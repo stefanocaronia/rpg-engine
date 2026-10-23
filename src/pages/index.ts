@@ -27,7 +27,23 @@ export {
 } from "./inheritance.ts";
 export { carriedWeight, type LoadRule, weightUnit } from "./load.ts";
 export { type MapField, mapHelp, readMapField } from "./maps.ts";
-export { everyGoalTicked, goalsIn, introductionText, type Link, links, partContent, readSection, secretNames, sectionTitles, type TextMode, textParts, unreadSecretLines, withoutComments } from "./markdown.ts";
+export {
+    everyGoalTicked,
+    goalsIn,
+    introductionText,
+    type Link,
+    links,
+    partContent,
+    readSection,
+    secretNames,
+    sectionTitles,
+    type TextMode,
+    textParts,
+    unreadSecretLines,
+    withLinksAsWords,
+    withoutComments,
+    withoutFencedBlocks,
+} from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, linkListItems, readFields, readFieldValue, splitPageFile } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
 export { formatPosition, type Position, positionHelp, readPosition } from "./positions.ts";

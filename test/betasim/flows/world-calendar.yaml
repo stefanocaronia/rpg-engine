@@ -1,0 +1,12 @@
+name: See the day of the main quest's deadline, and what happened today
+covers: [world-calendar]
+setup: {}
+steps:
+  - tapOn: World
+  - tapOn: Calendar
+  - assertVisible: Ritrovare i pellegrini
+  - tapOn: {label: "October 30, 1491 · day 3, deadline of Ritrovare i pellegrini"}
+    concept: {name: a day of the calendar says what falls on it, difficulty: 1}
+  - assertVisible: Deadline of Ritrovare i pellegrini
+  - tapOn: Today
+  - assertVisible: Il commiato del castellano

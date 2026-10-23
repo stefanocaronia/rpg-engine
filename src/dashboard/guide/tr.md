@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
@@ -111,59 +111,61 @@ Karakterini oyun yöneticisiyle birlikte yaparsın, tıpkı bir masada olduğu g
 
 ---
 
-## 3. Oynamak <!-- icon: chat -->
+## 3. Oyun oynamak <!-- icon: chat -->
 
 ### 3.1 Oyun yöneticisiyle konuşmak
 
-Karakterinin ne yaptığını ya da ne dediğini kendi sözlerinle yaz:
+Karakterin ne yapıyor ya da ne söylüyorsa kendi sözlerinle yaz:
 
 > Han sahibine bu gece başka kimin uğradığını soruyorum.
 
-Hikâyenin dışında konuşmak için köşeli parantez kullan: *[Tutuşma nasıl işliyor?]* Oyun yöneticisi de köşeli parantezle yanıt verir.
+Hikâyenin dışına çıkmak için köşeli parantez kullan: *[Tutuşma nasıl işliyor?]* Oyun yöneticisi de köşeli parantezle yanıt verir.
 
-Sen neyi denediğini söylersin; ne olduğunu oyun yöneticisi söyler. Oyun yöneticisi karakterin yerine asla karar vermez ve motordan asla söz etmez. Ona panonun nasıl kullanılacağını sorabilirsin.
+Sen neyi denediğini söylersin, ne olacağını oyun yöneticisi söyler. Oyun yöneticisi karakterin adına asla karar vermez ve motordan asla söz etmez. Gösterge panelini nasıl kullanacağını ona sorabilirsin.
 
-**Panodan eylem yapmak**: karakter kağıdında bir ada tıkla; örneğin bir silaha, bir büyüye ya da taşıdığın bir eşyaya. Sonra kimin için olduğunu seç. Konuşmak için bir kişiye de tıklayabilirsin. Pano senin cümleni yazar, örneğin *Kapüşonlu Haydut 1'e Gürz ile saldırıyorum.* **Oyun yöneticisine söyle** düğmesine basmadan önce cümleyi değiştirebilirsin. Oyun yöneticisi bunu sohbette söylenmiş gibi duyar ve diğer sözlerin gibi karara bağlar. Yapay zekâ uygulaman bunu kendiliğinden duyamıyorsa **Kopyala** cümleyi sohbete yapıştırmaya hazırlar.
+**Gösterge panelinden eylem yapmak**: karakter kağıdındaki bir ada tıkla; bu bir silah, bir büyü ya da taşıdığın bir şey olabilir. Sonra kimin için olduğunu seç. Biriyle konuşmak için de kişiye tıklayabilirsin. Gösterge paneli cümleni yazar, örneğin *Kapüşonlu Haydut 1'e Gürz ile saldırıyorum.* **Oyun yöneticisine söyle**'ye basmadan önce cümleyi değiştirebilirsin. Oyun yöneticisi bunu sohbette söylenmiş gibi duyar ve diğer her şey gibi karara bağlar. Yapay zekâ uygulaman cümleyi kendi başına duyamıyorsa **Kopyala** cümleyi sohbete yapıştırmaya hazırlar.
 
 ### 3.2 Atışlar
 
-Oyun yöneticisi atışı yalnızca sonuç belirsizse ve önemliyse ister. Önce neyin tehlikede olduğunu söyler. Sonra:
+Oyun yöneticisi atış istemeyi yalnızca sonuç belirsizse ve önemliyse yapar. Önce de neyin söz konusu olduğunu söyler. Sonra:
 
-- **Panoda** bir afiş her kontrol için bir düğme gösterir; örneğin *Akrobasi +4 · avantajlı*. Düğmeye tıkla: zarlar sayfaya düşer ve oyun yöneticisi sonucu duyar. Karakter kağıdında yanan satıra da tıklayabilir, zarları zar tepsisinden atabilir ya da afişe başka bir şey yazabilirsin.
-- **Elle** seçeneği afişin köşesinde ya da **Ayarlar**'da bulunur: afiş neyi atacağını söyler, sen de atışı karakter kağıdından ya da zar tepsisinden yaparsın.
-- **Gerçek zarlar** için zar ayarını fiziksel yap: attığın yüzleri yazarsın, *[14 attım.]*, RPG Engine değiştiricilerini ekler.
+- **Gösterge panelinde** bir bannerda her kontrol için bir düğme çıkar, örneğin *Acrobatics +4 · avantajlı*. Düğmeye tıkla: zarlar sayfaya düşer ve oyun yöneticisi sonucu duyar. Karakter kağıdında yanan satıra da tıklayabilir, zarları zar tepsisinden atabilir ya da bannera başka bir şey yazabilirsin.
+- **Elle** seçeneği bannerın köşesinde ya da **Ayarlar**'da bulunur: banner neyi atman gerektiğini söyler, sen de atışı karakter kağıdından ya da zar tepsisinden yaparsın.
+- **Fiziksel zarlar** için zar ayarını fiziksel yap: attığın yüzleri yazarsın, *[14 attım.]*, RPG Engine de değiştiricilerini ekler.
 
-**Serbest atışlar**: eğlenmek için karakter kağıdındaki herhangi bir sayıya tıkla ya da zar tepsisini aç. Bu atışlar hiçbir şeye sayılmaz ve oyun yöneticisi onları asla görmez.
+**Serbest atışlar**: eğlence için atmak istersen karakter kağıdındaki herhangi bir sayıya tıkla ya da zar tepsisini aç. Bunlar hiçbir zaman sayılmaz ve oyun yöneticisi onları görmez.
 
-**Oyun yöneticisinin atışları**, gizli olanlar hariç, atış sütununda görünür. Her zaman sorabilirsin: *[O atış gerçek miydi?]* Gizli bir atış için oyun yöneticisi, atışın sen sormadan önce yapıldığını kanıtlayan bir parmak izi verir.
+**Oyun yöneticisinin atışları**, gizli olanlar dışında, atış sütununda görünür. İstediğin zaman sorabilirsin: *[Şu atış gerçek miydi?]* Gizli bir atış için oyun yöneticisi, sen sormadan önce yapıldığını kanıtlayan bir parmak izi verir.
 
 ### 3.3 Sahneler ve çatışmalar
 
-Hikâye **sahneler** hâlinde ilerler: bir çatışma, bir konuşma, keşif, yolculuk, dinlenme. Her sahnenin sonunda oyun kendiliğinden kaydedilir ve sahne günlüğüne eklenir.
+Hikâye **sahneler** halinde ilerler: bir çatışma, bir konuşma, keşif, yolculuk, bir dinlenme. Her sahnenin sonunda oyun kendiliğinden kaydeder ve sahne günlüğüne girer.
 
-Çatışmada oyun yöneticisi senin olmayan her sırayı anlatır ve karar verebileceğin yerde durur. **Sahne** sayfasının üstünde sıranın kimde olduğunu ve sonra kimin geleceğini görürsün. Karakterinin kartı haritanın yanında durur. Sıra düzeni, grubunun can puanları ve düşmanların ne kadar yaralı göründüğü (sözlerle) sayfanın yanında kalır. Karakterin yere düşerse ölüm kurtarmaları sayfada büyük görünür.
+Bir çatışmada, sırası sende olmayan her sırayı oyun yöneticisi anlatır ve karar verebileceğin yerde durur. **Sahne** üstte sırasının kimde olduğunu ve sonra kimin geldiğini, haritanın yanında da karakterinin kartını gösterir. Sıraların düzeni, grubunun can puanları ve düşmanların ne kadar yaralı göründüğü ise sözcüklerle sayfanın yanında durur. Karakterin düşerse ölüm kurtarmaları sayfada büyük görünür.
 
 ### 3.4 Zaman, yolculuk ve hareket eden dünya
 
-RPG Engine tarihi tutar; oturumlar arasında zaman geçmez. Dinlendiğini söyle, *Uzun bir dinlenme yapıyoruz*, oyun yöneticisi onaylayınca dinlenme geri gelmesi gerekeni geri getirir. Kısa bir dinlenmede oyun yöneticisi panodan kaç can zarı harcayacağını sorabilir: zarları tek tek at, her birinin ne kadar iyileştirdiğini gör ve istediğinde dur. Nereye gittiğini söyle, *Kuzeye, Rocca'ya giden yola çıkıyoruz*, RPG Engine yolu, mesafeyi ve gün sayısını hesaplar; yolda bir şey olursa durur. Para, oyunun madeni paralarıyla sayılır, para üstü dahil.
+RPG Engine tarihi tutar; oturumlar arasında zaman geçmez. Dinlendiğini söyle, *Uzun bir dinlenme yapıyoruz*; oyun yöneticisi kabul edince dinlenme geri getirmesi gerekeni geri getirir. Kısa bir dinlenmede oyun yöneticisi gösterge panelinden kaç can zarı harcadığını sorabilir: zarları tek tek at, her birinin ne kadar iyileştirdiğini gör ve istediğin zaman dur. Nereye gittiğini söyle, *Kuzeye, Rocca'ya giden yola çıkıyoruz*; RPG Engine yolu, mesafeyi ve günleri hesaplar, yolda bir şey olursa durur. Para oyunun madeni paralarıyla sayılır, para üstü dahil.
 
-Kötü karakterlerin son tarihli planları vardır. Her yeni günde oyun yöneticisi, zamanın ilerlettiği tehditleri hareket ettirir. Onların izlerini görürsün ama saatin kendisini asla görmezsin.
+Kötülerin son tarihli planları vardır. Her yeni günde oyun yöneticisi, zamanın ilerlettiği tehditleri hareket ettirir. Sen onların izlerini görürsün, saatin kendisini asla.
 
 ### 3.5 Haritalar
 
-**Dünya**, karakterinin bildiği yerleri, aralarındaki yolları ve yürüdüğün izi gösterir; gerisi sisle kaplıdır. **Sahne**, bulunduğun yerin haritasını (varsa) ve kimin nerede durduğunu gösterir. Çatışmada, sıran geldiğinde, ulaşamayacağın kareler örtülüdür. Oyun yöneticisi nereye gideceğini sorduğunda bir kareye dokun ya da onu yaz, örneğin *E4*.
+**Dünya**, karakterinin bildiği yerleri, aralarındaki yolları ve yürüdüğün izi gösterir; gerisi sisle örtülüdür. **Sahne**, bulunduğun yerin haritasını, varsa, kimin nerede durduğuyla birlikte gösterir. Çatışmada, sıran geldiğinde ulaşamayacağın kareler örtülür. Oyun yöneticisi nereye gideceğini sorduğunda bir kareye dokun ya da *E4* gibi yaz.
+
+**Dünya** ayrıca karakterinin bildiklerini de tutar. **Bilgiler**, karakterin tanıdığı kişileri, yerleri, hizipleri, yaratıkları ve hikâyeleri listeler; her biri karakterin bildiği haliyle yazılır. İçinde arama yapabilir ya da birini açıp tamamını okuyabilirsin. Metindeki bir ad, kendi sayfasına götürür. **Belgeler**, bulunan mektupları, duyuruları ve sayfaları tekrar okuman için saklar. **Takvim** bugünü, görevlerinin kalan süreyle birlikte son tarihlerini ve hikâyenin günlerini gösterir. Sahnesi olan bir gün, Günlük'teki bölümlerine götürür.
 
 ### 3.6 Görevler, günlük ve notlar
 
-Karakterinin üstlendiği iş, **Günlük**'te bir görev olur; hedefleri, son tarihi ve neyi ölçtüğü ile birlikte. Görünür kalması için yıldızla: Sahne'nin en üstünde durur. Günlük ayrıca **hikâyeni** sahne sahne anlatır ve **notlarını** saklar. Notlar özeldir; bir notu **Paylaş** ile paylaşmazsan oyun yöneticisi onu görmez. Paylaşırsa, onu senin düşüncen olarak duyar, asla bir gerçek olarak değil. **Yoldaşlar** altında yoldaşlarının günlüklerini okursun: arada bir, bir günün ya da bir görevin sonunda, ne düşündüklerini ve hissettiklerini anlatan birkaç satır yazarlar.
+Karakterinin üstlendiği bir iş, **Günlük**'te hedefleri, son tarihi ve neyi ölçtüğüyle bir görev olur. Görünür kalması için yıldızla; Sahne'nin en üstünde durur. Günlük ayrıca **hikâyeni** sahne sahne anlatır ve **notlarını** tutar. Notlar özeldir; bir notu **Paylaş**mazsan oyun yöneticisi onu görmez. Paylaşırsan oyun yöneticisi bunu senin düşüncen olarak duyar, asla bir gerçek olarak değil. **Yoldaşlar** altında yoldaşlarının günlüklerini okursun: arada bir, bir günün ya da görevin sonunda, düşündükleri ve hissettikleri hakkında birkaç satır yazarlar.
 
 ### 3.7 Karakterinin hikâyesi ve resmi
 
-Karakter kağıdında **Açıklama** kartında karakterinin hikâyesi için bir kutu vardır: sen evet dedikten sonra oyun yöneticisi onu oraya yazar. Resim için oyun yöneticisine bir dosya ver (PNG, JPEG, WebP ya da SVG, en çok 5 MB) ve bilgisayarında nerede olduğunu söyle. Ya da bir portre yaptır ([3.11](#311-pictures)): *[Bana bir portre yap: örgülü gri saçlar, çenede bir yara izi.]*
+Karakter kağıdında **Açıklama** kartında karakterinin hikâyesi için bir kutu vardır; sen evet dedikten sonra oyun yöneticisi onu oraya yazar. Resim için oyun yöneticisine bir dosya ver (PNG, JPEG, WebP ya da SVG, en çok 5 MB) ve bilgisayarında nerede olduğunu söyle. Ya da bir portre yaptır ([3.11](#311-pictures)): *[Bana bir portre yap: örgülü gri saçlar, çenede bir yara izi.]*
 
 ### 3.8 Kayıtlar ve geri dönmek
 
-RPG Engine tüm kampanyayı her sahnenin sonunda kaydeder. Gerisini **kayıt** ayarı belirler:
+RPG Engine, her sahnenin sonunda tüm kampanyayı kaydeder. Gerisini **kayıt** ayarı belirler:
 
 | Kayıtlar | İstediğinde kaydet | Geri dön |
 |---|---|---|
@@ -173,42 +175,42 @@ RPG Engine tüm kampanyayı her sahnenin sonunda kaydeder. Gerisini **kayıt** a
 
 Her kipte **baştan başlayabilirsin**: oyunun başından ya da sıfırıncı oturumdan. Bunu sohbette ya da **Kayıtlar**'da yap.
 
-Geri döndükten sonra **yeni bir sohbet aç**: eski sohbet geri alınanı hâlâ hatırlar. Yeni sohbete *devam* yaz, sonra Kayıtlar'da **Yeni sohbet açtım** düğmesine bas.
+Geri döndükten sonra **yeni bir sohbet aç**: eski sohbet geri alınanı hâlâ hatırlar. Yeni sohbete *devam* yaz, sonra Kayıtlar'da **Yeni sohbet açtım**'a bas.
 
 ### 3.9 Oturumlar: durmak ve geri dönmek
 
-İstediğin zaman dur: *[Bu gece burada duralım.]* Her şey zaten dosyalarda kayıtlıdır. Geri dönmek için ajanını kampanya klasöründe başlat ve *devam* yaz: oyun yöneticisi sana kısa bir özet verir ve devam eder.
+İstediğin zaman dur: *[Bu gecelik burada bırakalım.]* Her şey zaten dosyalara kayıtlı. Geri dönmek için ajanını kampanya klasöründe başlat ve *devam* yaz: oyun yöneticisi sana kısa bir özet verir ve kaldığınız yerden sürdürür.
 
-### 3.10 Oyun yöneticisinin ruh hâli
+### 3.10 Oyun yöneticisinin ruh hali
 
-Panonun en üstündeki robot oyun yöneticisidir: yüzü hikâyenin tonunu izler ve henüz bilmediğin bir şeyi asla ele vermez. Sohbet kapalıyken uyur.
+Gösterge panelinin üstündeki robot oyun yöneticisidir. Yüzü hikâyenin tonunu izler ve henüz bilmediğin hiçbir şeyi ele vermez. Sohbet kapalıyken uyur.
 
 ### 3.11 Resimler
 
-RPG Engine; ulaştığın yerlerin, üstlendiğin görevlerin ve karşılaştığın kişilerin resimlerini, **resim** ayarının dediği gibi, yaptırabilir. İstediğinde karakterinin portresini de yapar. Kendi Codex ya da Claude Code'unu, kendi girişinle, kendi planında ve sınırları içinde kullanır: **Codex** onları boyar, o yoksa **Claude Code** çizer. **Ayarlar**, bu bilgisayarın resim yapıp yapamayacağını ve yapamıyorsa nasıl kurulacağını söyler. Oyun yöneticisine her zaman kendi resmini verebilirsin.
+RPG Engine, ulaştığın yerlerin, üstlendiğin görevlerin ve karşılaştığın kişilerin resimlerini, **resimler** ayarının dediği gibi yaptırabilir; istersen karakterinin portresini de. Kendi Codex'ini ya da Claude Code'unu, kendi girişinle, kendi planın ve sınırlarınla kullanır: **Codex** boyar, o yoksa **Claude Code** çizer. **Ayarlar**, bu bilgisayarın resim yapıp yapamadığını ve yapamıyorsa nasıl kurulacağını söyler. Oyun yöneticisine her zaman kendi resmini de verebilirsin.
 
 ### 3.12 Güvenlik: sınırlar, perdeler ve dur
 
-**Sınırlar** oyunda asla görünmez; **perdeler** yalnızca sahne dışında olur. İstediğin an *[dur]* yaz: oyun yöneticisi o içeriği hemen bırakır ve onu sınırlarına ekler.
+**Sınırlar** oyunda asla yer almaz; **perdeler** yalnızca sahne dışında olur. İstediğin an *[dur]* yaz: oyun yöneticisi o içeriği hemen bırakır ve sınırlarına ekler.
 
 ### 3.13 Fikrini değiştirmek
 
-Her ayar değişebilir; sohbette ya da **Ayarlar**'da. Oyun yöneticisinin kitapta olmayan bir konuda verdiği karar bir **emsal** olur; böylece aynı soru bir dahaki sefer aynı yanıtı alır.
+Her ayar değiştirilebilir, sohbette ya da **Ayarlar**'da. Oyun yöneticisinin kitapsız verdiği bir karar **emsal** olur; böylece aynı soru bir sonraki sefer aynı yanıtı alır.
 
 ---
 
-## 4. Pano <!-- icon: party -->
+## 4. Gösterge paneli <!-- icon: party -->
 
-Kendi bilgisayarındaki bir sayfa. Yalnızca o bilgisayarın tarayıcısında açılır ve sohbet açıkken canlıdır. Sohbet kapanınca *Bağlı değil* yazar; bir sonraki sohbetle kendiliğinden geri gelir.
+Kendi bilgisayarındaki bir sayfadır; yalnızca o bilgisayarın tarayıcısında açılır ve sohbet açık olduğu sürece canlıdır. Sohbet kapanınca *Not connected* gösterir; bir sonraki sohbetle kendiliğinden geri gelir.
 
-- **Grup**: senin ve yoldaşlarının karakter kağıtları. Atmak için bir sayıya tıkla; nereden geldiğini görmek için üzerine gel. Yanında atışlar durur.
+- **Grup**: senin karakter kağıdın ve yoldaşlarınınki. Atmak için bir sayıya tıkla; nereden geldiğini görmek için üzerine gel. Yanında atışlar durur.
 - **Sahne**: bulunduğun yer, resmi ve haritası, orada kimlerin olduğu, neler olduğu. Çatışmada sıralar ve karakterinin kartı.
 - **Günlük**: görevler, hikâye, yoldaşlarının günlükleri, notların.
-- **Dünya**: karakterinin bildiği hâliyle dünya haritası.
-- **Zar tepsisi**: zarları ve bir değiştirici seç, sonra at.
-- **Kayıtlar**, **Yardım**, **Ayarlar** ve **Hakkında**, satırın sonunda simgeler olarak durur. Ayarlar sayfanın kendi tercihlerini de içerir: tema, zar sesi, zar takımı.
+- **Dünya**: dünya haritası, karakterinin bildikleri, bulunan belgeler ve takvim.
+- **Zar tepsisi**: zarları ve bir değiştirici seç, at.
+- **Kayıtlar**, **Yardım**, **Ayarlar** ve **Hakkında**, satırın sonunda simgeler olarak durur. Ayarlar, sayfanın kendi tercihlerini de tutar: tema, zar sesi, zar seti.
 
-Oyun yöneticisi sana bir şey sorduğunda, hangi bölümde olursan ol, afişi en üstte kalır.
+Oyun yöneticisi sana bir şey sorduğunda, hangi bölümde olursan ol, bannerı en üstte kalır.
 
 ---
 

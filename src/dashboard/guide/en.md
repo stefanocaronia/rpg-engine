@@ -152,6 +152,8 @@ Villains have plans with deadlines. Each new day the master moves the threats th
 
 **World** shows the places your character knows, the roads between them and the trail you walked, with fog over the rest. **Scene** shows the map of the place where you are, when it has one, with who stands where; in a fight, on your turn, the squares you cannot reach are veiled. When the master asks where you move, touch a square, or write it, such as *E4*.
 
+**World** also keeps what your character knows. **Lore** lists the people, places, factions, creatures and stories they know, each as they know it: search it, or open one to read it whole; a name in the text leads to its page. **Documents** keeps the letters, notices and pages they found, to read again. **Calendar** shows today, your quests' deadlines with the time left, and the days of the story: a day with scenes leads to its chapters in the Journal.
+
 ### 3.6 Quests, journal and notes
 
 A task your character takes becomes a quest in the **Journal**, with its goals, its deadline and what it measures; star it to keep it in view at the top of Scene. The Journal also tells your **story**, scene by scene, and keeps your **notes**: private, unless you **Share** one, which the master hears as what you think, never as a fact. Under **Companions** you read your companions' diaries: now and then, at the end of a day or a quest, they write a few lines of what they think and feel.
@@ -203,7 +205,7 @@ A page on your own computer, open only in that computer's browser, live while th
 - **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from. Beside it, the rolls.
 - **Scene**: where you are, its picture and map, who is there, what is happening; in a fight, the turns and your character's card.
 - **Journal**: quests, the story, your companions' diaries, your notes.
-- **World**: the world map as your character knows it.
+- **World**: the world map, what your character knows, the documents found and the calendar.
 - **The dice tray**: choose dice and a modifier, and throw.
 - **Saves**, **Help**, **Settings** and **About**, as icons at the end of the row. Settings also holds the page's own preferences: theme, dice sound, dice set.
 

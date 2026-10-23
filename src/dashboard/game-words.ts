@@ -18,9 +18,35 @@ export function calendarDayLabel(date: CalendarDay): string
     const day = real >= 0 ? realDayLabel(date, real) : date.year === undefined
         ? t("{day} {month}", { day: date.day, month: systemWord("words", date.month) ?? date.month })
         : t("{day} {month} {year}", { day: date.day, month: systemWord("words", date.month) ?? date.month, year: date.year });
-    const seasons: Record<string, string> = { winter: t("winter"), spring: t("spring"), summer: t("summer"), autumn: t("autumn") };
-    const season = date.season === undefined ? undefined : (seasons[date.season] ?? systemWord("words", date.season) ?? date.season);
+    const season = date.season === undefined ? undefined : seasonLabel(date.season);
     return season === undefined ? day : t("{date}, {season}", { date: day, season });
+}
+
+/** A season in the page's language, in the words of who brought it: autumn, autunno. */
+export function seasonLabel(season: string): string
+{
+    const seasons: Record<string, string> = { winter: t("winter"), spring: t("spring"), summer: t("summer"), autumn: t("autumn") };
+    return seasons[season] ?? systemWord("words", season) ?? season;
+}
+
+/** A month of the calendar with its year, in the page's language: October 1491, ottobre 1491; a month of the story's own calendar in the words of who brought it. */
+export function calendarMonthLabel(month: string, year?: number): string
+{
+    const real = realMonths.indexOf(month);
+
+    if (real < 0) {
+        const name = systemWord("words", month) ?? month;
+        return year === undefined ? name : t("{month} {year}", { month: name, year });
+    }
+
+    const at = new Date(Date.UTC(2001, real, 1));
+
+    if (year !== undefined) {
+        at.setUTCFullYear(year);
+    }
+
+    const options: Intl.DateTimeFormatOptions = { month: "long", timeZone: "UTC", ...(year === undefined ? {} : { year: "numeric" }) };
+    return new Intl.DateTimeFormat(document.documentElement.lang || "en", options).format(at);
 }
 
 // The core's real months (TIM-8), which the page's language names on its own, as it bends them: 1 мая, 1. května.

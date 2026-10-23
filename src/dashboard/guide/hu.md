@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
 Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
@@ -117,49 +117,51 @@ A karaktered a mesélővel együtt alkotod meg, mint az asztalnál. Minden dönt
 
 Írd le, mit tesz vagy mond a karaktered, a saját szavaiddal:
 
-> Megkérdezem a fogadóst, ki járt még itt ma este.
+> Megkérdezem a fogadóst, ki járt még erre ma este.
 
-A történeten kívül szögletes zárójelbe írj: *[Hogyan működik a dulakodás?]* A mesélő is zárójelben válaszol.
+A történeten kívül szögletes zárójelben írj: *[Hogyan működik a dulakodás?]* A mesélő is zárójelben válaszol.
 
-Te megmondod, mit próbálsz tenni; a mesélő megmondja, mi történik. A mesélő sosem dönt a karaktered helyett, és sosem beszél a motorról. Megkérdezheted, hogyan használd a vezérlőpultot.
+Te azt mondod meg, mit próbálsz tenni; a mesélő azt, mi történik. A mesélő sosem dönt a karaktered helyett, és sosem beszél a motorról. Megkérdezheted tőle, hogyan használd a vezérlőpultot.
 
-**Cselekvés a vezérlőpultról**: kattints egy névre a karakterlapodon, például egy fegyverre, egy varázslatra vagy egy nálad lévő tárgyra, majd arra, akire irányul; vagy kattints egy szereplőre, hogy beszélj vele. A vezérlőpult megírja a mondatodat, például *Megtámadom az 1. csuklyás banditát a buzogánnyal.*, amit a **Mondd el a mesélőnek** előtt átírhatsz. A mesélő úgy hallja, mintha a csevegésben mondtad volna, és ugyanúgy dönt róla, mint bármi másról. Ahol az AI-alkalmazásod nem hallja magától, a **Másolás** előkészíti a mondatot, hogy beilleszthesd a csevegésbe.
+**Cselekvés a vezérlőpultról**: kattints egy névre a karakterlapodon, például egy fegyverre, egy varázslatra vagy egy nálad lévő tárgyra, majd arra, akire irányul; vagy kattints valakire, akivel beszélnél. A vezérlőpult megírja a mondatodat, például: *Megtámadom az 1. csuklyás banditát a buzogánnyal.* Ezt módosíthatod, mielőtt a **Mondd el a mesélőnek** gombra kattintasz. A mesélő úgy hallja, mintha a csevegésben mondtad volna, és úgy is bírálja el, mint bármi mást. Ha az AI-appod nem tudja magától meghallani, a **Másolás** előkészíti a mondatot, hogy beilleszd a csevegésbe.
 
 ### 3.2 Dobások
 
 A mesélő csak akkor kér dobást, ha a kimenetel bizonytalan és számít, és előbb elmondja, mi forog kockán. Ezután:
 
-- **A vezérlőpulton** egy sávban minden próbához megjelenik egy gomb, például *Akrobatika +4 · előnnyel*. Kattints rá: a kockák a lapon gurulnak le, és a mesélő hallja az eredményt. Kattinthatsz a karakterlapod kivilágosodó sorára is, dobhatsz a dobótálcáról, vagy írhatsz valami mást a sávba.
-- **Kézzel**, a sáv sarkában vagy a **Beállításokban**: a sáv megmondja, mit kell dobnod, te pedig a karakterlapodról vagy a dobótálcáról dobsz.
-- **Fizikai kockákkal**, ha a kockák beállítása fizikai: beírod a dobott értékeket, *[14-et dobtam.]*, és az RPG Engine hozzáadja a módosítóidat.
+- **A vezérlőpulton** egy sáv jelenik meg minden próbához egy gombbal, például: *Akrobatika +4 · előnnyel*. Kattints rá: a kockák a lapon hullanak le, és a mesélő hallja az eredményt. Kattinthatsz a karakterlapod kivilágosodó sorára is, dobhatsz a dobótálcáról, vagy írhatsz mást a sávba.
+- **Kézzel**, a sáv sarkában vagy a **Beállítások** között: a sáv megmondja, mit kell dobnod, te pedig a karakterlapodról vagy a dobótálcáról dobsz.
+- **Fizikai kockák**, ha a kockabeállítás fizikai: leírod a dobott számot, *[14-et dobtam.]*, és az RPG Engine hozzáadja a módosítóidat.
 
 **Szabad dobások**: kattints bármelyik számra a karakterlapodon, vagy nyisd meg a dobótálcát, és dobj kedvedre. Ezek soha nem számítanak, és a mesélő sosem látja őket.
 
-**A mesélő dobásai** megjelennek a dobásoszlopodban, kivéve a titkosakat. Bármikor megkérdezheted: *[Valódi volt az a dobás?]* Titkos dobásnál a mesélő ujjlenyomatot ad, amely bizonyítja, hogy a dobás a kérdésed előtt megtörtént.
+**A mesélő dobásai** megjelennek a dobásoszlopodban, a titkosak kivételével. Mindig megkérdezheted: *[Valódi volt az a dobás?]* Titkos dobásnál a mesélő ujjlenyomatot ad, amely bizonyítja, hogy a dobás azelőtt történt, hogy rákérdeztél.
 
 ### 3.3 Jelenetek és harcok
 
-A történet **jelenetekben** zajlik: harc, beszélgetés, felfedezés, utazás, pihenés. Minden jelenet végén a játék magától ment, és a jelenet bekerül a naplódba.
+A történet jelenetekben zajlik: harc, beszélgetés, felfedezés, utazás, pihenés. Minden jelenet végén a játék magától ment, és a jelenet bekerül a naplódba.
 
-Harcban a mesélő elmondja minden olyan kört, amely nem a tiéd, és ott áll meg, ahol te dönthetsz. A **Jelenet** felül mutatja, kinek a köre van és ki jön utána, valamint a karaktered kártyáját a térkép mellett; a körök sorrendje, a csapatod életereje és az, hogy az ellenfelek milyen sebesültnek látszanak (szavakban), az oldal szélén marad. Ha a karaktered elesik, a halál elleni mentődobások nagyban jelennek meg a lapon.
+Harcban a mesélő elmondja az összes kört, amely nem a tiéd, és ott áll meg, ahol te döntesz. A **Jelenet** felül mutatja, ki következik és ki jön utána, a karaktered kártyáját pedig a térkép mellett; a körök sorrendje, a csapatod életereje és az ellenfelek sérülése szavakkal leírva az oldal mellett marad. Ha a karaktered elesik, a halálmentők nagyban megjelennek a lapon.
 
 ### 3.4 Idő, utazás és a mozgó világ
 
-Az RPG Engine vezeti a dátumot; az alkalmak között nem telik az idő. Mondd ki, hogy pihensz, *Hosszú pihenőt tartunk*, és amint a mesélő beleegyezik, a pihenő visszaadja, amit kell. Rövid pihenőnél a mesélő a vezérlőpulton megkérdezheti, hány életerőkockát költesz el: egyenként dobj velük, nézd meg, mennyit gyógyít mindegyik, és akkor állj meg, amikor akarsz. Mondd meg, merre mentek, *Északra indulunk Roccába*, és az RPG Engine kiszámolja az utat, a távolságot és a napokat, és megáll, ha útközben történik valami. A pénzt a játék érméiben számoljuk, a visszajáróval együtt.
+Az RPG Engine vezeti a dátumot; az alkalmak között nem telik az idő. Mondd, hogy pihensz, *Hosszú pihenőt tartunk*, és ha a mesélő beleegyezik, a pihenő visszaadja, amit kell. Rövid pihenőnél a mesélő a vezérlőpulton megkérdezheti, hány életerőkockát költesz el: egyenként dobd őket, nézd meg, mennyit gyógyít mindegyik, és állj meg, amikor akarsz. Mondd meg, merre mész, *Észak felé indulunk Roccába*, és az RPG Engine kiszámolja az utat, a távolságot és a napokat, és megáll, ha történik valami az úton. A pénzt a játék érméiben számoljuk, a visszajáróval együtt.
 
-A gonosztevőknek határidős terveik vannak. Minden új nap elején a mesélő előremozdítja azokat a fenyegetéseket, amelyeket az idő előrébb vitt, te pedig a jeleiket látod, az órát soha.
+A gonoszoknak határidős terveik vannak. Minden új napon a mesélő előrébb mozdítja azokat a fenyegetéseket, amelyeket az idő előrevitt, te pedig a jeleiket látod, az órát sosem.
 
 ### 3.5 Térképek
 
-A **Világ** megmutatja a karaktered által ismert helyszíneket, a köztük futó utakat és a bejárt nyomvonalat; a többit köd takarja. A **Jelenet** megmutatja annak a helynek a térképét, ahol vagy, ha van neki, azzal együtt, hogy ki hol áll; harcban, a te körödben, az el nem érhető mezők el vannak fátyolozva. Ha a mesélő megkérdezi, hová lépsz, érints meg egy mezőt, vagy írd be, például *E4*.
+A **Világ** megmutatja a karaktered által ismert helyszíneket, a köztük lévő utakat és a bejárt ösvényt, a többi felett köddel. A **Jelenet** annak a helynek a térképét mutatja, ahol vagy, ha van neki, azzal, hogy ki hol áll; harcban, a te körödben, az el nem érhető mezők fátyollal vannak borítva. Amikor a mesélő megkérdezi, hová lépsz, érints meg egy mezőt, vagy írd le, például *E4*.
+
+A **Világ** azt is őrzi, amit a karaktered tud. Az **Ismeretek** felsorolja az embereket, helyeket, frakciókat, lényeket és történeteket, amelyeket ismer, mindegyiket úgy, ahogy ő ismeri: keress benne, vagy nyiss meg egyet, hogy egészében olvasd; a szövegben egy névre kattintva annak az oldalára jutsz. A **Dokumentumok** megőrzik a talált leveleket, hirdetményeket és lapokat, hogy újra elolvashasd őket. A **Naptár** megmutatja a mai napot, a küldetéseid határidejét a hátralévő idővel, és a történet napjait: egy jelenetekkel teli nap a Napló fejezeteihez vezet.
 
 ### 3.6 Küldetések, napló és jegyzetek
 
-Amit a karaktered vállal, az küldetés lesz a **Naplóban**, a céljaival, a határidejével és azzal, amit mér; jelöld csillaggal, hogy a Jelenet tetején szem előtt maradjon. A Napló elmeséli a **történetedet** is, jelenetről jelenetre, és őrzi a **jegyzeteidet**: ezek privátak, hacsak nem **Megosztasz** egyet; ezt a mesélő úgy hallja, mint amit gondolsz, sosem mint tényt. A **Társak** alatt elolvashatod a társaid naplóját: időnként, egy nap vagy egy küldetés végén, pár sorban leírják, mit gondolnak és éreznek.
+Amit a karaktered vállal, az küldetés lesz a **Naplóban**, céljaival, határidejével és azzal, amit mér; csillagozd meg, hogy a Jelenet tetején szem előtt maradjon. A Napló elmeséli a **történetedet** is, jelenetről jelenetre, és őrzi a **jegyzeteidet**: ezek privátak, hacsak nem **Megosztasz** egyet, amit a mesélő úgy hall, mint amit gondolsz, sosem mint tényt. A **Társak** alatt elolvashatod a társaid naplóját: időnként, egy nap vagy egy küldetés végén írnak néhány sort arról, mit gondolnak és éreznek.
 
 ### 3.7 A karaktered története és képe
 
-A karakterlapodon a **Leírás** kártyán van egy mező a karaktered történetének: a mesélő írja bele, miután igent mondtál. Képhez adj a mesélőnek egy fájlt (PNG, JPEG, WebP vagy SVG, legfeljebb 5 MB) azzal, hogy hol van a számítógépeden, vagy készíttess portrét ([3.11](#311-pictures)): *[Készíts nekem portrét: copfba font ősz haj, heg az állon.]*
+A karakterlapodon a **Leírás** kártyán van egy mező a karaktered történetének: a mesélő írja bele, miután igent mondasz. Képhez adj a mesélőnek egy fájlt (PNG, JPEG, WebP vagy SVG, legfeljebb 5 MB) a számítógépeden lévő helyével együtt, vagy készíttess portrét ([3.11](#311-pictures)): *[Készíts nekem egy portrét: copfba font ősz haj, egy heg az állon.]*
 
 ### 3.8 Mentések és visszalépés
 
@@ -168,47 +170,47 @@ Az RPG Engine minden jelenet végén menti az egész kampányt. A többit a **me
 | Mentések | Mentés, amikor akarod | Visszalépés |
 |---|---|---|
 | **permadeath** | nem | soha |
-| **checkpoint** | nem | az utolsó mentésig, csak ha a karaktered meghal |
-| **szabad** | igen | bármelyik mentésig |
+| **checkpoint** | nem | az utolsó mentésre, csak ha a karaktered meghal |
+| **szabad** | igen | bármelyik mentésre |
 
-Minden módban **újrakezdheted** a játékot a játék elejétől vagy a nulladik alkalomtól. Megteheted a csevegésben vagy a **Mentések** között.
+Minden módban **újrakezdheted** a játékot a játék elejéről vagy a nulladik alkalomtól. Megteheted a csevegésben vagy a **Mentésekben**.
 
-Visszalépés után **nyiss új csevegést**: a régi emlékszik arra, ami visszacsinálódott. Írd az újba: *folytatás*, aztán nyomd meg a **Megnyitottam az új csevegést** gombot a Mentéseknél.
+Visszalépés után **nyiss új csevegést**: a régi emlékszik arra, ami visszacsinálódott. Írd az új csevegésbe, hogy *folytatjuk*, majd nyomd meg a **Megnyitottam az új csevegést** gombot a Mentésekben.
 
-### 3.9 Alkalmak: megállás és visszatérés
+### 3.9 Alkalmak: abbahagyás és visszatérés
 
-Állj meg, amikor akarsz: *[Mára itt abbahagyjuk.]* Minden már el van mentve a fájlokba. A visszatéréshez indítsd el az ügynöködet a kampány mappájában, és írd: *folytatás*: a mesélő rövid összefoglalót ad, és megy tovább.
+Hagyd abba, amikor akarod: *[Mára álljunk meg itt.]* Minden már el van mentve a fájlokban. A visszatéréshez indítsd el az ügynöködet a kampány mappájában, és írd: *folytatjuk*; a mesélő rövid összefoglalót ad, és megy tovább.
 
 ### 3.10 A mesélő hangulata
 
-A vezérlőpult tetején lévő robot a mesélő: az arca követi a történet hangulatát, és sosem árul el semmit abból, amit még nem tudsz. Amikor a csevegés be van zárva, alszik.
+A vezérlőpult tetején lévő robot a mesélő: az arca követi a történet hangulatát, és sosem árulja el, amit még nem tudsz. Ha a csevegés zárva van, alszik.
 
 ### 3.11 Képek
 
-Az RPG Engine képeket készíttethet az elért helyszínekről, a vállalt küldetésekről és a megismert szereplőkről, ahogy a **képek** beállítás mondja, valamint a karaktered portréját, ha kéred. A saját Codexedet vagy Claude Code-odat használja, a te bejelentkezéseddel, a te csomagodon és annak korlátain belül: a **Codex** festi őket, egyébként a **Claude Code** rajzolja. A **Beállítások** megmondja, hogy ez a számítógép tud-e képet készíteni, és ha nem, hogyan állítsd be. A mesélőnek mindig adhatsz saját képet.
+Az RPG Engine képeket készíthet az általad elért helyszínekről, a vállalt küldetésekről és azokról, akikkel találkozol, ahogy a **képek** beállítás mondja, és a karaktered portréját is, ha kéred. A saját Codexedet vagy Claude Cododat használja, a te belépéseddel, a te csomagodon és annak korlátai szerint: a **Codex** festi őket, egyébként a **Claude Code** rajzolja. A **Beállítások** megmondja, hogy ez a számítógép tudja-e készíteni őket, és ha nem, hogyan állítsd be. A mesélőnek mindig adhatsz saját képet.
 
-### 3.12 Biztonság: határok, fátylak és stop
+### 3.12 Biztonság: határok, fátylak és leállítás
 
-A **határok** soha nem jelennek meg a játékban; a **fátylak** csak a színfalak mögött történnek. Bármikor írd: *[stop]*: a mesélő azonnal elejti a tartalmat, és felveszi a határaid közé.
+A **határok** sosem jelennek meg a játékban; a **fátylak** csak színfalak mögött történnek. Bármikor írd: *[stop]*: a mesélő azonnal elejti azt a tartalmat, és felveszi a határaid közé.
 
 ### 3.13 Meggondolod magad
 
-Minden beállítás megváltoztatható, a csevegésben vagy a **Beállításokban**. A szabálykönyv nélkül hozott mesélői döntés **precedens** lesz, így ugyanarra a kérdésre legközelebb ugyanaz lesz a válasz.
+Minden beállítás megváltoztatható, a csevegésben vagy a **Beállításokban**. A szabálykönyv nélkül hozott mesélői döntésből **precedens** lesz, így ugyanarra a kérdésre legközelebb ugyanaz a válasz jön.
 
 ---
 
 ## 4. A vezérlőpult <!-- icon: party -->
 
-Egy oldal a saját számítógépeden, csak annak a gépnek a böngészőjében nyílik meg, és amíg a csevegés nyitva van, él. Ha a csevegés bezárul, ezt mutatja: *Nincs kapcsolat*; a következő csevegéssel magától visszatér.
+Egy oldal a saját számítógépeden, csak annak a gépnek a böngészőjében nyílik meg, és amíg a csevegés nyitva van, él. Amikor a csevegés bezárul, a *Nincs kapcsolat* felirat látszik; a következő csevegéssel magától visszatér.
 
 - **Csapat**: a te karakterlapod és a társaidé. Kattints egy számra a dobáshoz; vidd fölé az egeret, hogy lásd, honnan jön. Mellette a dobások.
 - **Jelenet**: hol vagy, a képe és a térképe, ki van ott, mi történik; harcban a körök és a karaktered kártyája.
-- **Napló**: küldetések, a történet, a társaid naplója, a jegyzeteid.
-- **Világ**: a világtérkép úgy, ahogy a karaktered ismeri.
+- **Napló**: küldetések, a történet, a társaid naplói, a jegyzeteid.
+- **Világ**: a világtérkép, amit a karaktered tud, a talált dokumentumok és a naptár.
 - **A dobótálca**: válassz kockákat és módosítót, és dobj.
-- **Mentések**, **Súgó**, **Beállítások** és **Névjegy**, ikonokként a sor végén. A Beállítások az oldal saját preferenciáit is tartalmazzák: téma, kockahang, kockakészlet.
+- **Mentések**, **Súgó**, **Beállítások** és **Névjegy**, ikonként a sor végén. A Beállítások az oldal saját beállításait is tartalmazza: téma, kockahang, kockakészlet.
 
-Amikor a mesélő kérdez tőled, a sávja felül marad, bármelyik részben vagy.
+Amikor a mesélő kérdez tőled valamit, a sávja felül marad, bármelyik szakaszban vagy.
 
 ---
 

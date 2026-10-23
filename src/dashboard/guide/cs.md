@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -121,94 +121,96 @@ Napiš, co tvoje postava dělá nebo říká, vlastními slovy:
 
 Když chceš mluvit mimo příběh, piš do hranatých závorek: *[Jak funguje zápas v držení?]* Pán jeskyně odpoví také v závorkách.
 
-Ty říkáš, co zkoušíš. Pán jeskyně říká, co se stane. Pán jeskyně nikdy nerozhoduje za tvoji postavu a nikdy nemluví o enginu. Můžeš se ho zeptat, jak se dashboard používá.
+Ty říkáš, o co se pokoušíš. Pán jeskyně říká, co se stane. Pán jeskyně nikdy nerozhoduje za tvou postavu a nikdy nemluví o enginu. Můžeš se ho zeptat, jak se používá dashboard.
 
-**Jednání z dashboardu**: klikni na jméno v deníku postavy, třeba na zbraň, kouzlo nebo předmět, který neseš, a pak na to, koho se týká. Nebo klikni na osobu, se kterou chceš mluvit. Dashboard napíše tvoji větu, *Útočím na Bandita v kápi 1 palcátem.*, a ty ji můžeš před stisknutím **Říct Pánu jeskyně** upravit. Pán jeskyně ji uslyší, jako by zazněla v chatu, a posoudí ji jako každou jinou. Když ji tvoje AI aplikace sama nezachytí, tlačítko **Kopírovat** ji připraví k vložení do chatu.
+**Jednání z dashboardu**: klikni na jméno v deníku postavy, třeba na zbraň, kouzlo nebo něco, co nosíš. Potom vyber, na koho to míří. Nebo klikni na osobu, se kterou chceš mluvit. Dashboard napíše tvou větu, *Útočím na Zakuklený bandita 1 palcátem.*, kterou můžeš před **Říct Pánu jeskyně** upravit. Pán jeskyně ji slyší, jako by byla řečena v chatu, a rozhodne o ní jako o každé jiné. Když ji tvoje AI aplikace nezachytí sama, tlačítko **Kopírovat** ji připraví k vložení do chatu.
 
 ### 3.2 Hody
 
-Pán jeskyně žádá o hod, jen když je výsledek nejistý a důležitý, a nejdřív řekne, o co jde. Pak:
+Pán jeskyně žádá o hod, jen když je výsledek nejistý a záleží na něm. Nejdřív řekne, o co jde. Pak:
 
-- **Na dashboardu** se v liště zobrazí tlačítko pro každé ověření, například *Akrobacie +4 · s výhodou*. Klikni na něj: kostky padnou na stránce a Pán jeskyně uslyší výsledek. Můžeš také kliknout na řádek v deníku postavy, který se rozsvítí, hodit kostkami z podnosu na kostky, nebo do lišty napsat něco jiného.
-- **Ručně**, v rohu lišty nebo v **Nastavení**: lišta ti řekne, co hodit, a ty hodíš z deníku postavy nebo z podnosu na kostky.
-- **Fyzické kostky**, s nastavením kostek na fyzické: napíšeš čísla, která ti padla, *[Padla mi 14.]*, a RPG Engine přičte tvoje opravy.
+- **Na dashboardu** se v panelu zobrazí tlačítko pro každé ověření, například *Akrobacie +4 · s výhodou*. Klikni na něj: kostky padnou na stránce a Pán jeskyně uslyší výsledek. Můžeš také kliknout na řádek v deníku postavy, který se rozsvítí, hodit kostky z podnosu na kostky, nebo do panelu napsat něco jiného.
+- **Ručně**, v rohu panelu nebo v **Nastavení**: panel ti řekne, co hodit, a ty hodíš z deníku postavy nebo z podnosu na kostky.
+- **Fyzické kostky**, když je nastavení kostek na fyzické: napíšeš, co ti padlo, *[Hodil/a jsem 14.]*, a RPG Engine přičte tvé opravy.
 
-**Volné hody**: klikni na libovolné číslo v deníku postavy nebo otevři podnos na kostky a hoď si pro zábavu. Nikdy se nepočítají a Pán jeskyně je nikdy nevidí.
+**Volné hody**: klikni na libovolné číslo v deníku postavy nebo otevři podnos na kostky a hoď si pro zábavu. Nikdy se nepočítají a Pán jeskyně je nevidí.
 
-**Hody Pána jeskyně** se zobrazují ve tvém sloupci hodů, kromě tajných. Vždy se můžeš zeptat *[Byl ten hod skutečný?]*: u tajného hodu dá Pán jeskyně otisk, který dokazuje, že hod proběhl dřív, než ses zeptal*(a)*.
+**Hody Pána jeskyně** se zobrazují ve sloupci hodů, kromě tajných. Vždy se můžeš zeptat *[Byl ten hod skutečný?]*: u tajného hodu Pán jeskyně dá otisk, který dokazuje, že hod proběhl dřív, než ses zeptal/a.
 
 ### 3.3 Scény a boje
 
 Příběh běží ve **scénách**: boj, rozhovor, zkoumání, cestování, odpočinek. Na konci každé scény se hra sama uloží a scéna přejde do tvé kroniky.
 
-V boji Pán jeskyně vypráví každý tah, který není tvůj, a zastaví se tam, kde se můžeš rozhodnout. Nahoře v **Scéně** vidíš, kdo je na tahu a kdo je další, a vedle mapy kartu své postavy. Pořadí tahů, životy družiny a to, jak zraněně nepřátelé vypadají (slovy), zůstávají na straně vedle. Když tvoje postava padne, objeví se na stránce velké záchrany před smrtí.
+V boji Pán jeskyně vypráví každý tah, který není tvůj, a zastaví se tam, kde se můžeš rozhodnout. **Scéna** nahoře ukazuje, kdo je na tahu a kdo bude další, a vedle mapy kartu tvé postavy. Pořadí tahů, životy tvé družiny a slovní popis toho, jak jsou nepřátelé raněni, zůstávají na straně stránky. Pokud tvá postava padne, na stránce se velké zobrazí záchrany před smrtí.
 
 ### 3.4 Čas, cestování a svět, který se hýbe
 
-RPG Engine hlídá datum. Mezi sezeními žádný čas neplyne. Řekni, že odpočíváš, *Dlouze odpočíváme*, a jakmile Pán jeskyně souhlasí, odpočinek vrátí to, co má. Při krátkém odpočinku se tě Pán jeskyně může na dashboardu zeptat, kolik kostek životů utratíš: házej jimi po jedné, sleduj, kolik která vyléčí, a přestaň, kdy chceš. Řekni, kam jdeš, *Vydáme se severní cestou do Rocca*, a RPG Engine spočítá cestu, vzdálenost a dny. Zastaví se, když se cestou něco stane. Peníze se počítají v herních mincích, včetně drobných.
+RPG Engine hlídá datum. Mezi sezeními neběží čas. Řekni, že odpočíváš, *Dopřejeme si dlouhý odpočinek*, a jakmile Pán jeskyně souhlasí, odpočinek vrátí, co má. Při krátkém odpočinku se tě Pán jeskyně může na dashboardu zeptat, kolik kostek životů utratíš: hoď je po jedné, uvidíš, kolik každá vyléčí, a přestaň, kdy chceš. Řekni, kam jdeš, *Vydáme se po cestě na sever k Rocce*, a RPG Engine spočítá cestu, vzdálenost i dny. Zastaví se, když se cestou něco stane. Peníze se počítají v herních mincích, včetně drobných.
 
-Padouši mají plány s termíny. Každý nový den Pán jeskyně posune hrozby, které čas pohnul dopředu, a ty vidíš jejich znamení, nikdy ne samotné hodiny.
+Padouši mají plány s termíny. Každý nový den Pán jeskyně posune hrozby, které čas pokročil, a ty vidíš jejich znamení, nikdy ne samotné hodiny.
 
 ### 3.5 Mapy
 
-**Svět** ukazuje místa, která tvoje postava zná, cesty mezi nimi a stopu, kterou jsi prošel*(a)*, a zbytek je zahalen mlhou. **Scéna** ukazuje mapu místa, kde jsi, pokud nějakou má, a kdo kde stojí. V boji, když jsi na tahu, jsou políčka, na která nedosáhneš, zakrytá závojem. Když se Pán jeskyně zeptá, kam se přesuneš, dotkni se políčka, nebo ho napiš, například *E4*.
+**Svět** ukazuje místa, která tvá postava zná, cesty mezi nimi a stopu, kterou jsi prošel/prošla. Zbytek zakrývá mlha. **Scéna** ukazuje mapu místa, kde jsi, pokud nějakou má, a kdo kde stojí. V boji jsou na tvém tahu políčka, na která nedosáhneš, zastřená. Když se Pán jeskyně zeptá, kam se přesuneš, ťukni na políčko nebo ho napiš, třeba *E4*.
+
+**Svět** také uchovává, co tvá postava ví. **Znalosti** uvádějí lidi, místa, frakce, tvory a příběhy, které postava zná, každé tak, jak je zná: můžeš v nich hledat, nebo otevřít položku a přečíst si ji celou. Jméno v textu vede na svou stránku. **Dokumenty** uchovávají dopisy, oznámení a stránky, které postava našla, k opětovnému přečtení. **Kalendář** ukazuje dnešek, termíny tvých úkolů se zbývajícím časem a dny příběhu: den se scénami vede k jeho kapitolám v Kronice.
 
 ### 3.6 Úkoly, kronika a poznámky
 
-Úkol, který tvoje postava přijme, se stane úkolem v **Kronice**, s cíli, termínem a tím, co měří. Označ ho hvězdičkou, aby zůstal na očích nahoře ve Scéně. Kronika také vypráví tvůj **příběh**, scénu po scéně, a uchovává tvoje **poznámky**: jsou soukromé, dokud některou nezvolíš **Sdílet**. Pán jeskyně ji pak slyší jako to, co si myslíš, nikdy jako fakt. Pod **Společníci** čteš deníky svých společníků: čas od času, na konci dne nebo úkolu, napíšou pár řádků o tom, co si myslí a cítí.
+Úkol, který tvá postava přijme, se objeví v **Kronice** i s cíli, termínem a tím, co měří. Označ ho hvězdičkou, aby zůstal na očích nahoře ve Scéně. Kronika také vypráví tvůj **příběh**, scénu po scéně, a uchovává tvé **poznámky**: jsou soukromé, dokud některou nepoužiješ ke **Sdílet**. Pán jeskyně ji pak slyší jako to, co si myslíš, nikdy jako fakt. V části **Společníci** čteš deníky svých společníků: čas od času, na konci dne nebo úkolu, napíšou pár řádků o tom, co si myslí a cítí.
 
-### 3.7 Příběh a obraz tvé postavy
+### 3.7 Příběh a podoba tvé postavy
 
-V deníku postavy má karta **Popis** políčko pro příběh tvé postavy: Pán jeskyně ho tam zapíše, až řekneš ano. Pro obrázek dej Pánu jeskyně soubor (PNG, JPEG, WebP nebo SVG, do 5 MB) a řekni, kde na počítači leží. Nebo si nech vytvořit portrét ([3.11](#311-pictures)): *[Udělej mi portrét: šedé vlasy spletené do copu, jizva na bradě.]*
+Na deníku postavy má karta **Popis** pole pro příběh tvé postavy: Pán jeskyně ho tam zapíše, až řekneš ano. Pro obrázek dej Pánu jeskyně soubor (PNG, JPEG, WebP nebo SVG, do 5 MB) a řekni, kde na počítači leží. Nebo si nech vytvořit portrét ([3.11](#311-pictures)): *[Udělej mi portrét: šedé vlasy spletené do copu, jizva na bradě.]*
 
 ### 3.8 Uložené hry a návrat zpět
 
-RPG Engine ukládá celou kampaň na konci každé scény. Zbytek určuje nastavení **ukládání**:
+RPG Engine ukládá celou kampaň na konci každé scény. O zbytku rozhoduje nastavení **uložených her**:
 
-| Ukládání | Uložit, kdy chceš | Návrat zpět |
+| Uložené hry | Uložit, kdy chceš | Vrátit se |
 |---|---|---|
 | **permadeath** | ne | nikdy |
-| **checkpoint** | ne | k poslednímu uložení, jen když tvoje postava zemře |
-| **volné** | ano | k jakémukoli uložení |
+| **checkpoint** | ne | k poslední uložené hře, jen když tvá postava zemře |
+| **volné** | ano | k jakékoli uložené hře |
 
 V každém režimu můžeš **začít znovu**, od začátku hry nebo od nultého sezení. Udělej to v chatu nebo v **Uložené hry**.
 
-Po návratu zpět **otevři nový chat**: starý si pamatuje, co bylo vráceno. Do nového chatu napiš *pokračuj* a pak v Uložených hrách stiskni **Nový chat otevřen**.
+Po návratu zpět **otevři nový chat**: starý si pamatuje, co bylo zrušeno. V novém chatu napiš *pokračuj*, potom v Uložené hry stiskni **Nový chat otevřen**.
 
-### 3.9 Sezení: zastavení a návrat
+### 3.9 Sezení: přestávka a návrat
 
-Zastav, kdykoli chceš: *[Pro dnešní večer končíme.]* Všechno je už uložené v souborech. Chceš-li se vrátit, spusť svého agenta ve složce kampaně a napiš *pokračuj*: Pán jeskyně ti krátce shrne děj a pokračuje.
+Přestaň, kdy chceš: *[Pro dnešek skončeme.]* Všechno je už uloženo v souborech. Až se budeš chtít vrátit, spusť svého agenta ve složce kampaně a napiš *pokračuj*: Pán jeskyně ti krátce shrne děj a jde se dál.
 
 ### 3.10 Nálada Pána jeskyně
 
-Robot nahoře na dashboardu je Pán jeskyně: jeho obličej sleduje tón příběhu a nikdy neprozradí, co ještě nevíš. Když je chat zavřený, spí.
+Robot nahoře na dashboardu je Pán jeskyně. Jeho tvář sleduje tón příběhu a nikdy neprozradí, co ještě nevíš. Když je chat zavřený, spí.
 
 ### 3.11 Obrázky
 
-RPG Engine může nechat vytvořit obrázky míst, kam dojdeš, úkolů, které přijmeš, a těch, které potkáš, podle nastavení **obrázků**, a také portrét tvé postavy, když o něj požádáš. Používá tvůj vlastní Codex nebo Claude Code, s tvým přihlášením, na tvém tarifu a v jeho mezích: **Codex** je maluje, jinak je kreslí **Claude Code**. **Nastavení** ukáže, zda je tento počítač umí vytvořit, a když ne, jak to nastavit. Vždy můžeš Pánu jeskyně dát vlastní obrázek.
+RPG Engine může nechat vytvořit obrázky míst, kam dojdeš, úkolů, které přijmeš, a těch, které potkáš, podle nastavení **obrázků**, a také portrét tvé postavy, když o něj požádáš. Používá tvůj vlastní Codex nebo Claude Code, s tvým přihlášením, na tvém tarifu a v jeho mezích: **Codex** je maluje, jinak je kreslí **Claude Code**. **Nastavení** ukazuje, zda je tento počítač umí vytvářet, a jak to případně nastavit. Pánu jeskyně můžeš vždy dát vlastní obrázek.
 
 ### 3.12 Bezpečí: hranice, závoje a stop
 
-**Hranice** se ve hře nikdy neobjeví. **Závoje** se dějí jen mimo scénu. Kdykoli napiš *[stop]*: Pán jeskyně ten obsah okamžitě vynechá a přidá ho do tvých hranic.
+**Hranice** se ve hře nikdy neobjeví. **Závoje** se odehrávají jen mimo scénu. Kdykoli napiš *[stop]*: Pán jeskyně ten obsah okamžitě opustí a přidá ho do tvých hranic.
 
-### 3.13 Změna názoru
+### 3.13 Změna rozhodnutí
 
-Každé nastavení lze změnit, v chatu nebo v **Nastavení**. Rozhodnutí, které Pán jeskyně udělá bez pravidel, se stane **precedentem**, takže na stejnou otázku bude příště stejná odpověď.
+Každé nastavení lze změnit, v chatu nebo v **Nastavení**. Rozhodnutí, které Pán jeskyně udělá bez pravidel, se stane **precedentem**, takže stejná otázka dostane příště stejnou odpověď.
 
 ---
 
 ## 4. Dashboard <!-- icon: party -->
 
-Stránka na tvém vlastním počítači, otevřená jen v prohlížeči tohoto počítače, živá, dokud je chat otevřený. Když se chat zavře, zobrazí *Not connected*. S dalším chatem se vrátí sama.
+Stránka na tvém počítači, otevřená jen v prohlížeči na tomto počítači, živá, dokud je chat otevřený. Když se chat zavře, zobrazí *Not connected*. S dalším chatem se sama vrátí.
 
-- **Družina**: deník tvé postavy a deníky společníků. Kliknutím na číslo hodíš. Najetím myši uvidíš, odkud se bere. Vedle jsou hody.
+- **Družina**: tvůj deník postavy a deníky tvých společníků. Kliknutím na číslo hodíš. Najetím na něj uvidíš, odkud pochází. Vedle jsou hody.
 - **Scéna**: kde jsi, její obrázek a mapa, kdo tam je, co se děje. V boji tahy a karta tvé postavy.
-- **Kronika**: úkoly, příběh, deníky společníků, tvoje poznámky.
-- **Svět**: mapa světa, jak ji tvoje postava zná.
+- **Kronika**: úkoly, příběh, deníky tvých společníků, tvé poznámky.
+- **Svět**: mapa světa, co tvá postava ví, nalezené dokumenty a kalendář.
 - **Podnos na kostky**: vyber kostky a opravu a hoď.
 - **Uložené hry**, **Nápověda**, **Nastavení** a **O aplikaci**, jako ikony na konci řady. Nastavení obsahuje i vlastní předvolby stránky: motiv, zvuk kostek, sadu kostek.
 
-Když se tě Pán jeskyně na něco zeptá, jeho lišta zůstane nahoře, ať jsi v jakékoli části.
+Když se tě Pán jeskyně na něco zeptá, jeho panel zůstane nahoře, ať jsi v jakékoli části.
 
 ---
 

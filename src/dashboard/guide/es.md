@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -111,59 +111,61 @@ Creas tu personaje con el máster, como en una mesa. Cada elección es tuya, a m
 
 ---
 
-## 3. Jugar <!-- icon: chat -->
+## 3. Cómo se juega <!-- icon: chat -->
 
 ### 3.1 Hablar con el máster
 
-Escribe lo que hace o dice tu personaje, con tus propias palabras:
+Escribe lo que hace o dice tu personaje, con tus palabras:
 
-> Le pregunto al posadero quién más ha pasado esta noche.
+> Le pregunto al posadero quién más ha pasado por aquí esta noche.
 
-Para hablar fuera de la historia, escribe entre corchetes: *[¿Cómo funciona el agarre?]* El máster también responde entre corchetes.
+Fuera de la historia, escribe entre corchetes: *[¿Cómo funciona el agarre?]* El máster también responde entre corchetes.
 
-Tú dices lo que intentas; el máster dice lo que ocurre. El máster nunca decide por tu personaje y nunca habla del motor del juego. Puedes preguntarle cómo usar el dashboard.
+Tú dices lo que intentas; el máster dice lo que pasa. El máster nunca decide por tu personaje y nunca habla del motor del juego. Puedes preguntarle cómo usar el dashboard.
 
-**Actuar desde el dashboard**: haz clic en un nombre de tu ficha, como un arma, un conjuro o algo que llevas, y luego en a quién va dirigido. También puedes hacer clic en una persona para hablar con ella. El dashboard escribe tu frase, *Ataco a Bandido encapuchado 1 con Maza.*, que puedes cambiar antes de pulsar **Decir al máster**. El máster la oye como si la hubieras dicho en el chat y resuelve la acción como cualquier otra. Si tu app de IA no puede recibirla por sí sola, **Copiar** la deja lista para pegarla en el chat.
+**Actuar desde el dashboard**: haz clic en un nombre de tu ficha, como un arma, un conjuro o algo que llevas, y luego en el objetivo; o haz clic en una persona para hablarle. El dashboard escribe tu frase, *Ataco a Bandido encapuchado 1 con Maza.*, que puedes cambiar antes de pulsar **Decir al máster**. El máster la oye como si la hubieras dicho en el chat y la resuelve como cualquier otra. Si tu aplicación de IA no puede recibirla por sí sola, **Copiar** la deja lista para pegarla en el chat.
 
 ### 3.2 Tiradas
 
 El máster pide una tirada solo cuando el resultado es incierto e importa, y antes dice qué está en juego. Después:
 
-- **En el dashboard**, un aviso muestra un botón por cada prueba, como *Acrobacias +4 · con ventaja*. Haz clic en él: los dados caen en la página y el máster oye el resultado. También puedes hacer clic en la línea de tu ficha que se ilumina, lanzar los dados desde la bandeja de dados o escribir otra cosa en el aviso.
-- **Manual**, en la esquina del aviso o en **Ajustes**: el aviso te dice qué tirar, y lo tiras desde tu ficha o desde la bandeja de dados.
-- **Dados físicos**, con el ajuste de dados en físicos: escribes las caras que han salido, *[He sacado un 14.]*, y RPG Engine suma tus modificadores.
+- **En el dashboard**, un aviso muestra un botón para cada prueba, como *Acrobacias +4 · con ventaja*. Haz clic: los dados caen en la página y el máster oye el resultado. También puedes hacer clic en la línea de tu ficha que se ilumina, tirar los dados desde la bandeja de dados o escribir otra cosa en el aviso.
+- **Manual**, en la esquina del aviso o en **Ajustes**: el aviso te dice qué tirar, y tú lo tiras desde tu ficha o desde la bandeja de dados.
+- **Dados físicos**, con el ajuste de dados en físico: escribes los números que has sacado, *[He sacado un 14.]*, y RPG Engine suma tus modificadores.
 
 **Tiradas libres**: haz clic en cualquier número de tu ficha, o abre la bandeja de dados, para tirar por diversión. Nunca cuentan y el máster nunca las ve.
 
-**Las tiradas del máster** aparecen en tu columna de tiradas, salvo las secretas. Siempre puedes preguntar *[¿Esa tirada era real?]*: si fue una tirada secreta, el máster te da una huella que demuestra que se hizo antes de que preguntaras.
+**Las tiradas del máster** aparecen en tu columna de tiradas, salvo las secretas. Siempre puedes preguntar *[¿Esa tirada fue real?]*: si la tirada era secreta, el máster te da una huella que prueba que se hizo antes de que preguntaras.
 
 ### 3.3 Escenas y combates
 
-La historia avanza en **escenas**: un combate, una conversación, una exploración, un viaje, un descanso. Al final de cada escena el juego guarda la partida solo, y la escena pasa a tu diario.
+La historia avanza en **escenas**: un combate, una conversación, una exploración, un viaje, un descanso. Al final de cada escena la partida se guarda sola y la escena pasa a tu diario.
 
-En un combate, el máster narra cada turno que no es tuyo y se detiene cuando te toca decidir. **Escena** muestra arriba de quién es el turno y quién va después, y la tarjeta de tu personaje junto al mapa. El orden de los turnos, los puntos de golpe de tu grupo y lo heridos que parecen los enemigos, dicho con palabras, quedan a un lado de la página. Si tu personaje cae, las salvaciones contra la muerte aparecen en grande en la página.
+En un combate, el máster cuenta todos los turnos que no son tuyos y se detiene donde puedes decidir. **Escena** muestra arriba de quién es el turno y quién va después, y la tarjeta de tu personaje junto al mapa. El orden de los turnos, los puntos de golpe de tu grupo y lo heridos que parecen los enemigos, con palabras, quedan al lado de la página. Si tu personaje cae, las salvaciones de muerte aparecen en grande en la página.
 
 ### 3.4 Tiempo, viajes y el mundo que se mueve
 
-RPG Engine lleva la cuenta de la fecha; no pasa el tiempo entre sesiones. Di que descansas, *Hacemos un descanso largo*, y cuando el máster está de acuerdo, el descanso devuelve lo que corresponde. En un descanso corto, el máster puede preguntarte en el dashboard cuántos dados de golpe gastas: tíralos uno a uno, mira cuánto cura cada uno y para cuando quieras. Di adónde vas, *Tomamos el camino del norte hacia Rocca*, y RPG Engine calcula la ruta, la distancia y los días, y se detiene si ocurre algo por el camino. El dinero se cuenta en las monedas del juego, con cambio incluido.
+RPG Engine lleva la cuenta de la fecha; no pasa el tiempo entre sesiones. Di que descansas, *Hacemos un descanso largo*, y cuando el máster esté de acuerdo, el descanso devuelve lo que corresponde. En un descanso corto, el máster puede preguntarte en el dashboard cuántos dados de golpe gastas: tíralos de uno en uno, mira cuánto cura cada uno y para cuando quieras. Di adónde vas, *Tomamos el camino del norte hacia Rocca*, y RPG Engine calcula la ruta, la distancia y los días, y se detiene si ocurre algo por el camino. El dinero se cuenta en las monedas del juego, con el cambio incluido.
 
 Los villanos tienen planes con plazos. Cada día nuevo, el máster mueve las amenazas que el tiempo ha hecho avanzar, y tú ves sus señales, nunca el reloj en sí.
 
 ### 3.5 Mapas
 
-**Mundo** muestra los lugares que conoce tu personaje, los caminos entre ellos y el rastro de tu recorrido, con niebla sobre el resto. **Escena** muestra el mapa del lugar donde estás, si lo tiene, con quién está en cada sitio. En un combate, en tu turno, las casillas a las que no puedes llegar aparecen veladas. Cuando el máster te pregunte adónde te mueves, toca una casilla o escríbela, como *E4*.
+**Mundo** muestra los lugares que conoce tu personaje, los caminos entre ellos y el rastro que has recorrido, con niebla sobre el resto. **Escena** muestra el mapa del lugar donde estás, si lo tiene, con quién está en cada sitio; en un combate, en tu turno, las casillas a las que no llegas aparecen veladas. Cuando el máster pregunte adónde te mueves, toca una casilla o escríbela, por ejemplo *E4*.
+
+**Mundo** también guarda lo que sabe tu personaje. **Conocimientos** enumera las personas, los lugares, las facciones, las criaturas y las historias que conoce, cada una tal como la conoce: búscalas o abre una para leerla completa; un nombre dentro del texto lleva a su página. **Documentos** guarda las cartas, los avisos y las páginas que encontró, para releerlos. **Calendario** muestra hoy, los plazos de tus misiones con el tiempo que queda y los días de la historia: un día con escenas lleva a sus capítulos en el Diario.
 
 ### 3.6 Misiones, diario y notas
 
-Una tarea que asume tu personaje se convierte en una misión en el **Diario**, con sus objetivos, su plazo y lo que mide. Márcala con una estrella para tenerla a la vista arriba en Escena. El Diario también cuenta tu **historia**, escena por escena, y guarda tus **notas**: son privadas, salvo que **Compartas** una; el máster la oye como lo que piensa tu personaje, nunca como un hecho. En **Compañeros** puedes leer los diarios de tus compañeros: de vez en cuando, al final de un día o de una misión, escriben unas líneas sobre lo que piensan y sienten.
+Una tarea que asume tu personaje se convierte en una misión en el **Diario**, con sus objetivos, su plazo y lo que mide; márcala con una estrella para tenerla a la vista arriba en Escena. El Diario también cuenta tu **historia**, escena por escena, y guarda tus **notas**: son privadas, salvo que pulses **Compartir** en una, y entonces el máster la oye como lo que piensas, nunca como un hecho. En **Compañeros** puedes leer los diarios de tus compañeros: de vez en cuando, al final de un día o de una misión, escriben unas líneas sobre lo que piensan y sienten.
 
 ### 3.7 La historia y la imagen de tu personaje
 
-En tu ficha, la tarjeta **Descripción** tiene un cuadro para la historia de tu personaje: el máster la escribe ahí cuando tú das el visto bueno. Para una imagen, dale al máster un archivo (PNG, JPEG, WebP o SVG, de hasta 5 MB) junto con su ubicación en tu equipo, o pide que se haga un retrato ([3.11](#311-pictures)): *[Hazme un retrato: pelo gris con una trenza y una cicatriz en la barbilla.]*
+En tu ficha, la tarjeta **Descripción** tiene un cuadro para la historia de tu personaje: el máster la escribe ahí, cuando tú le dices que sí. Para una imagen, dale al máster un archivo (PNG, JPEG, WebP o SVG, de hasta 5 MB) indicando dónde está en tu equipo, o pide que se haga un retrato ([3.11](#311-pictures)): *[Hazme un retrato: pelo gris trenzado, una cicatriz en la barbilla.]*
 
 ### 3.8 Partidas guardadas y volver atrás
 
-RPG Engine guarda toda la campaña al final de cada escena. El ajuste **partidas guardadas** decide el resto:
+RPG Engine guarda toda la campaña al final de cada escena. El ajuste de **partidas guardadas** decide el resto:
 
 | Partidas guardadas | Guardar cuando quieras | Volver atrás |
 |---|---|---|
@@ -177,7 +179,7 @@ Después de volver atrás, **abre un chat nuevo**: el anterior recuerda lo que s
 
 ### 3.9 Sesiones: parar y volver
 
-Para cuando quieras: *[Lo dejamos aquí por esta noche.]* Todo ya está guardado en los archivos. Para volver, inicia tu agente en la carpeta de la campaña y escribe *continuar*: el máster te da un resumen breve y sigue.
+Para cuando quieras: *[Lo dejamos aquí por esta noche.]* Todo está ya guardado en los archivos. Para volver, inicia tu agente en la carpeta de la campaña y escribe *continuar*: el máster te da un resumen breve y sigue.
 
 ### 3.10 El ánimo del máster
 
@@ -185,7 +187,7 @@ El robot de la parte superior del dashboard es el máster: su cara sigue el tono
 
 ### 3.11 Imágenes
 
-RPG Engine puede generar imágenes de los lugares a los que llegas, de las misiones que asumes y de quienes conoces, según indique el ajuste **imágenes**, y el retrato de tu personaje cuando lo pidas. Usa tu propio Codex o Claude Code, con tu inicio de sesión, tu plan y sus límites: **Codex** las pinta y, si no, **Claude Code** las dibuja. **Ajustes** indica si este equipo puede crearlas y cómo configurarlo si no. Siempre puedes darle al máster una imagen tuya.
+RPG Engine puede generar imágenes de los lugares a los que llegas, las misiones que aceptas y los personajes que conoces, según indique el ajuste de **imágenes**, y el retrato de tu personaje cuando lo pides. Usa tu propio Codex o Claude Code, con tu inicio de sesión, en tu plan y con sus límites: **Codex** las pinta y, si no, **Claude Code** las dibuja. **Ajustes** indica si este equipo puede generarlas y, si no, cómo prepararlo. Siempre puedes darle al máster una imagen tuya.
 
 ### 3.12 Seguridad: líneas, velos y stop
 
@@ -193,20 +195,20 @@ Las **líneas** nunca aparecen en el juego; los **velos** ocurren solo fuera de 
 
 ### 3.13 Cambiar de opinión
 
-Todo ajuste se puede cambiar, en el chat o en **Ajustes**. Una decisión que el máster toma sin apoyarse en el libro se convierte en un **precedente**, de modo que la misma pregunta recibe la misma respuesta la próxima vez.
+Todos los ajustes se pueden cambiar, en el chat o en **Ajustes**. Una decisión que el máster toma sin el libro se convierte en un **precedente**, de modo que la misma pregunta recibe la misma respuesta la próxima vez.
 
 ---
 
 ## 4. El dashboard <!-- icon: party -->
 
-Una página de tu propio equipo, que solo se abre en el navegador de ese equipo y está activa mientras el chat está abierto. Cuando el chat se cierra, muestra *Not connected*; vuelve sola con el siguiente chat.
+Una página en tu propio equipo, que solo se abre en el navegador de ese equipo y está activa mientras el chat está abierto. Cuando el chat se cierra, muestra *Not connected*; vuelve sola con el siguiente chat.
 
-- **Grupo**: tu ficha y las de tus compañeros. Haz clic en un número para tirarlo; pasa el cursor por encima para ver de dónde viene. A su lado, las tiradas.
-- **Escena**: dónde estás, su imagen y su mapa, quién está allí, qué está pasando. En un combate, los turnos y la tarjeta de tu personaje.
-- **Diario**: misiones, la historia, los diarios de tus compañeros, tus notas.
-- **Mundo**: el mapa del mundo tal como lo conoce tu personaje.
+- **Grupo**: tu ficha y las de tus compañeros. Haz clic en un número para tirarlo; pasa el cursor por encima para ver de dónde sale. A su lado, las tiradas.
+- **Escena**: dónde estás, su imagen y su mapa, quién está allí y qué ocurre; en un combate, los turnos y la tarjeta de tu personaje.
+- **Diario**: misiones, la historia, los diarios de tus compañeros y tus notas.
+- **Mundo**: el mapa del mundo, lo que sabe tu personaje, los documentos encontrados y el calendario.
 - **La bandeja de dados**: elige dados y un modificador, y tira.
-- **Partidas guardadas**, **Ayuda**, **Ajustes** y **Acerca de**, como iconos al final de la fila. Ajustes también contiene las preferencias de la propia página: tema, sonido de los dados, juego de dados.
+- **Partidas guardadas**, **Ayuda**, **Ajustes** y **Acerca de**, como iconos al final de la fila. Ajustes también guarda las preferencias de la propia página: tema, sonido de los dados, juego de dados.
 
 Cuando el máster te pregunta algo, su aviso se queda arriba, estés en la sección que estés.
 

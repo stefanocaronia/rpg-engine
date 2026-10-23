@@ -11,6 +11,8 @@ const fencePattern = /^[ \t]*(`{3,}|~{3,})(.*)$/;
 // Inline code, as `x` or ``x``: a run of backticks closed by a run just as long.
 const inlineCodePattern = /(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)/g;
 const linkPattern = /\[\[([^\]|#^]+)(?:#([^\]|^]*))?(?:\^[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+// A link with what it shows, an embed's mark included: its target, its section and its words.
+const wordedLinkPattern = /!?\[\[([^\]|#^]+)(?:#([^\]|^]*))?(?:\^[^\]|]*)?(?:\|([^\]]*))?\]\]/g;
 // A goal as a quest lists it, a checkbox: - [ ] to do, - [x] done; in a quote or a secret too.
 const goalPattern = /^[ \t>]*[-*+][ \t]+\[([ xX])\]/;
 
@@ -182,10 +184,14 @@ export function links(text: string): Link[]
 }
 
 const rememberedLinks = rememberedByText((text: string): Link[] => {
-    // A file of another kind, as ![[map.png]], is an attachment, not a page.
-    const page = (target: string): boolean => !/\.(?!md$)[a-z0-9]+$/i.test(target.trim());
-    return lineViews(text.split("\n")).flatMap((view) => [...view.prose.matchAll(linkPattern)].filter((match) => page(match[1])).map((match) => linkOf(match[1], match[2])));
+    return lineViews(text.split("\n")).flatMap((view) => [...view.prose.matchAll(linkPattern)].filter((match) => !isAttachment(match[1])).map((match) => linkOf(match[1], match[2])));
 }, 20_000);
+
+/** Whether a link's target is a file of another kind, as ![[map.png]]: an attachment, not a page. */
+function isAttachment(target: string): boolean
+{
+    return /\.(?!md$)[a-z0-9]+$/i.test(target.trim());
+}
 
 /** Removes the blank lines at the start and the white space at the end. */
 export function trimBlankLines(text: string): string
@@ -337,6 +343,33 @@ export function goalsIn(text: string): { goals: { text: string; done: boolean; }
         return match === null;
     });
     return { goals, rest: trimBlankLines(rest.join("\n")) };
+}
+
+/**
+ * A text with the links that keep refuses written as their words (VIEW-3): [[Re Nero|il sovrano]] as il sovrano, [[Re Nero]] and ![[Re Nero]] as Re Nero; links in
+ * code blocks and attachments, as ![[map.png]], stay as written.
+ */
+export function withLinksAsWords(text: string, keep: (link: Link) => boolean): string
+{
+    const lines = text.split("\n");
+    const views = lineViews(lines);
+    return lines.map((line, index) =>
+        views[index].code ? line : line.replace(wordedLinkPattern, (whole: string, target: string, section: string | undefined, words: string | undefined) => {
+            if (isAttachment(target) || keep(linkOf(target, section))) {
+                return whole;
+            }
+
+            return words?.trim() || linkTargetName(target);
+        })
+    ).join("\n");
+}
+
+/** A text without its fenced blocks, as a map or code, which say nothing as prose. */
+export function withoutFencedBlocks(text: string): string
+{
+    const lines = text.split("\n");
+    const views = lineViews(lines);
+    return lines.filter((_, index) => !views[index].code).join("\n");
 }
 
 /** Whether a text lists goals as checkboxes, outside code blocks, and every one is ticked. */

@@ -162,6 +162,18 @@ export function isolated(value: string | number): string
     return pageDirection() === "rtl" ? `\u2068${value}\u2069` : String(value);
 }
 
+/** A text without case and accents, to compare or search: Città reads citta. */
+export function foldedText(text: string): string
+{
+    return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
+
+/** A text with its first letter capital, as a label at the start of a line: Day 3. */
+export function capitalized(text: string): string
+{
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /** Which way the page's language is written: right to left for Arabic and Hebrew, left to right for the others. */
 export function pageDirection(): "rtl" | "ltr"
 {

@@ -22,3 +22,6 @@
 - {id: rest-spend, area: Asked, name: "A short rest's hit dice, spent one at a time on the page", decision: D-492}
 - {id: library-use, area: Packages, name: "The player's books: a shelf of this computer turned on for the campaign", decision: D-491}
 - {id: import-notice, area: Notices, name: "An adventure being imported, and how far it is", decision: D-491}
+- {id: world-lore, area: World, name: "What the character knows, as a codex: browse by kind, search, read a page whole", decision: D-276}
+- {id: world-documents, area: World, name: "The documents found, read again on their paper", decision: D-276}
+- {id: world-calendar, area: World, name: "The calendar: today, the deadlines with the time left, the days of the story", decision: D-276}

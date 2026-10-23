@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -117,49 +117,51 @@ Fimmta útgáfa bætir við **framvindu**: reynslustigum eða áföngum.
 
 Skrifaðu hvað persónan þín gerir eða segir, með þínum eigin orðum:
 
-> Ég spyr gestgjafann hver annar hafi komið hér við í kvöld.
+> Ég spyr gestgjafann hver annar kom hér við í kvöld.
 
-Utan sögunnar skrifarðu innan hornklofa: *[Hvernig virka glímutök?]* Sögumaður svarar líka innan hornklofa.
+Utan sögunnar skrifarðu innan hornklofa: *[Hvernig virka glímutök?]* Sögumaðurinn svarar líka innan hornklofa.
 
-Þú segir hvað þú reynir; sögumaður segir hvað gerist. Sögumaður ákveður aldrei fyrir persónuna þína og talar aldrei um vélina. Þú getur spurt hann hvernig á að nota stjórnborðið.
+Þú segir hvað þú reynir. Sögumaðurinn segir hvað gerist. Sögumaðurinn ákveður aldrei neitt fyrir persónuna þína og talar aldrei um vélina á bak við leikinn. Þú getur spurt um það hvernig á að nota stjórnborðið.
 
-**Að leika af stjórnborðinu**: smelltu á nafn á persónublaðinu þínu, til dæmis vopn, galdur eða hlut sem þú berð, og svo á þann sem það beinist að. Þú getur líka smellt á einhvern til að tala við hann. Stjórnborðið skrifar setninguna fyrir þig, *Ég ræðst á Hooded Bandit 1 með Mace.*, og þú getur breytt henni áður en þú smellir á **Segðu sögumanni**. Sögumaður heyrir hana eins og hún væri sögð í spjallinu og úrskurðar um hana eins og um hvað annað. Þar sem gervigreindarforritið þitt nær ekki að heyra hana sjálft, gerir **Afrita** hana tilbúna til að líma í spjallið.
+**Að athafna sig af stjórnborðinu**: smelltu á nafn á persónublaðinu, til dæmis vopn, galdur eða hlut sem þú berð, og veldu svo á hvern það beinist. Þú getur líka smellt á persónu til að tala við hana. Stjórnborðið skrifar setninguna fyrir þig, *Ég ræðst á Hooded Bandit 1 með Mace.*, og þú getur breytt henni áður en þú ýtir á **Segðu sögumanni**. Sögumaðurinn heyrir hana eins og hún væri sögð í spjallinu og úrskurðar um hana eins og allt annað. Ef gervigreindarforritið þitt heyrir hana ekki sjálft, þá gerir **Afrita** hana tilbúna til að líma í spjallið.
 
-### 3.2 Kast
+### 3.2 Köst
 
-Sögumaður biður um kast aðeins þegar útkoman er óviss og skiptir máli, og segir fyrst hvað er í húfi. Síðan:
+Sögumaðurinn biður um kast aðeins þegar útkoman er óviss og skiptir máli, og segir fyrst hvað er í húfi. Síðan:
 
-- **Á stjórnborðinu** birtist borði með hnappi fyrir hvert próf, til dæmis *Acrobatics +4 · with advantage*. Smelltu á hann: teningarnir falla á síðunni og sögumaður heyrir niðurstöðuna. Þú getur líka smellt á línuna á persónublaðinu sem lýsist upp, kastað teningunum úr bakkanum eða skrifað eitthvað annað í borðann.
-- **Handvirkt**, í horni borðans eða í **Stillingar**: borðinn segir þér hverju á að kasta og þú kastar því af persónublaðinu eða úr bakkanum.
-- **Alvöru teningar**, þegar teningastillingin er á alvöru teningum: þú skrifar töluna sem þú kastaðir, *[Ég kastaði 14.]*, og RPG Engine bætir breytunum þínum við.
+- **Á stjórnborðinu** birtist borði með hnappi fyrir hvert próf, til dæmis *Loftfimleikar +4 · með forskoti*. Smelltu á hann: teningarnir falla á síðunni og sögumaðurinn fær útkomuna. Þú getur líka smellt á línuna á persónublaðinu sem lýsir upp, kastað teningunum úr teningabakkanum eða skrifað eitthvað annað í borðann.
+- **Handvirkt**, í horni borðans eða í **Stillingar**: borðinn segir þér hverju á að kasta og þú kastar því af persónublaðinu eða úr teningabakkanum.
+- **Alvöru teningar**, þegar teningastillingin er á líkamlegum: þú skrifar töluna sem kom upp, *[Ég kastaði 14.]*, og RPG Engine bætir breytunum þínum við.
 
-**Frjáls köst**: smelltu á hvaða tölu sem er á persónublaðinu, eða opnaðu bakkann, til að kasta til gamans. Þau telja aldrei og sögumaður sér þau aldrei.
+**Frjáls köst**: smelltu á hvaða tölu sem er á persónublaðinu, eða opnaðu teningabakkann, til að kasta til gamans. Þau telja aldrei og sögumaðurinn sér þau aldrei.
 
-**Köst sögumanns** birtast í kastdálkinum þínum, nema leynileg köst. Þú getur alltaf spurt *[Var þetta kast raunverulegt?]*: fyrir leynilegt kast gefur sögumaður fingrafar sem sannar að kastið var gert áður en þú spurðir.
+**Köst sögumannsins** birtast í kastadálknum þínum, nema þau leynilegu. Þú getur alltaf spurt *[Var þetta kast raunverulegt?]*: fyrir leynilegt kast gefur sögumaðurinn fingrafar sem sannar að kastið var gert áður en þú spurðir.
 
 ### 3.3 Atriði og bardagar
 
 Sagan gengur fram í **atriðum**: bardaga, samtali, könnun, ferðalagi eða hvíld. Í lok hvers atriðis vistast leikurinn sjálfkrafa og atriðið fer í dagbókina þína.
 
-Í bardaga segir sögumaður frá hverri röð sem er ekki þín og stoppar þar sem þú getur tekið ákvörðun. **Atriði** sýnir efst hver á röðina og hver kemur næst, og spjald persónunnar þinnar við hlið kortsins. Röð umferðarinnar, lífspunktar hópsins þíns og hversu særðir óvinirnir líta út, í orðum, standa við hlið síðunnar. Ef persónan þín fellur birtast dauðavistanirnar stórar á síðunni.
+Í bardaga segir sögumaðurinn frá hverri röð sem er ekki þín og stoppar þar sem þú getur tekið ákvörðun. **Atriði** sýnir efst hver á röðina og hver kemur næst, og spjald persónunnar þinnar við hlið kortsins. Röð umferðarinnar, lífsstig hópsins þíns og hve særðir óvinirnir líta út, í orðum, eru áfram við hlið síðunnar. Ef persónan þín fellur birtast dauðabjörgunarköstin stór á síðunni.
 
-### 3.4 Tími, ferðalög og heimurinn sem hreyfist
+### 3.4 Tími, ferðalög og heimur á hreyfingu
 
-RPG Engine heldur utan um dagsetninguna. Enginn tími líður milli funda. Segðu að þú hvílist, *Við tökum langa hvíld*, og þegar sögumaður samþykkir skilar hvíldin því sem hún á að skila. Í stuttri hvíld getur sögumaður spurt á stjórnborðinu hversu marga lífteninga þú eyðir: kastaðu þeim einum í einu, sjáðu hvað hver læknar og hættu þegar þú vilt. Segðu hvert þú ferð, *Við förum veginn norður til Rocca*, og RPG Engine reiknar út leiðina, vegalengdina og dagana, og stoppar þegar eitthvað gerist á leiðinni. Peningar eru taldir í mynt leiksins, með skiptimynt.
+RPG Engine heldur utan um dagsetninguna. Enginn tími líður milli funda. Segðu að þið hvílist, *Við tökum langa hvíld*, og þegar sögumaðurinn samþykkir skilar hvíldin því sem hún á að skila. Í stuttri hvíld getur sögumaðurinn spurt á stjórnborðinu hve marga lífsteninga þú notar: kastaðu þeim einum í einu, sjáðu hvað hver læknar og hættu þegar þú vilt. Segðu hvert þið farið, *Við förum veginn norður til Rocca*, og RPG Engine reiknar út leiðina, vegalengdina og dagana, og stoppar þegar eitthvað gerist á leiðinni. Peningar eru taldir í mynt leiksins, líka afgangurinn.
 
-Illmenni hafa áætlanir með tímamörkum. Með hverjum nýjum degi færir sögumaður þær ógnir sem tíminn hefur fært nær, og þú sérð merki þeirra, aldrei klukkuna sjálfa.
+Skúrkar hafa áætlanir með tímamörkum. Með hverjum nýjum degi færir sögumaðurinn ógnirnar sem tíminn hefur þokað áfram. Þú sérð merki þeirra, aldrei sjálfa klukkuna.
 
 ### 3.5 Kort
 
-**Heimur** sýnir staðina sem persónan þín þekkir, vegina á milli þeirra og slóðina sem þú gekkst, með þoku yfir restinni. **Atriði** sýnir kort af staðnum þar sem þú ert, ef hann er með kort, og hver stendur hvar. Í bardaga, í þinni röð, eru reitirnir sem þú nærð ekki til huldir. Þegar sögumaður spyr hvert þú ferð skaltu snerta reit eða skrifa hann, til dæmis *E4*.
+**Heimur** sýnir staðina sem persónan þín þekkir, vegina á milli þeirra og slóðina sem þú gekkst, með þoku yfir restinni. **Atriði** sýnir kort af staðnum þar sem þú ert, ef hann er með kort, og hver stendur hvar. Í bardaga, í þinni röð, eru reitirnir sem þú nærð ekki til huldir. Þegar sögumaðurinn spyr hvert þú ferð, snertu reit eða skrifaðu hann, til dæmis *E4*.
+
+**Heimur** geymir líka það sem persónan þín veit. **Fróðleikur** telur upp fólkið, staðina, fylkingarnar, skepnurnar og sögurnar sem hún þekkir, hvert eins og hún þekkir það: leitaðu í honum eða opnaðu færslu til að lesa hana alla. Nafn í textanum leiðir á síðu þess. **Skjöl** geymir bréfin, tilkynningarnar og síðurnar sem hún fann, svo þú getir lesið þau aftur. **Dagatal** sýnir daginn í dag, tímamörk verkefnanna þinna með tímanum sem er eftir og daga sögunnar: dagur með atriðum leiðir á kaflana hans í dagbókinni.
 
 ### 3.6 Verkefni, dagbók og minnisblöð
 
-Verkefni sem persónan þín tekur að sér verður að verkefni í **Dagbók**, með markmiðum sínum, tímamörkum og því sem það mælir. Settu stjörnu við það til að hafa það í sjónmáli efst í Atriði. Dagbókin segir líka **söguna** þína, atriði fyrir atriði, og geymir **minnisblöðin** þín: þau eru einkamál nema þú veljir **Deila** á eitt þeirra. Sögumaður heyrir það sem hugsun þína, aldrei sem staðreynd. Undir **Félagar** lestu dagbækur félaga þinna: öðru hverju, í lok dags eða verkefnis, skrifa þeir nokkrar línur um það sem þeir hugsa og finna.
+Verk sem persónan þín tekur að sér verður að verkefni í **Dagbók**, með markmiðum sínum, tímamörkum og því sem það mælir. Settu stjörnu á það til að hafa það sýnilegt efst í Atriði. Dagbókin segir líka **söguna** þína, atriði fyrir atriði, og geymir **minnisblöðin** þín: þau eru einkamál, nema þú veljir að **Deila** einu þeirra. Sögumaðurinn heyrir það þá sem það sem þú heldur, aldrei sem staðreynd. Undir **Félagar** lestu dagbækur félaga þinna: öðru hverju, í lok dags eða verkefnis, skrifa þeir nokkrar línur um það sem þeir hugsa og finna.
 
 ### 3.7 Saga og mynd persónunnar
 
-Á persónublaðinu er í spjaldinu **Lýsing** reitur fyrir sögu persónunnar: sögumaður skrifar hana inn eftir að þú segir já. Fyrir mynd skaltu gefa sögumanni skrá (PNG, JPEG, WebP eða SVG, allt að 5 MB) og segja hvar hún er í tölvunni þinni, eða láta gera andlitsmynd ([3.11](#311-pictures)): *[Gerðu andlitsmynd af mér: grátt hár í fléttu, ör á hökunni.]*
+Á persónublaðinu er í spjaldinu **Lýsing** reitur fyrir sögu persónunnar. Sögumaðurinn skrifar hana inn, eftir að þú hefur sagt já. Fyrir mynd skaltu gefa sögumanninum skrá (PNG, JPEG, WebP eða SVG, allt að 5 MB) ásamt slóðinni að henni í tölvunni þinni, eða láta gera andlitsmynd ([3.11](#311-pictures)): *[Gerðu andlitsmynd af mér: grátt hár í fléttu, ör á hökunni.]*
 
 ### 3.8 Vistanir og að fara til baka
 
@@ -167,48 +169,48 @@ RPG Engine vistar alla herferðina í lok hvers atriðis. Stillingin **vistanir*
 
 | Vistanir | Vista þegar þú vilt | Fara til baka |
 |---|---|---|
-| **permadeath** | nei | aldrei |
-| **checkpoint** | nei | í síðustu vistun, aðeins þegar persónan þín deyr |
-| **laust** | já | í hvaða vistun sem er |
+| **varanlegur dauði** | nei | aldrei |
+| **vistunarpunktur** | nei | á síðustu vistun, aðeins þegar persónan þín deyr |
+| **laust** | já | á hvaða vistun sem er |
 
 Í öllum stillingum geturðu **byrjað upp á nýtt**, frá upphafi leiks eða frá núllta fundi. Gerðu það í spjallinu eða í **Vistanir**.
 
-Eftir að hafa farið til baka skaltu **opna nýtt spjall**: gamla spjallið man það sem var afturkallað. Skrifaðu *áfram* í nýja spjallinu og ýttu svo á **Ég opnaði nýtt spjall** í Vistanir.
+Eftir að hafa farið til baka skaltu **opna nýtt spjall**: gamla spjallið man það sem var afturkallað. Skrifaðu *haltu áfram* í nýja spjallið og ýttu síðan á **Ég opnaði nýtt spjall** í Vistanir.
 
 ### 3.9 Fundir: að hætta og koma aftur
 
-Þú getur hætt hvenær sem er: *[Hættum hér í kvöld.]* Allt er þegar vistað í skránum. Til að koma aftur skaltu ræsa forritið þitt í möppu herferðarinnar og skrifa *áfram*: sögumaður gefur þér stutta samantekt og heldur svo áfram.
+Hættu hvenær sem þú vilt: *[Hættum hér í kvöld.]* Allt er þegar vistað í skrárnar. Til að koma aftur skaltu ræsa forritið þitt í herferðarmöppunni og skrifa *haltu áfram*: sögumaðurinn gefur þér stutt yfirlit og heldur áfram.
 
-### 3.10 Skap sögumanns
+### 3.10 Skap sögumannsins
 
-Vélmennið efst á stjórnborðinu er sögumaðurinn: andlit þess fylgir tóni sögunnar og gefur aldrei upp það sem þú veist ekki enn. Þegar spjallið er lokað sefur það.
+Vélmennið efst á stjórnborðinu er sögumaðurinn: svipur þess fylgir tóni sögunnar og gefur aldrei upp það sem þú veist ekki enn. Þegar spjallið er lokað sefur það.
 
 ### 3.11 Myndir
 
-RPG Engine getur látið gera myndir af stöðunum sem þú kemur til, verkefnunum sem þú tekur að þér og þeim sem þú hittir, eins og stillingin **myndir** segir til um, og andlitsmynd af persónunni þinni þegar þú biður um það. Það notar þitt eigið Codex eða Claude Code, með þinni innskráningu, á þinni áskrift og innan hennar marka: **Codex** málar þær, annars teiknar **Claude Code** þær. **Stillingar** segja hvort þessi tölva getur gert þær og hvernig á að setja það upp ef ekki. Þú getur alltaf gefið sögumanni þína eigin mynd.
+RPG Engine getur látið gera myndir af stöðunum sem þú kemur til, verkefnunum sem þú tekur að þér og þeim sem þú hittir, eins og stillingin **myndir** segir til um, og andlitsmynd af persónunni þinni þegar þú biður um það. Það notar þitt eigið Codex eða Claude Code, með þinni innskráningu, á þinni áskrift og innan hennar marka: **Codex** málar þær, annars teiknar **Claude Code** þær. **Stillingar** segja hvort þessi tölva getur gert þær og hvernig á að setja það upp ef ekki. Þú getur alltaf gefið sögumanninum þína eigin mynd.
 
 ### 3.12 Öryggi: línur, slæður og stopp
 
-**Línur** birtast aldrei í leiknum. **Slæður** gerast aðeins utan sviðs. Hvenær sem er geturðu skrifað *[stopp]*: sögumaður sleppir því efni strax og bætir því við línurnar þínar.
+**Línur** birtast aldrei í leiknum. **Slæður** gerast aðeins utan sviðs. Hvenær sem er geturðu skrifað *[stopp]*: sögumaðurinn sleppir því efni strax og bætir því við línurnar þínar.
 
 ### 3.13 Að skipta um skoðun
 
-Allar stillingar má breyta, í spjallinu eða í **Stillingar**. Úrskurður sem sögumaður gefur án regluleiksbókarinnar verður að **fordæmi**, svo sama spurning fær sama svar næst.
+Allar stillingar má breyta, í spjallinu eða í **Stillingar**. Úrskurður sem sögumaðurinn gefur án reglubókarinnar verður að **fordæmi**, svo sama spurning fái sama svar næst.
 
 ---
 
 ## 4. Stjórnborðið <!-- icon: party -->
 
-Síða á þinni eigin tölvu, aðeins opin í vafra þeirrar tölvu og virk meðan spjallið er opið. Þegar spjallinu er lokað sýnir hún *Not connected*. Hún kemur aftur sjálf með næsta spjalli.
+Síða á þinni eigin tölvu, aðeins opin í vafra þeirrar tölvu og virk meðan spjallið er opið. Þegar spjallinu er lokað sýnir hún *Ekki tengt*. Hún kemur aftur af sjálfu sér með næsta spjalli.
 
-- **Hópur**: persónublaðið þitt og félaga þinna. Smelltu á tölu til að kasta henni. Haltu bendlinum yfir henni til að sjá hvaðan hún kemur. Við hlið þess eru köstin.
-- **Atriði**: hvar þú ert, mynd þess og kort, hver er þar og hvað er að gerast. Í bardaga: raðirnar og spjald persónunnar þinnar.
+- **Hópur**: persónublaðið þitt og blöð félaga þinna. Smelltu á tölu til að kasta henni. Haltu bendlinum yfir henni til að sjá hvaðan hún kemur. Við hlið hennar eru köstin.
+- **Atriði**: hvar þú ert, myndin og kortið, hverjir eru þar og hvað er að gerast. Í bardaga eru það raðirnar og spjald persónunnar þinnar.
 - **Dagbók**: verkefni, sagan, dagbækur félaga þinna og minnisblöðin þín.
-- **Heimur**: heimskortið eins og persónan þín þekkir það.
+- **Heimur**: heimskortið, það sem persónan þín veit, skjölin sem fundust og dagatalið.
 - **Teningabakkinn**: veldu teninga og breyti, og kastaðu.
-- **Vistanir**, **Hjálp**, **Stillingar** og **Um**, sem tákn aftast í röðinni. Stillingar geyma líka eigin valkosti síðunnar: þema, teningahljóð og teningasett.
+- **Vistanir**, **Hjálp**, **Stillingar** og **Um**, sem tákn aftast í röðinni. Stillingar geyma líka eigin óskir síðunnar: þema, teningahljóð og teningasett.
 
-Þegar sögumaður spyr þig að einhverju helst borðinn hans efst, sama í hvaða hluta þú ert.
+Þegar sögumaðurinn spyr þig einhvers helst borðinn hans efst, sama í hvaða hluta þú ert.
 
 ---
 

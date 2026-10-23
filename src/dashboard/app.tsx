@@ -20,7 +20,7 @@ import { Icon } from "./icons.tsx";
 import { FollowedQuests, JournalView, QuestEndings } from "./journal.tsx";
 import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx";
 import { PackagesPage } from "./packages.tsx";
-import { About, Upcoming } from "./pages.tsx";
+import { About } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
 import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";
@@ -607,12 +607,11 @@ function App()
                                                 }}
                                             />
                                         )}
-                                        {address.section === "world" && <WorldView version={shown.version} lead={lead} />}
+                                        {address.section === "world" && <WorldView version={shown.version} lead={lead} tab={address.tab} item={address.name} />}
                                         {address.section === "settings" && <SettingsView version={shown.version} />}
                                         {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
                                         {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
-                                        {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} />}
-                                        {!["party", "scene", "journal", "world", "about", "help", "settings", "saves", "packages"].includes(address.section) && <Upcoming section={address.section} />}
+                                        {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} tab={address.tab} item={address.name} />}
                                         {address.section === "party" && member && (
                                             // A companion's things are not the player's to act with: only the player character's sheet has its verbs (D-495).
                                             <PlayerActsContext.Provider value={member.role === "pc" || playerActs === undefined ? playerActs : { ...playerActs, actions: {} }}>

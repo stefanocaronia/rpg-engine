@@ -426,6 +426,7 @@ export type View =
     | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     // thoughts may be missing from a server older than the page, as a chat started before an update (D-497).
     | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts?: ShownThought[]; }
+    | { kind: "world"; known: KnownEntry[]; documents: ShownDocument[]; calendar: ShownCalendar; }
     | { kind: "setup"; mode: string; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; left?: string[]; }
     | { kind: "unknown"; text: string; };
 
@@ -523,6 +524,39 @@ export interface PlayerSetting
     note?: { text: string; fix?: true; };
     /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
     most?: number;
+}
+
+/** A page the character knows, as World lists it (VIEW-11): its type, a place's kind and the places that hold it, the opening of its text, its picture. */
+export interface KnownEntry
+{
+    name: string;
+    type: string;
+    kind?: string;
+    within?: string[];
+    summary: string;
+    picture?: { file: string; version: number; };
+    companion?: true;
+}
+
+/** A document the character has or read (VIEW-11): what it is (letter, notice, map…), its text as the character knows it, its picture, and whether it carries it. */
+export interface ShownDocument
+{
+    name: string;
+    document: string;
+    text: string;
+    picture?: { file: string; version: number; };
+    carried: boolean;
+}
+
+/** The calendar as the character knows it (VIEW-11): now, today's game day, the months and today's day of them when the story has a calendar, the deadlines and the scenes by day. */
+export interface ShownCalendar
+{
+    now?: string;
+    today?: number;
+    months?: { name: string; days: number; season?: string; }[];
+    date?: { day: number; month: number; season?: string; year?: number; };
+    deadlines: { quest: string; main: boolean; date: string; day: number; minutes?: number; }[];
+    scenes: { day: number; number: number; title: string; place?: string; }[];
 }
 
 /** A day of the game's calendar: the day of its month, the month, its season and its year, when the calendar has them (TIM-8). */

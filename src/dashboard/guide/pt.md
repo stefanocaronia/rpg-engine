@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -119,51 +119,53 @@ Escreva o que seu personagem faz ou diz, com suas próprias palavras:
 
 > Pergunto ao estalajadeiro quem mais passou por aqui esta noite.
 
-Para falar fora da história, escreva entre colchetes: *[Como funciona agarrar?]* O mestre também responde entre colchetes.
+Para falar fora da história, escreva entre colchetes: *[Como funciona a agarrada?]* O mestre também responde entre colchetes.
 
-Você diz o que tenta fazer; o mestre diz o que acontece. O mestre nunca decide pelo seu personagem e nunca fala do motor do jogo. Você pode perguntar a ele como usar o painel.
+Você diz o que tenta; o mestre diz o que acontece. O mestre nunca decide pelo seu personagem e nunca fala do motor do jogo. Você pode perguntar a ele como usar o dashboard.
 
-**Agindo pelo painel**: clique em um nome da sua ficha, como uma arma, uma magia ou algo que você carrega, e depois em quem é o alvo. Ou clique em uma pessoa para conversar com ela. O painel escreve a frase por você, *Ataco Bandido Encapuzado 1 com Maça.*, e você pode mudá-la antes de usar **Dizer ao mestre**. O mestre a recebe como se fosse dita no chat e decide como em qualquer outra ação. Quando seu aplicativo de IA não consegue receber a frase sozinho, **Copiar** deixa a frase pronta para colar no chat.
+**Agindo pelo dashboard**: clique em um nome da sua ficha, como uma arma, uma magia ou algo que você carrega, e depois em quem será o alvo; ou clique em uma pessoa para conversar. O dashboard escreve a frase por você, *Ataco Bandido Encapuzado 1 com Maça.*, e você pode alterá-la antes de clicar em **Dizer ao mestre**. O mestre a recebe como se tivesse sido dita no chat e decide como em qualquer outra ação. Se o seu aplicativo de IA não consegue receber a frase sozinho, **Copiar** deixa o texto pronto para colar no chat.
 
 ### 3.2 Rolagens
 
 O mestre só pede uma rolagem quando o resultado é incerto e importa, e antes diz o que está em jogo. Depois:
 
-- **No painel**, um aviso mostra um botão para cada teste, como *Acrobacia +4 · com vantagem*. Clique nele: os dados caem na tela e o mestre recebe o resultado. Você também pode clicar na linha da ficha que se acende, jogar os dados pela bandeja de dados ou escrever outra coisa no aviso.
+- **No dashboard**, um aviso mostra um botão para cada teste, como *Acrobacia +4 · com vantagem*. Clique nele: os dados caem na página e o mestre recebe o resultado. Você também pode clicar na linha da ficha que se acende, jogar os dados da bandeja de dados ou escrever outra coisa no aviso.
 - **Manual**, no canto do aviso ou em **Configurações**: o aviso diz o que rolar, e você rola pela ficha ou pela bandeja de dados.
-- **Dados físicos**, com a opção de dados em físicos: você escreve os valores que tirou, *[Tirei 14.]*, e o RPG Engine soma seus modificadores.
+- **Dados físicos**, com a configuração de dados em físicos: você escreve as faces que tirou, *[Tirei 14.]*, e o RPG Engine soma seus modificadores.
 
 **Rolagens livres**: clique em qualquer número da ficha, ou abra a bandeja de dados, para rolar por diversão. Elas nunca contam e o mestre nunca as vê.
 
-**As rolagens do mestre** aparecem na sua coluna de rolagens, exceto as secretas. Você sempre pode perguntar *[Aquela rolagem foi de verdade?]*: para uma rolagem secreta, o mestre dá uma impressão digital que prova que ela foi feita antes de você perguntar.
+**As rolagens do mestre** aparecem na sua coluna de rolagens, exceto as secretas. Você sempre pode perguntar *[Essa rolagem foi de verdade?]*: no caso de uma rolagem secreta, o mestre dá uma impressão digital que prova que ela foi feita antes de você perguntar.
 
 ### 3.3 Cenas e combates
 
-A história passa por **cenas**: um combate, uma conversa, uma exploração, uma viagem, um descanso. No fim de cada cena, o jogo é salvo automaticamente e a cena entra no seu diário.
+A história se desenrola em **cenas**: um combate, uma conversa, uma exploração, uma viagem, um descanso. No fim de cada cena o jogo é salvo automaticamente, e a cena entra no seu diário.
 
-Em um combate, o mestre narra todo turno que não é seu e para quando você pode decidir. A **Cena** mostra no alto de quem é o turno e quem vem depois, além da carta do seu personagem ao lado do mapa. A ordem dos turnos, os pontos de vida do seu grupo e o estado dos inimigos, descrito em palavras, ficam ao lado da página. Se seu personagem cair, os testes contra a morte aparecem grandes na tela.
+Em um combate, o mestre narra todos os turnos que não são seus e para quando você precisa decidir. A **Cena** mostra no alto de quem é a vez e quem vem depois, e o cartão do seu personagem ao lado do mapa; a ordem dos turnos, os pontos de vida do seu grupo e o estado dos inimigos, descrito em palavras, ficam ao lado da página. Se seu personagem cair, os testes de morte aparecem grandes na página.
 
-### 3.4 Tempo, viagem e o mundo que se move
+### 3.4 Tempo, viagens e o mundo que se move
 
-O RPG Engine registra a data; nenhum tempo passa entre as sessões. Diga que vai descansar, *Fazemos um descanso longo*, e, quando o mestre concordar, o descanso devolve o que deve. Em um descanso curto, o mestre pode perguntar no painel quantos dados de vida você gasta: role um de cada vez, veja quanto cada um cura e pare quando quiser. Diga para onde vai, *Seguimos pela estrada do norte até Rocca*, e o RPG Engine calcula o caminho, a distância e os dias, parando quando algo acontecer no trajeto. O dinheiro é contado nas moedas do jogo, troco incluído.
+O RPG Engine controla a data; nenhum tempo passa entre as sessões. Diga que vai descansar, *Fazemos um descanso longo*, e, quando o mestre concordar, o descanso devolve o que deve. Em um descanso curto, o mestre pode perguntar no dashboard quantos dados de vida você gasta: role um de cada vez, veja quanto cada um cura e pare quando quiser. Diga para onde vai, *Pegamos a estrada ao norte, rumo a Rocca*, e o RPG Engine calcula o caminho, a distância e os dias, parando quando algo acontecer no trajeto. O dinheiro é contado nas moedas do jogo, troco incluído.
 
-Vilões têm planos com prazos. A cada novo dia, o mestre move as ameaças que o tempo fez avançar, e você vê os sinais delas, nunca o relógio em si.
+Os vilões têm planos com prazos. A cada novo dia, o mestre move as ameaças que o tempo fez avançar, e você vê os sinais delas, nunca o relógio em si.
 
 ### 3.5 Mapas
 
-**Mundo** mostra os locais que seu personagem conhece, as estradas entre eles e o caminho que vocês percorreram, com névoa sobre o resto. **Cena** mostra o mapa do local onde você está, quando ele tem um, com quem está em cada posição. Em um combate, na sua vez, os quadrados que você não alcança ficam cobertos. Quando o mestre perguntar para onde você se move, toque em um quadrado ou escreva o nome dele, como *E4*.
+**Mundo** mostra os locais que seu personagem conhece, as estradas entre eles e o caminho que você percorreu, com névoa sobre o resto. **Cena** mostra o mapa do local onde você está, quando há um, com quem está em cada lugar; em um combate, na sua vez, os quadrados que você não alcança ficam velados. Quando o mestre perguntar para onde você se move, toque em um quadrado ou escreva-o, como *E4*.
+
+**Mundo** também guarda o que seu personagem sabe. **Conhecimentos** lista as pessoas, os locais, as facções, as criaturas e as histórias que ele conhece, cada uma como ele a conhece: pesquise ou abra uma para ler por inteiro; um nome no texto leva à página correspondente. **Documentos** guarda as cartas, os avisos e as páginas que ele encontrou, para reler. **Calendário** mostra hoje, os prazos das suas missões com o tempo que resta e os dias da história: um dia com cenas leva aos capítulos dele no Diário.
 
 ### 3.6 Missões, diário e notas
 
-Uma tarefa que seu personagem assume vira uma missão no **Diário**, com seus objetivos, seu prazo e o que ela mede. Marque-a com uma estrela para mantê-la à vista no alto da Cena. O Diário também conta sua **história**, cena por cena, e guarda suas **notas**: elas são privadas, a menos que você use **Compartilhar** em uma, e o mestre a recebe como algo que você pensa, nunca como um fato. Em **Companheiros** você lê os diários dos seus companheiros: de vez em quando, ao fim de um dia ou de uma missão, eles escrevem algumas linhas sobre o que pensam e sentem.
+Uma tarefa que seu personagem assume vira uma missão no **Diário**, com seus objetivos, seu prazo e o que ela mede; marque-a com uma estrela para mantê-la à vista no alto da Cena. O Diário também conta sua **história**, cena por cena, e guarda suas **notas**: privadas, a menos que você use **Compartilhar** em uma, e então o mestre a recebe como algo que seu personagem pensa, nunca como um fato. Em **Companheiros** você lê os diários dos seus companheiros: de vez em quando, no fim de um dia ou de uma missão, eles escrevem algumas linhas sobre o que pensam e sentem.
 
 ### 3.7 A história e a imagem do seu personagem
 
-Na sua ficha, o cartão **Descrição** tem uma caixa para a história do seu personagem: o mestre a escreve ali, depois que você disser sim. Para uma imagem, entregue ao mestre um arquivo (PNG, JPEG, WebP ou SVG, de até 5 MB) com o caminho dele no seu computador, ou peça um retrato ([3.11](#311-pictures)): *[Faça um retrato para mim: cabelo grisalho em uma trança, uma cicatriz no queixo.]*
+Na sua ficha, o cartão **Descrição** tem um campo para a história do seu personagem: o mestre a escreve ali, depois que você disser sim. Para ter uma imagem, entregue ao mestre um arquivo (PNG, JPEG, WebP ou SVG, de até 5 MB) com o local dele no seu computador, ou peça um retrato ([3.11](#311-pictures)): *[Faça um retrato meu: cabelo grisalho em trança, uma cicatriz no queixo.]*
 
 ### 3.8 Jogos salvos e voltar atrás
 
-O RPG Engine salva a campanha inteira no fim de cada cena. A opção de **jogos salvos** decide o resto:
+O RPG Engine salva a campanha inteira no fim de cada cena. A configuração de **jogos salvos** decide o resto:
 
 | Jogos salvos | Salvar quando quiser | Voltar |
 |---|---|---|
@@ -171,9 +173,9 @@ O RPG Engine salva a campanha inteira no fim de cada cena. A opção de **jogos 
 | **checkpoint** | não | ao último jogo salvo, só quando seu personagem morre |
 | **livre** | sim | a qualquer jogo salvo |
 
-Em todos os modos, você pode **recomeçar**, desde o início do jogo ou desde a sessão zero. Faça isso no chat ou em **Jogos salvos**.
+Em todos os modos você pode **recomeçar**, desde o início do jogo ou desde a sessão zero. Faça isso no chat ou em **Jogos salvos**.
 
-Depois de voltar atrás, **abra um novo chat**: o chat antigo lembra o que foi desfeito. Escreva *continuar* no novo chat e depois clique em **Abri um novo chat** em Jogos salvos.
+Depois de voltar, **abra um novo chat**: o antigo se lembra do que foi desfeito. Escreva *continuar* no novo chat e depois clique em **Abri um novo chat** em Jogos salvos.
 
 ### 3.9 Sessões: parar e voltar
 
@@ -181,34 +183,34 @@ Pare quando quiser: *[Vamos parar por aqui esta noite.]* Tudo já está salvo no
 
 ### 3.10 O humor do mestre
 
-O robô no alto do painel é o mestre: o rosto dele acompanha o tom da história e nunca revela o que você ainda não sabe. Quando o chat está fechado, ele dorme.
+O robô no alto do dashboard é o mestre: o rosto dele acompanha o tom da história e nunca revela o que você ainda não sabe. Quando o chat está fechado, ele dorme.
 
 ### 3.11 Imagens
 
-O RPG Engine pode gerar imagens dos locais que você alcança, das missões que assume e de quem você encontra, conforme diz a opção de **imagens**, além do retrato do seu personagem quando você pedir. Ele usa seu próprio Codex ou Claude Code, com seu login, no seu plano e dentro dos limites dele: o **Codex** as pinta e, se não houver, o **Claude Code** as desenha. **Configurações** diz se este computador pode gerá-las e, se não puder, como configurá-lo. Você sempre pode entregar ao mestre uma imagem sua.
+O RPG Engine pode gerar imagens dos locais a que você chega, das missões que assume e das pessoas que encontra, conforme a configuração de **imagens**, e o retrato do seu personagem quando você pedir. Ele usa seu próprio Codex ou Claude Code, com seu login, no seu plano e dentro dos limites dele: o **Codex** pinta as imagens; na falta dele, o **Claude Code** as desenha. **Configurações** diz se este computador pode gerá-las e, se não puder, como configurar. Você sempre pode dar ao mestre uma imagem sua.
 
 ### 3.12 Segurança: linhas, véus e parar
 
-As **linhas** nunca aparecem no jogo; os **véus** acontecem só fora de cena. A qualquer momento, escreva *[parar]*: o mestre abandona esse conteúdo na hora e o acrescenta às suas linhas.
+As **linhas** nunca aparecem no jogo; os **véus** acontecem apenas fora de cena. A qualquer momento, escreva *[parar]*: o mestre abandona esse conteúdo na hora e o acrescenta às suas linhas.
 
 ### 3.13 Mudando de ideia
 
-Toda opção pode mudar, no chat ou em **Configurações**. Uma decisão que o mestre toma sem o livro vira um **precedente**, e assim a mesma pergunta recebe a mesma resposta da próxima vez.
+Toda configuração pode mudar, no chat ou em **Configurações**. Uma decisão que o mestre toma sem consultar o livro vira um **precedente**, e assim a mesma pergunta recebe a mesma resposta da próxima vez.
 
 ---
 
-## 4. O painel <!-- icon: party -->
+## 4. O dashboard <!-- icon: party -->
 
-Uma página no seu próprio computador, aberta só no navegador dele, ativa enquanto o chat está aberto. Quando o chat fecha, ela mostra *Not connected*; ela volta sozinha com o próximo chat.
+Uma página no seu próprio computador, que só abre no navegador desse computador e fica ativa enquanto o chat está aberto. Quando o chat é fechado, ela mostra *Not connected*; volta sozinha com o próximo chat.
 
-- **Grupo**: sua ficha e as dos seus companheiros. Clique em um número para rolá-lo; passe o mouse sobre ele para ver de onde vem. Ao lado ficam as rolagens.
-- **Cena**: onde você está, a imagem e o mapa, quem está ali, o que está acontecendo; em um combate, os turnos e a carta do seu personagem.
+- **Grupo**: sua ficha e as dos seus companheiros. Clique em um número para rolá-lo; passe o cursor sobre ele para ver de onde vem. Ao lado, as rolagens.
+- **Cena**: onde você está, sua imagem e seu mapa, quem está ali, o que acontece; em um combate, os turnos e o cartão do seu personagem.
 - **Diário**: missões, a história, os diários dos seus companheiros, suas notas.
-- **Mundo**: o mapa do mundo como seu personagem o conhece.
-- **A bandeja de dados**: escolha os dados e um modificador, e jogue.
-- **Jogos salvos**, **Ajuda**, **Configurações** e **Sobre**, como ícones no fim da linha. Configurações também guarda as preferências da própria página: tema, som dos dados, conjunto de dados.
+- **Mundo**: o mapa do mundo, o que seu personagem sabe, os documentos encontrados e o calendário.
+- **A bandeja de dados**: escolha os dados e um modificador, e role.
+- **Jogos salvos**, **Ajuda**, **Configurações** e **Sobre**, como ícones no fim da fileira. Configurações também guarda as preferências da própria página: tema, som dos dados, conjunto de dados.
 
-Quando o mestre perguntar algo a você, o aviso dele fica no alto, em qualquer seção em que você estiver.
+Quando o mestre pergunta algo a você, o aviso dele fica no alto, em qualquer seção em que você esteja.
 
 ---
 

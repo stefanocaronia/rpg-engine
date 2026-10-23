@@ -1,6 +1,6 @@
 // The languages the player may choose for the game (D-394): every language the master can play in, each named in its own words and in the page's by the
 // browser; a code not listed can still be written. Those the page is written in come first.
-import { pageLanguages } from "./text.ts";
+import { foldedText, pageLanguages } from "./text.ts";
 
 // The languages of the list, by code: ISO 639-1, with the regional variants that read differently.
 const codes = [
@@ -164,5 +164,5 @@ function capitalized(name: string, code: string): string
 
 function plain(text: string): string
 {
-    return text.normalize("NFD").replace(/\p{Mn}/gu, "").toLowerCase().trim();
+    return foldedText(text).trim();
 }

@@ -4,7 +4,7 @@
 // diaries (D-497); and the player's own notes.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
-import { type JournalView as Journal, readJournal } from "./api.ts";
+import { type JournalView as Journal, pictureAddress, readJournal } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import type { JournalFact, ShownChapter, ShownQuest, ShownThought } from "./data.ts";
 import { byDateLabel, factLabel, gameDateLabel } from "./game-words.ts";
@@ -21,7 +21,8 @@ import { arrowStep, t } from "./text.ts";
 // The tab the player last chose, kept in this browser.
 const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story", "companions", "notes"] } as const;
 
-export function JournalView({ version, campaign }: { version: number; campaign?: string; })
+/** The Journal: the tab the player last chose, or the one the address says, as #/journal/story, and a chapter in the story, as #/journal/story/3. */
+export function JournalView({ version, campaign, tab: asked, item }: { version: number; campaign?: string | undefined; tab?: string | undefined; item?: string | undefined; })
 {
     const journal = useJournal(version);
     const [chosen, setTab] = useChoice(tabChoice);
@@ -30,6 +31,20 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
     // The companions' tab only once one of them has written: a diary no one keeps shows nothing.
     const shown = tabChoice.values.filter((value) => value !== "companions" || (journal.read?.thoughts?.length ?? 0) > 0);
     const tab = (shown as string[]).includes(chosen) ? chosen : tabChoice.initial;
+
+    // A tab the address says becomes the one chosen.
+    useEffect(() => {
+        if (asked !== undefined && (tabChoice.values as readonly string[]).includes(asked)) {
+            setTab(asked);
+        }
+    }, [asked]);
+
+    // A chapter the address says, as the calendar's scenes lead to, brought into view once the story is read.
+    useEffect(() => {
+        const chapter = item === undefined || tab !== "story" ? null : document.querySelector<HTMLElement>(`.chapter[data-number="${CSS.escape(item)}"]`);
+        chapter?.scrollIntoView({ block: "center" });
+        chapter?.focus({ preventScroll: true });
+    }, [item, tab, journal.read !== undefined]);
 
     // On a phone the tabs may scroll sideways: the chosen one is brought into the row, and the page itself never moves.
     useEffect(() => {
@@ -45,6 +60,12 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
         row.scrollLeft += Math.min(0, tabBox.left - rowBox.left) + Math.max(0, tabBox.right - rowBox.right);
     }, [tab, shown.length]);
 
+    // A tab chosen is kept in this browser and written in the address, the first one's as the section's own.
+    const choose = (value: string): void => {
+        setTab(value);
+        location.replace(sectionAddress("journal", value === tabChoice.initial ? undefined : value));
+    };
+
     // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
     const move = (event: KeyboardEvent): void => {
         const step = arrowStep(event.key, true);
@@ -55,7 +76,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
 
         event.preventDefault();
         const next = shown[(shown.indexOf(tab as "quests") + step + shown.length) % shown.length];
-        setTab(next);
+        choose(next);
         tabs.current?.querySelector<HTMLElement>(`#journal-tab-${next}`)?.focus();
     };
 
@@ -72,7 +93,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
                         aria-selected={tab === value}
                         aria-controls={tab === value ? "journal-panel" : undefined}
                         tabIndex={tab === value ? 0 : -1}
-                        onClick={() => setTab(value)}
+                        onClick={() => choose(value)}
                     >
                         {tabName(value)}
                     </button>
@@ -499,7 +520,7 @@ function ClockFace({ clock, small = false, hidden = false }: { clock: NonNullabl
 }
 
 /** The time left before a deadline, as a game's timer: an hourglass and 1d 12h left, red under a day; Time is up once it has come. */
-function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadline"]>; })
+export function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadline"]>; })
 {
     const minutes = deadline.minutes;
     const near = minutes !== undefined && minutes < 24 * 60;
@@ -534,7 +555,12 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                 chapter.title === undefined
                     ? <Between key={index} chapter={chapter} />
                     : (
-                        <li key={index} class={["chapter", chapter.open ? "now" : "", chapter.picture === undefined && placeKinds[chapter.kind ?? ""] === undefined ? "bare" : ""].join(" ").trim()}>
+                        <li
+                            key={index}
+                            class={["chapter", chapter.open ? "now" : "", chapter.picture === undefined && placeKinds[chapter.kind ?? ""] === undefined ? "bare" : ""].join(" ").trim()}
+                            data-number={chapter.number}
+                            tabIndex={-1}
+                        >
                             <ChapterPicture chapter={chapter} />
                             <div class="chapter-body">
                                 <header class="chapter-head">
@@ -728,12 +754,6 @@ function useFollowed(campaign: string | undefined, quests: ShownQuest[] | undefi
 function clockLabel(clock: NonNullable<ShownQuest["clock"]>): string
 {
     return `${clock.name ?? t("Clock")}: ${t("{value} of {max}", { value: clock.value, max: clock.max })}`;
-}
-
-/** A picture's address, with when its file last changed, so that it comes again only when it changes. */
-function pictureAddress(picture: { file: string; version: number; }): string
-{
-    return `/images/${encodeURIComponent(picture.file)}?v=${picture.version}`;
 }
 
 /** "1d 12h", "3h 20m", "45m": time in the game's days, hours and minutes. */

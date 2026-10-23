@@ -37,7 +37,7 @@ import { languageName } from "./languages.ts";
 import { PageHead } from "./pages.tsx";
 import { Confirm } from "./saves.tsx";
 import { Command } from "./settings.tsx";
-import { arrowStep, isolated, pageDirection, t } from "./text.ts";
+import { arrowStep, foldedText, isolated, pageDirection, t } from "./text.ts";
 
 /** What happened to the player's last change, said where it was made: a row, a card, or the field. */
 interface Said
@@ -1633,9 +1633,8 @@ function kindsLabel(kind: PackageKind): string
 /** Whether an entry matches what the player searched: by its title, what it is or who wrote it, case and accents aside. */
 function matchesQuery(entry: CatalogEntry, query: string): boolean
 {
-    const plain = (text: string): string => text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-    const wanted = plain(query.trim());
-    return wanted === "" || [entry.title, entry.description ?? "", entry.author ?? ""].some((text) => plain(text).includes(wanted));
+    const wanted = foldedText(query.trim());
+    return wanted === "" || [entry.title, entry.description ?? "", entry.author ?? ""].some((text) => foldedText(text).includes(wanted));
 }
 
 /** Where a catalog's package is here: in the campaign, only on this computer, or not here. */

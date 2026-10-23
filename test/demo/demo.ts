@@ -350,6 +350,7 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (l
     await rpg("write", "Rocca di Vetta", "--add", "contains=[[Ettore]]", "--add", "contains=[[Lupa]]");
     save("start", "start");
     await makeDemoQuests(rpg);
+    await makeDemoLore(rpg);
 
     // Three scenes on the way, each a chapter of the story and a save at its end (D-367).
     const scene = async (title: string, type: string, summary: string): Promise<void> => {
@@ -392,6 +393,57 @@ async function makeDemoFight(rpg: (...args: string[]) => Promise<void>): Promise
     await rpg("scene", "hostile", "--who", "Brigante 1", "--who", "Brigante 2");
     // Ettore has swung once: his action is used, the bonus action and the reaction free (D-453).
     await rpg("scene", "use", "--who", "Ettore", "--uses", "attack");
+}
+
+/**
+ * What Ettore knows of the world besides its places, for World (VIEW-11): people, factions, a legend, a past event and a creature, some with a secret he has not
+ * discovered; his documents; and the calendar, from a day of autumn (TIM-8).
+ */
+async function makeDemoLore(rpg: (...args: string[]) => Promise<void>): Promise<void>
+{
+    const page = async (name: string, type: string, text: string, secret?: string): Promise<void> => {
+        await rpg("write", name, "--type", type, ...(type === "character" ? ["--set", "role=npc"] : []), "--text", text);
+
+        if (secret !== undefined) {
+            await rpg("write", `${name}#Verità`, "--secret", "--text", secret);
+        }
+    };
+
+    await page(
+        "Bertoldo",
+        "character",
+        "L'oste della Locanda del Guado: grosso, calvo, con le chiavi delle stanze al collo e un'opinione su tutto.\n\nHa servito trent'anni nella Guardia della Rocca prima di comprare la locanda.",
+        "Compra di nascosto i sigilli spezzati che i pellegrini lasciano.",
+    );
+    await page("Il castellano di Rocca di Vetta", "character", "Ser Aldo di Vetta, signore della Rocca: vecchio, cortese, stanco di una guerra che nessuno ricorda più.");
+    await page("Mastro Ivo", "character", "Un mercante di stoffe che fa la Strada del Re due volte al mese, col carro dipinto di giallo.");
+    await page("Il traghettatore", "character", "Porta gente e bestie da una riva all'altra del Fiume Scuro, ma solo con la sua lanterna accesa.");
+    await page("Sorella Ilde", "character", "La custode del Santuario della Luce, che cura i viandanti e non chiede mai da dove vengono.", "Era una dei Sussurranti, prima di fuggire.");
+    await page("Guardia della Rocca", "faction", "I soldati del castellano: tengono la Strada del Re fino al Ponte di Pietra, e poco oltre.");
+    await page("I Sussurranti", "faction", "Si dice che si incontrino alla Torre dei Sussurri nelle notti senza luna, e che parlino con chi non c'è più.", "Rapiscono i pellegrini per un rito alla luna nuova.");
+    await page(
+        "La leggenda della Torre",
+        "topic",
+        "Una torre senza porte nel Bosco delle Fate: chi ci passa accanto di notte sente il proprio nome sussurrato.\n\nI vecchi del villaggio dicono che la costruì un mago che voleva parlare coi morti.",
+    );
+    await page("L'inverno della Grande Piena", "event", "Vent'anni fa il Fiume Scuro si portò via il vecchio ponte e mezzo villaggio; il Mulino Rosso fu l'unico a restare in piedi.");
+    await page("Spettro del guado", "creature", "Una figura pallida che sale dall'acqua nelle notti di nebbia. Il traghettatore giura di averla vista.", "È la figlia dell'alchimista, annegata nella Grande Piena.");
+    const known = ["Bertoldo", "Il castellano di Rocca di Vetta", "Mastro Ivo", "Il traghettatore", "Sorella Ilde", "Guardia della Rocca", "I Sussurranti", "La leggenda della Torre", "L'inverno della Grande Piena", "Spettro del guado"];
+    await rpg("write", "Ettore", ...known.flatMap((name) => ["--add", `knows=[[${name}]]`]));
+
+    // The documents (VIEW-11): a letter and a torn page he carries, the page with a line he made out; a notice read at the inn.
+    const document = (name: string, kind: string, text: string): Promise<void> => rpg("write", name, "--type", "item", "--set", `document=${kind}`, "--text", text);
+    await document(
+        "Lettera del castellano",
+        "letter",
+        "Pergamena spessa, col sigillo azzurro della Rocca.\n\n*A chiunque incontri il latore: Ettore di Pietrafonda viaggia per mio conto sulla Strada del Re. Dategli acqua, fuoco e risposte.*\n\n— Ser Aldo di Vetta, castellano",
+    );
+    await document("Pagina strappata", "book", "Un foglio strappato da un libro di preghiere, trovato accanto al fuoco spento del Campo del Viandante. Il margine è pieno di segni a carboncino.");
+    await rpg("write", "Pagina strappata#Il margine", "--secret", "--text", "Fra i segni, una frase leggibile: «alla luna nuova la torre apre la bocca».");
+    await document("Avviso della Guardia", "notice", "Inchiodato alla porta della locanda:\n\n**TAGLIA** — Dieci monete d'oro a chi porta notizie dei pellegrini scomparsi sulla Strada del Re. Rivolgersi alla Guardia della Rocca.");
+    await rpg("write", "Zaino di Ettore", "--add", "contains=[[Lettera del castellano]]", "--add", "contains=[[Pagina strappata]]");
+    await rpg("write", "Ettore", "--add", "knows=[[Avviso della Guardia]]", "--add", "knows=[[Pagina strappata#Il margine]]");
+    await rpg("config", "calendar-start", "28 October 1491");
 }
 
 /** The quests of the demo (D-367): the main one with goals, a counter, a clock and a deadline; two on the side; one done and one failed. */

@@ -1,0 +1,10 @@
+name: Look up who the innkeeper is in what your character knows
+covers: [world-lore]
+setup: {}
+steps:
+  - tapOn: World
+  - tapOn: Lore
+    concept: {name: what the character knows is kept as a codex, difficulty: 1}
+  - inputText: {into: {label: Search what your character knows}, text: oste}
+  - tapOn: Bertoldo
+  - assertVisible: Ha servito trent'anni nella Guardia della Rocca

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -113,83 +113,85 @@ Du skapar din rollperson tillsammans med spelledaren, som vid ett spelbord. Varj
 
 ## 3. Att spela <!-- icon: chat -->
 
-### 3.1 Att prata med spelledaren
+### 3.1 Prata med spelledaren
 
 Skriv vad din rollperson gör eller säger, med egna ord:
 
-> Jag frågar värdshusvärden vem mer som kom förbi i kväll.
+> Jag frågar värdshusvärden vem mer som kom förbi ikväll.
 
-Skriv inom hakparenteser när du pratar utanför berättelsen: *[Hur fungerar grappling?]* Spelledaren svarar också inom hakparenteser.
+Skriv inom hakparenteser när du pratar utanför berättelsen: *[Hur fungerar brottning?]* Spelledaren svarar också inom hakparenteser.
 
-Du säger vad du försöker göra. Spelledaren säger vad som händer. Spelledaren bestämmer aldrig åt din rollperson och pratar aldrig om motorn. Du kan fråga spelledaren hur du använder dashboarden.
+Du säger vad du försöker göra. Spelledaren säger vad som händer. Spelledaren bestämmer aldrig något åt din rollperson och pratar aldrig om motorn. Du kan fråga spelledaren hur du använder dashboarden.
 
-**Agera från dashboarden**: klicka på ett namn på ditt rollformulär, till exempel ett vapen, en besvärjelse eller något du bär på. Välj sedan vem det gäller. Du kan också klicka på en person för att prata med den. Dashboarden skriver din mening, *Jag anfaller Hooded Bandit 1 med Mace.*, och du kan ändra den innan du klickar på **Säg till spelledaren**. Spelledaren hör den som om den sagts i chatten och avgör utfallet som vanligt. Om din AI-app inte kan höra den själv gör **Kopiera** den redo att klistras in i chatten.
+**Agera från dashboarden**: klicka på ett namn på ditt rollformulär, till exempel ett vapen, en besvärjelse eller något du bär på. Välj sedan vem det gäller. Du kan också klicka på en person för att prata med den. Dashboarden skriver din mening, *Jag attackerar Hooded Bandit 1 med Mace.*, och du kan ändra den innan du väljer **Säg till spelledaren**. Spelledaren hör den som om den sagts i chatten och dömer den som vilken annan handling som helst. Där din AI-app inte kan höra den själv gör **Kopiera** den klar att klistra in i chatten.
 
 ### 3.2 Slag
 
-Spelledaren ber om ett slag bara när utfallet är osäkert och spelar roll. Först säger spelledaren vad som står på spel. Sedan:
+Spelledaren ber om ett slag bara när utgången är osäker och spelar roll. Först säger spelledaren vad som står på spel. Sedan:
 
-- **På dashboarden** visar en banderoll en knapp för varje slag, till exempel *Acrobatics +4 · with advantage*. Klicka på den: tärningarna faller på sidan och spelledaren hör resultatet. Du kan också klicka på den rad i ditt rollformulär som lyser, slå tärningarna från tärningsbrickan eller skriva något annat i banderollen.
-- **För hand**, i banderollens hörn eller i **Inställningar**: banderollen berättar vad du ska slå, och du slår det från ditt rollformulär eller från tärningsbrickan.
-- **Fysiska tärningar**, när tärningsinställningen står på fysiska: du skriver vad tärningarna visade, *[Jag slog 14.]*, och RPG Engine lägger till dina modifikationer.
+- **På dashboarden** visar en banderoll en knapp för varje slag, till exempel *Acrobatics +4 · with advantage*. Klicka på den: tärningarna faller på sidan och spelledaren hör resultatet. Du kan också klicka på raden på ditt rollformulär som lyser upp, slå tärningarna från tärningsbrickan eller skriva något annat i banderollen.
+- **För hand**, i banderollens hörn eller i **Inställningar**: banderollen säger vad du ska slå, och du slår det från ditt rollformulär eller från tärningsbrickan.
+- **Fysiska tärningar**, när tärningsinställningen står på fysiska: du skriver vilka sidor du slog, *[Jag slog en 14.]*, och RPG Engine lägger till dina modifikationer.
 
-**Fria slag**: klicka på vilket tal som helst i ditt rollformulär, eller öppna tärningsbrickan, för att slå på skoj. De räknas aldrig och spelledaren ser dem aldrig.
+**Fria slag**: klicka på vilket tal som helst på ditt rollformulär, eller öppna tärningsbrickan, för att slå på skoj. De räknas aldrig, och spelledaren ser dem aldrig.
 
 **Spelledarens slag** syns i din slagkolumn, utom de hemliga. Du kan alltid fråga *[Var det slaget på riktigt?]*: för ett hemligt slag ger spelledaren ett fingeravtryck som bevisar att slaget gjordes innan du frågade.
 
 ### 3.3 Scener och strider
 
-Berättelsen går i **scener**: en strid, ett samtal, utforskning, resa, en vila. I slutet av varje scen sparas spelet av sig självt, och scenen hamnar i din dagbok.
+Berättelsen går i **scener**: en strid, ett samtal, utforskning, resa eller vila. I slutet av varje scen sparas spelet av sig självt, och scenen hamnar i din dagbok.
 
-I en strid berättar spelledaren varje tur som inte är din och stannar där du kan bestämma. **Scen** visar överst vems tur det är och vem som kommer härnäst, och din rollpersons kort bredvid kartan. Turordningen, gruppens träffpoäng och hur skadade fienderna ser ut, i ord, finns kvar bredvid sidan. Om din rollperson faller visas dödsslagen stort på sidan.
+I en strid berättar spelledaren varje tur som inte är din, och stannar där du kan bestämma. **Scen** visar högst upp vems tur det är och vem som kommer härnäst, och din rollpersons kort bredvid kartan. Turordningen, gruppens träffpoäng och hur skadade fienderna ser ut, i ord, står kvar bredvid sidan. Om din rollperson faller visas dödsslagen stort på sidan.
 
 ### 3.4 Tid, resor och världen som rör sig
 
-RPG Engine håller reda på datumet. Ingen tid går mellan spelpass. Säg att ni vilar, *Vi tar en lång vila*, och när spelledaren går med på det ger vilan tillbaka det den ska. Vid en kort vila kan spelledaren fråga på dashboarden hur många träffpoängstärningar du använder: slå dem en i taget, se hur mycket var och en läker och sluta när du vill. Säg vart ni går, *Vi tar vägen norrut mot Rocca*, så räknar RPG Engine ut vägen, avståndet och dagarna. Resan avbryts när något händer på vägen. Pengar räknas i spelets mynt, växel inräknad.
+RPG Engine håller reda på datumet. Ingen tid går mellan sessionerna. Säg att ni vilar, *Vi tar en lång vila*, så ger vilan tillbaka det den ska när spelledaren går med på den. Vid en kort vila kan spelledaren fråga på dashboarden hur många träffterningar du använder: slå dem en i taget, se hur mycket var och en läker och sluta när du vill. Säg vart ni går, *Vi tar vägen norrut mot Rocca*, så räknar RPG Engine ut vägen, avståndet och dagarna, och stannar när något händer på vägen. Pengar räknas i spelets mynt, med växel.
 
-Skurkar har planer med tidsfrister. Varje ny dag flyttar spelledaren fram de hot som tiden har fört framåt, och du ser deras tecken, aldrig själva klockan.
+Skurkar har planer med tidsfrister. Varje ny dag flyttar spelledaren fram de hot som tiden har fört framåt. Du ser tecknen på dem, aldrig själva klockan.
 
 ### 3.5 Kartor
 
-**Värld** visar de platser din rollperson känner till, vägarna mellan dem och spåret du har gått, med dimma över resten. **Scen** visar kartan över platsen där du är, när den har en, med vem som står var. I en strid, på din tur, är de rutor du inte kan nå dolda. När spelledaren frågar vart du rör dig, tryck på en ruta eller skriv den, till exempel *E4*.
+**Värld** visar de platser din rollperson känner till, vägarna mellan dem och spåret du har gått, med dimma över resten. **Scen** visar kartan över platsen där du är, när det finns en, och vem som står var. I en strid, på din tur, är de rutor du inte kan nå dolda. När spelledaren frågar vart du går, tryck på en ruta eller skriv den, till exempel *E4*.
+
+**Värld** rymmer också det din rollperson vet. **Kunskap** listar de personer, platser, fraktioner, varelser och berättelser som rollpersonen känner till, var och en så som rollpersonen känner till den. Sök i listan, eller öppna en post för att läsa den helt. Ett namn i texten leder till sin sida. **Dokument** sparar breven, kungörelserna och sidorna som rollpersonen hittade, så att du kan läsa dem igen. **Kalender** visar dagens datum, dina uppdrags tidsfrister med tiden som är kvar, och berättelsens dagar. En dag med scener leder till sina kapitel i dagboken.
 
 ### 3.6 Uppdrag, dagbok och anteckningar
 
-En uppgift som din rollperson tar sig an blir ett uppdrag i **Dagbok**, med sina mål, sin tidsfrist och det den mäter. Stjärnmärk det för att ha det i sikte högst upp i Scen. Dagboken berättar också din **berättelse**, scen för scen, och innehåller dina **anteckningar**. De är privata, om du inte väljer att **Dela** en. Spelledaren hör den som vad du tänker, aldrig som ett faktum. Under **Följeslagare** läser du dina följeslagares dagböcker. Då och då, i slutet av en dag eller ett uppdrag, skriver de några rader om vad de tänker och känner.
+En uppgift som din rollperson tar sig an blir ett uppdrag i **Dagbok**, med sina mål, sin tidsfrist och det den mäter. Stjärnmärk det för att ha det i sikte högst upp i Scen. Dagboken berättar också din **berättelse**, scen för scen, och sparar dina **anteckningar**. De är privata, om du inte väljer **Dela** för en av dem. Spelledaren hör den då som något du tänker, aldrig som ett faktum. Under **Följeslagare** läser du dina följeslagares dagböcker. Då och då, i slutet av en dag eller ett uppdrag, skriver de några rader om vad de tänker och känner.
 
-### 3.7 Din rollpersons berättelse och bild
+### 3.7 Din rollpersons historia och bild
 
-På ditt rollformulär har kortet **Beskrivning** en ruta för din rollpersons berättelse. Spelledaren skriver in den, efter att du har sagt ja. För en bild kan du ge spelledaren en fil (PNG, JPEG, WebP eller SVG, upp till 5 MB) tillsammans med var den finns på din dator, eller låta göra ett porträtt ([3.11](#311-pictures)): *[Gör ett porträtt av mig: grått hår i en fläta, ett ärr på hakan.]*
+På ditt rollformulär har kortet **Beskrivning** en ruta för din rollpersons historia. Spelledaren skriver in den, efter att du har sagt ja. För en bild kan du ge spelledaren en fil (PNG, JPEG, WebP eller SVG, upp till 5 MB) tillsammans med var den ligger på din dator, eller be om ett porträtt ([3.11](#311-pictures)): *[Gör ett porträtt åt mig: grått hår i en fläta, ett ärr på hakan.]*
 
 ### 3.8 Sparade spel och att gå tillbaka
 
-RPG Engine sparar hela kampanjen i slutet av varje scen. Inställningen för **sparade spel** avgör resten:
+RPG Engine sparar hela kampanjen i slutet av varje scen. Inställningen **sparade spel** avgör resten:
 
 | Sparade spel | Spara när du vill | Gå tillbaka |
 |---|---|---|
 | **permadeath** | nej | aldrig |
-| **checkpoint** | nej | till det senaste sparade spelet, bara när din rollperson dör |
+| **checkpoint** | nej | till senaste sparade spelet, bara när din rollperson dör |
 | **ledig** | ja | till vilket sparat spel som helst |
 
 I alla lägen kan du **börja om**, från spelets början eller från session noll. Gör det i chatten eller i **Sparade spel**.
 
-När du har gått tillbaka ska du **öppna en ny chatt**: den gamla minns det som ogjordes. Skriv *fortsätt* i den nya chatten och tryck sedan på **Jag har öppnat en ny chatt** i Sparade spel.
+Efter att du har gått tillbaka ska du **öppna en ny chatt**: den gamla kommer ihåg det som ogjorts. Skriv *fortsätt* i den nya chatten och tryck sedan på **Jag har öppnat en ny chatt** i Sparade spel.
 
-### 3.9 Spelpass: att sluta och komma tillbaka
+### 3.9 Sessioner: att sluta och komma tillbaka
 
-Sluta när du vill: *[Vi slutar här för i kväll.]* Allt är redan sparat i filerna. För att komma tillbaka startar du din agent i kampanjmappen och skriver *fortsätt*. Spelledaren ger dig en kort sammanfattning och går vidare.
+Sluta när du vill: *[Vi slutar här för ikväll.]* Allt är redan sparat i filerna. För att komma tillbaka startar du din agent i kampanjmappen och skriver *fortsätt*. Spelledaren ger dig en kort sammanfattning och spelet går vidare.
 
 ### 3.10 Spelledarens sinnesstämning
 
-Roboten högst upp på dashboarden är spelledaren. Dess ansikte följer berättelsens ton och avslöjar aldrig det du ännu inte vet. När chatten är stängd sover den.
+Roboten högst upp på dashboarden är spelledaren. Dess ansikte följer berättelsens ton och avslöjar aldrig sådant du inte vet än. När chatten är stängd sover den.
 
 ### 3.11 Bilder
 
-RPG Engine kan låta göra bilder av platserna du når, uppdragen du tar och de du möter, så som inställningen för **bilder** säger, och din rollpersons porträtt när du ber om det. Det använder din egen Codex eller Claude Code, med din inloggning, på din plan och inom dess gränser: **Codex** målar dem, annars ritar **Claude Code** dem. **Inställningar** visar om den här datorn kan göra dem, och hur du ställer in det om den inte kan. Du kan alltid ge spelledaren en egen bild.
+RPG Engine kan låta skapa bilder av platserna ni når, uppdragen ni tar och dem ni möter, så som inställningen **bilder** säger, och din rollpersons porträtt när du ber om det. Det använder ditt eget Codex eller Claude Code, med din inloggning, på din plan och inom dess gränser: **Codex** målar dem, annars ritar **Claude Code** dem. **Inställningar** visar om den här datorn kan göra dem, och hur du ställer in det om den inte kan. Du kan alltid ge spelledaren en egen bild.
 
 ### 3.12 Trygghet: gränser, slöjor och stopp
 
-**Gränser** förekommer aldrig i spelet. **Slöjor** händer bara utanför scenen. Skriv *[stopp]* när som helst: spelledaren släpper det innehållet direkt och lägger till det i dina gränser.
+**Gränser** förekommer aldrig i spelet. **Slöjor** händer bara utanför bild. Skriv *[stopp]* när som helst: spelledaren släpper det innehållet direkt och lägger till det bland dina gränser.
 
 ### 3.13 Att ändra sig
 
@@ -199,16 +201,16 @@ Varje inställning kan ändras, i chatten eller i **Inställningar**. Ett avgör
 
 ## 4. Dashboarden <!-- icon: party -->
 
-En sida på din egen dator, som bara öppnas i den datorns webbläsare och är aktiv medan chatten är öppen. När chatten stängs visar den *Not connected*. Den kommer tillbaka av sig själv med nästa chatt.
+En sida på din egen dator. Den öppnas bara i webbläsaren på den datorn och är aktiv medan chatten är öppen. När chatten stängs visar den *Not connected*. Den kommer tillbaka av sig själv med nästa chatt.
 
 - **Grupp**: ditt rollformulär och dina följeslagares. Klicka på ett tal för att slå det. Håll muspekaren över det för att se var det kommer ifrån. Bredvid ser du slagen.
-- **Scen**: var du är, dess bild och karta, vilka som finns där och vad som händer. I en strid visas turerna och din rollpersons kort.
-- **Dagbok**: uppdrag, berättelsen, dina följeslagares dagböcker, dina anteckningar.
-- **Värld**: världskartan så som din rollperson känner till den.
-- **Tärningsbrickan**: välj tärningar och en modifikation och slå.
-- **Sparade spel**, **Hjälp**, **Inställningar** och **Om**, som ikoner i slutet av raden. Inställningar innehåller också sidans egna preferenser: tema, tärningsljud, tärningsset.
+- **Scen**: var du är, dess bild och karta, vem som är där och vad som händer. I en strid visas turerna och din rollpersons kort.
+- **Dagbok**: uppdrag, berättelsen, dina följeslagares dagböcker och dina anteckningar.
+- **Värld**: världskartan, det din rollperson vet, de dokument som hittats och kalendern.
+- **Tärningsbrickan**: välj tärningar och en modifikation, och slå.
+- **Sparade spel**, **Hjälp**, **Inställningar** och **Om**, som ikoner i slutet av raden. Inställningar rymmer också sidans egna val: tema, tärningsljud och tärningsset.
 
-När spelledaren frågar dig något ligger dess banderoll kvar högst upp, oavsett vilken del du är i.
+När spelledaren frågar dig något ligger dess banderoll kvar högst upp, oavsett vilken del du befinner dig i.
 
 ---
 

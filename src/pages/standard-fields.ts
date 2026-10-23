@@ -23,7 +23,7 @@ const commonRules: Record<string, Rule> = { tags: "list", aliases: "list", image
 const typeRules: Partial<Record<PageType, Record<string, Rule>>> = {
     character: { role: ["pc", "companion", "npc"], creature: "link", inventory: "list", equipped: "links", knows: "links", factions: "links", status: ["alive", "dead"], mood: moods },
     place: { contains: "list", environment: "lines", stops: "stops", position: "position", radius: "length", map: "map", at: "list" },
-    item: { contains: "list" },
+    item: { contains: "list", document: "text" },
     creature: { creature: "link" },
     quest: { status: ["planned", "open", "done", "failed"] },
     event: { date: "text", place: "link", status: ["planned", "happened", "cancelled"], clock: "counter", when: "conditions", by: "linkOrLinks" },

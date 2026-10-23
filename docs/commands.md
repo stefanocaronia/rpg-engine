@@ -97,7 +97,7 @@ Create or change a page of the world.
 Read-only: no. Positional parameters: `page`.
 
 - `page` (`string`, required): name of the page, or of a copy in the open scene; Page#Name writes one section or one secret
-- `type` (`"character" | "place" | "faction" | "quest" | "item" | "event" | "topic" | "creature"`, optional): type of a new page, or the new type of one that exists: character, place (a room, a house, a ship, a region), faction, quest, item (a thing, even one with someone inside, such as a cart), event, topic, creature
+- `type` (`"character" | "place" | "faction" | "quest" | "item" | "event" | "topic" | "creature"`, optional): type of a new page, or the new type of one that exists: character, place (a room, a house, a ship, a region), faction, quest, item (a thing, even one with someone inside, such as a cart; one with words or a drawing to read again, such as a letter, a notice or a map, has document=letter, notice, map…), event, topic, creature
 - `set` (`string[] | object`, optional): fields to set: field=value, repeatable, or an object such as {"role": "npc"}. A link is [[Page]], links are [[A]], [[B]], a list is [a, b]
 - `unset` (`string[]`, optional): fields to remove, repeatable
 - `add` (`string[] | object`, optional): items to add to list fields: field=value, repeatable, such as factions=[[Barcaioli]], or an object
@@ -195,6 +195,7 @@ Read-only: yes. Positional parameters: `page`.
 - `saves` (`boolean`, optional): for the dashboard: the saves, and what the player may do with each
 - `setup` (`boolean`, optional): for the dashboard: the campaign's mode and name, what the next mode needs, and the setup's questions
 - `journal` (`boolean`, optional): for the dashboard: the quests the character knows, with goals, counters, clock and deadline, and the story by scenes
+- `world` (`boolean`, optional): for the dashboard: the pages the character knows, each with the opening of its text, the documents it has or read, and the calendar with the deadlines it knows
 - `as` (`string`, optional): for a character agent: the character whose view this is, other than the player's; alone or with page
 
 ### find

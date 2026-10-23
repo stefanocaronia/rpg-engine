@@ -42,6 +42,23 @@
     --bio-desert: #f0dfb0;
     --bio-snow: #f2f5f8;
     --bio-water: #b5d1ea;
+    /* The paper of the documents found, the same in both themes: a thing of the world, not a screen. */
+    --doc-paper: #f6eedb;
+    --doc-ink: #2f261b;
+    --doc-note: #5c4a30;
+    --doc-rule: #b9a47c;
+    --doc-link: #7a3b16;
+    --doc-seal: #9b2f24;
+    --doc-stone: #dcd8cf;
+    --doc-carved: #34322d;
+    --doc-fold: #dccba5;
+    --doc-ruled: #4f7aa8;
+    --doc-nail: #3b3b3b;
+    /* The seasons, in the calendar alone and always beside their word. */
+    --season-winter: light-dark(#4f7aa8, #9cc0e4);
+    --season-spring: light-dark(#4a8a45, #9ccf8f);
+    --season-summer: light-dark(#b98510, #f2c94c);
+    --season-autumn: light-dark(#b0562a, #e89a6a);
     /* Depth: shadows on the light page; on the dark one the surfaces' tone, and only what floats casts a shadow. */
     --lift: 0 1px 2px light-dark(rgb(24 44 76 / 0.08), rgb(0 0 0 / 0.3)), inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
     --raise: 0 6px 18px -10px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
@@ -125,6 +142,31 @@ h3,
 
 .num {
     font-variant-numeric: tabular-nums;
+}
+
+/* The small label over a title. */
+.eyebrow {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* A card that is always open: its CardHead, then its body. */
+.card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.card-body {
+    padding: 12px 16px 16px;
 }
 
 button {
@@ -1461,13 +1503,13 @@ a {
     padding-bottom: 72px;
 }
 
-:is(.journal-tabs, .package-tabs) {
+:is(.page-tabs, .journal-tabs, .package-tabs) {
     display: flex;
     gap: 4px;
     border-bottom: 1px solid var(--rule);
 }
 
-:is(.journal-tabs, .package-tabs) button {
+:is(.page-tabs, .journal-tabs, .package-tabs) button {
     min-height: 40px;
     padding: 0 16px;
     border: 0;
@@ -1479,33 +1521,52 @@ a {
     cursor: pointer;
 }
 
-:is(.journal-tabs, .package-tabs) button[aria-selected="true"] {
+:is(.page-tabs, .journal-tabs, .package-tabs) button[aria-selected="true"] {
     border-bottom-color: var(--accent);
     color: var(--accent);
 }
 
 /* Four tabs in a long language do not fit a phone: they scroll sideways instead of widening the page, the ring of the focus drawn inside the row. */
-.journal-tabs {
+:is(.page-tabs, .journal-tabs) {
     overflow-x: auto;
     scrollbar-width: thin;
 }
 
-.journal-tabs button {
+:is(.page-tabs, .journal-tabs) button {
     flex: none;
     white-space: nowrap;
 }
 
-.journal-tabs button:focus-visible {
+:is(.page-tabs, .journal-tabs) button:focus-visible {
     outline-offset: -2px;
 }
 
 @media (max-width: 600px) {
-    .journal-tabs {
+    :is(.page-tabs, .journal-tabs) {
         gap: 2px;
     }
 
-    .journal-tabs button {
+    :is(.page-tabs, .journal-tabs) button {
         padding: 0 10px;
+    }
+}
+
+/* On the narrowest phones a section's tabs share the row, closer, before they have to scroll. */
+@media (max-width: 400px) {
+    .page-tabs {
+        gap: 0;
+    }
+
+    .page-tabs button {
+        flex: 1 0 auto;
+        padding: 0 4px;
+    }
+}
+
+@media (pointer: coarse) {
+    .calendar-steps .icon-button {
+        min-height: var(--target);
+        min-width: var(--target);
     }
 }
 
@@ -2889,7 +2950,7 @@ a {
 
 @media (pointer: coarse) {
     .followed-star,
-    :is(.journal-tabs, .package-tabs) button {
+    :is(.page-tabs, .journal-tabs, .package-tabs) button {
         min-height: var(--target);
         min-width: var(--target);
     }
@@ -3713,11 +3774,6 @@ a {
 
 .upcoming p {
     margin: 0 0 6px;
-}
-
-.upcoming-note {
-    color: var(--muted);
-    font-size: 0.9rem;
 }
 
 .titles h1 {
@@ -5504,6 +5560,55 @@ button.row,
 .markdown ul {
     margin: 0 0 8px;
     line-height: 1.5;
+}
+
+/* A link of a page's text to a page the character knows. */
+.md-link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+    text-underline-offset: 2px;
+    border-radius: var(--radius-xs);
+}
+
+.md-link:hover {
+    text-decoration-color: currentColor;
+}
+
+.markdown blockquote {
+    margin: 0 0 8px;
+    padding-inline-start: 12px;
+    border-inline-start: 3px solid var(--rule);
+    color: var(--muted);
+}
+
+/* A secret the character discovered: a note of its own, edged in the accent, its title in the eyebrow. */
+.md-secret {
+    margin: 0 0 8px;
+    padding: 8px 12px;
+    border-inline-start: 3px solid var(--accent);
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+
+.md-pre {
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    border-radius: var(--radius-s);
+    background: var(--panel-2);
+    font-size: 0.85rem;
+}
+
+.md-secret .eyebrow {
+    margin-bottom: 4px;
+    color: var(--accent);
+}
+
+.md-secret > :last-child,
+.markdown blockquote > :last-child {
+    margin-bottom: 0;
 }
 
 /* The die inside a number the system rolls (D-280): quiet until the number is pointed at, as a click throws it. */
@@ -9695,6 +9800,892 @@ svg.icon {
 .world {
     display: grid;
     gap: var(--gap);
+    /* Room at the end for the dice button, which stays over the page. */
+    padding-bottom: 72px;
+}
+
+/* What the page brings into view stops under the top that stays. */
+.map-card,
+.browse {
+    scroll-margin-top: calc(var(--top-space) + var(--asked-space, 0px) + var(--gap));
+}
+
+.world-panel,
+.world-map {
+    display: grid;
+    gap: var(--gap);
+    min-width: 0;
+}
+
+/* A list and its reader (D-276): side by side on a wide screen, the reader in sight while the list scrolls; under that the reader in the list's place once a
+   page is open, the way back at its top. */
+.browse {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--gap);
+    align-items: start;
+}
+
+.browse-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    justify-self: start;
+    padding-inline: 6px 12px;
+}
+
+.browse-back svg.icon {
+    width: 18px;
+    height: 18px;
+    scale: -1 1;
+}
+
+[dir="rtl"] .browse-back svg.icon {
+    scale: 1;
+}
+
+@media (min-width: 900px) {
+    .browse {
+        grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+    }
+
+    .browse-back {
+        display: none;
+    }
+
+    .browse-reader {
+        position: sticky;
+        top: calc(var(--gap) + var(--top-space) + var(--asked-space, 0px));
+        max-height: calc(100vh - var(--top-space) - var(--asked-space, 0px) - 2 * var(--gap));
+        overflow: auto;
+    }
+}
+
+@media (max-width: 899px) {
+    .browse.open .browse-list {
+        display: none;
+    }
+}
+
+.browse-list {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+}
+
+.browse-find .package-search {
+    width: 100%;
+}
+
+.browse-find .package-search input {
+    height: 40px;
+}
+
+.browse-list .package-chips {
+    margin: 0;
+}
+
+.browse-group {
+    display: grid;
+    gap: 4px;
+}
+
+.browse-group > .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-inline: 10px;
+}
+
+.browse-count {
+    font-weight: 650;
+    letter-spacing: 0;
+}
+
+.browse-rows {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.browse-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 6px 10px;
+    border-radius: var(--radius-m);
+    color: var(--ink);
+}
+
+/* The one open: its row lit, a bar of the accent at its start. */
+.browse-row[aria-current="true"] {
+    background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+}
+
+.browse-row[aria-current="true"]::before {
+    content: "";
+    position: absolute;
+    inset-block: 8px;
+    inset-inline-start: 0;
+    width: 3px;
+    border-radius: var(--radius-xs);
+    background: var(--accent);
+}
+
+.browse-words {
+    display: grid;
+    flex: 1 1 auto;
+    gap: 2px;
+    min-width: 0;
+}
+
+.browse-name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.browse-meta {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.85rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+/* A thing's small picture: a place's, or its mark on the map's paper; a document's drawing on its own. */
+.browse-thumb {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    overflow: hidden;
+    border-radius: var(--radius-m);
+    background: var(--m-land);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--m-ink) 18%, transparent);
+    color: var(--m-ink);
+}
+
+.browse-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.browse-thumb svg {
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.browse-letter {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.paper-thumb {
+    background: var(--doc-paper);
+    color: var(--doc-ink);
+}
+
+.paper-thumb.look-inscription {
+    background: var(--doc-stone);
+}
+
+.browse-none {
+    margin: 0;
+    color: var(--muted);
+}
+
+.browse-none .save-button {
+    margin-inline-start: 4px;
+}
+
+/* The reader: the page open, as the character knows it. */
+.browse-reader {
+    min-width: 0;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    background: var(--panel);
+    box-shadow: var(--lift), var(--raise);
+}
+
+.reader-banner {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 6;
+    object-fit: cover;
+    border-radius: calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px) 0 0;
+}
+
+.reader-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 16px 8px;
+}
+
+.reader-head > div {
+    min-width: 0;
+}
+
+.reader-head .token {
+    --size: 64px;
+}
+
+.reader-head h3 {
+    font-size: 1.4rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+/* The title takes the focus for a screen reader to read it; no ring, as it is no control. */
+.reader-head h3:focus {
+    outline: none;
+}
+
+.reader-where {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.reader-where svg.icon {
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+}
+
+/* The places that hold it, the largest first, each a name of its own: the path follows the page's direction, its mark mirrored by itself. */
+.reader-path {
+    display: flex;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.reader-step::before {
+    content: "›" / "";
+    margin-inline: 5px;
+    opacity: 0.75;
+}
+
+.reader-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 4px 16px 8px;
+}
+
+.reader-text {
+    max-width: 70ch;
+    padding: 6px 16px 18px;
+}
+
+.reader-text .markdown p {
+    line-height: 1.55;
+}
+
+.pc-more {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    font-weight: 650;
+}
+
+@media (pointer: coarse) {
+    .pc-more {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--target);
+        margin-top: 0;
+    }
+}
+
+/* A document on its paper, light in both themes: what it is told by drawing alone, its words always plain text in the story's serif. */
+.paper {
+    color-scheme: light;
+    position: relative;
+    max-width: 62ch;
+    margin: 8px 16px 20px;
+    padding: 28px 30px 30px;
+    border-radius: var(--radius-xs);
+    background: var(--doc-paper);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--doc-ink) 20%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--doc-ink) 60%, transparent);
+    color: var(--doc-ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.6;
+}
+
+.paper .markdown p,
+.paper .markdown ul {
+    line-height: 1.6;
+    margin-bottom: 0.8em;
+}
+
+.paper .markdown > :last-child {
+    margin-bottom: 0;
+}
+
+.paper .md-link {
+    color: var(--doc-link);
+}
+
+.paper .markdown blockquote {
+    border-color: var(--doc-rule);
+    color: var(--doc-note);
+}
+
+/* A secret found in it, as a note in its margin: in pencil, dashed off the text. */
+.paper .md-secret {
+    margin-top: 1em;
+    padding: 4px 0;
+    padding-inline-start: 14px;
+    border-inline-start: 2px dashed var(--doc-rule);
+    border-radius: 0;
+    background: none;
+    color: var(--doc-note);
+    font-style: italic;
+}
+
+.paper .md-secret .eyebrow {
+    color: var(--doc-note);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-style: normal;
+}
+
+.paper-picture {
+    display: block;
+    margin-bottom: 16px;
+    border-radius: var(--radius-xs);
+}
+
+.paper-picture img {
+    display: block;
+    width: 100%;
+    border-radius: var(--radius-xs);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--doc-ink) 20%, transparent);
+}
+
+.paper-mark {
+    position: absolute;
+    pointer-events: none;
+}
+
+/* A letter: folded in three, sealed in wax at its foot. */
+.paper.look-letter {
+    padding-bottom: 56px;
+    background:
+        linear-gradient(to bottom, transparent calc(33.3% - 1px), color-mix(in srgb, var(--doc-ink) 7%, transparent) 33.3%, transparent calc(33.3% + 2px)),
+        linear-gradient(to bottom, transparent calc(66.6% - 1px), color-mix(in srgb, var(--doc-ink) 7%, transparent) 66.6%, transparent calc(66.6% + 2px)),
+        var(--doc-paper);
+}
+
+.paper.look-letter .paper-mark {
+    inset-block-end: 14px;
+    inset-inline-end: 22px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 34%, rgb(255 255 255 / 0.3), transparent 45%), var(--doc-seal);
+    box-shadow: inset 0 0 0 4px rgb(0 0 0 / 0.14), 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+/* A notice: nailed up, a little askew. */
+.paper.look-notice {
+    padding-top: 40px;
+    rotate: -0.6deg;
+}
+
+.paper.look-notice .paper-mark {
+    top: 12px;
+    left: calc(50% - 6px);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--doc-nail) 50%, white), var(--doc-nail) 70%);
+    box-shadow: 0 2px 2px rgb(0 0 0 / 0.35);
+}
+
+/* A page torn from a book: its top edge ragged. */
+.paper.look-page {
+    padding-top: 36px;
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+}
+
+.paper.look-page .paper-mark {
+    inset-block-start: 0;
+    inset-inline: 0;
+    height: 14px;
+    background:
+        linear-gradient(160deg, var(--panel) 40%, transparent 41%) 0 0 / 23px 14px,
+        linear-gradient(200deg, var(--panel) 40%, transparent 41%) 0 0 / 23px 14px,
+        linear-gradient(150deg, var(--panel) 30%, transparent 31%) 9px 0 / 17px 10px,
+        linear-gradient(210deg, var(--panel) 30%, transparent 31%) 9px 0 / 17px 10px;
+}
+
+/* A diary: ruled lines a line apart, and its margin. */
+.paper.look-diary {
+    padding-inline-start: 44px;
+    background:
+        linear-gradient(to right, transparent 30px, color-mix(in srgb, var(--doc-seal) 35%, transparent) 30px 31px, transparent 31px),
+        repeating-linear-gradient(to bottom, transparent 0 calc(1.6em - 1px), color-mix(in srgb, var(--doc-ruled) 22%, transparent) calc(1.6em - 1px) 1.6em) 0 21px,
+        var(--doc-paper);
+    background-repeat: no-repeat, repeat, no-repeat;
+}
+
+[dir="rtl"] .paper.look-diary {
+    background:
+        linear-gradient(to left, transparent 30px, color-mix(in srgb, var(--doc-seal) 35%, transparent) 30px 31px, transparent 31px),
+        repeating-linear-gradient(to bottom, transparent 0 calc(1.6em - 1px), color-mix(in srgb, var(--doc-ruled) 22%, transparent) calc(1.6em - 1px) 1.6em) 0 21px,
+        var(--doc-paper);
+}
+
+.paper.look-diary .markdown p,
+.paper.look-diary .markdown ul {
+    margin-bottom: 1.6em;
+}
+
+/* A scroll: its two ends rolled. */
+.paper.look-scroll {
+    padding-block: 40px;
+    background:
+        linear-gradient(to bottom, color-mix(in srgb, var(--doc-ink) 22%, transparent), color-mix(in srgb, var(--doc-ink) 4%, transparent) 14px, transparent 22px, transparent calc(100% - 22px), color-mix(in srgb, var(--doc-ink) 4%, transparent) calc(100% - 14px), color-mix(in srgb, var(--doc-ink) 22%, transparent)),
+        var(--doc-paper);
+}
+
+/* A map: the paper squared under its drawing. */
+.paper.look-map {
+    background:
+        repeating-linear-gradient(to right, transparent 0 23px, color-mix(in srgb, var(--m-ink) 6%, transparent) 23px 24px),
+        repeating-linear-gradient(to bottom, transparent 0 23px, color-mix(in srgb, var(--m-ink) 6%, transparent) 23px 24px),
+        var(--m-land);
+}
+
+/* An inscription: cut in stone, its lines in the middle. */
+.paper.look-inscription {
+    background: radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.35), transparent 60%), var(--doc-stone);
+    color: var(--doc-carved);
+    letter-spacing: 0.03em;
+    text-shadow: 0 1px 0 rgb(255 255 255 / 0.65);
+    text-align: center;
+}
+
+/* A note: smaller, its corner folded. */
+.paper.look-note {
+    max-width: 46ch;
+    background: linear-gradient(225deg, var(--panel) 0 14px, var(--doc-fold) 14px 21px, var(--doc-paper) 21px);
+}
+
+[dir="rtl"] .paper.look-note {
+    background: linear-gradient(135deg, var(--panel) 0 14px, var(--doc-fold) 14px 21px, var(--doc-paper) 21px);
+}
+
+@media (max-width: 600px) {
+    .paper {
+        margin-inline: 10px;
+        padding-inline: 20px;
+        font-size: 1rem;
+    }
+
+    .paper.look-diary {
+        padding-inline-start: 40px;
+    }
+}
+
+/* The calendar (TIM-8): today and the deadlines beside the month on a wide screen. */
+.calendar {
+    display: grid;
+    gap: var(--gap);
+    align-items: start;
+}
+
+.calendar-side {
+    display: grid;
+    gap: var(--gap);
+    min-width: 0;
+}
+
+@media (min-width: 900px) {
+    .calendar {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    }
+}
+
+.calendar-date {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.calendar-now {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 0;
+    color: var(--muted);
+}
+
+.season-winter {
+    --season: var(--season-winter);
+}
+
+.season-spring {
+    --season: var(--season-spring);
+}
+
+.season-summer {
+    --season: var(--season-summer);
+}
+
+.season-autumn {
+    --season: var(--season-autumn);
+}
+
+.season-other {
+    --season: var(--muted);
+}
+
+.calendar-season {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: var(--radius-s);
+    background: color-mix(in srgb, var(--season) 16%, var(--panel));
+    color: var(--ink);
+    font-size: 0.85rem;
+    font-weight: 650;
+}
+
+.calendar-season-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--season);
+}
+
+.calendar-month-name::first-letter {
+    text-transform: uppercase;
+}
+
+.calendar-steps {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    margin-inline-start: auto;
+}
+
+.calendar-steps .icon-button svg.icon {
+    width: 20px;
+    height: 20px;
+}
+
+.calendar-steps .calendar-back svg.icon,
+[dir="rtl"] .calendar-steps .icon-button:last-child svg.icon {
+    scale: -1 1;
+}
+
+[dir="rtl"] .calendar-steps .calendar-back svg.icon {
+    scale: 1;
+}
+
+/* The year as a ribbon of its months, each as long as its days, in its season's colour; the month shown taller, today's with a dot under it. */
+.calendar-year {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 14px;
+}
+
+.calendar-year-month {
+    position: relative;
+    flex-basis: 0;
+    height: 6px;
+    border-radius: var(--radius-xs);
+    background: color-mix(in srgb, var(--season) 45%, var(--panel));
+}
+
+.calendar-year-month.shown {
+    height: 14px;
+    background: var(--season);
+}
+
+.calendar-year-month.now::after {
+    content: "";
+    position: absolute;
+    top: calc(100% + 3px);
+    left: calc(50% - 2px);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--ink);
+}
+
+.calendar-year .calendar-season {
+    margin-inline-start: 10px;
+}
+
+/* The days in rows of ten, or five on a phone: a calendar of months alone has no weeks. */
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.calendar-days.rows-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.calendar-day {
+    display: grid;
+    grid-template-rows: 1fr 12px;
+    justify-items: center;
+    align-items: center;
+    min-height: 48px;
+    padding: 4px 2px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-m);
+    background: var(--float);
+    color: var(--ink);
+    font: inherit;
+    cursor: pointer;
+}
+
+.calendar-day-number {
+    font-weight: 650;
+}
+
+.calendar-day.lived {
+    background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.calendar-day.before {
+    border-style: dashed;
+    background: transparent;
+    color: var(--muted);
+}
+
+.calendar-day.due {
+    border-color: color-mix(in srgb, var(--low) 60%, var(--rule));
+}
+
+.calendar-day.today {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.calendar-day.today .calendar-day-number {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.calendar-day[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--paper);
+}
+
+.calendar-day[aria-pressed="true"] .calendar-day-number {
+    color: inherit;
+}
+
+.calendar-day-marks {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 12px;
+}
+
+.calendar-scene-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.calendar-day-marks svg.icon {
+    width: 12px;
+    height: 12px;
+    color: var(--low);
+    stroke-width: 2.4;
+}
+
+.calendar-day[aria-pressed="true"] :is(.calendar-scene-dot, .calendar-day-marks svg.icon) {
+    background: currentColor;
+    color: inherit;
+}
+
+.calendar-day[aria-pressed="true"] .calendar-day-marks svg.icon {
+    background: none;
+}
+
+/* What the marks of the days say. */
+.calendar-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.calendar-key > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.calendar-key > span::before {
+    content: "";
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-xs);
+}
+
+.calendar-key > .calendar-key-today::before {
+    border: 2px solid var(--accent);
+}
+
+.calendar-key > .calendar-key-lived::before {
+    background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.calendar-key > .calendar-key-scene::before {
+    width: 6px;
+    height: 6px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.calendar-key > .calendar-key-deadline::before {
+    display: none;
+}
+
+.calendar-key-deadline svg.icon {
+    width: 12px;
+    height: 12px;
+    color: var(--low);
+    stroke-width: 2.4;
+}
+
+/* The day chosen: its name and what it holds, each leading to the Journal. */
+.calendar-chosen {
+    display: grid;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+}
+
+.calendar-chosen-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.calendar-chosen-now {
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.calendar-chosen-list,
+.calendar-deadlines {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.calendar-deadlines {
+    padding: 6px 6px 8px;
+}
+
+.calendar-line,
+.calendar-deadline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 4px 8px;
+    border-radius: var(--radius-m);
+    color: var(--ink);
+}
+
+.calendar-deadline {
+    min-height: 56px;
+    padding-inline: 10px;
+}
+
+.calendar-line svg.icon {
+    width: 18px;
+    height: 18px;
+    color: var(--accent);
+}
+
+.calendar-scene {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+
+.calendar-scene-place {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.calendar-chapter {
+    color: var(--muted);
+    font-weight: 650;
+}
+
+/* A page opened comes in, a little from below. */
+@media (prefers-reduced-motion: no-preference) {
+    .browse-reader {
+        animation: reader-in var(--short) var(--ease-out);
+    }
+}
+
+@keyframes reader-in {
+    from {
+        opacity: 0;
+        translate: 0 6px;
+    }
+}
+
+/* A chapter the calendar led to, ringed while it has the focus. */
+.chapter:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
 }
 
 .map-card,
@@ -12078,6 +13069,13 @@ svg.icon {
 .package-chips button[aria-pressed="true"] {
     border-color: var(--accent);
     background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* A finger needs the room of a target, after the chip's own height. */
+@media (pointer: coarse) {
+    .package-chips button {
+        min-height: var(--target);
+    }
 }
 
 .package-chips button:focus-visible,

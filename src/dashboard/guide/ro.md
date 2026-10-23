@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 1e0398b1 e9b90526 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -111,7 +111,7 @@ Fără o lume scrisă, maestrul de joc întreabă și o **premisă** (gen, ton, 
 
 ---
 
-## 3. Jocul <!-- icon: chat -->
+## 3. Cum se joacă <!-- icon: chat -->
 
 ### 3.1 Dialogul cu maestrul de joc
 
@@ -119,51 +119,53 @@ Scrie ce face sau ce spune personajul tău, cu cuvintele tale:
 
 > Îl întreb pe hangiu cine a mai trecut pe aici în seara asta.
 
-Când ieși din poveste, scrie între paranteze drepte: *[Cum funcționează lupta corp la corp?]* Maestrul de joc îți răspunde tot între paranteze.
+Când vrei să ieși din poveste, scrie între paranteze drepte: *[Cum funcționează imobilizarea?]* Maestrul de joc răspunde tot între paranteze.
 
-Tu spui ce încerci; maestrul de joc spune ce se întâmplă. Maestrul de joc nu decide niciodată în locul personajului tău și nu vorbește despre motor. Îl poți întreba cum se folosește dashboardul.
+Tu spui ce încerci, iar maestrul de joc spune ce se întâmplă. Maestrul de joc nu decide niciodată pentru personajul tău și nu vorbește despre motor. Poți întreba maestrul de joc cum se folosește tabloul de bord.
 
-**Acțiuni din dashboard**: apasă pe un nume de pe fișa ta, de exemplu o armă, o vrajă sau un obiect pe care îl porți, apoi pe cine vizează; sau apasă pe o persoană ca să vorbești cu ea. Dashboardul scrie propoziția pentru tine, *Îl atac pe Bandit cu glugă 1 cu Mace.*, pe care o poți modifica înainte de **Spune-i maestrului de joc**. Maestrul de joc o aude ca pe o replică spusă în chat și o judecă la fel ca pe oricare alta. Dacă aplicația ta de AI nu o poate auzi singură, **Copiază** o pregătește ca s-o lipești în chat.
+**Acțiuni din tabloul de bord**: apasă pe un nume din fișa ta, de exemplu o armă, o vrajă sau un obiect pe care îl porți, apoi alege pentru cine este. Sau apasă pe o persoană ca să vorbești cu ea. Tabloul de bord scrie propoziția pentru tine, *Atac Bandit cu glugă 1 cu Buzdugan.*, pe care o poți modifica înainte de **Spune-i maestrului de joc**. Maestrul de joc o aude ca pe o replică spusă în chat și o judecă la fel ca pe oricare alta. Dacă aplicația ta de AI nu o poate prelua singură, **Copiază** o pregătește ca s-o lipești în chat.
 
 ### 3.2 Aruncări
 
-Maestrul de joc cere o aruncare doar când rezultatul este nesigur și contează, și spune mai întâi ce este în joc. Apoi:
+Maestrul de joc cere o aruncare doar când rezultatul este incert și contează, și spune mai întâi ce este în joc. Apoi:
 
-- **Pe dashboard**, un banner arată un buton pentru fiecare probă, de exemplu *Acrobatics +4 · with advantage*. Apasă-l: zarurile cad pe pagină, iar maestrul de joc află rezultatul. Poți apăsa și linia de pe fișă care se aprinde, poți arunca zarurile din tavă sau poți scrie altceva în banner.
-- **Manual**, în colțul bannerului sau în **Setări**: bannerul îți spune ce ai de aruncat, iar tu arunci de pe fișă sau din tavă.
-- **Zaruri fizice**, cu setarea pentru zaruri pe fizice: scrii fețele obținute, *[Am dat 14.]*, iar RPG Engine adaugă modificatorii tăi.
+- **Pe tabloul de bord**, un banner arată un buton pentru fiecare probă, de exemplu *Acrobatică +4 · cu avantaj*. Apasă pe el: zarurile cad pe pagină, iar maestrul de joc află rezultatul. Poți și să apeși pe linia din fișă care se luminează, să arunci zarurile din tava pentru zaruri sau să scrii altceva în banner.
+- **Manual**, în colțul bannerului sau în **Setări**: bannerul îți spune ce trebuie să arunci, iar tu arunci din fișă sau din tava pentru zaruri.
+- **Zaruri fizice**, cu setarea pentru zaruri pe fizice: scrii fețele pe care le-ai obținut, *[Am aruncat 14.]*, iar RPG Engine adaugă modificatorii tăi.
 
-**Aruncări libere**: apasă pe orice număr de pe fișă sau deschide tava ca să arunci de plăcere. Nu contează niciodată, iar maestrul de joc nu le vede.
+**Aruncări libere**: apasă pe orice număr din fișă sau deschide tava pentru zaruri, ca să arunci de plăcere. Ele nu contează niciodată, iar maestrul de joc nu le vede.
 
-**Aruncările maestrului de joc** apar în coloana ta de aruncări, în afară de cele secrete. Poți întreba oricând *[A fost reală aruncarea aceea?]*: pentru o aruncare secretă, maestrul de joc îți dă o amprentă care dovedește că a fost făcută înainte să întrebi.
+**Aruncările maestrului de joc** apar în coloana ta de aruncări, cu excepția celor secrete. Poți întreba oricând *[A fost reală aruncarea aceea?]*: pentru o aruncare secretă, maestrul de joc dă o amprentă care dovedește că aruncarea a fost făcută înainte să întrebi.
 
 ### 3.3 Scene și lupte
 
-Povestea se desfășoară în **scene**: o luptă, o conversație, explorare, călătorie, un popas. La sfârșitul fiecărei scene jocul se salvează singur, iar scena intră în jurnalul tău.
+Povestea se desfășoară în **scene**: o luptă, o conversație, o explorare, o călătorie, un popas. La sfârșitul fiecărei scene jocul se salvează singur, iar scena intră în jurnalul tău.
 
-Într-o luptă, maestrul de joc povestește fiecare tură care nu e a ta și se oprește acolo unde poți decide. **Scenă** arată sus a cui este tura și cine urmează, iar lângă hartă apare cartonașul personajului tău; ordinea turelor, punctele de viață ale grupului tău și cât de rănați par dușmanii, în cuvinte, rămân lângă pagină. Dacă personajul tău cade, salvările împotriva morții apar mari pe pagină.
+Într-o luptă, maestrul de joc povestește fiecare tură care nu este a ta și se oprește acolo unde poți decide. **Scenă** arată sus al cui este rândul și cine urmează, iar lângă hartă apare cartonașul personajului tău. Ordinea turelor, punctele de viață ale grupului și cât de răniți arată dușmanii, în cuvinte, rămân lângă pagină. Dacă personajul tău cade, aruncările de salvare împotriva morții apar mari pe pagină.
 
-### 3.4 Timpul, călătoria și lumea care se mișcă
+### 3.4 Timpul, călătoriile și lumea care se mișcă
 
-RPG Engine ține evidența datei; între sesiuni nu trece timp. Spune că vă odihniți, *Ne odihnim îndelung*, iar după ce maestrul de joc este de acord, odihna aduce înapoi ce trebuie. La o odihnă scurtă, maestrul de joc te poate întreba în dashboard câte zaruri de viață cheltui: le arunci pe rând, vezi cât vindecă fiecare și te oprești când vrei. Spune încotro mergi, *Luăm drumul spre nord, către Rocca*, iar RPG Engine calculează calea, distanța și zilele, oprindu-se când se întâmplă ceva pe drum. Banii se numără în monedele jocului, inclusiv restul.
+RPG Engine ține socoteala datei; între sesiuni nu trece timp. Spune că vă odihniți, *Ne odihnim îndelung*, și, odată ce maestrul de joc este de acord, odihna aduce înapoi ce trebuie. La o odihnă scurtă, maestrul de joc îți poate cere pe tabloul de bord câte zaruri de viață cheltuiești: le arunci pe rând, vezi cât vindecă fiecare și te oprești când vrei. Spune încotro mergeți, *Pornim pe drumul spre nord, către Rocca*, iar RPG Engine calculează drumul, distanța și zilele, oprindu-se când se întâmplă ceva pe cale. Banii se numără în monedele jocului, inclusiv restul.
 
 Răufăcătorii au planuri cu termene limită. În fiecare zi nouă, maestrul de joc mișcă amenințările pe care timpul le-a făcut să avanseze, iar tu le vezi semnele, niciodată ceasul în sine.
 
 ### 3.5 Hărți
 
-**Lume** arată locurile pe care le cunoaște personajul tău, drumurile dintre ele și traseul parcurs, cu ceață peste restul. **Scenă** arată harta locului în care te afli, când are una, cu cine se află unde; într-o luptă, în tura ta, căsuțele pe care nu le poți atinge sunt acoperite. Când maestrul de joc te întreabă încotro te miști, atinge o căsuță sau scrie-o, de exemplu *E4*.
+**Lume** arată locurile pe care le cunoaște personajul tău, drumurile dintre ele și traseul parcurs, cu ceață peste restul. **Scenă** arată harta locului în care te afli, când are una, cu cine se află unde. Într-o luptă, în rândul tău, căsuțele pe care nu le poți atinge sunt acoperite. Când maestrul de joc te întreabă unde te muți, atinge o căsuță sau scrie-o, de exemplu *E4*.
+
+**Lume** păstrează și ce știe personajul tău. **Cunoștințe** listează oamenii, locurile, facțiunile, creaturile și poveștile pe care le cunoaște, fiecare așa cum o știe el: caută în listă sau deschide o intrare ca s-o citești întreagă; un nume din text duce la pagina lui. **Documente** păstrează scrisorile, anunțurile și paginile găsite, ca să le poți reciti. **Calendar** arată ziua de azi, termenele misiunilor tale cu timpul rămas și zilele poveștii: o zi cu scene duce la capitolele ei din Jurnal.
 
 ### 3.6 Misiuni, jurnal și notițe
 
-O sarcină pe care o preia personajul tău devine o misiune în **Jurnal**, cu obiectivele, termenul limită și ce măsoară; pune-i o stea ca s-o ții la vedere sus, în Scenă. Jurnalul îți spune și **povestea**, scenă cu scenă, și păstrează **notițele** tale: private, dacă nu **Partajezi** una, caz în care maestrul de joc o aude ca pe ce gândești tu, nu ca pe un fapt. La **Însoțitori** citești jurnalele însoțitorilor tăi: din când în când, la sfârșitul unei zile sau al unei misiuni, ei scriu câteva rânduri despre ce gândesc și ce simt.
+O sarcină pe care o preia personajul tău devine o misiune în **Jurnal**, cu obiectivele ei, termenul limită și ce măsoară; marcheaz-o cu stea ca să rămână la vedere în partea de sus a paginii Scenă. Jurnalul spune și **povestea** ta, scenă cu scenă, și păstrează **notițele** tale: private, doar dacă nu **Partajează** una, pe care maestrul de joc o aude ca pe ce gândești, niciodată ca pe un fapt. Sub **Însoțitori** citești jurnalele însoțitorilor: din când în când, la sfârșitul unei zile sau al unei misiuni, ei scriu câteva rânduri despre ce gândesc și ce simt.
 
-### 3.7 Povestea și imaginea personajului tău
+### 3.7 Povestea și chipul personajului tău
 
-Pe fișa ta, cardul **Descriere** are o casetă pentru povestea personajului tău: maestrul de joc o scrie acolo, după ce ai spus da. Pentru o imagine, dă-i maestrului de joc un fișier (PNG, JPEG, WebP sau SVG, până la 5 MB) împreună cu locul unde se află pe computerul tău, sau cere un portret ([3.11](#311-pictures)): *[Fă-mi un portret: păr cărunt împletit într-o coadă, o cicatrice pe bărbie.]*
+În fișa ta, cartonașul **Descriere** are o casetă pentru povestea personajului tău: maestrul de joc o scrie acolo, după ce spui da. Pentru o imagine, dă-i maestrului de joc un fișier (PNG, JPEG, WebP sau SVG, până la 5 MB) împreună cu locul unde se află pe calculatorul tău, sau cere un portret ([3.11](#311-pictures)): *[Fă-mi un portret: păr cărunt împletit, o cicatrice pe bărbie.]*
 
 ### 3.8 Salvări și întoarcerea în timp
 
-RPG Engine salvează toată campania la sfârșitul fiecărei scene. Setarea **salvări** hotărăște restul:
+RPG Engine salvează toată campania la sfârșitul fiecărei scene. Setarea **salvări** decide restul:
 
 | Salvări | Salvezi când vrei | Te întorci |
 |---|---|---|
@@ -171,44 +173,44 @@ RPG Engine salvează toată campania la sfârșitul fiecărei scene. Setarea **s
 | **checkpoint** | nu | la ultima salvare, doar când personajul tău moare |
 | **liberă** | da | la orice salvare |
 
-În orice mod poți **relua de la capăt**, de la începutul jocului sau de la sesiunea zero. Fă-o în chat sau în **Salvări**.
+În toate modurile poți **începe de la capăt**, de la începutul jocului sau de la sesiunea zero. Fă asta în chat sau în **Salvări**.
 
-După ce te-ai întors, **deschide un chat nou**: cel vechi își amintește ce s-a anulat. Scrie *continuă* în chatul nou, apoi apasă **Am deschis un chat nou** în Salvări.
+După ce te-ai întors în timp, **deschide un chat nou**: cel vechi își amintește ce a fost anulat. Scrie *continuă* în chatul nou, apoi apasă **Am deschis un chat nou** în Salvări.
 
 ### 3.9 Sesiuni: oprirea și revenirea
 
-Oprește-te oricând vrei: *[Să ne oprim aici pentru în seara asta.]* Totul este deja salvat în fișiere. Ca să revii, pornește agentul în folderul campaniei și scrie *continuă*: maestrul de joc îți face un scurt rezumat și merge mai departe.
+Oprește-te oricând vrei: *[Să ne oprim aici pentru în seara asta.]* Totul este deja salvat în fișiere. Ca să revii, pornește-ți agentul în folderul campaniei și scrie *continuă*: maestrul de joc îți face un scurt rezumat și merge mai departe.
 
-### 3.10 Dispoziția maestrului de joc
+### 3.10 Starea de spirit a maestrului de joc
 
-Robotul din partea de sus a dashboardului este maestrul de joc: chipul lui urmează tonul poveștii și nu dezvăluie niciodată ce nu știi încă. Când chatul este închis, doarme.
+Robotul din partea de sus a tabloului de bord este maestrul de joc: chipul lui urmează tonul poveștii și nu dezvăluie niciodată ce nu știi încă. Când chatul este închis, robotul doarme.
 
 ### 3.11 Imagini
 
-RPG Engine poate genera imagini cu locurile la care ajungi, misiunile pe care le preiei și cei pe care îi întâlnești, după cum spune setarea **imagini**, precum și portretul personajului tău, când îl ceri. Folosește propriul tău Codex sau Claude Code, cu contul tău, în planul tău și cu limitele lui: **Codex** le pictează, altfel le desenează **Claude Code**. **Setări** arată dacă acest computer le poate genera și cum configurezi dacă nu. Poți oricând să-i dai maestrului de joc o imagine a ta.
+RPG Engine poate genera imagini cu locurile la care ajungi, misiunile pe care le preiei și persoanele pe care le întâlnești, după cum spune setarea **imagini**, plus portretul personajului tău când îl ceri. Folosește propriul tău Codex sau Claude Code, cu contul tău, în planul tău și cu limitele lui: **Codex** le pictează, altfel le desenează **Claude Code**. **Setări** arată dacă acest calculator le poate genera și, dacă nu, cum le configurezi. Poți oricând să-i dai maestrului de joc o imagine a ta.
 
-### 3.12 Siguranță: linii, văluri și stop
+### 3.12 Siguranță: linii, văluri și oprire
 
-**Liniile** nu apar niciodată în joc; **văluri** se petrec doar în afara scenei. În orice moment scrie *[stop]*: maestrul de joc renunță imediat la acel conținut și îl adaugă la liniile tale.
+**Liniile** nu apar niciodată în joc; **vălurile** se petrec doar în afara scenei. În orice moment scrie *[stop]*: maestrul de joc renunță imediat la acel conținut și îl adaugă la liniile tale.
 
-### 3.13 Te-ai răzgândit
+### 3.13 Când te răzgândești
 
-Orice setare poate fi schimbată, în chat sau în **Setări**. O decizie pe care maestrul de joc o ia fără carte devine un **precedent**, astfel că aceeași întrebare primește data viitoare același răspuns.
+Orice setare poate fi schimbată, în chat sau în **Setări**. O decizie pe care maestrul de joc o ia fără carte devine un **precedent**, ca aceeași întrebare să primească data viitoare același răspuns.
 
 ---
 
-## 4. Dashboardul <!-- icon: party -->
+## 4. Tabloul de bord <!-- icon: party -->
 
-O pagină pe propriul tău computer, deschisă doar în browserul acelui computer, activă cât timp chatul este deschis. Când chatul se închide, arată *Not connected*; revine singură la următorul chat.
+O pagină pe propriul tău calculator, deschisă doar în browserul acelui calculator, activă cât timp chatul este deschis. Când chatul se închide, pagina arată *Not connected*; revine singură la următorul chat.
 
-- **Grup**: fișa ta și fișele însoțitorilor tăi. Apasă pe un număr ca să arunci; ține cursorul deasupra ca să vezi de unde vine. Alături sunt aruncările.
-- **Scenă**: unde te afli, imaginea și harta ei, cine este acolo, ce se întâmplă; într-o luptă, turele și cardul personajului tău.
-- **Jurnal**: misiuni, povestea, jurnalele însoțitorilor tăi, notițele tale.
-- **Lume**: harta lumii așa cum o cunoaște personajul tău.
+- **Grup**: fișa ta și fișele însoțitorilor. Apasă pe un număr ca să-l arunci; ține cursorul deasupra lui ca să vezi de unde vine. Alături sunt aruncările.
+- **Scenă**: unde te afli, imaginea și harta locului, cine este acolo, ce se întâmplă; într-o luptă, turele și cartonașul personajului tău.
+- **Jurnal**: misiunile, povestea, jurnalele însoțitorilor, notițele tale.
+- **Lume**: harta lumii, ce știe personajul tău, documentele găsite și calendarul.
 - **Tava pentru zaruri**: alege zarurile și un modificator, apoi aruncă.
 - **Salvări**, **Ajutor**, **Setări** și **Despre**, ca pictograme la capătul rândului. Setări cuprinde și preferințele paginii: tema, sunetul zarurilor, setul de zaruri.
 
-Când maestrul de joc îți cere ceva, bannerul lui rămâne sus, în orice secțiune te-ai afla.
+Când maestrul de joc te întreabă ceva, bannerul lui rămâne sus, indiferent în ce secțiune te afli.
 
 ---
 

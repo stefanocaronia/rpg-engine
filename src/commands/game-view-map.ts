@@ -152,7 +152,7 @@ function mapPlace(sight: PlaceSight, roads: Roads, page: Page, known: (page: Pag
     }
 
     const region = regionsOf(world).find((candidate) => candidate.page === page);
-    const kind = typeof page.fields.kind === "string" && page.fields.kind.trim() !== "" ? page.fields.kind.trim() : undefined;
+    const kind = placeKind(page);
     const voice = (name: string): string | undefined => environmentAt(world, page).find(({ entry }) => comparableText(entry.name) === name)?.entry.value;
     const image = shownImage(sight.root, sight.context, world, page, (base) => knowsPage(sight.knowledge, base));
     const map = mapOf(world, page).root;
@@ -392,4 +392,10 @@ function fromText(from: NonNullable<MapPlace["from"]>, unit: ShownMap["unit"]): 
 function km(metres: number): number
 {
     return Math.round(metres / 10) / 100;
+}
+
+/** A place's kind as the page writes it (POS-7), such as village; undefined when it has none, or an empty one (D-107). */
+export function placeKind(page: Page): string | undefined
+{
+    return typeof page.fields.kind === "string" && page.fields.kind.trim() !== "" ? page.fields.kind.trim() : undefined;
 }

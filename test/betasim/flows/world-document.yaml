@@ -1,0 +1,8 @@
+name: Read again the letter your character carries
+covers: [world-documents]
+setup: {}
+steps:
+  - tapOn: World
+  - tapOn: Documents
+  - tapOn: Lettera del castellano
+  - assertVisible: Dategli acqua, fuoco e risposte

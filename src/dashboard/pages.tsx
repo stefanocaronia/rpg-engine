@@ -1,4 +1,4 @@
-// The pages' head, their section's icon and name in the accent (D-409); the sections still to come (D-276, D-309), each saying what it will hold; and About:
+// The pages' head, their section's icon and name in the accent (D-409); and About:
 // the product with its links, the game system, then small the licences, the credits and how it was made.
 import type { Section } from "./address.ts";
 import { sectionLabel } from "./address.ts";
@@ -18,20 +18,6 @@ export function PageHead({ section, id, title }: { section: Section; id: string;
             </span>
             <h2 id={id}>{title ?? sectionLabel(section)}</h2>
         </div>
-    );
-}
-
-/** A section the page does not have yet: what it will hold. */
-export function Upcoming({ section }: { section: Section; })
-{
-    return (
-        <section class="page-stack" aria-labelledby="upcoming-title">
-            <PageHead section={section} id="upcoming-title" />
-            <div class="upcoming">
-                <p>{upcoming(section)}</p>
-                <p class="upcoming-note">{t("It comes in a next step.")}</p>
-            </div>
-        </section>
     );
 }
 
@@ -139,10 +125,4 @@ const mitLicence = "https://opensource.org/license/mit";
 function withLinks(text: string)
 {
     return text.split(/(https?:\/\/[^\s]*[^\s.,;)])/).map((part, index) => (index % 2 === 1 ? <a key={index} href={part} target="_blank" rel="noreferrer">{part}</a> : part));
-}
-
-/** What a section to come will hold, as the plan says (D-269). */
-function upcoming(section: Section): string | undefined
-{
-    return section === "world" ? t("What your character knows, the documents found and the calendar; the world map later.") : undefined;
 }

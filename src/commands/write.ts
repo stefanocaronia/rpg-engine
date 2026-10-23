@@ -379,7 +379,11 @@ function countedTextNotes(existing: Page | undefined, page: Page): string[]
 /** A type as the parameter names it, with what tells a place from an item (D-155, D-156). */
 function typeText(type: PageType): string
 {
-    return type === "place" ? "place (a room, a house, a ship, a region)" : type === "item" ? "item (a thing, even one with someone inside, such as a cart)" : type;
+    return type === "place"
+        ? "place (a room, a house, a ship, a region)"
+        : type === "item"
+        ? "item (a thing, even one with someone inside, such as a cart; one with words or a drawing to read again, such as a letter, a notice or a map, has document=letter, notice, map…)"
+        : type;
 }
 
 /** Writes the fields of a copy in the open scene (INH-14): only what differs from its creature, never its text, the creature it copies or fixed fields. */

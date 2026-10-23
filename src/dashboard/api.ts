@@ -5,6 +5,12 @@ import { t } from "./text.ts";
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
 export type SavesView = Extract<View, { kind: "saves"; }>;
 
+/** A picture's address, with when its file last changed, so that it comes again only when it changes. */
+export function pictureAddress(picture: { file: string; version: number; }): string
+{
+    return `/images/${encodeURIComponent(picture.file)}?v=${picture.version}`;
+}
+
 /** What view gives: the party, with the last rolls, as many as asked; or a page. */
 export async function readView(page?: string, rolls?: number): Promise<View>
 {
@@ -94,6 +100,22 @@ export async function readJournal(): Promise<JournalView | undefined>
     }
 
     return body.kind === "journal" ? body : undefined;
+}
+
+/** What the character knows, its documents and the calendar, as the World section shows them besides the map (D-276). */
+export type WorldView = Extract<View, { kind: "world"; }>;
+
+/** What the character knows, its documents and the calendar; none before there is a player character, or from a server older than the page. */
+export async function readWorld(): Promise<WorldView | undefined>
+{
+    const response = await fetch("/api/view?world=true");
+    const body = await response.json() as View | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body.kind === "world" ? body : undefined;
 }
 
 /** One of the player's notes (D-371), as the server keeps it. */

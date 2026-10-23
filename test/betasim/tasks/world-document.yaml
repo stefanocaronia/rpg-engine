@@ -1,0 +1,5 @@
+goal: "Read again the letter the castellan gave your character."
+flow: world-document
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 1
+expected_seconds: 30

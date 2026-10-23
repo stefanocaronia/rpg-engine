@@ -30,6 +30,7 @@ import { calendarDayOf, readPresent } from "./game-time.ts";
 import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
+import { knownDocuments, knownEntries, type KnownEntry, knownEntryText, type ShownCalendar, shownCalendar, type ShownDocument } from "./game-view-world.ts";
 import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
 import { importShown, type ShownImport } from "./import.ts";
 import { countersText, lineCounters, lineExperience } from "./page-counters.ts";
@@ -169,6 +170,8 @@ export type ViewResult =
     | { kind: "setup"; mode: Mode; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; }
     /** The journal (D-367): the quests the player character knows, and the story by scenes. */
     | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts: ShownThought[]; }
+    /** The World section but the map (VIEW-11): the pages the character knows, each as it knows it, the documents it has or read, and the calendar. */
+    | { kind: "world"; known: KnownEntry[]; documents: ShownDocument[]; calendar: ShownCalendar; }
     /** The saves and what the mode allows (D-359): make one, go back to some, start over from the first. */
     | { kind: "saves"; mode: SaveMode; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     | { kind: "unknown"; text: string; };
@@ -193,6 +196,7 @@ export const view = defineCommand({
         saves: z.boolean().optional().describe("for the dashboard: the saves, and what the player may do with each"),
         setup: z.boolean().optional().describe("for the dashboard: the campaign's mode and name, what the next mode needs, and the setup's questions"),
         journal: z.boolean().optional().describe("for the dashboard: the quests the character knows, with goals, counters, clock and deadline, and the story by scenes"),
+        world: z.boolean().optional().describe("for the dashboard: the pages the character knows, each with the opening of its text, the documents it has or read, and the calendar with the deadlines it knows"),
         as: z.string().optional().describe("for a character agent: the character whose view this is, other than the player's; alone or with page"),
     }),
 
@@ -200,14 +204,14 @@ export const view = defineCommand({
     {
         const root = requireCampaign(context.folder);
 
-        if (input.as !== undefined && [input.diary, input.rolls, input.map, input.settings, input.saves, input.setup, input.journal].some((given) => given !== undefined)) {
-            throw new Error("Give as alone or with page: it is what that character knows, apart from the diary, the rolls, the map, the settings, the saves, the setup and the journal.");
+        if (input.as !== undefined && [input.diary, input.rolls, input.map, input.settings, input.saves, input.setup, input.journal, input.world].some((given) => given !== undefined)) {
+            throw new Error("Give as alone or with page: it is what that character knows, apart from the diary, the rolls, the map, the settings, the saves, the setup, the journal and the world.");
         }
 
         // The player's settings, with or without a player character (D-341).
         if (input.settings === true) {
-            if ([input.page, input.diary, input.rolls, input.map, input.journal].some((given) => given !== undefined)) {
-                throw new Error("Give settings alone: they are the player's settings, apart from the page, the diary, the rolls, the map and the journal.");
+            if ([input.page, input.diary, input.rolls, input.map, input.journal, input.world].some((given) => given !== undefined)) {
+                throw new Error("Give settings alone: they are the player's settings, apart from the page, the diary, the rolls, the map, the journal and the world.");
             }
 
             return { kind: "settings", settings: shownPlayerSettings(root, context) };
@@ -215,8 +219,8 @@ export const view = defineCommand({
 
         // The setup, with or without a player character (D-370).
         if (input.setup === true) {
-            if ([input.page, input.diary, input.rolls, input.map, input.settings, input.saves, input.journal].some((given) => given !== undefined)) {
-                throw new Error("Give setup alone: it is the campaign's setup, apart from the page, the diary, the rolls, the map, the settings, the saves and the journal.");
+            if ([input.page, input.diary, input.rolls, input.map, input.settings, input.saves, input.journal, input.world].some((given) => given !== undefined)) {
+                throw new Error("Give setup alone: it is the campaign's setup, apart from the page, the diary, the rolls, the map, the settings, the saves, the journal and the world.");
             }
 
             const world = campaignWorld(root, context);
@@ -235,8 +239,8 @@ export const view = defineCommand({
         }
 
         if (input.saves === true) {
-            if ([input.page, input.diary, input.rolls, input.map, input.settings, input.journal].some((given) => given !== undefined)) {
-                throw new Error("Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map, the settings and the journal.");
+            if ([input.page, input.diary, input.rolls, input.map, input.settings, input.journal, input.world].some((given) => given !== undefined)) {
+                throw new Error("Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map, the settings, the journal and the world.");
             }
 
             return shownSaves(root, context);
@@ -255,6 +259,22 @@ export const view = defineCommand({
         }
 
         const knowledge = knowledgeOf(root, world, pc);
+
+        // What the character knows and the calendar (VIEW-11).
+        if (input.world === true) {
+            if ([input.page, input.diary, input.rolls, input.map, input.journal].some((given) => given !== undefined)) {
+                throw new Error("Give world alone: it is what the character knows and the calendar, apart from the page, the diary, the rolls, the map and the journal.");
+            }
+
+            const known = (name: unknown): string | undefined => shownName(world, knowledge, name);
+            const journal = shownJournal(root, world, knowledge, readPresent(root).date, () => undefined, known, () => ({}));
+            return {
+                kind: "world",
+                known: knownEntries(root, context, world, knowledge),
+                documents: knownDocuments(root, context, world, knowledge),
+                calendar: shownCalendar(root, context, journal),
+            };
+        }
 
         // The journal (D-367, VIEW-8, VIEW-9).
         if (input.journal === true) {
@@ -426,6 +446,12 @@ export const view = defineCommand({
                     ...(result.quests.length === 0 ? ["No quests yet."] : result.quests.map(questText)),
                     ...result.chapters.map((chapter) => `${chapter.title ?? "Between scenes"}${chapter.date === undefined ? "" : `, ${chapter.date}`}${chapter.summary === undefined ? "" : `: ${chapter.summary}`}`),
                     ...result.thoughts.map((thought) => `${thought.who}'s diary${thought.date === undefined ? "" : `, ${thought.date}`}: ${thought.text}`),
+                ].join("\n");
+            case "world":
+                return [
+                    ...(result.known.length === 0 ? ["Known: nothing yet."] : ["Known:", ...result.known.map((entry) => `- ${knownEntryText(entry)}`)]),
+                    ...result.documents.map((document) => `Document: ${document.name} (${document.document}${document.carried ? ", carried" : ""})`),
+                    ...result.calendar.deadlines.map((deadline) => `Deadline of ${deadline.quest}: ${deadline.date}`),
                 ].join("\n");
             case "saves":
                 return [

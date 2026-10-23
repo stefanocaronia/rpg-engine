@@ -11,7 +11,7 @@ import type { ViewResult } from "../src/commands/view.ts";
 import type { Context, PicturesReady, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/dashboard-server.ts";
-import { readAddress } from "../src/dashboard/address.ts";
+import { readAddress, sectionAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { Asked, JournalFact, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/game-words.ts";
@@ -474,7 +474,7 @@ describe("the saves as the dashboard shows them (D-359)", () => {
         await ok("config", "saves", "free");
         expect(JSON.parse(await ok("view", "--saves", "--json"))).toMatchObject({ make: true, reset: ["start"], saves: [{ load: true }, { point: "start", load: false }] });
         expect((await runCommandLine(["view", "--saves", "--map"], context)).output).toBe(
-            "Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map, the settings and the journal.",
+            "Give saves alone: they are the campaign's saves, apart from the page, the diary, the rolls, the map, the settings, the journal and the world.",
         );
     });
 });
@@ -809,6 +809,12 @@ describe("the page's reading of a sheet (D-273)", () => {
         // The packages, a page of the menu (D-475).
         expect(readAddress("#/packages")).toEqual({ section: "packages" });
         expect(readAddress("#/packages/add")).toEqual({ section: "packages", tab: "add" });
+        // What is open in a tab: a page of the lore, a chapter of the story (D-276).
+        expect(readAddress("#/world/lore/Locanda%20del%20Guado")).toEqual({ section: "world", tab: "lore", name: "Locanda del Guado" });
+        expect(readAddress("#/journal/story/3")).toEqual({ section: "journal", tab: "story", name: "3" });
+        expect(sectionAddress("world", "lore", "Città/Nord")).toBe("#/world/lore/Citt%C3%A0%2FNord");
+        expect(readAddress(sectionAddress("world", "lore", "Città/Nord"))).toEqual({ section: "world", tab: "lore", name: "Città/Nord" });
+        expect(sectionAddress("world", undefined, "Guadoscuro")).toBe("#/world");
         expect(readAddress("#/elsewhere/Ettore")).toEqual({ section: "party" });
         expect(readAddress("#/party/%E0%A4%A")).toEqual({ section: "party" });
     });

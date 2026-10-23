@@ -15,8 +15,10 @@ import {
     readSection,
     secretNames,
     stacksOf,
+    systemPageNamed,
     textParts,
     textsIn,
+    withLinksAsWords,
     withoutComments,
     type World,
 } from "../pages/index.ts";
@@ -89,14 +91,14 @@ export function knownText(world: World, knowledge: Knowledge, page: Page): strin
         ...partsOf(page),
         ...inheritedByBase(world, page).flatMap((group) => group.parts.map((part) => ({ ...part, holder: group.base }))),
     ].filter((part) => isShown(knowledge, page, part));
-    return withoutComments([knownIntroduction(world, knowledge, page), ...parts.map((part) => part.text)].filter((text) => text !== "").join("\n\n"));
+    return inKnownWords(world, knowledge, withoutComments([knownIntroduction(world, knowledge, page), ...parts.map((part) => part.text)].filter((text) => text !== "").join("\n\n")));
 }
 
 /** A page's introduction as the character knows it (VIEW-3): its own, else that of its nearest base it knows; without comments. */
 export function knownIntroduction(world: World, knowledge: Knowledge, page: Page): string
 {
     const introduction = introductionText(page.body) || (baseChain(world, page).filter((base) => knowsPage(knowledge, base)).map((base) => introductionText(base.body)).find((text) => text !== "") ?? "");
-    return withoutComments(introduction);
+    return inKnownWords(world, knowledge, withoutComments(introduction));
 }
 
 /**
@@ -108,7 +110,7 @@ export function discoveredSecrets(world: World, knowledge: Knowledge): { page: s
     const own = new Set([knowledge.pc, ...baseChain(world, knowledge.pc)]);
     return knownLinks(world, knowledge.pc).flatMap((link) => {
         const part = link.page === undefined || (link.secret ?? "") === "" || own.has(link.page) ? undefined : partContent(link.page.body, link.secret ?? "");
-        return part?.secret === true ? [{ page: link.name, name: link.secret ?? "", text: withoutComments(part.content) }] : [];
+        return part?.secret === true ? [{ page: link.name, name: link.secret ?? "", text: inKnownWords(world, knowledge, withoutComments(part.content)) }] : [];
     });
 }
 
@@ -150,10 +152,23 @@ export function knownPart(world: World, knowledge: Knowledge, page: Page, name: 
 
         const whole = isSecretText(part.text) ? part.text : (readSection(holder.body, part.name) ?? part.text);
         const kept = isSecretText(part.text) ? [part] : partsOf({ ...holder, body: whole }).map((inner) => ({ ...inner, holder })).filter((inner) => isShown(knowledge, page, inner));
-        return withoutComments(kept.map((inner) => inner.text).join("\n\n"));
+        return inKnownWords(world, knowledge, withoutComments(kept.map((inner) => inner.text).join("\n\n")));
     }
 
     return undefined;
+}
+
+/** Whether a page's own text, not its bases', tells the character something: its introduction, or a section or secret of it the character may read (VIEW-3). */
+export function writesKnownText(knowledge: Knowledge, page: Page): boolean
+{
+    const said = (text: string | undefined): boolean => withoutComments(text ?? "").trim() !== "";
+    return said(introductionText(page.body)) || partsOf(page).some((part) => isShown(knowledge, page, part) && said(partContent(page.body, part.name)?.content));
+}
+
+/** A text as the character may read it (VIEW-3): a link to a page it does not know, or to none, written as its words, so that no name tells the page exists. */
+function inKnownWords(world: World, knowledge: Knowledge, text: string): string
+{
+    return withLinksAsWords(text, (link) => [...pagesWithNameOrAlias(world, link.page), systemPageNamed(world, link.page)].some((page) => page !== undefined && knowsPage(knowledge, page)));
 }
 
 /** Whether a part shows to the player character: a secret it discovered, or a section of the page or of a base it knows (D-254). */
