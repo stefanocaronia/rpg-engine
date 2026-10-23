@@ -269,8 +269,8 @@ export interface Spending
 export interface Player
 {
     choose(question: string, title: string, labels: string[], signal?: AbortSignal, rows?: Rows): Promise<number | Said | undefined | "unavailable" | "absent">;
-    /** Asks where the player's character moves on the map of its place (ASK-11): the square, the change of mind as its one button (0), or the player's words; only a page can. */
-    chooseSquare?(question: string, title: string, change: string, signal?: AbortSignal): Promise<Picked | 0 | Said | undefined | "absent">;
+    /** Asks where a player character, who, moves on the map of its place (ASK-11): the square, the change of mind as its one button (0), or the player's words; only a page can. */
+    chooseSquare?(question: string, title: string, change: string, who: string, signal?: AbortSignal): Promise<Picked | 0 | Said | undefined | "absent">;
     /** Asks the player to spend the dice of a rest one at a time (ASK-14), until the button that ends it (0); only a page can. */
     spendDice?(question: string, title: string, done: string, spending: Spending, signal?: AbortSignal): Promise<0 | undefined | "absent">;
     /** Whether a question waits for the player there now, as on the dashboard's page; a form does not say. */

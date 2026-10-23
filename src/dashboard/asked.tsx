@@ -35,12 +35,13 @@ const scrollKeys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home"
 
 /**
  * The master's question. `yourTurn` when it is asked on the turn of whom it asks; `who`, with more than one player character, the one it asks, whose portrait
- * takes the robot's place, the robot small on its edge, and whose name it says (D-480 (7)).
+ * takes the robot's place, the robot small on its edge, and whose name it says (D-480 (7)); `turnName`, then, whose turn it is, for a question that names no one.
  */
-export function AskedBanner({ asked, yourTurn, who, map, place, answered, onAnswered }: {
+export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answered, onAnswered }: {
     asked: Asked;
     yourTurn?: boolean;
     who?: Member | undefined;
+    turnName?: string | undefined;
     map?: ShownGrid;
     place?: string;
     answered?: boolean;
@@ -447,7 +448,7 @@ export function AskedBanner({ asked, yourTurn, who, map, place, answered, onAnsw
             {who === undefined ? <img class="asked-robot" src="/assets/favicon.svg" alt="" /> : <AskedWho member={who} />}
             <div class="asked-body">
                 {/* On the player's turn in a fight, the banner says so: the turn's own notice gives way to it (D-315). With more player characters, whom it asks. */}
-                {yourTurn ? <p class="asked-turn">{turnWords(who?.name)}</p> : who !== undefined && <p class="asked-turn">{t("For {name}", { name: who.name })}</p>}
+                {yourTurn ? <p class="asked-turn">{turnWords(who?.name ?? turnName)}</p> : who !== undefined && <p class="asked-turn">{t("For {name}", { name: who.name })}</p>}
                 <h2 class="asked-title">{asked.title}</h2>
                 <p id={`asked-${asked.id}`} class="asked-question" role="alert">
                     {who !== undefined && <span class="visually-hidden">{`${who.name}: `}</span>}

@@ -251,7 +251,7 @@ async function squareChosen(root: string, context: Context, question: string, gi
 
     // Without a page no map is in sight: the master asks where in the story's words, and puts them on the square that fits.
     const asked = `${question} (where their character goes in ${place.name}, in the story's words; then move them with move and at to the square that fits)`;
-    const chosen = context.page?.chooseSquare === undefined ? "absent" : await context.page.chooseSquare(question, words.square, words.change, context.signal);
+    const chosen = context.page?.chooseSquare === undefined ? "absent" : await context.page.chooseSquare(question, words.square, words.change, who, context.signal);
 
     // A call the user stopped logs nothing (ASK-9).
     if (chosen === "absent" || context.signal?.aborted === true) {

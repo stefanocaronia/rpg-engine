@@ -150,9 +150,10 @@ function App()
 
         try {
             const [first, told, actsNow] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined), readActs().catch(() => undefined)]);
-            const asked = told === undefined || first.kind !== "overview" ? told : withSaver(told, first.party);
-            // With more than one player character, a question for one puts them in the foreground: the place, the map and the squares are theirs (VIEW-12).
-            const focus = first.kind === "overview" && first.foreground !== undefined && asked?.who !== first.foreground ? playerNamed(first.party, asked?.who)?.name : undefined;
+            const asked = told;
+            // With more than one player character, a question for one elsewhere puts them in the foreground: the place, the map and the squares are theirs (VIEW-12).
+            const here = first.kind === "overview" && (first.place?.here ?? []).some((one) => one.name === asked?.who);
+            const focus = first.kind === "overview" && first.foreground !== undefined && asked?.who !== first.foreground && !here ? playerNamed(first.party, asked?.who)?.name : undefined;
             const overview = focus === undefined ? first : await readView(undefined, rollsAsked.current, focus).catch(() => first);
             const party = overview.kind === "overview" ? overview.party : [];
             partyNow.current = party;
@@ -362,11 +363,31 @@ function App()
 
     const member = shown.party.find((candidate) => candidate.name === shown.chosen);
     const players = shown.party.filter((candidate) => candidate.role === "pc");
-    // With more than one player character the page names each one, never "you" (D-480 (7)).
-    const several = players.length > 1;
+    // With more than one living player character the page names each one, never "you" (D-480 (7)); the view gives the foreground then alone.
+    const several = shown.foreground !== undefined;
     // The one in the foreground, whose place the page shows; and whose card is at hand in a fight, the one whose sheet was read.
     const lead = playerNamed(shown.party, shown.foreground) ?? players[0];
     const actor = member?.role === "pc" ? member : lead;
+    // Who acts from a sheet acts where they are: the place of one not in the foreground, read for them (VIEW-12).
+    const actsElsewhere = acting !== undefined && several && member?.role === "pc" && member.name !== shown.foreground ? member.name : undefined;
+    const [actPlace, setActPlace] = useState<{ who: string; place?: ShownPlace; }>();
+
+    useEffect(() => {
+        if (actsElsewhere === undefined) {
+            return;
+        }
+
+        let current = true;
+        void readView(undefined, 1, actsElsewhere).then((view) => {
+            if (current) {
+                setActPlace({ who: actsElsewhere, ...(view.kind === "overview" && view.place !== undefined ? { place: view.place } : {}) });
+            }
+        }, () => undefined);
+
+        return () => {
+            current = false;
+        };
+    }, [actsElsewhere, shown.version]);
     // A number of a sheet thrown for fun, each a throw of its own (D-280).
     const throwFromSheet: FreeRoll = (roll, label, who) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label, ...(who === undefined ? {} : { who }) }));
 
@@ -597,6 +618,7 @@ function App()
                             asked={shown.asked}
                             yourTurn={yourTurn && (asker === undefined || asker.name === turnOf?.name)}
                             who={asker}
+                            turnName={turnName}
                             map={shown.place?.map}
                             place={shown.place?.name}
                             answered={answering === shown.asked.id}
@@ -718,7 +740,7 @@ function App()
                         <ActSheet
                             start={acting.start}
                             self={several ? member?.name : undefined}
-                            place={shown.place}
+                            place={actsElsewhere === undefined ? shown.place : actPlace?.who === actsElsewhere ? actPlace.place : undefined}
                             scene={shown.openScene}
                             companions={shown.party.filter((one) => one.role === "companion").map((one) => one.name)}
                             reply={reply}
@@ -754,13 +776,6 @@ function calledOf(party: Member[], section: string, asked: Asked | undefined, sc
     const asking = playerNamed(party, asked?.who);
     const acting = hasTurns(scene) ? playerNamed(party, scene.turn) : undefined;
     return (section === "party" ? asking ?? acting : acting ?? asking) ?? playerNamed(party, foreground) ?? party[0];
-}
-
-/** A death save with who rolls it: the server names no one for a die alone, so the one player character at their dying point, as the question comes. */
-function withSaver(asked: Asked, party: Member[]): Asked
-{
-    const dying = party.filter((member) => member.role === "pc" && member.dying !== undefined);
-    return asked.save === undefined || asked.who !== undefined || dying.length !== 1 ? asked : { ...asked, who: dying[0].name };
 }
 
 /** A death save's card with its outcome, as what the system's code wrote left who rolled it, in the party as last read (D-461). */

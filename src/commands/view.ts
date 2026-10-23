@@ -112,7 +112,7 @@ export type ViewResult =
         /** The master's mood, which the robot shows, and their last moment, which the dashboard shows for a few seconds when it is new (MOOD-4, MOOD-6). */
         master: { mood: Mood; moment?: MoodMoment; };
         party: PartyMember[];
-        /** With more than one player character, the one in the foreground, whose place the view gives (VIEW-12). */
+        /** With more than one living player character, the one in the foreground, whose place the view gives (VIEW-12). */
         foreground?: string;
         /** Where the player character is, and the open scene, as data for the dashboard (VIEW-6). */
         place?: ShownPlace;
@@ -429,7 +429,8 @@ export const view = defineCommand({
             ...(today === undefined ? {} : { calendar: today }),
             master: { mood: masterMood(root), ...(moment === undefined ? {} : { moment }) },
             party: [...players, ...companions].map(member),
-            ...(players.length > 1 ? { foreground: pc.name } : {}),
+            // The page speaks of them by name while more than one lives; with one living, as of one (VIEW-12).
+            ...(players.filter((page) => page.fields.status !== "dead").length > 1 ? { foreground: pc.name } : {}),
             ...(place === undefined ? {} : { place }),
             ...(openScene === undefined ? {} : { openScene }),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
@@ -494,7 +495,7 @@ export const view = defineCommand({
             default: {
                 const more = result.diary.length < result.total ? ` (the last ${result.diary.length} of ${result.total}: view, diary all gives every one)` : "";
                 return [
-                    result.party.map((member) => memberLine(member, result.foreground !== undefined)).join("\n"),
+                    result.party.map((member) => memberLine(member, result.party.filter((one) => one.role === "pc").length > 1)).join("\n"),
                     result.quests.length === 0 ? "" : `Open quests: ${result.quests.join(" · ")}`,
                     result.scene === undefined ? "" : `Scene: ${result.scene}`,
                     result.diary.length === 0 ? "Diary: nothing yet." : `Diary${more}:\n${result.diary.map((line) => `- ${line}`).join("\n")}`,

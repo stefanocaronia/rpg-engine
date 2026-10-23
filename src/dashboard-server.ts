@@ -736,9 +736,10 @@ function pagePlayer(served: Served): Player
             const chosen = await put(question, title, labels, signal, rows === undefined ? {} : { rows });
             return typeof chosen === "object" && "square" in chosen ? undefined : chosen;
         },
-        async chooseSquare(question, title, change, signal)
+        async chooseSquare(question, title, change, who, signal)
         {
-            const chosen = await put(question, title, [change], signal, { square: true });
+            // Whose move it is, for the page to show the map of where they stand (D-480 (7)).
+            const chosen = await put(question, title, [change], signal, { square: true, rows: { who, fields: [] } });
             return typeof chosen === "number" ? (chosen === 0 ? 0 : undefined) : chosen;
         },
         async spendDice(question, title, done, spending, signal)

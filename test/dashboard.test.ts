@@ -1272,7 +1272,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         await rolling;
         const asking = ask.run(ask.input.parse({ question: "Dove ti sposti?", square: true }), served);
         const asked = await waitAsked();
-        expect(asked).toMatchObject({ question: "Dove ti sposti?", title: "Movimento", labels: ["Cambio idea"], square: true });
+        expect(asked).toMatchObject({ question: "Dove ti sposti?", title: "Movimento", labels: ["Cambio idea"], square: true, who: "Ettore" });
         expect((await send("POST", "/api/answer", { asked: asked.id, square: "zz" })).status).toBe(400);
         expect((await send("POST", "/api/answer", { asked: asked.id, square: "d2" })).status).toBe(202);
         expect(ask.format(await asking)).toBe("The player chose where to go: Ettore: now on D2 in Sala, 3 m from B2.");
