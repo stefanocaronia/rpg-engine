@@ -14,7 +14,7 @@ import { soundPref, useChoice, usePref } from "../prefs.ts";
 import { trayCheck, useRequested } from "../requested.ts";
 import { arrowStep, t } from "../text.ts";
 import { diceToThrow, type RareFace, rareFace } from "./models.ts";
-import { diceText, dieName, doubled, type Keep, keepsOf, keptOf, keptTotal, notation, trayDice, withDropped } from "./pool.ts";
+import { diceText, dieName, doubled, droppedBy, type Keep, keptOf, keptTotal, notation, trayDice, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
 import { diceEdgesPref, diceSetPref } from "./sets.ts";
 import { wakeSound } from "./sounds.ts";
@@ -301,7 +301,7 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         if (sheetThrow !== undefined) {
             const { roll, label, who } = sheetThrow;
             // Of a roll better or worse, as 2d20kl1, only the die its notation keeps counts.
-            const dice = withDropped(roll.dice.map((sides): ThrownDie => ({ sides, value: fairDie(sides) })), keepsOf(roll.notation));
+            const dice = droppedBy(roll.dice.map((sides): ThrownDie => ({ sides, value: fairDie(sides) })), roll.notation);
             const total = keptTotal(dice, roll.modifier);
             void throwAndShow(
                 { free: true, title: label, notation: roll.notation, dice, modifier: roll.modifier, total, text: diceText(dice, roll.modifier), ...(who === undefined ? {} : { who }) },
@@ -310,8 +310,8 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         }
     }, [sheetThrow?.number]);
 
-    // Only the kinds with two dice or more keep a choice of which count.
-    const shownKeeps = keptOf(pool, keeps);
+    // Only the kinds with two dice or more keep a choice of which count; dice doubled, as a critical hit's damage, all count.
+    const shownKeeps = double ? {} : keptOf(pool, keeps);
     // The dice a throw throws: those chosen, or twice as many.
     const thrown = double ? doubled(pool) : pool;
     // The check the master asks whose dice and number the tray's dice are, when one alone is (D-330); dice doubled are a free throw.

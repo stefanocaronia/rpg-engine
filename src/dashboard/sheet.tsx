@@ -125,6 +125,13 @@ export function SheetAtHand({ member, sheet, names, version, onRoll }: { member:
     );
 }
 
+/** What a row shows beside its value, when it says something more: a written speed equal to the one that counts now says nothing. */
+function shownBeside(value: SheetValue): string | undefined
+{
+    const beside = besideLabel(value);
+    return beside === value.text ? undefined : beside;
+}
+
 /** Values in a line of boxes, as under someone's name (D-299): each its label and its drawing, flashing when it changes. */
 function ValueLine({ values, fields }: { values: SheetValue[]; fields: ReadonlySet<string>; })
 {
@@ -137,7 +144,7 @@ function ValueLine({ values, fields }: { values: SheetValue[]; fields: ReadonlyS
                         <ValueDrawing value={value} label={fieldLabel(value.field, fields)} />
                     </Changing>
                     {/* What is written beside a number worked out, as the speed written beside the one that counts now. */}
-                    {value.beside !== undefined && widgetOf(value) !== "progress" && <span class="beside num">{shownText(value.beside)}</span>}
+                    {shownBeside(value) !== undefined && widgetOf(value) !== "progress" && <span class="beside num">{shownText(shownBeside(value) ?? "")}</span>}
                 </span>
             ))}
         </div>
@@ -296,7 +303,7 @@ function Row(props: Line)
     const { value, label } = props;
     const widget = widgetOf(value);
     const shownLabel = phraseLabel(label);
-    const beside = besideLabel(value);
+    const beside = shownBeside(value);
     const marks = value.marks === 0 ? null : <span class="marks" aria-label={value.marks === 1 ? t("1 mark") : t("{count} marks", { count: value.marks })}>{"●".repeat(value.marks)}</span>;
     // A list of bonds says how many it holds of the most it may, as 2/3; a load the stage it reaches, as Encumbered.
     const held = value.most === undefined ? undefined : { count: value.items?.length ?? 0, most: value.most };

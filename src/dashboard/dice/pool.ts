@@ -60,10 +60,22 @@ export function withDropped(dice: ThrownDie[], keeps: Partial<Record<number, Kee
     return dice.map((die, index) => (dropped.has(index) ? { ...die, dropped: true } : die));
 }
 
-/** Which of a kind count, as a notation writes it: 2d20kl1 keeps the lowest of the d20; a kind it says nothing of, all. */
-export function keepsOf(dice: string): Partial<Record<number, Keep>>
+/**
+ * The dice thrown with those a notation does not count dropped, as the system writes a better or a worse roll: 2d20kl1 keeps the lowest d20, 2d20dl1 drops it,
+ * 4d6kh3 keeps the three highest; a kind it says nothing of counts whole.
+ */
+export function droppedBy(dice: ThrownDie[], written: string): ThrownDie[]
 {
-    return Object.fromEntries([...dice.toLowerCase().matchAll(/\d*d(\d+)k([hl])1?/g)].map(([, sides, way]) => [Number(sides), way === "h" ? "highest" : "lowest"]));
+    const dropped = new Set(
+        [...written.toLowerCase().matchAll(/\d*d(\d+)([kd])([hl])(\d*)/g)].flatMap(([, sides, rule, which, count]) => {
+            const ofKind = dice.map((die, index) => ({ die, index })).filter(({ die }) => die.sides === Number(sides)).toSorted((first, second) => first.die.value - second.die.value);
+            const many = Math.min(ofKind.length, count === "" ? 1 : Number(count));
+            // From the lowest up: keeping the highest drops all but the top ones, dropping the lowest drops the bottom ones.
+            const gone = rule === "k" ? (which === "h" ? ofKind.slice(0, ofKind.length - many) : ofKind.slice(many)) : which === "l" ? ofKind.slice(0, many) : ofKind.slice(ofKind.length - many);
+            return gone.map(({ index }) => index);
+        }),
+    );
+    return dice.map((die, index) => (dropped.has(index) ? { ...die, dropped: true } : die));
 }
 
 /** The total of dice thrown: the faces that count, the dropped ones left out, and the number added. */

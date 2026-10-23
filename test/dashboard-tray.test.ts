@@ -1,6 +1,6 @@
 // The dice the tray throws by itself (D-284, D-337): which of a kind count, as a notation and as the chat writes them, and the checks they answer (D-330).
 import { describe, expect, it } from "vitest";
-import { diceText, doubled, keepsOf, keptOf, keptTotal, notation, trayThrows, withDropped } from "../src/dashboard/dice/pool.ts";
+import { diceText, doubled, droppedBy, keptOf, keptTotal, notation, trayThrows, withDropped } from "../src/dashboard/dice/pool.ts";
 import { type PageRoll, readFree, withFree } from "../src/dashboard/free-rolls.ts";
 import { sameDice } from "../src/dashboard/labels.ts";
 import { requestedOf, trayCheck } from "../src/dashboard/requested.ts";
@@ -40,12 +40,14 @@ describe("which dice of a kind count in the tray (D-337)", () => {
 });
 
 describe("a number of the sheet rolled for fun, and the dice doubled", () => {
-    it("keeps of a roll better or worse only the die its notation keeps, as 2d20kl1+3 counts the lowest d20 alone", () => {
-        expect([keepsOf("2d20kl1+3"), keepsOf("2d20kh1-1"), keepsOf("1d20+5"), keepsOf("2d20KH1+1d6")]).toEqual([{ 20: "lowest" }, { 20: "highest" }, {}, { 20: "highest" }]);
+    it("keeps of a roll better or worse only the dice its notation keeps, as 2d20kl1+3 counts the lowest d20 alone", () => {
         const two = [{ sides: 20, value: 4 }, { sides: 20, value: 17 }];
-        expect(keptTotal(withDropped(two, keepsOf("2d20kl1+3")), 3)).toBe(7);
-        expect(keptTotal(withDropped(two, keepsOf("2d20kh1+3")), 3)).toBe(20);
-        expect(keptTotal(withDropped(two, keepsOf("2d20+3")), 3)).toBe(24);
+        const total = (written: string, dice = two, modifier = 3): number => keptTotal(droppedBy(dice, written), modifier);
+        expect([total("2d20kl1+3"), total("2d20KH1+3"), total("2d20+3"), total("2d20kh1-1", two, -1)]).toEqual([7, 20, 24, 16]);
+        // Dropping one is keeping the other; a count keeps or drops as many.
+        expect([total("2d20dl1+3"), total("2d20dh1+3")]).toEqual([20, 7]);
+        const four = [{ sides: 6, value: 5 }, { sides: 6, value: 1 }, { sides: 6, value: 6 }, { sides: 6, value: 3 }];
+        expect([total("4d6kh3", four, 0), total("4d6dl1", four, 0), total("4d6kl2", four, 0), total("4d6dh2", four, 0)]).toEqual([14, 14, 4, 4]);
     });
 
     it("doubles the dice, never the number added, as a critical hit's damage", () => {
