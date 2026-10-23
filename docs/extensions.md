@@ -47,7 +47,7 @@ export default weather;
 
 - A command is defined as the core's are, with the kit's zod; its `run` gives the text the master reads, and its description is at most 150 words. It appears on the command line and through MCP while the campaign uses the extension.
 - `timePassed` runs after `advance` and `travel`, once for all the time they let pass, and as the game starts, with `from` and `to` the same; its lines end their output. An error there becomes a line that says the time did pass.
-- `game` is all the code reaches: `roll` with the engine's dice, `now` and `calendarDay`, `units`, `party` (the player character's places and what their environment holds), its own `state`, kept in the campaign in `extensions/<name>/state.yaml`, and `log`. It writes no page and no other file.
+- `game` is all the code reaches: `roll` with the engine's dice, `now` and `calendarDay`, `units`, `party` (the first living player character's places and what their environment holds), its own `state`, kept in the campaign in `extensions/<name>/state.yaml`, and `log`. It writes no page and no other file.
 - A game system's code is loaded the same way, from a `package.json` of kind `system`, with hooks of its own: see [game-systems.md](game-systems.md#6-code).
 
 ## 4. Installing
