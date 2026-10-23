@@ -37,6 +37,7 @@ import { languageName } from "./languages.ts";
 import { PageHead } from "./pages.tsx";
 import { Confirm } from "./saves.tsx";
 import { Command } from "./settings.tsx";
+import { PageTabs } from "./tabs.tsx";
 import { arrowStep, foldedText, isolated, pageDirection, t } from "./text.ts";
 
 /** What happened to the player's last change, said where it was made: a row, a card, or the field. */
@@ -55,9 +56,6 @@ interface Said
 
 /** The page's three tabs (D-488, D-491 (13)): what is here, first, what can be added, and the campaign's library. */
 type PackagesTab = "installed" | "add" | "library";
-
-// The tabs in their order, which the arrows follow.
-const tabOrder: PackagesTab[] = ["installed", "add", "library"];
 
 /** A package's work as this page started it, before the server says it: with where it was asked. */
 type Sending = PackageWork & { at: string; };
@@ -97,7 +95,6 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     // The rows here before the last addition: those not among them are new.
     const known = useRef<Set<string>>();
     const seeing = useRef<PackageKind>();
-    const tabs = useRef<HTMLDivElement>(null);
     const shownTab: PackagesTab = tab === "add" || tab === "library" ? tab : "installed";
     const [library, setLibrary] = useState<LibraryView>();
     const [libraryProblem, setLibraryProblem] = useState<string>();
@@ -246,19 +243,6 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
         }
     };
 
-    // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
-    const moveTab = (event: KeyboardEvent): void => {
-        const step = arrowStep(event.key, true);
-        const at = (tabOrder.indexOf(shownTab) + step + tabOrder.length) % tabOrder.length;
-        const next = event.key === "Home" ? tabOrder[0] : event.key === "End" ? tabOrder.at(-1) : step === 0 ? undefined : tabOrder[at];
-
-        if (next !== undefined) {
-            event.preventDefault();
-            choose(next);
-            tabs.current?.querySelector<HTMLElement>(`#packages-tab-${next}`)?.focus();
-        }
-    };
-
     const systems = view?.systems ?? [];
     const adventures = view?.adventures ?? [];
     const languages = view?.languages ?? [];
@@ -272,45 +256,16 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
             <PageHead section="packages" id="packages-title" />
             <p class="packages-lead">{t("What is added to the game. The master hears of each change at their next move.")}</p>
             {problem !== undefined && <p class="saves-said problem" role="alert">{problem}</p>}
-            <div class="package-tabs" role="tablist" aria-label={t("Packages")} ref={tabs} onKeyDown={moveTab}>
-                <button
-                    type="button"
-                    role="tab"
-                    id="packages-tab-installed"
-                    aria-label={[t("Installed"), ...marksText(updates, missing)].join(", ")}
-                    aria-selected={shownTab === "installed"}
-                    aria-controls={shownTab === "installed" ? "packages-panel" : undefined}
-                    tabIndex={shownTab === "installed" ? 0 : -1}
-                    onClick={() => choose("installed")}
-                >
-                    {t("Installed")}
-                    <TabMarks updates={updates} missing={missing} />
-                </button>
-                <button
-                    type="button"
-                    role="tab"
-                    id="packages-tab-add"
-                    aria-selected={shownTab === "add"}
-                    aria-controls={shownTab === "add" ? "packages-panel" : undefined}
-                    tabIndex={shownTab === "add" ? 0 : -1}
-                    onClick={() => choose("add")}
-                >
-                    {t("Add")}
-                </button>
-                <button
-                    type="button"
-                    role="tab"
-                    id="packages-tab-library"
-                    aria-label={[t("Library"), ...marksText(0, away)].join(", ")}
-                    aria-selected={shownTab === "library"}
-                    aria-controls={shownTab === "library" ? "packages-panel" : undefined}
-                    tabIndex={shownTab === "library" ? 0 : -1}
-                    onClick={() => choose("library")}
-                >
-                    {t("Library")}
-                    <TabMarks updates={0} missing={away} />
-                </button>
-            </div>
+            <PageTabs
+                section="packages"
+                label={t("Packages")}
+                chosen={shownTab}
+                tabs={[
+                    { key: "installed", name: t("Installed"), label: [t("Installed"), ...marksText(updates, missing)].join(", "), marks: <TabMarks updates={updates} missing={missing} /> },
+                    { key: "add", name: t("Add") },
+                    { key: "library", name: t("Library"), label: [t("Library"), ...marksText(0, away)].join(", "), marks: <TabMarks updates={0} missing={away} /> },
+                ]}
+            />
             {view !== undefined && (
                 <div class="package-panel" id="packages-panel" role="tabpanel" aria-label={shownTab === "add" ? t("Add") : shownTab === "library" ? t("Library") : t("Installed")}>
                     {elsewhere !== undefined && <WorkNote work={elsewhere} whose={workTitle(elsewhere, catalog.read)} />}
@@ -760,13 +715,13 @@ function TabMarks({ updates, missing }: { updates: number; missing: number; })
     return (
         <>
             {updates > 0 && (
-                <span class="package-tab-mark" data-tip={updatesText} aria-hidden="true">
+                <span class="tab-mark" data-tip={updatesText} aria-hidden="true">
                     <Icon name="update" />
                     {updates}
                 </span>
             )}
             {missing > 0 && (
-                <span class="package-tab-mark missing" data-tip={missingText} aria-hidden="true">
+                <span class="tab-mark missing" data-tip={missingText} aria-hidden="true">
                     <Icon name="alert" />
                 </span>
             )}

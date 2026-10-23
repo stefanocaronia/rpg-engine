@@ -1512,13 +1512,18 @@ a {
     padding-bottom: 72px;
 }
 
-:is(.page-tabs, .journal-tabs, .package-tabs) {
+.page-tabs {
     display: flex;
     gap: 4px;
     border-bottom: 1px solid var(--rule);
 }
 
-:is(.page-tabs, .journal-tabs, .package-tabs) button {
+/* A tab's marks follow its name, as the updates of Packages' Installed. */
+.page-tabs button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     min-height: 40px;
     padding: 0 16px;
     border: 0;
@@ -1530,33 +1535,73 @@ a {
     cursor: pointer;
 }
 
-:is(.page-tabs, .journal-tabs, .package-tabs) button[aria-selected="true"] {
+.page-tabs button[aria-selected="true"] {
     border-bottom-color: var(--accent);
     color: var(--accent);
 }
 
 /* Four tabs in a long language do not fit a phone: they scroll sideways instead of widening the page, the ring of the focus drawn inside the row. */
-:is(.page-tabs, .journal-tabs) {
+.page-tabs {
     overflow-x: auto;
     scrollbar-width: thin;
 }
 
-:is(.page-tabs, .journal-tabs) button {
+.page-tabs button {
     flex: none;
     white-space: nowrap;
 }
 
-:is(.page-tabs, .journal-tabs) button:focus-visible {
+.page-tabs button:focus-visible {
     outline-offset: -2px;
 }
 
 @media (max-width: 600px) {
-    :is(.page-tabs, .journal-tabs) {
+    .page-tabs {
         gap: 2px;
     }
 
-    :is(.page-tabs, .journal-tabs) button {
+    .page-tabs button {
         padding: 0 10px;
+    }
+}
+
+/* A tab's mark: a count in the accent, or what is missing in red, each with its tip. */
+.tab-mark {
+    display: inline-flex;
+    position: relative;
+    align-items: center;
+    gap: 3px;
+    min-height: 20px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.tab-mark.missing {
+    padding: 0 4px;
+    background: color-mix(in srgb, var(--low) 14%, transparent);
+    color: var(--low);
+}
+
+.tab-mark svg.icon {
+    width: 13px;
+    height: 13px;
+}
+
+/* The last tab's mark is near the page's edge: its tip ends at the mark, else on a phone the page grows wider. */
+.page-tabs > [role="tab"]:last-child .tab-mark[data-tip]::before {
+    left: auto;
+    inset-inline-end: 0;
+    translate: 0 4px;
+}
+
+@media (hover: hover) {
+    .page-tabs > [role="tab"]:last-child .tab-mark[data-tip]:hover::before {
+        translate: 0 0;
     }
 }
 
@@ -2934,7 +2979,7 @@ a {
 
 @media (pointer: coarse) {
     .followed-star,
-    :is(.page-tabs, .journal-tabs, .package-tabs) button {
+    .page-tabs button {
         min-height: var(--target);
         min-width: var(--target);
     }
@@ -12755,52 +12800,6 @@ svg.icon {
     font-size: 0.9rem;
 }
 
-/* The two tabs (D-488): Installed with its marks, the updates in the accent with their count and what the campaign lacks in red, each with its tip. */
-.package-tabs button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.package-tab-mark {
-    display: inline-flex;
-    position: relative;
-    align-items: center;
-    gap: 3px;
-    min-height: 20px;
-    padding: 0 7px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
-    color: var(--accent);
-    font-size: 0.75rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-}
-
-.package-tab-mark.missing {
-    padding: 0 4px;
-    background: color-mix(in srgb, var(--low) 14%, transparent);
-    color: var(--low);
-}
-
-.package-tab-mark svg.icon {
-    width: 13px;
-    height: 13px;
-}
-
-/* The last tab's mark is near the page's edge: its tip ends at the mark, else on a phone the page grows wider. */
-.package-tabs > [role="tab"]:last-child .package-tab-mark[data-tip]::before {
-    left: auto;
-    inset-inline-end: 0;
-    translate: 0 4px;
-}
-
-@media (hover: hover) {
-    .package-tabs > [role="tab"]:last-child .package-tab-mark[data-tip]:hover::before {
-        translate: 0 0;
-    }
-}
-
 .package-panel {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -13543,11 +13542,6 @@ svg.icon {
     .package-tile {
         width: 32px;
         height: 32px;
-    }
-
-    /* Three tabs and a mark fit 360 only a little tighter. */
-    .package-tabs button {
-        padding: 0 12px;
     }
 
     .package-tile svg.icon {

@@ -75,7 +75,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 **Page.** A section is a `PageHead` (its icon and title in the accent) over a `.page-stack` of cards, with room at the bottom for the dice's button. The page never changes section by itself.
 
-**Tabs.** Parts of one section are tabs under its head (`PageTabs`, `.page-tabs`): words in `--muted`, the chosen one in the accent with a 3 px bar under it, 40 px tall (44 on touch). On a phone they close up, and when they still do not fit the row scrolls sideways; it never wraps and never widens the page. The tab is in the address (`#/world/lore`), changed with `location.replace`; an item opened inside it is too (`#/world/lore/Bertoldo`), pushed, so that Back returns to it and the master can give a link. Arrows move along the tabs, Home and End go to the ends, and one Tab stop reaches the row.
+**Tabs.** Parts of one section are tabs under its head (`PageTabs`, `.page-tabs`): words in `--muted`, the chosen one in the accent with a 3 px bar under it, 40 px tall (44 on touch). On a phone they close up, and when they still do not fit the row scrolls sideways; it never wraps and never widens the page. The tab is in the address (`#/world/lore`), changed with `location.replace`; an item opened inside it is too (`#/world/lore/Bertoldo`), pushed, so that Back returns to it and the master can give a link. Arrows move along the tabs, Home and End go to the ends, and one Tab stop reaches the row. A tab may carry a mark after its name (`.tab-mark`): a count in the accent, or what is missing in `--low`, with its tip and in the tab's name for a screen reader.
 
 **Card.** `<details class="group">` with `CardHeader`: its icon (20 px, stroked in the accent), its title, a preview while closed, the chevron. It stays as the player left it (`useOpen`); on a phone cards start closed but the first. A card that is always open is a `<section class="card">` with `CardHead` and its `.card-body`. No card inside a card: inside one, sections under small headings.
 
@@ -125,7 +125,6 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 ## 5. Not in line yet
 
-- Tabs: Journal and Packages draw their own tab rows; they move to `PageTabs`. Packages does not scroll on a phone; Journal has no Home and End.
 - Font sizes outside the scale (0.7, 0.75, 0.78, 0.82, 0.875, 0.88, 0.9, 0.92, 0.95, 1.02, 1.05rem, and sizes in px) and weights 450, 500, 550, 750, 800, 900.
 - Nine eyebrows, each its own size, weight and spacing, to become `.eyebrow`.
 - Durations in milliseconds (120, 220, 240, 280, 320, 420, 500, 520, 700) instead of the tokens; eight `prefers-reduced-motion: reduce` blocks that take motion away instead of adding it under `no-preference`.

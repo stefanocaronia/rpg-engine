@@ -16,6 +16,7 @@ import { Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
 import { PageHead } from "./pages.tsx";
 import { useChoice, useKeptText } from "./prefs.ts";
+import { PageTabs } from "./tabs.tsx";
 import { arrowStep, t } from "./text.ts";
 
 // The tab the player last chose, kept in this browser.
@@ -27,7 +28,6 @@ export function JournalView({ version, campaign, tab: asked, item }: { version: 
     const journal = useJournal(version);
     const [chosen, setTab] = useChoice(tabChoice);
     const [followed, setFollowed] = useFollowed(campaign, journal.read?.quests);
-    const tabs = useRef<HTMLDivElement>(null);
     // The companions' tab only once one of them has written: a diary no one keeps shows nothing.
     const shown = tabChoice.values.filter((value) => value !== "companions" || (journal.read?.thoughts?.length ?? 0) > 0);
     const tab = (shown as string[]).includes(chosen) ? chosen : tabChoice.initial;
@@ -46,59 +46,11 @@ export function JournalView({ version, campaign, tab: asked, item }: { version: 
         chapter?.focus({ preventScroll: true });
     }, [item, tab, journal.read !== undefined]);
 
-    // On a phone the tabs may scroll sideways: the chosen one is brought into the row, and the page itself never moves.
-    useEffect(() => {
-        const row = tabs.current;
-        const chosenTab = row?.querySelector<HTMLElement>(`#journal-tab-${tab}`);
-
-        if (row === null || chosenTab === null || chosenTab === undefined) {
-            return;
-        }
-
-        const rowBox = row.getBoundingClientRect();
-        const tabBox = chosenTab.getBoundingClientRect();
-        row.scrollLeft += Math.min(0, tabBox.left - rowBox.left) + Math.max(0, tabBox.right - rowBox.right);
-    }, [tab, shown.length]);
-
-    // A tab chosen is kept in this browser and written in the address, the first one's as the section's own.
-    const choose = (value: string): void => {
-        setTab(value);
-        location.replace(sectionAddress("journal", value === tabChoice.initial ? undefined : value));
-    };
-
-    // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
-    const move = (event: KeyboardEvent): void => {
-        const step = arrowStep(event.key, true);
-
-        if (step === 0) {
-            return;
-        }
-
-        event.preventDefault();
-        const next = shown[(shown.indexOf(tab as "quests") + step + shown.length) % shown.length];
-        choose(next);
-        tabs.current?.querySelector<HTMLElement>(`#journal-tab-${next}`)?.focus();
-    };
-
     return (
         <section class="journal" aria-labelledby="journal-title">
             <PageHead section="journal" id="journal-title" />
-            <div class="journal-tabs" role="tablist" aria-label={t("Journal")} ref={tabs} onKeyDown={move}>
-                {shown.map((value) => (
-                    <button
-                        key={value}
-                        type="button"
-                        role="tab"
-                        id={`journal-tab-${value}`}
-                        aria-selected={tab === value}
-                        aria-controls={tab === value ? "journal-panel" : undefined}
-                        tabIndex={tab === value ? 0 : -1}
-                        onClick={() => choose(value)}
-                    >
-                        {tabName(value)}
-                    </button>
-                ))}
-            </div>
+            {/* The tab chosen is kept in this browser too, and the address says it. */}
+            <PageTabs section="journal" label={t("Journal")} chosen={tab} tabs={shown.map((key) => ({ key, name: tabName(key) }))} onChoose={setTab} />
             <div id="journal-panel" role="tabpanel" aria-labelledby={`journal-tab-${tab}`}>
                 {journal.problem !== undefined && <p class="journal-problem" role="alert">{journal.problem}</p>}
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
