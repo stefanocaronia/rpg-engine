@@ -941,7 +941,7 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
     const declared = (name: string, wanted: string): boolean => Object.entries(system?.fields ?? {}).some(([key, kind]) => kind === wanted && comparableText(key) === comparableText(name));
     const told = (value: SheetValue): SheetValue =>
         (field !== undefined && comparableText(value.field) === comparableText(field)) || declared(value.field, "length")
-            ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) }
+            ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial), ...(value.beside === undefined ? {} : { beside: lengthsInUnits(value.beside, measures.units, measures.imperial) }) }
             : (value.field === "load" || declared(value.field, "weight")) && measures.units === "metric" && pound !== undefined
             ? { ...value, text: kilograms(value.text), ...(value.load === undefined ? {} : { load: inKilograms(value.load, pound) }) }
             : value;

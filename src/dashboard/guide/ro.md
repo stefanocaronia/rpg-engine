@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -199,18 +199,18 @@ Orice setare poate fi schimbată, în chat sau în **Setări**. O decizie pe car
 
 ---
 
-## 4. Tabloul de bord <!-- icon: party -->
+## 4. Tabloul de comandă <!-- icon: party -->
 
-O pagină pe propriul tău calculator, deschisă doar în browserul acelui calculator, activă cât timp chatul este deschis. Când chatul se închide, pagina arată *Not connected*; revine singură la următorul chat.
+O pagină de pe propriul tău calculator, deschisă doar în browserul acelui calculator, activă cât timp chatul este deschis. Când chatul se închide, afișează *Not connected*; revine singură la următorul chat.
 
-- **Grup**: fișa ta și fișele însoțitorilor. Apasă pe un număr ca să-l arunci; ține cursorul deasupra lui ca să vezi de unde vine. Alături sunt aruncările.
-- **Scenă**: unde te afli, imaginea și harta locului, cine este acolo, ce se întâmplă; într-o luptă, turele și cartonașul personajului tău.
-- **Jurnal**: misiunile, povestea, jurnalele însoțitorilor, notițele tale.
+- **Grup**: fișa ta și fișele însoțitorilor tăi. Dă clic pe un număr ca să faci o aruncare; ține cursorul deasupra lui ca să vezi de unde vine și, când o săgeată marchează zarul, ce îmbunătățește sau înrăutățește aruncarea. Alături, aruncările.
+- **Scenă**: unde te afli, imaginea și harta ei, cine este de față, ce se întâmplă; într-o luptă, turele și cartonașul personajului tău.
+- **Jurnal**: misiuni, povestea, jurnalele însoțitorilor tăi, notițele tale.
 - **Lume**: harta lumii, ce știe personajul tău, documentele găsite și calendarul.
-- **Tava pentru zaruri**: alege zarurile și un modificator, apoi aruncă.
+- **Tava pentru zaruri**: alege zarurile și un modificator, apoi aruncă; ×2 dublează zarurile, niciodată modificatorul, ca la o lovitură critică.
 - **Salvări**, **Ajutor**, **Setări** și **Despre**, ca pictograme la capătul rândului. Setări cuprinde și preferințele paginii: tema, sunetul zarurilor, setul de zaruri.
 
-Când maestrul de joc te întreabă ceva, bannerul lui rămâne sus, indiferent în ce secțiune te afli.
+Când maestrul de joc îți pune o întrebare, bannerul lui rămâne în partea de sus, indiferent în ce secțiune te afli.
 
 ---
 

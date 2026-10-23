@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -199,18 +199,18 @@ Toda configuração pode mudar, no chat ou em **Configurações**. Uma decisão 
 
 ---
 
-## 4. O dashboard <!-- icon: party -->
+## 4. O painel <!-- icon: party -->
 
-Uma página no seu próprio computador, que só abre no navegador desse computador e fica ativa enquanto o chat está aberto. Quando o chat é fechado, ela mostra *Not connected*; volta sozinha com o próximo chat.
+Uma página no seu próprio computador, aberta apenas no navegador desse computador e ativa enquanto o chat estiver aberto. Quando o chat é fechado, ela mostra *Not connected*; ela volta sozinha no próximo chat.
 
-- **Grupo**: sua ficha e as dos seus companheiros. Clique em um número para rolá-lo; passe o cursor sobre ele para ver de onde vem. Ao lado, as rolagens.
-- **Cena**: onde você está, sua imagem e seu mapa, quem está ali, o que acontece; em um combate, os turnos e o cartão do seu personagem.
+- **Grupo**: sua ficha e as dos seus companheiros. Clique em um número para rolá-lo; passe o mouse sobre ele para ver de onde vem e, quando uma seta marca o dado, o que melhora ou piora a rolagem. Ao lado, as rolagens.
+- **Cena**: onde você está, a imagem e o mapa do lugar, quem está presente, o que está acontecendo; em um combate, os turnos e a carta do seu personagem.
 - **Diário**: missões, a história, os diários dos seus companheiros, suas notas.
 - **Mundo**: o mapa do mundo, o que seu personagem sabe, os documentos encontrados e o calendário.
-- **A bandeja de dados**: escolha os dados e um modificador, e role.
-- **Jogos salvos**, **Ajuda**, **Configurações** e **Sobre**, como ícones no fim da fileira. Configurações também guarda as preferências da própria página: tema, som dos dados, conjunto de dados.
+- **A bandeja de dados**: escolha os dados e um modificador, e role; ×2 dobra os dados, nunca o modificador, como em um acerto crítico.
+- **Jogos salvos**, **Ajuda**, **Configurações** e **Sobre**, como ícones no fim da fileira. As Configurações também guardam as preferências da própria página: tema, som dos dados, conjunto de dados.
 
-Quando o mestre pergunta algo a você, o aviso dele fica no alto, em qualquer seção em que você esteja.
+Quando o mestre pergunta algo a você, o aviso dele fica no topo, em qualquer seção em que você esteja.
 
 ---
 

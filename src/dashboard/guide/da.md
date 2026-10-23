@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med **en AI som spilleder**. Du taler med spillederen i en **chat**. RPG Engine arbejder i baggrunden: det **husker verdenen**, **slår med terningerne** og **fører regnskabet**. Ved siden af chatten har du en side åben i din browser, **dashboardet**, med dit karakterark, terningerne, kortene og din dagbog.
@@ -201,16 +201,16 @@ Alle indstillinger kan ændres, i chatten eller i **Indstillinger**. En afgørel
 
 ## 4. Dashboardet <!-- icon: party -->
 
-En side på din egen computer, som kun kan åbnes i den computers browser og er i live, mens chatten er åben. Når chatten lukker, viser den *Not connected*. Den vender tilbage af sig selv med den næste chat.
+En side på din egen computer, som kun kan åbnes i den computers browser, og som er live, mens chatten er åben. Når chatten lukkes, viser den *Not connected*. Den kommer tilbage af sig selv med næste chat.
 
-- **Gruppe**: dit karakterark og dine følgesvendes. Klik på et tal for at slå med det. Hold musen over det for at se, hvor det kommer fra. Ved siden af står slagene.
-- **Scene**: hvor du er, dens billede og kort, hvem der er der, og hvad der sker. I en kamp: turene og din karakters kort.
+- **Gruppe**: dit karakterark og dine følgesvendes. Klik på et tal for at slå med det. Hold musen over det for at se, hvor det kommer fra, og hvad der gør slaget bedre eller dårligere, når en pil markerer dets terning. Ved siden af ser du slagene.
+- **Scene**: hvor du er, med billede og kort, hvem der er der, og hvad der sker. I en kamp ser du turene og din karakters kort.
 - **Dagbog**: missioner, historien, dine følgesvendes dagbøger og dine noter.
-- **Verden**: verdenskortet, det din karakter ved, de fundne dokumenter og kalenderen.
-- **Terningbakken**: vælg terninger og en modifikator, og slå.
-- **Gemte spil**, **Hjælp**, **Indstillinger** og **Om** som ikoner for enden af rækken. Indstillinger rummer også sidens egne præferencer: tema, terningelyd og terningesæt.
+- **Verden**: verdenskortet, det din karakter ved, de dokumenter, I har fundet, og kalenderen.
+- **Terningbakken**: vælg terninger og en modifikator, og slå. ×2 fordobler terningerne, aldrig modifikatoren, som ved et kritisk slag.
+- **Gemte spil**, **Hjælp**, **Indstillinger** og **Om** som ikoner for enden af rækken. Indstillinger rummer også sidens egne valg: tema, terningelyd og terningesæt.
 
-Når spillederen spørger dig om noget, bliver dens banner stående øverst, uanset hvilken sektion du er i.
+Når spillederen spørger dig om noget, bliver spillederens banner øverst, uanset hvilken sektion du er i.
 
 ---
 

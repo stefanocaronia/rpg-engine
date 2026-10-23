@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -201,16 +201,16 @@ Jede Einstellung lässt sich ändern, im Chat oder in den **Einstellungen**. Ein
 
 ## 4. Das Dashboard <!-- icon: party -->
 
-Eine Seite auf deinem eigenen Computer, nur im Browser dieses Computers erreichbar und aktiv, solange der Chat offen ist. Wenn der Chat schließt, zeigt sie *Nicht verbunden*. Mit dem nächsten Chat kommt sie von selbst zurück.
+Eine Seite auf deinem eigenen Computer. Sie lässt sich nur im Browser dieses Computers öffnen und ist live, solange der Chat offen ist. Wenn der Chat schließt, zeigt sie *Nicht verbunden*. Mit dem nächsten Chat kommt sie von selbst zurück.
 
-- **Gruppe**: dein Charakterbogen und die deiner Begleiter. Klick auf eine Zahl, um sie zu würfeln. Fahr mit der Maus darüber, um zu sehen, woher sie kommt. Daneben die Würfe.
-- **Szene**: wo du bist, ihr Bild und ihre Karte, wer da ist, was gerade geschieht. In einem Kampf die Züge und die Karte deines Charakters.
-- **Tagebuch**: Quests, die Geschichte, die Tagebücher deiner Begleiter, deine Notizen.
+- **Gruppe**: dein Charakterbogen und die deiner Begleiter. Klicke auf eine Zahl, um sie zu würfeln. Fahre mit der Maus darüber, um zu sehen, woher sie kommt. Wenn ein Pfeil den Würfel markiert, siehst du auch, was den Wurf besser oder schlechter macht. Daneben stehen die Würfe.
+- **Szene**: wo du bist, mit Bild und Karte, wer da ist und was gerade passiert. Im Kampf siehst du die Züge und die Karte deines Charakters.
+- **Tagebuch**: Quests, die Geschichte, die Tagebücher deiner Begleiter und deine Notizen.
 - **Welt**: die Weltkarte, was dein Charakter weiß, die gefundenen Dokumente und der Kalender.
-- **Die Würfelschale**: Würfel und einen Modifikator wählen und werfen.
-- **Spielstände**, **Hilfe**, **Einstellungen** und **Info**, als Symbole am Ende der Reihe. Die Einstellungen enthalten auch die eigenen Vorlieben der Seite: Design, Würfelgeräusch, Würfelsatz.
+- **Die Würfelschale**: wähle Würfel und einen Modifikator und wirf. ×2 verdoppelt die Würfel, nie den Modifikator, wie bei einem kritischen Treffer.
+- **Spielstände**, **Hilfe**, **Einstellungen** und **Info** stehen als Symbole am Ende der Zeile. Die Einstellungen enthalten auch die eigenen Vorlieben der Seite: Design, Würfelsound und Würfelset.
 
-Wenn die Spielleitung dich etwas fragt, bleibt ihr Banner oben stehen, in welchem Bereich du auch bist.
+Wenn die Spielleitung dir eine Frage stellt, bleibt ihr Banner oben stehen, in welchem Bereich du auch bist.
 
 ---
 

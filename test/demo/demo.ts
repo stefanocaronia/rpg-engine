@@ -268,6 +268,9 @@ async function makeDemo(context: Context): Promise<void>
         "hit-dice-d8=2/3",
         "save-proficiencies=[wis, cha]",
         "skill-proficiencies=[Insight, Religion]",
+        // The Life Domain's Bonus Proficiency: heavy armor too.
+        "armor-proficiencies=[light armor, medium armor, heavy armor, shields]",
+        "weapon-proficiencies=[simple weapons]",
         "languages=[Common, Dwarvish]",
         "personality-traits=Cito le scritture a ogni pasto, e trovo sempre il versetto giusto per farmi passare il vino.",
     ];
