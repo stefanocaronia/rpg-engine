@@ -26,8 +26,8 @@ const furtherShare = 0.4;
 // How long after the wheel, a key, the scroll bar or a finger's fling a scroll is still the player's; any other is the page's own, and counts for nothing.
 const wheelTime = 800;
 const flingTime = 2500;
-// How long the question takes to fold or open, its height eased out as it opens and in as it folds.
-const foldTime = 220;
+// How long the question takes to fold or open, the style sheet's --short, its height eased out as it opens and in as it folds.
+const foldTime = 250;
 const easeOut = "cubic-bezier(0.05, 0.7, 0.1, 1)";
 const easeIn = "cubic-bezier(0.3, 0, 0.8, 0.15)";
 const scrollKeys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]);

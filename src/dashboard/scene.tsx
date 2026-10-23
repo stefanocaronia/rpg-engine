@@ -16,8 +16,8 @@ import { t } from "./text.ts";
 import { CharacterCard, hasTurns, type OwnSheet, TurnBand, TurnsCard, type TurnScene } from "./turns.tsx";
 import { BiomeSwatch } from "./world.tsx";
 
-// How long the band takes to come in or go out, as the style sheet has it, as the master's question folds.
-const bandTime = 220;
+// How long the band takes to come in or go out, the style sheet's --short, as the master's question folds.
+const bandTime = 250;
 
 /**
  * The Scene (D-309, D-444), the one page of where the party is. Outside turns the place, its picture with its text under it, the open scene and the map; while

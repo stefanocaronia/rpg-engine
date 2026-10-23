@@ -66,10 +66,11 @@ Weights: 400 text, 600 a word that stands out in a line (a chip of a list, a not
 | `--medium` 350 ms | A panel or sheet coming in |
 | `--flight` 450 ms | Something that travels: the result plate flying to its row |
 | `--long` 600 ms, `--linger` 900 ms | A mark that fades after it is seen |
+| `--wait` 500 ms | The moment a pointer rests on a control before its tooltip shows |
 
-`--ease` for most, `--ease-out` for what comes in, `--ease-in` for what leaves, `--ease-bounce` for one pop. A loop (breathing, pulsing) only for what waits for the player: their turn, a check asked, the robot. Motion never makes the player wait to act.
+`--ease` for most, `--ease-out` for what comes in, `--ease-in` for what leaves, `--ease-bounce` for one pop. A loop (breathing, pulsing) only for what waits for the player: their turn, a check asked, the robot; its period, in seconds, is its own, as is how long a fresh mark stays. A short step between things that come one after the other is a share of `--quick`. Motion never makes the player wait to act; script that times a motion of its own uses the same token's length.
 
-Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that with reduced motion the state is simply there; script checks `matchMedia("(prefers-reduced-motion: reduce)")` before a smooth scroll or an animation.
+Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that with reduced motion the state is simply there; script checks `matchMedia("(prefers-reduced-motion: reduce)")` before a smooth scroll or an animation. Only what leaves keeps its animation with reduced motion, run at once (`animation-duration: 0.01s`), so that it reaches its end.
 
 ## 2. Parts
 
@@ -126,6 +127,5 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 ## 5. Not in line yet
 
 - Titles between a card's and a page's (1.1 to 1.5rem: dialogs, banners, the master's question, a quest's cover) and labels under 0.72rem in tight tiles (0.55 to 0.68rem); the roll's total and the death save's word at weight 800.
-- Durations in milliseconds (120, 220, 240, 280, 320, 420, 500, 520, 700) instead of the tokens; eight `prefers-reduced-motion: reduce` blocks that take motion away instead of adding it under `no-preference`.
 - Corners of 2, 3, 7 and 9 px; raw colours outside the maps and the dice.
 - Cards always open drawn on their own (`.package-card`, `.map-card`, `.map-list`, `.upcoming`), to become `.card`; `.package-chips` and `.package-search` serve the whole page and take names of their own (`.filter-chips`, `.search`).
