@@ -52,7 +52,7 @@ The system's sans for everything (`body`: 15px/1.4). The serif (`--serif`) is th
 | `1.4rem` | 700 | A page's title (`h2` in `PageHead`) |
 | `1.6rem` and up | 700 | One number that is the point of its box: a total, a modifier |
 
-Weights: 400 text, 600 a word that stands out in a line (a chip of a list, a notice, a name in a row) and the serif titles, 650 controls (buttons, tabs, filter chips), 700 titles, names and numbers. The maps draw their labels in px, in the map's own units. Numbers that line up are `.num` (tabular figures). Items of a list start with a capital; a field's abbreviation (AC, WIS) is all capitals.
+Weights: 400 text, 600 a word that stands out in a line (a chip, a filter, a notice, a name in a row) and the serif titles, 650 controls (buttons, tabs), 700 titles, names and numbers. The maps draw their labels in px, in the map's own units. Numbers that line up are `.num` (tabular figures). Items of a list start with a capital; a field's abbreviation (AC, WIS) is all capitals.
 
 ### Room, corners, depth
 
@@ -85,7 +85,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 **Buttons.** A button of words is `.button`, 38 px tall (44 on touch): `.gold` for the one main action of a view, `.quiet` (accent words, no border) for a secondary one, `.danger` (red edge) for one that loses something, full red at its last step. A button of an icon is `.icon-button` (40 px), always with `aria-label` and the same words in `data-tip`; `.tonal` (48 px, raised) when it floats over the page. What goes somewhere is a link (`<a href>`); what does something is a button.
 
-**Chips.** A thing in a list is a chip (`.chips li`: the accent at 11%, `--radius-s`). A filter is a row of pill chips (`.package-chips`, `aria-pressed`, a muted count after the name): one Tab stop, arrows, Home and End along it. A search is a field with its magnifier inside (`.package-search`) that filters as it is typed. Two to five values of one setting are a `.segmented` control.
+**Chips.** A thing in a list is a chip (`.chips li`: the accent at 11%, `--radius-s`). A filter is a row of pill chips (`.filter-chips`, `aria-pressed`, a muted count after the name): one Tab stop, arrows, Home and End along it. A search is a field with its magnifier inside (`.search`) that filters as it is typed. Two to five values of one setting are a `.segmented` control.
 
 **Rows.** A list of things to open is a column of rows, each one button the row's width: the name in bold, its meta in `--muted` at 0.85rem, a number or distance at the end in `.num`. Sentences are lines, not chips.
 
@@ -130,4 +130,3 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 ## 5. Not in line yet
 
 - Titles between a card's and a page's (1.1 to 1.5rem: dialogs, banners, the master's question, a quest's cover) and labels under 0.72rem in tight tiles (0.55 to 0.68rem); the roll's total and the death save's word at weight 800.
-- Cards always open drawn on their own (`.package-card`, `.map-card`, `.map-list`, `.upcoming`), to become `.card`; `.package-chips` and `.package-search` serve the whole page and take names of their own (`.filter-chips`, `.search`).

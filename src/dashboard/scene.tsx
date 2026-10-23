@@ -33,7 +33,7 @@ export function SceneView(
 
     if (place === undefined && scene === undefined) {
         return (
-            <section class="upcoming" aria-labelledby="place-name">
+            <section class="card upcoming" aria-labelledby="place-name">
                 <h2 id="place-name">{t("In the open")}</h2>
                 <p>{t("The party is in no place the character knows, as on a road between two.")}</p>
             </section>

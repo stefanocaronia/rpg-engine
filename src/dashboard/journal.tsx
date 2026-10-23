@@ -575,7 +575,7 @@ function Diaries({ thoughts }: { thoughts: ShownThought[]; })
     return (
         <div class="diaries">
             {writers.length > 1 && (
-                <div class="package-chips" role="group" aria-label={t("Companions")} ref={chips} onKeyDown={chipKey}>
+                <div class="filter-chips" role="group" aria-label={t("Companions")} ref={chips} onKeyDown={chipKey}>
                     {chip(undefined)}
                     {writers.map(chip)}
                 </div>

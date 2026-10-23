@@ -3745,10 +3745,6 @@ a {
 
 .upcoming {
     padding: 20px;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-l);
-    background: var(--panel);
-    box-shadow: var(--lift), var(--raise);
 }
 
 .upcoming h2 {
@@ -9842,15 +9838,15 @@ svg.icon {
     min-width: 0;
 }
 
-.browse-find .package-search {
+.browse-find .search {
     width: 100%;
 }
 
-.browse-find .package-search input {
+.browse-find .search input {
     height: 40px;
 }
 
-.browse-list .package-chips {
+.browse-list .filter-chips {
     margin: 0;
 }
 
@@ -10651,10 +10647,6 @@ svg.icon {
 
 .map-card,
 .map-list {
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-l);
-    background: var(--panel);
-    box-shadow: var(--lift), var(--raise);
     overflow: hidden;
 }
 
@@ -12811,20 +12803,9 @@ svg.icon {
     }
 }
 
-.package-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    min-width: 0;
-    border: 1px solid var(--rule);
-    border-radius: var(--radius-l);
-    background: var(--panel);
-    box-shadow: var(--lift), var(--raise);
-}
-
 .package-body {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    padding: 12px 16px 14px;
 }
 
 .package-note {
@@ -12875,7 +12856,7 @@ svg.icon {
     color: var(--muted);
 }
 
-:is(.package-add-line, .package-credits, .package-search) input:focus-visible {
+:is(.package-add-line, .package-credits, .search) input:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 0;
 }
@@ -12904,14 +12885,14 @@ svg.icon {
     margin-inline-end: auto;
 }
 
-.package-search {
+.search {
     display: inline-flex;
     position: relative;
     align-items: center;
     width: min(220px, 50%);
 }
 
-.package-search svg.icon {
+.search svg.icon {
     position: absolute;
     inset-inline-start: 10px;
     width: 16px;
@@ -12920,7 +12901,7 @@ svg.icon {
     pointer-events: none;
 }
 
-.package-search input {
+.search input {
     width: 100%;
     height: 36px;
     padding: 0 10px;
@@ -12934,14 +12915,14 @@ svg.icon {
 }
 
 /* The kinds, with how many each has: one line on a screen, two on a phone, never a row to scroll. */
-.package-chips {
+.filter-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin: 6px 0 4px;
 }
 
-.package-chips button {
+.filter-chips button {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -12957,23 +12938,23 @@ svg.icon {
     cursor: pointer;
 }
 
-.package-chips button:hover {
+.filter-chips button:hover {
     background: color-mix(in srgb, var(--ink) 5%, transparent);
 }
 
-.package-chips button[aria-pressed="true"] {
+.filter-chips button[aria-pressed="true"] {
     border-color: var(--accent);
     background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 /* A finger needs the room of a target, after the chip's own height. */
 @media (pointer: coarse) {
-    .package-chips button {
+    .filter-chips button {
         min-height: var(--target);
     }
 }
 
-.package-chips button:focus-visible,
+.filter-chips button:focus-visible,
 .package-show:focus-visible,
 .package-row:focus-visible {
     outline: 2px solid var(--accent);
@@ -13518,7 +13499,7 @@ svg.icon {
         flex-basis: 100%;
     }
 
-    .package-search {
+    .search {
         width: 150px;
     }
 }

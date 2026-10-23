@@ -281,8 +281,8 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                         />
                     )}
                     {shownTab === "add" && (
-                        <section class="package-card" aria-label={t("Add")}>
-                            <div class="package-body">
+                        <section class="card" aria-label={t("Add")}>
+                            <div class="card-body package-body">
                                 {/* The catalog first, for whoever picks with a click; a link, an npm name, a folder or a file after it, for whoever knows what they want (D-488). */}
                                 <CatalogList
                                     catalog={catalog}
@@ -298,9 +298,9 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                     )}
                     {shownTab === "installed" && (
                         <>
-                            <section class="package-card" aria-labelledby="packages-systems">
+                            <section class="card" aria-labelledby="packages-systems">
                                 <CardHead icon={iconPath("dice")} title={<h3 id="packages-systems" tabIndex={-1}>{t("Game system")}</h3>} />
-                                <div class="package-body">
+                                <div class="card-body package-body">
                                     <ul class="package-list">
                                         {systems.map((system) => (
                                             <SystemRow
@@ -317,13 +317,13 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                     <CardSaid said={said} at="systems" />
                                 </div>
                             </section>
-                            <section class="package-card" aria-labelledby="packages-adventures">
+                            <section class="card" aria-labelledby="packages-adventures">
                                 <CardHead
                                     icon={iconPath("world")}
                                     title={<h3 id="packages-adventures" tabIndex={-1}>{t("Adventures")}</h3>}
                                     {...(adventures.length === 0 ? {} : { note: String(adventures.length) })}
                                 />
-                                <div class="package-body">
+                                <div class="card-body package-body">
                                     {adventures.length === 0 && <p class="package-note">{t("None yet: add one in Add, from the catalog, a .zip or a link.")}</p>}
                                     {adventures.length > 0 && (
                                         <ul class="package-list">
@@ -342,13 +342,13 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                     <ShareCampaign />
                                 </div>
                             </section>
-                            <section class="package-card" aria-labelledby="packages-extensions">
+                            <section class="card" aria-labelledby="packages-extensions">
                                 <CardHead
                                     icon={iconPath("packages")}
                                     title={<h3 id="packages-extensions" tabIndex={-1}>{t("Extensions")}</h3>}
                                     {...(view.installed.length + view.missing.length === 0 ? {} : { note: t("{count} in use", { count: usedCount(view) }) })}
                                 />
-                                <div class="package-body">
+                                <div class="card-body package-body">
                                     {view.installed.length + view.missing.length === 0 && <p class="package-note">{t("None: an extension adds rules and tools to the game; you find them in Add, in the catalog.")}</p>}
                                     {view.installed.length + view.missing.length > 0 && (
                                         <ul class="package-list">
@@ -373,9 +373,9 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                     <CardSaid said={said} at="extensions" />
                                 </div>
                             </section>
-                            <section class="package-card" aria-labelledby="packages-languages">
+                            <section class="card" aria-labelledby="packages-languages">
                                 <CardHead icon={iconPath("language")} title={<h3 id="packages-languages" tabIndex={-1}>{t("Languages")}</h3>} />
-                                <div class="package-body">
+                                <div class="card-body package-body">
                                     {languages.length === 0 && <p class="package-note">{t("None. The dashboard has its own languages; a language package takes the place of one with a translation made by hand.")}</p>}
                                     {languages.length > 0 && (
                                         <ul class="package-list">
@@ -453,13 +453,13 @@ function LibraryTab(
     // A folder by its name; by its path when another has the same name.
     const label = (entry: LibraryEntry): string => (entries.filter((other) => shelfName(other.path) === shelfName(entry.path)).length > 1 ? entry.path : shelfName(entry.path));
     return (
-        <section class="package-card" aria-labelledby="packages-library">
+        <section class="card" aria-labelledby="packages-library">
             <CardHead
                 icon={iconPath("library")}
                 title={<h3 id="packages-library" tabIndex={-1}>{t("Your books")}</h3>}
                 {...(entries.length === 0 ? {} : { note: t("{count} in this campaign", { count: used }) })}
             />
-            <div class="package-body">
+            <div class="card-body package-body">
                 <p class="library-scope">
                     <Icon name="info" />
                     <span>
@@ -893,14 +893,14 @@ function CatalogList(
             <div class="package-catalog-head">
                 <h4 class="eyebrow package-sub" id="package-catalog-title">{t("Catalog")}</h4>
                 {entries.length > 0 && (
-                    <span class="package-search">
+                    <span class="search">
                         <Icon name="search" />
                         <input type="search" value={query} placeholder={t("Search")} aria-label={t("Search the catalog")} onInput={(event) => setQuery(event.currentTarget.value)} />
                     </span>
                 )}
             </div>
             {kinds.length > 1 && (
-                <div class="package-chips" role="group" aria-label={t("Kind")} ref={chips} onKeyDown={chipKey}>
+                <div class="filter-chips" role="group" aria-label={t("Kind")} ref={chips} onKeyDown={chipKey}>
                     {chip("all", found.length)}
                     {kinds.map((one) => chip(one, found.filter((entry) => entry.kind === one).length))}
                 </div>

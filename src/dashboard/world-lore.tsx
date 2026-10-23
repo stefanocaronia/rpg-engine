@@ -44,7 +44,7 @@ export function LoreTab({ world, version, open, onMap }: { world: WorldView; ver
             <div class="browse-list">
                 {open !== undefined && asked === undefined && <p class="browse-none" role="status">{t("Your character knows nothing called “{name}”.", { name: open })}</p>}
                 <div class="browse-find">
-                    <span class="package-search">
+                    <span class="search">
                         <Icon name="search" />
                         <input type="search" value={search} placeholder={t("Search")} aria-label={t("Search what your character knows")} onInput={(event) => setSearch(event.currentTarget.value)} />
                     </span>
@@ -341,7 +341,7 @@ function FilterChips<Key extends string>(
     );
 
     return (
-        <div class="package-chips" role="group" aria-label={label} ref={row} onKeyDown={move}>
+        <div class="filter-chips" role="group" aria-label={label} ref={row} onKeyDown={move}>
             {chip(undefined, t("All"), all)}
             {options.map((option) => chip(option.key, option.name, option.count))}
         </div>

@@ -367,7 +367,7 @@ function MapCard(
     const here = full.maps.find((known) => known.name === part.name);
     const partyMap = full.party === undefined ? undefined : mapNameOf(full, full.party);
     return (
-        <section class="map-card" aria-labelledby="map-title">
+        <section class="card map-card" aria-labelledby="map-title">
             <header class="map-head">
                 <h3 id="map-title">{t("Map")}</h3>
                 <span class="map-sub">
@@ -877,7 +877,7 @@ function PlacesList({ map, layout, onChoose }: { map: WorldMap; layout: MapLayou
     };
 
     return (
-        <section class="map-list" aria-labelledby="places-title">
+        <section class="card map-list" aria-labelledby="places-title">
             <header class="map-head">
                 <h3 id="places-title">{t("Places you know")}</h3>
                 <span class="map-sub">{map.party === undefined ? t("on the map") : t("from your party, as the crow flies")}</span>
