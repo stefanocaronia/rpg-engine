@@ -5859,6 +5859,57 @@ button.row,
     height: 40px;
 }
 
+/* With more than one player character, the portrait of whom the master asks where the robot was, the robot small on its lower edge (D-480 (7)). */
+.asked-who {
+    position: relative;
+    flex: 0 0 auto;
+    display: grid;
+}
+
+.asked-who .token {
+    --size: 56px;
+}
+
+/* The robot on its edge says who asks; the name beside it says whom: no pip of the side between them. */
+.asked-who .side-pip {
+    display: none;
+}
+
+.asked-who-robot {
+    position: absolute;
+    inset-inline-end: -6px;
+    bottom: -4px;
+    z-index: 3;
+    width: 22px;
+    height: 22px;
+    filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.5));
+}
+
+.asked.folded .asked-who .token {
+    --size: 30px;
+}
+
+.asked.folded .asked-who-robot {
+    inset-inline-end: -4px;
+    bottom: -3px;
+    width: 15px;
+    height: 15px;
+}
+
+.asked-bar-name {
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+    .asked-who .token {
+        --size: 40px;
+    }
+
+    .asked.folded .asked-who {
+        display: none;
+    }
+}
+
 .asked-body {
     flex: 1;
     min-width: 0;

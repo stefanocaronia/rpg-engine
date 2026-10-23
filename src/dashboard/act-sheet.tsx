@@ -19,8 +19,10 @@ export type ActReply = "tell" | "answer" | "copy";
  * sends and Escape closes; over the whole page with a map, else a card.
  */
 export function ActSheet(
-    { start, place, scene, companions, reply, onSend, onClose }: {
+    { start, self, place, scene, companions, reply, onSend, onClose }: {
         start: ActStart;
+        /** The player character who acts, with more than one: the others are people to act on (VIEW-12). */
+        self?: string | undefined;
         place?: ShownPlace;
         scene?: ShownScene;
         companions: string[];
@@ -39,7 +41,7 @@ export function ActSheet(
     const [target, setTarget] = useState<ActTarget | "square" | undefined>(mode === "lets" ? "none" : undefined);
     const [square, setSquare] = useState("");
     const map = place?.map;
-    const people = actPeople(place, scene, companions);
+    const people = actPeople(place, scene, companions, self);
     const shownTarget: ActTarget = target === undefined ? "none" : target === "square" ? (square.trim() === "" ? "none" : { square: square.trim().toUpperCase() }) : target;
     const composed = "talk" in start ? talkSentence(start.talk) : actSentence(verb ?? "use", start.item, shownTarget);
     const [text, setText] = useState(composed);
@@ -144,6 +146,7 @@ export function ActSheet(
                             map={map}
                             place={place.name}
                             bare
+                            self={self}
                             choosing={{ selected: personChosen, onChoose: (name) => choose(name === undefined ? "self" : { person: name }) }}
                             {...(target === "square" ? { picking: { selected: square.trim().toUpperCase(), onSelect: setSquare } } : {})}
                         />

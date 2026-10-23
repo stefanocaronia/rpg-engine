@@ -91,7 +91,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 **Notices.** The page's own messages, over the page under its top (`.notice`): `.problem` in `--low`, the game away in `--warn`, a word to know in the accent, each with its icon. The master's words never go in a notice.
 
-**The master's question.** What the master asks stays over the page, in sight while it scrolls, with the robot and the question in the serif. A card that belongs to a question (a death save, a rest) stands in its frame, edged in the accent. Nothing else uses that frame.
+**The master's question.** What the master asks stays over the page, in sight while it scrolls, with the robot and the question in the serif. With more than one player character, the portrait of the one it asks takes the robot's place, the robot small on its edge, and their name is said over the title ("For Mira") and before the folded question. A card that belongs to a question (a death save, a rest) stands in its frame, edged in the accent. Nothing else uses that frame.
 
 **Dialogs and sheets.** `role="dialog"` named by its title. It opens with the focus on its first control or its Close; Esc closes it and the focus returns to what opened it. On a wide screen a card beside its thing; on a phone a sheet from the bottom. A modal `<dialog>` that is not full is `height: fit-content`.
 
@@ -109,7 +109,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 ## 3. Words
 
-- To the player, in the second person: "your character", "the master". Short, plain, in the game's words; never the machine's (no "error", "server", "load", "API"). What happened, then a colon and what to do.
+- To the player, in the second person: "your character", "the master". With more than one player character the page names each one where it would say "you" of a character: "It's Mira's turn", never "Your turn" or a "You" chip; with one, nothing changes. Short, plain, in the game's words; never the machine's (no "error", "server", "load", "API"). What happened, then a colon and what to do.
 - Buttons and tabs in one or two words, an action's verb first ("Roll", "Show on the map"). Sentence case.
 - Every phrase through `t()`, written in English in the code, with `{placeholders}`, never glued from pieces; Italian is curated by hand in `i18n/it.json`. A game's words come from its system (`systemWord`, `labels.ts`).
 - The page shows only what the character knows: a page it does not know is never a link, never hinted, never counted.

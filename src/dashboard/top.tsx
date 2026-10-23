@@ -36,6 +36,8 @@ interface TopOf
     fight?: boolean;
     /** It is the player's character's turn (D-315). */
     yourTurn?: boolean;
+    /** With more than one player character, whose turn it is, named in place of "you" (D-480 (7)). */
+    turnName?: string | undefined;
 }
 
 // What the row of the sections leaves between a link and the next, between the sections and the pages after them, and for the menu's button.
@@ -77,7 +79,7 @@ export function Top(top: TopOf)
                     )}
                 </div>
                 <StatusChips now={top.now} calendar={top.calendar} live={top.live} />
-                <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} />
+                <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} turnName={top.turnName} />
                 {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
             <ThemeCorner />
@@ -89,7 +91,7 @@ export function Top(top: TopOf)
  * The sections, each a link to its address (D-276, D-309), the one shown marked, then the saves, Help, the settings and About as icons at the row's end (D-333, D-409): what does not
  * fit goes into the menu, those three first, then the sections from the last.
  */
-function Navigation({ current, fight, yourTurn }: { current: Section; fight?: boolean; yourTurn?: boolean; })
+function Navigation({ current, fight, yourTurn, turnName }: { current: Section; fight?: boolean; yourTurn?: boolean; turnName?: string | undefined; })
 {
     // While the scene goes by turns the Scene's name is in gold; on the player's turn, from another section, it pulses (D-315, D-349, D-351, D-444).
     const shown = [...sections];
@@ -120,7 +122,7 @@ function Navigation({ current, fight, yourTurn }: { current: Section; fight?: bo
                             </span>
                             {/* The pages at the row's end are icons, their names in a tooltip under them and for a screen reader (D-409). */}
                             {index < shown.length && sectionLabel(section)}
-                            {section === "scene" && turn && <span class="visually-hidden">{`, ${t("your turn")}`}</span>}
+                            {section === "scene" && turn && <span class="visually-hidden">{`, ${turnName === undefined ? t("your turn") : t("It's {name}'s turn", { name: turnName })}`}</span>}
                         </a>
                     );
                 })}

@@ -405,6 +405,8 @@ export type View =
         /** The master's mood, and their last moment (MOOD-6). */
         master?: { mood: Mood; moment?: Moment; };
         party: Member[];
+        /** With more than one player character, the one in the foreground, whose place, map and squares the view gives (VIEW-12). */
+        foreground?: string;
         place?: ShownPlace;
         openScene?: ShownScene;
         quests: string[];
@@ -419,7 +421,7 @@ export type View =
         /** An import under way, which the page tells (D-491 (11)). */
         importing?: ShownImport;
     }
-    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; actions?: Partial<Record<string, ActVerb[]>>; text: string; story?: string; }
+    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; actions?: Partial<Record<string, ActVerb[]>>; text: string; story?: string; knownBy?: { secret: string; who: string[]; }[]; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }
@@ -536,6 +538,8 @@ export interface KnownEntry
     summary: string;
     picture?: { file: string; version: number; };
     companion?: true;
+    /** With more than one player character, those who know it, when not all of them do (VIEW-12). */
+    knownBy?: string[];
 }
 
 /** A document the character has or read (VIEW-11): what it is (letter, notice, map…), its text as the character knows it, its picture, and whether it carries it. */
@@ -546,6 +550,9 @@ export interface ShownDocument
     text: string;
     picture?: { file: string; version: number; };
     carried: boolean;
+    /** With more than one player character, the one who carries it, and those who know it when not all of them do (VIEW-12). */
+    carrier?: string;
+    knownBy?: string[];
 }
 
 /** The calendar as the character knows it (VIEW-11): now, today's game day, the months and today's day of them when the story has a calendar, the deadlines and the scenes by day. */

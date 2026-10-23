@@ -544,7 +544,8 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         const words = asked?.labels.map((label) => notationParts(/\(([^()]+)\)$/.exec(label)?.[1] ?? "") ?? null);
         // And the name the game gives its roll, in the campaign's language, as "with advantage" (D-399).
         const names = asked === undefined ? undefined : rollNamesOf(asked.labels, served);
-        const rows = asked?.rows?.fields.some((field) => field !== null) === true ? { who: asked.rows.who, fields: asked.rows.fields } : {};
+        // Whose roll it is, always, for the page to show who is asked (D-480 (7)); the fields of the sheet only when a check rolls one.
+        const rows = asked?.rows === undefined ? {} : { who: asked.rows.who, ...(asked.rows.fields.some((field) => field !== null) ? { fields: asked.rows.fields } : {}) };
         // The dice of a rest as they are now, read again at each look (ASK-14).
         const spend = asked?.spending === undefined ? undefined : spendShown(asked.spending, served);
         sendJson(response, 200, {

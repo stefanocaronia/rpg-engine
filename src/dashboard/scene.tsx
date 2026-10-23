@@ -22,11 +22,19 @@ const bandTime = 220;
 /**
  * The Scene (D-309, D-444), the one page of where the party is. Outside turns the place, its picture with its text under it, the open scene and the map; while
  * the scene goes by turns the band of the turns on top, the place closed to a line, the player's character's card beside the map, and on a narrow screen the
- * order of the turns. The map is the same through both, never drawn anew; only the band moves, coming and going.
+ * order of the turns. The map is the same through both, never drawn anew; only the band moves, coming and going. `actor` is the player character whose card
+ * is at hand, `foreground` the one the map measures from, with `several` player characters (VIEW-12).
  */
-export function SceneView(
-    { place, scene, lead, party, own, turnsBeside = false }: { place?: ShownPlace; scene?: ShownScene; lead?: Member; party: Member[]; own: OwnSheet; turnsBeside?: boolean; },
-)
+export function SceneView({ place, scene, actor, foreground, several = false, party, own, turnsBeside = false }: {
+    place?: ShownPlace;
+    scene?: ShownScene;
+    actor?: Member;
+    foreground?: string;
+    several?: boolean;
+    party: Member[];
+    own: OwnSheet;
+    turnsBeside?: boolean;
+})
 {
     const turns = hasTurns(scene) ? scene : undefined;
     const band = useBandMotion(turns);
@@ -44,16 +52,16 @@ export function SceneView(
     return (
         <section class={kinds.filter((kind) => kind !== "").join(" ")} aria-labelledby={turns === undefined ? "place-name" : "turn-title"}>
             <div class="scene-body">
-                {band && <TurnBand key="band" scene={band.scene} lead={lead} {...(band.motion === undefined ? {} : { motion: band.motion })} />}
+                {band && <TurnBand key="band" scene={band.scene} several={several} {...(band.motion === undefined ? {} : { motion: band.motion })} />}
                 {place && (turns === undefined ? <PlaceBand key="place" place={place} /> : <PlaceLine key={`line ${turns.title}`} place={place} />)}
                 {scene && turns === undefined && <SceneCard key="scene" scene={scene} />}
                 {turns && (
                     <div key="side" class="turn-side">
-                        {!turnsBeside && <TurnsCard scene={turns} party={party} />}
-                        <CharacterCard lead={lead} scene={turns} own={own} />
+                        {!turnsBeside && <TurnsCard scene={turns} party={party} several={several} />}
+                        <CharacterCard lead={actor} scene={turns} own={own} />
                     </div>
                 )}
-                {place?.map && <PlaceMap key="map" map={place.map} place={place.name} {...(turns?.turn === undefined ? {} : { acting: turns.turn })} dying={dyingOf(party)} />}
+                {place?.map && <PlaceMap key="map" map={place.map} place={place.name} {...(turns?.turn === undefined ? {} : { acting: turns.turn })} dying={dyingOf(party)} self={foreground} />}
                 {/* Who is here: under the map, who is where says it (D-325). */}
                 {turns === undefined && scene === undefined && place && place.here.length > 0 && place.map === undefined && (
                     <div key="groups" class="groups">

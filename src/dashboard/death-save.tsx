@@ -10,12 +10,15 @@ import { checkOf, fieldLabel } from "./labels.ts";
 import { Token } from "./party.tsx";
 import type { SaveAsked, SaveOutcome } from "./save-outcome.ts";
 import { t } from "./text.ts";
+import { turnWords } from "./turns.tsx";
 
 /** The card of a death save asked of the player, from the question to its outcome, which the player closes once read. */
-export function DeathSaveCard({ asked, save, member, roll, outcome, rolling, onRoll, onClose }: {
+export function DeathSaveCard({ asked, save, member, name, roll, outcome, rolling, onRoll, onClose }: {
     asked: Asked;
     save: SaveAsked;
-    member?: Member;
+    /** Who rolls it; with more than one player character, their name, said in place of "you" (D-480 (7)). */
+    member?: Member | undefined;
+    name?: string | undefined;
     /** The roll, once its dice have landed. */
     roll?: ShownRoll;
     /** What the system's code wrote of it, read once its dice landed; none when it wrote nothing. */
@@ -62,7 +65,7 @@ export function DeathSaveCard({ asked, save, member, roll, outcome, rolling, onR
                     <Icon name="close" />
                 </button>
             )}
-            <p class="asked-turn">{check === undefined ? t("Your turn") : `${t("Your turn")} · ${check.check}`}</p>
+            <p class="asked-turn">{check === undefined ? turnWords(name) : `${turnWords(name)} · ${check.check}`}</p>
             <p id={`dying-${asked.id}`} class="asked-question" role={roll === undefined ? "alert" : undefined}>{asked.question}</p>
             <div class="dying-life">
                 <HeartLine line={heartLine(outcome?.kind)} />

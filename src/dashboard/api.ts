@@ -11,10 +11,10 @@ export function pictureAddress(picture: { file: string; version: number; }): str
     return `/images/${encodeURIComponent(picture.file)}?v=${picture.version}`;
 }
 
-/** What view gives: the party, with the last rolls, as many as asked; or a page. */
-export async function readView(page?: string, rolls?: number): Promise<View>
+/** What view gives: the party, with the last rolls, as many as asked, and the place of the player character `focus` names (VIEW-12); or a page. */
+export async function readView(page?: string, rolls?: number, focus?: string): Promise<View>
 {
-    const query = new URLSearchParams({ ...(page === undefined ? {} : { page }), ...(rolls === undefined ? {} : { rolls: String(rolls) }) });
+    const query = new URLSearchParams({ ...(page === undefined ? {} : { page }), ...(rolls === undefined ? {} : { rolls: String(rolls) }), ...(focus === undefined ? {} : { focus }) });
     const response = await fetch(query.size === 0 ? "/api/view" : `/api/view?${query}`);
     const body = await response.json() as View | { error: string; };
 

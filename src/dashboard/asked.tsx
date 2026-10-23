@@ -4,15 +4,16 @@
 import { Fragment } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { answer } from "./api.ts";
-import type { Asked, ShownGrid } from "./data.ts";
+import type { Asked, Member, ShownGrid } from "./data.ts";
 import { trayThrows } from "./dice/pool.ts";
 import { notationLabel } from "./game-words.ts";
 import { Icon, NotationIcons } from "./icons.tsx";
 import { checkOf, notationModifier, sameDice, signed } from "./labels.ts";
 import { MapSheet } from "./map-sheet.tsx";
-import { sheetAddress } from "./party.tsx";
+import { sheetAddress, sideOf, Token } from "./party.tsx";
 import { byHandPref, usePref } from "./prefs.ts";
 import { t, tParts } from "./text.ts";
+import { turnWords } from "./turns.tsx";
 
 // How far below the top the banner stays, as in the style sheet; how many characters the player's own words may have, as the server takes them.
 const bannerTop = 16;
@@ -32,9 +33,19 @@ const easeOut = "cubic-bezier(0.05, 0.7, 0.1, 1)";
 const easeIn = "cubic-bezier(0.3, 0, 0.8, 0.15)";
 const scrollKeys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]);
 
-export function AskedBanner(
-    { asked, yourTurn, map, place, answered, onAnswered }: { asked: Asked; yourTurn?: boolean; map?: ShownGrid; place?: string; answered?: boolean; onAnswered(): void; },
-)
+/**
+ * The master's question. `yourTurn` when it is asked on the turn of whom it asks; `who`, with more than one player character, the one it asks, whose portrait
+ * takes the robot's place, the robot small on its edge, and whose name it says (D-480 (7)).
+ */
+export function AskedBanner({ asked, yourTurn, who, map, place, answered, onAnswered }: {
+    asked: Asked;
+    yourTurn?: boolean;
+    who?: Member | undefined;
+    map?: ShownGrid;
+    place?: string;
+    answered?: boolean;
+    onAnswered(): void;
+})
 {
     // Folded to a bar that stays in sight, the checks still in it: by the player, even at the top of the page, until they open it or a new question comes;
     // or down the page. How it changed last, for its motion.
@@ -413,8 +424,16 @@ export function AskedBanner(
         const shown = asked.labels.map((label, index) => answerButton(label, index, !roomy)).filter((button) => button !== null);
         return (
             <section ref={banner} class={classes} aria-label={t("What the master asks")}>
-                <img class="asked-robot" src="/assets/favicon.svg" alt="" />
-                <p class="asked-bar-question">{asked.question}</p>
+                {who === undefined ? <img class="asked-robot" src="/assets/favicon.svg" alt="" /> : <AskedWho member={who} />}
+                <p class="asked-bar-question">
+                    {who !== undefined && (
+                        <>
+                            <b class="asked-bar-name">{who.name}</b>
+                            {" · "}
+                        </>
+                    )}
+                    {asked.question}
+                </p>
                 {shown.length > 0 && <div class="asked-buttons">{shown}</div>}
                 {toggle}
             </section>
@@ -425,12 +444,15 @@ export function AskedBanner(
         // Once clicked, the banner folds away while the engine rolls, so that the page does not jump when it goes.
         <section ref={banner} class={classes} aria-labelledby={`asked-${asked.id}`}>
             {toggle}
-            <img class="asked-robot" src="/assets/favicon.svg" alt="" />
+            {who === undefined ? <img class="asked-robot" src="/assets/favicon.svg" alt="" /> : <AskedWho member={who} />}
             <div class="asked-body">
-                {/* On the player's turn in a fight, the banner says so: the turn's own notice gives way to it (D-315). */}
-                {yourTurn && <p class="asked-turn">{t("Your turn")}</p>}
+                {/* On the player's turn in a fight, the banner says so: the turn's own notice gives way to it (D-315). With more player characters, whom it asks. */}
+                {yourTurn ? <p class="asked-turn">{turnWords(who?.name)}</p> : who !== undefined && <p class="asked-turn">{t("For {name}", { name: who.name })}</p>}
                 <h2 class="asked-title">{asked.title}</h2>
-                <p id={`asked-${asked.id}`} class="asked-question" role="alert">{asked.question}</p>
+                <p id={`asked-${asked.id}`} class="asked-question" role="alert">
+                    {who !== undefined && <span class="visually-hidden">{`${who.name}: `}</span>}
+                    {asked.question}
+                </p>
                 {/* By hand, as a master says it: which check, with its dice as pictures; its number the player finds on the sheet. */}
                 {named.length > 0 && byHand && (
                     <p class="asked-hand-note">
@@ -446,7 +468,7 @@ export function AskedBanner(
                                         </a>
                                     </Fragment>
                                 )),
-                                sheet: <a href={sheetAddress(asked.who ?? "")}>{t("your sheet")}</a>,
+                                sheet: <a href={sheetAddress(asked.who ?? "")}>{who === undefined ? t("your sheet") : t("{name}'s sheet", { name: who.name })}</a>,
                             }).map((part, index) => <Fragment key={index}>{part}</Fragment>)}
                         </span>
                     </p>
@@ -497,12 +519,23 @@ export function AskedBanner(
     );
 }
 
+/** The portrait of the player character the master asks, where the robot was, the robot small on its edge (D-480 (7)); its name is in the words beside it. */
+function AskedWho({ member }: { member: Member; })
+{
+    return (
+        <span class="asked-who">
+            <Token member={member} side={sideOf(member.role)} />
+            <img class="asked-who-robot" src="/assets/favicon.svg" alt="" />
+        </span>
+    );
+}
+
 /** The width the folded bar leaves its answers: beside the robot and some of the question on a wide screen; a line of their own on a phone. */
 function foldedRoom(element: HTMLElement): number
 {
     const style = getComputedStyle(element);
     const inner = element.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
-    const robot = element.querySelector<HTMLElement>(".asked-robot");
+    const robot = element.querySelector<HTMLElement>(".asked-robot, .asked-who");
     const gap = Number.parseFloat(style.columnGap) || 0;
     const beside = matchMedia("(max-width: 600px)").matches ? 0 : (robot?.offsetWidth ?? 0) + questionRoom + 2 * gap;
     return inner - beside;

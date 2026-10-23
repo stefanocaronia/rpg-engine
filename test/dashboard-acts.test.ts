@@ -113,6 +113,12 @@ describe("whom a sentence names (D-495)", () => {
         ]);
     });
 
+    it("with more than one player character, names the others first, never the one acting (VIEW-12)", () => {
+        const two: ShownPlace = { ...place, map: { ...place.map!, at: [...at, { name: "Mira", role: "pc", square: "E5", distance: "1.5 m" }] } };
+        expect(actPeople(two, undefined, [], "Mira").map((person) => person.name)).toEqual(["Ettore", "Lupa", "Creature 1"]);
+        expect(actPeople(two, undefined, []).map((person) => person.name)).toEqual(["Lupa", "Creature 1"]);
+    });
+
     it("names those of the scene without a map, with how many copies", () => {
         const scene: ShownScene = { title: "Brawl", type: "combat", who: [{ name: "Ettore", role: "pc" }, { name: "giant rat", role: "other", stranger: true, count: 3 }] };
         expect(actPeople({ name: "Inn", within: [], around: [], text: "", here: [] }, scene, [])).toEqual([{ name: "Giant rat", role: "other", count: 3 }]);

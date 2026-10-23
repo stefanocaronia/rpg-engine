@@ -35,13 +35,22 @@ export function hasTurns(scene: ShownScene | undefined): scene is TurnScene
     return (scene?.fighters?.length ?? 0) > 0;
 }
 
-/** The band of the turns (D-315, D-444): the round, who acts, told again as the turn passes, who comes next; the scene's title and its line of now. */
-export function TurnBand({ scene, lead, motion }: { scene: TurnScene; lead?: Member; motion?: "in" | "out"; })
+/** The player's turn in words: theirs, or with more than one player character the one named, as the master says it (D-480 (7)). */
+export function turnWords(name: string | undefined): string
+{
+    return name === undefined ? t("Your turn") : t("It's {name}'s turn", { name });
+}
+
+/**
+ * The band of the turns (D-315, D-444): the round, who acts, told again as the turn passes, who comes next; the scene's title and its line of now. With
+ * `several` player characters each is named, never "you" (D-480 (7)).
+ */
+export function TurnBand({ scene, several = false, motion }: { scene: TurnScene; several?: boolean; motion?: "in" | "out"; })
 {
     const fighters = scene.fighters;
     const acting = fighters.findIndex((fighter) => fighter.name === scene.turn);
     const next = acting < 0 || fighters.length < 2 ? undefined : fighters[(acting + 1) % fighters.length];
-    const mine = lead !== undefined && scene.turn === lead.name;
+    const mine = acting >= 0 && fighters[acting].role === "pc";
     const kinds = ["turn-band", mine ? "mine" : acting < 0 ? "" : fighters[acting].role, motion === undefined ? "" : `band-${motion}`];
     return (
         <header class={kinds.filter((kind) => kind !== "").join(" ")}>
@@ -56,8 +65,8 @@ export function TurnBand({ scene, lead, motion }: { scene: TurnScene; lead?: Mem
                 <div class="turn-who">
                     {/* Told again when the turn passes: who acts, in one line; the marks stay out of it, or each use would read the band again. */}
                     <div aria-live="polite" aria-atomic="true">
-                        <p class="eyebrow">{mine ? t("Your turn") : t("Now acting")}</p>
-                        <h2 id="turn-title">{mine ? lead?.name : acting < 0 ? scene.title : shownName(fighters[acting])}</h2>
+                        <p class="eyebrow">{mine ? (several ? t("It's the turn of") : t("Your turn")) : t("Now acting")}</p>
+                        <h2 id="turn-title">{acting < 0 ? scene.title : shownName(fighters[acting])}</h2>
                     </div>
                     {scene.marks && <TurnMarks marks={scene.marks} />}
                 </div>
@@ -67,7 +76,7 @@ export function TurnBand({ scene, lead, motion }: { scene: TurnScene; lead?: Mem
                     <span class="eyebrow">{t("Next")}</span>
                     <span class="next-who">
                         <FighterToken fighter={next} pip={false} />
-                        {next.role === "pc" ? t("You") : shownName(next)}
+                        {next.role === "pc" && !several ? t("You") : shownName(next)}
                     </span>
                 </p>
             )}
@@ -102,12 +111,12 @@ function TurnMarks({ marks }: { marks: { use: string; used: boolean; }[]; })
 }
 
 /**
- * The player's character's card while the scene goes by turns (D-315, D-444): its name, what it is, and the way to its whole sheet in its header; what it keeps,
- * the fields and groups of its sheet the system names; at 0 only the death saves. Nothing when the system names none.
+ * A player character's card while the scene goes by turns (D-315, D-444), the one acting or called: its name, what it is, and the way to its whole sheet in its
+ * header; what it keeps, the fields and groups of its sheet the system names; at 0 only the death saves. Nothing when the system names none.
  */
 export function CharacterCard({ lead, scene, own }: { lead?: Member; scene: TurnScene; own: OwnSheet; })
 {
-    const fighter = scene.fighters.find((one) => one.role === "pc");
+    const fighter = scene.fighters.find((one) => one.role === "pc" && one.name === lead?.name);
 
     if (lead === undefined || fighter === undefined || (own.cards?.atHand.length ?? 0) === 0) {
         return null;
@@ -134,7 +143,7 @@ export function CharacterCard({ lead, scene, own }: { lead?: Member; scene: Turn
  * The order of the turns (D-315, D-419), fixed, the mark moving: on the table beside the page, where its list scrolls inside past eight or so and keeps
  * whoever acts in sight; on a narrow screen in the Scene, under the band. Nothing while the scene does not go by turns.
  */
-export function TurnsCard({ scene, party, beside = false }: { scene?: ShownScene; party: Member[]; beside?: boolean; })
+export function TurnsCard({ scene, party, several = false, beside = false }: { scene?: ShownScene; party: Member[]; several?: boolean; beside?: boolean; })
 {
     const list = useRef<HTMLOListElement>(null);
     const [open, toggle] = useOpen("Turns");
@@ -169,6 +178,7 @@ export function TurnsCard({ scene, party, beside = false }: { scene?: ShownScene
                     member={party.find((one) => one.role === fighter.role && one.name === fighter.name)}
                     place={index + 1}
                     acting={index === acting}
+                    several={several}
                 />
             ))}
         </ol>
@@ -205,7 +215,7 @@ export function TurnsCard({ scene, party, beside = false }: { scene?: ShownScene
  * One in the order (D-315), as a small card (D-419): their place, token and name, their counter, their state as icons (whether they act, at 0, what is on
  * them), what they keep; the death saves at 0. Their token has no pip of state: the icons beside it say it.
  */
-function FighterRow({ fighter, member, place, acting }: { fighter: Fighter; member: Member | undefined; place: number; acting: boolean; })
+function FighterRow({ fighter, member, place, acting, several }: { fighter: Fighter; member: Member | undefined; place: number; acting: boolean; several: boolean; })
 {
     // One of the party has the bar of their strip (D-419), the icons under it.
     const counter = member === undefined ? undefined : stripCounter(member);
@@ -219,7 +229,7 @@ function FighterRow({ fighter, member, place, acting }: { fighter: Fighter; memb
                         ? (
                             <>
                                 {shownName(fighter)}
-                                <span class="you">{t("You")}</span>
+                                {!several && <span class="you">{t("You")}</span>}
                             </>
                         )
                         : <TalkName name={shownName(fighter)}>{shownName(fighter)}</TalkName>}

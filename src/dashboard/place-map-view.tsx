@@ -38,7 +38,7 @@ export interface Choosing
     onChoose(name: string | undefined): void;
 }
 
-export function PlaceMap({ map, place, acting, picking, choosing, bare = false, dying }: {
+export function PlaceMap({ map, place, acting, picking, choosing, bare = false, dying, self: selfName }: {
     map: ShownGrid;
     place: string;
     acting?: string;
@@ -48,6 +48,8 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
     bare?: boolean;
     /** Where those of the party at their dying point stand, by name, for their tokens (D-461). */
     dying?: ReadonlyMap<string, DyingCounter[]>;
+    /** With more than one player character, the one in the foreground, whom the distances are from (VIEW-12). */
+    self?: string | undefined;
 })
 {
     const svg = useRef<SVGSVGElement>(null);
@@ -82,7 +84,7 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
         const square = squareOf(one.square);
         return square === undefined ? [] : [{ ...one, at: square }];
     });
-    const self = standing.find((one) => one.role === "pc");
+    const self = standing.find((one) => one.role === "pc" && (selfName === undefined || one.name === selfName));
     // What one fills, in squares a side: a large creature stands on the square at the top left of its own (GRD-4).
     const middle = (one: { at: Square; side?: number; }): [number, number] => [X(one.at.column) + (size * (one.side ?? 1)) / 2, Y(one.at.row) + (size * (one.side ?? 1)) / 2];
     // The squares the character can still reach, and those it stands on, which are never out of its reach (D-328).
@@ -191,8 +193,10 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
                     </g>
                     <g class="lm-tokens">
                         {standing.map((one, index) => {
-                            const shown = one.role === "pc" ? undefined : one.stranger ? strangerLabel(one.name) : one.name;
-                            // Talking needs someone else; choosing for an action takes the player's own character too, as themselves.
+                            // Talking needs someone else, never one of the player characters; choosing for an action takes the one acting too, as themselves, and
+                            // with more than one the others by name.
+                            const other = one.role !== "pc" || (choosing !== undefined && selfName !== undefined && one !== self);
+                            const shown = !other ? undefined : one.stranger ? strangerLabel(one.name) : one.name;
                             const choice = tokens === undefined || (shown === undefined && choosing === undefined) ? undefined : {
                                 chosen: choosing !== undefined && choosing.selected === shown && shown !== undefined,
                                 onChoose: () => tokens.onChoose(shown),
@@ -232,7 +236,7 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
                     )}
                 </svg>
             </div>
-            {!bare && <MapKey map={map} reach={reach.length > 0} />}
+            {!bare && <MapKey map={map} reach={reach.length > 0} self={selfName} />}
             {!bare && standing.length > 0 && (
                 <ul ref={where} class="lm-where" aria-label={t("Who is where")}>
                     {/* The player's character first, then the companions, then the others, each as the map lists them. */}
@@ -248,7 +252,9 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
                             <span class="lm-key-square">{one.square}</span>
                             {one.distance !== undefined
                                 ? <span class="lm-where-far">{one.distance}</span>
-                                : self !== undefined && one !== self && (nextTo(one.at, self.at) || one.square === self.square) && <span class="lm-where-far">{t("next to you")}</span>}
+                                : self !== undefined && one !== self && (nextTo(one.at, self.at) || one.square === self.square) && (
+                                    <span class="lm-where-far">{selfName === undefined ? t("next to you") : t("next to {name}", { name: selfName })}</span>
+                                )}
                         </li>
                     ))}
                 </ul>
@@ -257,8 +263,8 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
     );
 }
 
-/** The map's key: the veil of the player's turn, the things of the legend, where the squares lead. */
-function MapKey({ map, reach }: { map: ShownGrid; reach: boolean; })
+/** The map's key: the veil of the player's turn, named with more than one player character, the things of the legend, where the squares lead. */
+function MapKey({ map, reach, self }: { map: ShownGrid; reach: boolean; self?: string | undefined; })
 {
     return (
         <ul class="lm-key" aria-label={t("Legend")}>
@@ -271,7 +277,7 @@ function MapKey({ map, reach }: { map: ShownGrid; reach: boolean; })
                             <rect width={40} height={40} />
                         </g>
                     </svg>
-                    <span class="lm-key-name">{t("out of your move this turn")}</span>
+                    <span class="lm-key-name">{self === undefined ? t("out of your move this turn") : t("out of {name}'s move this turn", { name: self })}</span>
                 </li>
             )}
             {map.legend.filter((feature) => !["floor", "ground"].includes(feature.kind)).map((feature) => (

@@ -135,13 +135,14 @@ export interface ActPerson
 }
 
 /**
- * Who the player may name in a sentence: the party's companions, then those at the place, as the map has them or else the scene or the place, by the
- * page's labels, as Hooded Bandit 1, never a name the character does not know; never the player's own character, which is Myself.
+ * Who the player may name in a sentence: the other player characters there, the party's companions, then those at the place, as the map has them or else
+ * the scene or the place, by the page's labels, as Hooded Bandit 1, never a name the character does not know; never the one acting, `self`, which is Myself,
+ * nor without it any player character.
  */
-export function actPeople(place: ShownPlace | undefined, scene: ShownScene | undefined, companions: string[]): ActPerson[]
+export function actPeople(place: ShownPlace | undefined, scene: ShownScene | undefined, companions: string[], self?: string): ActPerson[]
 {
     const present: (ShownPerson & { square?: string; distance?: string; })[] = place?.map?.at ?? scene?.who ?? place?.here ?? [];
-    const shown = present.filter((person) => person.role !== "pc").map((person): ActPerson => ({
+    const shown = present.filter((person) => person.role !== "pc" || (self !== undefined && person.name !== self)).map((person): ActPerson => ({
         name: person.stranger === true ? strangerLabel(person.name) : person.name,
         role: person.role,
         ...(person.hostile === true ? { hostile: true } : {}),
@@ -150,7 +151,7 @@ export function actPeople(place: ShownPlace | undefined, scene: ShownScene | und
         ...(person.count === undefined || person.count < 2 ? {} : { count: person.count }),
     }));
     const away = companions.filter((name) => !shown.some((person) => person.name === name)).map((name): ActPerson => ({ name, role: "companion" }));
-    return [...shown.filter((person) => person.role === "companion"), ...away, ...shown.filter((person) => person.role !== "companion")];
+    return [...shown.filter((person) => person.role === "pc"), ...shown.filter((person) => person.role === "companion"), ...away, ...shown.filter((person) => person.role === "other")];
 }
 
 /** A sentence the player said on this page, by its id; lost when the game went away before the master heard it; or one copied, for the chat. */

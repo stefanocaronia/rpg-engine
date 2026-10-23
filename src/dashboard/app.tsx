@@ -36,7 +36,7 @@ import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
 import { pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
 import { SetupCorner, Top } from "./top.tsx";
-import { hasTurns, TurnsCard } from "./turns.tsx";
+import { hasTurns, TurnsCard, turnWords } from "./turns.tsx";
 import { WorldView } from "./world.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
@@ -53,6 +53,8 @@ interface Shown
     now?: string;
     calendar?: CalendarDay;
     party: Member[];
+    /** With more than one player character, the one in the foreground, whose place the page shows (VIEW-12). */
+    foreground?: string;
     chosen?: string;
     /** The line under the chosen one's name, such as Level 3 Cleric. */
     headline?: string;
@@ -98,6 +100,8 @@ function App()
     // The section the address names, and whose sheet (D-276, D-309).
     const [address, setAddress] = useState<Address>(() => readAddress(window.location.hash));
     const reading = useRef(0);
+    // Whose sheet the Party section opened by itself, kept until the address changes.
+    const opened = useRef<string>();
     // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new since come into the list as new.
     const seen = useRef<Set<string>>();
     const [thrown, setThrown] = useState<ShownRoll>();
@@ -139,16 +143,31 @@ function App()
     const [actProblem, setActProblem] = useState<string>();
     const [acting, setActing] = useState<{ start: ActStart; opener: HTMLElement | SVGElement; }>();
 
-    // Reads view again for whom the address names, or the player character, and what the master asks; an answer that comes after a newer one is left out.
+    // Reads view again for whom the address names, or the player character the master calls, and what the master asks; an answer that comes after a newer one
+    // is left out.
     const read = async (): Promise<void> => {
         const number = ++reading.current;
 
         try {
-            const [overview, asked, actsNow] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined), readActs().catch(() => undefined)]);
+            const [first, told, actsNow] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined), readActs().catch(() => undefined)]);
+            const asked = told === undefined || first.kind !== "overview" ? told : withSaver(told, first.party);
+            // With more than one player character, a question for one puts them in the foreground: the place, the map and the squares are theirs (VIEW-12).
+            const focus = first.kind === "overview" && first.foreground !== undefined && asked?.who !== first.foreground ? playerNamed(first.party, asked?.who)?.name : undefined;
+            const overview = focus === undefined ? first : await readView(undefined, rollsAsked.current, focus).catch(() => first);
             const party = overview.kind === "overview" ? overview.party : [];
             partyNow.current = party;
             const rolls = overview.kind === "overview" ? overview.rolls : [];
-            const member = party.find((candidate) => candidate.name === readAddress(window.location.hash).name) ?? party[0];
+            const address = readAddress(window.location.hash);
+            const scene = overview.kind === "overview" ? overview.openScene : undefined;
+            const foreground = overview.kind === "overview" ? overview.foreground : undefined;
+            // The sheet the Party section opens without a name stays while the player reads it, until they leave the section (D-480 (7)).
+            const kept = address.section === "party" ? party.find((candidate) => candidate.name === opened.current) : undefined;
+            const member = (address.section === "party" ? party.find((candidate) => candidate.name === address.name) : undefined) ?? kept ?? calledOf(party, address.section, asked, scene, foreground);
+
+            if (address.section === "party" && address.name === undefined) {
+                opened.current = member?.name;
+            }
+
             const page = member === undefined ? undefined : await readView(member.name);
             // The page's words in the campaign's language (D-394), its file read once; its dates and screen readers follow the language too.
             const language = overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined;
@@ -213,6 +232,7 @@ function App()
                         now: overview.kind === "overview" ? overview.now : undefined,
                         calendar: overview.kind === "overview" ? overview.calendar : undefined,
                         party,
+                        foreground,
                         chosen: member?.name,
                         headline: page?.kind === "page" ? page.headline : undefined,
                         sheet: page?.kind === "page" ? page.sheet : [],
@@ -320,6 +340,7 @@ function App()
         events.onerror = () => setLive(false);
 
         const followAddress = (): void => {
+            opened.current = undefined;
             redirectCombat();
             setAddress(readAddress(window.location.hash));
             void read();
@@ -340,7 +361,12 @@ function App()
     useEffect(() => setFree(readFree(shown.campaign)), [shown.campaign]);
 
     const member = shown.party.find((candidate) => candidate.name === shown.chosen);
-    const lead = shown.party.find((candidate) => candidate.role === "pc");
+    const players = shown.party.filter((candidate) => candidate.role === "pc");
+    // With more than one player character the page names each one, never "you" (D-480 (7)).
+    const several = players.length > 1;
+    // The one in the foreground, whose place the page shows; and whose card is at hand in a fight, the one whose sheet was read.
+    const lead = playerNamed(shown.party, shown.foreground) ?? players[0];
+    const actor = member?.role === "pc" ? member : lead;
     // A number of a sheet thrown for fun, each a throw of its own (D-280).
     const throwFromSheet: FreeRoll = (roll, label, who) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label, ...(who === undefined ? {} : { who }) }));
 
@@ -371,9 +397,14 @@ function App()
     };
 
     const requested = live ? requestedOf(answering === shown.asked?.id ? undefined : shown.asked, (index) => void answerFrom(index)) : undefined;
-    // The open scene goes by turns, as a fight, and whether the turn is the player's character's (D-314, D-315, D-444).
+    // The open scene goes by turns, as a fight, and whether the turn is a player character's (D-314, D-315, D-444); whose, by name, when there are more.
     const fight = hasTurns(shown.openScene);
-    const yourTurn = fight && lead !== undefined && shown.openScene?.turn === lead.name;
+    const turnOf = fight ? playerNamed(shown.party, shown.openScene?.turn) : undefined;
+    const yourTurn = turnOf !== undefined;
+    const turnName = several ? turnOf?.name : undefined;
+    // The player character the master's question is for, named on it when there are more (D-480 (7)).
+    const asker = several ? playerNamed(shown.party, shown.asked?.who) : undefined;
+    const dying = shown.party.find((candidate) => candidate.name === saving?.asked.who) ?? lead;
 
     // The game gone, what the master had not heard is lost with the chat: the strip says so, even once the game is back (D-495).
     useEffect(() => {
@@ -459,7 +490,7 @@ function App()
         requestAnimationFrame(() => opener?.isConnected === true && opener.focus());
     };
 
-    const playerActs: PlayerActs | undefined = actions === undefined || lead === undefined ? undefined : { actions, start: (start, opener) => setActing({ start, opener }) };
+    const playerActs: PlayerActs | undefined = actions === undefined || players.length === 0 ? undefined : { actions, start: (start, opener) => setActing({ start, opener }) };
 
     // The tab's title: the campaign's name and the product's; a question that waits marks it, to be seen from another tab (D-455).
     useEffect(() => {
@@ -523,6 +554,7 @@ function App()
                             section={address.section}
                             fight={fight}
                             yourTurn={yourTurn}
+                            turnName={turnName}
                         />
                     )}
                     {inSetup && <SetupCorner live={live} />}
@@ -532,7 +564,8 @@ function App()
                             key={saving.asked.id}
                             asked={saving.asked}
                             save={saving.save}
-                            member={lead}
+                            member={dying}
+                            name={several ? dying?.name : undefined}
                             roll={saving.roll}
                             outcome={saving.outcome}
                             rolling={saving.sent === true || answering === saving.asked.id || shown.asked?.id !== saving.asked.id}
@@ -562,7 +595,8 @@ function App()
                     {live && saving === undefined && shown.asked && shown.asked.spend === undefined && (
                         <AskedBanner
                             asked={shown.asked}
-                            yourTurn={yourTurn}
+                            yourTurn={yourTurn && (asker === undefined || asker.name === turnOf?.name)}
+                            who={asker}
                             map={shown.place?.map}
                             place={shown.place?.name}
                             answered={answering === shown.asked.id}
@@ -577,7 +611,7 @@ function App()
                                 {live && yourTurn && address.section !== "scene" && shown.asked === undefined && saving === undefined && (
                                     <a class="turn-notice" href={sectionAddress("scene")}>
                                         <Icon name="combat" />
-                                        <span>{shown.openScene?.round === undefined ? t("Your turn") : `${t("Your turn")} · ${t("Round {round}", { round: shown.openScene.round })}`}</span>
+                                        <span>{[turnWords(turnName), shown.openScene?.round === undefined ? "" : t("Round {round}", { round: shown.openScene.round })].filter((part) => part !== "").join(" · ")}</span>
                                         <span class="turn-notice-go">{t("Go to the scene")}</span>
                                     </a>
                                 )}
@@ -596,11 +630,13 @@ function App()
                                             <SceneView
                                                 place={shown.place}
                                                 scene={shown.openScene}
-                                                lead={lead}
+                                                actor={actor}
+                                                foreground={shown.foreground}
+                                                several={several}
                                                 party={shown.party}
                                                 turnsBeside={table}
                                                 own={{
-                                                    sheet: shown.chosen === lead?.name ? shown.sheet : [],
+                                                    sheet: shown.chosen === actor?.name ? shown.sheet : [],
                                                     cards: shown.cards,
                                                     version: shown.version,
                                                     onRoll: throwFromSheet,
@@ -639,7 +675,7 @@ function App()
                                                     setTableAway(true);
                                                 }}
                                             >
-                                                {fight && <TurnsCard scene={shown.openScene} party={shown.party} beside />}
+                                                {fight && <TurnsCard scene={shown.openScene} party={shown.party} several={several} beside />}
                                                 <QuestEndings version={shown.version} campaign={shown.campaign} beside />
                                                 <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
                                                 {rolls}
@@ -681,6 +717,7 @@ function App()
                     {acting !== undefined && (
                         <ActSheet
                             start={acting.start}
+                            self={several ? member?.name : undefined}
                             place={shown.place}
                             scene={shown.openScene}
                             companions={shown.party.filter((one) => one.role === "companion").map((one) => one.name)}
@@ -700,6 +737,30 @@ function App()
             </PlayerActsContext.Provider>
         </RequestedRoll.Provider>
     );
+}
+
+/** The player character of the party by their name; undefined for anyone else, or none. */
+function playerNamed(party: Member[], name: string | undefined): Member | undefined
+{
+    return name === undefined ? undefined : party.find((member) => member.role === "pc" && member.name === name);
+}
+
+/**
+ * Whose sheet the page reads when the address names no one (D-480 (7)): in the Party section the player character the master asks, then whose turn it is;
+ * elsewhere whose turn it is first, for the card at hand in a fight; else the one in the foreground, else the first.
+ */
+function calledOf(party: Member[], section: string, asked: Asked | undefined, scene: ShownScene | undefined, foreground: string | undefined): Member | undefined
+{
+    const asking = playerNamed(party, asked?.who);
+    const acting = hasTurns(scene) ? playerNamed(party, scene.turn) : undefined;
+    return (section === "party" ? asking ?? acting : acting ?? asking) ?? playerNamed(party, foreground) ?? party[0];
+}
+
+/** A death save with who rolls it: the server names no one for a die alone, so the one player character at their dying point, as the question comes. */
+function withSaver(asked: Asked, party: Member[]): Asked
+{
+    const dying = party.filter((member) => member.role === "pc" && member.dying !== undefined);
+    return asked.save === undefined || asked.who !== undefined || dying.length !== 1 ? asked : { ...asked, who: dying[0].name };
 }
 
 /** A death save's card with its outcome, as what the system's code wrote left who rolled it, in the party as last read (D-461). */
