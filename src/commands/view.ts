@@ -27,6 +27,7 @@ import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, re
 import { readOpenScene } from "./game-scene.ts";
 import { thoughtsIn, thoughtsRule, thoughtsShown } from "./game-thoughts.ts";
 import { calendarDayOf, readPresent } from "./game-time.ts";
+import { fuelLeft } from "./game-upkeep.ts";
 import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
@@ -365,7 +366,10 @@ export const view = defineCommand({
                 ...(icon === undefined ? {} : { icon }),
                 ...(place === undefined ? {} : { place }),
                 counters: lineValues(world, page, lineCounters(world, page, coins, system)).map((value) => valueCoins(value, coins, system)),
-                effects: effectsOf(page).map((effect) => seenEffect(sight, effect)),
+                effects: effectsOf(page).map((effect) => {
+                    const burns = fuelLeft(system, world, page, effect.name);
+                    return { ...seenEffect(sight, effect), ...(burns === undefined ? {} : { burns }) };
+                }),
                 ...(mood === "neutral" ? {} : { mood }),
                 ...(dying === undefined ? {} : { dying }),
                 ...(headline === undefined ? {} : { headline }),
@@ -768,7 +772,15 @@ function storyFact(world: World, entry: LogEntry, named: (name: unknown) => stri
             case "roll-revealed":
                 return { kind: "roll-revealed" };
             case "counter-changed":
-                return { kind: "counter", who: who(data.page), field: text(data.field), before: text(data.before), after: text(data.after), ...(data.stack === true ? { stack: true } : {}) };
+                return {
+                    kind: "counter",
+                    who: who(data.page),
+                    field: text(data.field),
+                    before: text(data.before),
+                    after: text(data.after),
+                    ...(data.stack === true ? { stack: true } : {}),
+                    ...(data.upkeep === true ? { upkeep: true } : {}),
+                };
             case "time-advanced":
                 return { kind: "time", ...(data.from === undefined ? {} : { from: text(data.from) }), to: text(data.to) };
             case "moved":

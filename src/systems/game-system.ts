@@ -105,9 +105,11 @@ const systemSchema = z.object({
         limit: z.union([z.string().min(1), z.array(z.union([z.string().min(1), z.number()])).min(1)]),
         coins: z.number().int().positive().optional(),
         weightless: z.string().min(1).optional(),
+        stages: z.record(z.string().min(1), z.string().min(1)).optional(),
     }, {
         error:
-            "write it as the field of an item's weight, the formula of the limit, and how many coins weigh one unit, such as {field: weight, limit: str * 15, coins: 50}; weightless names the field of an item whose contents weigh nothing",
+            "write it as the field of an item's weight, the formula of the limit, and how many coins weigh one unit, such as {field: weight, limit: str * 15, coins: 50}; weightless names the field of an item whose contents weigh nothing; "
+            + "stages names what a load makes a character, each with the formula that says so above 0, the heaviest last, such as {Encumbered: ceil(load - 5 * str)}",
     }).strict().optional(),
     travel: travelSchema.optional(),
     grid: gridSchema.optional(),
@@ -133,10 +135,12 @@ const systemSchema = z.object({
     "sheet-odds": z.object({
         better: z.string().regex(rollNamePattern),
         worse: z.string().regex(rollNamePattern),
-        when: z.array(z.object({ fields: z.array(z.string().min(1)).min(1), better: z.string().min(1).optional(), worse: z.string().min(1).optional() }).strict()),
+        when: z.array(
+            z.object({ fields: z.array(z.string().min(1)).min(1), better: z.string().min(1).optional(), worse: z.string().min(1).optional(), why: z.string().min(1).optional() }).strict(),
+        ),
     }, {
-        error: "write it as the dice of a better and a worse roll, and when: fields of the sheet with the formulas that make them better or worse above 0, "
-            + "such as {better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: count(equipped, stealth-disadvantage = true)}]}",
+        error: "write it as the dice of a better and a worse roll, and when: fields of the sheet with the formulas that make them better or worse above 0, and why in a word of the system, "
+            + "such as {better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: count(equipped, stealth-disadvantage = true), why: Armor}]}",
     }).strict().optional(),
     "roll-names": z.record(z.string().regex(rollNamePattern), z.union([z.string().min(1), z.record(z.string().min(2), z.string().min(1))]), {
         error: "write it as dice with the highest or the lowest kept or dropped, and the name the game gives such a roll, by language, such as 2d20kh1: {en: with advantage, it: con vantaggio}",
@@ -469,7 +473,7 @@ export interface GameSystem
      * What a character carries weighs (D-432, LOAD-1): the field of an item's weight, the limit as a formula, how many coins make one unit of weight, and the
      * field of an item whose contents weigh nothing.
      */
-    load?: { field: string; limit: Formula; coins?: number; weightless?: string; };
+    load?: { field: string; limit: Formula; coins?: number; weightless?: string; stages?: { name: string; formula: Formula; }[]; };
     /** The unit its computed lengths are in, as ft, which the sheet writes after them (SPD-1). */
     lengthUnit?: string;
     /** The lists whose pages give their bonus fields to who lists them, as attuned items and feats (D-449). */
@@ -488,7 +492,7 @@ export interface GameSystem
      * The dice of a better and a worse free roll, and the fields of the sheet that formulas make better or worse above 0, as Stealth in heavy armor or a check
      * at exhaustion 1; both cancel out (D-445).
      */
-    sheetOdds?: { better: string; worse: string; when: { fields: string[]; better?: Formula; worse?: Formula; }[]; };
+    sheetOdds?: { better: string; worse: string; when: { fields: string[]; better?: Formula; worse?: Formula; why?: string; }[]; };
     /** The line under a character's name on the dashboard, with fields in braces, such as Level {level} {classes} (D-288). */
     sheetHeadline?: string;
     /** The icon on the token of one of the party (D-414): by the name of the first item of a field that has one, such as a class of classes. */
@@ -843,6 +847,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
                     : parseFormula(data.load.limit),
                 ...(data.load.coins === undefined ? {} : { coins: data.load.coins }),
                 ...(data.load.weightless === undefined ? {} : { weightless: data.load.weightless }),
+                ...(data.load.stages === undefined ? {} : { stages: Object.entries(data.load.stages).map(([name, formula]) => ({ name, formula: parseFormula(formula) })) }),
             },
         }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
@@ -857,6 +862,7 @@ function readSystem(folder: string, name: string, additions?: CampaignData): Gam
                     fields: when.fields,
                     ...(when.better === undefined ? {} : { better: parseFormula(when.better) }),
                     ...(when.worse === undefined ? {} : { worse: parseFormula(when.worse) }),
+                    ...(when.why === undefined ? {} : { why: when.why }),
                 })),
             },
         }),

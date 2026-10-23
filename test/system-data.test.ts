@@ -80,7 +80,7 @@ describe("the character sheet (DAT-2)", () => {
         await runCommandLine(["init", "--name", "Nuova", "--system", "5e"], other);
         expect((await runCommandLine(["status"], other)).output).toContain(
             "No player character yet. The system 5e keeps on a character sheet, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, hp, "
-                + "save-proficiencies, skill-proficiencies, weapon-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, factions, inspiration, personality-traits, ideal, bond, flaw, age, height, weight, eyes, skin, hair, save-notes, equipped, temp-hp, "
+                + "save-proficiencies, skill-proficiencies, weapon-proficiencies, languages; and when they apply: creature, size, subclasses, background, feats, alignment, factions, inspiration, personality-traits, ideal, bond, flaw, age, height, weight, eyes, skin, hair, save-notes, fly, swim, climb, burrow, equipped, temp-hp, "
                 + "darkvision, damage-resistances, damage-immunities, death-successes, death-failures, exhaustion, days-without-food, expertise, "
                 + "armor-proficiencies, tool-proficiencies, fighting-styles, invocations, money, lifestyle, attuned, inventory, spells, prepared. It works out "
                 + "level, str-mod, dex-mod, con-mod, int-mod, wis-mod, cha-mod, proficiency, Saving Throws, Skills, ac, initiative, walking, flying, swimming, climbing, burrowing, extra-attacks, passive-perception, passive-insight, passive-investigation, long-jump, high-jump, push-drag, hold-breath, Features, Attacks, "

@@ -164,6 +164,8 @@ export interface SeenEffect
     condition?: true;
     /** The condition's drawing, when the system gives one (D-419): the d of an SVG path on a grid of 24. */
     icon?: string;
+    /** For something that burns, as a torch, what it spends and how many of it are still carried (UPK-3). */
+    burns?: { fuel: string; left: number; };
 }
 
 /** An effect as the dashboard shows it on someone of the party: its name, its end, the line status gives, and whether it is a condition (D-276, D-314, D-419). */
