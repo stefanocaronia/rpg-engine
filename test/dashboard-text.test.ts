@@ -77,7 +77,7 @@ describe("the page's words (D-394)", () => {
         expect([gameDateLabel("day 3, 06:00"), gameDateLabel("day 12"), gameDateLabel("tomorrow")]).toEqual(["giorno 3, 06:00", "giorno 12", "tomorrow"]);
         expect(effectEndLabel({ date: "day 1, 18:01" })).toBe("fino al giorno 1, 18:01");
         expect(fromLabel({ km: 12.4, direction: "north-east" }, (km) => lengthText(km, { name: "km", km: 1 }))).toBe("12,4 km a nord-est");
-        expect(levelNeedLabel({ needs: 1200, level: 4 })).toBe("1200 al livello 4");
+        expect(levelNeedLabel({ needs: 1200, level: 4 })).toBe("mancano 1200 al livello 4");
         expect(notationLabel([{ dice: "2d20", keep: { which: "highest", count: 1 } }, { add: "+5" }])).toBe("2d20, tieni il più alto, +5");
         await setLanguage("en");
     });
@@ -91,7 +91,7 @@ describe("the page's words (D-394)", () => {
         expect(pageDirection()).toBe("rtl");
         expect([arrowStep("ArrowLeft"), arrowStep("ArrowRight"), arrowStep("ArrowDown"), arrowStep("ArrowDown", true)]).toEqual([1, -1, 1, 0]);
         await setLanguage("it", read);
-        expect([pageDirection(), t("{points} to level {level}", { points: 1200, level: 4 })]).toEqual(["ltr", "1200 al livello 4"]);
+        expect([pageDirection(), t("{points} to level {level}", { points: 1200, level: 4 })]).toEqual(["ltr", "mancano 1200 al livello 4"]);
         expect([arrowStep("ArrowLeft"), arrowStep("ArrowRight")]).toEqual([-1, 1]);
         await setLanguage("en");
     });

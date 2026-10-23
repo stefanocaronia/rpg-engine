@@ -1,0 +1,7 @@
+name: An adventure being imported, as the page tells it
+covers: [import-notice]
+setup:
+  files:
+    .imports/il-re-del-guado/import.yaml: "title: Il re del guado\ndocument: re.pdf\npieces: 4\nphase: choosing\ndone: 4\n"
+steps:
+  - assertVisible: "“Il re del guado” is read: the master asks you where to start"

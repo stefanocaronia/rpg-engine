@@ -1,0 +1,5 @@
+goal: "Let the master search your manuals, already on this computer, in this campaign."
+flow: library-turn-on
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 1
+expected_seconds: 20

@@ -1,0 +1,14 @@
+name: On a short rest, spend hit dice one at a time
+covers: [rest-spend]
+setup:
+  rpg:
+    - [change, Ettore, hit-dice-d8, --to, "2"]
+    - [change, Ettore, hp, --to, "14"]
+  ask: {question: "Riposo breve sotto il mulino, mentre la pioggia batte sulle pale: quanti dadi vita spendi?", recipe: short rest}
+steps:
+  - tapOn: Roll
+    concept: {name: one hit die at a time, difficulty: 2}
+  - advance: 2s
+  - advance: 2s
+  - tapOn: Done
+  - assertState: {query: answer, contains: hit-dice-d8}

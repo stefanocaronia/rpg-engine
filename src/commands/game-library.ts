@@ -6,7 +6,7 @@ import type { Context } from "../core/context.ts";
 import { comparableText } from "../core/text.ts";
 import { documentAt, documentKinds } from "../documents/index.ts";
 import { dropUnlisted, foldersIn, isWithin, type LibraryBook, libraryFolders, libraryReader, type LibraryScope, type LibraryState, libraryState, mostBooks, samePath, saveLibraryFolders } from "../library/index.ts";
-import { findPages, hasAllWords, pageExcerpt, type PageFinding, pageTitle, type SearchedBook } from "../rules/index.ts";
+import { bookHeadings, findPages, hasAllWords, pageExcerpt, type PageFinding, pageTitle, type SearchedBook } from "../rules/index.ts";
 import { systemWords } from "../systems/index.ts";
 import { languageName } from "./game-world.ts";
 import { YesRefused } from "./package.ts";
@@ -43,6 +43,9 @@ const shownPages = 2;
 const otherPages = 6;
 // The most of the system's words in the books' language a search adds.
 const mostTranslations = 6;
+// The most books of an entry turned on, and titles of each, the master is told of.
+const toldBooks = 5;
+const toldTitles = 12;
 
 /**
  * The entries to turn on in the campaign's library, as full paths (LIB-1): each a folder or a document that is there, outside every campaign. Those not yet in
@@ -213,6 +216,32 @@ export function libraryShown(root: string, context: Context): string[]
     });
     const unused = entries.filter((entry) => !entry.used).map((entry) => `${entry.path} (on this computer, not used here: add turns it on)`);
     return [...used, ...unused];
+}
+
+/**
+ * What an entry of the library holds, as the master hears it when the player turns it on (D-491): its books read, each with its titles, so that the master
+ * knows when to search them; and those still being read.
+ */
+export function libraryContents(context: Context, entry: string): string
+{
+    const state = context.bookIndex === undefined ? undefined : libraryState(context.bookIndex, [entry], libraryScope);
+
+    if (state === undefined || state.books.length + state.waiting.length === 0) {
+        return "no book the engine reads";
+    }
+
+    const books = state.books.slice(0, toldBooks).map((book) => {
+        const titles = bookHeadings(book);
+        const told = titles.slice(0, toldTitles).join("; ") + (titles.length > toldTitles ? "; …" : "");
+        return titles.length === 0 ? `«${book.name}»` : `«${book.name}» (${told})`;
+    });
+    const more = state.books.length - books.length;
+    const waiting = state.waiting.length;
+    return [
+        ...books,
+        more > 0 ? `${more} more ${more === 1 ? "book" : "books"}` : "",
+        waiting > 0 ? `${waiting} ${waiting === 1 ? "book" : "books"} still being read` : "",
+    ].filter(Boolean).join(", ");
 }
 
 /** Starts reading the books of this computer's library still to read, in a process of its own, unless one reads already (LIB-3). */

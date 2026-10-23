@@ -15,3 +15,10 @@
 - {id: setup-choice, area: Setup, name: "A choice of the Setup: one of the questions before play", decision: D-370}
 - {id: settings-change, area: Settings, name: "Change a setting during play; the master hears it", decision: D-341}
 - {id: help-read, area: Help, name: "Read how to play with the chat and the dashboard", decision: D-407}
+- {id: act-sheet, area: Party, name: "A name on the sheet acts: the player's action as their own sentence to the master", decision: D-495}
+- {id: act-target, area: Party, name: "On whom: the map's tokens and the list, before the sentence", decision: D-495}
+- {id: act-talk, area: Party, name: "Talk to someone at the place, from their name", decision: D-495}
+- {id: act-strip, area: Party, name: "The sentences said: waiting, heard, never heard; taken back before the master hears", decision: D-495}
+- {id: rest-spend, area: Asked, name: "A short rest's hit dice, spent one at a time on the page", decision: D-492}
+- {id: library-use, area: Packages, name: "The player's books: a shelf of this computer turned on for the campaign", decision: D-491}
+- {id: import-notice, area: Notices, name: "An adventure being imported, and how far it is", decision: D-491}

@@ -1,0 +1,11 @@
+name: Speak to a companion from the page, in the player's own words
+covers: [act-talk, act-strip]
+setup: {bell: true}
+steps:
+  - phone: {tapOn: Scene}   # on a phone who is here is in Scene
+  - tapOn: Talk to Lupa
+  - inputText: {into: {label: Your words to the master}, text: "I talk to Lupa: resta dietro di me, piccola."}
+  - tapOn: Tell the master
+  - assertVisible: The master is about to read it   # the doorbell rang at once: too late to take it back
+  - assertNotVisible: {label: Take it back from the master}
+  - assertState: {query: news, contains: resta dietro di me}

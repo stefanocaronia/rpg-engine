@@ -7453,7 +7453,8 @@ svg.icon {
     font-size: 0.875rem;
 }
 
-.act-line.said {
+.act-line.said,
+.act-line.called {
     border-color: var(--accent);
 }
 

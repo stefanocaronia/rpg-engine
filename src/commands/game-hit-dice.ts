@@ -87,10 +87,12 @@ export function spendDice(
     const after = Math.min(target.value + healed, target.max ?? Number.POSITIVE_INFINITY);
     const written = (counter: { value: number; max?: number; }): number | string => (counter.max === undefined ? counter.value : formatCounter({ value: counter.value, max: counter.max }));
     const layers = writeCounters(root, context, world, page, [[field, written({ ...dice, value: dice.value - count })], [rule.gives, written({ ...target, value: after })]]);
-    const each = adds === 0 ? "" : ` ${adds > 0 ? "+" : "-"} ${Math.abs(adds)} each`;
-    const result = `${roll.notation} = [${roll.faces.join(", ")}]${each}, ${healed}`;
+    // What the dice add in all, in the notation as a check's bonus is, so that the page shows it beside the faces (playtest 19); each die heals at least 0.
+    const added = adds * count;
+    const notation = added === 0 ? roll.notation : `${roll.notation}${added > 0 ? "+" : "-"}${Math.abs(added)}`;
+    const result = `${notation} = [${roll.faces.join(", ")}]${added === 0 ? "" : ` ${added > 0 ? "+" : "-"} ${Math.abs(added)}`}, ${healed}`;
     const entry = newDatedLogEntry(root, context, "roll", "public", {
-        notation: roll.notation,
+        notation,
         total: healed,
         result,
         why,

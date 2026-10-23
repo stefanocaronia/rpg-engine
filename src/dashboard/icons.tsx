@@ -34,6 +34,8 @@ const iconPaths = {
     place: "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z M12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5Z",
     aside: "M6 6l6 6-6 6 M12 6l6 6-6 6",
     send: "M5 12h13 M13 6l6 6-6 6",
+    // The doorbell that called the master for the player's sentence (D-495).
+    bell: "M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15Z M10 20.5a2 2 0 0 0 4 0",
     copy: "M9 9h10.5v11.5H9Z M15 9V3.5H4.5V15H9",
     // The page's foot: the code, the package, a heart for support.
     github:

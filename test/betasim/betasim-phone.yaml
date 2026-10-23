@@ -1,5 +1,5 @@
 # The player's dashboard for betasim on a phone: 375×812. The same as betasim.yaml but for the viewport and the report (betasim has no extends yet).
-# Usability of the page only, never the game. `npm run betasim` builds, then runs both; README.md here says the rest.
+# Usability of the page only, never the game. `npm run betasim` builds, then runs both; betasim's README.md says the rest.
 name: rpg-engine dashboard, 375
 target:
   kind: web
@@ -27,6 +27,7 @@ screens:
   "^#/help": Help
   "^#/saves": Saves
   "^#/settings": Settings
+  "^#/packages": Packages
   "^(/|)$": Party
 # The two sizes as betasim's variants, the first the one this file runs: a step written {phone: …} runs only on the phone (betasim has no steps per viewport yet).
 variants:
@@ -60,3 +61,5 @@ terms:
   Lethality: 3
   Difficulty: 1
   Session zero: 3
+  Character voices: 2
+  Library: 1

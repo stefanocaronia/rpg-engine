@@ -1,0 +1,11 @@
+name: Turn on a shelf of the player's books for this campaign
+covers: [library-use]
+# The shelf is already on this computer: added once, each campaign turns it on (D-491 (13)).
+setup: {shelf: true}
+steps:
+  - phone: {tapOn: Menu}   # on a phone Packages is in the menu
+  - tapOn: Packages
+  - tapOn: Library
+  - tapOn: {label: "Manuali: in this campaign"}
+    concept: {name: a book on this computer is turned on for each campaign, difficulty: 2}
+  - assertState: {query: news, contains: in the campaign's library}

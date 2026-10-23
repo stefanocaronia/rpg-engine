@@ -1,0 +1,10 @@
+name: The master asks, and the player answers with an action from the sheet
+covers: [act-sheet, asked-choice]
+setup:
+  ask: {question: "Il secondo brigante alza il coltello verso Lupa: che fai?", options: ["Mi metto in mezzo", "Lascio fare a Lupa"]}
+steps:
+  - phone: {tapOn: Spells}   # on a phone the lists of the Combat card start closed
+  - tapOn: Cast Healing Word
+  - tapOn: {css: ".act-who-one.companion"}   # Lupa, in the list On whom
+  - tapOn: Answer the master
+  - assertState: {query: answer, contains: I cast Healing Word on Lupa.}

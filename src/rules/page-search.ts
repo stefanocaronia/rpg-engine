@@ -120,6 +120,18 @@ export function pageTitle(book: SearchedBook, part: number, search: string, also
     return titled === undefined ? undefined : lines[titled].trim().replace(/^#+\s*/, "");
 }
 
+/** The titles of a book in their order, each once: what it holds, as the master hears it when the player turns the book on. */
+export function bookHeadings(book: SearchedBook): string[]
+{
+    const { running } = wordsOfBook(book);
+    const titles = book.parts.flatMap((part) => {
+        const lines = part.text.split("\n");
+        const headings = titleLines(lines, running);
+        return lines.filter((_, index) => headings[index]).map((line) => line.trim().replace(/^#+\s*/, ""));
+    });
+    return [...new Set(titles)];
+}
+
 /**
  * A page's lines, which are its titles, how many words searched each holds, and the title that holds the most of them. Words of two letters count only when the
  * search has no longer ones, so that "di" never makes a title.

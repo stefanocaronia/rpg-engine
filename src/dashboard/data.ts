@@ -54,10 +54,13 @@ export interface SheetGroup
 /** What the player does with an item of the sheet, said as their sentence to the master (D-495): the engine's verbs. */
 export type ActVerb = "attack" | "cast" | "use" | "equip" | "unequip" | "prepare";
 
-/** A sentence the player said on the page: waiting for the master, who may not have heard it yet, and whether this chat hears one at once (D-495). */
+/**
+ * A sentence the player said on the page: waiting for the master, who may not have heard it yet, rung once the doorbell called them for it; and whether this
+ * chat hears one at once (D-495).
+ */
 export interface ActsShown
 {
-    pending: { id: string; text: string; }[];
+    pending: { id: string; text: string; rung?: boolean; }[];
     heard: string[];
     bell: boolean;
 }

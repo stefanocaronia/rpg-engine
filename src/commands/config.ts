@@ -377,7 +377,7 @@ const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
         means: {
             auto: "at key moments, as the master chooses, the character themselves, knowing only what they know, where your AI app can",
             master: "the master, always",
-            important: "always the character themselves for your companions and the main characters, the others as in auto: slower answers, and more of your plan",
+            important: "always the character themselves for your companions and the main characters, the others only at key moments: slower answers, and more of your plan",
             always: "always the character themselves, for everyone: much slower answers, and much more of your plan",
         },
         unset: "auto",

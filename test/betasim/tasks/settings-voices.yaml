@@ -1,0 +1,5 @@
+goal: "Let the master alone voice every character you meet."
+flow: settings-voices
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 1
+expected_seconds: 20

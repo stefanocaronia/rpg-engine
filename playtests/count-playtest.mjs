@@ -31,12 +31,14 @@ function countSession(folder, before)
     const campaignAfter = join(folder, "campaign-after");
     const eventPages = pageNames(join(campaignAfter, "world", "events"));
     const playerCharacters = pagesWith(join(campaignAfter, "world"), /^role:[ \t]*["']?pc["']?[ \t]*$/m);
-    const turnFiles = readdirSync(join(folder, "turns")).filter((name) => /^M\d+\.jsonl$/.test(name)).sort((a, b) => turnNumber(a) - turnNumber(b));
+    const turnFiles = readdirSync(join(folder, "turns")).filter((name) => /^M\d+(-bell)?\.jsonl$/.test(name)).sort((a, b) => turnNumber(a) - turnNumber(b));
     const turns = turnFiles.map((name) => ({ label: name.replace(".jsonl", ""), events: readLines(join(folder, "turns", name)) }));
     const player = playerMessages(join(folder, "dialogue.md"));
     const worldPages = pageNames(join(campaignAfter, "world"));
     const counts = {
-        turns: turns.length,
+        // A turn the dashboard's doorbell woke (D-495) answers no player's message: counted apart.
+        turns: turns.filter((turn) => !turn.label.endsWith("-bell")).length,
+        woken: turns.filter((turn) => turn.label.endsWith("-bell")).map((turn) => turn.label),
         apiRounds: 0,
         calls: {},
         callsPerTurn: [],
@@ -293,6 +295,11 @@ function countSheetTools(counts, turn, name, input, output, refused)
         counts.rests.push({ turn, recipe: input.recipe, page: input.page, field: input.field, spend: input.spend, refused, again: /gains nothing from another/.test(output) });
     }
 
+    // A rest asked on the dashboard, its hit dice spent by the player there (D-492).
+    if (name === "ask" && input.recipe !== undefined) {
+        counts.rests.push({ turn, recipe: `${input.recipe} asked`, page: input.who, refused, again: /gains nothing from another/.test(output) });
+    }
+
     if (name === "write" && /lifestyle/.test(JSON.stringify(input.set ?? ""))) {
         counts.upkeep.lifestyleSet++;
     }
@@ -305,10 +312,11 @@ function countSheetTools(counts, turn, name, input, output, refused)
         counts.recharge.effects.push({ turn, page: input.page, name: input.name });
     }
 
-    // Keeping the dying from dying (DIE): a Medicine check, a healer's kit, Spare the Dying, or a stable condition, as the master names them.
+    // Keeping the dying from dying (DIE): a check to stabilize, Spare the Dying, or a stable condition, as the master names them; a Medicine check alone may be
+    // for a fever (playtest 19).
     const said = `${input.why ?? ""} ${input.check ?? ""} ${input.question ?? ""} ${JSON.stringify(input.options ?? "")} ${input.name ?? ""}`;
 
-    if (["roll", "ask", "effect", "change"].includes(name) && /stabil|medicin|morent|spare the dying|healer|cerusic/i.test(said) && !(name === "change" && input.field === "hp")) {
+    if (["roll", "ask", "effect", "change"].includes(name) && /stabil|morent|morend|spare the dying|dying/i.test(said) && !(name === "change" && input.field === "hp")) {
         counts.stabilizing.push({ turn, tool: name, what: said.trim().slice(0, 120), refused });
     }
 
@@ -475,6 +483,7 @@ function markdown(details)
     const names = Object.keys(details).filter((name) => name.startsWith("session-"));
     const rows = [
         ["Player messages = master turns", (s) => s.turns],
+        ["Master turns woken by the dashboard", (s) => (s.woken ?? []).length === 0 ? "0" : `${s.woken.length}: ${s.woken.join(", ")}`],
         ["API rounds", (s) => s.apiRounds],
         ["Calls", (s) => `${sum(Object.values(s.calls))}: ${Object.entries(s.calls).sort((a, b) => b[1] - a[1]).map(([name, count]) => `${name} ${count}`).join(", ")}`],
         ["Calls per turn: median (max)", (s) => `${median(s.callsPerTurn.map((turn) => turn.calls))} (${maxOf(s.callsPerTurn, "calls")})`],
@@ -761,7 +770,8 @@ function sessionNumber(name)
 
 function turnNumber(name)
 {
-    return Number(name.match(/\d+/)[0]);
+    // A turn the dashboard's doorbell woke (D-495) comes after the turn it follows.
+    return Number(name.match(/\d+/)[0]) + (name.includes("-bell") ? 0.5 : 0);
 }
 
 function readJson(file)

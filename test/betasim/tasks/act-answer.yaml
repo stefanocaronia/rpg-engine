@@ -1,0 +1,5 @@
+goal: "The master asks what you do: answer by casting Healing Word on Lupa."
+flow: act-answer
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 3
+expected_seconds: 15

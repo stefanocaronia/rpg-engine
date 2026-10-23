@@ -14,7 +14,7 @@ import { installAdventure } from "./commands/game-adventures.ts";
 import { type Catalog, catalog } from "./commands/game-catalog.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
-import { libraryEntries, startLibraryReading, unquoted } from "./commands/game-library.ts";
+import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "./commands/game-library.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
@@ -1045,7 +1045,8 @@ async function changeLibrary(request: IncomingMessage, response: ServerResponse,
         const news = before === after
             ? ""
             : after
-            ? `The player, on the dashboard, turned on ${path} in the campaign's library: rules searches its books once they are read.`
+            ? `The player, on the dashboard, turned on ${path} in the campaign's library: ${libraryContents(context, path)}. Before you rule on what they cover, `
+                + "search them with rules, even when you know the system's rule."
             : `The player, on the dashboard, turned off ${path} in the campaign's library.`;
         return { kind: "library", news };
     });
@@ -1569,6 +1570,7 @@ function deliverActs(served: Served): void
         markRung(served.acts);
         served.bell.end("ring");
         served.bell = undefined;
+        served.notify();
     }
 }
 
@@ -1616,6 +1618,7 @@ function listenForBell(request: IncomingMessage, response: ServerResponse, serve
     if (served.acts.pending.length > 0 && (served.context.chat?.calls ?? 0) === 0) {
         markRung(served.acts);
         response.end("ring");
+        served.notify();
         return;
     }
 

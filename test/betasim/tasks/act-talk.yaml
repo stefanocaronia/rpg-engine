@@ -1,0 +1,5 @@
+goal: "Tell Lupa, from the page, to stay behind you."
+flow: act-talk
+audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+frequency: 3
+expected_seconds: 20

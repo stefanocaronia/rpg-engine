@@ -30,6 +30,8 @@ const environment = Object.fromEntries(Object.entries(process.env).filter(([name
 const codexHost = options["master-host"] === "codex";
 // The character agent, which a campaign with voices: master lacks (D-490).
 const characterAgent = join(".claude", "agents", "rpg-character.md");
+// How long a sentence said on the dashboard is given to wake the master through Claude Code's doorbell (D-495), in milliseconds.
+const doorbellWait = 60_000;
 // What an AI host reads in a campaign, as rpg init writes it: the master must find exactly these.
 const hostFileNames = ["AGENTS.md", "CLAUDE.md", join(".claude", "settings.json"), characterAgent];
 const playerSchema = JSON.stringify({
@@ -160,7 +162,7 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
     let note = [`(Organizer: a new evening begins. You open it by writing «${options.first}»; the master's answer follows.)`, options.dashboard ? dashboardNote : ""].filter(Boolean).join("\n");
     let player = { message: options.first, endSession: false };
     const page = options.dashboard ? pagePlayer({ folder, askPlayer: async (prompt, schema) => (await askPlayer(prompt, schema)).answer, moments }) : undefined;
-    const chat = options.dashboard ? masterChat(campaign, masterSession, folder, page) : undefined;
+    const chat = host === undefined ? masterChat(campaign, masterSession, folder, page) : undefined;
 
     try {
         for (let count = 1;; count++) {
@@ -169,7 +171,7 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
             turnBegins(folder);
             page?.turnBegins(count);
             const streamFile = join(folder, "turns", `M${count}.jsonl`);
-            const master = chat ? await chat.turn(player.message, streamFile) : host ? hostTurn(campaign, host, masterSession, player.message, streamFile) : masterTurn(campaign, masterSession, player.message, streamFile);
+            const master = chat ? await chat.turn(player.message, streamFile) : hostTurn(campaign, host, masterSession, player.message, streamFile);
             await page?.turnEnds(count);
             record(folder, `M${count}`, master.text);
             progress.masterCost = master.cost;
@@ -181,7 +183,7 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
                 return;
             }
 
-            const told = (await page?.momentsBefore(count + 1)) ?? [];
+            const { told, said } = (await page?.momentsBefore(count + 1)) ?? { told: [], said: false };
             note = [note, ...told, count === max ? lateNote : ""].filter(Boolean).join("\n");
 
             if (note) {
@@ -189,7 +191,10 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
             }
 
             // The rest of the master's message: what a question in this turn already showed the player is not sent again.
-            const unread = notYetRead(folder, master.text) || "(The master's message ends there.)";
+            const rest = notYetRead(folder, master.text);
+            const woken = said && chat ? await wokenTurn(chat, page, folder, `${count}-bell`) : undefined;
+            progress.masterCost = woken?.cost ?? progress.masterCost;
+            const unread = [rest, woken === undefined ? "" : notYetRead(folder, woken.text)].filter(Boolean).join("\n\n") || "(The master's message ends there.)";
             player = await playerTurn([count === 1 ? memory : "", note, unread].filter(Boolean).join("\n\n"), true);
 
             // A goodbye before the late note, as when the characters go to sleep (playtests 05b and 06), is written again once.
@@ -207,6 +212,20 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
         await page?.close();
         await chat?.close();
     }
+}
+
+/**
+ * The master's turn a sentence said on the page wakes through Claude Code's doorbell (D-495), its page watched as any turn's; undefined, and said, when none
+ * begins within `doorbellWait`, as the sentence then waits for the master's next call.
+ */
+async function wokenTurn(chat, page, folder, label)
+{
+    turnBegins(folder);
+    page?.turnBegins(label);
+    const woken = await chat.woken(doorbellWait, join(folder, "turns", `M${label}.jsonl`));
+    await page?.turnEnds(label);
+    record(folder, `M${label}, woken by the dashboard`, woken?.text ?? `(No turn woke within ${doorbellWait / 1000} s: the sentence waits for the master's next call.)`);
+    return woken;
 }
 
 /** Why the session ends after this master turn, if it does: a broken isolation voids the run; then errors, the budget, the player's goodbye, the hard cap. */
@@ -256,19 +275,10 @@ function hostTurn(campaign, host, session, prompt, streamFile)
     return turn;
 }
 
-/** One master turn; returns the text the player sees, the session's cost so far, and what went wrong, if anything. */
-function masterTurn(campaign, session, prompt, streamFile)
-{
-    const args = ["-p", "--output-format", "stream-json", "--verbose", ...masterArgs(dirname(dirname(streamFile))), ...(session.started ? ["--resume", session.id] : ["--session-id", session.id])];
-    const run = claude(args, campaign, prompt);
-    session.started = true;
-    writeFileSync(streamFile, run.stdout);
-    return turnResult(run.stdout.split("\n").map(parseJson).filter(Boolean), run.status !== 0, run.stderr);
-}
-
 /**
- * The master's chat as one Claude Code process for the whole session, as in an app (--dashboard): its rpg server, and the dashboard that server serves, live
- * from one turn to the next, so that a question on the page finds it open. Each turn streams its events to `page` as they come.
+ * The master's chat as one Claude Code process for the whole session, as in an app: its rpg server, and the dashboard that server serves, live from one turn
+ * to the next, so that a question on the page finds it open. Each turn streams its events to `page`, when there is one, as they come. A process for each turn
+ * would never end: claude -p waits for the doorbell's Stop hook (D-495) before its result.
  */
 function masterChat(campaign, session, folder, page)
 {
@@ -296,15 +306,55 @@ function masterChat(campaign, session, folder, page)
 
         if (event) {
             current.events.push(event);
+            current.opened ||= opensTurn(event);
             page?.heard(event);
         }
 
-        if (event?.type === "result") {
+        // A turn that ends with another the doorbell woke late, still running when it began, ends at the second result.
+        if (event?.type === "result" && --current.results === 0) {
             current.end(false, "");
         }
     });
 
     return {
+        /**
+         * A turn the chat starts by itself, as Claude Code's doorbell wakes it (D-495): its events from now, or those that came already, until its result;
+         * undefined when none begins within `wait` milliseconds, or the chat has ended.
+         */
+        woken(wait, streamFile)
+        {
+            return new Promise((done) => {
+                if (child.exitCode !== null) {
+                    done(undefined);
+                    return;
+                }
+
+                const lines = early.splice(0);
+                const events = lines.map(parseJson).filter(Boolean);
+
+                const end = (failed, problem) => {
+                    clearTimeout(timer);
+                    current = undefined;
+                    writeFileSync(streamFile, lines.join("\n") + "\n");
+                    done(turnResult(events, failed, problem));
+                };
+
+                // Lines with no turn begun, as a hook's, wait for the next turn; a turn begun is waited for to its end.
+                const timer = setTimeout(() => {
+                    if (!current.opened) {
+                        current = undefined;
+                        early.unshift(...lines);
+                        done(undefined);
+                    }
+                }, wait);
+                current = { lines, events, end, results: 1, opened: events.some(opensTurn) };
+                events.forEach((event) => page?.heard(event));
+
+                if (events.some((event) => event.type === "result")) {
+                    end(false, "");
+                }
+            });
+        },
         turn(prompt, streamFile)
         {
             return new Promise((done) => {
@@ -317,7 +367,7 @@ function masterChat(campaign, session, folder, page)
                     done(turnResult(events, failed, problem));
                 };
 
-                current = { lines, events, end };
+                current = { lines, events, end, results: unfinishedTurn(events) ? 2 : 1 };
 
                 if (child.exitCode !== null) {
                     end(true, `the master's chat had ended (exit ${child.exitCode}): ${stderr.trim()}`);
@@ -342,10 +392,23 @@ function masterChat(campaign, session, folder, page)
     };
 }
 
+/** Whether an event of the chat's stream begins a turn of the master's: its start, or its first words. */
+function opensTurn(event)
+{
+    return event.type === "assistant" || (event.type === "system" && event.subtype === "init");
+}
+
+/** Whether the events end inside a turn begun and not finished, as one the doorbell woke after the run stopped waiting for it. */
+function unfinishedTurn(events)
+{
+    return events.reduce((open, event) => (event.type === "result" ? false : open || opensTurn(event)), false);
+}
+
 /** What a master turn's events give: the text the player sees, the session's cost so far, and what went wrong, if anything. */
 function turnResult(events, failed, stderr)
 {
-    const result = events.find((event) => event.type === "result");
+    // The last: a turn the doorbell woke late may end just before it, in the same events.
+    const result = events.findLast((event) => event.type === "result");
     const blocks = events.filter((event) => event.type === "assistant" && !event.parent_tool_use_id).flatMap((event) => event.message.content);
     const text = blocks.filter((block) => block.type === "text").map((block) => block.text.trim()).join("\n\n");
     const error = failed || !result || result.is_error ? (stderr || result?.result || "no result").trim() : "";

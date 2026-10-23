@@ -6,7 +6,7 @@ import { request } from "node:http";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
-import { libraryEntries, libraryScope, skippedKind } from "../src/commands/game-library.ts";
+import { libraryContents, libraryEntries, libraryScope, skippedKind } from "../src/commands/game-library.ts";
 import type { Confirmed, Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
@@ -531,6 +531,15 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
         await ok("config", "library", "--add", join(shelf, "Rules of the Road.md"));
         expect(asked).toHaveLength(1);
         expect(libraryFolders(home)).toEqual([shelf, join(shelf, "Rules of the Road.md")]);
+    });
+
+    it("tells the master what an entry turned on holds: each book read with its titles, and those still being read", async () => {
+        expect(libraryContents(context, shelf)).toBe("2 books still being read");
+        await readShelf();
+        const told = libraryContents(context, shelf);
+        expect(told).toContain("«Regole del Guado» (IL VIAGGIO; AFFERRATO; IL GUADO)");
+        expect(told).toContain("«Rules of the Road» (CHAPTER ONE; FALLING; CLIMBING; THE MOUNTAIN PASS; FEATHER STEP; SHORT REST; RESTING IN THE WILD)");
+        expect(libraryContents(context, makeTempFolder())).toBe("no book the engine reads");
     });
 
     it("never searches a folder a campaign lists that is not in this computer's library, which the player allowed", async () => {

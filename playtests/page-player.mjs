@@ -14,13 +14,13 @@ const bannerWait = 10_000;
 // How long the page is given to draw a section after its address changes.
 const drawWait = 1200;
 
-/** The scenario's moments on the page (--moments): before the player's message `before`, a setting changed or a note written, and what the player is told. */
+/** The scenario's moments on the page (--moments): before the player's message `before`, a setting changed, a note written, a library folder turned on or someone talked to, and what the player is told. */
 export function readMoments(file)
 {
     const moments = file === undefined ? [] : parse(readFileSync(file, "utf8")) ?? [];
 
     if (!Array.isArray(moments) || moments.some((moment) => !(Number.isInteger(moment?.before) && moment.before > 1))) {
-        throw new Error(`${file}: write a list of moments, each with before, the number of a player's message from 2, and a setting, a note or tell.`);
+        throw new Error(`${file}: write a list of moments, each with before, the number of a player's message from 2, and a setting, a note, a library folder, talk or tell.`);
     }
 
     return moments;
@@ -77,6 +77,12 @@ export function pagePlayer({ folder, askPlayer, moments })
 
         if (shown === undefined) {
             note(`run: the question "${asked.question}" did not show on the page within ${bannerWait / 1000} s`);
+        }
+
+        // The dice of a rest only the page shows (ASK-14): the player says how many, and they are rolled one at a time.
+        if (asked.spend !== undefined) {
+            await spendDice(asked, banner, shown !== undefined, seen);
+            return;
         }
 
         // One answer for the page and the chat's form (one-answer.mjs): the form's, when it asked the player first, is the same choice by its index.
@@ -174,6 +180,85 @@ export function pagePlayer({ folder, askPlayer, moments })
         return true;
     };
 
+    // A rest's dice: the player reads the master's words and the dice left, says how many to spend, and each is rolled on the card, its roll awaited.
+    const spendDice = async (asked, banner, onPage, seen) => {
+        const dice = asked.spend.dice.map((one) => `${one.value} of ${one.max} d${one.sides}${one.adds === 0 ? "" : ` (+${one.adds} each)`}`).join(", ");
+        const { gives } = asked.spend;
+        const prompt = [
+            notYetRead(folder, mastersWords(state.said)),
+            `(The dashboard shows the master's question: «${asked.question}». ${asked.spend.who} has ${gives.field} ${gives.value}${gives.max === undefined ? "" : ` of ${gives.max}`}, and hit dice to spend: ${dice}. You roll them one at a time on the page and stop when you like. How many do you spend? 0 for none.)`,
+        ].filter(Boolean).join("\n\n");
+        const schema = { type: "object", required: ["dice"], properties: { dice: { type: "integer", minimum: 0, description: "how many dice you spend, one at a time" } } };
+        const wanted = await askPlayer(prompt, schema).then((given) => Math.max(0, Math.trunc(Number(given.dice) || 0))).catch((error) => {
+            note(`run: the player gave no answer (${error.message}); no dice spent`);
+            return 0;
+        });
+        const spent = [];
+
+        for (let count = 0; count < wanted; count++) {
+            const now = (await getJson(`${state.link}api/asked`))?.asked;
+            const die = now?.spend?.dice.find((one) => one.value > 0);
+
+            if (now?.id !== asked.id || die === undefined) {
+                break;
+            }
+
+            const rolls = now.spend.rolls.length;
+            const roll = banner.locator("button.spend-roll:not([aria-disabled=true])").first();
+            const clicked = onPage && await roll.click({ timeout: 2000 }).then(() => true, () => false);
+
+            if (!clicked) {
+                const sent = await post("/api/answer", { asked: asked.id, spend: die.field });
+
+                if (!sent.startsWith("2")) {
+                    note(`run: a die of "${asked.question}" not spent through /api/answer: ${sent}`);
+                }
+            }
+
+            spent.push(await rolled(asked.id, rolls) ?? "no roll came back");
+        }
+
+        const done = banner.locator("button.spend-done");
+        const ended = onPage && await done.click({ timeout: 2000 }).then(() => true, () => false);
+
+        if (!ended) {
+            note(`run: the rest of "${asked.question}" ended through /api/answer, not on the page`);
+            await post("/api/answer", { asked: asked.id, choice: 0 });
+        }
+
+        appendFileSync(join(pageFolder, "asked.jsonl"), JSON.stringify({ asked: asked.id, title: asked.title, question: asked.question, spend: { wanted, spent }, answeredMs: Date.now() - seen }) + "\n");
+        record(folder, "Page", `(${asked.title}: ${asked.question})\n\n${wanted === 0 ? "No dice spent" : `${wanted} dice to spend → ${spent.join("; ")}`}${ended ? "" : " (not on the page: see page/console.txt)"}`);
+    };
+
+    // A roll of a rest's die once the server has it: its face and total, or undefined after a few seconds.
+    const rolled = async (id, before) => {
+        for (let tries = 0; tries < 40; tries++) {
+            const now = (await getJson(`${state.link}api/asked`))?.asked;
+
+            // Another question in its place: this die's roll will never come.
+            if (now?.id !== id) {
+                return undefined;
+            }
+
+            const roll = now.spend?.rolls?.[before];
+
+            if (roll !== undefined) {
+                // The dice land on the page before the next is rolled.
+                await state.page.waitForTimeout(drawWait);
+                return `${roll.face} +${roll.adds} = ${roll.total}`;
+            }
+
+            await state.page.waitForTimeout(askedPoll);
+        }
+
+        return undefined;
+    };
+
+    const post = async (path, body) => {
+        const response = await fetch(`${state.link}${path.replace(/^\//, "")}`, { method: "POST", headers: { "Content-Type": "application/json", Origin: state.link.replace(/\/$/, "") }, body: JSON.stringify(body) });
+        return `${response.status} ${await response.text()}`;
+    };
+
     const answerWithoutBanner = async (asked, reply) => {
         note(`run: the question "${asked.question}" answered through /api/answer, not on the page`);
         const body = reply.words !== undefined ? { asked: asked.id, text: reply.words } : reply.square !== undefined ? { asked: asked.id, square: reply.square } : { asked: asked.id, choice: reply.index };
@@ -232,15 +317,25 @@ export function pagePlayer({ folder, askPlayer, moments })
                 await keep(`M${count}-${section}`);
             }
         },
-        /** Before the player's message `count`: the scenario's moments for it, done on the page; returns what the player is told of them. */
+        /**
+         * Before the player's message `count`: the scenario's moments for it, done on the page; returns what the player is told of them, and whether the
+         * player said a sentence to the master on the page (D-495), which may wake the master by itself.
+         */
         async momentsBefore(count)
         {
             const told = [];
+            let said = false;
 
             for (const moment of moments.filter((one) => one.before === count)) {
-                if (state.page !== undefined && (moment.setting || moment.note)) {
+                if (state.page !== undefined && (moment.setting || moment.note || moment.library)) {
                     const done = await act(moment);
                     record(folder, "Page", `Before P${count}: ${done}`);
+                }
+
+                if (state.page !== undefined && moment.talk) {
+                    const done = await talk(moment);
+                    record(folder, "Page", `Before P${count}: ${done.text}`);
+                    said ||= done.said;
                 }
 
                 if (moment.tell) {
@@ -248,7 +343,7 @@ export function pagePlayer({ folder, askPlayer, moments })
                 }
             }
 
-            return told;
+            return { told, said };
         },
         async close()
         {
@@ -274,12 +369,60 @@ export function pagePlayer({ folder, askPlayer, moments })
             return `${moment.setting.name} set to ${moment.setting.value} in Settings (${answer.trim()})`;
         }
 
+        // A folder already on this computer, turned on for the campaign as the Library tab does (D-491 (13)): no window asks again.
+        if (moment.library) {
+            await show("packages/library");
+            const answer = await send("/api/library", { action: "add", path: moment.library });
+            await state.page.waitForTimeout(drawWait);
+            await keep(`P${moment.before}-library`);
+            return `${moment.library} turned on in the Library of Packages (${answer.trim()})`;
+        }
+
         await show("journal");
         const id = `${Date.now().toString(36)}-playtest`;
         const written = await send("/api/notes", { id, title: moment.note.title, text: moment.note.text });
         const shared = moment.note.share ? await send("/api/notes", { share: id }) : "";
         await keep(`P${moment.before}-journal`);
         return `a note «${moment.note.title}» written (${written.trim()})${moment.note.share ? `, shared with the master (${shared.trim()})` : ""}`;
+    }
+
+    // Talking to someone from the page (D-495): their name in Scene opens the sentence, the player writes the rest, and the page sends it as it does.
+    async function talk(moment)
+    {
+        await show("scene");
+        const name = state.page.locator(`button.act.talk[data-name="${moment.talk.replaceAll('"', '\\"')}"]`).first();
+
+        if (!(await name.isVisible().catch(() => false))) {
+            note(`run: no «Talk to ${moment.talk}» on the page`);
+            return { text: `no way to talk to ${moment.talk} on the page`, said: false };
+        }
+
+        await name.click();
+        const sheet = state.page.locator("dialog.act-sheet");
+        const field = sheet.locator("textarea.act-words");
+        const start = await field.inputValue();
+        const prompt = [
+            notYetRead(folder, mastersWords(state.said)),
+            `(${moment.ask ?? `On the dashboard you click ${moment.talk}'s name to talk to them.`} The page has written «${start.trim()}»: write what you say, as you would in the chat; it goes to the master as your words.)`,
+        ].filter(Boolean).join("\n\n");
+        const schema = { type: "object", required: ["words"], properties: { words: { type: "string", description: `what you say to ${moment.talk}` } } };
+        const words = await askPlayer(prompt, schema).then((given) => String(given.words).trim()).catch(() => "");
+
+        if (words === "") {
+            await sheet.locator("button.act-cancel").click();
+            return { text: `talking to ${moment.talk} on the page: the player said nothing`, said: false };
+        }
+
+        await field.fill(`${start}${words}`);
+        const go = sheet.locator("button.act-go");
+        // Without the doorbell the page copies the sentence for the chat instead: the master would never hear it, so the run says so and waits for no turn.
+        const button = (await go.textContent())?.trim() ?? "";
+        const bell = (await getJson(`${state.link}api/act`))?.bell === true;
+        await go.click();
+        await state.page.waitForTimeout(drawWait);
+        await keep(`P${moment.before}-said`);
+        const strip = (await state.page.locator(".act-strip").textContent().catch(() => ""))?.trim() ?? "";
+        return { text: `«${start}${words}» said to the master on the page (${button}; ${strip || "no strip"})`, said: bell };
     }
 }
 

@@ -230,6 +230,7 @@ export function settingLabel(name: string): string
         style: t("In your words"),
         dice: t("Dice"),
         units: t("Units"),
+        voices: t("Character voices"),
         pictures: t("Pictures"),
         effort: t("Master's thinking"),
         lines: t("Lines"),
@@ -295,6 +296,10 @@ export function valueLabel(value: string): string
         mystery: t("Mystery"),
         "on the fly": t("On the fly"),
         "all at the start": t("All at the start"),
+        auto: t("Sometimes"),
+        master: t("The master"),
+        important: t("Main characters"),
+        always: t("Everyone"),
     };
     return labels[value] ?? itemLabel(value);
 }

@@ -1,0 +1,11 @@
+# What the player does on the dashboard's page in 19, before their message `before` (page-player.mjs): the Library, talking from the page, and what they want.
+# The folder of the house rules is the run's own, beside the campaign: start.md adds it to this computer before the run.
+- before: 2
+  library: '<runs>\2026-10-23\5-plancia\libri'
+  tell: "On the dashboard, in Packages › Library, you just turned on your folder «libri», with the house rules you wrote years ago for your table: the master can search them now. Mention it or not, as you like."
+- before: 4
+  talk: Gisella
+  ask: "On the dashboard you click Gisella's name to speak to her as Corrado, from the page instead of the chat, about tonight and the well."
+  tell: "You just said that to Gisella from the dashboard; the master may answer it before your next message."
+- before: 7
+  tell: "Corrado's ribs still ache from the stone this afternoon. If the evening gives you a quiet hour, you would like a short rest."

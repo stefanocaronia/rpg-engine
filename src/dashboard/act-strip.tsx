@@ -1,5 +1,5 @@
-// The player's sentences after they go (D-495): each in quotes with how it stands, in words and with a sign, never by colour alone; said, with a button to take
-// it back until the master hears it; heard; or never heard, the chat gone, to say again there. A screen reader hears only the change of state.
+// The player's sentences after they go (D-495), in words and with a sign: said, with a button to take it back while it waits; called, the doorbell rang;
+// heard; or never heard, the chat gone, to say again there. A screen reader hears only the change of state.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { SaidAct, SaidState } from "./acts.ts";
 import { Icon, type IconName } from "./icons.tsx";
@@ -66,6 +66,8 @@ function stateWords(state: SaidState): string
     switch (state) {
         case "said":
             return t("Said to the master");
+        case "called":
+            return t("The master is about to read it");
         case "heard":
             return t("The master is reading it");
         case "lost":
@@ -81,6 +83,8 @@ function stateIcon(state: SaidState): IconName
     switch (state) {
         case "said":
             return "send";
+        case "called":
+            return "bell";
         case "heard":
             return "check";
         case "lost":

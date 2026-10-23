@@ -1,0 +1,13 @@
+name: In the fight, attack a foe from the sheet, as words to the master
+covers: [act-sheet, act-target, act-strip]
+# Claude Code's hook listens: the sentence goes to the master by itself (D-495).
+setup: {bell: true}
+steps:
+  - phone: {tapOn: Attacks}   # on a phone the lists of the Combat card start closed
+  - tapOn: Attack with Mace
+    concept: {name: a name on the sheet acts, the number rolls, difficulty: 2}
+  - tapOn: {css: ".act-who-one.hostile", index: 0}   # the first foe in the list On whom
+  - tapOn: Tell the master
+  - assertVisible: The master is about to read it   # the doorbell rang at once: too late to take it back
+  - assertNotVisible: {label: Take it back from the master}
+  - assertState: {query: news, contains: "I attack Brigante incappucciato 1 with Mace."}

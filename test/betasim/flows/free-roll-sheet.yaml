@@ -2,7 +2,8 @@ name: A free roll of a skill from the sheet, just to see
 covers: [free-roll-sheet, sheet-read]
 setup: {}
 steps:
-  # Skills is the sheet's first card, open on a phone too.
+  # On a phone only the sheet's first card starts open, Combat for 5e: Skills is opened first.
+  - phone: {tapOn: Skills}
   - tapOn: Insight
     concept: {name: a line of the sheet rolls its dice, difficulty: 2}
   - advance: 2s

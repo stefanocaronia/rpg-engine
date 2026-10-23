@@ -147,7 +147,7 @@ describe("hit dice in a short rest (D-449)", () => {
     it("spends them in one step: each die with the Constitution modifier, the hit points healed, the dice taken; never more than one has", async () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=5/26");
         const spent = await ok("change", "Ettore", "hit-dice-d10", "--spend", "2", "--recipe", "short rest");
-        expect(spent).toMatch(/^Ettore spends 2 hit-dice-d10: 2d10 = \[\d+, \d+\] \+ 2 each, \d+; hp 5\/26 → \d+\/26; hit-dice-d10 3\/3 → 1\/3\.$/);
+        expect(spent).toMatch(/^Ettore spends 2 hit-dice-d10: 2d10\+4 = \[\d+, \d+\] \+ 4, \d+; hp 5\/26 → \d+\/26; hit-dice-d10 3\/3 → 1\/3\.$/);
         const refused = await runCommandLine(["change", "Ettore", "hit-dice-d10", "--spend", "2", "--recipe", "short rest"], context);
         expect(refused.output).toBe("Ettore has 1 hit-dice-d10: spend a whole number of them, from 1 up to that. Nothing changed.");
         const long = await runCommandLine(["change", "Ettore", "hit-dice-d10", "--spend", "1", "--recipe", "long rest"], context);
@@ -176,7 +176,7 @@ describe("hit dice in a short rest (D-449)", () => {
             'Ettore: nothing changed. Ask the player how many of hit-dice-d10 3/3 they spend and roll with their own dice, then change with spend and recipe "short rest" and values, the faces they tell.',
         );
         expect(await ok("change", "Ettore", "hit-dice-d10", "--spend", "2", "--recipe", "short rest", "--values", "6,1")).toBe(
-            "Ettore spends 2 hit-dice-d10: 2d10 = [6, 1] + 2 each, 11; hp 5/26 → 16/26; hit-dice-d10 3/3 → 1/3.",
+            "Ettore spends 2 hit-dice-d10: 2d10+4 = [6, 1] + 4, 11; hp 5/26 → 16/26; hit-dice-d10 3/3 → 1/3.",
         );
         const logged = readFileSync(join(folder, "log.jsonl"), "utf8").trim().split("\n").map((line) => JSON.parse(line) as { type: string; data: { physical?: boolean; }; });
         expect(logged.filter((entry) => entry.type === "roll").at(-1)?.data.physical).toBe(true);
@@ -190,7 +190,7 @@ describe("hit dice in a short rest (D-449)", () => {
         await ok("write", "Ettore", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=5/26");
         await ok("effect", "add", "Ettore", "Forma d'orso", "--set", "hp=10");
         const spent = await ok("change", "Ettore", "hit-dice-d10", "--spend", "1", "--recipe", "short rest");
-        expect(spent).toMatch(/^Ettore spends 1 hit-dice-d10: 1d10 = \[\d+\] \+ 2 each, \d+; hp 10\/26 → \d+\/26 in Forma d'orso; hit-dice-d10 3\/3 → 2\/3\.$/);
+        expect(spent).toMatch(/^Ettore spends 1 hit-dice-d10: 1d10\+2 = \[\d+\] \+ 2, \d+; hp 10\/26 → \d+\/26 in Forma d'orso; hit-dice-d10 3\/3 → 2\/3\.$/);
         const page = readFileSync(join(folder, "world", "characters", "Ettore.md"), "utf8");
         expect(page).toContain("hp: 5/26");
         expect(page).not.toMatch(/Forma d'orso[^\n]*hp=10\b/);

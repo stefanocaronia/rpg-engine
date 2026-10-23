@@ -1,0 +1,8 @@
+name: During play, let the master voice every character alone
+covers: [settings-change]
+setup: {}
+steps:
+  - phone: {tapOn: Menu}   # on a phone Settings is in the menu
+  - tapOn: Settings
+  - tapOn: {text: The master, within: Character voices}
+  - assertState: {query: setting, arg: voices, equals: master}

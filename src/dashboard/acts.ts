@@ -162,20 +162,32 @@ export interface SaidAct
     copied?: boolean;
 }
 
-/** How a sentence stands: said and waiting, heard by the master, never heard, the chat gone, or copied for the chat (D-495). */
-export type SaidState = "said" | "heard" | "lost" | "copied";
+/**
+ * How a sentence stands: said and waiting, which the player may take back; called, the doorbell rang for it and the master comes to read it, too late to take
+ * back; heard by the master; never heard, the chat gone; or copied for the chat (D-495).
+ */
+export type SaidState = "said" | "called" | "heard" | "lost" | "copied";
 
 /**
- * Each sentence said on this page with how it stands, as the server tells it: waiting while it is pending, heard once the master's call took it; while the
- * game is away, and after, what was not heard is lost, to say again in the chat. One the server no longer knows of, heard long ago, is left out; one copied
- * stays so, in its place.
+ * Each sentence said on this page with how it stands, as the server tells it: waiting while it is pending, called once the doorbell rang for it, heard once
+ * the master's call took it; while the game is away, and after, what was not heard is lost, to say again in the chat. One the server no longer knows of,
+ * heard long ago, is left out; one copied stays so, in its place.
  */
 export function saidStates(said: SaidAct[], shown: ActsShown | undefined, live: boolean): { act: SaidAct; state: SaidState; }[]
 {
     return said.flatMap((act) => {
-        const pending = shown?.pending.some((one) => one.id === act.id) === true;
+        const pending = shown?.pending.find((one) => one.id === act.id);
         const heard = shown?.heard.includes(act.id) === true;
-        const state: SaidState | undefined = act.copied === true ? "copied" : heard ? "heard" : pending && live ? "said" : !live || act.lost === true ? "lost" : undefined;
+        const waiting = pending?.rung === true ? "called" : "said";
+        const state: SaidState | undefined = act.copied === true
+            ? "copied"
+            : heard
+            ? "heard"
+            : pending !== undefined && live
+            ? waiting
+            : !live || act.lost === true
+            ? "lost"
+            : undefined;
         return state === undefined ? [] : [{ act, state }];
     });
 }

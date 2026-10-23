@@ -1,6 +1,8 @@
 name: Propose changes to the character's story
 covers: [story-propose]
-setup: {}
+setup:
+  rpg:
+    - [write, Ettore, --text, "Ettore è cresciuto al Guado, figlio del traghettatore. Ha lasciato il fiume il giorno in cui la Luce gli ha parlato."]
 steps:
   - phone: {tapOn: Backstory}   # on a phone the sheet's cards start closed
   - tapOn: Propose changes to your story

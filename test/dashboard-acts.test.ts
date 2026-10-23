@@ -126,6 +126,12 @@ describe("how a sentence said stands (D-495)", () => {
         expect(saidStates(said, { pending: [{ id: "a", text: "I attack." }], heard: ["b"], bell: true }, true).map((one) => one.state)).toEqual(["said", "heard", "copied"]);
     });
 
+    it("is called, no longer to take back, once the doorbell rang for it; lost if the game goes before the master reads it", () => {
+        const rung = { pending: [{ id: "a", text: "I attack.", rung: true }, { id: "b", text: "I use Torches." }], heard: [], bell: true };
+        expect(saidStates(said.slice(0, 2), rung, true).map((one) => one.state)).toEqual(["called", "said"]);
+        expect(saidStates(said.slice(0, 1), rung, false).map((one) => one.state)).toEqual(["lost"]);
+    });
+
     it("is lost while the game is away, and after, unless the server still holds it", () => {
         const shown = { pending: [{ id: "a", text: "I attack." }], heard: [], bell: true };
         expect(saidStates(said.slice(0, 1), shown, false).map((one) => one.state)).toEqual(["lost"]);
