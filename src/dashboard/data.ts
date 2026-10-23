@@ -424,7 +424,8 @@ export type View =
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }
     | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
-    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts: ShownThought[]; }
+    // thoughts may be missing from a server older than the page, as a chat started before an update (D-497).
+    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts?: ShownThought[]; }
     | { kind: "setup"; mode: string; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; left?: string[]; }
     | { kind: "unknown"; text: string; };
 

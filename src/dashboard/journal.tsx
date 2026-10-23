@@ -28,7 +28,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
     const [followed, setFollowed] = useFollowed(campaign, journal.read?.quests);
     const tabs = useRef<HTMLDivElement>(null);
     // The companions' tab only once one of them has written: a diary no one keeps shows nothing.
-    const shown = tabChoice.values.filter((value) => value !== "companions" || (journal.read?.thoughts.length ?? 0) > 0);
+    const shown = tabChoice.values.filter((value) => value !== "companions" || (journal.read?.thoughts?.length ?? 0) > 0);
     const tab = (shown as string[]).includes(chosen) ? chosen : tabChoice.initial;
 
     // On a phone the tabs may scroll sideways: the chosen one is brought into the row, and the page itself never moves.
@@ -82,7 +82,7 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
                 {journal.problem !== undefined && <p class="journal-problem" role="alert">{journal.problem}</p>}
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
                 {journal.read !== undefined && tab === "story" && <Story chapters={journal.read.chapters} now={journal.read.now} />}
-                {journal.read !== undefined && tab === "companions" && <Diaries thoughts={journal.read.thoughts} />}
+                {journal.read !== undefined && tab === "companions" && <Diaries thoughts={journal.read.thoughts ?? []} />}
                 {tab === "notes" && <Notes version={version} />}
                 {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">{t("The journal starts with the player character.")}</p>}
             </div>
