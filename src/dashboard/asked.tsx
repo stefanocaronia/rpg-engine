@@ -428,7 +428,7 @@ export function AskedBanner(
             <img class="asked-robot" src="/assets/favicon.svg" alt="" />
             <div class="asked-body">
                 {/* On the player's turn in a fight, the banner says so: the turn's own notice gives way to it (D-315). */}
-                {yourTurn && <p class="asked-turn">{t("Your turn")}</p>}
+                {yourTurn && <p class="eyebrow asked-turn">{t("Your turn")}</p>}
                 <h2 class="asked-title">{asked.title}</h2>
                 <p id={`asked-${asked.id}`} class="asked-question" role="alert">{asked.question}</p>
                 {/* By hand, as a master says it: which check, with its dice as pictures; its number the player finds on the sheet. */}

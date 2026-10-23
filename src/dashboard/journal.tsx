@@ -314,13 +314,13 @@ function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; follow
     const card = (quest: ShownQuest) => <QuestCard key={quest.name} quest={quest} followed={followed.includes(quest.name)} onFollow={onFollow} />;
     return (
         <div class="quest-log">
-            <h3 class="quest-group">
+            <h3 class="eyebrow quest-group">
                 {t("Active")} <span>{open.length}</span>
             </h3>
             {open.length === 0 ? <p class="journal-none">{t("None open now.")}</p> : <div class="quest-cards">{open.map(card)}</div>}
             {done.length > 0 && (
                 <details class="quest-folded">
-                    <summary class="quest-group">
+                    <summary class="eyebrow quest-group">
                         {t("Completed")} <span>{done.length}</span>
                     </summary>
                     <div class="quest-cards">{done.map(card)}</div>
@@ -328,7 +328,7 @@ function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; follow
             )}
             {failed.length > 0 && (
                 <details class="quest-folded">
-                    <summary class="quest-group">
+                    <summary class="eyebrow quest-group">
                         {t("Failed")} <span>{failed.length}</span>
                     </summary>
                     <div class="quest-cards">{failed.map(card)}</div>
@@ -499,7 +499,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
 
     return (
         <ol class="story">
-            <li class="story-mark now">
+            <li class="eyebrow story-mark now">
                 <b>{t("Now")}</b>
                 {now !== undefined && <span>{phraseLabel(gameDateLabel(now))}</span>}
             </li>
@@ -516,7 +516,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                             <ChapterPicture chapter={chapter} />
                             <div class="chapter-body">
                                 <header class="chapter-head">
-                                    {chapter.number !== undefined && <span class="chapter-number">{t("Chapter {number}", { number: chapter.number })}</span>}
+                                    {chapter.number !== undefined && <span class="eyebrow chapter-number">{t("Chapter {number}", { number: chapter.number })}</span>}
                                     <h3>{chapter.title}</h3>
                                     {chapter.open && <span class="chapter-now">{t("Now")}</span>}
                                     {chapter.type !== undefined && <span class="chapter-type">{phraseLabel(sceneTypeLabel(chapter.type))}</span>}
@@ -535,7 +535,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                         </li>
                     )
             )}
-            <li class="story-mark start">
+            <li class="eyebrow story-mark start">
                 <b>{t("The start")}</b>
             </li>
         </ol>

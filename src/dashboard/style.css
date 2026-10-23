@@ -154,6 +154,10 @@ h3,
     text-transform: uppercase;
 }
 
+.eyebrow.accent {
+    color: var(--accent);
+}
+
 /* A card that is always open: its CardHead, then its body. */
 .card {
     display: grid;
@@ -497,7 +501,7 @@ a {
     padding-inline: 16px;
     border-top: 1px solid var(--rule);
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     text-decoration: none;
 }
 
@@ -564,7 +568,7 @@ a {
     padding: 0 14px;
     border-radius: var(--radius-m) var(--radius-m) 0 0;
     color: var(--muted);
-    font-size: 0.95rem;
+    font-size: inherit;
     font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
@@ -665,7 +669,7 @@ a {
 .settings-problem {
     margin: -6px 0 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 .settings-problem {
@@ -1154,7 +1158,7 @@ a {
 .saves-none {
     margin: -6px 0 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 /* What the mode allows, tied to it by the gold mark, as Settings says what a value means. */
@@ -1162,7 +1166,7 @@ a {
     margin: -6px 0 0;
     padding-inline-start: 8px;
     border-inline-start: 3px solid var(--gold);
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 .saves-lead a {
@@ -1284,7 +1288,7 @@ a {
     border-radius: var(--radius-xs);
     background: var(--gold);
     color: var(--on-gold);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -1351,7 +1355,7 @@ a {
 .saves-over p {
     margin: 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 /* On a phone, each save a row: its picture on the left, small, as in a game's list of saves. */
@@ -1576,7 +1580,7 @@ a {
     border-radius: 999px;
     background: color-mix(in srgb, var(--accent) 16%, transparent);
     color: var(--accent);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
@@ -1680,11 +1684,6 @@ a {
     align-items: center;
     gap: 8px;
     margin: 4px 0 0;
-    color: var(--muted);
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
 }
 
 .quest-group span {
@@ -1982,7 +1981,7 @@ a {
 }
 
 .quest-text {
-    font-size: 0.92rem;
+    font-size: inherit;
 }
 
 .quest-text p {
@@ -2017,8 +2016,8 @@ a {
     border: 1.5px solid var(--muted);
     border-radius: var(--radius-xs);
     color: var(--on-gold);
-    font-size: 0.75rem;
-    font-weight: 800;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .quest-goals li.done .quest-tick {
@@ -2147,7 +2146,7 @@ a {
     flex: 1 1 280px;
     margin: 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 .player-notes-head svg.icon {
@@ -2323,7 +2322,7 @@ a {
     gap: 6px;
     margin: 0;
     color: var(--accent);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     font-weight: 600;
 }
 
@@ -2334,7 +2333,7 @@ a {
 
 .story-box label {
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .story-box textarea {
@@ -2643,7 +2642,7 @@ a {
 }
 
 .tracked .followed-name {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     white-space: normal;
 }
 
@@ -2765,11 +2764,6 @@ a {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
 }
 
 .story > li.story-mark::before {
@@ -2790,7 +2784,7 @@ a {
 }
 
 .story-mark span {
-    font-weight: 500;
+    font-weight: 400;
     letter-spacing: 0;
     text-transform: none;
 }
@@ -2854,11 +2848,6 @@ a {
 
 .chapter-number {
     flex-basis: 100%;
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
 }
 
 .chapter.between {
@@ -2935,7 +2924,7 @@ a {
     margin-block: 6px 2px;
     margin-inline: -18px 0;
     color: var(--ink);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 700;
     list-style: none;
 }
@@ -3067,7 +3056,7 @@ a {
     margin: 0;
     padding: 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     list-style: none;
 }
 
@@ -3084,7 +3073,7 @@ a {
     height: 22px;
     border: 1.5px solid var(--muted);
     border-radius: 50%;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
 }
 
@@ -3127,15 +3116,6 @@ a {
     border-radius: var(--radius-xs);
 }
 
-.setup-count {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
 .setup-about {
     margin: -4px 0 4px;
     color: var(--muted);
@@ -3162,7 +3142,7 @@ a {
 
 .setup-choice span {
     color: var(--muted);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
 }
 
 .setup-choice:hover {
@@ -3285,11 +3265,6 @@ a {
 
 .setup-open-label {
     margin-inline-end: 4px;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
 }
 
 .setup-chip {
@@ -3300,7 +3275,7 @@ a {
     background: var(--float);
     color: var(--ink);
     font: inherit;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     cursor: pointer;
 }
 
@@ -3364,7 +3339,7 @@ a {
 .setup-problem {
     margin: 0;
     color: var(--muted);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     text-align: center;
 }
 
@@ -3419,7 +3394,7 @@ a {
 /* Help (D-409): what it is, an index of chips, each part a card that folds. */
 .help-lead {
     margin: 0;
-    font-size: 1.02rem;
+    font-size: inherit;
 }
 
 .help-index {
@@ -3439,10 +3414,10 @@ a {
     background: var(--panel);
     color: var(--ink);
     font: inherit;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     line-height: 1.25;
     text-align: start;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
 }
 
@@ -3529,7 +3504,7 @@ a {
 
 .guide table {
     border-collapse: collapse;
-    font-size: 0.92rem;
+    font-size: 0.85rem;
     line-height: 1.45;
 }
 
@@ -3637,7 +3612,7 @@ a {
     border-radius: var(--radius-m);
     background: var(--panel-2);
     color: var(--ink);
-    font-size: 0.92rem;
+    font-size: 0.85rem;
     font-weight: 600;
     text-decoration: none;
 }
@@ -3685,7 +3660,7 @@ a {
 
 .about-licence h4 {
     margin: 0 0 4px;
-    font-size: 0.95rem;
+    font-size: inherit;
 }
 
 .about-licence .about-link {
@@ -3815,7 +3790,7 @@ a {
     box-shadow: var(--lift);
     color: var(--ink);
     font-size: 0.85rem;
-    font-weight: 550;
+    font-weight: 600;
     white-space: nowrap;
 }
 
@@ -3909,7 +3884,7 @@ a {
     padding-inline: 16px;
     border-top: 1px solid var(--rule);
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     line-height: 1.45;
     text-align: center;
 }
@@ -4038,7 +4013,7 @@ a {
     background: color-mix(in srgb, var(--tone) 10%, var(--panel));
     box-shadow: var(--lift);
     color: var(--ink);
-    font-weight: 550;
+    font-weight: 600;
 }
 
 .notice svg.icon {
@@ -4821,7 +4796,7 @@ summary :is(h3, .rolls-title),
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--muted);
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 650;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -5021,7 +4996,7 @@ button.row,
 }
 
 .row-text .text {
-    font-size: 0.95rem;
+    font-size: inherit;
     font-weight: 400;
     line-height: 1.45;
 }
@@ -5120,7 +5095,7 @@ button.row,
 
 .progress-next {
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
 }
 
 .track .fill {
@@ -5167,7 +5142,7 @@ button.row,
     border-radius: var(--radius-s);
     background: color-mix(in srgb, var(--accent) 11%, var(--panel));
     font-size: 0.85rem;
-    font-weight: 550;
+    font-weight: 600;
 }
 
 /* A name that acts (D-495): the name acts, the number rolls. A dotted line in the accent under it and a chevron after it; in a chip or a line, its whole
@@ -5193,7 +5168,7 @@ button.row,
 .act-mark {
     margin-inline-start: 0.25em;
     color: var(--accent);
-    font-weight: 800;
+    font-weight: 700;
 }
 
 .chips.acting li {
@@ -5244,7 +5219,7 @@ button.row,
     margin: 0;
     padding-block: 0;
     padding-inline: 1.1em 0;
-    font-size: 0.92rem;
+    font-size: inherit;
 }
 
 .notes li::marker {
@@ -5267,7 +5242,7 @@ button.row,
     background: color-mix(in srgb, var(--accent) 16%, transparent);
     color: var(--accent);
     font-size: 0.85rem;
-    font-weight: 550;
+    font-weight: 600;
 }
 
 .effect .end {
@@ -5318,7 +5293,7 @@ button.row,
 }
 
 .items tbody tr.inside th {
-    font-weight: 450;
+    font-weight: 400;
 }
 
 .item-picture {
@@ -5543,7 +5518,7 @@ button.row,
 
 .markdown h5 {
     margin: 12px 0 2px;
-    font-size: 0.95rem;
+    font-size: inherit;
     font-weight: 700;
 }
 
@@ -5762,7 +5737,7 @@ button.row,
     margin: 0;
     overflow: hidden;
     font-family: var(--serif);
-    font-size: 1.05rem;
+    font-size: 1rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -5829,7 +5804,7 @@ button.row,
 
     .asked-bar-question {
         flex-basis: 100%;
-        font-size: 0.95rem;
+        font-size: inherit;
     }
 
     .asked.folded .asked-buttons {
@@ -5857,11 +5832,6 @@ button.row,
 
 .asked-turn {
     margin: 0 0 2px;
-    color: var(--muted);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
 }
 
 .asked-title {
@@ -6034,10 +6004,6 @@ button.row,
 /* A system's word, which may be long in a language: it breaks rather than leave its card. */
 .dying-label {
     color: var(--ally);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     overflow-wrap: anywhere;
     hyphens: auto;
 }
@@ -6324,21 +6290,13 @@ button.row,
     gap: 4px 10px;
 }
 
-.spend-points-name {
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
 .spend-points-number {
     font-variant-numeric: tabular-nums;
 }
 
 .spend-points-number b {
     font-size: 1.6rem;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1;
 }
 
@@ -6349,7 +6307,7 @@ button.row,
 
 .spend-gain {
     color: var(--ally);
-    font-weight: 800;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
 
@@ -6485,7 +6443,7 @@ button.row,
 .spend-hint {
     margin: 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .spend-chips {
@@ -6519,7 +6477,7 @@ button.row,
 }
 
 .spend-chip-total {
-    font-weight: 800;
+    font-weight: 700;
 }
 
 .spend-done {
@@ -7013,7 +6971,7 @@ summary.fixed {
 .rolls-none {
     margin: 0 0 8px;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 /* A roll in three lines (D-292): whom, what, the dice; the token and the total at the top, as in a list of three lines. */
@@ -7123,8 +7081,8 @@ summary.fixed {
     border-start-start-radius: calc(var(--radius-m) - 1px);
     background: var(--gold);
     color: var(--on-gold);
-    font-size: 0.75rem;
-    font-weight: 900;
+    font-size: 0.8rem;
+    font-weight: 700;
     line-height: 1;
     clip-path: polygon(0 0, 100% 0, 0 100%);
     pointer-events: none;
@@ -7142,7 +7100,7 @@ summary.fixed {
 }
 
 .roll-check {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .roll-total {
@@ -7270,7 +7228,7 @@ summary.fixed {
 
 .plate-title {
     overflow: hidden;
-    font-size: 1.05rem;
+    font-size: 1.125rem;
     font-weight: 700;
     line-height: 1.25;
     text-overflow: ellipsis;
@@ -7316,7 +7274,7 @@ summary.fixed {
     border-radius: var(--radius-s);
     background: var(--panel-2);
     font-size: 0.85rem;
-    font-weight: 800;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
 
@@ -7417,11 +7375,11 @@ summary.fixed {
 }
 
 .plate-dice .die-chip s {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
 }
 
 .plate-dice .die-modifier {
-    font-size: 1.05rem;
+    font-size: 1.125rem;
 }
 
 .plate-total {
@@ -7444,7 +7402,7 @@ summary.fixed {
     margin: 2px -20px -16px;
     padding: 8px 20px;
     font-size: 0.85rem;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0.1em;
     text-align: center;
     text-transform: uppercase;
@@ -7577,7 +7535,7 @@ svg.icon {
 
 .die-more {
     margin-inline-start: 2px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
 }
 
@@ -7592,7 +7550,7 @@ svg.icon {
     border-radius: var(--radius-xs);
     background: var(--ink);
     color: var(--paper);
-    font: 500 0.75rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+    font: 400 0.8rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
     letter-spacing: 0;
     text-transform: none;
     white-space: nowrap;
@@ -7682,7 +7640,7 @@ svg.icon {
     border-radius: var(--radius-l);
     background: var(--float);
     box-shadow: var(--overlay);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
 }
 
 .act-line.said,
@@ -7868,7 +7826,7 @@ svg.icon {
     background: var(--float);
     box-shadow: var(--overlay);
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
 }
 
 
@@ -7990,7 +7948,7 @@ svg.icon {
     border-radius: var(--radius-xs);
     background: var(--accent);
     color: var(--paper);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
 }
 
@@ -8294,7 +8252,7 @@ svg.icon {
     .asked-buttons button {
         min-height: 40px;
         padding: 6px 12px;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
 
     .asked-title {
@@ -8472,7 +8430,7 @@ svg.icon {
 }
 
 .place-line h2 {
-    font-size: 1.05rem;
+    font-size: 1.125rem;
 }
 
 .place-line .place-env {
@@ -8631,7 +8589,7 @@ svg.icon {
     border-radius: var(--radius-s);
     background: color-mix(in srgb, var(--paper) 40%, transparent);
     font-size: 0.85rem;
-    font-weight: 550;
+    font-weight: 600;
 }
 
 .place-band.over .place-env li {
@@ -8642,7 +8600,7 @@ svg.icon {
 .place-env .k {
     margin-inline-end: 2px;
     color: var(--muted);
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 650;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -8716,12 +8674,6 @@ svg.icon {
 
 .scene-now .eyebrow {
     flex-basis: 100%;
-    margin: 0;
-    color: var(--accent);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
 }
 
 .scene-type {
@@ -8800,7 +8752,7 @@ svg.icon {
 
 .present .count {
     color: var(--muted);
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* Someone the character does not know: a coin as on the map, the hood or their number light on its dark disc (D-414). */
@@ -8979,15 +8931,6 @@ svg.icon {
     }
 }
 
-.turn-band .eyebrow {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-}
-
 .turn-band {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -9029,7 +8972,7 @@ svg.icon {
 
 .round-number {
     font-size: 2rem;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1;
 }
 
@@ -9160,7 +9103,7 @@ svg.icon {
     margin-inline-start: auto;
     color: var(--muted);
     font-size: 0.8rem;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* The order of the turns as small cards (D-419, R1): the place in a strip at the start, told apart by its ground alone, lit in a light yellow on the turn. */
@@ -9221,7 +9164,7 @@ svg.icon {
     align-items: center;
     gap: 8px;
     margin: 0;
-    font-size: 0.95rem;
+    font-size: inherit;
     font-weight: 700;
     /* Two lines of a like length: never a copy's number alone on the second. */
     text-wrap: balance;
@@ -9232,8 +9175,8 @@ svg.icon {
     border-radius: var(--radius-xs);
     background: var(--gold);
     color: var(--on-gold);
-    font-size: 0.7rem;
-    font-weight: 750;
+    font-size: 0.72rem;
+    font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
@@ -9293,7 +9236,7 @@ svg.icon {
 .turns-card.on-table .turn-name {
     grid-column: 1;
     gap: 6px;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
 }
 
 .turns-card.on-table .turn-main > .bar-line {
@@ -9422,7 +9365,7 @@ svg.icon {
 
 .death-word {
     color: var(--low);
-    font-weight: 800;
+    font-weight: 700;
 }
 
 .death-saves.stable .death-word {
@@ -9558,8 +9501,8 @@ svg.icon {
     display: grid;
     gap: 2px;
     color: var(--low);
-    font-size: 0.75rem;
-    font-weight: 800;
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .member-dying.stable {
@@ -9673,7 +9616,7 @@ svg.icon {
     background: var(--gold);
     box-shadow: var(--overlay);
     color: var(--on-gold);
-    font-weight: 750;
+    font-weight: 700;
     text-decoration: none;
 }
 
@@ -10600,14 +10543,6 @@ svg.icon {
     font-weight: 700;
 }
 
-.calendar-chosen-now {
-    color: var(--accent);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
 .calendar-chosen-list,
 .calendar-deadlines {
     display: grid;
@@ -11409,11 +11344,6 @@ svg.icon {
 .act-who legend {
     margin-bottom: 8px;
     padding: 0;
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 650;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
 }
 
 /* One to choose, as on the map's list of who is where: a line in the side's colour, red for a foe the master marked; chosen, ringed in the accent. */
@@ -11519,7 +11449,7 @@ svg.icon {
 .act-problem {
     margin: 0;
     color: var(--low);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
 }
 
@@ -11657,7 +11587,7 @@ svg.icon {
     margin: 0;
     padding: 10px 16px;
     list-style: none;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
 }
 
 .lm-where {
@@ -11682,14 +11612,14 @@ svg.icon {
 
 .lm-key-note {
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
 }
 
 .lm-key-square {
     padding: 0 5px;
     border-radius: var(--radius-xs);
     background: var(--cell);
-    font-size: 0.8125rem;
+    font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
 }
@@ -11720,7 +11650,7 @@ svg.icon {
 
 .lm-where-far {
     color: var(--muted);
-    font-size: 0.8125rem;
+    font-size: 0.8rem;
 }
 
 /* The ground's look, from the place's kind or its biome (D-325). */
@@ -11858,7 +11788,7 @@ svg.icon {
 
 .map-sub {
     color: var(--muted);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
 }
 
 .map-to-list {
@@ -11872,7 +11802,7 @@ svg.icon {
     background: none;
     color: var(--accent);
     font: inherit;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
 }
@@ -12100,7 +12030,7 @@ svg.icon {
     color: var(--ink);
     font: inherit;
     font-family: var(--serif);
-    font-size: 0.95rem;
+    font-size: inherit;
     cursor: pointer;
 }
 
@@ -12433,11 +12363,6 @@ svg.icon {
 .pc-eyebrow {
     margin-block: 0 2px;
     margin-inline: 0 36px;
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
 }
 
 .place-card h3 {
@@ -12451,7 +12376,7 @@ svg.icon {
     align-items: center;
     gap: 8px;
     margin: 6px 0 0;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
 }
 
@@ -12465,16 +12390,11 @@ svg.icon {
 
 .pc-text {
     margin: 8px 0 0;
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 .pc-sub {
     margin: 12px 0 4px;
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
 }
 
 .in-chips {
@@ -12495,13 +12415,13 @@ svg.icon {
 
 .in-path {
     opacity: 0.75;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .pc-ways {
     margin: 0;
     padding: 0;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     list-style: none;
 }
 
@@ -12558,11 +12478,6 @@ svg.icon {
 
 .key-title {
     margin: 0 0 6px;
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
 }
 
 .key-group ul {
@@ -12571,7 +12486,7 @@ svg.icon {
     gap: 6px 12px;
     margin: 0;
     padding: 0;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     list-style: none;
 }
 
@@ -12655,7 +12570,7 @@ svg.icon {
 .pr-far {
     grid-area: far;
     color: var(--muted);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
 }
 
 @media (max-width: 600px) {
@@ -12742,7 +12657,7 @@ svg.icon {
 /* How many of a thing, after its name (D-431). */
 .items .item-count {
     color: var(--muted);
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* What is carried is a list, not a table: no lines between its things, closer together (D-431). */
@@ -12797,7 +12712,7 @@ svg.icon {
 .packages-lead {
     margin: -6px 0 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 .package-panel {
@@ -12880,7 +12795,7 @@ svg.icon {
 .package-note {
     margin: 0;
     color: var(--muted);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
 }
 
 /* The one field that adds: its label, the field and its two buttons, which go under it on a phone; what it is, then the work or what happened. */
@@ -12980,7 +12895,7 @@ svg.icon {
     background: var(--panel-2);
     color: var(--ink);
     font: inherit;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
 }
 
 /* The kinds, with how many each has: one line on a screen, two on a phone, never a row to scroll. */
@@ -13032,7 +12947,7 @@ svg.icon {
 
 .package-count {
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
 }
 
@@ -13119,7 +13034,7 @@ svg.icon {
 
 .package-meta {
     color: var(--muted);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-variant-numeric: tabular-nums;
 }
 
@@ -13138,7 +13053,7 @@ svg.icon {
     align-items: center;
     gap: 3px;
     color: var(--muted);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 650;
 }
 
@@ -13185,16 +13100,7 @@ svg.icon {
 
 .package-quiet {
     color: var(--muted);
-    font-size: 0.82rem;
-}
-
-.package-sub {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.8rem;
 }
 
 .package-list {
@@ -13280,7 +13186,7 @@ svg.icon {
     display: grid;
     gap: 6px;
     color: var(--muted);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
 }
 
 .package-progress strong {
@@ -13400,7 +13306,7 @@ svg.icon {
     border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--rule));
     border-radius: var(--radius-m);
     background: color-mix(in srgb, var(--accent) 10%, var(--panel));
-    font-size: 0.9rem;
+    font-size: inherit;
 }
 
 .library-scope > svg.icon {
@@ -13437,7 +13343,7 @@ svg.icon {
     border: 1px solid var(--rule);
     border-radius: var(--radius-m);
     background: var(--float);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
 }
 
 .package-offline > svg.icon {
@@ -13486,7 +13392,7 @@ svg.icon {
     display: grid;
     gap: 4px;
     color: var(--muted);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 650;
 }
 
@@ -13508,7 +13414,7 @@ svg.icon {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
 }
 
 .package-rights svg.icon {

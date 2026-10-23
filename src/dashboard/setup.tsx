@@ -169,7 +169,7 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onPro
 
     return (
         <article class="setup-card" aria-labelledby={id}>
-            <p class="setup-count">{count}</p>
+            <p class="eyebrow setup-count">{count}</p>
             <h2 id={id} ref={heading} tabIndex={-1}>{title}</h2>
             <p class="setup-about">{phraseLabel(t(question.about))}</p>
             {question.choices !== undefined && <Choices question={question} value={value} labelledBy={id} onPick={pick} />}
@@ -309,7 +309,7 @@ function Ready({ setup, left, focus, onGo, onProblem }: { setup: Setup; left: Se
             <h2 id="setup-ready" ref={heading} tabIndex={-1}>{open.length === 0 ? t("All set") : t("Almost there")}</h2>
             {open.length > 0 && (
                 <div class="setup-open">
-                    <span class="setup-open-label">{t("Still open")}</span>
+                    <span class="eyebrow setup-open-label">{t("Still open")}</span>
                     {open.map(({ question, index }) => <button key={question.name} type="button" class="setup-chip" onClick={() => onGo(index)}>{settingLabel(question.name)}</button>)}
                 </div>
             )}

@@ -206,7 +206,7 @@ function DayDetails({ calendar, day }: { calendar: ShownCalendar; day: number; }
         <div class="calendar-chosen">
             <h4 class="calendar-chosen-title">
                 {capitalized(dayName(calendar, day))}
-                {marks.today && <span class="calendar-chosen-now">{t("Today")}</span>}
+                {marks.today && <span class="eyebrow accent calendar-chosen-now">{t("Today")}</span>}
             </h4>
             {empty && <p class="browse-none">{day > (calendar.today ?? 1) ? t("Nothing your character knows of is due on this day.") : t("No scene of the story on this day.")}</p>}
             {!empty && (

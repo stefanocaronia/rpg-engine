@@ -720,7 +720,7 @@ function PlaceCard(
                 <Icon name="close" />
             </button>
             <div class="pc-body">
-                <p class="pc-eyebrow">{eyebrow.join(" · ")}</p>
+                <p class="eyebrow pc-eyebrow">{eyebrow.join(" · ")}</p>
                 <h3 id="place-card-title">{place.name}</h3>
                 {here && (
                     <p class="pc-here">
@@ -732,7 +732,7 @@ function PlaceCard(
                 {readMore !== undefined && <a class="pc-more md-link" href={readMore}>{t("Read all you know")}</a>}
                 {inside.length > 0 && (
                     <>
-                        <h4 class="pc-sub">{t("Inside")}</h4>
+                        <h4 class="eyebrow pc-sub">{t("Inside")}</h4>
                         <ul class="in-chips">
                             {inside.flatMap((child) => [
                                 <li key={child.name} class="in-chip">{child.name}</li>,
@@ -747,7 +747,7 @@ function PlaceCard(
                 )}
                 {ways.length > 0 && (
                     <>
-                        <h4 class="pc-sub">{t("Ways")}</h4>
+                        <h4 class="eyebrow pc-sub">{t("Ways")}</h4>
                         <ul class="pc-ways">
                             {ways.map((way, index) => (
                                 <li key={index}>
@@ -791,7 +791,7 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
             <summary>{t("Key")}</summary>
             <div class="key-groups">
                 <div class="key-group">
-                    <h4 class="key-title">{t("Ways")}</h4>
+                    <h4 class="eyebrow key-title">{t("Ways")}</h4>
                     <ul>
                         {ways.map((look) => (
                             <li key={look}>
@@ -834,7 +834,7 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
                     </ul>
                 </div>
                 <div class="key-group">
-                    <h4 class="key-title">{t("Land")}</h4>
+                    <h4 class="eyebrow key-title">{t("Land")}</h4>
                     <ul>
                         {lands.map((look) => (
                             <li key={look}>
@@ -851,7 +851,7 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
                     </ul>
                 </div>
                 <div class="key-group">
-                    <h4 class="key-title">{t("Places")}</h4>
+                    <h4 class="eyebrow key-title">{t("Places")}</h4>
                     <ul>
                         {kinds.map((kind) => (
                             <li key={kind}>
@@ -893,7 +893,7 @@ function PlacesList({ map, layout, onChoose }: { map: WorldMap; layout: MapLayou
                     </li>
                 ))}
             </ol>
-            {(layout.regions.length > 0 || map.roads.length > 0) && <h4 class="pc-sub">{t("Regions and ways")}</h4>}
+            {(layout.regions.length > 0 || map.roads.length > 0) && <h4 class="eyebrow pc-sub">{t("Regions and ways")}</h4>}
             <ul class="places">
                 {layout.regions.map((region) => <RegionRow key={region.name} region={region} unit={map.unit} />)}
                 {map.roads.map((road) => (

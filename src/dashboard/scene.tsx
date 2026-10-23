@@ -290,7 +290,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
     return (
         <section class="scene-now" aria-labelledby="scene-title">
             <header>
-                <p class="eyebrow">{t("Scene")}</p>
+                <p class="eyebrow accent">{t("Scene")}</p>
                 <h3 id="scene-title">{scene.title}</h3>
                 <span class="scene-type" data-type={scene.type}>{sceneTypeLabel(scene.type)}</span>
                 {scene.since && <span class="scene-since">{sinceDateLabel(scene.since)}</span>}

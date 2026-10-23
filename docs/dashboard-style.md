@@ -41,7 +41,7 @@ The system's sans for everything (`body`: 15px/1.4). The serif (`--serif`) is th
 
 | Size | Weight | Use |
 |---|---|---|
-| `0.72rem`, uppercase, `letter-spacing: 0.08em` | 700 | An eyebrow: the small label over a title (`.eyebrow`), muted; in the accent when it says "now" |
+| `0.72rem`, uppercase, `letter-spacing: 0.08em` | 700 | An eyebrow: the small label over a title or a group (`.eyebrow`), muted; `.eyebrow.accent` when it says "now" |
 | `0.8rem` | 400–650 | Small: counts, tooltips, footnotes |
 | `0.85rem` | 400–650 | Secondary: a row's meta, a closed card's preview, chips |
 | body (inherit, 15px) | 400 | Text |
@@ -49,7 +49,7 @@ The system's sans for everything (`body`: 15px/1.4). The serif (`--serif`) is th
 | `1.4rem` | 700 | A page's title (`h2` in `PageHead`) |
 | `1.6rem` and up | 700 | One number that is the point of its box: a total, a modifier |
 
-Weights: 400 text, 650 controls (buttons, tabs, chips), 700 titles, names and numbers, 600 the serif titles. Numbers that line up are `.num` (tabular figures). Items of a list start with a capital; a field's abbreviation (AC, WIS) is all capitals.
+Weights: 400 text, 600 a word that stands out in a line (a chip of a list, a notice, a name in a row) and the serif titles, 650 controls (buttons, tabs, filter chips), 700 titles, names and numbers. The maps draw their labels in px, in the map's own units. Numbers that line up are `.num` (tabular figures). Items of a list start with a capital; a field's abbreviation (AC, WIS) is all capitals.
 
 ### Room, corners, depth
 
@@ -125,8 +125,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 ## 5. Not in line yet
 
-- Font sizes outside the scale (0.7, 0.75, 0.78, 0.82, 0.875, 0.88, 0.9, 0.92, 0.95, 1.02, 1.05rem, and sizes in px) and weights 450, 500, 550, 750, 800, 900.
-- Nine eyebrows, each its own size, weight and spacing, to become `.eyebrow`.
+- Titles between a card's and a page's (1.1 to 1.5rem: dialogs, banners, the master's question, a quest's cover) and labels under 0.72rem in tight tiles (0.55 to 0.68rem); the roll's total and the death save's word at weight 800.
 - Durations in milliseconds (120, 220, 240, 280, 320, 420, 500, 520, 700) instead of the tokens; eight `prefers-reduced-motion: reduce` blocks that take motion away instead of adding it under `no-preference`.
 - Corners of 2, 3, 7 and 9 px; raw colours outside the maps and the dice.
 - Cards always open drawn on their own (`.package-card`, `.map-card`, `.map-list`, `.upcoming`), to become `.card`; `.package-chips` and `.package-search` serve the whole page and take names of their own (`.filter-chips`, `.search`).

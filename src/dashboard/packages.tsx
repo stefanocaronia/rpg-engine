@@ -891,7 +891,7 @@ function CatalogList(
     return (
         <div class="package-catalog">
             <div class="package-catalog-head">
-                <h4 class="package-sub" id="package-catalog-title">{t("Catalog")}</h4>
+                <h4 class="eyebrow package-sub" id="package-catalog-title">{t("Catalog")}</h4>
                 {entries.length > 0 && (
                     <span class="package-search">
                         <Icon name="search" />
