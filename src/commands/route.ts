@@ -28,7 +28,7 @@ export const route = defineCommand({
     positionals: ["to"],
     input: z.object({
         to: z.string().describe("where to: a place"),
-        from: z.string().optional().describe("where from: a place, or a character; if left out, where the party is, or where its journey stopped"),
+        from: z.string().optional().describe("where from: a place, or a character; if left out, where the party is, or where its journey stopped; given, when the player characters are apart"),
         pace: z.string().optional().describe("one of the game's paces, such as fast, or a speed, such as 4.5 km; if left out, the game's usual pace"),
         across: z.boolean().optional().describe("straight across country, off the roads, when both places have a position"),
     }),

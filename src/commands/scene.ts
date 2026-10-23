@@ -34,11 +34,12 @@ import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./g
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clearCopies, offMapNote, placeGrid, standing } from "./game-grids.ts";
 import { metPictureNote, picturesNote } from "./game-images.ts";
+import { readJourney } from "./game-journey.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
 import { turnEffectsNote } from "./game-reminders.ts";
-import { partyLead } from "./game-roads.ts";
+import { partyLead, playersApart } from "./game-roads.ts";
 import { isPlayerDead, makeSave, saveText } from "./game-saves.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { systemTurnStarted } from "./game-system-code.ts";
@@ -315,8 +316,10 @@ function openNew(root: string, world: World, input: SceneInput, context: Context
     }
 
     checkInPlay(root, context, world);
-    const place = input.place === undefined ? leadPlace(world) : placePage(world, input.place);
-    const characters = [...new Set(input.with === undefined ? enteringParty(world, place) : input.with.map((name) => characterPage(world, name)))];
+    const named = input.with?.map((name) => characterPage(world, name));
+    const movers = readJourney(root)?.movers ?? [];
+    const place = input.place === undefined ? defaultPlace(world, movers, named) : placePage(world, input.place);
+    const characters = [...new Set(named ?? enteringParty(world, movers, place))];
     const copies = newCopies(world, input.creatures, characters.map((page) => page.name));
     const brought = bringParty(root, context, world, characters, place, input.type);
     const opened = readPresent(root).date;
@@ -1109,18 +1112,31 @@ function checkInPlay(root: string, context: Context, world: World): void
     }
 }
 
-/** Where the player characters are: the nearest place among their containers; refused when the living are apart (VIEW-12), with where each is. */
-function leadPlace(world: World): Page | undefined
+/**
+ * Where a scene opens without a place (SCN-2): where the player characters are; while they are apart (VIEW-12), where those it is with are, when they are
+ * together; else refused, with where each is.
+ */
+function defaultPlace(world: World, movers: string[], named: Page[] | undefined): Page | undefined
 {
-    const lead = partyLead(world, [], "Give place, where the scene is, or with, who is in it.");
+    if (named !== undefined && playersApart(world, movers) !== undefined) {
+        const places = [...new Set(named.map((page) => nearestPlace(world, page)))];
+
+        if (places.length > 1) {
+            throw new Error(`${named.map((page) => `${page.name}, in ${nearestPlace(world, page)?.name ?? "the open"}`).join("; ")}: give place, where the scene is. Nothing changed.`);
+        }
+
+        return places[0];
+    }
+
+    const lead = partyLead(world, movers, "Give place, where the scene is, or with, who is in it.");
     return lead === undefined ? undefined : nearestPlace(world, lead);
 }
 
-/** The nearest place of the living player characters when they are all in it; undefined when they are apart (VIEW-12), or in none. */
-function togetherPlace(world: World): Page | undefined
+/** The nearest place of the living player characters when they are all together; undefined when they are apart (VIEW-12), or in the open. */
+function togetherPlace(world: World, movers: string[]): Page | undefined
 {
-    const places = [...new Set(playerCharacters(world).filter((page) => page.fields.status !== "dead").map((page) => nearestPlace(world, page)).filter((place) => place !== undefined))];
-    return places.length === 1 ? places[0] : undefined;
+    const lead = playersApart(world, movers) === undefined ? partyLead(world, movers, "") : undefined;
+    return lead === undefined ? undefined : nearestPlace(world, lead);
 }
 
 function nearestPlace(world: World, page: Page): Page | undefined
@@ -1132,9 +1148,9 @@ function nearestPlace(world: World, page: Page): Page | undefined
  * Who of the party enters a scene when with is left out (CON-6): the living members in its place, and those where the player characters are, when they are
  * together (VIEW-12); all of them when there is no place.
  */
-function enteringParty(world: World, place: Page | undefined): Page[]
+function enteringParty(world: World, movers: string[], place: Page | undefined): Page[]
 {
-    const lead = togetherPlace(world);
+    const lead = togetherPlace(world, movers);
     return world.pages.filter((page) => isInParty(page) && (place === undefined || locate(world, page).chain.includes(place) || (lead !== undefined && nearestPlace(world, page) === lead)));
 }
 

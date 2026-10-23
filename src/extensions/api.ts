@@ -71,7 +71,7 @@ export interface Game
     calendarDay(day: number): CalendarDay | undefined;
     /** The units of measure the campaign tells the story in. */
     units(): "metric" | "imperial";
-    /** Where the party is: the player character's places, the nearest first, and what holds there by the places' environment, such as biome: desert. */
+    /** Where the party is: the first living player character's places, in the order of the pages, the nearest first, and what holds there by the places' environment, such as biome: desert. */
     party(): { places: string[]; environment: Record<string, string>; } | undefined;
     /** The extension's own state, kept in the campaign. */
     state: { read(): unknown; write(value: unknown): void; };

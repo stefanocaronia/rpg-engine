@@ -1426,7 +1426,9 @@ async function story(request: IncomingMessage, response: ServerResponse, served:
             }
 
             // A proposal ends when the master writes the story.
-            if (served.stories.get(pc.name)?.before !== undefined && served.stories.get(pc.name)?.before !== playerStory(pc)) {
+            const waiting = served.stories.get(pc.name);
+
+            if (waiting !== undefined && waiting.before !== playerStory(pc)) {
                 served.stories.delete(pc.name);
             }
 

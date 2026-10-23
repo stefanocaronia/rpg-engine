@@ -91,7 +91,9 @@ export function playerKnowledge(root: string, world: World, wanted?: string): Kn
 
     // One read of the log for them all.
     const read = { log: readLog(root), scene: readOpenScene(root).scene };
-    const each = players.map((player) => knowledgeOf(root, world, player, read));
+    // A dead one knows what it knew at its death (D-480 (1)), while one of them lives.
+    const living = players.some((player) => player.fields.status !== "dead");
+    const each = players.map((player) => knowledgeOf(root, world, player, read, living && player.fields.status === "dead"));
     return { pc, pages: new Set(each.flatMap((one) => [...one.pages])), secrets: new Set(each.flatMap((one) => [...one.secrets])), each };
 }
 
@@ -111,10 +113,13 @@ export function secretKnownBy(knowledge: Knowledge, page: Page, secret: string):
  * What a character knows (D-250, VIEW-10), the player's or another: what its knows lists, pages and the pages of its secrets; itself, the party when it is of it, and the
  * creatures they derive from (D-275, D-277), the quests the party took when it is of it, what it carries, the places around it, the characters and places of
  * the scenes it was in, and the places it was moved from and to, with those that hold them (D-316); the pages of the game system but its creatures, which anyone
- * may read (SYS-2). Never a creature of the campaign it was not told of.
+ * may read (SYS-2). Never a creature of the campaign it was not told of. As it was at its death, for a dead player character beside the living (VIEW-12): the
+ * place it died in, never where it was moved after, nor the scenes after.
  */
-export function knowledgeOf(root: string, world: World, pc: Page, read?: LogRead): Knowledge
+export function knowledgeOf(root: string, world: World, pc: Page, read?: LogRead, atDeath = false): Knowledge
 {
+    const lived = read ?? { log: readLog(root), scene: readOpenScene(root).scene };
+    const carried = [pc, ...world.pages.filter((page) => locate(world, page).chain.includes(pc))];
     // A link in knows, to a page or to one of its secrets, read with its secret (REV-1).
     const known = knownLinks(world, pc);
     const secrets = new Set(known.flatMap((link) => (link.secret === undefined ? [] : [secretKey(link.name, link.secret)])));
@@ -130,12 +135,12 @@ export function knowledgeOf(root: string, world: World, pc: Page, read?: LogRead
         ]),
         // The quests the player took (D-250).
         ...(member ? world.pages.filter((page) => page.type === "quest" && ["open", "done", "failed"].includes(String(page.fields.status))) : []),
-        ...world.pages.filter((page) => page !== pc && locate(world, page).chain.includes(pc)),
+        ...carried.filter((page) => page !== pc),
         // The kinds of the stacks it carries, as the campaign's Lembas (STK-12).
-        ...[pc, ...world.pages.filter((page) => locate(world, page).chain.includes(pc))].flatMap((holder) => stacksOf(world, holder).map((stack) => stack.kind)).filter((kind) => kind.system === undefined),
-        ...locate(world, pc).chain,
+        ...carried.flatMap((holder) => stacksOf(world, holder).map((stack) => stack.kind)).filter((kind) => kind.system === undefined),
+        ...(atDeath ? placesAtDeath(lived, world, pc) : locate(world, pc).chain),
         // The places it was in, and those that hold them, as the regions it crossed (D-316).
-        ...livedOf(read ?? { log: readLog(root), scene: readOpenScene(root).scene }, world, pc).flatMap((page) => (page.type === "place" ? [page, ...locate(world, page).chain] : page.type === "character" ? [page] : [])),
+        ...livedOf(atDeath ? untilDeath(lived, pc) : lived, world, pc).flatMap((page) => (page.type === "place" ? [page, ...locate(world, page).chain] : page.type === "character" ? [page] : [])),
     ]);
     return { pc, pages, secrets };
 }
@@ -318,6 +323,27 @@ function livedOf({ log, scene }: LogRead, world: World, pc: Page): Page[]
         return [...textList(from), ...textList(entry.data.to)];
     });
     return [...met, ...moved].flatMap((name) => pageOf(name) ?? []).filter((page) => !unnamed.has(page));
+}
+
+/** The log up to a character's death, the last line that wrote it dead, and no open scene; the whole log when no line did, as for one written dead by hand. */
+function untilDeath({ log }: LogRead, page: Page): LogRead
+{
+    const died = log.findLastIndex((entry) => {
+        const set = entry.data.set as Record<string, unknown> | undefined;
+        return ["page-created", "page-updated"].includes(entry.type) && comparableText(String(entry.data.page ?? "")) === comparableText(page.name) && set?.status === "dead";
+    });
+    return { log: died < 0 ? log : log.slice(0, died), scene: undefined };
+}
+
+/** Where a dead character lay when it died, and what holds it: where it was moved from by the first move after its death, else where it is. */
+function placesAtDeath(read: LogRead, world: World, page: Page): Page[]
+{
+    const before = untilDeath(read, page).log.length;
+    const named = (name: unknown): boolean => comparableText(String(name)) === comparableText(page.name);
+    const moved = read.log.slice(before).find((entry) => entry.type === "moved" && textList(entry.data.pages).some(named));
+    const from = moved?.data.from !== null && typeof moved?.data.from === "object" ? Object.entries(moved.data.from).find(([name]) => named(name))?.[1] : undefined;
+    const holder = typeof from === "string" ? pagesWithNameOrAlias(world, parsePageReference(from).name)[0] : undefined;
+    return moved === undefined ? locate(world, page).chain : holder === undefined ? [] : [holder, ...locate(world, holder).chain];
 }
 
 /** The log and the open scene, read once for what several characters lived. */

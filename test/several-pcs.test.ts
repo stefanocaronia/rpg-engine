@@ -107,6 +107,13 @@ describe("the commands that must know which player character (VIEW-12)", () => {
         expect(await ok("scene", "open", "--title", "Alla locanda", "--type", "social", "--place", "Locanda")).not.toContain("Moved into");
         expect((await json("view")).openScene).toMatchObject({ title: "Alla locanda" });
         expect(await ok("scene", "close", "--summary", "Ettore beve.")).toBeDefined();
+        // With with and no place, the place of those named, while the player characters are apart.
+        await ok("scene", "open", "--title", "Ettore beve", "--type", "social", "--with", "Ettore");
+        expect((await json("view")).openScene).toMatchObject({ title: "Ettore beve" });
+        await ok("scene", "close", "--summary", "Ettore beve ancora.");
+        expect((await runCommandLine(["scene", "open", "--title", "Insieme", "--type", "social", "--with", "Ettore", "--with", "Bruna"], context)).output).toContain(
+            "Ettore, in Locanda; Bruna, in Torre: give place, where the scene is. Nothing changed.",
+        );
         const apart = await runCommandLine(["scene", "open", "--title", "Dove?", "--type", "social"], context);
         expect(apart.output).toContain("The player characters are apart: Bruna, in Torre; Ettore, in Locanda. Give place, where the scene is, or with, who is in it.");
     });
@@ -118,6 +125,12 @@ describe("the commands that must know which player character (VIEW-12)", () => {
         expect(status).toContain("Lena, with Bruna");
         expect(status).toMatch(/Around Bruna: light: dark/);
         expect(status).toMatch(/Around Ettore: light: bright/);
+        // Who else is there, where each of them is; the dead one's place no longer counts.
+        await ok("write", "Oste", "--type", "character", "--set", "role=npc");
+        await ok("write", "Locanda", "--add", "contains=[[Oste]]");
+        expect(await ok("status")).toMatch(/Also there[^\n]*Oste[^\n]*Varro|Also there[^\n]*Varro[^\n]*Oste/);
+        await ok("write", "Bruna", "--set", "status=dead");
+        expect(await ok("status")).not.toMatch(/Also there[^\n]*Varro/);
     });
 });
 
@@ -138,7 +151,13 @@ describe("the master's word for more than one player character (D-480)", () => {
         await ok("scene", "open", "--title", "Alla locanda", "--type", "social", "--place", "Locanda", "--with", "Ettore");
         await ok("scene", "close", "--summary", "Ettore beve.");
         expect(await ok("write", "Bruna", "--set", "status=dead")).toContain("Bruna is dead while the others live: ask the table whether to go back to the last save");
+        // The table may go back to it, as the note says, until a save comes after the death.
+        expect(await ok("save", "load")).toContain("Alla locanda");
+        expect((await json("view")).party).toEqual(expect.arrayContaining([expect.objectContaining({ name: "Bruna", dead: false })]));
+        await ok("write", "Bruna", "--set", "status=dead");
         expect(await ok("write", "Ettore", "--set", "status=dead")).toContain("Ettore is dead. With saves checkpoint, offer the player to go back");
+        // One written dead from the start died in no story.
+        expect(await ok("write", "Aldo", "--type", "character", "--set", "role=pc", "--set", "status=dead")).not.toContain("is dead");
     });
 });
 
@@ -148,7 +167,9 @@ describe("what the player characters know together (VIEW-12, D-480 (1))", () => 
         await ok("scene", "open", "--title", "Alla torre", "--type", "social", "--place", "Torre", "--with", "Bruna", "--with", "Varro");
         await ok("reveal", "Varro#Colpa", "--to", "Bruna");
         await ok("scene", "close", "--summary", "Bruna parla con Varro.");
-        expect(await ok("view", "Varro")).toBe("Varro (character)\n\nIl mugnaio.\n\n> [!secret] Colpa\n> Ha ucciso il fratello.\n\nSecret Colpa: known to Bruna alone.");
+        expect(await ok("view", "Varro")).toBe("Varro (character)\n\nIl mugnaio.\n\n> [!secret] Colpa\n> Ha ucciso il fratello.\n\nKnown to Bruna alone.\n\nSecret Colpa: known to Bruna alone.");
+        expect(await ok("view", "Varro#Colpa")).toBe("Varro#Colpa\n\n> [!secret] Colpa\n> Ha ucciso il fratello.\n\nKnown to Bruna alone.");
+        expect(await ok("view", "Lena#Nulla")).toBe("No player character knows anything of Lena called Nulla.");
         expect(await ok("view", "Varro", "--as", "Ettore")).toBe("Ettore does not know Varro.");
         const world = await json("view", "--world");
         const varro = (world.known as { name: string; knownBy?: string[]; }[]).find((entry) => entry.name === "Varro");
@@ -160,9 +181,18 @@ describe("what the player characters know together (VIEW-12, D-480 (1))", () => 
         expect(await ok("view", "--world")).toContain("Document: Lettera (letter, carried by Bruna); known to Bruna alone");
     });
 
+    it("a dead one knows what it knew at its death, never where it lies after", async () => {
+        await ok("write", "Covo", "--type", "place", "--text", "Il covo del negromante.");
+        await ok("write", "Bruna", "--set", "status=dead");
+        await ok("move", "Bruna", "--to", "Covo");
+        expect(await ok("view", "Covo")).toBe("No player character knows Covo.");
+        expect(await ok("view")).toMatch(/\nBruna \(dead\), elsewhere: /);
+        expect(await ok("view", "Lettera")).toBe("Lettera (item)\n\nVieni da solo.\n\nKnown to Bruna alone.");
+    });
+
     it("keeps what a dead player character knew", async () => {
         await ok("write", "Bruna", "--set", "status=dead");
-        expect(await ok("view", "Lettera")).toBe("Lettera (item)\n\nVieni da solo.");
+        expect(await ok("view", "Lettera")).toBe("Lettera (item)\n\nVieni da solo.\n\nKnown to Bruna alone.");
         expect(await ok("view")).toMatch(/^Ettore, in Locanda: hp 12\/12\nBruna \(dead\), in Torre: hp 9\/10\n/);
     });
 
@@ -170,14 +200,16 @@ describe("what the player characters know together (VIEW-12, D-480 (1))", () => 
         const names = ["Ettore", "Bruna", "Lena", "Varro", "Locanda", "Torre", "Lettera"];
         const world = campaignWorld(folder, context);
         fc.assert(
-            fc.property(fc.array(fc.tuple(fc.constantFrom("Ettore", "Bruna"), fc.constantFrom(...names)), { maxLength: 8 }), (known) => {
+            fc.property(fc.array(fc.tuple(fc.constantFrom("Ettore", "Bruna"), fc.constantFrom(...names)), { maxLength: 8 }), fc.constantFrom("", "Ettore", "Bruna"), (known, dead) => {
                 const pages = world.pages.map((page) => {
                     const links = known.filter(([who]) => who === page.name).map(([, what]) => `[[${what}]]`);
-                    return links.length === 0 ? page : { ...page, fields: { ...page.fields, knows: links } };
+                    const fields = { ...page.fields, ...(links.length === 0 ? {} : { knows: links }), ...(page.name === dead ? { status: "dead" } : {}) };
+                    return { ...page, fields };
                 });
                 const made = { ...world, pages };
                 const union = playerKnowledge(folder, made);
-                const each = ["Ettore", "Bruna"].map((name) => knowledgeOf(folder, made, pageNamed(made, name)!));
+                // A dead one beside a living one counts as at its death.
+                const each = ["Ettore", "Bruna"].map((name) => knowledgeOf(folder, made, pageNamed(made, name)!, undefined, name === dead));
                 return made.pages.every((page) => (union !== undefined && knowsPage(union, page)) === each.some((one) => knowsPage(one, page)));
             }),
             { numRuns: 50 },

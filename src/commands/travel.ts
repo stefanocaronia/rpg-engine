@@ -123,7 +123,7 @@ export const travel = defineCommand({
         across: z.boolean().optional().describe("go to the place straight across country, off the roads; both need a position"),
         toward: z.string().optional().describe("off the roads, one way to go instead of a place: a point of the compass, such as west or NNE"),
         distance: z.string().optional().describe("with toward, how far, such as 12 km; if left out, until the day's travel ends"),
-        who: textList.optional().describe("who travels; if left out, the party where the player character is, with the vehicle they are in"),
+        who: textList.optional().describe("who travels; if left out, the party where the player character is, with the vehicle they are in; given, when the player characters are apart"),
         pace: z.string().optional().describe("one of the game's paces, such as fast or slow, or a speed, such as 4.5 km; if left out, the game's usual pace, or the one the journey had"),
         hours: z.union([z.number(), z.string()]).optional().describe(
             "the hours of travel today, when they differ from the game's: more for a forced march, 24 for a ship with its crew, 8 for a boat the party rows",
@@ -535,7 +535,9 @@ function stayingNote(world: World, travellers: Page[]): string
     const placeOf = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
     const start = travellers[0] === undefined ? undefined : placeOf(travellers[0]);
     // Every player character left behind where they start (VIEW-12).
-    const staying = playerCharacters(world).filter((pc) => pc.fields.status !== "dead" && !travellers.includes(pc) && start !== undefined && placeOf(pc)?.path === start.path);
+    const players = playerCharacters(world);
+    const living = players.filter((pc) => pc.fields.status !== "dead");
+    const staying = (living.length > 0 ? living : players.slice(0, 1)).filter((pc) => !travellers.includes(pc) && start !== undefined && placeOf(pc)?.path === start.path);
 
     if (start === undefined || staying.length === 0) {
         return "";

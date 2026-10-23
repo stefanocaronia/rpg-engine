@@ -10,7 +10,7 @@ import { comparableText, firstSentence, withArticle } from "../core/text.ts";
 import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
 import { type Coin, readAmount } from "../money/index.ts";
-import { declaredKind, entryPage, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, playerCharacters, systemPageNamed, textsIn, type World } from "../pages/index.ts";
+import { declaredKind, entryPage, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, playerCharacters, secretNames, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import type { ActVerb, GameSystem, SystemWords } from "../systems/index.ts";
 import { type CalendarDay, formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
@@ -18,12 +18,12 @@ import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, type SeenEffect } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
-import { discoveredSecrets, type Knowledge, knowledgeOf, knownIntroduction, knownPart, knownSecretsApart, knownText, knowsPage, playerKnowledge, playerStory, scenesLivedBy } from "./game-knowledge.ts";
+import { discoveredSecrets, type Knowledge, knowledgeOf, knownIntroduction, knownPart, knownSecretsApart, knownText, knowsPage, pageKnownBy, playerKnowledge, playerStory, scenesLivedBy, secretKnownBy } from "./game-knowledge.ts";
 import { blockingMode, campaignMode, type Mode, modes } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
 import { type Measures, measuresOf } from "./game-roads.ts";
-import { campaignSaves, isPlayerDead, loadRefusal, loadRule, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "./game-saves.ts";
+import { campaignSaves, loadRefusal, loadRule, mayGoBack, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "./game-saves.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { thoughtsIn, thoughtsRule, thoughtsShown } from "./game-thoughts.ts";
 import { calendarDayOf, readPresent } from "./game-time.ts";
@@ -142,10 +142,19 @@ export type ViewResult =
         text: string;
         /** With more than one player character, the secrets the text shows that only some of them discovered, by the name the text gives them, and who (VIEW-12). */
         knownBy?: { secret: string; who: string[]; }[];
+        /** With more than one player character, who knows the page, when not all of them do (VIEW-12). */
+        whoKnows?: string[];
         /** The player character's opening text, which the player may propose on the dashboard (D-373, D-386); left out on other pages. */
         story?: string;
     }
-    | { kind: "section"; title: string; lines: string[]; text: string; }
+    | {
+        kind: "section";
+        title: string;
+        lines: string[];
+        text: string;
+        /** With more than one player character, who knows it, when not all of them do (VIEW-12). */
+        knownBy?: string[];
+    }
     /** What another character knows and lived, for the character agent voicing them (VIEW-10): their own page as they know it, now, the pages they know, the secrets, the scenes. */
     | {
         kind: "memory";
@@ -330,10 +339,13 @@ export const view = defineCommand({
                 const group = part === undefined && party ? sheetGroup(world, system, page, reference.section) : undefined;
 
                 if (part === undefined && group === undefined) {
-                    return { kind: "unknown", text: `${knowledge.each === undefined ? pc.name : "No player character"} knows nothing of ${page.name} called ${reference.section}.` };
+                    return { kind: "unknown", text: `${knowledge.each === undefined ? `${pc.name} knows nothing` : "No player character knows anything"} of ${page.name} called ${reference.section}.` };
                 }
 
-                return { kind: "section", title: `${page.name}#${group?.name ?? reference.section}`, lines: group?.lines ?? [], text: part ?? "" };
+                // Who knows the secret, or the page, when not all the player characters do (VIEW-12).
+                const secret = secretNames(page.body).find((name) => comparableText(name) === comparableText(reference.section ?? ""));
+                const knownBy = part === undefined ? undefined : secret === undefined ? pageKnownBy(knowledge, page) : secretKnownBy(knowledge, page, secret);
+                return { kind: "section", title: `${page.name}#${group?.name ?? reference.section}`, lines: group?.lines ?? [], text: part ?? "", ...(knownBy === undefined ? {} : { knownBy }) };
             }
 
             return shownPage(root, context, world, knowledge, page, party);
@@ -439,9 +451,15 @@ export const view = defineCommand({
             case "unknown":
                 return result.text;
             case "page":
-                return [result.title, sheetText(result.sheet).join("\n"), result.text, ...(result.knownBy ?? []).map((one) => `Secret ${one.secret}: known to ${one.who.join(", ")} alone.`)].filter((block) => block !== "").join("\n\n");
+                return [
+                    result.title,
+                    sheetText(result.sheet).join("\n"),
+                    result.text,
+                    result.whoKnows === undefined ? "" : `Known to ${result.whoKnows.join(", ")} alone.`,
+                    ...(result.knownBy ?? []).map((one) => `Secret ${one.secret}: known to ${one.who.join(", ")} alone.`),
+                ].filter((block) => block !== "").join("\n\n");
             case "section":
-                return [result.title, result.lines.join("\n"), result.text].filter((block) => block !== "").join("\n\n");
+                return [result.title, result.lines.join("\n"), result.text, result.knownBy === undefined ? "" : `Known to ${result.knownBy.join(", ")} alone.`].filter((block) => block !== "").join("\n\n");
             case "memory":
                 return memoryText(result);
             case "map":
@@ -505,6 +523,7 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
     const actions = own ? system?.sheetActions : undefined;
     const story = own ? playerStory(page) : undefined;
     const secrets = knownSecretsApart(world, knowledge, page);
+    const whoKnows = pageKnownBy(knowledge, page);
     return {
         kind: "page",
         title: `${page.name} (${page.type ?? "page"})`,
@@ -514,6 +533,7 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
         ...(actions === undefined ? {} : { actions }),
         text: knownText(world, knowledge, page),
         ...(secrets.length === 0 ? {} : { knownBy: secrets }),
+        ...(whoKnows === undefined ? {} : { whoKnows }),
         ...(story === undefined ? {} : { story }),
     };
 }
@@ -1038,7 +1058,7 @@ function shownSaves(root: string, context: Context): Extract<ViewResult, { kind:
         return save === undefined ? [] : [[save.number, point] as const];
     }));
     const world = campaignWorld(root, context);
-    const dead = isPlayerDead(world);
+    const dead = mayGoBack(root, world);
     const made = new Map(readLog(root).filter((entry) => entry.type === "saved").map((entry) => [Number((entry.data as { save?: unknown; }).save), entry]));
 
     const madeOf = (number: number): Partial<ShownSave> => {

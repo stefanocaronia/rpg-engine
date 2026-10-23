@@ -5,6 +5,7 @@ import type { Context } from "../core/context.ts";
 import { filesIn } from "../core/files.ts";
 import { appendLogEntry, logFileName, logLine, readLog } from "../core/log.ts";
 import { files, isInside } from "../core/store.ts";
+import { comparableText } from "../core/text.ts";
 import { locate, playerCharacters, type World } from "../pages/index.ts";
 import { packFiles, readSaves, type Save, saveFileName, unpackFiles } from "../saves/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -52,6 +53,24 @@ export function isPlayerDead(world: World): boolean
 {
     const players = playerCharacters(world);
     return players.length > 0 && players.every((page) => page.fields.status === "dead");
+}
+
+/**
+ * Whether the game may go back under saves checkpoint (SAV-3, D-480 (2)): every player character is dead, or one died since the last save while another lives,
+ * for the table to choose.
+ */
+export function mayGoBack(root: string, world: World): boolean
+{
+    if (isPlayerDead(world)) {
+        return true;
+    }
+
+    const dead = new Set(playerCharacters(world).filter((page) => page.fields.status === "dead").map((page) => comparableText(page.name)));
+    const log = readLog(root);
+    return log.slice(log.findLastIndex((entry) => entry.type === "saved") + 1).some((entry) => {
+        const set = entry.data.set as Record<string, unknown> | undefined;
+        return ["page-created", "page-updated"].includes(entry.type) && dead.has(comparableText(String(entry.data.page ?? ""))) && set?.status === "dead";
+    });
 }
 
 /** The save whose load stopped halfway, which save load finishes (SAV-5); undefined when none did. */

@@ -10,6 +10,7 @@ import {
     loadRule,
     loadSave,
     makeSave,
+    mayGoBack,
     newChatBegun,
     newChatText,
     type ResetPoint,
@@ -110,7 +111,7 @@ export const save = defineCommand({
         }
 
         const chosen = chosenSave(saves, input.save);
-        const refusal = loadRefusal(mode, saves, chosen, isPlayerDead(campaignWorld(root, context)));
+        const refusal = loadRefusal(mode, saves, chosen, mayGoBack(root, campaignWorld(root, context)));
 
         if (refusal !== undefined) {
             throw new Error(`${refusal} Nothing changed.`);

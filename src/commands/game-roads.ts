@@ -78,17 +78,30 @@ export function travellingParty(world: World, character: Page | undefined, journ
  */
 export function partyLead(world: World, journeyMovers: string[], remedy: string): Page | undefined
 {
+    const apart = playersApart(world, journeyMovers);
+
+    if (apart !== undefined) {
+        throw new Error(`The player characters are apart: ${apart}. ${remedy} Nothing changed.`);
+    }
+
+    return leadingPlayers(world, journeyMovers).lead;
+}
+
+/** "Bruna, in Torre; Ettore, in Locanda": where each living player character is, when they are not all in one party (VIEW-12); undefined when they are. */
+export function playersApart(world: World, journeyMovers: string[]): string | undefined
+{
+    const { lead, living } = leadingPlayers(world, journeyMovers);
+    const party = travellingParty(world, lead, journeyMovers);
+    return living.every((page) => party.includes(page)) ? undefined : living.map((page) => `${page.name}, in ${placeOf(world, page)?.name ?? "the open"}`).join("; ");
+}
+
+/** The living player characters that are somewhere, in a place or on the journey, and the first of them, else the first living, else the first. */
+function leadingPlayers(world: World, journeyMovers: string[]): { lead: Page | undefined; living: Page[]; }
+{
     const players = playerCharacters(world);
     const somewhere = (page: Page): boolean => locate(world, page).chain.length > 0 || journeyMovers.some((name) => comparableText(name) === comparableText(page.name));
     const living = players.filter((page) => page.fields.status !== "dead" && somewhere(page));
-    const lead = living[0] ?? players.find((page) => page.fields.status !== "dead") ?? players[0];
-    const party = travellingParty(world, lead, journeyMovers);
-
-    if (living.some((page) => !party.includes(page))) {
-        throw new Error(`The player characters are apart: ${living.map((page) => `${page.name}, in ${placeOf(world, page)?.name ?? "the open"}`).join("; ")}. ${remedy} Nothing changed.`);
-    }
-
-    return lead;
+    return { lead: living[0] ?? players.find((page) => page.fields.status !== "dead") ?? players[0], living };
 }
 
 /**

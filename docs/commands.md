@@ -316,7 +316,7 @@ Read-only: no. Positional parameters: `to`.
 - `across` (`boolean`, optional): go to the place straight across country, off the roads; both need a position
 - `toward` (`string`, optional): off the roads, one way to go instead of a place: a point of the compass, such as west or NNE
 - `distance` (`string`, optional): with toward, how far, such as 12 km; if left out, until the day's travel ends
-- `who` (`string | string[]`, optional): who travels; if left out, the party where the player character is, with the vehicle they are in
+- `who` (`string | string[]`, optional): who travels; if left out, the party where the player character is, with the vehicle they are in; given, when the player characters are apart
 - `pace` (`string`, optional): one of the game's paces, such as fast or slow, or a speed, such as 4.5 km; if left out, the game's usual pace, or the one the journey had
 - `hours` (`any`, optional): the hours of travel today, when they differ from the game's: more for a forced march, 24 for a ship with its crew, 8 for a boat the party rows
 
@@ -327,7 +327,7 @@ How far a place is by road, and how long the journey takes: the stops and roads 
 Read-only: yes. Positional parameters: `to`.
 
 - `to` (`string`, required): where to: a place
-- `from` (`string`, optional): where from: a place, or a character; if left out, where the party is, or where its journey stopped
+- `from` (`string`, optional): where from: a place, or a character; if left out, where the party is, or where its journey stopped; given, when the player characters are apart
 - `pace` (`string`, optional): one of the game's paces, such as fast, or a speed, such as 4.5 km; if left out, the game's usual pace
 - `across` (`boolean`, optional): straight across country, off the roads, when both places have a position
 

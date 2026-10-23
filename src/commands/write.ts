@@ -337,10 +337,10 @@ export const write = defineCommand({
             ]
             : [];
         // The death of the last living player character: what the saves allow, said at once (SAV-7).
-        const died = changed && isPlayerCharacter(page) && page.fields.status === "dead" && existing?.fields.status !== "dead";
+        const died = changed && existing !== undefined && isPlayerCharacter(page) && page.fields.status === "dead" && existing.fields.status !== "dead";
         const death = changed && isPlayerDead(now) && !isPlayerDead(world) ? deathNotes(root, page.name) : died ? partyDeathNotes(root, page.name) : [];
         // A second living player character: how to run the table for them, once in a chat (D-480).
-        const party = joined && isPlayerCharacter(page) ? partyPart(context, system, now) : "";
+        const partyInstructions = joined && isPlayerCharacter(page) ? partyPart(context, system, now) : "";
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),
@@ -365,7 +365,7 @@ export const write = defineCommand({
                 ...sheet,
                 ...death,
                 ...moneyNotes,
-                ...(party === "" ? [] : [party]),
+                ...(partyInstructions === "" ? [] : [partyInstructions]),
             ],
             problems: world.problems,
         };

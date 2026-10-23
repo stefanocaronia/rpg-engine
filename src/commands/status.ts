@@ -71,12 +71,16 @@ export const status = defineCommand({
         const world = campaignWorld(root, context);
         const characters = world.pages.filter((page) => page.type === "character");
         const players = playerCharacters(world);
-        const place = players.length > 0 ? placeOf(world, players[0]) : undefined;
+        // The player characters the party follows: the living, else the first one (VIEW-12).
         const living = players.filter((page) => page.fields.status !== "dead");
-        // The player character someone is with, in the same place; and what holds around each place of theirs (VIEW-12).
-        const withPlayer = (page: Page): Page | undefined => (isPlayerCharacter(page) ? undefined : living.find((player) => placeOf(world, player) !== undefined && placeOf(world, player) === placeOf(world, page)));
-        const around = [...new Set(living.map((player) => placeOf(world, player)))].flatMap((at) => {
-            const there = living.filter((player) => placeOf(world, player) === at);
+        const followed = living.length > 0 ? living : players.slice(0, 1);
+        const place = followed.length > 0 ? placeOf(world, followed[0]) : undefined;
+        const placesOfPlayers = new Set(followed.map((player) => placeOf(world, player)).filter((at) => at !== undefined));
+        // The player character someone is with, in the same place; and what holds around each place of theirs.
+        const withPlayer = (page: Page): Page | undefined => (isPlayerCharacter(page) ? undefined : followed.find((player) => placeOf(world, player) !== undefined && placeOf(world, player) === placeOf(world, page)));
+        const nearestPlace = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
+        const around = [...new Set(followed.map(nearestPlace))].flatMap((at) => {
+            const there = followed.filter((player) => nearestPlace(player) === at);
             const text = surroundingsText(surroundings(world, there[0]));
             return text === "" ? [] : [{ who: there.map(characterName), text }];
         });
@@ -86,11 +90,11 @@ export const status = defineCommand({
 
         const member = (page: Page): Member => {
             const mood = livingMood(page);
-            const companion = withPlayer(page);
+            const player = withPlayer(page);
             return {
                 name: characterName(page),
                 where: locate(world, page).chain.map((holder) => holder.name),
-                ...(companion === undefined ? {} : { with: characterName(companion) }),
+                ...(player === undefined ? {} : { with: characterName(player) }),
                 // Under the rigor «rules», a load over the limit (LOAD-3).
                 counters: [
                     ...Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
@@ -154,14 +158,14 @@ export const status = defineCommand({
             // The chat's first status opens with the dashboard, for the master to offer it in their first answer (D-353).
             offerDashboard: offerDashboard(context),
             // Whether to ask for the places' pictures, or to have this one made (D-308).
-            pictures: picturesNote(root, context, world, players[0] === undefined ? undefined : locate(world, players[0]).chain.find((holder) => holder.type === "place")),
+            pictures: picturesNote(root, context, world, followed[0] === undefined ? undefined : nearestPlace(followed[0])),
             // The player's document being made an adventure, or ready to install (D-489).
             importing: importLine(root),
             // In the setup, the dashboard translated in the chat where nothing here does it in the background (D-423).
             translation: mode === "setup" ? translationOffer(root, context) : undefined,
             mood: masterMood(root),
             place,
-            alsoThere: characters.filter((page) => !isPartyMember(page) && place !== undefined && placeOf(world, page) === place).map(characterName),
+            alsoThere: characters.filter((page) => !isPartyMember(page) && placesOfPlayers.has(placeOf(world, page) ?? "")).map(characterName),
             around,
             scene: sceneText(world, openScene.scene),
             journey: journeyText(world, roadsOf(world), readJourney(root), measuresOf(root, system)),
