@@ -6,7 +6,7 @@ The dashboard is the table beside the chat where the game is played. It reads li
 
 ## 1. Tokens
 
-Every colour, corner, shadow and duration is a custom property of `:root`. A raw value outside `:root` is a bug, except inside the maps' and the dice's own palettes; white and black only as light and shade, a little of them over a colour. A paler or darker tone of a token is `color-mix()` of it.
+Every colour, corner, shadow and duration is a custom property of `:root`. A raw value outside `:root` is a bug, except inside the own palettes of the things drawn: the maps, the dice, the tokens and coins, the robot; white and black only as light and shade, a little of them over a colour. A paler or darker tone of a token is `color-mix()` of it.
 
 ### Colour
 
@@ -24,10 +24,13 @@ Two seeds, the robot's navy and gold. Each token is `light-dark()`, so both them
 | `--muted` | Secondary text, inactive tabs, icons of quiet controls |
 | `--accent` | What can be pressed and what is chosen: links, the focus ring, the chosen tab, the cards' icons, a page's head. Navy on the light page, gold on the dark one |
 | `--gold`, `--on-gold` | The robot's gold, the same in both themes: the one main action of a view, a chosen value, the player's turn, a main quest, the highest roll. Text on it is `--on-gold` |
+| `--gold-ink` | Gold as text or a line, readable on the light page |
 | `--ally` | The party's side, a success, something gained |
-| `--low` | Danger: a problem, a failure, a foe the master marked, death |
+| `--low`, `--on-low` | Danger: a problem, a failure, a foe the master marked, death; text on it |
 | `--warn` | A warning, as the game being away. On the dark page it is the gold: never beside gold that means "chosen" |
 | `--disc` | The dark disc under a token, in both themes |
+| `--veil`, `--on-veil`, `--on-veil-muted`, `--veil-low` | Over a picture, the same in both themes: its dark veil, the words on it, a deadline near |
+| `--cover`, `--cover-deep`, `--cover-main`, `--cover-main-deep` | A quest's cover without a picture, a main quest's in gold |
 | `--m-*`, `--l-*`, `--bio-*`, `--doc-*` | The paper of the maps and of documents, and their inks, the same in both themes (see Paper) |
 | `--season-*` | The four seasons, in the calendar alone and always beside their word |
 
@@ -54,8 +57,8 @@ Weights: 400 text, 600 a word that stands out in a line (a chip of a list, a not
 ### Room, corners, depth
 
 - Room in steps of 2 px up to 12, then 16 (`--gap`, between cards and stacks and around the page) and 24. A card's padding is 16 px inline; its header is at least 52 px tall.
-- Corners: `--radius-xs` 4 (tooltips), `--radius-s` 6 (list chips, controls inside controls), `--radius-m` 8 (buttons, fields, icon buttons), `--radius-l` 12 (cards, notices), `--radius-xl` 16 (banners, dialogs). Round (`50%`) only tokens and dots. A pill (`999px`) only for a choice among peers: filter chips, verbs, the maps' tabs; never a button or a card.
-- Depth: on the light page a card has `--lift, --raise`; what floats over the page (dialogs, sheets, the dice's button, tonal buttons) has `--overlay`. On the dark page depth is the surface's tone; only what floats casts a shadow.
+- Corners: `--radius-xs` 4 (tooltips), `--radius-s` 6 (list chips, controls inside controls), `--radius-m` 8 (buttons, fields, icon buttons), `--radius-l` 12 (cards, notices), `--radius-xl` 16 (banners, dialogs). Round (`50%`) only tokens and dots. A pill (`999px`) only for a choice among peers (filter chips, verbs, the maps' tabs) and a switch's track; never a button or a card. A thin bar has `--radius-xs`, its ends round; a mark that is square to tell it from a round one, `calc(var(--radius-xs) / 2)`.
+- Depth: on the light page a card has `--lift, --raise`; what floats over the page (dialogs, sheets, the dice's button, tonal buttons) has `--overlay`; the phone's bar at the window's foot `--raise-up`; a little drawn edge `--shade`. On the dark page depth is the surface's tone; only what floats casts a shadow. The page's light from above is `--glow`.
 
 ### Motion
 
@@ -127,5 +130,4 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 ## 5. Not in line yet
 
 - Titles between a card's and a page's (1.1 to 1.5rem: dialogs, banners, the master's question, a quest's cover) and labels under 0.72rem in tight tiles (0.55 to 0.68rem); the roll's total and the death save's word at weight 800.
-- Corners of 2, 3, 7 and 9 px; raw colours outside the maps and the dice.
 - Cards always open drawn on their own (`.package-card`, `.map-card`, `.map-list`, `.upcoming`), to become `.card`; `.package-chips` and `.package-search` serve the whole page and take names of their own (`.filter-chips`, `.search`).

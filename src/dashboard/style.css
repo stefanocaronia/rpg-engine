@@ -31,8 +31,13 @@
     --low: light-dark(#a73929, #ff9381);
     --warn: light-dark(#8a5a00, #f5c63e);
     --disc: #182c4c;
+    /* Gold as text or a line, readable on the light page; text on the danger's colour. */
+    --gold-ink: light-dark(#8a5a00, var(--gold));
+    --on-low: light-dark(#ffffff, var(--on-gold));
     /* The land of the map's paper, the same in both themes: each biome's colour and the ink of its marks, on the map and wherever a biome is named. */
     --m-mark: #6b4a5c;
+    --m-land: #f1e6cc;
+    --m-ink: #3f2f1f;
     --bio-forest: #bcd3a8;
     --bio-swamp: #b3c9b4;
     --bio-moor: #d9c4d7;
@@ -54,6 +59,15 @@
     --doc-fold: #dccba5;
     --doc-ruled: #4f7aa8;
     --doc-nail: #3b3b3b;
+    /* Over a picture, the same in both themes: its veil, the words on it, and a deadline near; a cover without a picture, a quest's and a main quest's. */
+    --veil: #060c1a;
+    --on-veil: #f3f4fa;
+    --on-veil-muted: #c9d0e0;
+    --veil-low: #b3261e;
+    --cover: #2c3f66;
+    --cover-deep: #0e1a33;
+    --cover-main: #6b5320;
+    --cover-main-deep: #1d1a14;
     /* The seasons, in the calendar alone and always beside their word. */
     --season-winter: light-dark(#4f7aa8, #9cc0e4);
     --season-spring: light-dark(#4a8a45, #9ccf8f);
@@ -62,6 +76,10 @@
     /* Depth: shadows on the light page; on the dark one the surfaces' tone, and only what floats casts a shadow. */
     --lift: 0 1px 2px light-dark(rgb(24 44 76 / 0.08), rgb(0 0 0 / 0.3)), inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
     --raise: 0 6px 18px -10px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
+    /* The page's light from above, a bar's shadow cast upward from the window's foot, the shade of a little drawn edge. */
+    --glow: light-dark(rgb(66 104 178 / 0.10), rgb(66 104 178 / 0.22));
+    --raise-up: 0 -6px 18px -12px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
+    --shade: light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5));
     --overlay: 0 14px 32px -12px light-dark(rgb(24 44 76 / 0.45), rgb(0 0 0 / 0.75)), 0 3px 8px -3px light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5));
     /* One state layer for whatever is clicked, and the least a finger hits. */
     --state-hover: 0.08;
@@ -102,7 +120,7 @@ html {
 body {
     margin: 0;
     min-height: 100vh;
-    background: radial-gradient(1200px 400px at 50% -200px, light-dark(rgb(66 104 178 / 0.10), rgb(66 104 178 / 0.22)), transparent), var(--paper);
+    background: radial-gradient(1200px 400px at 50% -200px, var(--glow), transparent), var(--paper);
     color: var(--ink);
     font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -1266,14 +1284,14 @@ a {
 
 /* A place without a picture: the mark of its kind, as the world map draws it, on the map's paper, which stays light in both themes. */
 .save-picture.kind {
-    background: #f1e6cc;
+    background: var(--m-land);
 }
 
 .save-kind {
     width: 56px;
     height: 56px;
     fill: none;
-    stroke: #3f2f1f;
+    stroke: var(--m-ink);
     stroke-width: 1.4;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -1419,7 +1437,7 @@ a {
 .confirm .button.danger.final:not(:disabled) {
     border-color: var(--low);
     background: var(--low);
-    color: light-dark(#ffffff, var(--on-gold));
+    color: var(--on-low);
 }
 
 /* Starting over with the same character or a new one. */
@@ -1757,7 +1775,7 @@ a {
     aspect-ratio: 16 / 6;
     border-bottom: 1px solid var(--rule);
     border-radius: calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px) 0 0;
-    color: #f3f4fa;
+    color: var(--on-veil);
 }
 
 .quest-cover > img,
@@ -1775,11 +1793,11 @@ a {
 }
 
 .quest-cover:has(> .quest-cover-mark) {
-    background: radial-gradient(120% 140% at 85% 30%, #2c3f66, #0e1a33 70%);
+    background: radial-gradient(120% 140% at 85% 30%, var(--cover), var(--cover-deep) 70%);
 }
 
 .quest-card.main .quest-cover:has(> .quest-cover-mark) {
-    background: radial-gradient(120% 140% at 85% 30%, #6b5320, #1d1a14 72%);
+    background: radial-gradient(120% 140% at 85% 30%, var(--cover-main), var(--cover-main-deep) 72%);
 }
 
 .quest-cover > .quest-cover-mark {
@@ -1792,7 +1810,7 @@ a {
     width: auto;
     height: 62%;
     fill: none;
-    stroke: #f1e6cc;
+    stroke: var(--m-land);
     stroke-width: 1.1;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -1803,7 +1821,7 @@ a {
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: linear-gradient(180deg, rgb(6 12 26 / 0.38), transparent 34%, transparent 42%, rgb(6 12 26 / 0.55) 68%, rgb(6 12 26 / 0.88));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--veil) 38%, transparent), transparent 34%, transparent 42%, color-mix(in srgb, var(--veil) 55%, transparent) 68%, color-mix(in srgb, var(--veil) 88%, transparent));
     content: "";
     pointer-events: none;
 }
@@ -1819,8 +1837,8 @@ a {
 }
 
 .quest-cover-top .followed-star {
-    background: rgb(6 12 26 / 0.62);
-    color: #f3f4fa;
+    background: color-mix(in srgb, var(--veil) 62%, transparent);
+    color: var(--on-veil);
     backdrop-filter: blur(4px);
 }
 
@@ -1829,19 +1847,19 @@ a {
 }
 
 .quest-cover-top :focus-visible {
-    outline-color: #f3f4fa;
+    outline-color: var(--on-veil);
 }
 
 .quest-cover-top .quest-deadline {
     margin-inline-start: auto;
-    background: rgb(6 12 26 / 0.62);
-    color: #f3f4fa;
+    background: color-mix(in srgb, var(--veil) 62%, transparent);
+    color: var(--on-veil);
     backdrop-filter: blur(4px);
 }
 
 .quest-cover-top .quest-deadline.near {
-    background: #b3261e;
-    color: #fff;
+    background: var(--veil-low);
+    color: var(--on-veil);
 }
 
 .quest-cover-top > .quest-badge:first-child,
@@ -1857,7 +1875,7 @@ a {
     margin: 0 0 12px;
     padding: 0 16px;
     overflow: hidden;
-    color: #f3f4fa;
+    color: var(--on-veil);
     font-size: 1.3rem;
     line-height: 1.15;
     text-wrap: balance;
@@ -1883,7 +1901,7 @@ a {
 .followed-picture.quest-cover-mark {
     display: grid;
     place-items: center;
-    background: #1d2b4a;
+    background: color-mix(in srgb, var(--cover) 50%, var(--cover-deep));
 }
 
 .followed-picture.quest-cover-mark svg {
@@ -2064,7 +2082,7 @@ a {
     min-width: 60px;
     height: 8px;
     overflow: hidden;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     background: var(--panel-2);
     box-shadow: inset 0 0 0 1px var(--rule);
 }
@@ -2072,7 +2090,7 @@ a {
 .quest-bar-track span {
     display: block;
     height: 100%;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     background: var(--gold);
     /* The gold's own edge, as the gold chips have it: the bar shows on the light page too. */
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold), var(--ink) 35%);
@@ -2833,14 +2851,14 @@ a {
 
 /* A place without a picture: the mark of its kind on the map's paper, which stays light in both themes, as in Saves. */
 .chapter-picture.kind {
-    background: #f1e6cc;
+    background: var(--m-land);
 }
 
 .chapter-picture svg {
     width: 52px;
     height: 52px;
     fill: none;
-    stroke: #3f2f1f;
+    stroke: var(--m-ink);
     stroke-width: 1.4;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -3310,7 +3328,7 @@ a {
     height: 12px;
     box-sizing: border-box;
     border: 1.5px solid var(--muted);
-    border-radius: 6px;
+    border-radius: var(--radius-s);
     content: "";
     transition: width var(--short) var(--ease);
 }
@@ -3829,7 +3847,7 @@ a {
     border: 0;
     background: linear-gradient(to bottom left, color-mix(in srgb, var(--accent) 40%, var(--panel)) 50%, transparent 50%);
     color: var(--accent);
-    filter: drop-shadow(-1px 1px 1px light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5)));
+    filter: drop-shadow(-1px 1px 1px var(--shade));
     cursor: pointer;
 }
 
@@ -4511,7 +4529,7 @@ a {
 /* The corner of the theme folds from the other side, and what opens a folded part points the way it reads. */
 [dir="rtl"] .theme-corner {
     background: linear-gradient(to bottom right, color-mix(in srgb, var(--accent) 40%, var(--panel)) 50%, transparent 50%);
-    filter: drop-shadow(1px 1px 1px light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5)));
+    filter: drop-shadow(1px 1px 1px var(--shade));
 }
 
 [dir="rtl"] .theme-corner::after {
@@ -4594,7 +4612,7 @@ a {
 .line-value .bar.progress {
     width: 150px;
     height: 6px;
-    border-radius: 3px;
+    border-radius: var(--radius-xs);
 }
 
 /* The sheet: a rail of tiles beside columns of boxes, with no holes. */
@@ -4974,7 +4992,7 @@ button.row,
     width: auto;
     height: 6px;
     margin: 0 12px 10px;
-    border-radius: 3px;
+    border-radius: var(--radius-xs);
 }
 
 .row-bar .bar {
@@ -5061,7 +5079,7 @@ button.row,
     display: inline-block;
     width: 120px;
     height: 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     background: color-mix(in srgb, var(--ink) 14%, transparent);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 45%, transparent);
     overflow: hidden;
@@ -5318,7 +5336,7 @@ button.row,
 
 /* What is equipped has its picture in gold, dark enough on the light page. */
 .item-picture.equipped {
-    color: light-dark(#8a5a00, var(--gold));
+    color: var(--gold-ink);
 }
 
 .item-picture svg.icon {
@@ -6176,7 +6194,7 @@ button.row,
 }
 
 .dying-card.back .dying-word {
-    color: light-dark(#8a5a00, var(--gold));
+    color: var(--gold-ink);
 }
 
 /* Motion only for who wants it: the ring beats while dying, slower once stable, bursts on the highest face; the new mark pops. Reduced, the states alone. */
@@ -6346,7 +6364,7 @@ button.row,
 .bar.spend-bar {
     width: 100%;
     height: 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-s);
 }
 
 .spend-bar .spend-now {
@@ -6691,7 +6709,7 @@ button.row,
     width: 32px;
     height: 18px;
     margin: 0;
-    border-radius: 9px;
+    border-radius: 999px;
     background: var(--rule);
     appearance: none;
     cursor: pointer;
@@ -6862,7 +6880,7 @@ summary.fixed {
     bottom: 12px;
     inset-inline-start: 32%;
     height: 4px;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     background: var(--accent);
     box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent) 55%, transparent);
     opacity: 0.8;
@@ -8158,7 +8176,7 @@ svg.icon {
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
         border-top: 1px solid var(--rule);
         background: var(--panel);
-        box-shadow: 0 -6px 18px -12px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
+        box-shadow: var(--raise-up);
     }
 
     .top .main-nav a {
@@ -8554,13 +8572,13 @@ svg.icon {
 
 /* The name over the picture, on a dark veil whatever the theme. */
 .place-band.over .place-caption {
-    --muted: #c9d0e0;
+    --muted: var(--on-veil-muted);
     --rule: rgb(255 255 255 / 0.22);
     position: absolute;
     inset: auto 0 0;
     padding: 64px 22px 18px;
-    background: linear-gradient(180deg, transparent, rgb(6 12 26 / 0.55) 40%, rgb(6 12 26 / 0.88));
-    color: #f3f4fa;
+    background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--veil) 55%, transparent) 40%, color-mix(in srgb, var(--veil) 88%, transparent));
+    color: var(--on-veil);
 }
 
 .place-path {
@@ -8822,8 +8840,8 @@ svg.icon {
     }
 
     .place-band.over .place-caption {
-        --muted: light-dark(#586174, #a8b1c6);
-        --rule: light-dark(#dfd3bd, #36425c);
+        --muted: inherit;
+        --rule: inherit;
         position: static;
         padding: 12px 14px 14px;
         background: none;
@@ -8972,11 +8990,11 @@ svg.icon {
 
 /* The player's own turn: the band in the robot's gold, the words dark on it in both themes. */
 .turn-band.mine {
-    --muted: rgb(24 44 76 / 0.75);
-    --rule: rgb(24 44 76 / 0.25);
+    --muted: color-mix(in srgb, var(--on-gold) 75%, transparent);
+    --rule: color-mix(in srgb, var(--on-gold) 25%, transparent);
     border-color: var(--gold);
     background: var(--gold);
-    box-shadow: var(--lift), 0 10px 26px -12px rgb(245 198 62 / 0.7);
+    box-shadow: var(--lift), 0 10px 26px -12px color-mix(in srgb, var(--gold) 70%, transparent);
     color: var(--on-gold);
 }
 
@@ -9163,7 +9181,7 @@ svg.icon {
 
 .turn-row.now .turn-place {
     background: light-dark(color-mix(in srgb, var(--gold) 45%, var(--panel-2)), color-mix(in srgb, var(--gold) 85%, var(--panel-2)));
-    color: light-dark(var(--ink), #1b2233);
+    color: light-dark(var(--ink), var(--on-gold));
 }
 
 .turn-main {
@@ -9284,7 +9302,7 @@ svg.icon {
     place-items: center;
     width: 24px;
     height: 24px;
-    border-radius: 7px;
+    border-radius: var(--radius-s);
     background: color-mix(in srgb, var(--accent) 14%, transparent);
     color: var(--accent);
 }
@@ -9540,7 +9558,7 @@ svg.icon {
 
 .strip-mark.failure {
     border-color: var(--low);
-    border-radius: 2px;
+    border-radius: calc(var(--radius-xs) / 2);
 }
 
 .strip-mark.success.marked {
@@ -9646,7 +9664,7 @@ svg.icon {
     margin-inline-start: auto;
     padding: 4px 12px;
     border-radius: var(--radius-m);
-    background: rgb(24 44 76 / 0.12);
+    background: color-mix(in srgb, var(--on-gold) 12%, transparent);
 }
 
 @media (max-width: 600px) {
@@ -11622,7 +11640,7 @@ svg.icon {
 .lm-swatch {
     width: 22px;
     height: 22px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--l-ink) 30%, transparent);
     flex: 0 0 auto;
 }
@@ -11786,9 +11804,7 @@ svg.icon {
 }
 
 .map-card {
-    --m-land: #f1e6cc;
     --m-fog: #dccaa2;
-    --m-ink: #3f2f1f;
     --m-halo: #f1e6cc;
     --m-river: #3a6d96;
     --m-trail: #b2361f;
@@ -12517,7 +12533,7 @@ svg.icon {
     flex: none;
     width: 30px;
     height: 16px;
-    border-radius: 3px;
+    border-radius: var(--radius-xs);
     background: var(--m-land);
 }
 
@@ -13216,7 +13232,7 @@ svg.icon {
     position: relative;
     height: 4px;
     overflow: hidden;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     background: var(--cell);
 }
 
@@ -13226,7 +13242,7 @@ svg.icon {
     inset-block: 0;
     inset-inline-start: 30%;
     width: 35%;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     background: var(--accent);
 }
 
