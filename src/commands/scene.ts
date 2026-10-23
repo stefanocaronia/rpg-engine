@@ -7,7 +7,24 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
-import { findPage, isEmptyField, isInParty, isPartyMember, linkListItems, linksIn, locate, type Page, pageNamed, pagesWithName, pageWithPath, parsePageReference, type World, writePage } from "../pages/index.ts";
+import {
+    findPage,
+    isEmptyField,
+    isInParty,
+    isPartyMember,
+    isPlayerCharacter,
+    linkListItems,
+    linksIn,
+    locate,
+    type Page,
+    pageNamed,
+    pagesWithName,
+    pageWithPath,
+    parsePageReference,
+    playerCharacters,
+    type World,
+    writePage,
+} from "../pages/index.ts";
 import { copyNames, nextTurn, type Scene, type SceneCopy, sceneTypes } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
@@ -21,6 +38,7 @@ import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
 import { turnEffectsNote } from "./game-reminders.ts";
+import { partyLead } from "./game-roads.ts";
 import { isPlayerDead, makeSave, saveText } from "./game-saves.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
 import { systemTurnStarted } from "./game-system-code.ts";
@@ -87,6 +105,8 @@ interface Turns
     round: number;
     turn: string;
     player: boolean;
+    /** More than one living player character, each handed their turn by name (D-480 (5)). */
+    several?: true;
 }
 
 /** Someone in the scene, with their counters. */
@@ -474,7 +494,7 @@ function leave(root: string, world: World, who: string[], context: Context, curr
     changes.push(...(staying.length === 0 ? [[["copies"], undefined] as [string[], unknown]] : Object.keys(copies).map((name): [string[], unknown] => [["copies", name], undefined])));
     const order = current.order?.filter((name) => !leaving.includes(name));
     const kept = order === undefined || order.length === 0 ? undefined : keptTurn(current, order);
-    const turns = order === undefined || kept === undefined ? undefined : { order, ...kept, player: isPlayerTurn(world, kept.turn) };
+    const turns = order === undefined || kept === undefined ? undefined : { order, ...kept, player: isPlayerTurn(world, kept.turn), ...severalPlayers(world) };
 
     if (current.order !== undefined) {
         changes.push([["order"], turns?.order], [["turn"], turns?.turn]);
@@ -537,7 +557,7 @@ function setOrder(root: string, world: World, order: string[], context: Context,
     updateScene(root, [[["order"], named], [["round"], round], [["turn"], turn]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, order: named }));
     const ended = endEffects(root, context, world, current, (effect) => endedByTurn(effect, round, turn, named), "turn");
-    return { action: "order", order: named, round, turn, player: isPlayerTurn(world, turn), noTurn: members.filter((name) => !named.includes(name)), ended };
+    return { action: "order", order: named, round, turn, player: isPlayerTurn(world, turn), ...severalPlayers(world), noTurn: members.filter((name) => !named.includes(name)), ended };
 }
 
 /**
@@ -630,7 +650,7 @@ function passTurn(root: string, world: World, context: Context, current: Scene):
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, round, turn }));
     const order = current.order;
     const ended = endEffects(root, context, world, current, (effect) => endedByTurn(effect, round, turn, order), "turn");
-    return { action: "next", order, round, turn, player: isPlayerTurn(world, turn), noTurn: [], ended };
+    return { action: "next", order, round, turn, player: isPlayerTurn(world, turn), ...severalPlayers(world), noTurn: [], ended };
 }
 
 /** Ends the scene; one that cannot be read is closed too, so that a scene written wrongly by hand never blocks the game. */
@@ -834,7 +854,7 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     const dying = turn.lines.join(" ");
     // Who cannot act, as one stable but still Unconscious, marks nothing.
     const inactive = member !== undefined && effectsOf(member).some((effect) => sameName(system?.combat?.inactive ?? [], effect.name) !== undefined);
-    const pc = member !== undefined && comparableText(String(member.fields.role ?? "")) === "pc";
+    const pc = member !== undefined && isPlayerCharacter(member);
     const uses = !pc || dying !== "" || inactive ? [] : turnUsesOf(system);
     const mark = uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
     // Notes written between the calls of another's turn reached the player (playtests 06, 08, 09, 11).
@@ -873,16 +893,23 @@ function actingText(acting: string | undefined): string
 function turnText(result: Turns): string
 {
     const then = result.order.length > 1 ? nextTurn(result.order, result.turn, 1).turn : undefined;
-    const now = result.player ? `${result.turn}, the player's character` : result.turn;
-    const stop = result.player ? ": stop here and hand them the turn." : ".";
+    const now = !result.player ? result.turn : result.several === true ? `${result.turn}, a player character` : `${result.turn}, the player's character`;
+    // With more than one, a message that already said what this one does goes on (D-480 (5)).
+    const stop = !result.player ? "." : result.several === true ? `: stop here and hand ${result.turn} the turn, by name, unless the player already said what ${result.turn} does.` : ": stop here and hand them the turn.";
     return `Round ${result.round} · now ${now}${then === undefined ? "" : ` (then ${then})`}${stop}`;
+}
+
+/** Whether more than one player character is alive, each handed their turn by name (D-480 (5)). */
+function severalPlayers(world: World): { several?: true; }
+{
+    return playerCharacters(world).filter((page) => page.fields.status !== "dead").length > 1 ? { several: true } : {};
 }
 
 /** Whether the turn is the player's character's, which only the player plays. */
 function isPlayerTurn(world: World, name: string): boolean
 {
     const page = findPage(world, name);
-    return page?.type === "character" && page.fields.role === "pc";
+    return page !== undefined && isPlayerCharacter(page);
 }
 
 /** A note on a line of its own, or nothing. */
@@ -1082,22 +1109,33 @@ function checkInPlay(root: string, context: Context, world: World): void
     }
 }
 
-/** Where the player character is: the nearest place among its containers. */
+/** Where the player characters are: the nearest place among their containers; refused when the living are apart (VIEW-12), with where each is. */
 function leadPlace(world: World): Page | undefined
 {
-    const lead = world.pages.find((page) => page.type === "character" && page.fields.role === "pc");
-    return lead === undefined ? undefined : locate(world, lead).chain.find((holder) => holder.type === "place");
+    const lead = partyLead(world, [], "Give place, where the scene is, or with, who is in it.");
+    return lead === undefined ? undefined : nearestPlace(world, lead);
+}
+
+/** The nearest place of the living player characters when they are all in it; undefined when they are apart (VIEW-12), or in none. */
+function togetherPlace(world: World): Page | undefined
+{
+    const places = [...new Set(playerCharacters(world).filter((page) => page.fields.status !== "dead").map((page) => nearestPlace(world, page)).filter((place) => place !== undefined))];
+    return places.length === 1 ? places[0] : undefined;
+}
+
+function nearestPlace(world: World, page: Page): Page | undefined
+{
+    return locate(world, page).chain.find((holder) => holder.type === "place");
 }
 
 /**
- * Who of the party enters a scene when with is left out (CON-6): the living members in its place, and those where the player character is; all of them when
- * there is no place.
+ * Who of the party enters a scene when with is left out (CON-6): the living members in its place, and those where the player characters are, when they are
+ * together (VIEW-12); all of them when there is no place.
  */
 function enteringParty(world: World, place: Page | undefined): Page[]
 {
-    const lead = leadPlace(world);
-    const nearestPlace = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
-    return world.pages.filter((page) => isInParty(page) && (place === undefined || locate(world, page).chain.includes(place) || (lead !== undefined && nearestPlace(page) === lead)));
+    const lead = togetherPlace(world);
+    return world.pages.filter((page) => isInParty(page) && (place === undefined || locate(world, page).chain.includes(place) || (lead !== undefined && nearestPlace(world, page) === lead)));
 }
 
 function withoutUndefined(current: Scene): Scene

@@ -7,7 +7,7 @@ import { campaignMode, modePart } from "./game-mode.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { agentVoices } from "./game-voices.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
-import { mentorPart, situationPart, stylePart } from "./parts.ts";
+import { mentorPart, partyPart, situationPart, stylePart } from "./parts.ts";
 
 export const instructions = defineCommand({
     name: "instructions",
@@ -28,6 +28,7 @@ export const instructions = defineCommand({
             masterInstructions(),
             modeText(context.folder, context),
             voicesText(context.folder, context),
+            partyText(context.folder, context),
             mentorText(context.folder, context),
             styleText(context.folder, context),
             sceneText(context.folder, context),
@@ -61,6 +62,18 @@ function sceneText(folder: string, context: Context): string
 
     try {
         return situationPart(scene.type, context, campaignSystem(root, context));
+    } catch {
+        return "";
+    }
+}
+
+/** How to run the table for more than one living player character (D-480), where the campaign has them. */
+function partyText(folder: string, context: Context): string
+{
+    const root = findCampaign(folder);
+
+    try {
+        return root === undefined ? "" : partyPart(context, campaignSystem(root, context), campaignWorld(root, context));
     } catch {
         return "";
     }

@@ -246,10 +246,13 @@ describe("the death of the player character (SAV-7)", () => {
         expect(await dies("permadeath")).toContain(
             "Kira is dead, and with saves permadeath the game never goes back: offer the player a new character, or the campaign started over from its start, if they want to go on;",
         );
-        // While another player character lives, nothing is said.
+        // While another player character lives, the death stays under permadeath, and the table chooses otherwise (D-480 (2)).
         await ok("write", "Lia", "--set", "status=alive");
         await ok("write", "Kira", "--set", "status=alive");
-        expect(await ok("write", "Kira", "--set", "status=dead")).not.toContain("is dead");
+        expect(await ok("write", "Kira", "--set", "status=dead")).toContain("Kira is dead, and the others go on: with saves permadeath the death stays;");
+        await ok("config", "saves", "checkpoint");
+        await ok("write", "Kira", "--set", "status=alive");
+        expect(await ok("write", "Kira", "--set", "status=dead")).toContain("Kira is dead while the others live: ask the table whether to go back to the last save, 1 - Al guado, for everyone, or to keep the death and go on;");
     });
 });
 

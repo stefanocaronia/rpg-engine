@@ -197,6 +197,7 @@ Read-only: yes. Positional parameters: `page`.
 - `journal` (`boolean`, optional): for the dashboard: the quests the character knows, with goals, counters, clock and deadline, and the story by scenes
 - `world` (`boolean`, optional): for the dashboard: the pages the character knows, each with the opening of its text, the documents it has or read, and the calendar with the deadlines it knows
 - `as` (`string`, optional): for a character agent: the character whose view this is, other than the player's; alone or with page
+- `focus` (`string`, optional): for the dashboard, with more than one player character: the one in the foreground, whose place, map and squares it gives; if left out, whose turn it is, else one in the open scene
 
 ### find
 

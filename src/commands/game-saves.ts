@@ -5,7 +5,7 @@ import type { Context } from "../core/context.ts";
 import { filesIn } from "../core/files.ts";
 import { appendLogEntry, logFileName, logLine, readLog } from "../core/log.ts";
 import { files, isInside } from "../core/store.ts";
-import { locate, type World } from "../pages/index.ts";
+import { locate, playerCharacters, type World } from "../pages/index.ts";
 import { packFiles, readSaves, type Save, saveFileName, unpackFiles } from "../saves/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { playerCharacter } from "./game-knowledge.ts";
@@ -50,7 +50,7 @@ export function campaignSaves(root: string): Save[]
 /** Whether the player character is dead: every one the campaign has, when it has one. Then no save is made, since going back is what one is for (SAV-3). */
 export function isPlayerDead(world: World): boolean
 {
-    const players = world.pages.filter((page) => page.type === "character" && page.fields.role === "pc");
+    const players = playerCharacters(world);
     return players.length > 0 && players.every((page) => page.fields.status === "dead");
 }
 
@@ -229,6 +229,33 @@ export function deathNotes(root: string, name: string): string[]
 
     const which = mode === "checkpoint" ? `the last save, ${saveText(last)}` : `a save, the last being ${saveText(last)} (save list gives every one)`;
     return [`${name} is dead. With saves ${mode}, offer the player to go back to ${which}, or a new character; save load only once they choose it.`];
+}
+
+/**
+ * The death of a player character while another lives (D-480 (2)): the game goes back by itself only when they all die, so the table chooses, as the saves
+ * allow: under permadeath the death stays.
+ */
+export function partyDeathNotes(root: string, name: string): string[]
+{
+    let mode: SaveMode;
+
+    try {
+        mode = saveMode(root);
+    } catch {
+        return [];
+    }
+
+    const last = campaignSaves(root).at(-1);
+
+    if (mode === "permadeath" || last === undefined) {
+        return [`${name} is dead, and the others go on${mode === "permadeath" ? ": with saves permadeath the death stays" : ""}; offer whoever played ${name} a new character, if they want one.`];
+    }
+
+    return [
+        `${name} is dead while the others live: ask the table whether to go back to ${
+            mode === "checkpoint" ? `the last save, ${saveText(last)}` : "a save (save list)"
+        }, for everyone, or to keep the death and go on; save load only once they choose it.`,
+    ];
 }
 
 /** The files a save holds, by their path inside it; refused, with what to do, when the zip cannot be read. */

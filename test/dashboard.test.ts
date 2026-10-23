@@ -1226,6 +1226,13 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         await runCommandLine(["write", "Ettore", "--text", "Cresciuto al Guado, figlio del traghettatore."], served);
         expect(JSON.parse((await send("GET", "/api/story")).body)).toEqual({});
         expect((await send("POST", "/api/story", { text: "   " })).status).toBe(400);
+        // With more than one player character, each story is its own, by who (VIEW-12).
+        await runCommandLine(["write", "Mira", "--type", "character", "--set", "role=pc"], served);
+        expect(JSON.parse((await send("POST", "/api/story", { text: "Figlia del mugnaio." })).body)).toEqual({ error: "Give who, whose story it is: Ettore or Mira." });
+        expect((await send("POST", "/api/story", { text: "Figlia del mugnaio.", who: "Mira" })).status).toBe(200);
+        expect(dashboard.news().lines.at(-1)).toMatch(/^The player proposes a story for Mira, in their own words:\n> Figlia del mugnaio\./);
+        expect(JSON.parse((await send("GET", "/api/story?who=Mira")).body)).toEqual({ proposed: "Figlia del mugnaio." });
+        expect(JSON.parse((await send("GET", "/api/story?who=Ettore")).body)).toEqual({});
     });
 
     it("asks on the page while one is open: a click rolls with the engine, logs the player's roll with its dice, and answers the master", async () => {

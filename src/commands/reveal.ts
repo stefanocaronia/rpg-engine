@@ -4,7 +4,7 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
-import { baseChain, isEmptyField, isPartyMember, links, locate, type Page, pageNamed, parsePageReference, secretNames, shownPart, systemLabel, withPage, type World, writePage } from "../pages/index.ts";
+import { baseChain, isEmptyField, isPartyMember, isPlayerCharacter, links, locate, type Page, pageNamed, parsePageReference, playerCharacters, secretNames, shownPart, systemLabel, withPage, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import { placedPosition } from "./game-positions.ts";
 import { copyName, readOpenScene } from "./game-scene.ts";
@@ -97,11 +97,11 @@ export const reveal = defineCommand({
  */
 function logLearned(root: string, context: Context, world: World, lines: { learner: Page; links: string[]; }[]): void
 {
-    const players = world.pages.filter((page) => page.type === "character" && page.fields.role === "pc");
+    const players = playerCharacters(world);
     const playerKnows = (link: string): boolean => players.some((player) => knowsLink(player, link));
 
     for (const { learner, links: learned } of lines) {
-        const visible = learner.fields.role === "pc" || (isPartyMember(learner) && learned.every(playerKnows));
+        const visible = isPlayerCharacter(learner) || (isPartyMember(learner) && learned.every(playerKnows));
         appendLogEntry(root, newDatedLogEntry(root, context, "learned", visible ? "public" : "hidden", { page: learner.name, knows: learned }));
     }
 }
@@ -112,8 +112,10 @@ function logLearned(root: string, context: Context, world: World, lines: { learn
  */
 function unplacedPlaces(world: World, lines: { learner: Page; links: string[]; }[]): RevealResult["unplaced"]
 {
-    const player = lines.find((line) => line.learner.fields.role === "pc");
-    const places = (player?.links ?? []).flatMap((link) => links(link)).filter((link) => link.section === undefined).flatMap((link) => {
+    // What any player character learned (VIEW-12).
+    const players = lines.filter((line) => isPlayerCharacter(line.learner));
+    const player = players[0];
+    const places = [...new Set(players.flatMap((line) => line.links))].flatMap((link) => links(link)).filter((link) => link.section === undefined).flatMap((link) => {
         const page = pageNamed(world, link.page);
         return page?.type === "place" && page.fields.stops === undefined && [page, ...locate(world, page).chain].every((holder) => placedPosition(world, holder) === undefined) ? [page.name] : [];
     });
@@ -181,7 +183,7 @@ function missingSecret(world: World, page: Page, name: string): string
 /** Who learns, when not said: the player's character, when there is one only (REV-2). */
 function playerCharacter(world: World): Page
 {
-    const players = world.pages.filter((page) => page.type === "character" && page.fields.role === "pc");
+    const players = playerCharacters(world);
 
     if (players.length !== 1) {
         throw new Error(

@@ -13,7 +13,7 @@ import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playe
 import { installAdventure } from "./commands/game-adventures.ts";
 import { type Catalog, catalog } from "./commands/game-catalog.ts";
 import { imageFolders } from "./commands/game-images.ts";
-import { playerCharacter, playerStory } from "./commands/game-knowledge.ts";
+import { playerStory } from "./commands/game-knowledge.ts";
 import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "./commands/game-library.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
@@ -33,6 +33,7 @@ import { findHiddenImage, findImage } from "./images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "./languages/index.ts";
 import { samePath } from "./library/index.ts";
 import { type PageTranslator, pageTranslator } from "./page-words.ts";
+import { playerCharacters } from "./pages/index.ts";
 import { codexClient, helperCommand, queueInCodex } from "./pictures/index.ts";
 import { type Acts, actText, giveBackAct, markHeard, markRung, newActs, takeActs, withdrawAct } from "./player-acts.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
@@ -214,6 +215,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 changed: new Map<string, PlayerSetting>(),
                 events: [],
                 left: new Set<string>(),
+                stories: new Map(),
                 shared: new Map<string, string>(),
                 notify: () => undefined,
                 words: pageTranslator(context, options.page ?? builtPage, () => served.notify()),
@@ -298,8 +300,8 @@ interface Served
     events: string[];
     /** The setup's choices the player left to the master on the page, shown so until the master makes them (D-370). */
     left: Set<string>;
-    /** The story the player proposed for their character, and the page's opening text then: waiting until the master writes it (D-386). */
-    story?: { text: string; before: string; };
+    /** The stories the player proposed for their characters, by name, each with the page's opening text then: waiting until the master writes it (D-386). */
+    stories: Map<string, { text: string; before: string; }>;
     /** The notes the player shared and the master has not heard yet, by id, with what the master will hear: until then the player may take one back (D-381). */
     shared: Map<string, string>;
     /** The wait for a page to come back, since the last one closed: a page that opens ends it. */
@@ -1401,33 +1403,40 @@ async function story(request: IncomingMessage, response: ServerResponse, served:
         return;
     }
 
-    const parsed = request.method === "GET" ? { success: true as const, data: undefined } : z.object({ text: z.string().trim().min(1).max(20_000) }).strict().safeParse(body);
+    const parsed = request.method === "GET"
+        ? { success: true as const, data: undefined }
+        : z.object({ text: z.string().trim().min(1).max(20_000), who: z.string().trim().min(1).max(200).optional() }).strict().safeParse(body);
 
     if (!parsed.success) {
-        sendJson(response, 400, { error: "Send { text }, the story in your words, up to 20,000 characters." });
+        sendJson(response, 400, { error: "Send { text }, the story in your words, up to 20,000 characters, and who, the character's name, when there is more than one." });
         return;
     }
 
     try {
         await served.session.ready();
         const answer = withFiles(served.session, () => {
-            const pc = playerCharacter(campaignWorld(requireCampaign(served.context.folder), served.context));
+            const players = playerCharacters(campaignWorld(requireCampaign(served.context.folder), served.context));
+            // Whose story: the one named, or the only one (VIEW-12).
+            const who = parsed.data?.who ?? new URL(request.url ?? "/", "http://localhost").searchParams.get("who") ?? undefined;
+            const pc = who === undefined ? (players.length === 1 ? players[0] : undefined) : players.find((player) => comparableText(player.name) === comparableText(who));
 
             if (pc === undefined) {
-                return { status: 400, body: { error: "There is no player character yet: make it with the master first." } };
+                const error = players.length === 0 ? "There is no player character yet: make it with the master first." : `Give who, whose story it is: ${players.map((player) => player.name).join(" or ")}.`;
+                return { status: 400, body: { error } };
             }
 
             // A proposal ends when the master writes the story.
-            if (served.story !== undefined && served.story.before !== playerStory(pc)) {
-                served.story = undefined;
+            if (served.stories.get(pc.name)?.before !== undefined && served.stories.get(pc.name)?.before !== playerStory(pc)) {
+                served.stories.delete(pc.name);
             }
 
             if (parsed.data !== undefined) {
-                served.story = { text: parsed.data.text, before: playerStory(pc) };
+                served.stories.set(pc.name, { text: parsed.data.text, before: playerStory(pc) });
                 served.events.push(`The player proposes a story for ${pc.name}, in their own words:\n${quotedLines(parsed.data.text)}\n${storyRule}`);
             }
 
-            return { status: 200, body: served.story === undefined ? {} : { proposed: served.story.text } };
+            const proposed = served.stories.get(pc.name)?.text;
+            return { status: 200, body: proposed === undefined ? {} : { proposed } };
         });
         sendJson(response, answer.status, answer.body);
     } catch (error) {

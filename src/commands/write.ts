@@ -38,6 +38,7 @@ import {
     isEmptyField,
     isNeverInherited,
     isPartyMember,
+    isPlayerCharacter,
     isStandardField,
     keepersOf,
     linksIn,
@@ -86,14 +87,14 @@ import { checkLimits } from "./game-limits.ts";
 import { campaignCoins } from "./game-money.ts";
 import { mapLookNotes, shortRoadNotes } from "./game-positions.ts";
 import { logQuestChange, newQuestNotes, tickedQuestNotes } from "./game-quests.ts";
-import { deathNotes, isPlayerDead } from "./game-saves.ts";
+import { deathNotes, isPlayerDead, partyDeathNotes } from "./game-saves.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { diaryDueLine } from "./game-thoughts.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
-import { partText, situationPart } from "./parts.ts";
+import { partText, partyPart, situationPart } from "./parts.ts";
 import { givenItems, progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes, weightlessNote } from "./sheet.ts";
 import { computedField, counterLimits, directBonuses, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, startingAtZero, workedMaximum, workedParts } from "./worked-out.ts";
@@ -336,12 +337,36 @@ export const write = defineCommand({
             ]
             : [];
         // The death of the last living player character: what the saves allow, said at once (SAV-7).
-        const death = changed && isPlayerDead(now) && !isPlayerDead(world) ? deathNotes(root, page.name) : [];
+        const died = changed && isPlayerCharacter(page) && page.fields.status === "dead" && existing?.fields.status !== "dead";
+        const death = changed && isPlayerDead(now) && !isPlayerDead(world) ? deathNotes(root, page.name) : died ? partyDeathNotes(root, page.name) : [];
+        // A second living player character: how to run the table for them, once in a chat (D-480).
+        const party = joined && isPlayerCharacter(page) ? partyPart(context, system, now) : "";
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),
             followersWhy: followers.why,
-            notes: [...story, ...notes, ...dropped, ...limits.notes, ...gained, ...thresholds, ...levels, ...leftOut, ...quest, ...twice, ...shadows, ...links, ...carried, ...firsts, ...counts, ...map, ...sheet, ...death, ...moneyNotes],
+            notes: [
+                ...story,
+                ...notes,
+                ...dropped,
+                ...limits.notes,
+                ...gained,
+                ...thresholds,
+                ...levels,
+                ...leftOut,
+                ...quest,
+                ...twice,
+                ...shadows,
+                ...links,
+                ...carried,
+                ...firsts,
+                ...counts,
+                ...map,
+                ...sheet,
+                ...death,
+                ...moneyNotes,
+                ...(party === "" ? [] : [party]),
+            ],
             problems: world.problems,
         };
     },

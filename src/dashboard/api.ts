@@ -174,10 +174,10 @@ export async function sendNote(change: NoteChange, leaving = false): Promise<str
 }
 
 /** Sends the master a story for the player character, which they write in its page with the player (D-386): undefined when it reached the game, else what went wrong. */
-export async function sendStory(text: string): Promise<string | undefined>
+export async function sendStory(text: string, who: string): Promise<string | undefined>
 {
     try {
-        const response = await fetch("/api/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+        const response = await fetch("/api/story", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, who }) });
         return response.ok ? undefined : ((await response.json().catch(() => ({})) as { error?: string; }).error ?? t("The story did not reach the master: try again."));
     } catch {
         return t("The story did not reach the master: the game is not connected.");
@@ -185,9 +185,9 @@ export async function sendStory(text: string): Promise<string | undefined>
 }
 
 /** The story the player sent that the master has not written yet; undefined when none (D-386). */
-export async function readStory(): Promise<string | undefined>
+export async function readStory(who: string): Promise<string | undefined>
 {
-    const response = await fetch("/api/story");
+    const response = await fetch(`/api/story?${new URLSearchParams({ who })}`);
     return response.ok ? ((await response.json()) as { proposed?: string; }).proposed : undefined;
 }
 

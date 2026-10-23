@@ -5,7 +5,7 @@ import type { Context } from "../core/context.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
-import { isInParty, type World } from "../pages/index.ts";
+import { isInParty, playerCharacters, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { campaignSystem, campaignWorld, missingWithSystems } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
@@ -59,7 +59,7 @@ export function campaignMode(root: string, world: World): Mode
         return "play";
     }
 
-    return world.pages.some((page) => page.type === "character" && page.fields.role === "pc") ? "session zero" : "setup";
+    return playerCharacters(world).length > 0 ? "session zero" : "setup";
 }
 
 /** A mode written by hand in state.yaml that is no mode: it counts as none (MOD-1), and validate says how to fix it. */
@@ -161,7 +161,7 @@ function setupMissing(root: string, context: Context, world: World): string[]
 function sessionZeroMissing(root: string, context: Context, world: World): string[]
 {
     const system = campaignSystem(root, context);
-    const players = world.pages.filter((page) => isInParty(page) && page.fields.role === "pc");
+    const players = playerCharacters(world).filter(isInParty);
     const companions = world.pages.filter((page) => isInParty(page) && page.fields.role === "companion");
     const way = readSettings(root).companions;
     const made = (way === "made with the player" || way === "made by the master") && companions.length === 0;

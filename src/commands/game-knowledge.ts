@@ -1,17 +1,20 @@
-// What a character knows, as the player's view and a character agent's read it (D-250, VIEW-2, VIEW-3, VIEW-10): the pages it knows and the text of each as it knows it.
-import { readLog } from "../core/log.ts";
+// What a character knows, as the player's view and a character agent's read it (D-250, VIEW-2, VIEW-3, VIEW-10): the pages it knows and the text of each as it knows it;
+// with more than one player character, what any of them knows, and who (VIEW-12).
+import { type LogEntry, readLog } from "../core/log.ts";
 import { comparableText } from "../core/text.ts";
 import {
     baseChain,
     inheritedByBase,
     introductionText,
     isPartyMember,
+    isPlayerCharacter,
     links,
     locate,
     type Page,
     pagesWithNameOrAlias,
     parsePageReference,
     partContent,
+    playerCharacters,
     readSection,
     secretNames,
     stacksOf,
@@ -22,23 +25,86 @@ import {
     withoutComments,
     type World,
 } from "../pages/index.ts";
+import type { Scene } from "../scene/index.ts";
 import { readOpenScene } from "./game-scene.ts";
 
 /** What a character knows: the pages, and the secrets by the page that writes them. */
 export interface Knowledge
 {
-    /** Whose knowledge it is: the player character, or another character for the character agent voicing them (VIEW-10). */
+    /** Whose knowledge it is: the player character, the one in the foreground when there are more (VIEW-12), or another character for the character agent voicing them (VIEW-10). */
     pc: Page;
     pages: Set<Page>;
     /** "coppa#veleno": the secrets it discovered, by the page that writes them and their name, as comparable text. */
     secrets: Set<string>;
+    /** With more than one player character, what each of them knows (VIEW-12): the pages and secrets above are what any of them knows. */
+    each?: Knowledge[];
 }
 
 /** The player character: the first living character with role pc, else the first dead one; undefined before there is one. */
 export function playerCharacter(world: World): Page | undefined
 {
-    const players = world.pages.filter((page) => page.type === "character" && page.fields.role === "pc");
+    const players = playerCharacters(world);
     return players.find((page) => page.fields.status !== "dead") ?? players[0];
+}
+
+/**
+ * The player character in the foreground (VIEW-12), whose place, map and squares the view shows: the one named; else, of the living, the one whose turn it is in
+ * the open scene, then one in the open scene, then the first; else the first. Undefined before there is one.
+ */
+export function foregroundCharacter(root: string, world: World, wanted?: string): Page | undefined
+{
+    const players = playerCharacters(world);
+
+    if (wanted !== undefined && wanted.trim() !== "") {
+        const page = pagesWithNameOrAlias(world, parsePageReference(wanted).name).find(isPlayerCharacter);
+
+        if (page === undefined) {
+            throw new Error(`${wanted.trim()} is not a player character: give one of ${players.map((player) => player.name).join(", ") || "them, once there is one"}.`);
+        }
+
+        return page;
+    }
+
+    const living = players.filter((page) => page.fields.status !== "dead");
+    const { scene } = readOpenScene(root);
+    const named = (page: Page, name: string | undefined): boolean => name !== undefined && pagesWithNameOrAlias(world, parsePageReference(name).name)[0] === page;
+    return living.find((page) => named(page, scene?.turn)) ?? living.find((page) => (scene?.with ?? []).some((link) => named(page, link))) ?? living[0] ?? players[0];
+}
+
+/**
+ * What the player characters know (VIEW-12): with one, its knowledge; with more, what any of them knows, living or dead, with what each does, and the one in the
+ * foreground as whose it is. Undefined before there is one.
+ */
+export function playerKnowledge(root: string, world: World, wanted?: string): Knowledge | undefined
+{
+    const pc = foregroundCharacter(root, world, wanted);
+
+    if (pc === undefined) {
+        return undefined;
+    }
+
+    const players = playerCharacters(world);
+
+    if (players.length === 1) {
+        return knowledgeOf(root, world, pc);
+    }
+
+    // One read of the log for them all.
+    const read = { log: readLog(root), scene: readOpenScene(root).scene };
+    const each = players.map((player) => knowledgeOf(root, world, player, read));
+    return { pc, pages: new Set(each.flatMap((one) => [...one.pages])), secrets: new Set(each.flatMap((one) => [...one.secrets])), each };
+}
+
+/** Who of the player characters knows a page, when more than one is played and only some of them do (VIEW-12); undefined otherwise. */
+export function pageKnownBy(knowledge: Knowledge, page: Page): string[] | undefined
+{
+    return knownApart(knowledge, (one) => knowsPage(one, page));
+}
+
+/** Who of the player characters discovered a secret, by the page that writes it and its name, when more than one is played and only some of them did (VIEW-12). */
+export function secretKnownBy(knowledge: Knowledge, page: Page, secret: string): string[] | undefined
+{
+    return knownApart(knowledge, (one) => one.secrets.has(secretKey(page.name, secret)));
 }
 
 /**
@@ -47,7 +113,7 @@ export function playerCharacter(world: World): Page | undefined
  * the scenes it was in, and the places it was moved from and to, with those that hold them (D-316); the pages of the game system but its creatures, which anyone
  * may read (SYS-2). Never a creature of the campaign it was not told of.
  */
-export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
+export function knowledgeOf(root: string, world: World, pc: Page, read?: LogRead): Knowledge
 {
     // A link in knows, to a page or to one of its secrets, read with its secret (REV-1).
     const known = knownLinks(world, pc);
@@ -69,7 +135,7 @@ export function knowledgeOf(root: string, world: World, pc: Page): Knowledge
         ...[pc, ...world.pages.filter((page) => locate(world, page).chain.includes(pc))].flatMap((holder) => stacksOf(world, holder).map((stack) => stack.kind)).filter((kind) => kind.system === undefined),
         ...locate(world, pc).chain,
         // The places it was in, and those that hold them, as the regions it crossed (D-316).
-        ...livedOf(root, world, pc).flatMap((page) => (page.type === "place" ? [page, ...locate(world, page).chain] : page.type === "character" ? [page] : [])),
+        ...livedOf(read ?? { log: readLog(root), scene: readOpenScene(root).scene }, world, pc).flatMap((page) => (page.type === "place" ? [page, ...locate(world, page).chain] : page.type === "character" ? [page] : [])),
     ]);
     return { pc, pages, secrets };
 }
@@ -92,6 +158,16 @@ export function knownText(world: World, knowledge: Knowledge, page: Page): strin
         ...inheritedByBase(world, page).flatMap((group) => group.parts.map((part) => ({ ...part, holder: group.base }))),
     ].filter((part) => isShown(knowledge, page, part));
     return inKnownWords(world, knowledge, withoutComments([knownIntroduction(world, knowledge, page), ...parts.map((part) => part.text)].filter((text) => text !== "").join("\n\n")));
+}
+
+/** The secrets a page's text shows (VIEW-3) that only some of the player characters discovered, when more than one is played, each by its name and with who (VIEW-12). */
+export function knownSecretsApart(world: World, knowledge: Knowledge, page: Page): { secret: string; who: string[]; }[]
+{
+    const parts = [...partsOf(page), ...inheritedByBase(world, page).flatMap((group) => group.parts.map((part) => ({ ...part, holder: group.base })))];
+    return parts.filter((part) => isSecretText(part.text) && isShown(knowledge, page, part)).flatMap((part) => {
+        const who = secretKnownBy(knowledge, part.holder, part.name);
+        return who === undefined ? [] : [{ secret: part.name, who }];
+    });
 }
 
 /** A page's introduction as the character knows it (VIEW-3): its own, else that of its nearest base it knows; without comments. */
@@ -210,6 +286,13 @@ function knownLinks(world: World, character: Page): { name: string; page?: Page;
     });
 }
 
+/** The names of the player characters a test holds for, when more than one is played and not all of them pass it. */
+function knownApart(knowledge: Knowledge, knows: (one: Knowledge) => boolean): string[] | undefined
+{
+    const knowers = knowledge.each?.filter(knows).map((one) => one.pc.name);
+    return knowers === undefined || knowers.length === knowledge.each?.length ? undefined : knowers;
+}
+
 function secretKey(page: string, secret: string): string
 {
     return `${comparableText(page)}#${comparableText(secret)}`;
@@ -219,13 +302,11 @@ function secretKey(page: string, secret: string): string
  * The pages of what the player character lived, as the log keeps it: the characters and places of the scenes it was in, those closed and the open one, and where
  * it was moved from and to; never one the master gave only by what the character sees of them, in any scene (D-416, VIEW-2).
  */
-function livedOf(root: string, world: World, pc: Page): Page[]
+function livedOf({ log, scene }: LogRead, world: World, pc: Page): Page[]
 {
     const pageOf = (name: string): Page | undefined => pagesWithNameOrAlias(world, parsePageReference(name).name)[0];
     const isPc = (name: string): boolean => pageOf(name) === pc;
-    const log = readLog(root);
     const closed = log.filter((entry) => entry.type === "scene-closed").map((entry) => entry.data as { place?: unknown; with?: unknown; left?: unknown; unnamed?: unknown; });
-    const { scene } = readOpenScene(root);
     const scenes = [...closed, ...(scene === undefined ? [] : [{ place: scene.place, with: scene.with, left: scene.left, unnamed: Object.keys(scene.seen ?? {}) }])];
     const unnamed = new Set(scenes.flatMap((one) => textList(one.unnamed).flatMap((name) => pageOf(name) ?? [])));
     const met = scenes.flatMap((one) => {
@@ -237,6 +318,13 @@ function livedOf(root: string, world: World, pc: Page): Page[]
         return [...textList(from), ...textList(entry.data.to)];
     });
     return [...met, ...moved].flatMap((name) => pageOf(name) ?? []).filter((page) => !unnamed.has(page));
+}
+
+/** The log and the open scene, read once for what several characters lived. */
+interface LogRead
+{
+    log: LogEntry[];
+    scene: Scene | undefined;
 }
 
 function textList(value: unknown): string[]

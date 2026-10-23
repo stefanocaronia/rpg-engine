@@ -2,6 +2,7 @@
 import { readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { corePart, layeredPart } from "../instructions/index.ts";
+import { playerCharacters, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { campaignSystem } from "./game-world.ts";
 
@@ -23,6 +24,12 @@ export function situationPart(name: string, context: Context, system: GameSystem
 
     context.told?.add(name);
     return text;
+}
+
+/** How to run the table for more than one living player character (D-450, D-480), once in a chat as a situation's part; none with fewer. */
+export function partyPart(context: Context, system: GameSystem | undefined, world: World): string
+{
+    return playerCharacters(world).filter((page) => page.fields.status !== "dead").length > 1 ? situationPart("party", context, system) : "";
 }
 
 /**

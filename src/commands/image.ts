@@ -9,7 +9,7 @@ import { comparableText, withArticle } from "../core/text.ts";
 import { imageFileName, imageLink, imagesFolderName, readImage } from "../images/index.ts";
 import { baseChain, findPage, isPartyMember, ownField, type Page, pageNamed, parsePageReference, type World, writePage } from "../pages/index.ts";
 import { imageFile, ownImage } from "./game-images.ts";
-import { knowledgeOf, knowsPage, playerCharacter } from "./game-knowledge.ts";
+import { knowsPage, playerKnowledge } from "./game-knowledge.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
@@ -212,8 +212,7 @@ function portraitWho(root: string, context: Context, world: World, page: Page): 
  */
 function metWho(root: string, world: World, page: Page): { name: string; who?: string; }
 {
-    const pc = playerCharacter(world);
-    const knowledge = pc === undefined ? undefined : knowledgeOf(root, world, pc);
+    const knowledge = playerKnowledge(root, world);
     const known = (one: Page): boolean => knowledge !== undefined && knowsPage(knowledge, one);
     const bases = baseChain(world, page).filter(known).map((base) => base.name).join(", ");
     return { name: known(page) ? page.name : page.type === "creature" ? "a creature" : "someone", ...(bases === "" ? {} : { who: bases }) };

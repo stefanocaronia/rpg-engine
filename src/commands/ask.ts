@@ -7,7 +7,7 @@ import { comparableText, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
-import { findPage, loadWorld, locate, type Page, type World } from "../pages/index.ts";
+import { findPage, loadWorld, locate, type Page, playerCharacters, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { placeGrid } from "./game-grids.ts";
@@ -632,7 +632,7 @@ function isDice(text: string): boolean
 /** The player's character the roll belongs to: the one named, or the only one there is (ASK-2). */
 function playerCharacter(world: World, who: string | undefined): string
 {
-    const players = world.pages.filter((page) => page.type === "character" && page.fields.role === "pc");
+    const players = playerCharacters(world);
 
     if (who === undefined || who.trim() === "") {
         if (players.length !== 1) {

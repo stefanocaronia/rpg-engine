@@ -3,7 +3,7 @@ import { z } from "zod";
 import { houseRulesFolderName, missingSettings, readSettings, requireCampaign, settingMeaning } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
-import { isInParty, isPartyMember, locate, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
+import { isInParty, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, parsePageReference, playerCharacters, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import type { GameDate } from "../time/index.ts";
@@ -42,8 +42,8 @@ interface Member
     name: string;
     /** The containers the member is in, nearest first. */
     where: string[];
-    /** Whether the member is where the first player character is. */
-    withLead: boolean;
+    /** The player character the member is with, in the same place: the first living one there (VIEW-12). */
+    with?: string;
     counters: string[];
     /** Its effects, with their end: "Spaventato (until round 3, Lena)". */
     effects: string[];
@@ -70,19 +70,27 @@ export const status = defineCommand({
         const settings = readSettings(root);
         const world = campaignWorld(root, context);
         const characters = world.pages.filter((page) => page.type === "character");
-        const players = characters.filter((page) => page.fields.role === "pc");
+        const players = playerCharacters(world);
         const place = players.length > 0 ? placeOf(world, players[0]) : undefined;
-        const withLead = (page: Page): boolean => place !== undefined && placeOf(world, page) === place;
+        const living = players.filter((page) => page.fields.status !== "dead");
+        // The player character someone is with, in the same place; and what holds around each place of theirs (VIEW-12).
+        const withPlayer = (page: Page): Page | undefined => (isPlayerCharacter(page) ? undefined : living.find((player) => placeOf(world, player) !== undefined && placeOf(world, player) === placeOf(world, page)));
+        const around = [...new Set(living.map((player) => placeOf(world, player)))].flatMap((at) => {
+            const there = living.filter((player) => placeOf(world, player) === at);
+            const text = surroundingsText(surroundings(world, there[0]));
+            return text === "" ? [] : [{ who: there.map(characterName), text }];
+        });
         const { coins } = campaignCoins(root, context);
         const system = campaignSystem(root, context);
         const openScene = readOpenScene(root);
 
         const member = (page: Page): Member => {
             const mood = livingMood(page);
+            const companion = withPlayer(page);
             return {
                 name: characterName(page),
                 where: locate(world, page).chain.map((holder) => holder.name),
-                withLead: withLead(page),
+                ...(companion === undefined ? {} : { with: characterName(companion) }),
                 // Under the rigor «rules», a load over the limit (LOAD-3).
                 counters: [
                     ...Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
@@ -153,8 +161,8 @@ export const status = defineCommand({
             translation: mode === "setup" ? translationOffer(root, context) : undefined,
             mood: masterMood(root),
             place,
-            alsoThere: characters.filter((page) => !isPartyMember(page) && withLead(page)).map(characterName),
-            around: players.length === 0 ? "" : surroundingsText(surroundings(world, players[0])),
+            alsoThere: characters.filter((page) => !isPartyMember(page) && place !== undefined && placeOf(world, page) === place).map(characterName),
+            around,
             scene: sceneText(world, openScene.scene),
             journey: journeyText(world, roadsOf(world), readJourney(root), measuresOf(root, system)),
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
@@ -186,8 +194,7 @@ export const status = defineCommand({
 
     format(result)
     {
-        const lead = result.players[0]?.name;
-        const companion = (member: Member): string => `${member.name}${member.withLead && lead !== undefined ? `, with ${lead}` : whereabouts(member)}${memberCounters(member)}`;
+        const companion = (member: Member): string => `${member.name}${member.with === undefined ? whereabouts(member) : `, with ${member.with}`}${memberCounters(member)}`;
         const state = [
             result.offerDashboard && result.dashboard !== undefined
                 ? `Offer the player their dashboard in your first answer, with its link: ${result.dashboard}. Their sheet, their settings and the dice of the checks you ask `
@@ -205,7 +212,7 @@ export const status = defineCommand({
             result.houseRules.length === 0 ? "" : `House rules (rules): ${result.houseRules.join(", ")}`,
             timeLine(result),
             ...(result.players.length === 0 ? [`No player character yet.${sheetNote(result.sheet)}`] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
-            result.around === "" ? "" : `Around ${lead}: ${result.around}`,
+            ...result.around.map((one) => `Around ${one.who.join(" and ")}: ${one.text}`),
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
             result.dashboard === undefined || result.offerDashboard ? "" : `Dashboard: ${result.dashboard}, the player's sheet, their settings and the dice of the checks you ask, live.`,
             result.pictures ?? "",

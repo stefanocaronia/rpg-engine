@@ -10,7 +10,7 @@ import { comparableText, firstSentence, withArticle } from "../core/text.ts";
 import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
 import { type Coin, readAmount } from "../money/index.ts";
-import { declaredKind, entryPage, isPartyMember, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, systemPageNamed, textsIn, type World } from "../pages/index.ts";
+import { declaredKind, entryPage, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, playerCharacters, systemPageNamed, textsIn, type World } from "../pages/index.ts";
 import type { ActVerb, GameSystem, SystemWords } from "../systems/index.ts";
 import { type CalendarDay, formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
@@ -18,7 +18,7 @@ import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { effectShown, type SeenEffect } from "./game-effects.ts";
 import { shownImage } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
-import { discoveredSecrets, type Knowledge, knowledgeOf, knownIntroduction, knownPart, knownText, knowsPage, playerCharacter, playerStory, scenesLivedBy } from "./game-knowledge.ts";
+import { discoveredSecrets, type Knowledge, knowledgeOf, knownIntroduction, knownPart, knownSecretsApart, knownText, knowsPage, playerKnowledge, playerStory, scenesLivedBy } from "./game-knowledge.ts";
 import { blockingMode, campaignMode, type Mode, modes } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game-moods.ts";
@@ -112,6 +112,8 @@ export type ViewResult =
         /** The master's mood, which the robot shows, and their last moment, which the dashboard shows for a few seconds when it is new (MOOD-4, MOOD-6). */
         master: { mood: Mood; moment?: MoodMoment; };
         party: PartyMember[];
+        /** With more than one player character, the one in the foreground, whose place the view gives (VIEW-12). */
+        foreground?: string;
         /** Where the player character is, and the open scene, as data for the dashboard (VIEW-6). */
         place?: ShownPlace;
         openScene?: ShownScene;
@@ -138,6 +140,8 @@ export type ViewResult =
         /** The fields whose items the player acts with, each with its verbs, as the system says (D-495). */
         actions?: Record<string, ActVerb[]>;
         text: string;
+        /** With more than one player character, the secrets the text shows that only some of them discovered, by the name the text gives them, and who (VIEW-12). */
+        knownBy?: { secret: string; who: string[]; }[];
         /** The player character's opening text, which the player may propose on the dashboard (D-373, D-386); left out on other pages. */
         story?: string;
     }
@@ -198,6 +202,7 @@ export const view = defineCommand({
         journal: z.boolean().optional().describe("for the dashboard: the quests the character knows, with goals, counters, clock and deadline, and the story by scenes"),
         world: z.boolean().optional().describe("for the dashboard: the pages the character knows, each with the opening of its text, the documents it has or read, and the calendar with the deadlines it knows"),
         as: z.string().optional().describe("for a character agent: the character whose view this is, other than the player's; alone or with page"),
+        focus: z.string().optional().describe("for the dashboard, with more than one player character: the one in the foreground, whose place, map and squares it gives; if left out, whose turn it is, else one in the open scene"),
     }),
 
     run(input, context): ViewResult
@@ -246,19 +251,25 @@ export const view = defineCommand({
             return shownSaves(root, context);
         }
 
+        if (input.as !== undefined && input.focus !== undefined) {
+            throw new Error("Give as or focus, not both: focus is the player character in the foreground of the player's view, as another character's view.");
+        }
+
         const world = campaignWorld(root, context);
-        // Whose view it is: the player character's, or another character's for the character agent voicing them (VIEW-10).
-        const pc = input.as === undefined ? playerCharacter(world) : characterNamed(world, input.as);
+        // Whose view it is: the player characters', with one in the foreground (VIEW-12), or another character's for the character agent voicing them (VIEW-10).
+        const knowledge = input.as === undefined ? playerKnowledge(root, world, input.focus) : knowledgeOf(root, world, characterNamed(world, input.as));
 
         // An import under way, which the dashboard tells the player (D-491 (11)); never the character agent.
         const importing = input.as === undefined ? importShown(root) : undefined;
 
-        if (pc === undefined) {
+        if (knowledge === undefined) {
             const language = readSettings(root).language;
             return { kind: "none", ...(language === undefined ? {} : { language }), ...(importing === undefined ? {} : { importing }) };
         }
 
-        const knowledge = knowledgeOf(root, world, pc);
+        const pc = knowledge.pc;
+        // Who of the party the view gives: the player characters, the living first, or the one whose view it is for a character agent, and the companions (VIEW-12).
+        const players = input.as === undefined ? playerCharacters(world).toSorted((one, other) => Number(one.fields.status === "dead") - Number(other.fields.status === "dead")) : [pc];
 
         // What the character knows and the calendar (VIEW-11).
         if (input.world === true) {
@@ -307,7 +318,7 @@ export const view = defineCommand({
             const system = campaignSystem(root, context);
 
             if (page === undefined) {
-                return { kind: "unknown", text: `${pc.name} does not know ${reference.name}.` };
+                return { kind: "unknown", text: `${knowerText(knowledge)} ${reference.name}.` };
             }
 
             // The sheet of the one whose view it is, and of the party when they are of it (VIEW-3, VIEW-10).
@@ -319,7 +330,7 @@ export const view = defineCommand({
                 const group = part === undefined && party ? sheetGroup(world, system, page, reference.section) : undefined;
 
                 if (part === undefined && group === undefined) {
-                    return { kind: "unknown", text: `${pc.name} knows nothing of ${page.name} called ${reference.section}.` };
+                    return { kind: "unknown", text: `${knowledge.each === undefined ? pc.name : "No player character"} knows nothing of ${page.name} called ${reference.section}.` };
                 }
 
                 return { kind: "section", title: `${page.name}#${group?.name ?? reference.section}`, lines: group?.lines ?? [], text: part ?? "" };
@@ -333,7 +344,7 @@ export const view = defineCommand({
 
         const open = readJourney(root)?.at !== undefined;
         const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
-        const sight = { root, context, world, knowledge, party: [pc, ...companions] };
+        const sight = { root, context, world, knowledge, party: [...players, ...companions] };
 
         if (input.as !== undefined) {
             return memoryOf({ ...sight, party: isPartyMember(pc) ? world.pages.filter((page) => page.type === "character" && isPartyMember(page)) : [pc] });
@@ -359,7 +370,7 @@ export const view = defineCommand({
             const icon = tokenIcon(world, system, page);
             return {
                 name: page.name,
-                role: page === pc ? "pc" : "companion",
+                role: isPlayerCharacter(page) ? "pc" : "companion",
                 dead: page.fields.status === "dead",
                 ...(image === undefined ? {} : { image }),
                 ...(icon === undefined ? {} : { icon }),
@@ -405,7 +416,8 @@ export const view = defineCommand({
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
             ...(today === undefined ? {} : { calendar: today }),
             master: { mood: masterMood(root), ...(moment === undefined ? {} : { moment }) },
-            party: [pc, ...companions].map(member),
+            party: [...players, ...companions].map(member),
+            ...(players.length > 1 ? { foreground: pc.name } : {}),
             ...(place === undefined ? {} : { place }),
             ...(openScene === undefined ? {} : { openScene }),
             quests: world.pages.filter((page) => page.type === "quest" && page.fields.status === "open").map((page) => page.name),
@@ -427,7 +439,7 @@ export const view = defineCommand({
             case "unknown":
                 return result.text;
             case "page":
-                return [result.title, sheetText(result.sheet).join("\n"), result.text].filter((block) => block !== "").join("\n\n");
+                return [result.title, sheetText(result.sheet).join("\n"), result.text, ...(result.knownBy ?? []).map((one) => `Secret ${one.secret}: known to ${one.who.join(", ")} alone.`)].filter((block) => block !== "").join("\n\n");
             case "section":
                 return [result.title, result.lines.join("\n"), result.text].filter((block) => block !== "").join("\n\n");
             case "memory":
@@ -450,7 +462,9 @@ export const view = defineCommand({
             case "world":
                 return [
                     ...(result.known.length === 0 ? ["Known: nothing yet."] : ["Known:", ...result.known.map((entry) => `- ${knownEntryText(entry)}`)]),
-                    ...result.documents.map((document) => `Document: ${document.name} (${document.document}${document.carried ? ", carried" : ""})`),
+                    ...result.documents.map((document) =>
+                        `Document: ${document.name} (${document.document}${document.carried ? `, carried${document.carrier === undefined ? "" : ` by ${document.carrier}`}` : ""})${knownByText(document.knownBy)}`
+                    ),
                     ...result.calendar.deadlines.map((deadline) => `Deadline of ${deadline.quest}: ${deadline.date}`),
                 ].join("\n");
             case "saves":
@@ -462,7 +476,7 @@ export const view = defineCommand({
             default: {
                 const more = result.diary.length < result.total ? ` (the last ${result.diary.length} of ${result.total}: view, diary all gives every one)` : "";
                 return [
-                    result.party.map(memberLine).join("\n"),
+                    result.party.map((member) => memberLine(member, result.foreground !== undefined)).join("\n"),
                     result.quests.length === 0 ? "" : `Open quests: ${result.quests.join(" · ")}`,
                     result.scene === undefined ? "" : `Scene: ${result.scene}`,
                     result.diary.length === 0 ? "Diary: nothing yet." : `Diary${more}:\n${result.diary.map((line) => `- ${line}`).join("\n")}`,
@@ -486,9 +500,11 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
     const language = readSettings(root).language;
     const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWordsOf(system, language, context)) : undefined;
     const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
-    // Only the player's own character acts from the sheet: the others act as the master says (D-495).
-    const actions = page === knowledge.pc ? system?.sheetActions : undefined;
-    const story = page === knowledge.pc ? playerStory(page) : undefined;
+    // Only the player's own characters act from the sheet: the others act as the master says (D-495).
+    const own = isPlayerCharacter(page) && (page === knowledge.pc || knowledge.each !== undefined);
+    const actions = own ? system?.sheetActions : undefined;
+    const story = own ? playerStory(page) : undefined;
+    const secrets = knownSecretsApart(world, knowledge, page);
     return {
         kind: "page",
         title: `${page.name} (${page.type ?? "page"})`,
@@ -497,8 +513,21 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
         ...(cards === undefined ? {} : { cards }),
         ...(actions === undefined ? {} : { actions }),
         text: knownText(world, knowledge, page),
+        ...(secrets.length === 0 ? {} : { knownBy: secrets }),
         ...(story === undefined ? {} : { story }),
     };
+}
+
+/** "; known to Ettore alone": who of the player characters knows something, when not all of them do (VIEW-12). */
+function knownByText(who: string[] | undefined): string
+{
+    return who === undefined ? "" : `; known to ${who.join(", ")} alone`;
+}
+
+/** "Ettore does not know": who the view is of, for a page it does not know; no player character, when it is of more than one. */
+function knowerText(knowledge: Knowledge): string
+{
+    return knowledge.each === undefined ? `${knowledge.pc.name} does not know` : "No player character knows";
 }
 
 /**
@@ -616,10 +645,10 @@ function shownRoll(
 }
 
 /** "Lena (companion, worried), in Locanda: hp 9/15 · Poisoned until day 2, 14:20": someone of the party as the chat reads them. */
-function memberLine(member: PartyMember): string
+function memberLine(member: PartyMember, players: boolean): string
 {
-    // A dead companion's line says so; the player character's never did.
-    const told = [member.role === "pc" ? "" : "companion", member.dead && member.role === "companion" ? "dead" : member.mood ?? ""].filter((part) => part !== "");
+    // A dead companion's line says so, and with more than one player character a dead one's (VIEW-12); a lone player character's never did.
+    const told = [member.role === "pc" ? "" : "companion", member.dead && (member.role === "companion" || players) ? "dead" : member.mood ?? ""].filter((part) => part !== "");
     const role = told.length === 0 ? "" : ` (${told.join(", ")})`;
     const counters = countersText(Object.fromEntries(member.counters.map((value) => [value.field, value.beside === undefined ? value.text : `${value.text} (${value.beside})`])));
     const shown = [counters, ...member.effects.map((effect) => effect.text)].filter((part) => part !== "");

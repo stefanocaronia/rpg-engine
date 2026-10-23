@@ -7,7 +7,7 @@ import { readCounter } from "../counters/index.ts";
 import type { Effect, EffectEnd } from "../effects/index.ts";
 import { type Grid, reachable, type Square, squareName, squaresApart, withoutMapBlock } from "../grid/index.ts";
 import { hiddenImageName } from "../images/index.ts";
-import { environmentAt, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, placesAround, type World } from "../pages/index.ts";
+import { environmentAt, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, placesAround, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem, GridRules } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
@@ -181,8 +181,8 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
         around,
         // The map block is drawn, not read.
         text: grid === undefined ? text : withoutMapBlock(text),
-        // The party first, the player character at its head.
-        here: [...sight.party.filter((page) => present.includes(page)), ...present.filter((page) => !sight.party.includes(page))].map((page) => ({
+        // The party first, the player character in the foreground at its head (VIEW-12).
+        here: [...partyFirst(sight).filter((page) => present.includes(page)), ...present.filter((page) => !sight.party.includes(page))].map((page) => ({
             ...person(sight, page),
             ...hostileMark(readOpenScene(sight.root).scene, page.name),
             ...stateOf(sight, page),
@@ -208,7 +208,7 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
     const system = campaignSystem(sight.root, sight.context);
     const measures = measuresOf(sight.root, system);
     const standings = standing(sight.world, place, here);
-    const self = standings.find((one): one is Standing & { square: Square; } => one.page === sight.party[0] && one.square !== undefined);
+    const self = standings.find((one): one is Standing & { square: Square; } => one.page === sight.knowledge.pc && one.square !== undefined);
     const at = standings.flatMap((one): ShownGrid["at"] => {
         const square = one.square === undefined ? undefined : squareName(one.square);
 
@@ -395,7 +395,7 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
     const icon = party ? tokenIcon(sight.world, system, page) : undefined;
     return {
         name: shown,
-        role: page === sight.knowledge.pc ? "pc" : party ? "companion" : "other",
+        role: partyRole(sight, page),
         ...(image === undefined ? {} : { image }),
         ...(icon === undefined ? {} : { icon }),
         ...(stranger ? { stranger: true as const } : {}),
@@ -539,10 +539,22 @@ function hostileMark(scene: Pick<Scene, "type" | "hostile"> | undefined, name: s
     return hostile ? { hostile: true } : {};
 }
 
+/** Someone's role as the view gives it: a player character or a companion of the party, or other. */
+function partyRole(sight: PlaceSight, page: Page): "pc" | "companion" | "other"
+{
+    return !sight.party.includes(page) ? "other" : isPlayerCharacter(page) ? "pc" : "companion";
+}
+
+/** The party, the player character in the foreground first (VIEW-12). */
+function partyFirst(sight: PlaceSight): Page[]
+{
+    return [...sight.party.filter((page) => page === sight.knowledge.pc), ...sight.party.filter((page) => page !== sight.knowledge.pc)];
+}
+
 /** Someone the character knows, with their picture and their role. */
 function person(sight: PlaceSight, page: Page): ShownPerson
 {
-    const role = page === sight.knowledge.pc ? "pc" : sight.party.includes(page) ? "companion" : "other";
+    const role = partyRole(sight, page);
     const image = picture(sight, page);
     // Only the party's: what the others are, the character may not know.
     const icon = role === "other" ? undefined : tokenIcon(sight.world, campaignSystem(sight.root, sight.context), page);

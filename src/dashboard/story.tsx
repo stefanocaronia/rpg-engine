@@ -5,7 +5,7 @@ import { readStory, sendStory } from "./api.ts";
 import { Icon } from "./icons.tsx";
 import { t } from "./text.ts";
 
-export function StoryBox({ story }: { story: string; })
+export function StoryBox({ story, who }: { story: string; who: string; })
 {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(story);
@@ -19,8 +19,8 @@ export function StoryBox({ story }: { story: string; })
     const wasEditing = useRef(false);
 
     useEffect(() => {
-        void readStory().then(setProposed, () => setProposed(undefined));
-    }, [story]);
+        void readStory(who).then(setProposed, () => setProposed(undefined));
+    }, [story, who]);
 
     // Opened, the field takes the focus; closed, the button that opens it.
     useEffect(() => {
@@ -36,7 +36,7 @@ export function StoryBox({ story }: { story: string; })
     const send = async (event: Event): Promise<void> => {
         event.preventDefault();
         setBusy(true);
-        const refused = await sendStory(draft);
+        const refused = await sendStory(draft, who);
         setBusy(false);
         setProblem(refused);
 

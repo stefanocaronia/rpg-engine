@@ -389,6 +389,18 @@ export function isCountedItem(world: World, page: Page): boolean
 
 const countedByWorld = new WeakMap<World, Set<string>>();
 
+/** Whether a page is a player character: a character with role pc. */
+export function isPlayerCharacter(page: Page): boolean
+{
+    return page.type === "character" && page.fields.role === "pc";
+}
+
+/** The player characters, living and dead, in the order of the pages. */
+export function playerCharacters(world: World): Page[]
+{
+    return world.pages.filter(isPlayerCharacter);
+}
+
 /** Whether a page is one of the player's party: their character or a companion. */
 export function isPartyMember(page: Page): boolean
 {

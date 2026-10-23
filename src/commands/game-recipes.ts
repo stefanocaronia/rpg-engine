@@ -2,7 +2,7 @@
 import { comparableText } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
-import { isDeclaredUncounted, isInParty, locate, type Page, type World } from "../pages/index.ts";
+import { isDeclaredUncounted, isInParty, locate, type Page, playerCharacters, type World } from "../pages/index.ts";
 import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { formulaValue, refillAmount } from "./worked-out.ts";
@@ -23,7 +23,7 @@ export function recipeNamed(system: GameSystem | undefined, name: string): { sys
 /** The pages a recipe without a page goes to: the living player characters, and the living companions where one of them is. */
 export function partyPages(world: World): Page[]
 {
-    const players = world.pages.filter((page) => isInParty(page) && page.fields.role === "pc");
+    const players = playerCharacters(world).filter(isInParty);
     const places = new Set(players.map((page) => locate(world, page).chain[0]?.name));
     const companions = world.pages.filter((page) => isInParty(page) && page.fields.role === "companion" && places.has(locate(world, page).chain[0]?.name));
     return [...players, ...companions];

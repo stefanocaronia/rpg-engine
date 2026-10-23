@@ -4,13 +4,12 @@ import type { Context } from "../core/context.ts";
 import { readLength } from "../core/length.ts";
 import { defineCommand } from "../core/registry.ts";
 import { directionHelp, directionName, distanceBetween, pointAlong, pointFrom, readDirection, type Start } from "../map/index.ts";
-import { environmentAt, locate, type Page, pageNamed, parsePageReference, type Position, type World } from "../pages/index.ts";
+import { environmentAt, locate, type Page, pageNamed, parsePageReference, playerCharacters, type Position, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
 import { aroundLead, passedLines, passTime, type TimePassed } from "./game-advance.ts";
 import { timePassedLines } from "./game-extensions.ts";
 import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, sameMovers, saveJourney, travelledSinceRest } from "./game-journey.ts";
-import { playerCharacter } from "./game-knowledge.ts";
 import { mapKey, mapOf } from "./game-maps.ts";
 import { movePages } from "./game-moves.ts";
 import { acrossHint, crossedRoads, openLegs } from "./game-open.ts";
@@ -29,6 +28,7 @@ import {
     moversOf,
     noWayText,
     paceOf,
+    partyLead,
     type Roads,
     roadsOf,
     sameSpot,
@@ -532,15 +532,16 @@ function aroundLines(world: World, roads: Roads, from: Position, point: Position
 /** "Corrado stays in Roccalba: …": who travels leaves out the player character where they start, which who may not have meant (playtest 05). */
 function stayingNote(world: World, travellers: Page[]): string
 {
-    const pc = playerCharacter(world);
     const placeOf = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
     const start = travellers[0] === undefined ? undefined : placeOf(travellers[0]);
+    // Every player character left behind where they start (VIEW-12).
+    const staying = playerCharacters(world).filter((pc) => pc.fields.status !== "dead" && !travellers.includes(pc) && start !== undefined && placeOf(pc)?.path === start.path);
 
-    if (pc === undefined || travellers.includes(pc) || start === undefined || placeOf(pc)?.path !== start.path) {
+    if (start === undefined || staying.length === 0) {
         return "";
     }
 
-    return `${pc.name} stays in ${start.name}: who replaces the party; to go together, leave who out, or name the party too.`;
+    return `${staying.map((pc) => pc.name).join(" and ")} ${staying.length === 1 ? "stays" : "stay"} in ${start.name}: who replaces the party; to go together, leave who out, or name the party too.`;
 }
 
 function travellersOf(world: World, who: string | string[] | undefined, journey: Journey | undefined): Page[]
@@ -548,7 +549,7 @@ function travellersOf(world: World, who: string | string[] | undefined, journey:
     const names = (typeof who === "string" ? [who] : (who ?? [])).filter((name) => name.trim() !== "");
 
     if (names.length === 0) {
-        const party = travellingParty(world, playerCharacter(world), journey?.movers ?? []);
+        const party = travellingParty(world, partyLead(world, journey?.movers ?? [], "Give who, the characters who travel."), journey?.movers ?? []);
 
         if (party.length === 0) {
             throw new Error("There is no player character to travel: give who, the characters who travel. Nothing changed.");

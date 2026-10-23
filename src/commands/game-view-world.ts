@@ -2,10 +2,10 @@
 // the calendar with the deadlines it knows and the days of its scenes.
 import type { Context } from "../core/context.ts";
 import { firstSentence } from "../core/text.ts";
-import { isPartyMember, locate, type Page, withoutFencedBlocks, type World } from "../pages/index.ts";
+import { isPartyMember, isPlayerCharacter, locate, type Page, withoutFencedBlocks, type World } from "../pages/index.ts";
 import { type CalendarMonth, formatGameDate, readGameDate } from "../time/index.ts";
 import { shownImage } from "./game-images.ts";
-import { type Knowledge, knownIntroduction, knownText, knowsPage, writesKnownText } from "./game-knowledge.ts";
+import { type Knowledge, knownIntroduction, knownText, knowsPage, pageKnownBy, writesKnownText } from "./game-knowledge.ts";
 import { calendarDayOf, campaignCalendar, readPresent } from "./game-time.ts";
 import { placeKind } from "./game-view-map.ts";
 
@@ -23,6 +23,8 @@ export interface KnownEntry
     picture?: { file: string; version: number; };
     /** A companion of the party. */
     companion?: true;
+    /** With more than one player character, those who know it, when not all of them do (VIEW-12). */
+    knownBy?: string[];
 }
 
 /** A document the player character has or read (VIEW-11): an item with document, such as letter or map, its text as the character knows it (VIEW-3) and its picture. */
@@ -33,8 +35,12 @@ export interface ShownDocument
     document: string;
     text: string;
     picture?: { file: string; version: number; };
-    /** The character carries it now. */
+    /** The character carries it now; with more than one player character, one of them does. */
     carried: boolean;
+    /** With more than one player character, the one who carries it (VIEW-12). */
+    carrier?: string;
+    /** With more than one player character, those who know it, when not all of them do (VIEW-12). */
+    knownBy?: string[];
 }
 
 /** The calendar as the player character knows it (VIEW-11, TIM-8): today, the months when the story has a calendar, the deadlines of its quests and the days of its scenes. */
@@ -62,7 +68,7 @@ export function knownEntries(root: string, context: Context, world: World, knowl
 {
     const known = (base: Page): boolean => knowsPage(knowledge, base);
     return [...knowledge.pages]
-        .filter((page) => page !== knowledge.pc && page.system === undefined && page.type !== "quest")
+        .filter((page) => !isPlayerCharacter(page) && page.system === undefined && page.type !== "quest")
         .filter((page) => page.type !== "item" || (documentOf(page) === undefined && writesKnownText(knowledge, page)))
         .map((page) => {
             const kind = page.type === "place" ? placeKind(page) : undefined;
@@ -70,6 +76,7 @@ export function knownEntries(root: string, context: Context, world: World, knowl
             const picture = shownImage(root, context, world, page, known);
             // The opening of its prose: a map's block says nothing as a line.
             const summary = withoutFencedBlocks(knownIntroduction(world, knowledge, page)).trim().split(/\n\s*\n/)[0].trim();
+            const knownBy = pageKnownBy(knowledge, page);
             return {
                 name: page.name,
                 type: page.type ?? "page",
@@ -78,6 +85,7 @@ export function knownEntries(root: string, context: Context, world: World, knowl
                 summary,
                 ...(picture === undefined ? {} : { picture }),
                 ...(page.type === "character" && page.fields.role === "companion" && isPartyMember(page) ? { companion: true as const } : {}),
+                ...(knownBy === undefined ? {} : { knownBy }),
             };
         })
         .sort((one, other) => one.name.localeCompare(other.name));
@@ -95,7 +103,19 @@ export function knownDocuments(root: string, context: Context, world: World, kno
         }
 
         const picture = shownImage(root, context, world, page, known);
-        return [{ name: page.name, document, text: knownText(world, knowledge, page), ...(picture === undefined ? {} : { picture }), carried: locate(world, page).chain.includes(knowledge.pc) }];
+        // Who carries it, of the player characters (VIEW-12).
+        const chain = locate(world, page).chain;
+        const carrier = (knowledge.each?.map((one) => one.pc) ?? [knowledge.pc]).find((player) => chain.includes(player));
+        const knownBy = pageKnownBy(knowledge, page);
+        return [{
+            name: page.name,
+            document,
+            text: knownText(world, knowledge, page),
+            ...(picture === undefined ? {} : { picture }),
+            carried: carrier !== undefined,
+            ...(carrier === undefined || knowledge.each === undefined ? {} : { carrier: carrier.name }),
+            ...(knownBy === undefined ? {} : { knownBy }),
+        }];
     }).sort((one, other) => Number(other.carried) - Number(one.carried) || one.name.localeCompare(other.name));
 }
 
@@ -139,7 +159,8 @@ export function shownCalendar(
 export function knownEntryText(entry: KnownEntry): string
 {
     const summary = firstSentence(entry.summary.replace(/\s*\n\s*/g, " "));
-    return `${entry.name} (${entry.kind ?? (entry.companion === true ? "companion" : entry.type)}${entry.within === undefined ? "" : `, in ${entry.within.join(" › ")}`})${summary === "" ? "" : `: ${summary}`}`;
+    const knownBy = entry.knownBy === undefined ? "" : `, known to ${entry.knownBy.join(", ")} alone`;
+    return `${entry.name} (${entry.kind ?? (entry.companion === true ? "companion" : entry.type)}${entry.within === undefined ? "" : `, in ${entry.within.join(" › ")}`}${knownBy})${summary === "" ? "" : `: ${summary}`}`;
 }
 
 /** What an item is as a document, such as letter: its document field; undefined for anything else. */

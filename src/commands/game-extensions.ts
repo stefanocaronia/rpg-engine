@@ -11,7 +11,7 @@ import { type Command, defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { rollDice } from "../dice/index.ts";
 import type { Extension, ExtensionCode, ExtensionCommand, ExtensionEntry, Game, GameMoment } from "../extensions/index.ts";
-import { environmentAt, isInParty, locate } from "../pages/index.ts";
+import { environmentAt, isInParty, locate, playerCharacters } from "../pages/index.ts";
 import { formatGameDate, type GameDate } from "../time/index.ts";
 import { campaignExtensions, runsCode } from "./game-extension-list.ts";
 import { calendarDayOf, newDatedLogEntry, presentDate } from "./game-time.ts";
@@ -180,7 +180,7 @@ function gameOf(root: string, context: Context, extension: Extension): Game
         units: () => (readTextSetting(root, "units") === "imperial" ? "imperial" : "metric"),
         party: () => {
             const world = campaignWorld(root, context);
-            const player = world.pages.find((page) => isInParty(page) && page.fields.role === "pc");
+            const player = playerCharacters(world).find(isInParty);
             return player === undefined
                 ? undefined
                 : {

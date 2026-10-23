@@ -2,7 +2,7 @@
 import { changeState } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
-import { isEmptyField, type World } from "../pages/index.ts";
+import { isEmptyField, locate, type Page, playerCharacters, type World } from "../pages/index.ts";
 import { addDuration, formatCalendarDay, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
 import { endedByDate, endEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
@@ -170,10 +170,19 @@ function openSceneText(root: string): string | undefined
     return scene === undefined ? undefined : `${scene.title}${scene.opened === undefined ? "" : ` (since ${scene.opened})`}`;
 }
 
-/** "Ettore: light: dark (Cripta)": what holds around the player character, for rules that count the hours spent there (ENV-5); undefined when nothing does. */
+/**
+ * "Ettore: light: dark (Cripta)": what holds around the player characters, once for each place of the living (VIEW-12), for rules that count the hours spent
+ * there (ENV-5); undefined when nothing does.
+ */
 export function aroundLead(world: World): string | undefined
 {
-    const lead = world.pages.find((page) => page.type === "character" && page.fields.role === "pc");
-    const around = surroundingsText(surroundings(world, lead));
-    return lead === undefined || around === "" ? undefined : `${lead.name}: ${around}`;
+    const players = playerCharacters(world);
+    const living = players.filter((page) => page.fields.status !== "dead");
+    const placeOf = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
+    const groups = living.length === 0 ? players.slice(0, 1).map((page) => [page]) : [...new Set(living.map(placeOf))].map((place) => living.filter((page) => placeOf(page) === place));
+    const lines = groups.flatMap((group) => {
+        const around = surroundingsText(surroundings(world, group[0]));
+        return around === "" ? [] : [`${group.map((page) => page.name).join(" and ")}: ${around}`];
+    });
+    return lines.length === 0 ? undefined : lines.join("; ");
 }

@@ -7,7 +7,7 @@ import { comparableText, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { rollDice } from "../dice/index.ts";
 import { withEffect } from "../effects/index.ts";
-import { concernsPlayer, isPartyMember, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
+import { concernsPlayer, isPartyMember, isPlayerCharacter, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { CounterChange, GameSystem, RollMade, SystemGame, SystemHooks, SystemPage, SystemReader } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { saveEffects } from "./game-effects.ts";
@@ -141,7 +141,7 @@ function systemPage(world: World, page: Page): SystemPage
     return {
         name: page.name,
         party: isPartyMember(page),
-        pc: comparableText(String(page.fields.role ?? "")) === "pc",
+        pc: isPlayerCharacter(page),
         counter: (field) => {
             const counter = readCounter(valueNamed(fields, field));
             return counter === undefined ? undefined : { value: counter.value, ...(counter.max === undefined ? {} : { max: counter.max }) };

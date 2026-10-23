@@ -95,7 +95,7 @@ export function MemberSheet(
                         {story !== undefined && (
                             <Card name={backstoryCard} title={t("Backstory")} icon={cardIcons.backstory} layout="lore" preview={plainLine(story) ?? t("Not written yet")}>
                                 {story.trim() !== "" && <Markdown text={story} />}
-                                <StoryBox story={story} />
+                                <StoryBox story={story} who={member.name} />
                             </Card>
                         )}
                         {described.trim() !== "" && (

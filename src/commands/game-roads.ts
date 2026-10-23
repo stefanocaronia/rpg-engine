@@ -5,7 +5,7 @@ import { formatLength, formatSpeed, type ImperialUnits, readSpeed, speedHelp, tr
 import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { quickestWay, type Speed, type Start, type Step, type Stretch, stretchesOf, type Way } from "../map/index.ts";
-import { environmentAt, isEmptyField, isInParty, locate, type Page, pagesWithName, readStops, type World } from "../pages/index.ts";
+import { environmentAt, isEmptyField, isInParty, locate, type Page, pagesWithName, playerCharacters, readStops, type World } from "../pages/index.ts";
 import type { GameSystem, TravelKind } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { mapKey } from "./game-maps.ts";
@@ -70,6 +70,25 @@ export function travellingParty(world: World, character: Page | undefined, journ
     };
 
     return [character, ...world.pages.filter((page) => page !== character && isInParty(page) && together(page))];
+}
+
+/**
+ * The player character whose party goes when who is left out (TRV-6, VIEW-12): the first living one, else the first; when the living are not all in its party,
+ * refused with where each is and the remedy given. One that is nowhere, in no place nor on the journey, counts for neither.
+ */
+export function partyLead(world: World, journeyMovers: string[], remedy: string): Page | undefined
+{
+    const players = playerCharacters(world);
+    const somewhere = (page: Page): boolean => locate(world, page).chain.length > 0 || journeyMovers.some((name) => comparableText(name) === comparableText(page.name));
+    const living = players.filter((page) => page.fields.status !== "dead" && somewhere(page));
+    const lead = living[0] ?? players.find((page) => page.fields.status !== "dead") ?? players[0];
+    const party = travellingParty(world, lead, journeyMovers);
+
+    if (living.some((page) => !party.includes(page))) {
+        throw new Error(`The player characters are apart: ${living.map((page) => `${page.name}, in ${placeOf(world, page)?.name ?? "the open"}`).join("; ")}. ${remedy} Nothing changed.`);
+    }
+
+    return lead;
 }
 
 /**

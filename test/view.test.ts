@@ -209,11 +209,12 @@ describe("the player's view, after a review", () => {
         expect(await ok("view", "--diary", "1")).toMatch(/- al-Mansur: 1d20 = /);
     });
 
-    it("VIEW-1: is the view of the living player character, when the first one died", async () => {
+    it("VIEW-1, VIEW-12: is the view of the player characters, the living first, and what the dead one knew stays", async () => {
         await ok("write", "Kira", "--set", "status=dead");
         await ok("write", "Lia", "--type", "character", "--set", "role=pc");
-        expect(await ok("view")).toMatch(/^Lia\n/);
+        expect(await ok("view")).toMatch(/^Lia\nKira \(dead\), in Guado › Valle\n/);
         expect(await ok("view", "Lia")).toBe("Lia (character)");
+        expect(await ok("view", "Guado")).toMatch(/^Guado \(place\)/);
     });
 
     it("VIEW-3: leaves out comments and undiscovered secrets a few spaces in, gives a section whole, and a group of the party's sheet", async () => {
