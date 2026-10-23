@@ -2220,12 +2220,17 @@ a {
     font-size: 0.85rem;
 }
 
-/* The followed quest, small, at the top of Scene and Combat. */
+/* The followed quests, small, at the top of Scene and Combat: a strip for each, the main ones first. */
+.followed-quests {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
 .followed {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 12px;
     padding-block: 6px;
     padding-inline: 6px 12px;
     border: 1px solid color-mix(in srgb, var(--gold) 60%, var(--rule));
@@ -2332,6 +2337,76 @@ a {
         border: 0;
         clip-path: inset(50%);
         white-space: nowrap;
+    }
+}
+
+/* A followed quest that ended (D-369), told for a few seconds as a notice: over the page in sight while it scrolls, under what the master asks; on the table
+   over the quests' card. Done, its star full in the gold of quests, which pops in; failed, its star empty in grey. Then it folds away. */
+.quest-endings {
+    position: sticky;
+    overflow-anchor: none;
+    top: calc(var(--gap) + var(--top-space) + var(--asked-space, 0px));
+    z-index: 14;
+    display: grid;
+    gap: 8px;
+    margin: 0 0 var(--gap);
+}
+
+.quest-endings.beside {
+    position: static;
+    margin: 0;
+}
+
+.notice.quest-ended {
+    --tone: var(--gold);
+    box-shadow: var(--overlay);
+    overflow-wrap: anywhere;
+}
+
+.notice.quest-ended.failed {
+    --tone: var(--muted);
+}
+
+.quest-ended .star {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    fill: var(--tone);
+    stroke: var(--tone);
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+}
+
+.quest-ended.failed .star {
+    fill: none;
+}
+
+.quest-ended.leaving {
+    overflow: hidden;
+    animation: asked-out var(--short) var(--ease-in) forwards;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .quest-ended {
+        animation: asked-in var(--medium) var(--ease-bounce);
+    }
+
+    .quest-ended.done .star {
+        animation: quest-star var(--long) var(--ease-bounce);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .quest-ended.leaving {
+        animation-duration: 0.01s;
+    }
+}
+
+@keyframes quest-star {
+    from {
+        opacity: 0;
+        scale: 0.3;
+        rotate: -72deg;
     }
 }
 

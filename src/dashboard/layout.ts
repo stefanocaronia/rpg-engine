@@ -94,6 +94,12 @@ export function followedQuests(kept: string | undefined, quests: Pick<ShownQuest
     return [...new Set(names)].filter((name) => open.some((quest) => quest.name === name));
 }
 
+/** The quests followed at the last reading that are done or failed now, in the order they were followed: each told for a moment before it leaves. */
+export function endedQuests<Quest extends Pick<ShownQuest, "name" | "status">>(followedBefore: string[], quests: Quest[]): Quest[]
+{
+    return followedBefore.flatMap((name) => quests.find((quest) => quest.name === name && quest.status !== "open") ?? []);
+}
+
 /** What the browser keeps once the player follows a quest or no longer does: the names followed, the new one last, as a list. */
 export function keptFollowed(followed: string[], name: string, follow: boolean): string
 {

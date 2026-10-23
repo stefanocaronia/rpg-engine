@@ -110,7 +110,7 @@ type SceneResult =
     | ({ action: "add"; title: string; place?: string; members: Member[]; ordered: boolean; seen?: Record<string, string>; } & Brought)
     | { action: "leave"; left: Member[]; turns?: Turns; noTurns: boolean; ended: string[]; acting?: string; }
     | ({ action: "order" | "next"; noTurn: string[]; ended: string[]; acting?: string; } & Turns)
-    | { action: "now"; title: string; now: string; }
+    | { action: "now"; title: string; now: string; members: string[]; }
     | { action: "use"; line: string; }
     | { action: "hostile" | "calm"; title: string; marked: string[]; hostile: string[]; }
     | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved);
@@ -224,8 +224,10 @@ export const scene = defineCommand({
                 return `Order: ${result.order.join(" · ")}.${result.noTurn.length === 0 ? "" : ` No turn: ${result.noTurn.join(", ")}.`}\n${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
             case "next":
                 return `${turnText(result)}${actingText(result.acting)}${endedText(result.ended)}`;
+            // Who is in it, so that the master sees a scene the story has left (playtest 19): another place or other people make a new one.
             case "now":
-                return `${result.title}: the player's dashboard now shows "${result.now}".`;
+                return `${result.title}, with ${result.members.length === 0 ? "no one" : result.members.join(", ")}: the player's dashboard now shows "${result.now}". `
+                    + "If the story has moved elsewhere or to other people, close this scene and open the next.";
             case "use":
                 return result.line;
             case "hostile":
@@ -263,7 +265,7 @@ function tellNow(root: string, now: string, context: Context, current: Scene): S
 
     updateScene(root, [[["now"], now.trim()]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-now", "public", { title: current.title, now: now.trim() }));
-    return { action: "now", title: current.title, now: now.trim() };
+    return { action: "now", title: current.title, now: now.trim(), members: memberNames(current) };
 }
 
 function checkParameters(input: SceneInput): void

@@ -16,7 +16,7 @@ import { explanations } from "../src/dashboard/api.ts";
 import type { Asked, JournalFact, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
-import { arrangedGroups, columnsByHeight, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { arrangedGroups, columnsByHeight, endedQuests, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
@@ -850,6 +850,25 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(followedQuests(keptFollowed(["Main"], "Main", false), quests)).toEqual([]);
         // The only open quest is followed until the player chooses, when there is no main one.
         expect(followedQuests(undefined, [{ name: "Alone", status: "open" as const, main: false }])).toEqual(["Alone"]);
+    });
+
+    it("tells the followed quests that ended since the last reading, never one let go or one done before (D-369)", () => {
+        const before = [
+            { name: "Main", status: "open" as const },
+            { name: "Side", status: "open" as const },
+            { name: "Old", status: "done" as const },
+        ];
+        const followed = followedQuests(JSON.stringify(["Main", "Side", "Old"]), before.map((quest) => ({ ...quest, main: quest.name === "Main" })));
+        expect(followed).toEqual(["Main", "Side"]);
+        const after = [
+            { name: "Main", status: "done" as const },
+            { name: "Side", status: "failed" as const },
+            { name: "Old", status: "done" as const },
+        ];
+        expect(endedQuests(followed, after).map((quest) => `${quest.name} ${quest.status}`)).toEqual(["Main done", "Side failed"]);
+        // Still open, let go, or no longer there: nothing to tell.
+        expect(endedQuests(followed, before)).toEqual([]);
+        expect(endedQuests(["Side"], [{ name: "Main", status: "done" as const }])).toEqual([]);
     });
 
     it("draws a number on its way to the next mark with a bar, among the numbers (D-284)", () => {

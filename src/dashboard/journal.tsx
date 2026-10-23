@@ -9,7 +9,7 @@ import type { JournalFact, ShownChapter, ShownQuest } from "./data.ts";
 import { byDateLabel, factLabel, gameDateLabel } from "./game-words.ts";
 import { Icon, iconPath } from "./icons.tsx";
 import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
-import { followedQuests, keptFollowed } from "./layout.ts";
+import { endedQuests, followedQuests, keptFollowed } from "./layout.ts";
 import { placeKinds } from "./map-symbols.ts";
 import { Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
@@ -74,8 +74,8 @@ export function JournalView({ version, campaign }: { version: number; campaign?:
 /**
  * The quests the player follows (D-369), the main ones first, then the others, each group in the order they were followed. Beside the page one card, as a video
  * game's quest tracker, that closes to its header: for each its mark, its name, its next goal, its clock and time left, with no command; a click opens it where
- * it stands into its goals, done ones ticked, and a button that stops following it. On a narrow screen the first, as a strip at the top of Scene and Combat.
- * A quest done or failed leaves by itself.
+ * it stands into its goals, done ones ticked, and a button that stops following it. On a narrow screen a strip for each, in the same order, at the top of Scene
+ * and Combat. A quest done or failed leaves by itself, told by QuestEndings.
  */
 export function FollowedQuests({ version, campaign, beside = false }: { version: number; campaign?: string; beside?: boolean; })
 {
@@ -87,7 +87,121 @@ export function FollowedQuests({ version, campaign, beside = false }: { version:
         return null;
     }
 
-    return beside ? <QuestTracker quests={quests} onUnfollow={(name) => follow(name, false)} /> : <FollowedStrip quest={quests[0]} onUnfollow={() => follow(quests[0].name, false)} />;
+    if (beside) {
+        return <QuestTracker quests={quests} onUnfollow={(name) => follow(name, false)} />;
+    }
+
+    return (
+        <aside class="followed-quests" aria-label={quests.length === 1 ? t("The quest you follow") : t("The quests you follow")}>
+            {quests.map((quest) => <FollowedStrip key={quest.name} quest={quest} onUnfollow={() => follow(quest.name, false)} />)}
+        </aside>
+    );
+}
+
+/**
+ * A followed quest done or failed while the page is open, told for a few seconds as it leaves the quests followed: the full star in the gold of quests, or the
+ * empty one in grey; over the page, in sight while it scrolls, or beside it over the quests' card. A screen reader hears it once; a quest that ended before the
+ * page read the journal is never told.
+ */
+export function QuestEndings({ version, campaign, beside = false }: { version: number; campaign?: string; beside?: boolean; })
+{
+    const journal = useJournal(version);
+    const [followed] = useFollowed(campaign, journal.read?.quests);
+    const before = useRef<{ campaign?: string; names: string[]; }>();
+    const [endings, setEndings] = useState<Ending[]>([]);
+    const [told, setTold] = useState("");
+
+    useEffect(() => {
+        const quests = journal.read?.quests;
+
+        if (quests === undefined) {
+            return;
+        }
+
+        const last = before.current;
+        before.current = { campaign, names: followed };
+        const ended = last === undefined || last.campaign !== campaign ? [] : endedQuests(last.names, quests);
+
+        if (ended.length === 0) {
+            return;
+        }
+
+        const at = Date.now();
+        setEndings((shown) => [...shown.filter((ending) => !ended.some((quest) => quest.name === ending.name)), ...ended.map((quest) => ({ name: quest.name, done: quest.status === "done", at }))]);
+        setTold(ended.map((quest) => endingWords(quest.name, quest.status === "done")).join(" "));
+    }, [journal.read, followed.join("\n"), campaign]);
+
+    // Each stays its time, then folds away; the words a screen reader heard go with the last.
+    useEffect(() => {
+        if (endings.length === 0) {
+            setTold("");
+            return;
+        }
+
+        const timers = endings.map((ending) =>
+            window.setTimeout(
+                () => setEndings((shown) => (ending.leaving ? shown.filter((one) => one !== ending) : shown.map((one) => (one === ending ? { ...one, leaving: true } : one)))),
+                ending.leaving ? endingFold : Math.max(0, ending.at + endingTime - Date.now()),
+            )
+        );
+        return () => timers.forEach((timer) => window.clearTimeout(timer));
+    }, [endings]);
+
+    return (
+        <>
+            <p class="visually-hidden" role="status">{told}</p>
+            {endings.length > 0 && (
+                <div class={beside ? "quest-endings beside" : "quest-endings"}>
+                    {endings.map((ending) => (
+                        <p key={`${ending.name} ${ending.at}`} class={["notice", "quest-ended", ending.done ? "done" : "failed", ending.leaving ? "leaving" : ""].join(" ").trim()}>
+                            <Star />
+                            <span>
+                                <NamedWords words={endingWords(ending.name, ending.done)} name={ending.name} />
+                            </span>
+                        </p>
+                    ))}
+                </div>
+            )}
+        </>
+    );
+}
+
+// A quest that ended, as told: whether done or failed, when the page saw it, and whether it is folding away.
+interface Ending
+{
+    name: string;
+    done: boolean;
+    at: number;
+    leaving?: boolean;
+}
+
+// How long an ended quest is told, and how long it takes to fold away (the CSS's --short).
+const endingTime = 8000;
+const endingFold = 250;
+
+function endingWords(quest: string, done: boolean): string
+{
+    return done ? t("Quest completed: {quest}", { quest }) : t("Quest failed: {quest}", { quest });
+}
+
+/** A sentence with a name of the game in it, the name bold and kept apart from the page's direction. */
+function NamedWords({ words, name }: { words: string; name: string; })
+{
+    const at = words.indexOf(name);
+
+    if (at < 0) {
+        return <>{words}</>;
+    }
+
+    return (
+        <>
+            {words.slice(0, at)}
+            <bdi>
+                <b>{name}</b>
+            </bdi>
+            {words.slice(at + name.length)}
+        </>
+    );
 }
 
 /** The card of the quests followed, beside the page: a line for each, which opens where it stands; the way to the Journal in its header. */
@@ -160,7 +274,7 @@ function FollowedStrip({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow():
 {
     const next = quest.goals.find((goal) => !goal.done);
     return (
-        <aside class="followed" aria-label={t("The quest you follow")}>
+        <div class="followed">
             <button type="button" class="followed-star on" aria-label={t("Follow {quest}", { quest: quest.name })} aria-pressed={true} onClick={onUnfollow}>
                 <Star />
             </button>
@@ -171,7 +285,7 @@ function FollowedStrip({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow():
             </a>
             {quest.clock !== undefined && <ClockFace clock={quest.clock} small />}
             {quest.deadline !== undefined && <Deadline deadline={quest.deadline} />}
-        </aside>
+        </div>
     );
 }
 
@@ -490,6 +604,9 @@ function Star()
     );
 }
 
+// The journal of the campaign's last version, read once for all that show it: the quests followed, how they end, the Journal itself.
+let journalRead: { version: number; read: Promise<Journal | undefined>; } | undefined;
+
 /** The journal, read again whenever the campaign changes; only the last reading counts. */
 function useJournal(version: number): { read?: Journal; problem?: string; done: boolean; }
 {
@@ -498,13 +615,30 @@ function useJournal(version: number): { read?: Journal; problem?: string; done: 
 
     useEffect(() => {
         const reading = ++reads.current;
-        void readJournal().then(
+        void journalOf(version).then(
             (read) => reading === reads.current && setState({ read, done: true }),
             (error: unknown) => reading === reads.current && setState({ problem: error instanceof Error ? error.message : String(error), done: true }),
         );
     }, [version]);
 
     return state;
+}
+
+/** The journal of a version of the campaign, read once; a reading that failed is tried again by the next that asks. */
+function journalOf(version: number): Promise<Journal | undefined>
+{
+    if (journalRead?.version === version) {
+        return journalRead.read;
+    }
+
+    const read = readJournal();
+    journalRead = { version, read };
+    read.catch(() => {
+        if (journalRead?.read === read) {
+            journalRead = undefined;
+        }
+    });
+    return read;
 }
 
 /**

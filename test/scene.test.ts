@@ -283,7 +283,9 @@ describe("rpg scene now (SCN-11, D-310)", () => {
     it("keeps the line of what is happening now, given at open or with now, for the player's view, logged in public and out of the diary", async () => {
         await ok("scene", "open", "--title", "Nell'ossario", "--type", "combat", "--now", "Gli annegati escono dall'acqua", "--creatures", "Annegato=1");
         expect(JSON.parse(await ok("view", "--json")).openScene.now).toBe("Gli annegati escono dall'acqua");
-        expect(await ok("scene", "now", "--now", "  Lena è a terra  ")).toContain("Lena è a terra");
+        // Who is in it, and a scene the story has left to close (playtest 19).
+        const told = await ok("scene", "now", "--now", "  Lena è a terra  ");
+        expect(told).toMatch(/^Nell'ossario, with .*Annegato 1: the player's dashboard now shows "Lena è a terra"\. If the story has moved elsewhere or to other people/);
         expect(JSON.parse(await ok("view", "--json")).openScene.now).toBe("Lena è a terra");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "scene-now", visibility: "public", data: { title: "Nell'ossario", now: "Lena è a terra" } });
         expect(JSON.parse(await ok("view", "--json")).diary.join(" ")).not.toContain("Lena è a terra");

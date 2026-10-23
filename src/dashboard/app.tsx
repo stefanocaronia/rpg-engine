@@ -17,7 +17,7 @@ import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Help } from "./help.tsx";
 import { Icon } from "./icons.tsx";
-import { FollowedQuests, JournalView } from "./journal.tsx";
+import { FollowedQuests, JournalView, QuestEndings } from "./journal.tsx";
 import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx";
 import { PackagesPage } from "./packages.tsx";
 import { About, Upcoming } from "./pages.tsx";
@@ -582,6 +582,8 @@ function App()
                                     </a>
                                 )}
                                 <Notices notices={importing} />
+                                {/* A followed quest that ends is told here for a moment, beside the page over the quests' card when the table holds them. */}
+                                {!table && <QuestEndings version={shown.version} campaign={shown.campaign} />}
                                 {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
                                 {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} scene={shown.openScene} />}
                                 <div class="body">
@@ -639,6 +641,7 @@ function App()
                                                 }}
                                             >
                                                 {fight && <TurnsCard scene={shown.openScene} party={shown.party} beside />}
+                                                <QuestEndings version={shown.version} campaign={shown.campaign} beside />
                                                 <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
                                                 {rolls}
                                             </PlayTable>
