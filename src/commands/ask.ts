@@ -632,7 +632,10 @@ function isDice(text: string): boolean
 /** The player's character the roll belongs to: the one named, or the only one there is (ASK-2). */
 function playerCharacter(world: World, who: string | undefined): string
 {
-    const players = playerCharacters(world);
+    // A dead one rolls nothing, beside the living (VIEW-12).
+    const all = playerCharacters(world);
+    const living = all.filter((page) => page.fields.status !== "dead");
+    const players = living.length > 0 ? living : all;
 
     if (who === undefined || who.trim() === "") {
         if (players.length !== 1) {

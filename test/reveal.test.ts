@@ -109,7 +109,7 @@ describe("rpg reveal (REV-1–REV-3)", () => {
         expect(await refused("reveal", "Varro", "--to", "Coppa")).toBe("Coppa is an item: only characters know things. Nothing recorded.");
         expect(await refused("reveal", "Varro", "--to", "Nessuno")).toBe("There is no character named Nessuno: look for them with find. Nothing recorded.");
         await ok("write", "Lena", "--set", "role=pc");
-        expect(await refused("reveal", "Varro")).toBe("There are 2 player's characters, Ennio and Lena: give who learns it with to.");
+        expect(await refused("reveal", "Varro")).toBe("There are 2 player characters, Ennio and Lena: give who learns it with to.");
     });
 
     it("REV-2: knows written as text stops the reveal before anything is written, for everyone", async () => {

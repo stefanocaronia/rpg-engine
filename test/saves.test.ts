@@ -252,7 +252,9 @@ describe("the death of the player character (SAV-7)", () => {
         expect(await ok("write", "Kira", "--set", "status=dead")).toContain("Kira is dead, and the others go on: with saves permadeath the death stays;");
         await ok("config", "saves", "checkpoint");
         await ok("write", "Kira", "--set", "status=alive");
-        expect(await ok("write", "Kira", "--set", "status=dead")).toContain("Kira is dead while the others live: ask the table whether to go back to the last save, 1 - Al guado, for everyone, or to keep the death and go on;");
+        expect(await ok("write", "Kira", "--set", "status=dead")).toContain(
+            "Kira is dead while the others live: ask the table now, before the scene's end saves and the death stays, whether to go back to the last save, 1 - Al guado, for everyone, or to keep the death and go on,",
+        );
     });
 });
 

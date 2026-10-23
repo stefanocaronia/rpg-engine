@@ -183,11 +183,14 @@ function missingSecret(world: World, page: Page, name: string): string
 /** Who learns, when not said: the player's character, when there is one only (REV-2). */
 function playerCharacter(world: World): Page
 {
-    const players = playerCharacters(world);
+    // A dead one learns nothing more, beside the living (VIEW-12).
+    const all = playerCharacters(world);
+    const living = all.filter((page) => page.fields.status !== "dead");
+    const players = living.length > 0 ? living : all;
 
     if (players.length !== 1) {
         throw new Error(
-            players.length === 0 ? "There is no player's character: give who learns it with to." : `There are ${players.length} player's characters, ${players.map((page) => page.name).join(" and ")}: give who learns it with to.`,
+            players.length === 0 ? "There is no player's character: give who learns it with to." : `There are ${players.length} player characters, ${players.map((page) => page.name).join(" and ")}: give who learns it with to.`,
         );
     }
 

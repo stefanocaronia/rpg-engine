@@ -340,7 +340,9 @@ export const write = defineCommand({
         const died = changed && existing !== undefined && isPlayerCharacter(page) && page.fields.status === "dead" && existing.fields.status !== "dead";
         const death = changed && isPlayerDead(now) && !isPlayerDead(world) ? deathNotes(root, page.name) : died ? partyDeathNotes(root, page.name) : [];
         // A second living player character: how to run the table for them, once in a chat (D-480).
-        const partyInstructions = joined && isPlayerCharacter(page) ? partyPart(context, system, now) : "";
+        // Or one back from the dead (Elena, 24 October).
+        const risen = changed && existing?.fields.status === "dead" && page.fields.status !== "dead";
+        const partyInstructions = (joined || risen) && isPlayerCharacter(page) ? partyPart(context, system, now) : "";
         return {
             ...result,
             followers: followers.pages.map((follower) => follower.name),

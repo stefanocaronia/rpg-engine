@@ -112,7 +112,7 @@ describe("the commands that must know which player character (VIEW-12)", () => {
         expect((await json("view")).openScene).toMatchObject({ title: "Ettore beve" });
         await ok("scene", "close", "--summary", "Ettore beve ancora.");
         expect((await runCommandLine(["scene", "open", "--title", "Insieme", "--type", "social", "--with", "Ettore", "--with", "Bruna"], context)).output).toContain(
-            "Ettore, in Locanda; Bruna, in Torre: give place, where the scene is. Nothing changed.",
+            "Ettore, in Locanda; Bruna, in Torre: a scene is in one place. Give place to bring the others there now, if they can be there at once;",
         );
         const apart = await runCommandLine(["scene", "open", "--title", "Dove?", "--type", "social"], context);
         expect(apart.output).toContain("The player characters are apart: Bruna, in Torre; Ettore, in Locanda. Give place, where the scene is, or with, who is in it.");
@@ -146,11 +146,24 @@ describe("the master's word for more than one player character (D-480)", () => {
         expect((await runCommandLine(["write", "Bruna", "--set", "role=pc"], told)).output).toContain(party);
     });
 
+    it("a dead one is no one's turn and rolls nothing; one back from the dead brings the party's part", async () => {
+        const told = { ...context, told: new Set<string>() };
+        await ok("move", "Ettore", "--to", "Torre");
+        await ok("scene", "open", "--title", "Scontro", "--type", "combat", "--place", "Torre", "--with", "Bruna", "--with", "Ettore", "--with", "Varro");
+        await ok("write", "Bruna", "--set", "status=dead");
+        expect(await ok("scene", "order", "--order", "Bruna", "--order", "Varro", "--order", "Ettore")).not.toMatch(/now Bruna[^\n]*stop here/);
+        await ok("scene", "close", "--summary", "Bruna cade.");
+        // Ettore alone lives: whose roll it is goes without saying.
+        expect((await runCommandLine(["ask", "--question", "Salti?", "--checks", "Athletics"], context)).output).not.toContain("Give who rolls");
+        const party = readFileSync(new URL("../instructions/party.md", import.meta.url), "utf8").trim().split("\n")[0];
+        expect((await runCommandLine(["write", "Bruna", "--set", "status=alive"], told)).output).toContain(party);
+    });
+
     it("at the death of one while another lives, the table chooses whether to go back (D-480 (2))", async () => {
         // A scene's end makes the save the table may go back to.
         await ok("scene", "open", "--title", "Alla locanda", "--type", "social", "--place", "Locanda", "--with", "Ettore");
         await ok("scene", "close", "--summary", "Ettore beve.");
-        expect(await ok("write", "Bruna", "--set", "status=dead")).toContain("Bruna is dead while the others live: ask the table whether to go back to the last save");
+        expect(await ok("write", "Bruna", "--set", "status=dead")).toContain("Bruna is dead while the others live: ask the table now, before the scene's end saves and the death stays, whether to go back to the last save");
         // The table may go back to it, as the note says, until a save comes after the death.
         expect(await ok("save", "load")).toContain("Alla locanda");
         expect((await json("view")).party).toEqual(expect.arrayContaining([expect.objectContaining({ name: "Bruna", dead: false })]));

@@ -271,9 +271,10 @@ export function partyDeathNotes(root: string, name: string): string[]
     }
 
     return [
-        `${name} is dead while the others live: ask the table whether to go back to ${
+        // Now: the save at the scene's end would keep the death (Elena, 24 October).
+        `${name} is dead while the others live: ask the table now, before the scene's end saves and the death stays, whether to go back to ${
             mode === "checkpoint" ? `the last save, ${saveText(last)}` : "a save (save list)"
-        }, for everyone, or to keep the death and go on; save load only once they choose it.`,
+        }, for everyone, or to keep the death and go on, with a new character for whoever played ${name} if they want one; save load only once they choose it.`,
     ];
 }
 

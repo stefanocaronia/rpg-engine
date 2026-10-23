@@ -456,11 +456,11 @@ export const view = defineCommand({
                     result.title,
                     sheetText(result.sheet).join("\n"),
                     result.text,
-                    result.whoKnows === undefined ? "" : `Known to ${result.whoKnows.join(", ")} alone.`,
-                    ...(result.knownBy ?? []).map((one) => `Secret ${one.secret}: known to ${one.who.join(", ")} alone.`),
+                    result.whoKnows === undefined ? "" : `Known to ${result.whoKnows.join(" and ")} alone.`,
+                    ...(result.knownBy ?? []).map((one) => `Secret ${one.secret}: known to ${one.who.join(" and ")} alone.`),
                 ].filter((block) => block !== "").join("\n\n");
             case "section":
-                return [result.title, result.lines.join("\n"), result.text, result.knownBy === undefined ? "" : `Known to ${result.knownBy.join(", ")} alone.`].filter((block) => block !== "").join("\n\n");
+                return [result.title, result.lines.join("\n"), result.text, result.knownBy === undefined ? "" : `Known to ${result.knownBy.join(" and ")} alone.`].filter((block) => block !== "").join("\n\n");
             case "memory":
                 return memoryText(result);
             case "map":
@@ -542,7 +542,7 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
 /** "; known to Ettore alone": who of the player characters knows something, when not all of them do (VIEW-12). */
 function knownByText(who: string[] | undefined): string
 {
-    return who === undefined ? "" : `; known to ${who.join(", ")} alone`;
+    return who === undefined ? "" : `; known to ${who.join(" and ")} alone`;
 }
 
 /** "Ettore does not know": who the view is of, for a page it does not know; no player character, when it is of more than one. */

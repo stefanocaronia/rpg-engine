@@ -159,7 +159,7 @@ export function shownCalendar(
 export function knownEntryText(entry: KnownEntry): string
 {
     const summary = firstSentence(entry.summary.replace(/\s*\n\s*/g, " "));
-    const knownBy = entry.knownBy === undefined ? "" : `, known to ${entry.knownBy.join(", ")} alone`;
+    const knownBy = entry.knownBy === undefined ? "" : `, known to ${entry.knownBy.join(" and ")} alone`;
     return `${entry.name} (${entry.kind ?? (entry.companion === true ? "companion" : entry.type)}${entry.within === undefined ? "" : `, in ${entry.within.join(" › ")}`}${knownBy})${summary === "" ? "" : `: ${summary}`}`;
 }
 

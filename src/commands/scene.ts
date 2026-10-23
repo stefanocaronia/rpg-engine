@@ -908,11 +908,11 @@ function severalPlayers(world: World): { several?: true; }
     return playerCharacters(world).filter((page) => page.fields.status !== "dead").length > 1 ? { several: true } : {};
 }
 
-/** Whether the turn is the player's character's, which only the player plays. */
+/** Whether the turn is the player's character's, which only the player plays; a dead one's is no one's. */
 function isPlayerTurn(world: World, name: string): boolean
 {
     const page = findPage(world, name);
-    return page !== undefined && isPlayerCharacter(page);
+    return page !== undefined && isPlayerCharacter(page) && page.fields.status !== "dead";
 }
 
 /** A note on a line of its own, or nothing. */
@@ -1122,7 +1122,10 @@ function defaultPlace(world: World, movers: string[], named: Page[] | undefined)
         const places = [...new Set(named.map((page) => nearestPlace(world, page)))];
 
         if (places.length > 1) {
-            throw new Error(`${named.map((page) => `${page.name}, in ${nearestPlace(world, page)?.name ?? "the open"}`).join("; ")}: give place, where the scene is. Nothing changed.`);
+            throw new Error(
+                `${named.map((page) => `${page.name}, in ${nearestPlace(world, page)?.name ?? "the open"}`).join("; ")}: a scene is in one place. Give place to bring the others there now, `
+                    + "if they can be there at once; if the way takes time, travel first, or open a scene for each group. Nothing changed.",
+            );
         }
 
         return places[0];
