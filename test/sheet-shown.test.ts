@@ -43,6 +43,7 @@ describe("what the sheet gives the dashboard", () => {
         expect((await value("load")).load?.stage).toBe("Heavily encumbered");
         expect((await value("athletics")).roll.odds).toEqual({ better: [], worse: ["Heavily encumbered"] });
         await ok("change", "Ettore", "Iron Pot", "--by", "+6");
+        expect((await value("load")).load?.stage).toBe("Over the limit");
         await ok("config", "rigor", "rules");
         expect((await value("load")).load?.stage).toBe("Over the limit");
     });

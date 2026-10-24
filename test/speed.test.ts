@@ -36,14 +36,16 @@ describe("the speed a sheet works out", () => {
         expect(await walking("Ettore")).toBe("walking 25 ft (25 ft)");
     });
 
-    it("weighs the load by rigor: under «rules» 5 ft past the limit; under «simulation» −10 past Str×5, −20 past Str×10 (SPD-3)", async () => {
+    it("weighs the load by rigor: 5 ft past the limit under «rules» and «simulation»; under «simulation» −10 past Str×5, −20 past Str×10 (SPD-3)", async () => {
         await ok("write", "Ettore", "--add", "inventory=[[Iron Pot]] 14");
         await ok("config", "rigor", "rules");
         expect(await walking("Ettore")).toBe("walking 30 ft (30 ft)");
-        await ok("change", "Ettore", "Iron Pot", "--by", "2");
-        expect(await walking("Ettore")).toBe("walking 5 ft (30 ft)");
         await ok("config", "rigor", "simulation");
         expect(await walking("Ettore")).toBe("walking 10 ft (30 ft)");
+        await ok("change", "Ettore", "Iron Pot", "--by", "2");
+        expect(await walking("Ettore")).toBe("walking 5 ft (30 ft)");
+        await ok("config", "rigor", "rules");
+        expect(await walking("Ettore")).toBe("walking 5 ft (30 ft)");
         await ok("config", "rigor", "smooth");
         expect(await walking("Ettore")).toBe("walking 30 ft (30 ft)");
     });

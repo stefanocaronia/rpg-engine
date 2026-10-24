@@ -49,8 +49,9 @@ The system's sans for everything (`body`: 15px/1.4). The serif (`--serif`) is th
 | `0.85rem` | 400–650 | Secondary: a row's meta, a closed card's preview, chips |
 | body (inherit, 15px) | 400 | Text |
 | `1.125rem` | 700 | A card's title (`h3`) |
+| `1.25rem` | 700 | A title over a picture or in a dialog: a banner, the master's question, a quest's cover |
 | `1.4rem` | 700 | A page's title (`h2` in `PageHead`) |
-| `1.6rem` and up | 700 | One number that is the point of its box: a total, a modifier |
+| `1.6rem` and up | 700, 800 for the player's two moments | One number that is the point of its box: a total, a modifier; at 800 the roll's total and the death save's word |
 
 Weights: 400 text, 600 a word that stands out in a line (a chip, a filter, a notice, a name in a row) and the serif titles, 650 controls (buttons, tabs), 700 titles, names and numbers. The maps draw their labels in px, in the map's own units. Numbers that line up are `.num` (tabular figures). Items of a list start with a capital; a field's abbreviation (AC, WIS) is all capitals.
 
@@ -129,4 +130,4 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 ## 5. Not in line yet
 
-- Titles between a card's and a page's (1.1 to 1.5rem: dialogs, banners, the master's question, a quest's cover) and labels under 0.72rem in tight tiles (0.55 to 0.68rem); the roll's total and the death save's word at weight 800.
+- Titles between a card's and a page's (1.1 to 1.5rem: dialogs, banners, the master's question, a quest's cover), to come to 1.25rem; labels under 0.72rem in tight tiles (0.55 to 0.68rem).

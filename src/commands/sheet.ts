@@ -599,7 +599,7 @@ function carriedRows(world: World, holder: Page, marks: { equipped: Page[]; bond
     });
 }
 
-/** A character's load when it is over its limit, as status says it under the rigor «rules» (LOAD-3): "load 230 / 210 lb, over the limit"; undefined otherwise. */
+/** A character's load when it is over its limit, as status says it under the rigor «rules» or «simulation» (LOAD-3): "load 230 / 210 lb, over the limit"; undefined otherwise. */
 export function overLoad(world: World, system: GameSystem | undefined, page: Page): string | undefined
 {
     if (system?.load === undefined || !hasSheet(world, page)) {
