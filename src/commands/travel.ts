@@ -9,7 +9,7 @@ import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
 import { aroundLead, passedLines, passTime, type TimePassed } from "./game-advance.ts";
 import { timePassedLines } from "./game-extensions.ts";
-import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, sameMovers, saveJourney, travelledSinceRest } from "./game-journey.ts";
+import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, ridersOf, sameMovers, saveJourney, travelledSinceRest } from "./game-journey.ts";
 import { mapKey, mapOf } from "./game-maps.ts";
 import { movePages } from "./game-moves.ts";
 import { acrossHint, crossedRoads, openLegs } from "./game-open.ts";
@@ -153,7 +153,8 @@ export const travel = defineCommand({
         const travellers = travellersOf(world, input.who, journey);
         const staying = input.who === undefined ? "" : stayingNote(world, travellers);
         const { movers, vehicle } = moversOf(world, system, travellers);
-        const ownJourney = journey !== undefined && sameMovers(journey, movers) ? journey : undefined;
+        const riders = ridersOf(world, movers);
+        const ownJourney = journey !== undefined && sameMovers(world, journey, movers) ? journey : undefined;
         checkOtherJourney(world, roads, journey, movers);
         const before = travelledSinceRest(ownJourney, now);
         // Hours given hold until the next rest (TRV-8).
@@ -175,7 +176,7 @@ export const travel = defineCommand({
         world = walked.world;
         const { stop, here, covered, date } = walked;
         const travelled = before + minutesBetween(now, date);
-        const kept: Journey = { movers: movers.map((page) => page.name), pace: plan.pace, last: date, travelled, hours: given };
+        const kept: Journey = { movers: movers.map((page) => page.name), riders, pace: plan.pace, last: date, travelled, hours: given };
         const point = stop === undefined ? (here !== undefined && "at" in here ? here.at : undefined) : "at" in stop.spot ? stop.spot.at : undefined;
         const total = { metres: plan.legs.reduce((sum, leg) => sum + leg.length, 0), minutes: plan.legs.reduce((sum, leg) => sum + leg.length / leg.metresAMinute, 0) };
         const headingLeft = plan.goal.heading !== undefined && input.distance !== undefined ? total.metres - covered.metres : undefined;
@@ -330,7 +331,7 @@ function walk(root: string, context: Context, start: World, movers: Page[], plan
  */
 function checkOtherJourney(world: World, roads: Roads, journey: Journey | undefined, movers: Page[]): void
 {
-    if (journey === undefined || sameMovers(journey, movers)) {
+    if (journey === undefined || sameMovers(world, journey, movers)) {
         return;
     }
 
