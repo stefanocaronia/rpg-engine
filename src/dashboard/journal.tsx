@@ -12,7 +12,7 @@ import { Icon, iconPath } from "./icons.tsx";
 import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
 import { endedQuests, followedQuests, keptFollowed } from "./layout.ts";
 import { placeKinds } from "./map-symbols.ts";
-import { Markdown } from "./markdown.tsx";
+import { knowersOf, Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
 import { PageHead } from "./pages.tsx";
 import { useChoice, useKeptText } from "./prefs.ts";
@@ -374,7 +374,7 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
             {from.length > 0 && <p class="quest-from">{from.join(" · ")}</p>}
             {quest.text !== "" && (
                 <div class="quest-text">
-                    <Markdown text={quest.text} />
+                    <Markdown text={quest.text} secretKnowers={knowersOf(quest.knownBy)} />
                 </div>
             )}
             {quest.goals.length > 0 && <Goals quest={quest} />}

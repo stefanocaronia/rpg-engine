@@ -15,7 +15,7 @@ import { conditionMark, effectParts, keptEffects, type SeenEffect } from "./game
 import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "./game-grid-moves.ts";
 import { placeGrid, placeLook, type Standing, standing } from "./game-grids.ts";
 import { imageFile, ownImage, shownImage } from "./game-images.ts";
-import { type Knowledge, knownText, knowsPage } from "./game-knowledge.ts";
+import { type Knowledge, knownSecretsApart, knownText, knowsPage } from "./game-knowledge.ts";
 import { type Measures, measuresOf } from "./game-roads.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { turnMarks } from "./game-turn-uses.ts";
@@ -57,6 +57,8 @@ export interface ShownPlace
     around: ({ name: string; value: string; place?: string; } | { effect: string; end?: EffectEnd; place?: string; })[];
     /** Its text as the character knows it (VIEW-3). */
     text: string;
+    /** Its secrets in that text that only some of the player characters discovered, each with who (VIEW-12). */
+    knownBy?: { secret: string; who: string[]; }[];
     /** The party and the characters the character knows who are there; never someone it does not know, who would give themselves away. */
     here: ShownPerson[];
     /** Its map, when it has one (GRD-6). */
@@ -174,6 +176,7 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
     const image = picture(sight, place);
     const grid = placeGrid(place)?.grid;
     const text = knownText(world, knowledge, place);
+    const apart = knownSecretsApart(world, knowledge, place);
     return {
         name: place.name,
         ...(image === undefined ? {} : { image }),
@@ -181,6 +184,7 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
         around,
         // The map block is drawn, not read.
         text: grid === undefined ? text : withoutMapBlock(text),
+        ...(apart.length === 0 ? {} : { knownBy: apart }),
         // The party first, the player character in the foreground at its head (VIEW-12).
         here: [...partyFirst(sight).filter((page) => present.includes(page)), ...present.filter((page) => !sight.party.includes(page))].map((page) => ({
             ...person(sight, page),

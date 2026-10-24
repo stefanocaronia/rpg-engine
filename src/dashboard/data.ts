@@ -124,6 +124,8 @@ export interface ShownPlace
     /** What holds there: the environment's entries, then the places' effects with their end; each with its place. */
     around: ({ name: string; value: string; place?: string; } | { effect: string; end?: EffectEnd; place?: string; })[];
     text: string;
+    /** Its secrets that only some of the player characters discovered, each with who (VIEW-12). */
+    knownBy?: { secret: string; who: string[]; }[];
     here: ShownPerson[];
     /** Its map, when it has one (GRD-6). */
     map?: ShownGrid;
@@ -468,6 +470,7 @@ export interface ShownQuest
     giver?: string;
     place?: string;
     text: string;
+    knownBy?: { secret: string; who: string[]; }[];
     goals: { text: string; done: boolean; }[];
     counters: { field: string; value: number; max: number; }[];
     clock?: { value: number; max: number; name?: string; };

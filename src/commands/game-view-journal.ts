@@ -5,7 +5,7 @@ import { comparableText } from "../core/text.ts";
 import { goalsIn, links, type Page, textsIn, type World } from "../pages/index.ts";
 import type { GameDate } from "../time/index.ts";
 import type { SeenEffect } from "./game-effects.ts";
-import { type Knowledge, knownText } from "./game-knowledge.ts";
+import { type Knowledge, knownSecretsApart, knownText } from "./game-knowledge.ts";
 import { measuresText, questMeasures } from "./game-quests.ts";
 
 /** A quest as the journal shows it (VIEW-8). */
@@ -18,6 +18,8 @@ export interface ShownQuest
     place?: string;
     /** Its text as the character knows it, without the goals. */
     text: string;
+    /** Its secrets in that text that only some of the player characters discovered, each with who (VIEW-12). */
+    knownBy?: { secret: string; who: string[]; }[];
     goals: { text: string; done: boolean; }[];
     /** Its fields that are counters with a maximum, as clues: 3/5. */
     counters: { field: string; value: number; max: number; }[];
@@ -138,6 +140,7 @@ function shownQuest(world: World, knowledge: Knowledge, page: Page, now: GameDat
     const place = shownLink(page.fields.place, named);
     const picture = look(page.name).picture;
     const where = page.fields.place === undefined ? {} : look(textsIn(page.fields.place)[0]);
+    const apart = knownSecretsApart(world, knowledge, page);
     return {
         name: page.name,
         status: page.fields.status as ShownQuest["status"],
@@ -148,6 +151,7 @@ function shownQuest(world: World, knowledge: Knowledge, page: Page, now: GameDat
         ...(where.picture === undefined ? {} : { placePicture: where.picture }),
         ...(where.kind === undefined ? {} : { placeKind: where.kind }),
         text: rest,
+        ...(apart.length === 0 ? {} : { knownBy: apart }),
         goals,
     };
 }

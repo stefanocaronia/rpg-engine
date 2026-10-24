@@ -196,6 +196,20 @@ describe("what the player characters know together (VIEW-12, D-480 (1))", () => 
         expect(await ok("view", "--world")).toContain("Document: Lettera (letter, carried by Bruna); known to Bruna alone");
     });
 
+    it("gives the dashboard who found out each secret of the place and of a quest, when not all of them did (D-480 (7))", async () => {
+        await ok("write", "Torre#Cripta", "--secret", "--text", "Sotto la torre c'è una cripta.");
+        await ok("write", "Il mugnaio", "--type", "quest", "--set", "status=open", "--text", "Scoprire cosa nasconde Varro.");
+        await ok("write", "Il mugnaio#Movente", "--secret", "--text", "Il fratello voleva il mulino.");
+        await ok("reveal", "Torre#Cripta", "Il mugnaio", "Il mugnaio#Movente", "--to", "Bruna");
+        await ok("reveal", "Il mugnaio", "--to", "Ettore");
+        expect((await json("view", "--focus", "Bruna")).place).toMatchObject({ name: "Torre", knownBy: [{ secret: "Cripta", who: ["Bruna"] }] });
+        const quest = ((await json("view", "--journal")).quests as { name: string; knownBy?: unknown; }[]).find((one) => one.name === "Il mugnaio");
+        expect(quest?.knownBy).toEqual([{ secret: "Movente", who: ["Bruna"] }]);
+        // Once both know it, nothing is said of who.
+        await ok("reveal", "Torre#Cripta", "--to", "Ettore");
+        expect((await json("view", "--focus", "Bruna")).place).not.toHaveProperty("knownBy");
+    });
+
     it("a living player character played by its agent is played with prudence; a companion or a dead one is not (D-480 (4))", async () => {
         const away = "You play while your player is away: no big decision, nothing precious spent, no needless risk.";
         expect(await ok("view", "--as", "Ettore")).toContain(away);

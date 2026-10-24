@@ -98,7 +98,9 @@ export function RollLog(
                             ? <p class="rolls-none">{emptyText(rolls.length, listed.before)}</p>
                             : (
                                 <ol class="roll-list">
-                                    {[...listed.shown].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, of)} token={tokenOf(roll, party, of)} fresh={fresh.has(roll.id)} greeted={greeted.current} />)}
+                                    {[...listed.shown].reverse().map((roll) => (
+                                        <RollRow key={roll.id} roll={roll} name={nameOf(roll, of)} token={tokenOf(roll, party, of)} fresh={fresh.has(roll.id)} greeted={greeted.current} several={several} />
+                                    ))}
                                 </ol>
                             )}
                         {listed.more
@@ -117,7 +119,7 @@ export function RollLog(
  * its tooltip the whole roll, which the lines may cut, with the notation in words; the chat's text for a screen reader. A new one first opens its place, then
  * appears in it, with a yellow corner for a while (D-303): as it first shows, whatever the readings after, and once.
  */
-function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name: string; token?: Tokened | "die"; fresh: boolean; greeted: Set<string>; })
+function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRoll; name: string; token?: Tokened | "die"; fresh: boolean; greeted: Set<string>; several: boolean; })
 {
     const [entering] = useState(() => fresh && !greeted.has(roll.id));
     const [marked, setMarked] = useState(entering);
@@ -152,7 +154,7 @@ function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name:
                 )
                 : <Token member={token} />}
             <span class="roll-who">
-                <span class="visually-hidden">{`${marked ? t("New.") + " " : ""}${free ? t("Your free roll, not logged:") : player ? t("Your roll:") : t("The master's roll:")} `}</span>
+                <span class="visually-hidden">{`${marked ? t("New.") + " " : ""}${free ? t("Your free roll, not logged:") : player ? (several ? t("The players' roll:") : t("Your roll:")) : t("The master's roll:")} `}</span>
                 {name}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}

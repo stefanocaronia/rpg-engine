@@ -7,7 +7,7 @@ import { effectLabel, sinceDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { phraseLabel, sceneTypeLabel, strangerLabel } from "./labels.ts";
 import { biomeLabel, biomes } from "./map-symbols.ts";
-import { Markdown } from "./markdown.tsx";
+import { knowersOf, Markdown, type SecretKnowers } from "./markdown.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { Card } from "./sheet.tsx";
@@ -143,7 +143,7 @@ function PlaceLine({ place }: { place: ShownPlace; })
             </div>
             {open && (
                 <div id="place-line-text" class="place-line-text">
-                    <Markdown text={text} />
+                    <Markdown text={text} secretKnowers={knowersOf(place.knownBy)} />
                 </div>
             )}
         </section>
@@ -165,8 +165,8 @@ function DescriptionToggle({ open, controls, onToggle }: { open: boolean; contro
     );
 }
 
-/** A place's text under its picture (D-444): three lines, and the rest at a click, which closes it again. */
-function PlaceAbout({ text }: { text: string; })
+/** A place's text under its picture (D-444): three lines, and the rest at a click, which closes it again; a secret with who found it out (D-480 (7)). */
+function PlaceAbout({ text, knowers }: { text: string; knowers: SecretKnowers | undefined; })
 {
     const [open, setOpen] = useState(false);
     const [long, setLong] = useState(false);
@@ -189,7 +189,7 @@ function PlaceAbout({ text }: { text: string; })
     return (
         <div class="place-about">
             <div ref={body} id="place-about-text" class={open ? "place-about-text" : "place-about-text clamped"}>
-                <Markdown text={text} />
+                <Markdown text={text} secretKnowers={knowers} />
             </div>
             {(long || open) && (
                 <button type="button" class="place-about-more" aria-expanded={open} aria-controls="place-about-text" onClick={() => setOpen(!open)}>
@@ -207,6 +207,7 @@ function PlaceAbout({ text }: { text: string; })
 function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean; onToggle(): void; }; })
 {
     const text = place.text.trim();
+    const knowers = knowersOf(place.knownBy);
     const caption = (
         <div class="place-caption">
             {place.within.length > 0 && (
@@ -233,7 +234,7 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
                     </div>
                     {caption}
                 </div>
-                {text !== "" && <PlaceAbout text={text} />}
+                {text !== "" && <PlaceAbout text={text} knowers={knowers} />}
             </header>
         )
         : (
@@ -244,11 +245,11 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
                     </figure>
                     {caption}
                 </div>
-                {fold === undefined && text !== "" && <PlaceAbout text={text} />}
+                {fold === undefined && text !== "" && <PlaceAbout text={text} knowers={knowers} />}
                 {fold?.open === true && text !== "" && (
                     <div class="place-about" id="place-band-text">
                         <div class="place-about-text">
-                            <Markdown text={text} />
+                            <Markdown text={text} secretKnowers={knowers} />
                         </div>
                     </div>
                 )}

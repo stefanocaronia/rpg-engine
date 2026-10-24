@@ -10,7 +10,7 @@ import type { KnownEntry, Member, ShownDocument } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { documentLook, foundLore, groupedLore, knownTo, type LoreGroup, loreGroupOf } from "./lore.ts";
 import { placeKindLabel, placeKinds } from "./map-symbols.ts";
-import { type LinkTo, Markdown, plainLine, type SecretKnowers } from "./markdown.tsx";
+import { knowersOf, type LinkTo, Markdown, plainLine } from "./markdown.tsx";
 import { Token } from "./party.tsx";
 import { arrowStep, capitalized, foldedText, t } from "./text.ts";
 
@@ -180,12 +180,6 @@ export function DocumentsTab({ world, open, players = [] }: { world: WorldView; 
     );
 }
 
-/** Who found out a secret, by its title, when not all the player characters did: "Mira found out". */
-function secretKnowers(knowers: { secret: string; who: string[]; }[]): SecretKnowers
-{
-    return (title) => knowers.find((one) => foldedText(one.secret.trim()) === foldedText(title))?.who;
-}
-
 /** Whether a document is carried, in words: by the player's character, or with more than one by the one named, as its group says; nothing of one read elsewhere. */
 function carriedWords(document: ShownDocument, several: boolean): string | undefined
 {
@@ -321,7 +315,7 @@ function LoreReader({ entry, version, link, onMap, focus, several }: { entry: Kn
             )}
             <div class="reader-text">
                 {text === undefined && !problem && entry.summary !== "" && <Markdown text={entry.summary} link={link} />}
-                {text !== undefined && text.trim() !== "" && <Markdown text={text} link={link} {...(several ? { secretKnowers: secretKnowers(knowers) } : {})} />}
+                {text !== undefined && text.trim() !== "" && <Markdown text={text} link={link} secretKnowers={several ? knowersOf(knowers) : undefined} />}
                 {((text !== undefined && text.trim() === "") || (text === undefined && entry.summary === "")) && !problem && (
                     <p class="browse-none">{text === undefined ? t("Reading…") : t("Your character knows its name, and nothing more yet.")}</p>
                 )}

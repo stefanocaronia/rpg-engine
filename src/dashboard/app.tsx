@@ -61,6 +61,8 @@ interface Shown
     sheet: SheetGroup[];
     cards?: SheetCards;
     text: string;
+    /** The text's secrets that only some of the player characters discovered, each with who (D-480 (7)). */
+    knownBy?: { secret: string; who: string[]; }[] | undefined;
     /** The player character's opening text, when the player may write it (D-373). */
     story?: string;
     rolls: ShownRoll[];
@@ -86,7 +88,7 @@ interface Shown
 }
 
 /** What a roll changes of the sheet and the fight, which the page shows only once its dice land. */
-type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "story" | "openScene">;
+type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "knownBy" | "story" | "openScene">;
 
 // How long at most what a death save or a die of a rest changed waits for its dice, when they never land.
 const longestHold = 15_000;
@@ -249,6 +251,7 @@ function App()
                         sheet: page?.kind === "page" ? page.sheet : [],
                         cards: page?.kind === "page" ? page.cards : undefined,
                         text: page?.kind === "page" ? page.text : "",
+                        knownBy: page?.kind === "page" ? page.knownBy : undefined,
                         story: page?.kind === "page" ? page.story : undefined,
                         rolls,
                         rollsTotal: overview.kind === "overview" ? overview.rollsTotal ?? rolls.length : 0,
@@ -697,6 +700,7 @@ function App()
                                                     sheet={shown.sheet}
                                                     cards={shown.cards}
                                                     text={shown.text}
+                                                    knownBy={shown.knownBy}
                                                     story={shown.story}
                                                     version={shown.version}
                                                     onRoll={throwFromSheet}
@@ -823,6 +827,7 @@ function withHeld(before: Shown, next: Shown, hold: boolean): Shown
         sheet: shown.sheet,
         cards: shown.cards,
         text: shown.text,
+        knownBy: shown.knownBy,
         story: shown.story,
         openScene: shown.openScene,
     });

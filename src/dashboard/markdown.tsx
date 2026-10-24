@@ -11,9 +11,15 @@ export type LinkTo = (name: string) => string | undefined;
 /** Who of the player characters found out a secret, by the title the text gives it, when not all of them did (VIEW-12); none when they all did. */
 export type SecretKnowers = (title: string) => string[] | undefined;
 
-export function Markdown({ text, link, secretKnowers }: { text: string; link?: LinkTo; secretKnowers?: SecretKnowers; })
+export function Markdown({ text, link, secretKnowers }: { text: string; link?: LinkTo; secretKnowers?: SecretKnowers | undefined; })
 {
     return <div class="markdown">{blocks(text, link, true, secretKnowers).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
+}
+
+/** Who found out each secret, from what the view gives of a page: its secrets that only some of the player characters discovered; none when it gives none. */
+export function knowersOf(knownBy: { secret: string; who: string[]; }[] | undefined): SecretKnowers | undefined
+{
+    return knownBy === undefined || knownBy.length === 0 ? undefined : (title) => knownBy.find((one) => foldedText(one.secret.trim()) === foldedText(title))?.who;
 }
 
 /** The first line of a page's text that is not a heading nor in a fenced block, as plain words: what a closed card shows of it. */

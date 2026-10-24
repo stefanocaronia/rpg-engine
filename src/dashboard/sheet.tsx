@@ -16,7 +16,7 @@ import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
-import { Markdown, plainLine } from "./markdown.tsx";
+import { knowersOf, Markdown, plainLine } from "./markdown.tsx";
 import { MoodFace, moodLabel } from "./mood.tsx";
 import { MemberToken } from "./party.tsx";
 import { requestedRow, useRequested } from "./requested.ts";
@@ -33,12 +33,14 @@ const backstoryCard = "Backstory";
 export type FreeRoll = (roll: SheetRoll, label: string, who?: string) => void;
 
 export function MemberSheet(
-    { member, headline, sheet, cards, text, story, version, onRoll, scene }: {
+    { member, headline, sheet, cards, text, knownBy, story, version, onRoll, scene }: {
         member: Member;
         headline?: string;
         sheet: SheetGroup[];
         cards?: SheetCards;
         text: string;
+        /** The text's secrets that only some of the player characters discovered, each with who (D-480 (7)). */
+        knownBy?: { secret: string; who: string[]; }[] | undefined;
         story?: string;
         version: number;
         onRoll: FreeRoll;
@@ -100,7 +102,7 @@ export function MemberSheet(
                         )}
                         {described.trim() !== "" && (
                             <Card name={descriptionCard} title={t("Description")} icon={cardIcons.description} layout="lore" preview={plainLine(described)}>
-                                <Markdown text={described} />
+                                <Markdown text={described} secretKnowers={knowersOf(knownBy)} />
                             </Card>
                         )}
                     </div>
