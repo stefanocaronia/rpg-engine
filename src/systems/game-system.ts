@@ -64,6 +64,9 @@ const travelSchema = z.object({
     rule: z.string().min(1).optional(),
     beyond: z.string().min(1).optional(),
     terrain: z.record(z.string().min(1), factorSchema).optional(),
+    vehicles: z.record(z.string().min(1), z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]), {
+        error: "give a field and the values of what is a vehicle, such as {category: drawn vehicle}",
+    }).optional(),
     kinds: z.record(
         z.string().min(1),
         z.object({
@@ -414,6 +417,8 @@ export interface Travel
     beyond?: string;
     /** By value of the environment's terrain entry, what it multiplies the speed of a pace by. */
     terrain: Record<string, number>;
+    /** What is a vehicle (TRV-6): an item with one of these fields at one of its values, or the vehicle of a kind; none when the game declares none. */
+    vehicles: { field: string; value: string; }[];
     kinds: TravelKind[];
 }
 
@@ -1039,7 +1044,7 @@ function sheetOf(data: z.infer<typeof systemSchema>, name: string, path: string)
 /**
  * A system's data with a campaign's additions over it (CAM-2): fields, tables, formulas and counters by name, the campaign's taking the place of the system's
  * with that name; a recipe added to the system's of that name, field by field, with its occasions and rules; the line's fields after the system's; travel key
- * by key, its paces, terrain and kinds by name.
+ * by key, its paces, terrain, vehicles and kinds by name.
  */
 function withCampaignData(raw: unknown, data: CampaignData): Record<string, unknown>
 {
@@ -1063,7 +1068,7 @@ function withCampaignData(raw: unknown, data: CampaignData): Record<string, unkn
     if (travel !== undefined) {
         const own = isMap(base.travel) ? base.travel : {};
         const byName = (key: string): unknown => (isMap(travel[key]) ? { ...withoutNames(isMap(own[key]) ? own[key] : {}, Object.keys(travel[key])), ...travel[key] } : own[key]);
-        merged.travel = Object.fromEntries(Object.entries({ ...own, ...travel, paces: byName("paces"), terrain: byName("terrain"), kinds: byName("kinds") }).filter(([, value]) => value !== undefined));
+        merged.travel = Object.fromEntries(Object.entries({ ...own, ...travel, paces: byName("paces"), terrain: byName("terrain"), vehicles: byName("vehicles"), kinds: byName("kinds") }).filter(([, value]) => value !== undefined));
     }
 
     const names = mapOf(data.values, "values");
@@ -1168,6 +1173,7 @@ function travelOf(data: z.infer<typeof travelSchema>): Travel
         rule: data.rule,
         beyond: data.beyond,
         terrain: Object.fromEntries(Object.entries(data.terrain ?? {}).map(([value, factor]) => [value, factorOf(factor)])),
+        vehicles: Object.entries(data.vehicles ?? {}).flatMap(([field, values]) => [values].flat().map((value) => ({ field, value }))),
         kinds: Object.entries(data.kinds ?? {}).map(([name, kind]) => {
             const [field, value] = Object.entries(kind.vehicle ?? {})[0] ?? [];
             return {

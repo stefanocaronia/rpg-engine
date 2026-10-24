@@ -89,6 +89,8 @@ type Ending =
 interface TravelResult
 {
     who: string;
+    /** Whether one goes alone, for the verb. */
+    alone: boolean;
     goal: string;
     call: string;
     way: string;
@@ -165,7 +167,7 @@ export const travel = defineCommand({
         const call = plan.goal.to === undefined ? `travel toward ${plan.goal.heading}` : `travel to ${plan.goal.to.name}${plan.goal.across ? ", across" : ""}`;
         // A forced march is the walkers' rule, past the game's hours: a vehicle that goes only by water has none.
         const marching = (vehicle === undefined || !isVehicleOnly(world, system, vehicle)) && plan.hours >= (system?.travel?.hours ?? 8);
-        const told = { who: namesText(travellers), goal, call, way: plan.way, going: plan.going, hours: plan.hours, beyond: marching ? system?.travel?.beyond : undefined };
+        const told = { who: namesText(travellers), alone: travellers.length === 1, goal, call, way: plan.way, going: plan.going, hours: plan.hours, beyond: marching ? system?.travel?.beyond : undefined };
 
         if (before >= plan.hours * 60) {
             return { ...told, reached: [], date: formatGameDate(now), travelled: before, hoursLeft: 0, ending: { kind: "spent" }, around: [], notes: [] };
@@ -209,7 +211,7 @@ export const travel = defineCommand({
 
     format(result)
     {
-        const head = `${result.who} ${result.ending.kind === "spent" ? "would travel" : "travel"} ${result.goal}, ${result.going}: ${result.way}.`;
+        const head = `${result.who} ${result.ending.kind === "spent" ? "would travel" : result.alone ? "travels" : "travel"} ${result.goal}, ${result.going}: ${result.way}.`;
         const passed = result.reached.length === 0 ? "" : `Passed ${result.reached.join(", ")}.`;
         const then = ` Then go on: ${result.call}.`;
         const done = result.ending.kind === "arrived" || result.ending.kind === "reached";
