@@ -29,6 +29,10 @@ export interface SheetValue
     progress?: { value: number; from: number; to: number; };
     /** Beside the points, what they say of the levels (PRO-6): how many the next level needs, the level that is due, or the least the level needs. */
     levelNeed?: { needs: number; level: number; } | { due: number; } | { least: number; level: number; };
+    /** For a list of bonds, as the attuned items, the most it may hold. */
+    most?: number;
+    /** For the load, what is carried and its limit, in the unit its text shows, and the heaviest of the system's stages it reaches, in the system's words, such as Encumbered. */
+    load?: { value: number; limit?: number; stage?: string; };
 }
 
 /** A free roll of a number of the sheet: the dice, by their sides, the number added, and both as a notation, such as 1d20+5. */
@@ -37,6 +41,8 @@ export interface SheetRoll
     notation: string;
     dice: number[];
     modifier: number;
+    /** Why it is better or worse, in the system's words, as Poisoned, even when the two cancel out. */
+    odds?: { better: string[]; worse: string[]; };
 }
 
 /**
@@ -48,7 +54,8 @@ export interface SheetGroup
     name: string;
     icon?: string;
     values: SheetValue[];
-    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; image?: { file: string; version: number; }; }[];
+    /** What a group's items are, as the things carried: each with its values, how deep inside another it is, whether equipped, and the lists of bonds it is in, as attuned. */
+    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; bonds?: string[]; image?: { file: string; version: number; }; }[];
 }
 
 /** What the player does with an item of the sheet, said as their sentence to the master (D-495): the engine's verbs. */
@@ -224,6 +231,8 @@ export interface SeenEffect
     condition?: true;
     /** The condition's drawing, the d of an SVG path on a grid of 24, when the system gives one (D-419). */
     icon?: string;
+    /** For something that burns, as a torch, what it spends and how many of it are still carried. */
+    burns?: { fuel: string; left: number; };
 }
 
 /** When an effect ends (EFF-2): at a game date; at the start of someone's turn in a round; when the scene ends; at an occasion of the game system, as long rest. */
@@ -494,7 +503,7 @@ export interface ShownChapter
 export type JournalFact =
     & { date?: string; }
     & (
-        | { kind: "counter"; who: string; field: string; before: string; after: string; stack?: boolean; }
+        | { kind: "counter"; who: string; field: string; before: string; after: string; stack?: boolean; upkeep?: true; }
         | { kind: "time"; from?: string; to: string; }
         | { kind: "moved"; who: string[]; to?: string; }
         | { kind: "learned"; who: string; what: string[]; }

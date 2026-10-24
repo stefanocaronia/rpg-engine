@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -201,14 +201,14 @@ Elke instelling kan veranderen, in de chat of bij **Instellingen**. Een uitspraa
 
 ## 4. Het dashboard <!-- icon: party -->
 
-Een pagina op je eigen computer, alleen te openen in de browser van die computer, actief zolang de chat open is. Sluit de chat, dan staat er *Niet verbonden*. Bij de volgende chat komt de pagina vanzelf terug.
+Een pagina op je eigen computer. Je opent hem alleen in de browser van die computer. Hij is live zolang de chat openstaat. Als de chat sluit, zie je *Not connected*. Bij de volgende chat komt de pagina vanzelf terug.
 
-- **Groep**: jouw karakterblad en dat van je metgezellen. Klik op een getal om te gooien en houd de muis erboven om te zien waar het vandaan komt. Ernaast staan de worpen.
-- **Scène**: waar je bent, met plaatje en kaart, wie er is en wat er gebeurt. In een gevecht ook de beurten en de kaart van jouw personage.
+- **Groep**: jouw karakterblad en dat van je metgezellen. Klik op een getal om ermee te gooien. Beweeg je muis erover om te zien waar het getal vandaan komt. Staat er een pijl bij de dobbelsteen, dan zie je ook wat de worp beter of slechter maakt. Ernaast staan de worpen.
+- **Scène**: waar je bent, met de afbeelding en de kaart, wie er is en wat er gebeurt. In een gevecht zie je de beurten en de kaart van jouw personage.
 - **Dagboek**: missies, het verhaal, de dagboeken van je metgezellen en je notities.
 - **Wereld**: de wereldkaart, wat jouw personage weet, de gevonden documenten en de kalender.
-- **De dobbelbak**: kies dobbelstenen en een modifier, en gooi.
-- **Opgeslagen spellen**, **Help**, **Instellingen** en **Over**, als pictogrammen aan het einde van de rij. Instellingen bevat ook de eigen voorkeuren van de pagina: thema, dobbelgeluid, dobbelsteenset.
+- **De dobbelbak**: kies dobbelstenen en een modifier en gooi. ×2 verdubbelt de dobbelstenen, nooit de modifier, zoals bij een kritieke treffer.
+- **Opgeslagen spellen**, **Help**, **Instellingen** en **Over**: als pictogrammen aan het eind van de rij. Bij Instellingen vind je ook de voorkeuren van de pagina zelf: thema, dobbelgeluid en dobbelsteenset.
 
 Als de spelleider je iets vraagt, blijft de banner bovenaan staan, in welk onderdeel je ook bent.
 

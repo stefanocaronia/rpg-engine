@@ -62,7 +62,7 @@ export function Marks({ kind, label, value, most, lit }: { kind: "successes" | "
 {
     return (
         <div class={`dying-side dying-${kind}`}>
-            <span class="dying-label" aria-hidden="true">{label}</span>
+            <span class="eyebrow dying-label" aria-hidden="true">{label}</span>
             <span class="dying-marks">
                 {Array.from({ length: most }, (_, index) => (
                     <span

@@ -103,10 +103,17 @@ export function effectEndLabel(end: EffectEnd): string
 }
 
 /** An effect in the page's language, with its end: Benedizione until day 1, 18:01. */
-export function effectLabel(effect: { name: string; end?: EffectEnd; }): string
+export function effectLabel(effect: { name: string; end?: EffectEnd; burns?: { fuel: string; left: number; }; }): string
 {
     const name = effectName(effect.name);
-    return effect.end === undefined ? name : `${name} ${effectEndLabel(effect.end)}`;
+    const told = effect.end === undefined ? name : `${name} ${effectEndLabel(effect.end)}`;
+    return effect.burns === undefined ? told : `${told} · ${burnsLabel(effect.name, effect.burns)}`;
+}
+
+/** What something that burns has left, as a torch: 5 left, or Oil: 3 left when it spends another thing. */
+export function burnsLabel(name: string, burns: { fuel: string; left: number; }): string
+{
+    return burns.fuel === name ? t("{count} left", { count: burns.left }) : t("{fuel}: {count} left", { fuel: effectName(burns.fuel), count: burns.left });
 }
 
 /** An effect's name in the page's language: a condition of the system in its words, as Unconscious in Italian; any other as written. */

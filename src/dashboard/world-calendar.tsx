@@ -71,7 +71,7 @@ export function CalendarTab({ calendar }: { calendar: ShownCalendar; })
                 <CardHead icon={iconPath("calendar")} title={<h3 id="calendar-month-title" class="calendar-month-name">{month === undefined ? t("The days of the story") : calendarMonthLabel(month.name, month.year)}</h3>}>
                     {month !== undefined && (
                         <span class="calendar-steps">
-                            {(offset !== 0 || chosen !== calendar.today) && <button type="button" class="save-button quiet" onClick={backToday}>{t("Today")}</button>}
+                            {(offset !== 0 || chosen !== calendar.today) && <button type="button" class="button quiet" onClick={backToday}>{t("Today")}</button>}
                             <button type="button" class="icon-button calendar-back" aria-label={t("Previous month")} data-tip={t("Previous month")} onClick={() => setOffset(offset - 1)}>
                                 <Icon name="fold" />
                             </button>
@@ -206,7 +206,7 @@ function DayDetails({ calendar, day }: { calendar: ShownCalendar; day: number; }
         <div class="calendar-chosen">
             <h4 class="calendar-chosen-title">
                 {capitalized(dayName(calendar, day))}
-                {marks.today && <span class="calendar-chosen-now">{t("Today")}</span>}
+                {marks.today && <span class="eyebrow accent calendar-chosen-now">{t("Today")}</span>}
             </h4>
             {empty && <p class="browse-none">{day > (calendar.today ?? 1) ? t("Nothing your character knows of is due on this day.") : t("No scene of the story on this day.")}</p>}
             {!empty && (

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
 Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
@@ -199,18 +199,18 @@ Minden beállítás megváltoztatható, a csevegésben vagy a **Beállításokba
 
 ---
 
-## 4. A vezérlőpult <!-- icon: party -->
+## 4. A irányítópult <!-- icon: party -->
 
-Egy oldal a saját számítógépeden, csak annak a gépnek a böngészőjében nyílik meg, és amíg a csevegés nyitva van, él. Amikor a csevegés bezárul, a *Nincs kapcsolat* felirat látszik; a következő csevegéssel magától visszatér.
+Egy oldal a saját számítógépeden, amely csak az adott gép böngészőjében nyílik meg, és amíg a csevegés nyitva van, él. Ha a csevegés bezárul, a *Not connected* felirat jelenik meg. A következő csevegéssel magától visszatér.
 
-- **Csapat**: a te karakterlapod és a társaidé. Kattints egy számra a dobáshoz; vidd fölé az egeret, hogy lásd, honnan jön. Mellette a dobások.
-- **Jelenet**: hol vagy, a képe és a térképe, ki van ott, mi történik; harcban a körök és a karaktered kártyája.
+- **Csapat**: a te karakterlapod és a társaidé. Kattints egy számra, hogy dobj vele. Ha fölé viszed az egeret, láthatod, honnan jön a szám, és ha egy nyíl jelöli a kockáját, azt is, mi teszi jobbá vagy rosszabbá a dobást. Mellette vannak a dobások.
+- **Jelenet**: hol vagy, a jelenet képe és térképe, kik vannak ott, mi történik. Harcban a körök és a karakter lapja.
 - **Napló**: küldetések, a történet, a társaid naplói, a jegyzeteid.
-- **Világ**: a világtérkép, amit a karaktered tud, a talált dokumentumok és a naptár.
-- **A dobótálca**: válassz kockákat és módosítót, és dobj.
-- **Mentések**, **Súgó**, **Beállítások** és **Névjegy**, ikonként a sor végén. A Beállítások az oldal saját beállításait is tartalmazza: téma, kockahang, kockakészlet.
+- **Világ**: a világtérkép, amit a karakter tud, a megtalált iratok és a naptár.
+- **A dobótálca**: válassz kockákat és módosítót, aztán dobj. A ×2 megduplázza a kockákat, a módosítót soha, mint egy kritikus találatnál.
+- **Mentések**, **Súgó**, **Beállítások** és **Névjegy**: ikonok a sor végén. A Beállítások az oldal saját módosításait is tartalmazza: téma, kockahang, kockakészlet.
 
-Amikor a mesélő kérdez tőled valamit, a sávja felül marad, bármelyik szakaszban vagy.
+Ha a mesélő kérdez tőled valamit, a kérdése szalagként a képernyő tetején marad, bármelyik részben jársz.
 
 ---
 

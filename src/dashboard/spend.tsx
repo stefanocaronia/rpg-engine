@@ -100,14 +100,14 @@ export function SpendCard({ asked, spend, member, flying, onSpend, onDone }: {
         <section ref={card} class={leaving ? "asked spend-card leaving" : "asked spend-card"} aria-labelledby={`spend-${asked.id}`}>
             <img class="asked-robot" src="/assets/favicon.svg" alt="" />
             <div class="asked-body">
-                <p class="asked-turn">{asked.title}</p>
+                <p class="eyebrow asked-turn">{asked.title}</p>
                 <p id={`spend-${asked.id}`} class="asked-question" role="alert">{asked.question}</p>
                 <div class="spend-play">
                     <div class="spend-life">
                         <span class="spend-token">{member !== undefined && <Token member={member} />}</span>
                         <div class="spend-points">
                             <span class="spend-points-head">
-                                <span class="spend-points-name">{fieldLabel(gives.field)}</span>
+                                <span class="eyebrow spend-points-name">{fieldLabel(gives.field)}</span>
                                 <span class="spend-points-number">
                                     <b>{value}</b>
                                     {gives.max !== undefined && <span class="spend-points-max">/{gives.max}</span>}

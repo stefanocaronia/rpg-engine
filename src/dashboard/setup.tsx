@@ -169,16 +169,16 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onPro
 
     return (
         <article class="setup-card" aria-labelledby={id}>
-            <p class="setup-count">{count}</p>
+            <p class="eyebrow setup-count">{count}</p>
             <h2 id={id} ref={heading} tabIndex={-1}>{title}</h2>
             <p class="setup-about">{phraseLabel(t(question.about))}</p>
             {question.choices !== undefined && <Choices question={question} value={value} labelledBy={id} onPick={pick} />}
             {isList && <ListQuestion question={question} onProblem={onProblem} />}
             {left && value === undefined && <p class="setup-left">{t("Left to the master: they choose, and tell you.")}</p>}
             <div class="setup-moves">
-                {onBack !== undefined && <button type="button" class="setup-button setup-back" onClick={onBack}>{t("Back")}</button>}
-                {open && !isList && <button type="button" class="setup-button quiet" onClick={onLeave}>{t("You decide")}</button>}
-                <button type="button" class={open ? "setup-button quiet" : "setup-button gold"} onClick={onNext}>
+                {onBack !== undefined && <button type="button" class="button setup-back" onClick={onBack}>{t("Back")}</button>}
+                {open && !isList && <button type="button" class="button quiet" onClick={onLeave}>{t("You decide")}</button>}
+                <button type="button" class={open ? "button quiet" : "button gold"} onClick={onNext}>
                     {open ? t("Skip") : t("Next")} <Icon name="send" />
                 </button>
             </div>
@@ -279,8 +279,8 @@ function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProb
                     aria-label={t("Add to {setting}", { setting: settingLabel(question.name) })}
                     onInput={(event) => setItem(event.currentTarget.value)}
                 />
-                <button type="submit" class="setup-button" disabled={item.trim() === ""}>{t("Add")}</button>
-                {question.items === undefined && <button type="button" class="setup-button quiet" onClick={() => send({ setting: question.name, value: "none" })}>{t("None")}</button>}
+                <button type="submit" class="button" disabled={item.trim() === ""}>{t("Add")}</button>
+                {question.items === undefined && <button type="button" class="button quiet" onClick={() => send({ setting: question.name, value: "none" })}>{t("None")}</button>}
             </form>
         </div>
     );
@@ -309,7 +309,7 @@ function Ready({ setup, left, focus, onGo, onProblem }: { setup: Setup; left: Se
             <h2 id="setup-ready" ref={heading} tabIndex={-1}>{open.length === 0 ? t("All set") : t("Almost there")}</h2>
             {open.length > 0 && (
                 <div class="setup-open">
-                    <span class="setup-open-label">{t("Still open")}</span>
+                    <span class="eyebrow setup-open-label">{t("Still open")}</span>
                     {open.map(({ question, index }) => <button key={question.name} type="button" class="setup-chip" onClick={() => onGo(index)}>{settingLabel(question.name)}</button>)}
                 </div>
             )}
@@ -317,10 +317,10 @@ function Ready({ setup, left, focus, onGo, onProblem }: { setup: Setup; left: Se
             {inChat.length > 0 && <p class="setup-about">{t("In the chat, with the master: {settings}.", { settings: inChat.map((name) => settingLabel(name).toLowerCase()).join(" · ") })}</p>}
             {sent ? <p class="setup-left">{t("The master knows: write to them in the chat, and the story begins.")}</p> : (
                 <div class="setup-moves">
-                    <button type="button" class="setup-button setup-back" onClick={() => onGo(setup.questions.length - 1)}>{t("Back")}</button>
+                    <button type="button" class="button setup-back" onClick={() => onGo(setup.questions.length - 1)}>{t("Back")}</button>
                     <button
                         type="button"
-                        class="setup-button gold"
+                        class="button gold"
                         onClick={() =>
                             void sendSetupWord({ ready: true }).then((refused) => {
                                 onProblem(refused);
@@ -395,7 +395,7 @@ function CampaignName({ name }: { name: string; })
                     }
                 }}
             />
-            <button type="submit" class="setup-button gold">{t("Save")}</button>
+            <button type="submit" class="button gold">{t("Save")}</button>
         </form>
     );
 }

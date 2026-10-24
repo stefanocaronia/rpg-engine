@@ -65,7 +65,7 @@ load: {field: weight, limit: ["str * 15 * table(carry-by-size, size)", str * 15]
 length-unit: ft
 ```
 
-Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, stacks by their `bundle`, what items hold, unless an item has the field `weightless` names set to true, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules`; formulas read them as `load` and `load-limit`. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
+Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, stacks by their `bundle`, what items hold, unless an item has the field `weightless` names set to true, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules` or `simulation`; formulas read them as `load` and `load-limit`. `stages` lists what a load makes a character, the heaviest last, each with `when`, the formula that says so above 0, as `[{name: Encumbered, when: "has(rigor, simulation) * ceil(load - 5 * str)"}]`: the dashboard shows the heaviest reached, in the system's words. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
 
 ### travel
 
@@ -128,7 +128,7 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 - `sheet-headline`: the line under a name on the dashboard.
 - `sheet-cards`: where the dashboard puts the groups.
 - `sheet-actions`: the fields whose items the player acts with on the dashboard, each with the engine's verbs (`attack`, `cast`, `use`, `equip`, `unequip`, `prepare`), the first the one a click says. The page makes it the player's own sentence to the master, who rules it; it checks nothing. Without it, the sheet only shows.
-- `sheet-dice`: the dice of the dashboard's free roll for each number. `sheet-odds`: the dice of a better and a worse free roll, and `when`, fields with the formulas that make them `better` or `worse` above 0; both cancel out, as `{better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: "count(equipped, stealth-disadvantage = true)"}]}`.
+- `sheet-dice`: the dice of the dashboard's free roll for each number. `sheet-odds`: the dice of a better and a worse free roll, and `when`, fields with the formulas that make them `better` or `worse` above 0; both cancel out, and `why`, a word of the system the dashboard shows beside the roll, as `{better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: "count(equipped, stealth-disadvantage = true)", why: Armor}]}`.
 - `status-line`: the character's line in `status`; `?` hides a field at zero.
 - `values`: the names a closed list or text takes, such as the skills or the alignments, written in the system's language and shown in the campaign's. `sheet-values`: the same, only on a page that keeps the sheet, as the languages, while a creature's stat block keeps its own words. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).
 
@@ -176,7 +176,7 @@ bonds:
   attuned: {most: 3, needs: attunement, while: equipped, rules: Attunement}
 ```
 
-The lists a character binds items in: `write` refuses more than `most`, and an item whose field `needs`, its own, its base's or a linked item's, asks for nothing; binding one says how many, what it asks (`by a paladin`) and the rules to read. With `while`, a bound item gives its bonuses only while in that list too, as a ring worn, and binding one not there says so.
+The lists a character binds items in: `write` refuses more than `most`, and an item whose field `needs`, its own, its base's or a linked item's, asks for nothing; binding one says how many, what it asks (`by a paladin`) and the rules to read. With `while`, a bound item gives its bonuses only while in that list too, as a ring worn, and binding one not there says so. On the sheet the list shows how many it holds of `most`, and each thing carried that is in it is marked.
 
 ### at-most
 

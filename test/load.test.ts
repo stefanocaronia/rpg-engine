@@ -39,9 +39,11 @@ describe("the load a character carries", () => {
         expect(values).toBe("35.3 / 105 kg");
     });
 
-    it("says under the rigor «rules» that a character carries more than the limit, and only then (LOAD-3)", async () => {
+    it("says under the rigor «rules» or «simulation» that a character carries more than the limit, and only then (LOAD-3)", async () => {
         await ok("write", "Ettore", "--set", "str=3");
         expect(await ok("status")).not.toContain("over the limit");
+        await ok("config", "rigor", "simulation");
+        expect(await ok("status")).toContain("load 70.5 / 45 lb, over the limit");
         await ok("config", "rigor", "rules");
         expect(await ok("status")).toContain("load 70.5 / 45 lb, over the limit");
         await ok("write", "Ettore", "--set", "str=14");

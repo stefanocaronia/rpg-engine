@@ -83,7 +83,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
                         <li key={save.number} class="save-card">
                             <SaveFace save={save} />
                             {save.load && (
-                                <button type="button" class="save-button" aria-label={t("Go back here: {save}", { save: saveTitle(save) })} disabled={busy} onClick={() => setAsking(save)}>
+                                <button type="button" class="button" aria-label={t("Go back here: {save}", { save: saveTitle(save) })} disabled={busy} onClick={() => setAsking(save)}>
                                     {t("Go back here")}
                                 </button>
                             )}
@@ -101,7 +101,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
                             ? t("Back to the campaign's start: everything that happened since is gone from the story, with the same character or a new one.")
                             : t("Back to the campaign's start: everything that happened since is gone from the story.")}
                     </p>
-                    <button type="button" class="save-button danger" disabled={busy} onClick={() => setAsking("reset")}>{t("Start the campaign over…")}</button>
+                    <button type="button" class="button danger" disabled={busy} onClick={() => setAsking("reset")}>{t("Start the campaign over…")}</button>
                 </section>
             )}
             {asking !== undefined && asking !== "reset" && saves !== undefined && (
@@ -175,7 +175,7 @@ function NewChat({ back, busy, onConfirm }: { back: string; busy: boolean; onCon
                     { save: back },
                 )}
             </p>
-            <button type="button" class="save-button gold" disabled={busy} onClick={onConfirm}>{t("I opened a new chat")}</button>
+            <button type="button" class="button gold" disabled={busy} onClick={onConfirm}>{t("I opened a new chat")}</button>
         </div>
     );
 }
@@ -201,7 +201,7 @@ function SaveNow({ busy, onSave }: { busy: boolean; onSave(label: string): void;
             }}
         >
             <input type="text" value={label} maxLength={80} placeholder={t("Name (optional)")} aria-label={t("The save's name, if you like")} onInput={(event) => setLabel(event.currentTarget.value)} />
-            <button type="submit" class="save-button gold" disabled={busy}>{t("Save now")}</button>
+            <button type="submit" class="button gold" disabled={busy}>{t("Save now")}</button>
         </form>
     );
 }
@@ -222,8 +222,8 @@ function GoBack({ save, later, busy, onClose, onConfirm }: { save: ShownSave; la
             <p>{lost}</p>
             <p class="confirm-note">{t("Your settings stay as they are. A copy of the game as it is now stays in the campaign's .saves folder.")}</p>
             <div class="confirm-buttons">
-                <button type="button" class="save-button" autoFocus onClick={onClose}>{t("Cancel")}</button>
-                <button type="button" class="save-button danger final" disabled={busy} onClick={onConfirm}>{t("Go back")}</button>
+                <button type="button" class="button" autoFocus onClick={onClose}>{t("Cancel")}</button>
+                <button type="button" class="button danger final" disabled={busy} onClick={onConfirm}>{t("Go back")}</button>
             </div>
         </Confirm>
     );
@@ -286,8 +286,8 @@ function StartOver({ saves, points, campaign, busy, onClose, onConfirm }: {
                     </p>
                     <p class="confirm-note">{t("Your settings stay as they are. A copy of the game as it is now stays in the campaign's .saves folder.")}</p>
                     <div class="confirm-buttons">
-                        <button type="button" class="save-button" autoFocus onClick={onClose}>{t("Cancel")}</button>
-                        <button type="button" class="save-button danger" onClick={() => setSure(true)}>{t("Continue")}</button>
+                        <button type="button" class="button" autoFocus onClick={onClose}>{t("Cancel")}</button>
+                        <button type="button" class="button danger" onClick={() => setSure(true)}>{t("Continue")}</button>
                     </div>
                 </>
             )}
@@ -312,8 +312,8 @@ function StartOver({ saves, points, campaign, busy, onClose, onConfirm }: {
                     </label>
                     <input ref={field} id="start-over-name" type="text" value={name} autoComplete="off" spellcheck={false} onInput={(event) => setName(event.currentTarget.value)} />
                     <div class="confirm-buttons">
-                        <button type="button" class="save-button" onClick={onClose}>{t("Cancel")}</button>
-                        <button type="submit" class="save-button danger final" disabled={!matches || busy}>{t("Start over")}</button>
+                        <button type="button" class="button" onClick={onClose}>{t("Cancel")}</button>
+                        <button type="submit" class="button danger final" disabled={!matches || busy}>{t("Start over")}</button>
                     </div>
                 </form>
             )}

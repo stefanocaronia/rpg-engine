@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den komplette veiledningen
 
 **RPG Engine** lar deg spille et rollespill rundt bordet med en **AI som spilleder**. Du snakker med spillederen i en **chat**. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**. Ved siden av chatten har du en side åpen i nettleseren, **dashbordet**, med karakterarket, terningene, kartene og dagboken din.
@@ -199,18 +199,18 @@ Alle innstillinger kan endres, i chatten eller i **Innstillinger**. En avgjørel
 
 ---
 
-## 4. Dashbordet <!-- icon: party -->
+## 4. Dashboardet <!-- icon: party -->
 
-En side på din egen datamaskin, som bare kan åpnes i nettleseren på den datamaskinen, og som er i live mens chatten er åpen. Når chatten lukkes, viser den *Not connected*. Den kommer tilbake av seg selv med neste chat.
+En side på din egen datamaskin. Den åpnes bare i nettleseren på den maskinen, og den er i gang så lenge samtalen er åpen. Når samtalen lukkes, viser den *Not connected*. Den kommer tilbake av seg selv med neste samtale.
 
-- **Gruppe**: karakterarket ditt og følgesvennenes. Klikk på et tall for å kaste det. Hold musepekeren over det for å se hvor det kommer fra. Ved siden av står kastene.
-- **Scene**: hvor du er, bildet og kartet, hvem som er der, hva som skjer. I en kamp ser du turene og karakterens kort.
-- **Dagbok**: oppdrag, historien, dagbøkene til følgesvennene dine, notatene dine.
-- **Verden**: verdenskartet, det karakteren din vet, dokumentene som er funnet og kalenderen.
-- **Terningbrettet**: velg terninger og en modifikator, og kast.
-- **Lagrede spill**, **Hjelp**, **Innstillinger** og **Om**, som ikoner i enden av raden. Innstillinger holder også sidens egne preferanser: tema, terninglyd, terningsett.
+- **Gruppe**: karakterarket ditt og følgesvennenes. Klikk på et tall for å kaste det. Hold musepekeren over det for å se hvor det kommer fra. Når en pil markerer terningen, ser du også hva som gjør kastet bedre eller verre. Ved siden av ser du kastene.
+- **Scene**: hvor du er, bilde og kart, hvem som er der, og hva som skjer. I en kamp ser du turene og kortet til karakteren din.
+- **Dagbok**: oppdrag, historien, følgesvennenes dagbøker og notatene dine.
+- **Verden**: verdenskartet, det karakteren din vet, dokumentene som er funnet, og kalenderen.
+- **Terningbrettet**: velg terninger og en modifikator, og kast. ×2 dobler terningene, aldri modifikatoren, som ved et kritisk treff.
+- **Lagrede spill**, **Hjelp**, **Innstillinger** og **Om** ligger som ikoner ytterst i raden. Innstillinger rommer også sidens egne valg: tema, terninglyd og terningsett.
 
-Når spillederen spør deg om noe, blir banneret værende øverst, uansett hvilken seksjon du er i.
+Når spilleder spør deg om noe, blir banneretværende øverst, uansett hvilken del du er i.
 
 ---
 

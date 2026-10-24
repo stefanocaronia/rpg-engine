@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -199,18 +199,18 @@ Każde ustawienie można zmienić, na czacie lub w **Ustawieniach**. Rozstrzygni
 
 ---
 
-## 4. Dashboard <!-- icon: party -->
+## 4. Pulpit <!-- icon: party -->
 
-Strona na Twoim własnym komputerze, otwarta tylko w przeglądarce tego komputera, działa, gdy czat jest otwarty. Gdy czat się zamyka, pokazuje *Not connected*. Wraca sama przy następnym czacie.
+Strona na Twoim komputerze, otwierana tylko w przeglądarce na tym komputerze. Działa, dopóki czat jest otwarty. Gdy czat się zamyka, pokazuje *Not connected*. Wraca sama przy następnym czacie.
 
-- **Drużyna**: Twoja karta postaci i karty towarzyszy. Kliknij liczbę, żeby nią rzucić, a po najechaniu zobaczysz, skąd się bierze. Obok są rzuty.
-- **Scena**: gdzie jesteś, jej obraz i mapa, kto tam jest, co się dzieje. W walce: tury i karta Twojej postaci.
-- **Dziennik**: zadania, historia, dzienniki towarzyszy, Twoje notatki.
-- **Świat**: mapa świata, wiedza Twojej postaci, znalezione dokumenty i kalendarz.
-- **Tacka na kości**: wybierz kości i modyfikator, a potem rzuć.
-- **Zapisy**, **Pomoc**, **Ustawienia** i **Informacje**, jako ikony na końcu rzędu. Ustawienia zawierają też preferencje samej strony: motyw, dźwięk kości, zestaw kości.
+- **Drużyna**: Twoja karta postaci i karty towarzyszy. Kliknij liczbę, aby wykonać rzut. Najedź na nią kursorem, aby zobaczyć, skąd się bierze. Gdy strzałka oznacza kość, zobaczysz też, co poprawia rzut lub go pogarsza. Obok są rzuty.
+- **Scena**: gdzie jesteś, obraz i mapa miejsca, kto tam jest, co się dzieje. W walce: tury i karta Twojej postaci.
+- **Dziennik**: zadania, fabuła, dzienniki towarzyszy, Twoje notatki.
+- **Świat**: mapa świata, to, co wie Twoja postać, znalezione dokumenty i kalendarz.
+- **Tacka na kości**: wybierz kości i modyfikator, potem rzuć. ×2 podwaja kości, nigdy modyfikator, tak jak przy trafieniu krytycznym.
+- **Zapisy**, **Pomoc**, **Ustawienia** i **Informacje**: ikony na końcu rzędu. W Ustawieniach są też preferencje samej strony: motyw, dźwięk kości, zestaw kości.
 
-Gdy Mistrz Gry o coś pyta, jego baner zostaje na górze, w której sekcji byś nie był(a).
+Gdy Mistrz Gry o coś pyta, jego baner zostaje na górze, w jakiejkolwiek sekcji jesteś.
 
 ---
 

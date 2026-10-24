@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -199,16 +199,16 @@ Allar stillingar má breyta, í spjallinu eða í **Stillingar**. Úrskurður se
 
 ---
 
-## 4. Stjórnborðið <!-- icon: party -->
+## 4. Mælaborðið <!-- icon: party -->
 
-Síða á þinni eigin tölvu, aðeins opin í vafra þeirrar tölvu og virk meðan spjallið er opið. Þegar spjallinu er lokað sýnir hún *Ekki tengt*. Hún kemur aftur af sjálfu sér með næsta spjalli.
+Síða á þinni eigin tölvu, sem opnast aðeins í vafra þeirrar tölvu og er virk meðan spjallið er opið. Þegar spjallinu er lokað sýnir hún *Not connected*; hún kemur aftur af sjálfu sér með næsta spjalli.
 
-- **Hópur**: persónublaðið þitt og blöð félaga þinna. Smelltu á tölu til að kasta henni. Haltu bendlinum yfir henni til að sjá hvaðan hún kemur. Við hlið hennar eru köstin.
-- **Atriði**: hvar þú ert, myndin og kortið, hverjir eru þar og hvað er að gerast. Í bardaga eru það raðirnar og spjald persónunnar þinnar.
-- **Dagbók**: verkefni, sagan, dagbækur félaga þinna og minnisblöðin þín.
-- **Heimur**: heimskortið, það sem persónan þín veit, skjölin sem fundust og dagatalið.
-- **Teningabakkinn**: veldu teninga og breyti, og kastaðu.
-- **Vistanir**, **Hjálp**, **Stillingar** og **Um**, sem tákn aftast í röðinni. Stillingar geyma líka eigin óskir síðunnar: þema, teningahljóð og teningasett.
+- **Hópur**: persónublaðið þitt og blöð félaga þinna. Smelltu á tölu til að kasta henni; haltu bendlinum yfir hana til að sjá hvaðan hún kemur og, þegar ör merkir tening hennar, hvað gerir kastið betra eða verra. Við hliðina eru köstin.
+- **Atriði**: hvar þú ert, mynd þess og kort, hverjir eru þar, hvað er að gerast; í bardaga eru það raðirnar og spjald persónunnar þinnar.
+- **Dagbók**: verkefni, sagan, dagbækur félaga þinna, minnisblöðin þín.
+- **Heimur**: heimskortið, það sem persónan þín veit, skjölin sem hafa fundist og dagatalið.
+- **Teningabakkinn**: veldu teninga og breyti og kastaðu; ×2 tvöfaldar teningana, aldrei breytinn, eins og við critical hit.
+- **Vistanir**, **Hjálp**, **Stillingar** og **Um**, sem tákn aftast í röðinni. Stillingar geyma líka eigin valkosti síðunnar: þema, teningahljóð og teningasett.
 
 Þegar sögumaðurinn spyr þig einhvers helst borðinn hans efst, sama í hvaða hluta þú ert.
 

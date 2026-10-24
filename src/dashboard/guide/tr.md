@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
@@ -201,16 +201,16 @@ Her ayar değiştirilebilir, sohbette ya da **Ayarlar**'da. Oyun yöneticisinin 
 
 ## 4. Gösterge paneli <!-- icon: party -->
 
-Kendi bilgisayarındaki bir sayfadır; yalnızca o bilgisayarın tarayıcısında açılır ve sohbet açık olduğu sürece canlıdır. Sohbet kapanınca *Not connected* gösterir; bir sonraki sohbetle kendiliğinden geri gelir.
+Kendi bilgisayarındaki bir sayfa. Yalnızca o bilgisayarın tarayıcısında açılır ve sohbet açık olduğu sürece canlıdır. Sohbet kapanınca *Bağlı değil* yazar. Bir sonraki sohbetle kendiliğinden geri gelir.
 
-- **Grup**: senin karakter kağıdın ve yoldaşlarınınki. Atmak için bir sayıya tıkla; nereden geldiğini görmek için üzerine gel. Yanında atışlar durur.
-- **Sahne**: bulunduğun yer, resmi ve haritası, orada kimlerin olduğu, neler olduğu. Çatışmada sıralar ve karakterinin kartı.
+- **Grup**: senin karakter kağıdın ve yoldaşlarınınkiler. Bir sayıya tıklayarak onu atabilirsin. Üzerine gelirsen sayının nereden geldiğini görürsün. Bir ok zarını işaretliyorsa atışı neyin iyileştirdiğini ya da kötüleştirdiğini de görürsün. Yanında atışlar yer alır.
+- **Sahne**: bulunduğun yer, resmi ve haritası, orada kimlerin olduğu, neler olduğu. Çatışmada sıralar ve karakterinin kartı da burada görünür.
 - **Günlük**: görevler, hikâye, yoldaşlarının günlükleri, notların.
 - **Dünya**: dünya haritası, karakterinin bildikleri, bulunan belgeler ve takvim.
-- **Zar tepsisi**: zarları ve bir değiştirici seç, at.
-- **Kayıtlar**, **Yardım**, **Ayarlar** ve **Hakkında**, satırın sonunda simgeler olarak durur. Ayarlar, sayfanın kendi tercihlerini de tutar: tema, zar sesi, zar seti.
+- **Zar tepsisi**: zarları ve bir değiştirici seç, sonra at. ×2 zarları ikiye katlar, değiştiriciyi asla katlamaz. Kritik vuruşta olduğu gibi.
+- **Kayıtlar**, **Yardım**, **Ayarlar** ve **Hakkında**: satırın sonunda simge olarak durur. Ayarlar, sayfanın kendi tercihlerini de içerir: tema, zar sesi, zar seti.
 
-Oyun yöneticisi sana bir şey sorduğunda, hangi bölümde olursan ol, bannerı en üstte kalır.
+Oyun yöneticisi sana bir şey sorduğunda, afişi hangi bölümde olursan ol en üstte kalır.
 
 ---
 

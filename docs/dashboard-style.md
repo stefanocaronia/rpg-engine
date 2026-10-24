@@ -6,7 +6,7 @@ The dashboard is the table beside the chat where the game is played. It reads li
 
 ## 1. Tokens
 
-Every colour, corner, shadow and duration is a custom property of `:root`. A raw value outside `:root` is a bug, except inside the maps' and the dice's own palettes; white and black only as light and shade, a little of them over a colour. A paler or darker tone of a token is `color-mix()` of it.
+Every colour, corner, shadow and duration is a custom property of `:root`. A raw value outside `:root` is a bug, except inside the own palettes of the things drawn: the maps, the dice, the tokens and coins, the robot; white and black only as light and shade, a little of them over a colour. A paler or darker tone of a token is `color-mix()` of it.
 
 ### Colour
 
@@ -24,10 +24,13 @@ Two seeds, the robot's navy and gold. Each token is `light-dark()`, so both them
 | `--muted` | Secondary text, inactive tabs, icons of quiet controls |
 | `--accent` | What can be pressed and what is chosen: links, the focus ring, the chosen tab, the cards' icons, a page's head. Navy on the light page, gold on the dark one |
 | `--gold`, `--on-gold` | The robot's gold, the same in both themes: the one main action of a view, a chosen value, the player's turn, a main quest, the highest roll. Text on it is `--on-gold` |
+| `--gold-ink` | Gold as text or a line, readable on the light page |
 | `--ally` | The party's side, a success, something gained |
-| `--low` | Danger: a problem, a failure, a foe the master marked, death |
+| `--low`, `--on-low` | Danger: a problem, a failure, a foe the master marked, death; text on it |
 | `--warn` | A warning, as the game being away. On the dark page it is the gold: never beside gold that means "chosen" |
 | `--disc` | The dark disc under a token, in both themes |
+| `--veil`, `--on-veil`, `--on-veil-muted`, `--veil-low` | Over a picture, the same in both themes: its dark veil, the words on it, a deadline near |
+| `--cover`, `--cover-deep`, `--cover-main`, `--cover-main-deep` | A quest's cover without a picture, a main quest's in gold |
 | `--m-*`, `--l-*`, `--bio-*`, `--doc-*` | The paper of the maps and of documents, and their inks, the same in both themes (see Paper) |
 | `--season-*` | The four seasons, in the calendar alone and always beside their word |
 
@@ -41,21 +44,22 @@ The system's sans for everything (`body`: 15px/1.4). The serif (`--serif`) is th
 
 | Size | Weight | Use |
 |---|---|---|
-| `0.72rem`, uppercase, `letter-spacing: 0.08em` | 700 | An eyebrow: the small label over a title (`.eyebrow`), muted; in the accent when it says "now" |
+| `0.72rem`, uppercase, `letter-spacing: 0.08em` | 700 | An eyebrow: the small label over a title or a group (`.eyebrow`), muted; `.eyebrow.accent` when it says "now" |
 | `0.8rem` | 400–650 | Small: counts, tooltips, footnotes |
 | `0.85rem` | 400–650 | Secondary: a row's meta, a closed card's preview, chips |
 | body (inherit, 15px) | 400 | Text |
 | `1.125rem` | 700 | A card's title (`h3`) |
+| `1.25rem` | 700 | A title over a picture or in a dialog: a banner, the master's question, a quest's cover |
 | `1.4rem` | 700 | A page's title (`h2` in `PageHead`) |
-| `1.6rem` and up | 700 | One number that is the point of its box: a total, a modifier |
+| `1.6rem` and up | 700, 800 for the player's two moments | One number that is the point of its box: a total, a modifier; at 800 the roll's total and the death save's word |
 
-Weights: 400 text, 650 controls (buttons, tabs, chips), 700 titles, names and numbers, 600 the serif titles. Numbers that line up are `.num` (tabular figures). Items of a list start with a capital; a field's abbreviation (AC, WIS) is all capitals.
+Weights: 400 text, 600 a word that stands out in a line (a chip, a filter, a notice, a name in a row) and the serif titles, 650 controls (buttons, tabs), 700 titles, names and numbers. The maps draw their labels in px, in the map's own units. Numbers that line up are `.num` (tabular figures). Items of a list start with a capital; a field's abbreviation (AC, WIS) is all capitals.
 
 ### Room, corners, depth
 
 - Room in steps of 2 px up to 12, then 16 (`--gap`, between cards and stacks and around the page) and 24. A card's padding is 16 px inline; its header is at least 52 px tall.
-- Corners: `--radius-xs` 4 (tooltips), `--radius-s` 6 (list chips, controls inside controls), `--radius-m` 8 (buttons, fields, icon buttons), `--radius-l` 12 (cards, notices), `--radius-xl` 16 (banners, dialogs). Round (`50%`) only tokens and dots. A pill (`999px`) only for a choice among peers: filter chips, verbs, the maps' tabs; never a button or a card.
-- Depth: on the light page a card has `--lift, --raise`; what floats over the page (dialogs, sheets, the dice's button, tonal buttons) has `--overlay`. On the dark page depth is the surface's tone; only what floats casts a shadow.
+- Corners: `--radius-xs` 4 (tooltips), `--radius-s` 6 (list chips, controls inside controls), `--radius-m` 8 (buttons, fields, icon buttons), `--radius-l` 12 (cards, notices), `--radius-xl` 16 (banners, dialogs). Round (`50%`) only tokens and dots. A pill (`999px`) only for a choice among peers (filter chips, verbs, the maps' tabs) and a switch's track; never a button or a card. A thin bar has `--radius-xs`, its ends round; a mark that is square to tell it from a round one, `calc(var(--radius-xs) / 2)`.
+- Depth: on the light page a card has `--lift, --raise`; what floats over the page (dialogs, sheets, the dice's button, tonal buttons) has `--overlay`; the phone's bar at the window's foot `--raise-up`; a little drawn edge `--shade`. On the dark page depth is the surface's tone; only what floats casts a shadow. The page's light from above is `--glow`.
 
 ### Motion
 
@@ -66,24 +70,25 @@ Weights: 400 text, 650 controls (buttons, tabs, chips), 700 titles, names and nu
 | `--medium` 350 ms | A panel or sheet coming in |
 | `--flight` 450 ms | Something that travels: the result plate flying to its row |
 | `--long` 600 ms, `--linger` 900 ms | A mark that fades after it is seen |
+| `--wait` 500 ms | The moment a pointer rests on a control before its tooltip shows |
 
-`--ease` for most, `--ease-out` for what comes in, `--ease-in` for what leaves, `--ease-bounce` for one pop. A loop (breathing, pulsing) only for what waits for the player: their turn, a check asked, the robot. Motion never makes the player wait to act.
+`--ease` for most, `--ease-out` for what comes in, `--ease-in` for what leaves, `--ease-bounce` for one pop. A loop (breathing, pulsing) only for what waits for the player: their turn, a check asked, the robot; its period, in seconds, is its own, as is how long a fresh mark stays. A short step between things that come one after the other is a share of `--quick`. Motion never makes the player wait to act; script that times a motion of its own uses the same token's length.
 
-Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that with reduced motion the state is simply there; script checks `matchMedia("(prefers-reduced-motion: reduce)")` before a smooth scroll or an animation.
+Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that with reduced motion the state is simply there; script checks `matchMedia("(prefers-reduced-motion: reduce)")` before a smooth scroll or an animation. Only what leaves keeps its animation with reduced motion, run at once (`animation-duration: 0.01s`), so that it reaches its end.
 
 ## 2. Parts
 
 **Page.** A section is a `PageHead` (its icon and title in the accent) over a `.page-stack` of cards, with room at the bottom for the dice's button. The page never changes section by itself.
 
-**Tabs.** Parts of one section are tabs under its head (`PageTabs`, `.page-tabs`): words in `--muted`, the chosen one in the accent with a 3 px bar under it, 40 px tall (44 on touch). On a phone they close up, and when they still do not fit the row scrolls sideways; it never wraps and never widens the page. The tab is in the address (`#/world/lore`), changed with `location.replace`; an item opened inside it is too (`#/world/lore/Bertoldo`), pushed, so that Back returns to it and the master can give a link. Arrows move along the tabs, Home and End go to the ends, and one Tab stop reaches the row.
+**Tabs.** Parts of one section are tabs under its head (`PageTabs`, `.page-tabs`): words in `--muted`, the chosen one in the accent with a 3 px bar under it, 40 px tall (44 on touch). On a phone they close up, and when they still do not fit the row scrolls sideways; it never wraps and never widens the page. The tab is in the address (`#/world/lore`), changed with `location.replace`; an item opened inside it is too (`#/world/lore/Bertoldo`), pushed, so that Back returns to it and the master can give a link. Arrows move along the tabs, Home and End go to the ends, and one Tab stop reaches the row. A tab may carry a mark after its name (`.tab-mark`): a count in the accent, or what is missing in `--low`, with its tip and in the tab's name for a screen reader.
 
 **Card.** `<details class="group">` with `CardHeader`: its icon (20 px, stroked in the accent), its title, a preview while closed, the chevron. It stays as the player left it (`useOpen`); on a phone cards start closed but the first. A card that is always open is a `<section class="card">` with `CardHead` and its `.card-body`. No card inside a card: inside one, sections under small headings.
 
-**Buttons.** A button of words is `.save-button`, 38 px tall (44 on touch): `.gold` for the one main action of a view, `.quiet` (accent words, no border) for a secondary one, `.danger` (red edge) for one that loses something, full red at its last step. A button of an icon is `.icon-button` (40 px), always with `aria-label` and the same words in `data-tip`; `.tonal` (48 px, raised) when it floats over the page. What goes somewhere is a link (`<a href>`); what does something is a button.
+**Buttons.** A button of words is `.button`, 38 px tall (44 on touch): `.gold` for the one main action of a view, `.quiet` (accent words, no border) for a secondary one, `.danger` (red edge) for one that loses something, full red at its last step. A button of an icon is `.icon-button` (40 px), always with `aria-label` and the same words in `data-tip`; `.tonal` (48 px, raised) when it floats over the page. What goes somewhere is a link (`<a href>`); what does something is a button.
 
-**Chips.** A thing in a list is a chip (`.chips li`: the accent at 11%, `--radius-s`). A filter is a row of pill chips (`.package-chips`, `aria-pressed`, a muted count after the name): one Tab stop, arrows, Home and End along it. A search is a field with its magnifier inside (`.package-search`) that filters as it is typed. Two to five values of one setting are a `.segmented` control.
+**Chips.** A thing in a list is a chip (`.chips li`: the accent at 11%, `--radius-s`). A filter is a row of pill chips (`.filter-chips`, `aria-pressed`, a muted count after the name): one Tab stop, arrows, Home and End along it. A search is a field with its magnifier inside (`.search`) that filters as it is typed. Two to five values of one setting are a `.segmented` control.
 
-**Rows.** A list of things to open is a column of rows, each one button the row's width: the name in bold, its meta in `--muted` at 0.85rem, a number or distance at the end in `.num`. Sentences are lines, not chips.
+**Rows.** A list of things to open is a column of rows, each one button the row's width: the name in bold, its meta in `--muted` at 0.85rem, a number or distance at the end in `.num`. Sentences are lines, not chips. On the sheet a number the system rolls better or worse has an arrow beside its die, up in `--ally`, down in `--low`, both muted when they cancel out, and its tooltip says why; a load past a stage has the stage's word in `--warn` before it; a thing in a list of bonds has two rings after its name, and the list how many it holds of its most.
 
 **List and reader.** Many things of a kind to browse and read, as what the character knows or the documents found: a list (a search field, filter chips, the rows grouped under eyebrows) and the open one in a reader beside it from 900 px; under that the reader takes the list's place, with a Back link at its top. Each row is a link to its item, named by its name and described by its meta (`aria-describedby`); the open one is `aria-current`, lit with a bar of the accent at its start. The open item is in the address; opening it moves the focus to the reader's title, Back returns it to its row. On a wide screen with nothing open the reader shows the list's first. An empty search says so in a line, with the way out.
 
@@ -125,10 +130,4 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 ## 5. Not in line yet
 
-- Three copies of the button of words: `.setup-button` and `.setting-button` become `.save-button`, which takes a name of its own (`.button`).
-- Tabs: Journal and Packages draw their own tab rows; they move to `PageTabs`. Packages does not scroll on a phone; Journal has no Home and End.
-- Font sizes outside the scale (0.7, 0.75, 0.78, 0.82, 0.875, 0.88, 0.9, 0.92, 0.95, 1.02, 1.05rem, and sizes in px) and weights 450, 500, 550, 750, 800, 900.
-- Nine eyebrows, each its own size, weight and spacing, to become `.eyebrow`.
-- Durations in milliseconds (120, 220, 240, 280, 320, 420, 500, 520, 700) instead of the tokens; eight `prefers-reduced-motion: reduce` blocks that take motion away instead of adding it under `no-preference`.
-- Corners of 2, 3, 7 and 9 px; raw colours outside the maps and the dice.
-- Cards always open drawn on their own (`.package-card`, `.map-card`, `.map-list`, `.upcoming`), to become `.card`; `.package-chips` and `.package-search` serve the whole page and take names of their own (`.filter-chips`, `.search`).
+- Titles between a card's and a page's (1.1 to 1.5rem: dialogs, banners, the master's question, a quest's cover), to come to 1.25rem; labels under 0.72rem in tight tiles (0.55 to 0.68rem).

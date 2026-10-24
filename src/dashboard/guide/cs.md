@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -199,18 +199,18 @@ Každé nastavení lze změnit, v chatu nebo v **Nastavení**. Rozhodnutí, kter
 
 ---
 
-## 4. Dashboard <!-- icon: party -->
+## 4. Ovládací panel <!-- icon: party -->
 
-Stránka na tvém počítači, otevřená jen v prohlížeči na tomto počítači, živá, dokud je chat otevřený. Když se chat zavře, zobrazí *Not connected*. S dalším chatem se sama vrátí.
+Stránka na tvém počítači, kterou otevřeš jen v prohlížeči na tomto počítači. Funguje, dokud je chat otevřený. Když se chat zavře, zobrazí *Not connected*. S dalším chatem se vrátí sama.
 
-- **Družina**: tvůj deník postavy a deníky tvých společníků. Kliknutím na číslo hodíš. Najetím na něj uvidíš, odkud pochází. Vedle jsou hody.
-- **Scéna**: kde jsi, její obrázek a mapa, kdo tam je, co se děje. V boji tahy a karta tvé postavy.
-- **Kronika**: úkoly, příběh, deníky tvých společníků, tvé poznámky.
+- **Družina**: tvůj deník postavy a deníky tvých společníků. Kliknutím na číslo si hodíš. Když na něj najedeš myší, uvidíš, odkud se bere, a pokud šipka u kostky něco označuje, také co hod zlepšuje nebo zhoršuje. Vedle jsou hody.
+- **Scéna**: kde jsi, obrázek a mapa místa, kdo tam je a co se děje. V boji tu najdeš tahy a kartu své postavy.
+- **Kronika**: úkoly, příběh, deníky tvých společníků a tvé poznámky.
 - **Svět**: mapa světa, co tvá postava ví, nalezené dokumenty a kalendář.
-- **Podnos na kostky**: vyber kostky a opravu a hoď.
-- **Uložené hry**, **Nápověda**, **Nastavení** a **O aplikaci**, jako ikony na konci řady. Nastavení obsahuje i vlastní předvolby stránky: motiv, zvuk kostek, sadu kostek.
+- **Podnos na kostky**: vyber kostky a opravu a hoď. ×2 zdvojnásobí kostky, nikdy ne opravu, jako při kritickém zásahu.
+- **Uložené hry**, **Nápověda**, **Nastavení** a **O aplikaci**: ikony na konci řady. V Nastavení najdeš také vlastní předvolby stránky: motiv, zvuk kostek a sadu kostek.
 
-Když se tě Pán jeskyně na něco zeptá, jeho panel zůstane nahoře, ať jsi v jakékoli části.
+Když se tě Pán jeskyně na něco zeptá, jeho nápis zůstane nahoře, ať jsi v jakékoli části.
 
 ---
 

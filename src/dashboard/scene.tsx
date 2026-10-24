@@ -16,8 +16,8 @@ import { t } from "./text.ts";
 import { CharacterCard, hasTurns, type OwnSheet, TurnBand, TurnsCard, type TurnScene } from "./turns.tsx";
 import { BiomeSwatch } from "./world.tsx";
 
-// How long the band takes to come in or go out, as the style sheet has it, as the master's question folds.
-const bandTime = 220;
+// How long the band takes to come in or go out, the style sheet's --short, as the master's question folds.
+const bandTime = 250;
 
 /**
  * The Scene (D-309, D-444), the one page of where the party is. Outside turns the place, its picture with its text under it, the open scene and the map; while
@@ -33,7 +33,7 @@ export function SceneView(
 
     if (place === undefined && scene === undefined) {
         return (
-            <section class="upcoming" aria-labelledby="place-name">
+            <section class="card upcoming" aria-labelledby="place-name">
                 <h2 id="place-name">{t("In the open")}</h2>
                 <p>{t("The party is in no place the character knows, as on a road between two.")}</p>
             </section>
@@ -290,7 +290,7 @@ function SceneCard({ scene }: { scene: ShownScene; })
     return (
         <section class="scene-now" aria-labelledby="scene-title">
             <header>
-                <p class="eyebrow">{t("Scene")}</p>
+                <p class="eyebrow accent">{t("Scene")}</p>
                 <h3 id="scene-title">{scene.title}</h3>
                 <span class="scene-type" data-type={scene.type}>{sceneTypeLabel(scene.type)}</span>
                 {scene.since && <span class="scene-since">{sinceDateLabel(scene.since)}</span>}

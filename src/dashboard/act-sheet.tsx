@@ -149,7 +149,7 @@ export function ActSheet(
                         />
                     )}
                     <fieldset ref={list} class="act-who">
-                        <legend>{t("On whom")}</legend>
+                        <legend class="eyebrow">{t("On whom")}</legend>
                         {people.map((person, index) =>
                             option(
                                 `person ${index}`,

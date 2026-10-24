@@ -111,7 +111,7 @@ export function stackMoveSteps(world: World, moves: StackMove[]): StackStep[]
 }
 
 /** Writes stack steps (STK-9), with their lines in the log and the kinds no longer carried taken out of equipped; returns the world after it and the lines that tell it. */
-export function writeStacks(root: string, context: Context, world: World, steps: StackStep[], why?: string): { world: World; notes: string[]; }
+export function writeStacks(root: string, context: Context, world: World, steps: StackStep[], why?: string, asked: Record<string, unknown> = {}): { world: World; notes: string[]; }
 {
     const changed = steps.filter((step) => step.before !== step.after);
 
@@ -119,7 +119,7 @@ export function writeStacks(root: string, context: Context, world: World, steps:
         return { world, notes: [] };
     }
 
-    const written = applyLogged(root, context, world, { edits: stackEdits(changed), moving: [] }, changed, why);
+    const written = applyLogged(root, context, world, { edits: stackEdits(changed), moving: [] }, changed, why, asked);
     const gone = changed.filter((step) => step.after === 0).map((step) => step.kind);
     const unequipped = gone.length === 0 ? { world: written, notes: [] } : unequipKinds(written, gone);
     return { world: unequipped.world, notes: [changed.map(stackStepText).join("; ") + ".", ...unequipped.notes] };
@@ -129,15 +129,15 @@ export function writeStacks(root: string, context: Context, world: World, steps:
  * Writes a plan with stack steps in it, and their lines in the log (STK-12): stopped halfway, the lines of the stacks already written are still logged, then the stop is
  * said (STK-9).
  */
-export function applyLogged(root: string, context: Context, world: World, plan: MovePlan, steps: StackStep[], why?: string): World
+export function applyLogged(root: string, context: Context, world: World, plan: MovePlan, steps: StackStep[], why?: string, asked: Record<string, unknown> = {}): World
 {
     try {
         const after = applyMove(world, plan);
-        logStackSteps(root, context, world, steps, why);
+        logStackSteps(root, context, world, steps, why, asked);
         return after;
     } catch (error) {
         if (error instanceof MoveStopped) {
-            logStackSteps(root, context, world, steps.filter((step) => error.written.includes(step.container.path)), why);
+            logStackSteps(root, context, world, steps.filter((step) => error.written.includes(step.container.path)), why, asked);
         }
 
         throw error;

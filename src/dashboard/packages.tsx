@@ -37,6 +37,7 @@ import { languageName } from "./languages.ts";
 import { PageHead } from "./pages.tsx";
 import { Confirm } from "./saves.tsx";
 import { Command } from "./settings.tsx";
+import { PageTabs } from "./tabs.tsx";
 import { arrowStep, foldedText, isolated, pageDirection, t } from "./text.ts";
 
 /** What happened to the player's last change, said where it was made: a row, a card, or the field. */
@@ -55,9 +56,6 @@ interface Said
 
 /** The page's three tabs (D-488, D-491 (13)): what is here, first, what can be added, and the campaign's library. */
 type PackagesTab = "installed" | "add" | "library";
-
-// The tabs in their order, which the arrows follow.
-const tabOrder: PackagesTab[] = ["installed", "add", "library"];
 
 /** A package's work as this page started it, before the server says it: with where it was asked. */
 type Sending = PackageWork & { at: string; };
@@ -97,7 +95,6 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     // The rows here before the last addition: those not among them are new.
     const known = useRef<Set<string>>();
     const seeing = useRef<PackageKind>();
-    const tabs = useRef<HTMLDivElement>(null);
     const shownTab: PackagesTab = tab === "add" || tab === "library" ? tab : "installed";
     const [library, setLibrary] = useState<LibraryView>();
     const [libraryProblem, setLibraryProblem] = useState<string>();
@@ -246,19 +243,6 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
         }
     };
 
-    // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
-    const moveTab = (event: KeyboardEvent): void => {
-        const step = arrowStep(event.key, true);
-        const at = (tabOrder.indexOf(shownTab) + step + tabOrder.length) % tabOrder.length;
-        const next = event.key === "Home" ? tabOrder[0] : event.key === "End" ? tabOrder.at(-1) : step === 0 ? undefined : tabOrder[at];
-
-        if (next !== undefined) {
-            event.preventDefault();
-            choose(next);
-            tabs.current?.querySelector<HTMLElement>(`#packages-tab-${next}`)?.focus();
-        }
-    };
-
     const systems = view?.systems ?? [];
     const adventures = view?.adventures ?? [];
     const languages = view?.languages ?? [];
@@ -272,45 +256,16 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
             <PageHead section="packages" id="packages-title" />
             <p class="packages-lead">{t("What is added to the game. The master hears of each change at their next move.")}</p>
             {problem !== undefined && <p class="saves-said problem" role="alert">{problem}</p>}
-            <div class="package-tabs" role="tablist" aria-label={t("Packages")} ref={tabs} onKeyDown={moveTab}>
-                <button
-                    type="button"
-                    role="tab"
-                    id="packages-tab-installed"
-                    aria-label={[t("Installed"), ...marksText(updates, missing)].join(", ")}
-                    aria-selected={shownTab === "installed"}
-                    aria-controls={shownTab === "installed" ? "packages-panel" : undefined}
-                    tabIndex={shownTab === "installed" ? 0 : -1}
-                    onClick={() => choose("installed")}
-                >
-                    {t("Installed")}
-                    <TabMarks updates={updates} missing={missing} />
-                </button>
-                <button
-                    type="button"
-                    role="tab"
-                    id="packages-tab-add"
-                    aria-selected={shownTab === "add"}
-                    aria-controls={shownTab === "add" ? "packages-panel" : undefined}
-                    tabIndex={shownTab === "add" ? 0 : -1}
-                    onClick={() => choose("add")}
-                >
-                    {t("Add")}
-                </button>
-                <button
-                    type="button"
-                    role="tab"
-                    id="packages-tab-library"
-                    aria-label={[t("Library"), ...marksText(0, away)].join(", ")}
-                    aria-selected={shownTab === "library"}
-                    aria-controls={shownTab === "library" ? "packages-panel" : undefined}
-                    tabIndex={shownTab === "library" ? 0 : -1}
-                    onClick={() => choose("library")}
-                >
-                    {t("Library")}
-                    <TabMarks updates={0} missing={away} />
-                </button>
-            </div>
+            <PageTabs
+                section="packages"
+                label={t("Packages")}
+                chosen={shownTab}
+                tabs={[
+                    { key: "installed", name: t("Installed"), label: [t("Installed"), ...marksText(updates, missing)].join(", "), marks: <TabMarks updates={updates} missing={missing} /> },
+                    { key: "add", name: t("Add") },
+                    { key: "library", name: t("Library"), label: [t("Library"), ...marksText(0, away)].join(", "), marks: <TabMarks updates={0} missing={away} /> },
+                ]}
+            />
             {view !== undefined && (
                 <div class="package-panel" id="packages-panel" role="tabpanel" aria-label={shownTab === "add" ? t("Add") : shownTab === "library" ? t("Library") : t("Installed")}>
                     {elsewhere !== undefined && <WorkNote work={elsewhere} whose={workTitle(elsewhere, catalog.read)} />}
@@ -326,8 +281,8 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                         />
                     )}
                     {shownTab === "add" && (
-                        <section class="package-card" aria-label={t("Add")}>
-                            <div class="package-body">
+                        <section class="card" aria-label={t("Add")}>
+                            <div class="card-body package-body">
                                 {/* The catalog first, for whoever picks with a click; a link, an npm name, a folder or a file after it, for whoever knows what they want (D-488). */}
                                 <CatalogList
                                     catalog={catalog}
@@ -343,9 +298,9 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                     )}
                     {shownTab === "installed" && (
                         <>
-                            <section class="package-card" aria-labelledby="packages-systems">
+                            <section class="card" aria-labelledby="packages-systems">
                                 <CardHead icon={iconPath("dice")} title={<h3 id="packages-systems" tabIndex={-1}>{t("Game system")}</h3>} />
-                                <div class="package-body">
+                                <div class="card-body package-body">
                                     <ul class="package-list">
                                         {systems.map((system) => (
                                             <SystemRow
@@ -362,13 +317,13 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                     <CardSaid said={said} at="systems" />
                                 </div>
                             </section>
-                            <section class="package-card" aria-labelledby="packages-adventures">
+                            <section class="card" aria-labelledby="packages-adventures">
                                 <CardHead
                                     icon={iconPath("world")}
                                     title={<h3 id="packages-adventures" tabIndex={-1}>{t("Adventures")}</h3>}
                                     {...(adventures.length === 0 ? {} : { note: String(adventures.length) })}
                                 />
-                                <div class="package-body">
+                                <div class="card-body package-body">
                                     {adventures.length === 0 && <p class="package-note">{t("None yet: add one in Add, from the catalog, a .zip or a link.")}</p>}
                                     {adventures.length > 0 && (
                                         <ul class="package-list">
@@ -387,13 +342,13 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                     <ShareCampaign />
                                 </div>
                             </section>
-                            <section class="package-card" aria-labelledby="packages-extensions">
+                            <section class="card" aria-labelledby="packages-extensions">
                                 <CardHead
                                     icon={iconPath("packages")}
                                     title={<h3 id="packages-extensions" tabIndex={-1}>{t("Extensions")}</h3>}
                                     {...(view.installed.length + view.missing.length === 0 ? {} : { note: t("{count} in use", { count: usedCount(view) }) })}
                                 />
-                                <div class="package-body">
+                                <div class="card-body package-body">
                                     {view.installed.length + view.missing.length === 0 && <p class="package-note">{t("None: an extension adds rules and tools to the game; you find them in Add, in the catalog.")}</p>}
                                     {view.installed.length + view.missing.length > 0 && (
                                         <ul class="package-list">
@@ -418,9 +373,9 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                     <CardSaid said={said} at="extensions" />
                                 </div>
                             </section>
-                            <section class="package-card" aria-labelledby="packages-languages">
+                            <section class="card" aria-labelledby="packages-languages">
                                 <CardHead icon={iconPath("language")} title={<h3 id="packages-languages" tabIndex={-1}>{t("Languages")}</h3>} />
-                                <div class="package-body">
+                                <div class="card-body package-body">
                                     {languages.length === 0 && <p class="package-note">{t("None. The dashboard has its own languages; a language package takes the place of one with a translation made by hand.")}</p>}
                                     {languages.length > 0 && (
                                         <ul class="package-list">
@@ -448,8 +403,8 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                 <Confirm title={t("Take {name} out of the campaign?", { name: asking.title })} onClose={() => setAsking(undefined)}>
                     <p>{t("Its places, people and pages leave the world. To have it again, add it once more.")}</p>
                     <div class="confirm-buttons">
-                        <button type="button" class="save-button" autoFocus onClick={() => setAsking(undefined)}>{t("Cancel")}</button>
-                        <button type="button" class="save-button danger final" onClick={() => confirmed(asking)}>{t("Take out")}</button>
+                        <button type="button" class="button" autoFocus onClick={() => setAsking(undefined)}>{t("Cancel")}</button>
+                        <button type="button" class="button danger final" onClick={() => confirmed(asking)}>{t("Take out")}</button>
                     </div>
                 </Confirm>
             )}
@@ -457,8 +412,8 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                 <Confirm title={t("Take {path} off this computer?", { path: asking.name })} onClose={() => setAsking(undefined)}>
                     <p>{t("No campaign searches it any more, and the text RPG Engine read of its books is deleted. The books stay where they are.")}</p>
                     <div class="confirm-buttons">
-                        <button type="button" class="save-button" autoFocus onClick={() => setAsking(undefined)}>{t("Cancel")}</button>
-                        <button type="button" class="save-button danger final" onClick={() => confirmed(asking)}>{t("Take off")}</button>
+                        <button type="button" class="button" autoFocus onClick={() => setAsking(undefined)}>{t("Cancel")}</button>
+                        <button type="button" class="button danger final" onClick={() => confirmed(asking)}>{t("Take off")}</button>
                     </div>
                 </Confirm>
             )}
@@ -466,8 +421,8 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                 <Confirm title={t("Uninstall {name} from this computer?", { name: asking.name })} onClose={() => setAsking(undefined)}>
                     {uninstallText(asking.what)}
                     <div class="confirm-buttons">
-                        <button type="button" class="save-button" autoFocus onClick={() => setAsking(undefined)}>{t("Cancel")}</button>
-                        <button type="button" class="save-button danger final" onClick={() => confirmed(asking)}>{t("Uninstall")}</button>
+                        <button type="button" class="button" autoFocus onClick={() => setAsking(undefined)}>{t("Cancel")}</button>
+                        <button type="button" class="button danger final" onClick={() => confirmed(asking)}>{t("Uninstall")}</button>
                     </div>
                 </Confirm>
             )}
@@ -498,13 +453,13 @@ function LibraryTab(
     // A folder by its name; by its path when another has the same name.
     const label = (entry: LibraryEntry): string => (entries.filter((other) => shelfName(other.path) === shelfName(entry.path)).length > 1 ? entry.path : shelfName(entry.path));
     return (
-        <section class="package-card" aria-labelledby="packages-library">
+        <section class="card" aria-labelledby="packages-library">
             <CardHead
                 icon={iconPath("library")}
                 title={<h3 id="packages-library" tabIndex={-1}>{t("Your books")}</h3>}
                 {...(entries.length === 0 ? {} : { note: t("{count} in this campaign", { count: used }) })}
             />
-            <div class="package-body">
+            <div class="card-body package-body">
                 <p class="library-scope">
                     <Icon name="info" />
                     <span>
@@ -561,13 +516,13 @@ function LibraryRow({ entry, label, state, onUse, onForget }: { entry: LibraryEn
                 row={`library:${entry.path}`}
                 actions={
                     <>
-                        <button type="button" class="save-button package-button" aria-label={t("Add {path} again", { path: label })} aria-disabled={state.busy} onClick={() => !state.busy && onUse(true)}>
+                        <button type="button" class="button package-button" aria-label={t("Add {path} again", { path: label })} aria-disabled={state.busy} onClick={() => !state.busy && onUse(true)}>
                             <Icon name="plus" />
                             {t("Add")}
                         </button>
                         <button
                             type="button"
-                            class="save-button package-button"
+                            class="button package-button"
                             aria-label={t("Take {name} out of this campaign", { name: label })}
                             aria-disabled={state.busy}
                             onClick={() => !state.busy && onUse(false)}
@@ -737,7 +692,7 @@ function LibraryField({ state, onAdd }: { state: RowState; onAdd(path: string): 
                     placeholder="D:\Books\5e"
                     onInput={(event) => setPath(event.currentTarget.value)}
                 />
-                <button type="submit" class="save-button package-button" aria-disabled={state.busy}>
+                <button type="submit" class="button package-button" aria-disabled={state.busy}>
                     <Icon name="plus" />
                     {t("Add")}
                 </button>
@@ -760,13 +715,13 @@ function TabMarks({ updates, missing }: { updates: number; missing: number; })
     return (
         <>
             {updates > 0 && (
-                <span class="package-tab-mark" data-tip={updatesText} aria-hidden="true">
+                <span class="tab-mark" data-tip={updatesText} aria-hidden="true">
                     <Icon name="update" />
                     {updates}
                 </span>
             )}
             {missing > 0 && (
-                <span class="package-tab-mark missing" data-tip={missingText} aria-hidden="true">
+                <span class="tab-mark missing" data-tip={missingText} aria-hidden="true">
                     <Icon name="alert" />
                 </span>
             )}
@@ -844,11 +799,11 @@ function AddField({ state, onAdd, onFile }: { state: RowState; onAdd(source: str
                     placeholder={t("github.com/someone/an-adventure")}
                     onInput={(event) => setSource(event.currentTarget.value)}
                 />
-                <button type="submit" class="save-button package-button" aria-disabled={state.busy}>
+                <button type="submit" class="button package-button" aria-disabled={state.busy}>
                     <Icon name="plus" />
                     {t("Add")}
                 </button>
-                <button type="button" class="save-button package-button" aria-disabled={state.busy} onClick={() => !state.busy && picker.current?.click()}>
+                <button type="button" class="button package-button" aria-disabled={state.busy} onClick={() => !state.busy && picker.current?.click()}>
                     <Icon name="file" />
                     {t("From a file…")}
                 </button>
@@ -936,16 +891,16 @@ function CatalogList(
     return (
         <div class="package-catalog">
             <div class="package-catalog-head">
-                <h4 class="package-sub" id="package-catalog-title">{t("Catalog")}</h4>
+                <h4 class="eyebrow package-sub" id="package-catalog-title">{t("Catalog")}</h4>
                 {entries.length > 0 && (
-                    <span class="package-search">
+                    <span class="search">
                         <Icon name="search" />
                         <input type="search" value={query} placeholder={t("Search")} aria-label={t("Search the catalog")} onInput={(event) => setQuery(event.currentTarget.value)} />
                     </span>
                 )}
             </div>
             {kinds.length > 1 && (
-                <div class="package-chips" role="group" aria-label={t("Kind")} ref={chips} onKeyDown={chipKey}>
+                <div class="filter-chips" role="group" aria-label={t("Kind")} ref={chips} onKeyDown={chipKey}>
                     {chip("all", found.length)}
                     {kinds.map((one) => chip(one, found.filter((entry) => entry.kind === one).length))}
                 </div>
@@ -1001,7 +956,7 @@ function CatalogAway({ failed, asking, onRetry }: { failed: Catalog["failed"]; a
                         <bdi>{one}</bdi>
                     </p>
                 ))}
-                <button type="button" class="save-button package-button" aria-disabled={asking} onClick={() => !asking && onRetry()}>
+                <button type="button" class="button package-button" aria-disabled={asking} onClick={() => !asking && onRetry()}>
                     <Icon name="update" />
                     {t("Try again")}
                 </button>
@@ -1038,7 +993,7 @@ function CatalogRow({ entry, named, view, state, onAdd, onUpdate }: { entry: Cat
     const action = (word: string, label: string, icon: IconName, onClick: () => void, accent = false) => (
         <button
             type="button"
-            class={accent ? "save-button package-button accent" : "save-button package-button"}
+            class={accent ? "button package-button accent" : "button package-button"}
             aria-label={label}
             aria-disabled={state.busy}
             onClick={() => !state.busy && onClick()}
@@ -1153,7 +1108,7 @@ function AdventureRow({ adventure, fresh, state, onTakeOut }: { adventure: Shown
                 ? (
                     <button
                         type="button"
-                        class="save-button package-button"
+                        class="button package-button"
                         aria-label={t("Take {name} out of the campaign…", { name: adventure.title })}
                         aria-disabled={state.busy}
                         onClick={() => !state.busy && onTakeOut()}
@@ -1200,7 +1155,7 @@ function ExtensionRow(
                 meta={<bdi class="package-why">{extension.broken}</bdi>}
                 actions={
                     <>
-                        <button type="button" class="save-button package-button" aria-label={t("Install {name} again", { name })} aria-disabled={state.busy} onClick={() => !state.busy && onUpdate()}>
+                        <button type="button" class="button package-button" aria-label={t("Install {name} again", { name })} aria-disabled={state.busy} onClick={() => !state.busy && onUpdate()}>
                             <Icon name="update" />
                             {t("Install it again")}
                         </button>
@@ -1264,7 +1219,7 @@ function MissingRow({ name, state, onInstall }: { name: string; state: RowState;
             name={shown}
             about={<span class="package-red">{t("Missing on this computer: the master does not use it until you install it.")}</span>}
             actions={
-                <button type="button" class="save-button package-button" aria-label={t("Install {name}", { name: shown })} aria-disabled={state.busy} onClick={() => !state.busy && onInstall()}>
+                <button type="button" class="button package-button" aria-label={t("Install {name}", { name: shown })} aria-disabled={state.busy} onClick={() => !state.busy && onInstall()}>
                     <Icon name="download" />
                     {t("Install")}
                 </button>
@@ -1400,7 +1355,7 @@ function VersionMeta({ version, newer }: { version: string | undefined; newer: s
 function UpdateButton({ name, version, busy, onClick }: { name: string; version: string; busy: boolean; onClick(): void; })
 {
     return (
-        <button type="button" class="save-button package-button accent" aria-label={t("Update {name} to {version}", { name, version })} aria-disabled={busy} onClick={() => !busy && onClick()}>
+        <button type="button" class="button package-button accent" aria-label={t("Update {name} to {version}", { name, version })} aria-disabled={busy} onClick={() => !busy && onClick()}>
             <Icon name="update" />
             {t("Update")}
         </button>
@@ -1541,7 +1496,7 @@ function ShareCampaign()
             <span class="package-actions">
                 <button
                     type="button"
-                    class="save-button package-button"
+                    class="button package-button"
                     aria-expanded={open}
                     aria-controls="package-credits"
                     onClick={() => {
@@ -1592,14 +1547,14 @@ function ShareCampaign()
                         <Icon name="licence" />
                         {t("Share it only if you have the right to: a world taken from a book or from someone else's adventure is not yours to give.")}
                     </p>
-                    <button type="submit" class="save-button package-button" aria-disabled={exporting}>
+                    <button type="submit" class="button package-button" aria-disabled={exporting}>
                         <Icon name="share" />
                         {exporting ? t("Exporting…") : t("Export")}
                     </button>
                     {made !== undefined && "download" in made && (
                         <p class="package-said package-ready" role="status">
                             <span>{`✓ ${t("{file} is ready.", { file: made.file })}`}</span>
-                            <a ref={ready} class="save-button gold package-button" href={made.download} download={made.file}>
+                            <a ref={ready} class="button gold package-button" href={made.download} download={made.file}>
                                 <Icon name="download" />
                                 {t("Download")}
                             </a>

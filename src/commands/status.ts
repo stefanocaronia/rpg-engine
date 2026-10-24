@@ -83,10 +83,10 @@ export const status = defineCommand({
                 name: characterName(page),
                 where: locate(world, page).chain.map((holder) => holder.name),
                 withLead: withLead(page),
-                // Under the rigor «rules», a load over the limit (LOAD-3).
+                // Under the rigor «rules» or «simulation», a load over the limit (LOAD-3).
                 counters: [
                     ...Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
-                    ...(settings.rigor === "rules" ? [overLoad(world, system, page) ?? ""].filter((text) => text !== "") : []),
+                    ...(settings.rigor === "rules" || settings.rigor === "simulation" ? [overLoad(world, system, page) ?? ""].filter((text) => text !== "") : []),
                 ],
                 effects: [...effectsOf(page).map((effect) => effectShown(world, effect)), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
                 ...(mood === "neutral" ? {} : { mood }),

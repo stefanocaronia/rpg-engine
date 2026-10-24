@@ -16,6 +16,7 @@ import { Markdown } from "./markdown.tsx";
 import { Notes } from "./notes.tsx";
 import { PageHead } from "./pages.tsx";
 import { useChoice, useKeptText } from "./prefs.ts";
+import { PageTabs } from "./tabs.tsx";
 import { arrowStep, t } from "./text.ts";
 
 // The tab the player last chose, kept in this browser.
@@ -27,7 +28,6 @@ export function JournalView({ version, campaign, tab: asked, item }: { version: 
     const journal = useJournal(version);
     const [chosen, setTab] = useChoice(tabChoice);
     const [followed, setFollowed] = useFollowed(campaign, journal.read?.quests);
-    const tabs = useRef<HTMLDivElement>(null);
     // The companions' tab only once one of them has written: a diary no one keeps shows nothing.
     const shown = tabChoice.values.filter((value) => value !== "companions" || (journal.read?.thoughts?.length ?? 0) > 0);
     const tab = (shown as string[]).includes(chosen) ? chosen : tabChoice.initial;
@@ -46,59 +46,11 @@ export function JournalView({ version, campaign, tab: asked, item }: { version: 
         chapter?.focus({ preventScroll: true });
     }, [item, tab, journal.read !== undefined]);
 
-    // On a phone the tabs may scroll sideways: the chosen one is brought into the row, and the page itself never moves.
-    useEffect(() => {
-        const row = tabs.current;
-        const chosenTab = row?.querySelector<HTMLElement>(`#journal-tab-${tab}`);
-
-        if (row === null || chosenTab === null || chosenTab === undefined) {
-            return;
-        }
-
-        const rowBox = row.getBoundingClientRect();
-        const tabBox = chosenTab.getBoundingClientRect();
-        row.scrollLeft += Math.min(0, tabBox.left - rowBox.left) + Math.max(0, tabBox.right - rowBox.right);
-    }, [tab, shown.length]);
-
-    // A tab chosen is kept in this browser and written in the address, the first one's as the section's own.
-    const choose = (value: string): void => {
-        setTab(value);
-        location.replace(sectionAddress("journal", value === tabChoice.initial ? undefined : value));
-    };
-
-    // The arrows move along the tabs, as in a tab list: the focus goes with the choice.
-    const move = (event: KeyboardEvent): void => {
-        const step = arrowStep(event.key, true);
-
-        if (step === 0) {
-            return;
-        }
-
-        event.preventDefault();
-        const next = shown[(shown.indexOf(tab as "quests") + step + shown.length) % shown.length];
-        choose(next);
-        tabs.current?.querySelector<HTMLElement>(`#journal-tab-${next}`)?.focus();
-    };
-
     return (
         <section class="journal" aria-labelledby="journal-title">
             <PageHead section="journal" id="journal-title" />
-            <div class="journal-tabs" role="tablist" aria-label={t("Journal")} ref={tabs} onKeyDown={move}>
-                {shown.map((value) => (
-                    <button
-                        key={value}
-                        type="button"
-                        role="tab"
-                        id={`journal-tab-${value}`}
-                        aria-selected={tab === value}
-                        aria-controls={tab === value ? "journal-panel" : undefined}
-                        tabIndex={tab === value ? 0 : -1}
-                        onClick={() => choose(value)}
-                    >
-                        {tabName(value)}
-                    </button>
-                ))}
-            </div>
+            {/* The tab chosen is kept in this browser too, and the address says it. */}
+            <PageTabs section="journal" label={t("Journal")} chosen={tab} tabs={shown.map((key) => ({ key, name: tabName(key) }))} onChoose={setTab} />
             <div id="journal-panel" role="tabpanel" aria-labelledby={`journal-tab-${tab}`}>
                 {journal.problem !== undefined && <p class="journal-problem" role="alert">{journal.problem}</p>}
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
@@ -362,13 +314,13 @@ function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; follow
     const card = (quest: ShownQuest) => <QuestCard key={quest.name} quest={quest} followed={followed.includes(quest.name)} onFollow={onFollow} />;
     return (
         <div class="quest-log">
-            <h3 class="quest-group">
+            <h3 class="eyebrow quest-group">
                 {t("Active")} <span>{open.length}</span>
             </h3>
             {open.length === 0 ? <p class="journal-none">{t("None open now.")}</p> : <div class="quest-cards">{open.map(card)}</div>}
             {done.length > 0 && (
                 <details class="quest-folded">
-                    <summary class="quest-group">
+                    <summary class="eyebrow quest-group">
                         {t("Completed")} <span>{done.length}</span>
                     </summary>
                     <div class="quest-cards">{done.map(card)}</div>
@@ -376,7 +328,7 @@ function QuestLog({ quests, followed, onFollow }: { quests: ShownQuest[]; follow
             )}
             {failed.length > 0 && (
                 <details class="quest-folded">
-                    <summary class="quest-group">
+                    <summary class="eyebrow quest-group">
                         {t("Failed")} <span>{failed.length}</span>
                     </summary>
                     <div class="quest-cards">{failed.map(card)}</div>
@@ -547,7 +499,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
 
     return (
         <ol class="story">
-            <li class="story-mark now">
+            <li class="eyebrow story-mark now">
                 <b>{t("Now")}</b>
                 {now !== undefined && <span>{phraseLabel(gameDateLabel(now))}</span>}
             </li>
@@ -564,7 +516,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                             <ChapterPicture chapter={chapter} />
                             <div class="chapter-body">
                                 <header class="chapter-head">
-                                    {chapter.number !== undefined && <span class="chapter-number">{t("Chapter {number}", { number: chapter.number })}</span>}
+                                    {chapter.number !== undefined && <span class="eyebrow chapter-number">{t("Chapter {number}", { number: chapter.number })}</span>}
                                     <h3>{chapter.title}</h3>
                                     {chapter.open && <span class="chapter-now">{t("Now")}</span>}
                                     {chapter.type !== undefined && <span class="chapter-type">{phraseLabel(sceneTypeLabel(chapter.type))}</span>}
@@ -583,7 +535,7 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
                         </li>
                     )
             )}
-            <li class="story-mark start">
+            <li class="eyebrow story-mark start">
                 <b>{t("The start")}</b>
             </li>
         </ol>
@@ -623,7 +575,7 @@ function Diaries({ thoughts }: { thoughts: ShownThought[]; })
     return (
         <div class="diaries">
             {writers.length > 1 && (
-                <div class="package-chips" role="group" aria-label={t("Companions")} ref={chips} onKeyDown={chipKey}>
+                <div class="filter-chips" role="group" aria-label={t("Companions")} ref={chips} onKeyDown={chipKey}>
                     {chip(undefined)}
                     {writers.map(chip)}
                 </div>
@@ -678,19 +630,44 @@ function Between({ chapter }: { chapter: ShownChapter; })
     );
 }
 
-/** The facts of a chapter, the game date written once whenever it changes, as the days in a chat. */
+/**
+ * The facts of a chapter, the game date written once whenever it changes, as the days in a chat; what the day's upkeep used up together, under its name.
+ */
 function Facts({ facts }: { facts: JournalFact[]; })
 {
     let last: string | undefined;
     return (
         <ul>
-            {facts.flatMap((fact, at) => {
-                const header = fact.date !== undefined && fact.date !== last ? [<li key={`date-${at}`} class="fact-date">{phraseLabel(gameDateLabel(fact.date))}</li>] : [];
-                last = fact.date ?? last;
-                return [...header, <li key={at}>{factLabel(fact)}</li>];
+            {factRuns(facts).flatMap(({ facts: run, at }) => {
+                const date = run[0].date;
+                const header = date !== undefined && date !== last ? [<li key={`date-${at}`} class="fact-date">{phraseLabel(gameDateLabel(date))}</li>] : [];
+                last = date ?? last;
+                const upkeep = run[0].kind === "counter" && run[0].upkeep === true;
+                return [
+                    ...header,
+                    upkeep
+                        ? (
+                            <li key={at} class="fact-upkeep">
+                                {t("The day's upkeep")}
+                                <ul>{run.map((fact, index) => <li key={index}>{factLabel(fact)}</li>)}</ul>
+                            </li>
+                        )
+                        : <li key={at}>{factLabel(run[0])}</li>,
+                ];
             })}
         </ul>
     );
+}
+
+/** The facts in runs: what the day's upkeep wrote at one date together, any other fact alone; each run with where it starts. */
+function factRuns(facts: JournalFact[]): { facts: JournalFact[]; at: number; }[]
+{
+    const upkeep = (fact: JournalFact | undefined): boolean => fact?.kind === "counter" && fact.upkeep === true;
+    return facts.reduce<{ facts: JournalFact[]; at: number; }[]>((runs, fact, at) => {
+        const open = runs.at(-1);
+        const joins = open !== undefined && upkeep(fact) && upkeep(open.facts[0]) && open.facts[0].date === fact.date;
+        return joins ? [...runs.slice(0, -1), { ...open, facts: [...open.facts, fact] }] : [...runs, { facts: [fact], at }];
+    }, []);
 }
 
 function Star()

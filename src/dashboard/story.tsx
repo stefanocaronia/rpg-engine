@@ -57,7 +57,7 @@ export function StoryBox({ story }: { story: string; })
                 <button
                     ref={pencil}
                     type="button"
-                    class="save-button"
+                    class="button"
                     onClick={() => {
                         setDraft(proposed ?? story);
                         setProblem(undefined);
@@ -76,8 +76,8 @@ export function StoryBox({ story }: { story: string; })
             <textarea ref={field} id={id} value={draft} rows={10} maxLength={20_000} onInput={(event) => setDraft(event.currentTarget.value)} />
             <div class="story-buttons">
                 <span class="story-status" role="alert">{problem}</span>
-                <button type="button" class="save-button" onClick={() => setEditing(false)}>{t("Cancel")}</button>
-                <button type="submit" class="save-button gold" disabled={busy || draft.trim() === "" || draft.trim() === (proposed ?? story).trim()}>
+                <button type="button" class="button" onClick={() => setEditing(false)}>{t("Cancel")}</button>
+                <button type="submit" class="button gold" disabled={busy || draft.trim() === "" || draft.trim() === (proposed ?? story).trim()}>
                     <Icon name="send" /> {t("Send to the master")}
                 </button>
             </div>
