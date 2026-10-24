@@ -149,9 +149,10 @@ h2 {
     font-weight: 700;
 }
 
-/* The cards' titles, in the text's own face (D-282), a step larger than the text (D-284). */
+/* The cards' titles, in the text's own face (D-282), a step larger than the text (D-284); a card of the table titled by an h2, as Turns and Quests, too. */
 h3,
-.rolls-title {
+.rolls-title,
+:is(.card-head, summary) > h2 {
     margin: 0;
     font-family: inherit;
     font-size: 1.125rem;
@@ -3941,9 +3942,9 @@ a.status-chip.widget-chip {
     border-radius: var(--radius-m);
 }
 
-/* In the Scene after what the scene needs; while it goes by turns, over the whole width, and last on a phone. */
+/* In the Scene after what the scene needs, spaced as its other parts; while it goes by turns, over the whole width, and last on a phone. */
 .place-view > .scene-body > .widget-cards {
-    margin-block-start: var(--gap);
+    margin: 0 0 var(--gap);
 }
 
 .in-turns > .scene-body > .widget-cards {
