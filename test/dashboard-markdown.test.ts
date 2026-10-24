@@ -28,10 +28,10 @@ describe("a page's text on the dashboard (D-275)", () => {
     });
 
     it("reads a secret as the engine does: at the text's own level, at most three spaces before its mark, any after", () => {
-        expect(shown(">  [!secret] Doppio\n>  testo")).toBe("<aside><p>Secret · Doppio</p><p>testo</p></aside>");
+        expect(shown(">  [!secret] Doppio\n>  testo")).toBe("<aside><p>You found out · Doppio</p><p>testo</p></aside>");
         expect(shown("> Una citazione\n> > [!secret] Falso\n> > testo")).toBe("<blockquote><p>Una citazione</p><blockquote><p>[!secret] Falso testo</p></blockquote></blockquote>");
         expect(shown("    > [!secret] Rientrato")).toBe("<p>> [!secret] Rientrato</p>");
-        expect(shown("> [!secret]")).toBe("<aside><p>Secret</p></aside>");
+        expect(shown("> [!secret]")).toBe("<aside><p>You found out</p></aside>");
     });
 
     it("never lets a fenced block swallow the text: it opens and closes on lines of its own, and one left open is shown as it is", () => {

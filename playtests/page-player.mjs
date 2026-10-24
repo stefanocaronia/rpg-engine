@@ -77,6 +77,9 @@ export function pagePlayer({ folder, askPlayer, moments })
 
         if (shown === undefined) {
             note(`run: the question "${asked.question}" did not show on the page within ${bannerWait / 1000} s`);
+        } else {
+            // The page while it asks, as the player sees it before answering.
+            await keep(`M${state.turn}-asked-${asked.id.slice(0, 8)}`).catch((error) => note(`run: the question not kept: ${error.message}`));
         }
 
         // The dice of a rest only the page shows (ASK-14): the player says how many, and they are rolled one at a time.
@@ -345,10 +348,18 @@ export function pagePlayer({ folder, askPlayer, moments })
 
             return { told, said };
         },
+        /** The session's end: what the Journal and the World show by then is kept, a tab each, before the page closes. */
         async close()
         {
             clearInterval(state.timer);
             await state.opening;
+
+            if (state.page !== undefined) {
+                for (const tab of ["journal/quests", "journal/story", "journal/companions", "journal/notes", "world/map", "world/lore", "world/documents", "world/calendar"]) {
+                    await show(tab).then(() => keep(`end-${tab.replace("/", "-")}`)).catch((error) => note(`run: ${tab} not kept: ${error.message}`));
+                }
+            }
+
             await state.browser?.close();
         },
     };

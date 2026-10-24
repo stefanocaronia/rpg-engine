@@ -96,6 +96,26 @@ describe("MCP server", () => {
         expect(readFileSync(join(folder, "world", "characters", "Lena.md"), "utf8")).not.toContain("Benedizione");
     });
 
+    it("answers a call with a parameter the tool lacks, or without one it needs, with what is wrong and every parameter, for a master who never loaded its schema", async () => {
+        await call("init", { name: "Guadoscuro" });
+        const log = readFileSync(join(folder, "log.jsonl"), "utf8");
+        const unknown = await call("rules", { query: "Forced March" });
+        expect(unknown.isError).toBe(true);
+        expect(unknown.text).toMatch(/^rules has no parameter query\. Nothing changed: call it again with its parameters\.\nrules takes:\n- text \(optional\): the words of the rule/);
+
+        const missing = await call("mood", { who: "master", feeling: "afraid" });
+        expect(missing.isError).toBe(true);
+        expect(missing.text).toMatch(/^mood needs mood\. mood has no parameter feeling\. Nothing changed: call it again with its parameters\.\nmood takes:\n- who: master for yours/);
+        expect(missing.text).toContain("\n- mood: the mood: neutral, happy, ");
+        expect(missing.text).toContain("\n- moment (optional): yours only");
+        expect(readFileSync(join(folder, "log.jsonl"), "utf8")).toBe(log);
+
+        // The host is still shown the strict schema: the tool takes these parameters and no others.
+        const mood = (await client.listTools()).tools.find((tool) => tool.name === "mood");
+        expect(mood?.inputSchema).toMatchObject({ type: "object", required: ["who", "mood"], additionalProperties: false });
+        expect(Object.keys(mood?.inputSchema.properties ?? {})).toEqual(["who", "mood", "moment"]);
+    });
+
     it("reports a failure as a tool error with the command's message", async () => {
         expect(await call("show", { page: "Varro" })).toEqual({ text: expect.stringContaining("There is no campaign here"), isError: true });
     });

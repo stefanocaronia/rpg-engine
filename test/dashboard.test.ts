@@ -1077,6 +1077,35 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(await ok("config", "difficulty")).toContain("difficulty: hard");
     });
 
+    it("tells the master of the problems the page shows the player, once for each new count, until they are fixed (playtest 05)", async () => {
+        const problems = async (): Promise<number> => (JSON.parse((await send("GET", "/api/view")).body) as { problems: number; }).problems;
+
+        // A write through the dashboard's session, as the master's in the chat.
+        const write = async (...args: string[]): Promise<void> => {
+            const result = await runCommandLine(["write", "Lanterna", ...args], { ...context, files: session });
+            expect(result.exitCode, result.output).toBe(0);
+        };
+
+        dashboard.news();
+        expect(await problems()).toBe(0);
+        expect(dashboard.news().lines).toEqual([]);
+        await write("--type", "item", "--set", "item=[[Lantern, Hooded]]");
+        expect(await problems()).toBe(1);
+        const told = dashboard.news();
+        expect(told.lines).toEqual(["The player's dashboard shows that the campaign's files have a problem, and tells them you fix it: call validate and fix them now, behind the scenes."]);
+        expect(dashboard.news().lines).toEqual([]);
+        // Given back when the master's call never answered.
+        told.restore();
+        expect(dashboard.news().lines).toEqual(told.lines);
+        // Fixed, then broken again: told again.
+        await write("--set", "item=[[Hooded Lantern]]");
+        expect(await problems()).toBe(0);
+        expect(dashboard.news().lines).toEqual([]);
+        await write("--set", "item=[[Lantern, Hooded]]");
+        await problems();
+        expect(dashboard.news().lines).toHaveLength(1);
+    });
+
     it("saves, goes back and starts over from the page as save does, as the mode allows, logged as the player's, and the master hears of each (D-359)", async () => {
         const newChat = "This chat remembers what is gone: ask the player to open a new chat (/clear in Claude Code, a new conversation elsewhere) and to write continua there. Nothing goes on in this one.";
         const refused = await send("POST", "/api/saves", { action: "make" });

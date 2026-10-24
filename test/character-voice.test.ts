@@ -42,6 +42,37 @@ describe("the character agent (D-490)", () => {
         expect(await voices("claude-code", false)).not.toContain("## Voices");
     });
 
+    it("comes with play's part when mode reaches play in a chat that has the agent, as one where session zero is played (playtest 01)", async () => {
+        const chat = { ...context, host: () => "claude-code", characterAgent: true };
+        const steps = [
+            ["config", "system", "free"],
+            ["config", "mentor", "off"],
+            ["config", "premise", "fantasy"],
+            ["config", "preparation", "on the fly"],
+            ["config", "difficulty", "normal"],
+            ["config", "lethality", "dice"],
+            ["config", "saves", "checkpoint"],
+            ["config", "rigor", "rules"],
+            ["config", "dice", "digital"],
+            ["config", "units", "metric"],
+            ["config", "companions", "none"],
+            ["config", "calendar-start", "day 1"],
+            ["config", "lines", "none"],
+            ["config", "veils", "none"],
+            ["config", "advancement", "xp"],
+            ["mode", "session zero"],
+        ];
+
+        for (const step of steps) {
+            await runCommandLine(step, chat);
+        }
+
+        await runCommandLine(["write", "Ada", "--type", "character", "--set", "role=pc", "--set", "concept=Una guaritrice", "--add", "abilities=Erbe"], chat);
+        const play = await runCommandLine(["mode", "play"], chat);
+        expect(play.output).toContain("## Play");
+        expect(play.output).toContain("## Voices");
+    });
+
     it("is gone when the player wants the master to voice every character, and comes back when they want it again", async () => {
         const path = join(folder, ".claude", "agents", "rpg-character.md");
         // At once, not when the server starts again.

@@ -398,7 +398,9 @@ function rollerNote(world: World, system: GameSystem | undefined, page: Page): s
         return number === undefined || number === 0 ? [] : [`${entry.field} ${number}`];
     });
     const all = [...effects.map((effect) => effect.name), ...marked];
-    return all.length === 0 ? undefined : `${page.name} has ${all.join(", ")}: if they change this roll, complete it: roll only what they add, such as one more die, and keep this one; never roll it again.`;
+    return all.length === 0
+        ? undefined
+        : `${page.name} has ${all.join(", ")}: if they change this roll, complete it: roll only what they add, such as one more die, and keep this one; never roll it again; a reroll of one die rolls that die alone and keeps the rest.`;
 }
 
 function revealHiddenRoll(rollId: string, root: string, context: Context): RollOutput

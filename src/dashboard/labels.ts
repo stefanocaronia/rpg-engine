@@ -1,5 +1,5 @@
 // Labels from the names of the fields, in English (D-273): "hit-dice-d8" reads "hit dice d8", "str-save" "STR save"; names in the campaign's language come later.
-import { systemWord, t } from "./text.ts";
+import { isolated, numberText, systemWord, t, timeText } from "./text.ts";
 
 // The dice the page has a picture of: the d% as 100, the coin as 2.
 const drawnDice = [2, 4, 6, 8, 10, 12, 20, 100];
@@ -120,14 +120,25 @@ export function notationModifier(notation: string): number
     return match === null ? 0 : Number(match[1]);
 }
 
-/** A number as it reads: −1 with a minus sign rather than a hyphen. */
-export function shownText(text: string): string
+/**
+ * A number as it reads in the page's language: −1 with a minus sign rather than a hyphen, 4,2 m with the Italian comma; a field whose kind is duration, as 3m
+ * of the engine, in words: 3 minuti.
+ */
+export function shownText(text: string, kind?: string): string
 {
+    const time = kind === "duration" ? durationText(text) : undefined;
+
+    if (time !== undefined) {
+        return time;
+    }
+
     // A number then a word of the system, as a weapon's 1d6+2 bludgeoning, says the word in the campaign's language (playtest 15).
     const tail = /^(.*\d)\s+(\D+)$/.exec(text);
     const tailWord = tail === null ? undefined : systemWord("words", tail[2]);
     const said = systemWord("words", text) ?? (tail === null || tailWord === undefined ? text : `${tail[1]} ${tailWord}`);
-    return said.replace(/(^|[\s(])-(?=\d)/g, "$1−");
+    // A decimal as the engine writes it, at most two digits, with the language's mark and its digits kept: 1.000 written by hand is a thousand, never 1.
+    const mark = numberText(1.5).replace(/\d/g, "");
+    return said.replace(/(?<![\w.])(\d+)\.(\d{1,2})(?![\w.])/g, `$1${mark}$2`).replace(/(^|[\s(])-(?=\d)/g, "$1−");
 }
 
 /** Dice as they read: 1d20−1 with a minus sign rather than a hyphen. */
@@ -146,6 +157,21 @@ export function initials(name: string): string
 export function nameHue(name: string): number
 {
     return [...name].reduce((hash, character) => (hash * 31 + (character.codePointAt(0) ?? 0)) % 360, 7);
+}
+
+/** A duration as the engine writes it, 1h 30m or 30s, in the page's words: 1 ora 30 minuti; undefined for any other text. */
+function durationText(text: string): string | undefined
+{
+    const units = { d: "day", h: "hour", m: "minute", s: "second" } as const;
+    const parts = text.split(" ").map((part) => /^(\d+)([dhms])$/.exec(part));
+    const order = parts.map((part) => (part === null ? -1 : "dhms".indexOf(part[2])));
+
+    if (parts.some((part) => part === null) || order.some((place, index) => index > 0 && place <= order[index - 1])) {
+        return undefined;
+    }
+
+    // Isolated by its first letter: words of a language written from right to left keep its order inside a number's box, which reads left to right.
+    return isolated(parts.map((part) => (part === null ? "" : timeText(Number(part[1]), units[part[2] as keyof typeof units]))).join(" "));
 }
 
 function words(field: string): string[]
