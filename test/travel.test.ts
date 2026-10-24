@@ -208,6 +208,18 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
         expect(await ok("show", "Gatto")).toContain("Is in: Zaino › Ettore");
     });
 
+    it("TRV-6: one who climbs into the cart in the open keeps the journey, which goes on from where it stopped", async () => {
+        await ok("write", "Carro", "--type", "item", "--set", "item=[[Cart]]");
+        await ok("write", "Locanda", "--add", "contains=[[Carro]]");
+        await ok("move", "Lena", "--to", "Carro");
+        await ok("write", "Rocca", "--set", "position=20 km E of [[Guadoscuro]]");
+        await ok("travel", "--toward", "west", "--distance", "3 km");
+        const travelled = readDuration(/travelled: (\S+)/.exec(state())?.[1] ?? "") ?? 0;
+        await ok("move", "Ettore", "--to", "Carro");
+        expect(await ok("travel", "--toward", "west", "--distance", "3 km")).toContain("Ettore and Lena travel west");
+        expect(readDuration(/travelled: (\S+)/.exec(state())?.[1] ?? "")).toBeGreaterThan(travelled);
+    });
+
     it("TRV-6: some aboard a boat and some not, or a scene other than travel, are refused before anything changes", async () => {
         await ok("write", "Chiatta", "--type", "item", "--set", "item=[[Keelboat]]");
         await ok("write", "Locanda", "--add", "contains=[[Chiatta]]");

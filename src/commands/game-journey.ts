@@ -28,6 +28,8 @@ export interface Journey
 {
     /** What travels: the travellers, or the vehicle that carries them (TRV-6). */
     movers: string[];
+    /** The characters it takes, on foot or carried: one who climbs into the cart or out of it keeps the journey (playtest 05). */
+    riders?: string[];
     /** Where it goes; none once it arrived, while the day's hours still count. */
     to?: string;
     /** Off the roads, the way it goes instead of a place, and the metres left, when a distance was given (TRV-12). */
@@ -64,6 +66,7 @@ export function readJourney(root: string): Journey | undefined
     const name = (field: unknown): string | undefined => (typeof field === "string" && !isEmptyField(field) ? parsePageReference(field).name : undefined);
     const text = (field: unknown): string | undefined => (typeof field === "string" && !isEmptyField(field) ? field.trim() : undefined);
     const movers = (Array.isArray(fields.who) ? fields.who : []).map(name).filter((mover) => mover !== undefined);
+    const riders = Array.isArray(fields.riders) ? fields.riders.map(name).filter((rider) => rider !== undefined) : undefined;
     const last = readGameDate(fields.last);
     const travelled = typeof fields.travelled === "string" ? readDuration(fields.travelled) : undefined;
     const hours = typeof fields.hours === "number" && fields.hours > 0 ? fields.hours : undefined;
@@ -75,7 +78,7 @@ export function readJourney(root: string): Journey | undefined
     const [road, from, toward, index] = [name(fields.road), name(fields.from), name(fields.toward), Number(fields.stretch) - 1];
     const on = road === undefined || from === undefined || toward === undefined ? undefined : { road, index: Number.isInteger(index) ? index : -1, from, toward, done: readLength(fields.done) ?? 0 };
     const at = readPosition(fields.at);
-    return { movers, to: name(fields.to), heading: text(fields.heading), left: readLength(fields.left), on, at, map: name(fields.map), pace: text(fields.pace), last, travelled, hours };
+    return { movers, riders, to: name(fields.to), heading: text(fields.heading), left: readLength(fields.left), on, at, map: name(fields.map), pace: text(fields.pace), last, travelled, hours };
 }
 
 /** Writes the journey in state.yaml, or removes it. */
@@ -84,6 +87,7 @@ export function saveJourney(root: string, journey: Journey | undefined): void
     const link = (name: string): string => `[[${name}]]`;
     const value = journey === undefined ? undefined : {
         who: journey.movers.map(link),
+        ...(journey.riders === undefined || sameNames(journey.riders, journey.movers) ? {} : { riders: journey.riders.map(link) }),
         ...(journey.to === undefined ? {} : { to: link(journey.to) }),
         ...(journey.heading === undefined ? {} : { heading: journey.heading }),
         ...(journey.left === undefined ? {} : { left: `${Math.round(journey.left)} m` }),
@@ -110,11 +114,18 @@ export function travelledSinceRest(journey: Journey | undefined, now: GameDate):
     return journey === undefined || minutesBetween(journey.last, now) >= restMinutes ? 0 : journey.travelled;
 }
 
-/** Whether a journey is made by these movers, the same ones. */
-export function sameMovers(journey: Journey, movers: Page[]): boolean
+/** Whether a journey is made by these movers: the same ones, or the same characters, as when one climbed into the cart or out of it. */
+export function sameMovers(world: World, journey: Journey, movers: Page[]): boolean
+{
+    return sameNames(journey.movers, movers.map((page) => page.name)) || (journey.riders !== undefined && sameNames(journey.riders, ridersOf(world, movers)));
+}
+
+/** The characters that movers take: those that are movers, and those a mover carries. */
+export function ridersOf(world: World, movers: Page[]): string[]
 {
     const names = new Set(movers.map((page) => comparableText(page.name)));
-    return journey.movers.length === names.size && journey.movers.every((name) => names.has(comparableText(name)));
+    const moving = (page: Page): boolean => names.has(comparableText(page.name));
+    return world.pages.filter((page) => page.type === "character" && (moving(page) || locate(world, page).chain.some(moving))).map((page) => page.name);
 }
 
 /** The movers of a journey as pages, those that still exist. */
@@ -129,7 +140,7 @@ export function journeyStart(world: World, roads: Roads, journey: Journey, mover
     const on = journey.on;
     const road = on === undefined ? undefined : pagesWithName(world, on.road)[0];
 
-    if (on === undefined || road === undefined || !sameMovers(journey, movers) || !movers.every((page) => locate(world, page).chain[0] === road)) {
+    if (on === undefined || road === undefined || !sameMovers(world, journey, movers) || !movers.every((page) => locate(world, page).chain[0] === road)) {
         return undefined;
     }
 
@@ -167,7 +178,7 @@ export function journeyPoint(world: World, journey: Journey, movers: Page[]): Po
 {
     const holder = movers[0] === undefined ? undefined : locate(world, movers[0]).chain[0];
 
-    if (journey.at === undefined || !sameMovers(journey, movers) || !movers.every((page) => locate(world, page).chain[0] === holder)) {
+    if (journey.at === undefined || !sameMovers(world, journey, movers) || !movers.every((page) => locate(world, page).chain[0] === holder)) {
         return undefined;
     }
 
@@ -232,4 +243,10 @@ export function journeyText(world: World, roads: Roads, journey: Journey | undef
         : "";
     const call = journey.to === undefined ? `travel toward ${journey.heading}` : `travel to ${journey.to}${journey.at === undefined ? "" : ", across"}`;
     return `${goal}${where}; ${hoursText(journey.travelled)} of travel since the last rest. To go on: ${call}.`;
+}
+
+function sameNames(first: string[], second: string[]): boolean
+{
+    const names = new Set(second.map(comparableText));
+    return first.length === names.size && first.every((name) => names.has(comparableText(name)));
 }
