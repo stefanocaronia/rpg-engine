@@ -128,17 +128,20 @@ describe("the lifestyle in a settlement (D-449, UPK-4)", () => {
 });
 
 describe("one long rest in 24 hours (D-449, RST-1)", () => {
-    it("gives nothing from a second one within 24 hours of the last that gave something, and says from when", async () => {
+    it("gives nothing from a second one called within 24 hours of the last that gave something, its hours advanced first, and says from when (D-500)", async () => {
         await ok("write", "Ettore", "--set", "hp=3/12");
         await ok("advance", "--by", "8h");
         expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("hp 3/12 → 12/12");
         await ok("change", "Ettore", "hp", "--to", "4");
         await ok("advance", "--by", "8h");
         const again = await ok("change", "Ettore", "--recipe", "long rest");
-        expect(again).toContain("Ettore had a long rest at day 2, 02:00, and gains nothing from another before day 2, 18:00: one in 24h.");
+        expect(again).toContain("Ettore had a long rest at day 2, 02:00, and gains nothing from another before day 3, 02:00: one in 24h.");
         expect(again).not.toContain("hp 4/12 →");
-        // The next night, called before its hours are advanced: 16 hours after the last call, as the master may call it either way.
-        await ok("advance", "--to", "day 2, 18:00");
+        expect(again).not.toContain("The game date did not move");
+        // 22 hours after the last, as in playtest 05, are too few; 24 are enough.
+        await ok("advance", "--to", "day 3, 00:00");
+        expect(await ok("change", "Ettore", "--recipe", "long rest")).not.toContain("hp 4/12 →");
+        await ok("advance", "--to", "day 3, 02:00");
         expect(await ok("change", "Ettore", "--recipe", "long rest")).toContain("hp 4/12 → 12/12");
     });
 });

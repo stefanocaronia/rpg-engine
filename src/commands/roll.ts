@@ -48,7 +48,7 @@ export const roll = defineCommand({
         ),
         why: z.string().optional().describe("what the roll is for"),
         check: z.string().optional().describe("what the roll is, as the player sees it in the dashboard's rolls, such as Bite or Stealth: never what only you know"),
-        who: z.string().optional().describe("character the roll belongs to, or a copy in the open scene; leave it out for a free roll of the master"),
+        who: z.string().optional().describe("character the roll belongs to, or a copy in the open scene, the damage and heals they deal too, never who takes them; leave it out only for a roll that is no one's, such as an oracle"),
         values: faceValues.optional().describe("faces rolled by the player with physical dice, separated by commas; on the command line write --values=-1,0,1 for negative faces"),
         hidden: z.boolean().optional().describe("only the master sees the result; its fingerprint goes to the player only if they ask for it"),
         reveal: z.string().optional().describe("id of a hidden roll whose proof to show, later"),

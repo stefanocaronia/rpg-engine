@@ -191,7 +191,7 @@ describe("recipes (DAT-4, DAT-5)", () => {
             "Ennio: Prosciugato ended; Ombra ended; hp 5/12 → 12/12; temp-hp 4 → 0; slots-1 0/2 → 2/2; exhaustion 1/6 → 0/6. Not brought back: hit-dice 0/1.",
             "Lena: hp 2/4 → 4/4 (again as Commoner).",
             'For the rest, read rules "Long Rest".',
-            "The game date did not move: advance the hours of the rest, if you have not yet.",
+            "The game date did not move: apply a rest once its hours (8h) have passed; if they have not yet, advance them now.",
         ].join("\n"));
         expect(character("Ennio")).toContain("Benedetto until day 1, 19:00");
         expect(character("Lena")).not.toContain("hp:");
@@ -241,7 +241,7 @@ describe("recipes (DAT-4, DAT-5)", () => {
     it("go to the page given, never to a copy, and are refused when the system has none by that name, with how to quote one", async () => {
         await ok("write", "Ennio", "--set", "temp-hp=4");
         expect(await ok("change", "Ennio", "--recipe", "short rest")).toBe(
-            'Short rest (a recipe of the system 5e):\nEnnio: nothing changed. Not brought back: hp 5/12.\nFor the rest, read rules "Short Rest".\nThe game date did not move: advance the hours of the rest, if you have not yet.',
+            'Short rest (a recipe of the system 5e):\nEnnio: nothing changed. Not brought back: hp 5/12.\nFor the rest, read rules "Short Rest".\nThe game date did not move: apply a rest once its hours have passed; if they have not yet, advance them now.',
         );
         expect(await refused("change", "Ennio", "--recipe", "riposo")).toBe('The system 5e has no recipe "riposo". Its recipes: long rest, short rest. Nothing changed.');
 
@@ -383,12 +383,12 @@ describe("other game systems", () => {
             "Bea: vigore 0/5 → 5/5; fatica 0/5 → 2/5; punti-a 0/2 → 2/2; punti-b 1/2 → 2/2. Not brought back: pozioni 0/3.",
             'vigore is no longer at 0: read rules "Sfinimento".',
             'For the rest, read rules "Riposo" and rules "Recupero".',
-            "The game date did not move: advance the hours of the rest, if you have not yet.",
+            "The game date did not move: apply a rest once its hours have passed; if they have not yet, advance them now.",
             "",
             "fatica changed: Fatica, from the rules of prova:\n# Fatica\n\nLa fatica toglie un dado.",
         ].join("\n"));
         expect(await ok("change", "Bea", "--recipe", "sosta")).toBe(
-            'Sosta (a recipe of the system prova):\nBea: nothing changed. Not brought back: fatica 2/5 (rules "Fatica"), pozioni 0/3.\nThe game date did not move: advance the hours of the rest, if you have not yet.',
+            'Sosta (a recipe of the system prova):\nBea: nothing changed. Not brought back: fatica 2/5 (rules "Fatica"), pozioni 0/3.\nThe game date did not move: apply a rest once its hours have passed; if they have not yet, advance them now.',
         );
         expect(await ok("effect", "add", "Bea", "Stordito", "--for", "1h")).toBe("Bea: Stordito until day 1, 19:00.\n\nStordito is a condition of the system prova:\n# Stordito\n\nChi è stordito perde il turno.");
         expect(await ok("effect", "add", "Bea", "Confuso", "--for", "1h")).toBe("Bea: Confuso until day 1, 19:00.");

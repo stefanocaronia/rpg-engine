@@ -152,7 +152,7 @@ export const travel = defineCommand({
         const journey = readJourney(root);
         const travellers = travellersOf(world, input.who, journey);
         const staying = input.who === undefined ? "" : stayingNote(world, travellers);
-        const { movers, vehicle } = moversOf(world, travellers);
+        const { movers, vehicle } = moversOf(world, system, travellers);
         const ownJourney = journey !== undefined && sameMovers(journey, movers) ? journey : undefined;
         checkOtherJourney(world, roads, journey, movers);
         const before = travelledSinceRest(ownJourney, now);

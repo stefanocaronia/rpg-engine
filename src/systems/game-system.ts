@@ -266,7 +266,7 @@ export interface Recipe
     needs?: string;
     /** How often it gives a page anything, as a long rest once in 24h (RST-1). */
     oncePer?: string;
-    /** How long it takes, as a long rest's 8h: the master may advance them before or after applying it (RST-1). */
+    /** How long it takes, as a long rest's 8h: the master advances them before applying it (RST-1, D-500). */
     lasts?: string;
     /** By counter named after its die, or counters that begin so, what spending one gives and adds to each die, as hit dice healing (D-449). */
     spend: Record<string, { gives: string; adds: Formula; }>;

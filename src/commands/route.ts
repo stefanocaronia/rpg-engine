@@ -49,7 +49,7 @@ export const route = defineCommand({
             throw new Error("There is no player character to start from: give from, a place.");
         }
 
-        const { movers, vehicle } = travellers.length === 0 ? { movers: [origin], vehicle: undefined } : moversOf(world, travellers);
+        const { movers, vehicle } = travellers.length === 0 ? { movers: [origin], vehicle: undefined } : moversOf(world, system, travellers);
         const journey = input.from === undefined ? readJourney(root) : undefined;
         const onRoad = journey === undefined ? undefined : journeyStart(world, roads, journey, movers);
         const departure = stopOf(world, roads, origin);

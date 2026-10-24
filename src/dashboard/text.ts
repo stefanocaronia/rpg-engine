@@ -74,6 +74,13 @@ export function pageLanguageOf(code: string | undefined): string
     return [asked, base, aliases[base] ?? ""].find((one) => shippedLanguages.includes(one)) ?? "en";
 }
 
+/** The browser's language, where the package ships it: the page's until the setup sets the campaign's (playtest 01); none for English or another. */
+export function browserLanguage(): string | undefined
+{
+    const language = typeof navigator === "undefined" ? "en" : pageLanguageOf(navigator.language);
+    return language === "en" ? undefined : language;
+}
+
 /** The languages the page is written in: English, and those shipped. */
 export function pageLanguages(): string[]
 {
