@@ -8,9 +8,12 @@ import { foldedText, t } from "./text.ts";
 /** Where a link of the text leads: the address of the page it names, or nothing, and the link stays its words. */
 export type LinkTo = (name: string) => string | undefined;
 
-export function Markdown({ text, link }: { text: string; link?: LinkTo; })
+/** What a secret's title says after its name, by the title the text gives it: who knows it, with more than one player character (VIEW-12). */
+export type SecretNote = (title: string) => string | undefined;
+
+export function Markdown({ text, link, secretNote }: { text: string; link?: LinkTo; secretNote?: SecretNote; })
 {
-    return <div class="markdown">{blocks(text, link, true).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
+    return <div class="markdown">{blocks(text, link, true, secretNote).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
 }
 
 /** The first line of a page's text that is not a heading nor in a fenced block, as plain words: what a closed card shows of it. */
@@ -46,7 +49,7 @@ const secretStart = /^[ \t]*\[!secret\][-+]?[ \t]*(.*)$/i;
 const pictureFile = /\.(?:png|jpe?g|gif|webp|avif|bmp|svg)$/i;
 
 /** The blocks of a text; `outer` for the text itself, where alone a quote may be a secret, as for the engine. */
-function blocks(text: string, link: LinkTo | undefined, outer: boolean): ComponentChildren[]
+function blocks(text: string, link: LinkTo | undefined, outer: boolean, note?: SecretNote): ComponentChildren[]
 {
     const shown: ComponentChildren[] = [];
     let paragraph: string[] = [];
@@ -71,7 +74,7 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean): Compone
         }
 
         if (quote.length > 0) {
-            show(<Quote lines={quote} link={link} outer={outer} />);
+            show(<Quote lines={quote} link={link} outer={outer} note={note} />);
         }
 
         paragraph = [];
@@ -146,7 +149,7 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean): Compone
 }
 
 /** A quote; at the text's own level, a secret the character discovered, written as a callout: a note of its own with its title. */
-function Quote({ lines, link, outer }: { lines: string[]; link: LinkTo | undefined; outer: boolean; })
+function Quote({ lines, link, outer, note }: { lines: string[]; link: LinkTo | undefined; outer: boolean; note: SecretNote | undefined; })
 {
     const secret = outer ? secretStart.exec(lines[0]) : null;
 
@@ -154,9 +157,10 @@ function Quote({ lines, link, outer }: { lines: string[]; link: LinkTo | undefin
         return <blockquote>{blocks(lines.join("\n"), link, false)}</blockquote>;
     }
 
+    const title = secret[1].trim();
     return (
         <aside class="md-secret">
-            <p class="eyebrow" dir="auto">{secret[1].trim() === "" ? t("Secret") : `${t("Secret")} · ${secret[1].trim()}`}</p>
+            <p class="eyebrow" dir="auto">{[t("Secret"), title, note?.(title)].filter((part) => part !== undefined && part !== "").join(" · ")}</p>
             {blocks(lines.slice(1).join("\n"), link, false)}
         </aside>
     );

@@ -6,30 +6,40 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { pictureAddress, readView, type WorldView } from "./api.ts";
 import { useMedia } from "./card.tsx";
-import type { KnownEntry, ShownDocument } from "./data.ts";
+import type { KnownEntry, Member, ShownDocument } from "./data.ts";
 import { Icon } from "./icons.tsx";
-import { documentLook, foundLore, groupedLore, type LoreGroup, loreGroupOf } from "./lore.ts";
+import { documentLook, foundLore, groupedLore, knownTo, type LoreGroup, loreGroupOf } from "./lore.ts";
 import { placeKindLabel, placeKinds } from "./map-symbols.ts";
-import { type LinkTo, Markdown, plainLine } from "./markdown.tsx";
+import { type LinkTo, Markdown, plainLine, type SecretNote } from "./markdown.tsx";
 import { Token } from "./party.tsx";
-import { arrowStep, capitalized, foldedText, t } from "./text.ts";
+import { arrowStep, capitalized, foldedText, listText, t } from "./text.ts";
 
 // From this width the reader stands beside the list.
 const wide = "(min-width: 900px)";
 
 /**
  * The pages the character knows: the list by kind with its search, and the one open, read again as the game changes (`version`). `onMap` is the address of a
- * place on the world map, or of the nearest that holds it.
+ * place on the world map, or of the nearest that holds it. With more than one player character (`players`), a chip for each among the kinds shows what that
+ * one knows (D-480 (7)).
  */
-export function LoreTab({ world, version, open, onMap }: { world: WorldView; version: number; open?: string | undefined; onMap: (places: string[]) => string | undefined; })
+export function LoreTab({ world, version, open, onMap, players = [] }: {
+    world: WorldView;
+    version: number;
+    open?: string | undefined;
+    onMap: (places: string[]) => string | undefined;
+    players?: Member[];
+})
 {
     const [search, setSearch] = useState("");
-    const [group, setGroup] = useState<LoreGroup>();
+    // A kind of page, or a player character's name after "@".
+    const [filter, setFilter] = useState<string>();
     const besides = useMedia(wide);
     const found = foundLore(world.known, search);
-    const shownGroup = group !== undefined && found.some((entry) => loreGroupOf(entry) === group) ? group : undefined;
-    const listed = shownGroup === undefined ? found : found.filter((entry) => loreGroupOf(entry) === shownGroup);
+    const kept = (entry: KnownEntry, key: string | undefined): boolean => key === undefined || (key.startsWith("@") ? knownTo(entry, key.slice(1)) : loreGroupOf(entry) === key);
+    const shownFilter = filter !== undefined && found.some((entry) => kept(entry, filter)) ? filter : undefined;
+    const listed = found.filter((entry) => kept(entry, shownFilter));
     const groups = groupedLore(listed);
+    const each = players.length > 1 ? players : [];
     // A name the address gives that the character does not know: said so over the list.
     const asked = world.known.find((one) => one.name === open);
     const entry = asked ?? (besides ? groups[0]?.entries[0] : undefined);
@@ -49,8 +59,17 @@ export function LoreTab({ world, version, open, onMap }: { world: WorldView; ver
                         <input type="search" value={search} placeholder={t("Search")} aria-label={t("Search what your character knows")} onInput={(event) => setSearch(event.currentTarget.value)} />
                     </span>
                 </div>
-                {groupedLore(world.known).length > 1 && (
-                    <FilterChips label={t("Kinds")} chosen={shownGroup} onChoose={setGroup} all={found.length} options={groupedLore(found).map((part) => ({ key: part.group, name: groupLabel(part.group), count: part.entries.length }))} />
+                {(groupedLore(world.known).length > 1 || each.length > 0) && (
+                    <FilterChips
+                        label={t("Kinds")}
+                        chosen={shownFilter}
+                        onChoose={setFilter}
+                        all={found.length}
+                        options={[
+                            ...groupedLore(found).map((part) => ({ key: part.group, name: groupLabel(part.group), count: part.entries.length })),
+                            ...each.map((member) => ({ key: `@${member.name}`, name: member.name, count: found.filter((entry) => knownTo(entry, member.name)).length, member })),
+                        ]}
+                    />
                 )}
                 {found.length === 0 && (
                     <p class="browse-none" role="status">
@@ -91,6 +110,7 @@ export function LoreTab({ world, version, open, onMap }: { world: WorldView; ver
                     entry={entry}
                     version={version}
                     link={link}
+                    several={each.length > 0}
                     onMap={entry.type === "place" ? onMap([entry.name, ...entry.within ?? []]) : undefined}
                     focus={asked !== undefined}
                 />
@@ -99,8 +119,11 @@ export function LoreTab({ world, version, open, onMap }: { world: WorldView; ver
     );
 }
 
-/** The documents the character has or read: those it carries, then the others; the one open on its paper, as what it is. */
-export function DocumentsTab({ world, open }: { world: WorldView; open?: string | undefined; })
+/**
+ * The documents the character has or read: those it carries, then the others; the one open on its paper, as what it is. With more than one player character
+ * (`players`), a group for each who carries some, by name (D-480 (7)).
+ */
+export function DocumentsTab({ world, open, players = [] }: { world: WorldView; open?: string | undefined; players?: Member[]; })
 {
     const besides = useMedia(wide);
     const asked = world.documents.find((one) => one.name === open);
@@ -111,8 +134,11 @@ export function DocumentsTab({ world, open }: { world: WorldView; open?: string 
         return <p class="browse-none">{t("No documents yet: the letters, notices and pages your character finds or reads come here, to read again.")}</p>;
     }
 
+    const several = players.length > 1;
+    const carriers = several ? players.map((member) => member.name) : [];
     const parts = [
-        { key: "carried", name: t("With you"), documents: world.documents.filter((one) => one.carried) },
+        ...carriers.map((name, index) => ({ key: `carried-${index}`, name: t("With {name}", { name }), documents: world.documents.filter((one) => one.carried && one.carrier === name) })),
+        { key: "carried", name: t("With you"), documents: world.documents.filter((one) => one.carried && (one.carrier === undefined || !carriers.includes(one.carrier))) },
         { key: "read", name: t("Read elsewhere"), documents: world.documents.filter((one) => !one.carried) },
     ].filter((part) => part.documents.length > 0);
     return (
@@ -149,9 +175,28 @@ export function DocumentsTab({ world, open }: { world: WorldView; open?: string 
                     </section>
                 ))}
             </div>
-            {document !== undefined && <DocumentReader key={document.name} document={document} link={link} focus={asked !== undefined} />}
+            {document !== undefined && <DocumentReader key={document.name} document={document} link={link} focus={asked !== undefined} several={several} />}
         </Browse>
     );
+}
+
+/** Who knows a secret, after its title, when not all the player characters do: "known to Mira alone". */
+function secretKnowers(knowers: { secret: string; who: string[]; }[]): SecretNote
+{
+    return (title) => {
+        const who = knowers.find((one) => foldedText(one.secret.trim()) === foldedText(title))?.who ?? [];
+        return who.length === 0 ? undefined : who.length === 1 ? t("known to {name} alone", { name: who[0] }) : t("known to {names} alone", { names: listText(who) });
+    };
+}
+
+/** Whether a document is carried, in words: by the player's character, or with more than one by the one named, as its group says; nothing of one read elsewhere. */
+function carriedWords(document: ShownDocument, several: boolean): string | undefined
+{
+    if (!several) {
+        return document.carried ? t("You carry it") : t("You read it");
+    }
+
+    return document.carried && document.carrier !== undefined ? t("With {name}", { name: document.carrier }) : undefined;
 }
 
 /** A document in the page's language, by what it is: Letter; one the page does not know as its own word. */
@@ -211,9 +256,11 @@ function Browse({ open, explicit, back, backLabel, children }: { open?: string |
 }
 
 /** A page the character knows, read whole as it knows it: its picture, what it is and where, its text with its links, and where it leads on the page. */
-function LoreReader({ entry, version, link, onMap, focus }: { entry: KnownEntry; version: number; link: LinkTo; onMap?: string | undefined; focus: boolean; })
+function LoreReader({ entry, version, link, onMap, focus, several }: { entry: KnownEntry; version: number; link: LinkTo; onMap?: string | undefined; focus: boolean; several: boolean; })
 {
     const [text, setText] = useState<string>();
+    // Who knows each secret, when not all the player characters do: said after its title, the one place the page names them (D-480 (7)).
+    const [knowers, setKnowers] = useState<{ secret: string; who: string[]; }[]>([]);
     const [problem, setProblem] = useState(false);
     const reads = useRef(0);
     const title = useRef<HTMLHeadingElement>(null);
@@ -225,6 +272,7 @@ function LoreReader({ entry, version, link, onMap, focus }: { entry: KnownEntry;
             (page) => {
                 if (reading === reads.current) {
                     setText(page.kind === "page" ? page.text : "");
+                    setKnowers(page.kind === "page" ? page.knownBy ?? [] : []);
                     setProblem(false);
                 }
             },
@@ -276,7 +324,7 @@ function LoreReader({ entry, version, link, onMap, focus }: { entry: KnownEntry;
             )}
             <div class="reader-text">
                 {text === undefined && !problem && entry.summary !== "" && <Markdown text={entry.summary} link={link} />}
-                {text !== undefined && text.trim() !== "" && <Markdown text={text} link={link} />}
+                {text !== undefined && text.trim() !== "" && <Markdown text={text} link={link} {...(several ? { secretNote: secretKnowers(knowers) } : {})} />}
                 {((text !== undefined && text.trim() === "") || (text === undefined && entry.summary === "")) && !problem && (
                     <p class="browse-none">{text === undefined ? t("Reading…") : t("Your character knows its name, and nothing more yet.")}</p>
                 )}
@@ -287,7 +335,7 @@ function LoreReader({ entry, version, link, onMap, focus }: { entry: KnownEntry;
 }
 
 /** A document on its paper, as what it is: a letter, a notice, a torn page; its picture first, larger at a click, for a map above all. */
-function DocumentReader({ document, link, focus }: { document: ShownDocument; link: LinkTo; focus: boolean; })
+function DocumentReader({ document, link, focus, several }: { document: ShownDocument; link: LinkTo; focus: boolean; several: boolean; })
 {
     const title = useRef<HTMLHeadingElement>(null);
     const look = documentLook(document.document);
@@ -296,7 +344,7 @@ function DocumentReader({ document, link, focus }: { document: ShownDocument; li
         <article class="browse-reader" aria-labelledby="reader-title">
             <header class="reader-head">
                 <div>
-                    <p class="eyebrow">{[documentLabel(document.document), document.carried ? t("You carry it") : t("You read it")].join(" · ")}</p>
+                    <p class="eyebrow">{[documentLabel(document.document), carriedWords(document, several)].filter((part) => part !== undefined).join(" · ")}</p>
                     <h3 id="reader-title" tabIndex={-1} ref={title}>{document.name}</h3>
                 </div>
             </header>
@@ -315,7 +363,13 @@ function DocumentReader({ document, link, focus }: { document: ShownDocument; li
 
 /** A row of filter chips: All, then each option with its count; one stop of Tab, the arrows along it. */
 function FilterChips<Key extends string>(
-    { label, options, chosen, all, onChoose }: { label: string; options: { key: Key; name: string; count: number; }[]; chosen: Key | undefined; all: number; onChoose: (key: Key | undefined) => void; },
+    { label, options, chosen, all, onChoose }: {
+        label: string;
+        options: { key: Key; name: string; count: number; member?: Member; }[];
+        chosen: Key | undefined;
+        all: number;
+        onChoose: (key: Key | undefined) => void;
+    },
 )
 {
     const row = useRef<HTMLDivElement>(null);
@@ -333,8 +387,16 @@ function FilterChips<Key extends string>(
         }
     };
 
-    const chip = (key: Key | undefined, name: string, count: number) => (
-        <button type="button" key={key ?? ""} aria-pressed={chosen === key} tabIndex={chosen === key ? 0 : -1} onClick={() => onChoose(key)}>
+    const chip = (key: Key | undefined, name: string, count: number, member?: Member) => (
+        <button
+            type="button"
+            key={key ?? ""}
+            class={member === undefined ? undefined : "with-token"}
+            aria-pressed={chosen === key}
+            tabIndex={chosen === key ? 0 : -1}
+            onClick={() => onChoose(key)}
+        >
+            {member !== undefined && <Token member={member} />}
             {name}
             <span class="package-count">{count}</span>
         </button>
@@ -343,7 +405,7 @@ function FilterChips<Key extends string>(
     return (
         <div class="package-chips" role="group" aria-label={label} ref={row} onKeyDown={move}>
             {chip(undefined, t("All"), all)}
-            {options.map((option) => chip(option.key, option.name, option.count))}
+            {options.map((option) => chip(option.key, option.name, option.count, option.member))}
         </div>
     );
 }

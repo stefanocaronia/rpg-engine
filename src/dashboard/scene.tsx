@@ -23,9 +23,9 @@ const bandTime = 220;
  * The Scene (D-309, D-444), the one page of where the party is. Outside turns the place, its picture with its text under it, the open scene and the map; while
  * the scene goes by turns the band of the turns on top, the place closed to a line, the player's character's card beside the map, and on a narrow screen the
  * order of the turns. The map is the same through both, never drawn anew; only the band moves, coming and going. `actor` is the player character whose card
- * is at hand, `foreground` the one the map measures from, with `several` player characters (VIEW-12).
+ * is at hand, `foreground` the one the map measures from, with `several` player characters (VIEW-12); `onShowCard` shows the card of another (D-480 (7)).
  */
-export function SceneView({ place, scene, actor, foreground, several = false, party, own, turnsBeside = false }: {
+export function SceneView({ place, scene, actor, foreground, several = false, party, own, turnsBeside = false, onShowCard }: {
     place?: ShownPlace;
     scene?: ShownScene;
     actor?: Member;
@@ -34,6 +34,7 @@ export function SceneView({ place, scene, actor, foreground, several = false, pa
     party: Member[];
     own: OwnSheet;
     turnsBeside?: boolean;
+    onShowCard?: (name: string) => void;
 })
 {
     const turns = hasTurns(scene) ? scene : undefined;
@@ -58,7 +59,7 @@ export function SceneView({ place, scene, actor, foreground, several = false, pa
                 {turns && (
                     <div key="side" class="turn-side">
                         {!turnsBeside && <TurnsCard scene={turns} party={party} several={several} />}
-                        <CharacterCard lead={actor} scene={turns} own={own} />
+                        <CharacterCard lead={actor} scene={turns} own={own} party={party} {...(several && onShowCard !== undefined ? { onShow: onShowCard } : {})} />
                     </div>
                 )}
                 {place?.map && <PlaceMap key="map" map={place.map} place={place.name} {...(turns?.turn === undefined ? {} : { acting: turns.turn })} dying={dyingOf(party)} self={foreground} />}

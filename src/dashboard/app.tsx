@@ -102,6 +102,8 @@ function App()
     const reading = useRef(0);
     // Whose sheet the Party section opened by itself, kept until the address changes.
     const opened = useRef<string>();
+    // Whose card the player chose at hand in a fight, with more than one player character (D-480 (7)): kept through that turn alone.
+    const handed = useRef<{ who: string; turn: string; }>();
     // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new since come into the list as new.
     const seen = useRef<Set<string>>();
     const [thrown, setThrown] = useState<ShownRoll>();
@@ -163,7 +165,15 @@ function App()
             const foreground = overview.kind === "overview" ? overview.foreground : undefined;
             // The sheet the Party section opens without a name stays while the player reads it, until they leave the section (D-480 (7)).
             const kept = address.section === "party" ? party.find((candidate) => candidate.name === opened.current) : undefined;
-            const member = (address.section === "party" ? party.find((candidate) => candidate.name === address.name) : undefined) ?? kept ?? calledOf(party, address.section, asked, scene, foreground);
+
+            // The card handed to another stays through that turn of that fight alone, while they are still in it; a fight reopened by the same title in the same minute counts as one.
+            if (handed.current !== undefined && (handed.current.turn !== turnKey(scene) || !(scene?.fighters ?? []).some((one) => one.name === handed.current?.who))) {
+                handed.current = undefined;
+            }
+
+            const atHand = address.section !== "party" ? playerNamed(party, handed.current?.who) : undefined;
+            const member = (address.section === "party" ? party.find((candidate) => candidate.name === address.name) : undefined) ?? kept ?? atHand
+                ?? calledOf(party, address.section, asked, scene, foreground);
 
             if (address.section === "party" && address.name === undefined) {
                 opened.current = member?.name;
@@ -365,6 +375,8 @@ function App()
     const players = shown.party.filter((candidate) => candidate.role === "pc");
     // With more than one living player character the page names each one, never "you" (D-480 (7)); the view gives the foreground then alone.
     const several = shown.foreground !== undefined;
+    // What a dead one carried, knew or may be gone back from stays theirs: those pages name each player character, the dead too (D-480 (1), (2)).
+    const many = players.length > 1;
     // The one in the foreground, whose place the page shows; and whose card is at hand in a fight, the one whose sheet was read.
     const lead = playerNamed(shown.party, shown.foreground) ?? players[0];
     const actor = member?.role === "pc" ? member : lead;
@@ -545,6 +557,7 @@ function App()
             unread={shown.rollsTotal > shown.rolls.length}
             campaign={shown.campaign}
             party={shown.party}
+            several={several}
             fresh={fresh}
             onMore={() => {
                 rollsAsked.current += firstRolls;
@@ -657,6 +670,10 @@ function App()
                                                 several={several}
                                                 party={shown.party}
                                                 turnsBeside={table}
+                                                onShowCard={(name) => {
+                                                    handed.current = { who: name, turn: turnKey(shown.openScene) };
+                                                    void read();
+                                                }}
                                                 own={{
                                                     sheet: shown.chosen === actor?.name ? shown.sheet : [],
                                                     cards: shown.cards,
@@ -665,9 +682,9 @@ function App()
                                                 }}
                                             />
                                         )}
-                                        {address.section === "world" && <WorldView version={shown.version} lead={lead} tab={address.tab} item={address.name} />}
-                                        {address.section === "settings" && <SettingsView version={shown.version} />}
-                                        {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} />}
+                                        {address.section === "world" && <WorldView version={shown.version} lead={lead} players={many ? players : undefined} tab={address.tab} item={address.name} />}
+                                        {address.section === "settings" && <SettingsView version={shown.version} several={many} />}
+                                        {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} several={many} />}
                                         {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
                                         {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} tab={address.tab} item={address.name} />}
                                         {address.section === "party" && member && (
@@ -776,6 +793,12 @@ function calledOf(party: Member[], section: string, asked: Asked | undefined, sc
     const asking = playerNamed(party, asked?.who);
     const acting = hasTurns(scene) ? playerNamed(party, scene.turn) : undefined;
     return (section === "party" ? asking ?? acting : acting ?? asking) ?? playerNamed(party, foreground) ?? party[0];
+}
+
+/** The turn of a scene that goes by them, as the round and who acts; empty outside turns. */
+function turnKey(scene: ShownScene | undefined): string
+{
+    return hasTurns(scene) ? `${scene.title} ${scene.since ?? ""} ${scene.round ?? ""} ${scene.turn ?? ""}` : "";
 }
 
 /** A death save's card with its outcome, as what the system's code wrote left who rolled it, in the party as last read (D-461). */

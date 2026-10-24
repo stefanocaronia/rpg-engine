@@ -14,7 +14,7 @@ import { sideOf, Token } from "./party.tsx";
 import { dyingState } from "./save-outcome.ts";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
 import { StatusIcons, StatusPip, type TokenStatus } from "./status.tsx";
-import { t } from "./text.ts";
+import { arrowStep, t } from "./text.ts";
 import { Bar } from "./widgets.tsx";
 
 /** The player character's sheet as the page read it, for its card. */
@@ -112,9 +112,10 @@ function TurnMarks({ marks }: { marks: { use: string; used: boolean; }[]; })
 
 /**
  * A player character's card while the scene goes by turns (D-315, D-444), the one acting or called: its name, what it is, and the way to its whole sheet in its
- * header; what it keeps, the fields and groups of its sheet the system names; at 0 only the death saves. Nothing when the system names none.
+ * header; what it keeps, the fields and groups of its sheet the system names; at 0 only the death saves. Nothing when the system names none. With more than
+ * one player character in the fight, their tokens in its header show the card of each (`onShow`, D-480 (7)), in place of what it is.
  */
-export function CharacterCard({ lead, scene, own }: { lead?: Member; scene: TurnScene; own: OwnSheet; })
+export function CharacterCard({ lead, scene, own, party = [], onShow }: { lead?: Member; scene: TurnScene; own: OwnSheet; party?: Member[]; onShow?: (name: string) => void; })
 {
     const fighter = scene.fighters.find((one) => one.role === "pc" && one.name === lead?.name);
 
@@ -122,9 +123,12 @@ export function CharacterCard({ lead, scene, own }: { lead?: Member; scene: Turn
         return null;
     }
 
+    const players = onShow === undefined ? [] : party.filter((member) => member.role === "pc" && scene.fighters.some((one) => one.role === "pc" && one.name === member.name));
+    const switching = players.length > 1 && onShow !== undefined;
     return (
         <aside class="at-hand" aria-labelledby="at-hand-title">
-            <CardHead icon={iconPath("party")} title={<h3 id="at-hand-title">{lead.name}</h3>} {...(lead.headline === undefined ? {} : { note: lead.headline })}>
+            <CardHead icon={iconPath("party")} title={<h3 id="at-hand-title">{lead.name}</h3>} {...(lead.headline === undefined || switching ? {} : { note: lead.headline })}>
+                {switching && <CardSwitch players={players} shown={lead.name} onShow={onShow} />}
                 <a class="icon-button tip-left" href={`#/party/${encodeURIComponent(lead.name)}`} aria-label={t("The whole sheet")} data-tip={t("The whole sheet")}>
                     <Icon name="party" />
                 </a>
@@ -136,6 +140,44 @@ export function CharacterCard({ lead, scene, own }: { lead?: Member; scene: Turn
                 </>
             )}
         </aside>
+    );
+}
+
+/** The tokens of the player characters in a fight, the one whose card shows pressed: one stop of Tab, the arrows along them (D-480 (7)). */
+function CardSwitch({ players, shown, onShow }: { players: Member[]; shown: string; onShow: (name: string) => void; })
+{
+    const row = useRef<HTMLDivElement>(null);
+
+    const move = (event: KeyboardEvent): void => {
+        const buttons = [...row.current?.querySelectorAll("button") ?? []];
+        const at = buttons.indexOf(event.target as HTMLButtonElement);
+        const step = arrowStep(event.key, true);
+        const to = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : step === 0 ? -1 : (at + step + buttons.length) % buttons.length;
+
+        if (to >= 0) {
+            event.preventDefault();
+            buttons[to]?.focus();
+            buttons[to]?.click();
+        }
+    };
+
+    return (
+        <div class="at-hand-switch" role="group" aria-label={t("Whose card")} ref={row} onKeyDown={move}>
+            {players.map((member) => (
+                <button
+                    type="button"
+                    key={member.name}
+                    class="tip-below"
+                    aria-pressed={member.name === shown}
+                    aria-label={member.name}
+                    data-tip={member.name}
+                    tabIndex={member.name === shown ? 0 : -1}
+                    onClick={() => member.name !== shown && onShow(member.name)}
+                >
+                    <Token member={member} />
+                </button>
+            ))}
+        </div>
     );
 }
 

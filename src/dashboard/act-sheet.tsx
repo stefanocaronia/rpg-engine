@@ -2,7 +2,7 @@
 // made for people chooses on whom, on the map or in a list; the page writes the sentence in a field the player changes before it goes. No rule here.
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { actPeople, actSentence, type ActStart, type ActTarget, actTitle, talkSentence, targetMode, verbLabel } from "./acts.ts";
+import { actPeople, actSentence, type ActStart, type ActTarget, actTitle, spokenBy, talkSentence, targetMode, verbLabel } from "./acts.ts";
 import type { ActVerb, ShownPlace, ShownScene } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
@@ -43,7 +43,8 @@ export function ActSheet(
     const map = place?.map;
     const people = actPeople(place, scene, companions, self);
     const shownTarget: ActTarget = target === undefined ? "none" : target === "square" ? (square.trim() === "" ? "none" : { square: square.trim().toUpperCase() }) : target;
-    const composed = "talk" in start ? talkSentence(start.talk) : actSentence(verb ?? "use", start.item, shownTarget);
+    // With more than one player character the sentence starts with who acts (D-480 (8)).
+    const composed = spokenBy("talk" in start ? talkSentence(start.talk) : actSentence(verb ?? "use", start.item, shownTarget), self);
     const [text, setText] = useState(composed);
     // What the page wrote last: changed by the player, the sentence is theirs and a new choice leaves it as it is.
     const written = useRef(composed);

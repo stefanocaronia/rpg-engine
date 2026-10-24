@@ -7125,6 +7125,11 @@ summary.fixed {
     --size: 40px;
 }
 
+/* The tray's free dice among several player characters are no one's (D-480 (7)): a die on the coin, where a face would be. */
+.roll-die {
+    color: var(--accent);
+}
+
 .roll-who,
 .roll-check {
     grid-column: 2;
@@ -9675,6 +9680,45 @@ svg.icon {
     margin: 0 -16px;
 }
 
+/* With more than one player character in the fight, their tokens in its header, the one whose card shows ringed in the accent (D-480 (7)). */
+.at-hand-switch {
+    display: flex;
+    gap: 4px;
+    margin-inline-start: auto;
+}
+
+.at-hand-switch button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+}
+
+.at-hand-switch .token {
+    --size: 30px;
+}
+
+.at-hand-switch [aria-pressed="false"] .token {
+    opacity: 0.7;
+}
+
+.at-hand-switch [aria-pressed="true"] .token {
+    box-shadow: var(--coin-shadow), 0 0 0 2px var(--panel), 0 0 0 4px var(--accent);
+}
+
+@media (pointer: coarse) {
+    .at-hand-switch button {
+        width: var(--target);
+        height: var(--target);
+    }
+}
+
 /* The sheet's cards inside it, as its sections. */
 .at-hand .group {
     margin: 0 -16px;
@@ -9934,6 +9978,15 @@ svg.icon {
 
 .browse-list .package-chips {
     margin: 0;
+}
+
+/* A chip for each player character, with more than one (D-480 (7)): the token before the name, the chip's padding round it. */
+.package-chips button.with-token {
+    padding-inline-start: 5px;
+}
+
+.package-chips .token {
+    --size: 24px;
 }
 
 .browse-group {

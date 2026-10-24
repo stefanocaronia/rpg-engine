@@ -13,7 +13,8 @@ import { placeKinds } from "./map-symbols.ts";
 import { PageHead } from "./pages.tsx";
 import { t } from "./text.ts";
 
-export function SavesView({ version, campaign }: { version: number; campaign?: string; })
+/** The Saves section; with `several` player characters, checkpoint goes back when all die, or when one does and the table chooses it (D-480 (2)). */
+export function SavesView({ version, campaign, several = false }: { version: number; campaign?: string; several?: boolean; })
 {
     const [saves, setSaves] = useState<Saves>();
     const [problem, setProblem] = useState<string>();
@@ -63,7 +64,7 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
             <PageHead section="saves" id="saves-title" />
             {saves !== undefined && (
                 <p class="saves-lead">
-                    <strong>{valueLabel(saves.mode)}:</strong> {modeText(saves.mode) ?? saves.rule} <a href={sectionAddress("settings")}>{t("Change it in Settings.")}</a>
+                    <strong>{valueLabel(saves.mode)}:</strong> {modeText(saves.mode, several) ?? saves.rule} <a href={sectionAddress("settings")}>{t("Change it in Settings.")}</a>
                 </p>
             )}
             {problem !== undefined && <p class="saves-said problem" role="alert">{problem}</p>}
@@ -88,7 +89,9 @@ export function SavesView({ version, campaign }: { version: number; campaign?: s
                                 </button>
                             )}
                             {/* Under checkpoint, where the death of the character would take the game (D-361). */}
-                            {saves.mode === "checkpoint" && index === 0 && !save.load && save.point === undefined && <p class="save-note">{t("Back here if your character dies")}</p>}
+                            {saves.mode === "checkpoint" && index === 0 && !save.load && save.point === undefined && (
+                                <p class="save-note">{several ? t("Back here if they all die, or if the table chooses it when one dies") : t("Back here if your character dies")}</p>
+                            )}
                         </li>
                     ))}
                 </ol>
@@ -355,11 +358,13 @@ function comparable(text: string): string
 }
 
 /** What a mode of saves lets the player do, in their words; undefined for one the page does not know. */
-function modeText(mode: string): string | undefined
+function modeText(mode: string, several: boolean): string | undefined
 {
     const texts: Record<string, string> = {
         free: t("save when you like, and go back to any save."),
-        checkpoint: t("the game saves at the end of each scene, and goes back to the last save only if your character dies."),
+        checkpoint: several
+            ? t("the game saves at the end of each scene, and goes back to the last save only if they all die, or if the table chooses it when one dies.")
+            : t("the game saves at the end of each scene, and goes back to the last save only if your character dies."),
         permadeath: t("the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over."),
     };
     return texts[mode];

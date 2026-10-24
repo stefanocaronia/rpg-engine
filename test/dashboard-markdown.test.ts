@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': this one is loaded by its address, with its two functions' types.
 const { Markdown, plainLine } = await import(new URL("../src/dashboard/markdown.tsx", import.meta.url).href) as {
-    Markdown: (props: { text: string; link?: (name: string) => string | undefined; }) => ComponentChildren;
+    Markdown: (props: { text: string; link?: (name: string) => string | undefined; secretNote?: (title: string) => string | undefined; }) => ComponentChildren;
     plainLine: (text: string) => string | undefined;
 };
 
@@ -34,6 +34,12 @@ describe("a page's text on the dashboard (D-275)", () => {
         expect(shown("> [!secret]")).toBe("<aside><p>Secret</p></aside>");
     });
 
+    it("says after a secret's title who knows it, with more than one player character, by the title the text gives it (VIEW-12)", () => {
+        const secretNote = (title: string): string | undefined => (title === "Verità" ? "known to Mira alone" : undefined);
+        expect(shown("> [!secret] Verità\n> testo", secretNote)).toBe("<aside><p>Secret · Verità · known to Mira alone</p><p>testo</p></aside>");
+        expect(shown("> [!secret] Altro\n> testo", secretNote)).toBe("<aside><p>Secret · Altro</p><p>testo</p></aside>");
+    });
+
     it("never lets a fenced block swallow the text: it opens and closes on lines of its own, and one left open is shown as it is", () => {
         expect(shown("```map\nA B\n```\nUn villaggio sul fiume.")).toBe("<p>Un villaggio sul fiume.</p>");
         expect(shown("```rpg roll 1d20```\nTesto dopo.")).toBe("<p>```rpg roll 1d20``` Testo dopo.</p>");
@@ -48,9 +54,9 @@ describe("a page's text on the dashboard (D-275)", () => {
 });
 
 /** The text as the page draws it, its tags and the addresses of its links, without classes. */
-function shown(text: string): string
+function shown(text: string, secretNote?: (title: string) => string | undefined): string
 {
-    const page = html(Markdown({ text, link }));
+    const page = html(Markdown({ text, link, ...(secretNote === undefined ? {} : { secretNote }) }));
     return page.replace(/^<div>|<\/div>$/g, "");
 }
 

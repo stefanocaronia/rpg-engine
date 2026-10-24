@@ -40,6 +40,8 @@ import { hasSheet } from "./worked-out.ts";
 
 // How many lines of the diary the view gives when no number is asked.
 const diaryLines = 10;
+// How a player character is played while their player is away (D-480 (4)).
+const awayRule = "You play while your player is away: no big decision, nothing precious spent, no needless risk.";
 
 // How many rolls the view gives, the last ones.
 const rollsShown = 20;
@@ -144,6 +146,8 @@ export type ViewResult =
         knownBy?: { secret: string; who: string[]; }[];
         /** With more than one player character, who knows the page, when not all of them do (VIEW-12). */
         whoKnows?: string[];
+        /** With who knows, the living player characters who do not, played as not knowing it. */
+        unaware?: string[];
         /** The player character's opening text, which the player may propose on the dashboard (D-373, D-386); left out on other pages. */
         story?: string;
     }
@@ -174,6 +178,8 @@ export type ViewResult =
         lived: string[];
         /** A companion's last lines of their diary, with their dates (DIA-3); none for anyone else. */
         thoughts?: string[];
+        /** For a living player character played while their player is away (D-480 (4)), the prudence it is played with. */
+        away?: string;
     }
     /** The world map as the player character knows it (VIEW-7). */
     | ({ kind: "map"; } & ShownMap)
@@ -456,7 +462,7 @@ export const view = defineCommand({
                     result.title,
                     sheetText(result.sheet).join("\n"),
                     result.text,
-                    result.whoKnows === undefined ? "" : `Known to ${result.whoKnows.join(" and ")} alone.`,
+                    result.whoKnows === undefined ? "" : whoKnowsText(result.whoKnows, result.unaware ?? []),
                     ...(result.knownBy ?? []).map((one) => `Secret ${one.secret}: known to ${one.who.join(" and ")} alone.`),
                 ].filter((block) => block !== "").join("\n\n");
             case "section":
@@ -525,6 +531,7 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
     const story = own ? playerStory(page) : undefined;
     const secrets = knownSecretsApart(world, knowledge, page);
     const whoKnows = pageKnownBy(knowledge, page);
+    const unaware = whoKnows === undefined ? [] : (knowledge.each ?? []).map((one) => one.pc).filter((pc) => pc.fields.status !== "dead" && !whoKnows.includes(pc.name)).map((pc) => pc.name);
     return {
         kind: "page",
         title: `${page.name} (${page.type ?? "page"})`,
@@ -535,8 +542,16 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
         text: knownText(world, knowledge, page),
         ...(secrets.length === 0 ? {} : { knownBy: secrets }),
         ...(whoKnows === undefined ? {} : { whoKnows }),
+        ...(unaware.length === 0 ? {} : { unaware }),
         ...(story === undefined ? {} : { story }),
     };
+}
+
+/** "Known to Bruna alone: Ettore plays as not knowing it, though all at the screen may read it.": who knows a page, and how the others are played (VIEW-12). */
+function whoKnowsText(who: string[], unaware: string[]): string
+{
+    const others = unaware.length === 0 ? "" : `: ${unaware.join(" and ")} ${unaware.length === 1 ? "plays" : "play"} as not knowing it, though all at the screen may read it`;
+    return `Known to ${who.join(" and ")} alone${others}.`;
 }
 
 /** "; known to Ettore alone": who of the player characters knows something, when not all of them do (VIEW-12). */
@@ -580,6 +595,8 @@ function memoryOf(sight: PlaceSight): Extract<ViewResult, { kind: "memory"; }>
         discovered: discoveredSecrets(world, knowledge).map((secret) => `${secret.page}#${secret.name}: ${secret.text.replace(/\s*\n\s*/g, " ")}`),
         lived: scenesLivedBy(root, world, self).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.title}${one.summary === "" ? "" : `: ${one.summary}`}`),
         ...(self.fields.role === "companion" ? { thoughts: thoughtsIn(root, world, self).slice(-thoughtsShown).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.text}`) } : {}),
+        // A lone player character's player is never away.
+        ...(isPlayerCharacter(self) && self.fields.status !== "dead" && playerCharacters(world).filter((one) => one.fields.status !== "dead").length > 1 ? { away: awayRule } : {}),
     };
 }
 
@@ -599,6 +616,7 @@ function memoryText(result: Extract<ViewResult, { kind: "memory"; }>): string
         list("Discovered", result.discovered),
         list("Lived", result.lived),
         result.thoughts === undefined ? "" : thoughtsText(result.thoughts),
+        result.away ?? "",
     ].filter((block) => block !== "").join("\n\n");
 }
 

@@ -180,7 +180,9 @@ describe("what the player characters know together (VIEW-12, D-480 (1))", () => 
         await ok("scene", "open", "--title", "Alla torre", "--type", "social", "--place", "Torre", "--with", "Bruna", "--with", "Varro");
         await ok("reveal", "Varro#Colpa", "--to", "Bruna");
         await ok("scene", "close", "--summary", "Bruna parla con Varro.");
-        expect(await ok("view", "Varro")).toBe("Varro (character)\n\nIl mugnaio.\n\n> [!secret] Colpa\n> Ha ucciso il fratello.\n\nKnown to Bruna alone.\n\nSecret Colpa: known to Bruna alone.");
+        expect(await ok("view", "Varro")).toBe(
+            "Varro (character)\n\nIl mugnaio.\n\n> [!secret] Colpa\n> Ha ucciso il fratello.\n\nKnown to Bruna alone: Ettore plays as not knowing it, though all at the screen may read it.\n\nSecret Colpa: known to Bruna alone.",
+        );
         expect(await ok("view", "Varro#Colpa")).toBe("Varro#Colpa\n\n> [!secret] Colpa\n> Ha ucciso il fratello.\n\nKnown to Bruna alone.");
         expect(await ok("view", "Lena#Nulla")).toBe("No player character knows anything of Lena called Nulla.");
         expect(await ok("view", "Varro", "--as", "Ettore")).toBe("Ettore does not know Varro.");
@@ -194,18 +196,30 @@ describe("what the player characters know together (VIEW-12, D-480 (1))", () => 
         expect(await ok("view", "--world")).toContain("Document: Lettera (letter, carried by Bruna); known to Bruna alone");
     });
 
+    it("a living player character played by its agent is played with prudence; a companion or a dead one is not (D-480 (4))", async () => {
+        const away = "You play while your player is away: no big decision, nothing precious spent, no needless risk.";
+        expect(await ok("view", "--as", "Ettore")).toContain(away);
+        expect(await ok("view", "--as", "Lena")).not.toContain(away);
+        await ok("write", "Ettore", "--set", "status=dead");
+        expect(await ok("view", "--as", "Ettore")).not.toContain(away);
+        // A lone living one's player is never away.
+        expect(await ok("view", "--as", "Bruna")).not.toContain(away);
+        // With no living one left unaware, who knows says no more.
+        expect(await ok("view", "Lettera")).toBe("Lettera (item)\n\nVieni da solo.\n\nKnown to Bruna alone.");
+    });
+
     it("a dead one knows what it knew at its death, never where it lies after", async () => {
         await ok("write", "Covo", "--type", "place", "--text", "Il covo del negromante.");
         await ok("write", "Bruna", "--set", "status=dead");
         await ok("move", "Bruna", "--to", "Covo");
         expect(await ok("view", "Covo")).toBe("No player character knows Covo.");
         expect(await ok("view")).toMatch(/\nBruna \(dead\), elsewhere: /);
-        expect(await ok("view", "Lettera")).toBe("Lettera (item)\n\nVieni da solo.\n\nKnown to Bruna alone.");
+        expect(await ok("view", "Lettera")).toBe("Lettera (item)\n\nVieni da solo.\n\nKnown to Bruna alone: Ettore plays as not knowing it, though all at the screen may read it.");
     });
 
     it("keeps what a dead player character knew", async () => {
         await ok("write", "Bruna", "--set", "status=dead");
-        expect(await ok("view", "Lettera")).toBe("Lettera (item)\n\nVieni da solo.\n\nKnown to Bruna alone.");
+        expect(await ok("view", "Lettera")).toBe("Lettera (item)\n\nVieni da solo.\n\nKnown to Bruna alone: Ettore plays as not knowing it, though all at the screen may read it.");
         expect(await ok("view")).toMatch(/^Ettore, in Locanda: hp 12\/12\nBruna \(dead\), in Torre: hp 9\/10\n/);
     });
 

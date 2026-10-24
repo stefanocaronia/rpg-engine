@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { actPeople, actSentence, actTitle, itemVerbs, saidStates, talkSentence, targetMode } from "../src/dashboard/acts.ts";
+import { actPeople, actSentence, actTitle, itemVerbs, saidStates, spokenBy, talkSentence, targetMode } from "../src/dashboard/acts.ts";
 import type { ShownPlace, ShownScene } from "../src/dashboard/data.ts";
 import { setLanguage } from "../src/dashboard/text.ts";
 import { pageFolder } from "./i18n/phrases.ts";
@@ -69,6 +69,11 @@ describe("the player's sentence (D-495)", () => {
             "Parlo con Bruno: ",
             "Attacca con Mazza",
         ]);
+    });
+
+    it("puts who acts in front with more than one player character, as the master reads it, and leaves the sentence as it is for one (D-480 (8))", () => {
+        expect(spokenBy("Attacco Brigante incappucciato 1 con Dagger.", "Mira")).toBe("Mira: Attacco Brigante incappucciato 1 con Dagger.");
+        expect(spokenBy("Parlo con Bruno: ", undefined)).toBe("Parlo con Bruno: ");
     });
 
     it("asks someone for an attack, lets the player choose for a spell or a use, and goes straight to the sentence for the rest", () => {

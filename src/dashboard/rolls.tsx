@@ -22,19 +22,22 @@ const moreRolls = 10;
 const markLength = 9000;
 
 export function RollLog(
-    { rolls, free, unread, campaign, party, fresh, onMore, onClearFree }: {
+    { rolls, free, unread, campaign, party, several = false, fresh, onMore, onClearFree }: {
         rolls: ShownRoll[];
         free: PageRoll[];
         unread: boolean;
         campaign?: string;
         party: Member[];
+        /** More than one player character: the tray's free dice are no one's (D-480 (7)). */
+        several?: boolean;
         fresh: Set<string>;
         onMore: () => void;
         onClearFree: () => void;
     },
 )
 {
-    const lead = party.find((member) => member.role === "pc");
+    // With more than one player character the tray's free dice, of no sheet, are no one's: the die for a face, "Free roll" for a name.
+    const of: Whose = { lead: party.find((member) => member.role === "pc"), nobody: several };
     const [chosen, toggle] = useOpen("Rolls");
     const [cleared, setCleared] = useState(() => readCleared(campaign));
     const [older, setOlder] = useState(0);
@@ -78,7 +81,7 @@ export function RollLog(
                 <CardHeader
                     icon={cardIcons.rolls}
                     title={<h2 id="rolls-title" class="rolls-title">{t("Rolls")}</h2>}
-                    preview={newest === undefined ? undefined : `${[nameOf(newest, lead), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.total}`}
+                    preview={newest === undefined ? undefined : `${[nameOf(newest, of), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.total}`}
                     open={open}
                     onToggle={toggle}
                 />
@@ -95,7 +98,7 @@ export function RollLog(
                             ? <p class="rolls-none">{emptyText(rolls.length, listed.before)}</p>
                             : (
                                 <ol class="roll-list">
-                                    {[...listed.shown].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, lead)} token={tokenOf(roll, party, lead)} fresh={fresh.has(roll.id)} greeted={greeted.current} />)}
+                                    {[...listed.shown].reverse().map((roll) => <RollRow key={roll.id} roll={roll} name={nameOf(roll, of)} token={tokenOf(roll, party, of)} fresh={fresh.has(roll.id)} greeted={greeted.current} />)}
                                 </ol>
                             )}
                         {listed.more
@@ -114,7 +117,7 @@ export function RollLog(
  * its tooltip the whole roll, which the lines may cut, with the notation in words; the chat's text for a screen reader. A new one first opens its place, then
  * appears in it, with a yellow corner for a while (D-303): as it first shows, whatever the readings after, and once.
  */
-function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name: string; token?: Tokened; fresh: boolean; greeted: Set<string>; })
+function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name: string; token?: Tokened | "die"; fresh: boolean; greeted: Set<string>; })
 {
     const [entering] = useState(() => fresh && !greeted.has(roll.id));
     const [marked, setMarked] = useState(entering);
@@ -139,7 +142,15 @@ function RollRow({ roll, name, token, fresh, greeted }: { roll: ShownRoll; name:
     return (
         <li class={["roll", player ? "by-player" : "by-master", free ? "free" : "", entering ? "entering" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id} title={said}>
             {marked && <span class="roll-flag" aria-hidden="true">!</span>}
-            {token === undefined ? <img class="roll-robot" src="/assets/favicon.svg" alt="" /> : <Token member={token} />}
+            {token === undefined
+                ? <img class="roll-robot" src="/assets/favicon.svg" alt="" />
+                : token === "die"
+                ? (
+                    <span class="token roll-die" aria-hidden="true">
+                        <Icon name="dice" />
+                    </span>
+                )
+                : <Token member={token} />}
             <span class="roll-who">
                 <span class="visually-hidden">{`${marked ? t("New.") + " " : ""}${free ? t("Your free roll, not logged:") : player ? t("Your roll:") : t("The master's roll:")} `}</span>
                 {name}
@@ -164,22 +175,46 @@ function emptyText(read: number, older: number): string
     return older > 0 ? t("No rolls in the last half hour.") : t("Cleared: the new rolls come here.");
 }
 
-/** Whom a roll is for, by name: the player's character for the player's own, whom the master named, or the master for a roll for no one. */
-function nameOf(roll: ShownRoll, lead: Member | undefined): string
+/** Whose the player's rolls are that name no one: the first player character's, or no one's for free dice among several (D-480 (7)). */
+interface Whose
 {
-    return roll.who === undefined ? (roll.by === "player" ? lead?.name ?? "" : t("The master")) : roll.stranger ? strangerLabel(roll.who) : roll.who;
+    lead: Member | undefined;
+    nobody: boolean;
+}
+
+/**
+ * Whom a roll is for, by name: the player's character for the player's own, whom the master named, or the master for a roll for no one; the tray's free dice
+ * among several player characters are a free roll of no one's.
+ */
+function nameOf(roll: ShownRoll, of: Whose): string
+{
+    if (freeOfNobody(roll, of)) {
+        return t("Free roll");
+    }
+
+    return roll.who === undefined ? (roll.by === "player" ? of.lead?.name ?? "" : t("The master")) : roll.stranger ? strangerLabel(roll.who) : roll.who;
+}
+
+/** Whether a roll is the tray's free dice, of no sheet, while more than one player character plays: no one's. */
+function freeOfNobody(roll: ShownRoll, of: Whose): boolean
+{
+    return of.nobody && "free" in roll && roll.who === undefined;
 }
 
 /**
  * The token of whom a roll is for (D-286): the player's character for the player's own; a member of the party; anyone else with their picture, or a question mark
- * for someone the character does not know; none, so the robot, for a roll the master makes for no one.
+ * for someone the character does not know; none, so the robot, for a roll the master makes for no one; a die for free dice of no one's.
  */
-function tokenOf(roll: ShownRoll, party: Member[], lead: Member | undefined): Tokened | undefined
+function tokenOf(roll: ShownRoll, party: Member[], of: Whose): Tokened | "die" | undefined
 {
     const member = party.find((candidate) => candidate.name === roll.who);
 
+    if (freeOfNobody(roll, of)) {
+        return "die";
+    }
+
     if (roll.by === "player") {
-        return member ?? lead ?? { name: "?", role: "pc" };
+        return member ?? of.lead ?? { name: "?", role: "pc" };
     }
 
     if (member !== undefined || roll.who === undefined) {

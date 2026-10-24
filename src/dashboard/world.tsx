@@ -63,8 +63,11 @@ const wayOrder = ["river", "road", "path"];
 // The section's tabs, the map's first: its address is the section's own.
 const worldTabs = ["map", "lore", "documents", "calendar"] as const;
 
-/** The World section: the tab the address says, and what is open in it, as #/world/lore/Bertoldo, or a place on the map, #/world/map/Guadoscuro. */
-export function WorldView({ version, lead, tab, item }: { version: number; lead?: Member | undefined; tab?: string | undefined; item?: string | undefined; })
+/**
+ * The World section: the tab the address says, and what is open in it, as #/world/lore/Bertoldo, or a place on the map, #/world/map/Guadoscuro. `players` are
+ * the player characters when there is more than one, named in what they know and carry (D-480 (7)).
+ */
+export function WorldView({ version, lead, players, tab, item }: { version: number; lead?: Member | undefined; players?: Member[] | undefined; tab?: string | undefined; item?: string | undefined; })
 {
     const [map, setMap] = useState<WorldMap>();
     const [problem, setProblem] = useState<string>();
@@ -111,8 +114,8 @@ export function WorldView({ version, lead, tab, item }: { version: number; lead?
             <div class="world-panel" id="world-panel" {...(shown.length > 1 ? { role: "tabpanel", "aria-labelledby": `world-tab-${chosen}` } : {})}>
                 {chosen === "map" && <MapTab map={map} problem={problem} lead={lead} place={item} readMore={readMore} />}
                 {chosen !== "map" && world === undefined && <p class="browse-none">{worldProblem ?? t("Reading…")}</p>}
-                {chosen === "lore" && world && <LoreTab world={world} version={version} open={item} onMap={onMap} />}
-                {chosen === "documents" && world && <DocumentsTab world={world} open={item} />}
+                {chosen === "lore" && world && <LoreTab world={world} version={version} open={item} onMap={onMap} {...(players === undefined ? {} : { players })} />}
+                {chosen === "documents" && world && <DocumentsTab world={world} open={item} {...(players === undefined ? {} : { players })} />}
                 {chosen === "calendar" && world && <CalendarTab calendar={world.calendar} />}
             </div>
         </section>

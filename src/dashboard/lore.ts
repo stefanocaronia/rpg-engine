@@ -25,6 +25,12 @@ export function foundLore(entries: KnownEntry[], search: string, group?: LoreGro
     });
 }
 
+/** Whether a player character knows a page, with more than one: all of them do unless it says who (VIEW-12). */
+export function knownTo(entry: Pick<KnownEntry, "knownBy">, name: string): boolean
+{
+    return entry.knownBy === undefined || entry.knownBy.includes(name);
+}
+
 /** The pages in their groups, in the groups' order, each group as the list gives it; the empty groups left out. */
 export function groupedLore(entries: KnownEntry[]): { group: LoreGroup; entries: KnownEntry[]; }[]
 {

@@ -239,8 +239,8 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
             {!bare && <MapKey map={map} reach={reach.length > 0} self={selfName} />}
             {!bare && standing.length > 0 && (
                 <ul ref={where} class="lm-where" aria-label={t("Who is where")}>
-                    {/* The player's character first, then the companions, then the others, each as the map lists them. */}
-                    {standing.toSorted((first, second) => roles.indexOf(first.role) - roles.indexOf(second.role)).map((one, index) => (
+                    {/* The player's character first, the one measured from on top with more (D-480 (7)), then the companions, then the others, as the map lists them. */}
+                    {standing.toSorted((first, second) => measuredFirst(first, second, selfName === undefined ? undefined : self) || roles.indexOf(first.role) - roles.indexOf(second.role)).map((one, index) => (
                         <li key={index} class={`lm-where-${one.role}${one.hostile === true ? " hostile" : ""}`}>
                             {one.role === "pc"
                                 ? <span class="lm-where-name">{one.name}</span>
@@ -250,7 +250,9 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
                                     </TalkName>
                                 )}
                             <span class="lm-key-square">{one.square}</span>
-                            {one.distance !== undefined
+                            {selfName !== undefined && one === self
+                                ? <span class="lm-where-far">{t("from here")}</span>
+                                : one.distance !== undefined
                                 ? <span class="lm-where-far">{one.distance}</span>
                                 : self !== undefined && one !== self && (nextTo(one.at, self.at) || one.square === self.square) && (
                                     <span class="lm-where-far">{selfName === undefined ? t("next to you") : t("next to {name}", { name: selfName })}</span>
@@ -261,6 +263,12 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
             )}
         </section>
     );
+}
+
+/** The one the distances are from before anyone else, when named: a negative number puts the first before the second. */
+function measuredFirst(first: object, second: object, from: object | undefined): number
+{
+    return from === undefined ? 0 : first === from ? -1 : second === from ? 1 : 0;
 }
 
 /** The map's key: the veil of the player's turn, named with more than one player character, the things of the legend, where the squares lead. */

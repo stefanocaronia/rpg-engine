@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { calendarDateOf, dayMarks, monthAt, monthOffsetOf, storyDays } from "../src/dashboard/calendar.ts";
 import type { KnownEntry, ShownCalendar } from "../src/dashboard/data.ts";
-import { documentLook, foundLore, groupedLore, linkedName, loreGroupOf } from "../src/dashboard/lore.ts";
+import { documentLook, foundLore, groupedLore, knownTo, linkedName, loreGroupOf } from "../src/dashboard/lore.ts";
 
 // Three months, the last with no season, as a story's own calendar: today is game day 5, the 3rd of Mud, year 12.
 const calendar: ShownCalendar = {
@@ -77,6 +77,12 @@ describe("what the character knows and its documents (D-276)", () => {
         expect(foundLore(known, "sottosuolo").map((one) => one.name)).toEqual(["Città delle Radici"]);
         expect(foundLore(known, "  ").length).toBe(5);
         expect(foundLore(known, "la", "tales").map((one) => one.name)).toEqual(["La leggenda", "La piena"]);
+    });
+
+    it("with more than one player character, gives each what they know: a page that names no one is known to all (VIEW-12)", () => {
+        const shared = entry("Bertoldo", "character");
+        const mine = { ...entry("Covo", "place"), knownBy: ["Mira"] };
+        expect([knownTo(shared, "Ettore"), knownTo(shared, "Mira"), knownTo(mine, "Ettore"), knownTo(mine, "Mira")]).toEqual([true, true, false, true]);
     });
 
     it("reads the page a link names", () => {

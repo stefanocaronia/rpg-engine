@@ -24,7 +24,8 @@ const groups: { names: string[]; system?: true; }[] = [
     { names: ["pictures", "language"] },
 ];
 
-export function SettingsView({ version }: { version: number; })
+/** The Settings section; with `several` player characters, what a value means says so where it speaks of one character (D-480 (2)). */
+export function SettingsView({ version, several = false }: { version: number; several?: boolean; })
 {
     const [settings, setSettings] = useState<PlayerSetting[]>();
     const [problem, setProblem] = useState<string>();
@@ -70,13 +71,22 @@ export function SettingsView({ version }: { version: number; })
                 return (
                     <section key={group.names[0]} class="settings-group">
                         <h3>{groupTitle(index)}</h3>
-                        {shown.map((setting) => <SettingRow key={setting.name} setting={setting} off={offBy(setting, settings)} onChange={change} />)}
+                        {shown.map((setting) => <SettingRow key={setting.name} setting={setting} off={offBy(setting, settings)} several={several} onChange={change} />)}
                     </section>
                 );
             })}
             <PageSettings />
         </section>
     );
+}
+
+/**
+ * What a value of a setting means, in the page's language; with more than one player character, checkpoint goes back when all die, or when one does and the
+ * table chooses it (D-480 (2)), in place of the words for one.
+ */
+function meansText(setting: string, value: string, means: string, several: boolean): string
+{
+    return several && setting === "saves" && value === "checkpoint" ? t("if they all die, or if the table chooses it when one dies: back to the end of the last scene") : t(means);
 }
 
 /** Why a setting counts for nothing now, as the prose while an author is written (D-395); undefined for one that counts. */
@@ -90,7 +100,7 @@ function offBy(setting: PlayerSetting, settings: PlayerSetting[]): string | unde
  * One setting: its name and what it is, its values to choose from, a list's items to add and take off, the player's own words, or the language; what the chosen
  * value means; why it counts for nothing now, its values still to choose.
  */
-function SettingRow({ setting, off, onChange }: { setting: PlayerSetting; off?: string; onChange(change: SettingChange): Promise<string | undefined>; })
+function SettingRow({ setting, off, several = false, onChange }: { setting: PlayerSetting; off?: string; several?: boolean; onChange(change: SettingChange): Promise<string | undefined>; })
 {
     // The value just picked shows at once, until the setting is read again.
     const [picked, setPicked] = useState<string>();
@@ -159,7 +169,7 @@ function SettingRow({ setting, off, onChange }: { setting: PlayerSetting; off?: 
                 {off !== undefined && <p class="setting-off" id={`${id}-off`}>{off}</p>}
                 {chosen?.means !== undefined && (
                     <p class="setting-means" id={`${id}-means`}>
-                        <strong>{valueLabel(chosen.value)}:</strong> {t(chosen.means)}
+                        <strong>{valueLabel(chosen.value)}:</strong> {meansText(setting.name, chosen.value, chosen.means, several)}
                     </p>
                 )}
                 {setting.name === "language" && value !== undefined && <p class="setting-means">{languageLine(value)}</p>}

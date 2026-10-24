@@ -62,6 +62,12 @@ export function talkSentence(name: string): string
     return `${t("I talk to {target}:", { target: name })} `;
 }
 
+/** The sentence with who says it in front, "Mira: …", as the master reads who acts with more than one player character (D-480 (8)); as it is for one. */
+export function spokenBy(sentence: string, who: string | undefined): string
+{
+    return who === undefined ? sentence : `${who}: ${sentence}`;
+}
+
 /** What a verb does with a thing, as a button's tooltip and the sheet's title say it: Attack with Mace. */
 export function actTitle(verb: ActVerb, item: string): string
 {
