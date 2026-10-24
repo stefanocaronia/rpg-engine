@@ -10,9 +10,9 @@ import type { KnownEntry, Member, ShownDocument } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { documentLook, foundLore, groupedLore, knownTo, type LoreGroup, loreGroupOf } from "./lore.ts";
 import { placeKindLabel, placeKinds } from "./map-symbols.ts";
-import { type LinkTo, Markdown, plainLine, type SecretNote } from "./markdown.tsx";
+import { type LinkTo, Markdown, plainLine, type SecretKnowers } from "./markdown.tsx";
 import { Token } from "./party.tsx";
-import { arrowStep, capitalized, foldedText, listText, t } from "./text.ts";
+import { arrowStep, capitalized, foldedText, t } from "./text.ts";
 
 // From this width the reader stands beside the list.
 const wide = "(min-width: 900px)";
@@ -180,13 +180,10 @@ export function DocumentsTab({ world, open, players = [] }: { world: WorldView; 
     );
 }
 
-/** Who knows a secret, after its title, when not all the player characters do: "known to Mira alone". */
-function secretKnowers(knowers: { secret: string; who: string[]; }[]): SecretNote
+/** Who found out a secret, by its title, when not all the player characters did: "Mira found out". */
+function secretKnowers(knowers: { secret: string; who: string[]; }[]): SecretKnowers
 {
-    return (title) => {
-        const who = knowers.find((one) => foldedText(one.secret.trim()) === foldedText(title))?.who ?? [];
-        return who.length === 0 ? undefined : who.length === 1 ? t("known to {name} alone", { name: who[0] }) : t("known to {names} alone", { names: listText(who) });
-    };
+    return (title) => knowers.find((one) => foldedText(one.secret.trim()) === foldedText(title))?.who;
 }
 
 /** Whether a document is carried, in words: by the player's character, or with more than one by the one named, as its group says; nothing of one read elsewhere. */
@@ -324,7 +321,7 @@ function LoreReader({ entry, version, link, onMap, focus, several }: { entry: Kn
             )}
             <div class="reader-text">
                 {text === undefined && !problem && entry.summary !== "" && <Markdown text={entry.summary} link={link} />}
-                {text !== undefined && text.trim() !== "" && <Markdown text={text} link={link} {...(several ? { secretNote: secretKnowers(knowers) } : {})} />}
+                {text !== undefined && text.trim() !== "" && <Markdown text={text} link={link} {...(several ? { secretKnowers: secretKnowers(knowers) } : {})} />}
                 {((text !== undefined && text.trim() === "") || (text === undefined && entry.summary === "")) && !problem && (
                     <p class="browse-none">{text === undefined ? t("Reading…") : t("Your character knows its name, and nothing more yet.")}</p>
                 )}

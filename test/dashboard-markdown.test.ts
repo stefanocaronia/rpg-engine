@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': this one is loaded by its address, with its two functions' types.
 const { Markdown, plainLine } = await import(new URL("../src/dashboard/markdown.tsx", import.meta.url).href) as {
-    Markdown: (props: { text: string; link?: (name: string) => string | undefined; secretNote?: (title: string) => string | undefined; }) => ComponentChildren;
+    Markdown: (props: { text: string; link?: (name: string) => string | undefined; secretKnowers?: (title: string) => string[] | undefined; }) => ComponentChildren;
     plainLine: (text: string) => string | undefined;
 };
 
@@ -34,10 +34,11 @@ describe("a page's text on the dashboard (D-275)", () => {
         expect(shown("> [!secret]")).toBe("<aside><p>You found out</p></aside>");
     });
 
-    it("says after a secret's title who knows it, with more than one player character, by the title the text gives it (VIEW-12)", () => {
-        const secretNote = (title: string): string | undefined => (title === "Verità" ? "known to Mira alone" : undefined);
-        expect(shown("> [!secret] Verità\n> testo", secretNote)).toBe("<aside><p>You found out · Verità · known to Mira alone</p><p>testo</p></aside>");
-        expect(shown("> [!secret] Altro\n> testo", secretNote)).toBe("<aside><p>You found out · Altro</p><p>testo</p></aside>");
+    it("says who found out a secret, by name, when not all the player characters did; you when they all did (VIEW-12, D-480 (7))", () => {
+        const secretKnowers = (title: string): string[] | undefined => (title === "Verità" ? ["Mira"] : title === "Patto" ? ["Mira", "Bruna"] : undefined);
+        expect(shown("> [!secret] Verità\n> testo", secretKnowers)).toBe("<aside><p>Mira found out · Verità</p><p>testo</p></aside>");
+        expect(shown("> [!secret] Patto\n> testo", secretKnowers)).toBe("<aside><p>Mira and Bruna found out · Patto</p><p>testo</p></aside>");
+        expect(shown("> [!secret] Altro\n> testo", secretKnowers)).toBe("<aside><p>You found out · Altro</p><p>testo</p></aside>");
     });
 
     it("never lets a fenced block swallow the text: it opens and closes on lines of its own, and one left open is shown as it is", () => {
@@ -54,9 +55,9 @@ describe("a page's text on the dashboard (D-275)", () => {
 });
 
 /** The text as the page draws it, its tags and the addresses of its links, without classes. */
-function shown(text: string, secretNote?: (title: string) => string | undefined): string
+function shown(text: string, secretKnowers?: (title: string) => string[] | undefined): string
 {
-    const page = html(Markdown({ text, link, ...(secretNote === undefined ? {} : { secretNote }) }));
+    const page = html(Markdown({ text, link, ...(secretKnowers === undefined ? {} : { secretKnowers }) }));
     return page.replace(/^<div>|<\/div>$/g, "");
 }
 

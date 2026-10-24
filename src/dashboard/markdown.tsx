@@ -3,17 +3,17 @@
 // the dashboard.
 import { type ComponentChildren, Fragment } from "preact";
 import { linkedName } from "./lore.ts";
-import { foldedText, t } from "./text.ts";
+import { foldedText, listText, t } from "./text.ts";
 
 /** Where a link of the text leads: the address of the page it names, or nothing, and the link stays its words. */
 export type LinkTo = (name: string) => string | undefined;
 
-/** What a secret's title says after its name, by the title the text gives it: who knows it, with more than one player character (VIEW-12). */
-export type SecretNote = (title: string) => string | undefined;
+/** Who of the player characters found out a secret, by the title the text gives it, when not all of them did (VIEW-12); none when they all did. */
+export type SecretKnowers = (title: string) => string[] | undefined;
 
-export function Markdown({ text, link, secretNote }: { text: string; link?: LinkTo; secretNote?: SecretNote; })
+export function Markdown({ text, link, secretKnowers }: { text: string; link?: LinkTo; secretKnowers?: SecretKnowers; })
 {
-    return <div class="markdown">{blocks(text, link, true, secretNote).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
+    return <div class="markdown">{blocks(text, link, true, secretKnowers).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
 }
 
 /** The first line of a page's text that is not a heading nor in a fenced block, as plain words: what a closed card shows of it. */
@@ -49,7 +49,7 @@ const secretStart = /^[ \t]*\[!secret\][-+]?[ \t]*(.*)$/i;
 const pictureFile = /\.(?:png|jpe?g|gif|webp|avif|bmp|svg)$/i;
 
 /** The blocks of a text; `outer` for the text itself, where alone a quote may be a secret, as for the engine. */
-function blocks(text: string, link: LinkTo | undefined, outer: boolean, note?: SecretNote): ComponentChildren[]
+function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?: SecretKnowers): ComponentChildren[]
 {
     const shown: ComponentChildren[] = [];
     let paragraph: string[] = [];
@@ -74,7 +74,7 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean, note?: S
         }
 
         if (quote.length > 0) {
-            show(<Quote lines={quote} link={link} outer={outer} note={note} />);
+            show(<Quote lines={quote} link={link} outer={outer} knowers={knowers} />);
         }
 
         paragraph = [];
@@ -148,8 +148,11 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean, note?: S
     return shown;
 }
 
-/** A quote; at the text's own level, a secret the character discovered, written as a callout: a note of its own with its title. */
-function Quote({ lines, link, outer, note }: { lines: string[]; link: LinkTo | undefined; outer: boolean; note: SecretNote | undefined; })
+/**
+ * A quote; at the text's own level, a secret the character discovered, written as a callout: a note of its own with its title, and who found it out, by name,
+ * when not all the player characters did (D-480 (7)).
+ */
+function Quote({ lines, link, outer, knowers }: { lines: string[]; link: LinkTo | undefined; outer: boolean; knowers: SecretKnowers | undefined; })
 {
     const secret = outer ? secretStart.exec(lines[0]) : null;
 
@@ -160,10 +163,16 @@ function Quote({ lines, link, outer, note }: { lines: string[]; link: LinkTo | u
     const title = secret[1].trim();
     return (
         <aside class="md-secret">
-            <p class="eyebrow" dir="auto">{[t("You found out"), title, note?.(title)].filter((part) => part !== undefined && part !== "").join(" · ")}</p>
+            <p class="eyebrow" dir="auto">{[foundOut(knowers?.(title) ?? []), title].filter((part) => part !== "").join(" · ")}</p>
             {blocks(lines.slice(1).join("\n"), link, false)}
         </aside>
     );
+}
+
+/** Who found out a secret: you, or with more than one player character the ones who did when not all of them did: Mira found out. */
+function foundOut(who: string[]): string
+{
+    return who.length === 0 ? t("You found out") : who.length === 1 ? t("{name} found out", { name: who[0] }) : t("{names} found out", { names: listText(who) });
 }
 
 /**
