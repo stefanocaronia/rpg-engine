@@ -2,10 +2,26 @@
 // code's hook shows now, checked and kept short, in the campaign's language. The extension's state never reaches the page: only what its hook gives.
 import { basename } from "node:path";
 import { z } from "zod";
-import { readOneSetting, readTextSetting } from "../campaign/index.ts";
+import { campaignFileName, readOneSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
+import type { Problem } from "../core/problem.ts";
 import { files } from "../core/store.ts";
-import { type DeclaredWidget, type Extension, type ExtensionWords, extensionWords, type Widget, type WidgetPage, widgetPages, type WidgetPlace, widgetPlaces, type WidgetText, type WidgetValue, wordIn } from "../extensions/index.ts";
+import { comparableText } from "../core/text.ts";
+import {
+    type DeclaredWidget,
+    type Extension,
+    type ExtensionCode,
+    type ExtensionWords,
+    extensionWords,
+    type Widget,
+    type WidgetPage,
+    widgetPages,
+    type WidgetPlace,
+    widgetPlaces,
+    type WidgetText,
+    type WidgetValue,
+    wordIn,
+} from "../extensions/index.ts";
 import { findImage } from "../images/index.ts";
 import { campaignExtensions } from "./game-extension-list.ts";
 import { extensionCode, gameViewOf } from "./game-extensions.ts";
@@ -46,74 +62,128 @@ export interface ShownContent
     parts?: ShownPart[];
 }
 
-/** A part of a widget's card as the page draws it: a lead's icon as its path, a picture as the file the dashboard serves. */
+/** A part of a widget's card as the page draws it: a lead's icon as its path, a picture as the file of its extension the dashboard serves. */
 export type ShownPart =
     | Exclude<NonNullable<Widget["parts"]>[number], { lead: WidgetText; } | { image: string; }>
     | { lead: WidgetText; icon?: string; value?: WidgetValue; }
-    | { image: { file: string; version: number; }; alt: WidgetText; };
+    | { image: { extension: string; file: string; version: number; }; alt: WidgetText; };
 
 /** The places a campaign may put a widget in, in campaign.yaml: top, side, a page, which is a card in that page, or off. */
 export const widgetSpots = [...widgetPlaces.filter((place) => place !== "page"), ...widgetPages, "off"] as const;
 
-// How long a widget's hook may take before the page goes on without it, and the most a widget may give, as JSON.
+// How long the hooks may take, all together, before the page goes on without those still at work, and the most a widget may give, as JSON.
 const hookTime = 2000;
 const mostShown = 12_000;
 
-/** The widgets of the campaign's extensions, in the order of the extensions and of their widgets, each where it stands and with what its hook shows now. */
+// The hooks still at work, by campaign, extension and widget: a reading that comes meanwhile waits on the same call, never calls again.
+const working = new Map<string, Promise<Widget | undefined>>();
+
+/**
+ * The widgets of the campaign's extensions, in the order of the extensions and of their widgets, each where it stands and with what its hook shows now. The
+ * hooks run together, within one time for all; one that takes longer shows nothing this time, and is not called again while it works.
+ */
 export async function campaignWidgets(root: string, context: Context): Promise<ShownWidget[]>
 {
     const spots = campaignSpots(root);
     const language = readTextSetting(root, "language");
-    const shown: ShownWidget[] = [];
+    let timer: NodeJS.Timeout | undefined;
+    const late = new Promise<"late">((done) => {
+        timer = setTimeout(() => done("late"), hookTime).unref();
+    });
+    const reading: Promise<ShownWidget>[] = [];
 
     for (const extension of campaignExtensions(root, context).extensions) {
         const words = wordsOf(extension, language);
-        const code = extension.widgets.length === 0 ? undefined : await extensionCode(extension).then((loaded) => ({ loaded }), (error: unknown) => ({ error: messageOf(error) }));
+        const code = extension.widgets.length === 0 ? undefined : extensionCode(extension).then((loaded) => ({ loaded }), (error: unknown) => ({ error: messageOf(error) }));
 
         for (const widget of extension.widgets) {
             const id = `${extension.name}.${widget.name}`;
             const own = ownSpot(widget);
-            const spot = spots[id] === undefined ? own : spotOf(spots[id], own);
+            const given = Object.entries(spots).find(([name]) => comparableText(name) === comparableText(id))?.[1];
+            const spot = given === undefined ? own : spotOf(given, own);
             const base: ShownWidget = {
                 id,
                 extension: extension.name,
-                from: words?.title ?? extension.title,
-                title: wordIn(words, widget.title),
+                from: words.read?.title ?? extension.title,
+                title: wordIn(words.read, widget.title),
                 ...spot,
                 own,
                 ...(widget.icon === undefined ? {} : { icon: extension.icons[widget.icon] }),
+                ...(words.problem === undefined ? {} : { problem: words.problem }),
             };
 
             if (spot.place === "off" || code === undefined) {
-                shown.push(base);
+                reading.push(Promise.resolve(base));
                 continue;
             }
 
-            const hook = "error" in code ? undefined : code.loaded?.widgets?.[widget.name];
-            const problem = "error" in code
-                ? `its code cannot be used: ${code.error}`
-                : code.loaded === undefined
-                ? "its code does not run in this campaign"
-                : hook === undefined
-                ? `its code gives nothing for the widget ${widget.name}`
-                : undefined;
-
-            if (problem !== undefined) {
-                shown.push({ ...base, problem });
-                continue;
-            }
-
-            try {
-                const given = await withinTime(Promise.resolve(hook!(gameViewOf(root, context, extension))));
-                const shows = given === undefined ? undefined : shownContent(extension, words, given);
-                shown.push({ ...base, ...(shows === undefined ? {} : { shows }) });
-            } catch (error) {
-                shown.push({ ...base, problem: messageOf(error) });
-            }
+            reading.push(code.then((loaded) => widgetNow(root, context, extension, widget.name, base, loaded, words.read, late)));
         }
     }
 
-    return shown;
+    try {
+        return await Promise.all(reading);
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+/** What keeps the words of the campaign's extensions from being read in its language, for validate: the file, and how to fix it (D-502). */
+export function extensionWordsProblems(root: string, context: Context): Problem[]
+{
+    const language = readTextSetting(root, "language");
+    return campaignExtensions(root, context).extensions.flatMap((extension) => {
+        const problem = wordsOf(extension, language).problem;
+        return problem === undefined ? [] : [{ path: campaignFileName, message: problem, fix: `or install it again with package install ${extension.name}` }];
+    });
+}
+
+/** A widget with what its hook shows now, or why it shows nothing: its code, a hook it lacks, a hook that failed or was late, what it gave. */
+async function widgetNow(
+    root: string,
+    context: Context,
+    extension: Extension,
+    name: string,
+    base: ShownWidget,
+    loaded: { loaded: ExtensionCode | undefined; } | { error: string; },
+    words: ExtensionWords | undefined,
+    late: Promise<"late">,
+): Promise<ShownWidget>
+{
+    const hook = "error" in loaded ? undefined : loaded.loaded?.widgets?.[name];
+
+    if (hook === undefined) {
+        const problem = "error" in loaded ? `its code cannot be used: ${loaded.error}` : loaded.loaded === undefined ? "its code does not run in this campaign" : `its code gives nothing for the widget ${name}`;
+        return { ...base, problem };
+    }
+
+    try {
+        const answer = await Promise.race([hookCall(root, extension, name, () => hook(gameViewOf(root, context, extension))), late]);
+
+        if (answer === "late") {
+            return { ...base, problem: `it gave nothing in ${hookTime / 1000} seconds` };
+        }
+
+        const shows = answer === undefined ? undefined : shownContent(extension, words, answer);
+        return { ...base, ...(shows === undefined ? {} : { shows }) };
+    } catch (error) {
+        return { ...base, problem: messageOf(error) };
+    }
+}
+
+/** A hook's call, or the one already at work for the same widget of the same campaign. */
+function hookCall(root: string, extension: Extension, widget: string, call: () => Widget | undefined | Promise<Widget | undefined>): Promise<Widget | undefined>
+{
+    const key = `${root}|${extension.package}@${extension.version}|${widget}`;
+    const running = working.get(key);
+
+    if (running !== undefined) {
+        return running;
+    }
+
+    const started = Promise.resolve().then(call).finally(() => working.delete(key));
+    working.set(key, started);
+    return started;
 }
 
 /** The widgets of the campaign's extensions by the names campaign.yaml gives them, as weather.today, with where each extension puts it. */
@@ -128,26 +198,38 @@ export function campaignWidgetNames(root: string, context: Context): Record<stri
  */
 export function checkWidgetSpots(root: string, context: Context, entries: Record<string, unknown>): void
 {
-    const known = campaignWidgetNames(root, context);
+    const known = Object.keys(campaignWidgetNames(root, context));
 
     for (const [name, value] of Object.entries(entries)) {
-        if (known[name] === undefined) {
-            const names = Object.keys(known);
-            throw new Error(`There is no widget ${name}: ${names.length === 0 ? "the campaign's extensions have none" : `the campaign's are ${names.join(", ")}`}. Nothing changed.`);
+        if (!known.some((one) => comparableText(one) === comparableText(name))) {
+            const names = known.length === 0 ? "the campaign's extensions have none" : `the campaign's are ${known.join(", ")}`;
+            throw new Error(`There is no widget ${name}: ${names}. Write one as ${known[0] ?? "weather.today"}: side. Nothing changed.`);
         }
 
         if (!spotSchema.safeParse(value).success) {
-            throw new Error(`${name} takes ${widgetSpots.join(", ")}, or {place, page, order}, such as ${name}: side. Nothing changed.`);
+            // Of a place written as its parts, what is wrong with them, as an order that is no whole number.
+            const issue = value !== null && typeof value === "object" ? spotObject.safeParse(value).error?.issues[0] : undefined;
+            const why = issue === undefined ? "" : ` Here ${[...issue.path, ""].join(" ")}${issue.message}.`;
+            throw new Error(`${name} takes ${widgetSpots.join(", ")}, or {place, page, order}, such as ${name}: side.${why} Nothing changed.`);
         }
     }
 }
 
+// The most and least order of a card among those of its place.
+const orderWords = "is a whole number from -100 to 100";
+
+/** A widget's place in campaign.yaml as its place, page and order. */
+const spotObject = z.object({
+    place: z.enum([...widgetPlaces, "off"], { error: `is ${[...widgetPlaces, "off"].join(", ")}` }).optional(),
+    page: z.enum(widgetPages, { error: `is ${widgetPages.join(", ")}` }).optional(),
+    order: z.int({ error: orderWords }).min(-100, { error: orderWords }).max(100, { error: orderWords }).optional(),
+}, { error: (issue) => (issue.code === "unrecognized_keys" ? `has no ${issue.keys.join(", ")}: only place, page and order` : undefined) }).strict().refine(
+    (spot) => spot.place !== "page" || spot.page !== undefined,
+    { error: "a card in place page names its page: scene, sheet, world or journal" },
+);
+
 /** A widget's place in campaign.yaml: a word, or its place, page and order. */
-const spotSchema = z.union([
-    z.enum(widgetSpots),
-    z.object({ place: z.enum([...widgetPlaces, "off"]).optional(), page: z.enum(widgetPages).optional(), order: z.int().min(-100).max(100).optional() }).strict()
-        .refine((spot) => spot.place !== "page" || spot.page !== undefined),
-]);
+const spotSchema = z.union([z.enum(widgetSpots), spotObject]);
 
 /** Where campaign.yaml puts the widgets it names; one written wrongly by hand is left out, its extension's place holding. */
 function campaignSpots(root: string): Record<string, z.infer<typeof spotSchema>>
@@ -184,16 +266,18 @@ function spotOf(given: z.infer<typeof spotSchema>, own: WidgetSpot): WidgetSpot
     return { place, ...(page === undefined ? {} : { page }), order: given.order ?? own.order };
 }
 
-function wordsOf(extension: Extension, language: string | undefined): ExtensionWords | undefined
+/** An extension's words in the campaign's language, none where it is written in it; or why they cannot be read, with their file. */
+function wordsOf(extension: Extension, language: string | undefined): { read?: ExtensionWords; problem?: string; }
 {
     if (language === undefined || language.split("-")[0] === extension.language.split("-")[0]) {
-        return undefined;
+        return {};
     }
 
     try {
-        return extensionWords(extension.folder, language);
-    } catch {
-        return undefined;
+        const read = extensionWords(extension.folder, language);
+        return read === undefined ? {} : { read };
+    } catch (error) {
+        return { problem: messageOf(error) };
     }
 }
 
@@ -304,8 +388,8 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
     };
 }
 
-/** A picture of the extension's images/, as the dashboard serves it; it throws when the extension has none by that name. */
-function pictureOf(extension: Extension, name: string): { file: string; version: number; }
+/** A picture of the extension's images/, as the dashboard serves it at an address of the extension's own; it throws when the extension has none by that name. */
+function pictureOf(extension: Extension, name: string): { extension: string; file: string; version: number; }
 {
     const file = findImage([extension.folder], name);
 
@@ -313,17 +397,7 @@ function pictureOf(extension: Extension, name: string): { file: string; version:
         throw new Error(`it shows the picture ${name}, which its images/ does not have`);
     }
 
-    return { file: basename(file), version: Math.trunc(files().modified(file) ?? 0) };
-}
-
-/** What a hook gives, or that it took too long. */
-function withinTime<Value>(running: Promise<Value>): Promise<Value>
-{
-    let timer: NodeJS.Timeout | undefined;
-    const late = new Promise<never>((_, fail) => {
-        timer = setTimeout(() => fail(new Error(`it gave nothing in ${hookTime / 1000} seconds`)), hookTime).unref();
-    });
-    return Promise.race([running, late]).finally(() => clearTimeout(timer));
+    return { extension: extension.name, file: basename(file), version: Math.trunc(files().modified(file) ?? 0) };
 }
 
 function messageOf(error: unknown): string

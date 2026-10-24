@@ -16,7 +16,7 @@ extensions/<name>/
   test/              its tests, not shipped
 ```
 
-Its name without the scope is the name its commands start with: `@rpgengine/weather` gives `weather` and `weather-set`. `api` is the version of the code's API (section 3) it is made for: rpg-engine refuses a package made for another.
+Its name without the scope is the name its commands start with: `@rpgengine/weather` gives `weather` and `weather-set`. `api` is the version of the code's API (section 3) it is made for, 2 since the widgets: rpg-engine reads a package made for its own or an older one, and refuses one made for a newer one before installing it.
 
 ## 2. extension.yaml
 
@@ -63,7 +63,7 @@ export default weather;
 
 - A command is defined as the core's are, with the kit's zod; its `run` gives the text the master reads, and its description is at most 150 words. It appears on the command line and through MCP while the campaign uses the extension.
 - `timePassed` runs after `advance` and `travel`, once for all the time they let pass, and as the game starts, with `from` and `to` the same; its lines end their output. An error there becomes a line that says the time did pass.
-- `widgets` gives, by each widget's name in extension.yaml, a hook that says what it shows now, or `undefined` for nothing. It reads the game as `game` does, without `roll`, `log` or writing its state, and runs as the dashboard reads the game, at most two seconds:
+- `widgets` gives, by each widget's name in extension.yaml, a hook that says what it shows now, or `undefined` for nothing. It reads the game as `game` does, without `roll`, `log` or writing its state, and runs as the dashboard reads the game, all the hooks together within two seconds; one still at work then shows nothing, and is not called again until it answers:
 
   ```ts
   widgets: {
@@ -72,13 +72,15 @@ export default weather;
   },
   ```
 
-  A chip shows `icon` and `chip`, and `says` in its tip; a card has the widget's title, `note` at the end of its head, and `parts`: `lead` (one thing large, with its icon and value), `text`, `facts`, `values` (each in a box under its label), `track` (pips or a bar), `rows`, `table`, `image` (a file of its `images/`). Words are the extension's, in its language, translated by its words as a whole; numbers are values, never inside the words: `{text: "From {low} to {high}", values: {low: 10, high: 15}}`, a number, `{number, unit}` or `{from, to, unit}`, which the page writes in its language. The server checks what a hook gives against these parts, keeps it short (some 12,000 characters), and sends the page nothing else: never the extension's state. A hook that fails or gives what no part draws shows nothing, and the dashboard's `/api/widgets` says why.
+  A chip shows `icon` and `chip`, and `says` in its tip; a card has the widget's title, `note` at the end of its head, and `parts`: `lead` (one thing large, with its icon and value), `text`, `facts`, `values` (each in a box under its label), `track` (pips or a bar), `rows`, `table`, `image` (a file of its `images/`, served at an address of the extension's own). Words are the extension's, in its language, translated by its words as a whole; numbers are values, never inside the words: `{text: "From {low} to {high}", values: {low: 10, high: 15}}`, a number, `{number, unit}` or `{from, to, unit}`, which the page writes in its language. The server checks what a hook gives against these parts, keeps it short (some 12,000 characters), and sends the page nothing else: never the extension's state. A hook that fails or gives what no part draws shows nothing, and the dashboard's `/api/widgets` says why.
+
+  What a hook gives, the player sees: it is never a place for secrets. It runs in the process of the chat's server, as the commands do: a loop that never yields stops the dashboard and the master's tools with it.
 - `game` is all the code reaches: `roll` with the engine's dice, `now` and `calendarDay`, `units`, `party` (the first living player character's places and what their environment holds), its own `state`, kept in the campaign in `extensions/<name>/state.yaml`, and `log`. It writes no page and no other file.
 - A game system's code is loaded the same way, from a `package.json` of kind `system`, with hooks of its own: see [game-systems.md](game-systems.md#6-code).
 
 ## 4. Words
 
-`words/<code>.yaml` gives the extension's words in a language, the base one for a regional one (`pt` for `pt-BR`): its `title` and `about`, which the Packages page shows, and `words`, each text its widgets write, from its own language to that one. A word the list lacks stays as written; one with a capital and without matches the same entry.
+`words/<code>.yaml` gives the extension's words in a language, the base one for a regional one (`pt` for `pt-BR`): its `title` and `about`, which the Packages page shows, and `words`, each text its widgets write, from its own language to that one. A word the list lacks stays as written; one with a capital and without matches the same entry. A file that does not read leaves the words as written, and `validate` names it.
 
 ```yaml
 title: il meteo secondo il punteggio del clima, di Stefano Caronia

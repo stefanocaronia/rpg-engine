@@ -6,7 +6,7 @@ import type { Context, PackageInfo } from "../core/context.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
-import { extensionApi, installedExtensions, isVerified, readExtension, shortName } from "../extensions/index.ts";
+import { installedExtensions, isVerified, readExtension, readsApi, shortName } from "../extensions/index.ts";
 import { installedLanguages } from "../languages/index.ts";
 import { systemFolders } from "../systems/index.ts";
 import { installedAdventures } from "./game-adventures.ts";
@@ -67,7 +67,7 @@ async function npmEntries(root: string, context: Context): Promise<{ entries: Ca
         return { entries: [], failed: searched.failed };
     }
 
-    const listed = searched.filter((one) => kinds.has(one.kind ?? "") && (one.kind !== "extension" || one.api === extensionApi));
+    const listed = searched.filter((one) => kinds.has(one.kind ?? "") && (one.kind !== "extension" || readsApi(one.api)));
     return { entries: listed.map((one) => npmEntry(one, installedVersion(root, context, one))) };
 }
 

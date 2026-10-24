@@ -19,6 +19,7 @@ import { questProblems } from "./game-quests.ts";
 import { passageProblems, roadProblems } from "./game-roads.ts";
 import { readOpenScene, sceneProblems } from "./game-scene.ts";
 import { readPresent, timeProblems } from "./game-time.ts";
+import { extensionWordsProblems } from "./game-widgets.ts";
 import { campaignSystem, systemOccasions, systemProblems, systemSettingProblems } from "./game-world.ts";
 import { listValueProblems } from "./sheet.ts";
 import { workedOutProblems } from "./worked-out.ts";
@@ -48,6 +49,7 @@ export function campaignProblems(root: string, world: World, context: Context): 
         ...shortRoadProblems(world),
         ...timeProblems(root, context),
         ...campaignExtensions(root, context).problems,
+        ...extensionWordsProblems(root, context),
         ...modeProblems(root),
         ...eventProblems(world),
         ...questProblems(world),

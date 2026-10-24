@@ -3,7 +3,6 @@
 import { type ComponentChildren, createContext } from "preact";
 import { useContext, useEffect, useRef } from "preact/hooks";
 import { type Section, sectionAddress } from "./address.ts";
-import { pictureAddress } from "./api.ts";
 import { CardHead } from "./card.tsx";
 import type { ShownWidget, WidgetPage, WidgetPart, WidgetSpot, WidgetText, WidgetValue } from "./data.ts";
 import { iconPath } from "./icons.tsx";
@@ -250,7 +249,7 @@ function Part({ part }: { part: WidgetPart; })
         );
     }
 
-    return <img class="widget-image" src={pictureAddress(part.image)} alt={textOf(part.alt)} loading="lazy" />;
+    return <img class="widget-image" src={`/images/ext/${encodeURIComponent(part.image.extension)}/${encodeURIComponent(part.image.file)}?v=${part.image.version}`} alt={textOf(part.alt)} loading="lazy" />;
 }
 
 /** A count as pips, or a bar, with its label and its value in words for a screen reader. */

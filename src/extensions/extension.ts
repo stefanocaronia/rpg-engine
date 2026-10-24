@@ -14,8 +14,17 @@ export const extensionFileName = "extension.yaml";
 const aboutWords = 40;
 const partWords = 400;
 
-/** The version of the API an extension's code is given (api.ts), which its package.json names: a package made for another is refused. */
-export const extensionApi = 1;
+/**
+ * The version of the API an extension's code is given (api.ts), which its package.json names: 2 added the widgets (D-502). A package made for this one or an
+ * older one is read; one made for a newer one is refused, as an older rpg-engine refuses this one's.
+ */
+export const extensionApi = 2;
+
+/** Whether this rpg-engine reads a package made for this version of the API: from 1 up to its own. */
+export function readsApi(api: number | undefined): boolean
+{
+    return api !== undefined && Number.isInteger(api) && api >= 1 && api <= extensionApi;
+}
 
 /** An installed extension (D-28, D-427, D-428): an npm package with an extension.yaml, its parts of the instructions and, when it has some, its code. */
 export interface Extension
@@ -155,9 +164,9 @@ export function readExtension(folder: string): Extension
     const owner = `The extension ${manifest.data.name}`;
     const marker = manifest.data["rpg-engine"];
 
-    if (marker?.kind !== "extension" || marker.api !== extensionApi) {
+    if (marker?.kind !== "extension" || !readsApi(marker.api)) {
         const made = marker?.kind !== "extension" ? 'its package.json does not say "rpg-engine": {"kind": "extension"}' : `it is made for the extension API ${marker.api ?? "none"}`;
-        throw new Error(`${owner} cannot be used, because ${made}; this rpg-engine reads the API ${extensionApi}: install a version of it made for this one.`);
+        throw new Error(`${owner} cannot be used, because ${made}; this rpg-engine reads the API 1 to ${extensionApi}: install a version of it made for these.`);
     }
 
     const declared = extensionSchema.safeParse(readYamlValues(where(extensionFileName), "what the extension is, such as title: ..."));

@@ -2,7 +2,7 @@
 // command line and through MCP, their own state, the lines they add when time passes, their calendar, and what keeps one out.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { appendFileSync, cpSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -26,6 +26,24 @@ async function campaign(system: string, extensions: Record<string, string>): Pro
     inPlay(folder);
     const listed = Object.entries(extensions).map(([name, version]) => `  "${name}": ${version}\n`).join("");
     appendFileSync(join(folder, "campaign.yaml"), listed === "" ? "" : `extensions:\n${listed}`);
+}
+
+/**
+ * A folder of packages with the extension @rpgengine/gauges, made here: a widget in the column for each hook, given as its code, its icon a line, and a
+ * picture in its images/.
+ */
+function gauges(where: string, hooks: Record<string, string>): string
+{
+    const own = join(where, "gauges");
+    mkdirSync(join(own, "src"), { recursive: true });
+    mkdirSync(join(own, "images"));
+    writeFileSync(join(own, "images", "gauge.png"), "png");
+    writeFileSync(join(own, "package.json"), JSON.stringify({ name: "@rpgengine/gauges", version: "1.0.0", main: "dist/index.js", "rpg-engine": { kind: "extension", api: 2 } }));
+    const widgets = Object.keys(hooks).map((name) => `  ${name}: {title: ${name}, icon: gauge, place: side}`).join("\n");
+    writeFileSync(join(own, "extension.yaml"), `title: gauges\nabout: gauges for the tests\nlanguage: en\nicons:\n  gauge: "M4 12h16"\nwidgets:\n${widgets}\n`);
+    const code = Object.entries(hooks).map(([name, hook]) => `${name}: ${hook},`).join(" ");
+    writeFileSync(join(own, "src", "index.ts"), `export default () => ({ widgets: { ${code} } });\n`);
+    return where;
 }
 
 beforeEach(() => {
@@ -160,11 +178,19 @@ describe("a campaign's widgets on the dashboard (D-502)", () => {
         ]);
         expect((await campaignWidgets(folder, context))[2]).not.toHaveProperty("problem");
 
-        expect((await rpg("config", "widgets", "omens.nowhere: side")).output).toBe("There is no widget omens.nowhere: the campaign's are omens.last, omens.every, omens.broken. Nothing changed.");
-        expect((await rpg("config", "widgets", "omens.last: bottom")).output).toBe("omens.last takes top, side, scene, sheet, world, journal, off, or {place, page, order}, such as omens.last: side. Nothing changed.");
+        expect((await rpg("config", "widgets", "omens.nowhere: side")).output).toBe(
+            "There is no widget omens.nowhere: the campaign's are omens.last, omens.every, omens.broken. Write one as omens.last: side. Nothing changed.",
+        );
+        const takes = "omens.last takes top, side, scene, sheet, world, journal, off, or {place, page, order}, such as omens.last: side.";
+        expect((await rpg("config", "widgets", "omens.last: bottom")).output).toBe(`${takes} Nothing changed.`);
+        expect((await rpg("config", "widgets", "omens.last: {order: 1.5}")).output).toBe(`${takes} Here order is a whole number from -100 to 100. Nothing changed.`);
+        expect((await rpg("config", "widgets", "omens.last: {place: page}")).output).toBe(`${takes} Here a card in place page names its page: scene, sheet, world or journal. Nothing changed.`);
+        // A widget's name in any case is the same widget, as campaign.yaml's other entries are.
+        expect((await rpg("config", "widgets", "Omens.Broken: top")).exitCode).toBe(0);
+        expect((await campaignWidgets(folder, context))[2]).toMatchObject({ place: "top" });
         await rpg("config", "widgets", "--remove", "omens.last");
         expect((await campaignWidgets(folder, context))[0]).toMatchObject({ place: "side", own: { place: "side", order: 2 } });
-        expect((await rpg("config")).output).toContain("\nwidgets: { omens.every: { place: side, order: -1 }, omens.broken: off }");
+        expect((await rpg("config")).output).toContain("\nwidgets: { omens.every: { place: side, order: -1 }, Omens.Broken: top }");
     });
 
     it("reach the page from the dashboard, which moves them as config does and names the extensions in the campaign's language", async () => {
@@ -204,6 +230,77 @@ describe("a campaign's widgets on the dashboard (D-502)", () => {
             await dashboard?.close();
             session.close();
         }
+    });
+
+    it("show nothing, with why, for hooks that are late, too long, or name a picture or an icon the extension lacks; the late ones within one time, never called again while at work", async () => {
+        const packages = gauges(join(folder, "packages"), {
+            slow: "() => { globalThis.gaugeCalls = (globalThis.gaugeCalls ?? 0) + 1; return new Promise(() => {}); }",
+            slower: "() => new Promise(() => {})",
+            long: "() => ({ parts: [{ text: 'x'.repeat(150) }, ...Array.from({ length: 11 }, () => ({ facts: Array.from({ length: 12 }, () => 'y'.repeat(150)) }))] })",
+            picture: "() => ({ parts: [{ image: 'gauge.png', alt: 'a gauge' }] })",
+            lost: "() => ({ parts: [{ image: 'lost.png', alt: 'a gauge' }] })",
+            icon: "() => ({ icon: 'moon', chip: 'x' })",
+        });
+        context = { ...context, extensionFolders: [packages] };
+        await campaign("ironsworn", { "@rpgengine/gauges": "1.0.0" });
+        const started = Date.now();
+        const [first, second] = await Promise.all([campaignWidgets(folder, context), campaignWidgets(folder, context)]);
+        expect(Date.now() - started).toBeLessThan(3500);
+        expect((globalThis as { gaugeCalls?: number; }).gaugeCalls).toBe(1);
+        expect(second.map((widget) => widget.problem)).toEqual(first.map((widget) => widget.problem));
+        expect(Object.fromEntries(first.map((widget) => [widget.id, widget.problem ?? widget.shows]))).toEqual({
+            "gauges.slow": "it gave nothing in 2 seconds",
+            "gauges.slower": "it gave nothing in 2 seconds",
+            "gauges.long": "it gave more than the dashboard shows of a widget, 12000 characters as JSON",
+            "gauges.picture": { parts: [{ image: { extension: "gauges", file: "gauge.png", version: expect.any(Number) }, alt: "a gauge" }] },
+            "gauges.lost": "it shows the picture lost.png, which its images/ does not have",
+            "gauges.icon": "it names the icon moon, which its extension.yaml does not have",
+        });
+    }, 10_000);
+
+    it("have their pictures at an address of their extension's own, which a campaign's picture of the same name never hides", async () => {
+        context = { ...context, extensionFolders: [gauges(join(folder, "packages"), { picture: "() => undefined" })] };
+        await campaign("ironsworn", { "@rpgengine/gauges": "1.0.0" });
+        mkdirSync(join(folder, "images"));
+        writeFileSync(join(folder, "images", "gauge.png"), "the campaign's");
+        const session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        const dashboard = await startDashboard({ ...context, files: session }, session, { ports: [0], page: folder });
+        const port = Number(new URL(dashboard?.url ?? "http://127.0.0.1:0").port);
+        const get = (path: string): Promise<{ status: number; body: string; }> =>
+            new Promise((done, fail) => {
+                request({ host: "127.0.0.1", port, path }, (response) => {
+                    let text = "";
+                    response.setEncoding("utf8");
+                    response.on("data", (chunk: string) => (text += chunk));
+                    response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+                }).on("error", fail).end();
+            });
+
+        try {
+            expect(await get("/images/ext/gauges/gauge.png")).toEqual({ status: 200, body: "png" });
+            expect(await get("/images/gauge.png")).toEqual({ status: 200, body: "the campaign's" });
+            expect((await get("/images/ext/nobody/gauge.png")).status).toBe(404);
+            expect((await get("/images/ext/gauges/..%2Fpackage.json")).status).toBe(404);
+        } finally {
+            await dashboard?.close();
+            session.close();
+        }
+    });
+
+    it("show nothing, with why, when the extension's code does not load, or its words do not read; validate names the file", async () => {
+        const broken = gauges(join(folder, "broken"), { picture: "() => undefined" });
+        writeFileSync(join(broken, "gauges", "src", "index.ts"), "throw new Error('broken on purpose');\n");
+        context = { ...context, extensionFolders: [broken] };
+        await campaign("ironsworn", { "@rpgengine/gauges": "1.0.0" });
+        expect((await campaignWidgets(folder, context))[0].problem).toBe("its code cannot be used: broken on purpose");
+
+        const unread = gauges(join(folder, "unread"), { picture: "() => ({ chip: 'x' })" });
+        mkdirSync(join(unread, "gauges", "words"));
+        writeFileSync(join(unread, "gauges", "words", "it.yaml"), "words: [not, a, map]\n");
+        context = { ...context, extensionFolders: [unread] };
+        await rpg("config", "language", "it");
+        expect((await campaignWidgets(folder, context))[0].problem).toMatch(/^The words of the extension in .*it\.yaml cannot be read: words: .*Fix the file\.$/);
+        expect((await rpg("validate")).output).toMatch(/it\.yaml cannot be read: words: .* Fix the file\. Fix: or install it again with package install gauges\./);
     });
 
     it("are refused in an extension.yaml that does not say how to show them, with what to fix", () => {

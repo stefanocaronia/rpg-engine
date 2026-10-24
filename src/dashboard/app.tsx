@@ -147,21 +147,25 @@ function App()
     const [said, setSaid] = useState<SaidAct[]>([]);
     const [actProblem, setActProblem] = useState<string>();
     const [acting, setActing] = useState<{ start: ActStart; opener: HTMLElement | SVGElement; }>();
-    // The widgets of the campaign's extensions, read with the rest (D-502): kept as they were when a reading of them fails.
+    // The widgets of the campaign's extensions (D-502), read beside the rest and shown as they come, so that a slow hook never holds the page back; kept as they
+    // were when a reading of them fails, and an answer older than one shown left out.
     const [widgets, setWidgets] = useState<ShownWidget[]>([]);
+    const widgetReading = useRef({ asked: 0, shown: 0 });
 
     // Reads view again for whom the address names, or the player character the master calls, and what the master asks; an answer that comes after a newer one
     // is left out.
     const read = async (): Promise<void> => {
         const number = ++reading.current;
+        const widgetsAsked = ++widgetReading.current.asked;
+        void readWidgets().then((read) => {
+            if (widgetsAsked > widgetReading.current.shown) {
+                widgetReading.current.shown = widgetsAsked;
+                setWidgets(read);
+            }
+        }, () => undefined);
 
         try {
-            const [first, told, actsNow, widgetsNow] = await Promise.all([
-                readView(undefined, rollsAsked.current),
-                readAsked().catch(() => undefined),
-                readActs().catch(() => undefined),
-                readWidgets().catch(() => undefined),
-            ]);
+            const [first, told, actsNow] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined), readActs().catch(() => undefined)]);
             const asked = told;
             // With more than one player character, a question for one elsewhere puts them in the foreground: the place, the map and the squares are theirs (VIEW-12).
             const here = first.kind === "overview" && (first.place?.here ?? []).some((one) => one.name === asked?.who);
@@ -199,10 +203,6 @@ function App()
                 document.documentElement.lang = language ?? "en";
                 document.documentElement.dir = pageDirection();
                 setActs(actsNow);
-
-                if (widgetsNow !== undefined) {
-                    setWidgets(widgetsNow);
-                }
 
                 // The verbs come with the player character's page alone: another's sheet leaves them as they were.
                 if (member?.role === "pc") {

@@ -1893,13 +1893,24 @@ async function runCommand(name: string, parameters: URLSearchParams, response: S
  */
 function sendImage(name: string, request: IncomingMessage, response: ServerResponse, served: Served): void
 {
-    const fileName = decoded(name);
+    // An extension's own, which its widgets show, at an address of its own, ext/<extension>/<file>, never mistaken for the campaign's (D-502).
+    const [, extensionName, extensionFile] = /^ext\/([^/]+)\/([^/]+)$/.exec(name) ?? [];
+    const fileName = decoded(extensionFile ?? name);
+    const ownerName = extensionName === undefined ? undefined : decoded(extensionName);
     const file = fileName === undefined || /[\\/]/.test(fileName) ? undefined : withFiles(served.session, () => {
         const root = findCampaign(served.context.folder);
+
+        if (root === undefined) {
+            return undefined;
+        }
+
+        if (extensionName !== undefined) {
+            const owner = campaignExtensions(root, served.context).extensions.find((extension) => extension.name === ownerName);
+            return owner === undefined ? undefined : findImage([owner.folder], fileName);
+        }
+
         // A stranger's picture comes by a name of its bytes, from the campaign's own (D-420).
-        // And an extension's own, which its widgets show (D-502).
-        const extensions = root === undefined ? [] : campaignExtensions(root, served.context).extensions.map((extension) => extension.folder);
-        return root === undefined ? undefined : findImage(imageFolders(root, served.context), fileName) ?? findHiddenImage([root], fileName) ?? findImage(extensions, fileName);
+        return findImage(imageFolders(root, served.context), fileName) ?? findHiddenImage([root], fileName);
     });
     const type = file === undefined ? undefined : imageTypes[extname(file).toLowerCase()];
     const bytes = file === undefined ? undefined : withFiles(served.session, () => files().bytes(file));

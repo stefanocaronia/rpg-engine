@@ -264,9 +264,9 @@ describe("rpg package install", () => {
         expect((await rpg("package", "install", "npm:seasons-of-the-test")).output).toBe(
             "seasons-of-the-test is installed on this computer, but it is for the game system 5e, and the campaign plays ironsworn: the campaign does not use it.",
         );
-        npm.describe = (spec) => Promise.resolve({ name: spec, version: "3.0.0", kind: "extension", api: 2 });
+        npm.describe = (spec) => Promise.resolve({ name: spec, version: "3.0.0", kind: "extension", api: 3 });
         expect((await rpg("package", "install", "omens")).output).toBe(
-            "@rpgengine/omens 3.0.0 is made for the extension API 2, and this RPG Engine reads the API 1: install a version made for it. Nothing changed.",
+            "@rpgengine/omens 3.0.0 is made for the extension API 3, and this RPG Engine reads the API 1 to 2: install a version made for these. Nothing changed.",
         );
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
     });

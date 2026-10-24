@@ -650,4 +650,4 @@ export type WidgetPart =
     | { track: { label: WidgetText; value: number; max: number; look?: "pips" | "bar"; }; }
     | { rows: { label: WidgetText; value?: WidgetValue; note?: WidgetText; }[]; }
     | { table: { head: WidgetText[]; rows: WidgetValue[][]; }; }
-    | { image: { file: string; version: number; }; alt: WidgetText; };
+    | { image: { extension: string; file: string; version: number; }; alt: WidgetText; };

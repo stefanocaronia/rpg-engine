@@ -8,7 +8,7 @@ import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
-import { type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, isTarball, isVerified, readExtension, shortName, verifiedScope } from "../extensions/index.ts";
+import { type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, isTarball, isVerified, readExtension, readsApi, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
 import { installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
 import { chooseAnswer } from "./ask.ts";
@@ -254,7 +254,7 @@ async function available(context: Context): Promise<PackageResult>
     }
 
     const here = installedExtensions(context.extensionFolders ?? []);
-    const packages = searched.filter((one) => one.kind === "extension" && one.api === extensionApi).map((one): Available => {
+    const packages = searched.filter((one) => one.kind === "extension" && readsApi(one.api)).map((one): Available => {
         const installed = here.find((found) => found.package === one.name);
         const copy = installed === undefined ? undefined : usable(context, one.name);
         const version = copy?.version;
@@ -306,8 +306,8 @@ async function installed(root: string, context: Context, name: string): Promise<
         );
     }
 
-    if (described.api !== extensionApi) {
-        throw new Error(`${described.name} ${described.version} is made for the extension API ${described.api ?? "none"}, and this RPG Engine reads the API ${extensionApi}: install a version made for it. Nothing changed.`);
+    if (!readsApi(described.api)) {
+        throw new Error(`${described.name} ${described.version} is made for the extension API ${described.api ?? "none"}, and this RPG Engine reads the API 1 to ${extensionApi}: install a version made for these. Nothing changed.`);
     }
 
     const local = isLocalSpec(spec);
