@@ -95,6 +95,12 @@ const iconPaths = {
     language: "M4 5h9 M8.5 3v2 M6 5c.5 3 2.8 5.5 6 7 M11 5c-.6 3-2.5 5.6-5.5 7.3 M12.5 21l4-9 4 9 M14 17.5h5",
     window: "M3 5h18v14H3Z M3 9h18 M6 7h.01 M8.5 7h.01",
     more: "M6 9l6 6 6-6",
+    // A thing in a list of bonds, as attuned: two rings linked.
+    bond: "M9 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9Z M15 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9Z",
+    // A roll the sheet makes better, worse, or both, which cancel out.
+    better: "M12 19.5V5 M6 11l6-6 6 6",
+    worse: "M12 4.5V19 M6 13l6 6 6-6",
+    even: "M8 19.5V4.5 M4 8.5l4-4 4 4 M16 4.5v15 M12 15.5l4 4 4-4",
 };
 
 /**

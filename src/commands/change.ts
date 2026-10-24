@@ -400,6 +400,8 @@ interface RecipeOutcome
     kept: string[];
     /** The effects without an end still on the page, which a rest may ask something of (EFF-15). */
     resting: string;
+    /** Whether the recipe gave the page nothing, at 0 of what it needs or too soon after the last (RST-1). */
+    barred: boolean;
 }
 
 /**
@@ -541,7 +543,7 @@ function recipeResult(
     context: Context,
     world: World,
     input: { page?: string; field?: string; by?: unknown; spend?: unknown; to?: unknown; why?: string; recipe: string; values?: number[]; },
-): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; buttons?: boolean; physical?: boolean; spent?: string; }
+): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; lasts?: string; buttons?: boolean; physical?: boolean; spent?: string; }
 {
     const named = campaignSystem(root, context);
     const page = input.page?.trim() === "" ? undefined : input.page;
@@ -580,7 +582,7 @@ function recipeResult(
     });
     // Where the dashboard serves a page, the player spends their dice there with ask (ASK-14); with physical dice, they roll their own (ASK-8).
     const physical = readSettings(root).dice === "physical";
-    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules, buttons: context.page?.spendDice !== undefined, physical };
+    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules, lasts: recipe.lasts, buttons: context.page?.spendDice !== undefined, physical };
 }
 
 /**
@@ -631,6 +633,7 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
         spendable: barred ? [] : spendableDice(current, recipe, pageCalled(current, name)),
         notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)),
         kept: keptRolls(current, pageCalled(current, name)).map(([field, values]) => `${field} ${values.join(", ")}`),
+        barred,
         resting: [atZero ? `At 0 ${recipe.needs ?? ""} when it began, ${name} gains nothing from it.` : tooSoon ?? "", restingEffectsNote(pageCalled(current, name))].filter((note) => note !== "").join(" "),
     };
 
@@ -681,7 +684,7 @@ function recipePage(root: string, world: World, name: string): Page
  * "Long rest (a recipe of the system 5e):", then for each page what ended and changed, as in "Ennio: Prosciugato ended; hp 8/12 → 12/12. Not brought back:
  * hit-dice 1/3.", with the thresholds it touched; the rules for the rest; the game date, which a recipe does not move.
  */
-function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; buttons?: boolean; physical?: boolean; }): string
+function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; lasts?: string; buttons?: boolean; physical?: boolean; }): string
 {
     const notes = result.outcomes.flatMap((outcome) => outcome.steps.flatMap(stepNotes));
     const lines = result.outcomes.flatMap((outcome) => {
@@ -697,7 +700,11 @@ function recipeText(result: { recipe: string; system: string; outcomes: RecipeOu
     });
     const rules = result.rules.length === 0 ? "" : `For the rest, read ${result.rules.map((rule) => `rules "${rule}"`).join(" and ")}.`;
     const title = `${result.recipe.charAt(0).toUpperCase()}${result.recipe.slice(1)} (a recipe of the system ${result.system}):`;
-    const text = [title, ...lines, rules, "The game date did not move: advance the hours of the rest, if you have not yet."].filter((line) => line !== "").join("\n");
+    // A refused rest has no hours to advance (D-500).
+    const hours = result.outcomes.every((outcome) => outcome.barred)
+        ? ""
+        : `The game date did not move: apply a rest once its hours${result.lasts === undefined ? "" : ` (${result.lasts})`} have passed; if they have not yet, advance them now.`;
+    const text = [title, ...lines, rules, hours].filter((line) => line !== "").join("\n");
     return [text, ...notes.filter((note) => note.includes("\n"))].join("\n\n");
 }
 

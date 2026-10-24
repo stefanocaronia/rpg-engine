@@ -127,6 +127,10 @@ export interface SheetValue
     progress?: Progress;
     /** Beside the points, what they say of the levels, as data the dashboard writes in its language (PRO-6). */
     levelNeed?: LevelNeed;
+    /** For a list of bonds, as the attuned items, the most it may hold (BND-1). */
+    most?: number;
+    /** For the load, what is carried and its limit, in the system's unit, and the heaviest of the system's stages it reaches, such as Encumbered (LOAD-2). */
+    load?: { value: number; limit?: number; stage?: string; };
 }
 
 /** A number between two marks: where it is, where it started from, where it goes. */
@@ -143,6 +147,8 @@ export interface SheetRoll
     notation: string;
     dice: number[];
     modifier: number;
+    /** Why the system makes it better or worse, in its words, as Poisoned, even when the two cancel out (D-445). */
+    odds?: { better: string[]; worse: string[]; };
 }
 
 /**
@@ -171,6 +177,8 @@ export interface SheetItem
     /** That icon, as the dashboard reads a picture; none for text, or a page without one. */
     image?: { file: string; version: number; };
     equipped?: boolean;
+    /** The lists of bonds it is in, as attuned (BND-1). */
+    bonds?: string[];
 }
 
 /**
@@ -190,9 +198,10 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
         if (group.entries.some((entry) => comparableText(entry.field) === "inventory")) {
             const values = group.entries.filter((entry) => comparableText(entry.field) !== "inventory").flatMap((entry) => {
                 const value = valueNamed(fields, entry.field);
-                return isEmptyField(value) ? [] : [sheetValue(world, fields, entry.field, value)];
+                const most = Object.entries(system.bonds).find(([list]) => comparableText(list) === comparableText(entry.field))?.[1].most;
+                return isEmptyField(value) ? [] : [{ ...sheetValue(world, fields, entry.field, value), ...(most === undefined ? {} : { most }) }];
             });
-            const items = carriedRows(world, page, equippedPages(world, page));
+            const items = carriedRows(world, page, { equipped: equippedPages(world, page), bonds: bondedPages(world, system, page) });
             const load = loadValue(world, system, page, fields);
             const shown = [...values, ...(load === undefined ? [] : [load])];
             return shown.length + items.length === 0 ? [] : [{ name: group.name, ...iconOf(group), values: shown, ...(items.length === 0 ? {} : { items }) }];
@@ -544,18 +553,23 @@ function groupEntries(world: World, system: GameSystem, group: SheetGroup, field
  * What a holder carries, as rows of the sheet (D-431): a stack with its count (STK-1), an item with a story of its own, 1, and below it what it holds, one level deeper, and
  * text as written; marked when equipped. Pages that are elsewhere, or not items, are left out.
  */
-function carriedRows(world: World, holder: Page, equipped: Page[], depth = 0, seen = new Set<Page>()): SheetItem[]
+function carriedRows(world: World, holder: Page, marks: { equipped: Page[]; bonds: Map<Page, string[]>; }, depth = 0, seen = new Set<Page>()): SheetItem[]
 {
     const field = containerFieldOf(holder.type);
     const stacks = stacksOf(world, holder);
     const shown = new Set<Page>();
-    const row = (item: string, count: string, on: boolean, page?: Page): SheetItem => ({
-        item,
-        ...(page === undefined ? {} : { page: page.name }),
-        values: [{ field: "quantity", text: count, marks: 0 }],
-        ...(depth === 0 ? {} : { depth, inside: holder.name }),
-        ...(on ? { equipped: true } : {}),
-    });
+
+    const row = (item: string, count: string, page?: Page): SheetItem => {
+        const bonds = page === undefined ? undefined : marks.bonds.get(page);
+        return {
+            item,
+            ...(page === undefined ? {} : { page: page.name }),
+            values: [{ field: "quantity", text: count, marks: 0 }],
+            ...(depth === 0 ? {} : { depth, inside: holder.name }),
+            ...(page !== undefined && marks.equipped.includes(page) ? { equipped: true } : {}),
+            ...(bonds === undefined ? {} : { bonds }),
+        };
+    };
 
     return (field === undefined ? [] : textsIn(holder.fields[field])).flatMap((entry): SheetItem[] => {
         const counted = entryKind(world, entry);
@@ -565,13 +579,13 @@ function carriedRows(world: World, holder: Page, equipped: Page[], depth = 0, se
             // Two entries of a kind are one stack, shown once (STK-3).
             const first = !shown.has(stack.kind);
             shown.add(stack.kind);
-            return first ? [row(stackName(stack), quantity(stack.count), equipped.includes(stack.kind), stack.kind)] : [];
+            return first ? [row(stackName(stack), quantity(stack.count), stack.kind)] : [];
         }
 
         const read = readEntry(entry);
 
         if (read.shape === "text") {
-            return [row(entry.trim(), "", false)];
+            return [row(entry.trim(), "")];
         }
 
         const page = entryPage(world, read.page);
@@ -581,11 +595,11 @@ function carriedRows(world: World, holder: Page, equipped: Page[], depth = 0, se
         }
 
         seen.add(page);
-        return [row(page.name, "", equipped.includes(page), page), ...carriedRows(world, page, equipped, depth + 1, seen)];
+        return [row(page.name, "", page), ...carriedRows(world, page, marks, depth + 1, seen)];
     });
 }
 
-/** A character's load when it is over its limit, as status says it under the rigor «rules» (LOAD-3): "load 230 / 210 lb, over the limit"; undefined otherwise. */
+/** A character's load when it is over its limit, as status says it under the rigor «rules» or «simulation» (LOAD-3): "load 230 / 210 lb, over the limit"; undefined otherwise. */
 export function overLoad(world: World, system: GameSystem | undefined, page: Page): string | undefined
 {
     if (system?.load === undefined || !hasSheet(world, page)) {
@@ -628,7 +642,9 @@ function loadValue(world: World, system: GameSystem, page: Page, fields: Record<
     const limit = formulaValue(world, fields, system.load.limit);
     const unit = weightUnit(world, system.load.field);
     const text = `${weightText(load)}${limit === undefined ? "" : ` / ${weightText(limit)}`}${unit === undefined ? "" : ` ${unit}`}`;
-    return { field: "load", text, marks: 0 };
+    const stage = system.load.stages?.findLast((one) => (formulaValue(world, fields, one.formula) ?? 0) > 0)?.name;
+    const shown = { value: Math.round(load * 10) / 10, ...(limit === undefined ? {} : { limit: Math.round(limit * 10) / 10 }), ...(stage === undefined ? {} : { stage }) };
+    return { field: "load", text, marks: 0, load: shown };
 }
 
 /** A weight as the sheet writes it: whole, or with one decimal. */
@@ -641,6 +657,24 @@ function weightText(weight: number): string
 function quantity(count: number): string
 {
     return count === 1 ? "" : String(count);
+}
+
+/** The pages a character has in each list of bonds of the system, items or kinds, each with the lists it is in, as the attuned (BND-1). */
+function bondedPages(world: World, system: GameSystem, page: Page): Map<Page, string[]>
+{
+    const bonded = new Map<Page, string[]>();
+
+    for (const list of Object.keys(system.bonds)) {
+        for (const name of linksIn(valueNamed(page.fields, list))) {
+            const found = entryPage(world, name);
+
+            if (found !== undefined) {
+                bonded.set(found, [...(bonded.get(found) ?? []), list]);
+            }
+        }
+    }
+
+    return bonded;
 }
 
 /** The pages a character has equipped, items or kinds (CON-12, STK-11). */
@@ -716,7 +750,10 @@ function sheetRoll(world: World, system: GameSystem, fields: Record<string, unkn
 {
     for (const field of [entry.field, entry.beside].filter((candidate) => candidate !== undefined)) {
         const usual = Object.entries(system.sheetDice).find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
-        const dice = usual === undefined ? undefined : oddsDice(world, system, fields, field) ?? usual;
+        const odds = usual === undefined ? undefined : oddsOf(world, system, fields, field);
+        const better = (odds?.better.length ?? 0) > 0;
+        const worse = (odds?.worse.length ?? 0) > 0;
+        const dice = better === worse ? usual : better ? system.sheetOdds?.better : system.sheetOdds?.worse;
         const number = dice === undefined ? undefined : numberOf(valueNamed(fields, field));
 
         if (dice !== undefined && number !== undefined) {
@@ -724,23 +761,33 @@ function sheetRoll(world: World, system: GameSystem, fields: Record<string, unkn
                 const [count, faces] = term.split("d");
                 return Array.from({ length: count === "" ? 1 : Number(count) }, () => Number.parseInt(faces, 10));
             });
-            return { notation: number === 0 ? dice : `${dice}${number > 0 ? "+" : "-"}${Math.abs(number)}`, dice: sides, modifier: number };
+            const why = odds === undefined ? undefined : { better: odds.better.flatMap((entry) => entry.why ?? []), worse: odds.worse.flatMap((entry) => entry.why ?? []) };
+            const shownWhy = why === undefined || why.better.length + why.worse.length === 0 ? {} : { odds: { better: [...new Set(why.better)], worse: [...new Set(why.worse)] } };
+            return { notation: number === 0 ? dice : `${dice}${number > 0 ? "+" : "-"}${Math.abs(number)}`, dice: sides, modifier: number, ...shownWhy };
         }
     }
 
     return undefined;
 }
 
-/** The dice of a better or a worse roll of a field, when the system's formulas make it one and not both, which cancel out (D-445); undefined otherwise. */
-function oddsDice(world: World, system: GameSystem, fields: Record<string, unknown>, field: string): string | undefined
+/**
+ * What makes a field's roll better and what makes it worse, by the system's formulas above 0 (D-445): its entries of each, which cancel out when both have one;
+ * undefined when the system has no odds.
+ */
+function oddsOf(world: World, system: GameSystem, fields: Record<string, unknown>, field: string): { better: OddsEntry[]; worse: OddsEntry[]; } | undefined
 {
     const odds = system.sheetOdds;
-    const when = (odds?.when ?? []).filter((entry) => entry.fields.some((listed) => comparableText(listed) === comparableText(field)));
+
+    if (odds === undefined) {
+        return undefined;
+    }
+
+    const when = odds.when.filter((entry) => entry.fields.some((listed) => comparableText(listed) === comparableText(field)));
     const above = (formula: Formula | undefined): boolean => formula !== undefined && (formulaValue(world, fields, formula) ?? 0) > 0;
-    const better = when.some((entry) => above(entry.better));
-    const worse = when.some((entry) => above(entry.worse));
-    return odds === undefined || better === worse ? undefined : better ? odds.better : odds.worse;
+    return { better: when.filter((entry) => above(entry.better)), worse: when.filter((entry) => above(entry.worse)) };
 }
+
+type OddsEntry = NonNullable<GameSystem["sheetOdds"]>["when"][number];
 
 /** A list with what the parts of the character add to it (PRO-7): the names written, then those given, apart and not counted with it. */
 function givenValue(world: World, field: string, value: unknown, given: { name: string; page: Page; }[]): SheetValue

@@ -11,8 +11,9 @@ import { t } from "./text.ts";
 const windowMargin = 12;
 const mostRolls = 12;
 
-// How the table slides out to its side and back, as the master's question folds: the page's width changes once, before it comes in or after it went.
-const slideTime = 220;
+// How the table slides out to its side and back in the style sheet's --short, as the master's question folds: the page's width changes once, before it comes in
+// or after it went.
+const slideTime = 250;
 const slideWay = 24;
 const easeOut = "cubic-bezier(0.05, 0.7, 0.1, 1)";
 const easeIn = "cubic-bezier(0.3, 0, 0.8, 0.15)";

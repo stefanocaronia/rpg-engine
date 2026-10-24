@@ -2,11 +2,11 @@
 // each keeps the names it fills; the page reads a language's file once, by its code or its base language, and falls back to English.
 import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { effectEndLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
-import { itemLabel, settingLabel } from "../src/dashboard/labels.ts";
-import { arrowStep, pageDirection, pageLanguageOf, pageTranslation, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
+import { itemLabel, settingLabel, shownText } from "../src/dashboard/labels.ts";
+import { arrowStep, browserLanguage, pageDirection, pageLanguageOf, pageTranslation, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
 import { lengthText } from "../src/dashboard/world-map.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./i18n/phrases.ts";
 import { makeTempFolder, testContext } from "./support.ts";
@@ -62,6 +62,17 @@ describe("the page's words (D-394)", () => {
         expect(pageLanguageOf("it-CH")).toBe("it");
         expect(pageLanguageOf("no")).toBe("nb");
         expect(pageLanguageOf("tlh")).toBe("en");
+
+        // Before the setup sets the campaign's language, the browser's, where it is shipped (D-500).
+        try {
+            vi.stubGlobal("navigator", { language: "it-IT" });
+            expect(browserLanguage()).toBe("it");
+            vi.stubGlobal("navigator", { language: "tlh" });
+            expect(browserLanguage()).toBeUndefined();
+        } finally {
+            vi.unstubAllGlobals();
+        }
+
         await setLanguage("tlh", read);
         expect(t("Your turn")).toBe("Your turn");
         // A file that arrives after another language was asked is not shown.
@@ -79,7 +90,21 @@ describe("the page's words (D-394)", () => {
         expect(fromLabel({ km: 12.4, direction: "north-east" }, (km) => lengthText(km, { name: "km", km: 1 }))).toBe("12,4 km a nord-est");
         expect(levelNeedLabel({ needs: 1200, level: 4 })).toBe("mancano 1200 al livello 4");
         expect(notationLabel([{ dice: "2d20", keep: { which: "highest", count: 1 } }, { add: "+5" }])).toBe("2d20, tieni il più alto, +5");
+        // The sheet's measures: a decimal with the language's comma, a duration field in words, a length written by hand as 9m never read as minutes; dice and versions untouched.
+        const duration = (text: string): string => shownText(text, "duration");
+        expect([shownText("4.2 m"), duration("3m"), duration("1h 30m"), duration("30s"), shownText("9m", "length"), shownText("1d6+2"), shownText("SRD 5.1.2")]).toEqual([
+            "4,2 m",
+            "3 minuti",
+            "1 ora 30 minuti",
+            "30 secondi",
+            "9m",
+            "1d6+2",
+            "SRD 5.1.2",
+        ]);
+        // A thousand written by hand stays a thousand, and a decimal keeps its digits.
+        expect([shownText("1.000 mo"), shownText("2.50 mo")]).toEqual(["1.000 mo", "2,50 mo"]);
         await setLanguage("en");
+        expect([shownText("4.2 m"), duration("3m"), duration("1h 30m"), duration("30 m"), duration("2m 1h")]).toEqual(["4.2 m", "3 minutes", "1 hour 30 minutes", "30 m", "2m 1h"]);
     });
 
     it("writes Arabic and Hebrew from right to left, each value of a phrase isolated in its own order, as +2 or 1d20+5 (D-394)", async () => {

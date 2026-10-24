@@ -33,7 +33,7 @@ import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
 import { SpendCard } from "./spend.tsx";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
-import { pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
+import { browserLanguage, pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
 import { SetupCorner, Top } from "./top.tsx";
 import { hasTurns, TurnsCard, turnWords } from "./turns.tsx";
@@ -181,7 +181,7 @@ function App()
 
             const page = member === undefined ? undefined : await readView(member.name);
             // The page's words in the campaign's language (D-394), its file read once; its dates and screen readers follow the language too.
-            const language = overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined;
+            const language = (overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined) ?? browserLanguage();
             await setLanguage(language);
             setSystemWords(overview.kind === "overview" ? overview.words : undefined);
 

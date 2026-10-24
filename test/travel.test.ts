@@ -181,11 +181,40 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
         expect(await ok("route", "Rocca")).toContain("No way leads to Rocca in Chiatta: the roads that join them include Mulattiera, a road");
     });
 
-    it("TRV-6: some aboard and some not, or a scene other than travel, are refused before anything changes", async () => {
+    it("TRV-6: some on a cart and some on foot go together at the pace of who walks, the cart with those aboard (playtest 05)", async () => {
+        await ok("write", "Carro", "--type", "item", "--set", "item=[[Cart]]");
+        await ok("write", "Locanda", "--add", "contains=[[Carro]]");
+        const walking = await ok("route", "Rocca");
+        await ok("move", "Lena", "--to", "Carro");
+        expect(await ok("route", "Rocca")).toBe(walking);
+        expect(await ok("travel", "Rocca")).toContain("Ettore and Lena travel to Rocca, at a normal pace");
+        expect(await ok("show", "Lena")).toContain("Is in: Carro › Rocca");
+        expect(await ok("show", "Ettore")).toContain("Is in: Rocca");
+    });
+
+    it("TRV-6: a mixed party stopped in the open goes on together, and who rides in what a traveller carries stays with them", async () => {
+        await ok("write", "Carro", "--type", "item", "--set", "item=[[Cart]]");
+        await ok("write", "Locanda", "--add", "contains=[[Carro]]");
+        await ok("move", "Lena", "--to", "Carro");
+        await ok("write", "Rocca", "--set", "position=20 km E of [[Guadoscuro]]");
+        await ok("travel", "--toward", "west");
+        await ok("advance", "--by", "10h");
+        expect(await ok("travel", "--toward", "west", "--distance", "9 km")).toContain("Ettore and Lena travel west");
+        await ok("write", "Gatto", "--type", "character", "--set", "role=companion");
+        await ok("write", "Zaino", "--type", "item", "--set", "item=[[Backpack]]", "--add", "contains=[[Gatto]]");
+        await ok("write", "Ettore", "--add", "inventory=[[Zaino]]");
+        expect(await ok("route", "Guadoscuro", "--across")).not.toContain("Zaino");
+        await ok("travel", "Guadoscuro", "--across");
+        expect(await ok("show", "Gatto")).toContain("Is in: Zaino › Ettore");
+    });
+
+    it("TRV-6: some aboard a boat and some not, or a scene other than travel, are refused before anything changes", async () => {
         await ok("write", "Chiatta", "--type", "item", "--set", "item=[[Keelboat]]");
         await ok("write", "Locanda", "--add", "contains=[[Chiatta]]");
         await ok("move", "Lena", "--to", "Chiatta");
-        expect(await refused("travel", "Rocca")).toBe("Lena is in a vehicle, and the others are not: move them all into the same one, or all out of it. Nothing changed.");
+        expect(await refused("travel", "Rocca")).toBe(
+            "Lena is in Chiatta, which goes only on the kinds of road made for it, and the others are not: move them all into it, or all out of it. Nothing changed.",
+        );
         await ok("move", "Lena", "--to", "Locanda");
         await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda");
         expect(await refused("travel", "Rocca")).toBe("A combat scene is open, Rissa: close it before the journey, or open a travel scene. Nothing changed.");

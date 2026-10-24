@@ -65,7 +65,7 @@ export function DeathSaveCard({ asked, save, member, name, roll, outcome, rollin
                     <Icon name="close" />
                 </button>
             )}
-            <p class="asked-turn">{check === undefined ? turnWords(name) : `${turnWords(name)} · ${check.check}`}</p>
+            <p class="eyebrow asked-turn">{check === undefined ? turnWords(name) : `${turnWords(name)} · ${check.check}`}</p>
             <p id={`dying-${asked.id}`} class="asked-question" role={roll === undefined ? "alert" : undefined}>{asked.question}</p>
             <div class="dying-life">
                 <HeartLine line={heartLine(outcome?.kind)} />

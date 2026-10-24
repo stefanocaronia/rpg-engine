@@ -35,7 +35,7 @@ export function plainLine(text: string): string | undefined
 
     // A quote's words, a secret's with its word, as the text reads them.
     const quoted = quoteLine.exec(line)?.[1];
-    const words = quoted === undefined ? line.replace(/^\s*[-*]\s+/, "") : quoted.replace(secretStart, (_, title: string) => `${t("Secret:")} ${title}`);
+    const words = quoted === undefined ? line.replace(/^\s*[-*]\s+/, "") : quoted.replace(secretStart, (_, title: string) => (title.trim() === "" ? t("You found out") : t("You found out: {what}", { what: title.trim() })));
     return linkWords(words).replace(/[*_]/g, "").trim();
 }
 
@@ -160,7 +160,7 @@ function Quote({ lines, link, outer, note }: { lines: string[]; link: LinkTo | u
     const title = secret[1].trim();
     return (
         <aside class="md-secret">
-            <p class="eyebrow" dir="auto">{[t("Secret"), title, note?.(title)].filter((part) => part !== undefined && part !== "").join(" · ")}</p>
+            <p class="eyebrow" dir="auto">{[t("You found out"), title, note?.(title)].filter((part) => part !== undefined && part !== "").join(" · ")}</p>
             {blocks(lines.slice(1).join("\n"), link, false)}
         </aside>
     );

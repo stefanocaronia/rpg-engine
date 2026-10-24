@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -203,11 +203,11 @@ Varje inställning kan ändras, i chatten eller i **Inställningar**. Ett avgör
 
 En sida på din egen dator. Den öppnas bara i webbläsaren på den datorn och är aktiv medan chatten är öppen. När chatten stängs visar den *Not connected*. Den kommer tillbaka av sig själv med nästa chatt.
 
-- **Grupp**: ditt rollformulär och dina följeslagares. Klicka på ett tal för att slå det. Håll muspekaren över det för att se var det kommer ifrån. Bredvid ser du slagen.
+- **Grupp**: ditt rollformulär och dina följeslagares. Klicka på ett tal för att slå det. Håll muspekaren över det för att se var det kommer ifrån och, när en pil markerar tärningen, vad som gör slaget bättre eller sämre. Bredvid ser du slagen.
 - **Scen**: var du är, dess bild och karta, vem som är där och vad som händer. I en strid visas turerna och din rollpersons kort.
 - **Dagbok**: uppdrag, berättelsen, dina följeslagares dagböcker och dina anteckningar.
 - **Värld**: världskartan, det din rollperson vet, de dokument som hittats och kalendern.
-- **Tärningsbrickan**: välj tärningar och en modifikation, och slå.
+- **Tärningsbrickan**: välj tärningar och en modifikation, och slå; ×2 fördubblar tärningarna, aldrig modifikationen, som vid en kritisk träff.
 - **Sparade spel**, **Hjälp**, **Inställningar** och **Om**, som ikoner i slutet av raden. Inställningar rymmer också sidans egna val: tema, tärningsljud och tärningsset.
 
 När spelledaren frågar dig något ligger dess banderoll kvar högst upp, oavsett vilken del du befinner dig i.

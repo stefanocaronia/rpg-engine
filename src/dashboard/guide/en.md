@@ -202,11 +202,11 @@ Every setting can change, in the chat or in **Settings**. A ruling the master ma
 
 A page on your own computer, open only in that computer's browser, live while the chat is open. When the chat closes, it shows *Not connected*; it comes back by itself with the next chat.
 
-- **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from. Beside it, the rolls.
+- **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from and, when an arrow marks its die, what makes the roll better or worse. Beside it, the rolls.
 - **Scene**: where you are, its picture and map, who is there, what is happening; in a fight, the turns and your character's card.
 - **Journal**: quests, the story, your companions' diaries, your notes.
 - **World**: the world map, what your character knows, the documents found and the calendar.
-- **The dice tray**: choose dice and a modifier, and throw.
+- **The dice tray**: choose dice and a modifier, and throw; ×2 doubles the dice, never the modifier, as for a critical hit.
 - **Saves**, **Help**, **Settings** and **About**, as icons at the end of the row. Settings also holds the page's own preferences: theme, dice sound, dice set.
 
 When the master asks you something, its banner stays at the top, whatever section you are in.

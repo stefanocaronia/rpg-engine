@@ -82,7 +82,7 @@ function memberUpkeep(root: string, context: Context, name: string, upkeep: NonN
     if (kind !== undefined && held.length > 0) {
         const { container, stack } = held[0];
         const step = { container, kind: stack.kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
-        const spent = writeStacks(root, context, world, [step], "a day's food").notes.join(" ");
+        const spent = writeStacks(root, context, world, [step], "a day's food", { upkeep: true }).notes.join(" ");
         const fed = hungry > 0 && setNumber(root, context, campaignWorld(root, context), member, upkeep.short, 0, "a day's food") ? ` ${upkeep.short} back to 0.` : "";
         // The last one eaten is said, for the player to hear before the day without (UPK-2).
         const left = held.reduce((total, holding) => total + holding.stack.count, 0) - 1;
@@ -137,7 +137,7 @@ function lifestylePaid(root: string, context: Context, world: World, member: Pag
 
     const after = formatAmount(payment.purse, coins);
     writePage(world, member.name, undefined, { set: { money: after } });
-    appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: member.name, field: "money", before, after, why: `a ${named} day` }));
+    appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: member.name, field: "money", before, after, why: `a ${named} day`, upkeep: true }));
     return `${member.name} pays a ${named} day: money ${before} → ${after}.`;
 }
 
@@ -157,7 +157,7 @@ function setNumber(root: string, context: Context, world: World, page: Page, fie
     }
 
     writePage(world, page.name, undefined, value === 0 ? { unset: [field] } : { set: { [field]: value } });
-    appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: page.name, field, before: String(before), after: String(value), why }));
+    appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: page.name, field, before: String(before), after: String(value), why, upkeep: true }));
     return true;
 }
 
@@ -175,7 +175,7 @@ function raise(root: string, context: Context, world: World, name: string, field
     const after = Math.min(read.value + 1, read.max ?? Number.POSITIVE_INFINITY);
     const value = written?.max === undefined ? after : formatCounter({ ...written, value: after });
     writePage(world, page.name, undefined, { set: { [field]: value } });
-    appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: page.name, field, before: String(read.value), after: String(after), why: "days without food" }));
+    appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: page.name, field, before: String(read.value), after: String(after), why: "days without food", upkeep: true }));
     return `${read.value} → ${after}`;
 }
 
@@ -185,10 +185,7 @@ function raise(root: string, context: Context, world: World, name: string, field
  */
 export function burning(system: GameSystem | undefined, world: World, holder: Page, name: string): { kind: Page; lasts: string; } | undefined
 {
-    // By its name, or by a kind of the campaign that derives from what burns, as Torcia from Torch.
-    const named = kindNamed(world, holder, name);
-    const names = [name, ...(named === undefined ? [] : [named, ...baseChain(world, named)].map((page) => page.name))];
-    const entry = Object.entries(system?.burning ?? {}).find(([burns]) => names.some((candidate) => comparableText(burns) === comparableText(candidate)));
+    const entry = burningEntry(system, world, holder, name);
 
     if (entry === undefined) {
         return undefined;
@@ -202,6 +199,23 @@ export function burning(system: GameSystem | undefined, world: World, holder: Pa
     }
 
     return { kind, lasts };
+}
+
+/** For an effect named after something that burns (UPK-3), what it spends, by the holder's name for it, as Torcia, and how many of it the holder still carries. */
+export function fuelLeft(system: GameSystem | undefined, world: World, holder: Page, name: string): { fuel: string; left: number; } | undefined
+{
+    if (Object.keys(system?.burning ?? {}).length === 0) {
+        return undefined;
+    }
+
+    // Only to show: a name two pages share, which a command would refuse, burns nothing here.
+    try {
+        const entry = burningEntry(system, world, holder, name);
+        const kind = entry === undefined ? undefined : kindNamed(world, holder, entry[1].spends ?? entry[0]);
+        return kind === undefined ? undefined : { fuel: kind.name, left: heldStacksOfKind(world, holder, kind).reduce((total, held) => total + held.stack.count, 0) };
+    } catch {
+        return undefined;
+    }
 }
 
 /** Spends one of what burns from what the holder carries (UPK-3), with its line in the log; the line that says it. */
@@ -218,4 +232,12 @@ export function burnOne(root: string, context: Context, holderName: string, kind
     const { container, stack } = held[0];
     const step = { container, kind: stack.kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
     return writeStacks(root, context, world, [step], "lit").notes.join(" ");
+}
+
+/** The system's entry of what burns that an effect is named after (UPK-3): by its name, or by a kind of the campaign that derives from it, as Torcia from Torch. */
+function burningEntry(system: GameSystem | undefined, world: World, holder: Page, name: string): [string, NonNullable<GameSystem["burning"]>[string]] | undefined
+{
+    const named = kindNamed(world, holder, name);
+    const names = [name, ...(named === undefined ? [] : [named, ...baseChain(world, named)].map((page) => page.name))];
+    return Object.entries(system?.burning ?? {}).find(([burns]) => names.some((candidate) => comparableText(burns) === comparableText(candidate)));
 }

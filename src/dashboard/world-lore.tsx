@@ -54,7 +54,7 @@ export function LoreTab({ world, version, open, onMap, players = [] }: {
             <div class="browse-list">
                 {open !== undefined && asked === undefined && <p class="browse-none" role="status">{t("Your character knows nothing called “{name}”.", { name: open })}</p>}
                 <div class="browse-find">
-                    <span class="package-search">
+                    <span class="search">
                         <Icon name="search" />
                         <input type="search" value={search} placeholder={t("Search")} aria-label={t("Search what your character knows")} onInput={(event) => setSearch(event.currentTarget.value)} />
                     </span>
@@ -73,7 +73,7 @@ export function LoreTab({ world, version, open, onMap, players = [] }: {
                 )}
                 {found.length === 0 && (
                     <p class="browse-none" role="status">
-                        {t("Nothing your character knows matches “{search}”.", { search })} <button type="button" class="save-button quiet" onClick={() => setSearch("")}>{t("Clear the search")}</button>
+                        {t("Nothing your character knows matches “{search}”.", { search })} <button type="button" class="button quiet" onClick={() => setSearch("")}>{t("Clear the search")}</button>
                     </p>
                 )}
                 {groups.map((part) => (
@@ -245,7 +245,7 @@ function Browse({ open, explicit, back, backLabel, children }: { open?: string |
     return (
         <div class={explicit ? "browse open" : "browse"} ref={box}>
             {explicit && (
-                <a class="browse-back save-button quiet" href={back}>
+                <a class="browse-back button quiet" href={back}>
                     <Icon name="fold" />
                     {backLabel}
                 </a>
@@ -309,13 +309,13 @@ function LoreReader({ entry, version, link, onMap, focus, several }: { entry: Kn
             {(onMap !== undefined || entry.companion) && (
                 <p class="reader-actions">
                     {onMap !== undefined && (
-                        <a class="save-button package-button" href={onMap}>
+                        <a class="button package-button" href={onMap}>
                             <Icon name="world" />
                             {t("Show on the map")}
                         </a>
                     )}
                     {entry.companion && (
-                        <a class="save-button package-button" href={`#/party/${encodeURIComponent(entry.name)}`}>
+                        <a class="button package-button" href={`#/party/${encodeURIComponent(entry.name)}`}>
                             <Icon name="party" />
                             {t("Open the sheet")}
                         </a>
@@ -403,7 +403,7 @@ function FilterChips<Key extends string>(
     );
 
     return (
-        <div class="package-chips" role="group" aria-label={label} ref={row} onKeyDown={move}>
+        <div class="filter-chips" role="group" aria-label={label} ref={row} onKeyDown={move}>
             {chip(undefined, t("All"), all)}
             {options.map((option) => chip(option.key, option.name, option.count, option.member))}
         </div>

@@ -1,4 +1,5 @@
 ---
+document: register
 ---
 
 Un registro rilegato in cuoio, gonfio di umidità: trent'anni di sacchi d'argento, colonna per colonna, nella grafia stretta di un caposquadra.

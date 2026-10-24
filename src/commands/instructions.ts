@@ -2,10 +2,10 @@ import { z } from "zod";
 import { findCampaign, readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
-import { buttonsInstructions, dashboardInstructions, masterInstructions, voicesInstructions } from "../instructions/index.ts";
+import { buttonsInstructions, dashboardInstructions, masterInstructions } from "../instructions/index.ts";
 import { campaignMode, modePart } from "./game-mode.ts";
 import { readOpenScene } from "./game-scene.ts";
-import { agentVoices } from "./game-voices.ts";
+import { voicesPart } from "./game-voices.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { mentorPart, partyPart, situationPart, stylePart } from "./parts.ts";
 
@@ -85,8 +85,7 @@ function voicesText(folder: string, context: Context): string
     const root = findCampaign(folder);
 
     try {
-        const way = root === undefined ? undefined : (readSettings(root).voices ?? "auto");
-        return root === undefined || way === undefined || !agentVoices(root, context) || campaignMode(root, campaignWorld(root, context)) !== "play" ? "" : voicesInstructions(way);
+        return root === undefined || campaignMode(root, campaignWorld(root, context)) !== "play" ? "" : voicesPart(root, context);
     } catch {
         return "";
     }

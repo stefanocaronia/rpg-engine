@@ -49,7 +49,7 @@ const known = new WeakMap<World, Roads>();
 
 /**
  * Who travels when no one is named (TRV-6): the living members of the party who are in the same place as the player character, the character first; in no place,
- * those in the same vehicle, or else those of the journey that stopped in the open, never one who was simply never put anywhere.
+ * those in the same vehicle, or else those of the journey that stopped in the open, on foot or in its vehicles, never one who was simply never put anywhere.
  */
 export function travellingParty(world: World, character: Page | undefined, journeyMovers: string[]): Page[]
 {
@@ -58,15 +58,17 @@ export function travellingParty(world: World, character: Page | undefined, journ
     }
 
     const place = placeOf(world, character);
-    const outer = locate(world, character).chain.at(-1);
+    const outerOf = (page: Page): Page => locate(world, page).chain.at(-1) ?? page;
+    const moving = (page: Page): boolean => journeyMovers.some((name) => comparableText(name) === comparableText(page.name));
+    const outer = outerOf(character);
 
     const together = (page: Page): boolean => {
         if (place !== undefined) {
             return placeOf(world, page) === place;
         }
 
-        const chain = locate(world, page).chain;
-        return outer !== undefined ? chain.at(-1) === outer : chain.length === 0 && journeyMovers.some((name) => comparableText(name) === comparableText(page.name));
+        // In the open, a mixed party is the walkers and the vehicles of its journey (playtest 05).
+        return outerOf(page) === outer || moving(outerOf(page));
     };
 
     return [character, ...world.pages.filter((page) => page !== character && isInParty(page) && together(page))];
@@ -105,30 +107,46 @@ function leadingPlayers(world: World, journeyMovers: string[]): { lead: Page | u
 }
 
 /**
- * What moves for the travellers (TRV-6): the vehicle they are all in, the outermost item that holds them below a place, or themselves. Refused when some are in
- * a vehicle and some are not, or they are in different ones, or in different places.
+ * What moves for the travellers (TRV-6): the vehicle they are all in, the outermost item that holds them below a place, or themselves. When only some are in a
+ * vehicle, or in different ones, each vehicle goes with those on foot, at their pace. Refused when they are in different places, or beside a boat that goes only by water.
  */
-export function moversOf(world: World, travellers: Page[]): { movers: Page[]; vehicle?: Page; }
+export function moversOf(world: World, system: GameSystem | undefined, travellers: Page[]): { movers: Page[]; vehicle?: Page; }
 {
-    const vehicles = travellers.map((page) => locate(world, page).chain.filter((holder, index, chain) => holder.type === "item" && chain.slice(0, index).every((inner) => inner.type === "item")).at(-1));
     const places = new Set(travellers.map((page) => placeOf(world, page)));
+    // Who rides in what another traveller carries, as a cat in a pack, goes with them.
+    const going = travellers.filter((page) => !locate(world, page).chain.some((holder) => travellers.includes(holder)));
+    const vehicles = going.map((page) => vehicleOf(world, page));
 
     if (places.size > 1) {
         throw new Error(`${travellers.map((page) => page.name).join(", ")} are not in the same place: a journey starts from one place. Move them together first, or travel with each apart. Nothing changed.`);
     }
 
-    if (vehicles.every((vehicle) => vehicle === undefined)) {
-        return { movers: travellers };
-    }
-
     const vehicle = vehicles[0];
 
-    if (vehicle === undefined || vehicles.some((other) => other !== vehicle)) {
-        const aboard = travellers.filter((_, index) => vehicles[index] !== undefined).map((page) => page.name);
-        throw new Error(`${aboard.join(", ")} ${aboard.length === 1 ? "is" : "are"} in a vehicle, and the others are not: move them all into the same one, or all out of it. Nothing changed.`);
+    if (vehicle !== undefined && vehicles.every((other) => other === vehicle)) {
+        return { movers: [vehicle], vehicle };
     }
 
-    return { movers: [vehicle], vehicle };
+    // A cart with the old man aboard and the others walking beside it: all go together, at the pace of who walks (playtest 05).
+    const movers = going.map((page, index) => vehicles[index] ?? page);
+    const afloat = vehicles.find((other) => other !== undefined && isVehicleOnly(world, system, other));
+
+    if (afloat !== undefined) {
+        const aboard = going.filter((_, index) => vehicles[index] === afloat).map((page) => page.name);
+        throw new Error(`${aboard.join(", ")} ${aboard.length === 1 ? "is" : "are"} in ${afloat.name}, which goes only on the kinds of road made for it, and the others are not: move them all into it, or all out of it. Nothing changed.`);
+    }
+
+    return { movers: movers.filter((page, index) => movers.indexOf(page) === index) };
+}
+
+/** The vehicle a page is in (TRV-6): the outermost of the items that hold it, when what holds that is a place or nothing; none in what a character carries. */
+function vehicleOf(world: World, page: Page): Page | undefined
+{
+    const chain = locate(world, page).chain;
+    const items = chain.findIndex((holder) => holder.type !== "item");
+    const inner = items === -1 ? chain : chain.slice(0, items);
+    const above = chain[inner.length];
+    return above === undefined || above.type === "place" ? inner.at(-1) : undefined;
 }
 
 /** The stop a journey starts from or ends at (ROA-5): the nearest page of the chain of `page`, itself first, that is a stop of a road. */

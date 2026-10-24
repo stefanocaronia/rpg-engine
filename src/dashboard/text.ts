@@ -74,6 +74,13 @@ export function pageLanguageOf(code: string | undefined): string
     return [asked, base, aliases[base] ?? ""].find((one) => shippedLanguages.includes(one)) ?? "en";
 }
 
+/** The browser's language, where the package ships it: the page's until the setup sets the campaign's (playtest 01); none for English or another. */
+export function browserLanguage(): string | undefined
+{
+    const language = typeof navigator === "undefined" ? "en" : pageLanguageOf(navigator.language);
+    return language === "en" ? undefined : language;
+}
+
 /** The languages the page is written in: English, and those shipped. */
 export function pageLanguages(): string[]
 {
@@ -193,6 +200,12 @@ export function tParts<Part>(phrase: string, parts: Record<string, Part>): (stri
 export function numberText(value: number): string
 {
     return new Intl.NumberFormat(current, { numberingSystem: "latn", useGrouping: false, maximumFractionDigits: 2 }).format(value);
+}
+
+/** A number of a unit of time as the page's language says it, in Latin digits: 3 minuti in Italian, 1 hour in English. */
+export function timeText(value: number, unit: "day" | "hour" | "minute" | "second"): string
+{
+    return new Intl.NumberFormat(current, { numberingSystem: "latn", useGrouping: false, style: "unit", unit, unitDisplay: "long" }).format(value);
 }
 
 /** Names as the page's language lists them: Ettore e Lupa. */

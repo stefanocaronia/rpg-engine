@@ -332,6 +332,9 @@ interface Served
     queueing?: Promise<void>;
     /** Codex refused a sentence once: the others wait for the master's next call (D-495). */
     queueBroken?: boolean;
+    /** The problems of the campaign's files the page last showed the player, and how many the master was told of (playtest 05). */
+    problemsShown?: number;
+    problemsTold?: number;
 }
 
 /** What the player does with a package on the page (D-475), or with the library (D-491 (13)). */
@@ -1480,6 +1483,7 @@ function pageNews(served: Served): { lines: string[]; restore(): void; }
     const acts = takeActs(served.acts, quotedLines);
     const shares = [...served.shared];
     const settings = settingNews(served);
+    const problems = problemNews(served);
     served.shared.clear();
 
     // The page hears that the shared notes and the sentences were read: they can no longer be taken back.
@@ -1488,12 +1492,13 @@ function pageNews(served: Served): { lines: string[]; restore(): void; }
     }
 
     return {
-        lines: [...events, ...acts.lines, ...shares.map(([, news]) => news), ...settings.lines],
+        lines: [...events, ...acts.lines, ...shares.map(([, news]) => news), ...settings.lines, ...problems.lines],
         restore: () => {
             served.events.unshift(...events);
             acts.restore();
             shares.forEach(([id, news]) => served.shared.set(id, news));
             settings.restore();
+            problems.restore();
         },
     };
 }
@@ -1686,6 +1691,37 @@ function giveBack(served: Served, taken: [string, PlayerSetting][]): void
     }
 }
 
+/** How many problems the page shows the player, as view's overview counts them: the master hears of them at their next call. */
+function keepProblems(served: Served, result: unknown): void
+{
+    const problems = typeof result === "object" && result !== null && (result as { kind?: unknown; }).kind === "overview" ? (result as { problems?: unknown; }).problems : undefined;
+
+    if (typeof problems === "number") {
+        served.problemsShown = problems;
+    }
+}
+
+/**
+ * What the master hears of the problems the page shows, which it promises the player the master fixes: once for each new count, none when there are none;
+ * given back when the call never answers.
+ */
+function problemNews(served: Served): { lines: string[]; restore(): void; }
+{
+    const shown = served.problemsShown ?? 0;
+    const told = served.problemsTold;
+    served.problemsTold = shown;
+
+    if (shown === 0 || shown === told) {
+        return { lines: [], restore: () => undefined };
+    }
+
+    const what = shown === 1 ? "a problem" : `${shown} problems`;
+    return {
+        lines: [`The player's dashboard shows that the campaign's files have ${what}, and tells them you fix it: call validate and fix them now, behind the scenes.`],
+        restore: () => (served.problemsTold = told),
+    };
+}
+
 /** Whether a command's result is the setup, as view gives it with setup. */
 function isSetup(result: unknown): result is { kind: "setup"; questions: PlayerSetting[]; }
 {
@@ -1793,6 +1829,7 @@ async function runCommand(name: string, parameters: URLSearchParams, response: S
     try {
         await served.session.ready();
         const result = await command.run(parsed.data, served.context);
+        keepProblems(served, result);
         sendJson(
             response,
             200,

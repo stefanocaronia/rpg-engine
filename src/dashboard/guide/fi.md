@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -199,18 +199,18 @@ Jokaista asetusta voi muuttaa, keskustelussa tai kohdassa **Asetukset**. Ratkais
 
 ---
 
-## 4. Kojelauta <!-- icon: party -->
+## 4. Hallintanäkymä <!-- icon: party -->
 
-Sivu omalla tietokoneellasi. Se aukeaa vain tämän tietokoneen selaimessa ja on käynnissä, kun keskustelu on auki. Kun keskustelu sulkeutuu, sivu näyttää *Ei yhteyttä*. Se palaa itsestään seuraavan keskustelun mukana.
+Sivu omalla tietokoneellasi. Se avautuu vain tämän tietokoneen selaimessa ja toimii niin kauan kuin keskustelu on auki. Kun keskustelu sulkeutuu, sivulla lukee *Not connected*. Yhteys palaa itsestään seuraavan keskustelun mukana.
 
-- **Seurue**: oma hahmolomakkeesi ja seuralaistesi lomakkeet. Klikkaa lukua heittääksesi sen. Vie hiiri sen päälle nähdäksesi, mistä se tulee. Vieressä ovat heitot.
-- **Kohtaus**: missä olet, sen kuva ja kartta, ketkä ovat paikalla ja mitä tapahtuu. Taistelussa vuorot ja hahmosi kortti.
-- **Päiväkirja**: tehtävät, tarina, seuralaistesi päiväkirjat ja muistiinpanosi.
+- **Seurue**: oma hahmolomakkeesi ja seuralaistesi lomakkeet. Heitä numerolla napsauttamalla. Vie osoitin numeron päälle, niin näet, mistä se tulee. Jos nuoli merkitsee noppaa, näet myös, mikä parantaa tai huonontaa heittoa. Sen vieressä näkyvät heitot.
+- **Kohtaus**: missä olet, paikan kuva ja kartta, ketkä ovat paikalla ja mitä tapahtuu. Taistelussa näet vuorot ja hahmosi kortin.
+- **Päiväkirja**: tehtävät, tarina, seuralaistesi päiväkirjat ja omat muistiinpanosi.
 - **Maailma**: maailmankartta, se mitä hahmosi tietää, löydetyt asiakirjat ja kalenteri.
-- **Noppa-alusta**: valitse nopat ja muunnin ja heitä.
-- **Tallennukset**, **Ohje**, **Asetukset** ja **Tietoja** kuvakkeina rivin lopussa. Asetuksissa ovat myös sivun omat valinnat: teema, nopan ääni ja noppasarja.
+- **Noppa-alusta**: valitse nopat ja muunnin ja heitä. ×2 kaksinkertaistaa nopat mutta ei muunninta, kuten kriittisessä osumassa.
+- **Tallennukset**, **Ohje**, **Asetukset** ja **Tietoja** näkyvät kuvakkeina rivin lopussa. Asetuksissa ovat myös sivun omat valinnat: teema, noppien ääni ja noppasetti.
 
-Kun pelinjohtaja kysyy sinulta jotain, sen ilmoituspalkki pysyy ylhäällä, missä osiossa sitten oletkin.
+Kun pelinjohtaja kysyy sinulta jotain, sen palkki pysyy ylhäällä, missä osiossa tahansa olet.
 
 ---
 

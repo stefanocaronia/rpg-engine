@@ -3,7 +3,7 @@
 import { ActName, usePlayerActs } from "./act-names.tsx";
 import { Coins } from "./coins.tsx";
 import type { Member, SheetValue } from "./data.ts";
-import { besideLabel, effectEndLabel, effectLabel, effectName } from "./game-words.ts";
+import { besideLabel, burnsLabel, effectEndLabel, effectLabel, effectName } from "./game-words.ts";
 import { fieldLabel, itemLabel, phraseLabel, shownText } from "./labels.ts";
 import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
 import { t } from "./text.ts";
@@ -30,7 +30,7 @@ export function ValueDrawing({ value, label, fields }: { value: SheetValue; labe
             return <Chips value={value} fields={fields} />;
         default:
             // Money as its coins (D-431).
-            return value.coins !== undefined && value.coins.length > 0 ? <Coins coins={value.coins} /> : <span class={value.text.length > 40 ? "text" : "num"}>{shownText(value.text)}</span>;
+            return value.coins !== undefined && value.coins.length > 0 ? <Coins coins={value.coins} /> : <span class={value.text.length > 40 ? "text" : "num"}>{shownText(value.text, value.kind)}</span>;
     }
 }
 
@@ -53,7 +53,7 @@ export function Bar({ value, label }: { value: SheetValue; label: string; })
             <span class={share < low ? "bar low" : "bar"} role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={current} aria-valuetext={value.text}>
                 <span class="fill" style={{ "--fill": String(share) }} />
             </span>
-            <span class="num">{shownText(value.text)}</span>
+            <span class="num">{shownText(value.text, value.kind)}</span>
         </span>
     );
 }
@@ -64,7 +64,7 @@ export function Progress({ value, label }: { value: SheetValue; label: string; }
     return (
         <span class="progress-line">
             <span class="progress-first">
-                <span class="num">{shownText(value.text)}</span>
+                <span class="num">{shownText(value.text, value.kind)}</span>
                 {besideLabel(value) !== undefined && <span class="progress-next">{shownText(besideLabel(value) ?? "")}</span>}
             </span>
             <ProgressBar value={value} label={label} />
@@ -97,7 +97,7 @@ export function Track({ value, label }: { value: SheetValue; label: string; })
                 <span class="fill" />
                 <span class="zero" />
             </span>
-            <span class="num">{shownText(value.text)}</span>
+            <span class="num">{shownText(value.text, value.kind)}</span>
         </span>
     );
 }
@@ -140,7 +140,14 @@ export function Effects({ effects, most }: { effects: Member["effects"]; most?: 
     const shown = most === undefined ? effects : effects.slice(0, most);
     return effects.length === 0 ? null : (
         <span class="effects">
-            {shown.map((effect) => <span key={effect.text} class="effect" title={effectLabel(effect)}>{effectName(effect.name)}{effect.end && most === undefined ? <span class="end">{`· ${effectEndLabel(effect.end)}`}</span> : null}</span>)}
+            {shown.map((effect) => (
+                <span key={effect.text} class="effect" title={effectLabel(effect)}>
+                    {effectName(effect.name)}
+                    {effect.end && most === undefined ? <span class="end">{`· ${effectEndLabel(effect.end)}`}</span> : null}
+                    {/* What burns says how many of what it spends are left, as torches. */}
+                    {effect.burns && most === undefined ? <span class="end">{`· ${burnsLabel(effect.name, effect.burns)}`}</span> : null}
+                </span>
+            ))}
             {effects.length > shown.length && <span class="effect more">+{effects.length - shown.length}</span>}
         </span>
     );

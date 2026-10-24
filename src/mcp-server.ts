@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { spawn } from "node:child_process";
+import { z } from "zod";
 import { findCampaign, hasCharacterAgent, refreshHostFiles } from "./campaign/index.ts";
 import { extensionCommands } from "./commands/game-extensions.ts";
 import { outsideNews, whileClosedNews } from "./commands/game-outside.ts";
@@ -235,11 +236,67 @@ function extensionTools(server: McpServer, context: Context, handler: (command: 
     return () => (running = running.then(sync).catch(() => undefined));
 }
 
+/**
+ * The host is shown each tool's parameters as they are, strict; the SDK lets any object through, so that runTool checks it and says how to call the tool:
+ * a master who calls one without loading its schema reads its parameters in the answer, not zod's words before our handler.
+ */
 function toolConfig(command: AnyCommand)
 {
     const annotations = command.readOnly ? { readOnlyHint: true } : undefined;
     const meta = command.alwaysLoad ? { "anthropic/alwaysLoad": true } : undefined;
-    return { description: command.description, inputSchema: command.input.strict(), annotations, _meta: meta };
+    return { description: command.description, inputSchema: z.looseObject({}).meta(shownInput(command)), annotations, _meta: meta };
+}
+
+// The JSON schema of each command's input, as the SDK would write it from the strict schema.
+const shownInputs = new WeakMap<AnyCommand, ShownInput>();
+
+type ShownInput = z.core.JSONSchema.BaseSchema & { properties?: Record<string, { description?: string; }>; required?: string[]; };
+
+function shownInput(command: AnyCommand): ShownInput
+{
+    let shown = shownInputs.get(command);
+
+    if (shown === undefined) {
+        shown = z.toJSONSchema(command.input.strict(), { target: "draft-7", io: "input" }) as ShownInput;
+        shownInputs.set(command, shown);
+    }
+
+    return shown;
+}
+
+/** The command's input, checked as its schema says; what is wrong comes with every parameter the tool takes, for a call made without the schema. */
+function checkedInput(command: AnyCommand, input: unknown): unknown
+{
+    const parsed = (command.input as z.ZodObject).strict().safeParse(input ?? {});
+
+    if (parsed.success) {
+        return parsed.data;
+    }
+
+    const given = typeof input === "object" && input !== null ? input as Record<string, unknown> : {};
+    const wrong = parsed.error.issues.map((issue) => inputIssue(command.name, issue, given));
+    const shown = shownInput(command);
+    const required = shown.required ?? [];
+    const parameters = Object.entries(shown.properties ?? {}).map(([name, field]) => `- ${name}${required.includes(name) ? "" : " (optional)"}${field.description === undefined ? "" : `: ${field.description}`}`);
+    const takes = parameters.length === 0 ? `${command.name} takes no parameters.` : `${command.name} takes:\n${parameters.join("\n")}`;
+    throw new Error(`${wrong.join(" ")} Nothing changed: call it again with its parameters.\n${takes}`);
+}
+
+function inputIssue(tool: string, issue: z.core.$ZodIssue, given: Record<string, unknown>): string
+{
+    const path = issue.path.map(String).join(".");
+
+    if (issue.code === "unrecognized_keys") {
+        const keys = issue.keys.join(", ");
+        return path === "" ? `${tool} has no parameter ${keys}.` : `${path} has no ${keys}.`;
+    }
+
+    // A parameter left out, whatever zod calls it: a missing word of a list is an invalid option to it.
+    if (issue.path.length === 1 && given[path] === undefined) {
+        return `${tool} needs ${path}.`;
+    }
+
+    return path === "" ? `${issue.message}.` : `${path}: ${issue.message}.`;
 }
 
 async function runTool(
@@ -285,10 +342,11 @@ async function runTool(
             return { content: [{ type: "text", text: [...(news?.lines ?? []), back.refused].join("\n\n") }], isError: true };
         }
 
+        const checked = checkedInput(command, input);
         // What changed outside the chat comes before the command runs on it, its events fired (OUT-3).
         changedOutside = outside.take();
         // The call's own context, with its cancel, as the user stopping it (ASK-9).
-        const text = command.format(await command.run(input, { ...context, signal: extra.signal }));
+        const text = command.format(await command.run(checked, { ...context, signal: extra.signal }));
         // What the player changed on the dashboard comes first, once, what they changed while the call waited included (D-341).
         news = context.news?.();
         return { content: [{ type: "text", text: [...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }] };

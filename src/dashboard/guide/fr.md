@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 d1fb7563 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
@@ -201,14 +201,14 @@ Chaque réglage peut changer, dans le chat ou dans **Paramètres**. Une décisio
 
 ## 4. Le tableau de bord <!-- icon: party -->
 
-Une page sur ton propre ordinateur, ouverte uniquement dans le navigateur de cet ordinateur, active tant que le chat est ouvert. Quand le chat se ferme, elle affiche *Non connecté* ; elle revient toute seule avec le prochain chat.
+Une page sur ton propre ordinateur, ouverte uniquement dans le navigateur de cet ordinateur, active tant que le chat est ouvert. Quand le chat se ferme, elle affiche *Not connected*. Elle revient toute seule avec le prochain chat.
 
-- **Groupe** : ta fiche et celles de tes compagnons. Clique sur un nombre pour le lancer ; passe dessus pour voir d'où il vient. À côté, les jets.
-- **Scène** : où tu es, son image et sa carte, qui est là, ce qui se passe ; en combat, les tours et la carte de ton personnage.
-- **Journal** : les quêtes, l'histoire, les journaux de tes compagnons, tes notes.
-- **Monde** : la carte du monde, ce que ton personnage sait, les documents trouvés et le calendrier.
-- **La piste de dés** : choisis les dés et un modificateur, puis lance.
-- **Sauvegardes**, **Aide**, **Paramètres** et **À propos**, sous forme d'icônes au bout de la rangée. Paramètres contient aussi les préférences propres à la page : thème, son des dés, jeu de dés.
+- **Groupe**&nbsp;: ta fiche et celles de tes compagnons. Clique sur un nombre pour le lancer. Survole-le pour voir d'où il vient et, quand une flèche marque son dé, ce qui améliore ou aggrave le jet. À côté, les jets.
+- **Scène**&nbsp;: où tu es, son image et sa carte, qui est là, ce qui se passe. Pendant un combat, les tours et la carte de ton personnage.
+- **Journal**&nbsp;: les quêtes, l'histoire, les journaux de tes compagnons, tes notes.
+- **Monde**&nbsp;: la carte du monde, ce que sait ton personnage, les documents trouvés et le calendrier.
+- **La piste de dés**&nbsp;: choisis les dés et un modificateur, puis lance. ×2 double les dés, jamais le modificateur, comme pour un coup critique.
+- **Sauvegardes**, **Aide**, **Paramètres** et **À propos**, sous forme d'icônes au bout de la rangée. Les Paramètres contiennent aussi les préférences propres à la page&nbsp;: thème, son des dés, jeu de dés.
 
 Quand le MJ te pose une question, sa bannière reste en haut, quelle que soit la section où tu te trouves.
 

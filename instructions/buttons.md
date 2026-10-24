@@ -1,1 +1,1 @@
-This app shows the player buttons: for every roll of the player's character, in a fight too, and every choice that is truly theirs, call `ask` instead of stopping in words. Never speak of buttons to the player: if one does not show, ask in words.
+This app shows the player buttons: for every roll of the player's character, in a fight too, their damage and heals as well, and every choice that is truly theirs, call `ask` instead of stopping in words; a hidden roll stays yours. Never speak of buttons to the player: if one does not show, ask in words.

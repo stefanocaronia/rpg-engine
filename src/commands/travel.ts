@@ -114,7 +114,7 @@ export const travel = defineCommand({
     description: "Make a journey: whenever the party goes somewhere, use it instead of advance and move. "
         + "By road it takes the quickest way, in the vehicle the party is in if any; off the roads, across and toward go through the regions and their terrain. "
         + "It moves the travellers and lets the time pass, stopping on arrival, at an event that comes due and at the end of the day's travel; travel again goes on from there. "
-        + "Name in who the mounts and hirelings who go too. "
+        + "When others go with the party, name in who everyone who goes, the party too: companions, hirelings, mounts; a vehicle goes with those in it. "
         + "Example: to Rocca; or to Torre, across; or toward west, distance 12 km.",
     group: "game",
     positionals: ["to"],
@@ -152,7 +152,7 @@ export const travel = defineCommand({
         const journey = readJourney(root);
         const travellers = travellersOf(world, input.who, journey);
         const staying = input.who === undefined ? "" : stayingNote(world, travellers);
-        const { movers, vehicle } = moversOf(world, travellers);
+        const { movers, vehicle } = moversOf(world, system, travellers);
         const ownJourney = journey !== undefined && sameMovers(journey, movers) ? journey : undefined;
         checkOtherJourney(world, roads, journey, movers);
         const before = travelledSinceRest(ownJourney, now);

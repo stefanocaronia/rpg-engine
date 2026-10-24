@@ -225,7 +225,7 @@ Read-only: no. Positional parameters: `notation`.
 - `notation` (`string`, optional): dice to roll: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%; with who, a field of their sheet stands for its value, such as 1d20+athletics
 - `why` (`string`, optional): what the roll is for
 - `check` (`string`, optional): what the roll is, as the player sees it in the dashboard's rolls, such as Bite or Stealth: never what only you know
-- `who` (`string`, optional): character the roll belongs to, or a copy in the open scene; leave it out for a free roll of the master
+- `who` (`string`, optional): character the roll belongs to, or a copy in the open scene, the damage and heals they deal too, never who takes them; leave it out only for a roll that is no one's, such as an oracle
 - `values` (`number[]`, optional): faces rolled by the player with physical dice, separated by commas; on the command line write --values=-1,0,1 for negative faces
 - `hidden` (`boolean`, optional): only the master sees the result; its fingerprint goes to the player only if they ask for it
 - `reveal` (`string`, optional): id of a hidden roll whose proof to show, later

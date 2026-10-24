@@ -27,6 +27,7 @@ import { campaignSaves, loadRefusal, loadRule, mayGoBack, type ResetPoint, reset
 import { readOpenScene } from "./game-scene.ts";
 import { thoughtsIn, thoughtsRule, thoughtsShown } from "./game-thoughts.ts";
 import { calendarDayOf, readPresent } from "./game-time.ts";
+import { fuelLeft } from "./game-upkeep.ts";
 import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
 import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
@@ -394,7 +395,10 @@ export const view = defineCommand({
                 ...(icon === undefined ? {} : { icon }),
                 ...(place === undefined ? {} : { place }),
                 counters: lineValues(world, page, lineCounters(world, page, coins, system)).map((value) => valueCoins(value, coins, system)),
-                effects: effectsOf(page).map((effect) => seenEffect(sight, effect)),
+                effects: effectsOf(page).map((effect) => {
+                    const burns = fuelLeft(system, world, page, effect.name);
+                    return { ...seenEffect(sight, effect), ...(burns === undefined ? {} : { burns }) };
+                }),
                 ...(mood === "neutral" ? {} : { mood }),
                 ...(dying === undefined ? {} : { dying }),
                 ...(headline === undefined ? {} : { headline }),
@@ -836,7 +840,15 @@ function storyFact(world: World, entry: LogEntry, named: (name: unknown) => stri
             case "roll-revealed":
                 return { kind: "roll-revealed" };
             case "counter-changed":
-                return { kind: "counter", who: who(data.page), field: text(data.field), before: text(data.before), after: text(data.after), ...(data.stack === true ? { stack: true } : {}) };
+                return {
+                    kind: "counter",
+                    who: who(data.page),
+                    field: text(data.field),
+                    before: text(data.before),
+                    after: text(data.after),
+                    ...(data.stack === true ? { stack: true } : {}),
+                    ...(data.upkeep === true ? { upkeep: true } : {}),
+                };
             case "time-advanced":
                 return { kind: "time", ...(data.from === undefined ? {} : { from: text(data.from) }), to: text(data.to) };
             case "moved":
@@ -995,13 +1007,29 @@ function speedInUnits(groups: SheetGroupData[], system: GameSystem | undefined, 
     const kilograms = (text: string): string => text.replace(/[\d.]+/g, (number) => String(Math.round(Number(number) * (pound ?? 1) * 10) / 10)).replace(/\s*\p{L}[\p{L}.]*\s*$/u, " kg");
     // The speeds the system works out are lengths too (SPD-1).
     const declared = (name: string, wanted: string): boolean => Object.entries(system?.fields ?? {}).some(([key, kind]) => kind === wanted && comparableText(key) === comparableText(name));
+    const inUnits = (text: string): string => lengthsInUnits(text, measures.units, measures.imperial);
+
+    // What is beside a length is told in the same units, as the speed written beside the one worked out, and left out when it says the same.
+    const lengthTold = ({ beside, ...value }: SheetValue): SheetValue => {
+        const text = inUnits(value.text);
+        const shownBeside = beside === undefined ? undefined : inUnits(beside);
+        return { ...value, text, ...(shownBeside === undefined || shownBeside === text ? {} : { beside: shownBeside }) };
+    };
+
     const told = (value: SheetValue): SheetValue =>
         (field !== undefined && comparableText(value.field) === comparableText(field)) || declared(value.field, "length")
-            ? { ...value, text: lengthsInUnits(value.text, measures.units, measures.imperial) }
+            ? lengthTold(value)
             : (value.field === "load" || declared(value.field, "weight")) && measures.units === "metric" && pound !== undefined
-            ? { ...value, text: kilograms(value.text) }
+            ? { ...value, text: kilograms(value.text), ...(value.load === undefined ? {} : { load: inKilograms(value.load, pound) }) }
             : value;
     return groups.map((group) => ({ ...group, values: group.values.map(told), ...(group.items === undefined ? {} : { items: group.items.map((item) => ({ ...item, values: item.values.map(told) })) }) }));
+}
+
+/** A load's numbers in kilograms, at the system's pound (LOAD-2). */
+function inKilograms(load: NonNullable<SheetValue["load"]>, pound: number): NonNullable<SheetValue["load"]>
+{
+    const kilograms = (weight: number): number => Math.round(weight * pound * 10) / 10;
+    return { ...load, value: kilograms(load.value), ...(load.limit === undefined ? {} : { limit: kilograms(load.limit) }) };
 }
 
 /** The groups of a sheet with the icon of every thing carried, its page's or the kind's it derives from (D-431); the page's name is the engine's, not the page's to show. */

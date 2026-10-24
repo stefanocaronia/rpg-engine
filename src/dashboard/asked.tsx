@@ -27,8 +27,8 @@ const furtherShare = 0.4;
 // How long after the wheel, a key, the scroll bar or a finger's fling a scroll is still the player's; any other is the page's own, and counts for nothing.
 const wheelTime = 800;
 const flingTime = 2500;
-// How long the question takes to fold or open, its height eased out as it opens and in as it folds.
-const foldTime = 220;
+// How long the question takes to fold or open, the style sheet's --short, its height eased out as it opens and in as it folds.
+const foldTime = 250;
 const easeOut = "cubic-bezier(0.05, 0.7, 0.1, 1)";
 const easeIn = "cubic-bezier(0.3, 0, 0.8, 0.15)";
 const scrollKeys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]);
@@ -448,7 +448,7 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
             {who === undefined ? <img class="asked-robot" src="/assets/favicon.svg" alt="" /> : <AskedWho member={who} />}
             <div class="asked-body">
                 {/* On the player's turn in a fight, the banner says so: the turn's own notice gives way to it (D-315). With more player characters, whom it asks. */}
-                {yourTurn ? <p class="asked-turn">{turnWords(who?.name ?? turnName)}</p> : who !== undefined && <p class="asked-turn">{t("For {name}", { name: who.name })}</p>}
+                {yourTurn ? <p class="eyebrow asked-turn">{turnWords(who?.name ?? turnName)}</p> : who !== undefined && <p class="eyebrow asked-turn">{t("For {name}", { name: who.name })}</p>}
                 <h2 class="asked-title">{asked.title}</h2>
                 <p id={`asked-${asked.id}`} class="asked-question" role="alert">
                     {who !== undefined && <span class="visually-hidden">{`${who.name}: `}</span>}
