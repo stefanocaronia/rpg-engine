@@ -36,6 +36,10 @@ export interface Extension
     needs: { system?: string; };
     /** Its months in place of the core's, as extension.yaml writes them: the time module reads them (TIM-8). */
     calendar?: unknown;
+    /** Its icons by name, each the path of an SVG drawn on 24 by 24, as the dashboard strokes it (D-502). */
+    icons: Record<string, string>;
+    /** Its widgets on the dashboard, in the order written, each where it puts itself (D-502). */
+    widgets: DeclaredWidget[];
     /** Its parts of the master's instructions, by name (D-121). */
     parts: Record<string, InstructionPart>;
     /** The file of its code, when it has some: the module whose default export gives its commands (D-428). */
@@ -44,6 +48,46 @@ export interface Extension
     linked: boolean;
 }
 
+/** The places of the dashboard a widget may stand in (D-502): a chip in the top, a card in the table's column beside the rolls, or a card in a page. */
+export const widgetPlaces = ["top", "side", "page"] as const;
+
+/** The pages a widget's card may stand in: the Scene, the sheet, the World and the Journal. */
+export const widgetPages = ["scene", "sheet", "world", "journal"] as const;
+
+export type WidgetPlace = (typeof widgetPlaces)[number];
+export type WidgetPage = (typeof widgetPages)[number];
+
+/** A widget as extension.yaml declares it (D-502): its name, which its code's hook has, its title, its icon, and where it stands, among the cards in order. */
+export interface DeclaredWidget
+{
+    name: string;
+    title: string;
+    icon?: string;
+    place: WidgetPlace;
+    /** The page of a card that stands in one. */
+    page?: WidgetPage;
+    /** Its order among the cards of its place, the lowest first. */
+    order: number;
+}
+
+// How many icons and widgets an extension may declare, and the longest path of an icon.
+const mostIcons = 40;
+const mostWidgets = 8;
+const longestPath = 4000;
+
+/** A name of an icon or a widget, as weather or sky-rain. */
+const ownName = z.string().regex(/^[a-z][a-z0-9-]*$/, "use lowercase letters, digits and hyphens, as sky-rain");
+
+const widgetSchema = z.object({
+    title: z.string().trim().min(1).max(40),
+    icon: ownName.optional(),
+    place: z.enum(widgetPlaces, { error: `a widget's place is ${widgetPlaces.join(", ")}` }),
+    page: z.enum(widgetPages, { error: `a card's page is ${widgetPages.join(", ")}` }).optional(),
+    order: z.int().min(-100).max(100).optional(),
+}).strict().refine((widget) => (widget.place === "page") === (widget.page !== undefined), {
+    error: "a widget in place page names its page (scene, sheet, world or journal), and only one in a page does",
+});
+
 const extensionSchema = z.object({
     title: z.string().trim().min(1),
     about: z.string().trim().min(1),
@@ -51,7 +95,20 @@ const extensionSchema = z.object({
     attribution: z.string().trim().min(1).optional(),
     needs: z.object({ system: z.string().trim().min(1).optional() }).strict().optional(),
     calendar: z.unknown().optional(),
-}).strict();
+    icons: z.record(ownName, z.string().max(longestPath).regex(/^[MmLlHhVvCcSsQqTtAaZz\d\s,.+-]+$/, "an icon is the path of an SVG, as M4 12h16")).optional(),
+    widgets: z.record(ownName, widgetSchema).optional(),
+}).strict().superRefine((declared, check) => {
+    const icons = Object.keys(declared.icons ?? {});
+    const widgets = Object.entries(declared.widgets ?? {});
+
+    if (icons.length > mostIcons || widgets.length > mostWidgets) {
+        check.addIssue({ code: "custom", message: `an extension declares at most ${mostIcons} icons and ${mostWidgets} widgets` });
+    }
+
+    for (const [name, widget] of widgets.filter(([, widget]) => widget.icon !== undefined && !icons.includes(widget.icon))) {
+        check.addIssue({ code: "custom", path: ["widgets", name, "icon"], message: `the icon ${widget.icon ?? ""} is not among the icons: add it there` });
+    }
+});
 
 const packageSchema = z.object({
     name: z.string().regex(/^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/, "an npm package name, such as @rpgengine/weather"),
@@ -109,7 +166,7 @@ export function readExtension(folder: string): Extension
         throw new Error(`${owner} cannot be read, because its ${extensionFileName} is not valid: ${z.prettifyError(declared.error).replace(/\s+/g, " ")}`);
     }
 
-    const { title, about, language, attribution, needs, calendar } = declared.data;
+    const { title, about, language, attribution, needs, calendar, icons, widgets } = declared.data;
     const parts = readParts(folder, owner);
     // What the master reads of it in every chat, kept short (D-441).
     const long = [["about", about, aboutWords] as const, ...Object.entries(parts).map(([name, part]) => [`instructions/${name}.md`, part.text, partWords] as const)]
@@ -130,6 +187,8 @@ export function readExtension(folder: string): Extension
         ...(attribution === undefined ? {} : { attribution }),
         needs: needs ?? {},
         ...(calendar === undefined ? {} : { calendar }),
+        icons: icons ?? {},
+        widgets: Object.entries(widgets ?? {}).map(([name, widget]) => ({ name, ...widget, order: widget.order ?? 0 })),
         parts,
         ...(manifest.data.main === undefined ? {} : { code: where(manifest.data.main) }),
         linked: installedFromFolder(folder),

@@ -211,6 +211,8 @@ export const settingsSchema = z.object({
     "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as portent?"),
     travel: z.unknown().optional().describe("what the campaign adds to how its game system travels, by key: paces, hours, terrain and kinds of road, such as kinds: {canal: {}}"),
     values: z.unknown().optional().describe("names the campaign adds to the closed lists of its game system, by field, such as languages: [Lingua dei Guadi]"),
+    // Checked against the campaign's extensions when it is written (D-502): one written wrongly by hand leaves the extension's place.
+    widgets: z.unknown().optional().describe("where the dashboard shows the extensions' widgets, by extension.widget: top, side, scene, sheet, world, journal or off, such as weather.today: side"),
 }).loose();
 
 export type CampaignSettings = z.infer<typeof settingsSchema>;
@@ -225,6 +227,9 @@ export const listSettingNames: SettingName[] = ["lines", "veils", "table", "prec
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
 export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values"];
 
+/** The settings that hold entries by name: what the campaign adds to its game system, and where the dashboard shows the extensions' widgets (D-502). */
+export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets"];
+
 /** What only the setup asks (D-241, MOD-3, D-347): how much the master teaches the game, how the companions come, when the story starts, and the lines and veils, which "none" answers too. */
 export const setupSettingNames: SettingName[] = ["mentor", "companions", "calendar-start", "lines", "veils"];
 
@@ -235,7 +240,7 @@ export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
 // The pictures: status asks for them once, only where they can be made (D-308).
 // How the master writes: the core's own until the player chooses (D-395).
 const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
-const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voices", "calendar", "calendar-start", ...mapSettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
+const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voices", "calendar", "calendar-start", ...entrySettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {
@@ -445,7 +450,7 @@ export function changeMapSetting(root: string, name: string, change: { set?: Rec
 {
     const setting = checkSettingName(name);
 
-    if (!mapSettingNames.includes(setting)) {
+    if (!entrySettingNames.includes(setting)) {
         throw new Error(`"${setting}" holds no entries by name: ${listSettingNames.includes(setting) ? "change it with add and remove" : "give the new value"}.`);
     }
 

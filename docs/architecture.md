@@ -26,7 +26,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | `pages` | Page files, frontmatter, sections and secrets, links, inheritance, containers, environment, checks |
 | `campaign` | Finding and creating a campaign; `campaign.yaml`; `state.yaml` |
 | `systems` | The installed game systems and their `system.yaml` |
-| `extensions` | The installed extensions and their `extension.yaml`; the API their code is given; npm for the packages |
+| `extensions` | The installed extensions, their `extension.yaml` and their words; the API their code is given; npm for the packages |
 | `dice` | Dice notation, digital or physical faces, proofs for hidden rolls |
 | `counters` | Counters such as `5/12` |
 | `money` | Coins and amounts, paying with change |
@@ -122,7 +122,7 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 | Problems | What `validate` lists; most never stop other commands | [commands/problems.ts](../src/commands/problems.ts), [pages/check.ts](../src/pages/check.ts) |
 | State checks | What cannot be true together in the party and the open scene, told to the master; read-only | [commands/game-checks.ts](../src/commands/game-checks.ts) |
 | Instructions | `core.md` at every chat, then a part per mode and situation, layered with the system's and the extensions'; in play in Claude Code, `voices.md`, when to call the character agent, an agent that `init` writes in `.claude/agents/` from `character.md` and that reads only `view` with `as` | [instructions/](../instructions/), [commands/parts.ts](../src/commands/parts.ts) |
-| Extensions | The packages campaign.yaml lists: their parts, calendar, commands and what they do as time passes; `package` installs them with npm | [extensions/](../src/extensions/), [commands/game-extensions.ts](../src/commands/game-extensions.ts), [commands/package.ts](../src/commands/package.ts) |
+| Extensions | The packages campaign.yaml lists: their parts, calendar, commands and what they do as time passes, their widgets on the dashboard, read-only, where they put them and campaign.yaml moves them, and their words; `package` installs them with npm | [extensions/](../src/extensions/), [commands/game-extensions.ts](../src/commands/game-extensions.ts), [commands/game-widgets.ts](../src/commands/game-widgets.ts), [commands/package.ts](../src/commands/package.ts) |
 | Adventures | Installed, taken out while the story has not touched them, exported as they were at the start, and made from the player's documents | [adventures/](../src/adventures/), [documents/](../src/documents/), [importer/](../src/importer/), [commands/game-adventures.ts](../src/commands/game-adventures.ts), [commands/import.ts](../src/commands/import.ts) |
 | Languages | A language's translation made by hand, as a package: the dashboard's phrases, its Guide and a system's words, before the translation on the fly | [languages/](../src/languages/), [page-words.ts](../src/page-words.ts) |
 | Catalog | What npm has for every kind of package and the adventures GitHub has by topic, for the Packages page | [commands/game-catalog.ts](../src/commands/game-catalog.ts) |
@@ -131,7 +131,7 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 
 ### The dashboard
 
-The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's folder. The server ([dashboard-server.ts](../src/dashboard-server.ts)) answers `/api/view` and the player's few actions (answers, notes, settings, saves, packages of ours, and what their character does, a sentence the master hears at the head of their next call: [player-acts.ts](../src/player-acts.ts), rung in by the hook or queued in Codex's thread), sends `/events` when files change (no data: the page reads `view` again), and serves pictures by name only. The page ([dashboard/app.tsx](../src/dashboard/app.tsx)) writes its words with `t()` from [dashboard/i18n/](../src/dashboard/i18n/); Help's guide is [dashboard/guide/](../src/dashboard/guide/).
+The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's folder. The server ([dashboard-server.ts](../src/dashboard-server.ts)) answers `/api/view` and the player's few actions (answers, notes, settings, saves, packages of ours, and what their character does, a sentence the master hears at the head of their next call: [player-acts.ts](../src/player-acts.ts), rung in by the hook or queued in Codex's thread), sends `/events` when files change (no data: the page reads `view` again), gives the extensions' widgets as their hooks show them (`/api/widgets`), and serves pictures by name only. The page ([dashboard/app.tsx](../src/dashboard/app.tsx)) writes its words with `t()` from [dashboard/i18n/](../src/dashboard/i18n/); Help's guide is [dashboard/guide/](../src/dashboard/guide/).
 
 ## 6. Tests
 

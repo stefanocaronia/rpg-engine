@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { TalkName } from "./act-names.tsx";
 import type { DyingCounter, Member, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
+import { WidgetCards } from "./extension-widgets.tsx";
 import { effectLabel, sinceDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { phraseLabel, sceneTypeLabel, strangerLabel } from "./labels.ts";
@@ -71,6 +72,8 @@ export function SceneView({ place, scene, actor, foreground, several = false, pa
                         </Card>
                     </div>
                 )}
+                {/* The extensions' cards, after what the scene needs (D-502). */}
+                <WidgetCards key="widgets" place="page" page="scene" />
             </div>
         </section>
     );

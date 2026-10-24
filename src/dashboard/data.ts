@@ -597,3 +597,57 @@ export interface SystemWords
     names?: Record<string, string>;
     headline?: string;
 }
+
+/** A widget of an extension (D-502): which it is, whose, its title, where it stands and where its extension puts it, its icon's path, and what it shows now. */
+export interface ShownWidget extends WidgetSpot
+{
+    /** As campaign.yaml names it: weather.today. */
+    id: string;
+    extension: string;
+    /** The extension's title, as Settings names whose it is. */
+    from: string;
+    title: string;
+    own: WidgetSpot;
+    icon?: string;
+    shows?: WidgetShows;
+    /** Why it shows nothing, for whoever made it. */
+    problem?: string;
+}
+
+/** Where a widget stands: a chip in the top, a card in the table's column, a card in a page, or nowhere; its order among the cards there. */
+export interface WidgetSpot
+{
+    place: "top" | "side" | "page" | "off";
+    page?: WidgetPage;
+    order: number;
+}
+
+/** The pages a widget's card may stand in. */
+export type WidgetPage = "scene" | "sheet" | "world" | "journal";
+
+/** What a widget shows: its icon's path, a chip's few words, what it says whole, a note, and a card's parts; words already in the campaign's language. */
+export interface WidgetShows
+{
+    icon?: string;
+    chip?: WidgetText;
+    says?: WidgetText;
+    note?: WidgetText;
+    parts?: WidgetPart[];
+}
+
+/** Words of an extension, or a phrase whose {names} are values the page writes in its language. */
+export type WidgetText = string | { text: string; values: Record<string, WidgetValue>; };
+
+/** A number, a word, a number with its unit, a range. */
+export type WidgetValue = number | string | { number: number; unit?: string; } | { from: number; to: number; unit?: string; };
+
+/** A part of a widget's card, drawn with the page's own parts. */
+export type WidgetPart =
+    | { lead: WidgetText; icon?: string; value?: WidgetValue; }
+    | { text: WidgetText; }
+    | { facts: WidgetText[]; }
+    | { values: { label: WidgetText; value: WidgetValue; }[]; }
+    | { track: { label: WidgetText; value: number; max: number; look?: "pips" | "bar"; }; }
+    | { rows: { label: WidgetText; value?: WidgetValue; note?: WidgetText; }[]; }
+    | { table: { head: WidgetText[]; rows: WidgetValue[][]; }; }
+    | { image: { file: string; version: number; }; alt: WidgetText; };

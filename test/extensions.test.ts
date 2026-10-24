@@ -2,12 +2,16 @@
 // command line and through MCP, their own state, the lines they add when time passes, their calendar, and what keeps one out.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, readFileSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
+import { campaignWidgets } from "../src/commands/game-widgets.ts";
 import type { Context } from "../src/core/context.ts";
-import { findExtension, installedExtensions } from "../src/extensions/index.ts";
+import { SessionStore } from "../src/core/session-store.ts";
+import { startDashboard } from "../src/dashboard-server.ts";
+import { findExtension, installedExtensions, readExtension } from "../src/extensions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 
@@ -106,6 +110,123 @@ describe("a campaign's extensions", () => {
         expect((await rpg("validate")).output).toContain('The calendar has no month "Thaw"');
         await rpg("config", "calendar-start", "1 Long");
         expect((await rpg("status")).output).toContain("Now: day 2, 08:00 (2 Long)\n");
+    });
+});
+
+describe("a campaign's widgets on the dashboard (D-502)", () => {
+    it("stand where their extension puts them, show what their hook gives, checked, and never the state", async () => {
+        await campaign("ironsworn", { "@rpgengine/omens": "1.2.0" });
+        expect((await campaignWidgets(folder, context)).map((widget) => [widget.id, widget.place, widget.page, widget.order, widget.shows === undefined])).toEqual([
+            ["omens.last", "side", undefined, 2, true],
+            ["omens.every", "page", "journal", 0, false],
+            ["omens.broken", "top", undefined, 0, true],
+        ]);
+
+        await rpg("omens", "--question", "will the bridge hold");
+        const [last, every, broken] = await campaignWidgets(folder, context);
+        expect(last).toMatchObject({ title: "Last omen", from: "omens at dawn, a test extension", icon: expect.stringMatching(/^M2 12s4-7/) });
+        expect(last.shows).toEqual({
+            icon: expect.stringMatching(/^M12 3l2\.6/),
+            chip: "a white stag",
+            says: { text: "Read for: {why}", values: { why: "asked" } },
+            parts: [{ lead: "a white stag", icon: expect.stringMatching(/^M12 3l2\.6/), value: { number: 3, unit: "days" } }, { text: { text: "Read for: {why}", values: { why: "asked" } } }],
+        });
+        expect(every.shows?.parts).toHaveLength(5);
+        expect(broken).toMatchObject({ problem: 'it gave what the dashboard does not show, at its top: Unrecognized key: "script"' });
+        expect(broken.shows).toBeUndefined();
+    });
+
+    it("speak the campaign's language by their extension's words, a word it lacks as written", async () => {
+        await campaign("ironsworn", { "@rpgengine/omens": "1.2.0" });
+        await rpg("config", "language", "it");
+        await rpg("omens", "--question", "will the bridge hold");
+        const [last, every] = await campaignWidgets(folder, context);
+        expect(last).toMatchObject({ title: "Ultimo presagio", from: "presagi all'alba, un'estensione di prova" });
+        expect(last.shows?.chip).toBe("un cervo bianco");
+        expect(last.shows?.parts?.[0]).toMatchObject({ lead: "un cervo bianco", value: { number: 3, unit: "giorni" } });
+        expect(last.shows?.says).toEqual({ text: "Letto per: {why}", values: { why: "chiesto" } });
+        expect(every.title).toBe("Omens");
+    });
+
+    it("are moved or turned off in campaign.yaml with config, and given back their extension's place", async () => {
+        await campaign("ironsworn", { "@rpgengine/omens": "1.2.0" });
+        expect((await rpg("config", "widgets", "omens.last: journal")).exitCode).toBe(0);
+        await rpg("config", "widgets", "omens.every: {place: side, order: -1}");
+        await rpg("config", "widgets", "omens.broken: off");
+        expect((await campaignWidgets(folder, context)).map((widget) => [widget.id, widget.place, widget.page, widget.order])).toEqual([
+            ["omens.last", "page", "journal", 2],
+            ["omens.every", "side", undefined, -1],
+            ["omens.broken", "off", undefined, 0],
+        ]);
+        expect((await campaignWidgets(folder, context))[2]).not.toHaveProperty("problem");
+
+        expect((await rpg("config", "widgets", "omens.nowhere: side")).output).toBe("There is no widget omens.nowhere: the campaign's are omens.last, omens.every, omens.broken. Nothing changed.");
+        expect((await rpg("config", "widgets", "omens.last: bottom")).output).toBe("omens.last takes top, side, scene, sheet, world, journal, off, or {place, page, order}, such as omens.last: side. Nothing changed.");
+        await rpg("config", "widgets", "--remove", "omens.last");
+        expect((await campaignWidgets(folder, context))[0]).toMatchObject({ place: "side", own: { place: "side", order: 2 } });
+        expect((await rpg("config")).output).toContain("\nwidgets: { omens.every: { place: side, order: -1 }, omens.broken: off }");
+    });
+
+    it("reach the page from the dashboard, which moves them as config does and names the extensions in the campaign's language", async () => {
+        await campaign("ironsworn", { "@rpgengine/omens": "1.2.0" });
+        await rpg("config", "language", "it");
+        const session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        const dashboard = await startDashboard({ ...context, files: session }, session, { ports: [0], page: folder });
+        const port = Number(new URL(dashboard?.url ?? "http://127.0.0.1:0").port);
+        const call = (path: string, body?: unknown): Promise<{ status: number; body: string; }> =>
+            new Promise((done, fail) => {
+                const headers = body === undefined ? {} : { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" };
+                request({ host: "127.0.0.1", port, path, method: body === undefined ? "GET" : "POST", headers }, (response) => {
+                    let text = "";
+                    response.setEncoding("utf8");
+                    response.on("data", (chunk: string) => (text += chunk));
+                    response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+                }).on("error", fail).end(body === undefined ? undefined : JSON.stringify(body));
+            });
+
+        try {
+            const widgets = JSON.parse((await call("/api/widgets")).body) as { widgets: { id: string; place: string; title: string; }[]; };
+            expect(widgets.widgets.map((widget) => [widget.id, widget.place, widget.title])).toEqual([["omens.last", "side", "Ultimo presagio"], ["omens.every", "page", "Omens"], [
+                "omens.broken",
+                "top",
+                "Broken",
+            ]]);
+            expect((await call("/api/config", { setting: "widgets", value: "omens.broken: off" })).status).toBe(202);
+            expect(JSON.parse((await call("/api/widgets")).body).widgets[2]).toMatchObject({ place: "off", own: { place: "top" } });
+            expect(JSON.parse((await call("/api/config", { setting: "widgets", value: "omens.broken: under" })).body).error).toContain("omens.broken takes top, side");
+            expect((await call("/api/config", { setting: "widgets", remove: "omens.broken" })).status).toBe(202);
+            expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("widgets");
+            expect(dashboard?.news().lines).toEqual([]);
+
+            const packages = JSON.parse((await call("/api/packages")).body) as { installed: { package: string; title: string; about: string; }[]; };
+            expect(packages.installed.find((one) => one.package === "@rpgengine/omens")).toMatchObject({ title: "presagi all'alba, un'estensione di prova", about: "un presagio a ogni alba, e uno letto a piacere" });
+        } finally {
+            await dashboard?.close();
+            session.close();
+        }
+    });
+
+    it("are refused in an extension.yaml that does not say how to show them, with what to fix", () => {
+        const copy = join(folder, "omens");
+        cpSync(join(testExtensionFolders[1], "omens"), copy, { recursive: true });
+        const yaml = readFileSync(join(copy, "extension.yaml"), "utf8");
+
+        const refused = (from: string, to: string): string => {
+            writeFileSync(join(copy, "extension.yaml"), yaml.replace(from, to));
+            return (() => {
+                try {
+                    readExtension(copy);
+                    return "read";
+                } catch (error) {
+                    return (error as Error).message;
+                }
+            })();
+        };
+
+        expect(refused("place: side", "place: bottom")).toContain("a widget's place is top, side, page → at widgets.last.place");
+        expect(refused("    page: journal\n", "")).toContain("a widget in place page names its page (scene, sheet, world or journal)");
+        expect(refused("icon: eye", "icon: moon")).toContain("the icon moon is not among the icons: add it there → at widgets.last.icon");
+        expect(refused('eye: "M2', 'eye: "<path d=M2')).toContain("an icon is the path of an SVG, as M4 12h16");
     });
 });
 

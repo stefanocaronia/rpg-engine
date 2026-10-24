@@ -12,11 +12,13 @@ import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNa
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
 import { installAdventure } from "./commands/game-adventures.ts";
 import { type Catalog, catalog } from "./commands/game-catalog.ts";
+import { campaignExtensions } from "./commands/game-extension-list.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerStory } from "./commands/game-knowledge.ts";
 import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "./commands/game-library.ts";
 import { campaignMode } from "./commands/game-mode.ts";
 import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
+import { campaignWidgets } from "./commands/game-widgets.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
 import { importShown } from "./commands/import.ts";
 import { adventureText, packageCommand, YesRefused } from "./commands/package.ts";
@@ -28,7 +30,7 @@ import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
 import { notationParts } from "./dice/index.ts";
-import { verifiedScope } from "./extensions/index.ts";
+import { extensionWords, findExtension, verifiedScope } from "./extensions/index.ts";
 import { findHiddenImage, findImage } from "./images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "./languages/index.ts";
 import { samePath } from "./library/index.ts";
@@ -575,6 +577,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    if (path === "/api/widgets") {
+        await widgetsNow(response, served);
+        return;
+    }
+
     if (path === "/api/library") {
         await libraryNow(response, served);
         return;
@@ -892,6 +899,13 @@ async function changeSetting(request: IncomingMessage, response: ServerResponse,
             const root = requireCampaign(served.context.folder);
             // In the setup, how companions come, the preparation and the name are the player's too (D-370).
             const setup = campaignMode(root, campaignWorld(root, served.context)) === "setup";
+
+            // Where the page shows the extensions' widgets is the page's own: the master hears nothing of it (D-502).
+            if (change.setting.trim() === "widgets" && !("add" in change)) {
+                config.run(config.input.parse({ setting: "widgets", ...("value" in change ? { value: change.value } : { remove: [change.remove] }) }), { ...served.context, actor: "player" });
+                return undefined;
+            }
+
             const before = playerSettingNamed(root, served.context, change.setting) ?? (setup ? setupSettingNamed(root, change.setting) : undefined);
 
             if (before === undefined) {
@@ -977,12 +991,45 @@ async function packagesNow(response: ServerResponse, served: Served, npm: boolea
                 system: system === undefined ? null : { name: system.name, title: system.title },
                 // The other systems of this computer, for a new campaign: a campaign's own is chosen in its setup (D-475).
                 otherSystems: installedSystems(served.context.systemFolders).filter((other) => other.name !== system?.name).map((other) => ({ name: other.name, title: other.title })),
-                ...(list.kind === "list" ? { installed: list.installed, missing: list.missing, adventures: list.adventures, systems: list.systems, languages: list.languages } : {}),
+                ...(list.kind === "list" ? { installed: inLanguage(list.installed, served, readTextSetting(root, "language")), missing: list.missing, adventures: list.adventures, systems: list.systems, languages: list.languages } : {}),
                 ...(available?.kind === "available" ? { available: available.packages, ...(available.failed === undefined ? {} : { failed: available.failed }) } : {}),
                 ...(served.packageWork === undefined ? {} : { working: served.packageWork }),
             };
         });
         sendJson(response, 200, shown);
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/** The extensions on this computer with their title and about in the campaign's language, where their words give them (D-502). */
+function inLanguage<Installed extends { package: string; title?: string; about?: string; }>(installed: Installed[], served: Served, language: string | undefined): Installed[]
+{
+    return installed.map((one) => {
+        if (language === undefined || one.title === undefined) {
+            return one;
+        }
+
+        try {
+            const extension = findExtension(served.context.extensionFolders ?? [], one.package);
+            const words = extension === undefined || extension.language.split("-")[0] === language.split("-")[0] ? undefined : extensionWords(extension.folder, language);
+            return { ...one, ...(words?.title === undefined ? {} : { title: words.title }), ...(words?.about === undefined ? {} : { about: words.about }) };
+        } catch {
+            return one;
+        }
+    });
+}
+
+/** The widgets of the campaign's extensions as the page shows them (D-502): where each stands, and what it shows now; none without a campaign. */
+async function widgetsNow(response: ServerResponse, served: Served): Promise<void>
+{
+    try {
+        await served.session.ready();
+        const widgets = await withFiles(served.session, async () => {
+            const root = findCampaign(served.context.folder);
+            return root === undefined ? [] : await campaignWidgets(root, served.context);
+        });
+        sendJson(response, 200, { widgets });
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
     }
@@ -1850,7 +1897,9 @@ function sendImage(name: string, request: IncomingMessage, response: ServerRespo
     const file = fileName === undefined || /[\\/]/.test(fileName) ? undefined : withFiles(served.session, () => {
         const root = findCampaign(served.context.folder);
         // A stranger's picture comes by a name of its bytes, from the campaign's own (D-420).
-        return root === undefined ? undefined : findImage(imageFolders(root, served.context), fileName) ?? findHiddenImage([root], fileName);
+        // And an extension's own, which its widgets show (D-502).
+        const extensions = root === undefined ? [] : campaignExtensions(root, served.context).extensions.map((extension) => extension.folder);
+        return root === undefined ? undefined : findImage(imageFolders(root, served.context), fileName) ?? findHiddenImage([root], fileName) ?? findImage(extensions, fileName);
     });
     const type = file === undefined ? undefined : imageTypes[extname(file).toLowerCase()];
     const bytes = file === undefined ? undefined : withFiles(served.session, () => files().bytes(file));

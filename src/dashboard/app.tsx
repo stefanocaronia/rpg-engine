@@ -7,12 +7,13 @@ import { type ActReply, ActSheet } from "./act-sheet.tsx";
 import { ActStrip } from "./act-strip.tsx";
 import { type ActStart, type SaidAct, saidStates, type SheetActions } from "./acts.ts";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
-import { answer, readActs, readAsked, readView, sayAct, sendSeen, withdrawAct } from "./api.ts";
+import { answer, readActs, readAsked, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
-import type { ActsShown, Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownPlace, ShownRoll, ShownScene } from "./data.ts";
+import type { ActsShown, Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
 import { DeathSaveCard } from "./death-save.tsx";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
+import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
 import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Help } from "./help.tsx";
@@ -146,6 +147,8 @@ function App()
     const [said, setSaid] = useState<SaidAct[]>([]);
     const [actProblem, setActProblem] = useState<string>();
     const [acting, setActing] = useState<{ start: ActStart; opener: HTMLElement | SVGElement; }>();
+    // The widgets of the campaign's extensions, read with the rest (D-502): kept as they were when a reading of them fails.
+    const [widgets, setWidgets] = useState<ShownWidget[]>([]);
 
     // Reads view again for whom the address names, or the player character the master calls, and what the master asks; an answer that comes after a newer one
     // is left out.
@@ -153,7 +156,12 @@ function App()
         const number = ++reading.current;
 
         try {
-            const [first, told, actsNow] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined), readActs().catch(() => undefined)]);
+            const [first, told, actsNow, widgetsNow] = await Promise.all([
+                readView(undefined, rollsAsked.current),
+                readAsked().catch(() => undefined),
+                readActs().catch(() => undefined),
+                readWidgets().catch(() => undefined),
+            ]);
             const asked = told;
             // With more than one player character, a question for one elsewhere puts them in the foreground: the place, the map and the squares are theirs (VIEW-12).
             const here = first.kind === "overview" && (first.place?.here ?? []).some((one) => one.name === asked?.who);
@@ -191,6 +199,10 @@ function App()
                 document.documentElement.lang = language ?? "en";
                 document.documentElement.dir = pageDirection();
                 setActs(actsNow);
+
+                if (widgetsNow !== undefined) {
+                    setWidgets(widgetsNow);
+                }
 
                 // The verbs come with the player character's page alone: another's sheet leaves them as they were.
                 if (member?.role === "pc") {
@@ -574,210 +586,218 @@ function App()
     );
     return (
         <RequestedRoll.Provider value={requested}>
-            <PlayerActsContext.Provider value={playerActs}>
-                <div class={live ? "page" : "page stale"}>
-                    {!inSetup && (
-                        <Top
-                            campaign={shown.campaign}
-                            product={productName}
-                            system={shown.system?.name}
-                            now={shown.now}
-                            calendar={shown.calendar}
-                            path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
-                            live={live}
-                            mood={shown.masterMood}
-                            moment={moment}
-                            asleep={!live && shown.readAt !== undefined}
-                            section={address.section}
-                            fight={fight}
-                            yourTurn={yourTurn}
-                            turnName={turnName}
-                        />
-                    )}
-                    {inSetup && <SetupCorner live={live} />}
-                    <Notices notices={notices} />
-                    {live && saving !== undefined && (
-                        <DeathSaveCard
-                            key={saving.asked.id}
-                            asked={saving.asked}
-                            save={saving.save}
-                            member={dying}
-                            name={several ? dying?.name : undefined}
-                            roll={saving.roll}
-                            outcome={saving.outcome}
-                            rolling={saving.sent === true || answering === saving.asked.id || shown.asked?.id !== saving.asked.id}
-                            onRoll={() => void rollSave()}
-                            onClose={closeSave}
-                        />
-                    )}
-                    {live && saving === undefined && shown.asked?.spend !== undefined && (
-                        <SpendCard
-                            key={shown.asked.id}
-                            asked={shown.asked}
-                            spend={shown.asked.spend}
-                            member={shown.party.find((candidate) => candidate.name === shown.asked?.spend?.who)}
-                            flying={holding.current?.roll.id}
-                            onSpend={(field) => answerSpend(shown.asked?.id, { spend: field })}
-                            onDone={async (focused) => {
-                                const taken = await answerSpend(shown.asked?.id, 0);
+            <WidgetsContext.Provider value={widgets}>
+                <PlayerActsContext.Provider value={playerActs}>
+                    <div class={live ? "page" : "page stale"}>
+                        {!inSetup && (
+                            <Top
+                                campaign={shown.campaign}
+                                product={productName}
+                                system={shown.system?.name}
+                                now={shown.now}
+                                calendar={shown.calendar}
+                                path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
+                                live={live}
+                                mood={shown.masterMood}
+                                moment={moment}
+                                asleep={!live && shown.readAt !== undefined}
+                                section={address.section}
+                                fight={fight}
+                                yourTurn={yourTurn}
+                                turnName={turnName}
+                            />
+                        )}
+                        {inSetup && <SetupCorner live={live} />}
+                        <Notices notices={notices} />
+                        {live && saving !== undefined && (
+                            <DeathSaveCard
+                                key={saving.asked.id}
+                                asked={saving.asked}
+                                save={saving.save}
+                                member={dying}
+                                name={several ? dying?.name : undefined}
+                                roll={saving.roll}
+                                outcome={saving.outcome}
+                                rolling={saving.sent === true || answering === saving.asked.id || shown.asked?.id !== saving.asked.id}
+                                onRoll={() => void rollSave()}
+                                onClose={closeSave}
+                            />
+                        )}
+                        {live && saving === undefined && shown.asked?.spend !== undefined && (
+                            <SpendCard
+                                key={shown.asked.id}
+                                asked={shown.asked}
+                                spend={shown.asked.spend}
+                                member={shown.party.find((candidate) => candidate.name === shown.asked?.spend?.who)}
+                                flying={holding.current?.roll.id}
+                                onSpend={(field) => answerSpend(shown.asked?.id, { spend: field })}
+                                onDone={async (focused) => {
+                                    const taken = await answerSpend(shown.asked?.id, 0);
 
-                                if (taken && focused) {
-                                    focusAfterCard();
+                                    if (taken && focused) {
+                                        focusAfterCard();
+                                    }
+
+                                    return taken;
+                                }}
+                            />
+                        )}
+                        {live && saving === undefined && shown.asked && shown.asked.spend === undefined && (
+                            <AskedBanner
+                                asked={shown.asked}
+                                yourTurn={yourTurn && (asker === undefined || asker.name === turnOf?.name)}
+                                who={asker}
+                                turnName={turnName}
+                                map={shown.place?.map}
+                                place={shown.place?.name}
+                                answered={answering === shown.asked.id}
+                                onAnswered={() => void read()}
+                            />
+                        )}
+                        {inSetup
+                            ? <SetupView setup={setup} />
+                            : (
+                                <>
+                                    {/* The player's turn, seen from another section (D-315, D-444): a notice that leads to the Scene; the page never goes there by itself. */}
+                                    {live && yourTurn && address.section !== "scene" && shown.asked === undefined && saving === undefined && (
+                                        <a class="turn-notice" href={sectionAddress("scene")}>
+                                            <Icon name="combat" />
+                                            <span>{[turnWords(turnName), shown.openScene?.round === undefined ? "" : t("Round {round}", { round: shown.openScene.round })].filter((part) => part !== "").join(" · ")}</span>
+                                            <span class="turn-notice-go">{t("Go to the scene")}</span>
+                                        </a>
+                                    )}
+                                    <Notices notices={importing} />
+                                    {/* A followed quest that ends is told here for a moment, beside the page over the quests' card when the table holds them. */}
+                                    {!table && <QuestEndings version={shown.version} campaign={shown.campaign} />}
+                                    {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
+                                    {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} scene={shown.openScene} />}
+                                    <div class="body">
+                                        <main>
+                                            {address.section === "about" && <About product={productName} system={shown.system} />}
+                                            {address.section === "help" && <Help />}
+                                            {/* The quest the player follows, small, where the story goes on (D-367), when the table does not hold it. */}
+                                            {!table && address.section === "scene" && <FollowedQuests version={shown.version} campaign={shown.campaign} />}
+                                            {address.section === "scene" && (
+                                                <SceneView
+                                                    place={shown.place}
+                                                    scene={shown.openScene}
+                                                    actor={actor}
+                                                    foreground={shown.foreground}
+                                                    several={several}
+                                                    party={shown.party}
+                                                    turnsBeside={table}
+                                                    onShowCard={(name) => {
+                                                        handed.current = { who: name, turn: turnKey(shown.openScene) };
+                                                        void read();
+                                                    }}
+                                                    own={{
+                                                        sheet: shown.chosen === actor?.name ? shown.sheet : [],
+                                                        cards: shown.cards,
+                                                        version: shown.version,
+                                                        onRoll: throwFromSheet,
+                                                    }}
+                                                />
+                                            )}
+                                            {address.section === "world" && <WorldView version={shown.version} lead={lead} players={many ? players : undefined} tab={address.tab} item={address.name} />}
+                                            {address.section === "settings" && <SettingsView version={shown.version} several={many} />}
+                                            {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} several={many} />}
+                                            {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
+                                            {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} tab={address.tab} item={address.name} />}
+                                            {address.section === "party" && member && (
+                                                // A companion's things are not the player's to act with: only the player character's sheet has its verbs (D-495).
+                                                <PlayerActsContext.Provider value={member.role === "pc" || playerActs === undefined ? playerActs : { ...playerActs, actions: {} }}>
+                                                    <MemberSheet
+                                                        key={member.name}
+                                                        member={member}
+                                                        headline={shown.headline}
+                                                        sheet={shown.sheet}
+                                                        cards={shown.cards}
+                                                        text={shown.text}
+                                                        knownBy={shown.knownBy}
+                                                        story={shown.story}
+                                                        version={shown.version}
+                                                        onRoll={throwFromSheet}
+                                                        scene={shown.openScene}
+                                                    />
+                                                </PlayerActsContext.Provider>
+                                            )}
+                                        </main>
+                                        {table
+                                            ? (
+                                                <PlayTable
+                                                    entering={tableMoved}
+                                                    onFold={() => {
+                                                        setTableMoved(true);
+                                                        setTableAway(true);
+                                                    }}
+                                                >
+                                                    {fight && <TurnsCard scene={shown.openScene} party={shown.party} several={several} beside />}
+                                                    <QuestEndings version={shown.version} campaign={shown.campaign} beside />
+                                                    <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
+                                                    <WidgetCards place="side" />
+                                                    {rolls}
+                                                </PlayTable>
+                                            )
+                                            : wide
+                                            ? (
+                                                <TableTab
+                                                    fight={fight}
+                                                    focused={tableMoved}
+                                                    onOpen={() => {
+                                                        setTableMoved(true);
+                                                        setTableAway(false);
+                                                    }}
+                                                />
+                                            )
+                                            : (
+                                                <>
+                                                    <WidgetCards place="side" />
+                                                    {rolls}
+                                                </>
+                                            )}
+                                    </div>
+                                    <PageFoot product={productName} system={shown.system} />
+                                </>
+                            )}
+                        <DiceTray
+                            requested={thrown}
+                            sheetThrow={sheetThrow}
+                            party={shown.party}
+                            onLanded={land}
+                            onShown={(id) => {
+                                setHeld((now) => (now === id ? undefined : now));
+
+                                if (thrown?.id === id) {
+                                    react(thrown, shown.party);
                                 }
-
-                                return taken;
+                            }}
+                            onFree={(roll) => {
+                                setFree((before) => withFree(shown.campaign, before, roll));
+                                setFresh((before) => new Set([...before, roll.id]));
                             }}
                         />
-                    )}
-                    {live && saving === undefined && shown.asked && shown.asked.spend === undefined && (
-                        <AskedBanner
-                            asked={shown.asked}
-                            yourTurn={yourTurn && (asker === undefined || asker.name === turnOf?.name)}
-                            who={asker}
-                            turnName={turnName}
-                            map={shown.place?.map}
-                            place={shown.place?.name}
-                            answered={answering === shown.asked.id}
-                            onAnswered={() => void read()}
-                        />
-                    )}
-                    {inSetup
-                        ? <SetupView setup={setup} />
-                        : (
-                            <>
-                                {/* The player's turn, seen from another section (D-315, D-444): a notice that leads to the Scene; the page never goes there by itself. */}
-                                {live && yourTurn && address.section !== "scene" && shown.asked === undefined && saving === undefined && (
-                                    <a class="turn-notice" href={sectionAddress("scene")}>
-                                        <Icon name="combat" />
-                                        <span>{[turnWords(turnName), shown.openScene?.round === undefined ? "" : t("Round {round}", { round: shown.openScene.round })].filter((part) => part !== "").join(" · ")}</span>
-                                        <span class="turn-notice-go">{t("Go to the scene")}</span>
-                                    </a>
-                                )}
-                                <Notices notices={importing} />
-                                {/* A followed quest that ends is told here for a moment, beside the page over the quests' card when the table holds them. */}
-                                {!table && <QuestEndings version={shown.version} campaign={shown.campaign} />}
-                                {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
-                                {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} scene={shown.openScene} />}
-                                <div class="body">
-                                    <main>
-                                        {address.section === "about" && <About product={productName} system={shown.system} />}
-                                        {address.section === "help" && <Help />}
-                                        {/* The quest the player follows, small, where the story goes on (D-367), when the table does not hold it. */}
-                                        {!table && address.section === "scene" && <FollowedQuests version={shown.version} campaign={shown.campaign} />}
-                                        {address.section === "scene" && (
-                                            <SceneView
-                                                place={shown.place}
-                                                scene={shown.openScene}
-                                                actor={actor}
-                                                foreground={shown.foreground}
-                                                several={several}
-                                                party={shown.party}
-                                                turnsBeside={table}
-                                                onShowCard={(name) => {
-                                                    handed.current = { who: name, turn: turnKey(shown.openScene) };
-                                                    void read();
-                                                }}
-                                                own={{
-                                                    sheet: shown.chosen === actor?.name ? shown.sheet : [],
-                                                    cards: shown.cards,
-                                                    version: shown.version,
-                                                    onRoll: throwFromSheet,
-                                                }}
-                                            />
-                                        )}
-                                        {address.section === "world" && <WorldView version={shown.version} lead={lead} players={many ? players : undefined} tab={address.tab} item={address.name} />}
-                                        {address.section === "settings" && <SettingsView version={shown.version} several={many} />}
-                                        {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} several={many} />}
-                                        {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
-                                        {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} tab={address.tab} item={address.name} />}
-                                        {address.section === "party" && member && (
-                                            // A companion's things are not the player's to act with: only the player character's sheet has its verbs (D-495).
-                                            <PlayerActsContext.Provider value={member.role === "pc" || playerActs === undefined ? playerActs : { ...playerActs, actions: {} }}>
-                                                <MemberSheet
-                                                    key={member.name}
-                                                    member={member}
-                                                    headline={shown.headline}
-                                                    sheet={shown.sheet}
-                                                    cards={shown.cards}
-                                                    text={shown.text}
-                                                    knownBy={shown.knownBy}
-                                                    story={shown.story}
-                                                    version={shown.version}
-                                                    onRoll={throwFromSheet}
-                                                    scene={shown.openScene}
-                                                />
-                                            </PlayerActsContext.Provider>
-                                        )}
-                                    </main>
-                                    {table
-                                        ? (
-                                            <PlayTable
-                                                entering={tableMoved}
-                                                onFold={() => {
-                                                    setTableMoved(true);
-                                                    setTableAway(true);
-                                                }}
-                                            >
-                                                {fight && <TurnsCard scene={shown.openScene} party={shown.party} several={several} beside />}
-                                                <QuestEndings version={shown.version} campaign={shown.campaign} beside />
-                                                <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
-                                                {rolls}
-                                            </PlayTable>
-                                        )
-                                        : wide
-                                        ? (
-                                            <TableTab
-                                                fight={fight}
-                                                focused={tableMoved}
-                                                onOpen={() => {
-                                                    setTableMoved(true);
-                                                    setTableAway(false);
-                                                }}
-                                            />
-                                        )
-                                        : rolls}
-                                </div>
-                                <PageFoot product={productName} system={shown.system} />
-                            </>
+                        {acting !== undefined && (
+                            <ActSheet
+                                start={acting.start}
+                                self={several ? member?.name : undefined}
+                                place={actsElsewhere === undefined ? shown.place : actPlace?.who === actsElsewhere ? actPlace.place : undefined}
+                                scene={shown.openScene}
+                                companions={shown.party.filter((one) => one.role === "companion").map((one) => one.name)}
+                                reply={reply}
+                                onSend={sendAct}
+                                onClose={closeAct}
+                            />
                         )}
-                    <DiceTray
-                        requested={thrown}
-                        sheetThrow={sheetThrow}
-                        party={shown.party}
-                        onLanded={land}
-                        onShown={(id) => {
-                            setHeld((now) => (now === id ? undefined : now));
-
-                            if (thrown?.id === id) {
-                                react(thrown, shown.party);
-                            }
-                        }}
-                        onFree={(roll) => {
-                            setFree((before) => withFree(shown.campaign, before, roll));
-                            setFresh((before) => new Set([...before, roll.id]));
-                        }}
-                    />
-                    {acting !== undefined && (
-                        <ActSheet
-                            start={acting.start}
-                            self={several ? member?.name : undefined}
-                            place={actsElsewhere === undefined ? shown.place : actPlace?.who === actsElsewhere ? actPlace.place : undefined}
-                            scene={shown.openScene}
-                            companions={shown.party.filter((one) => one.role === "companion").map((one) => one.name)}
-                            reply={reply}
-                            onSend={sendAct}
-                            onClose={closeAct}
+                        <ActStrip
+                            entries={strip}
+                            problem={actProblem}
+                            onWithdraw={(id) => void withdraw(id)}
+                            onCopy={(id, text) => void copyAct(text).then((done) => (done ? dismissAct(id) : setActProblem(t("Copy did not work: select the words and copy them yourself."))))}
+                            onDismiss={dismissAct}
                         />
-                    )}
-                    <ActStrip
-                        entries={strip}
-                        problem={actProblem}
-                        onWithdraw={(id) => void withdraw(id)}
-                        onCopy={(id, text) => void copyAct(text).then((done) => (done ? dismissAct(id) : setActProblem(t("Copy did not work: select the words and copy them yourself."))))}
-                        onDismiss={dismissAct}
-                    />
-                </div>
-            </PlayerActsContext.Provider>
+                    </div>
+                </PlayerActsContext.Provider>
+            </WidgetsContext.Provider>
         </RequestedRoll.Provider>
     );
 }

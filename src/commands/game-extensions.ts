@@ -10,7 +10,7 @@ import type { Problem } from "../core/problem.ts";
 import { type Command, defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { rollDice } from "../dice/index.ts";
-import type { Extension, ExtensionCode, ExtensionCommand, ExtensionEntry, Game, GameMoment } from "../extensions/index.ts";
+import type { Extension, ExtensionCode, ExtensionCommand, ExtensionEntry, Game, GameMoment, GameView } from "../extensions/index.ts";
 import { environmentAt, isInParty, locate, playerCharacters } from "../pages/index.ts";
 import { formatGameDate, type GameDate } from "../time/index.ts";
 import { campaignExtensions, runsCode } from "./game-extension-list.ts";
@@ -142,7 +142,7 @@ let installs = 0;
  * The code of an extension, when it may run (D-441): its module's default export, given the kit. Where the engine itself runs from its source, as in the tests,
  * an extension that ships its source too is loaded from it.
  */
-function extensionCode(extension: Extension): Promise<ExtensionCode | undefined>
+export function extensionCode(extension: Extension): Promise<ExtensionCode | undefined>
 {
     const source = join(extension.folder, "src", "index.ts");
     const entry = !runsCode(extension) ? undefined : import.meta.url.endsWith(".ts") && files().exists(source) ? source : extension.code;
@@ -194,6 +194,13 @@ function gameOf(root: string, context: Context, extension: Extension): Game
         },
         log: (text, visibility = "hidden") => appendLogEntry(root, newDatedLogEntry(root, context, "extension", visibility, { extension: extension.name, text })),
     };
+}
+
+/** The game as a widget of an extension reads it (D-502): the game its commands reach, without the dice, the log or writing. */
+export function gameViewOf(root: string, context: Context, extension: Extension): GameView
+{
+    const { now, calendarDay, units, party, state } = gameOf(root, context, extension);
+    return { now, calendarDay, units, party, state: { read: state.read } };
 }
 
 /** A game date as the API gives it: as written, its day and minute, and its day of the calendar. */

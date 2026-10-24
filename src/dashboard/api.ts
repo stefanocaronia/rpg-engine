@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { ActsShown, Asked, PlayerSetting, ResetPoint, View, WorldMap } from "./data.ts";
+import type { ActsShown, Asked, PlayerSetting, ResetPoint, ShownWidget, View, WorldMap } from "./data.ts";
 import { t } from "./text.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
@@ -298,6 +298,19 @@ export async function readPackages(): Promise<PackagesView>
     }
 
     return body;
+}
+
+/** The widgets of the campaign's extensions (D-502), each where it stands and with what it shows now. */
+export async function readWidgets(): Promise<ShownWidget[]>
+{
+    const response = await fetch("/api/widgets");
+    const body = await response.json() as { widgets: ShownWidget[]; } | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body.widgets;
 }
 
 /** The kinds of packages. */

@@ -18,6 +18,7 @@ export {
     diceWays,
     difficulties,
     efforts,
+    entrySettingNames,
     lethalities,
     listSettingNames,
     mapSettingNames,

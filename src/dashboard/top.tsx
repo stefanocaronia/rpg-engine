@@ -7,6 +7,7 @@ import type { RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { menuPages, type Section, sectionAddress, sectionLabel, sections } from "./address.ts";
 import type { CalendarDay, Moment, Mood } from "./data.ts";
+import { WidgetChips } from "./extension-widgets.tsx";
 import { calendarDayLabel, gameDateLabel } from "./game-words.ts";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
@@ -354,9 +355,11 @@ function MasterHome({ top, poke, onHome }: { top: Pick<TopOf, "mood" | "moment" 
 /** The game's time, its day of the calendar, and whether the game is live, each a chip. */
 function StatusChips({ now, calendar, live }: { now?: string; calendar?: CalendarDay; live: boolean; })
 {
-    // Live first and the time after, drawn the other way round: where the row is short, the time goes first (D-355).
+    const row = useRef<HTMLDivElement>(null);
+    useWrapped(row);
+    // Live first and the time after, drawn the other way round: where the row is short, the time goes first (D-355), and before it the extensions'.
     return (
-        <div class="status-chips">
+        <div ref={row} class="status-chips">
             <span class={live ? "status-chip live on" : "status-chip live"}>
                 <span class="dot" />
                 {live ? t("live") : t("waiting for the game")}
@@ -373,8 +376,45 @@ function StatusChips({ now, calendar, live }: { now?: string; calendar?: Calenda
                     {calendarDayLabel(calendar)}
                 </span>
             )}
+            {/* The extensions' chips after the time: where the row is short, they go first (D-502). */}
+            <WidgetChips />
         </div>
     );
+}
+
+/**
+ * The chips a short row puts on its second line, which is never seen, marked so: unseen, still read by a screen reader. The row does not clip, so that a chip's
+ * tooltip shows under it (D-502).
+ */
+function useWrapped(row: RefObject<HTMLElement>): void
+{
+    useLayoutEffect(() => {
+        const element = row.current;
+
+        if (element === null) {
+            return;
+        }
+
+        const mark = (): void => {
+            const chips = [...element.children] as HTMLElement[];
+            const first = chips[0]?.offsetTop ?? 0;
+            chips.forEach((chip) => chip.classList.toggle("wrapped", chip.offsetTop > first));
+        };
+
+        const sizes = new ResizeObserver(mark);
+        const added = new MutationObserver(() => {
+            [...element.children].forEach((chip) => sizes.observe(chip));
+            mark();
+        });
+        sizes.observe(element);
+        [...element.children].forEach((chip) => sizes.observe(chip));
+        added.observe(element, { childList: true, subtree: true, characterData: true });
+
+        return () => {
+            sizes.disconnect();
+            added.disconnect();
+        };
+    }, []);
 }
 
 /** The pages a menu holds as a list in the page's language: Rules, Saves and Settings; ルール、セーブ、設定. */

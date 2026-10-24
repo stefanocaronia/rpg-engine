@@ -1,10 +1,12 @@
 // The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, which the page changes as config does,
 // the master hearing of it at their next call; then the page's own, kept in this browser: the theme, the dice's sound, set and edges, rolling by hand.
 import type { ComponentChildren } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useContext, useEffect, useRef, useState } from "preact/hooks";
+import { sectionLabel } from "./address.ts";
 import { changeSetting, readSettings, type SettingChange } from "./api.ts";
-import type { PlayerSetting } from "./data.ts";
+import type { PlayerSetting, ShownWidget, WidgetPage, WidgetSpot } from "./data.ts";
 import { diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./dice/sets.ts";
+import { WidgetsContext } from "./extension-widgets.tsx";
 import { DieSwatch, Icon } from "./icons.tsx";
 import { settingLabel, valueLabel } from "./labels.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
@@ -75,6 +77,7 @@ export function SettingsView({ version, several = false }: { version: number; se
                     </section>
                 );
             })}
+            <WidgetSettings onChange={change} />
             <PageSettings />
         </section>
     );
@@ -498,6 +501,101 @@ function PageSettings()
             })}
         </section>
     );
+}
+
+/**
+ * Where the page shows the extensions' widgets (D-502), for the campaign: each in the top, the table's column, a page, or nowhere, and which page; the place its
+ * extension gives it sends it back there. None without a widget.
+ */
+function WidgetSettings({ onChange }: { onChange(change: SettingChange): Promise<string | undefined>; })
+{
+    const widgets = useContext(WidgetsContext);
+
+    if (widgets.length === 0) {
+        return null;
+    }
+
+    return (
+        <section class="settings-group">
+            <h3>{t("Extensions on the page")}</h3>
+            <p class="setting-about">{t("Where the page shows what the extensions add, in this campaign.")}</p>
+            {widgets.map((widget) => <WidgetRow key={widget.id} widget={widget} onChange={onChange} />)}
+        </section>
+    );
+}
+
+// The pages a widget's card may stand in, in the order of the sections.
+const widgetPages: WidgetPage[] = ["sheet", "scene", "journal", "world"];
+
+function WidgetRow({ widget, onChange }: { widget: ShownWidget; onChange(change: SettingChange): Promise<string | undefined>; })
+{
+    const [picked, setPicked] = useState<WidgetSpot>();
+    const said = useSaid();
+    const spot = picked ?? widget;
+    const id = `widget-setting-${idOf(widget.id)}`;
+
+    useEffect(() => setPicked(undefined), [widget.place, widget.page]);
+
+    // The extension's own place takes the campaign's away; another is written as a word: top, side, a page's name, off.
+    const choose = (next: WidgetSpot): void => {
+        setPicked(next);
+        const own = next.place === widget.own.place && (next.place !== "page" || next.page === widget.own.page);
+        const word = next.place === "page" ? next.page ?? "scene" : next.place;
+        void onChange(own ? { setting: "widgets", remove: widget.id } : { setting: "widgets", value: `${widget.id}: ${word}` }).then((problem) => {
+            // Already where its extension puts it: nothing to take away.
+            said.show(own && problem !== undefined && /has no entry/.test(problem) ? undefined : problem);
+        });
+    };
+
+    const moved = widget.own.place !== spot.place || (spot.place === "page" && widget.own.page !== spot.page);
+    return (
+        <div class="setting">
+            <div class="setting-what">
+                <span class="setting-name" id={id}>{widget.title}</span>
+                <span class="setting-about" id={`${id}-about`}>{widget.from}</span>
+            </div>
+            <div class="widget-spot">
+                <Segmented
+                    label={id}
+                    described={`${id}-about`}
+                    options={[
+                        { value: "top", label: t("Top bar") },
+                        { value: "side", label: t("Column") },
+                        { value: "page", label: t("A page") },
+                        { value: "off", label: t("Hidden") },
+                    ]}
+                    value={spot.place}
+                    onPick={(place) => choose({ place: place as WidgetSpot["place"], ...(place === "page" ? { page: spot.page ?? widget.own.page ?? "scene" } : {}), order: widget.order })}
+                />
+                <span class="visually-hidden" id={`${id}-which`}>{t("Which page")}</span>
+                {spot.place === "page" && (
+                    <Segmented
+                        label={`${id} ${id}-which`}
+                        described={`${id}-page`}
+                        options={widgetPages.map((page) => ({ value: page, label: sectionLabel(page === "sheet" ? "party" : page) }))}
+                        value={spot.page}
+                        onPick={(page) => choose({ place: "page", page: page as WidgetPage, order: widget.order })}
+                    />
+                )}
+            </div>
+            <div class="setting-after">
+                <p class="setting-means" id={`${id}-page`}>{moved ? t("Its extension puts it: {place}.", { place: spotLabel(widget.own) }) : t("Where its extension puts it.")}</p>
+                <p class={said.now?.problem ? "setting-said problem" : "setting-said"} role="status">{said.now?.text}</p>
+            </div>
+        </div>
+    );
+}
+
+/** Where a widget stands, in words: the top bar, the column, a page by its name, hidden. */
+function spotLabel(spot: WidgetSpot): string
+{
+    return spot.place === "top"
+        ? t("the top bar")
+        : spot.place === "side"
+        ? t("the column")
+        : spot.place === "off"
+        ? t("hidden")
+        : sectionLabel(spot.page === "sheet" ? "party" : spot.page ?? "scene");
 }
 
 /** A set of dice's d20, in its colours or its grain. */

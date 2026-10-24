@@ -12,6 +12,7 @@ import { CardHeader, useOpen } from "./card.tsx";
 import { FixedColumns } from "./columns.tsx";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownScene } from "./data.ts";
 import { DeathSaves } from "./dying.tsx";
+import { WidgetCards } from "./extension-widgets.tsx";
 import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
@@ -106,6 +107,7 @@ export function MemberSheet(
                             </Card>
                         )}
                     </div>
+                    <WidgetCards place="page" page="sheet" />
                 </div>
             </div>
         </section>

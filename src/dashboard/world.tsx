@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "./address.ts";
 import { pictureAddress, readMap, readView, readWorld, type WorldView as World } from "./api.ts";
 import type { MapPlace, MapPoint, Member, WorldMap } from "./data.ts";
+import { WidgetCards } from "./extension-widgets.tsx";
 import { fromLabel, terrainLabel } from "./game-words.ts";
 import { Glass, GlassDefs } from "./glass.tsx";
 import { Icon, type IconName } from "./icons.tsx";
@@ -118,6 +119,7 @@ export function WorldView({ version, lead, players, tab, item }: { version: numb
                 {chosen === "documents" && world && <DocumentsTab world={world} open={item} {...(players === undefined ? {} : { players })} />}
                 {chosen === "calendar" && world && <CalendarTab calendar={world.calendar} />}
             </div>
+            <WidgetCards place="page" page="world" />
         </section>
     );
 }

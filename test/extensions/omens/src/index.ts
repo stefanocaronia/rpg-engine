@@ -22,6 +22,29 @@ const omensAtDawn: ExtensionEntry = ({ z }) => ({
             },
         },
     ],
+    widgets: {
+        // The last omen, from the state: only what the hook gives reaches the page, never the place the state keeps.
+        last: (game) => {
+            const state = game.state.read() as { last?: string; why?: string; } | null;
+            return state?.last === undefined ? undefined : {
+                icon: "star",
+                chip: state.last,
+                says: { text: "Read for: {why}", values: { why: state.why ?? "" } },
+                parts: [{ lead: state.last, icon: "star", value: { number: 3, unit: "days" } }, { text: { text: "Read for: {why}", values: { why: state.why ?? "" } } }],
+            };
+        },
+        every: () => ({
+            note: "all the parts",
+            parts: [
+                { facts: ["a crow", "smoke"] },
+                { values: [{ label: "Omens read", value: 2 }, { label: "Since", value: { from: 1, to: 3, unit: "days" } }] },
+                { track: { label: "Omens read", value: 2, max: 6, look: "pips" } },
+                { rows: [{ label: "a crow", value: "worse", note: "at dawn" }] },
+                { table: { head: ["Omen", "Days"], rows: [["a crow", 2]] } },
+            ],
+        }),
+        broken: () => ({ chip: "<b>bold</b>", script: "alert(1)" }) as never,
+    },
     timePassed: ({ from, to }, game) => {
         const dawns = dawnsBetween(from, to);
 

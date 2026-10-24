@@ -7,6 +7,7 @@ import { sectionAddress } from "./address.ts";
 import { type JournalView as Journal, pictureAddress, readJournal } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import type { JournalFact, ShownChapter, ShownQuest, ShownThought } from "./data.ts";
+import { WidgetCards } from "./extension-widgets.tsx";
 import { byDateLabel, factLabel, gameDateLabel } from "./game-words.ts";
 import { Icon, iconPath } from "./icons.tsx";
 import { fieldLabel, phraseLabel, sceneTypeLabel } from "./labels.ts";
@@ -59,6 +60,7 @@ export function JournalView({ version, campaign, tab: asked, item }: { version: 
                 {tab === "notes" && <Notes version={version} />}
                 {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">{t("The journal starts with the player character.")}</p>}
             </div>
+            <WidgetCards place="page" page="journal" />
         </section>
     );
 }

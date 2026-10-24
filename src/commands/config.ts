@@ -14,6 +14,7 @@ import {
     diceWays,
     difficulties,
     efforts,
+    entrySettingNames,
     lethalities,
     listSettingNames,
     mapSettingNames,
@@ -56,6 +57,7 @@ import { campaignNote } from "./game-mode.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignCalendar, newDatedLogEntry } from "./game-time.ts";
+import { checkWidgetSpots } from "./game-widgets.ts";
 import { campaignSystem, campaignWorld, countedByGame, installedSystemName, missingWithSystems, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
@@ -89,6 +91,7 @@ export const config = defineCommand({
         + "in a window of their computer, then turned on in each campaign with add and off with remove; remove with computer takes one off this computer; "
         + "text, or PDFs whose text can be selected, read best: a scan is read from its pictures, on Windows only, slowly. "
         + 'coins, for a game with money whose system does not give them: each coin with its value in the smallest coin, other names after a slash, "rare" for a coin never given as change; totals count in the first. '
+        + "widgets: where the dashboard shows the extensions' widgets, which the player arranges in its Settings, such as value 'weather.today: side' (top, side, scene, sheet, world, journal or off); remove gives one back its extension's place. "
         + "The game system may add settings, such as advancement for 5e: config lists them with what each value means. "
         + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, "
         + "each replacing the system's one of that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the player character's line. "
@@ -173,11 +176,11 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         throw new Error(`There is no setting "${input.setting}". The settings are: ${[...settingNames, ...added].join(", ")}.`);
     }
 
-    if (input.add !== undefined && input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting))) {
+    if (input.add !== undefined && input.setting !== undefined && entrySettingNames.includes(checkSettingName(input.setting))) {
         throw new Error(`"${input.setting}" takes entries by name as the value, such as setting counters, value '${counterExample}'; remove takes their names.`);
     }
 
-    if (listChange && (input.setting === undefined || (input.value !== undefined && !mapSettingNames.includes(checkSettingName(input.setting))))) {
+    if (listChange && (input.setting === undefined || (input.value !== undefined && !entrySettingNames.includes(checkSettingName(input.setting))))) {
         throw new Error('Give add or remove with a list setting and no value, such as setting lines, add "spiders".');
     }
 
@@ -202,8 +205,16 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     const mapped = input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting));
     let replaced: string[] = [];
 
-    // What the campaign adds to its game system, checked with the system before it is written (CAM-1, CAM-3).
-    if (mapped && input.setting !== undefined && (input.value !== undefined || input.remove !== undefined)) {
+    // Where the dashboard shows the extensions' widgets, checked against them before it is written (D-502); the master hears nothing of it: it is the page's.
+    if (input.setting?.trim() === "widgets" && (input.value !== undefined || input.remove !== undefined)) {
+        const set = input.value === undefined ? undefined : entriesOf("widgets", input.value);
+        checkWidgetSpots(root, context, set ?? {});
+
+        if (changeMapSetting(root, "widgets", { set, remove: input.remove })) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: "widgets", value: input.value, remove: input.remove }));
+        }
+    } else if (mapped && input.setting !== undefined && (input.value !== undefined || input.remove !== undefined)) {
+        // What the campaign adds to its game system, checked with the system before it is written (CAM-1, CAM-3).
         const change = { set: input.value === undefined ? undefined : entriesOf(input.setting, input.value), remove: input.remove };
         checkAdditions(root, context, input.setting, change);
         replaced = replacedEntries(root, context, input.setting, Object.keys(change.set ?? {}));
@@ -250,7 +261,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     const settings = readSettings(root);
     // Listed all together, what the campaign adds to its system only when it adds something.
     const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
-    const listed = input.setting === undefined ? shown.filter((name) => !(added(name) || name === "calendar") || settings[name] !== undefined) : shown;
+    const listed = input.setting === undefined ? shown.filter((name) => !(added(name) || name === "calendar" || name === "widgets") || settings[name] !== undefined) : shown;
     const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
     // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
     const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
@@ -669,7 +680,7 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
         return settings[name] ?? (setupSettingNames.includes(name) ? undefined : []);
     }
 
-    if (mapSettingNames.includes(name)) {
+    if (entrySettingNames.includes(name)) {
         return settings[name] ?? {};
     }
 

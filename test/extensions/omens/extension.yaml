@@ -2,3 +2,20 @@
 title: omens at dawn, a test extension
 about: an omen each dawn, and one read at will
 language: en
+# On the dashboard (D-502): the last omen in the column beside the rolls, all of the parts in a card of the Journal, and one that gives what no page shows.
+icons:
+  eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z"
+  star: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6-4.5-4.2 6.1-.7Z"
+widgets:
+  last:
+    title: Last omen
+    icon: eye
+    place: side
+    order: 2
+  every:
+    title: Omens
+    place: page
+    page: journal
+  broken:
+    title: Broken
+    place: top
