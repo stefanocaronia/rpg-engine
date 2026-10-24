@@ -208,6 +208,23 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
         expect(await ok("show", "Gatto")).toContain("Is in: Zaino › Ettore");
     });
 
+    it("TRV-6: only what the game declares a vehicle carries a traveller; what is in it goes with it, and one in anything else is refused with what to do", async () => {
+        await ok("write", "Botte", "--type", "item");
+        await ok("write", "Locanda", "--add", "contains=[[Botte]]");
+        await ok("move", "Lena", "--to", "Botte");
+        expect(await refused("travel", "Rocca")).toBe(
+            "Lena is in Botte, which is no vehicle of this game: move them out, leave them out of who, or give Botte category drawn vehicle, or derive it from an item that has it. Nothing changed.",
+        );
+        expect(await ok("travel", "Rocca", "--who", "Ettore")).toContain("Ettore travels to Rocca");
+        await ok("write", "Carro", "--type", "item", "--set", "item=[[Cart]]");
+        await ok("write", "Rocca", "--add", "contains=[[Carro]]");
+        await ok("move", "Ettore", "--to", "Rocca");
+        await ok("move", "Botte", "--to", "Carro");
+        await ok("move", "Ettore", "--to", "Carro");
+        await ok("travel", "Bivio", "--who", "Ettore");
+        expect(await ok("show", "Botte")).toContain("Is in: Carro › Bivio");
+    });
+
     it("TRV-6: one who climbs into the cart in the open keeps the journey, which goes on from where it stopped", async () => {
         await ok("write", "Carro", "--type", "item", "--set", "item=[[Cart]]");
         await ok("write", "Locanda", "--add", "contains=[[Carro]]");
@@ -346,5 +363,15 @@ describe("a system without paces (TRV-1)", () => {
         await ok("config", "system", "ironsworn");
         expect(await refused("travel", "Rocca")).toContain("The game system gives no pace for travel: give pace as the distance of an hour in metric, such as 4.5 km or 4.5 km/h.");
         expect(await ok("route", "Rocca", "--pace", "4 km")).toBe("Guadoscuro → Bivio → Rocca, 36 km by Strada vecchia (12 km) and Sentiero dei colli (24 km).\nAt 4 km an hour: 9h of travel, 2 days at 8 h a day.");
+    });
+
+    it("TRV-6: a game that declares no vehicles has none, until the campaign declares them", async () => {
+        await ok("config", "system", "ironsworn");
+        await ok("write", "Carro", "--type", "item", "--set", "category=drawn vehicle");
+        await ok("write", "Locanda", "--add", "contains=[[Carro]]");
+        await ok("move", "Lena", "--to", "Carro");
+        expect(await refused("route", "Rocca", "--pace", "4 km")).toContain("Lena is in Carro, which is no vehicle of this game: move them out, leave them out of who, or declare what is a vehicle with travel.vehicles in campaign.yaml.");
+        await ok("config", "travel", "vehicles: {category: drawn vehicle}");
+        expect(await ok("route", "Rocca", "--pace", "4 km")).toContain("36 km");
     });
 });

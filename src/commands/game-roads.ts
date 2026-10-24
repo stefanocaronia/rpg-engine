@@ -115,7 +115,7 @@ export function moversOf(world: World, system: GameSystem | undefined, traveller
     const places = new Set(travellers.map((page) => placeOf(world, page)));
     // Who rides in what another traveller carries, as a cat in a pack, goes with them.
     const going = travellers.filter((page) => !locate(world, page).chain.some((holder) => travellers.includes(holder)));
-    const vehicles = going.map((page) => vehicleOf(world, page));
+    const vehicles = going.map((page) => vehicleOf(world, system, page));
 
     if (places.size > 1) {
         throw new Error(`${travellers.map((page) => page.name).join(", ")} are not in the same place: a journey starts from one place. Move them together first, or travel with each apart. Nothing changed.`);
@@ -139,14 +139,29 @@ export function moversOf(world: World, system: GameSystem | undefined, traveller
     return { movers: movers.filter((page, index) => movers.indexOf(page) === index) };
 }
 
-/** The vehicle a page is in (TRV-6): the outermost of the items that hold it, when what holds that is a place or nothing; none in what a character carries. */
-function vehicleOf(world: World, page: Page): Page | undefined
+/**
+ * The vehicle a page is in (TRV-6): the outermost of the items that hold it, when what holds that is a place or nothing; none in what a character carries.
+ * Refused when that item is no vehicle of the game, as a barrel with a thief in it.
+ */
+function vehicleOf(world: World, system: GameSystem | undefined, page: Page): Page | undefined
 {
     const chain = locate(world, page).chain;
     const items = chain.findIndex((holder) => holder.type !== "item");
     const inner = items === -1 ? chain : chain.slice(0, items);
     const above = chain[inner.length];
-    return above === undefined || above.type === "place" ? inner.at(-1) : undefined;
+    const outer = inner.at(-1);
+
+    if (outer === undefined || (above !== undefined && above.type !== "place")) {
+        return undefined;
+    }
+
+    if (!isVehicle(world, system, outer)) {
+        const declared = system?.travel?.vehicles[0];
+        const remedy = declared === undefined ? "declare what is a vehicle with travel.vehicles in campaign.yaml" : `give ${outer.name} ${declared.field} ${declared.value}, or derive it from an item that has it`;
+        throw new Error(`${page.name} is in ${outer.name}, which is no vehicle of this game: move them out, leave them out of who, or ${remedy}. Nothing changed.`);
+    }
+
+    return outer;
 }
 
 /** The stop a journey starts from or ends at (ROA-5): the nearest page of the chain of `page`, itself first, that is a stop of a road. */
@@ -413,17 +428,25 @@ export function isVehicleOnly(world: World, system: GameSystem | undefined, vehi
     return (system?.travel?.kinds ?? []).some((kind) => carries(world, vehicle, kind));
 }
 
+/** Whether an item is a vehicle of the game (TRV-6): it has a field at a value travel.vehicles declares, or is what a kind of road is travelled in. */
+function isVehicle(world: World, system: GameSystem | undefined, item: Page): boolean
+{
+    return (system?.travel?.vehicles ?? []).some((match) => hasValue(world, item, match)) || isVehicleOnly(world, system, item);
+}
+
 /** Whether a vehicle is one a kind of road is travelled in (TRV-2): it has the field with the value the system names. */
 function carries(world: World, vehicle: Page | undefined, kind: TravelKind): boolean
 {
-    if (vehicle === undefined || kind.vehicle === undefined) {
-        return false;
-    }
+    return vehicle !== undefined && kind.vehicle !== undefined && hasValue(world, vehicle, kind.vehicle);
+}
 
-    const fields = effectiveFields(world, vehicle);
-    const field = sameName(Object.keys(fields), kind.vehicle.field);
+/** Whether a page has a field at a value, as its own or as what it derives from has it. */
+function hasValue(world: World, page: Page, match: { field: string; value: string; }): boolean
+{
+    const fields = effectiveFields(world, page);
+    const field = sameName(Object.keys(fields), match.field);
     const value = field === undefined ? undefined : fields[field];
-    return typeof value === "string" && comparableText(value) === comparableText(kind.vehicle.value);
+    return typeof value === "string" && comparableText(value) === comparableText(match.value);
 }
 
 function vehicleSpeed(world: World, vehicle: Page, kind: TravelKind): number | undefined

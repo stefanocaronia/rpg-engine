@@ -77,12 +77,13 @@ travel:
   rule: Travel Pace
   beyond: Forced March
   terrain: {difficult: 1/2}
+  vehicles: {category: drawn vehicle}
   kinds:
     road: {}
     river: {vehicle: {category: waterborne vehicle}, speed: speed, hours: 24, current: 4.5 km}
 ```
 
-Paces per hour, the hours of a day's travel and the rule past them, what terrain does to a pace, and the kinds of road: a kind with `vehicle` is travelled only in such an item, at its `speed`.
+Paces per hour, the hours of a day's travel and the rule past them, what terrain does to a pace, the vehicles and the kinds of road. A vehicle is an item with a field at a value `vehicles` names, one or a list, or the `vehicle` of a kind, which is travelled only in such an item, at its `speed`. Travellers in a vehicle go with it, and what it holds too; one in any other item is refused, and a game that declares no vehicles has none.
 
 ### grid
 
