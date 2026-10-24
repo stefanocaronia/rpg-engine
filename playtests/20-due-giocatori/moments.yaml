@@ -1,0 +1,10 @@
+# What happens at the players' table and on the dashboard's page in session 2 of 20, before their message `before` (page-player.mjs): Dario late, then
+# arriving, and a sentence said to Livio from his name in Scene, which starts with the speaking character's name when the player characters are two (D-480 (8)).
+- before: 2
+  tell: "Dario texted: he is stuck at work and will be twenty minutes late. For now Irene plays alone, only Mira; when the master asks who is here tonight, say so, and agree with the master what Bruna does meanwhile."
+- before: 7
+  tell: "Dario has just arrived, out of breath, and sits down beside Irene: from your next message you both play, as before. Tell the master he is here."
+- before: 10
+  talk: Livio
+  ask: "On the dashboard, in Scene, you click Livio's name to speak to him, as Mira or as Bruna, whichever of you has more to say to him now, about Gaspare and the silver."
+  tell: "You just said that to Livio from the dashboard; the master may answer it before your next message."

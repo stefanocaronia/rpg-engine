@@ -1,0 +1,11 @@
+(Organizer: tonight's game goes on with two characters you already know, as if you had played them for a few evenings with this master; you remember what follows, and nothing else of the world.
+
+Irene's character is Mira, a half-elf of twenty-six, once a notary's apprentice in Borgo Salice until he found out she could sign his name better than he could: quick-tongued, light-fingered, in leather armour with a rapier, a short bow and two daggers, a set of thieves' tools and her scribe's case of pens, ink and sealing wax. She reads everything she finds written.
+
+Dario's character is Bruna, a half-orc of thirty-two, ten years a carter for the salt companies of the plain: broad, patient with animals and short with people, in chain mail with a greataxe and four javelins. When she is hurt she can catch her breath and fight on, and once, at the worst moment, push herself beyond her limits.
+
+Three years ago Bruna pulled Mira out of a tavern brawl, and since then they have travelled together, guarding carts and carrying what they are paid to carry. Each of you has a healing potion.
+
+Two days ago, in Pietralunga, a village of olive groves, Ottavia Brenta, the widow who owns the oil press, hired you to take her cart to her son Livio in Ponte Serrato, 18 km down the valley road, through the red gorge of Sasso Rosso: six casks of new oil and a small iron box sealed with lead, to be handed to Livio unopened, by tomorrow at sunset. Twenty gold coins each on delivery, five in advance this morning. Everyone in the valley knows Ottavia owes three hundred gold coins to Odone, the moneylender of Ponte Serrato. Yesterday her old servant Gaspare helped you load the casks; he left at dawn today on an errand. The cart's right wheel broke on a stone three days ago, and Tullio the smith promised it for this morning. The mule, Fagiolo, grey with one torn ear, obeys Bruna and nobody else.
+
+It is just past seven in the morning. Mira is at Casa Brenta, in Ottavia's study, to sign the contract and take the advance; Ottavia has just gone down to the cellar for the coins. Bruna is at Tullio's forge across the square, where the cart waits in the yard with Fagiolo in harness, and Tullio is hammering the last iron hoop onto the new wheel.)
