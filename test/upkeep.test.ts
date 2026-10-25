@@ -102,7 +102,7 @@ describe("the lifestyle in a settlement (D-449, UPK-4)", () => {
     it("pays a day of the lifestyle chosen at each midnight there, says what to do without one or without money, and pays nothing outside", async () => {
         await ok("move", "Ettore", "--to", "Locanda");
         expect(await ok("advance", "--by", "1d")).toContain(
-            "Ettore has no lifestyle to pay a day in a settlement: ask the player, then set lifestyle=Modest, one of Wretched, Squalid, Poor, Modest, Comfortable, Wealthy, Aristocratic. Read Lifestyle Expenses.",
+            "Ettore has no lifestyle to pay a day in a settlement: ask the player, then set lifestyle=Modest, one of Wretched, Squalid, Poor, Modest, Comfortable, Wealthy, Aristocratic; or, for a night paid on its own or board earned by work, charge it with change Ettore money, if not yet charged. Read Lifestyle Expenses.",
         );
         await ok("write", "Ettore", "--set", "lifestyle=Modest", "--set", "money=1 gp 5 sp");
         expect(await ok("advance", "--by", "1d")).toContain("Ettore pays a Modest day: money 1 gp 5 sp → 5 sp.");

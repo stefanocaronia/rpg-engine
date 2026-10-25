@@ -118,7 +118,9 @@ function lifestylePaid(root: string, context: Context, world: World, member: Pag
         // A lifestyle of the campaign's has no price the system knows: the master charges it.
         return typeof chosen === "string" && chosen.trim() !== ""
             ? `${member.name}'s ${lifestyle.field} ${chosen} has no price here: charge the day with change ${member.name} money, or set one of ${names.join(", ")}. Read ${lifestyle.rules}.`
-            : `${member.name} has no ${lifestyle.field} to pay a day in a settlement: ${who}set ${lifestyle.field}=${example}, one of ${names.join(", ")}. Read ${lifestyle.rules}.`;
+            : `${member.name} has no ${lifestyle.field} to pay a day in a settlement: ${who}set ${lifestyle.field}=${example}, one of ${
+                names.join(", ")
+            }; or, for a night paid on its own or board earned by work, charge it with change ${member.name} money, if not yet charged. Read ${lifestyle.rules}.`;
     }
 
     const price = coins === undefined ? undefined : readAmount(lifestyle.costs[named], coins);
