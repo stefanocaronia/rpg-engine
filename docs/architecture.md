@@ -27,7 +27,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | `campaign` | Finding and creating a campaign; `campaign.yaml`; `state.yaml` |
 | `systems` | The installed game systems and their `system.yaml` |
 | `extensions` | The installed extensions, their `extension.yaml` and their words; the API their code is given; npm for the packages |
-| `dice` | Dice notation, digital or physical faces, proofs for hidden rolls |
+| `dice` | Dice notation, digital or physical faces, proofs for hidden rolls, random tables, the yes/no oracle |
 | `counters` | Counters such as `5/12` |
 | `money` | Coins and amounts, paying with change |
 | `effects` | Effect lines: name, keeper, values, end |
@@ -106,7 +106,7 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 | Formulas | What a system works out: computed fields, tables, counter limits | [core/formula.ts](../src/core/formula.ts), [commands/worked-out.ts](../src/commands/worked-out.ts) |
 | Sheet | The character sheet as data, the same in chat and dashboard | [commands/sheet.ts](../src/commands/sheet.ts) |
 | Progression | Levels, features, uses that a rest refills, experience | [progression/](../src/progression/), [commands/progression.ts](../src/commands/progression.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts) |
-| Rolls and asking | Dice, hidden rolls with proofs; questions with buttons on the dashboard or in the host's form | [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [commands/ask.ts](../src/commands/ask.ts) |
+| Rolls and asking | Dice, hidden rolls with proofs, a page's random tables and the yes/no oracle; questions with buttons on the dashboard or in the host's form | [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [commands/game-tables.ts](../src/commands/game-tables.ts), [commands/ask.ts](../src/commands/ask.ts) |
 | Scenes | The open scene in `state.yaml`: who, copies, turns, who is hostile, what strangers look like | [scene/](../src/scene/), [commands/scene.ts](../src/commands/scene.ts) |
 | Saves | A zip at each scene's end; load and start over as the campaign's setting allows | [saves/](../src/saves/), [commands/save.ts](../src/commands/save.ts) |
 | Pictures | A page's `image`; pictures drawn by the player's Codex or Claude | [images/](../src/images/), [pictures/](../src/pictures/), [commands/image.ts](../src/commands/image.ts) |

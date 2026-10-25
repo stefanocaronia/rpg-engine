@@ -15,6 +15,8 @@ const linkPattern = /\[\[([^\]|#^]+)(?:#([^\]|^]*))?(?:\^[^\]|]*)?(?:\|[^\]]*)?\
 const wordedLinkPattern = /!?\[\[([^\]|#^]+)(?:#([^\]|^]*))?(?:\^[^\]|]*)?(?:\|([^\]]*))?\]\]/g;
 // A goal as a quest lists it, a checkbox: - [ ] to do, - [x] done; in a quote or a secret too.
 const goalPattern = /^[ \t>]*[-*+][ \t]+\[([ xX])\]/;
+// The row of dashes under a table's header, as |---|:--:| or --- | ---.
+const tableDividerPattern = /^\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?$/;
 
 /** Where a link points: a page, and a section or secret of it. */
 export interface Link
@@ -372,6 +374,32 @@ export function withoutFencedBlocks(text: string): string
     return lines.filter((_, index) => !views[index].code).join("\n");
 }
 
+/**
+ * The cells of the first table of a text, outside code, its header row first and without the row of dashes under it; in a quote or a secret too. A link
+ * written [[Page\|words]], as tables need, has its | back; whether it stands in a secret block. Undefined when the text has no table.
+ */
+export function firstTable(text: string): { rows: string[][]; secret: boolean; } | undefined
+{
+    const written = text.split("\n");
+    const lines = written.map((line) => line.replace(/^[ \t]{0,3}(?:>[ \t]?)*/, ""));
+    const views = lineViews(lines);
+    const isRow = (index: number): boolean => index < lines.length && isProse(views[index]) && lines[index].includes("|");
+    const start = lines.findIndex((_, index) => isRow(index) && isRow(index + 1) && tableDividerPattern.test(lines[index + 1].trim()));
+
+    if (start === -1) {
+        return undefined;
+    }
+
+    const rows = [lines[start]];
+
+    for (let index = start + 2; isRow(index) && lines[index].trim() !== ""; index++) {
+        rows.push(lines[index]);
+    }
+
+    const secret = secretsOf(written).some((block) => start >= block.start && start < block.end);
+    return { rows: rows.map(tableCells), secret };
+}
+
 /** Whether a text lists goals as checkboxes, outside code blocks, and every one is ticked. */
 export function everyGoalTicked(text: string): boolean
 {
@@ -408,6 +436,13 @@ function lineViews(lines: string[]): LineView[]
         comment = parts.length % 2 === 0 ? !comment : comment;
         return { code: false, commented, prose: parts.filter((_, index) => (index % 2 === 0) === !commented).join("") };
     });
+}
+
+/** The cells of a table's row, without the pipes at its ends; a pipe written \| stays in its cell, as in [[Page\|words]], and loses its backslash. */
+function tableCells(row: string): string[]
+{
+    const inner = row.trim().replace(/^\|/, "").replace(/(?<!\\)\|$/, "");
+    return inner.split(/(?<!\\)\|/).map((cell) => cell.replaceAll("\\|", "|").trim());
 }
 
 /** Whether a line can hold a title, a secret or a goal: neither code nor begun inside a comment. */

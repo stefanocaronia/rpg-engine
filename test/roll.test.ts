@@ -118,15 +118,20 @@ describe("the master's rolls behind the screen (D-287)", () => {
 
     it("hides by itself a roll for an NPC, a foe's copy in the scene or a name of no page, while the setting is unset or behind the screen", async () => {
         const npc = await rolled("1d20+4", "--who", "Varro", "--why", "mente");
-        expect(npc).toMatch(new RegExp(`^Hidden roll (\\S+), only for the master: 1d20\\+4 = 8 \\[4\\] \\+ 4 ${screen.replace(/[.:]/g, "\\$&")}\\nIts fingerprint, only if the player asks for it: [0-9a-f]{16}$`));
+        expect(npc).toMatch(new RegExp(`^Hidden roll (\\S+), only for the master: 1d20\\+4 = 8 \\[4\\] \\+ 4\\. ${screen.replace(/[.:]/g, "\\$&")}\\nIts fingerprint, only if the player asks for it: [0-9a-f]{16}$`));
         await runCommandLine(["scene", "open", "--title", "Nel bosco", "--type", "combat", "--creatures", "Lupo=1"], context);
         expect(await rolled("1d20+3", "--who", "Lupo 1")).toContain(screen);
         await runCommandLine(["config", "master-rolls", "behind the screen"], context);
         expect(await rolled("1d6", "--who", "la guardia")).toContain(screen);
+        // A who of no page may be a party member named wrongly: the master is told how to undo it.
+        expect(await rolled("1d6", "--who", "Kir")).toMatch(/\nKir names no page nor copy in the scene: hidden as a stranger's\. If Kir is of the party, roll --reveal \S+, and give who/);
+        expect(await rolled("1d20+3", "--who", "Lupo 1")).not.toContain("names no page");
         expect(loggedEvents().filter((event) => event.type === "roll").map((event) => [event.data.who, event.visibility, typeof event.data.fingerprint])).toEqual([
             ["Varro", "hidden", "string"],
             ["Lupo 1", "hidden", "string"],
             ["la guardia", "hidden", "string"],
+            ["Kir", "hidden", "string"],
+            ["Lupo 1", "hidden", "string"],
         ]);
         const id = /^Hidden roll (\S+),/.exec(npc)?.[1] ?? "";
         expect(await rolled("--reveal", id)).toContain(`Hidden roll ${id} revealed: 1d20+4 = 8 [4] + 4.`);

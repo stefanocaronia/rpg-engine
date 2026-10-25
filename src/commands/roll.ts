@@ -6,13 +6,14 @@ import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
-import { DiceError, type DiceRoll, rollDice, sha256 } from "../dice/index.ts";
+import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256, type ThrownDie } from "../dice/index.ts";
 import { declaredKind, findPage, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
-import { behindTheScreen, sealHiddenRoll } from "./game-master-rolls.ts";
+import { behindTheScreen, namesNoOne, ofTheParty, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { systemRolled } from "./game-system-code.ts";
+import { rollPageTable } from "./game-tables.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { itemList, signedText, workedFields } from "./worked-out.ts";
@@ -29,7 +30,7 @@ const namePattern = /(^|[+-])(\s*)(\p{L}[\p{L}0-9]*(?:-[\p{L}0-9]+)*)/gu;
 const diePattern = /^\d*d(\d+|%|F)/i;
 
 type RollOutput =
-    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; check?: string; physical: boolean; hidden: boolean; screened?: true; fingerprint?: string; note?: string; kept?: string; }
+    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; check?: string; physical: boolean; hidden: boolean; screened?: true; stranger?: true; fingerprint?: string; note?: string; kept?: string; }
     | { kind: "reveal"; id: string; text: string; proof: string; sha256: string; fingerprint: string; };
 
 export const roll = defineCommand({
@@ -40,7 +41,8 @@ export const roll = defineCommand({
         + "left out, a roll for a foe or anyone outside the party is hidden or shown as the master-rolls setting says. "
         + "keep stores the dice rolled for later, such as the two d20 of a diviner's Portent, rolled by the player for the player character, by you for a companion; "
         + "use takes one of those instead of the die and logs which roll it replaced. "
-        + 'Example: notation 1d20+perception, why "notice the trap", who Lena.',
+        + "Instead of a notation, table rolls on a random table of a page and gives its row, for you to tell; oracle answers a yes/no question with its odds. "
+        + 'Example: notation 1d20+perception, why "notice the trap", who Lena; table "Colli di Vallerana#Incontri", why "a night on the hills"; oracle likely, why "is the ferryman awake?".',
     group: "game",
     positionals: ["notation"],
     input: z.object({
@@ -60,6 +62,10 @@ export const roll = defineCommand({
         use: z.string().optional().describe("a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die"),
         from: z.string().optional().describe("who keeps the roll that use takes, when it is not who rolls"),
         double: z.boolean().optional().describe("roll twice the dice, never the numbers added, as a critical hit's damage: 1d8+3 rolls 2d8+3"),
+        table: z.string().optional().describe(
+            "a random table to roll on, as Page#Section: the first table under that heading, its die in the first header cell (d8, 2d6, d100, d66) or as big as its highest row",
+        ),
+        oracle: z.string().optional().describe("odds of a yes/no question, on a d100: almost certain, likely, 50/50, unlikely or small chance; why is the question asked; a double makes the answer extreme"),
     }),
 
     run(input, context): RollOutput
@@ -67,19 +73,27 @@ export const roll = defineCommand({
         const root = requireCampaign(context.folder);
 
         if (input.reveal !== undefined) {
-            if (input.notation !== undefined) {
-                throw new Error("Give either the dice to roll or the id of a hidden roll to reveal, not both.");
+            if (input.notation !== undefined || input.table !== undefined || input.oracle !== undefined) {
+                throw new Error("Give either the dice to roll, a table or the oracle, or the id of a hidden roll to reveal, not both.");
             }
 
             return revealHiddenRoll(input.reveal, root, context);
         }
 
-        if (input.notation === undefined) {
-            throw new Error("Give the dice to roll, for example 1d20+5.");
+        if ([input.notation, input.table, input.oracle].filter((given) => given !== undefined).length > 1) {
+            throw new Error("Give one of the dice to roll, table or oracle, not more: each is a roll of its own. Nothing rolled.");
+        }
+
+        if (input.notation === undefined && input.table === undefined && input.oracle === undefined) {
+            throw new Error("Give the dice to roll, for example 1d20+5; or table, for a random table, or oracle, for a yes/no question.");
         }
 
         if (input.values && input.hidden) {
             throw new Error("Physical dice are rolled by the player, so they cannot be hidden.");
+        }
+
+        if (input.notation === undefined) {
+            return answerRoll(input, root, context);
         }
 
         if (input.use !== undefined && (input.keep !== undefined || input.values !== undefined || input.hidden === true)) {
@@ -118,7 +132,9 @@ export const roll = defineCommand({
         const own = said.lines.length > 0 ? said.lines.join("\n") : roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
         const note = [own, said.problem].filter((line) => line !== undefined && line !== "").join("\n") || undefined;
         const shown = { kind: "roll" as const, id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden, fingerprint: shownFingerprint, note, kept };
-        return screened ? { ...shown, screened: true } : shown;
+        // A who of no page may be a party member named wrongly: the master is told how to undo the screen (review of 25 October).
+        const stranger = screened && input.who !== undefined && namesNoOne(root, context, input.who) ? { stranger: true as const } : {};
+        return screened ? { ...shown, screened: true, ...stranger } : shown;
     },
 
     format(output)
@@ -131,14 +147,74 @@ export const roll = defineCommand({
         const note = [output.kept, output.note].filter((line) => line !== undefined).map((line) => `\n${line}`).join("");
 
         if (output.hidden) {
-            const screen = output.screened === true ? " Behind the screen, as master-rolls says: tell only the outcome, in the story." : "";
-            return `Hidden roll ${output.id}, only for the master: ${output.text}${screen}\nIts fingerprint, only if the player asks for it: ${output.fingerprint}${note}`;
+            const screen = output.screened === true ? ". Behind the screen, as master-rolls says: tell only the outcome, in the story." : "";
+            const stranger = output.stranger === true
+                ? `\n${output.who} names no page nor copy in the scene: hidden as a stranger's. If ${output.who} is of the party, roll --reveal ${output.id}, and give who as their page's name.`
+                : "";
+            return `Hidden roll ${output.id}, only for the master: ${output.text}${screen}${stranger}\nIts fingerprint, only if the player asks for it: ${output.fingerprint}${note}`;
         }
 
         const label = [output.who, output.check, output.why].filter(Boolean).join(", ");
         return `${output.id} ${label ? label + ": " : ""}${output.text}${output.physical ? " (physical dice)" : ""}${note}`;
     },
 });
+
+/** A roll on a page's random table or of the oracle (D-503): logged as any roll, hidden or shown as any roll; the row or the answer is for the master to tell. */
+function answerRoll(input: { table?: string; oracle?: string; why?: string; who?: string; check?: string; values?: number[]; hidden?: boolean; keep?: string; use?: string; double?: boolean; }, root: string, context: Context): RollOutput
+{
+    if (input.keep !== undefined || input.use !== undefined || input.double === true) {
+        throw new Error("keep, use and double go with dice to roll, not with a table or the oracle. Nothing rolled.");
+    }
+
+    if (input.oracle !== undefined && (input.why === undefined || input.why.trim() === "")) {
+        throw new Error('Give the question asked as why, such as oracle likely, why "is the ferryman awake?". Nothing rolled.');
+    }
+
+    const physical = input.values !== undefined;
+    const source = input.values ? { values: input.values } : { random: context.random };
+    const answer = input.table !== undefined ? tableAnswer(root, context, input.table, source) : oracleAnswer(input.oracle ?? "", source);
+    // A table or the oracle is the master's own roll, behind the screen as master-rolls says, but for a party member's (D-287); a secret's table is never shown.
+    const masters = input.who === undefined || !ofTheParty(root, context, input.who);
+    const screened = answer.secret || (input.hidden === undefined && !physical && masters && screenUp(root));
+    const hidden = input.hidden === true || screened;
+    const checked = input.check === undefined ? {} : { check: input.check };
+    const data = { notation: answer.notation, total: answer.total, result: answer.text, ...answer.data, why: input.why, who: input.who, ...checked, physical, dice: answer.dice };
+    const entry = newDatedLogEntry(root, context, "roll", hidden ? "hidden" : "public", data);
+    const shownFingerprint = hidden ? sealHiddenRoll(entry, answer.text, context) : undefined;
+    appendLogEntry(root, entry);
+    const shown = { kind: "roll" as const, id: entry.id, text: answer.text, total: answer.total, why: input.why, who: input.who, check: input.check, physical, hidden, fingerprint: shownFingerprint };
+    return screened ? { ...shown, screened: true } : shown;
+}
+
+/** A roll that answers: its die, the number read, its text, the dice thrown and what the log keeps of the table or the oracle. */
+interface Answer
+{
+    /** It comes from a secret block, the master's alone. */
+    secret: boolean;
+    notation: string;
+    total: number;
+    text: string;
+    dice: ThrownDie[];
+    data: Record<string, unknown>;
+}
+
+/** The row of a page's table that the roll lands on, with the table and the row for the log. */
+function tableAnswer(root: string, context: Context, table: string, source: FaceSource): Answer
+{
+    const rolled = rollPageTable(root, context, table, source);
+    return { secret: rolled.secret, notation: rolled.die, total: rolled.result, text: rolled.text, dice: rolled.roll.dice, data: { table: rolled.table, row: rolled.row.label } };
+}
+
+/** The oracle's answer, with its odds and the answer for the log. */
+function oracleAnswer(odds: string, source: FaceSource): Answer
+{
+    try {
+        const asked = askOracle(odds, source);
+        return { secret: false, notation: "d100", total: asked.roll.total, text: asked.text, dice: asked.roll.dice, data: { oracle: asked.odds, odds: asked.chance, answer: `${asked.extreme ? "extreme " : ""}${asked.yes ? "yes" : "no"}` } };
+    } catch (error) {
+        throw error instanceof DiceError ? new Error(`${error.message} Nothing rolled.`) : error;
+    }
+}
 
 /** A field that keeps rolls for later on a page (KEP-1): what keep writes to, or use takes from. */
 interface KeptField

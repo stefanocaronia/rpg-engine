@@ -36,7 +36,7 @@
     "docs": "node --experimental-strip-types --input-type=module -e \"import { writeFileSync } from 'node:fs'; import { commands } from './src/commands/index.ts'; import { commandReference } from './src/core/command-reference.ts'; writeFileSync('docs/commands.md', commandReference(commands));\""
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.4"
   },
   "keywords": [
     "rpg",

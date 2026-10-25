@@ -101,6 +101,11 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
     const options: Record<string, { type: "string" | "boolean"; multiple?: boolean; }> = { json: { type: "boolean" } };
 
     for (const [name, field] of inputFields(command)) {
+        // --no-x turns x off: a field named no-x would be lost, as an extension's might be (review of 25 October).
+        if (name.startsWith("no-")) {
+            throw new Error(`${command.name} has a field named ${name}, and none may start with no-, which the command line reads as turning ${name.slice(3)} off: rename it.`);
+        }
+
         if (!positionals.includes(name)) {
             options[name] = { type: isBoolean(field) ? "boolean" : "string", multiple: isList(field) };
         }

@@ -42,7 +42,7 @@ Today RPG Engine plays **fifth edition**, from the free System Reference Documen
 
 ## What you need
 
-**Node.js 22** or newer, a web browser, and an AI agent to be the master: an AI app that can work with the files on your computer, such as Claude Code or Codex. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer.
+**Node.js 22.4** or newer, a web browser, and an AI agent to be the master: an AI app that can work with the files on your computer, such as Claude Code or Codex. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer.
 
 RPG Engine is tied to no AI company: any agent that supports MCP tools can be the master, local ones included. We play and test it with **Claude Code**; **Codex** is connected and checked, but no whole campaign has been played with it yet; [the guide](https://github.com/stefanocaronia/rpg-engine/blob/main/src/dashboard/guide/en.md#24-connect-your-ai) says how to connect any other agent. Give the master the largest model you have: a small one is easier to talk into revealing secrets or bending the rules.
 

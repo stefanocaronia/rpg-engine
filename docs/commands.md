@@ -233,6 +233,8 @@ Read-only: no. Positional parameters: `notation`.
 - `use` (`string`, optional): a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die
 - `from` (`string`, optional): who keeps the roll that use takes, when it is not who rolls
 - `double` (`boolean`, optional): roll twice the dice, never the numbers added, as a critical hit's damage: 1d8+3 rolls 2d8+3
+- `table` (`string`, optional): a random table to roll on, as Page#Section: the first table under that heading, its die in the first header cell (d8, 2d6, d100, d66) or as big as its highest row
+- `oracle` (`string`, optional): odds of a yes/no question, on a d100: almost certain, likely, 50/50, unlikely or small chance; why is the question asked; a double makes the answer extreme
 
 ### ask
 

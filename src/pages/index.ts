@@ -29,6 +29,7 @@ export { carriedWeight, type LoadRule, weightUnit } from "./load.ts";
 export { type MapField, mapHelp, readMapField } from "./maps.ts";
 export {
     everyGoalTicked,
+    firstTable,
     goalsIn,
     introductionText,
     type Link,
