@@ -1,6 +1,6 @@
 # 21 Dieci giorni di cielo: the weather on a long road
 
-The first long game with the weather extension, `@rpgengine/weather` 0.2.1 (D-436, D-437, D-440, D-441), installed from npm as a player would install it. A 5e campaign already under way, one player character, Corrado (cleric 3), on a ten-day journey with a deadline: two days of temperate hills at the end of August, two days and more waiting at the edge of the desert, three nights across the Deserto d'Ambra with a guide and her camel, then a fort on the far side, a storm on the ridges, and a choice between a short gorge that floods and a long valley road. The season turns on day 8, the 1st of September. Giulia's scenario (24 October).
+The first long game with the weather extension, `@rpgengine/weather` 0.2.2 (D-436, D-437, D-440, D-441), installed from npm as a player would install it. A 5e campaign already under way, one player character, Corrado (cleric 3), on a ten-day journey with a deadline: two days of temperate hills at the end of August, two days and more waiting at the edge of the desert, three nights across the Deserto d'Ambra with a guide and her camel, then a fort on the far side, a storm on the ridges, and a choice between a short gorge that floods and a long valley road. The season turns on day 8, the 1st of September. Giulia's scenario (24 October).
 
 It tests:
 
@@ -36,7 +36,7 @@ rpg validate; rpg status
 Pop-Location
 ```
 
-- `package install weather` installs `@rpgengine/weather` from npm, verified, with no yes asked, and adds it to `campaign.yaml`; `package list` must give it at 0.2.1. If npm has a newer version, write down which one was played.
+- `package install weather` installs `@rpgengine/weather` from npm, verified, with no yes asked, and adds it to `campaign.yaml`; `package list` must give it at 0.2.2. If npm has a newer version, write down which one was played.
 - `advance` to day 1 starts the weather: its output ends with a line «Weather: …», the first score rolled with 1d6 on the summer table. `rpg weather` says the same with the scale of `weather-set`. The roll is the extension's, not a roll of the log, so `--prepared` accepts the campaign.
 - The settings: rigor rules, so the rations are counted by the engine and the water is the master's to count, «a gallon each, two if the weather is hot» (5e `upkeep`); lethality dice; milestones; `voices master`, so that the run measures the weather and not the character agent; units metric, so degrees Celsius and kilometres.
 - `world/`: 31 pages. `validate` finds no problems; `status` shows day 1, the 25th of August, summer, Corrado (hp 24, ac 18) in Vallerana with Mastra Ilde, the quest «Le erbe per Torralba» (deadline day 10, 18:00), and the event Il ritorno di Zaira (day 4, 18:00).
@@ -98,7 +98,7 @@ Every moment below, in `dialogue.md` and `turns/`, and in `numbers.md`. The exte
 | W6 | The season | Status and `advance` give the date with month and season; on day 8 the 1st of September, autumn, and the valley read on the autumn table. The master notices the change in the story if the sky shows it (a cooler morning, fog) |
 | W7 | The stop at Sabbiedo | One `advance` over two or three dawns gives «Weather over N mornings»; the master tells the days in a few lines, not one sky each in full; the market and the wait still the player's choices |
 | W8 | The storm at the Rocca | When the event comes due: `weather-set` with the score of rain on the scale `weather` gives (in summer 2, a thunderstorm), with a `why`; at the next dawn, autumn, again over the roll (2, rain), as play.md says; then the roll again once the page's storm is over. A storm told without `weather-set` is a finding: the world and the story apart |
-| W9 | No bending | `weather-set` only when a page or the story changes the weather (the storm, a spell), never to spare the player a roll the master does not like, nor to make a sandstorm the dice did not give. Count the calls and their reasons |
+| W9 | No bending | `weather-set` only for a spell or a page written before play (the storm), and back to what the dice gave when it ends, as `weather` says; never to spare the player a roll the master does not like, nor to make a sandstorm the dice did not give. Weather the master would like comes foretold by its signs, at the first dawn whose dice bring it: an event the master writes in play to set the sky is a finding. Count the calls and their reasons |
 | W10 | The choice in the rain | The gorge, the wait, or the valley: the risk said before the choice (the flood, the case wet, the deadline), the three ways of knowing it there for the player to find, and the player choosing; whatever he chooses, the world holds (the flood's roll if he goes in) |
 | W11 | `weather` | Called when the master needs the sky again (a new session, a question of the player), not after every output that already says it. Count the calls |
 | W12 | Sessions 2 and 3 | A new master starts from the files: the sky of now from `weather` or the last line, the date, the water and the rations as the session before left them |
