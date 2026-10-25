@@ -2,18 +2,19 @@
 // scene and who is in it; outside a scene who is there of those the character knows; the map. While the scene goes by turns, the turns first.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { TalkName } from "./act-names.tsx";
+import { sectionAddress } from "./address.ts";
 import type { DyingCounter, Member, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
 import { WidgetCards } from "./extension-widgets.tsx";
 import { effectLabel, sinceDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { phraseLabel, sceneTypeLabel, strangerLabel } from "./labels.ts";
 import { biomeLabel, biomes } from "./map-symbols.ts";
-import { knowersOf, Markdown, type SecretKnowers } from "./markdown.tsx";
+import { InlineText, knowersOf, type LinkTo, Markdown, type SecretKnowers } from "./markdown.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { Card } from "./sheet.tsx";
 import { StatusPip } from "./status.tsx";
-import { t } from "./text.ts";
+import { foldedText, t } from "./text.ts";
 import { CharacterCard, hasTurns, type OwnSheet, TurnBand, TurnsCard, type TurnScene } from "./turns.tsx";
 import { BiomeSwatch } from "./world.tsx";
 
@@ -125,6 +126,7 @@ function PlaceLine({ place }: { place: ShownPlace; })
 {
     const [open, setOpen] = useState(false);
     const text = place.text.trim();
+    const link = placeLinks(place);
 
     if (place.image !== undefined) {
         return <PlaceBand place={place} fold={{ open, onToggle: () => setOpen(!open) }} />;
@@ -139,14 +141,14 @@ function PlaceLine({ place }: { place: ShownPlace; })
                 <h2 id="place-name">{place.name}</h2>
                 {place.around.length > 0 && (
                     <ul class="place-env" aria-label={t("Around")}>
-                        {place.around.map((item) => <Surrounding key={`${"effect" in item ? item.effect : item.name} ${item.place ?? ""}`} item={item} name={place.name} />)}
+                        {place.around.map((item) => <Surrounding key={`${"effect" in item ? item.effect : item.name} ${item.place ?? ""}`} item={item} name={place.name} link={link} />)}
                     </ul>
                 )}
                 {text !== "" && <DescriptionToggle open={open} controls="place-line-text" onToggle={() => setOpen(!open)} />}
             </div>
             {open && (
                 <div id="place-line-text" class="place-line-text">
-                    <Markdown text={text} secretKnowers={knowersOf(place.knownBy)} />
+                    <Markdown text={text} link={link} secretKnowers={knowersOf(place.knownBy)} />
                 </div>
             )}
         </section>
@@ -169,7 +171,7 @@ function DescriptionToggle({ open, controls, onToggle }: { open: boolean; contro
 }
 
 /** A place's text under its picture (D-444): three lines, and the rest at a click, which closes it again; a secret with who found it out (D-480 (7)). */
-function PlaceAbout({ text, knowers }: { text: string; knowers: SecretKnowers | undefined; })
+function PlaceAbout({ text, link, knowers }: { text: string; link: LinkTo; knowers: SecretKnowers | undefined; })
 {
     const [open, setOpen] = useState(false);
     const [long, setLong] = useState(false);
@@ -192,7 +194,7 @@ function PlaceAbout({ text, knowers }: { text: string; knowers: SecretKnowers | 
     return (
         <div class="place-about">
             <div ref={body} id="place-about-text" class={open ? "place-about-text" : "place-about-text clamped"}>
-                <Markdown text={text} secretKnowers={knowers} />
+                <Markdown text={text} link={link} secretKnowers={knowers} />
             </div>
             {(long || open) && (
                 <button type="button" class="place-about-more" aria-expanded={open} aria-controls="place-about-text" onClick={() => setOpen(!open)}>
@@ -211,6 +213,7 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
 {
     const text = place.text.trim();
     const knowers = knowersOf(place.knownBy);
+    const link = placeLinks(place);
     const caption = (
         <div class="place-caption">
             {place.within.length > 0 && (
@@ -221,7 +224,7 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
             <h2 id="place-name">{place.name}</h2>
             {place.around.length > 0 && (
                 <ul class="place-env" aria-label={t("Around")}>
-                    {place.around.map((item) => <Surrounding key={`${"effect" in item ? item.effect : item.name} ${item.place ?? ""}`} item={item} name={place.name} />)}
+                    {place.around.map((item) => <Surrounding key={`${"effect" in item ? item.effect : item.name} ${item.place ?? ""}`} item={item} name={place.name} link={link} />)}
                 </ul>
             )}
             {fold && text !== "" && <DescriptionToggle open={fold.open} controls="place-band-text" onToggle={fold.onToggle} />}
@@ -237,7 +240,7 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
                     </div>
                     {caption}
                 </div>
-                {text !== "" && <PlaceAbout text={text} knowers={knowers} />}
+                {text !== "" && <PlaceAbout text={text} link={link} knowers={knowers} />}
             </header>
         )
         : (
@@ -248,11 +251,11 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
                     </figure>
                     {caption}
                 </div>
-                {fold === undefined && text !== "" && <PlaceAbout text={text} knowers={knowers} />}
+                {fold === undefined && text !== "" && <PlaceAbout text={text} link={link} knowers={knowers} />}
                 {fold?.open === true && text !== "" && (
                     <div class="place-about" id="place-band-text">
                         <div class="place-about-text">
-                            <Markdown text={text} secretKnowers={knowers} />
+                            <Markdown text={text} link={link} secretKnowers={knowers} />
                         </div>
                     </div>
                 )}
@@ -264,7 +267,7 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
  * One thing that holds there: an entry of the environment as its name and value, as light dim, the biome and the terrain the engine reads in the page's language;
  * an effect with its end; the place it comes from, when another.
  */
-function Surrounding({ item, name }: { item: ShownPlace["around"][number]; name: string; })
+function Surrounding({ item, name, link }: { item: ShownPlace["around"][number]; name: string; link: LinkTo; })
 {
     const from = item.place === undefined || item.place === name ? undefined : item.place;
     const entry = "effect" in item ? undefined : environmentLabel(item.name, item.value);
@@ -279,7 +282,7 @@ function Surrounding({ item, name }: { item: ShownPlace["around"][number]; name:
                     {entry?.name !== "" && <span class={biome === undefined ? "k" : "visually-hidden"}>{entry?.name}</span>}
                     {/* A real space, which right-to-left keeps between two words in Latin letters, where a margin goes to the wrong side. */}
                     {entry?.name !== "" && biome === undefined && " "}
-                    {entry?.value}
+                    {entry !== undefined && <InlineText text={entry.value} link={link} />}
                 </>
             )}
             {from && <span class="from">{` · ${from}`}</span>}
@@ -292,6 +295,17 @@ function environmentLabel(name: string, value: string): { name: string; value: s
 {
     const known = name.trim().toLowerCase();
     return known === "biome" ? { name: t("biome"), value: biomeLabel(value)?.toLowerCase() ?? value } : known === "terrain" ? { name: "", value: phraseLabel(terrainLabel(value)) } : { name, value };
+}
+
+/** Where a link of a place's words leads: the place and those that hold it, which the character knows, to their pages in World; any other stays words. */
+function placeLinks(place: ShownPlace): LinkTo
+{
+    const known = new Map([...place.within, place.name].map((name) => [foldedText(name), name]));
+
+    return (name) => {
+        const page = known.get(foldedText(name));
+        return page === undefined ? undefined : sectionAddress("world", "lore", page);
+    };
 }
 
 /** The open scene (D-309): its title, type and since when, who is in it, and the round and whose turn it is when it has them. */

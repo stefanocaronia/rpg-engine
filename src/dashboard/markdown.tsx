@@ -16,6 +16,12 @@ export function Markdown({ text, link, secretKnowers }: { text: string; link?: L
     return <div class="markdown">{blocks(text, link, true, secretKnowers).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
 }
 
+/** A line of a page that is not a whole text, as a value of its fields: its links and its bold and italics, as the text reads them. */
+export function InlineText({ text, link }: { text: string; link?: LinkTo | undefined; })
+{
+    return <>{inline(text, link)}</>;
+}
+
 /** Who found out each secret, from what the view gives of a page: its secrets that only some of the player characters discovered; none when it gives none. */
 export function knowersOf(knownBy: { secret: string; who: string[]; }[] | undefined): SecretKnowers | undefined
 {
@@ -201,7 +207,7 @@ function inline(text: string, link: LinkTo | undefined): ComponentChildren[]
         }
 
         const name = linkedName(target);
-        const words = said?.trim() || name;
+        const words = said?.trim() || targetWords(target);
         const plain = said === undefined || foldedText(said.trim()) === foldedText(name);
         const address = name === "" || !plain ? undefined : link?.(name);
         return address === undefined ? emphasis(words, index) : [<a key={index} class="md-link" href={address}>{words}</a>];
@@ -230,8 +236,17 @@ function emphasis(text: string, at: number): ComponentChildren[]
     });
 }
 
-/** Links as their words: [[Page|name]] reads name, [[Page]] reads Page; a picture embedded reads nothing. */
+/** Links as their words: [[Page|name]] reads name, [[Page]] reads Page, [[Page#Part]] Page › Part; a picture embedded reads nothing. */
 function linkWords(text: string): string
 {
-    return text.replace(/!?\[\[([^\]|]*)(?:\|([^\]]*))?\]\]/g, (whole, target: string, said?: string) => whole.startsWith("!") && pictureFile.test(target.split("#")[0].trim()) ? "" : said?.trim() || linkedName(target));
+    return text.replace(/!?\[\[([^\]|]*)(?:\|([^\]]*))?\]\]/g, (whole, target: string, said?: string) => whole.startsWith("!") && pictureFile.test(target.split("#")[0].trim()) ? "" : said?.trim() || targetWords(target));
+}
+
+/** The words of a link without its own, as Obsidian reads them: Page, Page › Part for a heading of it, Part alone for one of the same page; never a block's id. */
+function targetWords(target: string): string
+{
+    const name = linkedName(target);
+    const part = target.split("#").slice(1).join("#").trim();
+    const heading = part.startsWith("^") ? "" : part;
+    return [name, heading].filter((words) => words !== "").join(" › ");
 }

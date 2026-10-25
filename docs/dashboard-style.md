@@ -29,7 +29,7 @@ Two seeds, the robot's navy and gold. Each token is `light-dark()`, so both them
 | `--low`, `--on-low` | Danger: a problem, a failure, a foe the master marked, death; text on it |
 | `--warn` | A warning, as the game being away. On the dark page it is the gold: never beside gold that means "chosen" |
 | `--disc` | The dark disc under a token, in both themes |
-| `--veil`, `--on-veil`, `--on-veil-muted`, `--veil-low` | Over a picture, the same in both themes: its dark veil, the words on it, a deadline near |
+| `--veil`, `--on-veil`, `--on-veil-muted`, `--veil-low` | Over a picture, the same in both themes: its dark veil, the words on it, a deadline near; on the veil `--accent` is `--gold`, for its links and the focus ring |
 | `--cover`, `--cover-deep`, `--cover-main`, `--cover-main-deep` | A quest's cover without a picture, a main quest's in gold |
 | `--m-*`, `--l-*`, `--bio-*`, `--doc-*` | The paper of the maps and of documents, and their inks, the same in both themes (see Paper) |
 | `--season-*` | The four seasons, in the calendar alone and always beside their word |

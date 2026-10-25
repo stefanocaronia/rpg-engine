@@ -3,8 +3,9 @@
 import type { ComponentChildren, VNode } from "preact";
 import { describe, expect, it } from "vitest";
 
-// The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': this one is loaded by its address, with its two functions' types.
-const { Markdown, plainLine } = await import(new URL("../src/dashboard/markdown.tsx", import.meta.url).href) as {
+// The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': this one is loaded by its address, with its functions' types.
+const { InlineText, Markdown, plainLine } = await import(new URL("../src/dashboard/markdown.tsx", import.meta.url).href) as {
+    InlineText: (props: { text: string; link?: (name: string) => string | undefined; }) => ComponentChildren;
     Markdown: (props: { text: string; link?: (name: string) => string | undefined; secretKnowers?: (title: string) => string[] | undefined; }) => ComponentChildren;
     plainLine: (text: string) => string | undefined;
 };
@@ -20,6 +21,19 @@ describe("a page's text on the dashboard (D-275)", () => {
         );
         expect(shown("Il [[Re Nero|sovrano]] e [[Re Nero]], [[world/character/Bertoldo.md]].")).toBe('<p>Il sovrano e Re Nero, <a href="#/world/lore/Bertoldo">Bertoldo</a>.</p>');
         expect(shown("[[|parole]] e [[ ]].")).toBe("<p>parole e .</p>");
+    });
+
+    it("reads a link to a heading as Obsidian does, Page › Part, and links it to the page; with words, as any link", () => {
+        expect(shown("Incontri: [[Bertoldo#Fato]], [[Valle#Incontri]], [[#Sotto]], [[Bertoldo#^a1b2]].")).toBe(
+            '<p>Incontri: <a href="#/world/lore/Bertoldo">Bertoldo › Fato</a>, Valle › Incontri, Sotto, <a href="#/world/lore/Bertoldo">Bertoldo</a>.</p>',
+        );
+        expect(shown("[[Bertoldo#Fato|Bertoldo]] e [[Bertoldo#Fato|il suo destino]].")).toBe('<p><a href="#/world/lore/Bertoldo">Bertoldo</a> e il suo destino.</p>');
+        expect(plainLine("Vedi [[Valle#Incontri]] e [[#Sotto]].")).toBe("Vedi Valle › Incontri e Sotto.");
+    });
+
+    it("reads the links of a field's value, as a place's environment, with the same rules: never the brackets", () => {
+        expect(html(InlineText({ text: "[[Bertoldo#Incontri]] di notte", link }))).toBe('<a href="#/world/lore/Bertoldo">Bertoldo › Incontri</a> di notte');
+        expect(html(InlineText({ text: "[[Valle dell'Orsa#Incontri|tabella]], **buio**" }))).toBe("tabella, <strong>buio</strong>");
     });
 
     it("leaves out a picture embedded, and reads a page embedded as a link", () => {

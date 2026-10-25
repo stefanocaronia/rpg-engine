@@ -100,6 +100,8 @@ describe("damage of a type", () => {
     });
 
     it("rolls dice given as by, its sign in front, and logs the roll for the player once the change is made (D-459)", async () => {
+        // In view, the dice on the player character are shown as any roll (D-287).
+        await ok("config", "master-rolls", "in view");
         await ok("write", "Ettore", "--add", "damage-resistances=slashing");
         // A minus before more than one term reads two ways: brackets say which (playtest 08).
         expect((await runCommandLine(["change", "Ettore", "hp", "--by=-1d8-2", "--damage", "slashing"], context)).output).toBe(
@@ -130,6 +132,54 @@ describe("damage of a type", () => {
         expect((await runCommandLine(["change", "Ettore", "temp-hp", "--by=-1", "--damage", "fire"], context)).output).toBe(
             "A damage type goes with hp, not temp-hp: change Ettore hp --by=-12 --damage fire. Nothing changed.",
         );
+    });
+});
+
+describe("the dice of change behind the screen (D-287)", () => {
+    const rolls = () => readLogFile(folder).filter((entry) => entry.type === "roll");
+    const shownRolls = async () => (JSON.parse(await ok("view", "--json")) as { rolls: unknown[]; }).rolls;
+
+    it("hide the dice on the player character or a companion, as the master's roll, sealed for a reveal, while the setting is unset or behind the screen", async () => {
+        await ok("write", "Bruna", "--type", "character", "--set", "role=companion", "--set", "hp=12/12");
+        const hit = await ok("change", "Ettore", "hp", "--by=-(2d6+3)", "--why", "il morso del lupo");
+        expect(hit).toMatch(
+            /^Hidden roll (\S+), only for the master: 2d6\+3 = 11 \[4, 4\] \+ 3\. Behind the screen, as master-rolls says: tell only the outcome, in the story\.\nIts fingerprint, only if the player asks for it: [0-9a-f]{16}\nEttore: hp 20\/20 → 9\/20\.$/,
+        );
+        await ok("config", "master-rolls", "behind the screen");
+        expect(await ok("change", "Bruna", "hp", "--by=-(1d6)")).toMatch(/^Hidden roll \S+, only for the master: 1d6 = 4 \[4\]\. Behind the screen/);
+        expect(rolls().map((entry) => [entry.visibility, typeof entry.data.proof])).toEqual([["hidden", "string"], ["hidden", "string"]]);
+        // What the player sees is the change, never the dice: no roll in the view; the roll is revealed as any hidden one.
+        expect(readLogFile(folder).find((entry) => entry.type === "counter-changed" && entry.data.page === "Ettore")).toMatchObject({ visibility: "public", data: { by: -11 } });
+        expect(await shownRolls()).toEqual([]);
+        const id = /^Hidden roll (\S+),/.exec(hit)?.[1] ?? "";
+        expect(await ok("roll", "--reveal", id)).toContain(`Hidden roll ${id} revealed: 2d6+3 = 11 [4, 4] + 3.`);
+    });
+
+    it("show the dice of healing on the party, and of damage on a foe's copy in the scene, as the party's rolls", async () => {
+        await ok("change", "Ettore", "hp", "--to", "5");
+        expect(await ok("change", "Ettore", "hp", "--by=+(2d4+2)", "--why", "pozione")).toBe("Rolled 2d4+2 = 10 [4, 4] + 2.\nEttore: hp 5/20 → 15/20.");
+        await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--with", "Ettore", "--creatures", "Wolf=1");
+        expect(await ok("change", "Wolf 1", "hp", "--by=-(1d8+2)")).toMatch(/^Rolled 1d8\+2 = 6 \[4\] \+ 2\.\nWolf 1: hp /);
+        expect(rolls().map((entry) => entry.visibility)).toEqual(["public", "public"]);
+        expect(await shownRolls()).toHaveLength(2);
+    });
+
+    it("hide the dice on a page that does not concern the player, as its change, in view too", async () => {
+        await ok("config", "master-rolls", "in view");
+        await ok("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "hp=15/15");
+        expect(await ok("change", "Varro", "hp", "--by=-(1d4)")).toMatch(/^Hidden roll \S+, only for the master: 1d4 = 4 \[4\]\nIts fingerprint, only if the player asks for it: [0-9a-f]{16}\nVarro: hp 15\/15 → 11\/15\.$/);
+        expect(readLogFile(folder).filter((entry) => ["roll", "counter-changed"].includes(entry.type)).map((entry) => [entry.type, entry.visibility, typeof entry.data.proof])).toEqual([
+            ["counter-changed", "hidden", "undefined"],
+            ["roll", "hidden", "string"],
+        ]);
+        expect(await shownRolls()).toEqual([]);
+    });
+
+    it("show the dice on the party too in view", async () => {
+        await ok("config", "master-rolls", "in view");
+        expect(await ok("change", "Ettore", "hp", "--by=-(2d6+3)")).toBe("Rolled 2d6+3 = 11 [4, 4] + 3.\nEttore: hp 20/20 → 9/20.");
+        expect(rolls().map((entry) => [entry.visibility, entry.data.proof])).toEqual([["public", undefined]]);
+        expect(await shownRolls()).toHaveLength(1);
     });
 });
 

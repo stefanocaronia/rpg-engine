@@ -40,6 +40,7 @@ import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
 import { spendableDice, spendDice } from "./game-hit-dice.ts";
+import { screenNote, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
 import { campaignCoins } from "./game-money.ts";
 import { logRecipeApplied, tooSoonNote } from "./game-recipe-pace.ts";
 import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
@@ -98,7 +99,7 @@ export const change = defineCommand({
         page: z.string().optional().describe("page that holds the counter or the money; with a recipe, left out for the player character and the companions with them"),
         field: z.string().optional().describe("the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe"),
         by: z.union([wholeNumber, z.string()]).optional().describe(
-            "how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here, as the player sees: by -(2d6+3) takes away 2d6+3, by -2d6 a die alone, as the game's rules have them rolled",
+            "how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here: by -(2d6+3) takes away 2d6+3, by -2d6 a die alone, as the game's rules have them rolled; taking away from the party, the master's roll, hidden or shown as master-rolls says",
         ),
         spend: z.union([wholeNumber, z.string()]).optional().describe("how much is paid or used up, or coins; refused when there is not enough"),
         to: z.union([z.number().int(), z.string()]).optional().describe(
@@ -129,18 +130,16 @@ export const change = defineCommand({
             throw new Error('Give the page and the field, such as page Bruna, field hp, by -7; or a recipe of the game system, such as recipe "long rest".');
         }
 
-        // Dice in by are rolled first and logged once the change is made, as a roll the player sees (D-459): one call for a roll and its damage.
+        // Dice in by are rolled first and logged once the change is made (D-459): one call for a roll and its damage.
         const roll = diceBy(input.by, context);
+        const hiding = roll === undefined ? undefined : diceHiding(root, world, input.page, roll.taking);
         const { hitCounter, ...result } = changeField(root, context, world, { ...input, page: input.page, field: input.field, ...(roll === undefined ? {} : { by: roll.by }) });
-
-        if (roll !== undefined) {
-            appendLogEntry(root, newDatedLogEntry(root, context, "roll", "public", { ...roll.data, why: input.why ?? `${input.field} of ${input.page}` }));
-        }
+        const hiddenRoll = roll === undefined ? undefined : logDiceBy(root, context, { ...roll.data, why: input.why ?? `${input.field} of ${input.page}` }, hiding);
 
         // The game system's code follows the change, after the roll that made it (D-448): as the 5e's dying point.
         const lines = hitCounter === undefined ? [] : allSaid(systemCounterChanged(root, context, hitCounter));
         const told = lines.length === 0 ? result : { ...result, reminders: [...result.reminders, ...lines] };
-        return roll === undefined ? told : { ...told, rolled: roll.data.result };
+        return roll === undefined ? told : { ...told, rolled: roll.data.result, ...(hiddenRoll === undefined ? {} : { hiddenRoll }) };
     },
 
     format(result)
@@ -154,7 +153,7 @@ export const change = defineCommand({
         const summary = result.changed ? `${result.page}: ${result.field} ${result.before} → ${after}${note}.` : `Nothing changed: ${result.field} on ${result.page} is ${after}${note}.`;
         // A rule's text, of several lines, comes after the lines of the change.
         const notes = stepNotes(result);
-        const lines = [...("rolled" in result && result.rolled !== undefined ? [`Rolled ${result.rolled}.`] : []), summary, ...notes.filter((line) => !line.includes("\n"))];
+        const lines = [...("rolled" in result && result.rolled !== undefined ? [rolledText(result.rolled, result.hiddenRoll)] : []), summary, ...notes.filter((line) => !line.includes("\n"))];
         return [lines.join("\n"), ...notes.filter((line) => line.includes("\n")), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
@@ -219,7 +218,7 @@ function changeField(
  * Dice given as by, such as -(2d6+3), rolled with the engine's dice (D-459): the sign in front is the roll's, so -(2d6+3) takes away 2d6+3, never less than 0;
  * undefined for a number, coins or any other text.
  */
-function diceBy(by: number | string | undefined, context: Context): { by: number; data: { notation: string; total: number; result: string; physical: false; dice: unknown; }; } | undefined
+function diceBy(by: number | string | undefined, context: Context): { by: number; taking: boolean; data: { notation: string; total: number; result: string; physical: false; dice: unknown; }; } | undefined
 {
     const text = typeof by === "string" ? by.replace(/\s+/g, "") : "";
     const body = text.replace(/^[+-]/, "");
@@ -242,7 +241,50 @@ function diceBy(by: number | string | undefined, context: Context): { by: number
 
     const rolled = rollDice(notation, { random: context.random });
     const total = Math.max(0, rolled.total);
-    return { by: text.startsWith("-") ? -total : total, data: { notation, total: rolled.total, result: rolled.text, physical: false, dice: rolled.dice } };
+    return { by: text.startsWith("-") ? -total : total, taking: text.startsWith("-"), data: { notation, total: rolled.total, result: rolled.text, physical: false, dice: rolled.dice } };
+}
+
+/** The dice in by, hidden: the roll's id, the fingerprint the player may ask for, and whether master-rolls hid them. */
+interface HiddenDice
+{
+    id: string;
+    fingerprint: string;
+    screened: boolean;
+}
+
+/**
+ * Why the dice in by are hidden, or undefined when shown (D-287): with their change, on a page that does not concern the player, whatever master-rolls says;
+ * behind the screen, taking away from the player character or a companion, as a foe's or a trap's do. Healing them, or dice on a copy in the scene, are shown.
+ */
+function diceHiding(root: string, world: World, name: string, taking: boolean): "secret" | "screen" | undefined
+{
+    const holder = holderNamed(root, world, name);
+
+    if (holder.kind === "copy") {
+        return undefined;
+    }
+
+    if (holder.visibility === "hidden") {
+        return "secret";
+    }
+
+    return taking && screenUp(root) && isPartyMember(holder.page) ? "screen" : undefined;
+}
+
+/** Logs the roll of the dice in by, sealed when hidden as roll seals one; what the master is told of it when hidden. */
+function logDiceBy(root: string, context: Context, data: { result: string; } & Record<string, unknown>, hiding: "secret" | "screen" | undefined): HiddenDice | undefined
+{
+    const entry = newDatedLogEntry(root, context, "roll", hiding === undefined ? "public" : "hidden", data);
+    const fingerprint = hiding === undefined ? undefined : sealHiddenRoll(entry, data.result, context);
+    appendLogEntry(root, entry);
+    return fingerprint === undefined ? undefined : { id: entry.id, fingerprint, screened: hiding === "screen" };
+}
+
+/** "Rolled 2d6+3 = 11 [5, 3] + 3.", or the hidden roll as roll tells it, only for the master. */
+function rolledText(rolled: string, hidden: HiddenDice | undefined): string
+{
+    const screen = hidden?.screened === true ? `. ${screenNote}` : "";
+    return hidden === undefined ? `Rolled ${rolled}.` : `Hidden roll ${hidden.id}, only for the master: ${rolled}${screen}\nIts fingerprint, only if the player asks for it: ${hidden.fingerprint}`;
 }
 
 /** Whether a text reads as dice, such as 2d6+3: coins and names of fields do not. */

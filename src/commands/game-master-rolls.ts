@@ -8,6 +8,9 @@ import { isPartyMember, pagesWithNameOrAlias } from "../pages/index.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignWorld } from "./game-world.ts";
 
+/** What the master is told of a roll the setting hid. */
+export const screenNote = "Behind the screen, as master-rolls says: tell only the outcome, in the story.";
+
 /**
  * Whether the master-rolls setting hides a roll of who: one for anyone the party does not hold, by name or alias, as a foe's copy in the scene or a name of
  * no page; never a roll of no one, as an oracle's.

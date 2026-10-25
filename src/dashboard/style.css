@@ -8884,8 +8884,9 @@ svg.icon {
     padding: 14px 18px 16px;
 }
 
-/* The name over the picture, on a dark veil whatever the theme. */
+/* The name over the picture, on a dark veil whatever the theme: its links and the focus ring in gold, as on the dark page. */
 .place-band.over .place-caption {
+    --accent: var(--gold);
     --muted: var(--on-veil-muted);
     --rule: rgb(255 255 255 / 0.22);
     position: absolute;
@@ -9154,6 +9155,7 @@ svg.icon {
     }
 
     .place-band.over .place-caption {
+        --accent: inherit;
         --muted: inherit;
         --rule: inherit;
         position: static;

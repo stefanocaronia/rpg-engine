@@ -10,7 +10,7 @@ import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256,
 import { declaredKind, findPage, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
-import { behindTheScreen, namesNoOne, ofTheParty, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
+import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { systemRolled } from "./game-system-code.ts";
 import { rollPageTable } from "./game-tables.ts";
@@ -147,7 +147,7 @@ export const roll = defineCommand({
         const note = [output.kept, output.note].filter((line) => line !== undefined).map((line) => `\n${line}`).join("");
 
         if (output.hidden) {
-            const screen = output.screened === true ? ". Behind the screen, as master-rolls says: tell only the outcome, in the story." : "";
+            const screen = output.screened === true ? `. ${screenNote}` : "";
             const stranger = output.stranger === true
                 ? `\n${output.who} names no page nor copy in the scene: hidden as a stranger's. If ${output.who} is of the party, roll --reveal ${output.id}, and give who as their page's name.`
                 : "";

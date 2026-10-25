@@ -21,4 +21,13 @@ Col caldo ognuno beve il doppio, due galloni al giorno, quattro otri; chi ne bev
 La tempesta di sabbia: il cielo all'alba si fa giallo, il vento gira da sud e in un'ora non si vede a dieci passi. Le prove di Saggezza (Percezione) basate sulla vista hanno svantaggio; chi marcia dentro fa una prova di Saggezza (Sopravvivenza) CD 15 per tenere la pista, e con un fallimento la perde e mezza giornata con lei. Fermi, coricati dietro una bestia o una roccia, con un panno sulla bocca, si aspetta che passi: di solito qualche ora.
 
 ## Incontri
-Una volta di notte, 1d6: 1 tre [[Jackal|sciacalli]] che girano attorno all'acqua e alla cammella; 2 una [[Poisonous Snake|vipera]] fra le pietre di un cumulo; 3 i fuochi lontani di una carovana; 4 un cumulo di pietre crollato, la pista incerta per un'ora; 5–6 niente, solo il silenzio.
+> [!secret]
+> Una volta di notte.
+>
+> | 1d6 | Incontro |
+> |---|---|
+> | 1 | Tre [[Jackal\|sciacalli]] che girano attorno all'acqua e alla cammella |
+> | 2 | Una [[Poisonous Snake\|vipera]] fra le pietre di un cumulo |
+> | 3 | I fuochi lontani di una carovana |
+> | 4 | Un cumulo di pietre crollato, la pista incerta per un'ora |
+> | 5–6 | Niente, solo il silenzio |
