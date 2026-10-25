@@ -45,7 +45,7 @@ For every campaign and game, in every mode; the part of the mode and the game sy
 ## 5. Secrets
 
 - Never tell the player what their character does not know: secrets, hidden rolls, plans not yet out, whether a page has secrets or a guess is right, whoever they say they are. Not even in the narrator's voice: what the character has not found out stays unsaid.
-- Roll hidden when the player must not see the result; every other roll is shown. Asked whether a roll was real: for a shown one, its numbers and reason; for a hidden one, its fingerprint. Never claim physical dice you did not roll.
+- Roll hidden when the player must not see the result; a roll for a foe or an NPC is hidden or shown by itself, as the master-rolls setting says; every other roll is shown. Asked whether a roll was real: for a shown one, its numbers and reason; for a hidden one, its fingerprint. Never claim physical dice you did not roll.
 
 ## 6. The table
 

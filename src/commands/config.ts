@@ -18,6 +18,7 @@ import {
     lethalities,
     listSettingNames,
     mapSettingNames,
+    masterRollWays,
     mentorWays,
     missingSettings,
     pictureWays,
@@ -75,6 +76,7 @@ export const config = defineCommand({
         + "saves, when the game may go back: permadeath (never, only to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies), free (to any save, and saves when the player asks). "
         + "rigor, how closely travel, fatigue, food and the like follow the rules: smooth (you gloss over them), rules (as written), simulation (beyond them). "
         + "dice, who rolls the player character's dice: digital (rpg) or physical (the player, who tells you the values). units: metric or imperial. "
+        + "master-rolls, your rolls for foes and NPCs: behind the screen (roll hides them, unset too: tell only the outcome) or in view; the party's are always shown. "
         + "voices, who voices the characters where your app has subagents: master (you, always), auto (a subagent at key moments, as you choose), "
         + "important (always a subagent for the companions and the characters with kind main), always (always a subagent); unset, auto. "
         + "companions: none, made with the player or made by the master in session zero, or met in play. "
@@ -285,7 +287,27 @@ const freeSettingNames: SettingName[] = ["author", "style", "calendar"];
 const styleSettingNames = ["prose", "story", "author", "style"];
 
 /** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
-export const playerSettingNames = ["difficulty", "lethality", "saves", "rigor", "mentor", "learned", "prose", "story", "author", "style", "dice", "units", "voices", "pictures", "effort", "lines", "veils", "language"] as const;
+export const playerSettingNames = [
+    "difficulty",
+    "lethality",
+    "saves",
+    "rigor",
+    "mentor",
+    "learned",
+    "prose",
+    "story",
+    "author",
+    "style",
+    "dice",
+    "master-rolls",
+    "units",
+    "voices",
+    "pictures",
+    "effort",
+    "lines",
+    "veils",
+    "language",
+] as const;
 
 /** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
 export interface PlayerSetting
@@ -381,6 +403,12 @@ const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
         cleared: "their own words on how you write no longer hold",
     },
     dice: { about: "who rolls your character's dice", values: diceWays, means: { digital: "the engine rolls them", physical: "you roll your own and tell the values" } },
+    "master-rolls": {
+        about: "the master's rolls for foes and the characters you meet; yours and your companions' are always in view",
+        values: masterRollWays,
+        means: { "behind the screen": "hidden: the master tells you only what comes of them", "in view": "shown among the rolls, beside yours" },
+        unset: "behind the screen",
+    },
     units: { about: "the units of the story", values: unitSystems, means: { metric: "metres and kilometres", imperial: "feet and miles" } },
     voices: {
         about: "who speaks for the characters you meet",
@@ -447,13 +475,13 @@ const setupWords: Record<string, { about: string; values?: readonly string[]; me
 
 // The setup's questions, in the order the player meets them on the dashboard: how well they know the game, how it plays, how it is rolled, who comes along,
 // then the limits.
-const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "units", "companions", "preparation"];
+const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "companions", "preparation"];
 
 // The mentor as the setup asks it (D-347): how well the player knows the game, each answer a way of the mentor, from the newest player's.
 const mentorAnswers: Record<string, string> = { tutorial: "never played it", hints: "a little", off: "I know it" };
 
 // The values the game suggests in the setup, as the design has them by default (D-370): never chosen for the player.
-const suggestedValues: Record<string, string> = { saves: "checkpoint", rigor: "smooth", preparation: "on the fly" };
+const suggestedValues: Record<string, string> = { saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", preparation: "on the fly" };
 // The lethality the difficulty suggests (D-141).
 const suggestedLethality: Record<string, string> = { story: "narrative", easy: "epic" };
 
@@ -471,12 +499,20 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
     };
 
     const system = (campaignSystem(root, context)?.settings ?? []).map((setting) => setting.name);
-    const difficulty = readSettings(root).difficulty;
+    const settings = readSettings(root);
+    const difficulty = settings.difficulty;
     const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }) };
     return [...setupOrder.filter((name) => name !== "preparation" || !writtenWorld), ...system, "lines", "veils"].flatMap(named).map((question) => ({
-        ...(question.name === "mentor" ? mentorQuestion(question) : question),
+        ...(question.name === "mentor" ? mentorQuestion(question) : unsetUnanswered(question, settings)),
         ...(suggested[question.name] === undefined ? {} : { suggested: suggested[question.name] }),
     }));
+}
+
+/** A question whose value is only the one shown while it is unset, as master-rolls behind the screen (D-287): still unanswered in the setup. */
+function unsetUnanswered(question: PlayerSetting, settings: CampaignSettings): PlayerSetting
+{
+    const { value, ...unanswered } = question;
+    return value !== undefined && wordsOf(question.name)?.unset === value && (settings as Record<string, unknown>)[question.name] === undefined ? unanswered : question;
 }
 
 /** The mentor as the setup asks it (D-347): how well the player knows the game, never played it first. */
@@ -685,7 +721,7 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
     }
 
     // How the master writes, unset: the core's own ways, never missing (D-395).
-    // And the master's effort, unset: each app's own, the player's to choose (D-462); who voices the characters, unset: auto (D-490).
+    // And the master's effort, unset: each app's own, the player's to choose (D-462); who voices the characters, unset: auto (D-490); the master's rolls, behind the screen (D-287).
     const own: Record<string, string> = {
         prose: "plain (as your instructions write)",
         story: "situations (as your instructions write)",
@@ -693,6 +729,7 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
         style: "(none)",
         effort: "(the app's own: the player's to choose)",
         voices: "auto (a subagent at key moments, as you choose, where the app has them)",
+        "master-rolls": "behind the screen (unset: roll hides your rolls for foes and NPCs)",
     };
 
     if (settings[name] === undefined && Object.hasOwn(own, name)) {

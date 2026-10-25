@@ -304,7 +304,7 @@ describe("rolls from the sheet (DAT-8)", () => {
         expect(id).toBeDefined();
         expect(await ok("roll", "--reveal", id ?? "")).toContain(`Hidden roll ${id} revealed: 1d20+wis-save = 9 [4] + 5 (wis-save +5).`);
         await ok("scene", "open", "--title", "Imboscata", "--type", "combat", "--creatures", "Goblin=1");
-        expect(await ok("roll", "1d20+dex-mod", "--who", "Goblin 1")).toContain("Goblin 1: 1d20+dex-mod = 6 [4] + 2 (dex-mod +2)");
+        expect(await ok("roll", "1d20+dex-mod", "--who", "Goblin 1")).toContain("only for the master: 1d20+dex-mod = 6 [4] + 2 (dex-mod +2)");
     });
 
     it("refuses a name without who, with who that is no character, or a field the sheet does not hold as a whole number, logging nothing", async () => {
@@ -324,7 +324,7 @@ describe("rolls from the sheet (DAT-8)", () => {
         );
         expect(await refused("roll", "1d20+umore", "--who", "Ettore")).toBe('umore on Ettore is "sereno", not a whole number: give the number in the notation.');
         expect(readLogFile(folder)).toHaveLength(logged);
-        expect(await ok("roll", "1d20+3", "--who", "la guardia")).toMatch(/^\S+ la guardia: 1d20\+3 = 7 \[4\] \+ 3$/);
+        expect(await ok("roll", "1d20+3", "--who", "la guardia", "--no-hidden")).toMatch(/^\S+ la guardia: 1d20\+3 = 7 \[4\] \+ 3$/);
         expect(await ok("roll", "d20+2d6", "--who", "Ettore")).toContain("d20+2d6 = 12 [4] + [4, 4]");
     });
 

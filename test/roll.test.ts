@@ -25,6 +25,7 @@ function loggedEvents()
 
 describe("rpg roll", () => {
     it("rolls digital dice and logs the roll", async () => {
+        writeFileSync(join(folder, "campaign.yaml"), "name: Test\nmaster-rolls: in view\n");
         const result = await runCommandLine(["roll", "2d6+1", "--why", "damage", "--who", "Lena"], context);
         expect(result).toEqual({ exitCode: 0, output: "id1 Lena, damage: 2d6+1 = 9 [4, 4] + 1" });
         expect(loggedEvents()).toEqual([
@@ -92,6 +93,74 @@ describe("rpg roll", () => {
     it("prints JSON on request", async () => {
         const result = await runCommandLine(["roll", "1d4", "--json"], context);
         expect(JSON.parse(result.output)).toMatchObject({ kind: "roll", id: "id1", total: 4 });
+    });
+});
+
+describe("the master's rolls behind the screen (D-287)", () => {
+    const screen = "Behind the screen, as master-rolls says: tell only the outcome, in the story.";
+
+    async function rolled(...args: string[]): Promise<string>
+    {
+        const result = await runCommandLine(["roll", ...args], context);
+        expect(result.exitCode, result.output).toBe(0);
+        return result.output;
+    }
+
+    beforeEach(async () => {
+        writeFileSync(join(folder, "state.yaml"), "mode: play\n");
+
+        for (const [name, role] of [["Kira", "pc"], ["Bran", "companion"], ["Varro", "npc"]]) {
+            await runCommandLine(["write", name, "--type", "character", "--set", `role=${role}`], context);
+        }
+
+        await runCommandLine(["write", "Lupo", "--type", "creature"], context);
+    });
+
+    it("hides by itself a roll for an NPC, a foe's copy in the scene or a name of no page, while the setting is unset or behind the screen", async () => {
+        const npc = await rolled("1d20+4", "--who", "Varro", "--why", "mente");
+        expect(npc).toMatch(new RegExp(`^Hidden roll (\\S+), only for the master: 1d20\\+4 = 8 \\[4\\] \\+ 4 ${screen.replace(/[.:]/g, "\\$&")}\\nIts fingerprint, only if the player asks for it: [0-9a-f]{16}$`));
+        await runCommandLine(["scene", "open", "--title", "Nel bosco", "--type", "combat", "--creatures", "Lupo=1"], context);
+        expect(await rolled("1d20+3", "--who", "Lupo 1")).toContain(screen);
+        await runCommandLine(["config", "master-rolls", "behind the screen"], context);
+        expect(await rolled("1d6", "--who", "la guardia")).toContain(screen);
+        expect(loggedEvents().filter((event) => event.type === "roll").map((event) => [event.data.who, event.visibility, typeof event.data.fingerprint])).toEqual([
+            ["Varro", "hidden", "string"],
+            ["Lupo 1", "hidden", "string"],
+            ["la guardia", "hidden", "string"],
+        ]);
+        const id = /^Hidden roll (\S+),/.exec(npc)?.[1] ?? "";
+        expect(await rolled("--reveal", id)).toContain(`Hidden roll ${id} revealed: 1d20+4 = 8 [4] + 4.`);
+    });
+
+    it("never hides by itself the rolls of the player character and the companions, nor one of no one, nor the player's physical dice", async () => {
+        expect(await rolled("1d20+2", "--who", "Kira")).toBe("id5 Kira: 1d20+2 = 6 [4] + 2");
+        expect(await rolled("1d20", "--who", "Bran")).toBe("id6 Bran: 1d20 = 4 [4]");
+        expect(await rolled("1d6", "--why", "oracolo")).toBe("id7 oracolo: 1d6 = 4 [4]");
+        expect(await rolled("1d20", "--who", "Varro", "--values", "12")).toBe("id8 Varro: 1d20 = 12 [12] (physical dice)");
+        expect(loggedEvents().filter((event) => event.type === "roll").every((event) => event.visibility === "public")).toBe(true);
+    });
+
+    it("shows a roll for an NPC in view, and an explicit hidden wins both ways", async () => {
+        expect(await rolled("1d20", "--who", "Varro", "--no-hidden")).toBe("id5 Varro: 1d20 = 4 [4]");
+        expect(await rolled("1d20", "--who", "Kira", "--hidden")).toMatch(/^Hidden roll id6, only for the master: 1d20 = 4 \[4\]\nIts fingerprint/);
+        await runCommandLine(["config", "master-rolls", "in view"], context);
+        expect(await rolled("1d20", "--who", "Varro")).toBe("id8 Varro: 1d20 = 4 [4]");
+        expect(await rolled("1d20", "--who", "Varro", "--hidden")).not.toContain(screen);
+        expect(loggedEvents().filter((event) => event.type === "roll").map((event) => event.visibility)).toEqual(["public", "hidden", "public", "hidden"]);
+    });
+
+    it("is asked in the setup, suggested behind the screen, never in play, and the player changes it in the Settings", async () => {
+        writeFileSync(join(folder, "state.yaml"), "mode: setup\n");
+        expect((await runCommandLine(["status"], context)).output).toContain("master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen)");
+        const setup = JSON.parse((await runCommandLine(["view", "--setup", "--json"], context)).output) as { questions: { name: string; value?: string; suggested?: string; }[]; };
+        expect(setup.questions.find((question) => question.name === "master-rolls")).toMatchObject({ suggested: "behind the screen" });
+        expect(setup.questions.find((question) => question.name === "master-rolls")).not.toHaveProperty("value");
+        const settings = JSON.parse((await runCommandLine(["view", "--settings", "--json"], context)).output) as { settings: { name: string; value?: string; }[]; };
+        expect(settings.settings.find((setting) => setting.name === "master-rolls")).toMatchObject({ value: "behind the screen" });
+        writeFileSync(join(folder, "state.yaml"), "mode: play\n");
+        expect((await runCommandLine(["status"], context)).output).not.toContain("master-rolls");
+        expect((await runCommandLine(["config", "master-rolls", "in view"], { ...context, actor: "player" })).exitCode).toBe(0);
+        expect((await runCommandLine(["config", "master-rolls", "aperti"], context)).exitCode).toBe(1);
     });
 });
 

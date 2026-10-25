@@ -1,6 +1,6 @@
 // The mode of the campaign, the main state of the game (D-77): setup, session zero or play, each opened by the checklist of the one before (D-221, D-241; MOD-1–MOD-7).
 import { basename } from "node:path";
-import { companionWays, diceWays, difficulties, lethalities, missingSettings, preparations, readSettings, readStateValues, rigors, saveModes, type SettingName, unansweredSettings, unitSystems } from "../campaign/index.ts";
+import { companionWays, diceWays, difficulties, lethalities, masterRollWays, missingSettings, preparations, readSettings, readStateValues, rigors, saveModes, type SettingName, unansweredSettings, unitSystems } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
@@ -35,6 +35,7 @@ const settingLabels: Partial<Record<SettingName, string>> = {
     saves: `saves (${saveModes.join(", ")})`,
     rigor: `rigor (${rigors.join(", ")})`,
     dice: `dice (${diceWays.join(", ")})`,
+    "master-rolls": `master-rolls (your rolls for foes and NPCs: ${masterRollWays.join(", ")}; suggest behind the screen)`,
     units: `units (${unitSystems.join(", ")})`,
     companions: `companions (${companionWays.join(", ")})`,
     "calendar-start": "calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491)",

@@ -106,7 +106,8 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
         }
     }
 
-    const parsed = parseArgs({ args, options, allowPositionals: true, strict: true, tokens: true });
+    // A flag is turned off as --no-hidden, where a setting would turn it on, as the MCP server takes hidden: false.
+    const parsed = parseArgs({ args, options, allowPositionals: true, allowNegative: true, strict: true, tokens: true });
     // The last positional, when it is a list, takes the arguments left before the first option, as in rpg move Ettore Lena --to Ossario.
     const last = positionals.at(-1);
     const takesRest = last !== undefined && isList(command.input.shape[last] as z.ZodType);

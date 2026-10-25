@@ -255,6 +255,7 @@ export function settingLabel(name: string): string
         author: t("Write like"),
         style: t("In your words"),
         dice: t("Dice"),
+        "master-rolls": t("Master's rolls"),
         units: t("Units"),
         voices: t("Character voices"),
         pictures: t("Pictures"),
@@ -326,6 +327,8 @@ export function valueLabel(value: string): string
         master: t("The master"),
         important: t("Main characters"),
         always: t("Everyone"),
+        "behind the screen": t("Behind the screen"),
+        "in view": t("In view"),
     };
     return labels[value] ?? itemLabel(value);
 }

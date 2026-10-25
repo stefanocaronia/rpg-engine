@@ -95,6 +95,9 @@ export function settingMeaning(name: string, value: unknown, counted?: CountedBy
 /** Who rolls the player character's dice (D-241): rpg, or the player with their own, telling the values; the master's are always rolled by rpg. */
 export const diceWays = ["digital", "physical"] as const;
 
+/** Whether the master's rolls for anyone outside the party are hidden (D-287): behind the screen, unset too, or in view; the party's are always shown. */
+export const masterRollWays = ["behind the screen", "in view"] as const;
+
 /**
  * Who voices the characters (D-490), where the AI app has subagents: a character as a subagent of its own at key moments, the master chooses (auto); the master
  * always; always for the companions and the main characters; always for everyone.
@@ -173,6 +176,10 @@ export const settingsSchema = z.object({
     ),
     rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
+    "master-rolls": z.enum(masterRollWays).optional().describe(
+        "the master's rolls for foes and anyone else outside the party: behind the screen (roll hides them, the master telling only the outcome) or in view (roll shows them); "
+            + "the party's rolls are always shown; unset, behind the screen",
+    ),
     units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
     voices: z.enum(voiceWays).optional().describe(
         "who voices the characters, where the AI app has subagents, from the master to the characters: master (the master, always), auto (at key moments, as the master chooses, "
@@ -230,8 +237,11 @@ export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "
 /** The settings that hold entries by name: what the campaign adds to its game system, and where the dashboard shows the extensions' widgets (D-502). */
 export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets"];
 
-/** What only the setup asks (D-241, MOD-3, D-347): how much the master teaches the game, how the companions come, when the story starts, and the lines and veils, which "none" answers too. */
-export const setupSettingNames: SettingName[] = ["mentor", "companions", "calendar-start", "lines", "veils"];
+/**
+ * What only the setup asks (D-241, MOD-3, D-347, D-287): how much the master teaches the game, whether the master's rolls are shown, how the companions come,
+ * when the story starts, and the lines and veils, which "none" answers too.
+ */
+export const setupSettingNames: SettingName[] = ["mentor", "master-rolls", "companions", "calendar-start", "lines", "veils"];
 
 /** What the setup asks only of a campaign without a written world (D-79, D-80, MOD-3). */
 export const premiseSettingNames: SettingName[] = ["premise", "preparation"];

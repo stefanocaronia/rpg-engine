@@ -15,13 +15,13 @@ import { byHandPref, conditionsPref, soundPref, tokenSymbolsPref, useChoice, use
 import { arrowStep, t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
-// The groups of the campaign's settings, in order; a setting the game system adds goes with the dice. How the master plays holds who voices the characters
-// (D-490) and how much the master thinks (D-462) too.
+// The groups of the campaign's settings, in order; a setting the game system adds goes with the dice, as whether the master's rolls are shown (D-287). How the
+// master plays holds who voices the characters (D-490) and how much the master thinks (D-462) too.
 const groups: { names: string[]; system?: true; }[] = [
     { names: ["difficulty", "lethality", "saves", "rigor"] },
     { names: ["mentor", "learned"] },
     { names: ["prose", "story", "author", "style", "voices", "effort"] },
-    { names: ["dice", "units"], system: true },
+    { names: ["dice", "master-rolls", "units"], system: true },
     { names: ["lines", "veils"] },
     { names: ["pictures", "language"] },
 ];

@@ -64,7 +64,7 @@ export interface SystemGame extends SystemReader
     addEffect(page: string, name: string, why: string): string[] | undefined;
     /** Ends an effect; whether the page had it. */
     endEffect(page: string, name: string, why: string): boolean;
-    /** Rolls with the engine's dice, as a public roll in the log for who. */
+    /** Rolls with the engine's dice, as a roll in the log for who: public, or hidden for anyone outside the party as the master-rolls setting says (D-287). */
     roll(notation: string, by: { who: string; why: string; }): { total: number; dice: ThrownDie[]; text: string; };
 }
 

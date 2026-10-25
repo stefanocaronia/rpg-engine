@@ -347,7 +347,7 @@ export default system;
 ```
 
 - The engine loads the code once, as the command line, the MCP server or the dashboard starts: a system changed since needs the server started again.
-- `game` reads a page (its counters with its effects, its effects, whether it is in the party or the player's character), a setting, and compares names as the engine does; it sets numbers (a counter keeps its maximum), adds and ends effects, and rolls with the engine's dice. Each write has its line in the log, public or hidden as the engine shows that page; a write calls no hook.
+- `game` reads a page (its counters with its effects, its effects, whether it is in the party or the player's character), a setting, and compares names as the engine does; it sets numbers (a counter keeps its maximum), adds and ends effects, and rolls with the engine's dice, a roll for anyone outside the party hidden while the campaign's `master-rolls` setting keeps it behind the screen. Each write has its line in the log, public or hidden as the engine shows that page; a write calls no hook.
 - A hook that fails, or code that cannot load, is a line for the master, with what to do: the command's change stands.
 - The code reaches the game only through `game`: lint refuses `Math.random`, `Date`, `process`, `globalThis`, `import()` and Node's modules in `systems/*/src`.
 

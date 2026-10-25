@@ -22,6 +22,7 @@ export {
     lethalities,
     listSettingNames,
     mapSettingNames,
+    masterRollWays,
     mentorWays,
     missingSettings,
     pictureWays,

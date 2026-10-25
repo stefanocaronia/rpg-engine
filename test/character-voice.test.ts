@@ -54,6 +54,7 @@ describe("the character agent (D-490)", () => {
             ["config", "saves", "checkpoint"],
             ["config", "rigor", "rules"],
             ["config", "dice", "digital"],
+            ["config", "master-rolls", "behind the screen"],
             ["config", "units", "metric"],
             ["config", "companions", "none"],
             ["config", "calendar-start", "day 1"],

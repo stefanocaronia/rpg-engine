@@ -157,6 +157,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             "author",
             "style",
             "dice",
+            "master-rolls",
             "units",
             "voices",
             "pictures",
@@ -254,6 +255,7 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             "saves",
             "rigor",
             "dice",
+            "master-rolls",
             "units",
             "companions",
             "preparation",
@@ -270,9 +272,9 @@ describe("the setup as the dashboard shows it (D-370)", () => {
         expect(setup.questions[1]).toMatchObject({ value: "normal", choices: expect.arrayContaining([expect.objectContaining({ value: "hard" })]) });
         // The values the game suggests, never chosen for the player; the lethality as the difficulty has it.
         const suggested = Object.fromEntries(setup.questions.filter((question: { suggested?: string; }) => question.suggested !== undefined).map((question: { name: string; suggested: string; }) => [question.name, question.suggested]));
-        expect(suggested).toEqual({ lethality: "dice", saves: "checkpoint", rigor: "smooth", preparation: "on the fly" });
+        expect(suggested).toEqual({ lethality: "dice", saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", preparation: "on the fly" });
         expect(setup.questions.find((question: { name: string; }) => question.name === "advancement")).toMatchObject({ about: "how your character levels up" });
-        expect(setup.questions[7]).toMatchObject({ name: "companions", about: "how companions come to your side", choices: expect.arrayContaining([{ value: "none", means: "you play alone" }]) });
+        expect(setup.questions[8]).toMatchObject({ name: "companions", about: "how companions come to your side", choices: expect.arrayContaining([{ value: "none", means: "you play alone" }]) });
         expect(setup.missing).toContain("companions (none, made with the player, made by the master, met in play)");
         // Once the premise is set, a campaign named after its folder: status asks the master to propose a name.
         await run("config", "premise", "Fantasy cupo");
@@ -1456,6 +1458,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
     it("names in the rolls only whom the character knows, and gives the last 20, or as many as asked (VIEW-4)", async () => {
         await ok("write", "Lupo mannaro", "--type", "creature", "--text", "Un uomo che diventa lupo.");
         await ok("write", "Ombra", "--type", "character", "--set", "role=npc");
+        await ok("config", "master-rolls", "in view");
         await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Locanda", "--with", "Ettore", "--creatures", "Lupo mannaro=1");
         await ok("roll", "1d20+4", "--who", "Lupo mannaro 1");
         await ok("roll", "1d20", "--who", "Ombra");
@@ -1518,7 +1521,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         await send("POST", "/api/answer", { asked: asked.id, choice: 1 });
         await asking;
         page.close();
-        await ok("roll", "1d20+4", "--who", "Varro", "--check", "Inganno", "--why", "il mugnaio mente");
+        await ok("roll", "1d20+4", "--who", "Varro", "--check", "Inganno", "--why", "il mugnaio mente", "--no-hidden");
         await ok("roll", "1d20", "--hidden", "--why", "la ronda sente");
         await ok("roll", "1d20+2", "--who", "Ettore", "--values", "15", "--why", "Atletica: il guado");
         const rolls = JSON.parse(await ok("view", "--json")).rolls;

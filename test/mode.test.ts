@@ -54,6 +54,7 @@ async function setUp(left: string[] = []): Promise<void>
         ["saves", "checkpoint"],
         ["rigor", "smooth"],
         ["dice", "digital"],
+        ["master-rolls", "behind the screen"],
         ["units", "metric"],
         ["companions", "none"],
         ["calendar-start", "day 1"],
@@ -240,6 +241,7 @@ const answers: Record<string, string> = {
     saves: "saves: checkpoint",
     rigor: "rigor: smooth",
     dice: "dice: digital",
+    "master-rolls": "master-rolls: behind the screen",
     units: "units: metric",
     "calendar-start": "calendar-start: 14 April",
     lines: "lines: []",
@@ -277,7 +279,7 @@ describe("the laws of the mode, on campaigns made at random", () => {
                     page(root, "characters", "Bran", made.companion, "companion");
                     page(root, "places", "Guado", made.place ? "alive" : "none");
                     const written = made.player !== "none" || made.companion !== "none" || made.place;
-                    const setup = ["language", "mentor", "difficulty", "lethality", "saves", "rigor", "dice", "units", "calendar-start", "lines", "veils", ...(written ? [] : ["premise", "preparation"])].every((setting) =>
+                    const setup = ["language", "mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "calendar-start", "lines", "veils", ...(written ? [] : ["premise", "preparation"])].every((setting) =>
                         setting !== made.unanswered
                     )
                         && made.companions !== undefined;

@@ -11,6 +11,7 @@ import { concernsPlayer, isPartyMember, isPlayerCharacter, type Page, pagesWithN
 import type { CounterChange, GameSystem, RollMade, SystemGame, SystemHooks, SystemPage, SystemReader } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { saveEffects } from "./game-effects.ts";
+import { behindTheScreen, sealHiddenRoll } from "./game-master-rolls.ts";
 import { keepingConditionNote } from "./game-reminders.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -129,7 +130,15 @@ function game(root: string, context: Context): SystemGame
         endEffect: (name, effect, why) => endEffect(root, context, name, effect, why),
         roll: (notation, by) => {
             const rolled = rollDice(notation, { random: context.random });
-            appendLogEntry(root, newDatedLogEntry(root, context, "roll", "public", { notation: rolled.notation, total: rolled.total, result: rolled.text, why: by.why, who: by.who, physical: false, dice: rolled.dice }));
+            // For anyone outside the party, hidden as the master-rolls setting says (D-287).
+            const hidden = behindTheScreen(root, context, by.who);
+            const entry = newDatedLogEntry(root, context, "roll", hidden ? "hidden" : "public", { notation: rolled.notation, total: rolled.total, result: rolled.text, why: by.why, who: by.who, physical: false, dice: rolled.dice });
+
+            if (hidden) {
+                sealHiddenRoll(entry, rolled.text, context);
+            }
+
+            appendLogEntry(root, entry);
             return { total: rolled.total, dice: rolled.dice, text: rolled.text };
         },
     };

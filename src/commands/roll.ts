@@ -6,10 +6,11 @@ import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
-import { createProof, DiceError, type DiceRoll, fingerprint, rollDice, sha256 } from "../dice/index.ts";
+import { DiceError, type DiceRoll, rollDice, sha256 } from "../dice/index.ts";
 import { declaredKind, findPage, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { behindTheScreen, sealHiddenRoll } from "./game-master-rolls.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
 import { systemRolled } from "./game-system-code.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -28,14 +29,15 @@ const namePattern = /(^|[+-])(\s*)(\p{L}[\p{L}0-9]*(?:-[\p{L}0-9]+)*)/gu;
 const diePattern = /^\d*d(\d+|%|F)/i;
 
 type RollOutput =
-    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; check?: string; physical: boolean; hidden: boolean; fingerprint?: string; note?: string; kept?: string; }
+    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; check?: string; physical: boolean; hidden: boolean; screened?: true; fingerprint?: string; note?: string; kept?: string; }
     | { kind: "reveal"; id: string; text: string; proof: string; sha256: string; fingerprint: string; };
 
 export const roll = defineCommand({
     name: "roll",
     description: "Roll dice and log the roll. "
         + "Give why and, if it belongs to someone, who; for a roll the player sees, check names it for them, while why stays yours. "
-        + "When the player rolls physical dice, pass their faces as values. Make it hidden when the player must not see the result. "
+        + "When the player rolls physical dice, pass their faces as values. Make it hidden when the player must not see the result; "
+        + "left out, a roll for a foe or anyone outside the party is hidden or shown as the master-rolls setting says. "
         + "keep stores the dice rolled for later, such as the two d20 of a diviner's Portent, rolled by the player for the player character, by you for a companion; "
         + "use takes one of those instead of the die and logs which roll it replaced. "
         + 'Example: notation 1d20+perception, why "notice the trap", who Lena.',
@@ -50,7 +52,9 @@ export const roll = defineCommand({
         check: z.string().optional().describe("what the roll is, as the player sees it in the dashboard's rolls, such as Bite or Stealth: never what only you know"),
         who: z.string().optional().describe("character the roll belongs to, or a copy in the open scene, the damage and heals they deal too, never who takes them; leave it out only for a roll that is no one's, such as an oracle"),
         values: faceValues.optional().describe("faces rolled by the player with physical dice, separated by commas; on the command line write --values=-1,0,1 for negative faces"),
-        hidden: z.boolean().optional().describe("only the master sees the result; its fingerprint goes to the player only if they ask for it"),
+        hidden: z.boolean().optional().describe(
+            "only the master sees the result; its fingerprint goes to the player only if they ask for it; left out, the master-rolls setting decides for who outside the party",
+        ),
         reveal: z.string().optional().describe("id of a hidden roll whose proof to show, later"),
         keep: z.string().optional().describe("a field of who that keeps rolls for later, such as portent: the dice rolled go there, in place of what it held"),
         use: z.string().optional().describe("a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die"),
@@ -83,6 +87,9 @@ export const roll = defineCommand({
         }
 
         const physical = input.values !== undefined;
+        // Left out, hidden follows the master-rolls setting for anyone outside the party (D-287); never for the player's dice, nor a kept roll used.
+        const screened = input.hidden === undefined && !physical && input.use === undefined && behindTheScreen(root, context, input.who);
+        const hidden = input.hidden === true || screened;
         const system = campaignSystem(root, context);
         const roller = rollerOf(root, context, input.who, hasNames(input.notation));
         // The notation as it is rolled, twice the dice for a critical hit (D-449).
@@ -99,24 +106,19 @@ export const roll = defineCommand({
         const using = used === undefined ? {} : { used: { from: used.page.name, field: used.field, value: used.value } };
         const checked = input.check === undefined ? {} : { check: input.check };
         const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, ...checked, physical, ...keeping, ...using, dice: diceRoll.dice };
-        const entry = newDatedLogEntry(root, context, "roll", input.hidden ? "hidden" : "public", data);
-        let shownFingerprint: string | undefined;
-
-        if (input.hidden) {
-            const proof = createProof(entry.id, text, context.newSalt());
-            shownFingerprint = fingerprint(proof);
-            Object.assign(entry.data, { proof, fingerprint: shownFingerprint });
-        }
+        const entry = newDatedLogEntry(root, context, "roll", hidden ? "hidden" : "public", data);
+        const shownFingerprint = hidden ? sealHiddenRoll(entry, text, context) : undefined;
 
         // The page first: a page that cannot be written leaves no line in the log saying it was (KEP-2, KEP-3).
         const kept = keeper !== undefined ? keepFaces(keeper, diceRoll.faces) : used !== undefined ? takeKept(used) : undefined;
         appendLogEntry(root, entry);
         // A roll of a dying party member is their death save, which the engine writes (DIE-4, D-460).
         // A hidden roll writes nothing the player would see (review of 17 October).
-        const said = input.who === undefined || input.hidden === true ? { lines: [] } : systemRolled(root, context, { who: input.who, notation: diceRoll.notation, total: diceRoll.total, dice: diceRoll.dice });
+        const said = input.who === undefined || hidden ? { lines: [] } : systemRolled(root, context, { who: input.who, notation: diceRoll.notation, total: diceRoll.total, dice: diceRoll.dice });
         const own = said.lines.length > 0 ? said.lines.join("\n") : roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
         const note = [own, said.problem].filter((line) => line !== undefined && line !== "").join("\n") || undefined;
-        return { kind: "roll", id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden: input.hidden === true, fingerprint: shownFingerprint, note, kept };
+        const shown = { kind: "roll" as const, id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden, fingerprint: shownFingerprint, note, kept };
+        return screened ? { ...shown, screened: true } : shown;
     },
 
     format(output)
@@ -129,7 +131,8 @@ export const roll = defineCommand({
         const note = [output.kept, output.note].filter((line) => line !== undefined).map((line) => `\n${line}`).join("");
 
         if (output.hidden) {
-            return `Hidden roll ${output.id}, only for the master: ${output.text}\nIts fingerprint, only if the player asks for it: ${output.fingerprint}${note}`;
+            const screen = output.screened === true ? " Behind the screen, as master-rolls says: tell only the outcome, in the story." : "";
+            return `Hidden roll ${output.id}, only for the master: ${output.text}${screen}\nIts fingerprint, only if the player asks for it: ${output.fingerprint}${note}`;
         }
 
         const label = [output.who, output.check, output.why].filter(Boolean).join(", ");

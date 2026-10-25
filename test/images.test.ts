@@ -312,7 +312,8 @@ describe("pictures of places, quests, the party and those met made from words (D
         expect(scene.fighters.map((fighter: { image?: unknown; }) => fighter.image !== undefined)).toEqual([false, false, true, true, true, false]);
         // Neither the file's name nor anything else tells who they are.
         expect(JSON.stringify(scene)).not.toMatch(/Varro|Oste|Brigante|Goblin|Bandit/);
-        // Their rolls show them as the scene does, the copies by their creature's, the system's none (D-421).
+        // Their rolls, in view, show them as the scene does, the copies by their creature's, the system's none (D-421).
+        await ok("config", "master-rolls", "in view");
         await ok("roll", "1d20+3", "--who", "Brigante 1", "--check", "Scimitarra");
         await ok("roll", "1d20", "--who", "Oste", "--check", "Furtività");
         await ok("roll", "1d20", "--who", "Goblin 1", "--check", "Furtività");
@@ -327,7 +328,7 @@ describe("pictures of places, quests, the party and those met made from words (D
     it("shows no face in the rolls of one no scene named, as one who acts out of sight (D-421)", async () => {
         await ok("write", "Duca", "--type", "character", "--set", "role=npc");
         await ok("image", "Duca", picture("d.svg", svg));
-        await ok("roll", "1d20+5", "--who", "Duca", "--check", "Inganno");
+        await ok("roll", "1d20+5", "--who", "Duca", "--check", "Inganno", "--no-hidden");
         expect(JSON.parse(await ok("view", "--json")).rolls.at(-1)).toMatchObject({ who: "someone", stranger: true });
         expect(JSON.parse(await ok("view", "--json")).rolls.at(-1).image).toBeUndefined();
     });

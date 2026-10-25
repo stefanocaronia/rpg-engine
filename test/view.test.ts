@@ -192,7 +192,7 @@ describe("the player's view, after a review", () => {
         await ok("write", "Covo segreto", "--type", "place");
         // A scene Kira is not in: Bran with the witch, whom Kira never met.
         await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Bran", "--with", "Strega", "--creatures", "Lupo mannaro=2");
-        await ok("roll", "1d20+4", "--who", "Lupo mannaro 1");
+        await ok("roll", "1d20+4", "--who", "Lupo mannaro 1", "--no-hidden");
         await ok("move", "Zaino", "--to", "Strega");
         await ok("move", "Bran", "--to", "Covo segreto");
         const view = await ok("view");
@@ -205,7 +205,7 @@ describe("the player's view, after a review", () => {
         // A name is written as it is, without a capital that is not its own (D-403).
         await ok("write", "al-Mansur", "--type", "character");
         await ok("write", "Kira", "--add", "knows=[[al-Mansur]]");
-        await ok("roll", "1d20", "--who", "al-Mansur");
+        await ok("roll", "1d20", "--who", "al-Mansur", "--no-hidden");
         expect(await ok("view", "--diary", "1")).toMatch(/- al-Mansur: 1d20 = /);
     });
 
@@ -429,7 +429,8 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect((await rpg("scene", "add", "--seen", "Lupo nero 1=lupo grigio")).output).toContain(
             "seen Lupo nero 1: give it by the creature, Lupo nero, once for all its copies, such as Lupo nero=lupo grigio: they are numbered from those words.",
         );
-        // Their rolls are named as the scene named them, and stay so once it closes (D-421).
+        // Their rolls, in view, are named as the scene named them, and stay so once it closes (D-421).
+        await ok("config", "master-rolls", "in view");
         await ok("roll", "1d20+3", "--who", "Lupo nero 1", "--check", "Morso");
         await ok("roll", "1d20", "--who", "Brunilde", "--check", "Furtività");
         const rollers = async (): Promise<string[]> => JSON.parse(await ok("view", "--json")).rolls.map((roll: { who?: string; }) => roll.who);
