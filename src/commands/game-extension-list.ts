@@ -8,6 +8,7 @@ import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { type Extension, findExtension, isVerified } from "../extensions/index.ts";
+import { isCoreField } from "../pages/index.ts";
 
 /** The extensions the campaign uses, and what keeps one from being used, with how to fix it. */
 export interface CampaignExtensions
@@ -79,6 +80,12 @@ export function extensionsLine(root: string, context: Context): string
     return extensions.length === 0 ? "" : `Extensions: ${extensions.map((extension) => `${extension.name} (${extension.about})`).join("; ")}.`;
 }
 
+/** The fields of the core an extension declares among its fields or counters, which no extension may write (D-505). */
+function coreFieldsOf(extension: Extension): string[]
+{
+    return [...Object.keys(extension.adds.fields ?? {}), ...Object.keys(extension.adds.counters ?? {})].filter(isCoreField);
+}
+
 function readCampaignExtensions(root: string, context: Context): CampaignExtensions
 {
     const extensions: Extension[] = [];
@@ -102,6 +109,12 @@ function readCampaignExtensions(root: string, context: Context): CampaignExtensi
                 path: campaignFileName,
                 message: `The extension ${name} needs the game system ${extension.needs.system}, and the campaign plays ${system ?? "none"}: it is left out.`,
                 fix: `take it away with package remove ${extension.name}`,
+            });
+        } else if (coreFieldsOf(extension).length > 0) {
+            problems.push({
+                path: campaignFileName,
+                message: `The extension ${name} declares ${coreFieldsOf(extension).join(", ")}, which the engine's own pages hold: it is left out.`,
+                fix: `install another version of it with package install ${extension.name}, or take it away with package remove ${extension.name}`,
             });
         } else if (extensions.some((other) => other.name === extension.name)) {
             problems.push({

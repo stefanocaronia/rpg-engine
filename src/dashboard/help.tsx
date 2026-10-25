@@ -1,7 +1,8 @@
 // Help (D-409, D-413): the complete guide, in the page's language, as its markdown file has it (guide/<code>.md): what it is, an index of chips, and each of
-// its parts a card that folds, the first two open. Its anchors are the English guide's, so that a link finds its heading in every language.
+// its parts a card that folds, the first two open. Its anchors are the English guide's, so that a link finds its heading in every language. At its end, how to
+// tell us what went wrong: the page's own words, so that the guide's translations stay as they are.
 import { useEffect, useMemo, useState } from "preact/hooks";
-import { CardHeader } from "./card.tsx";
+import { CardHead, CardHeader } from "./card.tsx";
 import { anchorOf, type Block, markdownBlocks, plainText } from "./guide-blocks.ts";
 import { Blocks, Inline } from "./guide-markdown.tsx";
 import { Icon, type IconName, iconPath, isIconName } from "./icons.tsx";
@@ -93,6 +94,28 @@ export function Help()
                         </div>
                     </details>
                 ))}
+            </div>
+            <ReportCard />
+        </section>
+    );
+}
+
+/** Where the issues of RPG Engine are reported, as its README says. */
+export const issuesLink = "https://github.com/stefanocaronia/rpg-engine/issues";
+
+/** The invitation to report what went wrong, said to one who may never have seen GitHub: what to write there, and that it is a public page. */
+export function ReportCard()
+{
+    return (
+        <section class="card help-report" aria-labelledby="help-report-title">
+            <CardHead icon={iconPath("chat")} title={<h3 id="help-report-title">{t("Tell us")}</h3>} />
+            <div class="card-body">
+                <p>{t("Something doesn't work, confuses you or could be better? Tell us what you did, what you expected and what happened: every report helps.")}</p>
+                <p class="help-report-note">{t("GitHub is the site where RPG Engine is made: you write there with a free account, as in a forum, and anyone can read it.")}</p>
+                <a class="about-link" href={issuesLink} target="_blank" rel="noreferrer">
+                    <Icon name="github" />
+                    {t("Open a report on GitHub")}
+                </a>
             </div>
         </section>
     );

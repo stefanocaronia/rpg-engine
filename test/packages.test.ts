@@ -9,6 +9,7 @@ import { runCommandLine } from "../src/command-line.ts";
 import type { Confirm, Confirmed, Context, PackageInfo, PackageManager, Player } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
+import { issuesPage } from "../src/extensions/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 
 /** npm as these tests have it: the packages it knows by name, each the folder of a test extension; it installs one by copying it into node_modules. */
@@ -266,9 +267,9 @@ describe("rpg package install", () => {
         expect((await rpg("package", "install", "npm:seasons-of-the-test")).output).toBe(
             "seasons-of-the-test is installed on this computer, but it is for the game system 5e, and the campaign plays ironsworn: the campaign does not use it.",
         );
-        npm.describe = (spec) => Promise.resolve({ name: spec, version: "3.0.0", kind: "extension", api: 3 });
+        npm.describe = (spec) => Promise.resolve({ name: spec, version: "4.0.0", kind: "extension", api: 4 });
         expect((await rpg("package", "install", "omens")).output).toBe(
-            "@rpgengine/omens 3.0.0 is made for the extension API 3, and this RPG Engine reads the API 1 to 2: install a version made for these. Nothing changed.",
+            "@rpgengine/omens 4.0.0 is made for the extension API 4, and this RPG Engine reads the API 1 to 3: install a version made for these. Nothing changed.",
         );
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
     });
@@ -293,6 +294,53 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
         );
         const listed = JSON.parse((await rpg("package", "list", "--json")).output) as { installed: Record<string, unknown>[]; };
         expect(listed.installed.find((one) => one.name === "weather")).toMatchObject({ package: "@rpgengine/weather", about: expect.stringMatching(/^the sky changes/), verified: true, used: true });
+    });
+
+    it("gives each package where its problems are reported, by its package.json, from what is on this computer: ours and the engine's systems at our issues", async () => {
+        await rpg("package", "install", "weather");
+        await rpg("package", "install", "omens");
+        writeFileSync(join(modules, "@rpgengine", "omens", "extension.yaml"), "title: [broken\n");
+        const omens = join(modules, "@rpgengine", "omens", "package.json");
+        writeFileSync(omens, JSON.stringify({ ...JSON.parse(readFileSync(omens, "utf8")), bugs: { url: "https://example.org/omens/bugs", email: "a@example.org" } }));
+        const pack = join(modules, "@test", "lingua-de");
+        mkdirSync(pack, { recursive: true });
+        writeFileSync(join(pack, "package.json"), JSON.stringify({ name: "@test/lingua-de", version: "1.0.0", repository: "github:someone/lingua-de", "rpg-engine": { kind: "language" } }));
+        writeFileSync(join(pack, "language.yaml"), "code: de\nname: Deutsch\n");
+        writeFileSync(join(pack, "phrases.json"), "{}");
+        npm.search = () => Promise.reject(new Error("list never asks npm"));
+        const listed = JSON.parse((await rpg("package", "list", "--json")).output) as { installed: Record<string, unknown>[]; systems: Record<string, unknown>[]; languages: Record<string, unknown>[]; };
+        const ours = "https://github.com/stefanocaronia/rpg-engine/issues";
+        expect(listed.installed.map((one) => [one.name, one.issues])).toEqual([["omens", "https://example.org/omens/bugs"], ["weather", ours]]);
+        expect(listed.systems.find((one) => one.name === "ironsworn")).toMatchObject({ issues: ours });
+        expect(listed.languages).toMatchObject([{ code: "de", issues: "https://github.com/someone/lingua-de/issues" }]);
+    });
+
+    it("reads where a package.json sends its problems: bugs first, a GitHub repository however written, never a link but over https", () => {
+        expect([
+            { bugs: "https://example.org/bugs", repository: "github:a/b" },
+            { bugs: { email: "me@example.org" }, repository: { type: "git", url: "git+https://github.com/stefanocaronia/rpg-engine.git", directory: "extensions/weather" } },
+            { repository: "git+ssh://git@github.com/Some-One/my.pack.git" },
+            { repository: "git@github.com:someone/pack.git" },
+            { repository: "https://github.com/someone/pack/" },
+            { repository: "someone/pack" },
+            { repository: "https://gitlab.com/someone/pack" },
+            { repository: "gitlab:someone/pack" },
+            { bugs: "javascript:alert(1)", repository: "bitbucket:someone/pack" },
+            { bugs: { url: "http://example.org/bugs" } },
+            {},
+        ].map((manifest) => issuesPage(manifest))).toEqual([
+            "https://example.org/bugs",
+            "https://github.com/stefanocaronia/rpg-engine/issues",
+            "https://github.com/Some-One/my.pack/issues",
+            "https://github.com/someone/pack/issues",
+            "https://github.com/someone/pack/issues",
+            "https://github.com/someone/pack/issues",
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+        ]);
     });
 
     it("gives what npm has for this API, ours first, with its author and the updates of those installed", async () => {

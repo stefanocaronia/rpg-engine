@@ -4,7 +4,7 @@
 // browser's rolls alone. With two dice or more of a kind, which count: all, the highest one or the lowest one (D-337, D-397). The dice show as pictures, never as their
 // notation. The dice and their physics load at the first throw.
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { Member, SheetRoll, ShownRoll, ThrownDie } from "../data.ts";
+import type { Member, SheetRoll, ShownRoll, ThrownDie, Tone } from "../data.ts";
 import { DiceFaces } from "../faces.tsx";
 import type { PageRoll } from "../free-rolls.ts";
 import { DieIcon, Icon } from "../icons.tsx";
@@ -50,6 +50,9 @@ interface Plate
     dice: ThrownDie[];
     modifier: number;
     total: number;
+    /** What the faces mean, in place of the total, when a package's roll says it; and how each die turned out (D-507). */
+    says?: string;
+    tones?: (Tone | null)[];
     text: string;
     shown: boolean;
     /** Whose roll the master asked: their token beside the title. */
@@ -177,8 +180,8 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         await new Promise((painted) => requestAnimationFrame(painted));
         const plateTop = measuredPlate.current?.getBoundingClientRect().top;
         // The header as it stands now, full at the page's top or compact below it: no die lands under it; on a wide screen nor on the card of a death save,
-        // whose outcome comes as they land (D-461), or of a rest's dice (D-492). A phone has no room under it.
-        const card = matchMedia("(min-width: 601px)").matches ? document.querySelector(".dying-card.rolling, .spend-card")?.getBoundingClientRect().bottom : undefined;
+        // whose outcome comes as they land (D-461), of a rest's dice (D-492), or of a package's question (D-507). A phone has no room under it.
+        const card = matchMedia("(min-width: 601px)").matches ? document.querySelector(".dying-card.rolling, .spend-card, .ask-card")?.getBoundingClientRect().bottom : undefined;
         const headerBottom = Math.max(0, document.querySelector(".top")?.getBoundingClientRect().bottom ?? 0, card ?? 0);
 
         if (plateTop !== undefined && plateTop > 0) {
@@ -268,6 +271,8 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
                 dice: requested.dice,
                 modifier: notationModifier(requested.notation),
                 total: requested.total,
+                ...(requested.says === undefined ? {} : { says: requested.says }),
+                ...(requested.tones === undefined ? {} : { tones: requested.tones }),
                 text: requested.text,
                 ...(member === undefined ? {} : { member }),
                 roll: requested.id,
@@ -540,8 +545,8 @@ function PlateContent({ plate }: { plate: Plate; })
                     )}
                 </span>
             </div>
-            <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" />
-            <span class="plate-total num">{shownText(String(plate.total))}</span>
+            <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" tones={plate.tones} />
+            {plate.says === undefined ? <span class="plate-total num">{shownText(String(plate.total))}</span> : <span class="plate-total plate-says">{plate.says}</span>}
             {plate.rare && <p class="plate-rare">{plate.rare.words}</p>}
             <span class="visually-hidden">{plate.free ? t("{dice}, free roll, not logged", { dice: plate.text }) : plate.text}</span>
         </>

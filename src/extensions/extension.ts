@@ -15,10 +15,17 @@ const aboutWords = 40;
 const partWords = 400;
 
 /**
- * The version of the API an extension's code is given (api.ts), which its package.json names: 2 added the widgets (D-502). A package made for this one or an
- * older one is read; one made for a newer one is refused, as an older rpg-engine refuses this one's.
+ * The version of the API an extension's code is given (api.ts), which its package.json names: 2 added the widgets (D-502), 3 its additions to the game system,
+ * the pages, the scene, writing its own fields and asking the player (D-505). A package made for this one or an older one is read; one made for a newer one is
+ * refused, as an older rpg-engine refuses this one's.
  */
-export const extensionApi = 2;
+export const extensionApi = 3;
+
+/** What an extension may add to the campaign's game system in extension.yaml, written as campaign.yaml writes it (CAM-2, D-505). */
+export const systemAdditionNames = ["fields", "tables", "computed", "counters", "recipes", "values"] as const;
+
+/** What an extension adds to the game system, by key, as extension.yaml writes it: the system checks it when it is read with it (CAM-3). */
+export type SystemAdditions = Partial<Record<(typeof systemAdditionNames)[number], Record<string, unknown>>>;
 
 /** Whether this rpg-engine reads a package made for this version of the API: from 1 up to its own. */
 export function readsApi(api: number | undefined): boolean
@@ -45,6 +52,8 @@ export interface Extension
     needs: { system?: string; };
     /** Its months in place of the core's, as extension.yaml writes them: the time module reads them (TIM-8). */
     calendar?: unknown;
+    /** What it adds to the game system, under the campaign's own additions (CAM-2). */
+    adds: SystemAdditions;
     /** Its icons by name, each the path of an SVG drawn on 24 by 24, as the dashboard strokes it (D-502). */
     icons: Record<string, string>;
     /** Its widgets on the dashboard, in the order written, each where it puts itself (D-502). */
@@ -97,6 +106,9 @@ const widgetSchema = z.object({
     error: "a widget in place page names its page (scene, sheet, world or journal), and only one in a page does",
 });
 
+/** An addition to the game system, which the system checks as it reads it (CAM-3). */
+const addition = z.record(z.string(), z.unknown(), { error: "give it as a map by name, as campaign.yaml does" }).optional();
+
 const extensionSchema = z.object({
     title: z.string().trim().min(1),
     about: z.string().trim().min(1),
@@ -106,6 +118,12 @@ const extensionSchema = z.object({
     calendar: z.unknown().optional(),
     icons: z.record(ownName, z.string().max(longestPath).regex(/^[MmLlHhVvCcSsQqTtAaZz\d\s,.+-]+$/, "an icon is the path of an SVG, as M4 12h16")).optional(),
     widgets: z.record(ownName, widgetSchema).optional(),
+    fields: addition,
+    tables: addition,
+    computed: addition,
+    counters: addition,
+    recipes: addition,
+    values: addition,
 }).strict().superRefine((declared, check) => {
     const icons = Object.keys(declared.icons ?? {});
     const widgets = Object.entries(declared.widgets ?? {});
@@ -176,6 +194,7 @@ export function readExtension(folder: string): Extension
     }
 
     const { title, about, language, attribution, needs, calendar, icons, widgets } = declared.data;
+    const adds: SystemAdditions = Object.fromEntries(systemAdditionNames.flatMap((key) => (declared.data[key] === undefined ? [] : [[key, declared.data[key]]])));
     const parts = readParts(folder, owner);
     // What the master reads of it in every chat, kept short (D-441).
     const long = [["about", about, aboutWords] as const, ...Object.entries(parts).map(([name, part]) => [`instructions/${name}.md`, part.text, partWords] as const)]
@@ -196,6 +215,7 @@ export function readExtension(folder: string): Extension
         ...(attribution === undefined ? {} : { attribution }),
         needs: needs ?? {},
         ...(calendar === undefined ? {} : { calendar }),
+        adds,
         icons: icons ?? {},
         widgets: Object.entries(widgets ?? {}).map(([name, widget]) => ({ name, ...widget, order: widget.order ?? 0 })),
         parts,

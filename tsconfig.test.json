@@ -4,7 +4,8 @@
     "noEmit": true,
     "rootDir": ".",
     "paths": {
-      "rpg-engine": ["./src/index.ts"]
+      "rpg-engine": ["./src/index.ts"],
+      "rpg-engine/testing": ["./src/testing.ts"]
     }
   },
   "include": ["src", "test", "systems/*/src", "systems/*/test", "extensions/*/src", "extensions/*/test"]

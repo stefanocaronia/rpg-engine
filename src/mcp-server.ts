@@ -308,7 +308,7 @@ async function runTool(
     outside: { take(): string[]; giveBack(lines: string[]): void; },
 ): Promise<CallToolResult>
 {
-    const keepAlive = command.needsPlayer
+    const keepAlive = command.needsPlayer || command.waitsForPlayer
         ? reportProgress(extra, () => (context.page?.asking?.() === true ? "waiting for the player's click on the dashboard" : "waiting for the player"))
         : command.slow === true
         ? reportProgress(extra, () => "still working")

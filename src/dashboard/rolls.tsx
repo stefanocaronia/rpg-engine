@@ -81,7 +81,7 @@ export function RollLog(
                 <CardHeader
                     icon={cardIcons.rolls}
                     title={<h2 id="rolls-title" class="rolls-title">{t("Rolls")}</h2>}
-                    preview={newest === undefined ? undefined : `${[nameOf(newest, of), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.total}`}
+                    preview={newest === undefined ? undefined : `${[nameOf(newest, of), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.says ?? newest.total}`}
                     open={open}
                     onToggle={toggle}
                 />
@@ -158,9 +158,9 @@ function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRo
                 {name}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}
-            <span class="roll-total num">{roll.total}</span>
+            {roll.says === undefined ? <span class="roll-total num">{roll.total}</span> : <span class="roll-total roll-says">{roll.says}</span>}
             <span class="roll-dice">
-                <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} />
+                <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} tones={roll.tones} />
                 <span class="visually-hidden">{roll.text}</span>
             </span>
         </li>

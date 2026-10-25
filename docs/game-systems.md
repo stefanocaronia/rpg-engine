@@ -323,6 +323,8 @@ A campaign's pages work as a system's: a class in `world/topics/` counts in `sum
 config counters "bulwark-dice: {max: 'has(subclasses, Shield Oath) * 4', refill: short rest}"
 ```
 
+An extension adds the same keys but `status-line` and `travel`, in its `extension.yaml`, under the campaign's: see [extensions.md](extensions.md#2-extensionyaml).
+
 ## 6. Code
 
 Where data is not enough, a system brings code, as the 5e does for its dying point. Its `package.json` says so, as an extension's does:

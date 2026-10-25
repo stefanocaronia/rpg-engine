@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { ActsShown, Asked, PlayerSetting, ResetPoint, ShownWidget, View, WorldMap } from "./data.ts";
+import type { ActsShown, AskedNow, PlayerSetting, ResetPoint, ShownWidget, View, WorldMap } from "./data.ts";
 import { t } from "./text.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
@@ -228,10 +228,10 @@ export async function changeSaves(change: SavesChange): Promise<string | undefin
     }
 }
 
-/** An extension on this computer (D-475): with whether the campaign uses it, or broken when it does not read. */
+/** An extension on this computer (D-475): with whether the campaign uses it, or broken when it does not read; with where its problems are reported. */
 export type ShownExtension =
-    | { name: string; package: string; version: string; title: string; about: string; verified: boolean; used: boolean; }
-    | { name: string; package: string; broken: string; };
+    | { name: string; package: string; version: string; title: string; about: string; verified: boolean; used: boolean; issues?: string; }
+    | { name: string; package: string; broken: string; issues?: string; };
 
 /** A game system on this computer (D-485): the campaign plays one, chosen in its setup; one npm installed has its package. */
 export interface ShownSystem
@@ -243,6 +243,8 @@ export interface ShownSystem
     verified: boolean;
     used: boolean;
     code: boolean;
+    /** Where its problems are reported, as its package says. */
+    issues?: string;
 }
 
 /** A language package on this computer (D-485 (3)): the dashboard's words made by hand, for every campaign. */
@@ -253,6 +255,8 @@ export interface ShownLanguage
     package: string;
     version: string;
     verified: boolean;
+    /** Where its problems are reported, as its package says. */
+    issues?: string;
 }
 
 /** An adventure of the campaign, with the game date it came in on, and whether it can still go: not once the story touched it (D-476). */
@@ -480,12 +484,21 @@ async function sendChange(change: SettingChange): Promise<string | undefined>
     }
 }
 
-/** What the master asks the player now; undefined when nothing. */
-export async function readAsked(): Promise<Asked | undefined>
+/** What the master asks the player now, null when nothing; with nothing, the card a package's last question left (D-507). */
+export async function readAsked(): Promise<AskedNow>
 {
     const response = await fetch("/api/asked");
-    const body = await response.json() as { asked: Asked | null; };
-    return body.asked ?? undefined;
+    return await response.json() as AskedNow;
+}
+
+/** Closes a package's card once told (D-507), for every page and every reading after; a server away keeps it, closed on this page alone. */
+export async function closeCard(key: string): Promise<void>
+{
+    try {
+        await fetch("/api/card", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ close: key }) });
+    } catch {
+        // Closed here; another page may still show it.
+    }
 }
 
 /** Tells the server whether this page is seen now (D-455); a page that cannot tell it is taken as seen. */

@@ -87,6 +87,8 @@ The 5e system, in `systems/5e/`, is under the Creative Commons Attribution 4.0 I
 
 The weather extension, in `extensions/weather/` and published apart as `@rpgengine/weather`, is Weather by the climate score, by Stefano Caronia, CC BY 4.0, with its code under MIT ([its license](https://github.com/stefanocaronia/rpg-engine/blob/main/extensions/weather/LICENSE.md)).
 
+The lockpicking extension, in `extensions/lockpicking/` and published apart as `@rpgengine/lockpicking`, is Lockpicking by complexity, by Stefano Caronia, CC BY 4.0, with its code under MIT and material from the SRD 5.1 ([its license](https://github.com/stefanocaronia/rpg-engine/blob/main/extensions/lockpicking/LICENSE.md)).
+
 rpg-engine ships only original or open-licensed content: for fifth edition, the SRD 5.1 under CC BY 4.0. Anything else that appears in your game is written by your AI or by you, as pages of your campaign on your computer: it is not part of rpg-engine, and we do not distribute it.
 
 The tests use a system based on Ironsworn, with the names of its mechanics and a foe of our own: This work is based on Ironsworn (https://www.ironswornrpg.com), created by Shawn Tomkin, and licensed for our use under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).

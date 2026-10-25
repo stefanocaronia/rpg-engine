@@ -69,6 +69,10 @@ export interface ShownRoll
     words?: NotationPart[];
     notation: string;
     total: number;
+    /** What the faces mean, in place of the total, when an extension's roll says it: 4 pins, no 1 (D-505). */
+    says?: string;
+    /** How each die turned out, by its face in order, when an extension's roll says it: good, bad or none (D-507). */
+    tones?: ("good" | "bad" | null)[];
     text: string;
     dice: ThrownDie[];
 }
@@ -374,7 +378,7 @@ export const view = defineCommand({
         }
 
         const language = readSettings(root).language;
-        const memberWords = system === undefined || language === undefined ? undefined : systemWordsOf(system, language, context);
+        const memberWords = system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context);
 
         // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).
         const member = (page: Page): PartyMember => {
@@ -428,7 +432,7 @@ export const view = defineCommand({
         const openScene = shownScene(sight);
         const settings = readSettings(root);
         const today = now === undefined ? undefined : calendarDayOf(root, context, now.day);
-        const words = system === undefined || settings.language === undefined ? undefined : systemWordsOf(system, settings.language, context);
+        const words = system === undefined || settings.language === undefined ? undefined : systemWordsOf(root, system, settings.language, context);
         return {
             kind: "overview",
             campaign: settings.name,
@@ -527,7 +531,7 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
         withCoins(speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system)), campaignCoins(root, context).coins, system),
     );
     const language = readSettings(root).language;
-    const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWordsOf(system, language, context)) : undefined;
+    const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context)) : undefined;
     const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
     // Only the player's own characters act from the sheet: the others act as the master says (D-495).
     const own = isPlayerCharacter(page) && (page === knowledge.pc || knowledge.each !== undefined);
@@ -663,7 +667,7 @@ function shownRoll(
     seen: Record<string, string> | undefined,
 ): ShownRoll
 {
-    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; dice?: unknown; physical?: unknown; };
+    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; says?: unknown; tones?: unknown; dice?: unknown; physical?: unknown; };
     const known = data.who === undefined ? undefined : named(data.who);
     const who = data.who === undefined ? undefined : known ?? strangerOfRoll(world, data.who, named, seen);
     // A stranger the scene of the roll never named shows no face: it would tell who acted out of sight (D-421).
@@ -682,6 +686,8 @@ function shownRoll(
         notation: String(data.notation ?? ""),
         ...(words === undefined ? {} : { words }),
         total: Number(data.total ?? 0),
+        ...(typeof data.says === "string" && data.says.trim() !== "" ? { says: data.says } : {}),
+        ...(Array.isArray(data.tones) ? { tones: data.tones.map((tone) => (tone === "good" || tone === "bad" ? tone : null)) } : {}),
         text: String(data.result ?? ""),
         dice: Array.isArray(data.dice) ? (data.dice as ThrownDie[]) : [],
     };

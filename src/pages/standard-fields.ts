@@ -83,6 +83,16 @@ export function isStandardField(type: PageType | undefined, name: string): boole
     return Object.hasOwn(commonRules, name) || (type !== undefined && Object.hasOwn(typeRules[type] ?? {}, name));
 }
 
+// The other fields the core reads on pages: effects, a page's kind, a quest's deadline and clock, a vehicle's riders and how long it travelled, who is hostile.
+const otherCoreFields = ["effects", "kind", "deadline", "clock-name", "riders", "travelled", "hostile", "type", "title"];
+
+/** Whether the core itself reads a field on some page, as role, status or contains: an extension's field never takes its name (D-505). */
+export function isCoreField(name: string): boolean
+{
+    const key = comparableText(name);
+    return [...Object.keys(commonRules), ...Object.values(typeRules).flatMap((rules) => Object.keys(rules ?? {})), ...otherCoreFields].some((field) => comparableText(field) === key);
+}
+
 /** Whether a standard field is a counter, changed with change like any other: an event's clock (EVT-2). */
 export function isCounterField(type: PageType | undefined, name: string): boolean
 {

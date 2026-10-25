@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingHttpHeaders, request } from "node:http";
 import { dirname, join, resolve } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view.ts";
@@ -1174,6 +1174,35 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/saves", { action: "delete" })).status).toBe(400);
     });
 
+    it("keeps a package's card as its call left it until another question comes or the player closes it, never one read too late (D-507)", async () => {
+        const page = await openPage();
+        const later: ((shows: unknown) => void)[] = [];
+        const card = (key: string, shows: () => Promise<unknown>) => ({ widget: "lockpicking.lock", key, shows });
+        const now = async (): Promise<{ card?: { key: string; ended?: true; }; }> => JSON.parse((await send("GET", "/api/asked")).body) as { card?: { key: string; ended?: true; }; };
+
+        const answer = async (rows?: Parameters<Player["choose"]>[4]): Promise<void> => {
+            const choosing = dashboard.player.choose("Q", "Roll", ["Roll: Lockpicking (4d6)"], undefined, rows);
+            expect((await send("POST", "/api/answer", { asked: (await waitAsked()).id, choice: 0 })).status).toBe(202);
+            await choosing;
+        };
+
+        await answer({ who: "Ettore", fields: [null], card: card("attempt-1", async () => ({ parts: [] })) });
+        dashboard.player.cardEnded?.(card("attempt-1", async () => ({ parts: [{ lead: "Open" }] })));
+        await vi.waitFor(async () => expect((await now()).card).toEqual({ widget: "lockpicking.lock", key: "attempt-1", shows: { parts: [{ lead: "Open" }] }, ended: true }));
+        // Closed on one page, it is gone on all, and after a reload.
+        expect((await send("POST", "/api/card", { close: "attempt-1" })).status).toBe(202);
+        expect((await now()).card).toBeUndefined();
+
+        // A card read after another question was asked and answered is never shown.
+        await answer({ who: "Ettore", fields: [null], card: card("attempt-2", async () => ({ parts: [] })) });
+        dashboard.player.cardEnded?.(card("attempt-2", () => new Promise((done) => later.push(done))));
+        await answer();
+        later.forEach((done) => done({ parts: [{ lead: "Open" }] }));
+        await new Promise((done) => setTimeout(done, 20));
+        expect((await now()).card).toBeUndefined();
+        page.close();
+    });
+
     it("keeps the player's notes outside the game: written, changed, taken away and shared with the master, never logged nor saved (D-371)", async () => {
         const notes = async (method: string, body?: unknown): Promise<{ id: string; title: string; text: string; shared?: string; }[]> => {
             const answer = await send(method, "/api/notes", body);
@@ -1278,6 +1307,31 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "roll", by: "player", data: { check: "Atletica", who: "Ettore", dice: [{ sides: 20, value: 4 }] } });
         // A click on a question no longer asked counts for nothing.
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(409);
+        page.close();
+    });
+
+    it("tells the page that a package's card comes, until its widget answers; then what it shows, or nothing when it gave nothing (D-507)", async () => {
+        const page = await openPage();
+        let answered: (shows: unknown) => void = () => undefined;
+        const shows = new Promise<unknown>((done) => (answered = done));
+        const card = { widget: "lockpicking.lock", key: "attempt-1", shows: () => shows };
+        const asking = dashboard.player.choose("Forzare la serratura", "Tiro", ["Tiro: Scasso (2d6)", "Cambio idea"], undefined, { who: "Ettore", fields: [null, null], card });
+        await waitAsked();
+        const now = async (): Promise<{ asked: { card?: unknown; } | null; }> => JSON.parse((await send("GET", "/api/asked")).body) as { asked: { card?: unknown; } | null; };
+        expect((await now()).asked?.card).toEqual({ widget: "lockpicking.lock", key: "attempt-1", coming: true });
+        answered({ parts: [{ lead: "Ettore" }] });
+        await new Promise((done) => setTimeout(done, 10));
+        expect((await now()).asked?.card).toEqual({ widget: "lockpicking.lock", key: "attempt-1", shows: { parts: [{ lead: "Ettore" }] } });
+        const asked = await waitAsked();
+        expect((await send("POST", "/api/answer", { asked: asked.id, choice: 1 })).status).toBe(202);
+        await asking;
+        // A widget that gives nothing: the question without its card, which the page asks as any other.
+        const again = dashboard.player.choose("Forzare la serratura", "Tiro", ["Tiro: Scasso (2d6)", "Cambio idea"], undefined, { who: "Ettore", fields: [null, null], card: { ...card, shows: () => Promise.resolve(undefined) } });
+        await waitAsked();
+        await new Promise((done) => setTimeout(done, 10));
+        expect((await now()).asked?.card).toEqual({ widget: "lockpicking.lock", key: "attempt-1" });
+        expect((await send("POST", "/api/answer", { asked: (await waitAsked()).id, choice: 1 })).status).toBe(202);
+        await again;
         page.close();
     });
 

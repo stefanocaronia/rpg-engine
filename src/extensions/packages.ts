@@ -107,6 +107,43 @@ export function isVerified(name: string, linked: boolean): boolean
     return name.startsWith(verifiedScope) && !linked;
 }
 
+/**
+ * Where a package takes reports of its problems, by its package.json: its `bugs` page, else the issues of its repository on GitHub; undefined when it says
+ * neither, or not over https.
+ */
+export function issuesPage(manifest: { bugs?: unknown; repository?: unknown; }): string | undefined
+{
+    const bugs = httpsLink(typeof manifest.bugs === "string" ? manifest.bugs : fieldOf(manifest.bugs, "url"));
+
+    if (bugs !== undefined) {
+        return bugs;
+    }
+
+    const repository = typeof manifest.repository === "string" ? manifest.repository : fieldOf(manifest.repository, "url");
+    const github = repository === undefined ? null : githubRepository.exec(repository.trim());
+    return github === null ? undefined : `https://github.com/${github[1]}/${github[2]}/issues`;
+}
+
+// A repository on GitHub as package.json may write it: a git, https or ssh address, github:owner/name, or owner/name alone, which npm reads as GitHub's.
+const githubRepository = /^(?:(?:git\+)?(?:https?|git|ssh):\/\/(?:[^@/]+@)?github\.com[/:]|git@github\.com:|github:)?([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?(?:#.*)?$/i;
+
+/** A field of an object read from JSON, when it is a string. */
+function fieldOf(value: unknown, field: string): string | undefined
+{
+    const read = typeof value === "object" && value !== null ? (value as Record<string, unknown>)[field] : undefined;
+    return typeof read === "string" ? read : undefined;
+}
+
+/** A link over https, as a page may open it; undefined for anything else. */
+function httpsLink(text: string | undefined): string | undefined
+{
+    try {
+        return text !== undefined && new URL(text).protocol === "https:" ? new URL(text).href : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
 /** What npm's registry says of a package, at a version or its latest, with what its package.json says for rpg-engine. */
 async function registryPackage(spec: string): Promise<PackageInfo | { failed: string; missing?: true; }>
 {
@@ -197,7 +234,11 @@ async function installCopy(folder: string, spec: string, expected: string | unde
     }
 
     renameSync(staged, target);
-    const ran = await run(`install --prefix ${quotedFolder(folder)} ${quotedFolder(target)} ${installOptions}`);
+    // npm keeps what it installed of the same version, so the copy it installed goes aside first: what runs is the one just given.
+    const installed = join(folder, "node_modules", read.name);
+    const aside = `${target}.installed`;
+    rmSync(aside, { recursive: true, force: true });
+    const ran = await installedAside(installed, aside, () => run(`install --prefix ${quotedFolder(folder)} ${quotedFolder(target)} ${installOptions}`));
 
     if (ran.code === 0) {
         rmSync(before, { recursive: true, force: true });
@@ -211,6 +252,26 @@ async function installCopy(folder: string, spec: string, expected: string | unde
     }
 
     return `npm said: ${npmError(ran)}`;
+}
+
+/** Runs npm with what it installed moved aside, taken away when npm succeeds and put back when it fails. */
+async function installedAside(installed: string, aside: string, install: () => Promise<NpmRun>): Promise<NpmRun>
+{
+    const moved = existsSync(installed);
+
+    if (moved) {
+        renameSync(installed, aside);
+    }
+
+    const ran = await install();
+
+    if (moved && ran.code !== 0) {
+        rmSync(installed, { recursive: true, force: true });
+        renameSync(aside, installed);
+    }
+
+    rmSync(aside, { recursive: true, force: true });
+    return ran;
 }
 
 interface Manifest

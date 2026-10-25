@@ -85,7 +85,7 @@ describe("what the campaign adds to its game system (CAM-1–CAM-3)", () => {
         writeFileSync(join(folder, "campaign.yaml"), `${campaignFile()}computed:\n  level: "sum(classes) +"\n`);
         await fighter("Gara", "classes=[[Fighter]] 2");
         expect(await ok("status")).toContain("level 2");
-        expect(await ok("validate")).toContain('What campaign.yaml adds to the system 5e does not read, so the campaign plays with the system alone: computed.level: "sum(classes) +" is not a formula');
+        expect(await ok("validate")).toContain('What campaign.yaml adds to the system 5e does not read, so the campaign plays without it: computed.level: "sum(classes) +" is not a formula');
     });
 
     it("gives a use only to who keeps the sheet, a companion with classes included, never to an item, a place, a non-player character or a copy (DAT-9, D-225)", async () => {

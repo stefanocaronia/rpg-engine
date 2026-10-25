@@ -635,45 +635,64 @@ export const campaignDataNames = ["fields", "tables", "computed", "counters", "r
 /** What campaign.yaml adds to the game system, as it writes it: checked when the system is read with it (CAM-3). */
 export type CampaignData = Partial<Record<(typeof campaignDataNames)[number], unknown>>;
 
-/**
- * The installed system with what the campaign adds to it, the nearest layer winning (CAM-2); when the additions do not read, the system alone and why (CAM-3).
- * Undefined as a system when none is installed by that name.
- */
-export function findCampaignSystem(folders: string[], name: string, data: CampaignData): { system?: GameSystem; problem?: string; }
+/** What an extension or the campaign adds to the game system (CAM-1, CAM-2): from where, as messages name it, and what. */
+export interface SystemLayer
 {
-    const system = findSystem(folders, name);
+    from: string;
+    data: CampaignData;
+}
 
-    if (system === undefined || campaignDataNames.every((key) => data[key] === undefined || data[key] === null)) {
-        return { system };
+/**
+ * The installed system with the layers over it, in order, the nearest to the campaign last and winning (CAM-2); a layer with which it does not read is left out,
+ * with why, and the others stay (CAM-3). Undefined as a system when none is installed by that name.
+ */
+export function findCampaignSystem(folders: string[], name: string, layers: SystemLayer[]): { system?: GameSystem; refused: { from: string; problem: string; }[]; }
+{
+    const found = systemFolders(folders).find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
+    const given = layers.filter((layer) => campaignDataNames.some((key) => layer.data[key] !== undefined && layer.data[key] !== null));
+
+    if (found === undefined) {
+        return { refused: [] };
     }
 
     try {
-        return { system: findSystem(folders, name, data) };
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return { system, problem: message.replace(/^The game system .*? cannot be read, because .*? is not valid:\s*/s, "") };
+        return { system: readSystem(found.folder, found.name, given), refused: [] };
+    } catch {
+        // One layer at a time, to leave out only those that do not read.
     }
+
+    const kept: SystemLayer[] = [];
+    const refused: { from: string; problem: string; }[] = [];
+
+    for (const layer of given) {
+        try {
+            readSystem(found.folder, found.name, [...kept, layer]);
+            kept.push(layer);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            refused.push({ from: layer.from, problem: message.replace(/^The game system .*? cannot be read, because .*? is not valid:\s*/s, "") });
+        }
+    }
+
+    return { system: readSystem(found.folder, found.name, kept), refused };
 }
 
-/**
- * The installed system with this name, ignoring case, from the nearest folder that has it, with what a campaign adds to it; undefined when none is. Only its own
- * system.yaml is read.
- */
-export function findSystem(folders: string[], name: string, data?: CampaignData): GameSystem | undefined
+/** The installed system with this name, ignoring case, from the nearest folder that has it; undefined when none is. Only its own system.yaml is read. */
+export function findSystem(folders: string[], name: string): GameSystem | undefined
 {
     const found = systemFolders(folders).find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
-    return found === undefined ? undefined : readSystem(found.folder, found.name, data);
+    return found === undefined ? undefined : readSystem(found.folder, found.name);
 }
 
-function readSystem(folder: string, name: string, additions?: CampaignData): GameSystem
+function readSystem(folder: string, name: string, layers: SystemLayer[] = []): GameSystem
 {
     const file = join(folder, systemFileName);
-    const path = additions === undefined ? file : `${file} with the additions of campaign.yaml`;
+    const path = layers.length === 0 ? file : `${file} with the additions of ${layers.map((layer) => layer.from).join(", ")}`;
     const raw = readYamlValues(file, 'what the system is, such as "title: ..."');
     let merged: unknown = raw;
 
     try {
-        merged = additions === undefined ? raw : withCampaignData(raw, additions);
+        merged = layers.reduce((below: unknown, layer) => withCampaignData(below, layer.data), raw);
     } catch (error) {
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${error instanceof Error ? error.message : String(error)}`);
     }

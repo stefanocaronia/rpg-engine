@@ -13,6 +13,7 @@ import {
     type ExtensionCode,
     type ExtensionWords,
     extensionWords,
+    type Track,
     type Widget,
     type WidgetPage,
     widgetPages,
@@ -294,12 +295,25 @@ const textSchema = z.union([
     z.object({ text: text(240), values: z.record(z.string().regex(/^\w+$/), valueSchema).refine((values) => Object.keys(values).length <= 8, "at most 8 values") }).strict(),
 ]);
 const iconName = z.string().regex(/^[a-z][a-z0-9-]*$/);
+const toneSchema = z.enum(["good", "bad"]);
 const partSchema = z.union([
-    z.object({ lead: textSchema, icon: iconName.optional(), value: valueSchema.optional() }).strict(),
+    z.object({ lead: textSchema, icon: iconName.optional(), value: valueSchema.optional(), tone: toneSchema.optional() }).strict(),
     z.object({ text: textSchema }).strict(),
     z.object({ facts: z.array(textSchema).max(12) }).strict(),
     z.object({ values: z.array(z.object({ label: textSchema, value: valueSchema }).strict()).max(12) }).strict(),
-    z.object({ track: z.object({ label: textSchema, value: z.int().min(0), max: z.int().min(1).max(100), look: z.enum(["pips", "bar"]).optional() }).strict() }).strict(),
+    z.object({
+        track: z.object({
+            label: textSchema,
+            value: z.int().min(0),
+            max: z.int().min(1).max(100),
+            look: z.enum(["pips", "bar", "steps"]).optional(),
+            held: z.int().min(0).optional(),
+            marked: z.int().min(0).optional(),
+            coming: z.int().min(0).optional(),
+            stage: z.enum(["start", "center", "end"]).optional(),
+            tone: toneSchema.optional(),
+        }).strict(),
+    }).strict(),
     z.object({ rows: z.array(z.object({ label: textSchema, value: valueSchema.optional(), note: textSchema.optional() }).strict()).max(24) }).strict(),
     z.object({ table: z.object({ head: z.array(textSchema).min(1).max(6), rows: z.array(z.array(valueSchema).max(6)).max(24) }).strict() }).strict(),
     z.object({ image: z.string().regex(/^[\w .-]+\.(png|jpe?g|webp|svg)$/i), alt: textSchema }).strict(),
@@ -349,7 +363,8 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
             parts: parts.map((part): ShownPart => {
                 if ("lead" in part) {
                     const leadIcon = icon(part.icon);
-                    return { lead: said(part.lead), ...(leadIcon === undefined ? {} : { icon: leadIcon }), ...(part.value === undefined ? {} : { value: valueIn(part.value) }) };
+                    const tone = part.tone === undefined ? {} : { tone: part.tone };
+                    return { lead: said(part.lead), ...(leadIcon === undefined ? {} : { icon: leadIcon }), ...(part.value === undefined ? {} : { value: valueIn(part.value) }), ...tone };
                 }
 
                 if ("text" in part) {
@@ -365,7 +380,7 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
                 }
 
                 if ("track" in part) {
-                    return { track: { ...part.track, label: said(part.track.label), value: Math.min(part.track.value, part.track.max) } };
+                    return { track: shownTrack({ ...part.track, label: said(part.track.label) }) };
                 }
 
                 if ("rows" in part) {
@@ -386,6 +401,47 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
             }),
         }),
     };
+}
+
+/** A count as the page draws it: the lit ones, then those held, marked and coming, each cut to what is left of its maximum. */
+function shownTrack<Shown extends Track>(track: Shown): Shown
+{
+    let left = track.max;
+
+    const fit = (count: number | undefined): number | undefined => {
+        const kept = count === undefined ? undefined : Math.min(count, left);
+        left -= kept ?? 0;
+        return kept;
+    };
+
+    const value = fit(track.value) ?? 0;
+    const [held, marked, coming] = [fit(track.held), fit(track.marked), fit(track.coming)];
+    return { ...track, value, ...(held === undefined ? {} : { held }), ...(marked === undefined ? {} : { marked }), ...(coming === undefined ? {} : { coming }) };
+}
+
+/**
+ * What one widget of an extension shows now, for the card of a question (D-507): read as the dashboard reads it, in the campaign's language; nothing when its
+ * hook is not there, fails, gives what no part draws, or is late.
+ */
+export async function widgetCard(root: string, context: Context, extension: Extension, name: string, key: string): Promise<ShownContent | undefined>
+{
+    try {
+        const hook = (await extensionCode(extension))?.widgets?.[name];
+
+        if (hook === undefined) {
+            return undefined;
+        }
+
+        let timer: NodeJS.Timeout | undefined;
+        const late = new Promise<"late">((done) => {
+            timer = setTimeout(() => done("late"), hookTime).unref();
+        });
+        // Its own call for its key, never one at work for the column or another card.
+        const answer = await Promise.race([hookCall(root, extension, `${name}#${key}`, () => hook(gameViewOf(root, context, extension), { key })), late]).finally(() => clearTimeout(timer));
+        return answer === "late" || answer === undefined ? undefined : shownContent(extension, wordsOf(extension, readTextSetting(root, "language")).read, answer);
+    } catch {
+        return undefined;
+    }
 }
 
 /** A picture of the extension's images/, as the dashboard serves it at an address of the extension's own; it throws when the extension has none by that name. */

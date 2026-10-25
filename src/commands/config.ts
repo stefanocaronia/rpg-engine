@@ -59,7 +59,7 @@ import { campaignCoins, coinsShown } from "./game-money.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignCalendar, newDatedLogEntry } from "./game-time.ts";
 import { checkWidgetSpots } from "./game-widgets.ts";
-import { campaignSystem, campaignWorld, countedByGame, installedSystemName, missingWithSystems, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
+import { campaignSystem, campaignWorld, countedByGame, installedSystemName, missingWithSystems, systemLayers, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
 
@@ -885,7 +885,9 @@ function checkAdditions(root: string, context: Context, setting: string, change:
     const held = data[setting] !== null && typeof data[setting] === "object" && !Array.isArray(data[setting]) ? (data[setting] as Record<string, unknown>) : {};
     const dropped = [...(change.remove ?? []), ...Object.keys(change.set ?? {})];
     const entries = { ...Object.fromEntries(Object.entries(held).filter(([name]) => !dropped.some((other) => comparableText(other) === comparableText(name)))), ...change.set };
-    const problem = findCampaignSystem(context.systemFolders, system, { ...data, [setting]: entries }).problem;
+    // Over what the campaign's extensions add, as the campaign plays it (CAM-2).
+    const layers = systemLayers(root, context, { ...data, [setting]: entries });
+    const problem = findCampaignSystem(context.systemFolders, system, layers).refused.find((layer) => layer.from === layers.at(-1)?.from)?.problem;
 
     if (problem !== undefined) {
         throw new Error(`With this, the system ${system} would not read: ${problem} Nothing changed.`);

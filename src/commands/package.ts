@@ -8,7 +8,7 @@ import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
-import { type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, isTarball, isVerified, readExtension, readsApi, shortName, verifiedScope } from "../extensions/index.ts";
+import { type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, readsApi, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
 import { installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
 import { chooseAnswer } from "./ask.ts";
@@ -31,10 +31,10 @@ type PackageResult =
     | { kind: "adventure-removed"; title: string; }
     | ({ kind: "exported"; } & AdventureExported);
 
-/** A package on this computer, as list gives it to the master and to the dashboard; broken when it does not read (D-442). */
+/** A package on this computer, as list gives it to the master and to the dashboard; broken when it does not read (D-442); with where its problems are reported. */
 type Installed =
-    | { name: string; package: string; version: string; title: string; about: string; verified: boolean; used: boolean; }
-    | { name: string; package: string; broken: string; };
+    | { name: string; package: string; version: string; title: string; about: string; verified: boolean; used: boolean; issues?: string; }
+    | { name: string; package: string; broken: string; issues?: string; };
 
 /** The player's yes to a package not ours, not given (D-478): they said no or closed the question, or no window could be shown here. */
 export class YesRefused extends Error
@@ -59,6 +59,8 @@ export interface InstalledSystem
     used: boolean;
     /** Whether it brings code, which runs from the next start of the game's server. */
     code: boolean;
+    /** Where its problems are reported, as its package.json says: the engine's own for those shipped with it. */
+    issues?: string;
 }
 
 /** A language package on this computer (D-485 (3)), for every campaign: one for each language. */
@@ -69,6 +71,8 @@ export interface InstalledLanguage
     package: string;
     version: string;
     verified: boolean;
+    /** Where its problems are reported, as its package.json says. */
+    issues?: string;
 }
 
 /** A package on npm for this rpg-engine, with the version installed here, if any, and whether it is newer (D-442). */
@@ -225,6 +229,8 @@ function listed(root: string, context: Context): PackageResult
 {
     const used = Object.keys(listedExtensions(root));
     const here = installedExtensions(context.extensionFolders ?? []).map((found): Installed => {
+        const issues = issuesOf(found.folder);
+
         try {
             const extension = readExtension(found.folder);
             return {
@@ -235,9 +241,10 @@ function listed(root: string, context: Context): PackageResult
                 about: extension.about,
                 verified: isVerified(extension.package, extension.linked),
                 used: used.includes(extension.package),
+                ...issues,
             };
         } catch (error) {
-            return { name: shortName(found.package), package: found.package, broken: error instanceof Error ? error.message : String(error) };
+            return { name: shortName(found.package), package: found.package, broken: error instanceof Error ? error.message : String(error), ...issues };
         }
     });
     const adventures = installedAdventures(root).map((one) => ({ title: one.title, version: one.version, ...(one.since === undefined ? {} : { since: one.since }), removable: storyTouching(root, one) === undefined }));
@@ -443,8 +450,21 @@ function systemsHere(root: string, context: Context): InstalledSystem[]
             verified: shipped || (manifest !== undefined && isVerified(manifest.name, linked)),
             used: comparableText(system.name) === comparableText(plays),
             code: systemHasCode(system.folder),
+            // The engine's own are reported where the engine is: its package.json is in the folder above its systems.
+            ...issuesOf(shipped ? join(context.systemFolders[0], "..") : system.folder),
         };
     });
+}
+
+/** Where the package in this folder takes reports of its problems, as its package.json says; nothing when it says none or has none that reads. */
+function issuesOf(folder: string): { issues?: string; }
+{
+    try {
+        const issues = issuesPage(JSON.parse(files().text(join(folder, "package.json")) ?? "") as { bugs?: unknown; repository?: unknown; });
+        return issues === undefined ? {} : { issues };
+    } catch {
+        return {};
+    }
 }
 
 /** The name and the version a package.json in this folder gives; undefined when it has none that reads. */
@@ -520,6 +540,7 @@ function languagesHere(context: Context): InstalledLanguage[]
         package: pack.package,
         version: pack.version,
         verified: isVerified(pack.package, installedFromFolder(pack.folder)),
+        ...issuesOf(pack.folder),
     }));
 }
 

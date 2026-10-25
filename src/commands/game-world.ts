@@ -4,10 +4,11 @@ import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
+import { type Extension, extensionWords } from "../extensions/index.ts";
 import { languagePackFor, packSystemFolder } from "../languages/index.ts";
 import { homeSystemWords } from "../page-words.ts";
 import { loadWorld, type PageType, searchSystemPages, type World, worldFolderName } from "../pages/index.ts";
-import { findCampaignSystem, findSystem, type GameSystem, installedSystems, type SystemSetting, type SystemWords, systemWords, withSettings } from "../systems/index.ts";
+import { type CampaignData, findCampaignSystem, findSystem, type GameSystem, installedSystems, type SystemLayer, type SystemSetting, type SystemWords, systemWords, withSettings } from "../systems/index.ts";
 import { campaignExtensions, extensionSources, layeredParts } from "./game-extension-list.ts";
 
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
@@ -29,13 +30,18 @@ export function campaignWorld(root: string, context: Context): World
     });
 }
 
-/** The game system's words in the campaign's language (D-403): its own, else those translated on the fly on this computer (D-406). */
-export function systemWordsOf(system: GameSystem, language: string, context: Context): SystemWords | undefined
+/**
+ * The game system's words in the campaign's language (D-403): its own, else those translated on the fly on this computer (D-406); with the names of the
+ * fields the campaign's extensions add, from their words, layered as their additions are (CAM-2, D-505).
+ */
+export function systemWordsOf(root: string, system: GameSystem, language: string, context: Context): SystemWords | undefined
 {
     // A language package's words come first, then the system's own, then those translated on the fly (D-485 (3)).
     const pack = languagePackFor(context.extensionFolders ?? [], language);
     const packed = pack === undefined ? undefined : packSystemFolder(pack, system.name);
-    return (packed === undefined ? undefined : systemWords(packed, language)) ?? systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
+    const own = (packed === undefined ? undefined : systemWords(packed, language)) ?? systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
+    const added = campaignExtensions(root, context).extensions.reduce((fields, extension) => ({ ...fields, ...extensionFieldWords(extension, language) }), {});
+    return Object.keys(added).length === 0 ? own : { ...(own ?? { groups: {}, words: {} }), fields: { ...own?.fields, ...added } };
 }
 
 /**
@@ -48,19 +54,49 @@ export function campaignSystem(root: string, context: Context): GameSystem | und
 }
 
 /**
- * The game system campaign.yaml names, with its additions or why they do not read, and as its settings have it (DAT-10), read once until campaign.yaml changes:
- * a call asks for it many times.
+ * The game system campaign.yaml names, with what its extensions and then the campaign add to it (CAM-2), and the layers left out with why (CAM-3), as its
+ * settings have it (DAT-10), read once until campaign.yaml changes: a call asks for it many times.
  */
-function systemOf(root: string, context: Context): { system?: GameSystem; problem?: string; }
+function systemOf(root: string, context: Context): { system?: GameSystem; refused: { from: string; problem: string; }[]; }
 {
-    // campaign.yaml, and the extensions' packages, whose parts it gives.
+    // campaign.yaml, and the extensions' packages, whose parts and additions it gives.
     return files().remember(`system ${resolve(root)}`, extensionSources(root, context), () => {
         const name = readTextSetting(root, "system");
-        const found = name === undefined ? {} : findCampaignSystem(context.systemFolders, name, readCampaignData(root));
+        const found = name === undefined ? { refused: [] } : findCampaignSystem(context.systemFolders, name, systemLayers(root, context, readCampaignData(root)));
         // And the parts of the instructions of its extensions over its own (D-121).
         const played = found.system === undefined ? undefined : withSettings(found.system, (setting) => readTextSetting(root, setting));
         return played === undefined ? found : { ...found, system: { ...played, parts: layeredParts(played.parts, campaignExtensions(root, context).extensions) } };
     });
+}
+
+/** What the campaign's extensions add to its game system, in the order campaign.yaml lists them, then the campaign's own additions, which win (CAM-2). */
+export function systemLayers(root: string, context: Context, campaign: CampaignData): SystemLayer[]
+{
+    const extensions = campaignExtensions(root, context).extensions.map((extension) => ({ from: extensionLayer(extension.name), data: extension.adds }));
+    return [...extensions, { from: campaignFileName, data: campaign }];
+}
+
+/** The layers over the campaign's system that it plays with, in order, and by name those left out because the system would not read with them (CAM-3). */
+export function playedLayers(root: string, context: Context): { kept: SystemLayer[]; refused: string[]; }
+{
+    const refused = systemOf(root, context).refused.map((layer) => layer.from);
+    return { kept: systemLayers(root, context, readCampaignData(root)).filter((layer) => !refused.includes(layer.from)), refused };
+}
+
+/** The name of an extension's layer of additions, as messages give it. */
+export function extensionLayer(name: string): string
+{
+    return `the extension ${name}`;
+}
+
+/** The names an extension's words give the fields it adds; none when its words do not read, which validate names. */
+function extensionFieldWords(extension: Extension, language: string): Record<string, string>
+{
+    try {
+        return extensionWords(extension.folder, language)?.fields ?? {};
+    } catch {
+        return {};
+    }
 }
 
 /** A setting the campaign's game system adds to the setup (DAT-10), by its name in any case; undefined when the system has none by that name. */
@@ -135,13 +171,15 @@ export function systemProblems(root: string, context: Context): Problem[]
     const name = readTextSetting(root, "system");
     const found = name === undefined ? undefined : systemOf(root, context);
 
-    // What the campaign adds that does not read: the campaign plays with the system alone (CAM-3).
-    if (found?.problem !== undefined) {
-        return [{
-            path: "campaign.yaml",
-            message: `What campaign.yaml adds to the system ${name ?? ""} does not read, so the campaign plays with the system alone: ${found.problem}`,
-            fix: "fix it first, with the config command or by hand: until then validate does not check what the system works out on the pages",
-        }];
+    // What an extension or the campaign adds that does not read: the campaign plays without it (CAM-3).
+    if (found !== undefined && found.refused.length > 0) {
+        return found.refused.map(({ from, problem }) => ({
+            path: campaignFileName,
+            message: `What ${from} adds to the system ${name ?? ""} does not read, so the campaign plays without it: ${problem}`,
+            fix: from === campaignFileName
+                ? "fix it first, with the config command or by hand: until then validate does not check what the system works out on the pages"
+                : `install another version of it with package install ${from.replace(/^the extension /, "")}, or take it away with package remove`,
+        }));
     }
 
     if (name === undefined || found?.system !== undefined) {

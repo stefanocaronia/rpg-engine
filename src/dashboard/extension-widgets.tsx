@@ -4,8 +4,9 @@ import { type ComponentChildren, createContext } from "preact";
 import { useContext, useEffect, useRef } from "preact/hooks";
 import { type Section, sectionAddress } from "./address.ts";
 import { CardHead } from "./card.tsx";
-import type { ShownWidget, WidgetPage, WidgetPart, WidgetSpot, WidgetText, WidgetValue } from "./data.ts";
+import type { ShownWidget, WidgetPage, WidgetPart, WidgetSpot, WidgetText, WidgetTrack, WidgetValue } from "./data.ts";
 import { iconPath } from "./icons.tsx";
+import type { TrackChange } from "./pack-card.ts";
 import { isolated, numberText, pageDirection, t } from "./text.ts";
 
 /** The widgets of the campaign's extensions, as last read: every part of the page that holds some takes its own from here. */
@@ -147,7 +148,7 @@ function WidgetCard({ widget }: { widget: ShownWidget; })
 }
 
 /** A part of a widget's card, as the page draws its own. */
-function Part({ part }: { part: WidgetPart; })
+export function Part({ part }: { part: WidgetPart; })
 {
     if ("lead" in part) {
         return (
@@ -252,35 +253,65 @@ function Part({ part }: { part: WidgetPart; })
     return <img class="widget-image" src={`/images/ext/${encodeURIComponent(part.image.extension)}/${encodeURIComponent(part.image.file)}?v=${part.image.version}`} alt={textOf(part.alt)} loading="lazy" />;
 }
 
-/** A count as pips, or a bar, with its label and its value in words for a screen reader. */
-function Track({ track }: { track: { label: WidgetText; value: number; max: number; look?: "pips" | "bar"; }; })
+/**
+ * A count as marks, or a bar, with its label; a screen reader hears the label once, in the count's name, with its value in words (D-507). Marks are pips, or
+ * tall steps of a progress with their count under them; good ones circles, bad ones squares; after those lit, the held, the marked and the coming. In a card
+ * of a question, its place there, and what changed since the card's last look, for its marks to move.
+ */
+export function Track({ track, place, change }: { track: WidgetTrack; place?: "start" | "center" | "end"; change?: TrackChange | undefined; })
 {
     const label = textOf(track.label);
     const said = t("{value} of {max}", { value: track.value, max: track.max });
-    const pips = track.look !== "bar" && track.max <= 10;
+    const steps = track.look === "steps";
+    const marks = track.look !== "bar" && track.max <= (steps ? mostSteps : mostPips);
+    const kind = [place === undefined ? "widget-track" : `ask-track track-${place}`, track.tone ?? ""].filter((name) => name !== "").join(" ");
+    const more = [
+        track.held === undefined || track.held === 0 ? "" : t("held: {count}", { count: track.held }),
+        track.marked === undefined || track.marked === 0 ? "" : t("failed: {count}", { count: track.marked }),
+        track.coming === undefined || track.coming === 0 ? "" : t("this roll: {count}", { count: track.coming }),
+    ].filter((part) => part !== "");
+    const named = [`${label}: ${said}`, ...more].join(", ");
     return (
-        <div class="widget-track">
-            <span class="widget-track-label" dir="auto">{label}</span>
-            {pips
+        <div class={kind}>
+            <span class="widget-track-label" dir="auto" aria-hidden="true">{label}</span>
+            {marks
                 ? (
-                    <span class="pips" role="img" aria-label={`${label}: ${said}`}>
-                        {Array.from({ length: track.max }, (_, index) => <span key={index} class={index < track.value ? "pip on" : "pip"} />)}
+                    <span class={["pips", steps ? "steps" : "", track.tone ?? ""].filter((name) => name !== "").join(" ")} role="img" aria-label={named}>
+                        {Array.from({ length: track.max }, (_, index) => <Mark key={index} index={index} track={track} change={change} />)}
                     </span>
                 )
                 : (
                     <span class="bar-line">
-                        <span class="bar" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={track.max} aria-valuenow={track.value} aria-valuetext={said}>
+                        <span class="bar" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={track.max} aria-valuenow={track.value} aria-valuetext={more.length === 0 ? said : [said, ...more].join(", ")}>
                             <span class="fill" style={{ "--fill": String(track.value / track.max) }} />
                         </span>
-                        <span class="num">{`${numberText(track.value)}/${numberText(track.max)}`}</span>
+                        <span class="num" aria-hidden="true">{`${numberText(track.value)}/${numberText(track.max)}`}</span>
                     </span>
                 )}
+            {marks && steps && <span class="track-count num" aria-hidden="true">{`${numberText(track.value + (track.held ?? 0))}/${numberText(track.max)}`}</span>}
         </div>
     );
 }
 
+// How many marks a count draws at most, as pips or as steps; past that, a bar.
+const mostPips = 10;
+const mostSteps = 12;
+
+/** One mark of a count: lit, held, marked or coming, by where it falls after the value; lit or gone out just now, its step in the order they move. */
+function Mark({ index, track, change }: { index: number; track: WidgetTrack; change?: TrackChange | undefined; })
+{
+    const held = track.value + (track.held ?? 0);
+    const marked = held + (track.marked ?? 0);
+    const state = index < track.value ? "on" : index < held ? "held" : index < marked ? "marked" : index < marked + (track.coming ?? 0) ? "coming" : "";
+    const lit = change?.lit.indexOf(index) ?? -1;
+    const out = change?.out.indexOf(index) ?? -1;
+    const moves = lit >= 0 ? "lit" : out >= 0 ? "out" : change?.marked.includes(index) === true ? "struck" : "";
+    const step = Math.max(lit, out, 0);
+    return <span class={["pip", state, moves].filter((name) => name !== "").join(" ")} style={moves === "" ? undefined : { "--step": String(step) }} />;
+}
+
 /** Words of an extension, its values written in the page's language, each set apart. */
-function Text({ text }: { text: WidgetText; })
+export function Text({ text }: { text: WidgetText; })
 {
     if (typeof text === "string") {
         return <>{text}</>;
@@ -324,7 +355,7 @@ function rangeText(from: number, to: number): string
 }
 
 /** An extension's icon, drawn as the page strokes its own. */
-function Drawn({ path, kind }: { path: string; kind: string; })
+export function Drawn({ path, kind }: { path: string; kind: string; })
 {
     return (
         <svg class={kind} viewBox="0 0 24 24" aria-hidden="true">

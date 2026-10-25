@@ -5,13 +5,14 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { appendFileSync, cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
-import { campaignWidgets } from "../src/commands/game-widgets.ts";
-import type { Context } from "../src/core/context.ts";
+import { tonesOf } from "../src/commands/ask.ts";
+import { campaignWidgets, widgetCard } from "../src/commands/game-widgets.ts";
+import type { Context, Rows } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { startDashboard } from "../src/dashboard-server.ts";
-import { findExtension, installedExtensions, readExtension } from "../src/extensions/index.ts";
+import { findExtension, installedExtensions, readExtension, readsApi } from "../src/extensions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 
@@ -327,6 +328,242 @@ describe("a campaign's widgets on the dashboard (D-502)", () => {
     });
 });
 
+describe("the API 3 of an extension's code (D-505)", () => {
+    /** An Ironsworn campaign with the wards extension and those given, Kira its player character, Bram her companion, and Ombra outside the party. */
+    async function warded(more: Record<string, string> = {}): Promise<void>
+    {
+        await campaign("ironsworn", { "@rpgengine/wards": "0.3.0", ...more });
+        await rpg("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "wits=2", "--set", "ward-sign=firm", "--set", "momentum=2");
+        await rpg("write", "Bram", "--type", "character", "--set", "role=companion");
+        await rpg("write", "Ombra", "--type", "character");
+    }
+
+    /** What the wards command reads of a page, the party and the scene. */
+    const read = async (...args: string[]): Promise<any> => JSON.parse((await rpg("wards", ...args)).output);
+
+    /** A folder of packages with an extension of no code, named @rpgengine/<name>, that adds this to the game system. */
+    function adding(where: string, name: string, additions: string): string
+    {
+        mkdirSync(join(where, name), { recursive: true });
+        writeFileSync(join(where, name, "package.json"), JSON.stringify({ name: `@rpgengine/${name}`, version: "1.0.0", "rpg-engine": { kind: "extension", api: 3 } }));
+        writeFileSync(join(where, name, "extension.yaml"), `title: ${name}\nabout: ${name} for the tests\nlanguage: en\n${additions}\n`);
+        return where;
+    }
+
+    it("add to the game system over it, the extensions in the campaign's order, and the campaign's additions win (CAM-2)", async () => {
+        context = { ...context, extensionFolders: [adding(join(folder, "packages"), "later", "counters:\n  momentum: {min: -6, max: 9}"), ...testExtensionFolders] };
+        await warded();
+        expect((await read("Kira", "--field", "ward-bonus")).page.value).toBe(4);
+        expect((await read("Kira", "--field", "ward-charges")).page).toMatchObject({ value: "3/3", counter: { value: 3, max: 3 } });
+        expect((await read("Kira", "--field", "momentum")).page.value).toBe("2/8");
+        expect((await rpg("write", "Kira", "--add", "debilities=warded")).exitCode).toBe(0);
+        expect((await rpg("validate")).output).not.toContain("warded");
+
+        appendFileSync(join(folder, "campaign.yaml"), '  "@rpgengine/later": 1.0.0\n');
+        expect((await read("Kira", "--field", "momentum")).page.value).toBe("2/9");
+        await rpg("config", "counters", "momentum: {min: -6, max: 12}");
+        expect((await read("Kira", "--field", "momentum")).page.value).toBe("2/12");
+
+        await rpg("wards-mark", "Kira", "--field", "ward-charges", "--value", "0");
+        expect((await rpg("change", "Kira", "--recipe", "sojourn")).output).toContain("ward-charges 0/3 → 3/3");
+    });
+
+    it("are left out when they do not read, named by validate, and the campaign plays with the other layers (CAM-3)", async () => {
+        context = { ...context, extensionFolders: [adding(join(folder, "packages"), "cracked", "fields:\n  crack: number\ncomputed:\n  crack: 1 +"), ...testExtensionFolders] };
+        await warded({ "@rpgengine/cracked": "1.0.0" });
+        const problems = (await rpg("validate")).output;
+        expect(problems).toContain('What the extension cracked adds to the system ironsworn does not read, so the campaign plays without it: computed.crack: "1 +" is not a formula');
+        expect(problems).toContain("install another version of it with package install cracked, or take it away with package remove");
+        expect((await read("Kira", "--field", "ward-bonus")).page.value).toBe(4);
+        expect((await rpg("config", "counters", "momentum: {min: -6, max: ward-bonus}")).exitCode).toBe(0);
+        expect((await read("Kira", "--field", "momentum")).page.value).toBe("2/4");
+    });
+
+    it("read a page with its effects and what the system works out, the party, and the scene with its round and turn", async () => {
+        await warded();
+        await rpg("effect", "add", "Kira", "Sharp", "--set", "wits=4");
+        expect(await read("Kira", "--field", "wits", "--formula", "ward-bonus * 2", "--effect", "sharp")).toEqual({
+            page: { name: "Kira", pc: true, party: true, value: 4, counter: { value: 4 }, formula: 12, has: true },
+            members: [{ name: "Bram", pc: false }, { name: "Kira", pc: true }],
+            scene: null,
+        });
+        expect((await read("Ombra", "--effect", "Sharp")).page).toEqual({ name: "Ombra", pc: false, party: false, has: false });
+        expect((await read("Nessuno")).page).toBeNull();
+        const unread = await rpg("wards", "Kira", "--formula", "1 +");
+        expect(unread.exitCode).toBe(1);
+        expect(unread.output).toContain("The formula 1 + does not read:");
+
+        await rpg("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Kira", "--with", "Bram");
+        expect((await read("Kira")).scene).toEqual({ title: "Agguato" });
+        await rpg("scene", "order", "--order", "Kira", "--order", "Bram");
+        expect((await read("Kira")).scene).toEqual({ title: "Agguato", round: 1, turn: "Kira" });
+    });
+
+    it("are left out when they declare a field the core's pages hold, as role or status, which validate says (D-505)", async () => {
+        context = { ...context, extensionFolders: [adding(join(folder, "packages"), "usurper", "fields:\n  role: text\n  hostile: text\n  usurped: number"), ...testExtensionFolders] };
+        await campaign("ironsworn", { "@rpgengine/usurper": "1.0.0" });
+        expect((await rpg("validate")).output).toContain("The extension @rpgengine/usurper declares role, hostile, which the engine's own pages hold: it is left out.");
+        expect((await rpg("status")).output).not.toContain("Extensions:");
+    });
+
+    it("set no field that the system, an extension below or the campaign declares too, nor any while its additions are left out; a counter takes no text", async () => {
+        context = { ...context, extensionFolders: [adding(join(folder, "packages"), "earlier", "fields:\n  ward-strength: number"), ...testExtensionFolders] };
+        await campaign("ironsworn", { "@rpgengine/earlier": "1.0.0", "@rpgengine/wards": "0.3.0" });
+        await rpg("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "wits=2", "--set", "ward-sign=firm");
+        expect((await rpg("wards-mark", "Kira", "--field", "ward-strength", "--value", "9")).output).toContain("ward-strength is not one of them: its own are ward-sign, ward-charges, ward-bonus.");
+        await rpg("config", "fields", "ward-sign: text");
+        expect((await rpg("wards-mark", "Kira", "--field", "ward-sign", "--value", "deep")).output).toContain("ward-sign is not one of them: its own are ward-charges, ward-bonus.");
+        expect((await rpg("wards-mark", "Kira", "--field", "ward-charges", "--value", "lots")).output).toBe("ward-charges is a counter: give it a number, not lots. Nothing changed.");
+        // Under its own name, whatever the case it is given in.
+        await rpg("wards-mark", "Kira", "--field", "WARD-CHARGES", "--value", "1");
+        const kira = readFileSync(join(folder, "world", "characters", "Kira.md"), "utf8");
+        expect(kira).toContain("\nward-charges: 1/3\n");
+        expect(kira).not.toContain("WARD-CHARGES");
+
+        const broken = join(folder, "broken");
+        cpSync(join(testExtensionFolders[1], "wards"), join(broken, "wards"), { recursive: true });
+        const yaml = join(broken, "wards", "extension.yaml");
+        writeFileSync(yaml, readFileSync(yaml, "utf8").replace("ward-bonus: table(ward-signs, ward-sign) + wits", 'ward-bonus: "1 +"'));
+        context = { ...context, extensionFolders: [broken, ...testExtensionFolders] };
+        expect((await rpg("wards-mark", "Kira", "--field", "ward-charges", "--value", "2")).output).toBe(
+            "What the extension wards adds to the game system does not read, so the campaign plays without it and it sets none of its fields: validate says why. Nothing changed.",
+        );
+    });
+
+    it("set only the fields its extension.yaml adds, each with its line in the log as the engine shows that page, and a widget reads them", async () => {
+        await warded();
+        expect((await rpg("wards-mark", "Kira", "--field", "ward-sign", "--value", "deep")).output).toBe("Marked.");
+        expect((await read("Kira", "--field", "ward-bonus")).page.value).toBe(5);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Kira", field: "ward-sign", before: "firm", after: "deep", why: "a ward marked" } });
+        await rpg("wards-mark", "Ombra", "--field", "ward-strength", "--value", "3");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ visibility: "hidden", data: { page: "Ombra", field: "ward-strength", before: "0", after: "3" } });
+
+        const lines = readLogFile(folder).length;
+        const refused = await rpg("wards-mark", "Kira", "--field", "health", "--value", "0");
+        expect(refused.output).toBe(
+            "The extension wards sets only the fields it adds to the game system, and health is not one of them: its own are ward-strength, ward-sign, ward-charges, ward-bonus. Add it to fields or counters in its extension.yaml. Nothing changed.",
+        );
+        // A field of the system it declares again is still the system's.
+        expect((await rpg("wards-mark", "Kira", "--field", "momentum", "--value", "8")).exitCode).toBe(1);
+        expect((await rpg("wards-mark", "Nessuno", "--field", "ward-strength", "--value", "1")).output).toBe("No page alone is named Nessuno: give the name of one page of the campaign. Nothing changed.");
+        expect(readLogFile(folder)).toHaveLength(lines);
+
+        expect((await campaignWidgets(folder, context))[0].shows).toBeUndefined();
+        await rpg("wards-mark", "Kira", "--field", "ward-strength", "--value", "6");
+        expect((await campaignWidgets(folder, context))[0].shows).toEqual({ parts: [{ track: { label: "Ward", value: 6, max: 10 } }] });
+    });
+
+    it("roll for who, in view in the party and behind the screen outside it as master-rolls says; the player's physical dice in view (D-287)", async () => {
+        await warded();
+        const roll = async (...args: string[]): Promise<any> => JSON.parse((await rpg("wards-roll", "--notation", "1d6", ...args)).output);
+        expect(await roll("--who", "Bram")).toEqual({ total: 4, faces: [4], text: "1d6 = 4 [4]", id: expect.any(String), hidden: false });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "roll", visibility: "public", data: { who: "Bram", why: "a ward tested", check: "Ward", physical: false } });
+        expect(await roll("--who", "Ombra")).toMatchObject({ total: 4, hidden: true });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "roll", visibility: "hidden", data: { who: "Ombra", fingerprint: expect.any(String) } });
+        expect(await roll("--who", "Ombra", "--values", "2")).toMatchObject({ total: 2, faces: [2], hidden: false });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ visibility: "public", data: { who: "Ombra", physical: true } });
+
+        await rpg("config", "master-rolls", "in view");
+        expect(await roll("--who", "Ombra")).toMatchObject({ hidden: false });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ visibility: "public" });
+    });
+
+    it("ask in the card of a widget, read before the dice and once the call ends, with their buttons' words, their rule, and no button to turn down a forced roll (D-507)", async () => {
+        await warded();
+        const asked: { labels: string[]; rows?: Rows; before?: unknown; }[] = [];
+        const ended: unknown[] = [];
+        context = {
+            ...context,
+            page: {
+                // The question comes at once: the card is read apart, never in its way.
+                choose: async (_question, _title, labels, _signal, rows) => (asked.push({ labels, rows, before: await rows?.card?.shows() }), 0),
+                cardEnded: (card) => void card.shows().then((shows) => ended.push({ widget: card.widget, key: card.key, shows })),
+            },
+        };
+        expect(JSON.parse((await rpg("wards-ask", "--question", "Raise the ward", "--card")).output)).toMatchObject({ rolled: { total: 6 } });
+        expect(asked[0]).toMatchObject({
+            labels: ["Roll: Ward (1d6+2)", "Change my mind"],
+            rows: { who: "Kira", buttons: [{ name: "Raise it", note: "now" }, null], rule: "A 1 breaks the ward", card: { widget: "wards.ward", key: "ward-1" } },
+            before: undefined,
+        });
+        await vi.waitFor(() => expect(ended).toEqual([{ widget: "wards.ward", key: "ward-1", shows: { parts: [{ track: { label: "Ward", value: 6, max: 10 } }] } }]));
+
+        await rpg("wards-ask", "--question", "Hold the ward", "--forced");
+        expect(asked[1].labels).toEqual(["Roll: Ward (1d6+2)"]);
+        expect(asked[1].rows).toEqual({ who: "Kira", fields: ["wits"] });
+        expect(ended).toHaveLength(1);
+    });
+
+    it("keep how the dice turned out in the roll's line only when there is one for each, good, bad or none, behind the screen too (D-507)", () => {
+        expect(tonesOf(["bad", undefined], [1, 4])).toEqual({ tones: ["bad", null] });
+        expect([tonesOf(["bad"], [1, 4]), tonesOf(["bad", "good", "good"], [1, 4]), tonesOf(["bad", "lucky"], [1, 4]), tonesOf([undefined, undefined], [1, 4])]).toEqual([{}, {}, {}, {}]);
+    });
+
+    it("give no card where the widget's hook fails, and refuse a widget the extension does not have", async () => {
+        context = { ...context, extensionFolders: [gauges(join(folder, "packages"), { broken: "() => { throw new Error('no') }" })] };
+        await campaign("ironsworn", { "@rpgengine/gauges": "1.0.0" });
+        const extension = findExtension(context.extensionFolders ?? [], "gauges");
+        expect(extension === undefined ? "none" : await widgetCard(folder, context, extension, "broken", "key")).toBeUndefined();
+    });
+
+    it("refuse to ask in the card of a widget the extension does not have, saying its own", async () => {
+        await warded();
+        context = { ...context, page: { choose: async () => 0 } };
+        expect((await rpg("wards-ask", "--question", "Raise the ward", "--card", "--widget", "shield")).output).toBe(
+            "The extension wards asks in the card of a widget shield it does not have: its own are ward. Nothing was asked.",
+        );
+    });
+
+    it("ask the player for a roll as ask does: rolled, declined, said in words, or to ask in words; nothing is written once the call is stopped (ASK-3, ASK-4, ASK-8, ASK-9, ASK-10)", async () => {
+        await warded();
+
+        const asked = async (page?: Context["page"], signal?: AbortSignal): Promise<{ output: string; exitCode: number; }> => {
+            const own = context;
+            context = { ...context, ...(page === undefined ? {} : { page }), ...(signal === undefined ? {} : { signal }) };
+            const result = await rpg("wards-ask", "--question", "Raise the ward before they come");
+            context = own;
+            return result;
+        };
+
+        const answering = (answer: Awaited<ReturnType<NonNullable<Context["page"]>["choose"]>>): Context["page"] => ({ choose: async () => answer });
+
+        expect(JSON.parse((await asked(answering(0))).output)).toEqual({ rolled: { id: expect.any(String), total: 6, faces: [4], text: "1d6+2 = 6 [4] + 2" } });
+        expect(readLogFile(folder).slice(-3)).toMatchObject([
+            { type: "roll", by: "player", visibility: "public", data: { who: "Kira", check: "Ward", why: "Ward: Raise the ward before they come" } },
+            { type: "counter-changed", data: { page: "Kira", field: "ward-strength", after: "6" } },
+            { type: "extension", data: { text: "ward asked: rolled" } },
+        ]);
+        expect(JSON.parse((await asked(answering(1))).output)).toEqual({ declined: true });
+        expect(JSON.parse((await asked(answering({ said: "I run instead" }))).output)).toEqual({ said: "I run instead" });
+        expect(JSON.parse((await asked()).output)).toEqual({ inWords: "Raise the ward before they come (the checks: Ward 1d6+2)", physical: false });
+        await rpg("config", "dice", "physical");
+        expect(JSON.parse((await asked(answering(0))).output)).toEqual({ inWords: "Raise the ward before they come (the checks: Ward 1d6+2)", physical: true });
+        await rpg("config", "dice", "digital");
+
+        const lines = readLogFile(folder).length;
+        const stopped = new AbortController();
+        stopped.abort();
+        expect((await asked(answering(0), stopped.signal)).output).toBe("The call was stopped: nothing more is written.");
+        const midway = new AbortController();
+        const waiting: Context["page"] = { choose: (_question, _title, _labels, signal) => new Promise((done) => signal?.addEventListener("abort", () => done(0))) };
+        setTimeout(() => midway.abort(), 20);
+        expect((await asked(waiting, midway.signal)).exitCode).toBe(1);
+        expect(readLogFile(folder)).toHaveLength(lines);
+    });
+
+    it("read packages made for the API 1 to 3, as omens and the weather, and refuse one made for a newer, with what to install", () => {
+        expect([0, 1, 2, 3, 4, 2.5, undefined].map(readsApi)).toEqual([false, true, true, true, false, false, false]);
+        expect(findExtension(testExtensionFolders, "omens")?.adds).toEqual({});
+        expect(findExtension(testExtensionFolders, "weather")?.name).toBe("weather");
+        expect(findExtension(testExtensionFolders, "wards")?.adds.counters).toEqual({ "ward-charges": { max: "wits + 1" }, momentum: { min: -6, max: 8 } });
+
+        const newer = join(folder, "newer");
+        cpSync(join(testExtensionFolders[1], "wards"), newer, { recursive: true });
+        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 4 } }));
+        expect(() => readExtension(newer)).toThrow("The extension @rpgengine/wards cannot be used, because it is made for the extension API 4; this rpg-engine reads the API 1 to 3: install a version of it made for these.");
+    });
+});
+
 describe("a campaign's extensions through MCP", () => {
     it("are tools beside the core's, there from the first list, and gone when the campaign no longer lists them", async () => {
         await campaign("ironsworn", { "@rpgengine/omens": "1.2.0" });
@@ -348,6 +585,40 @@ describe("a campaign's extensions through MCP", () => {
             await client.callTool({ name: "status", arguments: {} });
             expect(await names()).not.toContain("omens");
         } finally {
+            await client.close();
+        }
+    });
+
+    it("tell the host they wait for the player while one that needs the player asks, and leave the others silent (D-505)", async () => {
+        await campaign("ironsworn", { "@rpgengine/wards": "0.3.0" });
+        await rpg("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "wits=2");
+        let click: (index: number) => void = () => undefined;
+        let shown: () => void = () => undefined;
+        const asked = new Promise<void>((done) => (shown = done));
+        context = { ...context, page: { choose: () => new Promise((done) => ((click = done), shown())) } };
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer(context).connect(serverTransport);
+        const client = new Client({ name: "test", version: "1.0.0" });
+        await client.connect(clientTransport);
+        vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+
+        try {
+            const heard: string[] = [];
+            await client.callTool({ name: "status", arguments: {} });
+            const call = client.callTool({ name: "wards-ask", arguments: { question: "Raise the ward" } }, undefined, { onprogress: (progress) => heard.push(progress.message ?? "") });
+            await asked;
+            await vi.advanceTimersByTimeAsync(20_000);
+            await vi.waitFor(() => expect(heard).toEqual(["waiting for the player"]));
+            click(0);
+            expect(JSON.parse(((await call).content as { text: string; }[])[0].text)).toMatchObject({ rolled: { total: 6 } });
+
+            heard.length = 0;
+            const read = client.callTool({ name: "wards", arguments: { page: "Kira" } }, undefined, { onprogress: (progress) => heard.push(progress.message ?? "") });
+            await vi.advanceTimersByTimeAsync(20_000);
+            await read;
+            expect(heard).toEqual([]);
+        } finally {
+            vi.useRealTimers();
             await client.close();
         }
     });

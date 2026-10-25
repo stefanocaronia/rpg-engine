@@ -289,6 +289,10 @@ export interface ShownRoll
     words?: NotationPart[];
     notation: string;
     total: number;
+    /** What the faces mean, in place of the total, when an extension's roll says it, in the campaign's language. */
+    says?: string;
+    /** How each die turned out, by its face in order, when an extension's roll says it: good, bad or none, for the page to colour it (D-507). */
+    tones?: (Tone | null)[];
     text: string;
     dice: ThrownDie[];
 }
@@ -329,7 +333,37 @@ export interface Asked
         gives: { field: string; from: number; value: number; max?: number; };
         rolls: { id: string; field: string; face: number; adds: number; total: number; }[];
     };
+    /** By button, its name and the note under it when a package words it, as Reroll and 3 left, in place of the label's words (D-507). */
+    buttons?: ({ name: string; note?: string; } | null)[];
+    /** The rule under the buttons, in a line, as "A 1 resets the lock". */
+    rule?: string;
+    /** The card of a package's widget it is asked in, as it shows before the dice; it comes a moment after the question, once the widget answers (D-507). */
+    card?: AskedCard;
 }
+
+/**
+ * A package's card for its questions (D-507): its widget, as lockpicking.lock, whose side card it stands for; the attempt, the same for each question of it;
+ * what it shows, in the widget's parts, none when the widget gave nothing in time; coming, while its widget has not answered yet; ended, as the call that
+ * asked in it left it, after the last dice.
+ */
+export interface AskedCard
+{
+    widget: string;
+    key: string;
+    shows?: WidgetShows;
+    coming?: true;
+    ended?: true;
+}
+
+/** What /api/asked gives: the question, or none; with none, the card a package's last question left, until another question comes (D-507). */
+export interface AskedNow
+{
+    asked: Asked | null;
+    card?: AskedCard;
+}
+
+/** How a die, or a part of a card, turned out for the one who rolls. */
+export type Tone = "good" | "bad";
 
 /** A point of the world map, in km east and north of its centre; with its map, by the place that holds it, none for the main map (POS-8). */
 export interface MapPoint
@@ -641,13 +675,30 @@ export type WidgetText = string | { text: string; values: Record<string, WidgetV
 /** A number, a word, a number with its unit, a range. */
 export type WidgetValue = number | string | { number: number; unit?: string; } | { from: number; to: number; unit?: string; };
 
+/**
+ * A count (D-507): its value lit; after them, those held but not sure, those marked, as a die that failed, those the roll asked may light; each already cut to
+ * the maximum. As pips, a bar, or steps of a progress; in an ask's card, where it stands on the stage, and whether it is good or bad to have.
+ */
+export interface WidgetTrack
+{
+    label: WidgetText;
+    value: number;
+    max: number;
+    look?: "pips" | "bar" | "steps";
+    held?: number;
+    marked?: number;
+    coming?: number;
+    stage?: "start" | "center" | "end";
+    tone?: Tone;
+}
+
 /** A part of a widget's card, drawn with the page's own parts. */
 export type WidgetPart =
-    | { lead: WidgetText; icon?: string; value?: WidgetValue; }
+    | { lead: WidgetText; icon?: string; value?: WidgetValue; tone?: Tone; }
     | { text: WidgetText; }
     | { facts: WidgetText[]; }
     | { values: { label: WidgetText; value: WidgetValue; }[]; }
-    | { track: { label: WidgetText; value: number; max: number; look?: "pips" | "bar"; }; }
+    | { track: WidgetTrack; }
     | { rows: { label: WidgetText; value?: WidgetValue; note?: WidgetText; }[]; }
     | { table: { head: WidgetText[]; rows: WidgetValue[][]; }; }
     | { image: { extension: string; file: string; version: number; }; alt: WidgetText; };

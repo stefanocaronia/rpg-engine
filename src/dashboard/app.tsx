@@ -7,10 +7,11 @@ import { type ActReply, ActSheet } from "./act-sheet.tsx";
 import { ActStrip } from "./act-strip.tsx";
 import { type ActStart, type SaidAct, saidStates, type SheetActions } from "./acts.ts";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
-import { answer, readActs, readAsked, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
+import { answer, closeCard, readActs, readAsked, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
+import { AskCard } from "./ask-card.tsx";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
-import type { ActsShown, Asked, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
+import type { ActsShown, Asked, AskedNow, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
 import { DeathSaveCard } from "./death-save.tsx";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
@@ -19,7 +20,9 @@ import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Help } from "./help.tsx";
 import { Icon } from "./icons.tsx";
 import { FollowedQuests, JournalView, QuestEndings } from "./journal.tsx";
+import { checkOf } from "./labels.ts";
 import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx";
+import { inCard, nextPackCard, type PackCard } from "./pack-card.ts";
 import { PackagesPage } from "./packages.tsx";
 import { About } from "./pages.tsx";
 import { PartyStrip } from "./party.tsx";
@@ -75,6 +78,8 @@ interface Shown
     place?: ShownPlace;
     openScene?: ShownScene;
     asked?: Asked;
+    /** The card of a package's question, which stays through the questions of its attempt and after them, until closed (D-507). */
+    pack?: PackCard | undefined;
     /** How many times it was read: what was explained is told again after each. */
     version: number;
     readAt?: Date;
@@ -89,7 +94,7 @@ interface Shown
 }
 
 /** What a roll changes of the sheet and the fight, which the page shows only once its dice land. */
-type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "knownBy" | "story" | "openScene">;
+type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "knownBy" | "story" | "openScene" | "pack">;
 
 // How long at most what a death save or a die of a rest changed waits for its dice, when they never land.
 const longestHold = 15_000;
@@ -151,6 +156,9 @@ function App()
     // were when a reading of them fails, and an answer older than one shown left out.
     const [widgets, setWidgets] = useState<ShownWidget[]>([]);
     const widgetReading = useRef({ asked: 0, shown: 0 });
+    // The card of a package's question as last read, even while the dice that changed it fly; the attempts the player let go, with the question then (D-507).
+    const packNow = useRef<PackCard>();
+    const packsGone = useRef(new Map<string, string | undefined>());
 
     // Reads view again for whom the address names, or the player character the master calls, and what the master asks; an answer that comes after a newer one
     // is left out.
@@ -165,8 +173,8 @@ function App()
         }, () => undefined);
 
         try {
-            const [first, told, actsNow] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined), readActs().catch(() => undefined)]);
-            const asked = told;
+            const [first, askedNow, actsNow] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined), readActs().catch(() => undefined)]);
+            const asked = askedNow === undefined ? undefined : askedNow.asked ?? undefined;
             // With more than one player character, a question for one elsewhere puts them in the foreground: the place, the map and the squares are theirs (VIEW-12).
             const here = first.kind === "overview" && (first.place?.here ?? []).some((one) => one.name === asked?.who);
             const focus = first.kind === "overview" && first.foreground !== undefined && asked?.who !== first.foreground && !here ? playerNamed(first.party, asked?.who)?.name : undefined;
@@ -243,10 +251,12 @@ function App()
                 savingNow.current = shownCard;
                 setSaving(shownCard);
 
-                // So does a die of a rest the player spends, whose card shows it once it lands (D-492).
+                // So does a die of a rest the player spends, whose card shows it once it lands (D-492); and a roll from a package's card, its marks (D-507).
                 const spent = asked?.spend?.rolls.some((roll) => roll.id === asking?.id) === true;
+                const packRolled = packNow.current?.sent !== undefined;
+                const pack = askedNow === undefined ? packNow.current : packOf(askedNow);
 
-                if (asking !== undefined && ((card !== undefined && card.roll === undefined) || spent) && holding.current === undefined) {
+                if (asking !== undefined && ((card !== undefined && card.roll === undefined) || spent || packRolled) && holding.current === undefined) {
                     holding.current = { roll: asking, timer: window.setTimeout(() => land(asking.id), longestHold) };
                 }
 
@@ -271,6 +281,7 @@ function App()
                         place: overview.kind === "overview" ? overview.place : undefined,
                         openScene: overview.kind === "overview" ? overview.openScene : undefined,
                         asked,
+                        pack,
                         version: before.version + 1,
                         readAt: new Date(),
                         noCharacter: overview.kind === "none",
@@ -283,6 +294,97 @@ function App()
             if (number === reading.current) {
                 setShown((before) => ({ ...before, problem: error instanceof Error ? error.message : String(error) }));
             }
+        }
+    };
+
+    // The card of a package's question after a reading (D-507): an attempt asked again is no longer let go; one whose card went unanswered is.
+    const packOf = (told: AskedNow): PackCard | undefined => {
+        const key = told.asked?.card?.key;
+
+        if (key !== undefined && packsGone.current.has(key) && packsGone.current.get(key) !== told.asked?.id) {
+            packsGone.current.delete(key);
+        }
+
+        const next = nextPackCard(packNow.current, told, packsGone.current);
+
+        if (next.let !== undefined) {
+            packsGone.current.set(next.let, undefined);
+        }
+
+        packNow.current = next.card;
+        return next.card;
+    };
+
+    // The card shown, and as last read, the same: pressed, closed.
+    const setPack = (pack: PackCard | undefined): void => {
+        packNow.current = pack;
+        setShown((before) => ({ ...before, pack, ...(before.pending === undefined ? {} : { pending: { ...before.pending, pack } }) }));
+    };
+
+    // A button of a package's card (D-507): the card waits with it pressed while the answer goes; the core's change of mind takes the card away with it.
+    const answerPack = async (index: number): Promise<void> => {
+        const card = packNow.current;
+        const asked = card?.asked;
+
+        if (card === undefined || asked === undefined || card.ended === true || card.sent !== undefined) {
+            return;
+        }
+
+        const leaves = checkOf(asked.labels[index] ?? "", asked.title) === undefined && (asked.buttons?.[index] ?? undefined) === undefined;
+
+        if (leaves) {
+            packsGone.current.set(card.key, asked.id);
+        }
+
+        setPack(leaves ? undefined : { ...card, sent: index });
+
+        try {
+            await answer(asked.id, index);
+        } catch {
+            packsGone.current.delete(card.key);
+            setPack({ ...card, sent: undefined });
+        }
+
+        void read();
+    };
+
+    // The player's own words in place of a button (ASK-10): taken, the card goes with its question, as the master hears them.
+    const sayPack = async (text: string, focused: boolean): Promise<boolean> => {
+        const card = packNow.current;
+        const asked = card?.asked;
+
+        if (card === undefined || asked === undefined || card.ended === true || card.sent !== undefined) {
+            return false;
+        }
+
+        const taken = await answer(asked.id, text).catch(() => false);
+
+        if (taken) {
+            packsGone.current.set(card.key, asked.id);
+            setPack(undefined);
+
+            if (focused) {
+                focusAfterCard();
+            }
+        }
+
+        void read();
+        return taken;
+    };
+
+    const closePack = (focused: boolean): void => {
+        const key = packNow.current?.key;
+
+        if (key !== undefined) {
+            packsGone.current.set(key, undefined);
+            // Closed for the server too: no reading, here or on another page, brings it back.
+            void closeCard(key);
+        }
+
+        setPack(undefined);
+
+        if (focused) {
+            focusAfterCard();
         }
     };
 
@@ -444,7 +546,8 @@ function App()
         return taken;
     };
 
-    const requested = live ? requestedOf(answering === shown.asked?.id ? undefined : shown.asked, (index) => void answerFrom(index)) : undefined;
+    // A package's question is answered from its card alone (D-507).
+    const requested = live ? requestedOf(answering === shown.asked?.id || inCard(shown.asked) ? undefined : shown.asked, (index) => void answerFrom(index)) : undefined;
     // The open scene goes by turns, as a fight, and whether the turn is a player character's (D-314, D-315, D-444); whose, by name, when there are more.
     const fight = hasTurns(shown.openScene);
     const turnOf = fight ? playerNamed(shown.party, shown.openScene?.turn) : undefined;
@@ -586,7 +689,8 @@ function App()
     );
     return (
         <RequestedRoll.Provider value={requested}>
-            <WidgetsContext.Provider value={widgets}>
+            {/* While a package's card is there, its widget beside the page would show the same twice (D-507). */}
+            <WidgetsContext.Provider value={shown.pack === undefined ? widgets : widgets.filter((widget) => widget.id !== shown.pack?.widget)}>
                 <PlayerActsContext.Provider value={playerActs}>
                     <div class={live ? "page" : "page stale"}>
                         {!inSetup && (
@@ -642,7 +746,19 @@ function App()
                                 }}
                             />
                         )}
-                        {live && saving === undefined && shown.asked && shown.asked.spend === undefined && (
+                        {live && saving === undefined && shown.pack !== undefined && (
+                            <AskCard
+                                key={shown.pack.key}
+                                card={shown.pack}
+                                name={several ? playerNamed(shown.party, shown.pack.asked?.who)?.name ?? turnName : undefined}
+                                title={widgets.find((widget) => widget.id === shown.pack?.widget)?.title}
+                                onAnswer={(index) => void answerPack(index)}
+                                onWords={sayPack}
+                                onClose={closePack}
+                            />
+                        )}
+                        {/* A package's question waits for its card, which comes a moment after it; the question alone when its widget gives none (D-507). */}
+                        {live && saving === undefined && shown.pack === undefined && shown.asked && shown.asked.spend === undefined && !inCard(shown.asked) && (
                             <AskedBanner
                                 asked={shown.asked}
                                 yourTurn={yourTurn && (asker === undefined || asker.name === turnOf?.name)}
@@ -850,6 +966,7 @@ function withHeld(before: Shown, next: Shown, hold: boolean): Shown
         knownBy: shown.knownBy,
         story: shown.story,
         openScene: shown.openScene,
+        pack: shown.pack,
     });
     return { ...next, ...steady(before), pending: steady(next) };
 }

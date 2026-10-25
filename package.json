@@ -12,6 +12,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
     }
   },
   "files": [
@@ -25,11 +29,12 @@
     "instructions"
   ],
   "scripts": {
-    "build": "node -e \"for (const folder of ['dist', 'systems/5e/dist', 'extensions/weather/dist']) require('node:fs').rmSync(folder, { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\" && tsc -p extensions/weather && tsc -p systems/5e",
+    "build": "node -e \"for (const folder of ['dist', 'systems/5e/dist', 'extensions/weather/dist', 'extensions/lockpicking/dist']) require('node:fs').rmSync(folder, { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\" && tsc -p extensions/weather && tsc -p extensions/lockpicking && tsc -p systems/5e",
     "dev": "tsc --watch",
     "demo": "npm run build && node --experimental-strip-types --no-warnings test/demo/dashboard.ts --ask --port 5760",
     "betasim": "npm run build && node --experimental-strip-types --no-warnings test/betasim/run.ts",
     "translate": "node --experimental-strip-types --no-warnings test/i18n/translate.ts",
+    "test:downstream": "node --experimental-strip-types --no-warnings test/downstream/run.ts",
     "test": "vitest run",
     "format": "eslint --fix . && dprint fmt",
     "lint": "eslint . && dprint check && tsc -p tsconfig.test.json && tsc -p src/dashboard --noEmit",

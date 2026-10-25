@@ -3475,6 +3475,22 @@ a {
     margin: 0;
 }
 
+/* At the guide's end, how to tell us what went wrong: two lines and the link to GitHub. */
+.help-report .card-body p {
+    max-width: 64ch;
+    margin: 0 0 8px;
+    line-height: 1.55;
+}
+
+.help-report .help-report-note {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.help-report .about-link {
+    margin-top: 4px;
+}
+
 /* The guide's text in its cards (D-413): its headings in the accent, its tables scrolling inside their card, its commands to copy, the chat's lines quoted. */
 .guide p,
 .guide ul,
@@ -3861,12 +3877,15 @@ a.status-chip.widget-chip {
     gap: var(--gap);
 }
 
+/* Two columns that the tracks share, so that the pips of each start in one line; the labels take at most half, and wrap. */
 .widget-body {
     display: grid;
+    grid-template-columns: fit-content(50%) minmax(0, 1fr);
     gap: 12px;
 }
 
 .widget-body > * {
+    grid-column: 1 / -1;
     margin: 0;
 }
 
@@ -3902,10 +3921,13 @@ a.status-chip.widget-chip {
 }
 
 .widget-track {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: subgrid;
     align-items: center;
-    gap: 8px 12px;
+}
+
+.widget-track > .pips {
+    flex-wrap: wrap;
 }
 
 .widget-track-label {
@@ -5265,6 +5287,84 @@ button.row,
     background: var(--accent);
 }
 
+/* A count of a widget (D-507): good ones circles in the allies' green, bad ones squares in the red of what goes against, by shape as well as colour, as
+   the marks of the dying; a progress as tall steps. After those lit: held ones half full, a failed one crossed, those this roll may light dashed. */
+.pips.good {
+    --mark: var(--ally);
+}
+
+.pips.bad {
+    --mark: var(--low);
+}
+
+.pips:is(.good, .bad, .steps) .pip {
+    position: relative;
+    border-color: var(--mark, var(--accent));
+}
+
+.pips:is(.good, .bad, .steps) .pip.on {
+    background: var(--mark, var(--accent));
+}
+
+.pips.bad .pip {
+    border-radius: 18%;
+}
+
+.pips.steps {
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.pips.steps .pip {
+    width: 10px;
+    height: 22px;
+    border-radius: 3px;
+}
+
+.pip.held {
+    background: color-mix(in srgb, var(--mark, var(--accent)) 35%, var(--float));
+}
+
+.pip.marked {
+    position: relative;
+    border-color: var(--low);
+    background: color-mix(in srgb, var(--low) 12%, var(--float));
+}
+
+.pip.marked::before,
+.pip.marked::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80%;
+    max-width: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--low);
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.pip.marked::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.pip.coming {
+    border-style: dashed;
+    background: color-mix(in srgb, var(--mark, var(--accent)) 10%, transparent);
+}
+
+/* The count of steps, under them in a question's card; beside the page its marks say it. */
+.track-count {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.widget-track > .track-count {
+    display: none;
+}
+
 /* Bars and tracks: the track's edge stands out of the page enough to see (WCAG 1.4.11). */
 .bar-line {
     display: inline-flex;
@@ -6565,6 +6665,367 @@ button.row,
     }
 }
 
+/* The card of a package's question (D-507): its widget's parts in the frame of the master's question, through the questions of one attempt. Its counts on a
+   stage of three places, the middle one large; under them the roll's button or the choices a die asks for, and the rule; the outcome where they were. Wide,
+   the three places side by side; on a phone the middle one alone above the two others, and once told the card scrolls with the page. */
+.ask-card .asked-question {
+    margin-bottom: 4px;
+}
+
+/* Told, the button that closes it in its corner, beside the question. */
+.ask-card.ended .asked-question {
+    padding-inline-end: 36px;
+}
+
+.ask-close {
+    position: absolute;
+    top: 10px;
+    inset-inline-end: 10px;
+}
+
+.ask-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas: "start center end";
+    align-items: start;
+    gap: 14px 24px;
+    max-width: 760px;
+    margin: 14px auto 16px;
+}
+
+.ask-place {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 10px;
+    min-width: 0;
+}
+
+.ask-place.at-start {
+    grid-area: start;
+}
+
+.ask-place.at-center {
+    grid-area: center;
+    justify-items: center;
+}
+
+.ask-place.at-end {
+    grid-area: end;
+    justify-items: end;
+}
+
+.ask-track {
+    display: grid;
+    justify-items: inherit;
+    gap: 6px;
+    min-width: 0;
+}
+
+/* A label in the colour of its marks, and long in some languages: it breaks rather than leave its place. */
+.ask-track .widget-track-label {
+    overflow-wrap: anywhere;
+    hyphens: auto;
+}
+
+.ask-track.track-end .widget-track-label {
+    text-align: end;
+}
+
+.ask-track.good .widget-track-label {
+    color: var(--ally);
+}
+
+.ask-track.bad .widget-track-label {
+    color: var(--low);
+}
+
+.ask-track .pips {
+    gap: 6px;
+}
+
+.ask-track .pip {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+.ask-track .pips.steps {
+    gap: 7px;
+}
+
+.ask-track .pips.steps .pip {
+    width: 16px;
+    height: 34px;
+    border-radius: 5px;
+}
+
+.ask-facts {
+    justify-content: flex-end;
+}
+
+.ask-others {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.ask-foot {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+/* The question of a die that asks a choice, as "A 1 came up: reroll?", over its two buttons: the card's title stays the attempt's. */
+.ask-prompt {
+    margin: 0;
+    font-weight: 650;
+}
+
+.ask-choices {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.ask-roll {
+    /* The die in front hides the lines of the one behind it with the button's gold, as a check's button. */
+    --die-ground: var(--gold);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: min(320px, 100%);
+    min-height: 48px;
+    padding: 8px 20px;
+    border: 0;
+    border-radius: var(--radius-m);
+    background: var(--gold);
+    color: var(--on-gold);
+    font: inherit;
+    font-weight: 650;
+    box-shadow: var(--raise);
+    cursor: pointer;
+}
+
+.ask-leave {
+    gap: 8px;
+    min-height: 48px;
+    padding: 8px 20px;
+}
+
+.ask-choices:has(> :nth-child(2)) > :is(.ask-roll, .ask-leave) {
+    min-width: min(220px, 100%);
+}
+
+/* What the button costs or leaves, as "3 left", after its name. */
+.ask-note {
+    font-weight: 400;
+}
+
+.ask-choices > [aria-disabled="true"] {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.ask-choices > .sent {
+    opacity: 1;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* The outcome, large where the buttons were and as tall: green when it went well, red when not, with the widget's icon. */
+.ask-outcome {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.ask-outcome.good {
+    color: var(--ally);
+}
+
+.ask-outcome.bad {
+    color: var(--low);
+}
+
+.ask-outcome-icon {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ask-then {
+    margin: -6px 0 0;
+    font-weight: 600;
+}
+
+/* The player's own words, as in the master's question, the whole width it may take under the rule. */
+.ask-own {
+    width: 100%;
+    margin-top: 2px;
+}
+
+.ask-own input {
+    text-align: start;
+}
+
+.ask-rule {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-wrap: balance;
+}
+
+@media (max-width: 600px) {
+    /* Told, the card scrolls away with the page: the player reads on. */
+    .ask-card.ended {
+        position: relative;
+        top: auto;
+    }
+
+    .ask-stage {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-areas: "center center" "start end";
+        gap: 12px;
+        margin: 10px 0 12px;
+    }
+
+    .ask-track .pip {
+        width: 18px;
+        height: 18px;
+    }
+
+    .ask-track .pips.steps {
+        gap: 6px;
+    }
+
+    .ask-track .pips.steps .pip {
+        width: 14px;
+        height: 30px;
+    }
+
+    .ask-roll {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Two choices side by side, their names over their notes. */
+    .ask-choices:has(> :nth-child(2)) {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .ask-choices:has(> :nth-child(2)) > :is(.ask-roll, .ask-leave) {
+        display: grid;
+        justify-items: center;
+        align-content: center;
+        gap: 0;
+        min-width: 0;
+        min-height: 56px;
+        padding: 6px 8px;
+        line-height: 1.2;
+    }
+
+    .ask-choices:has(> :nth-child(2)) .die-icons {
+        display: none;
+    }
+
+    .ask-choices:has(> :nth-child(2)) .ask-note {
+        font-size: 0.85rem;
+    }
+
+    .ask-outcome {
+        font-size: 1.4rem;
+    }
+}
+
+/* The marks move only for who wants it, and never make the player wait: the choices can be pressed as they come. While the roll is asked, the marks it may
+   light breathe; lit by the dice, one after the other in their order; gone out from the last, falling a little; a failed one struck with a shake; a pip
+   spent leaves a ring. Reduced, the states are simply there. */
+@media (prefers-reduced-motion: no-preference) {
+    .ask-card.asking .pip.coming {
+        animation: ask-breathe 1.6s var(--ease) infinite alternate;
+    }
+
+    .ask-track .pip.lit {
+        animation: dying-pop var(--short) var(--ease-bounce) calc(var(--step, 0) * var(--quick) / 2) both;
+    }
+
+    .ask-track .pip.out {
+        animation: ask-out var(--short) var(--ease-in) calc(var(--step, 0) * var(--quick) / 3) both;
+    }
+
+    .ask-track .pip.struck {
+        animation: ask-struck var(--short) var(--ease-out) both;
+    }
+
+    .ask-track .pips:not(.steps) .pip.out::after {
+        content: "";
+        position: absolute;
+        inset: -6px;
+        border: 2px solid var(--mark, var(--accent));
+        border-radius: inherit;
+        animation: dying-ring var(--long) var(--ease-out) both;
+    }
+
+    .ask-card .ask-outcome {
+        animation: dying-word var(--medium) var(--ease-out) both;
+    }
+}
+
+@keyframes ask-breathe {
+    from {
+        opacity: 0.5;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes ask-out {
+    from {
+        background-color: var(--mark, var(--accent));
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: translateY(3px);
+    }
+}
+
+@keyframes ask-struck {
+    0% {
+        transform: scale(0.6);
+    }
+
+    50% {
+        transform: scale(1.15) translateX(2px);
+    }
+
+    75% {
+        transform: translateX(-2px);
+    }
+}
+
 /* The dice of a rest the master asks the player to spend (D-492, ASK-14): a card in the frame of the master's question, which stays while they roll. Who rests
    and the points the dice give, as a bar that keeps where the rest began; a row for each kind of die with its pips and its button; the dice rolled as chips;
    the one button that ends it. Wide, the points and the dice side by side; narrow, one under the other. */
@@ -7438,6 +7899,14 @@ summary.fixed {
     color: var(--ink);
 }
 
+/* What an extension's roll says in place of a total that means nothing: words, smaller, at most two lines. */
+.roll-total.roll-says {
+    max-width: 12ch;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-wrap: balance;
+}
+
 .roll-dice {
     grid-column: 2;
     margin-top: 4px;
@@ -7602,6 +8071,21 @@ summary.fixed {
     width: 14px;
     height: 14px;
     color: var(--accent);
+}
+
+/* A die of a package's roll that went well or badly for who rolled it, by its colour beside its face (D-507). */
+.die-chip.tone-good {
+    box-shadow: inset 0 0 0 1.5px var(--ally);
+    color: var(--ally);
+}
+
+.die-chip.tone-bad {
+    box-shadow: inset 0 0 0 1.5px var(--low);
+    color: var(--low);
+}
+
+.die-chip:is(.tone-good, .tone-bad) svg.die {
+    color: currentColor;
 }
 
 .die-chip.dropped {
@@ -7812,6 +8296,18 @@ summary.fixed {
 
 .dice-result.free:not(.highest, .lowest) {
     box-shadow: var(--plate-shadow);
+}
+
+/* What the faces of a package's roll mean, in place of the total: words, smaller (D-507). */
+.plate-total.plate-says {
+    max-width: 9em;
+    color: var(--ink);
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: normal;
+    text-align: center;
+    text-wrap: balance;
 }
 
 .dice-result.free .plate-total {
@@ -13526,6 +14022,28 @@ svg.icon {
 .package-update svg.icon {
     width: 14px;
     height: 14px;
+}
+
+/* Where a package's problems are reported: a link of words in its meta, never broken in two. */
+.package-report {
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
+/* On a phone the meta wraps: the link goes under it, never a dot left at a line's end. */
+@media (max-width: 600px) {
+    .package-report-gap {
+        display: none;
+    }
+
+    .package-report {
+        display: block;
+        width: fit-content;
+    }
 }
 
 /* Where a package is already, the system in use, an adventure in the story: words, never a button. */

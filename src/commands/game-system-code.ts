@@ -125,7 +125,14 @@ function game(root: string, context: Context): SystemGame
 {
     return {
         ...reader(root, context),
-        set: (name, values, why) => setNumbers(root, context, name, values, why),
+        set: (name, values, why) => {
+            const world = campaignWorld(root, context);
+            const page = uniquePage(world, name);
+
+            if (page !== undefined) {
+                setFields(root, context, world, page, values, why);
+            }
+        },
         addEffect: (name, effect, why) => addEffect(root, context, name, effect, why),
         endEffect: (name, effect, why) => endEffect(root, context, name, effect, why),
         roll: (notation, by) => {
@@ -144,7 +151,8 @@ function game(root: string, context: Context): SystemGame
     };
 }
 
-function systemPage(world: World, page: Page): SystemPage
+/** A page as a system's code reads it: in the party or not, the player's or not, its counters with what its effects give, its effects. */
+export function systemPage(world: World, page: Page): SystemPage
 {
     const fields = effectiveFields(world, page);
     return {
@@ -166,30 +174,40 @@ function uniquePage(world: World, name: string): Page | undefined
     return found.length === 1 ? found[0] : undefined;
 }
 
-/** Sets numbers on a page, a counter keeping its maximum, each with its line in the log. */
-function setNumbers(root: string, context: Context, name: string, values: Record<string, number>, why: string): void
+/**
+ * Sets fields on a page, numbers or text, a counter only numbers, keeping its maximum, each with its line in the log, public when the page concerns the player:
+ * for a system's code and an extension's (D-505).
+ */
+export function setFields(root: string, context: Context, world: World, page: Page, values: Record<string, number | string>, why: string): void
 {
-    const world = campaignWorld(root, context);
-    const page = uniquePage(world, name);
-
-    if (page === undefined || Object.keys(values).length === 0) {
+    if (Object.keys(values).length === 0) {
         return;
+    }
+
+    // A counter takes numbers alone: text in it would read as no counter at all.
+    const worded = Object.entries(values).find(([field, value]) => typeof value === "string" && valueNamed(world.system?.fields ?? {}, field) === "counter");
+
+    if (worded !== undefined) {
+        throw new Error(`${worded[0]} is a counter: give it a number, not ${worded[1]}. Nothing changed.`);
     }
 
     const before = effectiveFields(world, page);
     const written = Object.fromEntries(
         Object.entries(values).map(([field, value]) => {
             const own = readCounter(valueNamed(page.fields, field));
-            return [field, own?.max === undefined ? value : formatCounter({ ...own, value })];
+            return [field, typeof value !== "number" || own?.max === undefined ? value : formatCounter({ ...own, value })];
         }),
     );
     writePage(world, page.name, undefined, { set: written });
     const visibility = concernsPlayer(world, page) ? "public" : "hidden";
 
     for (const [field, after] of Object.entries(written)) {
-        const was = readCounter(valueNamed(before, field));
-        const shown = was === undefined ? "0" : was.max === undefined ? String(was.value) : formatCounter(was);
-        appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", visibility, { page: page.name, field, before: shown, after: String(after), why }));
+        const was = valueNamed(before, field);
+        const counter = readCounter(was);
+        const shown = was === undefined ? (typeof after === "number" ? "0" : "none") : counter === undefined ? String(was) : formatCounter(counter);
+        // A counter whose maximum the system works out, which the page does not write, reads with it after too.
+        const now = typeof after === "number" && counter?.max !== undefined ? formatCounter({ value: after, max: counter.max }) : after;
+        appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", visibility, { page: page.name, field, before: String(shown), after: String(now), why }));
     }
 }
 

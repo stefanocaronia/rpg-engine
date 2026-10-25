@@ -1,6 +1,6 @@
 // A package given as a .tgz (D-452): read and unpacked with Node alone, refused whole when an entry would leave the package, is not a plain file or folder, or
 // the archive does not read to its end; installed beside the copy it replaces, which comes back when npm fails.
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -148,6 +148,36 @@ describe("npm's packages with a .tgz (D-452)", () => {
         expect(await packages.install(second)).toBe(`${second} is no longer the package that was asked about: install it again`);
         expect(run.asked).toEqual([]);
         expect(readFileSync(join(target, "index.js"), "utf8")).toBe("v1");
+    });
+
+    it("runs the code just given, a folder's of the same version as the one installed, and keeps the one installed when npm fails", async () => {
+        const installed = join(folder, "packages", "node_modules", "@me", "notes");
+
+        // As npm: a copy of the folder, but none when what it installed has the same version.
+        const npmLike = (fails: boolean) => (args: string): Promise<NpmRun> => {
+            const from = /"([^"]+)" --install-links/.exec(args)?.[1] ?? "";
+            const version = (path: string): string | undefined => (existsSync(path) ? (JSON.parse(readFileSync(join(path, "package.json"), "utf8")) as { version: string; }).version : undefined);
+
+            if (!fails && version(installed) !== version(from)) {
+                cpSync(from, installed, { recursive: true });
+            }
+
+            return Promise.resolve({ code: fails ? 1 : 0, out: "", errors: "" });
+        };
+
+        const source = join(folder, "notes");
+        mkdirSync(join(source, "dist"), { recursive: true });
+        writeFileSync(join(source, "package.json"), manifest("0.1.0", "@me/notes"));
+        writeFileSync(join(source, "dist", "index.js"), "old");
+        await npmPackages(join(folder, "packages"), npmLike(false)).install(source);
+        writeFileSync(join(source, "dist", "index.js"), "new");
+        expect(await npmPackages(join(folder, "packages"), npmLike(false)).install(source)).toBeUndefined();
+        expect(readFileSync(join(installed, "dist", "index.js"), "utf8")).toBe("new");
+
+        writeFileSync(join(source, "dist", "index.js"), "newer");
+        expect(await npmPackages(join(folder, "packages"), npmLike(true)).install(source)).toMatch(/^npm said:/);
+        expect(readFileSync(join(installed, "dist", "index.js"), "utf8")).toBe("new");
+        expect(readdirSync(join(folder, "packages", "local", "@me"))).toEqual(["notes"]);
     });
 
     it("on uninstall takes away what it was unpacked to, and its scope's folder left empty", async () => {

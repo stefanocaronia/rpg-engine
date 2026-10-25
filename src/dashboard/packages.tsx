@@ -1064,7 +1064,12 @@ function SystemRow(
             name={<span class="system-chip">{system.name}</span>}
             badges={<Trust verified={system.verified} code={system.code} />}
             about={systemTitleLabel(system.title)}
-            meta={<VersionMeta version={system.version} newer={newer} />}
+            meta={
+                <>
+                    <VersionMeta version={system.version} newer={newer} />
+                    <ReportLink issues={system.issues} name={system.name} after={system.version !== undefined || newer !== undefined} />
+                </>
+            }
             row={`system:${system.name}`}
             fresh={fresh}
             actions={
@@ -1152,7 +1157,12 @@ function ExtensionRow(
                 tone="broken"
                 name={name}
                 about={<span class="package-red">{t("It does not read: install it again.")}</span>}
-                meta={<bdi class="package-why">{extension.broken}</bdi>}
+                meta={
+                    <>
+                        <bdi class="package-why">{extension.broken}</bdi>
+                        <ReportLink issues={extension.issues} name={name} after />
+                    </>
+                }
                 actions={
                     <>
                         <button type="button" class="button package-button" aria-label={t("Install {name} again", { name })} aria-disabled={state.busy} onClick={() => !state.busy && onUpdate()}>
@@ -1175,7 +1185,12 @@ function ExtensionRow(
             name={name}
             badges={<Trust verified={extension.verified} code={false} />}
             about={`${phraseLabel(extension.about.replace(/\.$/, ""))}.`}
-            meta={<VersionMeta version={extension.version} newer={newer} />}
+            meta={
+                <>
+                    <VersionMeta version={extension.version} newer={newer} />
+                    <ReportLink issues={extension.issues} name={name} after />
+                </>
+            }
             row={`extension:${extension.package}`}
             fresh={fresh}
             actions={
@@ -1254,6 +1269,7 @@ function LanguageRow(
                 <>
                     <VersionMeta version={language.version} newer={newer} />
                     {page && ` · ${t("the language of this page")}`}
+                    <ReportLink issues={language.issues} name={name} after />
                 </>
             }
             row={`language:${language.code}`}
@@ -1347,6 +1363,23 @@ function VersionMeta({ version, newer }: { version: string | undefined; newer: s
                     {t("new {version}", { version: newer })}
                 </span>
             )}
+        </>
+    );
+}
+
+/** Where the package's problems are reported, as its package.json says: after what its meta says before it, on a line of its own on a phone; nothing when it says nowhere. */
+export function ReportLink({ issues, name, after }: { issues: string | undefined; name: string; after: boolean; })
+{
+    if (issues === undefined) {
+        return null;
+    }
+
+    return (
+        <>
+            {after && <span class="package-report-gap">{" · "}</span>}
+            <a class="package-report" href={issues} target="_blank" rel="noreferrer" aria-label={t("Report a problem with {name}", { name })}>
+                {t("Report a problem")}
+            </a>
         </>
     );
 }

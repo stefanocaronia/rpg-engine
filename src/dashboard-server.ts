@@ -24,7 +24,7 @@ import { importShown } from "./commands/import.ts";
 import { adventureText, packageCommand, YesRefused } from "./commands/package.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
-import { type Context, packagesFolder, type Picked, type Player, type Rows, type Said, type SpendAsked, type Spending } from "./core/context.ts";
+import { type CardAsked, type Context, packagesFolder, type Picked, type Player, type Rows, type Said, type SpendAsked, type Spending } from "./core/context.ts";
 import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
@@ -294,6 +294,8 @@ interface Served
     pages: Set<ServerResponse>;
     /** What the master asks the player now, waiting for a click on the page (D-279). */
     asked?: Asked;
+    /** The card of a package's question as its call left it, after the last dice, until another question comes (D-507). */
+    card?: ShownCard;
     /** How long a question waits for a page to come back, after the last one closed. */
     pageReturn: number;
     /** Each setting the player changed on the page since the master's last call, as it was before the first of those changes (D-341). */
@@ -360,7 +362,18 @@ interface Asked
     rows?: Rows;
     /** The dice of a rest the player spends one at a time, until its one button (ASK-14). */
     spending?: Spending;
+    /** The card it is asked in, as it shows before the dice, once its package's widget answers (D-507). */
+    card?: ShownCard;
     settle(choice: number | Said | Picked | undefined | "absent"): void;
+}
+
+/** A package's card as the page draws it (D-507): its widget, the attempt, what it shows; ended, once the call that asked in it is over. */
+interface ShownCard
+{
+    widget: string;
+    key: string;
+    shows?: unknown;
+    ended?: true;
 }
 
 // How many characters the player's own words may have, in place of a button (ASK-10).
@@ -482,6 +495,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    if (request.method === "POST" && path === "/api/card" && origin !== undefined) {
+        await closeCard(request, response, served);
+        return;
+    }
+
     if (request.method === "POST" && path === "/api/seen" && origin !== undefined) {
         await pageSeen(request, response, served);
         return;
@@ -554,6 +572,8 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         // The dice of a rest as they are now, read again at each look (ASK-14).
         const spend = asked?.spending === undefined ? undefined : spendShown(asked.spending, served);
         sendJson(response, 200, {
+            // How the card of a package's last question was left, while no other question is asked (D-507).
+            ...(asked === undefined && served.card !== undefined ? { card: served.card } : {}),
             asked: asked === undefined
                 ? null
                 : {
@@ -565,6 +585,10 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
                     names,
                     ...rows,
                     ...(asked.rows?.save === undefined ? {} : { save: asked.rows.save }),
+                    ...(asked.rows?.buttons === undefined ? {} : { buttons: asked.rows.buttons }),
+                    ...(asked.rows?.rule === undefined ? {} : { rule: asked.rows.rule }),
+                    // Its card, or that one comes, until its widget answers: the page waits for it rather than show the question twice (D-507).
+                    ...(asked.card !== undefined ? { card: asked.card } : asked.rows?.card === undefined ? {} : { card: { widget: asked.rows.card.widget, key: asked.rows.card.key, coming: true } }),
                     ...(asked.square ? { square: true } : {}),
                     ...(spend === undefined ? {} : { who: spend.who, spend }),
                 },
@@ -697,12 +721,26 @@ function sendTagged(request: IncomingMessage, response: ServerResponse, bytes: U
     response.writeHead(200, all).end(request.method === "HEAD" ? undefined : bytes);
 }
 
+/** Reads what a package's card shows, never in the way of its question: given once it answers, with nothing to show when it fails or is late (D-507). */
+function readCard(served: Served, card: CardAsked | undefined, read: (card: ShownCard) => void): void
+{
+    if (card === undefined) {
+        return;
+    }
+
+    void card.shows().then((shows) => read({ widget: card.widget, key: card.key, ...(shows === undefined ? {} : { shows }) }), () => read({ widget: card.widget, key: card.key }));
+}
+
 /**
  * The player through the page (D-279): the question shows on every page open, and the first click settles it; with no page open, "absent", so that ask turns to
  * the form or to words. A stop of the call takes the question away and nothing is logged (ASK-9).
  */
 function pagePlayer(served: Served): Player
 {
+    // The card the last question on the page was asked in, which the call that asked it leaves as it ends, and how many were put (D-507).
+    let cardKey: string | undefined;
+    let questions = 0;
+
     const put = (question: string, title: string, labels: string[], signal?: AbortSignal, more: Pick<Asked, "square" | "rows" | "spending"> = {}): Promise<number | Said | Picked | undefined | "absent"> => {
         if (served.pages.size === 0) {
             return Promise.resolve("absent");
@@ -713,8 +751,9 @@ function pagePlayer(served: Served): Player
             return Promise.resolve(undefined);
         }
 
-        // A question asked again, as after a summary, takes the place of the one before.
+        // A question asked again, as after a summary, takes the place of the one before; and of a card left from before.
         served.asked?.settle(undefined);
+        served.card = undefined;
         return new Promise((done) => {
             const timer = setTimeout(() => settle(undefined), playerWait).unref();
 
@@ -733,6 +772,14 @@ function pagePlayer(served: Served): Player
             const stop = (): void => settle(undefined);
             const asked: Asked = { id: randomUUID(), question, title, labels, ...more, settle };
             served.asked = asked;
+            questions += 1;
+            cardKey = more.rows?.card?.key ?? cardKey;
+            readCard(served, more.rows?.card, (card) => {
+                if (served.asked === asked) {
+                    asked.card = card;
+                    served.notify();
+                }
+            });
             signal?.addEventListener("abort", stop);
             served.notify();
             watchHidden(served);
@@ -741,6 +788,22 @@ function pagePlayer(served: Served): Player
 
     return {
         asking: () => served.asked !== undefined,
+        cardEnded(card)
+        {
+            // Only a card its questions were asked in on the page.
+            if (card.key !== cardKey) {
+                return;
+            }
+
+            const at = questions;
+            readCard(served, card, (read) => {
+                // Only while no other question came meanwhile, answered or not.
+                if (served.asked === undefined && questions === at) {
+                    served.card = { ...read, ended: true };
+                    served.notify();
+                }
+            });
+        },
         async choose(question, title, labels, signal, rows)
         {
             const chosen = await put(question, title, labels, signal, rows === undefined ? {} : { rows });
@@ -935,6 +998,24 @@ async function changeSetting(request: IncomingMessage, response: ServerResponse,
 }
 
 /** Whether a page is seen now, as it says when it comes in sight or goes out of it (D-455): a question on pages no one sees goes to the chat. */
+/** The player closed a package's card that its call left (D-507): it is gone on every page and every device, and after a reload. */
+async function closeCard(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.object({ close: z.string().min(1).max(200) }).strict().safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send the key of the card to close: { close }." });
+        return;
+    }
+
+    if (served.card?.key === parsed.data.close) {
+        served.card = undefined;
+        served.notify();
+    }
+
+    sendJson(response, 202, {});
+}
+
 async function pageSeen(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
     const parsed = z.object({ page: z.string().min(1).max(64), seen: z.boolean() }).strict().safeParse(await readBody(request));

@@ -57,6 +57,7 @@ export {
     containerFieldOf,
     containerFields,
     heldTypesText,
+    isCoreField,
     isCounterField,
     isEmptyField,
     isFieldName,

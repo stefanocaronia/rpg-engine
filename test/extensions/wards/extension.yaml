@@ -1,0 +1,28 @@
+# A test extension for Ironsworn, made for the API 3 (D-505): what it adds to the game system, and code that reads a page and the scene, writes its own
+# fields, rolls for someone and asks the player.
+title: wards, a test extension
+about: wards kept on pages, read and marked at will
+language: en
+needs: {system: ironsworn}
+fields:
+  ward-strength: number
+  ward-sign: text
+  ward-charges: counter
+  ward-bonus: number
+tables:
+  ward-signs: {faint: 1, firm: 2, deep: 3}
+computed:
+  ward-bonus: table(ward-signs, ward-sign) + wits
+counters:
+  ward-charges: {max: wits + 1}
+  # In place of the system's, as campaign.yaml may put its own in place of this.
+  momentum: {min: -6, max: 8}
+recipes:
+  sojourn:
+    set: {ward-charges: max}
+values:
+  debilities: [warded]
+widgets:
+  ward:
+    title: Ward
+    place: side

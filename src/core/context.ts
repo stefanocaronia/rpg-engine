@@ -224,6 +224,22 @@ export interface Rows
     who: string;
     fields: (string | null)[];
     save?: SaveAsked;
+    /** By button, its name and the note under it when a package words it, as Reroll and 3 left (D-507). */
+    buttons?: ({ name: string; note?: string; } | null)[];
+    /** The rule under the buttons, in a line. */
+    rule?: string;
+    card?: CardAsked;
+}
+
+/**
+ * The card of a package's widget a question is asked in (D-507): the widget, by its extension's name and its own, as lockpicking.lock, and which attempt it is;
+ * what it shows, read when it is asked for, never in the way of the question.
+ */
+export interface CardAsked
+{
+    widget: string;
+    key: string;
+    shows(): Promise<unknown>;
 }
 
 /** A death save the question asks (DIE-4, D-460): its die, the total that succeeds, its counters as they stand, and what the lowest and highest faces do. */
@@ -275,6 +291,8 @@ export interface Player
     spendDice?(question: string, title: string, done: string, spending: Spending, signal?: AbortSignal): Promise<0 | undefined | "absent">;
     /** Whether a question waits for the player there now, as on the dashboard's page; a form does not say. */
     asking?(): boolean;
+    /** As the call whose questions were asked in a card ends: the card as it is after the last dice (D-507). */
+    cardEnded?(card: CardAsked): void;
 }
 
 export function defaultContext(folder = process.cwd()): Context

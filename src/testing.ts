@@ -1,0 +1,247 @@
+// The test kit for whoever writes an extension (D-506): a campaign of a game system in play, with the extension installed from its folder as the player's own,
+// its commands run as the command line runs them, with the dice and the time decided; its log, its widgets and the dashboard read as the page reads them.
+import { mkdirSync, mkdtempSync, readFileSync, rmdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { request } from "node:http";
+import { tmpdir } from "node:os";
+import { basename, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { stringify } from "yaml";
+import { runCommandLine } from "./command-line.ts";
+import { campaignWidgets, type ShownWidget } from "./commands/game-widgets.ts";
+import type { Context, Player } from "./core/context.ts";
+import type { LogEntry } from "./core/log.ts";
+import { SessionStore } from "./core/session-store.ts";
+import { startDashboard } from "./dashboard-server.ts";
+import { loadSystemCode } from "./systems/index.ts";
+
+export type { ShownWidget } from "./commands/game-widgets.ts";
+export type { CardAsked, Context, Player, Rows, Said } from "./core/context.ts";
+export type { LogEntry } from "./core/log.ts";
+
+/** What a command printed, and its exit code: 0 when it did what it was asked. */
+export interface Ran
+{
+    output: string;
+    exitCode: number;
+}
+
+/** A campaign for an extension's tests, made by testCampaign. */
+export interface TestCampaign
+{
+    /** Its folder, a temporary one of its own. */
+    folder: string;
+    /** What its commands run with: change its `page` to answer the player's questions, its `signal` to stop a call. */
+    context: Context;
+    /** Runs a command as the command line does, as `run("lockpicking", "Crypt door", "--who", "Kira")`. */
+    run(...args: string[]): Promise<Ran>;
+    /** Runs a command that must succeed, and gives what it printed; it throws with that when it fails. */
+    ok(...args: string[]): Promise<string>;
+    /** The dice show these faces in turn, each one die of any size; when they run out, a roll throws. */
+    dice(...faces: number[]): void;
+    /** The lines of the campaign's log, in order. */
+    log(): LogEntry[];
+    /** A file of the campaign, as text, by its path in it; undefined when there is none. */
+    read(path: string): string | undefined;
+    /** The widgets of the campaign's extensions, as the dashboard shows them. */
+    widgets(): Promise<ShownWidget[]>;
+    /** The dashboard of the campaign, served on a port of this computer, with a page open on it. */
+    dashboard(): Promise<TestDashboard>;
+    /** Takes the campaign's folder away, and anything it started. */
+    close(): Promise<void>;
+}
+
+/** A campaign's dashboard in a test: the player through its page, what it answers, and what it is sent. */
+export interface TestDashboard
+{
+    /** The player through the page: give it as the campaign's context.page for the questions to reach the page. */
+    player: Player;
+    /** What the dashboard answers at an address, as JSON, as /api/asked. */
+    get(path: string): Promise<any>;
+    /** Sends the dashboard what the page sends, as an answer to /api/answer; its status and what it answered. */
+    post(path: string, body: unknown): Promise<{ status: number; body: any; }>;
+    close(): Promise<void>;
+}
+
+/** How a test campaign is made: its game system, the folders of the extensions it uses, its language, and whether its setup is done (by default it is). */
+export interface TestCampaignOptions
+{
+    system: string;
+    extensions?: string[];
+    language?: string;
+    play?: boolean;
+    /** Settings written in campaign.yaml as by hand, as {"calendar-start": "14 April"}. */
+    settings?: Record<string, unknown>;
+}
+
+/**
+ * A campaign in play for a test (D-506): made with init in a temporary folder, its setup done, using these extensions, each linked from its folder as the
+ * player's own, never through npm, so that its code runs. Its dice show 4 until told otherwise, its time is a fixed day, its ids count up.
+ */
+export async function testCampaign(options: TestCampaignOptions): Promise<TestCampaign>
+{
+    const base = mkdtempSync(join(tmpdir(), "rpg-extension-test-"));
+    const folder = join(base, "campaign");
+    const packages = join(base, "packages");
+    const linked = (options.extensions ?? []).map((extension) => linkPackage(packages, resolve(extension)));
+    let ids = 0;
+    let faces: number[] | undefined;
+    const context: Context = {
+        folder,
+        random: (sides) => {
+            if (faces === undefined) {
+                return Math.min(4, sides);
+            }
+
+            const face = faces.shift();
+
+            if (face === undefined) {
+                throw new Error("The test ran out of dice: give more faces with dice().");
+            }
+
+            return face;
+        },
+        now: () => new Date("2026-10-02T10:00:00Z"),
+        newId: () => `id${++ids}`,
+        newSalt: () => "salt",
+        actor: "master",
+        platform: process.platform === "win32" || process.platform === "darwin" ? process.platform : "linux",
+        systemFolders: [enginePath("../systems/")],
+        systemCode: await loadSystemCode([enginePath("../systems/")]),
+        extensionFolders: [packages],
+    };
+    const started: TestDashboard[] = [];
+    // Each call reads the campaign's context as the test left it, a page or a signal of its own included.
+    const campaign: TestCampaign = {
+        folder,
+        context,
+        run: (...args) => runCommandLine(args, campaign.context),
+        ok: async (...args) => {
+            const ran = await campaign.run(...args);
+
+            if (ran.exitCode !== 0) {
+                throw new Error(`${args.join(" ")} failed: ${ran.output}`);
+            }
+
+            return ran.output;
+        },
+        dice: (...given) => (faces = [...given]),
+        log: () => (readText(join(folder, "log.jsonl")) ?? "").split("\n").filter((line) => line.trim() !== "").map((line) => JSON.parse(line) as LogEntry),
+        read: (path) => readText(join(folder, path)),
+        widgets: () => campaignWidgets(folder, campaign.context),
+        dashboard: async () => {
+            const dashboard = await testDashboard(campaign.context);
+            started.push(dashboard);
+            return dashboard;
+        },
+        close: async () => {
+            await Promise.all(started.map((dashboard) => dashboard.close()));
+            // The links first, alone: never through them, into the extension's own folder.
+            linked.forEach((one) => unlink(one.link));
+            rmSync(base, { recursive: true, force: true });
+        },
+    };
+    await campaign.ok("init", "--name", "Test", "--language", options.language ?? "en", "--system", options.system, "--difficulty", "normal", "--lethality", "dice");
+
+    if (options.play !== false) {
+        inPlay(folder);
+    }
+
+    const extensions = Object.fromEntries(linked.map((one) => [one.name, one.version]));
+    const added = { ...options.settings, ...(linked.length === 0 ? {} : { extensions }) };
+    const written = readFileSync(join(folder, "campaign.yaml"), "utf8");
+    writeFileSync(join(folder, "campaign.yaml"), Object.keys(added).length === 0 ? written : `${written}${stringify(added)}`);
+    return campaign;
+}
+
+/** An extension's folder linked into the packages a test campaign reads, as one the player installed from a folder: its name and version. */
+function linkPackage(packages: string, folder: string): { name: string; version: string; link: string; }
+{
+    const manifest = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { name?: string; version?: string; };
+
+    if (manifest.name === undefined || manifest.version === undefined) {
+        throw new Error(`${folder} has no package.json with a name and a version: give the folder of an extension.`);
+    }
+
+    const scope = manifest.name.includes("/") ? manifest.name.split("/")[0] : "";
+    mkdirSync(join(packages, scope), { recursive: true });
+    // A junction on Windows, which needs no rights; a link elsewhere.
+    const link = join(packages, scope, basename(manifest.name));
+    symlinkSync(folder, link, "junction");
+    return { name: manifest.name, version: manifest.version, link };
+}
+
+/** Takes a link away, never what it leads to: a junction of Windows goes as an empty folder does. */
+function unlink(link: string): void
+{
+    try {
+        unlinkSync(link);
+    } catch {
+        rmdirSync(link);
+    }
+}
+
+/** A campaign that init made in play, as after its setup (MOD-1): the settings of play that are not there take their usual values. */
+function inPlay(folder: string): void
+{
+    const state = join(folder, "state.yaml");
+    writeFileSync(state, readFileSync(state, "utf8").replace(/^mode: setup$/m, "mode: play"));
+    const settings = join(folder, "campaign.yaml");
+    const written = readFileSync(settings, "utf8");
+    const usual = ["saves: checkpoint", "rigor: smooth", "dice: digital", "units: metric"].filter((line) => !new RegExp(`^${line.split(":")[0]}:`, "m").test(written));
+    writeFileSync(settings, `${written}${usual.map((line) => `${line}\n`).join("")}`);
+}
+
+/** The dashboard of a test campaign, with a page open on it that the server has heard from, so that questions go to the page. */
+async function testDashboard(context: Context): Promise<TestDashboard>
+{
+    const session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+    const dashboard = await startDashboard({ ...context, files: session }, session, { ports: [0], page: context.folder });
+
+    if (dashboard === undefined) {
+        session.close();
+        throw new Error("The test's dashboard did not start.");
+    }
+
+    const port = Number(new URL(dashboard.url).port);
+    const call = (method: string, path: string, body?: unknown): Promise<{ status: number; body: any; }> =>
+        new Promise((done, fail) => {
+            const headers = body === undefined ? {} : { "origin": `http://127.0.0.1:${port}`, "content-type": "application/json" };
+            const sent = request({ host: "127.0.0.1", port, path, method, headers }, (response) => {
+                let text = "";
+                response.setEncoding("utf8");
+                response.on("data", (chunk: string) => (text += chunk));
+                response.on("end", () => done({ status: response.statusCode ?? 0, body: text.trim() === "" ? {} : JSON.parse(text) as unknown }));
+            });
+            sent.on("error", fail);
+            sent.end(body === undefined ? undefined : JSON.stringify(body));
+        });
+    const page = request({ host: "127.0.0.1", port, path: "/events" });
+    const opened = new Promise((done) => page.on("response", (response) => response.once("data", done)));
+    page.end();
+    await opened;
+    return {
+        player: dashboard.player,
+        get: async (path) => (await call("GET", path)).body,
+        post: (path, body) => call("POST", path, body),
+        close: async () => {
+            page.destroy();
+            await dashboard.close();
+            session.close();
+        },
+    };
+}
+
+/** A path of the engine's package, from this file in src/ or dist/ alike. */
+function enginePath(relative: string): string
+{
+    return fileURLToPath(new URL(relative, import.meta.url));
+}
+
+function readText(path: string): string | undefined
+{
+    try {
+        return readFileSync(path, "utf8");
+    } catch {
+        return undefined;
+    }
+}
