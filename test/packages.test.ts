@@ -32,11 +32,13 @@ function fakeNpm(modules: string, known: Record<string, string>): PackageManager
         installed,
         describe: (spec) => Promise.resolve(info(spec) ?? { failed: `npm has no package ${spec}`, missing: true }),
         install: (spec) => {
-            const to = join(modules, ...spec.split("/"));
+            // A name with its version, as rpg-engine gives npm the one it described.
+            const name = spec.replace(/(?<=.)@[^@/]*$/, "");
+            const to = join(modules, ...name.split("/"));
             mkdirSync(join(to, ".."), { recursive: true });
             // As npm does, what was there goes first: a link to a folder is taken away, never what it points to.
             rmSync(to, { recursive: true, force: true });
-            cpSync(known[spec], to, { recursive: true });
+            cpSync(known[name], to, { recursive: true });
             installed.push(spec);
             return Promise.resolve(undefined);
         },
@@ -146,13 +148,13 @@ describe("rpg package install", () => {
         expect(result.output).toMatch(
             /^Installed weather \d+\.\d+\.\d+, verified, and the campaign uses it: the sky changes each dawn by a roll, with the seasons, hot deserts, polar cold and fog\. Its commands: weather, weather-set\. Its parts of your instructions are given when they apply: play, setup\.\n\nIts part for now:\n\nThe weather changes by itself each dawn/,
         );
-        expect(npm.installed).toEqual(["@rpgengine/weather"]);
+        expect(npm.installed).toEqual([`@rpgengine/weather@${weatherVersion}`]);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain(`\nextensions:\n  "@rpgengine/weather": ${weatherVersion}\n`);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-installed", visibility: "public", data: { package: "@rpgengine/weather", version: weatherVersion, verified: true } });
         expect((await rpg("status")).output).toContain("\nExtensions: weather (the sky changes each dawn");
 
         expect((await rpg("package", "install", "weather")).output).toMatch(/^The campaign already uses weather \d+\.\d+\.\d+, verified: the sky/);
-        expect(npm.installed).toEqual(["@rpgengine/weather"]);
+        expect(npm.installed).toEqual([`@rpgengine/weather@${weatherVersion}`]);
     });
 
     it("says when a chat sees the new tools, by the app in use (D-441)", async () => {
@@ -225,7 +227,7 @@ describe("rpg package install", () => {
         mkdirSync(join(modules, "@rpgengine"), { recursive: true });
         symlinkSync(copy, join(modules, "@rpgengine", "weather"), "junction");
         await rpg("package", "install", "weather");
-        expect(npm.installed).toEqual(["@rpgengine/weather"]);
+        expect(npm.installed).toEqual([`@rpgengine/weather@${weatherVersion}`]);
         removeFolder(join(copy, ".."));
     });
 
@@ -275,7 +277,7 @@ describe("rpg package install", () => {
         await rpg("package", "install", "weather");
         writeFileSync(join(modules, "@rpgengine", "weather", "extension.yaml"), "title: [broken\n");
         expect((await rpg("package", "install", "weather")).output).toMatch(/^The campaign already uses weather \d+\.\d+\.\d+, verified|^Installed weather \d+\.\d+\.\d+, verified/);
-        expect(npm.installed).toEqual(["@rpgengine/weather", "@rpgengine/weather"]);
+        expect(npm.installed).toEqual([`@rpgengine/weather@${weatherVersion}`, `@rpgengine/weather@${weatherVersion}`]);
     });
 });
 

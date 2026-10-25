@@ -283,12 +283,15 @@ async function installed(root: string, context: Context, name: string): Promise<
     }
 
     // A name alone is one of ours: weather is @rpgengine/weather, never a stranger's of that name, which is given as npm:weather.
-    const spec = name.startsWith("npm:") ? name.slice(4) : isLocalSpec(name) || name.startsWith("@") ? name : `${verifiedScope}${name}`;
-    const described = await packages.describe(spec);
+    const asked = name.startsWith("npm:") ? name.slice(4) : isLocalSpec(name) || name.startsWith("@") ? name : `${verifiedScope}${name}`;
+    const described = await packages.describe(asked);
 
     if ("failed" in described) {
-        throw new Error(`${described.failed}. Nothing changed${spec === name ? "" : `: ${name} alone means ${spec}, one of RPG Engine's; another's is named with its scope, or as npm:${name} without one`}.`);
+        throw new Error(`${described.failed}. Nothing changed${asked === name ? "" : `: ${name} alone means ${asked}, one of RPG Engine's; another's is named with its scope, or as npm:${name} without one`}.`);
     }
+
+    // npm is given the version described, which the player's yes was for: by its name alone, npm would keep the exact version it saved before.
+    const spec = isLocalSpec(asked) ? asked : `${described.name}@${described.version}`;
 
     if (described.kind === "system") {
         return await systemInstalled(root, context, spec, name, described);
