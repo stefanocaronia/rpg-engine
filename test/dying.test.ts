@@ -157,6 +157,27 @@ describe("the dying", () => {
         expect(await ok("scene", "next")).not.toContain("death save");
     });
 
+    it("leaves the death save of every player character to the player, the second too, on its own card (DIE-4, DIE-5, D-450)", async () => {
+        await ok("write", "Mira", "--type", "character", "--set", "role=pc", "--set", "hp=3/12");
+        await ok("change", "Mira", "hp", "--by=-5");
+        await ok("scene", "open", "--title", "Il guado", "--type", "combat", "--with", "Ettore", "--with", "Mira");
+        await ok("scene", "order", "--order", "Ettore", "--order", "Mira");
+        const turn = await ok("scene", "next");
+        expect(turn).toContain("Mira is dying: the turn starts with their death save, the player's to roll: ask them, with ask, a check of 1d20; the engine writes its outcome.");
+        expect(readLogFile(folder).filter((entry) => entry.type === "roll")).toEqual([]);
+
+        let shown: Rows | undefined;
+        const page: Player = {
+            choose: async (_question, _title, _labels, _signal, rows) => {
+                shown = rows;
+                return 0;
+            },
+        };
+        const result = await ask.run(ask.input.parse({ question: "Mira è a terra", options: "Tiro contro la morte 1d20", who: "Mira" }), { ...context, page, random: () => 13 });
+        expect(shown).toMatchObject({ who: "Mira", save: { successes: { field: "death-successes", value: 0 } } });
+        expect(ask.format(result)).toContain("Mira's death save: 13, a success; death-successes 0 → 1.");
+    });
+
     it("dies at once when what goes past 0 is as large as the maximum (DIE-2)", async () => {
         expect(await ok("change", "Ettore", "hp", "--by=-30", "--damage", "fire")).toContain(
             "Ettore dies at once: 20 past 0 is at least the maximum, 20; death-failures 0 → 3. Read rules Instant Death.",
