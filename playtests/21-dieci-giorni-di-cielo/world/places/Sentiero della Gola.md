@@ -2,7 +2,7 @@
 kind: path
 stops:
   - "[[Rocca del Varco]]"
-  - 12 km
+  - 14 km
   - "[[Gola del Lupo]]"
   - 14 km
   - "[[Torralba]]"

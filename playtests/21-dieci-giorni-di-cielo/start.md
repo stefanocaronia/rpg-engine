@@ -39,7 +39,7 @@ Pop-Location
 - `package install weather` installs `@rpgengine/weather` from npm, verified, with no yes asked, and adds it to `campaign.yaml`; `package list` must give it at 0.2.1. If npm has a newer version, write down which one was played.
 - `advance` to day 1 starts the weather: its output ends with a line «Weather: …», the first score rolled with 1d6 on the summer table. `rpg weather` says the same with the scale of `weather-set`. The roll is the extension's, not a roll of the log, so `--prepared` accepts the campaign.
 - The settings: rigor rules, so the rations are counted by the engine and the water is the master's to count, «a gallon each, two if the weather is hot» (5e `upkeep`); lethality dice; milestones; `voices master`, so that the run measures the weather and not the character agent; units metric, so degrees Celsius and kilometres.
-- `world/`: 30 pages. `validate` finds no problems; `status` shows day 1, the 25th of August, summer, Corrado (hp 24, ac 18) in Vallerana with Mastra Ilde, the quest «Le erbe per Torralba» (deadline day 10, 18:00), and the event Il ritorno di Zaira (day 4, 18:00).
+- `world/`: 31 pages. `validate` finds no problems; `status` shows day 1, the 25th of August, summer, Corrado (hp 24, ac 18) in Vallerana with Mastra Ilde, the quest «Le erbe per Torralba» (deadline day 10, 18:00), and the event Il ritorno di Zaira (day 4, 18:00).
 - With uncommitted changes in the repo, add `--uncommitted`. The dice have no seed: compare the moments, not the skies.
 
 ## The sessions
@@ -70,7 +70,7 @@ Positions in km east and north of Vallerana; normal pace, 4.5 km an hour, 8 hour
 
 - **Colli di Vallerana** (region, no climate: the seasons' table): Vallerana, the Strada dei Gelsi (Vallerana, 36 km, Locanda del Gelso, 36 km, Sabbiedo), Sabbiedo with its Caravanserraglio. Day 1 to the Locanda, about 15:00; day 2 to Sabbiedo, about 15:00.
 - **Deserto d'Ambra** (region, `climate: torrid`, `biome: desert`, with `caldo` and `incontri` in its environment): the Pista del Sale (Sabbiedo, 30 km, Pozzo delle Due Palme, 34 km, Cisterna d'Ambra, 30 km, Rocca del Varco), the well and the cistern. The road is in the region's `contains`, so a party on it, or in a camp written `here` on it, reads the hot desert's table. With Zaira they march by night: off at 17:00 on day 5, the well about 23:40; off at 17:00 on day 6, the cistern about 00:30 on day 7; off at 17:00 on day 7, the Rocca about 23:40. Each dawn falls while they sleep at a water point.
-- **Valle dell'Orsa** (region, no climate): the Rocca del Varco, where the Pista ends; the Strada della Valle (Rocca, 40 km, Osteria del Ponte, 40 km, Torralba), about 18 hours, arriving on day 10; the Sentiero della Gola (`path`: Rocca, 12 km, Gola del Lupo, 14 km, Torralba), about 6 hours.
+- **Valle dell'Orsa** (region, no climate): the Rocca del Varco, where the Pista ends; the Strada della Valle (Rocca, 40 km, Osteria del Ponte, 40 km, Torralba), about 18 hours, arriving on day 10; the Sentiero della Gola (`path`: Rocca, 14 km, Gola del Lupo, 14 km, Torralba), about 6 hours.
 
 The calendar: day 1 is the 25th of August; day 7 the 31st; day 8 the 1st of September, autumn. The hot desert's table is the same in every season; the season shows in the hills (summer: a heat wave at the bottom of the scale, a thunderstorm next to it) and in the valley (autumn: rain, wind, and fog on mornings that roll it).
 

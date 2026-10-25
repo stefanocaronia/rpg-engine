@@ -66,7 +66,7 @@ inventory:
   - "[[Mace]]"
   - "[[Shield]]"
   - "[[Amulet]]"
-  - "[[Healer's Kit]]"
+  - "[[Borsa da cerusico di Corrado]]"
   - "[[Bedroll]]"
   - "[[Tinderbox]]"
   - "[[Torch]] 3"
