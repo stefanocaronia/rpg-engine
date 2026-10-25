@@ -1,6 +1,6 @@
 # 22 La notte della dogana: a night of locks
 
-The first game with the lockpicking extension, `@rpgengine/lockpicking` (D-505), installed from the repo's folder since it is not on npm yet. A 5e campaign already under way: Nives, a thief of 3rd level with expertise in thieves' tools, and Tecla, a cleric with no proficiency in them, break into a customs house by night to take the true register from the collector's chest and bring out Tecla's brother, chained in a cell, before the trial at dawn. Six locks between them and the boat: a gate anyone may try, a chest that wants the tools, an iron door already scratched by a prisoner, opened while the guards come, a door the player must not know the name of, and manacles with no DC on their page. The guard changes at three: two hours in a cellar nobody visits, time for a short rest. Giulia's scenario (25 October). A second start, [B](#start-b-at-the-cells-door), plays the same night from 03:25 at the cells' door, in one session from the dashboard, so that the failures in a row and the fight come for sure instead of being hoped for halfway through the night.
+The first game with the lockpicking extension, `@rpgengine/lockpicking` (D-505), installed from npm as a player would install it. A 5e campaign already under way: Nives, a thief of 3rd level with expertise in thieves' tools, and Tecla, a cleric with no proficiency in them, break into a customs house by night to take the true register from the collector's chest and bring out Tecla's brother, chained in a cell, before the trial at dawn. Six locks between them and the boat: a gate anyone may try, a chest that wants the tools, an iron door already scratched by a prisoner, opened while the guards come, a door the player must not know the name of, and manacles with no DC on their page. The guard changes at three: two hours in a cellar nobody visits, time for a short rest. Giulia's scenario (25 October). A second start, [B](#start-b-at-the-cells-door), plays the same night from 03:25 at the cells' door, in one session from the dashboard, so that the failures in a row and the fight come for sure instead of being hoped for halfway through the night.
 
 It tests:
 
@@ -17,16 +17,15 @@ Player: `players/chiara.md`, Chiara who plays a rogue and never leaves a lock cl
 
 ## The campaign
 
-Before session 1, in a new folder chosen as `README.md` says, from the repo at the commit under test (PowerShell), after `npm run build`. The extension is installed from its folder in the repo, `extensions/lockpicking` with its `dist/`, as a user would install one from a disk.
+Before session 1, in a new folder chosen as `README.md` says, from the repo at the commit under test (PowerShell), after `npm run build`. The extension comes from the npm registry, as for a user: it needs the network. To try a version not yet published, install its repo's folder instead, `rpg package install ..\rpg-engine-lockpicking` after `npm run build` there, and click yes in the window that asks.
 
 ```
-$repo = (Get-Location).Path
 $run = "<runs>\<date>\<n>"
 $campaign = "$run\dogana"
 rpg init $campaign --name "La notte della dogana" --system 5e --language it --difficulty normal --lethality dice
 Copy-Item -Recurse -Force playtests\22-la-notte-della-dogana\world\* $campaign\world
 Push-Location $campaign
-rpg package install "$repo\extensions\lockpicking"
+rpg package install lockpicking
 rpg package list
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
 rpg config companions "made by the master"; rpg config lines none; rpg config veils none; rpg config advancement milestones; rpg config mentor off
@@ -39,7 +38,7 @@ rpg validate; rpg status
 Pop-Location
 ```
 
-- `package install` installs `@rpgengine/lockpicking` from the folder and adds it to `campaign.yaml`; `package list` gives it with its version.
+- `package install` installs `@rpgengine/lockpicking` from npm, verified, with no yes asked, and adds it to `campaign.yaml`; `package list` gives it with its version.
 - `lockpicking "Porta delle celle"` reads the door without changing it: DC 20 (20), complexity 4, thieves' tools needed, failures in a row 2 of 4 with signs of tampering; Nives rolls 6d6 in 3 rounds (18 s) with 4 rerolls. Read-only, so `--prepared` accepts the campaign.
 - The settings: rigor rules, lethality dice, saves checkpoint, so a fall in the fight can go back to the end of a scene; dice digital, so the player's rolls are buttons, clicked on the page in session 2; `voices master`, so that the run measures the locks and not the character agent.
 - `world/`: 28 pages. `validate` finds no problems; `status` shows day 1, 23:30, Nives (hp 21, ac 14) and Tecla (hp 24, ac 16) in the Rimessa di Salvo with Salvo, the quest «Fuori dalla dogana» (deadline day 2, 06:00), and the events Il cambio della guardia (day 2, 03:00), La ronda di Brando (03:30) and L'alba del processo (06:00).
@@ -126,14 +125,13 @@ Player: `players/chiara.md`, with [brief-b.md](brief-b.md). `world-b/` changes s
 As for start A, in a folder of its own:
 
 ```
-$repo = (Get-Location).Path
 $run = "<runs>\<date>\<n>"
 $campaign = "$run\dogana-b"
 rpg init $campaign --name "La notte della dogana" --system 5e --language it --difficulty normal --lethality dice
 Copy-Item -Recurse -Force playtests\22-la-notte-della-dogana\world\* $campaign\world
 Copy-Item -Recurse -Force playtests\22-la-notte-della-dogana\world-b\* $campaign\world
 Push-Location $campaign
-rpg package install "$repo\extensions\lockpicking"
+rpg package install lockpicking
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
 rpg config companions "made by the master"; rpg config lines none; rpg config veils none; rpg config advancement milestones; rpg config mentor off
 rpg config voices master; rpg config pictures none; rpg config master-rolls "behind the screen"

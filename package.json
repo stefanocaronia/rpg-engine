@@ -1,6 +1,6 @@
 {
   "name": "rpg-engine",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Play a tabletop role-playing game with an AI as your game master: the AI tells the story; RPG Engine remembers the world, rolls the dice and keeps the accounts.",
   "type": "module",
   "bin": {
@@ -29,7 +29,7 @@
     "instructions"
   ],
   "scripts": {
-    "build": "node -e \"for (const folder of ['dist', 'systems/5e/dist', 'extensions/weather/dist', 'extensions/lockpicking/dist']) require('node:fs').rmSync(folder, { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\" && tsc -p extensions/weather && tsc -p extensions/lockpicking && tsc -p systems/5e",
+    "build": "node -e \"for (const folder of ['dist', 'systems/5e/dist']) require('node:fs').rmSync(folder, { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\" && tsc -p systems/5e",
     "dev": "tsc --watch",
     "demo": "npm run build && node --experimental-strip-types --no-warnings test/demo/dashboard.ts --ask --port 5760",
     "betasim": "npm run build && node --experimental-strip-types --no-warnings test/betasim/run.ts",

@@ -51,8 +51,8 @@ function fakeNpm(modules: string, known: Record<string, string>): PackageManager
     };
 }
 
-// The weather's version, as its package.json gives it.
-const weatherVersion = (JSON.parse(readFileSync(join(testExtensionFolders[0], "weather", "package.json"), "utf8")) as { version: string; }).version;
+// The version of skies, one of ours as the skies was, as its package.json gives it.
+const skiesVersion = (JSON.parse(readFileSync(join(testExtensionFolders[0], "skies", "package.json"), "utf8")) as { version: string; }).version;
 
 /** A player who answers on the dashboard's page, or in the host's form, with this button. */
 function pageAnswering(button: number): Player
@@ -80,9 +80,9 @@ const rpg = (...args: string[]) => runCommandLine(args, context);
 beforeEach(async () => {
     folder = makeTempFolder();
     modules = join(makeTempFolder(), "node_modules");
-    const [ours, tests] = testExtensionFolders;
+    const [tests] = testExtensionFolders;
     npm = fakeNpm(modules, {
-        "@rpgengine/weather": join(ours, "weather"),
+        "@rpgengine/skies": join(tests, "skies"),
         "@rpgengine/omens": join(tests, "omens"),
         "@test/rumors": join(tests, "rumors"),
         "seasons-of-the-test": join(tests, "seasons"),
@@ -145,25 +145,25 @@ describe("a language as a package (D-485 (3))", () => {
 
 describe("rpg package install", () => {
     it("installs one of ours by its name alone, adds it to the campaign with its version, logs it, and gives the part for now (D-27, D-436)", async () => {
-        const result = await rpg("package", "install", "weather");
+        const result = await rpg("package", "install", "skies");
         expect(result.output).toMatch(
-            /^Installed weather \d+\.\d+\.\d+, verified, and the campaign uses it: the sky changes each dawn by a roll, with the seasons, hot deserts, polar cold and fog\. Its commands: weather, weather-set\. Its parts of your instructions are given when they apply: play, setup\.\n\nIts part for now:\n\nThe weather changes by itself each dawn/,
+            /^Installed skies \d+\.\d+\.\d+, verified, and the campaign uses it: the sky changes each dawn by a roll, in a test extension\. Its commands: skies, skies-set\. Its parts of your instructions are given when they apply: play, setup\.\n\nIts part for now:\n\nThe sky changes by itself each dawn/,
         );
-        expect(npm.installed).toEqual([`@rpgengine/weather@${weatherVersion}`]);
-        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain(`\nextensions:\n  "@rpgengine/weather": ${weatherVersion}\n`);
-        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-installed", visibility: "public", data: { package: "@rpgengine/weather", version: weatherVersion, verified: true } });
-        expect((await rpg("status")).output).toContain("\nExtensions: weather (the sky changes each dawn");
+        expect(npm.installed).toEqual([`@rpgengine/skies@${skiesVersion}`]);
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain(`\nextensions:\n  "@rpgengine/skies": ${skiesVersion}\n`);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-installed", visibility: "public", data: { package: "@rpgengine/skies", version: skiesVersion, verified: true } });
+        expect((await rpg("status")).output).toContain("\nExtensions: skies (the sky changes each dawn");
 
-        expect((await rpg("package", "install", "weather")).output).toMatch(/^The campaign already uses weather \d+\.\d+\.\d+, verified: the sky/);
-        expect(npm.installed).toEqual([`@rpgengine/weather@${weatherVersion}`]);
+        expect((await rpg("package", "install", "skies")).output).toMatch(/^The campaign already uses skies \d+\.\d+\.\d+, verified: the sky/);
+        expect(npm.installed).toEqual([`@rpgengine/skies@${skiesVersion}`]);
     });
 
     it("says when a chat sees the new tools, by the app in use (D-441)", async () => {
         context = { ...context, host: () => "codex-mcp-client" };
-        expect((await rpg("package", "install", "weather")).output).toContain("Its commands: weather, weather-set. Codex sees them only once it is closed and opened again: tell the player.");
-        await rpg("package", "remove", "weather");
+        expect((await rpg("package", "install", "skies")).output).toContain("Its commands: skies, skies-set. Codex sees them only once it is closed and opened again: tell the player.");
+        await rpg("package", "remove", "skies");
         context = { ...context, host: () => "claude-code" };
-        expect((await rpg("package", "install", "weather")).output).toContain("Its commands: weather, weather-set. They are yours from the player's next message.");
+        expect((await rpg("package", "install", "skies")).output).toContain("Its commands: skies, skies-set. They are yours from the player's next message.");
     });
 
     it("installs one not ours only with the player's own yes in the host's form or a window of their computer, never the page's nor the master's (D-441, D-478)", async () => {
@@ -214,21 +214,21 @@ describe("rpg package install", () => {
     });
 
     it("says, before the yes, that a .tgz of one of ours takes the place of npm's copy in every campaign, and npm's comes back when asked by its name (D-452)", async () => {
-        await rpg("package", "install", "weather");
+        await rpg("package", "install", "skies");
         context = { ...context, terminal: true };
-        npm.describe = () => Promise.resolve({ name: "@rpgengine/weather", version: weatherVersion, kind: "extension", api: 1 });
-        expect((await rpg("package", "install", "./weather.tgz")).output).toContain(
-            `it is never verified, and RPG Engine takes no responsibility for it. It takes the place of @rpgengine/weather ${weatherVersion} from npm, in every campaign on this computer.`,
+        npm.describe = () => Promise.resolve({ name: "@rpgengine/skies", version: skiesVersion, kind: "extension", api: 1 });
+        expect((await rpg("package", "install", "./skies.tgz")).output).toContain(
+            `it is never verified, and RPG Engine takes no responsibility for it. It takes the place of @rpgengine/skies ${skiesVersion} from npm, in every campaign on this computer.`,
         );
     });
 
     it("installs npm's copy again over one from a folder of the same version, asked by its name (D-452)", async () => {
-        const copy = join(makeTempFolder(), "weather");
-        cpSync(join(testExtensionFolders[0], "weather"), copy, { recursive: true });
+        const copy = join(makeTempFolder(), "skies");
+        cpSync(join(testExtensionFolders[0], "skies"), copy, { recursive: true });
         mkdirSync(join(modules, "@rpgengine"), { recursive: true });
-        symlinkSync(copy, join(modules, "@rpgengine", "weather"), "junction");
-        await rpg("package", "install", "weather");
-        expect(npm.installed).toEqual([`@rpgengine/weather@${weatherVersion}`]);
+        symlinkSync(copy, join(modules, "@rpgengine", "skies"), "junction");
+        await rpg("package", "install", "skies");
+        expect(npm.installed).toEqual([`@rpgengine/skies@${skiesVersion}`]);
         removeFolder(join(copy, ".."));
     });
 
@@ -275,29 +275,29 @@ describe("rpg package install", () => {
     });
 
     it("installs again a copy on this computer that no longer reads", async () => {
-        await rpg("package", "install", "weather");
-        writeFileSync(join(modules, "@rpgengine", "weather", "extension.yaml"), "title: [broken\n");
-        expect((await rpg("package", "install", "weather")).output).toMatch(/^The campaign already uses weather \d+\.\d+\.\d+, verified|^Installed weather \d+\.\d+\.\d+, verified/);
-        expect(npm.installed).toEqual([`@rpgengine/weather@${weatherVersion}`, `@rpgengine/weather@${weatherVersion}`]);
+        await rpg("package", "install", "skies");
+        writeFileSync(join(modules, "@rpgengine", "skies", "extension.yaml"), "title: [broken\n");
+        expect((await rpg("package", "install", "skies")).output).toMatch(/^The campaign already uses skies \d+\.\d+\.\d+, verified|^Installed skies \d+\.\d+\.\d+, verified/);
+        expect(npm.installed).toEqual([`@rpgengine/skies@${skiesVersion}`, `@rpgengine/skies@${skiesVersion}`]);
     });
 });
 
 describe("rpg package list, available, remove and uninstall (D-442)", () => {
     it("lists at once what is on this computer and what the campaign uses, a broken one with how to fix it, and one the campaign lists that is missing", async () => {
-        await rpg("package", "install", "weather");
+        await rpg("package", "install", "skies");
         await rpg("package", "install", "omens");
         writeFileSync(join(modules, "@rpgengine", "omens", "extension.yaml"), "title: [broken\n");
         writeFileSync(join(folder, "campaign.yaml"), `${readFileSync(join(folder, "campaign.yaml"), "utf8")}  "@other/tarot": 1.0.0\n`);
         npm.search = () => Promise.reject(new Error("list never asks npm"));
         expect((await rpg("package", "list")).output).toMatch(
-            /^On this computer: omens \(broken: .*; install it again\); weather \d+\.\d+\.\d+, used by the campaign\.\nThe campaign lists, not installed here: @other\/tarot; install each with package install\.\npackage available says those npm has, and updates\.$/,
+            /^On this computer: omens \(broken: .*; install it again\); skies \d+\.\d+\.\d+, used by the campaign\.\nThe campaign lists, not installed here: @other\/tarot; install each with package install\.\npackage available says those npm has, and updates\.$/,
         );
         const listed = JSON.parse((await rpg("package", "list", "--json")).output) as { installed: Record<string, unknown>[]; };
-        expect(listed.installed.find((one) => one.name === "weather")).toMatchObject({ package: "@rpgengine/weather", about: expect.stringMatching(/^the sky changes/), verified: true, used: true });
+        expect(listed.installed.find((one) => one.name === "skies")).toMatchObject({ package: "@rpgengine/skies", about: expect.stringMatching(/^the sky changes/), verified: true, used: true });
     });
 
     it("gives each package where its problems are reported, by its package.json, from what is on this computer: ours and the engine's systems at our issues", async () => {
-        await rpg("package", "install", "weather");
+        await rpg("package", "install", "skies");
         await rpg("package", "install", "omens");
         writeFileSync(join(modules, "@rpgengine", "omens", "extension.yaml"), "title: [broken\n");
         const omens = join(modules, "@rpgengine", "omens", "package.json");
@@ -310,7 +310,7 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
         npm.search = () => Promise.reject(new Error("list never asks npm"));
         const listed = JSON.parse((await rpg("package", "list", "--json")).output) as { installed: Record<string, unknown>[]; systems: Record<string, unknown>[]; languages: Record<string, unknown>[]; };
         const ours = "https://github.com/stefanocaronia/rpg-engine/issues";
-        expect(listed.installed.map((one) => [one.name, one.issues])).toEqual([["omens", "https://example.org/omens/bugs"], ["weather", ours]]);
+        expect(listed.installed.map((one) => [one.name, one.issues])).toEqual([["omens", "https://example.org/omens/bugs"], ["skies", ours]]);
         expect(listed.systems.find((one) => one.name === "ironsworn")).toMatchObject({ issues: ours });
         expect(listed.languages).toMatchObject([{ code: "de", issues: "https://github.com/someone/lingua-de/issues" }]);
     });
@@ -318,7 +318,7 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
     it("reads where a package.json sends its problems: bugs first, a GitHub repository however written, never a link but over https", () => {
         expect([
             { bugs: "https://example.org/bugs", repository: "github:a/b" },
-            { bugs: { email: "me@example.org" }, repository: { type: "git", url: "git+https://github.com/stefanocaronia/rpg-engine.git", directory: "extensions/weather" } },
+            { bugs: { email: "me@example.org" }, repository: { type: "git", url: "git+https://github.com/stefanocaronia/rpg-engine.git", directory: "test/extensions/skies" } },
             { repository: "git+ssh://git@github.com/Some-One/my.pack.git" },
             { repository: "git@github.com:someone/pack.git" },
             { repository: "https://github.com/someone/pack/" },
@@ -344,11 +344,11 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
     });
 
     it("gives what npm has for this API, ours first, with its author and the updates of those installed", async () => {
-        await rpg("package", "install", "weather");
-        const installed = join(modules, "@rpgengine", "weather", "package.json");
+        await rpg("package", "install", "skies");
+        const installed = join(modules, "@rpgengine", "skies", "package.json");
         writeFileSync(installed, readFileSync(installed, "utf8").replace(/"version": "[^"]+"/, '"version": "0.0.1"'));
         expect((await rpg("package", "available")).output).toBe(
-            `On npm: omens 1.2.0 by Ada: a test package; weather ${weatherVersion} by Ada, installed 0.0.1: an update: a test package; `
+            `On npm: omens 1.2.0 by Ada: a test package; skies ${skiesVersion} by Ada, installed 0.0.1: an update: a test package; `
                 + "rumors 2.0.0 (not verified) by Ada: a test package; seasons-of-the-test 0.1.0 (not verified) by Ada: a test package.",
         );
         npm.search = () => Promise.resolve({ failed: "npm's registry could not be reached: offline" });
@@ -356,24 +356,24 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
     });
 
     it("uninstalls one from this computer, and takes it out of the campaign", async () => {
-        await rpg("package", "install", "weather");
-        expect((await rpg("package", "uninstall", "weather")).output).toBe("weather is off this computer, and the campaign no longer uses it: another campaign that lists it asks to install it again.");
-        expect(existsSync(join(modules, "@rpgengine", "weather"))).toBe(false);
+        await rpg("package", "install", "skies");
+        expect((await rpg("package", "uninstall", "skies")).output).toBe("skies is off this computer, and the campaign no longer uses it: another campaign that lists it asks to install it again.");
+        expect(existsSync(join(modules, "@rpgengine", "skies"))).toBe(false);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
-        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-uninstalled", visibility: "public", data: { package: "@rpgengine/weather" } });
-        expect((await rpg("package", "uninstall", "weather")).output).toBe("weather is not on this computer: no package is. Nothing changed.");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-uninstalled", visibility: "public", data: { package: "@rpgengine/skies" } });
+        expect((await rpg("package", "uninstall", "skies")).output).toBe("skies is not on this computer: no package is. Nothing changed.");
     });
 
     it("removes one from the campaign, keeping it on this computer and what it kept in the campaign", async () => {
-        await rpg("package", "install", "weather");
+        await rpg("package", "install", "skies");
         await rpg("advance", "--to", "day 1, 18:00");
-        expect((await rpg("package", "remove", "weather")).output).toBe(
-            "The campaign no longer uses weather: its commands and its parts of your instructions are gone; what it kept in the campaign stays, and comes back if it is installed again.",
+        expect((await rpg("package", "remove", "skies")).output).toBe(
+            "The campaign no longer uses skies: its commands and its parts of your instructions are gone; what it kept in the campaign stays, and comes back if it is installed again.",
         );
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
-        expect((await rpg("weather")).output).toMatch(/^Unknown command "weather"/);
-        expect((await rpg("package", "remove", "weather")).output).toBe("The campaign does not use weather: it uses no package. Nothing changed.");
-        expect((await rpg("package", "list")).output).toMatch(/^On this computer: weather \d+\.\d+\.\d+\.\n/);
+        expect((await rpg("skies")).output).toMatch(/^Unknown command "skies"/);
+        expect((await rpg("package", "remove", "skies")).output).toBe("The campaign does not use skies: it uses no package. Nothing changed.");
+        expect((await rpg("package", "list")).output).toMatch(/^On this computer: skies \d+\.\d+\.\d+\.\n/);
     });
 });
 
@@ -420,20 +420,20 @@ describe("the packages on the dashboard's page (D-475)", () => {
         expect(before.otherSystems.map((one: { name: string; }) => one.name)).toContain("5e");
         expect(before.installed).toEqual([]);
         const shop = JSON.parse((await send("GET", "/api/packages?npm=true")).body);
-        expect(shop.available.map((one: { name: string; }) => one.name)).toContain("weather");
-        const added = await send("POST", "/api/add", { source: "weather" });
+        expect(shop.available.map((one: { name: string; }) => one.name)).toContain("skies");
+        const added = await send("POST", "/api/add", { source: "skies" });
         expect(added.status).toBe(202);
         expect(JSON.parse(added.body)).toEqual({ kind: "extension" });
         const listed = JSON.parse((await send("GET", "/api/packages")).body);
         expect(listed.systems.map((one: { name: string; used: boolean; }) => [one.name, one.used])).toEqual(expect.arrayContaining([["ironsworn", true], ["5e", false]]));
         const offered = JSON.parse((await send("GET", "/api/catalog")).body);
-        expect(offered.entries).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "extension", title: "weather", source: "weather", verified: true, installed: weatherVersion })]));
+        expect(offered.entries).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "extension", title: "skies", source: "skies", verified: true, installed: skiesVersion })]));
         expect(offered.failed).toMatchObject({ github: expect.stringContaining("reach GitHub") });
         const after = JSON.parse((await send("GET", "/api/packages")).body);
-        expect(after.installed).toMatchObject([{ name: "weather", used: true, verified: true }]);
-        expect(dashboard.news().lines.join("\n")).toContain("The player, on the dashboard, added weather: Installed weather");
-        expect((await send("POST", "/api/package", { action: "remove", name: "weather" })).status).toBe(202);
-        expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toMatchObject([{ name: "weather", used: false }]);
+        expect(after.installed).toMatchObject([{ name: "skies", used: true, verified: true }]);
+        expect(dashboard.news().lines.join("\n")).toContain("The player, on the dashboard, added skies: Installed skies");
+        expect((await send("POST", "/api/package", { action: "remove", name: "skies" })).status).toBe(202);
+        expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toMatchObject([{ name: "skies", used: false }]);
     });
 
     it("adds someone else's package only with the player's yes in a window of their computer, never the host's form nor the page's click (D-478, D-485)", async () => {

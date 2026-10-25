@@ -1,0 +1,4 @@
+# A test extension of ours for the API 2, as the weather was made: a sky each dawn, a command that tells it and one that sets it, a part for play and one for setup.
+title: skies at dawn, a test extension
+about: the sky changes each dawn by a roll, in a test extension
+language: en

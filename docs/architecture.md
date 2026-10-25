@@ -18,7 +18,6 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | [src/dashboard-server.ts](../src/dashboard-server.ts), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
 | [src/testing.ts](../src/testing.ts) | `rpg-engine/testing`, the test kit for extensions: a campaign with its extensions linked, its commands, log, widgets and dashboard; see [extensions.md](extensions.md#6-tests) |
 | [systems/](../systems/) | Built-in game systems: [5e](../systems/5e/) |
-| [extensions/](../extensions/) | Our extensions, each an npm package of its own: [weather](../extensions/weather/), [lockpicking](../extensions/lockpicking/); see [extensions.md](extensions.md) |
 | [instructions/](../instructions/) | The game master's instructions |
 | [test/](../test/) | Tests and the Ironsworn-based test system |
 
@@ -136,7 +135,7 @@ The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's f
 
 ## 6. Tests
 
-`npm test` runs vitest on `test/`, `systems/*/test/` and `extensions/*/test/`. Commands are tested through `runCommandLine(args, testContext(folder))`; `*-laws.test.ts` check rules with fast-check on random worlds; [systems/ironsworn](../systems/ironsworn/) is an Ironsworn-based test system, kept out of the npm package, so the core stays generic; [test/system-packages.test.ts](../test/system-packages.test.ts) checks every installed system.
+`npm test` runs vitest on `test/` and `systems/*/test/`; our extensions keep their tests in their own repos, and `npm run test:downstream` runs them against this engine. Commands are tested through `runCommandLine(args, testContext(folder))`; `*-laws.test.ts` check rules with fast-check on random worlds; [systems/ironsworn](../systems/ironsworn/) is an Ironsworn-based test system, kept out of the npm package, so the core stays generic; [test/system-packages.test.ts](../test/system-packages.test.ts) checks every installed system.
 
 ## 7. How to add things
 

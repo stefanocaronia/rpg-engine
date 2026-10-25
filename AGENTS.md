@@ -24,7 +24,6 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `docs/` | the docs for developers and agents: `architecture.md`, `game-systems.md`, `extensions.md`, `dashboard-style.md`, `commands.md` (generated); the player's guide is Help's, `src/dashboard/guide/` | yes | no |
 | `src/` | core, CLI, MCP server, the dashboard's server and page (`src/dashboard/`) | yes | built into `dist/` |
 | `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/`, and the scripts that wrote its pages in `build/`; `ironsworn` is for now a test system | yes | yes, without their tests and scripts, and without `ironsworn` until it is playable |
-| `extensions/` | our extensions, each an npm package of its own under `@rpgengine/` (D-436, D-441), such as `weather`: with its tests in its `test/` | yes | no: each is published apart |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
 | `test/` | tests | yes | no |
 | `playtests/` | playtest scenarios: player profiles, starting points, checklists | yes | no |
@@ -40,12 +39,12 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - `npm run demo`: build, then serve the dashboard of the demo campaign at `http://127.0.0.1:5760`, asking checks in turn: what the browser pane's play button starts (`.claude/launch.json`).
 - `npm run betasim`: build, then run betasim's flows and simulated testers on the dashboard, at 1280 and at 375 (`test/betasim/`): its usability alone, never the game. Reports in `test/betasim/report/`.
 - `npm run translate`: translate the dashboard's phrases that a shipped language lacks (`src/dashboard/i18n/<code>.json`), a game system's words from its Italian list (`systems/<name>/words/<code>.yaml`), and the guide of Help where a language lacks it or has one from an older English (`src/dashboard/guide/<code>.md`), with Claude Code and your own login; `-- --only fr,de` for some. Italian is curated: read what it writes there.
-- Releasing: a tag `v<version>` equal to `package.json`'s version publishes it to npm through GitHub Actions (`.github/workflows/publish.yml`), after lint, build and tests; an extension of `extensions/` with a tag `<name>-v<version>` (`publish-extension.yml`); only on Stefano's word.
+- Releasing: a tag `v<version>` equal to `package.json`'s version publishes it to npm through GitHub Actions (`.github/workflows/publish.yml`), after lint, build and tests; only on Stefano's word. Our extensions live in their own repos beside this one, `../rpg-engine-weather` and `../rpg-engine-lockpicking` (D-506), each with its tests, CI and release by tag; `npm run test:downstream` runs their tests against this engine, before a release of it.
 - `npm link`: install the development build as the global `rpg` command. An MCP server that is already running keeps the code and the game systems it started with: after a build, reconnect it (`/mcp` in Claude Code) or open a new chat.
 
 ## Development vs game
 
-1. **No "magic" names for game files in the repo.** Nothing under `instructions/`, `systems/`, `extensions/` or `playtests/` is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.
+1. **No "magic" names for game files in the repo.** Nothing under `instructions/`, `systems/` or `playtests/`, nor in an extension's repo, is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.
 2. **Playtests with an AI run in a campaign outside the repo.** Claude Code also reads the `CLAUDE.md` files of parent folders, so inside the repo development and game instructions would mix.
 
 ## Architecture rules

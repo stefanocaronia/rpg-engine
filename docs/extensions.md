@@ -1,11 +1,11 @@
 # Extensions
 
-An extension adds to a campaign what its game system lacks: rules as text, parts of the master's instructions, a calendar, and code, commands the master calls, work done as time passes and widgets on the dashboard. It is a package, an npm package for rpg-engine; a campaign plays one game system and any number of extensions. Our own are in [extensions/](../extensions/), such as [weather](../extensions/weather/), each published as a package of its own. The code that reads them is [src/extensions/](../src/extensions/); the commands use them through [commands/game-extensions.ts](../src/commands/game-extensions.ts), and the dashboard its widgets through [commands/game-widgets.ts](../src/commands/game-widgets.ts).
+An extension adds to a campaign what its game system lacks: rules as text, parts of the master's instructions, a calendar, and code, commands the master calls, work done as time passes and widgets on the dashboard. It is a package, an npm package for rpg-engine; a campaign plays one game system and any number of extensions. Ours live each in a repo of its own, [rpg-engine-weather](https://github.com/stefanocaronia/rpg-engine-weather) and [rpg-engine-lockpicking](https://github.com/stefanocaronia/rpg-engine-lockpicking), and are published to npm from there. The code that reads them is [src/extensions/](../src/extensions/); the commands use them through [commands/game-extensions.ts](../src/commands/game-extensions.ts), and the dashboard its widgets through [commands/game-widgets.ts](../src/commands/game-widgets.ts).
 
 ## 1. The package
 
 ```text
-extensions/<name>/
+rpg-engine-<name>/
   package.json       its npm name, version and code; "rpg-engine": {"kind": "extension", "api": 3}; the keyword rpg-engine-package;
                      bugs, or a repository on GitHub, for the dashboard's "Report a problem" link
   extension.yaml     what it is (section 2)

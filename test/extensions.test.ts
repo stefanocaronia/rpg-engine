@@ -306,7 +306,7 @@ describe("a campaign's widgets on the dashboard (D-502)", () => {
 
     it("are refused in an extension.yaml that does not say how to show them, with what to fix", () => {
         const copy = join(folder, "omens");
-        cpSync(join(testExtensionFolders[1], "omens"), copy, { recursive: true });
+        cpSync(join(testExtensionFolders[0], "omens"), copy, { recursive: true });
         const yaml = readFileSync(join(copy, "extension.yaml"), "utf8");
 
         const refused = (from: string, to: string): string => {
@@ -421,7 +421,7 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(kira).not.toContain("WARD-CHARGES");
 
         const broken = join(folder, "broken");
-        cpSync(join(testExtensionFolders[1], "wards"), join(broken, "wards"), { recursive: true });
+        cpSync(join(testExtensionFolders[0], "wards"), join(broken, "wards"), { recursive: true });
         const yaml = join(broken, "wards", "extension.yaml");
         writeFileSync(yaml, readFileSync(yaml, "utf8").replace("ward-bonus: table(ward-signs, ward-sign) + wits", 'ward-bonus: "1 +"'));
         context = { ...context, extensionFolders: [broken, ...testExtensionFolders] };
@@ -551,14 +551,14 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(readLogFile(folder)).toHaveLength(lines);
     });
 
-    it("read packages made for the API 1 to 3, as omens and the weather, and refuse one made for a newer, with what to install", () => {
+    it("read packages made for the API 1 to 3, as omens, skies and wards, and refuse one made for a newer, with what to install", () => {
         expect([0, 1, 2, 3, 4, 2.5, undefined].map(readsApi)).toEqual([false, true, true, true, false, false, false]);
         expect(findExtension(testExtensionFolders, "omens")?.adds).toEqual({});
-        expect(findExtension(testExtensionFolders, "weather")?.name).toBe("weather");
+        expect(findExtension(testExtensionFolders, "skies")?.name).toBe("skies");
         expect(findExtension(testExtensionFolders, "wards")?.adds.counters).toEqual({ "ward-charges": { max: "wits + 1" }, momentum: { min: -6, max: 8 } });
 
         const newer = join(folder, "newer");
-        cpSync(join(testExtensionFolders[1], "wards"), newer, { recursive: true });
+        cpSync(join(testExtensionFolders[0], "wards"), newer, { recursive: true });
         writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 4 } }));
         expect(() => readExtension(newer)).toThrow("The extension @rpgengine/wards cannot be used, because it is made for the extension API 4; this rpg-engine reads the API 1 to 3: install a version of it made for these.");
     });

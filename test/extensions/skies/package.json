@@ -1,0 +1,15 @@
+{
+  "name": "@rpgengine/skies",
+  "version": "0.2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stefanocaronia/rpg-engine.git",
+    "directory": "test/extensions/skies"
+  },
+  "rpg-engine": {
+    "kind": "extension",
+    "api": 2
+  }
+}

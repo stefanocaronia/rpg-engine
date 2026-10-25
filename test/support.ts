@@ -12,8 +12,8 @@ export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.me
 /** The code of the systems the tests see, loaded once for each test file, as an entry of the engine does (D-448). */
 export const testSystemCode = await loadSystemCode(testSystemFolders);
 
-/** The extensions the tests see: ours of the repository, such as weather, and the test ones. */
-export const testExtensionFolders = [fileURLToPath(new URL("../extensions/", import.meta.url)), fileURLToPath(new URL("./extensions/", import.meta.url))];
+/** The extensions the tests see: the test ones, made for them; ours have repositories of their own (D-506). */
+export const testExtensionFolders = [fileURLToPath(new URL("./extensions/", import.meta.url))];
 
 /** How many pages a game system the tests see has, in a folder of its world if given: "The system 5e has 22 more pages". */
 export function systemPageCount(system: string, folder?: string): number

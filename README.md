@@ -85,9 +85,7 @@ The code is under the [MIT](https://github.com/stefanocaronia/rpg-engine/blob/ma
 
 The 5e system, in `systems/5e/`, is under the Creative Commons Attribution 4.0 International License ([its license](https://github.com/stefanocaronia/rpg-engine/blob/main/systems/5e/LICENSE.md)): This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode. Its creatures' icons are from game-icons.net, under the Creative Commons Attribution 3.0 Unported License, by the authors its license names. rpg-engine is compatible with fifth edition.
 
-The weather extension, in `extensions/weather/` and published apart as `@rpgengine/weather`, is Weather by the climate score, by Stefano Caronia, CC BY 4.0, with its code under MIT ([its license](https://github.com/stefanocaronia/rpg-engine/blob/main/extensions/weather/LICENSE.md)).
-
-The lockpicking extension, in `extensions/lockpicking/` and published apart as `@rpgengine/lockpicking`, is Lockpicking by complexity, by Stefano Caronia, CC BY 4.0, with its code under MIT and material from the SRD 5.1 ([its license](https://github.com/stefanocaronia/rpg-engine/blob/main/extensions/lockpicking/LICENSE.md)).
+Our extensions are packages of their own, installed only when a campaign wants them: [weather](https://github.com/stefanocaronia/rpg-engine-weather) (`@rpgengine/weather`), Weather by the climate score, and [lockpicking](https://github.com/stefanocaronia/rpg-engine-lockpicking) (`@rpgengine/lockpicking`), Lockpicking by complexity, both by Stefano Caronia under CC BY 4.0, with their code under MIT; each repo has its license.
 
 rpg-engine ships only original or open-licensed content: for fifth edition, the SRD 5.1 under CC BY 4.0. Anything else that appears in your game is written by your AI or by you, as pages of your campaign on your computer: it is not part of rpg-engine, and we do not distribute it.
 
