@@ -1,9 +1,16 @@
 // The card of a package's question on the dashboard (D-507): what the page keeps of it from one reading to the next, where its widget's parts stand on it,
 // and what changed on its counts between two looks, for their marks to move.
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { closeCard } from "../src/dashboard/api.ts";
 import type { Asked, AskedCard, WidgetShows, WidgetTrack } from "../src/dashboard/data.ts";
 import { cardLayout, inCard, nextPackCard, type PackCard, trackChanges } from "../src/dashboard/pack-card.ts";
+// The page's .tsx modules are typed by the page's own tsconfig: loaded by their address, with their functions' types.
+const { cardsIn, ownPageIn, navPagesOf } = await import(new URL("../src/dashboard/page-code.tsx", import.meta.url).href) as {
+    cardsIn: (loaded: object | Error | undefined, page: string) => [string, { page: string; order?: number; }][] | Error;
+    ownPageIn: (loaded: object | Error | undefined, page: string) => object | Error | undefined;
+    navPagesOf: (loaded: { module: { package: string; }; loaded: object | Error | undefined; }[]) => object[];
+};
 
 const pins = (more: Partial<WidgetTrack> = {}): WidgetTrack => ({ label: "Pins", value: 2, max: 6, look: "steps", stage: "center", ...more });
 const rerolls = (value: number): WidgetTrack => ({ label: "Rerolls", value, max: 2, look: "pips", stage: "start", tone: "good" });
@@ -99,6 +106,22 @@ describe("the parts of a package's card (D-507)", () => {
         expect(layout.places).toEqual({ start: [], center: [pins(), loose], end: [failures] });
         expect([layout.facts, layout.texts]).toEqual([["Harder"], ["Two to go"]]);
     });
+
+    it("takes who acts apart from the counts, the first of them, with what they do (D-509)", () => {
+        const layout = cardLayout({ parts: [{ who: "Ettore", does: "picks" }, { track: pins({ figure: "tumblers" }) }, { who: "Lupa" }] });
+        expect(layout.who).toEqual({ who: "Ettore", does: "picks" });
+        expect(layout.places.center).toEqual([pins({ figure: "tumblers" })]);
+        expect(layout.others).toEqual([]);
+    });
+});
+
+describe("the kit of rpg-engine/page (D-510)", () => {
+    it("gives in the page every part its types declare to the extensions, and no other", () => {
+        const declared = [...readFileSync("src/page.ts", "utf8").matchAll(/^export declare function (\w+)/gm)].map((match) => match[1]).sort();
+        const kit = readFileSync("src/dashboard/kit.tsx", "utf8");
+        const given = [...kit.matchAll(/^export function (\w+)/gm)].map((match) => match[1]).concat(...[...kit.matchAll(/^export \{ ([^}]+) \}/gm)].map((match) => match[1].split(", "))).sort();
+        expect(given).toEqual(declared);
+    });
 });
 
 describe("what changed on a card's counts (D-507)", () => {
@@ -114,5 +137,42 @@ describe("what changed on a card's counts (D-507)", () => {
         expect(trackChanges(shows(pins({ coming: 2 })), shows(pins({ held: 1, marked: 1 }))).get(JSON.stringify("Pins"))).toEqual({ lit: [2], out: [], marked: [3] });
         expect(trackChanges(shows(rerolls(2)), shows(rerolls(2))).size).toBe(0);
         expect(trackChanges(undefined, shows(pins())).size).toBe(0);
+    });
+});
+
+describe("a package's page code that did not load (D-510 (5), D-511)", () => {
+    const broken = new TypeError("Failed to fetch dynamically imported module");
+    const draw = () => null;
+    const loaded = { cards: { later: { page: "sheet", title: "Later", order: 2, draw }, first: { page: "sheet", title: "First", order: 1, draw }, map: { page: "world", title: "Map", draw } }, pages: { deck: { title: "Deck", draw } } };
+
+    it("gives its error to the cards of every page and to its own pages, for them to say it with whose it is", () => {
+        expect(["scene", "sheet", "world", "journal"].map((page) => cardsIn(broken, page))).toEqual([broken, broken, broken, broken]);
+        expect(ownPageIn(broken, "deck")).toBe(broken);
+    });
+
+    it("gives a page the cards its module puts there, in their order, and none while it comes", () => {
+        expect((cardsIn(loaded, "sheet") as [string, object][]).map(([name]) => name)).toEqual(["first", "later"]);
+        expect(cardsIn(loaded, "scene")).toEqual([]);
+        expect(cardsIn(undefined, "sheet")).toEqual([]);
+        expect(ownPageIn(loaded, "deck")).toBe(loaded.pages.deck);
+        expect([ownPageIn(loaded, "other"), ownPageIn(undefined, "deck")]).toEqual([undefined, undefined]);
+    });
+});
+
+describe("a package's pages in the navigation (D-512)", () => {
+    const draw = () => null;
+
+    it("puts each where its module says, a tab or the packages' menu, the menu when it says nothing, in the order of the modules", () => {
+        const system = { module: { package: "5e" }, loaded: { pages: { spells: { title: "Spells", icon: "M0 0", nav: "tab", draw } } } };
+        const charms = { module: { package: "charms" }, loaded: { pages: { knots: { title: "Knots", draw }, braid: { title: "Braid", nav: "menu", draw } } } };
+        expect(navPagesOf([system, charms])).toEqual([
+            { package: "5e", name: "spells", title: "Spells", icon: "M0 0", nav: "tab" },
+            { package: "charms", name: "knots", title: "Knots", nav: "menu" },
+            { package: "charms", name: "braid", title: "Braid", nav: "menu" },
+        ]);
+    });
+
+    it("leaves out the pages of a module that comes or broke", () => {
+        expect(navPagesOf([{ module: { package: "later" }, loaded: undefined }, { module: { package: "broken" }, loaded: new Error("no") }])).toEqual([]);
     });
 });

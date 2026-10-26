@@ -568,6 +568,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
             "three": "/vendor/three.module.js",
             "three/addons/": "/vendor/three/addons/",
             "@dimforge/rapier3d-compat": "/vendor/rapier.mjs",
+            "rpg-engine/page": "/kit.js",
         });
         expect(html.headers["content-security-policy"]).toBe(`default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`);
         expect(await get("/app.js")).toMatchObject({ status: 200, body: "export {};\n", headers: { "content-type": "text/javascript; charset=utf-8" } });

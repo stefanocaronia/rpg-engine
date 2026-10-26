@@ -500,10 +500,68 @@ a {
     padding: 0 10px;
 }
 
-.sections a.away {
+.sections :is(a, .packages-menu).away {
     position: absolute;
     visibility: hidden;
     pointer-events: none;
+}
+
+/* A package's page as a tab (D-512): its title as long as a section's at most, cut short beyond. */
+.sections a.own-tab .section-name {
+    max-width: 12em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The packages' icon as the menu of their other pages (D-512): a page's icon that opens, lit while one of them or Packages is shown. */
+.sections .packages-menu {
+    position: relative;
+    display: inline-flex;
+}
+
+.packages-menu-button {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-m) var(--radius-m) 0 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
+}
+
+.packages-menu-button.shown {
+    background: linear-gradient(var(--accent), var(--accent)) no-repeat center bottom / 100% 3px;
+    color: var(--accent);
+}
+
+.packages-menu-button svg.icon {
+    width: 20px;
+    height: 20px;
+}
+
+.packages-menu .menu-pop {
+    min-width: 220px;
+}
+
+/* Packages, where they are added and taken away, under their pages; in the menu of a phone their pages under Packages, set in. */
+.menu-pop .menu-manage {
+    margin-top: 4px;
+    border-top: 1px solid var(--rule);
+    border-radius: 0 0 var(--radius-m) var(--radius-m);
+}
+
+.menu-sub {
+    display: grid;
+    padding-inline-start: 20px;
+}
+
+.menu-pop :is(.menu-sub, .packages-menu .menu-pop) a {
+    height: auto;
+    min-height: 40px;
+    padding-block: 6px;
 }
 
 /* Where the party is (D-333): from the largest place to its own, which stays whole while the others give way; it leads to Scene. */
@@ -3889,12 +3947,92 @@ a.status-chip.widget-chip {
     margin: 0;
 }
 
+/* A package's drawing (D-510): its place in the page, a shadow root that takes this style sheet. A figure keeps its room while its module comes, its declared
+   width at most and its shape; in the top, as tall as an icon. Turned right to left when it holds no words. What broke says so, and whose it is. */
+.ext-root {
+    display: block;
+    min-width: 0;
+}
+
+.ext-figure {
+    width: var(--figure-width, 100%);
+    max-width: 100%;
+    aspect-ratio: var(--figure-ratio, auto);
+}
+
+.ext-figure.at-top {
+    width: auto;
+    height: 20px;
+    aspect-ratio: var(--figure-ratio, 1);
+}
+
+[dir="rtl"] .ext-root.mirrored {
+    transform: scaleX(-1);
+}
+
+/* A count drawn as a figure takes the width of its place, the figure its own in it. */
+.ask-track.figured {
+    grid-template-columns: minmax(0, 1fr);
+    justify-self: stretch;
+    justify-items: center;
+}
+
+.track-figure {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    width: 100%;
+    min-width: 0;
+}
+
+.figure-count > [dir] {
+    font-weight: 400;
+}
+
+.widget-track.figured {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 4px;
+}
+
+.widget-track.figured > .figure-count {
+    display: block;
+}
+
+/* The packages' cards in a page, after its widgets' own: none drawn, no room. */
+.package-cards:empty {
+    display: none;
+}
+
+.ext-broken {
+    margin: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--low);
+    border-radius: var(--radius-s);
+    color: var(--low);
+    font-size: 0.85rem;
+    text-align: start;
+    overflow-wrap: anywhere;
+}
+
 /* One thing large: its icon, its words, its value, as the sky and the temperature. */
 .widget-lead {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
+}
+
+/* Its figure, its extension's drawing, over its words and value. */
+.widget-lead.figured {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 8px;
+}
+
+.widget-lead.figured > .ext-figure {
+    grid-column: 1 / -1;
+    justify-self: center;
 }
 
 .widget-lead-icon {
@@ -6665,9 +6803,10 @@ button.row,
     }
 }
 
-/* The card of a package's question (D-507): its widget's parts in the frame of the master's question, through the questions of one attempt. Its counts on a
-   stage of three places, the middle one large; under them the roll's button or the choices a die asks for, and the rule; the outcome where they were. Wide,
-   the three places side by side; on a phone the middle one alone above the two others, and once told the card scrolls with the page. */
+/* The card of a package's question (D-507, D-509): its widget's parts in the frame of the master's question, through the questions of one attempt. Who acts on
+   the left, the middle count large, the others one over the other on the right with the facts under them; under them the roll's button or the choices a die
+   asks for, and the rule; the outcome where they were. On a phone who acts over the middle, the others side by side under it, and once told the card scrolls
+   with the page. No colour of the moment: the frame stays the question's. */
 .ask-card .asked-question {
     margin-bottom: 4px;
 }
@@ -6686,11 +6825,10 @@ button.row,
 .ask-stage {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    grid-template-areas: "start center end";
-    align-items: start;
+    grid-template-areas: "who center side";
+    align-items: center;
     gap: 14px 24px;
-    max-width: 760px;
-    margin: 14px auto 16px;
+    margin: 12px 0 14px;
 }
 
 .ask-place {
@@ -6701,8 +6839,8 @@ button.row,
     min-width: 0;
 }
 
-.ask-place.at-start {
-    grid-area: start;
+.ask-place.at-who {
+    grid-area: who;
 }
 
 .ask-place.at-center {
@@ -6710,9 +6848,21 @@ button.row,
     justify-items: center;
 }
 
-.ask-place.at-end {
-    grid-area: end;
+/* The counts at the side, each its label before its marks on one line, ending at the card's edge. */
+.ask-place.at-side {
+    grid-area: side;
     justify-items: end;
+    gap: 8px;
+}
+
+.ask-place.at-side .ask-track {
+    grid-auto-flow: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.ask-place.at-side .widget-track-label {
+    text-align: end;
 }
 
 .ask-track {
@@ -6728,8 +6878,39 @@ button.row,
     hyphens: auto;
 }
 
-.ask-track.track-end .widget-track-label {
-    text-align: end;
+/* Who acts (D-509): their coin, their name over what they do. */
+.who-acts {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.who-acts .token {
+    --size: 64px;
+}
+
+/* In a widget's card beside the page, a coin as the strip's. */
+.widget-body .who-acts .token {
+    --size: 44px;
+}
+
+.who-acts-words {
+    display: grid;
+    min-width: 0;
+    margin: 0;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.who-acts-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.who-acts-does {
+    color: var(--muted);
+    font-size: 0.9rem;
 }
 
 .ask-track.good .widget-track-label {
@@ -6900,10 +7081,35 @@ button.row,
     }
 
     .ask-stage {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        grid-template-areas: "center center" "start end";
-        gap: 12px;
-        margin: 10px 0 12px;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "who" "center" "side";
+        gap: 10px;
+        margin: 8px 0 10px;
+    }
+
+    .who-acts .token {
+        --size: 40px;
+    }
+
+    .who-acts-words {
+        display: block;
+    }
+
+    .who-acts-does::before {
+        content: " ";
+    }
+
+    /* The counts at the side in a row under the middle, from edge to edge; the facts under them. */
+    .ask-place.at-side {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px 12px;
+    }
+
+    .ask-place.at-side .ask-facts {
+        flex-basis: 100%;
     }
 
     .ask-track .pip {
@@ -8964,7 +9170,7 @@ svg.icon {
     }
 
     .top-place,
-    .top .sections a.page-link,
+    .top .sections .page-link,
     .theme-corner {
         display: none;
     }
@@ -9002,6 +9208,18 @@ svg.icon {
     .top .main-nav a[aria-current="page"] {
         background: none;
         color: var(--ink);
+    }
+
+    /* A package's tab in the bar as a section, its title cut short to its share of the bar. */
+    .top .main-nav a {
+        min-width: 0;
+    }
+
+    .top .main-nav .section-name {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-inline: 2px;
     }
 
     .top .main-nav .section-mark {

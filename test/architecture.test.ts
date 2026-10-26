@@ -45,6 +45,8 @@ describe("architecture", () => {
             "extensions/extension.ts",
             "extensions/packages.ts",
             "extensions/tarball.ts",
+            // The player's yes to another's code, for its files as installed (D-478, D-510, D-511).
+            "core/consents.ts",
             "systems/words.ts",
             "campaign/create-campaign.ts",
             "pictures/claude.ts",

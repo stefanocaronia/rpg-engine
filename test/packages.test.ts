@@ -1,6 +1,6 @@
 // The package command (D-27, D-428, D-436, D-439, D-441): installing an extension on this computer with npm, ours or another with the player's own yes, adding it to
 // the campaign, listing and removing; npm itself is a fake here, which copies the test extensions as it would install them.
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -170,7 +170,7 @@ describe("rpg package install", () => {
         const refused = await rpg("package", "install", "@test/rumors");
         expect(refused.exitCode).toBe(1);
         expect(refused.output).toBe(
-            "@test/rumors is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it. Only the player can say yes to it, in the host's form or "
+            "Not verified by RPG Engine: @test/rumors 2.0.0, asked from the command line. Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you. Install it only if you trust who made it. Only the player can say yes to it, in the host's form or "
                 + "in a window of their computer, and neither can be shown here (no desktop, as over SSH; on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.",
         );
 
@@ -180,34 +180,49 @@ describe("rpg package install", () => {
         expect(npm.installed).toEqual([]);
 
         context = { ...context, player: pageAnswering(1) };
-        expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player did not want @test/rumors. Nothing changed.");
+        expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player did not want @test/rumors 2.0.0. Nothing changed.");
         expect(npm.installed).toEqual([]);
 
         context = { ...context, player: pageAnswering(0) };
         expect((await rpg("package", "install", "@test/rumors")).output).toMatch(
-            /^Installed rumors 2\.0\.0, not verified: at the player's risk, and the campaign uses it: a rumor in each tavern\. Its code is not used/,
+            /^Installed rumors 2\.0\.0, not verified: at the player's risk, and the campaign uses it: a rumor in each tavern\. Its commands: rumors\./,
         );
     });
 
     it("asks in a window of the player's computer where no form is, as on the command line, and asks the form first where there is one (D-478)", async () => {
         const asked: string[] = [];
         context = { ...context, terminal: true, confirm: windowAnswering("no", asked) };
-        expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player did not want @test/rumors. Nothing changed.");
-        expect(asked).toEqual(["A package not ours: Install @test/rumors? @test/rumors is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it."]);
+        expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player did not want @test/rumors 2.0.0. Nothing changed.");
+        expect(asked).toEqual([
+            "A package not ours: Install @test/rumors 2.0.0? Not verified by RPG Engine: @test/rumors 2.0.0, asked from the command line. Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you. Install it only if you trust who made it.",
+        ]);
         context = { ...context, confirm: windowAnswering("yes", asked) };
         expect((await rpg("package", "install", "@test/rumors")).exitCode).toBe(0);
         await rpg("package", "remove", "@test/rumors");
         context = { ...context, player: pageAnswering(0), confirm: windowAnswering("no", asked) };
         expect((await rpg("package", "install", "@test/rumors")).exitCode).toBe(0);
+        // Its code runs after the yes, which holds for this version and these files, on this computer (D-478, D-510).
+        expect((await rpg("rumors")).output).toBe("a rumor");
+        const consents = join(modules, "..", "consents.json");
+        expect(Object.keys(JSON.parse(readFileSync(consents, "utf8")) as object)).toEqual(["@test/rumors"]);
+        appendFileSync(join(modules, "@test", "rumors", "extension.yaml"), "# changed after the yes\n");
         expect((await rpg("rumors")).output).toMatch(/^Unknown command "rumors"/);
+        // A second yes, at the same version, goes to npm's files installed anew, never to those changed since.
+        context = { ...context, player: undefined, confirm: windowAnswering("yes", asked) };
+        expect((await rpg("package", "install", "@test/rumors")).exitCode).toBe(0);
+        expect(npm.installed.filter((one) => one.startsWith("@test/rumors"))).toHaveLength(2);
+        expect(readFileSync(join(modules, "@test", "rumors", "extension.yaml"), "utf8")).not.toContain("changed after the yes");
+        expect((await rpg("rumors")).output).toBe("a rumor");
+        await rpg("package", "uninstall", "@test/rumors");
+        expect(JSON.parse(readFileSync(consents, "utf8"))).toEqual({});
     });
 
     it("asks the player's yes for a .tgz of this computer, even named alone, saying what it holds and that its code runs (D-452)", async () => {
         context = { ...context, terminal: true, confirm: windowAnswering("none") };
         npm.describe = () => Promise.resolve({ name: "secret-notes", version: "1.0.0", kind: "extension", api: 1, author: "Ada" });
         expect((await rpg("package", "install", "secret-notes-1.0.0.tgz")).output).toBe(
-            "secret-notes-1.0.0.tgz (secret-notes 1.0.0, by Ada) is a file of this computer, not a package published by RPG Engine: its code runs, it is never verified, "
-                + "and RPG Engine takes no responsibility for it. Only the player can say yes to it, in the host's form or in a window of their computer, and neither can be shown here "
+            "Not verified by RPG Engine: secret-notes-1.0.0.tgz (secret-notes 1.0.0, by Ada), a file of this computer, asked from the command line. Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you. "
+                + "RPG Engine takes no responsibility for it. Only the player can say yes to it, in the host's form or in a window of their computer, and neither can be shown here "
                 + "(no desktop, as over SSH; on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.",
         );
         expect(npm.installed).toEqual([]);
@@ -218,7 +233,7 @@ describe("rpg package install", () => {
         context = { ...context, terminal: true };
         npm.describe = () => Promise.resolve({ name: "@rpgengine/skies", version: skiesVersion, kind: "extension", api: 1 });
         expect((await rpg("package", "install", "./skies.tgz")).output).toContain(
-            `it is never verified, and RPG Engine takes no responsibility for it. It takes the place of @rpgengine/skies ${skiesVersion} from npm, in every campaign on this computer.`,
+            `RPG Engine takes no responsibility for it. It takes the place of @rpgengine/skies ${skiesVersion} from npm, in every campaign on this computer.`,
         );
     });
 
@@ -234,7 +249,7 @@ describe("rpg package install", () => {
 
     it("never sends the player to the terminal when they closed the question without a yes", async () => {
         context = { ...context, player: { choose: () => Promise.resolve(undefined) } };
-        expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player closed the question without a yes to @test/rumors. Nothing changed: ask again only if they bring it up.");
+        expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player closed the question without a yes to @test/rumors 2.0.0. Nothing changed: ask again only if they bring it up.");
         expect(npm.installed).toEqual([]);
     });
 
@@ -267,9 +282,9 @@ describe("rpg package install", () => {
         expect((await rpg("package", "install", "npm:seasons-of-the-test")).output).toBe(
             "seasons-of-the-test is installed on this computer, but it is for the game system 5e, and the campaign plays ironsworn: the campaign does not use it.",
         );
-        npm.describe = (spec) => Promise.resolve({ name: spec, version: "4.0.0", kind: "extension", api: 4 });
+        npm.describe = (spec) => Promise.resolve({ name: spec, version: "5.0.0", kind: "extension", api: 5 });
         expect((await rpg("package", "install", "omens")).output).toBe(
-            "@rpgengine/omens 4.0.0 is made for the extension API 4, and this RPG Engine reads the API 1 to 3: install a version made for these. Nothing changed.",
+            "@rpgengine/omens 5.0.0 is made for the extension API 5, and this RPG Engine reads the API 1 to 4: install a version made for these. Nothing changed.",
         );
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
     });

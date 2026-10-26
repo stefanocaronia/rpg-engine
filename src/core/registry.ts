@@ -19,6 +19,8 @@ export interface Command<Schema extends z.ZodObject = z.ZodObject, Result = unkn
     positionals?: string[];
     /** The command asks the player directly: it exists only where the surface can (Context.player), never on the command line. */
     needsPlayer?: boolean;
+    /** The player may run it too, from an extension's code in the dashboard's page (D-510): only an extension's command says so. */
+    forPlayer?: boolean;
     /** The command may wait for the player's answer, as an extension's that asks (D-505): the MCP server reports so meanwhile, and it runs everywhere. */
     waitsForPlayer?: boolean;
     /** The command may take minutes, as an installation: the MCP server reports its progress meanwhile, so that a host does not give up on it. */

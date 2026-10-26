@@ -646,6 +646,37 @@ export interface ShownWidget extends WidgetSpot
     shows?: WidgetShows;
     /** Why it shows nothing, for whoever made it. */
     problem?: string;
+    /** Its extension's version, which an error of its page code names (D-510). */
+    version?: string;
+    /** The address of its extension's page module, when its code runs (D-510): it draws this widget, its card of a roll, or a figure in them. */
+    module?: string;
+    /** The figures its extension draws, by name, with the room each takes, kept while its module comes; mirror: turned right to left, as it holds no words. */
+    figures?: Record<string, FigureSize>;
+    /** Its extension's words in the campaign's language, by their English, for its page code's own words; none when it is written in that language. */
+    words?: Record<string, string>;
+}
+
+/** A package whose code draws in the page (D-510, D-511), as a widget or a module knows it: its name, version, module, figures and words. */
+export type PackageCode = Pick<ShownWidget, "extension" | "version" | "module" | "figures" | "words">;
+
+/** A page module of the campaign's system or one of its extensions whose code runs, as /api/modules lists it (D-511). */
+export interface ShownModule
+{
+    package: string;
+    kind: "system" | "extension";
+    version: string;
+    address: string;
+    figures: Record<string, FigureSize>;
+    /** Its words in the campaign's language, by their English, for its page code's own words; none when it is written in that language. */
+    words?: Record<string, string>;
+}
+
+/** The room of a figure an extension draws (D-510), in CSS pixels on a wide screen; on a phone it shrinks to the width there is, keeping its shape. */
+export interface FigureSize
+{
+    width: number;
+    height: number;
+    mirror?: boolean;
 }
 
 /** Where a widget stands: a chip in the top, a card in the table's column, a card in a page, or nowhere; its order among the cards there. */
@@ -667,6 +698,10 @@ export interface WidgetShows
     says?: WidgetText;
     note?: WidgetText;
     parts?: WidgetPart[];
+    /** What only its page code draws (D-510), as the pins of a lock: JSON as its hook gave it, never read by the master. */
+    data?: unknown;
+    /** The figure of its page code that draws the whole inside of its card of a roll (D-510), the page keeping the question and the field for words. */
+    body?: string;
 }
 
 /** Words of an extension, or a phrase whose {names} are values the page writes in its language. */
@@ -690,11 +725,14 @@ export interface WidgetTrack
     coming?: number;
     stage?: "start" | "center" | "end";
     tone?: Tone;
+    /** The figure of its extension's page code that draws it (D-510), as tumblers; its label and value still name it for a screen reader. */
+    figure?: string;
 }
 
 /** A part of a widget's card, drawn with the page's own parts. */
 export type WidgetPart =
-    | { lead: WidgetText; icon?: string; value?: WidgetValue; tone?: Tone; }
+    | { lead: WidgetText; icon?: string; value?: WidgetValue; tone?: Tone; figure?: string; }
+    | { who: string; does?: WidgetText; }
     | { text: WidgetText; }
     | { facts: WidgetText[]; }
     | { values: { label: WidgetText; value: WidgetValue; }[]; }

@@ -4,13 +4,28 @@ import { type ComponentChildren, createContext } from "preact";
 import { useContext, useEffect, useRef } from "preact/hooks";
 import { type Section, sectionAddress } from "./address.ts";
 import { CardHead } from "./card.tsx";
-import type { ShownWidget, WidgetPage, WidgetPart, WidgetSpot, WidgetText, WidgetTrack, WidgetValue } from "./data.ts";
+import type { PackageCode, ShownModule, ShownWidget, WidgetPage, WidgetPart, WidgetSpot, WidgetText, WidgetTrack, WidgetValue } from "./data.ts";
 import { iconPath } from "./icons.tsx";
 import type { TrackChange } from "./pack-card.ts";
+import { type CardPage, cardsIn, codeOfModule, ExtensionRoot, type FigurePart, type FigurePlace, figureSize, type LoadedModule, ModulesContext, pagePropsOf, usePageModule } from "./page-code.tsx";
+import { sideOf, Token } from "./party.tsx";
+import { PeopleContext } from "./people.ts";
 import { isolated, numberText, pageDirection, t } from "./text.ts";
 
 /** The widgets of the campaign's extensions, as last read: every part of the page that holds some takes its own from here. */
 export const WidgetsContext = createContext<ShownWidget[]>([]);
+
+/** The widget whose parts are drawn here, with its page module and data, for a count its extension draws as a figure (D-510); where it stands. */
+export const OwnerContext = createContext<Owner | undefined>(undefined);
+
+/** A widget as its parts' drawing needs it: its module as it stands, its data, its place. */
+export interface Owner
+{
+    widget: PackageCode;
+    loaded: LoadedModule;
+    data?: unknown;
+    place: FigurePlace;
+}
 
 // The section of the page each widget's page is.
 const pageSections: Record<WidgetPage, Section> = { scene: "scene", sheet: "party", world: "world", journal: "journal" };
@@ -29,19 +44,75 @@ export function WidgetChips()
     );
 }
 
-/** The cards of the widgets that stand in this place, or at the end of this page, in their order; nothing where none does. */
-export function WidgetCards({ place, page }: { place: "side" | "page"; page?: WidgetPage; })
+/**
+ * The cards of the widgets that stand in this place, or at the end of this page, in their order; in a page, then the cards its packages' page code puts there
+ * (D-511), given whose sheet it is and what the page shows. Nothing where none does.
+ */
+export function WidgetCards({ place, page, who, view }: { place: "side" | "page"; page?: WidgetPage; who?: string | undefined; view?: unknown; })
 {
     const widgets = inPlace(useContext(WidgetsContext), place, page).filter((widget) => widget.shows?.parts !== undefined || widget.shows?.note !== undefined);
+    const own = place === "page" && page !== undefined ? <PackageCards page={page} who={who} view={view} /> : null;
 
     if (widgets.length === 0) {
-        return null;
+        return own;
     }
 
     return (
-        <div class={`widget-cards on-${place}`}>
-            {widgets.map((widget) => <WidgetCard key={widget.id} widget={widget} />)}
-        </div>
+        <>
+            <div class={`widget-cards on-${place}`}>
+                {widgets.map((widget) => <WidgetCard key={widget.id} widget={widget} />)}
+            </div>
+            {own}
+        </>
+    );
+}
+
+/** The cards the page code of the campaign's packages puts in a page (D-511), the system's first, each package's in their order. */
+function PackageCards({ page, who, view }: { page: CardPage; who?: string | undefined; view?: unknown; })
+{
+    const modules = useContext(ModulesContext);
+    return modules.length === 0 ? null : <div class="widget-cards on-page package-cards">{modules.map((module) => <ModuleCards key={module.package} module={module} page={page} who={who} view={view} />)}</div>;
+}
+
+/** One package's cards in a page, once its module came; one that did not load says so in a card of its own, with its error. */
+function ModuleCards({ module, page, who, view }: { module: ShownModule; page: CardPage; who?: string | undefined; view?: unknown; })
+{
+    const owner = codeOfModule(module);
+    const loaded = usePageModule(owner);
+    const cards = cardsIn(loaded, page);
+
+    if (cards instanceof Error) {
+        const id = titleId(`${module.package}.broken`);
+        return (
+            <section class="card widget-card package-card" aria-labelledby={id}>
+                <CardHead icon={iconPath("packages")} title={<h3 id={id}>{module.package}</h3>} />
+                <div class="card-body widget-body">
+                    <ExtensionRoot widget={owner} loaded={cards} kind="ext-body" draw={() => null} />
+                </div>
+            </section>
+        );
+    }
+
+    return (
+        <>
+            {cards.map(([name, card]) => {
+                const id = titleId(`${module.package}.${name}`);
+                const Drawing = card.draw;
+                return (
+                    <section key={name} class="card widget-card package-card" aria-labelledby={id}>
+                        <CardHead icon={card.icon ?? iconPath("packages")} title={<h3 id={id}>{card.title}</h3>} />
+                        <div class="card-body widget-body">
+                            <ExtensionRoot
+                                widget={owner}
+                                loaded={loaded}
+                                kind="ext-body"
+                                draw={() => <Drawing {...pagePropsOf(owner)} name={name} page={page} {...(who === undefined ? {} : { who })} {...(view === undefined ? {} : { view })} />}
+                            />
+                        </div>
+                    </section>
+                );
+            })}
+        </>
     );
 }
 
@@ -75,10 +146,15 @@ function WidgetChip({ widget, card }: { widget: ShownWidget; card?: ShownWidget 
     const shows = widget.shows;
     const icon = shows?.icon ?? widget.icon;
     const said = widgetSaid(widget);
+    const loaded = usePageModule(widget);
+    // Its lead's figure in place of its icon, when its page code draws one (D-510): the frame, the words, the tip and the name stay the page's.
+    const lead = shows?.parts?.find((part) => "lead" in part && part.figure !== undefined) as Extract<WidgetPart, { lead: WidgetText; }> | undefined;
     // Named by its whole sentence, which its tip shows too: the tip's drawing would add itself to a name made of its words.
     const inside = (
         <>
-            {icon !== undefined && <Drawn path={icon} kind="icon" />}
+            {lead?.figure !== undefined && widget.module !== undefined
+                ? <Figure owner={{ widget, loaded, data: shows?.data, place: "top" }} name={lead.figure} part={lead} />
+                : icon !== undefined && <Drawn path={icon} kind="icon" />}
             <span class="num">{shows?.chip === undefined ? widget.title : <Text text={shows.chip} />}</span>
         </>
     );
@@ -126,6 +202,8 @@ function WidgetCard({ widget }: { widget: ShownWidget; })
     const id = titleId(widget.id);
     const title = useRef<HTMLHeadingElement>(null);
     const shows = widget.shows;
+    const loaded = usePageModule(widget);
+    const place = widget.place === "page" ? "page" : "side";
 
     // Led here by its chip from another page.
     useEffect(() => {
@@ -142,14 +220,58 @@ function WidgetCard({ widget }: { widget: ShownWidget; })
                 title={<h3 id={id} ref={title} tabIndex={-1}>{widget.title}</h3>}
                 {...(shows?.note === undefined ? {} : { note: <Text text={shows.note} /> })}
             />
-            {shows?.parts !== undefined && shows.parts.length > 0 && <div class="card-body widget-body">{shows.parts.map((part, index) => <Part key={index} part={part} />)}</div>}
+            {/* Its parts, whose counts and lead its page code may draw as figures (D-510). */}
+            {shows?.parts !== undefined && shows.parts.length > 0 && (
+                <OwnerContext.Provider value={{ widget, loaded, data: shows.data, place }}>
+                    <div class="card-body widget-body">{shows.parts.map((part, index) => <Part key={index} part={part} />)}</div>
+                </OwnerContext.Provider>
+            )}
         </section>
+    );
+}
+
+/** Who acts in a card (D-509, D-510): their portrait as the page draws it, the party and those at the place known by name; their name and what they do. */
+export function Who({ who, does }: { who: string; does?: WidgetText | undefined; })
+{
+    const person = useContext(PeopleContext).find((one) => one.name === who) ?? { name: who, role: "other" as const };
+    const side = sideOf(person.role);
+    return (
+        <div class="who-acts">
+            <Token member={person} {...(side === undefined ? {} : { side })} />
+            <p class="who-acts-words" dir="auto">
+                <b class="who-acts-name">{who}</b>
+                {does !== undefined && (
+                    <span class="who-acts-does">
+                        <Text text={does} />
+                    </span>
+                )}
+            </p>
+        </div>
     );
 }
 
 /** A part of a widget's card, as the page draws its own. */
 export function Part({ part }: { part: WidgetPart; })
 {
+    const owner = useContext(OwnerContext);
+
+    if ("who" in part) {
+        return <Who who={part.who} does={part.does} />;
+    }
+
+    if ("lead" in part && part.figure !== undefined && owner?.widget.module !== undefined) {
+        // Drawn by its extension's page code over its words and value, which stay the page's (D-510): the figure in place of its icon.
+        return (
+            <div class="widget-lead figured">
+                <Figure owner={owner} name={part.figure} part={part} />
+                <span class="widget-lead-words" dir="auto">
+                    <Text text={part.lead} />
+                </span>
+                {part.value !== undefined && <Value value={part.value} kind="widget-lead-value" />}
+            </div>
+        );
+    }
+
     if ("lead" in part) {
         return (
             <div class="widget-lead">
@@ -260,17 +382,56 @@ export function Part({ part }: { part: WidgetPart; })
  */
 export function Track({ track, place, change }: { track: WidgetTrack; place?: "start" | "center" | "end"; change?: TrackChange | undefined; })
 {
+    // Without a figure, its marks drawn here: a plain count needs nothing of the page around it.
+    return track.figure === undefined ? Marks({ track, place, change }) : <Figured track={track} figure={track.figure} place={place} change={change} />;
+}
+
+/**
+ * A count its package draws as a figure (D-510), where its page code runs: the page keeps its name, in words for a screen reader, and its count in figures
+ * under it; elsewhere its marks.
+ */
+function Figured({ track, figure, place, change }: { track: WidgetTrack; figure: string; place?: "start" | "center" | "end" | undefined; change?: TrackChange | undefined; })
+{
+    const owner = useContext(OwnerContext);
+
+    if (owner?.widget.module === undefined) {
+        return <Marks track={track} place={place} change={change} />;
+    }
+
+    const { label, named, kind } = trackWords(track, place);
+    return (
+        <div class={`${kind} figured`}>
+            <span class="track-figure" role="img" aria-label={named}>
+                <Figure owner={owner} name={figure} part={{ track }} />
+            </span>
+            <span class="track-count figure-count" aria-hidden="true">
+                <span dir="auto">{label}</span> <span class="num">{`${numberText(track.value + (track.held ?? 0))}/${numberText(track.max)}`}</span>
+            </span>
+        </div>
+    );
+}
+
+/** A count's words: its label, its name for a screen reader with the marks held, failed and coming, its value in words, and its classes. */
+function trackWords(track: WidgetTrack, place: "start" | "center" | "end" | undefined): { label: string; said: string; more: string[]; named: string; kind: string; }
+{
     const label = textOf(track.label);
     const said = t("{value} of {max}", { value: track.value, max: track.max });
-    const steps = track.look === "steps";
-    const marks = track.look !== "bar" && track.max <= (steps ? mostSteps : mostPips);
     const kind = [place === undefined ? "widget-track" : `ask-track track-${place}`, track.tone ?? ""].filter((name) => name !== "").join(" ");
     const more = [
         track.held === undefined || track.held === 0 ? "" : t("held: {count}", { count: track.held }),
         track.marked === undefined || track.marked === 0 ? "" : t("failed: {count}", { count: track.marked }),
         track.coming === undefined || track.coming === 0 ? "" : t("this roll: {count}", { count: track.coming }),
     ].filter((part) => part !== "");
-    const named = [`${label}: ${said}`, ...more].join(", ");
+    return { label, said, more, named: [`${label}: ${said}`, ...more].join(", "), kind };
+}
+
+/** A count as marks, or a bar, with its label. */
+function Marks({ track, place, change }: { track: WidgetTrack; place?: "start" | "center" | "end" | undefined; change?: TrackChange | undefined; })
+{
+    const { label, said, more, named, kind } = trackWords(track, place);
+    const steps = track.look === "steps";
+    const marks = track.look !== "bar" && track.max <= (steps ? mostSteps : mostPips);
+
     return (
         <div class={kind}>
             <span class="widget-track-label" dir="auto" aria-hidden="true">{label}</span>
@@ -290,6 +451,38 @@ export function Track({ track, place, change }: { track: WidgetTrack; place?: "s
                 )}
             {marks && steps && <span class="track-count num" aria-hidden="true">{`${numberText(track.value + (track.held ?? 0))}/${numberText(track.max)}`}</span>}
         </div>
+    );
+}
+
+/** A figure of an extension, given what it drew before once what it draws changes, for it to move from one to the other. */
+function Figure({ owner, name, part }: { owner: Owner; name: string; part: FigurePart; })
+{
+    const looks = useRef<{ said: string; data?: unknown; before?: unknown; }>();
+    const said = JSON.stringify([part, owner.data]);
+
+    // The data it drew before, once what it draws changes: in a card of a roll that is once the dice land, as the card changes only then.
+    if (looks.current?.said !== said) {
+        looks.current = { said, data: owner.data, ...(looks.current === undefined ? {} : { before: looks.current.data }) };
+    }
+
+    const before = looks.current.before;
+    const size = figureSize(owner.widget, name);
+    return (
+        <ExtensionRoot
+            widget={owner.widget}
+            loaded={owner.loaded}
+            kind={`ext-figure at-${owner.place}`}
+            size={size}
+            draw={(module) => {
+                const Drawing = module.figures?.[name];
+
+                if (Drawing === undefined) {
+                    throw new Error(`its page module has no figure ${name}`);
+                }
+
+                return <Drawing {...pagePropsOf(owner.widget)} name={name} data={owner.data} {...(before === undefined ? {} : { before })} part={part} place={owner.place} size={size} />;
+            }}
+        />
     );
 }
 
@@ -325,7 +518,7 @@ export function Text({ text }: { text: WidgetText; })
 }
 
 /** A value: a number or a range with its unit, as the page's language writes them, set apart; a word as it is. */
-function Value({ value, kind }: { value: WidgetValue; kind?: string; })
+export function Value({ value, kind }: { value: WidgetValue; kind?: string; })
 {
     return typeof value === "string"
         ? <span class={kind} dir="auto">{value}</span>

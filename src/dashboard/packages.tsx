@@ -34,6 +34,7 @@ import { gameDateLabel, sinceDateLabel } from "./game-words.ts";
 import { Icon, type IconName, iconPath } from "./icons.tsx";
 import { phraseLabel, systemTitleLabel } from "./labels.ts";
 import { languageName } from "./languages.ts";
+import { OwnPageLinks } from "./package-page.tsx";
 import { PageHead } from "./pages.tsx";
 import { Confirm } from "./saves.tsx";
 import { Command } from "./settings.tsx";
@@ -1068,6 +1069,7 @@ function SystemRow(
                 <>
                     <VersionMeta version={system.version} newer={newer} />
                     <ReportLink issues={system.issues} name={system.name} after={system.version !== undefined || newer !== undefined} />
+                    <OwnPageLinks name={system.package} />
                 </>
             }
             row={`system:${system.name}`}
@@ -1189,6 +1191,7 @@ function ExtensionRow(
                 <>
                     <VersionMeta version={extension.version} newer={newer} />
                     <ReportLink issues={extension.issues} name={name} after />
+                    <OwnPageLinks name={extension.package} />
                 </>
             }
             row={`extension:${extension.package}`}

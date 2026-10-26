@@ -1,14 +1,16 @@
 // The extensions a campaign uses (D-27, D-28, D-427): those campaign.yaml lists, as installed, and their parts of the instructions over the system's (D-121).
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { z } from "zod";
 import { campaignFileName, readOneSetting, readTextSetting } from "../campaign/index.ts";
+import { packageCodeMayRun } from "../core/consents.ts";
 import type { Context } from "../core/context.ts";
 import type { InstructionPart } from "../core/instruction-parts.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
-import { type Extension, findExtension, isVerified } from "../extensions/index.ts";
+import { type Extension, extensionWords, type FigureSize, findExtension, hasConsent, isVerified } from "../extensions/index.ts";
 import { isCoreField } from "../pages/index.ts";
+import { type GameSystem, systemPageModule, systemWords } from "../systems/index.ts";
 
 /** The extensions the campaign uses, and what keeps one from being used, with how to fix it. */
 export interface CampaignExtensions
@@ -45,10 +47,82 @@ export function listedExtensions(root: string): Record<string, string>
     }
 }
 
-/** Whether an extension's code may run (D-441): ours, verified, or one the player installed from a folder of their own; never a stranger's from npm, for now. */
+/**
+ * Whether an extension's code may run, on the server and in the dashboard's page alike (D-441, D-478, D-510): ours, verified; one the player installed from a
+ * folder or a file of their own; or another's that the player said yes to, at this version and with these files.
+ */
 export function runsCode(extension: Extension): boolean
 {
-    return isVerified(extension.package, extension.linked) || extension.linked;
+    return isVerified(extension.package, extension.linked) || extension.linked || hasConsent(extension.folder, extension.package, extension.version);
+}
+
+/** The code of a package of the campaign for the dashboard's page (D-510, D-511): whose it is, its module's file and address, and its figures. */
+export interface PageModule
+{
+    package: string;
+    kind: "system" | "extension";
+    version: string;
+    file: string;
+    address: string;
+    figures: Record<string, FigureSize>;
+    /** Its words in the campaign's language, by their English, for its page code's own words; none when it is written in that language. */
+    words?: Record<string, string>;
+}
+
+/**
+ * The page modules of the campaign's packages whose code runs (D-510, D-511): its game system's, then its extensions', in the order campaign.yaml lists them.
+ * A system the engine ships, or one of ours, runs; another's as an extension's does, after the player's yes.
+ */
+export function campaignPageModules(root: string, context: Context, system: GameSystem | undefined): PageModule[]
+{
+    const own = system === undefined ? undefined : systemPageModule(system.folder);
+    const language = readTextSetting(root, "language");
+    const systems = own === undefined || system === undefined || !packageCodeMayRun(system.folder)
+        ? []
+        : [{
+            package: own.package,
+            kind: "system" as const,
+            version: own.version,
+            file: own.file,
+            address: pageAddress(own.package, own.version, own.file),
+            figures: {},
+            ...wordsIn(language, system.language, () => systemWords(system.folder, language ?? "")?.words),
+        }];
+    const extensions = campaignExtensions(root, context).extensions.flatMap((extension) =>
+        extension.page === undefined || !runsCode(extension)
+            ? []
+            : [{
+                package: extension.package,
+                kind: "extension" as const,
+                version: extension.version,
+                file: extension.page,
+                address: pageAddress(extension.package, extension.version, extension.page),
+                figures: extension.figures,
+                ...wordsIn(language, extension.language, () => extensionWords(extension.folder, language ?? "")?.words),
+            }]
+    );
+    return [...systems, ...extensions];
+}
+
+/** A package's words in the campaign's language, when it is written in another; none when they are not there or do not read, which validate says. */
+function wordsIn(language: string | undefined, own: string, read: () => Record<string, string> | undefined): { words?: Record<string, string>; }
+{
+    if (language === undefined || language.split("-")[0] === own.split("-")[0]) {
+        return {};
+    }
+
+    try {
+        const words = read();
+        return words === undefined || Object.keys(words).length === 0 ? {} : { words };
+    } catch {
+        return {};
+    }
+}
+
+/** The address the dashboard serves a package's page module at: by the package's name and version, its folder's files beside it. */
+export function pageAddress(name: string, version: string, file: string): string
+{
+    return `/pkg/${encodeURIComponent(name)}/${encodeURIComponent(version)}/${encodeURIComponent(basename(file))}`;
 }
 
 /**

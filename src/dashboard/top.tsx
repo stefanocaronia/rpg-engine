@@ -3,14 +3,15 @@
 // all, where the party is. It stays on top: down the page it draws itself together, the master and the name smaller, the product and the place folded away,
 // the sections still there (D-295); what the master asks and the rolls stay in sight under it. The robot shows the master's mood, a moment's face, and sleeps
 // while the chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
-import type { RefObject } from "preact";
+import { type ComponentChildren, Fragment, type RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { menuPages, type Section, sectionAddress, sectionLabel, sections } from "./address.ts";
+import { menuPages, packagePages, type Section, sectionAddress, sectionLabel, sections } from "./address.ts";
 import type { CalendarDay, Moment, Mood } from "./data.ts";
-import { WidgetChips } from "./extension-widgets.tsx";
+import { Drawn, WidgetChips } from "./extension-widgets.tsx";
 import { calendarDayLabel, gameDateLabel } from "./game-words.ts";
 import { Icon } from "./icons.tsx";
 import { Master } from "./master.tsx";
+import { type NavPage, ownKey } from "./page-code.tsx";
 import { usePrefChange } from "./prefs.ts";
 import { t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
@@ -39,6 +40,9 @@ interface TopOf
     yourTurn?: boolean;
     /** With more than one player character, whose turn it is, named in place of "you" (D-480 (7)). */
     turnName?: string | undefined;
+    /** The packages' own pages, as tabs or in the packages' menu (D-512), and the one shown, as package/name. */
+    ownPages?: NavPage[];
+    ownShown?: string | undefined;
 }
 
 // What the row of the sections leaves between a link and the next, between the sections and the pages after them, and for the menu's button.
@@ -80,7 +84,7 @@ export function Top(top: TopOf)
                     )}
                 </div>
                 <StatusChips now={top.now} calendar={top.calendar} live={top.live} />
-                <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} turnName={top.turnName} />
+                <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} turnName={top.turnName} ownPages={top.ownPages ?? []} ownShown={top.ownShown} />
                 {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
             <ThemeCorner />
@@ -89,47 +93,156 @@ export function Top(top: TopOf)
 }
 
 /**
- * The sections, each a link to its address (D-276, D-309), the one shown marked, then the saves, Help, the settings and About as icons at the row's end (D-333, D-409): what does not
- * fit goes into the menu, those three first, then the sections from the last.
+ * The sections, each a link to its address (D-276, D-309), the one shown marked, then the packages' pages that are tabs (D-512); then the saves, Help, the
+ * settings, the packages and About as icons at the row's end (D-333, D-409), the packages a menu of the packages' other pages when they have some: what does
+ * not fit goes into the menu, those icons first, then the tabs from the last.
  */
-function Navigation({ current, fight, yourTurn, turnName }: { current: Section; fight?: boolean; yourTurn?: boolean; turnName?: string | undefined; })
+function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown }: {
+    current: Section;
+    fight?: boolean | undefined;
+    yourTurn?: boolean | undefined;
+    turnName?: string | undefined;
+    ownPages: NavPage[];
+    ownShown?: string | undefined;
+})
 {
     // While the scene goes by turns the Scene's name is in gold; on the player's turn, from another section, it pulses (D-315, D-349, D-351, D-444).
-    const shown = [...sections];
     const turns = fight === true && current !== "scene";
     const turn = yourTurn === true && current !== "scene";
+    const tabs = [...sections.map((section) => sectionTab(section, current)), ...ownPages.filter((page) => page.nav === "tab").map((page) => ownTab(page, ownShown))];
+    const inMenu = ownPages.filter((page) => page.nav === "menu");
     const row = useRef<HTMLDivElement>(null);
-    const fitting = useFitting(row, shown.length, `${shown.join()} ${turn}`);
-    const away = [...shown.slice(fitting.sections), ...(fitting.pages ? [] : menuPages)];
+    const fitting = useFitting(row, tabs.length, `${tabs.map((tab) => tab.key).join()} ${turn} ${inMenu.length}`);
+    const awayTabs = tabs.slice(fitting.sections);
+    const awayPages = fitting.pages ? [] : menuPages;
     return (
         <div ref={row} class="nav-row">
             <nav class="sections main-nav" aria-label={t("Sections")}>
-                {[...shown, ...menuPages].map((section, index) => {
-                    const gone = away.includes(section);
-                    const kinds = [section === "scene" && turns ? (turn ? "your-turn" : "in-turns") : "", index === shown.length ? "pages-start" : "", index >= shown.length ? "page-link tip-below" : "", gone ? "away" : ""];
+                {tabs.map((tab) => {
+                    const gone = awayTabs.includes(tab);
+                    const kinds = [tab.key === "scene" && turns ? (turn ? "your-turn" : "in-turns") : "", tab.own ? "own-tab" : "", gone ? "away" : ""];
                     return (
                         <a
-                            key={section}
-                            href={sectionAddress(section)}
+                            key={tab.key}
+                            href={tab.href}
                             class={kinds.filter((kind) => kind !== "").join(" ") || undefined}
-                            aria-label={index >= shown.length ? sectionLabel(section) : undefined}
-                            data-tip={index >= shown.length ? sectionLabel(section) : undefined}
-                            aria-current={section === current ? "page" : undefined}
+                            aria-current={tab.current ? "page" : undefined}
                             aria-hidden={gone ? true : undefined}
                             tabIndex={gone ? -1 : undefined}
                         >
-                            <span class="section-mark">
-                                <Icon name={section} />
-                            </span>
-                            {/* The pages at the row's end are icons, their names in a tooltip under them and for a screen reader (D-409). */}
-                            {index < shown.length && sectionLabel(section)}
-                            {section === "scene" && turn && <span class="visually-hidden">{`, ${turnName === undefined ? t("your turn") : t("It's {name}'s turn", { name: turnName })}`}</span>}
+                            <span class="section-mark">{tab.icon}</span>
+                            <span class="section-name" dir="auto">{tab.label}</span>
+                            {tab.key === "scene" && turn && <span class="visually-hidden">{`, ${turnName === undefined ? t("your turn") : t("It's {name}'s turn", { name: turnName })}`}</span>}
                         </a>
                     );
                 })}
+                {/* The pages at the row's end are icons, their names in a tooltip under them and for a screen reader (D-409). */}
+                {menuPages.map((page, index) => {
+                    const gone = !fitting.pages;
+                    const kinds = ["page-link tip-below", index === 0 ? "pages-start" : "", gone ? "away" : ""].filter((kind) => kind !== "").join(" ");
+                    return page === "packages" && inMenu.length > 0
+                        ? <PackagesMenu key={page} pages={inMenu} current={current} ownShown={ownShown} kinds={kinds} gone={gone} />
+                        : (
+                            <a
+                                key={page}
+                                href={sectionAddress(page)}
+                                class={kinds}
+                                aria-label={sectionLabel(page)}
+                                data-tip={sectionLabel(page)}
+                                aria-current={page === current ? "page" : undefined}
+                                aria-hidden={gone ? true : undefined}
+                                tabIndex={gone ? -1 : undefined}
+                            >
+                                <span class="section-mark">
+                                    <Icon name={page} />
+                                </span>
+                            </a>
+                        );
+                })}
             </nav>
-            <Menu current={current} away={away} />
+            <Menu current={current} awayTabs={awayTabs} awayPages={awayPages} ownMenu={inMenu} ownShown={ownShown} />
         </div>
+    );
+}
+
+/** A tab of the row: a section, or a package's page that is a tab (D-512); its key, its address, its name and picture, whether it is shown. */
+interface Tab
+{
+    key: string;
+    href: string;
+    label: string;
+    icon: ComponentChildren;
+    current: boolean;
+    own: boolean;
+}
+
+function sectionTab(section: (typeof sections)[number], current: Section): Tab
+{
+    return { key: section, href: sectionAddress(section), label: sectionLabel(section), icon: <Icon name={section} />, current: section === current, own: false };
+}
+
+function ownTab(page: NavPage, shown: string | undefined): Tab
+{
+    const key = ownKey(page);
+    return { key, href: sectionAddress(packagePages, page.package, page.name), label: page.title, icon: ownIcon(page), current: key === shown, own: true };
+}
+
+function ownIcon(page: NavPage): ComponentChildren
+{
+    return page.icon === undefined ? <Icon name="packages" /> : <Drawn path={page.icon} kind="icon" />;
+}
+
+/**
+ * The packages' icon as a menu (D-512), when their pages that are no tabs are some: those pages by their titles, then Packages, where packages are added and
+ * taken away. Lit while one of them, or Packages, is shown.
+ */
+function PackagesMenu({ pages, current, ownShown, kinds, gone }: { pages: NavPage[]; current: Section; ownShown?: string | undefined; kinds: string; gone: boolean; })
+{
+    const [open, setOpen] = useState(false);
+    const holder = useRef<HTMLDivElement>(null);
+    const shown = current === "packages" || pages.some((page) => ownKey(page) === ownShown);
+    const label = t("Menu: {pages}", { pages: listOf([...pages.map((page) => page.title), sectionLabel("packages")]) });
+    useClosing(holder, open, setOpen);
+    return (
+        <div ref={holder} class={`packages-menu ${kinds}`} aria-hidden={gone ? true : undefined}>
+            <button
+                type="button"
+                class={shown ? "packages-menu-button shown" : "packages-menu-button"}
+                aria-label={label}
+                data-tip={label}
+                aria-expanded={open}
+                tabIndex={gone ? -1 : undefined}
+                onClick={() => setOpen(!open)}
+            >
+                <span class="section-mark">
+                    <Icon name="packages" />
+                </span>
+            </button>
+            {open && (
+                <div class="menu-pop">
+                    <OwnPageLinks pages={pages} ownShown={ownShown} onPick={() => setOpen(false)} />
+                    <a class="menu-manage" href={sectionAddress("packages")} aria-current={current === "packages" ? "page" : undefined} onClick={() => setOpen(false)}>
+                        <Icon name="packages" />
+                        {sectionLabel("packages")}
+                    </a>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** The packages' pages as links of a menu, each its icon and title. */
+function OwnPageLinks({ pages, ownShown, onPick }: { pages: NavPage[]; ownShown?: string | undefined; onPick(): void; })
+{
+    return (
+        <>
+            {pages.map((page) => (
+                <a key={ownKey(page)} href={sectionAddress(packagePages, page.package, page.name)} aria-current={ownKey(page) === ownShown ? "page" : undefined} dir="auto" onClick={onPick}>
+                    {ownIcon(page)}
+                    {page.title}
+                </a>
+            ))}
+        </>
     );
 }
 
@@ -200,7 +313,7 @@ function useFitting(row: RefObject<HTMLElement>, count: number, shape: string): 
 
         // Every link stays in the row, what does not fit unseen, so that each can be measured.
         const measure = (): void => {
-            const widths = [...element.querySelectorAll<HTMLElement>("nav > a")].map((link) => link.offsetWidth + linkGap);
+            const widths = [...element.querySelectorAll<HTMLElement>("nav > a, nav > .packages-menu")].map((link) => link.offsetWidth + linkGap);
             const total = (from: number, to?: number): number => widths.slice(from, to).reduce((sum, width) => sum + width, 0);
             const room = element.clientWidth;
             const left = phone.matches ? Infinity : room - menuRoom;
@@ -223,14 +336,74 @@ function useFitting(row: RefObject<HTMLElement>, count: number, shape: string): 
     return fitting;
 }
 
-/** The menu (D-309, D-333): what does not fit in the row, and on a phone the theme too, which has no switch of its own there; none when all fits. */
-function Menu({ current, away }: { current: Section; away: Section[]; })
+/**
+ * The menu (D-309, D-333): what does not fit in the row, the tabs and the pages at its end, the packages' pages that are no tabs after Packages (D-512); on a
+ * phone the theme too, which has no switch of its own there; none when all fits.
+ */
+function Menu({ current, awayTabs, awayPages, ownMenu, ownShown }: {
+    current: Section;
+    awayTabs: Tab[];
+    awayPages: readonly (typeof menuPages)[number][];
+    ownMenu: NavPage[];
+    ownShown?: string | undefined;
+})
 {
     const [open, setOpen] = useState(false);
     const holder = useRef<HTMLDivElement>(null);
     const [theme, flip] = useTheme();
+    useClosing(holder, open, setOpen);
 
-    // A touch outside or Escape closes it.
+    if (awayTabs.length + awayPages.length === 0) {
+        return null;
+    }
+
+    const names = listOf([...awayTabs.map((tab) => tab.label), ...awayPages.map(sectionLabel)]);
+    return (
+        <div class="menu" ref={holder}>
+            <button
+                type="button"
+                class="icon-button tonal menu-button tip-left"
+                aria-label={t("Menu: {pages}", { pages: names })}
+                data-tip={t("Menu: {pages}", { pages: names })}
+                aria-expanded={open}
+                onClick={() => setOpen(!open)}
+            >
+                <Icon name="menu" />
+            </button>
+            {open && (
+                <div class="menu-pop">
+                    {awayTabs.map((tab) => (
+                        <a key={tab.key} href={tab.href} aria-current={tab.current ? "page" : undefined} dir="auto" onClick={() => setOpen(false)}>
+                            {tab.icon}
+                            {tab.label}
+                        </a>
+                    ))}
+                    {awayPages.map((page) => (
+                        <Fragment key={page}>
+                            <a href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} onClick={() => setOpen(false)}>
+                                <Icon name={page} />
+                                {sectionLabel(page)}
+                            </a>
+                            {page === "packages" && ownMenu.length > 0 && (
+                                <div class="menu-sub">
+                                    <OwnPageLinks pages={ownMenu} ownShown={ownShown} onPick={() => setOpen(false)} />
+                                </div>
+                            )}
+                        </Fragment>
+                    ))}
+                    <button type="button" class="menu-theme" onClick={flip}>
+                        <Icon name={theme.next === "dark" ? "moon" : "sun"} />
+                        {theme.name}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** A touch outside an open menu, or Escape, closes it; Escape gives the focus back to its button. */
+function useClosing(holder: RefObject<HTMLDivElement>, open: boolean, setOpen: (open: boolean) => void): void
+{
     useEffect(() => {
         if (!open) {
             return;
@@ -245,6 +418,7 @@ function Menu({ current, away }: { current: Section; away: Section[]; })
         const escape = (event: KeyboardEvent): void => {
             if (event.key === "Escape") {
                 setOpen(false);
+                holder.current?.querySelector<HTMLElement>("button")?.focus();
             }
         };
 
@@ -256,39 +430,6 @@ function Menu({ current, away }: { current: Section; away: Section[]; })
             document.removeEventListener("keydown", escape);
         };
     }, [open]);
-
-    if (away.length === 0) {
-        return null;
-    }
-
-    return (
-        <div class="menu" ref={holder}>
-            <button
-                type="button"
-                class="icon-button tonal menu-button tip-left"
-                aria-label={t("Menu: {pages}", { pages: pagesList(away) })}
-                data-tip={t("Menu: {pages}", { pages: pagesList(away) })}
-                aria-expanded={open}
-                onClick={() => setOpen(!open)}
-            >
-                <Icon name="menu" />
-            </button>
-            {open && (
-                <div class="menu-pop">
-                    {away.map((page) => (
-                        <a key={page} href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} onClick={() => setOpen(false)}>
-                            <Icon name={page} />
-                            {sectionLabel(page)}
-                        </a>
-                    ))}
-                    <button type="button" class="menu-theme" onClick={flip}>
-                        <Icon name={theme.next === "dark" ? "moon" : "sun"} />
-                        {theme.name}
-                    </button>
-                </div>
-            )}
-        </div>
-    );
 }
 
 /** In the setup, which has no sections (D-379): whether the game is live and the switch of the theme, small at the top right. */
@@ -417,8 +558,8 @@ function useWrapped(row: RefObject<HTMLElement>): void
     }, []);
 }
 
-/** The pages a menu holds as a list in the page's language: Rules, Saves and Settings; ルール、セーブ、設定. */
-function pagesList(pages: Section[]): string
+/** Names as a list in the page's language: Rules, Saves and Settings; ルール、セーブ、設定. */
+function listOf(names: string[]): string
 {
-    return new Intl.ListFormat(document.documentElement.lang || "en", { type: "conjunction" }).format(pages.map(sectionLabel));
+    return new Intl.ListFormat(document.documentElement.lang || "en", { type: "conjunction" }).format(names);
 }

@@ -30,13 +30,15 @@ export interface Context
     systemFolders: string[];
     /**
      * The code of the systems that bring some, by name, loaded as the command line, the MCP server or the dashboard starts (D-448): its hooks, which the
-     * systems module types, or what kept it from loading.
+     * systems module types, or what kept it from loading, as another's code without the player's yes (D-511).
      */
-    systemCode?: Record<string, { hooks: object; } | { problem: string; }>;
+    systemCode?: Record<string, { hooks: object; } | { problem: string; } | { refused: string; }>;
     /** The folders that hold the installed extensions, each a package folder or npm's node_modules (D-436); none where missing. */
     extensionFolders?: string[];
     /** The AI app the MCP server serves, by the name it gives itself, such as claude-code; missing on the command line. */
     host?: () => string | undefined;
+    /** The packages the player said no to in a window in this session, by the name npm describes: never asked again until the server starts again (D-510). */
+    declined?: Set<string>;
     /** The chat the MCP server serves, as the dashboard needs it for the player's sentences (D-495); missing on the command line. */
     chat?: ChatState;
     /** The command was typed by the player in their own terminal: their own hands, as the yes to a package not ours needs (D-441). */

@@ -8,12 +8,14 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { tonesOf } from "../src/commands/ask.ts";
+import { campaignPageModules } from "../src/commands/game-extension-list.ts";
 import { campaignWidgets, widgetCard } from "../src/commands/game-widgets.ts";
 import type { Context, Rows } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { startDashboard } from "../src/dashboard-server.ts";
-import { findExtension, installedExtensions, readExtension, readsApi } from "../src/extensions/index.ts";
+import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
+import { findExtension, installedExtensions, packageFingerprint, readExtension, readsApi } from "../src/extensions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
+import { type GameSystem, systemPageModule } from "../src/systems/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 
 let folder: string;
@@ -551,16 +553,209 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(readLogFile(folder)).toHaveLength(lines);
     });
 
-    it("read packages made for the API 1 to 3, as omens, skies and wards, and refuse one made for a newer, with what to install", () => {
-        expect([0, 1, 2, 3, 4, 2.5, undefined].map(readsApi)).toEqual([false, true, true, true, false, false, false]);
+    it("read packages made for the API 1 to 4, as omens, skies, wards and charms, and refuse one made for a newer, with what to install", () => {
+        expect([0, 1, 2, 3, 4, 5, 2.5, undefined].map(readsApi)).toEqual([false, true, true, true, true, false, false, false]);
         expect(findExtension(testExtensionFolders, "omens")?.adds).toEqual({});
         expect(findExtension(testExtensionFolders, "skies")?.name).toBe("skies");
         expect(findExtension(testExtensionFolders, "wards")?.adds.counters).toEqual({ "ward-charges": { max: "wits + 1" }, momentum: { min: -6, max: 8 } });
 
         const newer = join(folder, "newer");
         cpSync(join(testExtensionFolders[0], "wards"), newer, { recursive: true });
-        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 4 } }));
-        expect(() => readExtension(newer)).toThrow("The extension @rpgengine/wards cannot be used, because it is made for the extension API 4; this rpg-engine reads the API 1 to 3: install a version of it made for these.");
+        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 5 } }));
+        expect(() => readExtension(newer)).toThrow("The extension @rpgengine/wards cannot be used, because it is made for the extension API 5; this rpg-engine reads the API 1 to 4: install a version of it made for these.");
+    });
+});
+
+describe("a package's code in the dashboard's page (D-510, D-511)", () => {
+    /** The campaign's dashboard, and what it answers at an address, sent JSON when there is a body. */
+    async function served(): Promise<{ call(path: string, body?: unknown): Promise<{ status: number; body: string; type: string; policy: string; }>; close(): Promise<void>; dashboard: Dashboard; }>
+    {
+        const session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        const dashboard = await startDashboard({ ...context, files: session }, session, { ports: [0], page: folder });
+
+        if (dashboard === undefined) {
+            throw new Error("The dashboard did not start.");
+        }
+
+        const port = Number(new URL(dashboard.url).port);
+        return {
+            dashboard,
+            call: (path, body) =>
+                new Promise((done, fail) => {
+                    const headers = body === undefined ? {} : { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" };
+                    request({ host: "127.0.0.1", port, path, method: body === undefined ? "GET" : "POST", headers }, (response) => {
+                        let text = "";
+                        response.setEncoding("utf8");
+                        response.on("data", (chunk: string) => (text += chunk));
+                        response.on("end", () => done({ status: response.statusCode ?? 0, body: text, type: String(response.headers["content-type"]), policy: String(response.headers["content-security-policy"]) }));
+                    }).on("error", fail).end(body === undefined ? undefined : JSON.stringify(body));
+                }),
+            close: async () => {
+                await dashboard.close();
+                session.close();
+            },
+        };
+    }
+
+    it("read a package's page module and figures, and the figures a widget names, which its extension.yaml declares", async () => {
+        const charms = findExtension(testExtensionFolders, "charms");
+        expect(charms?.page).toBe(join(testExtensionFolders[0], "charms", "page", "page.js"));
+        expect(charms?.figures).toEqual({ knot: { width: 120, height: 40, mirror: true }, braid: { width: 360, height: 120 } });
+
+        await campaign("ironsworn", { "@rpgengine/charms": "1.0.0" });
+        await rpg("write", "Kira", "--type", "character", "--set", "role=pc");
+        const [charm] = await campaignWidgets(folder, context);
+        expect(charm).toMatchObject({ id: "charms.charm", version: "1.0.0", module: "/pkg/%40rpgengine%2Fcharms/1.0.0/page.js", figures: charms?.figures });
+        expect(charm.shows).toEqual({
+            data: { knots: 0, secret: "only-the-page-reads-this" },
+            body: "braid",
+            parts: [{ who: "Kira", does: "ties" }, { track: { label: "Knots", value: 0, max: 5, figure: "knot" } }],
+        });
+        // What only the page draws never reaches the master.
+        expect(`${(await rpg("view", "--json")).output}${(await rpg("status")).output}`).not.toContain("only-the-page-reads-this");
+    });
+
+    it("serve a package's page files beside its module, only of the campaign's packages whose code runs, at the version installed", async () => {
+        await campaign("ironsworn", { "@rpgengine/charms": "1.0.0" });
+        const page = await served();
+
+        try {
+            expect(JSON.parse((await page.call("/api/modules")).body)).toEqual({
+                modules: [{ package: "@rpgengine/charms", kind: "extension", version: "1.0.0", address: "/pkg/%40rpgengine%2Fcharms/1.0.0/page.js", figures: expect.any(Object) }],
+            });
+            const module = await page.call("/pkg/%40rpgengine%2Fcharms/1.0.0/page.js");
+            expect(module).toMatchObject({ status: 200, type: "text/javascript; charset=utf-8" });
+            expect(module.body).toContain("figures");
+            expect(await page.call("/pkg/%40rpgengine%2Fcharms/1.0.0/parts/twist.js")).toMatchObject({ status: 200 });
+            expect((await page.call("/pkg/%40rpgengine%2Fcharms/1.0.0/page.css")).type).toBe("text/css; charset=utf-8");
+
+            for (const refused of ["notes.txt", "..%2Fpackage.json", "..%2Fsrc%2Findex.ts", "%2E%2E/extension.yaml"]) {
+                expect((await page.call(`/pkg/%40rpgengine%2Fcharms/1.0.0/${refused}`)).status, refused).toBe(404);
+            }
+
+            expect((await page.call("/pkg/%40rpgengine%2Fcharms/0.9.0/page.js")).status).toBe(404);
+            expect((await page.call("/pkg/%40rpgengine%2Fomens/1.2.0/page.js")).status).toBe(404);
+        } finally {
+            await page.close();
+        }
+
+        // A package the campaign does not use gives the page nothing.
+        await rpg("package", "remove", "charms");
+        const other = await served();
+
+        try {
+            expect((await other.call("/pkg/%40rpgengine%2Fcharms/1.0.0/page.js")).status).toBe(404);
+            expect(JSON.parse((await other.call("/api/modules")).body)).toEqual({ modules: [] });
+        } finally {
+            await other.close();
+        }
+    });
+
+    it("give a package's page code its words in the campaign's language, with its widgets and its module, and none in its own language (D-510)", async () => {
+        await campaign("ironsworn", { "@rpgengine/charms": "1.0.0" });
+        const words = { "{count} knots tied": "{count} nodi fatti", Knots: "Nodi" };
+        const page = await served();
+
+        try {
+            expect((await campaignWidgets(folder, context))[0].words).toBeUndefined();
+            expect(JSON.parse((await page.call("/api/modules")).body).modules[0].words).toBeUndefined();
+            await rpg("config", "language", "it");
+            expect((await campaignWidgets(folder, context))[0]).toMatchObject({ words, shows: { parts: [expect.anything(), { track: { label: "Nodi" } }] } });
+            expect(campaignPageModules(folder, context, undefined)[0].words).toEqual(words);
+        } finally {
+            await page.close();
+        }
+    });
+
+    it("refuse a page module outside its package, an extension's or a system's, and an address that does not decode; fingerprint files in a plain order (D-510)", async () => {
+        const root = makeTempFolder();
+        cpSync(join(testExtensionFolders[0], "charms"), join(root, "packs", "charms"), { recursive: true });
+        const manifest = join(root, "packs", "charms", "package.json");
+        writeFileSync(manifest, readFileSync(manifest, "utf8").replace('"page/page.js"', '"../../elsewhere/page.js"'));
+        expect(() => readExtension(join(root, "packs", "charms"))).toThrow(
+            "The extension @rpgengine/charms cannot be used, because its page, ../../elsewhere/page.js, is not inside its package: name a file of its own, such as dist/page.js.",
+        );
+        const system = join(root, "trial");
+        mkdirSync(system);
+        writeFileSync(join(system, "package.json"), JSON.stringify({ name: "@test/system-trial", version: "0.3.0", "rpg-engine": { kind: "system", page: "../elsewhere/page.js" } }));
+        expect(systemPageModule(system)).toBeUndefined();
+
+        await campaign("ironsworn", {});
+        const page = await served();
+
+        try {
+            expect((await page.call("/pkg/%E0%A4%A/1.0.0/page.js")).status).toBe(404);
+        } finally {
+            await page.close();
+        }
+
+        // The same files make the same fingerprint, whichever came first, in the order of their names' code points.
+        const [first, second] = [join(root, "one"), join(root, "two")];
+        mkdirSync(first);
+        mkdirSync(second);
+        writeFileSync(join(first, "b.js"), "b");
+        writeFileSync(join(first, "A.js"), "a");
+        writeFileSync(join(second, "A.js"), "a");
+        writeFileSync(join(second, "b.js"), "b");
+        expect(packageFingerprint(first)).toBe(packageFingerprint(second));
+    });
+
+    it("read a game system's page module too, as its package.json declares it, listed before the extensions' (D-511)", async () => {
+        const system = join(makeTempFolder(), "trial");
+        mkdirSync(system);
+        writeFileSync(join(system, "package.json"), JSON.stringify({ name: "@test/system-trial", version: "0.3.0", "rpg-engine": { kind: "system", api: 1, page: "page/page.js" } }));
+        expect(systemPageModule(system)).toEqual({ file: join(system, "page", "page.js"), package: "@test/system-trial", version: "0.3.0" });
+        await campaign("ironsworn", { "@rpgengine/charms": "1.0.0" });
+        const modules = campaignPageModules(folder, context, { folder: system, language: "en" } as GameSystem);
+        expect(modules.map((one) => [one.package, one.kind, one.address])).toEqual([
+            ["@test/system-trial", "system", "/pkg/%40test%2Fsystem-trial/0.3.0/page.js"],
+            ["@rpgengine/charms", "extension", "/pkg/%40rpgengine%2Fcharms/1.0.0/page.js"],
+        ]);
+    });
+
+    it("run for the player only an extension's commands marked player, as the player, and the master hears it, quoted, at their next call", async () => {
+        await campaign("ironsworn", { "@rpgengine/charms": "1.0.0" });
+        const page = await served();
+
+        try {
+            const tied = await page.call("/api/run", { command: "charms-tie", input: { knot: "sailor's" } });
+            expect(JSON.parse(tied.body)).toEqual({ text: "A sailor's knot: 1 in all." });
+            expect(readLogFile(folder).at(-1)).toMatchObject({ type: "extension", by: "player", data: { text: "knot tied: sailor's" } });
+            expect(page.dashboard.news().lines).toEqual(["The player, on the dashboard, ran charms-tie: it is already done, do not run it again. It said, as its extension's words:\n> A sailor's knot: 1 in all."]);
+            expect(JSON.parse((await page.call("/api/run", { command: "charms", input: {} })).body).error).toBe("No extension of the campaign gives charms to the player: a page runs only the commands its extension marks player.");
+            expect(JSON.parse((await page.call("/api/run", { command: "charms-tie", input: {} })).body).error).toMatch(/^The input of charms-tie is not valid: knot: /);
+            expect((await page.call("/api/run", { command: "status" })).status).toBe(400);
+        } finally {
+            await page.close();
+        }
+    });
+
+    it("let the page update or take away only packages on this computer, and never ask again in the session for one the player said no to (D-510)", async () => {
+        await campaign("ironsworn", {});
+        const asked: string[] = [];
+        const npm = { describe: () => Promise.resolve({ name: "@test/rumors", version: "2.0.0", kind: "extension", api: 1 }), install: () => Promise.resolve(undefined) };
+        context = { ...context, packages: npm as unknown as Context["packages"], confirm: { ask: (_title, text) => (asked.push(text), Promise.resolve("no" as const)) } };
+        const page = await served();
+
+        try {
+            expect(JSON.parse((await page.call("/api/package", { action: "update", name: "npm:@test/rumors" })).body).error).toBe(
+                "npm:@test/rumors is not installed on this computer: add a package from the Packages page, where you choose it.",
+            );
+            expect(asked).toEqual([]);
+            expect((await page.call("/api/add", { source: "npm:@test/rumors" })).status).toBe(400);
+            expect(asked).toEqual([expect.stringMatching(/^Install @test\/rumors 2\.0\.0\? Not verified by RPG Engine: @test\/rumors 2\.0\.0, asked from the dashboard\./)]);
+
+            // However the page writes it, the package npm describes was said no to: no window again.
+            for (const source of ["npm:@test/rumors", "@test/rumors", "npm:@test/rumors@2.0.0", "@test/rumors@latest", " npm:@test/rumors@2"]) {
+                const again = await page.call("/api/add", { source });
+                expect(again.status, source).toBe(400);
+                expect(JSON.parse(again.body), source).toMatchObject({ code: "declined" });
+            }
+
+            expect(asked).toHaveLength(1);
+        } finally {
+            await page.close();
+        }
     });
 });
 

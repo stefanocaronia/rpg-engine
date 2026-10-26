@@ -36,6 +36,8 @@ export interface ExtensionCommand<Input extends z.ZodObject = z.ZodObject>
     readOnly?: boolean;
     /** Fields the command line takes as positional arguments, in order: weather-set 2. */
     positionals?: string[];
+    /** The player may run it too, from the extension's code in the dashboard's page, with run (D-510); the master hears it at their next call. */
+    player?: boolean;
     /**
      * It may ask the player with game.ask (D-505): through MCP the host is told it waits for the player, so that it does not give up. Unlike the core's ask it
      * stays on the command line and where nothing shows buttons, where ask gives the question in words.
@@ -201,6 +203,10 @@ export type Asked =
  */
 export interface Widget
 {
+    /** What only its page code draws (D-510), as the pins of a lock: JSON, kept short, which goes only to the page, never to the master. */
+    data?: unknown;
+    /** The figure of its page code that draws the whole inside of its card of a roll, the dashboard keeping the question and the field for words (D-510). */
+    body?: string;
     /** One of the icons of extension.yaml, in place of the widget's own. */
     icon?: string;
     /** The few words of a chip in the top, as 10–15 °C. */
@@ -236,6 +242,8 @@ export interface Track
     coming?: number;
     stage?: "start" | "center" | "end";
     tone?: DieTone;
+    /** The figure of the extension's page code that draws it, in place of the dashboard's pips (D-510); its label and value still say it in words. */
+    figure?: string;
 }
 
 /**
@@ -243,7 +251,8 @@ export interface Track
  * bar; rows of a label, a value and a note; a table; a picture of the extension's images/.
  */
 export type WidgetPart =
-    | { lead: WidgetText; icon?: string; value?: WidgetValue; tone?: DieTone; }
+    | { lead: WidgetText; icon?: string; value?: WidgetValue; tone?: DieTone; figure?: string; }
+    | { who: string; does?: WidgetText; }
     | { text: WidgetText; }
     | { facts: WidgetText[]; }
     | { values: { label: WidgetText; value: WidgetValue; }[]; }

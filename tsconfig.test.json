@@ -5,7 +5,8 @@
     "rootDir": ".",
     "paths": {
       "rpg-engine": ["./src/index.ts"],
-      "rpg-engine/testing": ["./src/testing.ts"]
+      "rpg-engine/testing": ["./src/testing.ts"],
+      "rpg-engine/page": ["./src/page.ts"]
     }
   },
   "include": ["src", "test", "systems/*/src", "systems/*/test"]

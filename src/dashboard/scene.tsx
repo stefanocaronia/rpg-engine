@@ -73,8 +73,8 @@ export function SceneView({ place, scene, actor, foreground, several = false, pa
                         </Card>
                     </div>
                 )}
-                {/* The extensions' cards, after what the scene needs (D-502). */}
-                <WidgetCards key="widgets" place="page" page="scene" />
+                {/* The extensions' cards, after what the scene needs (D-502), then the packages' own (D-511). */}
+                <WidgetCards key="widgets" place="page" page="scene" who={foreground} view={place} />
             </div>
         </section>
     );

@@ -13,6 +13,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./page": {
+      "types": "./dist/page.d.ts",
+      "default": "./dist/page.js"
+    },
     "./testing": {
       "types": "./dist/testing.d.ts",
       "default": "./dist/testing.js"

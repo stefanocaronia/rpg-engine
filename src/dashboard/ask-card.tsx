@@ -1,20 +1,22 @@
-// The card of a package's question (D-507): its widget's parts in the frame of the master's question, which stays through the questions of one attempt. Its
-// counts on a stage of three places; under them the roll's button, or the choices a die asks for, and the rule; once the dice have spoken, the outcome where
-// the buttons were. What the dice changed moves on its marks once they land; the card stays until the player closes it.
+// The card of a package's question (D-507, D-509): its widget's parts in the frame of the master's question, which stays through the questions of one attempt.
+// Who acts on the left, the count drawn large in the middle, the others one over the other on the right; under them the roll's button, or the choices a die
+// asks for, and the rule; once the dice have spoken, the outcome where the buttons were. Its extension's page code may draw the middle's figure, or the
+// whole inside, the frame staying the page's (D-510). What the dice changed moves once they land; the card stays until the player closes it.
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { WidgetShows, WidgetTrack } from "./data.ts";
-import { Drawn, Part, Text, textOf, Track } from "./extension-widgets.tsx";
+import type { Asked, ShownWidget, WidgetShows } from "./data.ts";
+import { Drawn, OwnerContext, Part, Text, textOf, Track, Who } from "./extension-widgets.tsx";
 import { Icon, NotationIcons } from "./icons.tsx";
 import { checkOf } from "./labels.ts";
 import { cardLayout, labelKey, type PackCard, type TrackChange, trackChanges } from "./pack-card.ts";
+import { type CardButton, deepQuery, ExtensionRoot, figureSize, type PageModule, pagePropsOf, usePageModule } from "./page-code.tsx";
 import { t } from "./text.ts";
 import { turnWords } from "./turns.tsx";
 
-/** The card; `name`, with more than one player character, whom it asks; `title`, its widget's, for a card the page saw no question of. */
-export function AskCard({ card, name, title, onAnswer, onWords, onClose }: {
+/** The card; `name`, with more than one player character, whom it asks; `widget`, whose card it is, its title for a card the page saw no question of. */
+export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
     card: PackCard;
     name?: string | undefined;
-    title?: string | undefined;
+    widget?: ShownWidget | undefined;
     /** A button pressed, by its place among the question's. */
     onAnswer(index: number): void;
     /** The player's own words in place of a button (ASK-10), `focused` when the focus was in the card: whether the game took them. */
@@ -26,13 +28,14 @@ export function AskCard({ card, name, title, onAnswer, onWords, onClose }: {
     const element = useRef<HTMLElement>(null);
     // Whether the focus was on one of its buttons as it was pressed: it goes to the next question's first button, or to Close at the end.
     const pressed = useRef(false);
-    // What the card showed before, what changed since, and that change in words for a screen reader.
-    const look = useRef<{ said: string; shows?: WidgetShows; changes: Map<string, TrackChange>; told: string; }>({ said: "", changes: new Map(), told: "" });
+    // What the card showed, and before it, what changed since, and that change in words for a screen reader.
+    const look = useRef<{ said: string; shows?: WidgetShows; before?: WidgetShows; changes: Map<string, TrackChange>; told: string; }>({ said: "", changes: new Map(), told: "" });
     const said = JSON.stringify(card.shows);
 
     if (look.current.said !== said) {
         const changes = trackChanges(look.current.shows, card.shows);
-        look.current = { said, shows: card.shows, changes, told: look.current.shows === undefined ? "" : toldText(card, changes) };
+        const before = look.current.shows === undefined ? {} : { before: look.current.shows };
+        look.current = { said, shows: card.shows, ...before, changes, told: look.current.shows === undefined ? "" : toldText(card, changes) };
     }
 
     const { changes, told } = look.current;
@@ -47,6 +50,9 @@ export function AskCard({ card, name, title, onAnswer, onWords, onClose }: {
     const id = card.key.replace(/[^a-z0-9-]/gi, "-");
     const ruleId = `ask-rule-${id}`;
     const state = card.ended === true ? "ended" : card.sent !== undefined ? "rolling" : "asking";
+    // The extension's page code, when it has one: it may draw the whole inside of this card (D-510).
+    const loaded = usePageModule(widget);
+    const body = widget?.module === undefined ? undefined : card.shows.body;
     // The player's own words, as in the master's question: while they go, and what went wrong.
     const [words, setWords] = useState("");
     const [saying, setSaying] = useState(false);
@@ -81,13 +87,14 @@ export function AskCard({ card, name, title, onAnswer, onWords, onClose }: {
         };
     }, [card.ended]);
 
-    // The button pressed gone, the focus that was on it goes to the next question's first button, or to Close once the card has its outcome.
+    // The button pressed gone, the focus that was on it goes to the next question's first button, or to Close once the card has its outcome; in an
+    // extension's drawing too.
     useEffect(() => {
-        if (!pressed.current || element.current === null || element.current.contains(document.activeElement)) {
+        if (!pressed.current || element.current === null || (element.current.contains(document.activeElement) && deepActive()?.classList.contains("ext-root") !== true)) {
             return;
         }
 
-        const next = element.current.querySelector<HTMLElement>(card.ended === true ? ".ask-close" : ".ask-choices button:not([aria-disabled='true'])");
+        const next = deepQuery(element.current, card.ended === true ? ".ask-close" : ".ask-choices button:not([aria-disabled='true'])");
 
         if (next !== null) {
             pressed.current = false;
@@ -123,25 +130,67 @@ export function AskCard({ card, name, title, onAnswer, onWords, onClose }: {
         setProblem(t("The answer did not reach the game: try again."));
     };
 
-    const place = (stage: NonNullable<WidgetTrack["stage"]>) => {
-        const tracks = layout.places[stage];
-        // The facts under the counts at the end, or in the middle when none is at the end.
-        const facts = stage === (layout.places.end.length > 0 ? "end" : "center") ? layout.facts : [];
-        return (
-            <div class={`ask-place at-${stage}`}>
-                {tracks.map((track) => <Track key={labelKey(track.label)} track={track} place={stage} change={changes.get(labelKey(track.label))} />)}
-                {facts.length > 0 && (
-                    <ul class="chips ask-facts">
-                        {facts.map((fact, index) => (
-                            <li key={index} dir="auto">
-                                <Text text={fact} />
-                            </li>
-                        ))}
-                    </ul>
+    const tracksOf = (stage: "start" | "center" | "end") => layout.places[stage].map((track) => <Track key={labelKey(track.label)} track={track} place={stage} change={changes.get(labelKey(track.label))} />);
+    const side = layout.places.start.length + layout.places.end.length > 0;
+    // The facts under the counts at the side, or in the middle when none is there.
+    const facts = layout.facts.length === 0 ? null : (
+        <ul class="chips ask-facts">
+            {layout.facts.map((fact, index) => (
+                <li key={index} dir="auto">
+                    <Text text={fact} />
+                </li>
+            ))}
+        </ul>
+    );
+    const choices = asked === undefined ? undefined : cardAskedOf(asked, prompt);
+
+    // The inside the page draws: who acts, the middle, the side; the others; the buttons, the outcome and the rule.
+    const inside = (
+        <>
+            <div class={layout.who === undefined ? "ask-stage" : "ask-stage with-who"}>
+                {layout.who !== undefined && (
+                    <div class="ask-place at-who">
+                        <Who who={layout.who.who} does={layout.who.does} />
+                    </div>
+                )}
+                <div class="ask-place at-center">
+                    {tracksOf("center")}
+                    {!side && facts}
+                </div>
+                {side && (
+                    <div class="ask-place at-side">
+                        {tracksOf("start")}
+                        {tracksOf("end")}
+                        {facts}
+                    </div>
                 )}
             </div>
-        );
-    };
+            {layout.others.length > 0 && <div class="ask-others">{layout.others.map((part, index) => <Part key={index} part={part} />)}</div>}
+            <div class="ask-foot">
+                {choices !== undefined && asked !== undefined && (
+                    <>
+                        {choices.prompt !== undefined && <p class="ask-prompt" role="alert">{choices.prompt}</p>}
+                        <Choices key={asked.id} buttons={choices.buttons} sent={card.sent} describedBy={ruled === undefined ? undefined : ruleId} onChoose={press} />
+                    </>
+                )}
+                {/* The outcome where the buttons were, as tall, so that the page does not move; a screen reader hears it from the status below. */}
+                {asked === undefined && outcome !== undefined && (
+                    <p class={outcome.tone === undefined ? "ask-outcome" : `ask-outcome ${outcome.tone}`} aria-hidden="true">
+                        {outcome.icon !== undefined && <Drawn path={outcome.icon} kind="ask-outcome-icon" />}
+                        <span dir="auto">
+                            <Text text={outcome.lead} />
+                        </span>
+                    </p>
+                )}
+                {asked === undefined && layout.texts.map((text, index) => (
+                    <p key={index} class="ask-then" dir="auto">
+                        <Text text={text} />
+                    </p>
+                ))}
+                {ruled !== undefined && <p id={ruleId} class="ask-rule" dir="auto">{ruled}</p>}
+            </div>
+        </>
+    );
 
     return (
         <section ref={element} class={`asked ask-card ${state}`} aria-labelledby={`ask-${id}`}>
@@ -152,85 +201,159 @@ export function AskCard({ card, name, title, onAnswer, onWords, onClose }: {
                         <Icon name="close" />
                     </button>
                 )}
-                <p class="eyebrow asked-turn">{check === undefined ? title ?? turnWords(name) : `${turnWords(name)} · ${check.check}`}</p>
-                <p id={`ask-${id}`} class="asked-question" role={asked !== undefined && prompt === undefined ? "alert" : undefined}>{question ?? title}</p>
-                <div class="ask-stage">
-                    {place("start")}
-                    {place("center")}
-                    {place("end")}
-                </div>
-                {layout.others.length > 0 && <div class="ask-others">{layout.others.map((part, index) => <Part key={index} part={part} />)}</div>}
-                <div class="ask-foot">
-                    {asked !== undefined && (
-                        <>
-                            {prompt !== undefined && <p class="ask-prompt" role="alert">{prompt}</p>}
-                            <div class="ask-choices">
-                                {asked.labels.map((label, index) => {
-                                    const roll = checkOf(label, asked.title);
-                                    const own = asked.buttons?.[index] ?? undefined;
-                                    // A choice that says what it costs, as "it resets", in the red of what is lost; else a plain button.
-                                    const kind = roll !== undefined ? "ask-roll" : own?.note !== undefined ? "button danger ask-leave" : "button ask-leave";
-                                    return (
-                                        <button
-                                            key={`${asked.id} ${index}`}
-                                            type="button"
-                                            class={card.sent === index ? `${kind} sent` : kind}
-                                            aria-disabled={card.sent === undefined ? undefined : "true"}
-                                            aria-describedby={ruled === undefined ? undefined : ruleId}
-                                            onClick={() => press(index)}
-                                        >
-                                            {roll !== undefined && <NotationIcons notation={roll.dice} />}
-                                            <span class="asked-check-name">{own?.name ?? roll?.check ?? label}</span>
-                                            {own?.note !== undefined && <span class="ask-note">{own.note}</span>}
-                                            {roll !== undefined && <span class="visually-hidden">{roll.dice}</span>}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </>
-                    )}
-                    {/* The outcome where the buttons were, as tall, so that the page does not move; a screen reader hears it from the status below. */}
-                    {asked === undefined && outcome !== undefined && (
-                        <p class={outcome.tone === undefined ? "ask-outcome" : `ask-outcome ${outcome.tone}`} aria-hidden="true">
-                            {outcome.icon !== undefined && <Drawn path={outcome.icon} kind="ask-outcome-icon" />}
-                            <span dir="auto">
-                                <Text text={outcome.lead} />
-                            </span>
-                        </p>
-                    )}
-                    {asked === undefined && layout.texts.map((text, index) => (
-                        <p key={index} class="ask-then" dir="auto">
-                            <Text text={text} />
-                        </p>
-                    ))}
-                    {ruled !== undefined && <p id={ruleId} class="ask-rule" dir="auto">{ruled}</p>}
-                    {/* The player's own words in place of a button, as in the master's question (ASK-10). */}
-                    {asked !== undefined && (
-                        <form class="asked-own ask-own" onSubmit={(event) => void say(event)}>
-                            <input
-                                type="text"
-                                value={words}
-                                maxLength={mostWords}
-                                placeholder={t("Or write what you do…")}
-                                aria-label={t("Or write what you do")}
-                                disabled={busy}
-                                onInput={(event) => setWords(event.currentTarget.value)}
-                            />
-                            <button type="submit" class="icon-button" aria-label={t("Send")} data-tip={t("Send")} disabled={busy || words.trim() === ""}>
-                                <Icon name="send" />
-                            </button>
-                        </form>
-                    )}
-                    {problem !== undefined && <p class="asked-problem" role="alert">{problem}</p>}
-                </div>
+                <p class="eyebrow asked-turn">{check === undefined ? widget?.title ?? turnWords(name) : `${turnWords(name)} · ${check.check}`}</p>
+                <p id={`ask-${id}`} class="asked-question" role={asked !== undefined && prompt === undefined ? "alert" : undefined}>{question ?? widget?.title}</p>
+                {body !== undefined && widget !== undefined
+                    ? (
+                        <ExtensionRoot
+                            widget={widget}
+                            loaded={loaded}
+                            kind="ext-card"
+                            draw={(module) => (
+                                <OwnBody
+                                    module={module}
+                                    name={body}
+                                    widget={widget}
+                                    shows={card.shows}
+                                    before={look.current.before}
+                                    asked={choices}
+                                    sent={card.sent}
+                                    ended={card.ended === true}
+                                    answer={press}
+                                />
+                            )}
+                        />
+                    )
+                    : widget === undefined
+                    ? inside
+                    : <OwnerContext.Provider value={{ widget, loaded, data: card.shows.data, place: "ask" }}>{inside}</OwnerContext.Provider>}
+                {/* The player's own words in place of a button, as in the master's question (ASK-10): always the page's. */}
+                {asked !== undefined && (
+                    <form class="asked-own ask-own" onSubmit={(event) => void say(event)}>
+                        <input
+                            type="text"
+                            value={words}
+                            maxLength={mostWords}
+                            placeholder={t("Or write what you do…")}
+                            aria-label={t("Or write what you do")}
+                            disabled={busy}
+                            onInput={(event) => setWords(event.currentTarget.value)}
+                        />
+                        <button type="submit" class="icon-button" aria-label={t("Send")} data-tip={t("Send")} disabled={busy || words.trim() === ""}>
+                            <Icon name="send" />
+                        </button>
+                    </form>
+                )}
+                {problem !== undefined && <p class="asked-problem" role="alert">{problem}</p>}
                 <p class="visually-hidden" role="status">{told}</p>
             </div>
         </section>
     );
 }
 
+/**
+ * The buttons of a question in a card, as the page draws them, for its own card and an extension's (D-510): a roll in gold with its dice, a choice that
+ * loses something with a red edge, any other plain; the one pressed marked while its answer goes, the others waiting.
+ */
+export function Choices({ buttons, sent, describedBy, onChoose }: { buttons: CardButton[]; sent?: number | undefined; describedBy?: string | undefined; onChoose(index: number): void; })
+{
+    return (
+        <div class="ask-choices">
+            {buttons.map((button, index) => {
+                const kind = button.dice !== undefined ? "ask-roll" : button.danger === true ? "button danger ask-leave" : "button ask-leave";
+                return (
+                    <button
+                        key={index}
+                        type="button"
+                        class={sent === index ? `${kind} sent` : kind}
+                        aria-disabled={sent === undefined ? undefined : "true"}
+                        aria-describedby={describedBy}
+                        onClick={() => onChoose(index)}
+                    >
+                        {button.dice !== undefined && <NotationIcons notation={button.dice} />}
+                        <span class="asked-check-name">{button.name}</span>
+                        {button.note !== undefined && <span class="ask-note">{button.note}</span>}
+                        {button.dice !== undefined && <span class="visually-hidden">{button.dice}</span>}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/** The buttons of a question as a card shows them: each its name, its note and its dice when it rolls; the question a die asks, and the rule. */
+export function cardAskedOf(asked: Asked, prompt?: string): CardAsked
+{
+    const buttons = asked.labels.map((label, index) => {
+        const roll = checkOf(label, asked.title);
+        const own = asked.buttons?.[index] ?? undefined;
+        const note = own?.note === undefined ? {} : { note: own.note };
+        // A choice that says what it costs, as "it resets", in the red of what is lost.
+        return { name: own?.name ?? roll?.check ?? label, ...note, ...(roll === undefined ? (own?.note === undefined ? {} : { danger: true }) : { dice: roll.dice }) };
+    });
+    return { buttons, ...(prompt === undefined ? {} : { prompt }), ...(asked.rule === undefined ? {} : { rule: asked.rule }) };
+}
+
 // How many characters the player's own words may have, as the server takes them.
 const mostWords = 500;
+
+/** The whole inside of a card of a roll as its extension's page code draws it (D-510): its body, a figure with the question's buttons. */
+function OwnBody({ module, name, widget, shows, before, asked, sent, ended, answer }: {
+    module: PageModule;
+    name: string;
+    widget: ShownWidget;
+    shows: WidgetShows;
+    before?: WidgetShows | undefined;
+    asked?: CardAsked | undefined;
+    sent?: number | undefined;
+    ended: boolean;
+    answer(index: number): void;
+})
+{
+    const Drawing = module.bodies?.[name];
+
+    if (Drawing === undefined) {
+        throw new Error(`its page module has no body ${name}`);
+    }
+
+    return (
+        <Drawing
+            {...pagePropsOf(widget)}
+            name={name}
+            data={shows.data}
+            {...(before === undefined ? {} : { before: before.data })}
+            place="ask"
+            size={figureSize(widget, name)}
+            parts={shows.parts ?? []}
+            buttons={asked?.buttons ?? []}
+            {...(asked?.prompt === undefined ? {} : { prompt: asked.prompt })}
+            {...(asked?.rule === undefined ? {} : { rule: asked.rule })}
+            {...(sent === undefined ? {} : { sent })}
+            ended={ended}
+            answer={answer}
+        />
+    );
+}
+
+/** The buttons of a question as a card shows them, with the question a die asks over them and the rule under them. */
+interface CardAsked
+{
+    prompt?: string;
+    buttons: CardButton[];
+    rule?: string;
+}
+
+/** The element with the focus, inside an extension's drawing too. */
+function deepActive(): Element | null
+{
+    let active = document.activeElement;
+
+    while (active?.shadowRoot?.activeElement !== undefined && active.shadowRoot.activeElement !== null) {
+        active = active.shadowRoot.activeElement;
+    }
+
+    return active;
+}
 
 /** What a look of the card changed, for a screen reader, once: its outcome, then each count that changed, as "Failed. Pins: 0 of 6. Failures: 3 of 4." */
 function toldText(card: PackCard, changes: Map<string, TrackChange>): string

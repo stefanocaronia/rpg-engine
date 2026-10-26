@@ -1,9 +1,12 @@
 // The code a game system brings where its data is not enough (D-448), as the 5e's dying point: hooks the engine calls after its own writes, given the game
 // they may read and change. A system's package.json says it has code, as an extension's does (D-439); the engine loads it once for the process, as it starts.
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { packageCodeMayRun } from "../core/consents.ts";
 import type { SaveAsked } from "../core/context.ts";
+import { realPath } from "../core/files.ts";
+import { isInside } from "../core/store.ts";
 import { systemFolders } from "./system-folders.ts";
 
 /** A die as it was thrown: its faces, what it showed, and whether it was dropped, as the lower of two kept highest. */
@@ -87,12 +90,26 @@ export interface SystemHooks
 export type SystemEntry = () => SystemHooks;
 
 /** A system's code as loaded: its hooks, or what kept it from loading. */
-export type LoadedSystemCode = { hooks: SystemHooks; } | { problem: string; };
+export type LoadedSystemCode = { hooks: SystemHooks; } | { problem: string; } | { refused: string; };
 
 /** Whether a system's folder brings code: a package.json of kind system with a main (D-448). */
 export function systemHasCode(folder: string): boolean
 {
     return systemPackage(folder) !== undefined;
+}
+
+/** A system's code for the dashboard's page, as its package.json declares it (D-511): its module's file, the package's name and version; undefined without one. */
+export function systemPageModule(folder: string): { file: string; package: string; version: string; } | undefined
+{
+    try {
+        const data = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { name?: unknown; version?: unknown; "rpg-engine"?: { kind?: unknown; page?: unknown; }; };
+        const page = data["rpg-engine"]?.kind === "system" ? data["rpg-engine"].page : undefined;
+        // Its page code is a file of its own, by real paths, links included (D-510).
+        const inside = typeof page === "string" && isInside(realPath(folder), realPath(resolve(folder, page)));
+        return !inside || typeof page !== "string" || typeof data.name !== "string" ? undefined : { file: join(folder, page), package: data.name, version: typeof data.version === "string" ? data.version : "0.0.0" };
+    } catch {
+        return undefined;
+    }
 }
 
 /**
@@ -112,6 +129,12 @@ export async function loadSystemCode(folders: string[]): Promise<Record<string, 
         seen.add(name.toLowerCase());
 
         if (main === undefined || !first) {
+            continue;
+        }
+
+        // Another's code runs only after the player's yes, for this version and these files (D-478, D-511).
+        if (!packageCodeMayRun(own)) {
+            loaded[name] = { refused: `is not ours, and the player has not said yes to it as it is installed: install it again with package install, for their yes` };
             continue;
         }
 

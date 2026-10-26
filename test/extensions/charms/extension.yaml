@@ -1,0 +1,11 @@
+# A test extension for the API 4 (D-510): its page code draws a knot in a track and the inside of a card, and the player ties a knot from the page.
+title: charms, a test extension
+about: knots tied on a charm, drawn by its own page code
+language: en
+figures:
+  knot: {width: 120, height: 40, mirror: true}
+  braid: {width: 360, height: 120}
+widgets:
+  charm:
+    title: Charm
+    place: side

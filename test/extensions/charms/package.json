@@ -1,0 +1,11 @@
+{
+  "name": "@rpgengine/charms",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "rpg-engine": {
+    "kind": "extension",
+    "api": 4,
+    "page": "page/page.js"
+  }
+}

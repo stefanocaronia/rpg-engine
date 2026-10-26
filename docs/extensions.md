@@ -6,7 +6,7 @@ An extension adds to a campaign what its game system lacks: rules as text, parts
 
 ```text
 rpg-engine-<name>/
-  package.json       its npm name, version and code; "rpg-engine": {"kind": "extension", "api": 3}; the keyword rpg-engine-package;
+  package.json       its npm name, version and code; "rpg-engine": {"kind": "extension", "api": 4, "page": "dist/page.js"}; the keyword rpg-engine-package;
                      bugs, or a repository on GitHub, for the dashboard's "Report a problem" link
   extension.yaml     what it is (section 2)
   instructions/*.md  what it adds to the master's instructions, as a system's parts
@@ -17,7 +17,7 @@ rpg-engine-<name>/
   test/              its tests, not shipped
 ```
 
-Its name without the scope is the name its commands start with: `@rpgengine/weather` gives `weather` and `weather-set`. `api` is the version of the code's API (section 3) it is made for: 2 added the widgets, 3 the additions to the game system, the pages, the scene, writing its own fields and asking the player. rpg-engine reads a package made for its own or an older one, and refuses one made for a newer one before installing it.
+Its name without the scope is the name its commands start with: `@rpgengine/weather` gives `weather` and `weather-set`. `api` is the version of the code's API (section 3) it is made for: 2 added the widgets, 3 the additions to the game system, the pages, the scene, writing its own fields and asking the player, 4 its code in the dashboard's page. rpg-engine reads a package made for its own or an older one, and refuses one made for a newer one before installing it.
 
 ## 2. extension.yaml
 
@@ -96,6 +96,17 @@ export default weather;
   - its own `state`, kept in the campaign in `extensions/<name>/state.yaml`, and `log`. It writes no other page, field or file; once the call is stopped, as while `ask` waits, `set`, `state.write`, `log` and a roll with `who` throw.
 - A game system's code is loaded the same way, from a `package.json` of kind `system`, with hooks of its own: see [game-systems.md](game-systems.md#6-code).
 
+### Code in the dashboard's page
+
+A package, an extension or a game system, may draw in the dashboard's page with code of its own, in the dashboard's style.
+
+- `page` in its `package.json`'s `"rpg-engine"` names its page module, an ES module built as its code is. The dashboard serves that module's folder at `/pkg/<package>/<version>/` (scripts, style sheets, SVG), only for the campaign's system and extensions whose code runs, and lists them at `/api/modules`. The module imports `preact` and `rpg-engine/page`, the dashboard's kit, from the page itself: one Preact, the dashboard's.
+- Its default export gives, by name, the components of its `figures` and its `bodies`. `extension.yaml` declares each figure's room, `figures: {tumblers: {width: 360, height: 105, mirror: true}}`, which the page keeps while the module comes; `mirror` turns one without words right to left.
+- A widget's hook gives the page code what only it draws as `data`, JSON kept short, which goes to the page alone and never to the master. A `track` or a `lead` names the `figure` that draws it, its label and count, or its words and value, staying the dashboard's under it; a chip draws the figure of its widget's lead in place of its icon; `body` names the figure that draws the whole inside of its card of a roll, the dashboard keeping the question and the field for the player's own words; `{who, does}` is who acts, as "Ettore picks", whose portrait the dashboard finds. A figure a widget names must be declared.
+- `rpg-engine/page` gives the props a figure's component gets (its `data`, before the dice in a roll's card, the part it draws, its place and room, `words`, `number`, `language`, `dir`, `theme`, `reducedMotion`) and `run(command, input)`, which runs, as the player, a command of the extension marked `player: true`, through `POST /api/run`; the master hears it at their next call, quoted as the extension's words. The master's tools stay as they are.
+- Its `cards` are cards at the end of the dashboard's pages, each with its `page` (`scene`, `sheet`, `world` or `journal`), `title`, `icon` and `order`; its `pages` are pages of its own at `#/pkg/<package>/<name>`, each with its `title` and `icon`, and `nav: "tab"` for a page central to the game, as a system's spells, a tab beside Party, Scene, Journal and World; any other is in the menu of the packages' icon at the top, as one that says nothing.
+- What breaks shows its error and whose it is, in the card: no drawing stands in for it.
+
 ## 4. Words
 
 `words/<code>.yaml` gives the extension's words in a language, the base one for a regional one (`pt` for `pt-BR`): its `title` and `about`, which the Packages page shows; `fields`, the names of the fields it adds to the game system, by their id, which the sheet, `show` and the dashboard write over the system's own, layered as the additions are; and `words`, each text its widgets write, from its own language to that one. A word the list lacks stays as written; one with a capital and without matches the same entry. A file that does not read leaves the words as written, and `validate` names it.
@@ -125,7 +136,7 @@ With `--json`, each gives its result as data.
 - A package not ours is installed only with the player's own yes, where the master cannot give it with its own tools: the host's form, else a window of the player's operating system (PowerShell, osascript, zenity or kdialog), else not at all; never the dashboard's page, nor the master's word. It does not hold against a program with the player's shell: the host's own permission for each command does, unless it is opened without permissions. A file or a folder is copied at the yes, and its copy runs.
 - The same command installs the other kinds, told by what the package holds: a game system (`"kind": "system"` and a `system.yaml`), on this computer for a new campaign, the campaign keeping its own, named by its package without its scope and its `system-`; a language (`"kind": "language"`, a `language.yaml` with its `code` and `name`, a `phrases.json` from each English phrase of the dashboard to its own, and maybe a `guide.md` and `systems/<name>/words/<code>.yaml`), texts only and no yes asked, one per language, its phrases coming before the dashboard's and the translation on the fly, refused when a phrase loses a `{name}` or turns the order of a text; an adventure, as a `.zip`, a folder or a link with `adventure.yaml`.
 - The dashboard's Packages page adds by one field (a link, an npm name or a folder) or a file, and lists what npm has for every kind and the GitHub repositories with the topic `rpg-engine-adventure`. A package not ours that the page adds asks the player's yes in a window of their computer only.
-- For now a package not ours brings its texts and data, never its code, which does not run; the code of a folder or a `.tgz` the player installed does. A `.tgz`, as `npm pack` makes it, is unpacked into rpg-engine's folder and installed from there, so the file can then be moved; `uninstall` takes the unpacked copy away too. A copy from a folder or a file takes the place of npm's on the whole computer, and the player is told so before saying yes; asking for the package by its name brings npm's back. Its parts come under a title of their own and never take the place of the core's or the system's.
+- The code of a package not ours, on the computer and in the page, runs after the player's yes, which says in plain words what it can do there: see the whole campaign, its secrets included, press buttons and speak to the master for the player. The yes holds on this computer for that package, its version and the fingerprint of its files: another version, or a file changed since, asks again; `uninstall` takes it away. The code of a folder or a `.tgz` the player installed runs once copied. From the page, the player updates or takes away only the packages on this computer, a no in a window holds until the game's server starts again, and the window says the request comes from the dashboard. A `.tgz`, as `npm pack` makes it, is unpacked into rpg-engine's folder and installed from there, so the file can then be moved; `uninstall` takes the unpacked copy away too. A copy from a folder or a file takes the place of npm's on the whole computer, and the player is told so before saying yes; asking for the package by its name brings npm's back. Its parts come under a title of their own and never take the place of the core's or the system's.
 
 ## 6. Tests
 

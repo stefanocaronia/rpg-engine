@@ -9,7 +9,10 @@ export const sections = ["party", "scene", "journal", "world"] as const;
 /** The pages at the row's end, as icons, in the menu on a phone: the saves, played with, then what is read, as Help and the settings are, and the packages (D-356, D-409, D-475). */
 export const menuPages = ["saves", "help", "settings", "packages", "about"] as const;
 
-export type Section = (typeof sections)[number] | (typeof menuPages)[number];
+/** A package's own page, as #/pkg/<package>/<name>, reached from its row in Packages and by its address (D-511). */
+export const packagePages = "pkg" as const;
+
+export type Section = (typeof sections)[number] | (typeof menuPages)[number] | typeof packagePages;
 
 /** A place in the page: its section, for the sheet whom it shows, a page's tab, as #/packages/add, and what is open in the tab, as #/world/lore/Bertoldo. */
 export interface Address
@@ -24,7 +27,7 @@ export function readAddress(hash: string): Address
 {
     const [, written = "", ...rest] = hash.replace(/^#/, "").split("/");
     const first = written === "combat" ? "scene" : written;
-    const section = [...sections, ...menuPages].find((candidate) => candidate === first) ?? "party";
+    const section = [...sections, ...menuPages, packagePages].find((candidate) => candidate === first) ?? "party";
     const sheet = first === "party" || first === "character";
     const known = section === first;
     const tab = sheet || !known ? "" : decoded(rest[0] ?? "");
@@ -51,6 +54,7 @@ export function sectionLabel(section: Section): string
         settings: t("Settings"),
         packages: t("Packages"),
         about: t("About"),
+        pkg: t("Packages"),
     };
     return labels[section];
 }

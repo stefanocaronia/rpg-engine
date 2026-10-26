@@ -1,7 +1,8 @@
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
+import { ourScope } from "../core/consents.ts";
 import type { PackageInfo, PackageManager } from "../core/context.ts";
 import { isTarball, tarballText, unpackTarball } from "./tarball.ts";
 
@@ -9,7 +10,7 @@ import { isTarball, tarballText, unpackTarball } from "./tarball.ts";
 export const packageKeyword = "rpg-engine-package";
 
 /** The npm scope of the packages we publish, the verified ones (D-428, D-441). */
-export const verifiedScope = "@rpgengine/";
+export const verifiedScope = ourScope;
 
 const registry = "https://registry.npmjs.org";
 // Where the packages given as a .tgz are unpacked, in the packages' folder (D-452).
@@ -57,7 +58,11 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
                 return await installCopy(folder, spec, described.get(resolve(spec)), run);
             }
 
-            const ran = await run(`install --prefix ${quotedFolder(folder)} ${isLocalSpec(spec) ? quotedFolder(spec) : checkedSpec(spec)} ${installOptions}`);
+            // What npm installed of the same version goes aside first, as it would keep it whatever it holds now: the files are npm's (D-510).
+            const named = spec.replace(/(?<=.)@[^@/]*$/, "");
+            const aside = join(folder, "aside", ...named.split("/"));
+            mkdirSync(join(aside, ".."), { recursive: true });
+            const ran = await installedAside(join(folder, "node_modules", ...named.split("/")), aside, () => run(`install --prefix ${quotedFolder(folder)} ${checkedSpec(spec)} ${installOptions}`));
             return ran.code === 0 ? undefined : `npm said: ${npmError(ran)}`;
         },
         uninstall: async (name) => {

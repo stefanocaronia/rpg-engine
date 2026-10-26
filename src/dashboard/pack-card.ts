@@ -73,9 +73,13 @@ export function inCard(asked: Asked | undefined): boolean
     return asked?.card !== undefined && (asked.card.shows !== undefined || asked.card.coming === true);
 }
 
-/** Where a card's parts stand: the outcome, the counts in their three places, the facts under the last, the lines under the outcome, and any other part. */
+/**
+ * Where a card's parts stand: who acts, the outcome, the counts in their places (the middle one large, the start's and the end's one over the other at
+ * the side, D-509), the facts under the last, the lines under the outcome, and any other part.
+ */
 export interface CardLayout
 {
+    who?: Extract<WidgetPart, { who: string; }>;
     lead?: Extract<WidgetPart, { lead: WidgetText; }>;
     places: Record<NonNullable<WidgetTrack["stage"]>, WidgetTrack[]>;
     facts: WidgetText[];
@@ -91,6 +95,8 @@ export function cardLayout(shows: WidgetShows): CardLayout
     for (const part of shows.parts ?? []) {
         if ("lead" in part) {
             layout.lead ??= part;
+        } else if ("who" in part) {
+            layout.who ??= part;
         } else if ("track" in part) {
             layout.places[part.track.stage ?? "center"].push(part.track);
         } else if ("facts" in part) {

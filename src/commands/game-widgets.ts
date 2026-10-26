@@ -13,6 +13,7 @@ import {
     type ExtensionCode,
     type ExtensionWords,
     extensionWords,
+    type FigureSize,
     type Track,
     type Widget,
     type WidgetPage,
@@ -24,7 +25,7 @@ import {
     wordIn,
 } from "../extensions/index.ts";
 import { findImage } from "../images/index.ts";
-import { campaignExtensions } from "./game-extension-list.ts";
+import { campaignExtensions, pageAddress, runsCode } from "./game-extension-list.ts";
 import { extensionCode, gameViewOf } from "./game-extensions.ts";
 
 /** Where a widget stands: a place of the dashboard, with its page for a card in one, and its order among the cards there; or off. */
@@ -51,11 +52,23 @@ export interface ShownWidget extends WidgetSpot
     shows?: ShownContent;
     /** Why it shows nothing, for whoever made it: its code failed, or gave what the dashboard does not show. */
     problem?: string;
+    /** Its extension's version, which an error of its page code names (D-510). */
+    version?: string;
+    /** The address of its extension's page module, when it has one and its code runs (D-510). */
+    module?: string;
+    /** The figures its extension's page code draws, by name, with the room each takes (D-510). */
+    figures?: Record<string, FigureSize>;
+    /** Its extension's words in the campaign's language, by their English, for its page code's own words; none when it is written in that language. */
+    words?: Record<string, string>;
 }
 
 /** What a widget shows, as the page draws it: its words in the campaign's language, its icons as their paths, its pictures as files. */
 export interface ShownContent
 {
+    /** What only its page code draws (D-510): JSON as its hook gave it, never read by the master. */
+    data?: unknown;
+    /** The figure that draws the whole inside of its card of a roll (D-510). */
+    body?: string;
     icon?: string;
     chip?: WidgetText;
     says?: WidgetText;
@@ -66,7 +79,7 @@ export interface ShownContent
 /** A part of a widget's card as the page draws it: a lead's icon as its path, a picture as the file of its extension the dashboard serves. */
 export type ShownPart =
     | Exclude<NonNullable<Widget["parts"]>[number], { lead: WidgetText; } | { image: string; }>
-    | { lead: WidgetText; icon?: string; value?: WidgetValue; }
+    | { lead: WidgetText; icon?: string; value?: WidgetValue; tone?: "good" | "bad"; figure?: string; }
     | { image: { extension: string; file: string; version: number; }; alt: WidgetText; };
 
 /** The places a campaign may put a widget in, in campaign.yaml: top, side, a page, which is a card in that page, or off. */
@@ -111,6 +124,9 @@ export async function campaignWidgets(root: string, context: Context): Promise<S
                 own,
                 ...(widget.icon === undefined ? {} : { icon: extension.icons[widget.icon] }),
                 ...(words.problem === undefined ? {} : { problem: words.problem }),
+                ...pageOf(extension),
+                // Its words for its page code's own words, in the campaign's language (D-510).
+                ...(extension.page === undefined || words.read === undefined || Object.keys(words.read.words).length === 0 ? {} : { words: words.read.words }),
             };
 
             if (spot.place === "off" || code === undefined) {
@@ -297,7 +313,8 @@ const textSchema = z.union([
 const iconName = z.string().regex(/^[a-z][a-z0-9-]*$/);
 const toneSchema = z.enum(["good", "bad"]);
 const partSchema = z.union([
-    z.object({ lead: textSchema, icon: iconName.optional(), value: valueSchema.optional(), tone: toneSchema.optional() }).strict(),
+    z.object({ lead: textSchema, icon: iconName.optional(), value: valueSchema.optional(), tone: toneSchema.optional(), figure: iconName.optional() }).strict(),
+    z.object({ who: text(80), does: textSchema.optional() }).strict(),
     z.object({ text: textSchema }).strict(),
     z.object({ facts: z.array(textSchema).max(12) }).strict(),
     z.object({ values: z.array(z.object({ label: textSchema, value: valueSchema }).strict()).max(12) }).strict(),
@@ -312,6 +329,7 @@ const partSchema = z.union([
             coming: z.int().min(0).optional(),
             stage: z.enum(["start", "center", "end"]).optional(),
             tone: toneSchema.optional(),
+            figure: iconName.optional(),
         }).strict(),
     }).strict(),
     z.object({ rows: z.array(z.object({ label: textSchema, value: valueSchema.optional(), note: textSchema.optional() }).strict()).max(24) }).strict(),
@@ -319,6 +337,9 @@ const partSchema = z.union([
     z.object({ image: z.string().regex(/^[\w .-]+\.(png|jpe?g|webp|svg)$/i), alt: textSchema }).strict(),
 ]);
 const widgetSchema = z.object({
+    // JSON for the page code alone, its size held by the most a widget gives.
+    data: z.json().optional(),
+    body: iconName.optional(),
     icon: iconName.optional(),
     chip: textSchema.optional(),
     says: textSchema.optional(),
@@ -352,9 +373,21 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
 
     const valueIn = (value: WidgetValue): WidgetValue => typeof value === "number" ? value : typeof value === "string" ? wordIn(words, value) : value.unit === undefined ? value : { ...value, unit: wordIn(words, value.unit) };
 
-    const { icon: ownIcon, chip, says, note, parts } = parsed.data;
+    // A figure it names is one its extension.yaml declares, for its page code to draw.
+    const figure = (name: string | undefined): { figure?: string; } => {
+        if (name !== undefined && extension.figures[name] === undefined) {
+            throw new Error(`it names the figure ${name}, which its extension.yaml does not declare in figures`);
+        }
+
+        return name === undefined ? {} : { figure: name };
+    };
+
+    const { icon: ownIcon, chip, says, note, parts, data, body } = parsed.data;
     const shownIcon = icon(ownIcon);
+    const inside = body === undefined ? {} : { body: figure(body).figure };
     return {
+        ...(data === undefined ? {} : { data }),
+        ...inside,
         ...(shownIcon === undefined ? {} : { icon: shownIcon }),
         ...(chip === undefined ? {} : { chip: said(chip) }),
         ...(says === undefined ? {} : { says: said(says) }),
@@ -364,7 +397,11 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
                 if ("lead" in part) {
                     const leadIcon = icon(part.icon);
                     const tone = part.tone === undefined ? {} : { tone: part.tone };
-                    return { lead: said(part.lead), ...(leadIcon === undefined ? {} : { icon: leadIcon }), ...(part.value === undefined ? {} : { value: valueIn(part.value) }), ...tone };
+                    return { lead: said(part.lead), ...(leadIcon === undefined ? {} : { icon: leadIcon }), ...(part.value === undefined ? {} : { value: valueIn(part.value) }), ...tone, ...figure(part.figure) };
+                }
+
+                if ("who" in part) {
+                    return { who: part.who, ...(part.does === undefined ? {} : { does: said(part.does) }) };
                 }
 
                 if ("text" in part) {
@@ -380,7 +417,7 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
                 }
 
                 if ("track" in part) {
-                    return { track: shownTrack({ ...part.track, label: said(part.track.label) }) };
+                    return { track: shownTrack({ ...part.track, label: said(part.track.label), ...figure(part.track.figure) }) };
                 }
 
                 if ("rows" in part) {
@@ -442,6 +479,13 @@ export async function widgetCard(root: string, context: Context, extension: Exte
     } catch {
         return undefined;
     }
+}
+
+/** Where a widget's page code is, when its extension has some and its code runs (D-510): its module's address, its version, its figures. */
+function pageOf(extension: Extension): Pick<ShownWidget, "version" | "module" | "figures">
+{
+    const module = extension.page === undefined || !runsCode(extension) ? {} : { module: pageAddress(extension.package, extension.version, extension.page) };
+    return { version: extension.version, ...module, ...(Object.keys(extension.figures).length === 0 ? {} : { figures: extension.figures }) };
 }
 
 /** A picture of the extension's images/, as the dashboard serves it at an address of the extension's own; it throws when the extension has none by that name. */

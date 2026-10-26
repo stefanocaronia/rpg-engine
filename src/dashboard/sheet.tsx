@@ -107,7 +107,7 @@ export function MemberSheet(
                             </Card>
                         )}
                     </div>
-                    <WidgetCards place="page" page="sheet" />
+                    <WidgetCards place="page" page="sheet" who={member.name} view={member} />
                 </div>
             </div>
         </section>

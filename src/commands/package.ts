@@ -8,7 +8,7 @@ import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
-import { type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, readsApi, shortName, verifiedScope } from "../extensions/index.ts";
+import { dropConsent, type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, readsApi, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
 import { installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
 import { chooseAnswer } from "./ask.ts";
@@ -192,7 +192,7 @@ export const packageCommand = defineCommand({
             const what = `${extension.name} ${extension.version}${result.verified ? ", verified" : ", not verified: at the player's risk"}`;
             const said = [
                 `${result.already ? `The campaign already uses ${what}` : `Installed ${what}, and the campaign uses it`}: ${extension.about}.`,
-                result.codeLeftOut ? "Its code is not used: for now RPG Engine runs only its own packages' code, and its texts bring the rest." : "",
+                result.codeLeftOut ? "Its code is not used: the player's yes holds for another version or other files; install it again for their yes." : "",
                 result.commands.length === 0 ? "" : `Its commands: ${result.commands.join(", ")}.${result.tools === "" ? "" : ` ${result.tools}`}`,
                 Object.keys(extension.parts).length === 0 ? "" : `Its parts of your instructions are given when they apply: ${Object.keys(extension.parts).join(", ")}.`,
             ].filter((line) => line !== "").join(" ");
@@ -327,11 +327,12 @@ async function installed(root: string, context: Context, name: string): Promise<
         // A file or a folder says what it holds, and when it takes the place of a copy from npm, which is one for the whole computer (D-452).
         const holds = local ? ` (${described.name} ${described.version}${described.author === undefined ? "" : `, by ${described.author}`})` : "";
         const replaces = local && before !== undefined && !before.linked ? ` It takes the place of ${before.package} ${before.version} from npm, in every campaign on this computer.` : "";
-        await playerYes(context, local ? name : described.name, local, holds, replaces);
+        await playerYes(context, local ? name : `${described.name} ${described.version}`, described.name, local, holds, replaces);
     }
 
     // A copy from a file or a folder never stands for the one npm has: asked by its name, npm's comes back.
-    const reinstall = before === undefined || before.version !== described.version || local || before.linked;
+    // Another's whose code may not run is installed again before its yes is kept: the yes goes to npm's files, never to files changed since (D-478, D-510).
+    const reinstall = before === undefined || before.version !== described.version || local || before.linked || (!isVerified(described.name, local) && !runsCode(before));
 
     if (reinstall) {
         const why = await packages.install(spec);
@@ -349,6 +350,11 @@ async function installed(root: string, context: Context, name: string): Promise<
 
     if (extension === undefined) {
         throw new Error(`${described.name} was installed, but RPG Engine cannot use it as an extension. Nothing changed in the campaign.`);
+    }
+
+    // The player's yes holds for this version and these files, on this computer: its code runs on the server and in the page (D-478, D-510).
+    if (!isVerified(described.name, local) && !extension.linked) {
+        recordConsent(extension.folder, extension.package, extension.version);
     }
 
     const system = readTextSetting(root, "system");
@@ -383,7 +389,7 @@ async function installed(root: string, context: Context, name: string): Promise<
         extension,
         verified,
         commands,
-        codeLeftOut: extension.code !== undefined && !runsCode(extension),
+        codeLeftOut: (extension.code !== undefined || extension.page !== undefined) && !runsCode(extension),
         already,
         ...modePart(root, context, extension),
         tools: toolsNote(context),
@@ -405,7 +411,7 @@ async function systemInstalled(root: string, context: Context, spec: string, nam
     }
 
     if (!isVerified(described.name, local)) {
-        await playerYes(context, local ? name : described.name, local, local ? ` (${described.name} ${described.version})` : "");
+        await playerYes(context, local ? name : `${described.name} ${described.version}`, described.name, local, local ? ` (${described.name} ${described.version})` : "");
     }
 
     const why = await (context.packages as NonNullable<Context["packages"]>).install(spec);
@@ -415,6 +421,13 @@ async function systemInstalled(root: string, context: Context, spec: string, nam
     }
 
     [...context.systemFolders, ...(context.extensionFolders ?? [])].forEach((folder) => files().refresh(folder));
+    const installed = installedExtensionFolder(context, described.name);
+
+    // The player's yes holds for this version and these files: its code runs at the next start of the game's server (D-478, D-511).
+    if (!isVerified(described.name, local) && !local && installed !== undefined) {
+        recordConsent(installed, described.name, described.version);
+    }
+
     let system: InstalledSystem | undefined;
 
     try {
@@ -544,6 +557,13 @@ function languagesHere(context: Context): InstalledLanguage[]
     }));
 }
 
+/** Whether a package is on this computer, by its name as package takes it: an extension, a game system or a language npm installed (D-510). */
+export function isInstalledPackage(context: Context, name: string): boolean
+{
+    const asked = name.startsWith("npm:") ? name.slice(4) : name.startsWith("@") ? name : `${verifiedScope}${name}`;
+    return [asked, name].some((one) => installedExtensionFolder(context, one) !== undefined);
+}
+
 /** The folder npm installed a package in, among the extensions' folders; undefined when it is not there. */
 function installedExtensionFolder(context: Context, name: string): string | undefined
 {
@@ -564,11 +584,19 @@ function pagePhrases(context: Context): Record<string, string>
  * The player's own yes to a package not ours (D-441, D-478), where the master cannot give it with its own tools: the host's form first, never the dashboard's
  * page, whose click a local program can forge; else a window of their operating system; else none, and it throws.
  */
-async function playerYes(context: Context, name: string, local: boolean, holds = "", replaces = ""): Promise<void>
+async function playerYes(context: Context, name: string, pack: string, local: boolean, holds = "", replaces = ""): Promise<void>
 {
+    // A no in a window holds for the package npm describes, however it was written, until the server starts again (D-510).
+    if (context.declined?.has(pack) === true) {
+        throw new YesRefused(`The player said no to ${pack} in this session: it is not asked again until the game's server starts again. Nothing changed.`, "declined");
+    }
+
+    // Said in plain words, the fixed text before the name its author chose; and where the request comes from (D-510).
+    const from = context.actor === "player" ? "the dashboard" : context.host === undefined ? "the command line" : "the chat";
+    const can = "Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you.";
     const warning = local
-        ? `${name}${holds} is ${isTarball(name) ? "a file" : "a folder"} of this computer, not a package published by RPG Engine: its code runs, it is never verified, and RPG Engine takes no responsibility for it.${replaces}`
-        : `${name} is not published by RPG Engine: its texts are someone else's, and RPG Engine takes no responsibility for it.`;
+        ? `Not verified by RPG Engine: ${name}${holds}, ${isTarball(name) ? "a file" : "a folder"} of this computer, asked from ${from}. ${can} RPG Engine takes no responsibility for it.${replaces}`
+        : `Not verified by RPG Engine: ${name}, asked from ${from}. ${can} Install it only if you trust who made it.`;
     const question = `Install ${name}? ${warning}`;
     const title = "A package not ours";
     const answer = context.player === undefined ? "unavailable" : await context.player.choose(question, title, ["Install it, at my risk", "Do not install it"], context.signal);
@@ -593,6 +621,7 @@ async function playerYes(context: Context, name: string, local: boolean, holds =
     }
 
     if (window === "no") {
+        context.declined?.add(pack);
         throw new YesRefused(`The player did not want ${name}. Nothing changed.`, "declined");
     }
 
@@ -682,10 +711,16 @@ async function uninstalled(root: string, context: Context, name: string): Promis
         throw new Error("Packages are uninstalled only by the game's server or the command line, which reach npm.");
     }
 
+    const folder = installedExtensionFolder(context, found.package);
     const why = await packages.uninstall(found.package);
 
     if (why !== undefined) {
         throw new Error(`${found.package} could not be uninstalled: ${why}. Nothing changed.`);
+    }
+
+    // Off this computer, its yes goes with it: installed again, it is asked again.
+    if (folder !== undefined) {
+        dropConsent(folder, found.package);
     }
 
     [...context.systemFolders, ...(context.extensionFolders ?? [])].forEach((folder) => files().refresh(folder));

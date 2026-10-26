@@ -69,6 +69,8 @@ const iconPaths = {
     about: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18Z M12 11v6 M12 7.6v.3",
     // The packages (D-475): a box, as npm draws it; what is done with one, and the system that stays.
     packages: "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73Z M12 22V12 M3.29 7 12 12l8.71-5 M7.5 4.27l9 5.15",
+    // A package's own page, as the packages.
+    pkg: "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73Z M12 22V12 M3.29 7 12 12l8.71-5 M7.5 4.27l9 5.15",
     download: "M12 4v11 M7 10.5l5 5 5-5 M5 20h14",
     update: "M20 12a8 8 0 1 1-2.3-5.6 M20 4v4.5h-4.5",
     lock: "M6.5 10.5h11v10h-11Z M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3",

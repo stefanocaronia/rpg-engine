@@ -4,7 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createRequire } from "node:module";
 import { connect } from "node:net";
-import { basename, extname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { readAdventureZip } from "./adventures/index.ts";
@@ -12,7 +12,8 @@ import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNa
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
 import { installAdventure } from "./commands/game-adventures.ts";
 import { type Catalog, catalog } from "./commands/game-catalog.ts";
-import { campaignExtensions } from "./commands/game-extension-list.ts";
+import { campaignExtensions, campaignPageModules, type PageModule } from "./commands/game-extension-list.ts";
+import { extensionCommands } from "./commands/game-extensions.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerStory } from "./commands/game-knowledge.ts";
 import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "./commands/game-library.ts";
@@ -21,10 +22,11 @@ import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
 import { campaignWidgets } from "./commands/game-widgets.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
 import { importShown } from "./commands/import.ts";
-import { adventureText, packageCommand, YesRefused } from "./commands/package.ts";
+import { adventureText, isInstalledPackage, packageCommand, YesRefused } from "./commands/package.ts";
 import { playerSaveNews, save } from "./commands/save.ts";
 import { view } from "./commands/view.ts";
 import { type CardAsked, type Context, packagesFolder, type Picked, type Player, type Rows, type Said, type SpendAsked, type Spending } from "./core/context.ts";
+import { realPath } from "./core/files.ts";
 import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
@@ -163,6 +165,8 @@ const importMap = JSON.stringify({
         "three": "/vendor/three.module.js",
         "three/addons/": "/vendor/three/addons/",
         "@dimforge/rapier3d-compat": "/vendor/rapier.mjs",
+        // The kit the extensions' page code is drawn with (D-510).
+        "rpg-engine/page": "/kit.js",
     },
 });
 
@@ -214,6 +218,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 pageHidden: options.pageHidden ?? pageHidden,
                 pageIds: new Map<ServerResponse, string>(),
                 seen: new Map<string, boolean>(),
+                declined: new Set<string>(),
                 changed: new Map<string, PlayerSetting>(),
                 events: [],
                 left: new Set<string>(),
@@ -324,6 +329,8 @@ interface Served
     words: PageTranslator;
     /** The package the player is adding, updating or taking away on the page, while npm works (D-475): one at a time. */
     packageWork?: { name: string; action: PackageAction; phase: PackagePhase; };
+    /** The packages the player said no to in a window of their computer, asked from the page: never asked again in this session (D-510). */
+    declined: Set<string>;
     /** What the page may add, as npm and GitHub said it last, and when (D-486). */
     catalog?: { at: number; catalog: Catalog; };
     /** The player's sentences said on the page, waiting for the master or heard lately (D-495). */
@@ -479,6 +486,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     const path = url.pathname;
 
     // The page answers the master's question with a click, and changes the player's settings: what it sends, and only from itself (D-279, D-341).
+    if (request.method === "POST" && path === "/api/run" && origin !== undefined) {
+        await runForPlayer(request, response, served);
+        return;
+    }
+
     if (request.method === "POST" && path === "/api/answer" && origin !== undefined) {
         await answerAsked(request, response, served);
         return;
@@ -601,6 +613,14 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    if (path === "/api/modules") {
+        const root = findCampaign(served.context.folder);
+        await served.session.ready();
+        const modules = root === undefined ? [] : withFiles(served.session, () => pageModulesOf(root, served));
+        sendJson(response, 200, { modules: modules.map((one) => ({ package: one.package, kind: one.kind, version: one.version, address: one.address, figures: one.figures, ...(one.words === undefined ? {} : { words: one.words }) })) });
+        return;
+    }
+
     if (path === "/api/widgets") {
         await widgetsNow(response, served);
         return;
@@ -636,6 +656,8 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         // A language package's phrases or Guide, before the page's own (D-485 (3)).
     } else if (path.startsWith("/vendor/")) {
         sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response, served);
+    } else if (path.startsWith("/pkg/")) {
+        sendFile(packagePageFile(path.slice("/pkg/".length), served), path, request, response, served);
     } else {
         sendFile(pageFile(served.page, path), path, request, response, served);
     }
@@ -705,6 +727,80 @@ function sendFile(file: string | undefined, path: string, request: IncomingMessa
     }
 
     sendTagged(request, response, bytes, { "Content-Type": type, "Content-Security-Policy": type.startsWith("image/") ? picturePolicy : securityHeaders["Content-Security-Policy"] });
+}
+
+/**
+ * A file of a package's page code (D-510, D-511), at pkg/<package>/<version>/<path>: only of the campaign's system or one of its extensions, at the version
+ * installed, whose code runs, and only beside its page module, by real paths, links included; a script, a style sheet or a picture. Undefined for anything else.
+ */
+function packagePageFile(path: string, served: Served): string | undefined
+{
+    let parts: string[];
+
+    try {
+        parts = path.split("/").map((part) => decodeURIComponent(part));
+    } catch {
+        return undefined;
+    }
+
+    const [name, version, ...rest] = parts;
+    const root = findCampaign(served.context.folder);
+    const module = root === undefined ? undefined : withFiles(served.session, () => pageModulesOf(root, served).find((one) => one.package === name && one.version === version));
+
+    if (module === undefined || rest.length === 0 || ![".js", ".mjs", ".css", ".svg"].includes(extname(rest.at(-1) ?? ""))) {
+        return undefined;
+    }
+
+    const folder = realPath(dirname(module.file));
+    const file = realPath(resolve(folder, ...rest));
+    return isInside(folder, file) ? file : undefined;
+}
+
+/** The page modules of the campaign's packages whose code runs: its system's and its extensions'. */
+function pageModulesOf(root: string, served: Served): PageModule[]
+{
+    return campaignPageModules(root, served.context, campaignSystem(root, served.context));
+}
+
+/**
+ * Runs a command of an extension the player may run from its page code (D-510): one the campaign's extensions give with player, whose code runs; as the
+ * player's, its output among what the master hears at their next call, quoted as another's words.
+ */
+async function runForPlayer(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.object({ command: z.string().trim().min(1).max(80), input: z.record(z.string(), z.unknown()).optional() }).strict().safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send the command to run and its input: { command, input }." });
+        return;
+    }
+
+    try {
+        await served.session.ready();
+        const context: Context = { ...served.context, actor: "player" };
+        const text = await withFiles(served.session, async () => {
+            const root = requireCampaign(context.folder);
+            const command = (await extensionCommands(root, context, [])).commands.find((one) => one.name === parsed.data.command && one.forPlayer === true);
+
+            if (command === undefined) {
+                throw new Error(`No extension of the campaign gives ${parsed.data.command} to the player: a page runs only the commands its extension marks player.`);
+            }
+
+            const input = command.input.safeParse(parsed.data.input ?? {});
+
+            if (!input.success) {
+                throw new Error(`The input of ${command.name} is not valid: ${input.error.issues.map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`).join("; ")}.`);
+            }
+
+            return command.format(await command.run(input.data, context));
+        });
+        const quoted = text.split("\n").map((line) => `> ${line}`).join("\n");
+        served.events.push(`The player, on the dashboard, ran ${parsed.data.command}: it is already done, do not run it again. It said, as its extension's words:\n${quoted}`);
+        served.notify();
+        sendJson(response, 200, { text });
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
 }
 
 /** Bytes with a tag of what they hold, read again at each load: the same bytes come back as not modified, as three.js and the dice after the first load. */
@@ -1130,6 +1226,13 @@ async function changePackage(request: IncomingMessage, response: ServerResponse,
     }
 
     const { action, name } = parsed.data;
+
+    // The page updates or takes away only what this computer has: it never brings a package new to it, nor its window, by these (D-510).
+    if (!isInstalledPackage(served.context, name)) {
+        sendJson(response, 400, { error: `${name} is not installed on this computer: add a package from the Packages page, where you choose it.` });
+        return;
+    }
+
     const done = action === "update" ? "updated" : action === "remove" ? "took out of the campaign" : "uninstalled";
     await packageWork(response, served, name, action, async (context) => {
         const result = await packageCommand.run(packageCommand.input.parse({ action: action === "update" ? "install" : action, name }), context);
@@ -1273,6 +1376,8 @@ async function packageWork(
         player: undefined,
         // Never the terminal: a folder new to the library asks the yes in a window (D-477).
         terminal: undefined,
+        // A no in a window holds for the session: a page, or a package's code in it, cannot make the window come back and back (D-510).
+        declined: served.declined,
         ...(confirm === undefined ? {} : {
             confirm: {
                 ask: async (title, text, signal, answers) => {

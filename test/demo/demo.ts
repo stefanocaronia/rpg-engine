@@ -1,6 +1,7 @@
 // The demo campaign of the dashboard (D-272), in tmp/dashboard-demo: made the first time, then kept, so that rpg can change it from its folder. Not part of the tests.
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { parseDocument } from "yaml";
 import { runCommandLine } from "../../src/command-line.ts";
 import { ask } from "../../src/commands/ask.ts";
 import { makeSave } from "../../src/commands/game-saves.ts";
@@ -18,12 +19,12 @@ import { inPlay } from "../support.ts";
 
 export const demoFolder = join(import.meta.dirname, "..", "..", "tmp", "dashboard-demo");
 
-/** A question the demo asks as the master does with ask: checks or answers, or the dice of a rest (ASK-14). */
-export type DemoQuestion = { question: string; options: string[]; } | { question: string; recipe: string; };
+/** A question the demo asks as the master does with ask: checks or answers, the dice of a rest (ASK-14), or an attempt on a lock with the lockpicking extension (D-507). */
+export type DemoQuestion = { question: string; options: string[]; } | { question: string; recipe: string; } | { question: string; lock: string; check: string; };
 
 /**
  * The checks and the choice the demo asks in turn, of Ettore, a cleric of the third level: one die, two with advantage, an answer, dice rerolled, the hit dice
- * of a short rest.
+ * of a short rest, and an attempt on Bertoldo's chest when the lockpicking extension is there.
  */
 export const demoQuestions: DemoQuestion[] = [
     { question: "Il guado è gonfio di pioggia: se scivoli, la corrente ti porta verso le rapide", options: ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"] },
@@ -36,7 +37,14 @@ export const demoQuestions: DemoQuestion[] = [
         options: ["Gli mostro il sigillo del vescovo", "Provo a corromperlo con le monete d'argento", "Torniamo indietro e cerchiamo il guado", "Lo sfido a duello davanti ai suoi uomini"],
     },
     { question: "Riposo breve sotto il mulino, mentre la pioggia batte sulle pale: quanti dadi vita spendi?", recipe: "short rest" },
+    { question: "Il forziere di Bertoldo, mentre i briganti rovesciano i tavoli: un 1 fa scattare la molla", lock: "Forziere di Bertoldo", check: "Scasso" },
 ];
+
+/** Our extensions, in their repositories beside the engine's (D-506): the demo uses each that is there and built, as the player's own. */
+const demoExtensions = ["rpg-engine-weather", "rpg-engine-lockpicking"];
+
+/** Where the demo links them, apart from the packages the Packages page installs: the first folder by a name wins. */
+const linkedFolder = `${demoFolder}-linked`;
 
 /**
  * The demo's dashboard, which can also ask the player on its page, as the master does with ask (D-279), where Ettore goes on the map (ASK-11), and roll as the
@@ -44,6 +52,8 @@ export const demoQuestions: DemoQuestion[] = [
  */
 export interface DemoDashboard extends Dashboard
 {
+    /** Whether the lockpicking extension is there: without it, the demo asks no attempt on a lock. */
+    lockpicking: boolean;
     ask(asked: DemoQuestion): Promise<string>;
     askSquare(question: string): Promise<string>;
     roll(...args: string[]): Promise<string>;
@@ -61,7 +71,7 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
     const context: Context = {
         ...own,
         systemFolders: [own.systemFolders[0], join(packages, "node_modules")],
-        extensionFolders: [join(packages, "node_modules")],
+        extensionFolders: [linkedFolder, join(packages, "node_modules")],
         packages: npmPackages(packages),
         download: downloadBytes,
         confirm: systemConfirm(process.platform, process.env),
@@ -75,6 +85,13 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
 
     if (!existsSync(join(demoFolder, "campaign.yaml"))) {
         await makeDemo(context);
+    }
+
+    const lockpicking = linkDemoExtensions(join(packages, "node_modules")).includes("@rpgengine/lockpicking");
+
+    // The lock and the tools, written once, on a demo made before them too.
+    if (lockpicking && !existsSync(join(demoFolder, "world", "items", `${demoLock}.md`))) {
+        await makeDemoLock(context);
     }
 
     // The systems' code, as the MCP server loads it, for what the demo asks to follow as in a game (D-448).
@@ -93,8 +110,13 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
 
     return {
         ...dashboard,
+        lockpicking,
         ask: async (asked) => {
             await session.ready();
+
+            if ("lock" in asked) {
+                return lockpicking ? pickDemoLock(asked, { ...context, files: session, page: dashboard.player }) : "The demo has no lockpicking: nothing asked.";
+            }
 
             // Each rest of the demo starts from the same hit dice and hit points, so that it can be asked again and again.
             if ("recipe" in asked) {
@@ -117,6 +139,150 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
             session.close();
         },
     };
+}
+
+/**
+ * Links our extensions that are beside the engine and built into the demo's own folder, as rpg-engine/testing does: installed from a folder, so never asked
+ * the player's yes, and listed in campaign.yaml. One not there is unlinked and left out, unless the Packages page installed it, and the terminal says so.
+ * The packages linked, by name.
+ */
+function linkDemoExtensions(installed: string): string[]
+{
+    const linked: string[] = [];
+    const listed: Record<string, string | undefined> = {};
+
+    for (const repository of demoExtensions) {
+        const folder = resolve(import.meta.dirname, "..", "..", "..", repository);
+        const manifest = readManifest(folder);
+        const name = `@rpgengine/${repository.replace(/^rpg-engine-/, "")}`;
+        const link = join(linkedFolder, name);
+        unlinkFolder(link);
+
+        if (manifest === undefined || !existsSync(join(folder, manifest.main ?? "dist/index.js"))) {
+            const why = manifest === undefined ? `not beside the engine (${folder})` : `not built: run npm run build in ${folder}`;
+            console.log(`${repository}: ${why}. The demo runs without it.`);
+            listed[name] = readManifest(join(installed, name))?.version;
+            continue;
+        }
+
+        mkdirSync(join(linkedFolder, "@rpgengine"), { recursive: true });
+        // A junction on Windows, which needs no rights; a link elsewhere.
+        symlinkSync(folder, link, "junction");
+        listed[manifest.name] = manifest.version;
+        linked.push(manifest.name);
+    }
+
+    listExtensions(listed);
+    return linked;
+}
+
+/** Sets the extensions campaign.yaml lists, by name, each to its version or left out when undefined; the others, its comments and the rest as written. */
+function listExtensions(listed: Record<string, string | undefined>): void
+{
+    const file = join(demoFolder, "campaign.yaml");
+    const written = readFileSync(file, "utf8");
+    const document = parseDocument(written);
+    const extensions = { ...(document.toJS() as { extensions?: Record<string, string>; }).extensions };
+
+    for (const [name, version] of Object.entries(listed)) {
+        if (version === undefined) {
+            delete extensions[name];
+        } else {
+            extensions[name] = version;
+        }
+    }
+
+    if (Object.keys(extensions).length === 0) {
+        document.delete("extensions");
+    } else {
+        document.set("extensions", extensions);
+    }
+
+    if (document.toString() !== written) {
+        writeFileSync(file, document.toString());
+    }
+}
+
+function readManifest(folder: string): { name: string; version: string; main?: string; } | undefined
+{
+    try {
+        return JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { name: string; version: string; main?: string; };
+    } catch {
+        return undefined;
+    }
+}
+
+/** Takes a link away, never what it leads to: a junction of Windows goes as an empty folder does. */
+function unlinkFolder(link: string): void
+{
+    try {
+        lstatSync(link);
+    } catch {
+        return;
+    }
+
+    try {
+        unlinkSync(link);
+    } catch {
+        rmdirSync(link);
+    }
+}
+
+/** The lock of the demo, under the inn's counter. */
+const demoLock = "Forziere di Bertoldo";
+
+/** Bertoldo's chest at the inn, a lock of DC 15 (6d6 for a cleric), and Ettore's thieves' tools with his proficiency in them: two rerolls at the third level. */
+async function makeDemoLock(context: Context): Promise<void>
+{
+    const lines = [
+        ["write", demoLock, "--type", "item", "--set", "lock-dc=15", "--text", "Un forziere ferrato sotto il bancone, dove Bertoldo tiene l'incasso e le chiavi di riserva."],
+        ["write", "Locanda del Guado", "--add", `contains=[[${demoLock}]]`],
+        ["write", "Ettore", "--add", "tool-proficiencies=thieves' tools", "--add", "inventory=[[Thieves' Tools|arnesi da scasso]] 1"],
+    ];
+
+    for (const line of lines) {
+        const result = await runCommandLine(line, context);
+
+        if (result.exitCode !== 0) {
+            throw new Error(`rpg ${line.join(" ")}: ${result.output}`);
+        }
+    }
+}
+
+/**
+ * An attempt of Ettore's on a lock, as the master makes it with lockpicking-pick: in the brawl, two dice at each of his actions, called again until it opens or
+ * fails. A lock left open or jammed is locked again first, and the rerolls come back once they are spent, so that it can be asked again and again.
+ */
+async function pickDemoLock(asked: { question: string; lock: string; check: string; }, context: Context): Promise<string>
+{
+    const rpg = async (...args: string[]): Promise<string> => (await runCommandLine(args, context)).output;
+    const before = await rpg("lockpicking", asked.lock);
+
+    // One field at a time: write refuses to remove a field that is not there.
+    if (before.includes("Nothing to pick.")) {
+        for (const field of ["lock-failures", "lock-state", "lock-tampered", "lock-worn"]) {
+            await rpg("write", asked.lock, "--unset", field);
+        }
+    }
+
+    if (before.includes("with 0 rerolls")) {
+        await rpg("change", "Ettore", "lockpicking-rerolls", "--to", "max");
+    }
+
+    const said: string[] = [];
+
+    for (let call = 0; call < 10; call++) {
+        said.push(await rpg("lockpicking-pick", asked.lock, "--question", asked.question, "--check", asked.check));
+
+        // The attempt goes on at his next action: a moment to see the pins passed, as between two turns.
+        if (!/ passes \d+ of the \d+ dice /.test(said.at(-1) ?? "")) {
+            break;
+        }
+
+        await new Promise((done) => setTimeout(done, 2500));
+    }
+
+    return said.join("\n");
 }
 
 /** The inn's map as the master writes it (GRD-1, GRD-2). */

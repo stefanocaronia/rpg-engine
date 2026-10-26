@@ -3,6 +3,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { recordConsent } from "../src/core/consents.ts";
 import { findSystem, loadSystemCode, systemHasCode } from "../src/systems/index.ts";
 import { makeTempFolder, testSystemFolders } from "./support.ts";
 
@@ -48,5 +49,21 @@ describe("the code of a game system (D-448)", () => {
         writeFileSync(join(modules, "..", "package.json"), JSON.stringify({ dependencies: { "@test/system-mine": "1.0.0", "@test/system-ironsworn": "1.0.0" } }));
         const loaded = await loadSystemCode([...testSystemFolders, modules]);
         expect(Object.keys(loaded).sort()).toEqual(["5e", "mine"]);
+    });
+
+    it("runs another's code only after the player's yes, for its version and its files: a file changed since stops it again (D-478, D-511)", async () => {
+        const modules = join(makeTempFolder(), "node_modules");
+        const folder = join(modules, "@test", "system-odd");
+        mkdirSync(join(folder, "dist"), { recursive: true });
+        writeFileSync(join(folder, "package.json"), JSON.stringify({ name: "@test/system-odd", version: "1.0.0", type: "module", main: "dist/index.js", "rpg-engine": { kind: "system" } }));
+        writeFileSync(join(folder, "dist", "index.js"), "export default () => ({});\n");
+        writeFileSync(join(folder, "system.yaml"), "title: another's system\nlanguage: en\n");
+        writeFileSync(join(modules, "..", "package.json"), JSON.stringify({ dependencies: { "@test/system-odd": "1.0.0" } }));
+
+        expect((await loadSystemCode([modules])).odd).toEqual({ refused: expect.stringContaining("the player has not said yes to it") });
+        recordConsent(folder, "@test/system-odd", "1.0.0");
+        expect((await loadSystemCode([modules])).odd).toHaveProperty("hooks");
+        writeFileSync(join(folder, "system.yaml"), "title: another's system, changed\nlanguage: en\n");
+        expect((await loadSystemCode([modules])).odd).toHaveProperty("refused");
     });
 });

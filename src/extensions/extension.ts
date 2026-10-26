@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { z } from "zod";
-import { installedFromFolder, packageFoldersIn } from "../core/files.ts";
+import { installedFromFolder, packageFoldersIn, realPath } from "../core/files.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
-import { files } from "../core/store.ts";
+import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
@@ -16,10 +16,10 @@ const partWords = 400;
 
 /**
  * The version of the API an extension's code is given (api.ts), which its package.json names: 2 added the widgets (D-502), 3 its additions to the game system,
- * the pages, the scene, writing its own fields and asking the player (D-505). A package made for this one or an older one is read; one made for a newer one is
- * refused, as an older rpg-engine refuses this one's.
+ * the pages, the scene, writing its own fields and asking the player (D-505), 4 its code in the dashboard's page, its figures and its commands for the player
+ * (D-510). A package made for this one or an older one is read; one made for a newer one is refused, as an older rpg-engine refuses this one's.
  */
-export const extensionApi = 3;
+export const extensionApi = 4;
 
 /** What an extension may add to the campaign's game system in extension.yaml, written as campaign.yaml writes it (CAM-2, D-505). */
 export const systemAdditionNames = ["fields", "tables", "computed", "counters", "recipes", "values"] as const;
@@ -62,8 +62,20 @@ export interface Extension
     parts: Record<string, InstructionPart>;
     /** The file of its code, when it has some: the module whose default export gives its commands (D-428). */
     code?: string;
+    /** The file of its code for the dashboard's page, when it has some: the module whose default export draws its figures (D-510). */
+    page?: string;
+    /** The figures its page code draws, by name, with the room each takes on a wide screen; mirror, turned right to left, as it holds no words (D-510). */
+    figures: Record<string, FigureSize>;
     /** Installed from a folder of this computer, which npm links: never verified, whatever its name (D-428). */
     linked: boolean;
+}
+
+/** The room of a figure an extension draws (D-510), in CSS pixels on a wide screen; mirror, turned right to left, as it holds no words. */
+export interface FigureSize
+{
+    width: number;
+    height: number;
+    mirror?: boolean;
 }
 
 /** The places of the dashboard a widget may stand in (D-502): a chip in the top, a card in the table's column beside the rolls, or a card in a page. */
@@ -91,6 +103,7 @@ export interface DeclaredWidget
 // How many icons and widgets an extension may declare, and the longest path of an icon.
 const mostIcons = 40;
 const mostWidgets = 8;
+const mostFigures = 8;
 const longestPath = 4000;
 
 /** A name of an icon or a widget, as weather or sky-rain. */
@@ -118,6 +131,7 @@ const extensionSchema = z.object({
     calendar: z.unknown().optional(),
     icons: z.record(ownName, z.string().max(longestPath).regex(/^[MmLlHhVvCcSsQqTtAaZz\d\s,.+-]+$/, "an icon is the path of an SVG, as M4 12h16")).optional(),
     widgets: z.record(ownName, widgetSchema).optional(),
+    figures: z.record(ownName, z.object({ width: z.int().min(8).max(1280), height: z.int().min(8).max(800), mirror: z.boolean().optional() }).strict()).optional(),
     fields: addition,
     tables: addition,
     computed: addition,
@@ -128,8 +142,8 @@ const extensionSchema = z.object({
     const icons = Object.keys(declared.icons ?? {});
     const widgets = Object.entries(declared.widgets ?? {});
 
-    if (icons.length > mostIcons || widgets.length > mostWidgets) {
-        check.addIssue({ code: "custom", message: `an extension declares at most ${mostIcons} icons and ${mostWidgets} widgets` });
+    if (icons.length > mostIcons || widgets.length > mostWidgets || Object.keys(declared.figures ?? {}).length > mostFigures) {
+        check.addIssue({ code: "custom", message: `an extension declares at most ${mostIcons} icons, ${mostWidgets} widgets and ${mostFigures} figures` });
     }
 
     for (const [name, widget] of widgets.filter(([, widget]) => widget.icon !== undefined && !icons.includes(widget.icon))) {
@@ -142,7 +156,7 @@ const packageSchema = z.object({
     version: z.string().min(1),
     main: z.string().min(1).optional(),
     // What says it is a package for rpg-engine, of which kind, and for which version of the API (D-439).
-    "rpg-engine": z.object({ kind: z.string(), api: z.number().optional() }).optional(),
+    "rpg-engine": z.object({ kind: z.string(), api: z.number().optional(), page: z.string().min(1).optional() }).optional(),
 });
 
 /** The extensions installed in these folders, each a package folder, or a scope's folder of them as npm keeps them (@rpgengine/weather); the first by a name wins. */
@@ -193,7 +207,13 @@ export function readExtension(folder: string): Extension
         throw new Error(`${owner} cannot be read, because its ${extensionFileName} is not valid: ${z.prettifyError(declared.error).replace(/\s+/g, " ")}`);
     }
 
-    const { title, about, language, attribution, needs, calendar, icons, widgets } = declared.data;
+    const { title, about, language, attribution, needs, calendar, icons, widgets, figures } = declared.data;
+
+    // Its page code is a file of its own, by real paths, links included (D-510).
+    if (marker.page !== undefined && !isInside(realPath(folder), realPath(resolve(folder, marker.page)))) {
+        throw new Error(`${owner} cannot be used, because its page, ${marker.page}, is not inside its package: name a file of its own, such as dist/page.js.`);
+    }
+
     const adds: SystemAdditions = Object.fromEntries(systemAdditionNames.flatMap((key) => (declared.data[key] === undefined ? [] : [[key, declared.data[key]]])));
     const parts = readParts(folder, owner);
     // What the master reads of it in every chat, kept short (D-441).
@@ -220,6 +240,8 @@ export function readExtension(folder: string): Extension
         widgets: Object.entries(widgets ?? {}).map(([name, widget]) => ({ name, ...widget, order: widget.order ?? 0 })),
         parts,
         ...(manifest.data.main === undefined ? {} : { code: where(manifest.data.main) }),
+        ...(marker.page === undefined ? {} : { page: where(marker.page) }),
+        figures: figures ?? {},
         linked: installedFromFolder(folder),
     };
 }

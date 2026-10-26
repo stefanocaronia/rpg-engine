@@ -1,4 +1,5 @@
 // The extensions installed beside the engine (D-427, D-428): which they are, what each declares, and the API their code is given. Depends on nothing else in rpg-engine.
+export { dropConsent, hasConsent, packageFingerprint, recordConsent } from "../core/consents.ts";
 export type {
     Asked,
     AskedRoll,
@@ -27,6 +28,7 @@ export {
     type Extension,
     extensionApi,
     extensionFileName,
+    type FigureSize,
     findExtension,
     installedExtensions,
     readExtension,

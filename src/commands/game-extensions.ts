@@ -138,6 +138,7 @@ function asCommand(extension: Extension, command: ExtensionCommand, taken: strin
         readOnly: command.readOnly,
         positionals: command.positionals,
         waitsForPlayer: command.needsPlayer,
+        forPlayer: command.player === true,
         async run(input, called)
         {
             const campaign = requireCampaign(called.folder);

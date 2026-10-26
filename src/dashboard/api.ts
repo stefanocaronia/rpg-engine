@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { ActsShown, AskedNow, PlayerSetting, ResetPoint, ShownWidget, View, WorldMap } from "./data.ts";
+import type { ActsShown, AskedNow, PlayerSetting, ResetPoint, ShownModule, ShownWidget, View, WorldMap } from "./data.ts";
 import { t } from "./text.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
@@ -317,6 +317,19 @@ export async function readWidgets(): Promise<ShownWidget[]>
     return body.widgets;
 }
 
+/** The page modules of the campaign's system and extensions whose code runs (D-510, D-511), the system's first. */
+export async function readModules(): Promise<ShownModule[]>
+{
+    const response = await fetch("/api/modules");
+    const body = await response.json() as { modules: ShownModule[]; } | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body.modules;
+}
+
 /** The kinds of packages. */
 export type PackageKind = "system" | "adventure" | "extension" | "language";
 
@@ -572,4 +585,17 @@ export function explanations(lines: string[]): Map<string, string[]>
         const field = line.split(" ")[0];
         return colon < 0 ? [] : [[field, line.slice(colon + 2).split(", ")]];
     }));
+}
+
+/** Runs a command of an extension marked for the player (D-510), as its page code asks: what it said; it throws what went wrong, as the engine says it. */
+export async function runCommand(command: string, input: Record<string, unknown> = {}): Promise<string>
+{
+    const response = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ command, input }) });
+    const body = await response.json().catch(() => ({})) as { text?: string; error?: string; };
+
+    if (!response.ok || body.error !== undefined) {
+        throw new Error(body.error ?? `${command} did not run (${response.status})`);
+    }
+
+    return body.text ?? "";
 }

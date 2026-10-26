@@ -103,6 +103,10 @@ function loadedHooks(system: GameSystem | undefined, context: Context): SystemHo
         return "is not loaded: start the MCP server again (/mcp in Claude Code), or open a new chat";
     }
 
+    if ("refused" in loaded) {
+        return loaded.refused;
+    }
+
     return "problem" in loaded ? `cannot load (${loaded.problem}): install rpg-engine again, or run npm run build in its repository, then start the MCP server again` : (loaded.hooks as SystemHooks);
 }
 
