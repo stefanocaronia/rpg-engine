@@ -1,4 +1,5 @@
-// What one does in a turn (D-453; TRN-1–TRN-4): the action, the bonus action, the reaction, the attacks of an action and Sneak Attack, counted by the engine.
+// What one does in a turn (D-453; TRN-1–TRN-5), on the fake system: the move, the deed, the parry in any turn, the strikes within the deed and a flourish once
+// a turn, counted by the engine. The 5e's legendary creatures and Thirsting Blade go with it (D-514, step 8).
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
@@ -10,88 +11,131 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
-    await ok("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "classes=[[Fighter]] 5", "--set", "hp-base=44");
-    await ok("write", "Vespa", "--type", "character", "--set", "role=companion", "--set", "classes=[[Rogue]] 1", "--set", "hp-base=8");
-    await ok("scene", "open", "--title", "Cripta", "--type", "combat", "--with", "Ettore", "--with", "Vespa", "--creatures", "Skeleton=1");
-    await ok("scene", "order", "--order", "Ettore", "--order", "Vespa", "--order", "Skeleton 1");
+    // A Scout of rank 2, with a second deed and one more strike; a Warden, whose Steady Hand gives a flourish.
+    await ok("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "vocations=[[Scout]] 2", "--set", "extra-strikes=1");
+    await ok("write", "Vespa", "--type", "character", "--set", "role=companion", "--set", "vocations=[[Warden]] 1");
+    await ok("scene", "open", "--title", "Cripta", "--type", "combat", "--with", "Ettore", "--with", "Vespa", "--creatures", "Bog Hound=1");
+    await ok("scene", "order", "--order", "Ettore", "--order", "Vespa", "--order", "Bog Hound 1");
 });
 
 afterEach(() => removeFolder(folder));
 
 describe("the uses of a turn", () => {
-    it("counts the attacks within the action, as many as the sheet gives, and one more action only by what gives it (TRN-1, TRN-3)", async () => {
-        expect(await ok("show", "Ettore")).toContain("extra-attacks 1");
-        expect(await use("Ettore", "attack")).toBe("Ettore: attack 1 of 2, its action used.");
-        expect(await use("Ettore", "attack")).toBe("Ettore: attack 2 of 2.");
-        expect(await refused("Ettore", "attack")).toBe(
-            "Ettore has used its action until its next turn, with 2 attack of 2: what another use makes, as with bonus action or reaction, is marked as that use; "
+    it("counts the strikes within the deed, as many as the sheet gives, and one more deed only by what gives it (TRN-1, TRN-3, TRN-5)", async () => {
+        expect(await use("Ettore", "strike")).toBe("Ettore: strike 1 of 2, its deed used.");
+        expect(await use("Ettore", "strike")).toBe("Ettore: strike 2 of 2.");
+        expect(await refused("Ettore", "strike")).toBe(
+            "Ettore has used its deed until its next turn, with 2 strike of 2: what another use makes, as with move or parry, is marked as that use; "
                 + "add by and what only for what gives one more, as a feature by its name. Nothing changed.",
         );
-        // Action Surge is the fighter's counter: spent with it, and refused once it is gone (TRN-5).
-        expect(await use("Ettore", "attack", "Action Surge")).toBe("Ettore: attack 1 of 2, its action used, by Action Surge; action-surge 1 → 0.");
-        expect(await ok("show", "Ettore")).toContain("action-surge 0/1");
-        await use("Ettore", "attack");
-        expect((await runCommandLine(["scene", "use", "--who", "Ettore", "--uses", "attack", "--by", "Action Surge"], context)).output).toBe(
-            "Ettore has action-surge 0: Action Surge gives nothing more until it comes back. Nothing changed.",
+        // The second deed is the Scout's counter: spent with it, and refused once it is gone (TRN-5).
+        expect(await use("Ettore", "strike", "Second Deed")).toBe("Ettore: strike 1 of 2, its deed used, by Second Deed; second-deed 1 → 0.");
+        expect(await ok("show", "Ettore")).toContain("second-deed 0/1");
+        await use("Ettore", "strike");
+        expect((await runCommandLine(["scene", "use", "--who", "Ettore", "--uses", "strike", "--by", "Second Deed"], context)).output).toBe(
+            "Ettore has second-deed 0: Second Deed gives nothing more until it comes back. Nothing changed.",
         );
-        // Who knows spells hears what a spell with the bonus action leaves (p. 101); who knows none, as Vespa below, does not.
-        await ok("write", "Ettore", "--add", "spells=[[Fire Bolt]]");
-        expect(await use("Ettore", "bonus action")).toBe("Ettore: bonus action used. If it cast a spell, only a cantrip of one action follows this turn (p. 101).");
-        expect(await refused("Ettore", "bonus action")).toContain("Ettore has used its bonus action until its next turn");
+        // A use's note, said as it is marked.
+        expect(await use("Ettore", "parry")).toBe("Ettore: parry used. A parry spends the next deed.");
+        expect(await refused("Ettore", "parry")).toContain("Ettore has used its parry until its next turn");
+        // A note only when what it reads holds, as the charms one has bound: Vespa's move, below, has none.
+        await ok("write", "Ettore", "--add", "bound=[[Iron Ring]]");
+        expect(await use("Ettore", "move")).toBe("Ettore: move used. Bound charms rattle: a move is heard.");
     });
 
-    it("keeps the action to one's own turn, the reaction to any, until one's turn comes again, and Sneak Attack once a turn (TRN-2, TRN-4)", async () => {
-        expect(await refused("Vespa", "action")).toBe("It is Ettore's turn, not Vespa's: action goes in its own turn; what one does in another's turn takes reaction: mark that. Nothing changed.");
-        expect(await use("Vespa", "reaction")).toBe("Vespa: reaction used.");
-        expect(await use("Vespa", "sneak attack")).toBe("Vespa: sneak attack used.");
-        expect(await refused("Vespa", "sneak attack")).toContain("Vespa has used its sneak attack until its next turn");
-        expect(await refused("Ettore", "sneak attack")).toBe("Ettore has no sneak attack: it comes from what the sheet has, as a feature. Nothing changed.");
-        await use("Ettore", "reaction");
+    it("keeps the deed to one's own turn, the parry to any, until one's turn comes again, and a flourish once a turn (TRN-2, TRN-4)", async () => {
+        expect(await refused("Vespa", "deed")).toBe("It is Ettore's turn, not Vespa's: deed goes in its own turn; what one does in another's turn takes parry: mark that. Nothing changed.");
+        expect(await use("Vespa", "parry")).toBe("Vespa: parry used. A parry spends the next deed.");
+        expect(await use("Vespa", "flourish")).toBe("Vespa: flourish used.");
+        expect(await refused("Vespa", "flourish")).toContain("Vespa has used its flourish until its next turn");
+        expect(await refused("Ettore", "flourish")).toBe("Ettore has no flourish: it comes from what the sheet has, as a feature. Nothing changed.");
+        await use("Ettore", "parry");
         await ok("scene", "next");
-        // Vespa's turn: her reaction and Sneak Attack are back; Ettore's reaction waits for his turn.
-        expect(await use("Vespa", "reaction")).toBe("Vespa: reaction used.");
-        expect(await use("Vespa", "sneak attack")).toBe("Vespa: sneak attack used.");
-        expect(await refused("Ettore", "reaction")).toContain("Ettore has used its reaction until its next turn");
-        expect(await use("Vespa", "bonus action")).toBe("Vespa: bonus action used.");
+        // Vespa's turn: her parry and flourish are back; Ettore's parry waits for his turn.
+        expect(await use("Vespa", "parry")).toBe("Vespa: parry used. A parry spends the next deed.");
+        expect(await use("Vespa", "flourish")).toBe("Vespa: flourish used.");
+        expect(await refused("Ettore", "parry")).toContain("Ettore has used its parry until its next turn");
+        expect(await use("Vespa", "move")).toBe("Vespa: move used.");
     });
 
     it("gives the dashboard what who acts has used of the turn (TRN-4)", async () => {
-        await use("Ettore", "attack");
+        await use("Ettore", "strike");
         const marks = async (): Promise<unknown> => (JSON.parse(await ok("view", "--json")) as { openScene?: { marks?: unknown; }; }).openScene?.marks;
-        expect(await marks()).toEqual([{ use: "action", used: true }, { use: "bonus action", used: false }, { use: "reaction", used: false }]);
+        expect(await marks()).toEqual([{ use: "move", used: false }, { use: "deed", used: true }, { use: "parry", used: false }]);
         await ok("scene", "next");
-        expect(await marks()).toEqual([{ use: "action", used: false }, { use: "bonus action", used: false }, { use: "reaction", used: false }]);
+        expect(await marks()).toEqual([{ use: "move", used: false }, { use: "deed", used: false }, { use: "parry", used: false }]);
         // A foe's are the master's to tell (D-453).
         await ok("scene", "next");
         expect(await marks()).toBeUndefined();
     });
 
-    it("asks for the order first, follows a rename, and counts Thirsting Blade as Extra Attack (TRN-1, TRN-3)", async () => {
+    it("asks for the order first and follows a rename (TRN-1, TRN-3)", async () => {
         await ok("scene", "close", "--summary", "Fine.");
         await ok("scene", "open", "--title", "Altra", "--type", "combat", "--with", "Ettore");
-        expect((await runCommandLine(["scene", "use", "--who", "Ettore", "--uses", "reaction"], context)).output).toBe(
+        expect((await runCommandLine(["scene", "use", "--who", "Ettore", "--uses", "parry"], context)).output).toBe(
             "The scene has no order of turns, so no turn to use: set it with scene order first, after rolling for it if the game does.",
         );
         await ok("scene", "order", "--order", "Ettore");
-        await use("Ettore", "attack");
+        await use("Ettore", "strike");
         await ok("rename", "Ettore", "Ruggero");
-        expect(await use("Ruggero", "attack")).toBe("Ruggero: attack 2 of 2.");
-        expect(await refused("Ruggero", "attack")).toContain("Ruggero has used its action");
-        await ok("write", "Corvo", "--type", "character", "--set", "role=companion", "--set", "classes=[[Warlock]] 5", "--set", "hp-base=30", "--add", "invocations=Thirsting Blade");
-        expect(await ok("show", "Corvo")).toContain("extra-attacks 1");
+        expect(await use("Ruggero", "strike")).toBe("Ruggero: strike 2 of 2.");
+        expect(await refused("Ruggero", "strike")).toContain("Ruggero has used its deed");
     });
 
-    it("leaves unlimited the attacks a sheet does not work out, as a creature's, and refuses what the game does not name (TRN-1)", async () => {
+    it("leaves unlimited the strikes a sheet does not work out, as a creature's, and refuses what the game does not name (TRN-1)", async () => {
         await ok("scene", "next");
         await ok("scene", "next");
-        expect(await use("Skeleton 1", "attack")).toBe("Skeleton 1: attack 1, its action used.");
-        expect(await use("Skeleton 1", "attack")).toBe("Skeleton 1: attack 2.");
-        expect(await refused("Skeleton 1", "dance")).toBe("dance is no use of a turn in 5e: give one of action, bonus action, reaction, attack, sneak attack, legendary action. Nothing changed.");
-        expect((await runCommandLine(["scene", "use", "--who", "Lena", "--uses", "action"], context)).output).toBe(
-            "Lena is not in the scene Cripta: bring them in with scene add, or give one of Ettore, Vespa, Skeleton 1.",
+        expect(await use("Bog Hound 1", "strike")).toBe("Bog Hound 1: strike 1, its deed used.");
+        expect(await use("Bog Hound 1", "strike")).toBe("Bog Hound 1: strike 2.");
+        expect(await refused("Bog Hound 1", "dance")).toBe("dance is no use of a turn in fake: give one of move, deed, strike, parry, flourish. Nothing changed.");
+        expect((await runCommandLine(["scene", "use", "--who", "Lena", "--uses", "deed"], context)).output).toBe(
+            "Lena is not in the scene Cripta: bring them in with scene add, or give one of Ettore, Vespa, Bog Hound 1.",
         );
+    });
+});
+
+describe("what the turn's reminder names (playtests 05 and 05b)", () => {
+    it("names the uses that stand alone, leaving the strikes and the flourish the master's to mark; marking the deed tells to mark the strikes", async () => {
+        expect(await ok("scene", "next")).not.toContain("Mark with scene use what Vespa");
+        await ok("scene", "next");
+        expect(await ok("scene", "next")).toContain("Mark with scene use what Ettore uses of the turn, as it happens: move, deed, parry.");
+        expect(await use("Ettore", "deed")).toBe("Ettore: deed used. If it is to attack, mark each strike instead, 2 for Ettore, which takes the deed.");
+    });
+});
+
+// The 5e's: its legendary creatures, what they do not take, and Thirsting Blade go with it (D-514, step 8).
+describe("the 5e's turns", () => {
+    beforeEach(async () => {
+        await ok("scene", "close", "--summary", "Fine.");
+        await ok("config", "system", "5e");
+        await ok("write", "Ettore", "--unset", "vocations", "--unset", "extra-strikes", "--set", "classes=[[Fighter]] 5", "--set", "hp-base=44");
+        await ok("scene", "open", "--title", "Cripta", "--type", "combat", "--with", "Ettore", "--creatures", "Adult Green Dragon=1");
+        await ok("scene", "order", "--order", "Ettore", "--order", "Adult Green Dragon 1");
+    });
+
+    it("counts a dragon's legendary actions in others' turns, back at its own, keeps its Legendary Resistance, and refuses a condition it is immune to (D-454)", async () => {
+        expect(await use("Adult Green Dragon 1", "legendary action")).toBe("Adult Green Dragon 1: legendary action used.");
+        await use("Adult Green Dragon 1", "legendary action");
+        await use("Adult Green Dragon 1", "legendary action");
+        expect(await refused("Adult Green Dragon 1", "legendary action")).toContain("Adult Green Dragon 1 has used 3 legendary action until its next turn");
+        expect(await refused("Ettore", "legendary action")).toBe("Ettore has no legendary action: it comes from what the sheet has, as a feature. Nothing changed.");
+        expect(await ok("change", "Adult Green Dragon 1", "legendary-resistance", "--by=-1")).toBe("Adult Green Dragon 1: legendary-resistance 3/3 → 2/3.");
+        await ok("scene", "next");
+        expect(await use("Adult Green Dragon 1", "legendary action")).toBe("Adult Green Dragon 1: legendary action used.");
+        expect((await runCommandLine(["effect", "add", "Adult Green Dragon 1", "Poisoned"], context)).output).toBe(
+            "Adult Green Dragon 1 is immune to Poisoned, in its condition-immunities: it does not take it. Nothing changed.",
+        );
+    });
+
+    it("counts Thirsting Blade as Extra Attack, and Action Surge as one more action (TRN-1, TRN-5)", async () => {
+        expect(await ok("show", "Ettore")).toContain("extra-attacks 1");
+        await use("Ettore", "attack");
+        await use("Ettore", "attack");
+        expect(await use("Ettore", "attack", "Action Surge")).toBe("Ettore: attack 1 of 2, its action used, by Action Surge; action-surge 1 → 0.");
+        await ok("write", "Corvo", "--type", "character", "--set", "role=companion", "--set", "classes=[[Warlock]] 5", "--set", "hp-base=30", "--add", "invocations=Thirsting Blade");
+        expect(await ok("show", "Corvo")).toContain("extra-attacks 1");
     });
 });
 
@@ -113,30 +157,3 @@ async function ok(...args: string[]): Promise<string>
     expect(result.exitCode, result.output).toBe(0);
     return result.output;
 }
-
-describe("legendary creatures and what a creature does not take (D-454)", () => {
-    it("counts a dragon's legendary actions in others' turns, back at its own, keeps its Legendary Resistance, and refuses a condition it is immune to", async () => {
-        await ok("scene", "add", "--creatures", "Adult Green Dragon=1");
-        await ok("scene", "order", "--order", "Ettore", "--order", "Adult Green Dragon 1");
-        expect(await use("Adult Green Dragon 1", "legendary action")).toBe("Adult Green Dragon 1: legendary action used.");
-        await use("Adult Green Dragon 1", "legendary action");
-        await use("Adult Green Dragon 1", "legendary action");
-        expect(await refused("Adult Green Dragon 1", "legendary action")).toContain("Adult Green Dragon 1 has used 3 legendary action until its next turn");
-        expect(await refused("Ettore", "legendary action")).toBe("Ettore has no legendary action: it comes from what the sheet has, as a feature. Nothing changed.");
-        expect(await ok("change", "Adult Green Dragon 1", "legendary-resistance", "--by=-1")).toBe("Adult Green Dragon 1: legendary-resistance 3/3 → 2/3.");
-        await ok("scene", "next");
-        expect(await use("Adult Green Dragon 1", "legendary action")).toBe("Adult Green Dragon 1: legendary action used.");
-        expect((await runCommandLine(["effect", "add", "Adult Green Dragon 1", "Poisoned"], context)).output).toBe(
-            "Adult Green Dragon 1 is immune to Poisoned, in its condition-immunities: it does not take it. Nothing changed.",
-        );
-    });
-});
-
-describe("what the turn's reminder names (playtests 05 and 05b)", () => {
-    it("names the uses that stand alone, leaving the attacks and Sneak Attack the master's to mark; marking the action tells to mark the attacks", async () => {
-        expect(await ok("scene", "next")).not.toContain("Mark with scene use what Vespa");
-        await ok("scene", "next");
-        expect(await ok("scene", "next")).toContain("Mark with scene use what Ettore uses of the turn, as it happens: action, bonus action, reaction.");
-        expect(await use("Ettore", "action")).toBe("Ettore: action used. If it is to attack, mark each attack instead, 2 for Ettore, which takes the action.");
-    });
-});

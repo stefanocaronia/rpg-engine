@@ -5,8 +5,8 @@ import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequ
 import { spawn } from "node:child_process";
 import { z } from "zod";
 import { findCampaign, hasCharacterAgent, refreshHostFiles } from "./campaign/index.ts";
-import { extensionCommands } from "./commands/game-extensions.ts";
 import { outsideNews, whileClosedNews } from "./commands/game-outside.ts";
+import { packageCommands } from "./commands/game-package-code.ts";
 import { newChatText, wentBackTo } from "./commands/game-saves.ts";
 import { campaignWorld } from "./commands/game-world.ts";
 import { commands } from "./commands/index.ts";
@@ -207,7 +207,7 @@ function extensionTools(server: McpServer, context: Context, handler: (command: 
         const store = context.files ?? new FileStore(context.systemFolders);
         const own = await withFiles(store, async () => {
             const root = findCampaign(context.folder);
-            return root === undefined ? { commands: [], sources: {} as Record<string, string> } : await extensionCommands(root, context, taken);
+            return root === undefined ? { commands: [], sources: {} as Record<string, string> } : await packageCommands(root, context, taken);
         });
 
         for (const command of own.commands) {

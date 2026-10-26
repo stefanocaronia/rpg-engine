@@ -1,0 +1,269 @@
+# A fake game system for the core's tests (D-513 (3), D-514): names of our own, neither D&D nor Ironsworn, and other shapes than the 5e's, so that what the
+# core does only for the 5e shows. Two dice and their sum for the sheet, coins that are not decimal, a down point that counts one side, a pool of stamina
+# dice spent in a breather. Its versions of the rules, in versions/, wait for the engine to read them (D-513 (5)).
+title: the fake system of the core's tests
+language: en
+attribution: The fake system of rpg-engine's tests, made for them; no game's text.
+# Not decimal, as an innkeeper gives change (D-128): a crown is 20 shillings, a mark 160 pence and rare.
+coins: crown 240, mark 160 rare, shilling 12, penny 1
+round: 10 seconds
+length-unit: m
+load:
+  field: heft
+  limit: 10 + 5 * might
+  coins: 120
+  weightless: hollow
+  stages:
+    - {name: Laden, when: "ceil(best(load, 0) - 10 - 5 * best(might, 0))"}
+# Journeys on foot, by cart and by barge: three paces, eight hours a day, a long haul beyond them; a canal by barge, its current with it downstream.
+travel:
+  paces: {quick: 6 km, steady: 4.5 km, slow: 3 km}
+  pace: steady
+  hours: 8
+  rule: Journeys
+  beyond: Long Haul
+  terrain: {difficult: 1/2}
+  vehicles: {category: cart}
+  kinds:
+    lane: {}
+    track: {}
+    canal: {vehicle: {category: barge}, speed: drift, hours: 24, current: 4.5 km}
+    mere: {vehicle: {category: barge}, speed: drift, hours: 24}
+# Squares of 2 m, a diagonal one and a half, difficult ground three times; what is big fills two squares a side; who leaves one's side reads Disengage.
+grid:
+  square: 2 m
+  diagonal: 1.5
+  difficult: 3
+  speed: stride
+  walking: speed
+  size: bulk
+  footprints: {big: 2}
+  leaving: Disengage
+settings:
+  harshness:
+    about: how hard the road is
+    gentle: {means: "a day without food costs nothing until the third", player: "the road forgives"}
+    # The bitter road keeps no renown: the sheet leaves it out.
+    bitter: {means: "every day without food costs at once, and no renown is kept", player: "the road keeps count", without: [renown]}
+sheet:
+  Person: [calling?, vocations, level, renown]
+  Traits: [might (might-bonus), grace (grace-bonus), wit (wit-bonus), skilled]
+  Struggle: [grit, ward?, resolve, fading?, stamina-d6?, stamina-d4?, guard, notice, speed (stride)]
+  Knacks: [knacks, knack-count, oaths?, rites?, tongues?]
+  Gear: [money?, lodging?, equipped?, kit?, bound?, inventory?]
+sheet-notes:
+  Knacks: "knacks are the person's few tricks: their vocations give some by rank, and the story may give one more, written by hand; tongues are the languages they speak, open."
+sheet-cards:
+  rail: [Traits]
+  order: [Struggle, Knacks, Gear, Person]
+  at-hand: [grit, guard, speed]
+# What the player does with the items of these fields on the dashboard, said as their own sentence to the master (D-495).
+sheet-actions:
+  knacks: [use]
+  inventory: [use, equip]
+sheet-headline: "{calling}, rank {level}"
+# The icons of the groups, and the symbol on a token of the party by their first vocation: the d of an SVG path on a grid of 24.
+sheet-icons:
+  Struggle: "M12 3 19 5.5V11c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V5.5Z"
+  Knacks: "M12 3.5a4 4 0 1 1 0 8a4 4 0 1 1 0-8Z"
+token-icons:
+  field: vocations
+  icons:
+    Warden: "M4 20V8l8-5 8 5v12Z M9 20v-6h6v6"
+    Scout: "M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+# Two six-sided dice and a bonus; a better roll keeps two of three dice, the higher, a worse one the lower.
+sheet-dice:
+  2d6: [might-bonus, grace-bonus, wit-bonus, notice]
+sheet-odds:
+  better: 3d6kh2
+  worse: 3d6kl2
+  when:
+    - {fields: [grace-bonus, notice], worse: "has(effects, Dazed)", why: Dazed}
+    - {fields: [notice], better: "has(knacks, Keen Eye)", why: Keen Eye}
+roll-names:
+  3d6kh2: {en: with an edge, it: con un margine}
+  3d6kl2: {en: against the odds, it: contro la sorte}
+# The traits one may be skilled in, a list the system closes; the knacks stay open, as an oath's pages add theirs with their rank.
+values:
+  skilled: [might, grace, wit]
+sheet-values:
+  tongues: [Lowland, Marsh Cant]
+  lodging: [Hayloft, Inn, Manor]
+  # The kinds of harm, which the lists of who takes it name.
+  tough-against: [bludgeoning, cold, fire, piercing, poison, slashing]
+  immune-against: [bludgeoning, cold, fire, piercing, poison, slashing]
+  weak-against: [bludgeoning, cold, fire, piercing, poison, slashing]
+progression:
+  list: vocations
+  level: level
+  features: Knacks
+  experience: {field: renown, table: renown-by-rank, rules: Rising}
+  # An oath of a vocation adds its knacks and its rites by the vocation's rank.
+  parts: {list: oaths, field: vocation, lists: [rites]}
+item-formulas:
+  vocations: [vocation-guard]
+  # What a buckler held gives who holds it.
+  equipped: [parry]
+always-in:
+  kit: [Bare Hands]
+marks: [skilled]
+status-line: [level, grit, ward?, resolve, guard, stamina-d6, stamina-d4, fading?]
+thresholds:
+  grit 0: Falling
+  fading 3: Gone
+  resolve -3: Breaking
+  # At every change of what one has lost, the rule to read.
+  resolve-loss: Hunger
+  ward 0: Wards
+recipes:
+  night's sleep:
+    set: {grit: max, ward: 0}
+    regain: {stamina-*: "max(1, floor(level / 2))"}
+    lower: {resolve-loss: "1 - min(1, best(days-hungry, 0))"}
+    needs: grit
+    once-per: 20h
+    lasts: 7h
+    ends: [night's sleep, breather]
+    rules: [Rest]
+  breather:
+    # Stamina dice spent to recover, each rolled with the might bonus, the total back to grit.
+    spend: {stamina-*: {gives: grit, adds: might-bonus}}
+    ends: [breather]
+    rules: [Rest]
+rewards:
+  renown: {from: renown-value, overcome: grit 0}
+conditions: [Dazed, Pinned, Asleep, Down]
+condition-icons:
+  Dazed: "M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16Z"
+  Pinned: "M5 5l14 14 M19 5 5 19"
+  Asleep: "M4.5 7.5h5l-5 6h5"
+  Down: "M12 4v10.5 M8 10.5l4 4 4-4 M4 20h16"
+# Its widgets, as an extension's (D-514): who is Down and how far they faded, in the column beside the rolls, the card its code asks a rally in; and on
+# each of the party, the same under their name, in their row of the turns and as the word of their state.
+icons:
+  fade: "M4 12h16 M12 4v16"
+widgets:
+  rally: {title: Rally, icon: fade, place: side}
+  down: {title: Down, icon: fade, place: person}
+upkeep:
+  daily: Hardtack
+  short: days-hungry
+  grace: "2 + might-bonus"
+  worsens: resolve-loss
+  lifestyle: {field: lodging, costs: {Hayloft: "—", Inn: 2 shilling, Manor: 1 crown}, rules: Lodging}
+  rules: Hunger
+burning:
+  Rushlight: {lasts: 2h}
+  Lantern: {lasts: 5h, spends: Tallow}
+# What the charms one has bound give, added up as effects are.
+bonus-lists: [bound]
+bonds:
+  bound: {most: 2, needs: binding, while: kit, rules: Bindings}
+turn-uses:
+  move: {note: "Bound charms rattle: a move is heard.", note-when: "count(bound)"}
+  deed: {}
+  # A creature, without vocations, strikes as many times as the master says.
+  strike: {within: deed, most: "(1 + best(extra-strikes, 0)) / min(1, count(vocations))"}
+  parry: {any-turn: true, note: "A parry spends the next deed."}
+  flourish: {needs: "has(knacks, Steady Hand)", resets: each turn, any-turn: true}
+at-most:
+  might: 9 + bonus-might-max
+  knacks: 3
+immune: immune-to
+damage: {counter: grit, halves: tough-against, ignores: immune-against, doubles: weak-against, rules: Harm}
+keeping: {counter: grit, conditions: [Asleep, Pinned, Down], rules: Holding}
+combat: {track: grit, in-words: [steady, shaken, reeling, down], inactive: [Asleep, Down]}
+# The down point, at 0 grit; it counts only one side, fading, up to three, and then they are gone: the fake's code marks them, and its widget down draws
+# them (src/index.ts).
+down: {at: grit 0}
+checks:
+  - {when: fading > 0, needs: grit <= 0, say: "{page} is fading with {grit}: fading counts only at 0 grit; change {page} fading to 0."}
+  - {when: Steadied, needs: grit <= 0, say: "{page} is Steadied with {grit}: Steadied holds only at 0 grit; effect end {page} Steadied."}
+fields:
+  calling: text
+  category: text
+  vocations: list
+  level: number
+  # A counter without a maximum, as the points one gains are.
+  renown: counter
+  renown-value: number
+  # Raised to what a bound charm gives, kept when higher.
+  might: at-least
+  grace: number
+  wit: number
+  might-bonus: modifier
+  grace-bonus: modifier
+  wit-bonus: modifier
+  skilled: list
+  grit: counter
+  ward: counter
+  resolve: counter
+  resolve-loss: counter
+  fading: counter
+  stamina-d6: counter
+  stamina-d4: counter
+  second-deed: counter
+  rallies: counter
+  marsh-breath: counter
+  guard: number
+  vocation-guard: number
+  parry: number
+  stamina-die: text
+  charges: counter
+  uses: counter
+  guard-bonus: bonus
+  bonus-might-max: bonus
+  notice: number
+  speed: length
+  # How fast a vehicle goes on the water, in an hour.
+  drift: text
+  stride: text
+  bonus-stride: bonus
+  stride-factor: factor
+  heft: text
+  knacks: list
+  lore: text
+  oaths: list
+  vocation: text
+  rites: list
+  knack-count: number
+  tongues: list
+  kit: list
+  extra-strikes: number
+  binding: text
+  hollow: text
+  bulk: text
+  bound: list
+  days-hungry: number
+  lodging: text
+  immune-to: list
+  tough-against: list
+  immune-against: list
+  weak-against: list
+tables:
+  bonus-by-score: {1: -1, 3: 0, 5: 1, 7: 2}
+  renown-by-rank: {1: 0, 2: 10, 3: 30, 4: 60}
+computed:
+  might-bonus: table(bonus-by-score, might)
+  grace-bonus: table(bonus-by-score, grace)
+  wit-bonus: table(bonus-by-score, wit)
+  level: sum(vocations)
+  guard: 6 + grace-bonus + best(vocation-guard, 0) + best(parry, 0) + guard-bonus
+  notice: floor((wit + level) / 2) + 2 * has(skilled, wit)
+  # Only on who has a vocation, as a formula with no field to read would give a number to every page.
+  knack-count: count(knacks) / min(1, count(vocations))
+  # The stride written, then what effects add and multiply; pinned, none.
+  speed: (stride + bonus-stride) * stride-factor * (1 - has(effects, Pinned))
+counters:
+  grit: {max: "6 + 3 * level + might-bonus"}
+  ward: {shields: grit}
+  resolve: {min: -3, max: 3}
+  resolve-loss: {max: 5}
+  stamina-d6: {max: "sum(vocations, stamina-die = d6)"}
+  stamina-d4: {max: "sum(vocations, stamina-die = d4)"}
+  # A Warden's rallies, as many as the row of its table gives: all back with a night's sleep, one with a breather from Iron Lung.
+  rallies: {refill: {night's sleep: max, breather: "has(knacks, Iron Lung)"}}
+  # A people's own use, written on its page.
+  marsh-breath: {refill: breather}
+  # A Scout's second deed in a turn, back with a breather.
+  second-deed: {max: "has(knacks, Quiet Step)", refill: breather}

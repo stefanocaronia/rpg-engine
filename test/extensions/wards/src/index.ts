@@ -1,8 +1,8 @@
 // A test extension's code for the API 3 (D-505): it reads a page, the party and the scene, sets the fields its extension.yaml adds, rolls for someone and asks
 // the player, each command giving back what the engine gave it.
-import type { ExtensionEntry, GameView } from "rpg-engine";
+import type { GameView, PackageEntry } from "rpg-engine";
 
-const wards: ExtensionEntry = ({ z }) => ({
+const wards: PackageEntry = ({ z }) => ({
     commands: [
         {
             name: "wards",
@@ -21,6 +21,13 @@ const wards: ExtensionEntry = ({ z }) => ({
                 game.set(input.page, { [input.field]: /^-?\d+$/.test(input.value) ? Number(input.value) : input.value }, "a ward marked");
                 return "Marked.";
             },
+        },
+        {
+            name: "wards-change",
+            description: "Change a counter of a page, as change does.",
+            input: z.object({ page: z.string(), field: z.string(), to: z.string() }),
+            positionals: ["page"],
+            run: (input, game) => game.change(input.page, input.field, { to: Number(input.to) }, "a ward changed"),
         },
         {
             name: "wards-roll",

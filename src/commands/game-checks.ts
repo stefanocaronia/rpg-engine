@@ -2,16 +2,16 @@
 // never a change. The core's rules read the system's own data; a system adds its own with checks.
 import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText, sameName, valueNamed } from "../core/text.ts";
+import { comparableText, sameWord, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { keeperOf } from "../effects/index.ts";
 import { inheritedFields, isPartyMember, type Page, pagesWithName, parsePageReference, type World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { CheckAtom, CheckOperator, GameSystem, SystemCheck } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { keptEffects } from "./game-effects.ts";
+import { keptEffects, systemNamed } from "./game-effects.ts";
 import { readOpenScene } from "./game-scene.ts";
-import { campaignSystem, campaignWorld } from "./game-world.ts";
+import { campaignSystem, campaignSystemWords, campaignWorld } from "./game-world.ts";
 
 /** A contradiction in the state: the rule that found it, the page it is on, and the line for the master. */
 export interface Contradiction
@@ -32,10 +32,12 @@ export function allStateChecks(root: string, context: Context): Contradiction[]
 
     const world = campaignWorld(root, context);
     const scene = readOpenScene(root).scene;
+    // Effects written in the campaign's language are the system's by its words, A terra its Down (D-403).
+    const words = campaignSystemWords(root, context);
     return checkedPages(world, scene).flatMap((page) => [
-        ...said("kept-broken", page, keptWhileBroken(world, scene, system, page)),
-        ...said("awake-at-dying", page, awakeAtDying(world, system, page)),
-        ...system.checks.flatMap((check, index) => said(`system-${index}`, page, systemCheck(world, check, page))),
+        ...said("kept-broken", page, keptWhileBroken(world, scene, system, page, words)),
+        ...said("awake-when-down", page, awakeWhenDown(world, system, page, words)),
+        ...system.checks.flatMap((check, index) => said(`system-${index}`, page, systemCheck(world, check, page, words))),
     ]);
 }
 
@@ -75,6 +77,9 @@ export function markStateChecksTold(context: Context, found: Contradiction[]): v
 
 const keyPrefix = "check:";
 
+/** The system's words in the campaign's language, by their English. */
+type Words = Record<string, string> | undefined;
+
 function checkKey(found: Contradiction): string
 {
     return `${keyPrefix}${found.rule}:${comparableText(found.page.name)}`;
@@ -93,21 +98,21 @@ function checkedPages(world: World, scene: Scene | undefined): Page[]
 }
 
 /** Who keeps an effect alive while a condition that breaks it is on them (EFF-14), as concentration held while Unconscious. */
-function keptWhileBroken(world: World, scene: Scene | undefined, system: GameSystem, page: Page): string | undefined
+function keptWhileBroken(world: World, scene: Scene | undefined, system: GameSystem, page: Page, words: Words): string | undefined
 {
     const keeping = system.keeping;
-    const condition = effectsOf(page).find((effect) => sameName(keeping?.conditions ?? [], effect.name) !== undefined)?.name;
+    const condition = effectsOf(page).find((effect) => systemNamed(keeping?.conditions ?? [], effect.name, words) !== undefined)?.name;
     const kept = keeping === undefined || condition === undefined ? [] : keptEffects(world, scene, page.name);
     return kept.length === 0 ? undefined : `${page.name} keeps ${kept.join(" · ")} but is ${condition}, which breaks it: effect end, by [[${page.name}]]. Read rules ${keeping?.rules}.`;
 }
 
 /**
- * One of the party at the system's dying value, or below, with none of the conditions that keep from acting (DIE-1), as when one was ended by hand; never anyone
+ * One of the party at the system's down value, or below, with none of the conditions that keep from acting (DIE-1), as when one was ended by hand; never anyone
  * else, as a foe at 0 is dead in the game's rules (review of 19 October).
  */
-function awakeAtDying(world: World, system: GameSystem, page: Page): string | undefined
+function awakeWhenDown(world: World, system: GameSystem, page: Page, words: Words): string | undefined
 {
-    const dying = system.dying;
+    const down = system.down;
 
     if (!isPartyMember(page)) {
         return undefined;
@@ -115,28 +120,28 @@ function awakeAtDying(world: World, system: GameSystem, page: Page): string | un
 
     const inactive = system.combat?.inactive ?? [];
     // The page's own counter: what a form that gives it holds is not the page's (DIE-8).
-    const counter = dying === undefined ? undefined : readCounter(valueNamed(inheritedFields(world, page), dying.field));
+    const counter = down === undefined ? undefined : readCounter(valueNamed(inheritedFields(world, page), down.field));
 
-    if (dying === undefined || counter === undefined || counter.value > dying.value || inactive.length === 0 || page.fields.status === "dead") {
+    if (down === undefined || counter === undefined || counter.value > down.value || inactive.length === 0 || page.fields.status === "dead") {
         return undefined;
     }
 
-    if (effectsOf(page).some((effect) => sameName(inactive, effect.name) !== undefined)) {
+    if (effectsOf(page).some((effect) => systemNamed(inactive, effect.name, words) !== undefined)) {
         return undefined;
     }
 
-    const rule = system.thresholds.find((threshold) => comparableText(threshold.field) === comparableText(dying.field) && threshold.value === dying.value)?.rule;
+    const rule = system.thresholds.find((threshold) => comparableText(threshold.field) === comparableText(down.field) && threshold.value === down.value)?.rule;
     const read = rule === undefined ? "" : ` Read rules ${rule}.`;
-    return `${page.name} is at ${dying.field} ${formatCounter(counter)}, not marked dead, with none of ${inactive.join(", ")}: raise its ${dying.field} as its rules say, `
+    return `${page.name} is at ${down.field} ${formatCounter(counter)}, not marked dead, with none of ${inactive.join(", ")}: raise its ${down.field} as its rules say, `
         + `give it one of them back, or write status=dead.${read}`;
 }
 
 /** A check of the system (CHK-2): its line when `when` holds and `needs` does not; nothing when a field it reads is not on the page. */
-function systemCheck(world: World, check: SystemCheck, page: Page): string | undefined
+function systemCheck(world: World, check: SystemCheck, page: Page, words: Words): string | undefined
 {
     const fields = inheritedFields(world, page);
-    const when = holds(page, fields, check.when);
-    const needs = holds(page, fields, check.needs);
+    const when = holds(page, fields, check.when, words);
+    const needs = holds(page, fields, check.needs, words);
 
     if (when !== true || needs !== false) {
         return undefined;
@@ -153,10 +158,10 @@ function systemCheck(world: World, check: SystemCheck, page: Page): string | und
 }
 
 /** Whether an atom holds on a page: an effect without end or keeper on it, or a field against a number; undefined when the field is not there. */
-function holds(page: Page, fields: Record<string, unknown>, atom: CheckAtom): boolean | undefined
+function holds(page: Page, fields: Record<string, unknown>, atom: CheckAtom, words: Words): boolean | undefined
 {
     if ("effect" in atom) {
-        return effectsOf(page).some((effect) => comparableText(effect.name) === comparableText(atom.effect) && effect.end === undefined && keeperOf(effect) === undefined);
+        return effectsOf(page).some((effect) => sameWord(atom.effect, effect.name, words) && effect.end === undefined && keeperOf(effect) === undefined);
     }
 
     const value = readCounter(valueNamed(fields, atom.field))?.value;

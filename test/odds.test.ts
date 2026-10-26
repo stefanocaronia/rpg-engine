@@ -1,4 +1,5 @@
-// The free rolls of the sheet with advantage or disadvantage (D-445): what exhaustion and the conditions as effects make worse.
+/// The 5e's free rolls of the sheet with advantage or disadvantage (D-445): what exhaustion and the conditions as effects make worse. It goes with the 5e
+// (D-514, step 8); the odds on the fake system are in fake-system.test.ts, and below on a system of the test's own.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

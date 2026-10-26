@@ -1,20 +1,23 @@
 export { getVersion } from "./core/version.ts";
-// What an extension's code is given and gives back (D-436): extensions import these types from rpg-engine.
-export type { SaveAsked } from "./core/context.ts";
+// What a package's code is given and gives back, an extension's or a game system's (D-436, D-514): packages import these types from rpg-engine.
 export type {
     Asked,
     AskedRoll,
+    Asking,
+    AskingQuestion,
     ButtonWords,
     CalendarDay,
+    CardTint,
+    CounterChange,
     DieTone,
-    ExtensionCode,
-    ExtensionCommand,
-    ExtensionEntry,
-    ExtensionKit,
     Game,
     GameMoment,
     GamePage,
     GameView,
+    PackageCode,
+    PackageCommand,
+    PackageEntry,
+    PackageKit,
     Rolled,
     RollFor,
     TimePassage,
@@ -23,5 +26,4 @@ export type {
     WidgetPart,
     WidgetText,
     WidgetValue,
-} from "./extensions/index.ts";
-export type { CounterChange, RollMade, SystemEntry, SystemGame, SystemHooks, SystemPage, SystemReader } from "./systems/index.ts";
+} from "./core/package-api.ts";

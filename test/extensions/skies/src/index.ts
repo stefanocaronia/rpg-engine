@@ -1,9 +1,9 @@
 // A test extension's code for the API 2: a sky rolled with the engine's dice, told and set by its commands.
-import type { ExtensionEntry } from "rpg-engine";
+import type { PackageEntry } from "rpg-engine";
 
 const skies = ["storm", "rain", "clouds", "haze", "clear", "bright"];
 
-const skiesAtDawn: ExtensionEntry = ({ z }) => ({
+const skiesAtDawn: PackageEntry = ({ z }) => ({
     commands: [
         {
             name: "skies",

@@ -16,10 +16,10 @@ beforeEach(async () => {
     folder = makeTempFolder();
     // A chat, which keeps what it was told (D-97).
     context = { ...testContext(folder), told: new Set() };
-    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
-    await ok("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "hp=20/20");
-    await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=12/12");
+    await ok("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "grit=20/20");
+    await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "grit=12/12");
     await ok("advance", "--to", "day 1, 10:00");
 });
 
@@ -28,30 +28,29 @@ afterEach(() => removeFolder(folder));
 describe("the core's checks (CHK-2)", () => {
     it("say once in a chat who keeps an effect while a condition breaks it, until it is ended, and again when it comes back", async () => {
         await ok("effect", "add", "Lena", "Benedizione", "--by", "[[Ettore]]");
-        await ok("effect", "add", "Ettore", "Paralyzed");
+        await ok("effect", "add", "Ettore", "Pinned");
         await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--with", "Ettore", "--with", "Lena");
-        const line = "Ettore keeps Benedizione (Lena) but is Paralyzed, which breaks it: effect end, by [[Ettore]]. Read rules Concentration.";
+        const line = "Ettore keeps Benedizione (Lena) but is Pinned, which breaks it: effect end, by [[Ettore]]. Read rules Holding.";
         // The first turn, as the order starts it, says it; the turns after it no more.
         expect(await ok("scene", "order", "--order", "Lena", "--order", "Ettore")).toContain(line);
         expect(await ok("scene", "next")).not.toContain("which breaks it");
-        await ok("effect", "end", "Ettore", "Paralyzed");
+        await ok("effect", "end", "Ettore", "Pinned");
         expect(await ok("scene", "next")).not.toContain("which breaks it");
-        await ok("effect", "add", "Ettore", "Paralyzed");
+        await ok("effect", "add", "Ettore", "Pinned");
         expect(await ok("scene", "next")).toContain(line);
     });
 
     it("say one of the party at 0 with no condition that keeps from acting, ended by hand, and stay silent for the dead, the knocked out and anyone else", async () => {
-        await ok("change", "Lena", "hp", "--by=-12");
+        await ok("change", "Lena", "grit", "--by=-12");
         expect(await ok("status")).not.toContain("Lena is at");
-        await ok("effect", "end", "Lena", "Unconscious");
+        await ok("effect", "end", "Lena", "Down");
         expect(await ok("advance", "--by", "10m")).toContain(
-            "Lena is at hp 0/12, not marked dead, with none of Incapacitated, Paralyzed, Petrified, Stunned, Unconscious: raise its hp as its rules say, give it one of them back, "
-                + "or write status=dead. Read rules Dropping to 0 Hit Points.",
+            "Lena is at grit 0/12, not marked dead, with none of Asleep, Down: raise its grit as its rules say, give it one of them back, or write status=dead. Read rules Falling.",
         );
         await ok("write", "Lena", "--set", "status=dead");
         expect(await ok("status")).not.toContain("Lena is at");
         // A foe at 0 is dead in the game's rules: no line, in the scene or out of it (review of 19 October).
-        await ok("write", "Bandito", "--type", "character", "--set", "hp=0/11");
+        await ok("write", "Bandito", "--type", "character", "--set", "grit=0/11");
         await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--with", "Bandito");
         expect(allStateChecks(folder, context)).toEqual([]);
     });
@@ -59,32 +58,32 @@ describe("the core's checks (CHK-2)", () => {
     it("tell again in the turns what status told once it held no more and came back (CHK-3)", async () => {
         await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--with", "Ettore", "--with", "Lena");
         await ok("scene", "order", "--order", "Ettore", "--order", "Lena");
-        await ok("change", "Ettore", "death-failures", "--to", "2");
-        expect(await ok("status")).toContain("Ettore has death-failures 2");
-        await ok("change", "Ettore", "death-failures", "--to", "0");
-        expect(await ok("status")).not.toContain("Ettore has death-failures");
-        await ok("change", "Ettore", "death-failures", "--to", "1");
-        expect(await ok("scene", "next")).toContain("Ettore has death-failures 1");
+        await ok("change", "Ettore", "fading", "--to", "2");
+        expect(await ok("status")).toContain("Ettore is fading with grit 20/20");
+        await ok("change", "Ettore", "fading", "--to", "0");
+        expect(await ok("status")).not.toContain("Ettore is fading");
+        await ok("change", "Ettore", "fading", "--to", "1");
+        expect(await ok("scene", "next")).toContain("Ettore is fading with grit 20/20");
     });
 });
 
 describe("the system's checks (CHK-2)", () => {
     it("say what its data finds, in status every time and in validate on the page", async () => {
-        await ok("change", "Ettore", "death-failures", "--to", "2");
-        const line = "Ettore has death-failures 2 with hp 20/20: the death saves count only at 0 hit points; change Ettore death-failures to 0.";
+        await ok("change", "Ettore", "fading", "--to", "2");
+        const line = "Ettore is fading with grit 20/20: fading counts only at 0 grit; change Ettore fading to 0.";
         expect(await ok("status")).toContain(line);
         expect(await ok("status")).toContain(line);
         expect((await runCommandLine(["validate"], context)).output).toContain(`world/characters/Ettore.md: ${line}`);
-        await ok("change", "Ettore", "death-failures", "--to", "0");
-        expect(await ok("status")).not.toContain("death saves count only");
+        await ok("change", "Ettore", "fading", "--to", "0");
+        expect(await ok("status")).not.toContain("fading counts only");
     });
 
     it("count an effect with an end or a keeper as no state", async () => {
-        await ok("effect", "add", "Ettore", "Stable", "--for", "1m");
+        await ok("effect", "add", "Ettore", "Steadied", "--for", "1m");
         expect(allStateChecks(folder, context)).toEqual([]);
-        await ok("effect", "end", "Ettore", "Stable");
-        await ok("effect", "add", "Ettore", "Stable");
-        expect(allStateChecks(folder, context).map((found) => found.line)).toEqual(["Ettore is Stable with hp 20/20: Stable holds only at 0 hit points; effect end Ettore Stable."]);
+        await ok("effect", "end", "Ettore", "Steadied");
+        await ok("effect", "add", "Ettore", "Steadied");
+        expect(allStateChecks(folder, context).map((found) => found.line)).toEqual(["Ettore is Steadied with grit 20/20: Steadied holds only at 0 grit; effect end Ettore Steadied."]);
     });
 });
 
@@ -98,40 +97,40 @@ describe("the opening of an evening (playtests 15, 16)", () => {
 
 describe("the laws of the checks (CHK-1, CHK-4)", () => {
     it("change nothing: the campaign's files are the same before and after", async () => {
-        await ok("change", "Ettore", "death-failures", "--to", "2");
+        await ok("change", "Ettore", "fading", "--to", "2");
         const before = snapshot(folder);
         expect(allStateChecks(folder, context)).toHaveLength(1);
         expect(snapshot(folder)).toEqual(before);
     });
 
-    it("are silent after any run of legal commands on the party: damage, healing, the turns, the death saves and time", async () => {
+    it("are silent after any run of legal commands on the party: damage, healing, the turns, the rallies and time", async () => {
         await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--with", "Ettore", "--with", "Lena");
         await ok("scene", "order", "--order", "Ettore", "--order", "Lena");
         const step = fc.oneof(
             fc.record({ kind: fc.constant("damage"), who: fc.constantFrom("Ettore", "Lena"), amount: fc.integer({ min: 1, max: 40 }) }),
             fc.record({ kind: fc.constant("heal"), who: fc.constantFrom("Ettore", "Lena"), amount: fc.integer({ min: 1, max: 30 }) }),
-            fc.record({ kind: fc.constant("next"), face: fc.integer({ min: 1, max: 20 }) }),
-            // The player's roll for their character, a death save while dying (DIE-4), and time passing.
-            fc.record({ kind: fc.constant("save"), face: fc.integer({ min: 1, max: 20 }) }),
+            fc.record({ kind: fc.constant("next"), face: fc.integer({ min: 1, max: 6 }) }),
+            // The player's roll for their character, a rally while down, and time passing.
+            fc.record({ kind: fc.constant("save"), face: fc.integer({ min: 1, max: 6 }) }),
             fc.record({ kind: fc.constant("time") }),
         );
         await fc.assert(
             fc.asyncProperty(fc.array(step, { minLength: 1, maxLength: 12 }), async (steps) => {
                 for (const who of ["Ettore", "Lena"]) {
-                    await ok("change", who, "death-failures", "--to", "0");
-                    await ok("change", who, "death-successes", "--to", "0");
-                    await ok("change", who, "hp", "--to", "max");
+                    // Grit given back ends Down and what was marked, by the system's code.
+                    await ok("change", who, "grit", "--to", "max");
+                    await ok("change", who, "fading", "--to", "0");
                 }
 
                 for (const one of steps) {
                     if (one.kind === "next") {
                         await ok("scene", "next", { ...context, random: () => one.face });
                     } else if (one.kind === "save") {
-                        await ok("roll", "1d20", "--who", "Ettore", "--why", "Tiro contro la morte", { ...context, random: () => one.face });
+                        await ok("roll", "2d6", "--who", "Ettore", "--why", "Rialzarsi", { ...context, random: () => one.face });
                     } else if (one.kind === "time") {
                         await ok("advance", "--by", "10m");
                     } else {
-                        await ok("change", one.who, "hp", one.kind === "damage" ? `--by=-${one.amount}` : `--by=${one.amount}`);
+                        await ok("change", one.who, "grit", one.kind === "damage" ? `--by=-${one.amount}` : `--by=${one.amount}`);
                     }
 
                     expect(allStateChecks(folder, context).map((found) => found.line), JSON.stringify(steps)).toEqual([]);

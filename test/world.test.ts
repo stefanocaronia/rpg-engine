@@ -15,7 +15,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
 });
 
 afterEach(() => removeFolder(folder));
@@ -146,16 +146,16 @@ describe("rpg find", () => {
     });
 
     it("finds pages by name, fields and text, ignoring case", async () => {
-        expect((await rpg("find", "FIGLIA")).output).toBe("Varro (character): Un alchimista che vuole riavere la figlia.\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
-        expect((await rpg("find", "companion")).output).toBe("Lena (character): role: companion\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
-        expect((await rpg("find", "varro")).output).toBe("Varro (character)\nLa cripta (place): I servitori di Varro dormono qui.\n\nfind looks for the pages of the system 5e in their names and fields, in English.");
+        expect((await rpg("find", "FIGLIA")).output).toBe("Varro (character): Un alchimista che vuole riavere la figlia.\n\nfind looks for the pages of the system fake in their names and fields, in English.");
+        expect((await rpg("find", "companion")).output).toBe("Lena (character): role: companion\n\nfind looks for the pages of the system fake in their names and fields, in English.");
+        expect((await rpg("find", "varro")).output).toBe("Varro (character)\nLa cripta (place): I servitori di Varro dormono qui.\n\nfind looks for the pages of the system fake in their names and fields, in English.");
         expect((await rpg("find", "basilisco")).output).toBe(
-            "No page matches. What was said in play and never written is not in the files: if the player remembers it, write it.\n\nfind looks for the pages of the system 5e in their names and fields, in English.",
+            "No page matches. What was said in play and never written is not in the files: if the player remembers it, write it.\n\nfind looks for the pages of the system fake in their names and fields, in English.",
         );
     });
 
     it("says only that no page matches in a campaign without a game system, and reads only", async () => {
-        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: 5e\n", ""));
+        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: fake\n", ""));
         expect((await rpg("find", "--type", "creature")).output).toBe("No page matches.");
         expect((await rpg("find", "basilisco")).output).toBe("No page matches. What was said in play and never written is not in the files: if the player remembers it, write it.");
         expect(commands.find((command) => command.name === "find")?.readOnly).toBe(true);
@@ -163,7 +163,7 @@ describe("rpg find", () => {
 
     it("lists the pages of a type, or all of them", async () => {
         expect((await rpg("find", "--type", "place")).output).toBe("La cripta (place)");
-        expect((await rpg("find")).output).toBe(`Lena (character)\nVarro (character)\nLa cripta (place)\n\nThe system 5e has ${systemPageCount("5e")} more pages, named in English: give part of a name, in English, to find them.`);
+        expect((await rpg("find")).output).toBe(`Lena (character)\nVarro (character)\nLa cripta (place)\n\nThe system fake has ${systemPageCount("fake")} more pages, named in English: give part of a name, in English, to find them.`);
     });
 });
 
@@ -173,7 +173,7 @@ describe("pages written by hand", () => {
         expect((await rpg("show", "la nebbia")).output).toBe("La nebbia (free page) · world/La nebbia.md\n\nNon si alza da giorni.");
 
         writeFileSync(join(folder, "world", "items", "La nebbia.md"), "");
-        expect((await rpg("find")).output).toBe(`La nebbia (free page)\nLa nebbia (item)\n\nThe system 5e has ${systemPageCount("5e")} more pages, named in English: give part of a name, in English, to find them.`);
+        expect((await rpg("find")).output).toBe(`La nebbia (free page)\nLa nebbia (item)\n\nThe system fake has ${systemPageCount("fake")} more pages, named in English: give part of a name, in English, to find them.`);
         expect((await rpg("show", "la nebbia")).output).toBe(
             'Two pages have the same name: world/La nebbia.md and world/items/La nebbia.md. Rename one of them by its path, such as rename "world/items/La nebbia.md" "a new name": names must be unique in the campaign.',
         );

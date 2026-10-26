@@ -94,7 +94,7 @@ function checkCounted(world: World, holder: Page, field: string, read: { page: s
     }
 
     if (!isKind(world, page) && elsewhere.length > 0) {
-        throw new Error(`${page.name} is in ${elsewhere[0].name} as one thing with a story of its own: a count goes only beside a kind, as [[Torch]] 7. Nothing changed.`);
+        throw new Error(`${page.name} is in ${elsewhere[0].name} as one thing with a story of its own: a count goes only beside a kind, as [[Name]] 7. Nothing changed.`);
     }
 }
 

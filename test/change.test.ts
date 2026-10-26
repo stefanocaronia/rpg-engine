@@ -11,8 +11,8 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
-    await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "arrows=2"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "grit=12/12", "--set", "arrows=2"], context);
 });
 
 afterEach(() => removeFolder(folder));
@@ -101,15 +101,18 @@ describe("the table of cases of change", () => {
 
 describe("rpg change", () => {
     it("changes a counter on its page and logs it, public for the player's character", async () => {
-        expect((await rpg("change", "bruna", "HP", "--by=-7", "--why", "morso del lupo")).output).toBe("Bruna: hp 12/12 → 5/12.");
-        expect(brunaFile()).toBe("---\nrole: pc\nhp: 5/12\narrows: 2\n---\n");
-        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Bruna", field: "hp", before: "12/12", after: "5/12", by: -7, why: "morso del lupo" } });
+        expect((await rpg("change", "bruna", "GRIT", "--by=-7", "--why", "morso del lupo")).output).toBe("Bruna: grit 12/12 → 5/12.");
+        expect(brunaFile()).toBe("---\nrole: pc\ngrit: 5/12\narrows: 2\n---\n");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Bruna", field: "grit", before: "12/12", after: "5/12", by: -7, why: "morso del lupo" } });
     });
 
     it("stops at a limit with by, and says how far it went beyond", async () => {
-        expect((await rpg("change", "Bruna", "hp", "--by=-15")).output).toBe('Bruna: hp 12/12 → 0/12: at 0, 3 beyond.\nhp is at 0, 3 beyond: read rules "Dropping to 0 Hit Points".\nBruna is Unconscious while hp is 0.');
-        expect((await rpg("change", "Bruna", "hp", "--by=20")).output).toBe('Bruna: hp 0/12 → 12/12: at max, 8 beyond.\nhp is no longer at 0: read rules "Dropping to 0 Hit Points".\nBruna is no longer dying: Unconscious ended.');
-        expect((await rpg("change", "Bruna", "hp", "--by=1")).output).toBe("Nothing changed: hp on Bruna is 12/12: at max, 1 beyond.");
+        // The threshold's rule, then what the system's code says at the down point.
+        expect((await rpg("change", "Bruna", "grit", "--by=-15")).output).toBe(
+            'Bruna: grit 12/12 → 0/12: at 0, 3 beyond.\ngrit is at 0, 3 beyond: read rules "Falling".\nBruna falls: one fading at the start of each of their turns, 3 and they are gone. Read rules Falling.',
+        );
+        expect((await rpg("change", "Bruna", "grit", "--by=20")).output).toBe('Bruna: grit 0/12 → 12/12: at max, 8 beyond.\ngrit is no longer at 0: read rules "Falling".\nBruna rises: Down ended, fading 0.');
+        expect((await rpg("change", "Bruna", "grit", "--by=1")).output).toBe("Nothing changed: grit on Bruna is 12/12: at max, 1 beyond.");
     });
 
     it("spends only what is there", async () => {
@@ -118,9 +121,9 @@ describe("rpg change", () => {
     });
 
     it("sets a value, the maximum, or a new maximum, outside the limits too", async () => {
-        expect((await rpg("change", "Bruna", "hp", "--to", "3")).output).toBe("Bruna: hp 12/12 → 3/12.");
-        expect((await rpg("change", "Bruna", "hp", "--to", "max")).output).toBe("Bruna: hp 3/12 → 12/12: at max.");
-        expect((await rpg("change", "Bruna", "hp", "--to", "15/15")).output).toBe("Bruna: hp 12/12 → 15/15: at max.");
+        expect((await rpg("change", "Bruna", "grit", "--to", "3")).output).toBe("Bruna: grit 12/12 → 3/12.");
+        expect((await rpg("change", "Bruna", "grit", "--to", "max")).output).toBe("Bruna: grit 3/12 → 12/12: at max.");
+        expect((await rpg("change", "Bruna", "grit", "--to", "15/15")).output).toBe("Bruna: grit 12/12 → 15/15: at max.");
         expect((await rpg("change", "Bruna", "arrows", "--to", "max")).output).toBe("arrows on Bruna has no maximum: give to a number, or write the field as current/max with write.");
     });
 
@@ -132,8 +135,8 @@ describe("rpg change", () => {
     });
 
     it("hides the changes of a non-player character, and shows those of what the player carries", async () => {
-        await rpg("write", "Annegato 2", "--type", "character", "--set", "role=npc", "--set", "hp=22/22");
-        await rpg("change", "Annegato 2", "hp", "--by=-9");
+        await rpg("write", "Annegato 2", "--type", "character", "--set", "role=npc", "--set", "grit=22/22");
+        await rpg("change", "Annegato 2", "grit", "--by=-9");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "counter-changed", visibility: "hidden" });
 
         await rpg("write", "Borsa del guaritore", "--type", "item", "--set", "uses=10/10");
@@ -164,9 +167,9 @@ describe("rpg change", () => {
     });
 
     it("lets write create a counter but not change it", async () => {
-        expect((await rpg("write", "Bruna", "--set", "hp=5/12")).output).toBe('hp is a counter: use change, page "Bruna", field hp, to 5/12 (or by an amount). To make it something else, unset it, then set it.');
-        expect((await rpg("write", "Bruna", "--set", "HP=5/12")).output).toBe('hp is a counter: use change, page "Bruna", field hp, to 5/12 (or by an amount). To make it something else, unset it, then set it.');
-        expect((await rpg("write", "Bruna", "--set", "hp=12/12")).output).toBe("Nothing changed on Bruna: it already reads like that.");
+        expect((await rpg("write", "Bruna", "--set", "grit=5/12")).output).toBe('grit is a counter: use change, page "Bruna", field grit, to 5/12 (or by an amount). To make it something else, unset it, then set it.');
+        expect((await rpg("write", "Bruna", "--set", "GRIT=5/12")).output).toBe('grit is a counter: use change, page "Bruna", field grit, to 5/12 (or by an amount). To make it something else, unset it, then set it.');
+        expect((await rpg("write", "Bruna", "--set", "grit=12/12")).output).toBe("Nothing changed on Bruna: it already reads like that.");
         expect((await rpg("write", "Bruna", "--set", "kit=10/10")).exitCode).toBe(0);
     });
 
@@ -177,9 +180,9 @@ describe("rpg change", () => {
     });
 
     it("accepts a link as the page, max in any case, and says how to fix a quoted number", async () => {
-        await rpg("change", "Bruna", "hp", "--by=-2");
-        expect((await rpg("change", "[[Bruna]]", "hp", "--to", "MAX")).output).toBe("Bruna: hp 10/12 → 12/12: at max.");
-        expect((await rpg("change", "Bruna#Storia", "hp", "--by=1")).output).toBe("Give the page without #Storia: a counter is a field of the page, such as page Bruna, field hp.");
+        await rpg("change", "Bruna", "grit", "--by=-2");
+        expect((await rpg("change", "[[Bruna]]", "grit", "--to", "MAX")).output).toBe("Bruna: grit 10/12 → 12/12: at max.");
+        expect((await rpg("change", "Bruna#Storia", "grit", "--by=1")).output).toBe("Give the page without #Storia: a counter is a field of the page, such as page Bruna, field grit.");
 
         await rpg("write", "Bruna", "--set", 'frecce="20"');
         expect((await rpg("change", "Bruna", "frecce", "--by=1")).output).toBe('frecce on Bruna is the text "20": write it without quotes, such as frecce: 20, to make it a counter.');
@@ -187,11 +190,11 @@ describe("rpg change", () => {
     });
 
     it("explains what is missing or wrong", async () => {
-        expect((await rpg("change", "Bruna", "mana", "--by=1")).output).toBe('Bruna has no field "mana". Its counters: hp 12/12, arrows 2. To add one, use write, such as set mana=12/12.');
+        expect((await rpg("change", "Bruna", "mana", "--by=1")).output).toBe('Bruna has no field "mana". Its counters: grit 12/12, arrows 2. To add one, use write, such as set mana=12/12.');
         expect((await rpg("change", "Bruna", "role", "--by=1")).output).toBe("role is a fixed field of Bruna, not a counter: change it with write.");
-        expect((await rpg("change", "Bruna", "hp")).output).toBe("Give one of by (damage, healing), spend (what is paid or used up) or to (a value, max, or current/max).");
-        expect((await rpg("change", "Bruna", "hp", "--by=1", "--to", "max")).exitCode).toBe(1);
-        expect((await rpg("change", "Bruna", "hp", "--to", "molti")).output).toBe('"molti" is not a value for to: give a whole number, max, or current/max such as 15/15.');
-        expect((await rpg("change", "Varro", "hp", "--by=1")).output).toBe("There is no page named Varro. Look for it with the find command.");
+        expect((await rpg("change", "Bruna", "grit")).output).toBe("Give one of by (damage, healing), spend (what is paid or used up) or to (a value, max, or current/max).");
+        expect((await rpg("change", "Bruna", "grit", "--by=1", "--to", "max")).exitCode).toBe(1);
+        expect((await rpg("change", "Bruna", "grit", "--to", "molti")).output).toBe('"molti" is not a value for to: give a whole number, max, or current/max such as 15/15.');
+        expect((await rpg("change", "Varro", "grit", "--by=1")).output).toBe("There is no page named Varro. Look for it with the find command.");
     });
 });

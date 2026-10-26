@@ -110,7 +110,7 @@ export interface ShownPerson
     effects?: SeenEffect[];
     /** A condition keeps them from acting (D-314). */
     inactive?: true;
-    /** At 0, as Combat tells it: the party at the dying point, a foe down. */
+    /** At 0, as Combat tells it: the party at the down point, a foe down. */
     down?: true;
     dead?: true;
 }
@@ -147,7 +147,7 @@ export interface ShownGrid
     reach?: string[];
 }
 
-/** Someone in a fight as the player sees them (D-314): the party's counter as numbers, a foe's in words; what is on them; whether they act; what they keep; the dying's counters. */
+/** Someone in a fight as the player sees them (D-314): the party's counter as numbers, a foe's in words; what is on them; whether they act; what they keep; whether down. */
 export interface Fighter
 {
     name: string;
@@ -165,21 +165,8 @@ export interface Fighter
     effects: Member["effects"];
     inactive?: true;
     keeps?: string[];
-    dying?: DyingCounter[];
-}
-
-/** A counter of the panel of the dying (D-314): its value, and its limit. */
-export interface DyingCounter
-{
-    field: string;
-    value: number;
-    limit?: number;
-    /** Which side of the death saves it counts, by the system's names (D-461): the successes or the failures. */
-    side?: "successes" | "failures";
-    /** Of the successes, what the system calls one whose counter is full, as Stable. */
-    full?: string;
-    /** The short word of its marks, as Successes; its field's label where none. */
-    mark?: string;
+    /** One of the party at the system's down point (D-516). */
+    down?: true;
 }
 
 /** The open scene as the player sees it (VIEW-6). */
@@ -217,8 +204,8 @@ export interface Member
     effects: SeenEffect[];
     /** Their mood, none when neutral or dead (MOOD-6). */
     mood?: Mood;
-    /** At the system's dying point, the counters shown large in their band (D-310 (7)). */
-    dying?: DyingCounter[];
+    /** At the system's down point, as hp 0 (D-516). */
+    down?: true;
     /** What they are: Level 3 Cleric (D-409). */
     headline?: string;
 }
@@ -297,6 +284,18 @@ export interface ShownRoll
     dice: ThrownDie[];
 }
 
+/**
+ * The dice of a rest the player spends, as they stand (ASK-14, D-492): each counter of dice with its die and what a die adds, the counter they give to as it was
+ * at the question and as it is, and the dice rolled so far, by the id of their roll.
+ */
+export interface RestDice
+{
+    who: string;
+    dice: { field: string; sides: number; value: number; max: number; adds: number; }[];
+    gives: { field: string; from: number; value: number; max?: number; };
+    rolls: { id: string; field: string; face: number; adds: number; total: number; }[];
+}
+
 /** What the master asks the player now, with a button for each check or answer (D-279). */
 export interface Asked
 {
@@ -314,25 +313,13 @@ export interface Asked
     /** Whose sheet the checks read, and by button the field of the sheet it rolls, whose row answers it too (ASK-12). */
     who?: string;
     fields?: (string | null)[];
-    /** A death save, the player's to roll (DIE-4, D-460): its die, the total that succeeds, its counters as they stand, and what its lowest and highest faces do. */
-    save?: {
-        sides: number;
-        atLeast: number;
-        successes: { field: string; value: number; most: number; };
-        failures: { field: string; value: number; most: number; };
-        lowest?: number;
-        highest?: { field: string; value: number; };
-    };
     /**
      * The dice a rest lets the player's character spend, one at a time until its one button (ASK-14, D-492): each counter of dice with what a die adds, the
      * counter they give to as it was at the question and as it is, and the dice rolled so far, by the id of their roll.
      */
-    spend?: {
-        who: string;
-        dice: { field: string; sides: number; value: number; max: number; adds: number; }[];
-        gives: { field: string; from: number; value: number; max?: number; };
-        rolls: { id: string; field: string; face: number; adds: number; total: number; }[];
-    };
+    spend?: RestDice;
+    /** A forced roll (D-507), as a death save: no button turns it down, and no words of the player's take its place. */
+    forced?: true;
     /** By button, its name and the note under it when a package words it, as Reroll and 3 left, in place of the label's words (D-507). */
     buttons?: ({ name: string; note?: string; } | null)[];
     /** The rule under the buttons, in a line, as "A 1 resets the lock". */
@@ -644,6 +631,8 @@ export interface ShownWidget extends WidgetSpot
     own: WidgetSpot;
     icon?: string;
     shows?: WidgetShows;
+    /** In place person, what it shows on each of the party, by their name: only those it shows something on (D-514). */
+    people?: Record<string, WidgetShows>;
     /** Why it shows nothing, for whoever made it. */
     problem?: string;
     /** Its extension's version, which an error of its page code names (D-510). */
@@ -679,15 +668,15 @@ export interface FigureSize
     mirror?: boolean;
 }
 
-/** Where a widget stands: a chip in the top, a card in the table's column, a card in a page, or nowhere; its order among the cards there. */
+/** Where a widget stands: a chip in the top, a card in the table's column, a card in a page, on each of the party, or nowhere; its order among the cards there. */
 export interface WidgetSpot
 {
-    place: "top" | "side" | "page" | "off";
+    place: "top" | "side" | "page" | "person" | "card" | "off";
     page?: WidgetPage;
     order: number;
 }
 
-/** The pages a widget's card may stand in. */
+/** The pages a widget's card may stand in, as src/page.ts declares them (test/dashboard-ask-card.test.ts checks it). */
 export type WidgetPage = "scene" | "sheet" | "world" | "journal";
 
 /** What a widget shows: its icon's path, a chip's few words, what it says whole, a note, and a card's parts; words already in the campaign's language. */
@@ -695,6 +684,10 @@ export interface WidgetShows
 {
     icon?: string;
     chip?: WidgetText;
+    /** On someone of the party, dead by the package's rules though not marked so (D-516). */
+    dead?: true;
+    /** In the card of a question, the colour of its moment, by the page's token (D-517). */
+    tint?: "low" | "ally" | "gold" | "muted";
     says?: WidgetText;
     note?: WidgetText;
     parts?: WidgetPart[];
@@ -727,6 +720,8 @@ export interface WidgetTrack
     tone?: Tone;
     /** The figure of its extension's page code that draws it (D-510), as tumblers; its label and value still name it for a screen reader. */
     figure?: string;
+    /** The counter of the sheet it counts, which leaves the line under the name while a widget on the party shows it (D-514). */
+    field?: string;
 }
 
 /** A part of a widget's card, drawn with the page's own parts. */

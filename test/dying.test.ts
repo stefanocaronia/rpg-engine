@@ -1,3 +1,4 @@
+// The 5e's (D-514): this file goes with the 5e to its own repository at step 8; the core's own tests of the same rules run on the fake system.
 // The dying (D-454, D-460; DIE-1–DIE-5): Unconscious at 0 hit points, a failure for damage there, instant death, the death saves, and all of it ended by hit points
 // regained.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -30,21 +31,21 @@ describe("the dying", () => {
 
     it("writes the death save the player rolls with a button: a success at 10, a failure under it, two on a 1, back to 1 hp on a 20 (DIE-4, D-460)", async () => {
         await ok("change", "Ettore", "hp", "--by=-10");
-        // The page gets only the check, as no one turns a death save down, with what the page draws of it.
-        let shown: { labels: string[]; rows?: Rows; } | undefined;
+        // The page gets only the check, as no one turns a death save down, in the 5e's card, with what its page module draws of it (D-516).
+        let shown: { labels: string[]; rows?: Rows; card?: unknown; } | undefined;
         const page: Player = {
             choose: async (_question, _title, labels, _signal, rows) => {
-                shown = { labels, rows };
+                shown = { labels, rows, card: await rows?.card?.shows() };
                 return undefined;
             },
         };
         await ask.run(ask.input.parse({ question: "Ettore è a terra", options: "Tiro contro la morte 1d20", who: "Ettore" }), { ...context, page });
-        expect(shown).toEqual({
+        expect(shown).toMatchObject({
             labels: ["Tiro: Tiro contro la morte (1d20)"],
-            rows: {
-                who: "Ettore",
-                fields: [null],
-                save: { sides: 20, atLeast: 10, successes: { field: "death-successes", value: 0, most: 3 }, failures: { field: "death-failures", value: 0, most: 3 }, lowest: 2, highest: { field: "hp", value: 1 } },
+            rows: { who: "Ettore", fields: [null], forced: true, card: { widget: "5e.death-save" } },
+            card: {
+                body: "death-save",
+                data: { who: "Ettore", successes: { value: 0, most: 3 }, failures: { value: 0, most: 3 }, down: true, dead: false, sides: 20, atLeast: 10, lowest: 2, highest: { field: "hp", value: 1 } },
             },
         });
 
@@ -166,15 +167,15 @@ describe("the dying", () => {
         expect(turn).toContain("Mira is dying: the turn starts with their death save, the player's to roll: ask them, with ask, a check of 1d20; the engine writes its outcome.");
         expect(readLogFile(folder).filter((entry) => entry.type === "roll")).toEqual([]);
 
-        let shown: Rows | undefined;
+        let shown: unknown;
         const page: Player = {
             choose: async (_question, _title, _labels, _signal, rows) => {
-                shown = rows;
+                shown = { ...rows, card: await rows?.card?.shows() };
                 return 0;
             },
         };
         const result = await ask.run(ask.input.parse({ question: "Mira è a terra", options: "Tiro contro la morte 1d20", who: "Mira" }), { ...context, page, random: () => 13 });
-        expect(shown).toMatchObject({ who: "Mira", save: { successes: { field: "death-successes", value: 0 } } });
+        expect(shown).toMatchObject({ who: "Mira", card: { data: { who: "Mira", successes: { value: 0 } } } });
         expect(ask.format(result)).toContain("Mira's death save: 13, a success; death-successes 0 → 1.");
     });
 

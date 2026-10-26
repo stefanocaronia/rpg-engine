@@ -22,7 +22,7 @@ async function campaign(): Promise<string>
 {
     const created = makeTempFolder();
     context = testContext(created);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(created);
     await ok("write", "Ennio", "--type", "character", "--set", "role=pc");
     await ok("write", "Lena", "--type", "character", "--set", "role=companion");

@@ -1,5 +1,5 @@
-// What the sheet gives the dashboard past its text, for the numbers of 15 October to be drawn: why a roll is better or worse, the load and its stage, how many
-// bonds a list may hold, the written speed beside each mode, what a lit torch has left, and the facts the day's upkeep wrote.
+// What the sheet gives the dashboard past its text, for the numbers of 15 October to be drawn, on the fake system: why a roll is better or worse, the load
+// and its stage, how many bonds a list may hold, the written stride beside the speed, what a lit rushlight has left, and the facts the day's upkeep wrote.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
@@ -11,12 +11,11 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
-    await ok("config", "units", "imperial");
     await ok("advance", "--to", "day 1, 18:00");
-    const fields = ["role=pc", "creature=[[Human]]", "classes=[[Fighter]] 1", "str=10", "dex=12", "con=12", "int=10", "wis=10", "cha=10", "hp-base=10"];
-    await ok("write", "Ettore", "--type", "character", ...fields.flatMap((field) => ["--set", field]), "--add", "inventory=[[Torch]] 3", "--add", "inventory=[[Rations]] 2");
+    const fields = ["role=pc", "vocations=[[Scout]] 1", "might=1", "grace=3", "wit=4", "stride=8 m"];
+    await ok("write", "Ettore", "--type", "character", ...fields.flatMap((field) => ["--set", field]), "--add", "inventory=[[Rushlight]] 3", "--add", "inventory=[[Hardtack]] 2");
     await ok("write", "Bosco", "--type", "place", "--add", "contains=[[Ettore]]");
 });
 
@@ -24,54 +23,46 @@ afterEach(() => removeFolder(folder));
 
 describe("what the sheet gives the dashboard", () => {
     it("says why a roll is better or worse, in the system's words", async () => {
-        expect((await value("perception")).roll.odds).toBeUndefined();
-        await ok("effect", "add", "Ettore", "Poisoned");
-        await ok("change", "Ettore", "exhaustion", "--to", "3");
-        expect((await value("perception")).roll).toMatchObject({ notation: "2d20kl1", odds: { better: [], worse: ["Exhaustion", "Poisoned"] } });
-        await ok("effect", "end", "Ettore", "Poisoned");
-        expect((await value("wis-save")).roll).toMatchObject({ notation: "2d20kl1", odds: { better: [], worse: ["Exhaustion"] } });
+        expect((await value("grace")).roll.odds).toBeUndefined();
+        expect((await value("notice")).roll).toMatchObject({ notation: "3d6kh2", odds: { better: ["Keen Eye"], worse: [] } });
+        await ok("effect", "add", "Ettore", "Dazed");
+        expect((await value("notice")).roll).toMatchObject({ notation: "2d6", odds: { better: ["Keen Eye"], worse: ["Dazed"] } });
+        expect((await value("grace")).roll).toMatchObject({ notation: "3d6kl2", odds: { better: [], worse: ["Dazed"] } });
     });
 
-    it("gives the load with its limit, and the heaviest stage it reaches by rigor", async () => {
-        // Strength 10: past 50 lb encumbered, past 100 heavily, past 150 over the limit.
-        await ok("write", "Ettore", "--add", "inventory=[[Iron Pot]] 6");
-        expect((await value("load")).load).toEqual({ value: 67, limit: 150 });
-        await ok("config", "rigor", "simulation");
-        expect((await value("load")).load).toEqual({ value: 67, limit: 150, stage: "Encumbered" });
-        expect((await value("athletics")).roll.odds).toBeUndefined();
-        await ok("change", "Ettore", "Iron Pot", "--by", "+6");
-        expect((await value("load")).load?.stage).toBe("Heavily encumbered");
-        expect((await value("athletics")).roll.odds).toEqual({ better: [], worse: ["Heavily encumbered"] });
-        await ok("change", "Ettore", "Iron Pot", "--by", "+6");
-        expect((await value("load")).load?.stage).toBe("Over the limit");
-        await ok("config", "rigor", "rules");
-        expect((await value("load")).load?.stage).toBe("Over the limit");
+    it("gives the load with its limit, and the stage it reaches", async () => {
+        // Might 1: the limit is 15; the rushlights 0.3 and the hardtack 1, then twenty tallow 10 more, then twenty more.
+        expect((await value("load")).load).toEqual({ value: 1.3, limit: 15 });
+        await ok("write", "Ettore", "--add", "inventory=[[Tallow]] 20");
+        expect((await value("load")).load).toEqual({ value: 11.3, limit: 15 });
+        await ok("change", "Ettore", "Tallow", "--by", "+20");
+        expect((await value("load")).load).toEqual({ value: 21.3, limit: 15, stage: "Laden" });
     });
 
     it("gives the most a list of bonds may hold, and marks the things carried that are in it", async () => {
-        await ok("write", "Ettore", "--add", "inventory=[[Ring of Protection|anello]] 1", "--add", "attuned=[[Ring of Protection]]");
-        expect(await value("attuned")).toMatchObject({ items: ["Ring of Protection"], most: 3 });
+        await ok("write", "Ettore", "--add", "inventory=[[Iron Ring|anello]] 1", "--add", "bound=[[Iron Ring]]");
+        expect(await value("bound")).toMatchObject({ items: ["Iron Ring"], most: 2 });
         const items = (await groups()).flatMap((group) => group.items ?? []);
-        expect(items.find((item) => item.item === "anello")).toMatchObject({ bonds: ["attuned"] });
-        expect(items.find((item) => item.item.toLowerCase().includes("torch"))?.bonds).toBeUndefined();
+        expect(items.find((item) => item.item === "anello")).toMatchObject({ bonds: ["bound"] });
+        expect(items.find((item) => item.item.toLowerCase().includes("rushlight"))?.bonds).toBeUndefined();
     });
 
-    it("shows the written speed of a mode beside the one worked out, with its note", async () => {
-        await ok("write", "Ettore", "--set", "fly=40 ft (hover)");
-        expect(await value("flying")).toMatchObject({ text: "40 ft", beside: "40 ft (hover)", besideField: "fly" });
+    it("shows the written stride beside the speed worked out, with its note", async () => {
+        await ok("write", "Ettore", "--set", "stride=8 m (on dry ground)");
+        expect(await value("speed")).toMatchObject({ text: "8 m", beside: "8 m (on dry ground)", besideField: "stride" });
     });
 
-    it("gives a lit torch what it spends and how many are left", async () => {
-        await ok("effect", "add", "Ettore", "Torch");
+    it("gives a lit rushlight what it spends and how many are left", async () => {
+        await ok("effect", "add", "Ettore", "Rushlight");
         const party = JSON.parse(await ok("view", "--json")).party as { effects: { name: string; burns?: unknown; }[]; }[];
-        expect(party[0].effects.find((effect) => effect.name === "Torch")?.burns).toEqual({ fuel: "Torch", left: 2 });
+        expect(party[0].effects.find((effect) => effect.name === "Rushlight")?.burns).toEqual({ fuel: "Rushlight", left: 2 });
     });
 
     it("marks the facts the day's upkeep wrote", async () => {
         await ok("config", "rigor", "rules");
         await ok("advance", "--by", "1d");
         const { chapters } = JSON.parse(await ok("view", "--journal", "--json")) as { chapters: { facts: Record<string, unknown>[]; }[]; };
-        expect(chapters.flatMap((chapter) => chapter.facts)).toContainEqual(expect.objectContaining({ kind: "counter", who: "Ettore", field: "Rations", before: "2", after: "1", upkeep: true }));
+        expect(chapters.flatMap((chapter) => chapter.facts)).toContainEqual(expect.objectContaining({ kind: "counter", who: "Ettore", field: "Hardtack", before: "2", after: "1", upkeep: true }));
     });
 });
 

@@ -23,6 +23,7 @@ export function campaignWorld(root: string, context: Context): World
         return loadWorld(root, {
             system,
             language: readTextSetting(root, "language"),
+            words: campaignSystemWords(root, context),
             missingSystem: system === undefined ? named : undefined,
             noSystem: named === undefined,
             rigor: readTextSetting(root, "rigor"),
@@ -42,6 +43,27 @@ export function systemWordsOf(root: string, system: GameSystem, language: string
     const own = (packed === undefined ? undefined : systemWords(packed, language)) ?? systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
     const added = campaignExtensions(root, context).extensions.reduce((fields, extension) => ({ ...fields, ...extensionFieldWords(extension, language) }), {});
     return Object.keys(added).length === 0 ? own : { ...(own ?? { groups: {}, words: {} }), fields: { ...own?.fields, ...added } };
+}
+
+/**
+ * The game system's words in the campaign's language, by their English (D-403), by which a name written in it is the system's, Prono its Prone; none without a
+ * language, or when they do not read. Kept until campaign.yaml, an extension or a translation of this computer changes.
+ */
+export function campaignSystemWords(root: string, context: Context): Record<string, string> | undefined
+{
+    const sources = extensionSources(root, context);
+    const translated = context.home === undefined ? undefined : resolve(join(context.home, "systems"));
+    const dependsOn = (path: string): boolean => sources(path) || (translated !== undefined && (isInside(translated, path) || isInside(path, translated)));
+    return files().remember(`system words ${resolve(root)}`, dependsOn, () => {
+        const system = campaignSystem(root, context);
+        const language = readTextSetting(root, "language");
+
+        try {
+            return system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context)?.words;
+        } catch {
+            return undefined;
+        }
+    });
 }
 
 /**

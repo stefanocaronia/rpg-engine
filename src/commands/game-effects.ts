@@ -2,7 +2,7 @@
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, sameName, sameWord } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { type Effect, type EffectEnd, endsAtTurn, formatEffect, formatEnd, keeperOf, readEffects } from "../effects/index.ts";
 import { concernsPlayer, isDeclaredUncounted, isEmptyField, type Page, systemFirstFix, type World, writePage } from "../pages/index.ts";
@@ -162,29 +162,37 @@ export interface SeenEffect
     text: string;
     /** One of the system's conditions (D-186, D-419). */
     condition?: true;
-    /** The condition's drawing, when the system gives one (D-419): the d of an SVG path on a grid of 24. */
+    /** Its drawing, when the system, an extension or the campaign gives one by its name (D-419, D-516): the d of an SVG path on a grid of 24. */
     icon?: string;
     /** For something that burns, as a torch, what it spends and how many of it are still carried (UPK-3). */
     burns?: { fuel: string; left: number; };
 }
 
 /** An effect as the dashboard shows it on someone of the party: its name, its end, the line status gives, and whether it is a condition (D-276, D-314, D-419). */
-export function effectParts(world: World, system: GameSystem | undefined, effect: Effect): SeenEffect
+export function effectParts(world: World, system: GameSystem | undefined, effect: Effect, words?: Record<string, string>): SeenEffect
 {
-    return { name: effect.name, ...(effect.end === undefined ? {} : { end: effect.end }), text: effectShown(world, effect), ...conditionMark(system, effect.name) };
+    return { name: effect.name, ...(effect.end === undefined ? {} : { end: effect.end }), text: effectShown(world, effect), ...conditionMark(system, effect.name, words) };
 }
 
-/** Whether an effect's name is one of the system's conditions, whatever its case, and the drawing the system gives it (D-419); nothing for any other effect. */
-export function conditionMark(system: GameSystem | undefined, name: string): Pick<SeenEffect, "condition" | "icon">
+/**
+ * Whether an effect's name is one of the system's conditions, whatever its case (D-419), and the drawing given to its name, a condition's or any effect's, by
+ * the system with its extensions' and the campaign's over it (D-516); a name in the campaign's language too, by the system's `words` in it (D-403).
+ */
+export function conditionMark(system: GameSystem | undefined, name: string, words?: Record<string, string>): Pick<SeenEffect, "condition" | "icon">
 {
-    const condition = (system?.conditions ?? []).find((named) => comparableText(named) === comparableText(name));
+    const condition = systemNamed(system?.conditions ?? [], name, words) !== undefined;
+    const icons = system?.conditionIcons ?? {};
+    const drawn = systemNamed(Object.keys(icons), name, words);
+    return { ...(condition ? { condition: true as const } : {}), ...(drawn === undefined ? {} : { icon: icons[drawn] }) };
+}
 
-    if (condition === undefined) {
-        return {};
-    }
-
-    const icon = Object.entries(system?.conditionIcons ?? {}).find(([named]) => comparableText(named) === comparableText(condition))?.[1];
-    return { condition: true, ...(icon === undefined ? {} : { icon }) };
+/**
+ * The name of a list of the system's that an effect's name is, whatever its case: as written first, else as the system's words say it in the campaign's
+ * language, Prono for Prone (D-403).
+ */
+export function systemNamed(names: string[], name: string, words: Record<string, string> | undefined): string | undefined
+{
+    return sameName(names, name) ?? names.find((own) => sameWord(own, name, words));
 }
 
 /** "Benedizione (Ennio, Bruno)": what someone keeps alive, on whom (D-138). */

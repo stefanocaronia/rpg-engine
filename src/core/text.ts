@@ -33,6 +33,21 @@ export function sameName(names: string[], name: string): string | undefined
     return names.find((candidate) => comparableText(candidate) === comparableText(name.trim()));
 }
 
+/**
+ * Whether two names are one, as names are compared, or one is the other's word in `words`, a table from names to their words in another language: Prone and
+ * Prono by {Prone: Prono}.
+ */
+export function sameWord(one: string, other: string, words?: Record<string, string>): boolean
+{
+    const wordOf = (name: string): string | undefined => {
+        const key = words === undefined ? undefined : sameName(Object.keys(words), name);
+        return key === undefined ? undefined : words?.[key];
+    };
+
+    const same = (first: string | undefined, second: string): boolean => first !== undefined && comparableText(first.trim()) === comparableText(second.trim());
+    return same(one, other) || same(wordOf(one), other) || same(wordOf(other), one);
+}
+
 /** The value a record holds under a name, as names are compared (INH-5); undefined when it holds none. */
 export function valueNamed(record: Record<string, unknown>, name: string): unknown
 {

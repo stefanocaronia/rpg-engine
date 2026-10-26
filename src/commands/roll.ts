@@ -10,12 +10,13 @@ import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256,
 import { declaredKind, findPage, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { systemNamed } from "./game-effects.ts";
 import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
+import { packagesRolled } from "./game-package-hooks.ts";
 import { copyPage, readOpenScene } from "./game-scene.ts";
-import { systemRolled } from "./game-system-code.ts";
 import { rollPageTable } from "./game-tables.ts";
 import { newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
+import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { itemList, signedText, workedFields } from "./worked-out.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
@@ -128,9 +129,12 @@ export const roll = defineCommand({
         appendLogEntry(root, entry);
         // A roll of a dying party member is their death save, which the engine writes (DIE-4, D-460).
         // A hidden roll writes nothing the player would see (review of 17 October).
-        const said = input.who === undefined || hidden ? { lines: [] } : systemRolled(root, context, { who: input.who, notation: diceRoll.notation, total: diceRoll.total, dice: diceRoll.dice });
-        const own = said.lines.length > 0 ? said.lines.join("\n") : roller === undefined ? undefined : rollerNote(roller.world, system, roller.page);
-        const note = [own, said.problem].filter((line) => line !== undefined && line !== "").join("\n") || undefined;
+        const said = input.who === undefined || hidden
+            ? { lines: [], added: [] }
+            : packagesRolled(root, context, { who: input.who, notation: diceRoll.notation, total: diceRoll.total, faces: diceRoll.faces, dice: diceRoll.dice, text, id: entry.id });
+        const own = said.lines.length > 0 ? said.lines.join("\n") : roller === undefined ? undefined : rollerNote(roller.world, system, roller.page, campaignSystemWords(root, context));
+        // The system's lines take the place of the engine's note, as a death save does; the extensions' come after it (D-514).
+        const note = [own, ...said.added, said.problem].filter((line) => line !== undefined && line !== "").join("\n") || undefined;
         const shown = { kind: "roll" as const, id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden, fingerprint: shownFingerprint, note, kept };
         // A who of no page may be a party member named wrongly: the master is told how to undo the screen (review of 25 October).
         const stranger = screened && input.who !== undefined && namesNoOne(root, context, input.who) ? { stranger: true as const } : {};
@@ -304,7 +308,14 @@ function notRollsText(world: World, field: string, value: unknown): string
     const kind = declaredKind(world, field) ?? (readCounter(value) === undefined ? undefined : "counter");
     return kind === undefined
         ? `${field} keeps no rolls: declare it so first, such as config, setting fields, value "${field}: rolls".`
-        : `${field} is ${kind === "counter" ? "a counter" : `a field of kind ${kind}`}, not kept rolls: keep and use take a field declared as rolls, such as portent.`;
+        : `${field} is ${kind === "counter" ? "a counter" : `a field of kind ${kind}`}, not kept rolls: keep and use take a field declared as rolls${rollsExample(world)}.`;
+}
+
+/** ", such as omen": a field the system or the campaign declares as kept rolls; how to declare one when none is. */
+function rollsExample(world: World): string
+{
+    const declared = Object.keys(world.system?.fields ?? {}).find((name) => declaredKind(world, name) === "rolls");
+    return declared === undefined ? ', which config declares, such as setting fields, value "luck: rolls"' : `, such as ${declared}`;
 }
 
 /** " Elara keeps 3, 4 in portent: give from Elara.": the characters whose field holds the number use asked for, when the page asked does not (KEP-3). */
@@ -330,7 +341,9 @@ function rollWith(notation: string, used: { value: number; } | undefined, source
     } catch (error) {
         // A kept number is not a face rolled now: there is nothing to roll again.
         const why = (error instanceof DiceError ? error.message : String(error)).replace(/: ask the player to roll it again\.$/, "");
-        throw new Error(`A kept roll takes the place of one die, of the kind it was rolled with: give a notation with that one die, such as 1d20+2 (${why}). Nothing rolled.`);
+        // The example with the notation's own die, as 1d6+2 for 2d6+2.
+        const die = /d(\d+|%|F)/i.exec(notation)?.[1] ?? "20";
+        throw new Error(`A kept roll takes the place of one die, of the kind it was rolled with: give a notation with that one die, such as 1d${die}+2 (${why}). Nothing rolled.`);
     }
 }
 
@@ -464,12 +477,12 @@ function sheetValue(roller: { world: World; page: Page; } | undefined, fields: R
 
 /**
  * "Lena has Poisoned, Bless, exhaustion 1: see whether they change this roll.": the effects on who rolls that are not already in their numbers, being no more
- * than a name, and the conditions (DAT-6); then the fields of their line written with ?, when they are not at zero (DAT-8).
+ * than a name, and the conditions, maybe in the campaign's language (DAT-6, D-403); then the fields of their line written with ?, when they are not at zero (DAT-8).
  */
-function rollerNote(world: World, system: GameSystem | undefined, page: Page): string | undefined
+function rollerNote(world: World, system: GameSystem | undefined, page: Page, words: Record<string, string> | undefined): string | undefined
 {
     const fields = effectiveFields(world, page);
-    const effects = effectsOf(page).filter((effect) => effect.values.length === 0 || sameName(system?.conditions ?? [], effect.name) !== undefined);
+    const effects = effectsOf(page).filter((effect) => effect.values.length === 0 || systemNamed(system?.conditions ?? [], effect.name, words) !== undefined);
     // Kept rolls are no number that changes a roll: use takes them.
     const marked = (system?.statusLine ?? []).filter((entry) => entry.whenSet && declaredKind(world, entry.field) !== "rolls").flatMap((entry) => {
         const value = valueNamed(fields, entry.field);

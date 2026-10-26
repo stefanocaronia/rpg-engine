@@ -23,7 +23,7 @@ Show or change the campaign settings.
 
 Read-only: no. Positional parameters: `setting`, `value`.
 
-- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, master-rolls, units, voices, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, widgets, or one the game system adds
+- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, master-rolls, units, voices, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets, or one the game system adds
 - `value` (`string`, optional): new value of the setting
 - `add` (`string[]`, optional): items to add to a list setting (lines, veils, table, precedents, learned, library, status-line), repeatable
 - `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, table, precedents, learned, library, status-line), repeatable
@@ -272,7 +272,7 @@ Read-only: no. Positional parameters: `action`, `page`, `name`.
 
 - `action` (`"add" | "end"`, required): add or end
 - `page` (`string`, optional): who has it: a page, or a copy in the open scene such as Annegato 2
-- `name` (`string`, optional): the effect's name, such as Benedizione; a condition of the game system always by its name there, such as Frightened
+- `name` (`string`, optional): the effect's name, such as Benedizione; a condition of the game system by its name there, such as Frightened, or by the system's word for it in the campaign's language, such as Spaventato
 - `for` (`string`, optional): add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; scene, until it ends; or an occasion of the game system its recipe brings, such as long rest. Left out, until it is ended: so for one that ends with something in the story, such as breathing clean air; end it then
 - `until` (`string`, optional): add, in a scene with turns: whose next turn ends it when it starts, such as Ennio, instead of for
 - `by` (`string`, optional): add: who keeps it alive, if someone must (concentration), such as [[Lena]]; end: take away every effect they keep, on everyone

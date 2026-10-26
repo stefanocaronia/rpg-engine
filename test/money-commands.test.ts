@@ -1,5 +1,5 @@
 // Money through the commands (MECCANICHE, MON-1–MON-8): config, change, write, status and validate.
-// The coin values of the 5e campaign are those of the SRD 5.2.1 (CC-BY-4.0); the other campaigns use invented coins, to keep the core generic.
+/// The campaign's own coins are those of the SRD 5.2.1 (CC-BY-4.0), over the fake system's; the other campaigns use invented coins, to keep the core generic.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -14,11 +14,11 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
-    await ok("config", "advancement", "xp");
+    await ok("config", "harshness", "gentle");
     await ok("config", "coins", "gp/mo 100, pp 1000 rare, ep 50 rare, sp/ma 10, cp/mr 1");
-    await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12", "--set", "money=34 gp 4 sp");
+    await ok("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "grit=12/12", "--set", "money=34 gp 4 sp");
     await ok("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "borsa=3 sp");
 });
 
@@ -51,9 +51,9 @@ describe("the coins of the campaign (MON-1, MON-8)", () => {
 
         writeFileSync(join(folder, "campaign.yaml"), file("campaign.yaml").replace("cp/mr: 1", "cp/mr: 2"));
         expect(await ok("validate")).toContain(
-            "- campaign.yaml: coins: No coin is worth 1: the smallest coin is worth 1, and the others are worth so many of it. Fix: fix the coins in campaign.yaml by hand, or set them again with config, each with its value in the smallest coin, or remove them from campaign.yaml to have those of the system 5e.",
+            "- campaign.yaml: coins: No coin is worth 1: the smallest coin is worth 1, and the others are worth so many of it. Fix: fix the coins in campaign.yaml by hand, or set them again with config, each with its value in the smallest coin, or remove them from campaign.yaml to have those of the system fake.",
         );
-        expect(await ok("status")).toContain("Ennio: hp 12/12");
+        expect(await ok("status")).toContain("Ennio: grit 12/12");
         expect((await rpg("change", "Ennio", "money", "--spend", "5 sp")).output).toContain("money on Ennio looks like money, but the campaign's coins cannot be read: coins: No coin is worth 1");
         expect(await ok("config", "coins")).toContain("coins: cannot be read: coins: No coin is worth 1");
     });
@@ -92,7 +92,7 @@ describe("change on money (MON-4, MON-5, MON-7)", () => {
         expect(await ok("change", "Ennio", "money", "--to", "50 mo")).toBe("Ennio: money 53 gp 7 sp 6 cp → 50 gp.");
         expect(await ok("change", "Varro", "borsa", "--spend", "3 sp")).toBe("Varro: borsa 3 sp → 0 gp.");
         expect(readLogFile(folder).at(-1)).toMatchObject({ visibility: "hidden", data: { page: "Varro" } });
-        expect(await ok("status")).toContain("Ennio: hp 12/12 · money 50 gp");
+        expect(await ok("status")).toContain("Ennio: grit 12/12 · money 50 gp");
     });
 
     it("refuses what cannot be paid, and says what is not money", async () => {
@@ -104,9 +104,9 @@ describe("change on money (MON-4, MON-5, MON-7)", () => {
             [["change", "Ennio", "money", "--spend", "0 gp"], 'Give spend the coins paid, such as spend "5 gp".'],
             [["change", "Ennio", "money", "--to=-3"], '"-3" is not coins for money on Ennio: give coins of the campaign (gp/mo, pp, ep, sp/ma, cp/mr), such as to "3 gp".'],
             [["change", "Ennio", "money", "--by", "5 sp", "--spend", "1 sp"], 'Give one of by (coins received, or paid with a minus), spend (what is paid) or to (what the purse holds), such as spend "5 sp".'],
-            [["change", "Ennio", "hp", "--by", "5 sp"], "hp on Ennio is a counter: give by a whole number, such as by -7."],
-            [["change", "Ennio", "oro", "--spend", "5 gp"], 'Ennio has no field "oro". Its counters and money: hp 12/12, money 34 gp 4 sp. To add one, use write, such as set oro=10 gp (what it holds, not the price).'],
-            [["change", "Ennio", "pf", "--to", "max"], 'Ennio has no field "pf". Its counters and money: hp 12/12, money 34 gp 4 sp. To add one, use write, such as set pf=12/12.'],
+            [["change", "Ennio", "grit", "--by", "5 sp"], "grit on Ennio is a counter: give by a whole number, such as by -7."],
+            [["change", "Ennio", "oro", "--spend", "5 gp"], 'Ennio has no field "oro". Its counters and money: grit 12/12, money 34 gp 4 sp. To add one, use write, such as set oro=10 gp (what it holds, not the price).'],
+            [["change", "Ennio", "pf", "--to", "max"], 'Ennio has no field "pf". Its counters and money: grit 12/12, money 34 gp 4 sp. To add one, use write, such as set pf=12/12.'],
         ];
 
         for (const [args, message] of refusals) {
@@ -126,7 +126,7 @@ describe("change on money (MON-4, MON-5, MON-7)", () => {
     });
 
     it("reads money that a page inherits, writes only what differs, and pays from a copy", async () => {
-        await ok("write", "Bandito", "--type", "creature", "--set", "hp=11/11", "--set", "money=2 sp");
+        await ok("write", "Bandito", "--type", "creature", "--set", "grit=11/11", "--set", "money=2 sp");
         await ok("write", "Lucio", "--type", "character", "--set", "role=npc", "--set", "creature=[[Bandito]]");
         expect(await ok("change", "Lucio", "money", "--by", "+1 sp")).toBe("Lucio: money 2 sp → 3 sp (0.3 gp).");
         expect(file("world/characters/Lucio.md")).toContain("money: 3 sp\n");
@@ -139,12 +139,12 @@ describe("change on money (MON-4, MON-5, MON-7)", () => {
     });
 
     it("logs the money of a companion whose creature changes, as it does for counters", async () => {
-        await ok("write", "Bandito", "--type", "creature", "--set", "hp=11/11", "--set", "money=3 sp");
-        await ok("write", "Mercante", "--type", "creature", "--set", "hp=9/9", "--set", "money=5 gp");
+        await ok("write", "Bandito", "--type", "creature", "--set", "grit=11/11", "--set", "money=3 sp");
+        await ok("write", "Mercante", "--type", "creature", "--set", "grit=9/9", "--set", "money=5 gp");
         await ok("write", "Lucio", "--type", "character", "--set", "role=companion", "--set", "creature=[[Bandito]]");
         await ok("write", "Lucio", "--set", "creature=[[Mercante]]");
         const lines = readLogFile(folder).filter((entry) => entry.type === "counter-changed" && entry.visibility === "public");
-        expect(lines.map((entry) => entry.data)).toEqual([{ page: "Lucio", field: "hp", before: "11/11", after: "9/9" }, { page: "Lucio", field: "money", before: "3 sp", after: "5 gp" }]);
+        expect(lines.map((entry) => entry.data)).toEqual([{ page: "Lucio", field: "grit", before: "11/11", after: "9/9" }, { page: "Lucio", field: "money", before: "3 sp", after: "5 gp" }]);
     });
 });
 

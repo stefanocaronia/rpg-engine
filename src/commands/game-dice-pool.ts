@@ -1,4 +1,5 @@
-// Dice a rest lets one spend to recover (D-449), as hit dice in a short rest: rolled each with what the system adds, given to a counter, taken from theirs.
+// A pool of dice a rest lets one spend to recover (D-449, D-513 (6)), as a counter of d6: each rolled with what the recipe adds, given to a counter, taken from
+// its own.
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
@@ -8,7 +9,7 @@ import { findPage, isPartyMember, type Page, withPage, type World, writePage } f
 import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
 import { saveEffects } from "./game-effects.ts";
-import { allSaid, systemCounterChanged } from "./game-system-code.ts";
+import { allSaid, packagesCounterChanged } from "./game-package-hooks.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { formulaValue } from "./worked-out.ts";
@@ -24,7 +25,7 @@ export interface DiceSpent
     id: string;
 }
 
-/** A counter of dice a recipe lets a page spend, as hit-dice-d8 3/5: its die, what each adds, and the counter it gives to. */
+/** A counter of dice a recipe lets a page spend, as stamina-d6 3/5: its die, what each adds, and the counter it gives to. */
 export interface RestDice
 {
     field: string;
@@ -36,7 +37,7 @@ export interface RestDice
 }
 
 /**
- * Spends dice of a counter named after its die, as hit-dice-d8, in a recipe that lets one (D-449): each die rolled with what the recipe adds, at least 0, the
+ * Spends dice of a counter named after its die, as stamina-d6, in a recipe that lets one (D-449): each die rolled with what the recipe adds, at least 0, the
  * total given to its counter up to the maximum, the dice taken from theirs, each on the effect that gives it, if one does (EFF-7); the line that says it, with the
  * rules a party member's counters touch (DAT-3). `how` gives the why, the check that names the roll in the log, as the player's own rolls are named (ASK-14),
  * and the faces of physical dice, one for each die (ASK-8). Refused when the recipe spends no such counter, there are not as many, or the faces are not one a die.
@@ -112,13 +113,13 @@ export function spendDice(
     const notes = isPartyMember(page)
         ? [[field, dice.value, dice.value - count], [rule.gives, target.value, after]].flatMap(([changed, before, now]) => thresholdNotes(root, system, String(changed), { before, after: now, amount: {} }))
         : [];
-    // What the counter regained sets off in the game system's code, as the 5e's dying point (D-448).
-    const dying = allSaid(systemCounterChanged(root, context, { page: page.name, field: rule.gives, before: target.value, after, lost: 0, ...(target.max === undefined ? {} : { max: target.max }) }));
+    // What the counter regained sets off in the packages' code, as a game's down point (D-448).
+    const hooked = allSaid(packagesCounterChanged(root, context, { page: page.name, field: rule.gives, before: target.value, after, lost: 0, ...(target.max === undefined ? {} : { max: target.max }) }));
     const within = (changed: string): string => (layers.get(changed) === undefined ? "" : ` in ${layers.get(changed)}`);
     const line = `${page.name} spends ${count} ${field}: ${result}; ${rule.gives} ${target.value}${max(target)} → ${after}${max(target)}${within(rule.gives)}; ${field} ${dice.value}${max(dice)} → ${dice.value - count}${max(dice)}${
         within(field)
     }.`;
-    return { text: [line, ...notes, ...dying].join("\n"), notes: [...notes, ...dying], faces: roll.faces, adds, total: healed, id: entry.id };
+    return { text: [line, ...notes, ...hooked].join("\n"), notes: [...notes, ...hooked], faces: roll.faces, adds, total: healed, id: entry.id };
 }
 
 /** The counters of dice a recipe lets this page spend, as the page reads them, with a maximum above 0: those at 0 too, as a page shows them spent. */
@@ -135,7 +136,7 @@ export function restDice(world: World, recipe: Recipe, page: Page): RestDice[]
     });
 }
 
-/** The counters of dice worth spending, as hit-dice-d8 2/3: some left, and the counter they give to below its maximum, where they would give something. */
+/** The counters of dice worth spending, as stamina-d6 2/3: some left, and the counter they give to below its maximum, where they would give something. */
 export function spendableDice(world: World, recipe: Recipe, page: Page): string[]
 {
     const fields = effectiveFields(world, page);
@@ -172,7 +173,7 @@ function writeCounters(root: string, context: Context, world: World, page: Page,
     return layers;
 }
 
-/** What a recipe's spend says of a counter: by its name, or by a name ending in *, such as hit-dice-*. */
+/** What a recipe's spend says of a counter: by its name, or by a name ending in *, such as stamina-*. */
 function spendRule(recipe: Recipe, field: string): Recipe["spend"][string] | undefined
 {
     return Object.entries(recipe.spend).find(([pattern]) => pattern.endsWith("*") ? comparableText(field).startsWith(comparableText(pattern.slice(0, -1))) : comparableText(pattern) === comparableText(field))?.[1];

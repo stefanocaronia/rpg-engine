@@ -1,7 +1,7 @@
 // The player's dashboard (D-269, D-272, D-276): the master and the campaign on top, the party's strip, what the master asks, the sheet of whom the address
 // names and the table beside it, the turns of a fight, the followed quest and the rolls (D-279), read again whenever the server says something changed.
 import { render } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { type PlayerActs, PlayerActsContext } from "./act-names.tsx";
 import { type ActReply, ActSheet } from "./act-sheet.tsx";
 import { ActStrip } from "./act-strip.tsx";
@@ -9,10 +9,10 @@ import { type ActStart, type SaidAct, saidStates, type SheetActions } from "./ac
 import { type Address, readAddress, sectionAddress } from "./address.ts";
 import { answer, closeCard, readActs, readAsked, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
 import { AskCard } from "./ask-card.tsx";
+import { AskedDice } from "./asked-dice.tsx";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
 import type { ActsShown, Asked, AskedNow, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownModule, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
-import { DeathSaveCard } from "./death-save.tsx";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
 import { PageFoot } from "./footer.tsx";
@@ -32,13 +32,11 @@ import { PeopleContext } from "./people.ts";
 import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";
 import { RollLog } from "./rolls.tsx";
-import { type SaveAsked, type SaveOutcome, saveOutcome } from "./save-outcome.ts";
 import { SavesView } from "./saves.tsx";
 import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
-import { SpendCard } from "./spend.tsx";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
 import { browserLanguage, pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
@@ -92,14 +90,14 @@ interface Shown
     /** An import under way (D-491 (11)). */
     importing?: ShownImport;
     problem?: string;
-    /** What a death save's roll, or a die of a rest, changed, kept back while its dice are in the air (D-461, D-492). */
+    /** What a roll from a card, or a die of a rest, changed, kept back while its dice are in the air (D-461, D-492). */
     pending?: Steady;
 }
 
 /** What a roll changes of the sheet and the fight, which the page shows only once its dice land. */
 type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "knownBy" | "story" | "openScene" | "pack">;
 
-// How long at most what a death save or a die of a rest changed waits for its dice, when they never land.
+// How long at most what a roll from a card or a die of a rest changed waits for its dice, when they never land.
 const longestHold = 15_000;
 // How long a sentence the master heard, or one copied for the chat, stays in the strip (D-495).
 const heardTime = 6000;
@@ -130,15 +128,8 @@ function App()
     const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
     // The question answered from the sheet or the tray, while the engine rolls it (D-330); the free rolls, in this browser alone.
     const [answering, setAnswering] = useState<string>();
-    // The death save asked of the player, a card that stays until its outcome is told (D-461): the question, whether the player rolled, its roll once landed
-    // with what the system's code wrote of it.
-    const [saving, setSaving] = useState<{ asked: Asked; save: SaveAsked; sent?: boolean; roll?: ShownRoll; outcome?: SaveOutcome | undefined; }>();
-    const savingNow = useRef(saving);
-    savingNow.current = saving;
-    // The roll that answers it while its dice fly: what it changes of the sheet waits for them (D-461).
+    // The roll that answers a card, or a die of a rest, while its dice fly: what it changes of the sheet waits for them (D-461).
     const holding = useRef<{ roll: ShownRoll; timer: number; }>();
-    // The party as last read, never held back: what a death save's roll left of them.
-    const partyNow = useRef<Member[]>([]);
     const [free, setFree] = useState<PageRoll[]>([]);
     // On a wide screen the table stands beside the page, unless the player folded it; folded, or under that width, the turns and the followed quest go back to
     // the page.
@@ -164,6 +155,11 @@ function App()
     // The card of a package's question as last read, even while the dice that changed it fly; the attempts the player let go, with the question then (D-507).
     const packNow = useRef<PackCard>();
     const packsGone = useRef(new Map<string, string | undefined>());
+    // In the card of a rest's dice, how many dice were rolled as the player pressed one, until its roll lands.
+    const restSent = useRef<number>();
+    // The widgets as read while a card's dice fly, which show only once they land, as the rest of what the roll changed: a panel on the party never tells the
+    // outcome of a death save before its die (D-461).
+    const widgetsHeld = useRef<ShownWidget[]>();
 
     // Reads view again for whom the address names, or the player character the master calls, and what the master asks; an answer that comes after a newer one
     // is left out.
@@ -175,7 +171,13 @@ function App()
                 widgetReading.current.shown = widgetsAsked;
                 // Their extensions' page code comes before a card of a roll needs it (D-510).
                 preloadModules(read);
-                setWidgets(read);
+
+                if (holding.current !== undefined || packNow.current?.sent !== undefined) {
+                    widgetsHeld.current = read;
+                } else {
+                    widgetsHeld.current = undefined;
+                    setWidgets(read);
+                }
             }
         }, () => undefined);
         // The page modules of the system and the extensions, for their cards in the pages and their own pages (D-511).
@@ -198,7 +200,6 @@ function App()
             const focus = first.kind === "overview" && first.foreground !== undefined && asked?.who !== first.foreground && !here ? playerNamed(first.party, asked?.who)?.name : undefined;
             const overview = focus === undefined ? first : await readView(undefined, rollsAsked.current, focus).catch(() => first);
             const party = overview.kind === "overview" ? overview.party : [];
-            partyNow.current = party;
             const rolls = overview.kind === "overview" ? overview.rolls : [];
             const address = readAddress(window.location.hash);
             const scene = overview.kind === "overview" ? overview.openScene : undefined;
@@ -262,19 +263,21 @@ function App()
                     setHeld(asking.id);
                 }
 
-                // A death save asked becomes its card; another question takes its place. The roll that answers it holds back what it changes (D-461).
-                const card = asked?.save === undefined ? (asked === undefined ? savingNow.current : undefined) : savingNow.current?.asked.id === asked.id ? savingNow.current : { asked, save: asked.save };
-                // Dice landed before what the system's code wrote was read: the outcome as soon as it is.
-                const shownCard = card?.roll !== undefined && card.outcome === undefined ? toldCard(card, party) : card;
-                savingNow.current = shownCard;
-                setSaving(shownCard);
-
-                // So does a die of a rest the player spends, whose card shows it once it lands (D-492); and a roll from a package's card, its marks (D-507).
+                // A roll from a package's card, as a death save, holds back what it changes until its dice land, its marks too (D-461, D-507); so does a die of a
+                // rest the player spends (D-492).
                 const spent = asked?.spend?.rolls.some((roll) => roll.id === asking?.id) === true;
                 const packRolled = packNow.current?.sent !== undefined;
-                const pack = askedNow === undefined ? packNow.current : packOf(askedNow);
+                const next = askedNow === undefined ? packNow.current : packOf(askedNow);
+                // The roll that answers a card is its last, for its drawing to tell (D-510).
+                const pack = packRolled && asking !== undefined && next !== undefined ? { ...next, rolled: { total: asking.total, faces: asking.dice.map((die) => die.value) } } : next;
+                packNow.current = pack;
 
-                if (asking !== undefined && ((card !== undefined && card.roll === undefined) || spent || packRolled) && holding.current === undefined) {
+                // A die of a rest's card whose roll came with none to wait for, as with no dice to throw: its buttons free at once.
+                if (restSent.current !== undefined && (pack?.asked?.spend?.rolls.length ?? 0) > restSent.current && !spent) {
+                    window.setTimeout(unpressRest);
+                }
+
+                if (asking !== undefined && (spent || packRolled) && holding.current === undefined) {
                     holding.current = { roll: asking, timer: window.setTimeout(() => land(asking.id), longestHold) };
                 }
 
@@ -348,6 +351,11 @@ function App()
             return;
         }
 
+        if (asked.spend !== undefined) {
+            await spendFromCard(card, asked, index);
+            return;
+        }
+
         const leaves = checkOf(asked.labels[index] ?? "", asked.title) === undefined && (asked.buttons?.[index] ?? undefined) === undefined;
 
         if (leaves) {
@@ -364,6 +372,39 @@ function App()
         }
 
         void read();
+    };
+
+    // A button of the card of a rest's dice (ASK-14): a die of a counter, which the question keeps; the last, the end, which takes the card away with it.
+    const spendFromCard = async (card: PackCard, asked: Asked, index: number): Promise<void> => {
+        const dice = asked.spend?.dice[index];
+
+        // The die's button waits, pressed, until its roll lands (or the engine refuses it).
+        if (dice !== undefined) {
+            restSent.current = asked.spend?.rolls.length;
+            setPack({ ...card, sent: index });
+
+            if (!await answerSpend(asked.id, { spend: dice.field })) {
+                restSent.current = undefined;
+                setPack(packNow.current === undefined ? undefined : { ...packNow.current, sent: undefined });
+            }
+
+            return;
+        }
+
+        const focused = (document.activeElement?.closest(".ask-card") ?? null) !== null;
+        packsGone.current.set(card.key, asked.id);
+        setPack(undefined);
+
+        if (await answerSpend(asked.id, 0)) {
+            if (focused) {
+                focusAfterCard();
+            }
+
+            return;
+        }
+
+        packsGone.current.delete(card.key);
+        setPack(card);
     };
 
     // The player's own words in place of a button (ASK-10): taken, the card goes with its question, as the master hears them.
@@ -406,7 +447,7 @@ function App()
         }
     };
 
-    // The death save's dice, or a rest's die, have landed: its outcome on the card, and the sheet as the roll left it (D-461, D-492).
+    // The dice of a card's roll, or a rest's die, have landed: the card and the sheet as the roll left them (D-461, D-492).
     const land = (roll: string): void => {
         const held = holding.current;
 
@@ -416,14 +457,29 @@ function App()
 
         window.clearTimeout(held.timer);
         holding.current = undefined;
-        setSaving((before) => {
-            if (before === undefined || before.roll !== undefined) {
-                return before;
-            }
-
-            return { ...toldCard(before, partyNow.current), roll: held.roll };
-        });
         setShown((before) => (before.pending === undefined ? before : { ...before, ...before.pending, pending: undefined }));
+        unpressRest();
+    };
+
+    // The card of a rest's dice, its die landed: its buttons free again, and the widgets read meanwhile shown.
+    const unpressRest = (): void => {
+        const card = packNow.current;
+        restSent.current = undefined;
+        showHeldWidgets();
+
+        if (card?.asked?.spend !== undefined && card.sent !== undefined) {
+            setPack({ ...card, sent: undefined });
+        }
+    };
+
+    // The widgets read while a card's dice flew, once they have landed.
+    const showHeldWidgets = (): void => {
+        const held = widgetsHeld.current;
+        widgetsHeld.current = undefined;
+
+        if (held !== undefined) {
+            setWidgets(held);
+        }
     };
 
     // A card of the master's closed, the focus goes to the notice of the turn, or else to the page (D-461, D-492).
@@ -433,30 +489,6 @@ function App()
             page?.setAttribute("tabindex", "-1");
             (document.querySelector<HTMLElement>(".turn-notice") ?? page)?.focus({ preventScroll: true });
         });
-    };
-
-    const closeSave = (): void => {
-        setSaving(undefined);
-        focusAfterCard();
-    };
-
-    // The player rolls the death save from its card, as from a check's button.
-    const rollSave = async (): Promise<void> => {
-        const id = saving?.asked.id;
-
-        if (id === undefined) {
-            return;
-        }
-
-        setSaving((before) => (before === undefined ? before : { ...before, sent: true }));
-
-        try {
-            await answer(id, 0);
-        } catch {
-            setSaving((before) => (before === undefined ? before : { ...before, sent: false }));
-        }
-
-        void read();
     };
 
     // A new roll's face on the robot, for a moment, when the roll is remarkable (D-305, 7).
@@ -577,7 +609,6 @@ function App()
     const turnName = several ? turnOf?.name : undefined;
     // The player character the master's question is for, named on it when there are more (D-480 (7)).
     const asker = several ? playerNamed(shown.party, shown.asked?.who) : undefined;
-    const dying = shown.party.find((candidate) => candidate.name === saving?.asked.who) ?? lead;
 
     // The game gone, what the master had not heard is lost with the chat: the strip says so, even once the game is back (D-495).
     useEffect(() => {
@@ -605,7 +636,7 @@ function App()
     };
 
     // With a question of the master's open, the sentence answers it (ASK-10); else it rings the master, or, in a chat that hears nothing by itself, is copied.
-    const question = saving === undefined && shown.asked !== undefined && shown.asked.spend === undefined && shown.asked.save === undefined ? shown.asked : undefined;
+    const question = shown.asked !== undefined && shown.asked.spend === undefined && shown.asked.forced !== true ? shown.asked : undefined;
     const reply: ActReply = question !== undefined ? "answer" : acts?.bell === true ? "tell" : "copy";
 
     const sendAct = async (text: string): Promise<string | undefined> => {
@@ -672,6 +703,10 @@ function App()
     }, [shown.campaign, shown.asked?.id]);
 
     const setup = useSetup(shown.version);
+    // While a package's card is there, its widget beside the page would show the same twice (D-507); the same list until either changes, as the cards that
+    // read their widget's data read it again when it does.
+    const packWidget = shown.pack?.widget;
+    const pageWidgets = useMemo(() => (packWidget === undefined ? widgets : widgets.filter((widget) => widget.id !== packWidget)), [widgets, packWidget]);
     // While the campaign is in its setup, the page is its first configuration, as a portal's (D-370).
     const inSetup = setup?.mode === "setup";
 
@@ -713,8 +748,7 @@ function App()
         <ModulesContext.Provider value={modules}>
             <PeopleContext.Provider value={people}>
                 <RequestedRoll.Provider value={requested}>
-                    {/* While a package's card is there, its widget beside the page would show the same twice (D-507). */}
-                    <WidgetsContext.Provider value={shown.pack === undefined ? widgets : widgets.filter((widget) => widget.id !== shown.pack?.widget)}>
+                    <WidgetsContext.Provider value={pageWidgets}>
                         <PlayerActsContext.Provider value={playerActs}>
                             <div class={live ? "page" : "page stale"}>
                                 {!inSetup && (
@@ -739,26 +773,24 @@ function App()
                                 )}
                                 {inSetup && <SetupCorner live={live} />}
                                 <Notices notices={notices} />
-                                {live && saving !== undefined && (
-                                    <DeathSaveCard
-                                        key={saving.asked.id}
-                                        asked={saving.asked}
-                                        save={saving.save}
-                                        member={dying}
-                                        name={several ? dying?.name : undefined}
-                                        roll={saving.roll}
-                                        outcome={saving.outcome}
-                                        rolling={saving.sent === true || answering === saving.asked.id || shown.asked?.id !== saving.asked.id}
-                                        onRoll={() => void rollSave()}
-                                        onClose={closeSave}
+                                {live && shown.pack !== undefined && (
+                                    <AskCard
+                                        key={shown.pack.key}
+                                        card={shown.pack}
+                                        name={several ? playerNamed(shown.party, shown.pack.asked?.who)?.name ?? turnName : undefined}
+                                        widget={widgets.find((widget) => widget.id === shown.pack?.widget)}
+                                        onAnswer={(index) => void answerPack(index)}
+                                        onWords={sayPack}
+                                        onClose={closePack}
                                     />
                                 )}
-                                {live && saving === undefined && shown.asked?.spend !== undefined && (
-                                    <SpendCard
+                                {/* A package's question waits for its card, which comes a moment after it; the question alone when its widget gives none (D-507). */}
+                                {/* The dice of a rest asked with no card of a package: a button for each counter of dice, and the one that ends it (ASK-14). */}
+                                {live && shown.pack === undefined && shown.asked?.spend !== undefined && !inCard(shown.asked) && (
+                                    <AskedDice
                                         key={shown.asked.id}
                                         asked={shown.asked}
                                         spend={shown.asked.spend}
-                                        member={shown.party.find((candidate) => candidate.name === shown.asked?.spend?.who)}
                                         flying={holding.current?.roll.id}
                                         onSpend={(field) => answerSpend(shown.asked?.id, { spend: field })}
                                         onDone={async (focused) => {
@@ -772,19 +804,7 @@ function App()
                                         }}
                                     />
                                 )}
-                                {live && saving === undefined && shown.pack !== undefined && (
-                                    <AskCard
-                                        key={shown.pack.key}
-                                        card={shown.pack}
-                                        name={several ? playerNamed(shown.party, shown.pack.asked?.who)?.name ?? turnName : undefined}
-                                        widget={widgets.find((widget) => widget.id === shown.pack?.widget)}
-                                        onAnswer={(index) => void answerPack(index)}
-                                        onWords={sayPack}
-                                        onClose={closePack}
-                                    />
-                                )}
-                                {/* A package's question waits for its card, which comes a moment after it; the question alone when its widget gives none (D-507). */}
-                                {live && saving === undefined && shown.pack === undefined && shown.asked && shown.asked.spend === undefined && !inCard(shown.asked) && (
+                                {live && shown.pack === undefined && shown.asked && shown.asked.spend === undefined && !inCard(shown.asked) && (
                                     <AskedBanner
                                         asked={shown.asked}
                                         yourTurn={yourTurn && (asker === undefined || asker.name === turnOf?.name)}
@@ -800,8 +820,11 @@ function App()
                                     ? <SetupView setup={setup} />
                                     : (
                                         <>
-                                            {/* The player's turn, seen from another section (D-315, D-444): a notice that leads to the Scene; the page never goes there by itself. */}
-                                            {live && yourTurn && address.section !== "scene" && shown.asked === undefined && saving === undefined && (
+                                            {
+                                                /* The player's turn, seen from another section (D-315, D-444): a notice that leads to the Scene, once no question nor a package's card
+                                                is there; the page never goes there by itself. */
+                                            }
+                                            {live && yourTurn && address.section !== "scene" && shown.asked === undefined && shown.pack === undefined && (
                                                 <a class="turn-notice" href={sectionAddress("scene")}>
                                                     <Icon name="combat" />
                                                     <span>{[turnWords(turnName), shown.openScene?.round === undefined ? "" : t("Round {round}", { round: shown.openScene.round })].filter((part) => part !== "").join(" · ")}</span>
@@ -970,15 +993,7 @@ function turnKey(scene: ShownScene | undefined): string
     return hasTurns(scene) ? `${scene.title} ${scene.since ?? ""} ${scene.round ?? ""} ${scene.turn ?? ""}` : "";
 }
 
-/** A death save's card with its outcome, as what the system's code wrote left who rolled it, in the party as last read (D-461). */
-function toldCard<Card extends { asked: Asked; save: SaveAsked; outcome?: SaveOutcome | undefined; }>(card: Card, party: Member[]): Card
-{
-    const who = card.asked.who;
-    const after = party.find((member) => (who === undefined ? member.role === "pc" : member.name === who));
-    return { ...card, outcome: after === undefined ? undefined : saveOutcome(card.save, after) };
-}
-
-/** The page as read now; while a death save's dice fly, with the sheet and the fight as they were, what the roll changed kept until they land (D-461). */
+/** The page as read now; while a card's dice fly, with the sheet and the fight as they were, what the roll changed kept until they land (D-461). */
 function withHeld(before: Shown, next: Shown, hold: boolean): Shown
 {
     if (!hold) {

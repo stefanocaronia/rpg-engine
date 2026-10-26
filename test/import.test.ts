@@ -86,7 +86,7 @@ function book(): string
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await rpg("init", "--name", "Prova", "--language", "it", "--system", "5e");
+    await rpg("init", "--name", "Prova", "--language", "it", "--system", "fake");
 });
 
 describe("import of the player's document (D-489)", () => {
@@ -210,7 +210,7 @@ describe("an import that goes wrong (D-489, Matteo's review of 20 October)", () 
 
         const stubborn = join(makeTempFolder(), "c");
         context = testContext(stubborn);
-        await rpg("init", stubborn, "--name", "Prova", "--language", "it", "--system", "5e");
+        await rpg("init", stubborn, "--name", "Prova", "--language", "it", "--system", "fake");
         context = testContext(stubborn);
         context.reader = fakeReader({ starts: 1, badManifest: "always" });
         const stopped = await rpg("import", book(), "--title", "The King");

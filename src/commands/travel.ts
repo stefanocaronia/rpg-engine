@@ -8,11 +8,11 @@ import { environmentAt, locate, type Page, pageNamed, parsePageReference, player
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
 import { aroundLead, passedLines, passTime, type TimePassed } from "./game-advance.ts";
-import { timePassedLines } from "./game-extensions.ts";
 import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, ridersOf, sameMovers, saveJourney, travelledSinceRest } from "./game-journey.ts";
 import { mapKey, mapOf } from "./game-maps.ts";
 import { movePages } from "./game-moves.ts";
 import { acrossHint, crossedRoads, openLegs } from "./game-open.ts";
+import { timePassedLines } from "./game-package-code.ts";
 import { nearPlaces, pointText, positionOf, regionAt } from "./game-positions.ts";
 import {
     dayHours,

@@ -1,3 +1,4 @@
+// The 5e's in part (D-514): the tests through the commands on the 5e go with it at step 8; those of the module stay, and the core's run on the fake system.
 // Rules as text (MECCANICHE, RUL-1–RUL-7): the cases of the table, through the rules module and through the command, in a campaign played in Italian with the system 5e.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

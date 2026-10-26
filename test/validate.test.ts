@@ -11,7 +11,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
 });
 
 afterEach(() => removeFolder(folder));
@@ -27,14 +27,13 @@ function writeByHand(path: string, text: string): void
 }
 
 describe("rpg validate", () => {
-    it("finds nothing wrong in a clean campaign, and in the first playtest scenario", async () => {
-        expect((await rpg("validate")).output).toBe("No problems.");
-
-        cpSync(new URL("../playtests/01-guadoscuro/world", import.meta.url), join(folder, "world"), { recursive: true });
+    it("finds nothing wrong in a clean campaign", async () => {
         expect((await rpg("validate")).output).toBe("No problems.");
     });
 
-    it.each(["02-cripta-del-culto", "04-tre-settimane"])("finds nothing wrong in the playtest scenario %s, prepared with its characters", async (scenario) => {
+    // The 5e's: the playtest scenarios are of the 5e, and go with it (D-514, step 8).
+    it.each(["01-guadoscuro", "02-cripta-del-culto", "04-tre-settimane"])("finds nothing wrong in the playtest scenario %s of the 5e, prepared with its characters", async (scenario) => {
+        await rpg("config", "system", "5e");
         cpSync(new URL(`../playtests/${scenario}/world`, import.meta.url), join(folder, "world"), { recursive: true });
         expect((await rpg("validate")).output).toBe("No problems.");
     });

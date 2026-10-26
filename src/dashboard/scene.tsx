@@ -1,10 +1,10 @@
 // The Scene section (D-309, VIEW-6, D-444): where the party is, its picture with the places around it, its name, what holds there and its text; the open
 // scene and who is in it; outside a scene who is there of those the character knows; the map. While the scene goes by turns, the turns first.
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useContext, useEffect, useRef, useState } from "preact/hooks";
 import { TalkName } from "./act-names.tsx";
 import { sectionAddress } from "./address.ts";
-import type { DyingCounter, Member, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
-import { WidgetCards } from "./extension-widgets.tsx";
+import type { Member, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
+import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
 import { effectLabel, sinceDateLabel, terrainLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { phraseLabel, sceneTypeLabel, strangerLabel } from "./labels.ts";
@@ -13,7 +13,7 @@ import { InlineText, knowersOf, type LinkTo, Markdown, type SecretKnowers } from
 import { sideOf, Token } from "./party.tsx";
 import { PlaceMap } from "./place-map-view.tsx";
 import { Card } from "./sheet.tsx";
-import { StatusPip } from "./status.tsx";
+import { downTint, personState, StatusPip } from "./status.tsx";
 import { foldedText, t } from "./text.ts";
 import { CharacterCard, hasTurns, type OwnSheet, TurnBand, TurnsCard, type TurnScene } from "./turns.tsx";
 import { BiomeSwatch } from "./world.tsx";
@@ -64,7 +64,7 @@ export function SceneView({ place, scene, actor, foreground, several = false, pa
                         <CharacterCard lead={actor} scene={turns} own={own} party={party} {...(several && onShowCard !== undefined ? { onShow: onShowCard } : {})} />
                     </div>
                 )}
-                {place?.map && <PlaceMap key="map" map={place.map} place={place.name} {...(turns?.turn === undefined ? {} : { acting: turns.turn })} dying={dyingOf(party)} self={foreground} />}
+                {place?.map && <PlaceMap key="map" map={place.map} place={place.name} {...(turns?.turn === undefined ? {} : { acting: turns.turn })} self={foreground} />}
                 {/* Who is here: under the map, who is where says it (D-325). */}
                 {turns === undefined && scene === undefined && place && place.here.length > 0 && place.map === undefined && (
                     <div key="groups" class="groups">
@@ -335,6 +335,15 @@ function SceneCard({ scene }: { scene: ShownScene; })
  */
 function People({ people }: { people: ShownPerson[]; })
 {
+    const widgets = useContext(WidgetsContext);
+
+    // One of the party with what a package's widget on them says of their state (D-514).
+    const statusOf = (person: ShownPerson) => {
+        const party = person.role !== "other";
+        const said = party ? personState(widgets, person.name) : undefined;
+        return { ...person, party, ...(said === undefined ? {} : { person: said }) };
+    };
+
     return (
         <ul class="present">
             {people.map((person, index) => (
@@ -352,8 +361,8 @@ function People({ people }: { people: ShownPerson[]; })
                                 member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }), ...(person.icon === undefined ? {} : { icon: person.icon }) }}
                                 hostile={person.hostile === true}
                                 side={sideOf(person.role)}
-                                status={{ ...person, party: person.role !== "other" }}
-                                dying={person.dead === true ? "dead" : person.down === true ? "down" : undefined}
+                                status={statusOf(person)}
+                                dying={downTint(statusOf(person))}
                                 number={person.stranger ? letterOf(person.name) : undefined}
                             />
                         )}
@@ -386,10 +395,4 @@ function PersonName({ person }: { person: ShownPerson; })
 function letterOf(name: string): string | undefined
 {
     return /^creature ([A-Z])$/.exec(name)?.[1];
-}
-
-/** Where those of the party at their dying point stand, by name, for their tokens on the map (D-461). */
-function dyingOf(party: Member[]): Map<string, DyingCounter[]>
-{
-    return new Map(party.flatMap((member) => (member.dying === undefined ? [] : [[member.name, member.dying] as const])));
 }

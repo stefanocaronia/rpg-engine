@@ -34,9 +34,9 @@ beforeEach(async () => {
     watchers = [];
     unwatchable = undefined;
     session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: fakeWatcher });
-    await fresh("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await fresh("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     await fresh("write", "Locanda", "--type", "place");
-    await fresh("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=12/12");
+    await fresh("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "grit=12/12");
     await fresh("write", "Locanda", "--add", "contains=[[Ennio]]");
 });
 
@@ -107,25 +107,25 @@ function sessionWorld(): World
     return withFiles(session, () => campaignWorld(folder, context));
 }
 
-const ennio = (hp: string): string => `---\nrole: pc\nhp: ${hp}\n---\n`;
+const ennio = (grit: string): string => `---\nrole: pc\ngrit: ${grit}\n---\n`;
 
 describe("the store of a session", () => {
     it("keeps what a call read for the next calls, until a watcher names the file", async () => {
-        expect(await warm("status")).toContain("hp 12/12");
+        expect(await warm("status")).toContain("grit 12/12");
         byHand("world/characters/Ennio.md", ennio("5/12"), false);
-        expect(await warm("status")).toContain("hp 12/12");
+        expect(await warm("status")).toContain("grit 12/12");
         tell(join(folder, "world", "characters"), "Ennio.md");
-        expect(await warm("status")).toContain("hp 5/12");
+        expect(await warm("status")).toContain("grit 5/12");
     });
 
     it("reads again only the files its watchers name, and builds nothing again for what changes nothing", async () => {
         await warm("status");
         byHand("world/places/Locanda.md", "Una locanda nuova.\n", false);
         byHand("world/characters/Ennio.md", ennio("8/12"));
-        expect(await warm("status")).toContain("hp 8/12");
+        expect(await warm("status")).toContain("grit 8/12");
         expect(await warm("show", "Locanda")).not.toContain("Una locanda nuova.");
         // A write that finds its file as the store kept it trusts the watchers too.
-        await warm("change", "Ennio", "hp", "--by=-1");
+        await warm("change", "Ennio", "grit", "--by=-1");
         expect(await warm("show", "Locanda")).not.toContain("Una locanda nuova.");
         // A file saved as it was, a file no call reads, and a full check after it, each build nothing again at the next call.
         const first = sessionWorld();
@@ -184,10 +184,10 @@ describe("the store of a session", () => {
         await warm("status");
         byHand("world/characters/Ennio.md", ennio("4/12"), false);
         tell(join(folder, "world", "characters"), undefined);
-        expect(await warm("status")).toContain("hp 4/12");
+        expect(await warm("status")).toContain("grit 4/12");
         byHand("world/characters/Ennio.md", ennio("3/12"), false);
         await warm("instructions");
-        expect(await warm("status")).toContain("hp 3/12");
+        expect(await warm("status")).toContain("grit 3/12");
     });
 
     it("checks everything when a watcher fails, or names its own folder, an empty name or nothing", async () => {
@@ -214,22 +214,22 @@ describe("the store of a session", () => {
 
     it("checks everything at the next call when a write finds a file changed by hand", async () => {
         await warm("status");
-        byHand("world/characters/Ennio.md", "---\nrole: pc\nhp: 12/12\numore: teso\n---\n", false);
+        byHand("world/characters/Ennio.md", "---\nrole: pc\ngrit: 12/12\numore: teso\n---\n", false);
         byHand("world/places/Locanda.md", "Una locanda nuova.\n", false);
-        await warm("change", "Ennio", "hp", "--by=-1");
+        await warm("change", "Ennio", "grit", "--by=-1");
         expect(await warm("show", "Locanda")).toContain("Una locanda nuova.");
     });
 
     it("writes nothing over a file changed by hand that it missed, and the command repeated starts from it (D-196)", async () => {
         const path = join(folder, "world", "characters", "Ennio.md");
         await warm("status");
-        byHand("world/characters/Ennio.md", "---\nrole: pc\nhp: 5/12\numore: teso\n---\n", false);
-        expect(await warm("change", "Ennio", "hp", "--by=-1")).toBe(
+        byHand("world/characters/Ennio.md", "---\nrole: pc\ngrit: 5/12\numore: teso\n---\n", false);
+        expect(await warm("change", "Ennio", "grit", "--by=-1")).toBe(
             "world/characters/Ennio.md was changed by hand since this call read it, so the command wrote nothing: look at it again, as with show or status, and repeat the command if it still fits.",
         );
-        expect(readFileSync(path, "utf8")).toBe("---\nrole: pc\nhp: 5/12\numore: teso\n---\n");
-        expect(await warm("change", "Ennio", "hp", "--by=-1")).toBe("Ennio: hp 5/12 → 4/12.");
-        expect(readFileSync(path, "utf8")).toBe("---\nrole: pc\nhp: 4/12\numore: teso\n---\n");
+        expect(readFileSync(path, "utf8")).toBe("---\nrole: pc\ngrit: 5/12\numore: teso\n---\n");
+        expect(await warm("change", "Ennio", "grit", "--by=-1")).toBe("Ennio: grit 5/12 → 4/12.");
+        expect(readFileSync(path, "utf8")).toBe("---\nrole: pc\ngrit: 4/12\numore: teso\n---\n");
     });
 
     it("says so when a command stops there after it wrote other files, which repeating it would change twice (D-196)", async () => {
@@ -252,7 +252,7 @@ describe("the store of a session", () => {
     it("reads at every call what is not of a campaign it watches: a campaign made meanwhile by another process, which init then leaves alone", async () => {
         const empty = makeTempFolder();
         const there = { ...testContext(empty), files: session };
-        const init = ["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"];
+        const init = ["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"];
 
         const call = async (...args: string[]): Promise<string> => {
             await session.ready();
@@ -276,8 +276,8 @@ describe("the store of a session", () => {
         byHand("world/characters/Ennio.md", ennio("5/12"), false);
         openWatcher(join(folder, "world", "characters"))!.failed();
         const [status, show] = await Promise.all([warm("status"), warm("show", "Ennio")]);
-        expect(status).toContain("hp 5/12");
-        expect(show).toContain("Combat: hp 5/12");
+        expect(status).toContain("grit 5/12");
+        expect(show).toContain("Struggle: grit 5/12");
     });
 
     it("checks everything after more changes than a watcher on Linux keeps", async () => {
@@ -329,7 +329,7 @@ describe("the store of a session", () => {
         const other = makeTempFolder();
 
         try {
-            await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(other));
+            await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(other));
             await runCommandLine(["write", "Rosa", "--type", "character"], testContext(other));
             expect(withFiles(session, () => campaignWorld(other, testContext(other))).pages.map((page) => page.name)).toEqual(["Rosa"]);
             expect(sessionWorld().pages.map((page) => page.name).sort()).toEqual(["Ennio", "Locanda"]);
@@ -371,11 +371,11 @@ describe("the store of a session", () => {
     it("answers as a new process would, through changes by hand that its watchers name, or lose (law)", async () => {
         const steps = fc.array(
             fc.oneof(
-                fc.record({ kind: fc.constant("hp"), hp: fc.integer({ min: 0, max: 12 }), lost: fc.boolean() }),
+                fc.record({ kind: fc.constant("grit"), grit: fc.integer({ min: 0, max: 12 }), lost: fc.boolean() }),
                 fc.record({ kind: fc.constant("page"), name: fc.constantFrom("Rosa", "Varro", "Lena"), lost: fc.boolean() }),
                 fc.record({ kind: fc.constant("gone"), name: fc.constantFrom("Rosa", "Varro", "Lena"), lost: fc.boolean() }),
                 fc.record({ kind: fc.constant("change"), by: fc.integer({ min: -3, max: 3 }) }),
-                fc.record({ kind: fc.constant("mute"), hp: fc.integer({ min: 0, max: 12 }) }),
+                fc.record({ kind: fc.constant("mute"), grit: fc.integer({ min: 0, max: 12 }) }),
             ),
             { minLength: 1, maxLength: 8 },
         );
@@ -385,14 +385,14 @@ describe("the store of a session", () => {
 
                 for (const [index, step] of run.entries()) {
                     if (step.kind === "change") {
-                        expect(await warm("change", "Ennio", "hp", `--by=${step.by}`)).toBeDefined();
+                        expect(await warm("change", "Ennio", "grit", `--by=${step.by}`)).toBeDefined();
                     } else if (step.kind === "mute") {
                         // Changed by hand without a word from the watchers, then written: refused, unless the text is the same (D-196).
-                        byHand("world/characters/Ennio.md", ennio(`${step.hp}/12`), false);
+                        byHand("world/characters/Ennio.md", ennio(`${step.grit}/12`), false);
                         expect(await warm("write", "Ennio", "--set", `nota=passo ${index}`)).toBeDefined();
                     } else {
-                        const path = step.kind === "hp" ? "world/characters/Ennio.md" : `world/characters/${step.name}.md`;
-                        const text = step.kind === "hp" ? ennio(`${step.hp}/12`) : step.kind === "page" ? "---\nrole: npc\n---\n" : undefined;
+                        const path = step.kind === "grit" ? "world/characters/Ennio.md" : `world/characters/${step.name}.md`;
+                        const text = step.kind === "grit" ? ennio(`${step.grit}/12`) : step.kind === "page" ? "---\nrole: npc\n---\n" : undefined;
 
                         if (text !== undefined || readFileSyncOrUndefined(join(folder, path)) !== undefined) {
                             byHand(path, text, false);
@@ -439,17 +439,17 @@ describe("the store of a session, with Node's watchers", () => {
     };
 
     it("sees a page changed by hand, saved in place or through a file renamed over it", async () => {
-        expect(await call("status")).toContain("hp 12/12");
+        expect(await call("status")).toContain("grit 12/12");
         writeFileSync(join(folder, "world", "characters", "Ennio.md"), ennio("7/12"));
-        expect(await answers(["status"], "hp 7/12")).toBe(true);
+        expect(await answers(["status"], "grit 7/12")).toBe(true);
         writeFileSync(join(folder, "world", "characters", "Ennio.md.tmp"), ennio("2/12"));
         renameSync(join(folder, "world", "characters", "Ennio.md.tmp"), join(folder, "world", "characters", "Ennio.md"));
-        expect(await answers(["status"], "hp 2/12")).toBe(true);
+        expect(await answers(["status"], "grit 2/12")).toBe(true);
     });
 
     // Linux's watchers drop without a word what overflows the system's queue; on Windows a burst like this one loses nothing.
     it.runIf(process.platform === "linux")("sees a page changed after a burst of files made and removed while the server was busy", async () => {
-        expect(await call("status")).toContain("hp 12/12");
+        expect(await call("status")).toContain("grit 12/12");
         const characters = join(folder, "world", "characters");
 
         // Done in one go, as while a call keeps the server busy: the events wait in the system's queue, and overflow it.
@@ -459,7 +459,7 @@ describe("the store of a session, with Node's watchers", () => {
         }
 
         writeFileSync(join(characters, "Ennio.md"), ennio("3/12"));
-        expect(await answers(["status"], "hp 3/12")).toBe(true);
+        expect(await answers(["status"], "grit 3/12")).toBe(true);
     }, 60000);
 
     it("sees a folder removed by hand, whose watcher Windows floods with its own path", async () => {

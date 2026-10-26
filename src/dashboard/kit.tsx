@@ -5,11 +5,13 @@ import type { ComponentChildren } from "preact";
 import { useContext } from "preact/hooks";
 import type { WidgetText } from "./data.ts";
 import { Drawn, Text } from "./extension-widgets.tsx";
+import { NotationIcons } from "./icons.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PeopleContext } from "./people.ts";
 
 export { Choices } from "./ask-card.tsx";
 export { Text, Track, Value, Who } from "./extension-widgets.tsx";
+export { cardPages } from "./page-code.tsx";
 
 /** A button of words, as the page's: gold for the one main action, quiet for a secondary one, danger for one that loses something. */
 export function Button({ children, onClick, kind, disabled, tip }: {
@@ -48,6 +50,12 @@ export function IconButton({ path, label, onClick }: { path: string; label: stri
 export function Icon({ path }: { path: string; })
 {
     return <Drawn path={path} kind="icon" />;
+}
+
+/** The dice of a notation as the page draws them, as a d20 for 1d20+5. */
+export function Dice({ notation }: { notation: string; })
+{
+    return <NotationIcons notation={notation} />;
 }
 
 /** Things of a list, as the page's chips. */

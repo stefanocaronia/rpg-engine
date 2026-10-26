@@ -45,16 +45,16 @@ describe("the parts of the instructions (D-121)", () => {
     });
 
     it("give, in play, the core, then the part of play with the system's after a blank line (MOD-5)", async () => {
-        await ok("init", "--name", "Rocca", "--system", "5e");
+        await ok("init", "--name", "Rocca", "--system", "fake");
         inPlay(folder);
         const given = await ok("instructions");
         expect(given).toMatch(/^# Game master: core instructions\n/);
-        expect(given).toMatch(/\n\n## Play\n\nThe story is on\.[\s\S]*14\. The player sees their whole sheet[^\n]*\n\n### Fifth edition\n\n- At difficulty normal, fights run from moderate to high difficulty \(XP budget per character\)/);
+        expect(given).toMatch(/\n\n## Play\n\nThe story is on\.[\s\S]*14\. The player sees their whole sheet[^\n]*\n\n### The fake system\n\n- A roll is two six-sided dice and a bonus, 8 or more succeeds/);
         expect(given).not.toContain("## Setup");
     });
 
     it("give the mentor's part for the way the player wants the game taught, with the system's and what was already explained; none when off (D-347)", async () => {
-        await ok("init", "--name", "Rocca", "--system", "5e");
+        await ok("init", "--name", "Rocca", "--system", "fake");
         inPlay(folder);
         expect(await ok("instructions")).not.toContain("mentor");
         await ok("config", "mentor", "hints");
@@ -62,9 +62,9 @@ describe("the parts of the instructions (D-121)", () => {
         expect(hints).toContain("The player wants a hint now and then (mentor hints).");
         expect(hints).not.toContain("mentor tutorial");
         await ok("config", "mentor", "tutorial");
-        await ok("config", "learned", "--add", "Advantage", "--add", "Saving throw");
+        await ok("config", "learned", "--add", "Edge and Odds", "--add", "Falling");
         const tutorial = await ok("instructions");
-        expect(tutorial).toMatch(/The player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fifth edition, the first evenings,[^\n]*\n\nAlready explained: Advantage, Saving throw\./);
+        expect(tutorial).toMatch(/The player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fake system, the first evenings,[^\n]*\n\nAlready explained: Edge and Odds, Falling\./);
         await ok("config", "mentor", "off");
         expect(await ok("instructions")).not.toContain("mentor");
         expect(await ok("status")).not.toContain("mentor");
@@ -73,10 +73,10 @@ describe("the parts of the instructions (D-121)", () => {
     });
 
     it("give the mentor's part when the master sets it with config, once in a chat, as in the setup; the player's change comes with the news instead (D-347)", async () => {
-        await ok("init", "--name", "Rocca", "--system", "5e");
+        await ok("init", "--name", "Rocca", "--system", "fake");
         const chat = { ...context, told: new Set<string>() };
         const set = async (value: string) => (await runCommandLine(["config", "mentor", value], chat)).output;
-        expect(await set("tutorial")).toMatch(/^mentor: tutorial: each mechanic explained[\s\S]*\n\nThe player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fifth edition, the first evenings,/);
+        expect(await set("tutorial")).toMatch(/^mentor: tutorial: each mechanic explained[\s\S]*\n\nThe player is learning the game \(mentor tutorial\)\.[^\n]*\n\nIn the fake system, the first evenings,/);
         expect(await set("tutorial")).not.toContain("(mentor tutorial)");
         expect(await set("hints")).toContain("The player wants a hint now and then (mentor hints).");
         expect(await set("off")).not.toContain("mentor hints");
@@ -95,7 +95,7 @@ describe("the parts of the instructions (D-121)", () => {
 
 describe("a part of the instructions in a chat (D-97)", () => {
     it("comes the first time its situation opens, again after instructions, and every time on the command line", async () => {
-        await ok("init", "--name", "Rocca", "--system", "5e");
+        await ok("init", "--name", "Rocca", "--system", "fake");
         inPlay(folder);
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
         await createMcpServer(testContext(folder)).connect(serverTransport);
@@ -121,7 +121,7 @@ describe("a part of the instructions in a chat (D-97)", () => {
             writeFileSync(join(folder, "state.yaml"), "mode: session zero\n");
             const zero = "## Session zero\n\nPlay, as with a human game master";
             expect(await call("instructions", {})).toContain(zero);
-            expect(await call("instructions", {})).toContain("Agree first, before any die, and set with config in table");
+            expect(await call("instructions", {})).toContain("Choose the vocations first, with their ranks");
         } finally {
             await host.close();
         }

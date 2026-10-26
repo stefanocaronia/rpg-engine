@@ -14,12 +14,12 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./game-events.ts";
 import { experienceOf, levelDueNote } from "./game-experience.ts";
 import { extensionsLine } from "./game-extension-list.ts";
-import { extensionCodeProblems } from "./game-extensions.ts";
 import { picturesNote } from "./game-images.ts";
 import { journeyText, readJourney } from "./game-journey.ts";
 import { campaignMode, campaignNote } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { livingMood, masterMood } from "./game-moods.ts";
+import { packageCodeProblems } from "./game-package-code.ts";
 import { isTickedOpenQuest, openQuestText } from "./game-quests.ts";
 import { measuresOf, roadsOf } from "./game-roads.ts";
 import { interruptedLoad } from "./game-saves.ts";
@@ -66,7 +66,7 @@ export const status = defineCommand({
     async run(input, context)
     {
         const root = requireCampaign(context.folder);
-        const codeProblems = await extensionCodeProblems(root, context, []);
+        const codeProblems = await packageCodeProblems(root, context, []);
         const settings = readSettings(root);
         const world = campaignWorld(root, context);
         const characters = world.pages.filter((page) => page.type === "character");

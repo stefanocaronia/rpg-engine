@@ -52,7 +52,7 @@ function rollPhysical(terms: Term[], values: number[]): RollBreakdown
     const neededCount = minimumDice(terms);
 
     if (values.length < neededCount) {
-        throw new DiceError(`This roll needs at least ${neededCount} values (${describeDice(terms)}), but ${values.length} were given.`);
+        throw new DiceError(`This roll needs at least ${neededCount} values (${describeDice(terms)}), but ${values.length} ${values.length === 1 ? "was" : "were"} given.`);
     }
 
     const faces = physicalFaces(values);

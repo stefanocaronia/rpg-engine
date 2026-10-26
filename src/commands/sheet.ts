@@ -293,7 +293,18 @@ export function sheetHeadline(world: World, system: GameSystem | undefined, page
     };
 
     const named = [...headline.matchAll(/\{([^{}]+)\}/g)].map((match) => shown(match[1]));
-    return named.every((text) => text === "") ? undefined : headline.replace(/\{([^{}]+)\}/g, (_, field: string) => shown(field)).replace(/\s+/g, " ").trim();
+
+    if (named.every((text) => text === "")) {
+        return undefined;
+    }
+
+    // Its parts between commas, each kept with the comma before it unless it names fields all empty: "{calling}, rank {level}" without a calling is rank 3.
+    const parts = headline.split(/(\s*[,;،、，]\s*)/);
+    const kept = parts.flatMap((part, at) => {
+        const fields = [...part.matchAll(/\{([^{}]+)\}/g)].map((match) => shown(match[1]));
+        return at % 2 === 1 || (fields.length > 0 && fields.every((text) => text === "")) ? [] : [{ text: part.replace(/\{([^{}]+)\}/g, (_, field: string) => shown(field)), before: parts[at - 1] ?? "" }];
+    });
+    return kept.map((part, at) => (at === 0 ? part.text : `${part.before}${part.text}`)).join("").replace(/\s+/g, " ").trim();
 }
 
 /**

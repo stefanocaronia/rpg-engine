@@ -30,7 +30,7 @@ import { calendarDayOf, readPresent } from "./game-time.ts";
 import { fuelLeft } from "./game-upkeep.ts";
 import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./game-view-journal.ts";
 import { mapText, type ShownMap, shownMap } from "./game-view-map.ts";
-import { type DyingCounter, dyingOf, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
+import { isDown, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game-view-place.ts";
 import { knownDocuments, knownEntries, type KnownEntry, knownEntryText, type ShownCalendar, shownCalendar, type ShownDocument } from "./game-view-world.ts";
 import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
 import { importShown, type ShownImport } from "./import.ts";
@@ -97,8 +97,8 @@ export interface PartyMember
     mood?: Mood;
     /** What they are, as the line under a sheet's name says it in the campaign's language: Level 3 Cleric (D-288, D-409). */
     headline?: string;
-    /** At the system's dying point, as hp 0, the counters the dashboard shows large in their band (D-310 (7)). */
-    dying?: DyingCounter[];
+    /** At the system's down point, as hp 0 (D-516). */
+    down?: true;
 }
 
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
@@ -367,7 +367,9 @@ export const view = defineCommand({
 
         const open = readJourney(root)?.at !== undefined;
         const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
-        const sight = { root, context, world, knowledge, party: [...players, ...companions] };
+        const language = readSettings(root).language;
+        const memberWords = system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context);
+        const sight = { root, context, world, knowledge, party: [...players, ...companions], ...(memberWords === undefined ? {} : { words: memberWords.words }) };
 
         if (input.as !== undefined) {
             return memoryOf({ ...sight, party: isPartyMember(pc) ? world.pages.filter((page) => page.type === "character" && isPartyMember(page)) : [pc] });
@@ -377,9 +379,6 @@ export const view = defineCommand({
             return { kind: "map", ...shownMap(sight, measuresOf(root, system), readSettings(root).name) };
         }
 
-        const language = readSettings(root).language;
-        const memberWords = system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context);
-
         // Where someone is, as far as the character knows the places: elsewhere when it knows none of them (D-254).
         const member = (page: Page): PartyMember => {
             const chain = locate(world, page).chain;
@@ -388,7 +387,7 @@ export const view = defineCommand({
             const place = where.length > 0 ? where : chain.length > 0 ? "elsewhere" : open ? "open" : undefined;
             const image = shownImage(root, context, world, page, (base) => knowsPage(knowledge, base));
             const mood = livingMood(page);
-            const dying = dyingOf(world, system, page);
+            const down = isDown(world, system, page);
             const headline = sheetHeadline(world, system, page, memberWords);
             const icon = tokenIcon(world, system, page);
             return {
@@ -404,7 +403,7 @@ export const view = defineCommand({
                     return { ...seenEffect(sight, effect), ...(burns === undefined ? {} : { burns }) };
                 }),
                 ...(mood === "neutral" ? {} : { mood }),
-                ...(dying === undefined ? {} : { dying }),
+                ...(down ? { down: true as const } : {}),
                 ...(headline === undefined ? {} : { headline }),
             };
         };

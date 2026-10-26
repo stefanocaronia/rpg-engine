@@ -1,11 +1,11 @@
-// The types of rpg-engine/page (D-510): what an extension's page code gets from the dashboard to draw its figures inside the dashboard's own frame. In the
+// The types of rpg-engine/page (D-510): what a package's page code gets from the dashboard to draw its figures inside the dashboard's own frame. In the
 // page, rpg-engine/page is the dashboard's kit, its components and its style sheet, given with the dashboard's own Preact.
 import type { ComponentChildren, ComponentType, JSX } from "preact";
-import type { DieTone, Track, WidgetText, WidgetValue } from "./extensions/api.ts";
+import type { DieTone, Track, WidgetText, WidgetValue } from "./core/package-api.ts";
 
-export type { DieTone, Track, WidgetText, WidgetValue } from "./extensions/api.ts";
+export type { DieTone, Track, WidgetText, WidgetValue } from "./core/package-api.ts";
 
-/** The room a figure takes on a wide screen, as extension.yaml declares it; on a phone it shrinks to the width there is, keeping its shape. */
+/** The room a figure takes on a wide screen, as its extension.yaml or system.yaml declares it; on a phone it shrinks to the width there is, keeping its shape. */
 export interface FigureSize
 {
     width: number;
@@ -13,8 +13,8 @@ export interface FigureSize
     mirror?: boolean;
 }
 
-/** Where a figure is drawn: a chip in the top, a card beside the rolls, a card in a page, or a roll's card. */
-export type FigurePlace = "top" | "side" | "page" | "ask";
+/** Where a figure is drawn: a chip in the top, a card beside the rolls, a card in a page, a roll's card, or the panel on someone of the party (D-516). */
+export type FigurePlace = "top" | "side" | "page" | "ask" | "person";
 
 /** The part a figure draws in place of the dashboard's own, its words translated: what the dashboard says of it to a screen reader. */
 export type FigurePart = { track: Track; } | { lead: WidgetText; icon?: string; value?: WidgetValue; tone?: DieTone; };
@@ -30,14 +30,16 @@ export interface PageProps
     dir: "ltr" | "rtl";
     theme: "light" | "dark";
     reducedMotion: boolean;
-    /** Runs a command of the package marked player, as the player: what it said (D-510). */
+    /** Runs a command of the package marked player, as the player: what it said (D-510); one marked readOnly tells the master nothing. */
     run(command: string, input?: Record<string, unknown>): Promise<string>;
+    /** A field of the game system's sheet as the dashboard names it in its language, as PF for hp in Italian. */
+    field(name: string): string;
 }
 
 /** What the component of a figure gets (D-510). */
 export interface FigureProps extends PageProps
 {
-    /** Its name, as extension.yaml declares it. */
+    /** Its name, as its extension.yaml or system.yaml declares it. */
     name: string;
     /** What the widget's hook gave for the page code: in a roll's card, as it is after the dice, given once they land. */
     data: unknown;
@@ -49,8 +51,10 @@ export interface FigureProps extends PageProps
     size: FigureSize;
 }
 
-/** The pages of the dashboard a package's card stands in, after their own cards (D-511). */
-export type CardPage = "scene" | "sheet" | "world" | "journal";
+/** The pages of the dashboard a package's card or widget stands in, after their own cards (D-502, D-511): the Scene, the sheet, the World and the Journal. */
+export const cardPages = ["scene", "sheet", "world", "journal"] as const;
+
+export type CardPage = (typeof cardPages)[number];
 
 /** A card a package puts in a page of the dashboard (D-511): its title and icon (a path on a grid of 24) in the dashboard's frame, its order, its inside. */
 export interface PageCard
@@ -59,6 +63,8 @@ export interface PageCard
     title: string;
     icon?: string;
     order?: number;
+    /** One of its package's widgets, whose hook gives the card its data, for the character the card shows (D-514). */
+    widget?: string;
     draw: ComponentType<PageCardProps>;
 }
 
@@ -70,6 +76,8 @@ export interface PageCardProps extends PageProps
     who?: string;
     /** On the sheet the character shown, in the Scene their place, as the dashboard's view gives them. */
     view?: unknown;
+    /** The data its widget's hook gives for who, once it came, when the card names a widget. */
+    data?: unknown;
 }
 
 /** A page of a package's own (D-511), at #/pkg/<package>/<name>, linked from its row in Packages: its title and icon in the page's head, its whole inside. */
@@ -82,6 +90,8 @@ export interface OwnPage
      * the menu, the default, in the menu of the packages' icon at the top.
      */
     nav?: "tab" | "menu";
+    /** One of its package's widgets, whose hook gives the page its data (D-514). */
+    widget?: string;
     draw: ComponentType<OwnPageProps>;
 }
 
@@ -89,6 +99,8 @@ export interface OwnPage
 export interface OwnPageProps extends PageProps
 {
     name: string;
+    /** The data its widget's hook gives, once it came, when the page names a widget. */
+    data?: unknown;
 }
 
 /**
@@ -99,6 +111,10 @@ export interface BodyProps extends FigureProps
 {
     /** The widget's parts, its words translated. */
     parts: unknown[];
+    /** The dice of a rest the card asks (ASK-14), as they stand: its buttons are then a die of each counter, in their order, and last the one that ends it. */
+    rest?: RestDice;
+    /** The last roll made from it, once its dice landed: its total and its faces. */
+    rolled?: { total: number; faces: number[]; };
     /** The question's buttons, as the kit's Choices draws them. */
     buttons: CardButton[];
     /** The question a die asks over the buttons, as "A 1 came up: reroll?", when it is not the card's title. */
@@ -113,6 +129,18 @@ export interface BodyProps extends FigureProps
     answer(button: number): void;
 }
 
+/**
+ * The dice of a rest the player spends one at a time (ASK-14): whose they are; each counter of dice with its die and what a die adds; the counter they give to
+ * as it was at the question and as it is; the dice rolled so far, each by the id of its roll.
+ */
+export interface RestDice
+{
+    who: string;
+    dice: { field: string; sides: number; value: number; max: number; adds: number; }[];
+    gives: { field: string; from: number; value: number; max?: number; };
+    rolls: { id: string; field: string; face: number; adds: number; total: number; }[];
+}
+
 /** A button of a question: its name, the note after it, its dice when it rolls; danger when what it does loses something, as "it resets". */
 export interface CardButton
 {
@@ -123,7 +151,7 @@ export interface CardButton
 }
 
 /**
- * The default export of a package's page module (D-510, D-511): by name, the components of its figures (declared in extension.yaml) and of its cards'
+ * The default export of a package's page module (D-510, D-511): by name, the components of its figures (declared in its extension.yaml or system.yaml) and of its cards'
  * insides, its cards in the dashboard's pages and its own pages.
  */
 export interface PageModule
@@ -132,6 +160,8 @@ export interface PageModule
     bodies?: Record<string, ComponentType<BodyProps>>;
     cards?: Record<string, PageCard>;
     pages?: Record<string, OwnPage>;
+    /** Its own style sheet, which each of its drawings takes after the dashboard's: the layout and motion of its own parts, with the dashboard's tokens. */
+    style?: string;
 }
 
 // The dashboard's own parts, which /kit.js gives in the page (src/dashboard/kit.tsx): drawn as the dashboard draws its own, with its style sheet's classes.
@@ -142,6 +172,8 @@ export declare function Button(props: { children: ComponentChildren; onClick(): 
 export declare function IconButton(props: { path: string; label: string; onClick(): void; }): JSX.Element;
 /** An icon, a path on a grid of 24, stroked in the accent. */
 export declare function Icon(props: { path: string; }): JSX.Element;
+/** The dice of a notation as the dashboard draws them, as a d20 for 1d20+5. */
+export declare function Dice(props: { notation: string; }): JSX.Element;
 /** Things of a list, as chips. */
 export declare function Chips(props: { items: WidgetText[]; }): JSX.Element;
 /** Someone's portrait as a coin: the party and those at the place by name, with their picture, else their initials. */
@@ -150,7 +182,7 @@ export declare function Portrait(props: { name: string; large?: boolean; }): JSX
 export declare function Who(props: { who: string; does?: WidgetText; }): JSX.Element;
 /** A count as pips, a bar or steps, with its label; in a card of a roll, its place there; a screen reader hears its name and value. */
 export declare function Track(props: { track: Track; place?: "start" | "center" | "end"; }): JSX.Element;
-/** Words of the extension, their values written in the dashboard's language. */
+/** Words of the package, their values written in the dashboard's language. */
 export declare function Text(props: { text: WidgetText; }): JSX.Element;
 /** A value written in the dashboard's language, set apart right to left. */
 export declare function Value(props: { value: WidgetValue; }): JSX.Element;

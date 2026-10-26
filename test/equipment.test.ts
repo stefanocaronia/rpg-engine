@@ -1,3 +1,4 @@
+// The 5e's (D-514): this file goes with the 5e to its own repository at step 8; the core's own tests of the same rules run on the fake system.
 // What a character wears and wields on the 5e (D-231, D-232, PRO-5, CON-12): the armor class from armor, shield and what changes it, and the attacks of the
 // weapons equipped, worked out from the formulas of their pages.
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";

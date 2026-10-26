@@ -1,3 +1,4 @@
+// The 5e's (D-514): this file goes with the 5e to its own repository at step 8; the core's own tests of the same rules run on the fake system.
 // How characters gain levels on the 5e (D-205, D-212, D-233, D-234): the setting the setup asks (DAT-10), the experience points and the level they reach (PRO-6),
 // and what the creatures overcome in a scene give the party (DAT-11).
 import { readFileSync, writeFileSync } from "node:fs";
@@ -191,9 +192,12 @@ describe("the experience points (PRO-6, D-205, D-234)", () => {
 });
 
 describe("what a new level gives, written by the player's choices (PRO-4, FOR-7)", () => {
-    it("never writes a list the system works out, and says when a section stands in place of a feature's text", async () => {
+    it("writes a feature by hand beside those of the rows, which the sheet shows and the formulas count (PRO-3), and says when a section stands in place of a feature's text", async () => {
         await character("Ennio", "pc", "classes=[[Fighter]] 1");
-        expect(await refused("write", "Ennio", "--add", "features=Action Surge")).toContain("Not written, the system 5e works it out: features Fighting Style, Second Wind. It comes from classes, subclasses. Nothing changed.");
+        await ok("write", "Ennio", "--add", "features=Stroke of Luck");
+        expect(await ok("show", "Ennio")).toContain("features Fighting Style, Second Wind, Stroke of Luck");
+        // Stroke of Luck's use comes with the feature, written or given.
+        expect(await ok("show", "Ennio")).toContain("stroke-of-luck 1/1");
         expect(await ok("write", "Ennio#Second Wind", "--text", "Ennio si rialza sempre.")).toContain(
             "show Ennio#Second Wind now gives this section, not the text of the feature Second Wind its classes give.",
         );

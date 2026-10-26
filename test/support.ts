@@ -6,8 +6,11 @@ import type { Context } from "../src/core/context.ts";
 import type { LogEntry } from "../src/core/log.ts";
 import { loadSystemCode } from "../src/systems/index.ts";
 
-/** The game systems the tests see: those of the package, 5e and ironsworn, the second kept out of the npm package until it is playable. */
-export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.meta.url))];
+/**
+ * The game systems the tests see: those of the package, 5e and ironsworn, the second kept out of the npm package until it is playable; and the fake system
+ * of the core's tests, in test/systems/, never published (D-513 (3)).
+ */
+export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.meta.url)), fileURLToPath(new URL("./systems/", import.meta.url))];
 
 /** The code of the systems the tests see, loaded once for each test file, as an entry of the engine does (D-448). */
 export const testSystemCode = await loadSystemCode(testSystemFolders);

@@ -3,18 +3,18 @@
 // square or by piece, doors and where squares lead, the squares' names; who stands where as coins, the one acting raised off the paper, a foe the master marked glowing (D-415); then the key, and who
 // is where in words, the map's twin.
 import { type ComponentChildren, Fragment } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useContext, useEffect, useRef, useState } from "preact/hooks";
 import { TalkName, usePlayerActs } from "./act-names.tsx";
 import { CardHead } from "./card.tsx";
-import type { DyingCounter, ShownGrid } from "./data.ts";
+import type { ShownGrid } from "./data.ts";
+import { WidgetsContext } from "./extension-widgets.tsx";
 import { Glass, GlassDefs } from "./glass.tsx";
 import { iconPath } from "./icons.tsx";
 import { strangerLabel } from "./labels.ts";
 import { type Side, sideIcons, sideOf } from "./party.tsx";
 import { columnName, exitSide, floorLoops, groundKinds, isSolid, isStandable, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./place-map.ts";
 import { conditionsPref, tokenSymbolsPref, useChoice, usePref } from "./prefs.ts";
-import { type DyingState, dyingState } from "./save-outcome.ts";
-import { statusMarks, statusWords } from "./status.tsx";
+import { type PersonState, personState, statusMarks, statusWords } from "./status.tsx";
 import { t } from "./text.ts";
 
 // How wide a square is drawn, in pixels.
@@ -38,7 +38,7 @@ export interface Choosing
     onChoose(name: string | undefined): void;
 }
 
-export function PlaceMap({ map, place, acting, picking, choosing, bare = false, dying, self: selfName }: {
+export function PlaceMap({ map, place, acting, picking, choosing, bare = false, self: selfName }: {
     map: ShownGrid;
     place: string;
     acting?: string;
@@ -46,8 +46,6 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
     choosing?: Choosing;
     /** Without its key and who is where, as in a sheet whose list says it. */
     bare?: boolean;
-    /** Where those of the party at their dying point stand, by name, for their tokens (D-461). */
-    dying?: ReadonlyMap<string, DyingCounter[]>;
     /** With more than one player character, the one in the foreground, whom the distances are from (VIEW-12). */
     self?: string | undefined;
 })
@@ -55,6 +53,7 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
     const svg = useRef<SVGSVGElement>(null);
     const where = useRef<HTMLUListElement>(null);
     const acts = usePlayerActs();
+    const widgets = useContext(WidgetsContext);
     // On the page, a token touched starts talking to them, the focus coming back to their line of who is where (D-495).
     const talking: Choosing | undefined = acts === undefined || picking !== undefined ? undefined : {
         onChoose: (name) => {
@@ -204,7 +203,7 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
                             return (
                                 <Token
                                     key={index}
-                                    one={{ ...one, party: one.role !== "other", dying: dyingState(dying?.get(one.name)), counters: dying?.get(one.name) }}
+                                    one={standingOf(one, one.role === "other" ? undefined : personState(widgets, one.name))}
                                     index={index}
                                     acting={one.name === acting}
                                     hostile={one.hostile === true}
@@ -830,13 +829,19 @@ function Token(
     );
 }
 
-/** Someone on the map, with whether they are of the party and, at their dying point, where they stand (D-461). */
-type Standing = ShownGrid["at"][number] & { party?: boolean; dying?: DyingState | undefined; counters?: DyingCounter[] | undefined; };
+/** Someone on the map, with whether they are of the party and what a package's widget on them says of their state (D-461, D-516). */
+type Standing = ShownGrid["at"][number] & { party?: boolean; person?: PersonState | undefined; };
+
+/** Someone on the map with what a widget on them says: dead by its rules too. */
+function standingOf(one: ShownGrid["at"][number], person: PersonState | undefined): Standing
+{
+    return { ...one, party: one.role !== "other", person, ...(person?.dead === true ? { dead: true as const } : {}) };
+}
 
 /** At 0 a token greyed, until its counter rises again; dead, greyer and faded, as in the party's strip (D-461). */
 function fallenOf(one: Standing): string
 {
-    return one.dead === true || one.dying === "dead" ? "dead" : one.down === true ? "fallen" : "";
+    return one.dead === true ? "dead" : one.down === true ? "fallen" : "";
 }
 
 // The marks on a token as on one of 40 pixels on the page: the side's pip of 17, the state's of 12, a number's coin 13 high.

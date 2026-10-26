@@ -11,7 +11,7 @@ import { environmentAt, isPlayerCharacter, locate, type Page, pagesWithName, pag
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem, GridRules } from "../systems/index.ts";
 import { effectsOf } from "./effect-layer.ts";
-import { conditionMark, effectParts, keptEffects, type SeenEffect } from "./game-effects.ts";
+import { conditionMark, effectParts, keptEffects, type SeenEffect, systemNamed } from "./game-effects.ts";
 import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "./game-grid-moves.ts";
 import { placeGrid, placeLook, type Standing, standing } from "./game-grids.ts";
 import { imageFile, ownImage, shownImage } from "./game-images.ts";
@@ -41,7 +41,7 @@ export interface ShownPerson
     effects?: SeenEffect[];
     /** A condition keeps them from acting (D-314). */
     inactive?: true;
-    /** At 0, as Combat tells it (D-314): one of the party at the system's dying point, another when a foe's counter in words says down. */
+    /** At 0, as Combat tells it (D-314): one of the party at the system's down point, another when a foe's counter in words says down. */
     down?: true;
     dead?: true;
 }
@@ -87,7 +87,7 @@ export interface ShownGrid
 
 /**
  * Someone in a fight as the player sees them (D-314): their counter, the party's as numbers and a foe's in words, or none; what is on them, the party's as their
- * line gives it, with its end, for others only the conditions anyone sees, by name; whether they cannot act; what they keep alive; the panel of the dying.
+ * line gives it, with its end, for others only the conditions anyone sees, by name; whether they cannot act; what they keep alive; whether down.
  */
 export interface Fighter
 {
@@ -105,21 +105,8 @@ export interface Fighter
     effects: SeenEffect[];
     inactive?: true;
     keeps?: string[];
-    dying?: DyingCounter[];
-}
-
-/** A counter of the panel of the dying (D-314): its value, and the limit the system's thresholds give it. */
-export interface DyingCounter
-{
-    field: string;
-    value: number;
-    limit?: number;
-    /** Which side of the death saves it counts, by the system's names (D-461): the successes or the failures. */
-    side?: "successes" | "failures";
-    /** Of the successes, what the system calls one whose counter is full, as Stable. */
-    full?: string;
-    /** The short word of its marks, as Successes. */
-    mark?: string;
+    /** One of the party at the system's down point (D-516). */
+    down?: true;
 }
 
 /** The open scene as the player sees it (VIEW-6): who is in it as in VIEW-4, and the order of the turns. */
@@ -150,6 +137,8 @@ export interface PlaceSight
     world: World;
     knowledge: Knowledge;
     party: Page[];
+    /** The game system's words in the campaign's language, by their English (D-403): effects named in it are its conditions too. */
+    words?: Record<string, string>;
 }
 
 /** Where the player character is, as it knows it; none when it is in no place it knows, as in the open on a journey. */
@@ -395,7 +384,7 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
     const effects = shownEffects(sight, system, page, party);
     const health = healthOf(sight.world, system, page, party);
     const keeps = party ? keptEffects(sight.world, readOpenScene(sight.root).scene, page.name) : [];
-    const dying = party ? dyingOf(sight.world, system, page) : undefined;
+    const down = party && isDown(sight.world, system, page);
     const icon = party ? tokenIcon(sight.world, system, page) : undefined;
     return {
         name: shown,
@@ -407,33 +396,18 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
         ...(health === undefined ? {} : { health: health.word }),
         ...(health?.wound === undefined ? {} : { wound: health.wound }),
         effects,
-        ...(keepsFromActing(system, effects) ? { inactive: true as const } : {}),
+        ...(keepsFromActing(system, effects, sight.words) ? { inactive: true as const } : {}),
         ...(keeps.length === 0 ? {} : { keeps }),
-        ...(dying === undefined ? {} : { dying }),
+        ...(down ? { down: true as const } : {}),
     };
 }
 
-/**
- * The panel of the dying of someone of the party (D-310 (7), D-314): at the value of the counter the system names, as hp 0, the counters it shows, with their
- * limits, or below it in a game whose counter goes below; none above it, nor for the dead.
- */
-export function dyingOf(world: World, system: GameSystem | undefined, page: Page): DyingCounter[] | undefined
+/** Whether someone of the party is down (D-516): at the value of the counter the system names, as hp 0, or below it; never the dead. */
+export function isDown(world: World, system: GameSystem | undefined, page: Page): boolean
 {
-    const counters = pageCounters(world, page);
-    const dying = system?.dying;
-    const value = readCounter(counters[dying?.field ?? ""])?.value;
-
-    if (dying === undefined || page.fields.status === "dead" || value === undefined || value > dying.value) {
-        return undefined;
-    }
-
-    // Each counter by its side, as the system names them (D-461).
-    return (["successes", "failures"] as const).flatMap((side) => {
-        const field = dying.show[side];
-        const full = side === "successes" && dying.stable !== undefined ? { full: dying.stable } : {};
-        const mark = dying.marks[side] === undefined ? {} : { mark: dying.marks[side] };
-        return field === undefined ? [] : [{ field, value: readCounter(counters[field] ?? page.fields[field])?.value ?? 0, ...limitOf(system?.thresholds ?? [], field), side, ...full, ...mark }];
-    });
+    const down = system?.down;
+    const value = readCounter(pageCounters(world, page)[down?.field ?? ""])?.value;
+    return down !== undefined && page.fields.status !== "dead" && value !== undefined && value <= down.value;
 }
 
 /** An effect on someone of the party as the player sees it: an end at someone's turn names them as the character knows them (VIEW-4), as creature 2. */
@@ -443,11 +417,11 @@ export function seenEffect(sight: PlaceSight, effect: Effect): SeenEffect
     const system = campaignSystem(sight.root, sight.context);
 
     if (end === undefined || !("turn" in end)) {
-        return effectParts(sight.world, system, effect);
+        return effectParts(sight.world, system, effect, sight.words);
     }
 
     const scene = readOpenScene(sight.root).scene ?? { copies: {} };
-    return effectParts(sight.world, system, { ...effect, end: { ...end, turn: shownTurn(sight, scene, end.turn) } });
+    return effectParts(sight.world, system, { ...effect, end: { ...end, turn: shownTurn(sight, scene, end.turn) } }, sight.words);
 }
 
 /**
@@ -460,10 +434,10 @@ function stateOf(sight: PlaceSight, page: Page): Pick<ShownPerson, "effects" | "
     const party = sight.party.includes(page);
     const effects = shownEffects(sight, system, page, party);
     const dead = page.fields.status === "dead";
-    const down = !dead && (party ? dyingOf(sight.world, system, page) !== undefined : healthOf(sight.world, system, page, false)?.wound === "down");
+    const down = !dead && (party ? isDown(sight.world, system, page) : healthOf(sight.world, system, page, false)?.wound === "down");
     return {
         ...(effects.length === 0 ? {} : { effects }),
-        ...(keepsFromActing(system, effects) ? { inactive: true as const } : {}),
+        ...(keepsFromActing(system, effects, sight.words) ? { inactive: true as const } : {}),
         ...(down ? { down: true as const } : {}),
         ...(dead ? { dead: true as const } : {}),
     };
@@ -479,16 +453,15 @@ function strangerState(sight: PlaceSight, scene: Pick<Scene, "seen"> | undefined
 function shownEffects(sight: PlaceSight, system: GameSystem | undefined, page: Page, party: boolean): SeenEffect[]
 {
     return effectsOf(page).flatMap((effect) => {
-        const mark = conditionMark(system, effect.name);
+        const mark = conditionMark(system, effect.name, sight.words);
         return party ? [seenEffect(sight, effect)] : mark.condition === true ? [{ name: effect.name, text: effect.name, ...mark }] : [];
     });
 }
 
 /** Whether one of these effects is a condition the system says keeps from acting (D-314). */
-function keepsFromActing(system: GameSystem | undefined, effects: SeenEffect[]): boolean
+function keepsFromActing(system: GameSystem | undefined, effects: SeenEffect[], words: Record<string, string> | undefined): boolean
 {
-    const inactive = new Set((system?.combat?.inactive ?? []).map(comparableText));
-    return effects.some((effect) => inactive.has(comparableText(effect.name)));
+    return effects.some((effect) => systemNamed(system?.combat?.inactive ?? [], effect.name, words) !== undefined);
 }
 
 /**
@@ -527,13 +500,6 @@ function healthIndex(count: number, value: number, most: number | undefined): nu
     }
 
     return 1 + Math.min(between - 1, Math.floor(((most - value) * between) / most));
-}
-
-/** The limit a threshold of the system gives a counter, as death-failures 3. */
-function limitOf(thresholds: { field: string; value?: number; }[], field: string): { limit?: number; }
-{
-    const limit = thresholds.find((threshold) => comparableText(threshold.field) === comparableText(field))?.value;
-    return limit === undefined ? {} : { limit };
 }
 
 /** The mark of one the master says attacks the party, in a fight (D-415); nothing for anyone else, or outside a fight. */

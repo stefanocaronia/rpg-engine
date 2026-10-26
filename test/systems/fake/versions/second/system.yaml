@@ -1,0 +1,5 @@
+# The second rules of the fake system, over its common part (D-513 (5)): a night's sleep brings back every stamina die.
+title: the second rules
+recipes:
+  night's sleep:
+    regain: {stamina-*: max}

@@ -4,7 +4,7 @@ import { readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { parseFormula } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
-import { comparableText, valueNamed } from "../core/text.ts";
+import { comparableText, valueNamed, withArticle } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { formatAmount, payCoins, readAmount, totalOf } from "../money/index.ts";
 import { baseChain, heldStacksOfKind, kindNamed, locate, type Page, type World, writePage } from "../pages/index.ts";
@@ -134,13 +134,13 @@ function lifestylePaid(root: string, context: Context, world: World, member: Pag
     const before = formatAmount(purse, coins);
 
     if (payment === undefined) {
-        return `${member.name} cannot pay a ${named} day, ${lifestyle.costs[named]}, with money ${before}: a poorer lifestyle, work or a debt, as you judge. Read ${lifestyle.rules}.`;
+        return `${member.name} cannot pay ${withArticle(named)} day, ${lifestyle.costs[named]}, with money ${before}: a poorer lifestyle, work or a debt, as you judge. Read ${lifestyle.rules}.`;
     }
 
     const after = formatAmount(payment.purse, coins);
     writePage(world, member.name, undefined, { set: { money: after } });
     appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: member.name, field: "money", before, after, why: `a ${named} day`, upkeep: true }));
-    return `${member.name} pays a ${named} day: money ${before} → ${after}.`;
+    return `${member.name} pays ${withArticle(named)} day: money ${before} → ${after}.`;
 }
 
 /** Whether a page stands in a settlement, or in a place inside one (UPK-1). */

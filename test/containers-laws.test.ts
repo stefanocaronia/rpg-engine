@@ -180,7 +180,7 @@ async function smallCampaign(folders: string[]): Promise<string>
 {
     const folder = makeTempFolder();
     folders.push(folder);
-    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
     const held: Record<string, string> = { Regione: "Palude", Palude: "Cripta", Cripta: "Ossario", Ossario: "Ennio", Ennio: "Zaino", Zaino: "Lanterna" };
 
     for (const name of names) {

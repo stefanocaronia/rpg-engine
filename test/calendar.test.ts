@@ -113,7 +113,7 @@ describe("when the campaign's story starts, in the setup, config, status and adv
     beforeEach(async () => {
         folder = makeTempFolder();
         context = testContext(folder);
-        await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+        await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     });
 
     afterEach(() => removeFolder(folder));
@@ -164,7 +164,7 @@ describe("when the campaign's story starts, in the setup, config, status and adv
 
     it("never stops the game for a calendar that does not read: validate says it, and the date stays day N", async () => {
         inPlay(folder);
-        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\ncalendar: {months: [{name: April}]}\ncalendar-start: 1 April\n");
+        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: fake\ndifficulty: normal\nlethality: dice\ncalendar: {months: [{name: April}]}\ncalendar-start: 1 April\n");
         await rpg("advance", "--to", "day 1, 18:00");
         expect((await rpg("status")).output).toContain("Now: day 1, 18:00\n");
         expect((await rpg("validate")).output).toMatch(/campaign\.yaml: The calendar does not read: .* fix calendar in campaign\.yaml by hand, or take it away with config calendar none/);

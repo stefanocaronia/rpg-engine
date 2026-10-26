@@ -3,7 +3,7 @@ import { requireCampaign } from "../campaign/index.ts";
 import { factorOf, numberOf } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName, valueNamed } from "../core/text.ts";
+import { comparableText, sameName, sameWord, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { type Effect, type EffectEnd, effectNamed, formatEffect, formatEnd, isSceneDuration, readEffect, readRounds, withEffect } from "../effects/index.ts";
 import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isKind, isNeverInherited, isStandardField, type Page, parsePageReference, readFieldValue, textsIn, type World } from "../pages/index.ts";
@@ -11,11 +11,11 @@ import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
 import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
-import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects } from "./game-effects.ts";
+import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects, systemNamed } from "./game-effects.ts";
+import { allSaid, packagesEffectAdded } from "./game-package-hooks.ts";
 import { keepingConditionNote, secondKeptNote } from "./game-reminders.ts";
 import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
-import { allSaid, systemEffectAdded } from "./game-system-code.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { burning, burnOne } from "./game-upkeep.ts";
 import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
@@ -50,7 +50,7 @@ export const effect = defineCommand({
     input: z.object({
         action: z.enum(actions).describe("add or end"),
         page: z.string().optional().describe("who has it: a page, or a copy in the open scene such as Annegato 2"),
-        name: z.string().optional().describe("the effect's name, such as Benedizione; a condition of the game system always by its name there, such as Frightened"),
+        name: z.string().optional().describe("the effect's name, such as Benedizione; a condition of the game system by its name there, such as Frightened, or by the system's word for it in the campaign's language, such as Spaventato"),
         for: z.string().optional().describe(
             "add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; scene, until it ends; or an occasion of the game system its recipe brings, such as long rest. "
                 + "Left out, until it is ended: so for one that ends with something in the story, such as breathing clean air; end it then",
@@ -109,7 +109,7 @@ export const effect = defineCommand({
                 throw new Error("end takes the page and the effect's name, or by alone: nothing else.");
             }
 
-            const ended = effectNamed(current, input.name);
+            const ended = effectNamed(current, input.name, world.words);
 
             if (ended === undefined) {
                 const held = current.length === 0 ? `${holder.page.name} has no effects.` : `Its effects: ${current.map((effect) => effect.name).join(", ")}.`;
@@ -141,24 +141,25 @@ export const effect = defineCommand({
         checkPlaceValues(world, holder, values);
         const keeper = input.by === undefined ? undefined : keeperLink(world, open.scene, input.by);
         const system = campaignSystem(root, context);
+        const words = world.words;
         checkNotCounter(system, holder.page, name);
-        checkNotImmune(world, system, holder.page, name);
+        checkNotImmune(world, system, holder.page, name, words);
         // Something that burns, as a torch, spends one of what the holder carries and lasts as long as it burns, unless told otherwise (UPK-3).
         const lit = holder.copy ? undefined : burning(system, world, holder.page, name);
         const lasting = input.for ?? (input.until === undefined ? lit?.lasts : undefined);
         const added: Effect = { name, ...(keeper === undefined ? {} : { by: keeper }), values, ...withEnd(root, open.scene, lasting, input.until, system, inScene(open.scene, holder), missingSystemHint(world)) };
         checkLine(added);
-        const replaced = effectNamed(current, name);
-        const effects = withEffect(current, added);
+        const replaced = effectNamed(current, name, words);
+        const effects = withEffect(current, added, words);
         const changed = valuesChanged(world, holder.page, withEffects(holder.page, effects), added);
         // What the condition may break that the holder keeps alive, and what the keeper already keeps, read before the effect is written (EFF-14).
-        const keeping = [keepingConditionNote(world, open.scene, system, holder.page.name, name), secondKeptNote(world, open.scene, system, added)].filter((note) => note !== "");
-        const notes = [...addNotes(world, holder.page, current, added, open.scene, system), ...conditionNote(root, system, name), ...roundsNote(input.for, added.end, system), ...keeping];
+        const keeping = [keepingConditionNote(world, open.scene, system, holder.page.name, name, words), secondKeptNote(world, open.scene, system, added)].filter((note) => note !== "");
+        const notes = [...addNotes(world, holder.page, current, added, open.scene, system), ...conditionNote(root, system, name, words), ...roundsNote(input.for, added.end, system), ...keeping];
         saveEffects(root, context, world, holder, effects);
         appendLogEntry(root, newDatedLogEntry(root, context, "effect-added", visibility, { page: holder.page.name, copy: holder.copy ? true : undefined, effect: formatEffect(added), why }));
         const burnt = lit === undefined ? [] : [burnOne(root, context, holder.page.name, lit.kind)].filter((note) => note !== "");
         // One dying made stable, as by a companion's Medicine: its death saves end (DIE-6).
-        const stable = holder.copy ? [] : allSaid(systemEffectAdded(root, context, { page: holder.page.name, effect: name }));
+        const stable = holder.copy ? [] : allSaid(packagesEffectAdded(root, context, { page: holder.page.name, effect: name }));
         const instead = [...(replaced === undefined ? [] : [`It takes the place of ${formatEffect(replaced)}.`]), ...burnt, ...stable];
         return { action: "add", page: holder.page.name, effect: added.name, end: added.end === undefined ? undefined : formatEnd(added.end), values: changed, ended: [], notes: [...instead, ...notes] };
     },
@@ -210,12 +211,15 @@ function checkNotCounter(system: GameSystem | undefined, page: Page, name: strin
     }
 }
 
-/** Refuses a condition of the system that the page's list of immunities names, as poisoned on a zombie (D-454, EFF-17); before anything is written. */
-function checkNotImmune(world: World, system: GameSystem | undefined, page: Page, name: string): void
+/**
+ * Refuses a condition of the system that the page's list of immunities names, as poisoned on a zombie (D-454, EFF-17); before anything is written. Either may be
+ * in the campaign's language, Avvelenato for Poisoned (D-403).
+ */
+function checkNotImmune(world: World, system: GameSystem | undefined, page: Page, name: string, words: Record<string, string> | undefined): void
 {
-    const condition = (system?.conditions ?? []).find((candidate) => comparableText(candidate) === comparableText(name));
+    const condition = systemNamed(system?.conditions ?? [], name, words);
     const list = system?.immune;
-    const immune = condition !== undefined && list !== undefined && textsIn(valueNamed(effectiveFields(world, page), list)).some((item) => comparableText(item) === comparableText(condition));
+    const immune = condition !== undefined && list !== undefined && textsIn(valueNamed(effectiveFields(world, page), list)).some((item) => systemNamed([condition], item, words) !== undefined);
 
     if (immune) {
         throw new Error(`${page.name} is immune to ${condition}, in its ${list}: it does not take it. Nothing changed.`);
@@ -486,7 +490,7 @@ function checkLine(added: Effect): void
  */
 function addNotes(world: World, page: Page, current: Effect[], added: Effect, scene: Scene | undefined, system: GameSystem | undefined): string[]
 {
-    const others = withEffects(page, current.filter((effect) => comparableText(effect.name) !== comparableText(added.name)));
+    const others = withEffects(page, current.filter((effect) => !sameWord(effect.name, added.name, world.words)));
     const fields = effectiveFields(world, others);
     const read = (field: string): string => String(valueNamed(fields, field) ?? "none");
     const counters = added.values.filter(([field, value]) => !isDeclaredUncounted(world, field) && readCounter(value)?.max !== undefined).map(([field]) => field);
@@ -510,11 +514,11 @@ function addNotes(world: World, page: Page, current: Effect[], added: Effect, sc
 
 /**
  * The text of a condition of the game system, when the effect bears its name (DAT-6): who believes they know a rule does not look it up. A house rule
- * on it comes first, with the precedents on it.
+ * on it comes first, with the precedents on it. A name in the campaign's language says the system's beside it, Prone (Prono) (D-403).
  */
-function conditionNote(root: string, system: GameSystem | undefined, name: string): string[]
+function conditionNote(root: string, system: GameSystem | undefined, name: string, words: Record<string, string> | undefined): string[]
 {
-    const condition = system?.conditions.find((candidate) => comparableText(candidate) === comparableText(name));
+    const condition = system === undefined ? undefined : systemNamed(system.conditions, name, words);
 
     if (system === undefined || condition === undefined) {
         return [];
@@ -527,7 +531,8 @@ function conditionNote(root: string, system: GameSystem | undefined, name: strin
     }
 
     const source = rule.source === houseRules ? ", by a house rule of the campaign" : "";
-    return [`${condition} is a condition of the system ${system.name}${source}:\n${ruleBlock(rule)}`];
+    const written = sameName([condition], name) === undefined ? ` (${name.trim()})` : "";
+    return [`${condition}${written} is a condition of the system ${system.name}${source}:\n${ruleBlock(rule)}`];
 }
 
 /** "1m is 10 rounds of 6 seconds.": a duration in time that became rounds, in a scene with turns (DAT-7). */

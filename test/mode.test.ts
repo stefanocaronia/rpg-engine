@@ -108,10 +108,10 @@ describe("the mode (MOD-1–MOD-7)", () => {
     });
 
     it("MOD-3: a campaign without a written world is asked its premise and preparation; the system's settings are asked too", async () => {
-        await ok("init", "--name", "Vuota", "--system", "5e");
+        await ok("init", "--name", "Vuota", "--system", "fake");
         const status = await ok("status");
         expect(status).toContain("premise (the genre, the tone and a few elements of the world, in the player's words), preparation (on the fly, all at the start)");
-        expect(status).toContain("advancement (xp or milestones); set each with config.");
+        expect(status).toContain("harshness (gentle or bitter); set each with config.");
         await ok("write", "Guado", "--type", "place");
         expect(await ok("status")).not.toContain("premise (");
     });

@@ -1,3 +1,4 @@
+// The 5e's (D-514): this file goes with the 5e to its own repository at step 8; the core's own tests of the same rules run on the fake system.
 // The character sheet through the commands (D-204, D-206, D-207; DAT-2, DAT-8, SYS-8): show gives it in groups, write takes only the system's names in its
 // lists and says once what it lacks, and roll takes a value from it by name.
 import fc from "fast-check";

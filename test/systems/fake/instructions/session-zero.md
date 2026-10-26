@@ -1,0 +1,1 @@
+- Choose the vocations first, with their ranks, and then might, grace and wit, from 1 to 7.

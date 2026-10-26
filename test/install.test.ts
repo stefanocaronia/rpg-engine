@@ -41,7 +41,7 @@ function fakeHelpers(states: Partial<Record<HelperName, HelperState>>, login: He
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await ok("init", "--name", "Prova", "--language", "vi", "--system", "5e");
+    await ok("init", "--name", "Prova", "--language", "vi", "--system", "fake");
 });
 
 describe("Codex and Claude Code installed with the player's yes (D-424, D-425)", () => {

@@ -250,7 +250,7 @@ function parseFrontmatter(frontmatter: string, path: string): Document
         // Only the first line of the parser's message: the rest quotes the file, which may hold secrets.
         const message = `The frontmatter of ${path} is not valid YAML; fix it by hand: ${document.errors[0].message.split("\n")[0]}`;
         // A stack written by hand without quotes, - [[Torch]] 7, reads as a list inside a list (STK-13).
-        const stack = /(?:^\s*-\s*|\[)\[\[[^\]]+\]\][ \t]+\d/m.test(frontmatter) ? ` A stack in a list goes in quotes, such as - "[[Torch]] 7".` : "";
+        const stack = /(?:^\s*-\s*|\[)\[\[[^\]]+\]\][ \t]+\d/m.test(frontmatter) ? ` A stack in a list goes in quotes, such as - "[[Name]] 7".` : "";
         throw new Error(`${message}${stack}`);
     }
 

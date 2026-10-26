@@ -232,33 +232,7 @@ export const write = defineCommand({
         const here = input.here === true ? hereOf(root, world, reference.name, existing, type, fields) : undefined;
         const positioned = type === "place" ? positionToWrite(world, reference.name, here === undefined ? fields : hereFields(here, fields)) : { change: fields, placed: { notes: [] } };
         fields = positioned.change;
-        conditionsAsList(existing, fields);
-        checkFieldNames(type, fields);
-        checkFieldChange(type, fields);
-        environmentAsSet(world, existing, type, reference.name, fields);
-        checkValues(fields);
-        // A page that keeps the sheet, as it will be written, takes only the names the sheet closes (D-435).
-        const asWritten: Page = { name: reference.name, path: existing?.path ?? "", body: existing?.body ?? "", ...(type === undefined ? {} : { type }), fields: { ...existing?.fields, ...fields.set } };
-        const onSheet = hasSheet(world, asWritten);
-        checkListValues(system, fields.set ?? {}, onSheet);
-        checkListValues(system, fields.add ?? {}, onSheet);
-        checkKnows(world, fields);
-
-        if (existing !== undefined) {
-            if (changedFieldNames(fields).some(passesOn)) {
-                checkNotCopied(world, open, existing);
-            }
-
-            checkCounters(world, existing, fields.set, coins);
-            checkUses(world, system, existing, fields.set);
-            checkClearedCounters(world, existing, ownFieldChange(world, existing, fields), coins);
-            checkLists(world, existing, fields);
-        }
-
-        checkBase(world, existing?.name ?? reference.name, type, fields.set);
-        checkBonds(world, system, existing, existing?.name ?? reference.name, fields);
-        checkLimits(world, system, existing, existing?.name ?? reference.name, fields);
-        checkEventFields(world, existing, type, fields);
+        checkFieldWrite(world, system, open, coins, { existing, name: reference.name, type }, fields);
         const written = writePage(world, reference.name, input.type, { ...fields, text: input.text, section, append: input.append, secret: input.secret });
         const { created, changed, mode, retyped } = written;
 
@@ -390,6 +364,115 @@ export const write = defineCommand({
         return [[summary, followers, ...result.notes].filter((line) => line !== "").join("\n"), skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/**
+ * Sets fields on a page for a package's code, as write --set does (D-511, D-514): the same checks, a number on a counter keeping its maximum, a field the
+ * system works out left out, the maxima worked out again. In the log, counter-changed for a counter, public when the page concerns the player, and
+ * page-updated for the other fields; nothing for a value that stays. It throws what write refuses, with how to fix it, and writes nothing.
+ */
+export function writePackageFields(root: string, context: Context, world: World, page: Page, values: Record<string, number | string>, why: string): void
+{
+    const { coins } = campaignCoins(root, context);
+    const system = campaignSystem(root, context);
+
+    if (page.system !== undefined) {
+        throw new Error(readOnlyMessage(page, Object.keys(values), world));
+    }
+
+    const kept = Object.fromEntries(
+        Object.entries(values).map(([field, value]) => {
+            const own = readCounter(valueNamed(page.fields, field));
+            return [field, typeof value !== "number" || own?.max === undefined ? value : formatCounter({ ...own, value })];
+        }),
+    );
+    const given = withoutComputed(world, page, oneItemLists(world, kept, page.type), page.name, undefined);
+
+    if (Object.keys(given.set).length === 0) {
+        throw new Error(`${given.note ?? "Give the fields to set."} Nothing changed.`);
+    }
+
+    const positioned = page.type === "place" ? positionToWrite(world, page.name, { set: asAmounts(world, given.set, coins) }) : { change: { set: asAmounts(world, given.set, coins) }, placed: { notes: [] } };
+    const fields = positioned.change;
+    checkNoEffects(fields, page);
+    checkFieldWrite(world, system, readOpenScene(root), coins, { existing: page, name: page.name, type: page.type }, fields);
+    const before = effectiveFields(world, page);
+    const written = writePage(world, page.name, undefined, fields);
+
+    if (!written.changed) {
+        return;
+    }
+
+    const now = withPage(world, page, written.page);
+    const limits = systemProblems(root, context).length === 0 ? workedLimitsChange(system, world, page, now, written.page) : { set: {}, unset: [] };
+    const after = Object.keys(limits.set).length > 0 || limits.unset.length > 0 ? writePage(now, page.name, undefined, { set: limits.set, unset: limits.unset }).page : written.page;
+    const counters = Object.keys(fields.set ?? {}).filter((field) => readCounter(valueNamed(page.fields, field)) !== undefined || valueNamed(system?.fields ?? {}, field) === "counter");
+    const others = Object.fromEntries(Object.entries(fields.set ?? {}).filter(([field, value]) => !counters.includes(field) && valueNamed(page.fields, field) !== value));
+    const visibility = concernsPlayer(world, page) ? "public" : "hidden";
+
+    const shown = (value: unknown): string => {
+        const counter = readCounter(value);
+        return value === undefined ? "0" : counter === undefined ? String(value) : String(formatCounter(counter));
+    };
+
+    for (const field of counters) {
+        const [was, is] = [shown(valueNamed(before, field)), shown(valueNamed(effectiveFields(withPage(world, page, after), after), field))];
+
+        if (was !== is) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", visibility, { page: page.name, field, before: was, after: is, why }));
+        }
+    }
+
+    if (Object.keys(others).length > 0) {
+        appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: page.name, type: page.type, set: others, why }));
+    }
+
+    if (positioned.placed.origin !== undefined) {
+        writeOrigin(root, context, withPage(world, page, after), positioned.placed.origin);
+    }
+}
+
+/**
+ * The checks of write on what it is about to write on a page, new or not, and on its fields (D-435, D-514): their names and values, the lists the sheet
+ * closes, a creature's copies in the open scene, counters, uses, the base, bonds, limits and an event's fields. It throws what is wrong, with how to fix it.
+ */
+function checkFieldWrite(
+    world: World,
+    system: GameSystem | undefined,
+    open: ReturnType<typeof readOpenScene>,
+    coins: Coin[] | undefined,
+    target: { existing: Page | undefined; name: string; type: PageType | undefined; },
+    fields: FieldChange,
+): void
+{
+    const { existing, name, type } = target;
+    conditionsAsList(existing, fields);
+    checkFieldNames(type, fields);
+    checkFieldChange(type, fields);
+    environmentAsSet(world, existing, type, name, fields);
+    checkValues(fields);
+    // A page that keeps the sheet, as it will be written, takes only the names the sheet closes (D-435).
+    const asWritten: Page = { name, path: existing?.path ?? "", body: existing?.body ?? "", ...(type === undefined ? {} : { type }), fields: { ...existing?.fields, ...fields.set } };
+    const onSheet = hasSheet(world, asWritten);
+    checkListValues(system, fields.set ?? {}, onSheet);
+    checkListValues(system, fields.add ?? {}, onSheet);
+    checkKnows(world, fields);
+
+    if (existing !== undefined) {
+        if (changedFieldNames(fields).some(passesOn)) {
+            checkNotCopied(world, open, existing);
+        }
+
+        checkCounters(world, existing, fields.set, coins);
+        checkUses(world, system, existing, fields.set);
+        checkClearedCounters(world, existing, ownFieldChange(world, existing, fields), coins);
+        checkLists(world, existing, fields);
+    }
+
+    checkBase(world, existing?.name ?? name, type, fields.set);
+    checkBonds(world, system, existing, existing?.name ?? name, fields);
+    checkLimits(world, system, existing, existing?.name ?? name, fields);
+    checkEventFields(world, existing, type, fields);
+}
 
 /** "torce 7" written in an inventory: a count inside a text, which nothing counts, and how goods are counted instead (STK-10). */
 function countedTextNotes(existing: Page | undefined, page: Page): string[]

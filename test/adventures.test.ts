@@ -21,7 +21,7 @@ const manifest = [
     "version: 1.0.0",
     "author: Ada",
     "license: CC BY 4.0",
-    "needs: {system: 5e}",
+    "needs: {system: fake}",
     "levels: 1-3",
     "content: [drowning]",
     "start: '[[Pozzo]]'",
@@ -33,7 +33,7 @@ const pages: Record<string, string> = {
     "world/characters/Oste.md": "---\nrole: npc\naliases: [Bertoldo]\n---\n\nThe innkeeper. On day 4 he leaves.\n",
     "world/events/La piena.md": "---\ndate: day 3, 06:00\nstatus: planned\n---\n\nThe water rises.\n",
     "world/topics/Apertura del pozzo.md": "---\ntags: [opening]\n---\n\nThe situation.\n",
-    "world/creatures/Goblin.md": "---\nhp: 3\n---\n\nA goblin of the well.\n",
+    "world/creatures/Bog Hound.md": "---\ngrit: 3\n---\n\nA hound of the well.\n",
     "rules/Acqua.md": "# Acqua fredda\n\nCold water tires.\n",
     "images/pozzo.svg": "<svg xmlns='http://www.w3.org/2000/svg'/>",
 };
@@ -76,7 +76,7 @@ function setDay(day: number): void
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await rpg("init", "--name", "Prova", "--language", "en", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await rpg("init", "--name", "Prova", "--language", "en", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
 });
 
@@ -90,7 +90,7 @@ describe("package install of an adventure (ADV-1–ADV-5)", () => {
         expect(result.output).toContain("Installed the adventure Il pozzo 1.0.0 by Ada (CC BY 4.0): A well that whispers under a village.");
         expect(result.output).toContain("It is written for levels 1-3: adapt it to the party's.");
         expect(result.output).toContain("Its content: drowning; keep to the player's lines and veils.");
-        expect(result.output).toContain("Its pages take the place of the game system's: Goblin.");
+        expect(result.output).toContain("Its pages take the place of the game system's: Bog Hound.");
         expect(result.output).toContain("Show [[Apertura del pozzo]] and the pages it says to read first before you narrate.");
         expect(result.output).toContain("It starts in [[Pozzo]], in no place of the world yet");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "adventure-installed", data: { title: "Il pozzo", version: "1.0.0", shift: 0 } });
@@ -115,8 +115,8 @@ describe("package install of an adventure (ADV-1–ADV-5)", () => {
     });
 
     it("refuses what is not for the campaign: another game system, an extension it lacks, levels where the system has none", async () => {
-        expect((await rpg("package", "install", adventureFolder({}, manifest.replace("system: 5e", "system: ironsworn")))).output).toContain("is for the game system ironsworn");
-        expect((await rpg("package", "install", adventureFolder({}, manifest.replace("{system: 5e}", "{system: 5e, extensions: {weather: 0.1.0}}")))).output).toContain(
+        expect((await rpg("package", "install", adventureFolder({}, manifest.replace("system: fake", "system: ironsworn")))).output).toContain("is for the game system ironsworn");
+        expect((await rpg("package", "install", adventureFolder({}, manifest.replace("{system: fake}", "{system: fake, extensions: {weather: 0.1.0}}")))).output).toContain(
             "needs the extension weather: install it with package install weather first",
         );
     });
@@ -233,13 +233,13 @@ describe("package export (ADV-7)", () => {
 
     it("needs the game system only where a page uses it, and keeps to the player the pages from their own documents (D-489 (6))", async () => {
         await rpg("write", "Borgo", "--type", "place", "--set", "source=The King, p. 3");
-        await rpg("write", "Grosh", "--type", "character", "--set", "creature=[[Goblin]]");
+        await rpg("write", "Grosh", "--type", "character", "--set", "creature=[[Bog Hound]]");
         makeSave(folder, context, undefined, "session zero");
         const result = await rpg("package", "export");
         expect(result.output).toContain("1 of its pages come from the player's own documents (source:): Borgo. So it says personal use only.");
         const read = readAdventureZip(readFileSync(join(folder, "exports", "Prova.adventure.zip")), "Prova.adventure.zip");
-        expect(read.manifest).toMatchObject({ license: "personal use only", needs: { system: "5e" } });
-        expect(read.manifest.attribution).toContain("System Reference Document");
+        expect(read.manifest).toMatchObject({ license: "personal use only", needs: { system: "fake" } });
+        expect(read.manifest.attribution).toContain("The fake system of rpg-engine's tests");
         // The player says they may share it, with the document's own license.
         expect((await rpg("package", "export", "--license", "CC BY 4.0")).output).not.toContain("personal use only");
     });

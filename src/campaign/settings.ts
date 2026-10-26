@@ -218,6 +218,7 @@ export const settingsSchema = z.object({
     "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as portent?"),
     travel: z.unknown().optional().describe("what the campaign adds to how its game system travels, by key: paces, hours, terrain and kinds of road, such as kinds: {canal: {}}"),
     values: z.unknown().optional().describe("names the campaign adds to the closed lists of its game system, by field, such as languages: [Lingua dei Guadi]"),
+    "condition-icons": z.unknown().optional().describe("the drawings of effects on the dashboard by their names, over the game system's: the d of an SVG path on a grid of 24, such as Benedizione: M12 3v18"),
     // Checked against the campaign's extensions when it is written (D-502): one written wrongly by hand leaves the extension's place.
     widgets: z.unknown().optional().describe("where the dashboard shows the extensions' widgets, by extension.widget: top, side, scene, sheet, world, journal or off, such as weather.today: side"),
 }).loose();
@@ -232,7 +233,7 @@ export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "learned", "library", "status-line"];
 
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
-export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values"];
+export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values", "condition-icons"];
 
 /** The settings that hold entries by name: what the campaign adds to its game system, and where the dashboard shows the extensions' widgets (D-502). */
 export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets"];

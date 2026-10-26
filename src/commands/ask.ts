@@ -10,10 +10,10 @@ import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, playerCharacters, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
+import { type RestDice, restDice, spendDice } from "./game-dice-pool.ts";
 import { placeGrid } from "./game-grids.ts";
-import { type RestDice, restDice, spendDice } from "./game-hit-dice.ts";
+import { allSaid, packagesAsking, packagesRolled } from "./game-package-hooks.ts";
 import { recipeNamed } from "./game-recipes.ts";
-import { allSaid, systemAsking, systemRolled } from "./game-system-code.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
 import { placeOnMap } from "./move.ts";
@@ -185,7 +185,7 @@ export const ask = defineCommand({
  * A roll of the player's character asked with buttons (ASK-3, ASK-8, ASK-12): for ask, and for an extension's code (D-505). With physical dice it is the question
  * to ask in words; a call stopped logs nothing (ASK-9).
  */
-export async function askedRoll(root: string, context: Context, question: string, checks: { label: string; notation?: string; }[], given: string | undefined, told: Told = {}): Promise<AskResult>
+export async function askedRoll(root: string, context: Context, question: string, checks: { label: string; notation?: string; }[], given: string | undefined, told?: Told): Promise<AskResult>
 {
     const who = playerCharacter(loadWorld(root), given);
     const worked = sheetChecks(root, context, checks, who);
@@ -195,10 +195,10 @@ export async function askedRoll(root: string, context: Context, question: string
         return { kind: "physical", asked: askedText(question, "checks", worked) };
     }
 
-    return rollChosen(root, context, question, worked, who, buttonWordsOf(root), told);
+    return rollWorded(root, context, question, worked, who, told);
 }
 
-/** What an extension's roll asked tells in its own words (D-505): the button that turns it down, and what the faces mean, logged in place of the total. */
+/** What a package's roll asked tells in its own words (D-505, D-507): the button that turns it down, and what the faces mean, logged in place of the total. */
 export interface Told
 {
     /** The roll's button in place of the core's words, with a note under it. */
@@ -243,23 +243,39 @@ function buttonWordsOf(root: string): typeof buttonWords.en
 }
 
 /**
- * The buttons of a roll: the checks and a change of mind (ASK-3, ASK-4); a death save, only its check, as no one turns it down (D-460). The chosen check is
- * rolled with the engine's dice and logged as the player's roll.
+ * A roll asked in a package's words: a package's own ask in its own (D-505), the core's in the game system's, when its code words it (D-507, D-514); the
+ * system's card as it is after the last dice, once the call ends, however it ends.
  */
-async function rollChosen(root: string, context: Context, question: string, checks: Option[], who: string, words: typeof buttonWords.en, told: Told = {}): Promise<AskResult>
+async function rollWorded(root: string, context: Context, question: string, checks: Option[], who: string, given: Told | undefined): Promise<AskResult>
+{
+    const told = given ?? packagesAsking(root, context, { who, checks: checks.map((check) => check.label), notations: checks.map((check) => check.notation ?? "") }) ?? {};
+
+    try {
+        return await rollChosen(root, context, question, checks, who, buttonWordsOf(root), told);
+    } finally {
+        if (given === undefined && told.card !== undefined) {
+            context.page?.cardEnded?.(told.card);
+        }
+    }
+}
+
+/**
+ * The buttons of a roll: the checks and a change of mind (ASK-3, ASK-4); a forced roll, as a death save, only its checks, as no one turns it down (D-460,
+ * D-507). The chosen check is rolled with the engine's dice and logged as the player's roll.
+ */
+async function rollChosen(root: string, context: Context, question: string, checks: Option[], who: string, words: typeof buttonWords.en, told: Told): Promise<AskResult>
 {
     const system = campaignSystem(root, context);
-    const save = systemAsking(root, context, { who, notations: checks.map((check) => check.notation ?? "") });
     const decline = told.decline === false ? undefined : told.decline?.name ?? words.change;
-    const change = save === undefined && decline !== undefined ? [decline] : [];
+    const change = decline === undefined ? [] : [decline];
     const labels = [...checks.map((check) => `${words.roll}: ${check.label} (${check.notation})`), ...change];
     const language = readSettings(root).language ?? system?.language ?? "en";
     const formed = (check: Option): string => told.roll?.name ?? formLabel(check, (dice) => (system === undefined ? undefined : rollName(system, dice, language)));
     const shown = [...checks.map(formed), ...change];
     // A package's words for its buttons, its rule and its card, for the page (D-507).
     const buttons = told.roll === undefined && typeof told.decline !== "object" ? {} : { buttons: [...checks.map(() => told.roll ?? null), ...change.map(() => (typeof told.decline === "object" ? told.decline : null))] };
-    const own = { ...buttons, ...(told.rule === undefined ? {} : { rule: told.rule }), ...(told.card === undefined ? {} : { card: told.card }) };
-    const rows = { who, fields: [...checks.map((check) => check.field ?? null), ...change.map(() => null)], ...(save === undefined ? {} : { save }), ...own };
+    const own = { ...buttons, ...(told.rule === undefined ? {} : { rule: told.rule }), ...(told.card === undefined ? {} : { card: told.card }), ...(decline === undefined ? { forced: true as const } : {}) };
+    const rows = { who, fields: [...checks.map((check) => check.field ?? null), ...change.map(() => null)], ...own };
     const chosen = await chooseAnswer(context, question, words.roll, labels, rows, shown);
 
     const asked = askedText(question, "checks", checks);
@@ -291,8 +307,8 @@ async function rollChosen(root: string, context: Context, question: string, chec
     const data = { notation: diceRoll.notation, total: diceRoll.total, result: diceRoll.text, ...says, ...tones, why: `${check.label}: ${question}`, check: check.label, who, physical: false, dice: diceRoll.dice };
     const entry = newDatedLogEntry(root, { ...context, actor: "player" }, "roll", "public", data);
     appendLogEntry(root, entry);
-    // A check of a dying character is their death save, which the engine writes (DIE-4, D-460).
-    const notes = allSaid(systemRolled(root, context, { who, notation: diceRoll.notation, total: diceRoll.total, dice: diceRoll.dice }));
+    // What the packages' code makes of the roll, as the 5e's death save (D-448).
+    const notes = allSaid(packagesRolled(root, context, { who, notation: diceRoll.notation, total: diceRoll.total, faces: diceRoll.faces, dice: diceRoll.dice, text: diceRoll.text, id: entry.id }));
     return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total, faces: diceRoll.faces, ...(notes.length === 0 ? {} : { notes }) };
 }
 
@@ -389,13 +405,16 @@ async function diceSpent(root: string, context: Context, question: string, recip
         return { kind: "dice in words", asked: inWords };
     }
 
+    // The packages may word the dice of a rest, as a roll: the rule under them, the card of a widget they are spent in (D-514).
+    const told = packagesAsking(root, context, { who, checks: left.map((dice) => dice.field), notations: left.map((dice) => `1d${dice.sides}`), recipe: recipe.name }) ?? {};
+    const worded = told.rule === undefined ? {} : { rule: told.rule };
     const fieldWords = systemWordsOf(root, system, settings.language ?? system.language ?? "en", context)?.fields ?? {};
     const label = (field: string): string => String(valueNamed(fieldWords, field) ?? field);
     const from = counterOn(world, who, gives)?.value ?? 0;
     const rolls: SpendAsked["rolls"] = [];
     const notes: string[] = [];
     // The dice as last read: what the page and the master are told when the campaign does not read for a moment, as while a page is rewritten.
-    let last: SpendAsked = { who, dice: before.map(shownDice), gives: { field: gives, from, value: from }, rolls: [] };
+    let last: SpendAsked = { who, dice: before.map(shownDice), gives: { field: gives, from, value: from }, rolls: [], ...worded };
 
     const page: Spending = {
         shown: () => {
@@ -403,7 +422,7 @@ async function diceSpent(root: string, context: Context, question: string, recip
                 const now = campaignWorld(root, context);
                 const target = counterOn(now, who, gives);
                 const dice = restDice(now, recipe, pageNamed(now, who)).map(shownDice);
-                last = { who, dice, gives: { field: gives, from, value: target?.value ?? 0, ...(target?.max === undefined ? {} : { max: target.max }) }, rolls: [...rolls] };
+                last = { who, dice, gives: { field: gives, from, value: target?.value ?? 0, ...(target?.max === undefined ? {} : { max: target.max }) }, rolls: [...rolls], ...worded };
             } catch {
                 last = { ...last, rolls: [...rolls] };
             }
@@ -431,7 +450,8 @@ async function diceSpent(root: string, context: Context, question: string, recip
         spent: () => (rolls.length === 0 ? undefined : [`While your ask was stopped, ${spentText(before, page.shown())}`, ...notes].join("\n")),
     };
 
-    const done = await context.page.spendDice(question, words.rest, words.done, page, context.signal);
+    const done = await context.page.spendDice(question, words.rest, words.done, page, context.signal, told.card)
+        .finally(() => (told.card === undefined ? undefined : context.page?.cardEnded?.(told.card)));
 
     if (done === 0) {
         logAnswer(root, context, question, [words.done], words.done);
@@ -563,11 +583,26 @@ function formLabel(check: Option, named: (dice: string) => string | undefined): 
     const name = dice.length === 1 ? named(dice[0].replace(/^\+/, "")) : undefined;
     const shown = dice.map((term, index) => {
         const sign = term.startsWith("-") ? "−" : "+";
-        const body = term.replace(/^[+-]/, "").replace(name === undefined ? /^1(?=d)/i : /^\d*(d(?:\d+|%)).*$/i, name === undefined ? "" : "$1");
+        const body = name === undefined ? term.replace(/^[+-]/, "").replace(/^1(?=d)/i, "") : keptDice(term.replace(/^[+-]/, ""));
         return index === 0 && sign === "+" ? body : `${sign} ${body}`;
     });
     const added = modifier === 0 ? "" : ` ${modifier < 0 ? "−" : "+"}${Math.abs(modifier)}`;
     return `${check.label} · ${shown.join(" ")}${added}${name === undefined ? "" : `, ${name}`}`;
+}
+
+/** The dice a named roll keeps, as its name says the rest: 2d20kh1 is d20, 3d6kh2 is 2d6, 4d6dl1 is 3d6. */
+function keptDice(term: string): string
+{
+    const match = /^(\d*)(d(?:\d+|%))([kd][hl])(\d*)/i.exec(term);
+
+    if (match === null) {
+        return term.replace(/^\d*(d(?:\d+|%)).*$/i, "$1");
+    }
+
+    const [, count, die, rule, number] = match;
+    const told = Number(number === "" ? 1 : number);
+    const kept = rule.toLowerCase().startsWith("k") ? told : Number(count === "" ? 1 : count) - told;
+    return `${kept === 1 ? "" : kept}${die}`;
 }
 
 /**

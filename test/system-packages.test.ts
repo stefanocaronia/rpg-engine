@@ -13,8 +13,8 @@ import { installedSystems } from "../src/systems/index.ts";
 import { testSystemFolders } from "./support.ts";
 
 describe("the installed game systems", () => {
-    it("are the 5e and free systems of the package and the ironsworn system of the tests", () => {
-        expect(installedSystems(testSystemFolders).map((system) => system.name)).toEqual(["5e", "free", "ironsworn"]);
+    it("are the 5e and free systems of the package, and the ironsworn and fake systems of the tests", () => {
+        expect(installedSystems(testSystemFolders).map((system) => system.name)).toEqual(["5e", "free", "ironsworn", "fake"]);
     });
 
     for (const system of installedSystems(testSystemFolders)) {

@@ -179,9 +179,9 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         // The plate is measured, unseen, before the dice fly: they land above it, however many rows its dice take (D-366).
         await new Promise((painted) => requestAnimationFrame(painted));
         const plateTop = measuredPlate.current?.getBoundingClientRect().top;
-        // The header as it stands now, full at the page's top or compact below it: no die lands under it; on a wide screen nor on the card of a death save,
-        // whose outcome comes as they land (D-461), of a rest's dice (D-492), or of a package's question (D-507). A phone has no room under it.
-        const card = matchMedia("(min-width: 601px)").matches ? document.querySelector(".dying-card.rolling, .spend-card, .ask-card")?.getBoundingClientRect().bottom : undefined;
+        // The header as it stands now, full at the page's top or compact below it: no die lands under it; on a wide screen nor on the card of a package's
+        // question, whose outcome comes as they land, as a death save's (D-461, D-507), or on a rest's dice (D-492). A phone has no room under it.
+        const card = matchMedia("(min-width: 601px)").matches ? document.querySelector(".ask-card, .asked-rest")?.getBoundingClientRect().bottom : undefined;
         const headerBottom = Math.max(0, document.querySelector(".top")?.getBoundingClientRect().bottom ?? 0, card ?? 0);
 
         if (plateTop !== undefined && plateTop > 0) {

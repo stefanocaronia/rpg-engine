@@ -44,7 +44,7 @@ describe("rpg init", () => {
         const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro"], context);
         expect(result.exitCode).toBe(0);
         expect(result.output).toContain(`Created the campaign "La nebbia di Guadoscuro" in ${folder}.`);
-        expect(result.output).toContain(`Still to agree with the player: system (installed: 5e, free, ironsworn), language (a code, such as it), ${asked}; ${onward}`);
+        expect(result.output).toContain(`Still to agree with the player: system (installed: 5e, free, ironsworn, fake), language (a code, such as it), ${asked}; ${onward}`);
         // A new campaign starts in setup (MOD-1).
         expect(readFileSync(join(folder, "state.yaml"), "utf8")).toContain("\nmode: setup\n");
 
@@ -58,16 +58,16 @@ describe("rpg init", () => {
     });
 
     it("names the campaign after its folder and takes the settings it is given", async () => {
-        const result = await runCommandLine(["init", "guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+        const result = await runCommandLine(["init", "guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
         // What the system adds to the setup is asked after (DAT-10).
-        expect(result.output).toContain('veils ("none" is an answer), advancement (xp or milestones); set each with config.');
-        expect(readFileSync(join(folder, "guadoscuro", "campaign.yaml"), "utf8")).toContain("name: guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\n");
+        expect(result.output).toContain('veils ("none" is an answer), harshness (gentle or bitter); set each with config.');
+        expect(readFileSync(join(folder, "guadoscuro", "campaign.yaml"), "utf8")).toContain("name: guadoscuro\nlanguage: it\nsystem: fake\ndifficulty: normal\nlethality: dice\n");
     });
 
     it("tells the player how to start playing, and the master what is still missing", async () => {
         const result = await runCommandLine(["init", "--language", "it"], context);
         expect(result.output).toBe(
-            `Created the campaign "${basename(folder)}" in ${folder}.\n${playLine}\n\nFor the master: Still to agree with the player: system (installed: 5e, free, ironsworn), ${asked}; ${onward}`,
+            `Created the campaign "${basename(folder)}" in ${folder}.\n${playLine}\n\nFor the master: Still to agree with the player: system (installed: 5e, free, ironsworn, fake), ${asked}; ${onward}`,
         );
     });
 
@@ -199,10 +199,10 @@ describe("rpg config", () => {
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
-            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, free, ironsworn)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: 5e, free, ironsworn, fake)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
                 + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncompanions: (missing)\ncalendar-start: (missing)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
-                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, free, ironsworn), language (a code, such as it), ${asked}; ${onward}`,
+                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: 5e, free, ironsworn, fake), language (a code, such as it), ${asked}; ${onward}`,
         );
     });
 
@@ -241,17 +241,17 @@ describe("rpg config", () => {
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
         const result = await runCommandLine(["config", "language", "it"], context);
-        expect(result.output).toBe(`language: it\n\nStill to agree with the player: system (installed: 5e, free, ironsworn), ${asked}; ${onward}`);
+        expect(result.output).toBe(`language: it\n\nStill to agree with the player: system (installed: 5e, free, ironsworn, fake), ${asked}; ${onward}`);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with the config command.\nname: Guadoscuro\nlanguage: it\n`);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "master", visibility: "public", data: { setting: "language", value: "it" } });
     });
 
     it("adds to the lines and the veils one item at a time, and removes them", async () => {
         await runCommandLine(["config", "language", "it"], context);
-        await runCommandLine(["config", "system", "5e"], context);
+        await runCommandLine(["config", "system", "fake"], context);
         await runCommandLine(["config", "difficulty", "normal"], context);
         await runCommandLine(["config", "lethality", "dice"], context);
-        await runCommandLine(["config", "advancement", "xp"], context);
+        await runCommandLine(["config", "harshness", "gentle"], context);
         expect(shown((await runCommandLine(["config", "lines", "--add", "ragni", "--add", "corpi descritti nei dettagli"], context)).output)).toBe("lines: ragni; corpi descritti nei dettagli");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("lines:\n  - ragni\n  - corpi descritti nei dettagli\n");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", data: { setting: "lines", add: ["ragni", "corpi descritti nei dettagli"] } });
@@ -272,7 +272,7 @@ describe("rpg config", () => {
     });
 
     it("keeps the comments of a hand-written list, and reads accents written either way", async () => {
-        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nadvancement: xp\nlines:\n  - ragni # da sempre\n  - morte di città\n");
+        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: fake\ndifficulty: normal\nlethality: dice\nharshness: gentle\nlines:\n  - ragni # da sempre\n  - morte di città\n");
         expect(shown((await runCommandLine(["config", "lines", "--add", "Morte di città"], context)).output)).toBe("lines: ragni; morte di città");
         await runCommandLine(["config", "lines", "--add", "lupi"], context);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("  - ragni # da sempre\n");
@@ -280,12 +280,12 @@ describe("rpg config", () => {
     });
 
     it("reads an empty list written by hand, and refuses one that is not a list", async () => {
-        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nadvancement: xp\nlines:\n");
+        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: fake\ndifficulty: normal\nlethality: dice\nharshness: gentle\nlines:\n");
         // Written empty, as Obsidian does, a list is not yet answered (D-107, MOD-3).
         expect(shown((await runCommandLine(["config", "lines"], context)).output)).toBe("lines: (missing)");
         expect(shown((await runCommandLine(["config", "lines", "--add", "ragni"], context)).output)).toBe("lines: ragni");
 
-        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: 5e\ndifficulty: normal\nlethality: dice\nveils: torture\n");
+        writeFileSync(join(folder, "campaign.yaml"), "name: Guadoscuro\nlanguage: it\nsystem: fake\ndifficulty: normal\nlethality: dice\nveils: torture\n");
         expect((await runCommandLine(["config", "veils", "--add", "sangue"], context)).output).toBe(`"veils" in campaign.yaml is not a list of text; write it by hand as veils: [item, item].`);
     });
 
@@ -308,7 +308,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, master-rolls, units, voices, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, widgets.`,
+            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, dice, master-rolls, units, voices, companions, calendar-start, pictures, effort, lines, veils, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });
@@ -316,7 +316,7 @@ describe("rpg config", () => {
     it("writes nothing when the settings would still not be valid", async () => {
         const handWritten = "name: Guadoscuro\nlanguage: Italiano\n";
         writeFileSync(join(folder, "campaign.yaml"), handWritten);
-        const result = await runCommandLine(["config", "system", "5e"], context);
+        const result = await runCommandLine(["config", "system", "fake"], context);
         expect(result.exitCode).toBe(1);
         expect(result.output).toContain("Fix it by hand (a list is written as [item, item]); a single value can also be set with the config command.");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(handWritten);

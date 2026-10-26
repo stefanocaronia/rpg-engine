@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
+import { fieldsRead } from "../core/formula.ts";
 import { appendLogEntry, type LogEntry } from "../core/log.ts";
+import type { CounterChange as SystemCounterChange } from "../core/package-api.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, valueNamed, withArticle } from "../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../counters/index.ts";
@@ -33,21 +35,21 @@ import {
     type World,
     writePage,
 } from "../pages/index.ts";
-import type { CounterChange as SystemCounterChange, GameSystem, Recipe } from "../systems/index.ts";
+import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
 import { damageLists, type DamageTaken, damageTaken } from "./game-damage.ts";
+import { spendableDice, spendDice } from "./game-dice-pool.ts";
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
-import { spendableDice, spendDice } from "./game-hit-dice.ts";
 import { screenNote, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
 import { campaignCoins } from "./game-money.ts";
+import { allSaid, packagesCounterChanged } from "./game-package-hooks.ts";
 import { logRecipeApplied, tooSoonNote } from "./game-recipe-pace.ts";
 import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
 import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
 import { changeStack } from "./game-stacks.ts";
-import { allSaid, systemCounterChanged } from "./game-system-code.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
@@ -137,7 +139,7 @@ export const change = defineCommand({
         const hiddenRoll = roll === undefined ? undefined : logDiceBy(root, context, { ...roll.data, why: input.why ?? `${input.field} of ${input.page}` }, hiding);
 
         // The game system's code follows the change, after the roll that made it (D-448): as the 5e's dying point.
-        const lines = hitCounter === undefined ? [] : allSaid(systemCounterChanged(root, context, hitCounter));
+        const lines = hitCounter === undefined ? [] : allSaid(packagesCounterChanged(root, context, hitCounter));
         const told = lines.length === 0 ? result : { ...result, reminders: [...result.reminders, ...lines] };
         return roll === undefined ? told : { ...told, rolled: roll.data.result, ...(hiddenRoll === undefined ? {} : { hiddenRoll }) };
     },
@@ -166,7 +168,7 @@ function changeField(
     input: { page: string; field: string; by?: number | string; spend?: number | string; to?: number | string; why?: string; damage?: string; },
 )
 {
-    const holder = holderNamed(root, world, input.page);
+    const holder = holderNamed(root, world, input.page, input.field);
     const fields = withDeclaredStart(world, holder, effectiveFields(world, holder.page), input.field);
     // A name that is no field of the page, nor one the system declares, may be a kind the page holds a stack of (STK-5).
     const kind = holdsField(world, fields, input.field) ? undefined : kindNamed(world, holder.kind === "page" ? holder.page : undefined, input.field) ?? countable(world, input.field);
@@ -809,6 +811,7 @@ function counterStep(
         );
     }
 
+    // A value given with to keeps the minimum the system gives, for where it stands: 0 is no limit of a counter that goes below it.
     const { counter: after, beyond } = changeCounter(before, counterChange);
 
     // Above a maximum the game system works out, a value reads as the maximum (FOR-6): what change says it wrote would not be what is read.
@@ -826,7 +829,7 @@ function counterStep(
         return counter !== undefined && formatCounter(counter) === formatCounter(after);
     };
 
-    return { before: formatCounter(before), after: formatCounter(after), amount: { ...amountOf(counterChange), beyond: beyond === 0 ? undefined : beyond }, note: limitNote(after, beyond), same };
+    return { before: formatCounter(before), after: formatCounter(after), amount: { ...amountOf(counterChange), beyond: beyond === 0 ? undefined : beyond }, note: limitNote({ ...after, min: after.min ?? before.min }, beyond), same };
 }
 
 /** A counter as the page keeps it: with the maximum the game system works out from the page without its effects, which the reading puts back (FOR-6). */
@@ -943,11 +946,11 @@ function coinNames(coins: Coin[]): string
     return coins.map((coin) => coin.names.join("/")).join(", ");
 }
 
-/** What holds the counter, given by name or as a link: a copy in the open scene first, then a page of the campaign. */
-function holderNamed(root: string, world: World, name: string): CounterHolder
+/** What holds the counter, given by name or as a link: a copy in the open scene first, then a page of the campaign; the field asked names the example. */
+function holderNamed(root: string, world: World, name: string, field?: string): CounterHolder
 {
     const open = readOpenScene(root);
-    const found = pageOrCopy(world, open, name, (page) => `a counter is a field of the page, such as page ${page}, field hp`);
+    const found = pageOrCopy(world, open, name, (page) => `a counter is a field of the page, such as page ${page}${field === undefined ? "" : `, field ${field}`}`);
     const copy = found.copy;
 
     if (copy !== undefined) {
@@ -1026,8 +1029,11 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
     const listed = held.length > 0 ? `Its counters${hasMoney ? " and money" : ""}: ${held.join(", ")}.` : "It has no counters.";
     // A counter the system gives who has what it comes from is not added by hand, as a warlock's spell-slots to a wizard (DAT-9).
     const given = Object.keys(world.system?.formulas?.counters ?? {}).find((counter) => comparableText(counter) === comparableText(name.trim()));
+    // A maximum that reads nothing, as a track of 5, is everyone's: it is written by hand as any other counter.
+    const max = given === undefined ? undefined : world.system?.formulas?.counters[given]?.max;
+    const everyones = max !== undefined && fieldsRead(max).length === 0;
 
-    if (given !== undefined && holder.kind === "page" && hasSheet(world, page)) {
+    if (given !== undefined && !everyones && holder.kind === "page" && hasSheet(world, page)) {
         const sources = maximumSources(world, given, fields);
         const whence = sources.length === 0 ? `the tables of its ${world.system?.progression?.list ?? "lists"}` : sources.join(", ");
         throw new Error(`${page.name} has no ${given}: the system ${world.system?.name ?? ""} gives it from ${whence}, and ${page.name} has none from them. ${listed}`);
@@ -1037,7 +1043,9 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
     const stacks = holder.kind === "page" ? stacksOf(world, page).map((stack) => `${stackName(stack)} ${stack.count}`) : [];
     const goods = goodsNamed(world, name);
     const counted = stacks.length === 0 ? "" : `Its stacks: ${stacks.join(", ")}. `;
-    const how = goods === undefined ? howToAdd(world, holder, name, example) : `Goods are a stack, changed by its kind, such as change ${page.name}, ${goods.name}, spend 1.`;
+    // Its maximum, everyone's, in the example: the master writes it as the system works it out (FOR-7).
+    const shown = everyones && given !== undefined ? `0/${counterLimits(world, fields, given).max ?? 0}` : example;
+    const how = goods === undefined ? howToAdd(world, holder, name, shown) : `Goods are a stack, changed by its kind, such as change ${page.name}, ${goods.name}, spend 1.`;
     throw new Error(`${page.name} has no field "${name}". ${counted}${listed} ${how}`);
 }
 

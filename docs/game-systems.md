@@ -1,6 +1,6 @@
 # Game systems
 
-A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from [systems/5e](../systems/5e/) from [systems/ironsworn](../systems/ironsworn/), a test system based on Ironsworn, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
+A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from [systems/5e](../systems/5e/), from [systems/ironsworn](../systems/ironsworn/), a test system based on Ironsworn, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
 
 ## 1. The folder
 
@@ -13,10 +13,13 @@ systems/<name>/
   images/            the pictures its pages link in `image`
   instructions/*.md  what it adds to the master's instructions (section 4)
   words/<code>.yaml  its words in other languages (section 4)
+  package.json       when it is a package: its npm name, version, the API it is made for, its code (section 6)
   build/, test/      scripts and tests, not shipped
 ```
 
-A system is installed by putting its folder in the package's `systems/`. A campaign names it in `campaign.yaml` (`system: 5e`). A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the systems it started with.
+The engine's own systems are in its `systems/` folder; any other is installed as a package with `package install`: from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 5}}`. A campaign names it in `campaign.yaml` (`system: 5e`). A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the systems it started with.
+
+The schema of `system.yaml` is part of the package API (section 6), which goes up with every addition a package may use: a new key comes with a new API number, and a system that uses it says that number, so that an older engine asks to be updated instead of refusing an unknown key. A folder without a `package.json` is data alone: it is read as made for the engine that reads it, and brings no code.
 
 ## 2. system.yaml
 
@@ -126,7 +129,7 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 - `sheet`: groups of fields in order. `field?` is written only when it applies; `field (beside)` shows a field beside it. The player character keeps a sheet, and so does a companion with a `level` or no `creature`. A group with `inventory` shows what the character carries, a row for each stack or item, what a container holds below it and what is equipped marked, after the group's other fields, such as `money`.
 - `sheet-notes`: what `write` says of a group when a character joins the party.
 - `sheet-icons`, `token-icons`: SVG path data on a 24 grid, for a group's card and for a token's mark by class.
-- `sheet-headline`: the line under a name on the dashboard.
+- `sheet-headline`: the line under a name on the dashboard; a part between commas whose fields are all empty is left out.
 - `sheet-cards`: where the dashboard puts the groups.
 - `sheet-actions`: the fields whose items the player acts with on the dashboard, each with the engine's verbs (`attack`, `cast`, `use`, `equip`, `unequip`, `prepare`), the first the one a click says. The page makes it the player's own sentence to the master, who rules it; it checks nothing. Without it, the sheet only shows.
 - `sheet-dice`: the dice of the dashboard's free roll for each number. `sheet-odds`: the dice of a better and a worse free roll, and `when`, fields with the formulas that make them `better` or `worse` above 0; both cancel out, and `why`, a word of the system the dashboard shows beside the roll, as `{better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: "count(equipped, stealth-disadvantage = true)", why: Armor}]}`.
@@ -207,29 +210,25 @@ damage: {counter: hp, halves: damage-resistances, ignores: damage-immunities, do
 
 `change` with `damage` and a negative `by` reads the lists of who takes it, what it writes with what the pages of `bonus-lists` and its effects add: a type in `ignores` takes nothing, in `halves` half rounded down, then in `doubles` twice that; the counter that shields `counter`, as temporary hit points, loses first. An item that names the type with a condition, as "slashing from nonmagical attacks", or names no type, as "damage from spells", waits for the master to say `slashing (applies)` or `slashing (does not apply)`.
 
-### conditions, keeping, combat, dying
+### conditions, keeping, combat, down
 
 ```yaml
 conditions: [Blinded, Charmed, Poisoned, Prone]
 condition-icons: {Prone: "M4 18h16M7 14l5-4 5 4"}
 keeping: {counter: hp, conditions: [Incapacitated, Unconscious], rules: Concentration}
 combat: {track: hp, in-words: [unhurt, hurt, bloodied, down], inactive: [Incapacitated, Stunned, Unconscious]}
-dying:
-  at: hp 0
-  show: {successes: death-successes, failures: death-failures}
-  stable: Stable
-  marks: {successes: Successes, failures: Failures}
+down: {at: hp 0}
 immune: condition-immunities
 checks:
   - {when: Stable, needs: hp <= 0, say: "{page} is Stable with {hp}: effect end {page} Stable."}
 ```
 
-- `conditions`: effects with these names show their rule; `condition-icons` draws them.
+- `conditions`: effects with these names show their rule; `condition-icons` draws them, and any other effect by its name, as a spell's: on the tokens, in the turns and in the effect's chip. Here and in `keeping`, `combat`, `immune` and `checks`, an effect named with the system's word in the campaign's language, from `words`, counts as its English name, and is the same effect: `Prono` is `Prone`.
 - `keeping`: what can break what someone keeps alive, as concentration; the output names the rule, the engine ends nothing.
 - `combat`: the counter the dashboard's Combat follows; `in-words`, the words a foe's is heard in, the first at full, the last at 0, those between at equal shares, translated by the system's `words`; who cannot act.
-- `dying`: when the dashboard shows the panel of the dying, its counters by their sides, `stable`, what it calls one whose successes are full, and `marks`, the short words of each side (the field's label where none), all translated by `words`. What the dying point does, as the 5e's death saves, is the system's code (see [Code](#code)); the dashboard tells a death save from what that code wrote.
+- `down`: when one of the party is down, `at` a counter's value or under it, which Combat and the tokens read. What being down does, and how the dashboard draws it, are the system's code and widgets (see [Code](#code)): the 5e's death saves are its widget in place `person`, a panel under the name, and the card of its widget in place `card` a death save is asked in. Without them the dashboard says down and leaves the counters in the line of values.
 - `immune`: the list of a page whose conditions `effect add` refuses.
-- `checks`: what cannot be true together, which the engine tells the master at `scene next` and `advance`, once in a chat while it lasts, and in `status` and `validate` every time; it never changes anything. `when` and `needs` are an effect's name, which counts only without an end or a keeper, or a field against a number; `say` fills `{page}` and each `{field}` with the page's own values. A check that needs more is the system's code. The engine checks two things itself, from the data above: who keeps an effect alive while a condition of `keeping` is on them, and one of the party at the value of `dying`, not marked dead, with no condition of `combat.inactive`. It checks the party, alive or dead, and the characters of the open scene, never copies.
+- `checks`: what cannot be true together, which the engine tells the master at `scene next` and `advance`, once in a chat while it lasts, and in `status` and `validate` every time; it never changes anything. `when` and `needs` are an effect's name, which counts only without an end or a keeper, or a field against a number; `say` fills `{page}` and each `{field}` with the page's own values. A check that needs more is the system's code. The engine checks two things itself, from the data above: who keeps an effect alive while a condition of `keeping` is on them, and one of the party at the value of `down`, not marked dead, with no condition of `combat.inactive`. It checks the party, alive or dead, and the characters of the open scene, never copies.
 
 ### tables, computed, counters
 
@@ -248,6 +247,7 @@ counters:
 - `tables`: a number key reads the highest row not above it; a name key reads its row.
 - `computed`: a field worked out by a formula, or by the first of several that has a value. Never written by hand.
 - `counters`: `min` and `max` by formula. `refill` names the occasions that bring a use back. `shields`: the counter this one protects.
+- A counter on every sheet, as `stress` from 0 to 6: declare it in `fields` as a counter, give it its limits here, `stress: {max: "6"}`, and name it in a group of `sheet`. A character that joins the party without it is told to the master, who writes it, `stress: 0/6`; the engine does not write it on its own.
 
 ### progression
 
@@ -261,7 +261,7 @@ progression:
   experience: {field: xp, table: xp-by-level, rules: Beyond 1st Level}
 ```
 
-Items of `list` such as `[[Barbarian]] 3` read the row of their page's level table: its columns become fields (but those in `skip`), its `features` column the features gained. `parts` are pages that add features by their class's level, as subclasses. `experience` gives the points each level needs. `level` names the field of a level written on a page: a companion with it, or with items of `list`, keeps the sheet.
+Items of `list` such as `[[Barbarian]] 3` read the row of their page's level table: its columns become fields (but those in `skip`), its `features` column the features gained. `parts` are pages that add features by their class's level, as subclasses. Features written by hand on the character, as a feat gives one, join those gained: the sheet shows them all, and formulas read them all. `experience` gives the points each level needs. `level` names the field of a level written on a page: a companion with it, or with items of `list`, keeps the sheet.
 
 ### item-formulas, always-in
 
@@ -292,7 +292,7 @@ always-in: {equipped: [Unarmed Strike]}
 - Names are ASCII letters, digits and single hyphens: `level-1` is a field; write `level - 1`.
 - A list item is a name with an optional number: `"[[Fighter]] 3"`, `Perception +3`.
 - A field reads as a number when it is one, a counter, `+2`, or a measure such as `25 ft` (a number and a word of up to three letters), even with a note in brackets after it, as `40 ft (hover)`.
-- Besides the fields, a formula reads `effects` as the names of the page's effects (`has(effects, Grappled)`), `rigor` as the campaign's, and `load` and `load-limit` (see `load`).
+- Besides the fields, a formula reads `effects` as the names of the page's effects, one written in the campaign's language by its English name from `words` (`has(effects, Grappled)` finds `Afferrato`), `rigor` as the campaign's, and `load` and `load-limit` (see `load`).
 - A formula has no value when a field it reads is missing; then the page's own value is read.
 - A page is read in layers: its bases (`creature`, `item`), the page, its effects, then what the system works out.
 
@@ -317,7 +317,7 @@ headline: "{classes} di livello {level}"
 
 A campaign's pages work as a system's: a class in `world/topics/` counts in `sum(classes)`, a creature with `creature: "[[Elf]]"` is a new race, an item with `item: "[[Longsword]]"` a named sword. A campaign page cannot take a system page's name.
 
-`campaign.yaml` adds to `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line`, `travel` and `values`, with `config`; an entry with a system's name replaces it, but the names in `values` join the system's list, as a language of the campaign's world:
+`campaign.yaml` adds to `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line`, `travel`, `values` and `condition-icons`, with `config`; an entry with a system's name replaces it, but the names in `values` join the system's list, as a language of the campaign's world:
 
 ```text
 config counters "bulwark-dice: {max: 'has(subclasses, Shield Oath) * 4', refill: short rest}"
@@ -327,31 +327,34 @@ An extension adds the same keys but `status-line` and `travel`, in its `extensio
 
 ## 6. Code
 
-Where data is not enough, a system brings code, as the 5e does for its dying point. Its `package.json` says so, as an extension's does:
+Where data is not enough, a system brings code, as the 5e does for its dying point, its death saves and its hit dice on the dashboard. Its `package.json` says so, as an extension's does, with the API it is made for:
 
 ```json
-{ "type": "module", "main": "dist/index.js", "rpg-engine": { "kind": "system", "api": 1 } }
+{ "name": "@rpgengine/system-5e", "version": "1.0.0", "type": "module", "main": "dist/index.js", "rpg-engine": { "kind": "system", "api": 5, "page": "dist/page.js" } }
 ```
 
-`src/index.ts` is built into `dist/` with the engine; the package ships `dist/` without `src/`. Its default export gives the hooks, each optional, each giving lines for the command's output:
+A system's code has the contract of an extension's, `PackageEntry`, described in [extensions.md](extensions.md#3-code): its `commands`, `timePassed`, the hooks of its `widgets`, and its page module. `system.yaml` declares `icons`, `widgets` and `figures` with the keys and limits of an `extension.yaml`. The engine calls the hooks after its own writes for the system first, then for the extensions, each optional, each giving lines for the command's output:
 
 ```ts
-import type { SystemEntry } from "rpg-engine";
+import type { PackageEntry } from "rpg-engine";
 
-const system: SystemEntry = () => ({
-    counterChanged: (change, game) => [],   // after change or the hit dice wrote a counter of a page
+const system: PackageEntry = ({ z }) => ({
+    commands: [{ name: "5e-spells", description: "…", input: z.object({}), readOnly: true, player: true, run: (input, game) => "…" }],
+    counterChanged: (change, game) => [],   // after change or a rest's dice wrote a counter of a page
     turnStarted: ({ who }, game) => [],     // as someone's turn starts in a scene
     rolled: (roll, game) => [],             // after a roll for someone, never a hidden one
     effectAdded: ({ page, effect }, game) => [],
-    asking: ({ who, notations }, game) => undefined, // what the page draws of a question, as a death save; it only reads
+    asking: ({ who, checks, notations, recipe }, game) => undefined, // how the core's ask asks this roll, or a rest's dice; it only reads
 });
 export default system;
 ```
 
-- The engine loads the code once, as the command line, the MCP server or the dashboard starts: a system changed since needs the server started again.
-- `game` reads a page (its counters with its effects, its effects, whether it is in the party or the player's character), a setting, and compares names as the engine does; it sets numbers (a counter keeps its maximum), adds and ends effects, and rolls with the engine's dice, a roll for anyone outside the party hidden while the campaign's `master-rolls` setting keeps it behind the screen. Each write has its line in the log, public or hidden as the engine shows that page; a write calls no hook.
+- A system's commands are named as the system, or start with its name and a hyphen, as the campaign plays it: `5e`, `5e-spells`.
+- `asking` gives, before the core's `ask` shows its buttons, what an extension gives `game.ask`: the roll's button, `decline: false` for a forced roll, a `rule`, and `card: {widget, key}`, one of the package's widgets to ask in, its hook given the key and whose roll it is; `undefined` asks as always. With `recipe`, it is asked for the dice of a rest, which the page then spends in that card, its page module's body drawing them. The system is asked first. A package's own `game.ask` is not given to it.
+- The engine loads the code once, as the command line, the MCP server or the dashboard starts: a system changed since needs the server started again. A system made for an API the engine does not read brings no code, and says why.
+- In the hooks, `game` is a package's (see extensions.md): `set` writes as `write --set`, `change` changes a counter as the `change` command, the way for hit points and any counter the rules watch, and calls no hook from inside one; `addEffect` and `endEffect`. A roll for anyone outside the party is hidden while the campaign's `master-rolls` setting keeps it behind the screen. Each write has its line in the log, public or hidden as the engine shows that page; a write calls no hook. Its state is kept in `extensions/<name>/state.yaml`, as an extension's.
 - A hook that fails, or code that cannot load, is a line for the master, with what to do: the command's change stands.
-- The code reaches the game only through `game`: lint refuses `Math.random`, `Date`, `process`, `globalThis`, `import()` and Node's modules in `systems/*/src`.
+- The code reaches the game only through `game`; in this repository, lint refuses `Math.random`, `Date`, `process`, `globalThis`, `import()` and Node's modules in `systems/*/src`.
 
 ## 7. Checks
 

@@ -11,9 +11,10 @@ import { tonesOf } from "../src/commands/ask.ts";
 import { campaignPageModules } from "../src/commands/game-extension-list.ts";
 import { campaignWidgets, widgetCard } from "../src/commands/game-widgets.ts";
 import type { Context, Rows } from "../src/core/context.ts";
+import { readsApi } from "../src/core/package-declarations.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
-import { findExtension, installedExtensions, packageFingerprint, readExtension, readsApi } from "../src/extensions/index.ts";
+import { findExtension, installedExtensions, packageFingerprint, readExtension } from "../src/extensions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
 import { type GameSystem, systemPageModule } from "../src/systems/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
@@ -63,7 +64,7 @@ describe("the installed extensions", () => {
         expect(omens).toMatchObject({ package: "@rpgengine/omens", name: "omens", version: "1.2.0", about: "an omen each dawn, and one read at will", needs: {} });
         expect(omens?.parts.play.text).toBe("An omen comes each dawn: tell it when the party wakes.");
         expect(findExtension(testExtensionFolders, "@rpgengine/omens")?.name).toBe("omens");
-        expect(findExtension(testExtensionFolders, "SEASONS-of-the-test")?.needs).toEqual({ system: "5e" });
+        expect(findExtension(testExtensionFolders, "SEASONS-of-the-test")?.needs).toEqual({ system: "fake" });
         expect(findExtension(testExtensionFolders, "weather-of-nowhere")).toBeUndefined();
     });
 });
@@ -116,13 +117,13 @@ describe("a campaign's extensions", () => {
         const problems = (await rpg("validate")).output;
         expect(problems).toContain("The extension @test/nowhere is not installed on this computer: the campaign plays without it.");
         expect(problems).toContain("install it with package install @test/nowhere");
-        expect(problems).toContain("The extension seasons-of-the-test needs the game system 5e, and the campaign plays ironsworn: it is left out.");
+        expect(problems).toContain("The extension seasons-of-the-test needs the game system fake, and the campaign plays ironsworn: it is left out.");
         expect((await rpg("status")).output).not.toContain("Extensions:");
         expect((await rpg("advance", "--to", "day 1, 18:00")).exitCode).toBe(0);
     });
 
     it("bring their months in place of the real ones, and the campaign's own months take theirs (TIM-8)", async () => {
-        await campaign("5e", { "seasons-of-the-test": "0.1.0" });
+        await campaign("fake", { "seasons-of-the-test": "0.1.0" });
         expect((await rpg("config", "calendar-start", "14 April")).output).toBe('The calendar has no month "April": its months are Thaw, Bloom, Ember, Frost. Nothing changed.');
         await rpg("config", "calendar-start", "90 Thaw");
         expect((await rpg("advance", "--to", "day 2, 08:00")).output).toBe("The game starts on day 2, 08:00 (1 Bloom, summer).");
@@ -184,7 +185,7 @@ describe("a campaign's widgets on the dashboard (D-502)", () => {
         expect((await rpg("config", "widgets", "omens.nowhere: side")).output).toBe(
             "There is no widget omens.nowhere: the campaign's are omens.last, omens.every, omens.broken. Write one as omens.last: side. Nothing changed.",
         );
-        const takes = "omens.last takes top, side, scene, sheet, world, journal, off, or {place, page, order}, such as omens.last: side.";
+        const takes = "omens.last takes top, side, person, scene, sheet, world, journal, off, or {place, page, order}, such as omens.last: side.";
         expect((await rpg("config", "widgets", "omens.last: bottom")).output).toBe(`${takes} Nothing changed.`);
         expect((await rpg("config", "widgets", "omens.last: {order: 1.5}")).output).toBe(`${takes} Here order is a whole number from -100 to 100. Nothing changed.`);
         expect((await rpg("config", "widgets", "omens.last: {place: page}")).output).toBe(`${takes} Here a card in place page names its page: scene, sheet, world or journal. Nothing changed.`);
@@ -323,7 +324,7 @@ describe("a campaign's widgets on the dashboard (D-502)", () => {
             })();
         };
 
-        expect(refused("place: side", "place: bottom")).toContain("a widget's place is top, side, page → at widgets.last.place");
+        expect(refused("place: side", "place: bottom")).toContain("a widget's place is top, side, page, person, card → at widgets.last.place");
         expect(refused("    page: journal\n", "")).toContain("a widget in place page names its page (scene, sheet, world or journal)");
         expect(refused("icon: eye", "icon: moon")).toContain("the icon moon is not among the icons: add it there → at widgets.last.icon");
         expect(refused('eye: "M2', 'eye: "<path d=M2')).toContain("an icon is the path of an SVG, as M4 12h16");
@@ -366,7 +367,7 @@ describe("the API 3 of an extension's code (D-505)", () => {
         await rpg("config", "counters", "momentum: {min: -6, max: 12}");
         expect((await read("Kira", "--field", "momentum")).page.value).toBe("2/12");
 
-        await rpg("wards-mark", "Kira", "--field", "ward-charges", "--value", "0");
+        await rpg("wards-change", "Kira", "--field", "ward-charges", "--to", "0");
         expect((await rpg("change", "Kira", "--recipe", "sojourn")).output).toContain("ward-charges 0/3 → 3/3");
     });
 
@@ -408,45 +409,38 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect((await rpg("status")).output).not.toContain("Extensions:");
     });
 
-    it("set no field that the system, an extension below or the campaign declares too, nor any while its additions are left out; a counter takes no text", async () => {
+    it("set any field of any page as write --set does, under the name the system with its additions gives it; a counter is changed (D-511, D-514)", async () => {
         context = { ...context, extensionFolders: [adding(join(folder, "packages"), "earlier", "fields:\n  ward-strength: number"), ...testExtensionFolders] };
         await campaign("ironsworn", { "@rpgengine/earlier": "1.0.0", "@rpgengine/wards": "0.3.0" });
         await rpg("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "wits=2", "--set", "ward-sign=firm");
-        expect((await rpg("wards-mark", "Kira", "--field", "ward-strength", "--value", "9")).output).toContain("ward-strength is not one of them: its own are ward-sign, ward-charges, ward-bonus.");
-        await rpg("config", "fields", "ward-sign: text");
-        expect((await rpg("wards-mark", "Kira", "--field", "ward-sign", "--value", "deep")).output).toContain("ward-sign is not one of them: its own are ward-charges, ward-bonus.");
-        expect((await rpg("wards-mark", "Kira", "--field", "ward-charges", "--value", "lots")).output).toBe("ward-charges is a counter: give it a number, not lots. Nothing changed.");
-        // Under its own name, whatever the case it is given in.
-        await rpg("wards-mark", "Kira", "--field", "WARD-CHARGES", "--value", "1");
+        // Another extension's field, and the system's.
+        expect((await rpg("wards-mark", "Kira", "--field", "ward-strength", "--value", "9")).output).toBe("Marked.");
+        expect((await rpg("wards-mark", "Kira", "--field", "wits", "--value", "3")).output).toBe("Marked.");
+        // A counter is changed, never just written, as write --set refuses it (D-514).
+        expect((await rpg("wards-mark", "Kira", "--field", "ward-charges", "--value", "1")).output).toContain("ward-charges is a counter");
+        // Under the name the system with its additions gives it, whatever the case it is given in.
+        await rpg("wards-mark", "Kira", "--field", "WARD-SIGN", "--value", "deep");
         const kira = readFileSync(join(folder, "world", "characters", "Kira.md"), "utf8");
-        expect(kira).toContain("\nward-charges: 1/3\n");
-        expect(kira).not.toContain("WARD-CHARGES");
-
-        const broken = join(folder, "broken");
-        cpSync(join(testExtensionFolders[0], "wards"), join(broken, "wards"), { recursive: true });
-        const yaml = join(broken, "wards", "extension.yaml");
-        writeFileSync(yaml, readFileSync(yaml, "utf8").replace("ward-bonus: table(ward-signs, ward-sign) + wits", 'ward-bonus: "1 +"'));
-        context = { ...context, extensionFolders: [broken, ...testExtensionFolders] };
-        expect((await rpg("wards-mark", "Kira", "--field", "ward-charges", "--value", "2")).output).toBe(
-            "What the extension wards adds to the game system does not read, so the campaign plays without it and it sets none of its fields: validate says why. Nothing changed.",
-        );
+        expect(kira).toContain("\nward-sign: deep\n");
+        expect(kira).toContain("\nwits: 3\n");
+        expect(kira).not.toContain("WARD-SIGN");
     });
 
-    it("set only the fields its extension.yaml adds, each with its line in the log as the engine shows that page, and a widget reads them", async () => {
+    it("set fields, each with its line in the log as the engine shows that page, and a widget reads them", async () => {
         await warded();
         expect((await rpg("wards-mark", "Kira", "--field", "ward-sign", "--value", "deep")).output).toBe("Marked.");
         expect((await read("Kira", "--field", "ward-bonus")).page.value).toBe(5);
-        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Kira", field: "ward-sign", before: "firm", after: "deep", why: "a ward marked" } });
+        // As write logs it: page-updated for a field, nothing for a value that stays (D-514).
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "page-updated", visibility: "hidden", data: { page: "Kira", set: { "ward-sign": "deep" }, why: "a ward marked" } });
+        const marked = readLogFile(folder).length;
+        await rpg("wards-mark", "Kira", "--field", "ward-sign", "--value", "deep");
+        expect(readLogFile(folder)).toHaveLength(marked);
         await rpg("wards-mark", "Ombra", "--field", "ward-strength", "--value", "3");
-        expect(readLogFile(folder).at(-1)).toMatchObject({ visibility: "hidden", data: { page: "Ombra", field: "ward-strength", before: "0", after: "3" } });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "page-updated", data: { page: "Ombra", set: { "ward-strength": 3 } } });
 
+        await rpg("wards-change", "Kira", "--field", "momentum", "--to", "8");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Kira", field: "momentum", after: "8/8" } });
         const lines = readLogFile(folder).length;
-        const refused = await rpg("wards-mark", "Kira", "--field", "health", "--value", "0");
-        expect(refused.output).toBe(
-            "The extension wards sets only the fields it adds to the game system, and health is not one of them: its own are ward-strength, ward-sign, ward-charges, ward-bonus. Add it to fields or counters in its extension.yaml. Nothing changed.",
-        );
-        // A field of the system it declares again is still the system's.
-        expect((await rpg("wards-mark", "Kira", "--field", "momentum", "--value", "8")).exitCode).toBe(1);
         expect((await rpg("wards-mark", "Nessuno", "--field", "ward-strength", "--value", "1")).output).toBe("No page alone is named Nessuno: give the name of one page of the campaign. Nothing changed.");
         expect(readLogFile(folder)).toHaveLength(lines);
 
@@ -458,7 +452,7 @@ describe("the API 3 of an extension's code (D-505)", () => {
     it("roll for who, in view in the party and behind the screen outside it as master-rolls says; the player's physical dice in view (D-287)", async () => {
         await warded();
         const roll = async (...args: string[]): Promise<any> => JSON.parse((await rpg("wards-roll", "--notation", "1d6", ...args)).output);
-        expect(await roll("--who", "Bram")).toEqual({ total: 4, faces: [4], text: "1d6 = 4 [4]", id: expect.any(String), hidden: false });
+        expect(await roll("--who", "Bram")).toEqual({ notation: "1d6", total: 4, faces: [4], dice: [{ sides: 6, value: 4 }], text: "1d6 = 4 [4]", id: expect.any(String), hidden: false });
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "roll", visibility: "public", data: { who: "Bram", why: "a ward tested", check: "Ward", physical: false } });
         expect(await roll("--who", "Ombra")).toMatchObject({ total: 4, hidden: true });
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "roll", visibility: "hidden", data: { who: "Ombra", fingerprint: expect.any(String) } });
@@ -492,7 +486,7 @@ describe("the API 3 of an extension's code (D-505)", () => {
 
         await rpg("wards-ask", "--question", "Hold the ward", "--forced");
         expect(asked[1].labels).toEqual(["Roll: Ward (1d6+2)"]);
-        expect(asked[1].rows).toEqual({ who: "Kira", fields: ["wits"] });
+        expect(asked[1].rows).toEqual({ who: "Kira", fields: ["wits"], forced: true });
         expect(ended).toHaveLength(1);
     });
 
@@ -532,7 +526,7 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(JSON.parse((await asked(answering(0))).output)).toEqual({ rolled: { id: expect.any(String), total: 6, faces: [4], text: "1d6+2 = 6 [4] + 2" } });
         expect(readLogFile(folder).slice(-3)).toMatchObject([
             { type: "roll", by: "player", visibility: "public", data: { who: "Kira", check: "Ward", why: "Ward: Raise the ward before they come" } },
-            { type: "counter-changed", data: { page: "Kira", field: "ward-strength", after: "6" } },
+            { type: "page-updated", data: { page: "Kira", set: { "ward-strength": 6 } } },
             { type: "extension", data: { text: "ward asked: rolled" } },
         ]);
         expect(JSON.parse((await asked(answering(1))).output)).toEqual({ declined: true });
@@ -553,16 +547,20 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(readLogFile(folder)).toHaveLength(lines);
     });
 
-    it("read packages made for the API 1 to 4, as omens, skies, wards and charms, and refuse one made for a newer, with what to install", () => {
-        expect([0, 1, 2, 3, 4, 5, 2.5, undefined].map(readsApi)).toEqual([false, true, true, true, true, false, false, false]);
+    it("read packages made for the API 1 to 5, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
+        expect([0, 1, 2, 3, 4, 5, 6, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, false, false, false]);
+        // A game system's first API is 5, the one contract (D-514).
+        expect([1, 4, 5, 6].map((api) => readsApi(api, "system"))).toEqual([false, false, true, false]);
         expect(findExtension(testExtensionFolders, "omens")?.adds).toEqual({});
         expect(findExtension(testExtensionFolders, "skies")?.name).toBe("skies");
         expect(findExtension(testExtensionFolders, "wards")?.adds.counters).toEqual({ "ward-charges": { max: "wits + 1" }, momentum: { min: -6, max: 8 } });
 
         const newer = join(folder, "newer");
         cpSync(join(testExtensionFolders[0], "wards"), newer, { recursive: true });
-        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 5 } }));
-        expect(() => readExtension(newer)).toThrow("The extension @rpgengine/wards cannot be used, because it is made for the extension API 5; this rpg-engine reads the API 1 to 4: install a version of it made for these.");
+        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 6 } }));
+        expect(() => readExtension(newer)).toThrow(
+            "The extension @rpgengine/wards cannot be used, because it is made for the API 6, and this rpg-engine reads the API 1 to 5 for an extension: rpg-engine must be updated first: ask the player to update it as they installed it, then open a new chat.",
+        );
     });
 });
 
@@ -703,7 +701,7 @@ describe("a package's code in the dashboard's page (D-510, D-511)", () => {
     it("read a game system's page module too, as its package.json declares it, listed before the extensions' (D-511)", async () => {
         const system = join(makeTempFolder(), "trial");
         mkdirSync(system);
-        writeFileSync(join(system, "package.json"), JSON.stringify({ name: "@test/system-trial", version: "0.3.0", "rpg-engine": { kind: "system", api: 1, page: "page/page.js" } }));
+        writeFileSync(join(system, "package.json"), JSON.stringify({ name: "@test/system-trial", version: "0.3.0", "rpg-engine": { kind: "system", api: 5, page: "page/page.js" } }));
         expect(systemPageModule(system)).toEqual({ file: join(system, "page", "page.js"), package: "@test/system-trial", version: "0.3.0" });
         await campaign("ironsworn", { "@rpgengine/charms": "1.0.0" });
         const modules = campaignPageModules(folder, context, { folder: system, language: "en" } as GameSystem);
@@ -721,8 +719,8 @@ describe("a package's code in the dashboard's page (D-510, D-511)", () => {
             const tied = await page.call("/api/run", { command: "charms-tie", input: { knot: "sailor's" } });
             expect(JSON.parse(tied.body)).toEqual({ text: "A sailor's knot: 1 in all." });
             expect(readLogFile(folder).at(-1)).toMatchObject({ type: "extension", by: "player", data: { text: "knot tied: sailor's" } });
-            expect(page.dashboard.news().lines).toEqual(["The player, on the dashboard, ran charms-tie: it is already done, do not run it again. It said, as its extension's words:\n> A sailor's knot: 1 in all."]);
-            expect(JSON.parse((await page.call("/api/run", { command: "charms", input: {} })).body).error).toBe("No extension of the campaign gives charms to the player: a page runs only the commands its extension marks player.");
+            expect(page.dashboard.news().lines).toEqual(["The player, on the dashboard, ran charms-tie: it is already done, do not run it again. It said, as its package's words:\n> A sailor's knot: 1 in all."]);
+            expect(JSON.parse((await page.call("/api/run", { command: "charms", input: {} })).body).error).toBe("No package of the campaign gives charms to the player: a page runs only the commands its package marks player.");
             expect(JSON.parse((await page.call("/api/run", { command: "charms-tie", input: {} })).body).error).toMatch(/^The input of charms-tie is not valid: knot: /);
             expect((await page.call("/api/run", { command: "status" })).status).toBe(400);
         } finally {

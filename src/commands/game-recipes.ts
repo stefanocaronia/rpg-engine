@@ -87,8 +87,8 @@ export function notBroughtBack(world: World, system: GameSystem, recipe: Recipe,
     const atZero = (field: string): boolean => system.statusLine.some((entry) => entry.whenSet && comparableText(entry.field) === comparableText(field));
 
     return Object.entries(effectiveFields(world, page)).flatMap(([field, value]) => {
-        // What the recipe sets, or leaves to the player among what it regains, is not left to the master.
-        const handled = targetOf(recipe, field) !== undefined || regainOf(recipe, field) !== undefined;
+        // What the recipe sets or lowers, or leaves to the player among what it regains, is not left to the master.
+        const handled = targetOf(recipe, field) !== undefined || regainOf(recipe, field) !== undefined || Object.keys(recipe.lower).some((name) => matches(name, field));
         const counter = isDeclaredUncounted(world, field) || handled ? undefined : readCounter(value);
 
         if (counter?.max === undefined || counter.value === (atZero(field) ? 0 : counter.max)) {

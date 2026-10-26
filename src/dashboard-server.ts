@@ -12,14 +12,14 @@ import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNa
 import { config, playerChangeNews, type PlayerSetting, playerSettingNamed, playerSettings, setupSettingNamed } from "./commands/config.ts";
 import { installAdventure } from "./commands/game-adventures.ts";
 import { type Catalog, catalog } from "./commands/game-catalog.ts";
-import { campaignExtensions, campaignPageModules, type PageModule } from "./commands/game-extension-list.ts";
-import { extensionCommands } from "./commands/game-extensions.ts";
+import { campaignPageModules, type PageModule } from "./commands/game-extension-list.ts";
 import { imageFolders } from "./commands/game-images.ts";
 import { playerStory } from "./commands/game-knowledge.ts";
 import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "./commands/game-library.ts";
 import { campaignMode } from "./commands/game-mode.ts";
+import { campaignPackages, loadCampaignCode, packageCommands } from "./commands/game-package-code.ts";
 import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
-import { campaignWidgets } from "./commands/game-widgets.ts";
+import { campaignWidgets, packageWidget } from "./commands/game-widgets.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
 import { importShown } from "./commands/import.ts";
 import { adventureText, isInstalledPackage, packageCommand, YesRefused } from "./commands/package.ts";
@@ -196,6 +196,8 @@ export async function startDashboard(context: Context, session: SessionStore, op
 {
     // The systems' code, when no MCP server loaded it first, as the dashboard served alone (D-448).
     context.systemCode ??= await loadSystemCode(context.systemFolders);
+    // And the campaign's extensions', whose hooks are called at once too (D-514).
+    await withFiles(session, () => loadCampaignCode(context));
     const root = withFiles(session, () => findCampaign(context.folder)) ?? context.folder;
 
     for (const port of options.ports ?? campaignPorts(root)) {
@@ -596,7 +598,7 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
                     words,
                     names,
                     ...rows,
-                    ...(asked.rows?.save === undefined ? {} : { save: asked.rows.save }),
+                    ...(asked.rows?.forced === true ? { forced: true } : {}),
                     ...(asked.rows?.buttons === undefined ? {} : { buttons: asked.rows.buttons }),
                     ...(asked.rows?.rule === undefined ? {} : { rule: asked.rows.rule }),
                     // Its card, or that one comes, until its widget answers: the page waits for it rather than show the question twice (D-507).
@@ -623,6 +625,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (path === "/api/widgets") {
         await widgetsNow(response, served);
+        return;
+    }
+
+    if (path === "/api/widget") {
+        await widgetForCard(response, served, url.searchParams);
         return;
     }
 
@@ -763,7 +770,7 @@ function pageModulesOf(root: string, served: Served): PageModule[]
 }
 
 /**
- * Runs a command of an extension the player may run from its page code (D-510): one the campaign's extensions give with player, whose code runs; as the
+ * Runs a command of a package the player may run from its page code (D-510, D-514): one the campaign's packages give with player, whose code runs; as the
  * player's, its output among what the master hears at their next call, quoted as another's words.
  */
 async function runForPlayer(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
@@ -778,12 +785,12 @@ async function runForPlayer(request: IncomingMessage, response: ServerResponse, 
     try {
         await served.session.ready();
         const context: Context = { ...served.context, actor: "player" };
-        const text = await withFiles(served.session, async () => {
+        const { text, readOnly } = await withFiles(served.session, async () => {
             const root = requireCampaign(context.folder);
-            const command = (await extensionCommands(root, context, [])).commands.find((one) => one.name === parsed.data.command && one.forPlayer === true);
+            const command = (await packageCommands(root, context, [])).commands.find((one) => one.name === parsed.data.command && one.forPlayer === true);
 
             if (command === undefined) {
-                throw new Error(`No extension of the campaign gives ${parsed.data.command} to the player: a page runs only the commands its extension marks player.`);
+                throw new Error(`No package of the campaign gives ${parsed.data.command} to the player: a page runs only the commands its package marks player.`);
             }
 
             const input = command.input.safeParse(parsed.data.input ?? {});
@@ -792,10 +799,17 @@ async function runForPlayer(request: IncomingMessage, response: ServerResponse, 
                 throw new Error(`The input of ${command.name} is not valid: ${input.error.issues.map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`).join("; ")}.`);
             }
 
-            return command.format(await command.run(input.data, context));
+            return { text: command.format(await command.run(input.data, context)), readOnly: command.readOnly === true };
         });
         const quoted = text.split("\n").map((line) => `> ${line}`).join("\n");
-        served.events.push(`The player, on the dashboard, ran ${parsed.data.command}: it is already done, do not run it again. It said, as its extension's words:\n${quoted}`);
+
+        // A command that only reads tells the master nothing (D-514).
+        if (readOnly) {
+            sendJson(response, 200, { text });
+            return;
+        }
+
+        served.events.push(`The player, on the dashboard, ran ${parsed.data.command}: it is already done, do not run it again. It said, as its package's words:\n${quoted}`);
         served.notify();
         sendJson(response, 200, { text });
     } catch (error) {
@@ -911,9 +925,9 @@ function pagePlayer(served: Served): Player
             const chosen = await put(question, title, [change], signal, { square: true, rows: { who, fields: [] } });
             return typeof chosen === "number" ? (chosen === 0 ? 0 : undefined) : chosen;
         },
-        async spendDice(question, title, done, spending, signal)
+        async spendDice(question, title, done, spending, signal, card)
         {
-            const chosen = await put(question, title, [done], signal, { spending });
+            const chosen = await put(question, title, [done], signal, { spending, ...(card === undefined ? {} : { rows: { who: spending.shown().who, fields: [], card } }) });
             // The call stopped, its answer never goes: the dice spent reach the master at the next one, as the player's other news (ASK-14).
             const told = signal?.aborted === true ? spending.spent() : undefined;
 
@@ -1195,6 +1209,23 @@ function inLanguage<Installed extends { package: string; title?: string; about?:
             return one;
         }
     });
+}
+
+/** What one widget of a package shows for a card or a page of its page code, for the character it shows (D-514): its data, or nothing. */
+async function widgetForCard(response: ServerResponse, served: Served, query: URLSearchParams): Promise<void>
+{
+    const [owner, name, who] = [query.get("package") ?? "", query.get("widget") ?? "", query.get("who") ?? undefined];
+
+    try {
+        await served.session.ready();
+        const shows = await withFiles(served.session, async () => {
+            const root = findCampaign(served.context.folder);
+            return root === undefined ? undefined : await packageWidget(root, served.context, owner, name, who === "" ? undefined : who);
+        });
+        sendJson(response, 200, shows === undefined ? {} : { shows });
+    } catch (error) {
+        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
 }
 
 /** The widgets of the campaign's extensions as the page shows them (D-502): where each stands, and what it shows now; none without a campaign. */
@@ -2079,7 +2110,7 @@ async function runCommand(name: string, parameters: URLSearchParams, response: S
  */
 function sendImage(name: string, request: IncomingMessage, response: ServerResponse, served: Served): void
 {
-    // An extension's own, which its widgets show, at an address of its own, ext/<extension>/<file>, never mistaken for the campaign's (D-502).
+    // A package's own, which its widgets show, at an address of its own, ext/<package>/<file>, never mistaken for the campaign's (D-502, D-514).
     const [, extensionName, extensionFile] = /^ext\/([^/]+)\/([^/]+)$/.exec(name) ?? [];
     const fileName = decoded(extensionFile ?? name);
     const ownerName = extensionName === undefined ? undefined : decoded(extensionName);
@@ -2091,7 +2122,7 @@ function sendImage(name: string, request: IncomingMessage, response: ServerRespo
         }
 
         if (extensionName !== undefined) {
-            const owner = campaignExtensions(root, served.context).extensions.find((extension) => extension.name === ownerName);
+            const owner = campaignPackages(root, served.context).find((extension) => extension.name === ownerName);
             return owner === undefined ? undefined : findImage([owner.folder], fileName);
         }
 

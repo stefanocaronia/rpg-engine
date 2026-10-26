@@ -23,7 +23,7 @@ const turn = "Move each clock as its event says, or a step for each day its owne
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     await ok("write", "Guadoscuro", "--type", "place", "--set", "contains=[[Locanda]], [[Ossario]]");
     await ok("write", "Locanda", "--type", "place", "--set", "contains=[[Ennio]], [[Lanterna]]");
     await ok("write", "Ossario", "--type", "place");

@@ -2,18 +2,18 @@
 // title and line of now, gold when it is the player's turn; the order of the turns, fixed, the mark moving, each one a small card (D-419): their place in a
 // strip that lights up on their turn, their counter, the party's as numbers and a foe's in words, their state as icons, what they keep, the death saves at 0;
 // and the player's character's card, the fields and groups of its sheet the system names. The page never decides a rule: it shows.
-import { useEffect, useRef } from "preact/hooks";
+import { useContext, useEffect, useRef } from "preact/hooks";
 import { TalkName } from "./act-names.tsx";
 import { CardHead, CardHeader, useOpen } from "./card.tsx";
-import type { Fighter, Member, SheetCards, SheetGroup, ShownScene } from "./data.ts";
-import { DeathSaves } from "./dying.tsx";
+import type { Fighter, Member, SheetCards, SheetGroup, ShownScene, ShownWidget } from "./data.ts";
+import { WidgetsContext } from "./extension-widgets.tsx";
 import { Icon, iconPath } from "./icons.tsx";
 import { fieldLabel, itemLabel, phraseLabel, shownText, strangerLabel } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { sideOf, Token } from "./party.tsx";
-import { dyingState } from "./save-outcome.ts";
+import { PersonPanel, type PersonShown, personShown } from "./person-panel.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";
-import { StatusIcons, StatusPip, type TokenStatus } from "./status.tsx";
+import { downTint, personState, StatusIcons, type StatusMark, StatusPip, type TokenStatus } from "./status.tsx";
 import { arrowStep, t } from "./text.ts";
 import { Bar } from "./widgets.tsx";
 
@@ -118,11 +118,14 @@ function TurnMarks({ marks }: { marks: { use: string; used: boolean; }[]; })
 export function CharacterCard({ lead, scene, own, party = [], onShow }: { lead?: Member; scene: TurnScene; own: OwnSheet; party?: Member[]; onShow?: (name: string) => void; })
 {
     const fighter = scene.fighters.find((one) => one.role === "pc" && one.name === lead?.name);
+    const widgets = useContext(WidgetsContext);
 
     if (lead === undefined || fighter === undefined || (own.cards?.atHand.length ?? 0) === 0) {
         return null;
     }
 
+    // At 0 the panels of the packages' widgets on them (D-516).
+    const person = personShown(widgets, lead.name);
     const players = onShow === undefined ? [] : party.filter((member) => member.role === "pc" && scene.fighters.some((one) => one.role === "pc" && one.name === member.name));
     const switching = players.length > 1 && onShow !== undefined;
     return (
@@ -133,12 +136,14 @@ export function CharacterCard({ lead, scene, own, party = [], onShow }: { lead?:
                     <Icon name="party" />
                 </a>
             </CardHead>
-            {fighter.dying ? <DeathSaves dying={fighter.dying} /> : (
-                <>
-                    {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
-                    <SheetAtHand member={lead} sheet={own.sheet} names={own.cards?.atHand ?? []} version={own.version} onRoll={own.onRoll} />
-                </>
-            )}
+            {person.length > 0
+                ? person.map((shown) => <PersonPanel key={shown.widget.id} shown={shown} />)
+                : (
+                    <>
+                        {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
+                        <SheetAtHand member={lead} sheet={own.sheet} names={own.cards?.atHand ?? []} version={own.version} onRoll={own.onRoll} />
+                    </>
+                )}
         </aside>
     );
 }
@@ -261,6 +266,8 @@ function FighterRow({ fighter, member, place, acting, several }: { fighter: Figh
 {
     // One of the party has the bar of their strip (D-419), the icons under it.
     const counter = member === undefined ? undefined : stripCounter(member);
+    const widgets = useContext(WidgetsContext);
+    const person = fighter.role === "other" ? [] : personShown(widgets, fighter.name);
     return (
         <li class={["turn-row", fighter.role, acting ? "now" : ""].filter((part) => part !== "").join(" ")} aria-current={acting ? "step" : undefined}>
             <span class="turn-place">{place}</span>
@@ -282,10 +289,10 @@ function FighterRow({ fighter, member, place, acting, several }: { fighter: Figh
                         && (fighter.role === "other"
                             ? <span class={fighter.wound === undefined ? "wound" : `wound ${fighter.wound}`}>{phraseLabel(itemLabel(fighter.health))}</span>
                             : <span class="turn-health num">{shownText(fighter.health)}</span>)}
-                    <StatusIcons status={fighterStatus(fighter)} downSaid={counter === undefined && fighter.role === "other" && fighter.wound === "down"} />
+                    <StatusIcons status={fighterStatus(fighter, widgets)} said={saidInRow(fighter, person, counter !== undefined)} />
                 </div>
                 {fighter.keeps && <p class="keeping">{t("Keeping {what}", { what: fighter.keeps.join(", ") })}</p>}
-                {fighter.dying && <DeathSaves dying={fighter.dying} compact />}
+                {person.map((shown) => <PersonPanel key={shown.widget.id} shown={shown} compact />)}
             </div>
         </li>
     );
@@ -297,7 +304,8 @@ function FighterRow({ fighter, member, place, acting, several }: { fighter: Figh
  */
 function FighterToken({ fighter, pip = true, state = true }: { fighter: Fighter; pip?: boolean; state?: boolean; })
 {
-    const status = state ? fighterStatus(fighter) : undefined;
+    const widgets = useContext(WidgetsContext);
+    const status = state ? fighterStatus(fighter, widgets) : undefined;
     // A stranger's number, as Creature 2's or, with more kinds, Creature B1's, the same on their token on the map (D-325, D-331).
     const number = fighter.stranger ? /[A-Z]?\d+$/.exec(fighter.name)?.[0] : undefined;
     const hostile = fighter.hostile === true;
@@ -314,22 +322,37 @@ function FighterToken({ fighter, pip = true, state = true }: { fighter: Fighter;
                 member={{ name: fighter.name, role: fighter.role, ...(fighter.image === undefined ? {} : { image: fighter.image }), ...(fighter.icon === undefined ? {} : { icon: fighter.icon }) }}
                 hostile={hostile}
                 side={pip ? sideOf(fighter.role) : undefined}
-                dying={dyingState(fighter.dying) ?? (fighter.wound === "down" ? "down" : undefined)}
+                dying={downTint(status ?? fighterStatus(fighter, widgets))}
                 {...(status === undefined ? {} : { status })}
                 number={number}
             />
         );
 }
 
-/** A fighter's state: what is on them, whether they act, and at 0 the party's dying point or a foe down. */
-function fighterStatus(fighter: Fighter): TokenStatus
+/**
+ * The states a row of the turns already says in words, which its icons do not say again to a screen reader (D-516): the word of a package's panel, a foe's
+ * down beside a counter in words.
+ */
+export function saidInRow(fighter: Fighter, person: PersonShown[], counted: boolean): StatusMark["tone"][]
 {
+    const worded = person.some(({ shows }) => shows.parts?.some((part) => "lead" in part) === true);
+    return worded
+        ? ["dying", "stable", "down", "dead"]
+        : !counted && fighter.role === "other" && fighter.wound === "down"
+        ? ["down"]
+        : [];
+}
+
+/** A fighter's state: what is on them, whether they act, and at 0 the party's down point, with what a package's widget on them says (D-514), or a foe down. */
+function fighterStatus(fighter: Fighter, widgets: ShownWidget[]): TokenStatus
+{
+    const person = fighter.role === "other" ? undefined : personState(widgets, fighter.name);
     return {
+        ...(person === undefined ? {} : { person }),
         effects: fighter.effects,
         inactive: fighter.inactive === true,
-        down: fighter.dying !== undefined || fighter.wound === "down",
-        dying: dyingState(fighter.dying),
-        counters: fighter.dying,
+        down: fighter.down === true || fighter.wound === "down",
+        ...(person?.dead === true ? { dead: true } : {}),
         party: fighter.role !== "other",
     };
 }

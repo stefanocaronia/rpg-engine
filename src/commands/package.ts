@@ -4,18 +4,19 @@ import { changeExtensions, readTextSetting, requireCampaign } from "../campaign/
 import type { Context, PackageInfo } from "../core/context.ts";
 import { installedFromFolder } from "../core/files.ts";
 import { appendLogEntry } from "../core/log.ts";
+import { apiProblem, readsApi } from "../core/package-declarations.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
-import { dropConsent, type Extension, extensionApi, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, readsApi, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
+import { dropConsent, type Extension, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
 import { installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
 import { chooseAnswer } from "./ask.ts";
 import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game-adventures.ts";
 import { listedExtensions, runsCode } from "./game-extension-list.ts";
-import { extensionCommandNames, packagesInstalled } from "./game-extensions.ts";
 import { campaignMode } from "./game-mode.ts";
+import { loadCampaignCode, packageCommandNames, packagesInstalled } from "./game-package-code.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
 
@@ -261,7 +262,7 @@ async function available(context: Context): Promise<PackageResult>
     }
 
     const here = installedExtensions(context.extensionFolders ?? []);
-    const packages = searched.filter((one) => one.kind === "extension" && readsApi(one.api)).map((one): Available => {
+    const packages = searched.filter((one) => one.kind === "extension" && readsApi(one.api, "extension")).map((one): Available => {
         const installed = here.find((found) => found.package === one.name);
         const copy = installed === undefined ? undefined : usable(context, one.name);
         const version = copy?.version;
@@ -311,13 +312,15 @@ async function installed(root: string, context: Context, name: string): Promise<
     if (described.kind !== "extension") {
         throw new Error(
             described.kind === undefined
-                ? `${described.name} is not a package for RPG Engine: its package.json does not say "rpg-engine": {"kind": "extension"}. Nothing changed.`
+                ? `${described.name} is not a package for RPG Engine: its package.json does not say "rpg-engine": {"kind": "extension"}, or {"kind": "system"} for a game system. Nothing changed.`
                 : `${described.name} is a package of kind ${described.kind}: for now extensions, game systems and adventures are installed this way. Nothing changed.`,
         );
     }
 
-    if (!readsApi(described.api)) {
-        throw new Error(`${described.name} ${described.version} is made for the extension API ${described.api ?? "none"}, and this RPG Engine reads the API 1 to ${extensionApi}: install a version made for these. Nothing changed.`);
+    const unread = apiProblem(described.api, "extension");
+
+    if (unread !== undefined) {
+        throw new Error(`${described.name} ${described.version} cannot be used, because ${unread}. Nothing changed.`);
     }
 
     const local = isLocalSpec(spec);
@@ -363,6 +366,11 @@ async function installed(root: string, context: Context, name: string): Promise<
         throw new Error(`${extension.name} is installed on this computer, but it is for the game system ${extension.needs.system}, and the campaign plays ${system ?? "none"}: the campaign does not use it.`);
     }
 
+    // Its state, widgets and pictures go by its name, which the system's would share (D-514).
+    if (comparableText(extension.name) === comparableText(system ?? "")) {
+        throw new Error(`${extension.name} is installed on this computer, but it has the name of the game system the campaign plays: the campaign does not use it. Nothing changed in the campaign.`);
+    }
+
     const others = Object.keys(listedExtensions(root)).filter((other) => other !== extension.package && shortName(other) === extension.name);
 
     if (others.length > 0) {
@@ -371,7 +379,7 @@ async function installed(root: string, context: Context, name: string): Promise<
 
     // Its code is checked before the campaign lists it: a package that would not work is never added.
     const commands = runsCode(extension)
-        ? await extensionCommandNames(extension, []).catch((error: unknown) => {
+        ? await packageCommandNames(extension, context, []).catch((error: unknown) => {
             throw new Error(`The code of ${extension.package} cannot be used: ${error instanceof Error ? error.message : String(error)}. Nothing changed in the campaign.`);
         })
         : [];
@@ -383,6 +391,9 @@ async function installed(root: string, context: Context, name: string): Promise<
         changeExtensions(root, { ...listedBefore, [extension.package]: extension.version });
         appendLogEntry(root, newDatedLogEntry(root, context, "package-installed", "public", { package: extension.package, version: extension.version, verified }));
     }
+
+    // The campaign's code anew, the new one's included: their hooks are called at the next change, never skipped (D-514).
+    await loadCampaignCode(context);
 
     return {
         kind: "installed",
@@ -404,6 +415,12 @@ async function systemInstalled(root: string, context: Context, spec: string, nam
 {
     const local = isLocalSpec(spec);
     const named = shortName(described.name).replace(/^system-/, "");
+    const unread = apiProblem(described.api, "system");
+
+    if (unread !== undefined) {
+        throw new Error(`${described.name} ${described.version} cannot be used, because ${unread}. Nothing changed.`);
+    }
+
     const taken = systemsHere(root, context).find((one) => comparableText(one.name) === comparableText(named) && one.package !== described.name);
 
     if (taken !== undefined) {

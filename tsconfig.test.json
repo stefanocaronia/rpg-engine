@@ -3,6 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "rootDir": ".",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "paths": {
       "rpg-engine": ["./src/index.ts"],
       "rpg-engine/testing": ["./src/testing.ts"],

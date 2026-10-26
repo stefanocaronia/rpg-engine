@@ -159,7 +159,7 @@ async function formClient(answer: ElicitResult, shown: unknown[], capabilities: 
 
 describe("what the player changed on the dashboard (D-341)", () => {
     it("comes at the head of the master's next answer, once, even when the call fails", async () => {
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         const news = ["The player set difficulty to hard on the dashboard. Play by it from now on."];
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
         await createMcpServer({ ...testContext(folder), news: () => ({ lines: news.splice(0), restore: () => undefined }) }, {}).connect(serverTransport);
@@ -207,7 +207,7 @@ describe("what the player changed on the dashboard (D-341)", () => {
     });
 
     it("takes in what the player changed while the call waited for them", async () => {
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], testContext(folder));
         const news: string[] = [];
         // A page where the player changes a setting before answering.
@@ -228,7 +228,7 @@ describe("what the player changed on the dashboard (D-341)", () => {
     });
 
     it("comes back for the next call when the user stops the one it was taken for, whose answer never goes", async () => {
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], testContext(folder));
         const news: string[] = [];
         let reached: () => void = () => undefined;
@@ -280,7 +280,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
     const wall = { question: "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options: ["Atletica 1d20+5", "Acrobazia 1d20+3"], who: "Bruna" };
 
     beforeEach(async () => {
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], testContext(folder));
     });
 
@@ -364,7 +364,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
 
 describe("MCP server, with the files of a session (D-193)", () => {
     it("makes the session ready before every tool: what its watchers name, and everything at instructions", async () => {
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "hp=12/12"], testContext(folder));
         const reports = new Map<string, (name: string | undefined) => void>();
         const session = new SessionStore({ watchFolder: (watched, changed) => (reports.set(resolve(watched), changed), { close: () => undefined }) });
@@ -397,7 +397,7 @@ describe("MCP server, what changed outside the chat (OUT-1–OUT-4, D-364)", () 
     it("tells the master at the next call what changed by hand, each page's fields and text, logs it hidden and fires the events it set off", async () => {
         // The real clock: what changed while no chat was open is told by the time of the log's last line (OUT-4).
         const context = { ...testContext(folder), now: () => new Date() };
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
         inPlay(folder);
         const session = new SessionStore({ watchFolder: () => ({ close: () => undefined }) });
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -455,7 +455,7 @@ describe("MCP server, what changed outside the chat (OUT-1–OUT-4, D-364)", () 
         const context = { ...testContext(folder), now: () => new Date() };
         // The last line of the log a minute ago; the page written by hand half a minute ago, before the chat begins.
         const earlier = { ...context, now: () => new Date(Date.now() - 60_000) };
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], earlier);
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], earlier);
         await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], earlier);
         const bruna = join(folder, "world", "characters", "Bruna.md");
         writeFileSync(bruna, `${readFileSync(bruna, "utf8")}\nScritto a mano.\n`);
@@ -483,7 +483,7 @@ describe("MCP server, what changed outside the chat (OUT-1–OUT-4, D-364)", () 
 
 describe("MCP server, loading a save in a session (SAV-5)", () => {
     it("reads the campaign as the save gave it back, at the very next call", async () => {
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         await runCommandLine(["config", "saves", "free"], testContext(folder));
         const session = new SessionStore({ watchFolder: () => ({ close: () => undefined }) });
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -534,7 +534,7 @@ describe("MCP server, loading a save in a session (SAV-5)", () => {
 
 describe("MCP server, starting a session (D-194)", () => {
     it("lists the tools to a host that asks for them after initialized before it reads the campaign", async () => {
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         const order: string[] = [];
 
         class SeenSession extends SessionStore
@@ -594,7 +594,7 @@ describe("MCP server, starting a session (D-194)", () => {
 
 describe("rpg mcp, as a host starts it", () => {
     beforeEach(async () => {
-        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
     });
 
     /** The server in a new process, as a host starts it, initialized by a host with these capabilities; what it writes goes in `output`. */

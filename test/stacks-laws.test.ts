@@ -8,7 +8,7 @@ import { runCommandLine } from "../src/command-line.ts";
 import { entryOfKind, readEntry, withStackCount } from "../src/pages/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
-const kinds = ["Torch", "Rations", "Arrows"];
+const kinds = ["Rushlight", "Hardtack", "Tallow"];
 // An entry as a list may hold it: a stack, a kind alone, written with a label or another case, a page, or text.
 const entries = fc.oneof(
     fc.tuple(fc.constantFrom(...kinds), fc.integer({ min: 1, max: 30 })).map(([kind, count]) => `[[${kind}]] ${count}`),
@@ -41,7 +41,7 @@ describe("the laws of a list's stacks", () => {
 const holders = ["Ettore", "Lena", "Ugo", "Bottega", "Zaino"];
 const sides = ["Ettore", "Lena", "Ugo", "Bottega"];
 // The labels a stack written by hand may have, as an Italian table writes them.
-const labels: Record<string, string> = { Torch: "torce", Rations: "razioni", Arrows: "frecce" };
+const labels: Record<string, string> = { Rushlight: "giunchi", Hardtack: "gallette", Tallow: "sego" };
 // What a side of a trade names: a kind by its name or by a label, with how many.
 const goods = fc.tuple(fc.constantFrom(...kinds), fc.integer({ min: 1, max: 4 }), fc.integer({ min: 0, max: 4 })).map(([kind, count, way]) => `${way === 0 ? labels[kind] : kind} ${count}`);
 const commands = fc.oneof(
@@ -52,7 +52,7 @@ const commands = fc.oneof(
         to: fc.constantFrom(...sides),
         gives: fc.array(goods, { minLength: 1, maxLength: 3 }),
         gets: fc.array(goods, { maxLength: 1 }),
-        price: fc.constantFrom("", "", "3 cp", "1 sp", "2 sp 5 cp", "1 gp"),
+        price: fc.constantFrom("", "", "3 penny", "1 shilling", "2 shilling 5 penny", "1 crown"),
         // Who pays: page, with gives, or with, with gets.
         paidBy: fc.constantFrom("page", "with"),
     }),
@@ -137,11 +137,11 @@ function shopShare(step: { from: string; to: string; price: string; paidBy: stri
 /** A campaign in play with the holders, their purses, the stacks given, written one by one as write allows them, and doubles written by hand with a label. */
 async function setUp(run: (...args: string[]) => Promise<{ exitCode: number; output: string; }>, folder: string, stacks: number[][], twice: [string, string, number][]): Promise<void>
 {
-    await run("init", "--name", "Mercato", "--language", "it", "--system", "5e");
+    await run("init", "--name", "Mercato", "--language", "it", "--system", "fake");
     inPlay(folder);
-    await run("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "money=3 gp 4 sp 7 cp");
-    await run("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "money=9 sp 9 cp");
-    await run("write", "Ugo", "--type", "character", "--set", "role=npc", "--set", "money=2 gp 5 sp 5 cp");
+    await run("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "money=3 crown 4 shilling 7 penny");
+    await run("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "money=9 shilling 9 penny");
+    await run("write", "Ugo", "--type", "character", "--set", "role=npc", "--set", "money=2 crown 5 shilling 5 penny");
     await run("write", "Bottega", "--type", "place", "--add", "contains=[[Ugo]]");
     await run("write", "Zaino", "--type", "item");
     await run("move", "Zaino", "--to", "Ettore");
@@ -208,9 +208,9 @@ function entriesOfKind(text: string, kind: string): number
 /** What the purses of some characters are worth, in copper, as the pages say. */
 function valueIn(files: Record<string, string>, names: string[]): number
 {
-    const worth: Record<string, number> = { gp: 100, sp: 10, cp: 1 };
+    const worth: Record<string, number> = { crown: 240, mark: 160, shilling: 12, penny: 1 };
     return names.reduce((total, name) => {
         const money = /^money: (.*)$/m.exec(files[`world/characters/${name}.md`] ?? "")?.[1] ?? "";
-        return total + [...money.matchAll(/(\d+) (gp|sp|cp)/g)].reduce((sum, [, count, coin]) => sum + Number(count) * worth[coin], 0);
+        return total + [...money.matchAll(/(\d+) (crown|mark|shilling|penny)/g)].reduce((sum, [, count, coin]) => sum + Number(count) * worth[coin], 0);
     }, 0);
 }

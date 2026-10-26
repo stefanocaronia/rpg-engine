@@ -1,7 +1,7 @@
 // A test extension's code for the API 4: a knot the player ties from the page, and a widget whose page code draws it, with data only the page reads.
-import type { ExtensionEntry } from "rpg-engine";
+import type { PackageEntry } from "rpg-engine";
 
-const charms: ExtensionEntry = ({ z }) => ({
+const charms: PackageEntry = ({ z }) => ({
     commands: [
         {
             name: "charms",

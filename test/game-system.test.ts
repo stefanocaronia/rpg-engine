@@ -86,27 +86,28 @@ describe("the names a game gives its rolls (D-399)", () => {
 describe("what a fight follows on the dashboard (D-314)", () => {
     const base = "title: one of our own\nlanguage: it\nfields: { pf: counter, salvi: counter, persi: counter, forza: number }\nconditions: [Stordito, Prono]\n";
 
-    it("reads the counter, the words a foe's is told in, who does not act, and the panel of the dying with what full successes make", () => {
-        system(near, "nostro", `${base}combat: {track: pf, in-words: [illeso, ferito, a terra], inactive: [Stordito]}\ndying: {at: pf 0, show: {successes: salvi, failures: persi}, stable: Salvo}\n`);
+    it("reads the counter, the words a foe's is told in, who does not act, and when one of the party is down (D-516)", () => {
+        system(near, "nostro", `${base}combat: {track: pf, in-words: [illeso, ferito, a terra], inactive: [Stordito]}\ndown: {at: pf 0}\n`);
         expect(installedSystems([near])[0]).toMatchObject({
             combat: { track: "pf", inWords: ["illeso", "ferito", "a terra"], inactive: ["Stordito"] },
-            dying: { field: "pf", value: 0, show: { successes: "salvi", failures: "persi" }, stable: "Salvo" },
+            down: { field: "pf", value: 0 },
         });
         system(near, "nostro", `${base}combat: {track: pf}\n`);
         expect(installedSystems([near])[0].combat).toEqual({ track: "pf", inWords: [], inactive: [] });
     });
 
-    it("refuses a track or a counter of the dying that is no counter, and a condition it does not have", () => {
+    it("refuses a track or a counter of the down point that is no counter, and a condition it does not have", () => {
         system(near, "nostro", `${base}combat: {track: forza}\n`);
         expect(() => installedSystems([near])).toThrow("combat.track: forza is not declared as a counter in fields");
         system(near, "nostro", `${base}combat: {track: pf, inactive: [Paralizzato]}\n`);
         expect(() => installedSystems([near])).toThrow("combat.inactive: Paralizzato is not one of its conditions");
-        system(near, "nostro", `${base}dying: {at: pf 0, show: {failures: forza}}\n`);
-        expect(() => installedSystems([near])).toThrow("dying: forza is not declared as a counter in fields");
-        system(near, "nostro", `${base}dying: {at: pf, show: {successes: salvi}}\n`);
+        system(near, "nostro", `${base}down: {at: forza 0}\n`);
+        expect(() => installedSystems([near])).toThrow("down.at: forza is not declared as a counter in fields");
+        system(near, "nostro", `${base}down: {at: pf}\n`);
         expect(() => installedSystems([near])).toThrow("cannot be read");
-        system(near, "nostro", `${base}dying: {at: pf 0, show: {successes: salvi}}\n`);
-        expect(() => installedSystems([near])).toThrow("name what full successes make");
+        // The panel's counters and words are the system's code now (D-516).
+        system(near, "nostro", `${base}down: {at: pf 0, show: {successes: salvi}}\n`);
+        expect(() => installedSystems([near])).toThrow("cannot be read");
         system(near, "nostro", `${base}combat: {track: pf, in-words: true}\n`);
         expect(() => installedSystems([near])).toThrow("give the words a foe's counter is heard in");
     });
@@ -122,7 +123,7 @@ describe("what a fight follows on the dashboard (D-314)", () => {
         expect(() => installedSystems([near])).toThrow("checks: {pff} in say is neither {page} nor a field declared in fields");
     });
 
-    it("reads the drawing of a condition, and marks an effect named as one of its conditions, whatever its case, with its drawing when it has one (D-419)", () => {
+    it("reads the drawing of an effect, and marks an effect named as one of its conditions, whatever its case, with its drawing when it has one (D-419, D-516)", () => {
         system(near, "nostro", `${base}condition-icons: { stordito: "M4 4L20 20" }\n`);
         const read = installedSystems([near])[0];
         expect(read.conditionIcons).toEqual({ stordito: "M4 4L20 20" });
@@ -132,8 +133,9 @@ describe("what a fight follows on the dashboard (D-314)", () => {
             {},
             {},
         ]);
-        system(near, "nostro", `${base}condition-icons: { Paralizzato: "M4 4L20 20" }\n`);
-        expect(() => installedSystems([near])).toThrow("condition-icons: Paralizzato is not one of its conditions (Stordito, Prono); write it as one of them, or add it to conditions.");
+        // Any effect's name has its drawing too, a condition or not (D-516).
+        system(near, "nostro", `${base}condition-icons: { Benedizione: "M12 3v18" }\n`);
+        expect(conditionMark(installedSystems([near])[0], "benedizione")).toEqual({ icon: "M12 3v18" });
         system(near, "nostro", `${base}condition-icons: { Prono: "<path d='M4 4'/>" }\n`);
         expect(() => installedSystems([near])).toThrow("write it as the d of an SVG path on a grid of 24");
         system(far, "altro", base);

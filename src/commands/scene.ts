@@ -30,22 +30,22 @@ import type { GameSystem } from "../systems/index.ts";
 import { formatGameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { newStateChecks } from "./game-checks.ts";
-import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy } from "./game-effects.ts";
+import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy, systemNamed } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clearCopies, offMapNote, placeGrid, standing } from "./game-grids.ts";
 import { metPictureNote, picturesNote } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
+import { packagesTurnStarted } from "./game-package-hooks.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game-quests.ts";
 import { turnEffectsNote } from "./game-reminders.ts";
 import { partyLead, playersApart } from "./game-roads.ts";
 import { isPlayerDead, makeSave, saveText } from "./game-saves.ts";
 import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./game-scene.ts";
-import { systemTurnStarted } from "./game-system-code.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { turnUsesOf, useInTurn, usesAtTurn } from "./game-turn-uses.ts";
-import { campaignSystem, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
+import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { situationPart } from "./parts.ts";
 import { hasSheet, startingAtZero } from "./worked-out.ts";
@@ -620,8 +620,9 @@ function useOfTurn(root: string, world: World, input: SceneInput, context: Conte
         spendOne(root, context, world, { name, copy: copy !== undefined, page }, done.spends, by ?? "");
     }
 
-    // One who cannot act, as Stunned, is said so: the game's rule, which the master applies (pp. 91, 358).
-    const inactive = effectsOf(page).map((effect) => effect.name).filter((effect) => (system?.combat?.inactive ?? []).some((condition) => comparableText(condition) === comparableText(effect)));
+    // One who cannot act, as Stunned, is said so: the game's rule, which the master applies (pp. 91, 358); by its name in the campaign's language too (D-403).
+    const words = campaignSystemWords(root, context);
+    const inactive = effectsOf(page).map((effect) => effect.name).filter((effect) => systemNamed(system?.combat?.inactive ?? [], effect, words) !== undefined);
     const warned = inactive.length === 0 ? "" : ` ${name} is ${inactive.join(", ")}: read what it may still do.`;
     return { action: "use", line: `${done.line}${warned}` };
 }
@@ -853,10 +854,11 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     // The player character's turn reminds what to mark of it, which the player sees on the dashboard (TRN-1); a companion's counts went right without (playtest
     // 08); dying, the death save it starts with (DIE-5).
     const member = findPage(world, turns.turn);
-    const turn = systemTurnStarted(root, context, turns.turn);
+    const turn = packagesTurnStarted(root, context, turns.turn);
     const dying = turn.lines.join(" ");
     // Who cannot act, as one stable but still Unconscious, marks nothing.
-    const inactive = member !== undefined && effectsOf(member).some((effect) => sameName(system?.combat?.inactive ?? [], effect.name) !== undefined);
+    const words = campaignSystemWords(root, context);
+    const inactive = member !== undefined && effectsOf(member).some((effect) => systemNamed(system?.combat?.inactive ?? [], effect.name, words) !== undefined);
     const pc = member !== undefined && isPlayerCharacter(member);
     const uses = !pc || dying !== "" || inactive ? [] : turnUsesOf(system);
     const mark = uses.length > 0 ? `Mark with scene use what ${turns.turn} uses of the turn, as it happens: ${uses.join(", ")}.` : "";
@@ -864,7 +866,8 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
     const quiet = pc ? "" : "Write nothing until the round is told: what you work out stays in your thinking.";
     // What cannot be true together, once in a chat, after the system's code had its say (CHK-3).
     const checks = newStateChecks(root, context).join(" ");
-    const acting = [effects, dying, mark, offTheMap(world, scene, turns.turn), turn.problem ?? "", checks, quiet].filter((line) => line !== "").join(" ");
+    // The extensions' lines come after the engine's reminder, which only the system's take the place of (D-514).
+    const acting = [effects, dying, mark, ...turn.added, offTheMap(world, scene, turns.turn), turn.problem ?? "", checks, quiet].filter((line) => line !== "").join(" ");
     return acting === "" ? result : { ...result, acting };
 }
 

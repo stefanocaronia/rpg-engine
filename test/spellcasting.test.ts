@@ -1,3 +1,4 @@
+// The 5e's (D-514): this file goes with the 5e to its own repository at step 8; the core's own tests of the same rules run on the fake system.
 // A character's spellcasting on the 5e (D-227, PRO-5): slots by caster level, a warlock's Pact Magic and Mystic Arcanum, and the save DC, attack and prepared
 // spells of each class, worked out from the formulas of its page.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

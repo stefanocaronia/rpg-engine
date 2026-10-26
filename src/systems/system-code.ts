@@ -1,120 +1,93 @@
-// The code a game system brings where its data is not enough (D-448), as the 5e's dying point: hooks the engine calls after its own writes, given the game
-// they may read and change. A system's package.json says it has code, as an extension's does (D-439); the engine loads it once for the process, as it starts.
+// The code a game system brings where its data is not enough (D-448, D-514), with the same contract as an extension's: the engine loads it once for the process,
+// as it starts. A system's package.json says it has code and which API it is made for, as an extension's does (D-439); a folder without one is data alone.
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { z } from "zod";
 import { packageCodeMayRun } from "../core/consents.ts";
-import type { SaveAsked } from "../core/context.ts";
 import { realPath } from "../core/files.ts";
+import type { PackageCode, PackageEntry } from "../core/package-api.ts";
+import { apiProblem } from "../core/package-declarations.ts";
 import { isInside } from "../core/store.ts";
 import { systemFolders } from "./system-folders.ts";
 
-/** A die as it was thrown: its faces, what it showed, and whether it was dropped, as the lower of two kept highest. */
-export interface ThrownDie
+/** A system's code as loaded: what it gives, or what kept it from loading; the version of its package, as it was loaded. */
+export type LoadedSystemCode = ({ code: PackageCode; } | { problem: string; } | { refused: string; }) & { version: string; };
+
+/** A system's package.json of kind system (D-448, D-511): its name and version, the main of its code and its page module, the API it is made for. */
+export interface SystemPackage
 {
-    sides: number | "F";
-    value: number;
-    dropped?: boolean;
+    package: string;
+    version: string;
+    main?: string;
+    page?: string;
+    api?: number;
 }
 
-/** A counter a command changed on a page: before and after, its maximum, and what damage took of it past what shields it. */
-export interface CounterChange
+/** A system's package.json of kind system; undefined for a folder without one, which is data alone. */
+export function systemPackage(folder: string): SystemPackage | undefined
 {
-    page: string;
-    field: string;
-    before: number;
-    after: number;
-    max?: number;
-    lost: number;
-}
+    const path = join(folder, "package.json");
 
-/** A roll made for someone with a page, as the player's check or the master's roll with who: never a hidden one. */
-export interface RollMade
-{
-    who: string;
-    notation: string;
-    total: number;
-    dice: ThrownDie[];
-}
+    if (!existsSync(path)) {
+        return undefined;
+    }
 
-/** A page as a system's code reads it: in the party or not, the player's character or not, its counters with what its effects give, its effects. */
-export interface SystemPage
-{
-    name: string;
-    party: boolean;
-    pc: boolean;
-    counter(field: string): { value: number; max?: number; } | undefined;
-    has(effect: string): boolean;
-}
-
-/** What a system's code may read of the game. */
-export interface SystemReader
-{
-    /** A page by its name; undefined when no page, or more than one, has it. */
-    page(name: string): SystemPage | undefined;
-    /** A setting of the campaign, as mentor. */
-    setting(name: string): string | undefined;
-    /** Whether two names are the same, as the engine compares them: case and accents aside. */
-    sameName(one: string, other: string): boolean;
-}
-
-/** What a system's code may do to the game: each write with its line in the log, public or hidden as the engine shows that page to the player. */
-export interface SystemGame extends SystemReader
-{
-    /** Sets numbers on a page: a counter keeps its maximum. */
-    set(page: string, values: Record<string, number>, why: string): void;
-    /** Adds an effect without end; the engine's notes on what it breaks of what one keeps, or undefined when the page has it already. */
-    addEffect(page: string, name: string, why: string): string[] | undefined;
-    /** Ends an effect; whether the page had it. */
-    endEffect(page: string, name: string, why: string): boolean;
-    /** Rolls with the engine's dice, as a roll in the log for who: public, or hidden for anyone outside the party as the master-rolls setting says (D-287). */
-    roll(notation: string, by: { who: string; why: string; }): { total: number; dice: ThrownDie[]; text: string; };
-}
-
-/** The hooks of a system's code, each optional, each giving lines for the command's output. Writes made through the game call no hook. */
-export interface SystemHooks
-{
-    /** After change, or the hit dice, wrote a counter of a page. */
-    counterChanged?(change: CounterChange, game: SystemGame): string[];
-    /** As someone's turn starts in a scene. */
-    turnStarted?(turn: { who: string; }, game: SystemGame): string[];
-    /** After a roll for someone was logged. */
-    rolled?(roll: RollMade, game: SystemGame): string[];
-    /** After an effect was added to a page. */
-    effectAdded?(added: { page: string; effect: string; }, game: SystemGame): string[];
-    /** Before ask shows its buttons: what the page draws of the question, as a death save; it only reads. */
-    asking?(question: { who: string; notations: string[]; }, game: SystemReader): SaveAsked | undefined;
-}
-
-/** The default export of a system's code. */
-export type SystemEntry = () => SystemHooks;
-
-/** A system's code as loaded: its hooks, or what kept it from loading. */
-export type LoadedSystemCode = { hooks: SystemHooks; } | { problem: string; } | { refused: string; };
-
-/** Whether a system's folder brings code: a package.json of kind system with a main (D-448). */
-export function systemHasCode(folder: string): boolean
-{
-    return systemPackage(folder) !== undefined;
-}
-
-/** A system's code for the dashboard's page, as its package.json declares it (D-511): its module's file, the package's name and version; undefined without one. */
-export function systemPageModule(folder: string): { file: string; package: string; version: string; } | undefined
-{
     try {
-        const data = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { name?: unknown; version?: unknown; "rpg-engine"?: { kind?: unknown; page?: unknown; }; };
-        const page = data["rpg-engine"]?.kind === "system" ? data["rpg-engine"].page : undefined;
-        // Its page code is a file of its own, by real paths, links included (D-510).
-        const inside = typeof page === "string" && isInside(realPath(folder), realPath(resolve(folder, page)));
-        return !inside || typeof page !== "string" || typeof data.name !== "string" ? undefined : { file: join(folder, page), package: data.name, version: typeof data.version === "string" ? data.version : "0.0.0" };
+        const data = JSON.parse(readFileSync(path, "utf8")) as { name?: unknown; version?: unknown; main?: unknown; "rpg-engine"?: { kind?: unknown; api?: unknown; page?: unknown; }; };
+        const marker = data["rpg-engine"];
+
+        if (marker?.kind !== "system") {
+            return undefined;
+        }
+
+        return {
+            package: typeof data.name === "string" ? data.name : "",
+            version: typeof data.version === "string" ? data.version : "0.0.0",
+            ...(typeof data.main === "string" ? { main: data.main } : {}),
+            ...(typeof marker.page === "string" ? { page: marker.page } : {}),
+            ...(typeof marker.api === "number" ? { api: marker.api } : {}),
+        };
     } catch {
         return undefined;
     }
 }
 
+/** What a package's default export gave, refused when it is not its code, an object, as null is not. */
+export function givenCode(given: unknown, file: string): PackageCode
+{
+    if (typeof given !== "object" || given === null || Array.isArray(given)) {
+        throw new Error(`${file}'s default export gave ${given === null ? "null" : Array.isArray(given) ? "a list" : typeof given}, not its code: give an object, such as { commands: [] }`);
+    }
+
+    return given as PackageCode;
+}
+
+/** Whether a system's folder brings code: a package.json of kind system with a main (D-448). */
+export function systemHasCode(folder: string): boolean
+{
+    return systemPackage(folder)?.main !== undefined;
+}
+
+/** Why this engine does not read the system in this folder, made for another API, with what to do; undefined when it does, or when it is data alone. */
+export function systemApiProblem(folder: string): string | undefined
+{
+    const own = systemPackage(folder);
+    return own === undefined ? undefined : apiProblem(own.api, "system");
+}
+
+/** A system's code for the dashboard's page, as its package.json declares it (D-511): its module's file, the package's name and version; undefined without one. */
+export function systemPageModule(folder: string): { file: string; package: string; version: string; } | undefined
+{
+    const own = systemPackage(folder);
+    // Its page code is a file of its own, by real paths, links included (D-510).
+    const inside = own?.page !== undefined && isInside(realPath(folder), realPath(resolve(folder, own.page)));
+    return !inside || own?.page === undefined || own.package === "" ? undefined : { file: join(folder, own.page), package: own.package, version: own.version };
+}
+
 /**
  * The code of every system in these folders that brings some, by the system's name, loaded once: from its source where the engine runs from its own, as in
- * the tests, else from its built main. One that fails to load says why, for the command that needs it.
+ * the tests, else from its built main. One that fails to load, or is made for an API this engine does not read, says why, for the command that needs it.
  */
 export async function loadSystemCode(folders: string[]): Promise<Record<string, LoadedSystemCode>>
 {
@@ -124,7 +97,8 @@ export async function loadSystemCode(folders: string[]): Promise<Record<string, 
     const seen = new Set<string>();
 
     for (const { name, folder: own } of systemFolders(folders)) {
-        const main = systemPackage(own);
+        const main = systemPackage(own)?.main;
+        const version = systemPackage(own)?.version ?? "0.0.0";
         const first = !seen.has(name.toLowerCase());
         seen.add(name.toLowerCase());
 
@@ -132,9 +106,16 @@ export async function loadSystemCode(folders: string[]): Promise<Record<string, 
             continue;
         }
 
+        const unread = systemApiProblem(own);
+
+        if (unread !== undefined) {
+            loaded[name] = { refused: unread.replace(/^it /, ""), version };
+            continue;
+        }
+
         // Another's code runs only after the player's yes, for this version and these files (D-478, D-511).
         if (!packageCodeMayRun(own)) {
-            loaded[name] = { refused: `is not ours, and the player has not said yes to it as it is installed: install it again with package install, for their yes` };
+            loaded[name] = { refused: `is not ours, and the player has not said yes to it as it is installed: install it again with package install, for their yes`, version };
             continue;
         }
 
@@ -145,31 +126,14 @@ export async function loadSystemCode(folders: string[]): Promise<Record<string, 
             const module = await import(pathToFileURL(file).href) as { default?: unknown; };
 
             if (typeof module.default !== "function") {
-                throw new Error(`${file} has no default export that gives its hooks`);
+                throw new Error(`${file} has no default export that gives its code`);
             }
 
-            loaded[name] = { hooks: (module.default as SystemEntry)() };
+            loaded[name] = { code: givenCode((module.default as PackageEntry)({ z }), file), version };
         } catch (error) {
-            loaded[name] = { problem: error instanceof Error ? error.message : String(error) };
+            loaded[name] = { problem: error instanceof Error ? error.message : String(error), version };
         }
     }
 
     return loaded;
-}
-
-/** The main of a system's package.json of kind system; undefined when it has none. */
-function systemPackage(folder: string): string | undefined
-{
-    const path = join(folder, "package.json");
-
-    if (!existsSync(path)) {
-        return undefined;
-    }
-
-    try {
-        const data = JSON.parse(readFileSync(path, "utf8")) as { main?: unknown; "rpg-engine"?: { kind?: unknown; }; };
-        return data["rpg-engine"]?.kind === "system" && typeof data.main === "string" ? data.main : undefined;
-    } catch {
-        return undefined;
-    }
 }

@@ -4,14 +4,15 @@
 // portraits. When it breaks, its place says the error and whose it is, for whoever fixes it. The shapes are rpg-engine/page's, which src/page.ts declares.
 import { Component, type ComponentChildren, type ComponentType, createContext, render, type VNode } from "preact";
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { runCommand } from "./api.ts";
-import type { FigureSize, PackageCode, ShownModule, Tone, WidgetText, WidgetTrack, WidgetValue } from "./data.ts";
+import { readWidgetData, runCommand } from "./api.ts";
+import type { FigureSize, PackageCode, RestDice, ShownModule, Tone, WidgetText, WidgetTrack, WidgetValue } from "./data.ts";
+import { fieldLabel } from "./labels.ts";
 import { PeopleContext } from "./people.ts";
 import { isolated, numberText, pageDirection } from "./text.ts";
 import { shownTheme } from "./theme.ts";
 
-/** Where a figure is drawn: a chip in the top, a card beside the rolls, a card in a page, or a roll's card. */
-export type FigurePlace = "top" | "side" | "page" | "ask";
+/** Where a figure is drawn: a chip in the top, a card beside the rolls, a card in a page, a roll's card, or the panel on someone of the party (D-516). */
+export type FigurePlace = "top" | "side" | "page" | "ask" | "person";
 
 /** The part a figure draws in place of the page's own. */
 export type FigurePart = { track: WidgetTrack; } | { lead: WidgetText; icon?: string; value?: WidgetValue; tone?: Tone; };
@@ -26,6 +27,8 @@ export interface PageProps
     theme: "light" | "dark";
     reducedMotion: boolean;
     run(command: string, input?: Record<string, unknown>): Promise<string>;
+    /** A field of the game system's sheet as the page names it, as PF for hp in Italian. */
+    field(name: string): string;
 }
 
 /** What the component of a figure gets (D-510). */
@@ -39,8 +42,10 @@ export interface FigureProps extends PageProps
     size: FigureSize;
 }
 
-/** The pages of the dashboard a package's card stands in (D-511), after their own cards. */
-export type CardPage = "scene" | "sheet" | "world" | "journal";
+/** The pages of the dashboard a package's card stands in (D-511), after their own cards: as src/page.ts declares them to the packages. */
+export const cardPages = ["scene", "sheet", "world", "journal"] as const;
+
+export type CardPage = (typeof cardPages)[number];
 
 /** A card a package puts in a page of the dashboard (D-511): its title and icon in the page's frame, its order among the packages' cards, its inside its own. */
 export interface PageCard
@@ -49,6 +54,8 @@ export interface PageCard
     title: string;
     icon?: string;
     order?: number;
+    /** One of its package's widgets, whose hook gives the card its data, for the character it shows (D-514). */
+    widget?: string;
     draw: ComponentType<PageCardProps>;
 }
 
@@ -59,6 +66,7 @@ export interface PageCardProps extends PageProps
     page: CardPage;
     who?: string;
     view?: unknown;
+    data?: unknown;
 }
 
 /** A page of a package's own (D-511), at #/pkg/<package>/<name>: its title and icon in the page's head, its whole inside its own. */
@@ -68,6 +76,8 @@ export interface OwnPage
     icon?: string;
     /** Where the navigation has it (D-512): a tab beside the sections, or the packages' menu, which is where a page that says nothing goes. */
     nav?: "tab" | "menu";
+    /** One of its package's widgets, whose hook gives the page its data (D-514). */
+    widget?: string;
     draw: ComponentType<OwnPageProps>;
 }
 
@@ -125,12 +135,43 @@ export function ownKey(page: { package: string; name: string; }): string
 export interface OwnPageProps extends PageProps
 {
     name: string;
+    data?: unknown;
+}
+
+/**
+ * The data a widget of a package gives a card or a page of its page code that names it, for the character it shows (D-514): undefined until it comes, or when
+ * the card names none or its hook gives nothing. Read again each time the page reads the game again (`reading`, the widgets as last read), the data drawn
+ * kept until the new comes; for another widget or character, none until theirs comes.
+ */
+export function useWidgetData(owner: string, widget: string | undefined, who: string | undefined, reading: unknown): unknown
+{
+    const [data, setData] = useState<unknown>(undefined);
+
+    useEffect(() => setData(undefined), [owner, widget, who]);
+
+    useEffect(() => {
+        let current = true;
+
+        if (widget !== undefined) {
+            void readWidgetData(owner, widget, who).then((shows) => current && setData(shows?.data), () => undefined);
+        }
+
+        return () => {
+            current = false;
+        };
+    }, [owner, widget, who, reading]);
+
+    return data;
 }
 
 /** What the component that draws the whole inside of a roll's card gets (D-510): a figure's, and the question's buttons, drawn with the page's own. */
 export interface BodyProps extends FigureProps
 {
     parts: unknown[];
+    /** The dice of a rest the card asks, as they stand: its buttons are a die of each counter, in their order, then the one that ends it (ASK-14). */
+    rest?: RestDice;
+    /** The last roll made from it, once its dice landed. */
+    rolled?: { total: number; faces: number[]; };
     buttons: CardButton[];
     /** The question a die asks over the buttons, as "A 1 came up: reroll?", when it is not the card's title. */
     prompt?: string;
@@ -158,6 +199,8 @@ export interface PageModule
     bodies?: Record<string, ComponentType<BodyProps>>;
     cards?: Record<string, PageCard>;
     pages?: Record<string, OwnPage>;
+    /** Its own style sheet, which each of its drawings takes after the page's: its layout and motion, with the page's tokens. */
+    style?: string;
 }
 
 /** The page modules of the campaign's packages whose code runs, its system's first (D-511), as last read. */
@@ -234,6 +277,7 @@ export function pagePropsOf(owner: PackageCode): PageProps
         theme: shownTheme(),
         reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
         run: runCommand,
+        field: (name) => fieldLabel(name),
     };
 }
 
@@ -275,7 +319,8 @@ export function ExtensionRoot({ widget, loaded, kind, size, draw }: {
         }
 
         const root = box.shadowRoot ?? box.attachShadow({ mode: "open" });
-        root.adoptedStyleSheets = [sheet];
+        const own = loaded === undefined || loaded instanceof Error ? undefined : moduleSheet(loaded);
+        root.adoptedStyleSheets = own === undefined ? [sheet] : [sheet, own];
         const inside = loaded === undefined
             ? null
             : loaded instanceof Error
@@ -364,6 +409,27 @@ function loadPageSheet(): Promise<CSSStyleSheet>
         return sheet;
     });
     return sheetLoading;
+}
+
+// Each module's own style sheet, made once.
+const moduleSheets = new WeakMap<PageModule, CSSStyleSheet>();
+
+/** A module's own style sheet, when it gives one. */
+function moduleSheet(module: PageModule): CSSStyleSheet | undefined
+{
+    if (module.style === undefined) {
+        return undefined;
+    }
+
+    let sheet = moduleSheets.get(module);
+
+    if (sheet === undefined) {
+        sheet = new CSSStyleSheet();
+        sheet.replaceSync(module.style);
+        moduleSheets.set(module, sheet);
+    }
+
+    return sheet;
 }
 
 /** The drawing, called inside its boundary, which catches what it throws as well as what its components do. */

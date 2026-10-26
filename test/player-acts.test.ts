@@ -23,7 +23,7 @@ let codexWait: number;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    expect((await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context)).exitCode).toBe(0);
+    expect((await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake"], context)).exitCode).toBe(0);
     inPlay(folder);
     session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
     chat = { calls: 0 };
@@ -96,10 +96,10 @@ function listen(): Promise<boolean>
 describe("the player's sentences on the dashboard (D-495)", () => {
     it("come from the fields of the player character's sheet the system names, never from another's", async () => {
         const write = async (...args: string[]): Promise<void> => expect((await runCommandLine(["write", ...args], context)).exitCode).toBe(0);
-        await write("Ettore", "--type", "character", "--set", "role=pc", "--set", "classes=[[Cleric]] 1");
-        await write("Lupa", "--type", "character", "--set", "role=companion", "--set", "classes=[[Fighter]] 1");
+        await write("Ettore", "--type", "character", "--set", "role=pc", "--set", "vocations=[[Warden]] 1");
+        await write("Lupa", "--type", "character", "--set", "role=companion", "--set", "vocations=[[Scout]] 1");
         const view = async (name: string): Promise<{ actions?: unknown; }> => JSON.parse((await runCommandLine(["view", name, "--json"], context)).output) as { actions?: unknown; };
-        expect((await view("Ettore")).actions).toMatchObject({ attack: ["attack"], spells: ["cast", "prepare"], inventory: ["use", "equip"] });
+        expect((await view("Ettore")).actions).toMatchObject({ knacks: ["use"], inventory: ["use", "equip"] });
         expect((await view("Lupa")).actions).toBeUndefined();
     });
 

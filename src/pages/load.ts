@@ -61,12 +61,12 @@ function carriedLoad(world: World, rule: LoadRule, holder: Page, seen = new Set<
     }, 0);
 }
 
-/** A page's weight as a number of the system's unit, its own or its base's: 1 lb, 1/2 lb, 1½ lb, 1,000 lb; 0 when it has none. */
+/** A page's weight as a number of the system's unit, its own or its base's: 1 lb, 1/2 lb, 1½ lb, 1,000 lb, 0.5 kg, 0,5 kg; 0 when it has none. */
 function weightOf(world: World, field: string, page: Page): number
 {
     const value = valueNamed(inheritedFields(world, page), field);
     // A note may follow the unit, as a waterskin's 5 lb (full).
-    const match = typeof value === "string" ? /^\s*([\d,]*)\s*(½|¼|¾|\d+\/\d+)?\s*[\p{L}.]*\s*(?:\([^()]*\))?\s*$/u.exec(value) : null;
+    const match = typeof value === "string" ? /^\s*([\d,]*(?:\.\d+)?)\s*(½|¼|¾|\d+\/\d+)?\s*[\p{L}.]*\s*(?:\([^()]*\))?\s*$/u.exec(value) : null;
 
     if (typeof value === "number") {
         return value;
@@ -76,7 +76,8 @@ function weightOf(world: World, field: string, page: Page): number
         return 0;
     }
 
-    const whole = match[1] === "" ? 0 : Number(match[1].replace(/,/g, ""));
+    // A comma before three digits groups thousands, as 1,000; any other is a decimal comma, as 0,5.
+    const whole = match[1] === "" ? 0 : Number(match[1].replace(/,(?=\d{3}(?!\d))/g, "").replace(",", "."));
     const part = match[2] === undefined ? 0 : ({ "½": 0.5, "¼": 0.25, "¾": 0.75 } as Record<string, number>)[match[2]] ?? Number(match[2].split("/")[0]) / Number(match[2].split("/")[1]);
     return whole + part;
 }

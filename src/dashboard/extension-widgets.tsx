@@ -7,7 +7,7 @@ import { CardHead } from "./card.tsx";
 import type { PackageCode, ShownModule, ShownWidget, WidgetPage, WidgetPart, WidgetSpot, WidgetText, WidgetTrack, WidgetValue } from "./data.ts";
 import { iconPath } from "./icons.tsx";
 import type { TrackChange } from "./pack-card.ts";
-import { type CardPage, cardsIn, codeOfModule, ExtensionRoot, type FigurePart, type FigurePlace, figureSize, type LoadedModule, ModulesContext, pagePropsOf, usePageModule } from "./page-code.tsx";
+import { type CardPage, cardsIn, codeOfModule, ExtensionRoot, type FigurePart, type FigurePlace, figureSize, type LoadedModule, ModulesContext, type PageCard, pagePropsOf, usePageModule, useWidgetData } from "./page-code.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PeopleContext } from "./people.ts";
 import { isolated, numberText, pageDirection, t } from "./text.ts";
@@ -93,26 +93,29 @@ function ModuleCards({ module, page, who, view }: { module: ShownModule; page: C
         );
     }
 
+    return <>{cards.map(([name, card]) => <ModuleCard key={name} module={module} name={name} card={card} page={page} who={who} view={view} />)}</>;
+}
+
+/** One card of a package's page code, with the data of the widget it names for who, once it comes (D-514). */
+function ModuleCard({ module, name, card, page, who, view }: { module: ShownModule; name: string; card: PageCard; page: CardPage; who?: string | undefined; view?: unknown; })
+{
+    const owner = codeOfModule(module);
+    const loaded = usePageModule(owner);
+    const data = useWidgetData(module.package, card.widget, who, useContext(WidgetsContext));
+    const id = titleId(`${module.package}.${name}`);
+    const Drawing = card.draw;
     return (
-        <>
-            {cards.map(([name, card]) => {
-                const id = titleId(`${module.package}.${name}`);
-                const Drawing = card.draw;
-                return (
-                    <section key={name} class="card widget-card package-card" aria-labelledby={id}>
-                        <CardHead icon={card.icon ?? iconPath("packages")} title={<h3 id={id}>{card.title}</h3>} />
-                        <div class="card-body widget-body">
-                            <ExtensionRoot
-                                widget={owner}
-                                loaded={loaded}
-                                kind="ext-body"
-                                draw={() => <Drawing {...pagePropsOf(owner)} name={name} page={page} {...(who === undefined ? {} : { who })} {...(view === undefined ? {} : { view })} />}
-                            />
-                        </div>
-                    </section>
-                );
-            })}
-        </>
+        <section class="card widget-card package-card" aria-labelledby={id}>
+            <CardHead icon={card.icon ?? iconPath("packages")} title={<h3 id={id}>{card.title}</h3>} />
+            <div class="card-body widget-body">
+                <ExtensionRoot
+                    widget={owner}
+                    loaded={loaded}
+                    kind="ext-body"
+                    draw={() => <Drawing {...pagePropsOf(owner)} name={name} page={page} {...(who === undefined ? {} : { who })} {...(view === undefined ? {} : { view })} {...(data === undefined ? {} : { data })} />}
+                />
+            </div>
+        </section>
     );
 }
 
@@ -455,7 +458,7 @@ function Marks({ track, place, change }: { track: WidgetTrack; place?: "start" |
 }
 
 /** A figure of an extension, given what it drew before once what it draws changes, for it to move from one to the other. */
-function Figure({ owner, name, part }: { owner: Owner; name: string; part: FigurePart; })
+export function Figure({ owner, name, part }: { owner: Owner; name: string; part: FigurePart; })
 {
     const looks = useRef<{ said: string; data?: unknown; before?: unknown; }>();
     const said = JSON.stringify([part, owner.data]);

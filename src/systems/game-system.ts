@@ -5,11 +5,12 @@ import { type Formula, type FormulaData, formulaOf, parseFormula, readFormulas, 
 import { frozen } from "../core/frozen.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
 import { type ImperialUnits, lengthHelp, readLength, readSpeed, speedHelp } from "../core/length.ts";
+import { type DeclaredWidget, declaredWidgets, type FigureSize, packagePartsIssues, packagePartsShape } from "../core/package-declarations.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
-import { systemHasCode } from "./system-code.ts";
+import { systemApiProblem, systemHasCode } from "./system-code.ts";
 import { systemFolders } from "./system-folders.ts";
 
 /** The file that makes a folder a game system and says what it is. */
@@ -204,19 +205,9 @@ const systemSchema = z.object({
         error: "write it as the counter a fight follows, the words the player hears a foe's in, from full to 0, and the conditions that keep from acting, "
             + "such as {track: hp, in-words: [unhurt, hurt, badly hurt, down], inactive: [Stunned]}",
     }).strict().optional(),
-    dying: z.object({
-        at: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"'),
-        show: z.object({ successes: z.string().min(1).optional(), failures: z.string().min(1).optional() }).strict(),
-        stable: z.string().min(1).optional(),
-        marks: z.object({ successes: z.string().min(1).optional(), failures: z.string().min(1).optional() }).strict().optional(),
-    }, {
-        error: "write it as when the dying begins, the counters the dashboard shows by their sides, what it calls one whose successes are full, and the short words of "
-            + "each side's marks, such as {at: hp 0, show: {successes: death-successes, failures: death-failures}, stable: Stable, marks: {successes: Successes, failures: Failures}}; "
-            + "what the dying point does is the system's code (D-448)",
-    }).strict().refine((dying) => dying.show.successes === undefined || dying.stable !== undefined, {
-        message: "name what full successes make, which the dashboard says, such as stable: Stable",
-        path: ["stable"],
-    }).optional(),
+    down: z.object({ at: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"') }, {
+        error: "write it as when one of the party is down, such as {at: hp 0}; what being down does, and how the dashboard draws it, is the system's code (D-448, D-516)",
+    }).strict().optional(),
     checks: z.array(
         z.object({ when: checkAtomSchema, needs: checkAtomSchema, say: z.string().min(1) }, {
             error: 'write each as what holds, what must hold with it, and the line for the master, such as {when: Stable, needs: hp <= 0, say: "{page} is Stable with {hp}: effect end {page} Stable."}',
@@ -257,6 +248,7 @@ const systemSchema = z.object({
             shields: z.string().min(1).optional(),
         }).strict(),
     ).optional(),
+    ...packagePartsShape,
 }).strict();
 
 /** A recipe of the system (D-185, DAT-4): the fields it brings to their maximum or to a value, the occasions it ends, the rules to read for the rest. */
@@ -343,19 +335,11 @@ export interface SystemCheck
     say: string;
 }
 
-/**
- * When the dashboard shows the panel of the dying, and its counters by their sides (D-314, D-461): at a counter's value, such as hp 0. What the dying point
- * does is the system's code (D-448).
- */
-export interface Dying
+/** When one of the party is down, at a counter's value or under it, such as hp 0 (D-314, D-516). What being down does is the system's code (D-448). */
+export interface Down
 {
     field: string;
     value: number;
-    show: { successes?: string; failures?: string; };
-    /** What the dashboard calls one whose successes are full, as the 5e's Stable. */
-    stable?: string;
-    /** The short words of each side's marks, as Successes; the field's label where none. */
-    marks: { successes?: string; failures?: string; };
 }
 
 /** A threshold (D-184, DAT-3): a field, the value at which it matters, or none for every change, and the title of the rule to read. */
@@ -520,8 +504,12 @@ export interface GameSystem
     recipes: Recipe[];
     /** The names of its conditions (D-186, DAT-6). */
     conditions: string[];
-    /** By condition, its drawing on a token and in Combat (D-419): the d of an SVG path on a grid of 24. */
+    /** By the name of a condition or any effect, its drawing on a token, in Combat and in its chip (D-419, D-516): the d of an SVG path on a grid of 24. */
     conditionIcons: Record<string, string>;
+    /** Its icons, widgets and figures on the dashboard, as an extension's (D-502, D-510, D-514): its code's hooks show its widgets. */
+    icons: Record<string, string>;
+    widgets: DeclaredWidget[];
+    figures: Record<string, FigureSize>;
     /** What can break what someone keeps alive, when the game has it (EFF-14). */
     /** The lists a character binds items in, as attunement (BND-1): at most so many, each an item whose field asks for it, with the rules to read. */
     bonds: Record<string, { most: number; needs: string; while?: string; rules: string; }>;
@@ -542,8 +530,8 @@ export interface GameSystem
     keeping?: Keeping;
     /** What a fight follows on the dashboard (D-314). */
     combat?: CombatData;
-    /** The panel of the dying on the dashboard (D-314). */
-    dying?: Dying;
+    /** When one of the party is down (D-516). */
+    down?: Down;
     /** What cannot be true together, which the engine says to the master (CHK-2). */
     checks: SystemCheck[];
     /** By counter, the counter it shields, which loses from it first, as temp-hp shields hp (DAT-14). */
@@ -630,7 +618,7 @@ export function installedSystems(folders: string[]): GameSystem[]
 }
 
 /** What a campaign may add to its game system in campaign.yaml (CAM-1): its own fields, tables, formulas, counters, recipes, line of the player character and travel. */
-export const campaignDataNames = ["fields", "tables", "computed", "counters", "recipes", "status-line", "travel", "values"] as const;
+export const campaignDataNames = ["fields", "tables", "computed", "counters", "recipes", "status-line", "travel", "values", "condition-icons"] as const;
 
 /** What campaign.yaml adds to the game system, as it writes it: checked when the system is read with it (CAM-3). */
 export type CampaignData = Partial<Record<(typeof campaignDataNames)[number], unknown>>;
@@ -700,10 +688,18 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
     const parsed = systemSchema.safeParse(merged);
 
     if (!parsed.success) {
-        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${issuesText(parsed.error)}`);
+        // One made for a newer API may declare what this engine does not know yet (D-515).
+        const unread = systemApiProblem(folder);
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${issuesText(parsed.error)}${unread === undefined ? "" : ` Besides, ${unread}.`}`);
     }
 
     const data = parsed.data;
+    const parts = packagePartsIssues(data, "a game system")[0];
+
+    if (parts !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${[...parts.path, ""].join(".").replace(/\.$/, ": ")}${parts.message}.`);
+    }
+
     // What a counter shields is no limit of it: a counter with only that has none (DAT-14).
     const limited = Object.entries(data.counters ?? {}).flatMap(([counter, { min, max, refill }]) => min === undefined && max === undefined && refill === undefined ? [] : [[counter, { min, max, refill }] as const]);
     const formulas = systemFormulas({ ...data, counters: Object.fromEntries(limited) }, name, path);
@@ -729,14 +725,13 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
         ...(data.keeping === undefined ? [] : [{ where: "keeping.counter", field: data.keeping.counter }]),
         ...(data.damage === undefined ? [] : [{ where: "damage.counter", field: data.damage.counter }]),
         ...(data.combat === undefined ? [] : [{ where: "combat.track", field: data.combat.track }]),
-        ...(data.dying === undefined ? [] : [data.dying.at.split(" ")[0], ...Object.values(data.dying.show)].map((field) => ({ where: "dying", field }))),
+        ...(data.down === undefined ? [] : [{ where: "down.at", field: data.down.at.split(" ")[0] }]),
         ...Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [{ where: `counters.${counter}.shields`, field: limits.shields }])),
     ].find((entry) => kindOf(entry.field) !== "counter");
 
     const unknownCondition = [
         ...(data.keeping?.conditions ?? []).map((condition) => ({ where: "keeping.conditions", condition })),
         ...(data.combat?.inactive ?? []).map((condition) => ({ where: "combat.inactive", condition })),
-        ...Object.keys(data["condition-icons"] ?? {}).map((condition) => ({ where: "condition-icons", condition })),
     ].find((entry) => !(data.conditions ?? []).some((named) => comparableText(named) === comparableText(entry.condition)));
 
     if (unknownCondition !== undefined) {
@@ -917,6 +912,9 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
         })),
         conditions: data.conditions ?? [],
         conditionIcons: data["condition-icons"] ?? {},
+        icons: data.icons ?? {},
+        widgets: declaredWidgets(data.widgets),
+        figures: data.figures ?? {},
         bonds: data.bonds ?? {},
         ...(data.upkeep === undefined ? {} : { upkeep: data.upkeep }),
         burning: data.burning ?? {},
@@ -936,7 +934,7 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
         ...(data.damage === undefined ? {} : { damage: data.damage }),
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
         ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? [], inactive: data.combat.inactive ?? [] } }),
-        ...(data.dying === undefined ? {} : { dying: dyingRule(data.dying) }),
+        ...(data.down === undefined ? {} : { down: downRule(data.down.at) }),
         checks: (data.checks ?? []).map((check) => ({ when: checkAtom(check.when), needs: checkAtom(check.needs), say: check.say })),
         shields: Object.fromEntries(Object.entries(data.counters ?? {}).flatMap(([counter, limits]) => (limits.shields === undefined ? [] : [[counter, limits.shields]]))),
         formulas,
@@ -1070,7 +1068,7 @@ function withCampaignData(raw: unknown, data: CampaignData): Record<string, unkn
     const base = isMap(raw) ? raw : {};
     const merged: Record<string, unknown> = { ...base };
 
-    for (const key of ["fields", "tables", "computed", "counters"] as const) {
+    for (const key of ["fields", "tables", "computed", "counters", "condition-icons"] as const) {
         const added = mapOf(data[key], key);
         merged[key] = added === undefined ? base[key] : { ...withoutNames(isMap(base[key]) ? base[key] : {}, Object.keys(added)), ...added };
     }
@@ -1262,9 +1260,9 @@ function checkAtom(text: string): CheckAtom
     return field === null ? { effect: text.trim() } : { field: field[1], op: field[2] as CheckOperator, value: Number(field[3]) };
 }
 
-/** The dying as the system writes them: "hp 0" read as a field and a number. */
-function dyingRule(data: NonNullable<z.infer<typeof systemSchema>["dying"]>): Dying
+/** When one is down as the system writes it: "hp 0" read as a field and a number. */
+function downRule(at: string): Down
 {
-    const [field, value] = data.at.split(" ");
-    return { field, value: Number(value), show: data.show, ...(data.stable === undefined ? {} : { stable: data.stable }), marks: data.marks ?? {} };
+    const [field, value] = at.split(" ");
+    return { field, value: Number(value) };
 }

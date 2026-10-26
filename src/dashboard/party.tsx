@@ -1,12 +1,13 @@
 // The party's strip (D-276): a link to each one's sheet, with their token and the pip of their state (D-419), their name, the first counter of their line and
 // their effects; the dead go last.
+import { useContext } from "preact/hooks";
 import type { Member, ShownScene } from "./data.ts";
-import { dyingWord } from "./dying.tsx";
+import { WidgetsContext } from "./extension-widgets.tsx";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
+import { personShown, PersonStrip } from "./person-panel.tsx";
 import { tokenSymbolsPref, usePref } from "./prefs.ts";
-import type { DyingState } from "./save-outcome.ts";
-import { memberStatus, StatusPip, statusWords, type TokenStatus } from "./status.tsx";
+import { besideWord, type DownTint, downTint, memberStatus, StatusPip, statusWords, type TokenStatus } from "./status.tsx";
 import { t } from "./text.ts";
 import { Bar, Effects } from "./widgets.tsx";
 
@@ -18,12 +19,14 @@ export function sheetAddress(name: string): string
 
 export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?: string; scene?: ShownScene; })
 {
+    const widgets = useContext(WidgetsContext);
     const ordered = [...party.filter((member) => !member.dead), ...party.filter((member) => member.dead)];
     return (
         <nav class="party" aria-label={t("Party")}>
             {ordered.map((member) => {
                 const counter = stripCounter(member);
-                const status = memberStatus(member, scene);
+                const status = memberStatus(member, scene, widgets);
+                const person = personShown(widgets, member.name)[0];
                 // One name for a screen reader, which the drawing inside would say twice.
                 const said = [member.name, counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`, ...statusWords(status)];
                 return (
@@ -38,29 +41,14 @@ export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?:
                         <span class="name">{member.name}</span>
                         {member.dead
                             ? <span class="dead-mark">{t("dead")}</span>
-                            : status.dying !== undefined && member.dying !== undefined
-                            ? <MemberDying state={status.dying} counters={member.dying} />
+                            : person !== undefined
+                            ? <PersonStrip shown={person} />
                             : counter && <Bar value={counter} label={fieldLabel(counter.field)} />}
-                        <Effects effects={member.effects} most={2} />
+                        <Effects effects={besideWord(member.effects, status.person)} most={2} />
                     </a>
                 );
             })}
         </nav>
-    );
-}
-
-/** One of the party at their dying point in the strip (D-461): the word of where they stand and their marks, small, in place of their bar. */
-function MemberDying({ state, counters }: { state: DyingState; counters: Member["dying"] & object; })
-{
-    const successes = counters.find((counter) => counter.side === "successes");
-    const failures = counters.find((counter) => counter.side === "failures");
-    const marks = (counter: typeof successes, kind: string) =>
-        counter === undefined ? [] : Array.from({ length: counter.limit ?? Math.max(counter.value, 1) }, (_, index) => <span key={`${kind}${index}`} class={`strip-mark ${kind}${index < counter.value ? " marked" : ""}`} />);
-    return (
-        <span class={`member-dying ${state}`}>
-            <span class="member-dying-word">{dyingWord(state, counters)}</span>
-            <span class="strip-marks" aria-hidden="true">{[...marks(successes, "success"), ...marks(failures, "failure")]}</span>
-        </span>
     );
 }
 
@@ -69,7 +57,7 @@ export function MemberToken({ member, large, status }: { member: Member; large?:
 {
     return (
         <span class="token-holder" data-tip={member.headline === undefined ? undefined : `${member.name} · ${member.headline}`}>
-            <Token member={member} large={large} side={sideOf(member.role)} status={status} dying={status.dying} />
+            <Token member={member} large={large} side={sideOf(member.role)} status={status} dying={downTint(status)} />
         </span>
     );
 }
@@ -104,8 +92,8 @@ export function Token({ member, large, hostile, side, status, number, dying }: {
     side?: Side;
     status?: TokenStatus;
     number?: string | undefined;
-    /** At 0, the picture greyed, as the panel of the dying says, a foe down too; dead, greyer and faded (D-461). */
-    dying?: DyingState | "down" | undefined;
+    /** At 0, the picture greyed, tinted as a package's widget on them says, a foe down too; dead, greyer and faded (D-461). */
+    dying?: DownTint | undefined;
 })
 {
     const fallen = dying === "dead" || member.dead === true ? "dead" : dying === undefined ? "" : `fallen ${dying}`;

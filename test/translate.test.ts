@@ -56,7 +56,7 @@ function answered(output: string): string
 beforeEach(async () => {
     folder = makeTempFolder();
     context = { ...testContext(folder), home: makeTempFolder(), pageFolder: page(), dashboard: "http://127.0.0.1:4747/" };
-    await ok("init", "--name", "Prova", "--language", "vi", "--system", "5e");
+    await ok("init", "--name", "Prova", "--language", "vi", "--system", "fake");
 });
 
 describe("the dashboard translated in the chat (D-423)", () => {
@@ -86,7 +86,7 @@ describe("the dashboard translated in the chat (D-423)", () => {
 
         // The game system's words came after the page's, by what each is.
         const home = context.home as string;
-        expect(homeSystemWords(home, { name: "5e", folder: join(testSystemFolders[0], "5e") }, "vi")?.groups.Skills).toMatch(/^VI w\d+$/);
+        expect(homeSystemWords(home, { name: "fake", folder: join(testSystemFolders[1], "fake") }, "vi")?.groups.Traits).toMatch(/^VI w\d+$/);
         expect(readLogFile(folder).filter((entry) => entry.type === "page-translated").every((entry) => entry.visibility === "hidden")).toBe(true);
         expect(await ok("status")).not.toContain("The dashboard is not in Vietnamese");
         expect(await refused("translate", "--phrases", "{}")).toContain("None of these phrases was kept");

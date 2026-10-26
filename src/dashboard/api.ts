@@ -317,6 +317,20 @@ export async function readWidgets(): Promise<ShownWidget[]>
     return body.widgets;
 }
 
+/** What a package's widget shows for a card or a page of its page code, for who (D-514): nothing when the package or the widget is not the campaign's. */
+export async function readWidgetData(owner: string, widget: string, who: string | undefined): Promise<{ data?: unknown; } | undefined>
+{
+    const query = new URLSearchParams({ package: owner, widget, ...(who === undefined ? {} : { who }) });
+    const response = await fetch(`/api/widget?${query.toString()}`);
+    const body = await response.json() as { shows?: { data?: unknown; }; error?: string; };
+
+    if (body.error !== undefined) {
+        throw new Error(body.error);
+    }
+
+    return body.shows;
+}
+
 /** The page modules of the campaign's system and extensions whose code runs (D-510, D-511), the system's first. */
 export async function readModules(): Promise<ShownModule[]>
 {

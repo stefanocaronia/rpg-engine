@@ -15,7 +15,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Valle", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Valle", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
     await ok("write", "Ettore", "--type", "character", "--set", "role=pc");
     await ok("write", "Lena", "--type", "character", "--set", "role=companion");
@@ -30,7 +30,7 @@ beforeEach(async () => {
     await ok("write", "Sentiero dei colli", "--type", "place", "--set", "stops=[[Bivio]], 24 km, [[Rocca]]");
     await ok("write", "Mulattiera", "--type", "place", "--set", "stops=[[Ponte]], 30 km, [[Rocca]]", "--add", "environment=terrain: difficult");
     await ok("write", "Via del Re", "--type", "place", "--set", "stops=[[Rocca]], 50 km, [[Capitale]]");
-    await ok("write", "Fiume Nero", "--type", "place", "--set", "kind=river", "--set", "stops=[[Ponte]], 18 km, [[Porto]]");
+    await ok("write", "Fiume Nero", "--type", "place", "--set", "kind=canal", "--set", "stops=[[Ponte]], 18 km, [[Porto]]");
     await ok("advance", "--to", "day 3, 08:00");
 });
 
@@ -80,7 +80,7 @@ describe("roads (ROA-1–ROA-7)", () => {
 
 describe("rpg route (TRV-4, TRV-5)", () => {
     it("TRV-5: the quickest way from where the party is, by its roads, with the distance and the time at the game's pace", async () => {
-        expect(await ok("route", "Rocca")).toBe("Guadoscuro → Bivio → Rocca, 36 km by Strada vecchia (12 km) and Sentiero dei colli (24 km).\nAt a normal pace (4.5 km an hour): 8h of travel.");
+        expect(await ok("route", "Rocca")).toBe("Guadoscuro → Bivio → Rocca, 36 km by Strada vecchia (12 km) and Sentiero dei colli (24 km).\nAt a steady pace (4.5 km an hour): 8h of travel.");
     });
 
     it("TRV-1, TRV-5: another pace or a speed, from another place, in days at the day's hours", async () => {
@@ -88,22 +88,25 @@ describe("rpg route (TRV-4, TRV-5)", () => {
             "Bivio → Rocca → Capitale, 74 km by Sentiero dei colli (24 km) and Via del Re (50 km).\nAt a slow pace (3 km an hour): 24h 40m of travel, 4 days at 8 h a day.",
         );
         expect(await ok("route", "Capitale", "--from", "Rocca", "--pace", "5 km")).toBe("Rocca → Capitale, 50 km by Via del Re.\nAt 5 km an hour: 10h of travel, 2 days at 8 h a day.");
-        expect(await refused("route", "Rocca", "--pace", "di corsa")).toContain('"di corsa" is not a pace: give one of the paces of the game (fast, normal, slow) or the distance of an hour in metric');
+        expect(await refused("route", "Rocca", "--pace", "di corsa")).toContain('"di corsa" is not a pace: give one of the paces of the game (quick, steady, slow) or the distance of an hour in metric');
     });
 
     it("TRV-3, TRV-4: difficult terrain halves a pace, so the quickest way may be the longer one", async () => {
-        expect(await ok("route", "Rocca", "--from", "Ponte")).toBe("Ponte → Bivio → Rocca, 32 km by Strada vecchia (8 km) and Sentiero dei colli (24 km).\nAt a normal pace (4.5 km an hour): 7h 7m of travel.");
+        expect(await ok("route", "Rocca", "--from", "Ponte")).toBe("Ponte → Bivio → Rocca, 32 km by Strada vecchia (8 km) and Sentiero dei colli (24 km).\nAt a steady pace (4.5 km an hour): 7h 7m of travel.");
         await ok("write", "Mulattiera", "--remove", "environment=terrain");
-        expect(await ok("route", "Rocca", "--from", "Ponte")).toBe("Ponte → Rocca, 30 km by Mulattiera.\nAt a normal pace (4.5 km an hour): 6h 40m of travel.");
+        expect(await ok("route", "Rocca", "--from", "Ponte")).toBe("Ponte → Rocca, 30 km by Mulattiera.\nAt a steady pace (4.5 km an hour): 6h 40m of travel.");
     });
 
     it("TRV-3: the terrain of a region around the road counts, as its environment does", async () => {
         await ok("write", "Brughiera", "--type", "place", "--add", "environment=terrain: difficult", "--add", "contains=[[Via del Re]]");
-        expect(await ok("route", "Capitale", "--from", "Rocca")).toContain("At a normal pace (4.5 km an hour): 22h 13m of travel, 3 days at 8 h a day.");
+        expect(await ok("route", "Capitale", "--from", "Rocca")).toContain("At a steady pace (4.5 km an hour): 22h 13m of travel, 3 days at 8 h a day.");
     });
 
-    it("D-262: in imperial, with the game's mile", async () => {
+    it("D-262: in imperial, with the true mile where the system gives none, and with the game's mile of the 5e", async () => {
         await ok("config", "units", "imperial");
+        expect(await ok("route", "Rocca")).toBe("Guadoscuro → Bivio → Rocca, 22.4 miles by Strada vecchia (7.5 miles) and Sentiero dei colli (14.9 miles).\nAt a steady pace (2.8 miles an hour): 8h of travel.");
+        // The 5e's: its mile of 1.5 km goes with it (D-514, step 8).
+        await ok("config", "system", "5e");
         expect(await ok("route", "Rocca")).toBe("Guadoscuro → Bivio → Rocca, 24 miles by Strada vecchia (8 miles) and Sentiero dei colli (16 miles).\nAt a normal pace (3 miles an hour): 8h of travel.");
     });
 
@@ -117,7 +120,7 @@ describe("rpg route (TRV-4, TRV-5)", () => {
 
     it("TRV-4: a way only by river says so, on foot", async () => {
         expect(await ok("route", "Porto")).toBe(
-            "No way leads to Porto on foot: the roads that join them include Fiume Nero, a river travelled only in a vehicle with category waterborne vehicle, such as an item that derives from [[Galley]], which brings it with its speed.",
+            "No way leads to Porto on foot: the roads that join them include Fiume Nero, a canal travelled only in a vehicle with category barge, such as an item that derives from [[Barge]], which brings it with its drift.",
         );
     });
 });
@@ -126,7 +129,7 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
     it("TRV-7, TRV-11: on arrival the party is in the destination, the time has passed, and the log has each step", async () => {
         const output = await ok("travel", "Rocca");
         expect(output).toBe(
-            "Ettore and Lena travel to Rocca, at a normal pace (4.5 km an hour): Guadoscuro → Bivio → Rocca, 36 km by Strada vecchia (12 km) and Sentiero dei colli (24 km).\n"
+            "Ettore and Lena travel to Rocca, at a steady pace (4.5 km an hour): Guadoscuro → Bivio → Rocca, 36 km by Strada vecchia (12 km) and Sentiero dei colli (24 km).\n"
                 + "Passed Bivio (day 3, 10:40).\nArrived at day 3, 16:00: now in Rocca.",
         );
         expect(await ok("show", "Lena")).toContain("Is in: Rocca");
@@ -151,7 +154,7 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
             "Stopped on Sentiero dei colli, 10.5 km past Bivio, toward Rocca, at day 3, 13:00: an event came due, below. 63.5 km left to Capitale, 14h 7m of travel, 2 days at 8 h a day. 3h of travel left today.",
         );
         expect(state()).toContain(
-            'journey:\n  who:\n    - "[[Ettore]]"\n    - "[[Lena]]"\n  to: "[[Capitale]]"\n  road: "[[Sentiero dei colli]]"\n  stretch: 1\n  from: "[[Bivio]]"\n  toward: "[[Rocca]]"\n  done: 10500 m\n  pace: normal\n  last: day 3, 13:00\n  travelled: 5h\n',
+            'journey:\n  who:\n    - "[[Ettore]]"\n    - "[[Lena]]"\n  to: "[[Capitale]]"\n  road: "[[Sentiero dei colli]]"\n  stretch: 1\n  from: "[[Bivio]]"\n  toward: "[[Rocca]]"\n  done: 10500 m\n  pace: steady\n  last: day 3, 13:00\n  travelled: 5h\n',
         );
         expect(await ok("status")).toContain("Journey: to Capitale, on Sentiero dei colli, 10.5 km past Bivio, toward Rocca; 5h of travel since the last rest. To go on: travel to Capitale.");
         expect(await ok("route", "Guadoscuro")).toContain("Sentiero dei colli, 10.5 km past Bivio → Bivio → Guadoscuro, 22.5 km");
@@ -161,18 +164,18 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
     it("TRV-8: at the end of the day's hours the journey stops, says to camp or march on, and goes on the next day; hours march on today", async () => {
         await ok("travel", "Capitale");
         expect(await ok("travel", "Capitale")).toContain(
-            "They already travelled 8h today, the day's 8 h: camp for the night, or go on with hours, such as hours 10 (beyond 8 h: rules Forced March). Nothing changed.",
+            "They already travelled 8h today, the day's 8 h: camp for the night, or go on with hours, such as hours 10 (beyond 8 h: rules Long Haul). Nothing changed.",
         );
         await ok("advance", "--to", "day 4, 07:00");
         expect(await ok("travel", "Capitale")).toContain(
-            "Stopped on Via del Re, 36 km past Rocca, toward Capitale, at day 4, 15:00, after 8h of travel today: camp for the night, or go on with hours, such as hours 10 (beyond 8 h: rules Forced March). 14 km left to Capitale, 3h 7m of travel.",
+            "Stopped on Via del Re, 36 km past Rocca, toward Capitale, at day 4, 15:00, after 8h of travel today: camp for the night, or go on with hours, such as hours 10 (beyond 8 h: rules Long Haul). 14 km left to Capitale, 3h 7m of travel.",
         );
         expect(await ok("travel", "Capitale", "--hours", "12")).toContain("Arrived at day 4, 18:07: now in Capitale.");
         expect(await ok("status")).not.toContain("Journey:");
     });
 
     it("TRV-2, TRV-6: in a boat on a river, the boat travels with those aboard, at its speed and the current's downstream; upstream at its speed", async () => {
-        await ok("write", "Chiatta", "--type", "item", "--set", "item=[[Keelboat]]");
+        await ok("write", "Chiatta", "--type", "item", "--set", "item=[[Barge]]");
         await ok("move", "Chiatta", "--to", "Ponte");
         await ok("move", "Ettore", "Lena", "--to", "Chiatta");
         expect(await ok("travel", "Porto")).toBe("Ettore and Lena travel to Porto, in Chiatta, at its speed: Ponte → Porto, 18 km by Fiume Nero.\nArrived at day 3, 11:00: now in Porto.");
@@ -187,7 +190,7 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
         const walking = await ok("route", "Rocca");
         await ok("move", "Lena", "--to", "Carro");
         expect(await ok("route", "Rocca")).toBe(walking);
-        expect(await ok("travel", "Rocca")).toContain("Ettore and Lena travel to Rocca, at a normal pace");
+        expect(await ok("travel", "Rocca")).toContain("Ettore and Lena travel to Rocca, at a steady pace");
         expect(await ok("show", "Lena")).toContain("Is in: Carro › Rocca");
         expect(await ok("show", "Ettore")).toContain("Is in: Rocca");
     });
@@ -213,7 +216,7 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
         await ok("write", "Locanda", "--add", "contains=[[Botte]]");
         await ok("move", "Lena", "--to", "Botte");
         expect(await refused("travel", "Rocca")).toBe(
-            "Lena is in Botte, which is no vehicle of this game: move them out, leave them out of who, or give Botte category drawn vehicle, or derive it from an item that has it. Nothing changed.",
+            "Lena is in Botte, which is no vehicle of this game: move them out, leave them out of who, or give Botte category cart, or derive it from an item that has it. Nothing changed.",
         );
         expect(await ok("travel", "Rocca", "--who", "Ettore")).toContain("Ettore travels to Rocca");
         await ok("write", "Carro", "--type", "item", "--set", "item=[[Cart]]");
@@ -238,7 +241,7 @@ describe("rpg travel (TRV-6–TRV-11)", () => {
     });
 
     it("TRV-6: some aboard a boat and some not, or a scene other than travel, are refused before anything changes", async () => {
-        await ok("write", "Chiatta", "--type", "item", "--set", "item=[[Keelboat]]");
+        await ok("write", "Chiatta", "--type", "item", "--set", "item=[[Barge]]");
         await ok("write", "Locanda", "--add", "contains=[[Chiatta]]");
         await ok("move", "Lena", "--to", "Chiatta");
         expect(await refused("travel", "Rocca")).toBe(
@@ -320,7 +323,7 @@ describe("the laws of travel (TRV-7–TRV-9)", () => {
                         return result.output;
                     };
 
-                    await call("init", "--name", "Legge", "--system", "5e");
+                    await call("init", "--name", "Legge", "--system", "fake");
                     inPlay(run);
                     const stops = lengths.map((_, index) => `T${index + 1}`);
                     writeFileSync(join(run, "world/characters/Ettore.md"), "---\nrole: pc\n---\n");
@@ -367,11 +370,11 @@ describe("a system without paces (TRV-1)", () => {
 
     it("TRV-6: a game that declares no vehicles has none, until the campaign declares them", async () => {
         await ok("config", "system", "ironsworn");
-        await ok("write", "Carro", "--type", "item", "--set", "category=drawn vehicle");
+        await ok("write", "Carro", "--type", "item", "--set", "category=cart");
         await ok("write", "Locanda", "--add", "contains=[[Carro]]");
         await ok("move", "Lena", "--to", "Carro");
         expect(await refused("route", "Rocca", "--pace", "4 km")).toContain("Lena is in Carro, which is no vehicle of this game: move them out, leave them out of who, or declare what is a vehicle with travel.vehicles in campaign.yaml.");
-        await ok("config", "travel", "vehicles: {category: drawn vehicle}");
+        await ok("config", "travel", "vehicles: {category: cart}");
         expect(await ok("route", "Rocca", "--pace", "4 km")).toContain("36 km");
     });
 });

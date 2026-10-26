@@ -505,11 +505,12 @@ function PageSettings()
 
 /**
  * Where the page shows the extensions' widgets (D-502), for the campaign: each in the top, the table's column, a page, or nowhere, and which page; the place its
- * extension gives it sends it back there. None without a widget.
+ * extension gives it sends it back there. None without a widget; never one on each of the party.
  */
 function WidgetSettings({ onChange }: { onChange(change: SettingChange): Promise<string | undefined>; })
 {
-    const widgets = useContext(WidgetsContext);
+    // One on each of the party stands where its package puts it: there is nowhere else for it (D-514).
+    const widgets = useContext(WidgetsContext).filter((widget) => widget.own.place !== "person" && widget.own.place !== "card");
 
     if (widgets.length === 0) {
         return null;

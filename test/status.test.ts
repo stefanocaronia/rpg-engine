@@ -30,7 +30,7 @@ describe("rpg status", () => {
     it("says the mode and what the setup still needs before the game starts, and leaves the instructions to their own command (MOD-7)", async () => {
         const status = await state();
         expect(status).toMatch(
-            /^Guadoscuro · mode setup\nStill to agree with the player: system \(installed: 5e, free, ironsworn\), language \(a code, such as it\), mentor \(ask how well the player knows the game: never played, tutorial; a little, hints; well, off\), premise \(/,
+            /^Guadoscuro · mode setup\nStill to agree with the player: system \(installed: 5e, free, ironsworn, fake\), language \(a code, such as it\), mentor \(ask how well the player knows the game: never played, tutorial; a little, hints; well, off\), premise \(/,
         );
         expect(status).toMatch(/veils \("none" is an answer\); set each with config\. When none is left and the player confirms: mode, to "session zero"\.\nNo player character yet\.$/);
         const file = (name: string): string => readFileSync(new URL(`../instructions/${name}`, import.meta.url), "utf8").replace(/\r\n/g, "\n").trim();
@@ -40,13 +40,13 @@ describe("rpg status", () => {
     it("shows the party, where they are, their counters and who is with them", async () => {
         inPlay(folder);
         await rpg("config", "language", "it");
-        await rpg("config", "system", "5e");
+        await rpg("config", "system", "fake");
         await rpg("config", "difficulty", "normal");
         await rpg("config", "lethality", "epic");
         await rpg("config", "lines", "--add", "harm to children");
         await rpg("config", "table", "--add", "rolls shown as they fall");
-        await rpg("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "hp=5/12", "--add", "inventory=[[Arrows]] 18");
-        await rpg("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=7/7");
+        await rpg("write", "Ennio", "--type", "character", "--set", "role=pc", "--set", "grit=5/12", "--add", "inventory=[[Rushlight]] 18");
+        await rpg("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "grit=7/7");
         await rpg("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "status=dead");
         await rpg("write", "Gaspare", "--type", "character", "--set", "role=npc");
         await rpg("write", "Laboratorio", "--type", "place", "--add", "contains=[[Ennio]]", "--add", "contains=[[Lena]]", "--add", "contains=[[Varro]]");
@@ -57,17 +57,17 @@ describe("rpg status", () => {
         await rpg("write", "Il rituale", "--type", "event", "--set", "status=planned");
 
         expect(await state()).toBe([
-            "Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal · lethality epic · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
+            "Guadoscuro · it · fake, the fake system of the core's tests · difficulty normal · lethality epic · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
             "Difficulty normal: fights moderate to high; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); "
             + "random encounters normal; threat clocks at their pace.",
-            "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them; a light you put on as an effect, as a Torch, still spends one.",
-            "Still missing: advancement (xp or milestones). Ask the player, then set it with the config command (setting and value).",
+            "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them; a light you put on as an effect, as a Rushlight, still spends one.",
+            "Still missing: harshness (gentle or bitter). Ask the player, then set it with the config command (setting and value).",
             "Lines: harm to children · Veils: none",
             "Table: rolls shown as they fall",
-            "PC: Ennio, in Laboratorio › Cripta: hp 5/12",
-            "Companions: Lena, with Ennio: hp 7/7",
-            "Ennio's sheet still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, save-proficiencies, skill-proficiencies, weapon-proficiencies, languages.",
-            "Lena's sheet still lacks, by these names: classes, xp, str, dex, con, int, wis, cha, speed, hp-base, save-proficiencies, skill-proficiencies, weapon-proficiencies, languages.",
+            "PC: Ennio, in Laboratorio › Cripta: grit 5/12",
+            "Companions: Lena, with Ennio: grit 7/7",
+            "Ennio's sheet still lacks, by these names: vocations, renown, might, grace, wit, skilled, resolve, stride.",
+            "Lena's sheet still lacks, by these names: vocations, renown, might, grace, wit, skilled, resolve, stride.",
             "Also there: Varro (dead)",
             "Open quests: Ritrovare gli scomparsi",
             "Planned events: Il rituale",
@@ -86,7 +86,7 @@ describe("rpg status", () => {
             [
                 "Guadoscuro · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
                 "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them.",
-                "Still missing: system (installed: 5e, free, ironsworn), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
+                "Still missing: system (installed: 5e, free, ironsworn, fake), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
                 "No game date yet: at the first scene, set it with advance to, at the scene's hour, such as day 1, 18:00.",
                 "PC: Ennio",
                 "Planned events: Sparizione di Rosa (day 1, 23:00) · Il rituale (day 2, 23:00) · La fiera (day 3, 06:00), and 1 more: find text planned, type event",
@@ -125,11 +125,11 @@ describe("rpg status", () => {
     });
 
     it("marks the dead, shows the companions before a character exists, and says with whom only when they share a place", async () => {
-        await rpg("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "hp=0/7", "--set", "status=dead");
-        expect(await state()).toContain("No player character yet.\nCompanions: Lena (dead): hp 0/7");
+        await rpg("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "grit=0/7", "--set", "status=dead");
+        expect(await state()).toContain("No player character yet.\nCompanions: Lena (dead): grit 0/7");
 
         await rpg("write", "Ennio", "--type", "character", "--set", "role=pc");
-        expect(await state()).toContain("PC: Ennio\nCompanions: Lena (dead): hp 0/7");
+        expect(await state()).toContain("PC: Ennio\nCompanions: Lena (dead): grit 0/7");
     });
 
     it("counts the files it cannot read, without showing what is in them", async () => {

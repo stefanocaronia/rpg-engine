@@ -49,6 +49,8 @@ export interface World
     system?: SystemPages;
     /** The language the campaign is played in, as a code such as it, when campaign.yaml says it. */
     language?: string;
+    /** The game system's words in that language, by their English names, as Prone: Prono: an effect named with one is the system's (D-403). */
+    words?: Record<string, string>;
     /** The game system campaign.yaml names when it is not installed: none of its pages can be found (SYS-1). */
     missingSystem?: string;
     /** Whether campaign.yaml names no game system yet (D-167): a link may be to a page of the one it will name. */
@@ -122,10 +124,13 @@ export function createWorld(root: string): void
  * The pages of the campaign in `root`, and those of its game system, if one is installed: `system` says where it is and what it declares (SYS-1).
  * `language` is the campaign's; `missingSystem` the system it names that is not installed, and `noSystem` whether it names none yet, for messages.
  */
-export function loadWorld(root: string, options: { system?: SystemInfo & { folder: string; }; language?: string; missingSystem?: string; noSystem?: boolean; rigor?: string; } = {}): World
+export function loadWorld(
+    root: string,
+    options: { system?: SystemInfo & { folder: string; }; language?: string; words?: Record<string, string>; missingSystem?: string; noSystem?: boolean; rigor?: string; } = {},
+): World
 {
     const campaign = readPages(root);
-    const { system, language, missingSystem, noSystem, rigor } = options;
+    const { system, language, words, missingSystem, noSystem, rigor } = options;
 
     if (system === undefined) {
         return frozen({ root, ...campaign, language, missingSystem, noSystem, ...(rigor === undefined ? {} : { rigor }) });
@@ -140,6 +145,7 @@ export function loadWorld(root: string, options: { system?: SystemInfo & { folde
         problems,
         system: { name, title, language: system.language, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, bonusWhile, pages: systemPages.pages },
         language,
+        ...(words === undefined ? {} : { words }),
         ...(rigor === undefined ? {} : { rigor }),
     });
 }

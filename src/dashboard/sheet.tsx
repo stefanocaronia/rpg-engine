@@ -4,15 +4,14 @@
 // (FOR-8). While the master asks a roll, the number its check names lights up and answers it (D-330, ASK-12). A companion who keeps no sheet shows the stat
 // block of its creature (D-275).
 import { type ComponentChildren, Fragment } from "preact";
-import { useEffect, useId, useRef, useState } from "preact/hooks";
+import { useContext, useEffect, useId, useRef, useState } from "preact/hooks";
 import { ActName, usePlayerActs } from "./act-names.tsx";
 import { itemVerbs } from "./acts.ts";
 import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import { FixedColumns } from "./columns.tsx";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownScene } from "./data.ts";
-import { DeathSaves } from "./dying.tsx";
-import { WidgetCards } from "./extension-widgets.tsx";
+import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
 import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
@@ -20,8 +19,9 @@ import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.t
 import { knowersOf, Markdown, plainLine } from "./markdown.tsx";
 import { MoodFace, moodLabel } from "./mood.tsx";
 import { MemberToken } from "./party.tsx";
+import { PersonBoxes, personBoxes, personFields, PersonPanel, type PersonShown, personShown } from "./person-panel.tsx";
 import { requestedRow, useRequested } from "./requested.ts";
-import { memberStatus } from "./status.tsx";
+import { besideWord, memberStatus } from "./status.tsx";
 import { StoryBox } from "./story.tsx";
 import { arrowStep, listText, systemWord, t } from "./text.ts";
 import { Effects, ProgressBar, ValueDrawing } from "./widgets.tsx";
@@ -52,15 +52,20 @@ export function MemberSheet(
     const { rail, others } = arrangedGroups(sheet, cards);
     const fields = sheetFields(member, sheet);
     const group = (shown: SheetGroup) => <Group key={shown.name} member={member.name} group={shown} fields={fields} version={version} onRoll={onRoll} first={shown === others[0]} />;
-    // At the dying point its counters leave the line for their panel, large, under the name (D-310, 7).
-    const dying = new Set(member.dying?.map((counter) => counter.field));
+    const widgets = useContext(WidgetsContext);
+    const status = memberStatus(member, scene, widgets);
+    // At 0 the panels of the packages' widgets that say their state, large, under the name, their counters out of the line (D-310 (7), D-516). The others
+    // are small cards of their packages among the line's boxes, the counters they count left out of it.
+    const person = personShown(widgets, member.name);
+    const boxes = personBoxes(widgets, member.name);
+    const shownApart = personFields([...person, ...boxes]);
     // The player character's story has its own card: the rest of the page's text is its description (D-386).
     const described = story !== undefined && story.trim() !== "" && text.startsWith(story) ? text.slice(story.length).trimStart() : text;
     return (
         <section class="sheet" aria-label={member.name}>
             <header class="band">
                 <div class="identity">
-                    <MemberToken member={member} large status={memberStatus(member, scene)} />
+                    <MemberToken member={member} large status={status} />
                     <div class="who">
                         <h2>{member.name}</h2>
                         {/* The system's headline, and the mood: only here, its face before its word (D-305, D-419). */}
@@ -86,9 +91,9 @@ export function MemberSheet(
                         )}
                     </div>
                 </div>
-                {member.dying && <DeathSaves dying={member.dying} />}
-                <ValueLine values={member.counters.filter((value) => !dying.has(value.field))} fields={fields} />
-                <Effects effects={member.effects} />
+                {person.map((shown) => <PersonPanel key={shown.widget.id} shown={shown} />)}
+                <ValueLine values={member.counters.filter((value) => !shownApart.has(value.field))} fields={fields} boxes={boxes} />
+                <Effects effects={besideWord(member.effects, status.person)} />
             </header>
             <div class="sheet-body">
                 {rail.length > 0 && <div class="rail">{rail.map(group)}</div>}
@@ -119,11 +124,14 @@ export function SheetAtHand({ member, sheet, names, version, onRoll }: { member:
 {
     const fields = sheetFields(member, sheet);
     const same = (name: string, wanted: string): boolean => name.toLowerCase() === wanted.toLowerCase();
-    const line = names.flatMap((wanted) => sheet.flatMap((group) => group.values).filter((value) => same(value.field, wanted)));
+    // The packages' small cards on them too, as under the name (D-516), the counters they count left out.
+    const boxes = personBoxes(useContext(WidgetsContext), member.name);
+    const counted = personFields(boxes);
+    const line = names.flatMap((wanted) => sheet.flatMap((group) => group.values).filter((value) => same(value.field, wanted) && !counted.has(value.field)));
     const groups = names.flatMap((wanted) => sheet.filter((group) => same(group.name, wanted)));
     return (
         <>
-            {line.length > 0 && <ValueLine values={line} fields={fields} />}
+            {(line.length > 0 || boxes.length > 0) && <ValueLine values={line} fields={fields} boxes={boxes} />}
             {groups.map((group) => <Group key={group.name} member={member.name} group={group} fields={fields} version={version} onRoll={onRoll} />)}
         </>
     );
@@ -136,8 +144,8 @@ function shownBeside(value: SheetValue): string | undefined
     return beside === value.text ? undefined : beside;
 }
 
-/** Values in a line of boxes, as under someone's name (D-299): each its label and its drawing, flashing when it changes. */
-function ValueLine({ values, fields }: { values: SheetValue[]; fields: ReadonlySet<string>; })
+/** Values in a line of boxes, as under someone's name (D-299): each its label and its drawing, flashing when it changes; then the packages' boxes (D-516). */
+function ValueLine({ values, fields, boxes = [] }: { values: SheetValue[]; fields: ReadonlySet<string>; boxes?: PersonShown[]; })
 {
     return (
         <div class="line">
@@ -151,6 +159,7 @@ function ValueLine({ values, fields }: { values: SheetValue[]; fields: ReadonlyS
                     {shownBeside(value) !== undefined && widgetOf(value) !== "progress" && <span class="beside num">{shownText(shownBeside(value) ?? "")}</span>}
                 </span>
             ))}
+            <PersonBoxes shown={boxes} />
         </div>
     );
 }

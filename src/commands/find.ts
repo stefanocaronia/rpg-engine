@@ -58,7 +58,7 @@ function systemNote(result: { system?: string; systemMatches: unknown[]; systemM
     const named = result.language;
 
     if (!result.withText && result.systemMore > 0) {
-        const what = result.type === undefined ? "pages" : `${result.type}s`;
+        const what = `${result.type ?? "page"}${result.systemMore === 1 ? "" : "s"}`;
         const language = named === undefined ? "" : `, named in ${named}`;
         return `The system ${result.system} has ${result.systemMore}${listed ? " more" : ""} ${what}${language}: give part of a name${named === undefined ? "" : `, in ${named},`} to find them.`;
     }

@@ -256,9 +256,9 @@ function progressionFields(world: World, scope: ReturnType<typeof formulaScope>)
         value: value.value,
         reads: value.from.map((from): FormulaRead => ({ list: progression.lists[0], item: from.name, value: from.level })),
     }));
-    const features = progression.features.length === 0 ? [] : [{
+    const features = progression.features.length + progression.written.length === 0 ? [] : [{
         field: progression.featuresField,
-        value: progression.features.map((feature) => feature.name).join(", "),
+        value: [...progression.features.map((feature) => feature.name), ...progression.written].join(", "),
         reads: progression.from.map((from): FormulaRead => ({ list: from.list, item: from.name, value: from.level ?? 1 })),
     }];
     return [...values, ...features];
@@ -421,7 +421,8 @@ function progressedField(world: World, scope: ReturnType<typeof formulaScope>, f
     const found = givenFields(world, scope).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
     const list = found === undefined ? undefined : itemList(world, found.field);
 
-    if (found === undefined) {
+    // The features are written too, beside those the rows give (PRO-3).
+    if (found === undefined || comparableText(found.field) === comparableText(scope.progression()?.featuresField ?? "")) {
         return undefined;
     }
 
@@ -976,10 +977,10 @@ function formulaScope(
             const key = keys.get(comparableText(name));
             const value = key === undefined ? undefined : fields[key];
 
-            // The effects read by their names, as has(effects, Grappled) (FOR-2).
+            // The effects read by their names, as has(effects, Grappled) (FOR-2); one named in the campaign's language by the system's English, Afferrato as Grappled (D-403).
             if (comparableText(name) === "effects") {
                 const read = readEffects(value);
-                return "effects" in read ? read.effects.map((effect) => effect.name) : [];
+                return "effects" in read ? read.effects.map((effect) => systemName(world.words, effect.name)) : [];
             }
 
             return value === undefined ? missingValue(world, fields, name) : withAlwaysIn(world, fields, name, value);
@@ -1050,4 +1051,11 @@ function isSystemCounter(world: World, field: string): boolean
 function keyOf(fields: Record<string, unknown>, field: string): string | undefined
 {
     return sameName(Object.keys(fields), field);
+}
+
+/** The English name the system's words give a name written in the campaign's language, Grappled for Afferrato (D-403); the name itself when they give none. */
+function systemName(words: Record<string, string> | undefined, name: string): string
+{
+    const written = comparableText(name.trim());
+    return Object.entries(words ?? {}).find(([, word]) => comparableText(word) === written)?.[0] ?? name;
 }

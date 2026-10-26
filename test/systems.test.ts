@@ -1,3 +1,4 @@
+// The 5e's (D-514): this file goes with the 5e to its own repository at step 8; the core's own tests of the same rules run on the fake system.
 // The pages of the game system (MECCANICHE, SYS-1–SYS-8): the cases of the table, through the commands, in a campaign played in Italian with the system 5e.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -46,7 +47,7 @@ function handWrite(path: string, text: string): void
     writeFileSync(join(folder, path), text);
 }
 
-const installed = "Installed: 5e (the fifth edition from the SRD 5.1, the 2014 rules), free (free play, without a game system), ironsworn (a test system based on Ironsworn).";
+const installed = "Installed: 5e (the fifth edition from the SRD 5.1, the 2014 rules), free (free play, without a game system), ironsworn (a test system based on Ironsworn), fake (the fake system of the core's tests).";
 
 describe("SYS-1: the campaign's system is one of those installed", () => {
     it("takes only an installed system in init and config, as it is installed, and lists them while it is missing", async () => {
@@ -74,7 +75,7 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
         expect(await ok("validate")).toBe(
             `1 problem:\n- campaign.yaml: The system Quinta edizione is not installed: no creatures, items or rules come from a system. ${installed} Fix: ask the player which game you play, then config, setting system, value 5e.`,
         );
-        expect((await ok("config", "system")).split("\n\n")[0]).toBe("system: Quinta edizione (not installed; installed: 5e, free, ironsworn)");
+        expect((await ok("config", "system")).split("\n\n")[0]).toBe("system: Quinta edizione (not installed; installed: 5e, free, ironsworn, fake)");
         expect(await ok("status")).toContain("1 problem in the campaign");
         expect(await refused("show", "Wolf")).toBe(
             "There is no page named Wolf. Look for it with the find command. The campaign's system, Quinta edizione, is not installed, so none of its pages can be found: validate says how to fix it.",

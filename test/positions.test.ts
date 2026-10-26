@@ -16,7 +16,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Valle", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Valle", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
     await ok("write", "Ettore", "--type", "character", "--set", "role=pc");
     await ok("write", "Lena", "--type", "character", "--set", "role=companion");
@@ -102,7 +102,7 @@ describe("positions (POS-1–POS-5)", () => {
 
     it("POS-4: a stop with no position is on the line between its road's stops that have one; validate takes a written one by hand that does not read", async () => {
         await placeTheMap();
-        expect(await ok("route", "Torre", "--from", "Bivio", "--across")).toContain("Straight from Bivio to Torre, 10 km through the open (2.3 km), Brughiera (7.8 km).\nAt a normal pace (4.5 km an hour): 3h 57m of travel.");
+        expect(await ok("route", "Torre", "--from", "Bivio", "--across")).toContain("Straight from Bivio to Torre, 10 km through the open (2.3 km), Brughiera (7.8 km).\nAt a steady pace (4.5 km an hour): 3h 57m of travel.");
         await ok("write", "Fonte", "--type", "place");
         await ok("write", "Fonte", "--set", "radius=10 km");
         expect(await refused("write", "Fonte", "--set", "radius=10 miles")).toContain('"radius" must be a length in km or m, such as 10 km.');
@@ -123,7 +123,7 @@ describe("travel off the roads (TRV-12, TRV-13)", () => {
             'No road reaches Torre: none of Torre is a stop of a road. Write one, a place with stops, such as write "Strada del passo", type place, set stops=[[A]], 8 km, [[Torre]]. Straight across country it is 15.6 km north-east: travel to Torre, across.',
         );
         expect(await ok("travel", "Torre", "--across")).toBe(
-            "Ettore and Lena travel to Torre, across, at a normal pace (4.5 km an hour): straight from Guadoscuro to Torre, 15.6 km through the open (11.9 km), Brughiera (3.7 km); 4h 18m of travel.\n"
+            "Ettore and Lena travel to Torre, across, at a steady pace (4.5 km an hour): straight from Guadoscuro to Torre, 15.6 km through the open (11.9 km), Brughiera (3.7 km); 4h 18m of travel.\n"
                 + "Arrived at day 3, 12:18: now in Torre.",
         );
         expect(await refused("travel", "Torre", "--across")).toBe("Ettore is already in Torre: no journey, use move for a place inside it. Nothing changed.");
@@ -133,7 +133,7 @@ describe("travel off the roads (TRV-12, TRV-13)", () => {
         await placeTheMap();
         await ok("move", "Ettore", "Lena", "--to", "Torre");
         expect(await ok("travel", "--toward", "S", "--distance", "12 km")).toBe(
-            "Ettore and Lena travel south, at a normal pace (4.5 km an hour): south from Torre, 12 km through Brughiera (7.8 km), the open (4.3 km); 4h 23m of travel.\n"
+            "Ettore and Lena travel south, at a steady pace (4.5 km an hour): south from Torre, 12 km through Brughiera (7.8 km), the open (4.3 km); 4h 23m of travel.\n"
                 + "Went as far as asked, at day 3, 12:23.\nIn the open, in no region.\nNear: Bivio, 2 km north.\nCrossed: Strada vecchia, 10 km out.\nNo place is written here: to make it one, such as a camp, write <name>, type place, here.",
         );
         expect(await ok("show", "Ettore")).not.toContain("Is in:");
@@ -162,7 +162,7 @@ describe("travel off the roads (TRV-12, TRV-13)", () => {
         expect(await refused("travel", "Fonte", "--across")).toContain("Fonte has no position on the map: give it one, such as write Fonte, set position=");
         await ok("move", "Ettore", "Lena", "--to", "Fonte");
         expect(await refused("travel", "Torre", "--across")).toContain("Ettore is where the map has no position: give one to the place they are in");
-        await ok("write", "Chiatta", "--type", "item", "--set", "item=[[Keelboat]]");
+        await ok("write", "Chiatta", "--type", "item", "--set", "item=[[Barge]]");
         await ok("move", "Chiatta", "--to", "Guadoscuro");
         await ok("move", "Ettore", "Lena", "--to", "Chiatta");
         expect(await refused("travel", "Torre", "--across")).toBe("Chiatta goes only on the kinds of road made for it: off the roads they go on foot, out of it. Nothing changed.");
@@ -265,7 +265,7 @@ describe("the world map as the character knows it (VIEW-7, D-316, D-318)", () =>
             ].join("\n"),
         );
         expect((await rpg("view", "Rocca", "--map")).output).toBe("Give map alone: it is the world map, apart from the page, the diary and the rolls.");
-        // Below a km or a mile, in metres or the game's feet, in the chat and on the page alike (D-403).
+        // Below a km or a mile, in metres or feet, a system without its own foot counting the true one, in the chat and on the page alike (D-403).
         await ok("write", "Fonte", "--type", "place", "--set", "position=60 m N of [[Guadoscuro]]");
         await ok("write", "Ettore", "--add", "knows=[[Fonte]]");
         const near = JSON.parse(await ok("view", "--map", "--json"));
@@ -274,8 +274,8 @@ describe("the world map as the character knows it (VIEW-7, D-316, D-318)", () =>
         expect(fromLabel(fonte.from, (km) => lengthText(km, near.unit))).toBe("60 m north");
         await ok("config", "units", "imperial");
         const imperial = JSON.parse(await ok("view", "--map", "--json"));
-        expect(await ok("view", "--map")).toContain("- Fonte: 200 feet north");
-        expect(fromLabel(imperial.places.find((place: { name: string; }) => place.name === "Fonte").from, (km) => lengthText(km, imperial.unit))).toBe("200 feet north");
+        expect(await ok("view", "--map")).toContain("- Fonte: 197 feet north");
+        expect(fromLabel(imperial.places.find((place: { name: string; }) => place.name === "Fonte").from, (km) => lengthText(km, imperial.unit))).toBe("197 feet north");
     });
 
     it("draws a known road only up to its last known stop, with a beginning toward the next; the trail goes along the roads it took", async () => {

@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { installedFromFolder, packageFoldersIn, realPath } from "../core/files.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
+import { apiProblem, type DeclaredWidget, declaredWidgets, type FigureSize, packagePartsIssues, packagePartsShape } from "../core/package-declarations.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
@@ -14,54 +15,32 @@ export const extensionFileName = "extension.yaml";
 const aboutWords = 40;
 const partWords = 400;
 
-/**
- * The version of the API an extension's code is given (api.ts), which its package.json names: 2 added the widgets (D-502), 3 its additions to the game system,
- * the pages, the scene, writing its own fields and asking the player (D-505), 4 its code in the dashboard's page, its figures and its commands for the player
- * (D-510). A package made for this one or an older one is read; one made for a newer one is refused, as an older rpg-engine refuses this one's.
- */
-export const extensionApi = 4;
-
 /** What an extension may add to the campaign's game system in extension.yaml, written as campaign.yaml writes it (CAM-2, D-505). */
-export const systemAdditionNames = ["fields", "tables", "computed", "counters", "recipes", "values"] as const;
+export const systemAdditionNames = ["fields", "tables", "computed", "counters", "recipes", "values", "condition-icons"] as const;
 
 /** What an extension adds to the game system, by key, as extension.yaml writes it: the system checks it when it is read with it (CAM-3). */
 export type SystemAdditions = Partial<Record<(typeof systemAdditionNames)[number], Record<string, unknown>>>;
 
-/** Whether this rpg-engine reads a package made for this version of the API: from 1 up to its own. */
-export function readsApi(api: number | undefined): boolean
+/**
+ * A package that brings its code to a campaign (D-513, D-514): one of its extensions, or its game system; the same contract and the same parts, the kind
+ * deciding only its role.
+ */
+export interface CodePackage
 {
-    return api !== undefined && Number.isInteger(api) && api >= 1 && api <= extensionApi;
-}
-
-/** An installed extension (D-28, D-427, D-428): an npm package with an extension.yaml, its parts of the instructions and, when it has some, its code. */
-export interface Extension
-{
+    kind: "extension" | "system";
     /** The package's name, as npm and campaign.yaml write it: @rpgengine/weather. */
     package: string;
-    /** The name its commands start with: the package's without its scope, weather (D-63). */
+    /** The name its commands and widgets start with (D-63): an extension's package's without its scope, weather; a system's as the campaign plays it, 5e. */
     name: string;
     version: string;
     folder: string;
     title: string;
-    /** The line the master reads in the list of extensions (D-28). */
-    about: string;
     /** The language its texts are written in, as a code such as en. */
     language: string;
-    attribution?: string;
-    /** The game system it needs, when it needs one (D-163). */
-    needs: { system?: string; };
-    /** Its months in place of the core's, as extension.yaml writes them: the time module reads them (TIM-8). */
-    calendar?: unknown;
-    /** What it adds to the game system, under the campaign's own additions (CAM-2). */
-    adds: SystemAdditions;
     /** Its icons by name, each the path of an SVG drawn on 24 by 24, as the dashboard strokes it (D-502). */
     icons: Record<string, string>;
     /** Its widgets on the dashboard, in the order written, each where it puts itself (D-502). */
     widgets: DeclaredWidget[];
-    /** Its parts of the master's instructions, by name (D-121). */
-    parts: Record<string, InstructionPart>;
-    /** The file of its code, when it has some: the module whose default export gives its commands (D-428). */
-    code?: string;
     /** The file of its code for the dashboard's page, when it has some: the module whose default export draws its figures (D-510). */
     page?: string;
     /** The figures its page code draws, by name, with the room each takes on a wide screen; mirror, turned right to left, as it holds no words (D-510). */
@@ -70,54 +49,24 @@ export interface Extension
     linked: boolean;
 }
 
-/** The room of a figure an extension draws (D-510), in CSS pixels on a wide screen; mirror, turned right to left, as it holds no words. */
-export interface FigureSize
+/** An installed extension (D-28, D-427, D-428): an npm package with an extension.yaml, its parts of the instructions and, when it has some, its code. */
+export interface Extension extends CodePackage
 {
-    width: number;
-    height: number;
-    mirror?: boolean;
+    kind: "extension";
+    /** The line the master reads in the list of extensions (D-28). */
+    about: string;
+    attribution?: string;
+    /** The game system it needs, when it needs one (D-163). */
+    needs: { system?: string; };
+    /** Its months in place of the core's, as extension.yaml writes them: the time module reads them (TIM-8). */
+    calendar?: unknown;
+    /** What it adds to the game system, under the campaign's own additions (CAM-2). */
+    adds: SystemAdditions;
+    /** Its parts of the master's instructions, by name (D-121). */
+    parts: Record<string, InstructionPart>;
+    /** The file of its code, when it has some: the module whose default export gives its commands (D-428). */
+    code?: string;
 }
-
-/** The places of the dashboard a widget may stand in (D-502): a chip in the top, a card in the table's column beside the rolls, or a card in a page. */
-export const widgetPlaces = ["top", "side", "page"] as const;
-
-/** The pages a widget's card may stand in: the Scene, the sheet, the World and the Journal. */
-export const widgetPages = ["scene", "sheet", "world", "journal"] as const;
-
-export type WidgetPlace = (typeof widgetPlaces)[number];
-export type WidgetPage = (typeof widgetPages)[number];
-
-/** A widget as extension.yaml declares it (D-502): its name, which its code's hook has, its title, its icon, and where it stands, among the cards in order. */
-export interface DeclaredWidget
-{
-    name: string;
-    title: string;
-    icon?: string;
-    place: WidgetPlace;
-    /** The page of a card that stands in one. */
-    page?: WidgetPage;
-    /** Its order among the cards of its place, the lowest first. */
-    order: number;
-}
-
-// How many icons and widgets an extension may declare, and the longest path of an icon.
-const mostIcons = 40;
-const mostWidgets = 8;
-const mostFigures = 8;
-const longestPath = 4000;
-
-/** A name of an icon or a widget, as weather or sky-rain. */
-const ownName = z.string().regex(/^[a-z][a-z0-9-]*$/, "use lowercase letters, digits and hyphens, as sky-rain");
-
-const widgetSchema = z.object({
-    title: z.string().trim().min(1).max(40),
-    icon: ownName.optional(),
-    place: z.enum(widgetPlaces, { error: `a widget's place is ${widgetPlaces.join(", ")}` }),
-    page: z.enum(widgetPages, { error: `a card's page is ${widgetPages.join(", ")}` }).optional(),
-    order: z.int().min(-100).max(100).optional(),
-}).strict().refine((widget) => (widget.place === "page") === (widget.page !== undefined), {
-    error: "a widget in place page names its page (scene, sheet, world or journal), and only one in a page does",
-});
 
 /** An addition to the game system, which the system checks as it reads it (CAM-3). */
 const addition = z.record(z.string(), z.unknown(), { error: "give it as a map by name, as campaign.yaml does" }).optional();
@@ -129,25 +78,18 @@ const extensionSchema = z.object({
     attribution: z.string().trim().min(1).optional(),
     needs: z.object({ system: z.string().trim().min(1).optional() }).strict().optional(),
     calendar: z.unknown().optional(),
-    icons: z.record(ownName, z.string().max(longestPath).regex(/^[MmLlHhVvCcSsQqTtAaZz\d\s,.+-]+$/, "an icon is the path of an SVG, as M4 12h16")).optional(),
-    widgets: z.record(ownName, widgetSchema).optional(),
-    figures: z.record(ownName, z.object({ width: z.int().min(8).max(1280), height: z.int().min(8).max(800), mirror: z.boolean().optional() }).strict()).optional(),
+    ...packagePartsShape,
     fields: addition,
     tables: addition,
     computed: addition,
     counters: addition,
     recipes: addition,
     values: addition,
+    // The drawings of effects by their names, over the system's (D-516).
+    "condition-icons": addition,
 }).strict().superRefine((declared, check) => {
-    const icons = Object.keys(declared.icons ?? {});
-    const widgets = Object.entries(declared.widgets ?? {});
-
-    if (icons.length > mostIcons || widgets.length > mostWidgets || Object.keys(declared.figures ?? {}).length > mostFigures) {
-        check.addIssue({ code: "custom", message: `an extension declares at most ${mostIcons} icons, ${mostWidgets} widgets and ${mostFigures} figures` });
-    }
-
-    for (const [name, widget] of widgets.filter(([, widget]) => widget.icon !== undefined && !icons.includes(widget.icon))) {
-        check.addIssue({ code: "custom", path: ["widgets", name, "icon"], message: `the icon ${widget.icon ?? ""} is not among the icons: add it there` });
+    for (const issue of packagePartsIssues(declared, "an extension")) {
+        check.addIssue({ code: "custom", ...issue });
     }
 });
 
@@ -196,9 +138,14 @@ export function readExtension(folder: string): Extension
     const owner = `The extension ${manifest.data.name}`;
     const marker = manifest.data["rpg-engine"];
 
-    if (marker?.kind !== "extension" || !readsApi(marker.api)) {
-        const made = marker?.kind !== "extension" ? 'its package.json does not say "rpg-engine": {"kind": "extension"}' : `it is made for the extension API ${marker.api ?? "none"}`;
-        throw new Error(`${owner} cannot be used, because ${made}; this rpg-engine reads the API 1 to ${extensionApi}: install a version of it made for these.`);
+    if (marker?.kind !== "extension") {
+        throw new Error(`${owner} cannot be used, because its package.json does not say "rpg-engine": {"kind": "extension"}: install a version of it made for rpg-engine.`);
+    }
+
+    const unread = apiProblem(marker.api, "extension");
+
+    if (unread !== undefined) {
+        throw new Error(`${owner} cannot be used, because ${unread}.`);
     }
 
     const declared = extensionSchema.safeParse(readYamlValues(where(extensionFileName), "what the extension is, such as title: ..."));
@@ -225,6 +172,7 @@ export function readExtension(folder: string): Extension
     }
 
     return {
+        kind: "extension",
         package: manifest.data.name,
         name: shortName(manifest.data.name),
         version: manifest.data.version,
@@ -237,7 +185,7 @@ export function readExtension(folder: string): Extension
         ...(calendar === undefined ? {} : { calendar }),
         adds,
         icons: icons ?? {},
-        widgets: Object.entries(widgets ?? {}).map(([name, widget]) => ({ name, ...widget, order: widget.order ?? 0 })),
+        widgets: declaredWidgets(widgets),
         parts,
         ...(manifest.data.main === undefined ? {} : { code: where(manifest.data.main) }),
         ...(marker.page === undefined ? {} : { page: where(marker.page) }),

@@ -38,7 +38,7 @@ describe("telling us what went wrong", () => {
         const link = drawn(ReportLink({ issues: "https://github.com/stefanocaronia/rpg-engine/issues", name: "weather", after: true }));
         expect(link.text).toBe(" · Segnala un problema");
         expect(link.links).toEqual([{ href: "https://github.com/stefanocaronia/rpg-engine/issues", target: "_blank", label: "Segnala un problema con weather", words: "Segnala un problema" }]);
-        expect(drawn(ReportLink({ issues: "https://example.org/bugs", name: "5e", after: false })).text).toBe("Segnala un problema");
+        expect(drawn(ReportLink({ issues: "https://example.org/bugs", name: "fake", after: false })).text).toBe("Segnala un problema");
         expect(drawn(ReportLink({ issues: undefined, name: "tarot", after: true }))).toEqual({ text: "", links: [] });
     });
 });

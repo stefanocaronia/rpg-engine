@@ -7,7 +7,7 @@ import type { Page, World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
-import { effectsOn, keptEffectHolders, keptEffects } from "./game-effects.ts";
+import { effectsOn, keptEffectHolders, keptEffects, systemNamed } from "./game-effects.ts";
 
 /** "Viola keeps Eroismo (Corrado): lost 7 hp. Read rules Concentration.": what someone keeps alive, when the counter the game system names goes down by `lost` (EFF-14). */
 export function keepingLossNote(world: World, scene: Scene | undefined, system: GameSystem | undefined, name: string, field: string, lost: number): string
@@ -25,12 +25,15 @@ export function keepingLossNote(world: World, scene: Scene | undefined, system: 
     return kept.length === 0 ? "" : `${name} keeps ${kept.join(" · ")}: lost ${lost} ${field}. Read rules ${keeping.rules}.`;
 }
 
-/** "Corrado keeps Scudo della fede (Viola): now Paralyzed, which breaks it…": what someone keeps alive, when they take a condition the game system names (EFF-14). */
-export function keepingConditionNote(world: World, scene: Scene | undefined, system: GameSystem | undefined, name: string, condition: string): string
+/**
+ * "Corrado keeps Scudo della fede (Viola): now Paralyzed, which breaks it…": what someone keeps alive, when they take a condition the game system names (EFF-14),
+ * maybe in the campaign's language (D-403).
+ */
+export function keepingConditionNote(world: World, scene: Scene | undefined, system: GameSystem | undefined, name: string, condition: string, words: Record<string, string> | undefined): string
 {
     const keeping = system?.keeping;
 
-    if (keeping === undefined || !keeping.conditions.some((named) => comparableText(named) === comparableText(condition))) {
+    if (keeping === undefined || systemNamed(keeping.conditions, condition, words) === undefined) {
         return "";
     }
 

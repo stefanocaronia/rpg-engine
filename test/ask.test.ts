@@ -14,7 +14,7 @@ beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
     shown = [];
-    await rpg("init", "--name", "Rocca", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await rpg("init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     await rpg("write", "Bruna", "--type", "character", "--set", "role=pc");
     await rpg("write", "Lena", "--type", "character", "--set", "role=companion");
 });
@@ -71,8 +71,8 @@ describe("a roll with buttons (ASK-3, ASK-7)", () => {
     });
 
     it("rolls any notation of the dice, such as advantage, and takes the only player character when who is left out", async () => {
-        expect(await asked({ question: "Colpire il lupo", options: "Attacco 2d20kh1+5" }, 0)).toContain("Bruna, Attacco: 2d20kh1+5 = 9 [(4), 4] + 5, rolled by the player.");
-        expect(shown[0].labels).toEqual(["Attacco · d20 +5, con vantaggio", "Cambio idea"]);
+        expect(await asked({ question: "Colpire il lupo", options: "Attacco 3d6kh2+5" }, 0)).toContain("Bruna, Attacco: 3d6kh2+5 = 13 [(4), 4, 4] + 5, rolled by the player.");
+        expect(shown[0].labels).toEqual(["Attacco · 2d6 +5, con un margine", "Cambio idea"]);
         // The form writes the dice as the dashboard's button draws them: the game's name for a roll, every kind of die, the number added (D-297, D-399).
         await asked({ question: "Colpo furtivo", options: "Spada corta 1d6+2d6+3" }, 1);
         expect(shown[1].labels).toEqual(["Spada corta · d6 + 2d6 +3", "Cambio idea"]);
@@ -180,10 +180,10 @@ describe("laws of ask (ASK-3, ASK-4)", () => {
 });
 
 describe("checks that name the numbers of the sheet (ASK-12)", () => {
-    const named = { question: "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options: ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"], who: "Bruna" };
+    const named = { question: "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options: ["Forza 2d6+might-bonus", "Grazia 2d6+grace-bonus"], who: "Bruna" };
 
     beforeEach(async () => {
-        await rpg("write", "Bruna", "--set", "str=14", "--set", "dex=12");
+        await rpg("write", "Bruna", "--set", "might=7", "--set", "grace=5");
     });
 
     it("works out the numbers from the sheet, as roll does, and tells the page the field of each check, whose row it lights", async () => {
@@ -197,9 +197,9 @@ describe("checks that name the numbers of the sheet (ASK-12)", () => {
             },
         };
         const result = ask.format(await ask.run(ask.input.parse(named), { ...context, page }));
-        expect(shown[0].labels).toEqual(["Tiro: Atletica (1d20+2)", "Tiro: Acrobazia (1d20+1)", "Cambio idea"]);
-        expect(rows).toEqual({ who: "Bruna", fields: ["athletics", "acrobatics", null] });
-        expect(result).toMatch(/^\S+ Bruna, Atletica: 1d20\+2 = \d+ \[\d+\] \+ 2, rolled by the player\./);
+        expect(shown[0].labels).toEqual(["Tiro: Forza (2d6+2)", "Tiro: Grazia (2d6+1)", "Cambio idea"]);
+        expect(rows).toEqual({ who: "Bruna", fields: ["might-bonus", "grace-bonus", null] });
+        expect(result).toMatch(/^\S+ Bruna, Forza: 2d6\+2 = \d+ \[\d+, \d+\] \+ 2, rolled by the player\./);
     });
 
     it("gives no field for a check with a number, or with more than one name; refuses a field the sheet does not have; with physical dice, asks the numbers in words", async () => {
@@ -210,23 +210,23 @@ describe("checks that name the numbers of the sheet (ASK-12)", () => {
                 return undefined;
             },
         };
-        await ask.run(ask.input.parse({ ...named, options: ["Atletica 1d20+5", "Acrobazia 1d20+dex-mod+acrobatics"] }), { ...context, page });
+        await ask.run(ask.input.parse({ ...named, options: ["Forza 2d6+5", "Grazia 2d6+grace-bonus+might-bonus"] }), { ...context, page });
         expect(rows?.fields).toEqual([null, null, null]);
-        expect(await refused({ ...named, options: ["Atletica 1d20+athletix"] })).toContain("Bruna has no athletix.");
-        expect(await refused({ ...named, options: ["Furtività 1d20+furtività"] })).toContain("Bruna has no furtività.");
+        expect(await refused({ ...named, options: ["Forza 2d6+mihgt"] })).toContain("Bruna has no mihgt.");
+        expect(await refused({ ...named, options: ["Ingegno 2d6+ingegno"] })).toContain("Bruna has no ingegno.");
         await rpg("config", "dice", "physical");
-        expect(await asked(named, 0)).toContain("Atletica 1d20+2, Acrobazia 1d20+1");
+        expect(await asked(named, 0)).toContain("Forza 2d6+2, Grazia 2d6+1");
     });
 });
 
 describe("checks whose dice are written with spaces or a minus, as roll's own advice says (ASK-12)", () => {
     beforeEach(async () => {
-        await rpg("write", "Bruna", "--set", "str=14");
+        await rpg("write", "Bruna", "--set", "might=7");
     });
 
     it("takes the dice from the first word that is a die, spaces and a minus included", async () => {
-        await asked({ question: "Il muro", options: ["Atletica 1d20+athletics - 1", "Forza 1d20 + str-mod"], who: "Bruna" }, undefined);
-        expect(shown[0].labels).toEqual(["Atletica · d20 +1", "Forza · d20 +2", "Cambio idea"]);
+        await asked({ question: "Il muro", options: ["Forza 2d6+might-bonus - 1", "Prova 2d6 + might-bonus"], who: "Bruna" }, undefined);
+        expect(shown[0].labels).toEqual(["Forza · 2d6 +1", "Prova · 2d6 +2", "Cambio idea"]);
     });
 });
 
@@ -248,7 +248,7 @@ describe("where the player's character moves on the map (ASK-11)", () => {
     });
 
     it("shows the map on the page and moves the character to the square touched, telling the master the way", async () => {
-        expect(await moved({ square: "D3" })).toBe("The player chose where to go: Bruna: now on D3 in Sala, 3 m from B2.");
+        expect(await moved({ square: "D3" })).toBe("The player chose where to go: Bruna: now on D3 in Sala, 5 m from B2.");
         expect(shown).toEqual([{ question: "Dove ti sposti?", title: "Movimento", labels: ["Cambio idea"] }]);
         expect(readLogFile(folder).filter((entry) => entry.type === "asked").at(-1)).toMatchObject({ by: "player", visibility: "public", data: { question: "Dove ti sposti?", answer: "D3" } });
     });
@@ -334,52 +334,54 @@ describe("the dice of a rest, spent one at a time on the page (ASK-14, D-492)", 
         },
     });
 
-    const rest = { question: "Riposo breve sotto il mulino: quanti dadi vita spendi?", recipe: "short rest", who: "Bruna" };
+    const rest = { question: "Riposo breve sotto il mulino: quanti dadi vita spendi?", recipe: "breather", who: "Bruna" };
     const spent = async (page: Player): Promise<string> => ask.format(await ask.run(ask.input.parse(rest), { ...context, page }));
 
     beforeEach(async () => {
-        await rpg("write", "Bruna", "--set", "classes=[[Fighter]] 3", "--set", "hp-base=20", "--set", "hp=5/26", "--set", "con=14");
+        await rpg("write", "Bruna", "--set", "vocations=[[Warden]] 3", "--set", "might=7", "--set", "grit=5/17");
     });
 
     it("shows the dice and the hit points, spends a die at each click as the player's roll, and gives the master what they healed", async () => {
         const seen = { shown: [] as SpendAsked[], refused: [] as (string | undefined)[] };
-        expect(await spent(pageSpending(["hit-dice-d10", "HIT-DICE-D10"], 0, seen))).toBe(
-            "The player spent 2 of Bruna's dice: hit-dice-d10 4 + 2 = 6, hit-dice-d10 4 + 2 = 6; hp 5/26 → 17/26; hit-dice-d10 3/3 → 1/3. Already written: tell it in the story.",
+        expect(await spent(pageSpending(["stamina-d6", "STAMINA-D6"], 0, seen))).toBe(
+            "The player spent 2 of Bruna's dice: stamina-d6 4 + 2 = 6, stamina-d6 4 + 2 = 6; grit 5/17 → 17/17; stamina-d6 3/3 → 1/3. Already written: tell it in the story.",
         );
         expect(shown).toEqual([{ question: rest.question, title: "Riposo", labels: ["Ho finito"] }]);
         expect(seen.refused).toEqual([undefined, undefined]);
-        expect(seen.shown[0]).toEqual({ who: "Bruna", dice: [{ field: "hit-dice-d10", sides: 10, value: 3, max: 3, adds: 2 }], gives: { field: "hp", from: 5, value: 5, max: 26 }, rolls: [] });
-        expect(seen.shown[2]).toMatchObject({ dice: [{ field: "hit-dice-d10", value: 1 }], gives: { from: 5, value: 17 }, rolls: [{ field: "hit-dice-d10", face: 4, adds: 2, total: 6 }, { face: 4 }] });
+        expect(seen.shown[0]).toEqual({ who: "Bruna", dice: [{ field: "stamina-d6", sides: 6, value: 3, max: 3, adds: 2 }], gives: { field: "grit", from: 5, value: 5, max: 17 }, rolls: [], rule: "Each die adds the might bonus" });
+        // The system words the dice of its rest, as asking words a roll (D-514).
+        expect(seen.shown[2]).toHaveProperty("rule", "Each die adds the might bonus");
+        expect(seen.shown[2]).toMatchObject({ dice: [{ field: "stamina-d6", value: 1 }], gives: { from: 5, value: 17 }, rolls: [{ field: "stamina-d6", face: 4, adds: 2, total: 6 }, { face: 4 }] });
         const log = readLogFile(folder);
         const rolls = log.filter((entry) => entry.type === "roll");
-        expect(rolls.slice(-2)).toMatchObject([{ by: "player", visibility: "public", data: { who: "Bruna", check: "Dadi vita d10", total: 6 } }, { by: "player" }]);
+        expect(rolls.slice(-2)).toMatchObject([{ by: "player", visibility: "public", data: { who: "Bruna", check: "Fiato d6", total: 6 } }, { by: "player" }]);
         expect(seen.shown[2].rolls.map((roll) => roll.id)).toEqual(rolls.slice(-2).map((entry) => entry.id));
         expect(log.filter((entry) => entry.type === "asked").at(-1)).toMatchObject({ by: "player", data: { question: rest.question, answer: "Ho finito" } });
     });
 
     it("spends none when the player ends it at once, refuses a die they lack, and keeps what was spent when the page closes first", async () => {
         const seen = { shown: [] as SpendAsked[], refused: [] as (string | undefined)[] };
-        expect(await spent(pageSpending(["hit-dice-d8"], 0, seen))).toBe("The player spends none of Bruna's dice (hit-dice-d10 3/3).");
-        expect(seen.refused).toEqual(["Bruna has no hit-dice-d8 that short rest lets one spend."]);
-        const left = await spent(pageSpending(["hit-dice-d10"], "absent", seen));
-        expect(left).toContain("The player spent 1 of Bruna's dice: hit-dice-d10 4 + 2 = 6; hp 5/26 → 11/26; hit-dice-d10 3/3 → 2/3.");
-        expect(left).toContain('The player closed the page before they were done: ask in words whether they spend more, then change with page Bruna, the dice\'s counter, spend and recipe "short rest".');
+        expect(await spent(pageSpending(["stamina-d4"], 0, seen))).toBe("The player spends none of Bruna's dice (stamina-d6 3/3).");
+        expect(seen.refused).toEqual(["Bruna has no stamina-d4 that breather lets one spend."]);
+        const left = await spent(pageSpending(["stamina-d6"], "absent", seen));
+        expect(left).toContain("The player spent 1 of Bruna's dice: stamina-d6 4 + 2 = 6; grit 5/17 → 11/17; stamina-d6 3/3 → 2/3.");
+        expect(left).toContain('The player closed the page before they were done: ask in words whether they spend more, then change with page Bruna, the dice\'s counter, spend and recipe "breather".');
     });
 
     it("has the master ask in words without a page, and with physical dice", async () => {
         const inWords = ask.format(await ask.run(ask.input.parse(rest), { ...context, player: playerClicking(0) }));
         expect(inWords).toBe(
-            'Ask the player in words, without a word about buttons: Riposo breve sotto il mulino: quanti dadi vita spendi? (the dice of Bruna: hit-dice-d10 3/3, each 1d10+2; they give hp; then change with page Bruna, the dice\'s counter, spend and recipe "short rest", which rolls them). Then stop.',
+            'Ask the player in words, without a word about buttons: Riposo breve sotto il mulino: quanti dadi vita spendi? (the dice of Bruna: stamina-d6 3/3, each 1d6+2; they give grit; then change with page Bruna, the dice\'s counter, spend and recipe "breather", which rolls them). Then stop.',
         );
         await rpg("config", "dice", "physical");
         const physical = ask.format(await ask.run(ask.input.parse(rest), { ...context, page: pageSpending([], 0, { shown: [], refused: [] }) }));
-        expect(physical).toContain('they roll them with their own dice: then change with page Bruna, the dice\'s counter, spend, recipe "short rest" and values, the faces they tell');
+        expect(physical).toContain('they roll them with their own dice: then change with page Bruna, the dice\'s counter, spend, recipe "breather" and values, the faces they tell');
     });
 
     it("is refused with options, for a recipe that spends no dice, and when no die is left", async () => {
         expect(await refused({ ...rest, options: ["Sì", "No"] })).toContain("Give recipe without options or square");
-        expect(await refused({ ...rest, recipe: "long rest" })).toBe("long rest lets one spend no dice: there is nothing to ask.");
-        await rpg("change", "Bruna", "hit-dice-d10", "--to", "0");
-        expect(await refused(rest)).toBe("Bruna has no dice left that short rest lets one spend (hit-dice-d10 0/3): there is nothing to ask.");
+        expect(await refused({ ...rest, recipe: "night's sleep" })).toBe("night's sleep lets one spend no dice: there is nothing to ask.");
+        await rpg("change", "Bruna", "stamina-d6", "--to", "0");
+        expect(await refused(rest)).toBe("Bruna has no dice left that breather lets one spend (stamina-d6 0/3): there is nothing to ask.");
     });
 });

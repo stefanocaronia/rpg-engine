@@ -4,7 +4,7 @@ import type { Asked, AskedNow, WidgetPart, WidgetShows, WidgetText, WidgetTrack 
 
 /**
  * The card as the page shows it: its widget and attempt and what it shows; the attempt's question the page saw first, its title; the question asked now;
- * the button the player pressed, while its answer goes; ended once the call that asked in it is over.
+ * the button the player pressed, while its answer goes; the last roll made from it; ended once the call that asked in it is over.
  */
 export interface PackCard
 {
@@ -14,7 +14,15 @@ export interface PackCard
     title?: string;
     asked?: Asked;
     sent?: number;
+    rolled?: CardRoll;
     ended?: true;
+}
+
+/** A roll made from a card: its total and its faces. */
+export interface CardRoll
+{
+    total: number;
+    faces: number[];
 }
 
 /** The card after a reading; and an attempt whose card goes without a button of it pressed, which no card that ends it brings back. */
@@ -43,7 +51,8 @@ export function nextPackCard(before: PackCard | undefined, now: AskedNow, gone: 
         }
 
         const sent = kept?.asked?.id === asked.id && kept.sent !== undefined ? { sent: kept.sent } : {};
-        return { card: { widget: card.widget, key: card.key, shows: card.shows, title: kept?.title ?? asked.question, asked, ...sent } };
+        const rolled = kept?.rolled === undefined ? {} : { rolled: kept.rolled };
+        return { card: { widget: card.widget, key: card.key, shows: card.shows, title: kept?.title ?? asked.question, asked, ...sent, ...rolled } };
     }
 
     const ended = now.card;
@@ -56,7 +65,8 @@ export function nextPackCard(before: PackCard | undefined, now: AskedNow, gone: 
     if (ended?.ended === true && ended.shows !== undefined && !gone.has(ended.key)) {
         const kept = before?.key === ended.key ? before : undefined;
         const title = kept?.title === undefined ? {} : { title: kept.title };
-        return { card: { widget: ended.widget, key: ended.key, shows: ended.shows, ...title, ...(kept?.asked === undefined ? {} : { asked: kept.asked }), ended: true } };
+        const rolled = kept?.rolled === undefined ? {} : { rolled: kept.rolled };
+        return { card: { widget: ended.widget, key: ended.key, shows: ended.shows, ...title, ...(kept?.asked === undefined ? {} : { asked: kept.asked }), ...rolled, ended: true } };
     }
 
     // Its question gone with no button of it pressed, as answered in words or taken back by the master: the card goes, and what the call leaves stays away.

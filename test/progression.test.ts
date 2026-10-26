@@ -1,3 +1,4 @@
+// The 5e's in part (D-514): the tests through the commands on the 5e go with it at step 8; those of the module stay, and the core's run on the fake system.
 // The rows of their tables that the classes of a character give, and its features (D-201, D-219, PRO-1–PRO-4): the module on tables, then the commands on the 5e.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -148,10 +149,10 @@ describe("what the classes give, through the commands (PRO-1–PRO-4)", () => {
         expect(shown).not.toContain("Frenzy");
     });
 
-    it("never writes what the classes give, and refuses to change it", async () => {
+    it("never writes what the rows give, and refuses to change it; a feature written by hand that a row gives counts once (PRO-3)", async () => {
         const written = await ok("write", "Brann", "--set", "rage-damage=+3", "--set", "features=[Rage]", "--set", "xp=900");
-        expect(written).toContain("Not written, the system 5e works them out: rage-damage +2 (you gave +3); features Rage, Unarmored Defense");
-        expect(written).toContain("They come from classes, subclasses.");
+        expect(written).toContain("Not written, the system 5e works it out: rage-damage +2 (you gave +3). They come from classes, subclasses.");
+        expect(await ok("show", "Brann#Features")).toContain("features Rage, Unarmored Defense");
         expect(await refused("effect", "add", "Brann", "Furia sacra", "--set", "rage-damage=+4")).toBe(
             "rage-damage on Brann is what its classes and subclasses give, from the tables of their pages: an effect cannot change it. Nothing changed.",
         );

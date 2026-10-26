@@ -117,10 +117,20 @@ describe("the parts of a package's card (D-507)", () => {
 
 describe("the kit of rpg-engine/page (D-510)", () => {
     it("gives in the page every part its types declare to the extensions, and no other", () => {
-        const declared = [...readFileSync("src/page.ts", "utf8").matchAll(/^export declare function (\w+)/gm)].map((match) => match[1]).sort();
+        const declared = [...readFileSync("src/page.ts", "utf8").matchAll(/^export (?:declare function|const) (\w+)/gm)].map((match) => match[1]).sort();
         const kit = readFileSync("src/dashboard/kit.tsx", "utf8");
         const given = [...kit.matchAll(/^export function (\w+)/gm)].map((match) => match[1]).concat(...[...kit.matchAll(/^export \{ ([^}]+) \}/gm)].map((match) => match[1].split(", "))).sort();
         expect(given).toEqual(declared);
+    });
+
+    it("lists the pages a card stands in as src/page.ts declares them, in the page code and in Settings (D-514)", () => {
+        const list = (file: string, pattern: RegExp): string[] => (JSON.parse(`[${pattern.exec(readFileSync(file, "utf8"))?.[1] ?? ""}]`) as string[]).sort();
+        const declared = list("src/page.ts", /export const cardPages = \[([^\]]*)\]/);
+        expect(declared).toEqual(["journal", "scene", "sheet", "world"]);
+        expect(list("src/dashboard/page-code.tsx", /export const cardPages = \[([^\]]*)\]/)).toEqual(declared);
+        expect(list("src/dashboard/settings.tsx", /const widgetPages: WidgetPage\[\] = \[([^\]]*)\]/)).toEqual(declared);
+        const union = /export type WidgetPage = ([^;]+);/.exec(readFileSync("src/dashboard/data.ts", "utf8"))?.[1] ?? "";
+        expect(union.split("|").map((page) => page.trim().replace(/"/g, "")).sort()).toEqual(declared);
     });
 });
 
@@ -163,10 +173,10 @@ describe("a package's pages in the navigation (D-512)", () => {
     const draw = () => null;
 
     it("puts each where its module says, a tab or the packages' menu, the menu when it says nothing, in the order of the modules", () => {
-        const system = { module: { package: "5e" }, loaded: { pages: { spells: { title: "Spells", icon: "M0 0", nav: "tab", draw } } } };
+        const system = { module: { package: "@rpgengine/system-fake" }, loaded: { pages: { spells: { title: "Spells", icon: "M0 0", nav: "tab", draw } } } };
         const charms = { module: { package: "charms" }, loaded: { pages: { knots: { title: "Knots", draw }, braid: { title: "Braid", nav: "menu", draw } } } };
         expect(navPagesOf([system, charms])).toEqual([
-            { package: "5e", name: "spells", title: "Spells", icon: "M0 0", nav: "tab" },
+            { package: "@rpgengine/system-fake", name: "spells", title: "Spells", icon: "M0 0", nav: "tab" },
             { package: "charms", name: "knots", title: "Knots", nav: "menu" },
             { package: "charms", name: "braid", title: "Braid", nav: "menu" },
         ]);

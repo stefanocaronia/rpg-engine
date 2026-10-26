@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
 import { runCommandLine } from "./command-line.ts";
 import { campaignWidgets, type ShownWidget } from "./commands/game-widgets.ts";
+import { campaignSystem } from "./commands/game-world.ts";
 import type { Context, Player } from "./core/context.ts";
 import type { LogEntry } from "./core/log.ts";
 import { SessionStore } from "./core/session-store.ts";
@@ -127,7 +128,11 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
         dice: (...given) => (faces = [...given]),
         log: () => (readText(join(folder, "log.jsonl")) ?? "").split("\n").filter((line) => line.trim() !== "").map((line) => JSON.parse(line) as LogEntry),
         read: (path) => readText(join(folder, path)),
-        widgets: () => campaignWidgets(folder, campaign.context),
+        // The extensions' alone, as a game system may have widgets of its own, as the 5e's death saves (D-516).
+        widgets: async () => {
+            const system = campaignSystem(folder, campaign.context)?.name;
+            return (await campaignWidgets(folder, campaign.context)).filter((widget) => widget.extension !== system);
+        },
         dashboard: async () => {
             const dashboard = await testDashboard(campaign.context);
             started.push(dashboard);

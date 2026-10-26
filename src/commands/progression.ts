@@ -28,6 +28,8 @@ export interface Progression
     /** The name of the field that holds the features, such as features. */
     featuresField: string;
     features: { name: string; pages: Page[]; }[];
+    /** The features written on the character by hand, as what a feat or the story gives, that no row or part gives: counted with them (PRO-3). */
+    written: string[];
     /** Each feature as a row or a part gives it, before they are merged, with its level and page: what a new level adds, even a feature gained again. */
     gains: { name: string; level: number; page: Page; }[];
     /** What the parts add to the character's lists by their level, each with its list and page: a domain's spells, always prepared (PRO-7). */
@@ -85,11 +87,15 @@ export function progressionOf(world: World, fields: Record<string, unknown>): Pr
 
     // Item by item, then level by level; at the same level, a class's own features before its subclass's.
     features.sort((first, second) => first.order - second.order || first.level - second.level || first.part - second.part);
+    const merged = mergedFeatures(features);
+    const gainedNames = new Set(merged.map(({ name }) => comparableText(featureParts(name).name)));
+    const handWritten = listItems(valueNamed(fields, featuresField)).map((item) => item.name).filter((name) => !gainedNames.has(comparableText(featureParts(name).name)));
     return {
         lists: rule.parts === undefined ? [rule.list] : [rule.list, rule.parts.list],
         values: [...values.values()],
         featuresField,
-        features: mergedFeatures(features).map(({ name }) => ({ name, pages: pagesGiving(features, name) })),
+        features: merged.map(({ name }) => ({ name, pages: pagesGiving(features, name) })),
+        written: [...new Set(handWritten)],
         gains: features.map(({ name, level, page }) => ({ name, level, page })),
         given,
         from: [...entries.map((entry) => ({ list: rule.list, name: entry.page.name, level: entry.level })), ...parts.map((part) => ({ list: rule.parts?.list ?? "", name: part.page.name }))],
@@ -109,8 +115,9 @@ export function progressionValue(progression: Progression | undefined, field: st
         return undefined;
     }
 
+    // Those of the rows and the parts, then those written by hand (PRO-3).
     if (comparableText(field) === comparableText(progression.featuresField)) {
-        return progression.features.map((feature) => feature.name);
+        return [...progression.features.map((feature) => feature.name), ...progression.written];
     }
 
     return progression.values.find((value) => comparableText(value.field) === comparableText(field))?.value;

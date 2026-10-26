@@ -3,11 +3,11 @@
 // asks for, and the rule; once the dice have spoken, the outcome where the buttons were. Its extension's page code may draw the middle's figure, or the
 // whole inside, the frame staying the page's (D-510). What the dice changed moves once they land; the card stays until the player closes it.
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { Asked, ShownWidget, WidgetShows } from "./data.ts";
+import type { Asked, RestDice, ShownWidget, WidgetShows } from "./data.ts";
 import { Drawn, OwnerContext, Part, Text, textOf, Track, Who } from "./extension-widgets.tsx";
 import { Icon, NotationIcons } from "./icons.tsx";
-import { checkOf } from "./labels.ts";
-import { cardLayout, labelKey, type PackCard, type TrackChange, trackChanges } from "./pack-card.ts";
+import { checkOf, fieldLabel } from "./labels.ts";
+import { cardLayout, type CardRoll, labelKey, type PackCard, type TrackChange, trackChanges } from "./pack-card.ts";
 import { type CardButton, deepQuery, ExtensionRoot, figureSize, type PageModule, pagePropsOf, usePageModule } from "./page-code.tsx";
 import { t } from "./text.ts";
 import { turnWords } from "./turns.tsx";
@@ -43,6 +43,8 @@ export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
     const asked = card.ended === true ? undefined : card.asked;
     const ruled = card.asked?.rule;
     const check = card.asked === undefined ? undefined : checkOf(card.asked.labels[0] ?? "", card.asked.title);
+    // The dice of a rest are asked in it one at a time, the same question until its end (ASK-14).
+    const rest = card.asked?.spend;
     const question = card.title ?? asked?.question;
     const prompt = asked !== undefined && question !== asked.question ? asked.question : undefined;
     // The widget's lead is the outcome once it has a tone, good or bad; before, it names who rolls, which the line on top says.
@@ -58,6 +60,8 @@ export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
     const [saying, setSaying] = useState(false);
     const [problem, setProblem] = useState<string>();
     const busy = card.sent !== undefined || saying;
+    // The player's own words take no forced roll's place, nor a rest's dice (D-507, ASK-14).
+    const takesWords = asked !== undefined && asked.forced !== true && rest === undefined;
 
     // While it stays in sight, the rolls beside the sheet stay in sight under it, as under the master's question (D-291); once it scrolls with the page, not.
     useEffect(() => {
@@ -142,7 +146,7 @@ export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
             ))}
         </ul>
     );
-    const choices = asked === undefined ? undefined : cardAskedOf(asked, prompt);
+    const choices = asked === undefined ? undefined : rest === undefined ? cardAskedOf(asked, prompt) : restAskedOf(asked, rest);
 
     // The inside the page draws: who acts, the middle, the side; the others; the buttons, the outcome and the rule.
     const inside = (
@@ -193,7 +197,8 @@ export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
     );
 
     return (
-        <section ref={element} class={`asked ask-card ${state}`} aria-labelledby={`ask-${id}`}>
+        // The package's tint of the moment, as the 5e's death save, frames it in its colour, without the robot (D-517).
+        <section ref={element} class={`asked ask-card ${state}${card.shows.tint === undefined ? "" : ` tinted tint-${card.shows.tint}`}`} aria-labelledby={`ask-${id}`}>
             <img class="asked-robot" src="/assets/favicon.svg" alt="" />
             <div class="asked-body">
                 {card.ended === true && (
@@ -201,7 +206,7 @@ export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
                         <Icon name="close" />
                     </button>
                 )}
-                <p class="eyebrow asked-turn">{check === undefined ? widget?.title ?? turnWords(name) : `${turnWords(name)} · ${check.check}`}</p>
+                <p class="eyebrow asked-turn">{rest !== undefined ? card.asked?.title : check === undefined ? widget?.title ?? turnWords(name) : `${turnWords(name)} · ${check.check}`}</p>
                 <p id={`ask-${id}`} class="asked-question" role={asked !== undefined && prompt === undefined ? "alert" : undefined}>{question ?? widget?.title}</p>
                 {body !== undefined && widget !== undefined
                     ? (
@@ -216,6 +221,8 @@ export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
                                     widget={widget}
                                     shows={card.shows}
                                     before={look.current.before}
+                                    rest={rest}
+                                    rolled={card.rolled}
                                     asked={choices}
                                     sent={card.sent}
                                     ended={card.ended === true}
@@ -228,7 +235,7 @@ export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
                     ? inside
                     : <OwnerContext.Provider value={{ widget, loaded, data: card.shows.data, place: "ask" }}>{inside}</OwnerContext.Provider>}
                 {/* The player's own words in place of a button, as in the master's question (ASK-10): always the page's. */}
-                {asked !== undefined && (
+                {takesWords && (
                     <form class="asked-own ask-own" onSubmit={(event) => void say(event)}>
                         <input
                             type="text"
@@ -281,6 +288,12 @@ export function Choices({ buttons, sent, describedBy, onChoose }: { buttons: Car
     );
 }
 
+/** The buttons of the dice of a rest as a card shows them (ASK-14): a die of each counter, in their order, then the one that ends it. */
+function restAskedOf(asked: Asked, rest: RestDice): CardAsked
+{
+    return { buttons: [...rest.dice.map((dice) => ({ name: fieldLabel(dice.field), dice: `1d${dice.sides}` })), { name: asked.labels[0] ?? "" }] };
+}
+
 /** The buttons of a question as a card shows them: each its name, its note and its dice when it rolls; the question a die asks, and the rule. */
 export function cardAskedOf(asked: Asked, prompt?: string): CardAsked
 {
@@ -298,12 +311,14 @@ export function cardAskedOf(asked: Asked, prompt?: string): CardAsked
 const mostWords = 500;
 
 /** The whole inside of a card of a roll as its extension's page code draws it (D-510): its body, a figure with the question's buttons. */
-function OwnBody({ module, name, widget, shows, before, asked, sent, ended, answer }: {
+function OwnBody({ module, name, widget, shows, before, rest, rolled, asked, sent, ended, answer }: {
     module: PageModule;
     name: string;
     widget: ShownWidget;
     shows: WidgetShows;
     before?: WidgetShows | undefined;
+    rest?: RestDice | undefined;
+    rolled?: CardRoll | undefined;
     asked?: CardAsked | undefined;
     sent?: number | undefined;
     ended: boolean;
@@ -325,6 +340,8 @@ function OwnBody({ module, name, widget, shows, before, asked, sent, ended, answ
             place="ask"
             size={figureSize(widget, name)}
             parts={shows.parts ?? []}
+            {...(rest === undefined ? {} : { rest })}
+            {...(rolled === undefined ? {} : { rolled })}
             buttons={asked?.buttons ?? []}
             {...(asked?.prompt === undefined ? {} : { prompt: asked.prompt })}
             {...(asked?.rule === undefined ? {} : { rule: asked.rule })}

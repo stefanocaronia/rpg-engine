@@ -3,10 +3,11 @@
 import { join } from "node:path";
 import { readManifest } from "../adventures/index.ts";
 import type { Context, PackageInfo } from "../core/context.ts";
+import { readsApi } from "../core/package-declarations.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
-import { installedExtensions, isVerified, readExtension, readsApi, shortName } from "../extensions/index.ts";
+import { installedExtensions, isVerified, readExtension, shortName } from "../extensions/index.ts";
 import { installedLanguages } from "../languages/index.ts";
 import { systemFolders } from "../systems/index.ts";
 import { installedAdventures } from "./game-adventures.ts";
@@ -67,7 +68,8 @@ async function npmEntries(root: string, context: Context): Promise<{ entries: Ca
         return { entries: [], failed: searched.failed };
     }
 
-    const listed = searched.filter((one) => kinds.has(one.kind ?? "") && (one.kind !== "extension" || readsApi(one.api)));
+    // A package made for an API this engine does not read is not offered (D-515).
+    const listed = searched.filter((one) => kinds.has(one.kind ?? "") && (one.kind === "language" || readsApi(one.api, one.kind === "system" ? "system" : "extension")));
     return { entries: listed.map((one) => npmEntry(one, installedVersion(root, context, one))) };
 }
 

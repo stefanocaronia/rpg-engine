@@ -13,12 +13,12 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
 });
 
 afterEach(() => removeFolder(folder));
 
-/** One case: Zanna's own hp and Lupo's hp (none when left out), what is asked, and what Zanna then holds, or the start of the refusal. */
+/** One case: Zanna's own grit and Lupo's grit (none when left out), what is asked, and what Zanna then holds, or the start of the refusal. */
 interface Case
 {
     rule: string;
@@ -30,34 +30,34 @@ interface Case
 }
 
 const writeCases: Case[] = [
-    { rule: "INH-11", base: "13/13", ask: ["write", "--set", "hp=5/13"], refused: "hp is a counter that Zanna reads from Lupo: use change" },
-    { rule: "D-125", base: "13/13", ask: ["write", "--set", "hp=13/13"] },
-    { rule: "D-125", own: "morto", base: "13/13", ask: ["write", "--set", "hp=13/13"] },
-    { rule: "INH-11", base: "13/13", ask: ["write", "--set", "hp=morto"], holds: "morto" },
-    { rule: "INH-11", base: "13/13", ask: ["write", "--unset", "hp"], refused: 'Zanna has no field "hp" to remove. It reads hp from Lupo' },
+    { rule: "INH-11", base: "13/13", ask: ["write", "--set", "grit=5/13"], refused: "grit is a counter that Zanna reads from Lupo: use change" },
+    { rule: "D-125", base: "13/13", ask: ["write", "--set", "grit=13/13"] },
+    { rule: "D-125", own: "morto", base: "13/13", ask: ["write", "--set", "grit=13/13"] },
+    { rule: "INH-11", base: "13/13", ask: ["write", "--set", "grit=morto"], holds: "morto" },
+    { rule: "INH-11", base: "13/13", ask: ["write", "--unset", "grit"], refused: 'Zanna has no field "grit" to remove. It reads grit from Lupo' },
     {
         rule: "INH-11",
         own: "5/13",
         base: "13/13",
-        ask: ["write", "--set", "hp=7/13"],
-        refused: 'hp is a counter: use change, page "Zanna", field hp, to 7/13 (or by an amount). To make it something else, set a value that is not a counter.',
+        ask: ["write", "--set", "grit=7/13"],
+        refused: 'grit is a counter: use change, page "Zanna", field grit, to 7/13 (or by an amount). To make it something else, set a value that is not a counter.',
     },
-    { rule: "INH-11", own: "5/13", base: "13/13", ask: ["write", "--set", "hp=morto"], holds: "morto" },
-    { rule: "INH-11", own: "5/13", base: "13/13", ask: ["write", "--unset", "hp"], refused: "hp on Zanna is a counter: without it, Zanna would read 13/13 from Lupo" },
-    { rule: "INH-6", own: "5/13", base: "13/13", ask: { set: { hp: "" } }, refused: "Give hp a value. To remove a field, use unset." },
-    { rule: "INH-6", own: "5/13", base: "13/13", ask: { set: { hp: null } }, refused: "Give hp a value. To remove a field, use unset." },
-    { rule: "INH-6", base: "13/13", ask: { set: { hp: "" } }, refused: "Give hp a value. To remove a field, use unset." },
-    { rule: "INH-11", own: "5/13", ask: ["write", "--set", "hp=7/13"], refused: 'hp is a counter: use change, page "Zanna", field hp, to 7/13 (or by an amount). To make it something else, unset it, then set it.' },
-    { rule: "INH-11", own: "5/13", ask: ["write", "--set", "hp=morto"], refused: "hp is a counter: use change" },
-    { rule: "INH-11", own: "5/13", ask: ["write", "--unset", "hp"] },
-    { rule: "INH-11", own: "5/13", base: "20", ask: ["write", "--unset", "hp"] },
-    { rule: "INH-11", own: "5", base: "13/13", ask: ["write", "--unset", "hp"] },
-    // hp has a maximum in the system: as a number alone it is a statistic of a stat block, which write changes (CNT-7).
-    { rule: "INH-11", own: "5", base: "13/13", ask: ["write", "--set", "hp=7"], holds: "7" },
-    { rule: "INH-11", base: "20", ask: ["write", "--set", "hp=7"], holds: "7" },
-    { rule: "INH-11", own: "morto", base: "13/13", ask: ["write", "--set", "hp=7/13"], holds: "7/13" },
-    { rule: "INH-6", own: "", base: "13/13", ask: ["write", "--set", "hp=5/13"], refused: "hp is a counter that Zanna reads from Lupo: use change" },
-    { rule: "INH-6", own: "", base: "13/13", ask: ["write", "--unset", "hp"] },
+    { rule: "INH-11", own: "5/13", base: "13/13", ask: ["write", "--set", "grit=morto"], holds: "morto" },
+    { rule: "INH-11", own: "5/13", base: "13/13", ask: ["write", "--unset", "grit"], refused: "grit on Zanna is a counter: without it, Zanna would read 13/13 from Lupo" },
+    { rule: "INH-6", own: "5/13", base: "13/13", ask: { set: { grit: "" } }, refused: "Give grit a value. To remove a field, use unset." },
+    { rule: "INH-6", own: "5/13", base: "13/13", ask: { set: { grit: null } }, refused: "Give grit a value. To remove a field, use unset." },
+    { rule: "INH-6", base: "13/13", ask: { set: { grit: "" } }, refused: "Give grit a value. To remove a field, use unset." },
+    { rule: "INH-11", own: "5/13", ask: ["write", "--set", "grit=7/13"], refused: 'grit is a counter: use change, page "Zanna", field grit, to 7/13 (or by an amount). To make it something else, unset it, then set it.' },
+    { rule: "INH-11", own: "5/13", ask: ["write", "--set", "grit=morto"], refused: "grit is a counter: use change" },
+    { rule: "INH-11", own: "5/13", ask: ["write", "--unset", "grit"] },
+    { rule: "INH-11", own: "5/13", base: "20", ask: ["write", "--unset", "grit"] },
+    { rule: "INH-11", own: "5", base: "13/13", ask: ["write", "--unset", "grit"] },
+    // grit has a maximum in the system: as a number alone it is a statistic of a stat block, which write changes (CNT-7).
+    { rule: "INH-11", own: "5", base: "13/13", ask: ["write", "--set", "grit=7"], holds: "7" },
+    { rule: "INH-11", base: "20", ask: ["write", "--set", "grit=7"], holds: "7" },
+    { rule: "INH-11", own: "morto", base: "13/13", ask: ["write", "--set", "grit=7/13"], holds: "7/13" },
+    { rule: "INH-6", own: "", base: "13/13", ask: ["write", "--set", "grit=5/13"], refused: "grit is a counter that Zanna reads from Lupo: use change" },
+    { rule: "INH-6", own: "", base: "13/13", ask: ["write", "--unset", "grit"] },
     { rule: "INH-9", base: "13/13", ask: ["change", "--by=-3"], holds: "10/13" },
     { rule: "INH-9", own: "10/13", base: "13/13", ask: ["change", "--by=3"] },
     { rule: "INH-9", own: "10/13", base: "13/13", ask: ["change", "--to", "max"] },
@@ -71,8 +71,8 @@ const writeCases: Case[] = [
 
 describe("a counter on a page that derives from a creature", () => {
     it.each(writeCases)("$rule: Zanna holds $own, Lupo $base; $ask", async (example) => {
-        const lupo = example.base === undefined ? "" : `hp: ${example.base}\n`;
-        const zanna = example.own === undefined ? "" : `hp: ${example.own === "" ? "" : example.own}\n`;
+        const lupo = example.base === undefined ? "" : `grit: ${example.base}\n`;
+        const zanna = example.own === undefined ? "" : `grit: ${example.own === "" ? "" : example.own}\n`;
         writeFileSync(join(folder, "world", "creatures", "Lupo.md"), `---\n${lupo}ac: 12\n---\n`);
         writeFileSync(join(folder, "world", "characters", "Zanna.md"), `---\nrole: npc\ncreature: "[[Lupo]]"\n${zanna}---\n`);
         const before = readFileSync(join(folder, "world", "characters", "Zanna.md"), "utf8");
@@ -87,7 +87,7 @@ describe("a counter on a page that derives from a creature", () => {
 
         expect(result.exitCode, result.output).toBe(0);
         const fields = JSON.parse((await runCommandLine(["show", "Zanna", "--json"], context)).output).fields as Record<string, unknown>;
-        expect(fields.hp === undefined ? undefined : String(fields.hp)).toBe(example.holds);
+        expect(fields.grit === undefined ? undefined : String(fields.grit)).toBe(example.holds);
     });
 });
 
@@ -103,5 +103,5 @@ async function ask(request: Case["ask"]): Promise<{ exitCode: number; output: st
     }
 
     const [command, ...options] = request;
-    return runCommandLine([command, "Zanna", ...(command === "change" ? ["hp"] : []), ...options], context);
+    return runCommandLine([command, "Zanna", ...(command === "change" ? ["grit"] : []), ...options], context);
 }

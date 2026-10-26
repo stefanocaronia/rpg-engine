@@ -33,7 +33,7 @@ async function campaign(): Promise<void>
 {
     folder = makeTempFolder();
     context = testContext(folder);
-    await ok("init", "--name", "Prova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await ok("init", "--name", "Prova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
     await ok("write", "Kira", "--type", "character", "--set", "role=pc");
     await ok("write", "Bran", "--type", "character", "--set", "role=companion");
@@ -125,16 +125,16 @@ describe("the moods", () => {
     it("MOOD-1, MOOD-2: refuses a mood not on the list, a page that is not a character, a page of the system, a copy, a moment for a character, with what to do", async () => {
         expect(await refused("mood", "master", "furious")).toContain(`expected one of ${moods.map((name) => `"${name}"`).join("|")}`);
         expect(await refused("mood", "Guado", "happy")).toContain("Guado is a place, not a character: only you and the characters have moods. Nothing changed.");
-        expect(await refused("mood", "Wolf", "happy")).toContain('Wolf is a creature, a kind of being: moods are for characters. Make one from it, such as with write "Name"');
+        expect(await refused("mood", "Bog Hound", "happy")).toContain('Bog Hound is a creature, a kind of being: moods are for characters. Make one from it, such as with write "Name"');
         expect(await refused("mood", "Nessuno", "happy")).toContain("There is no page Nessuno: write the character first");
         expect(await refused("mood", "Bran", "sad", "--moment")).toContain("Only your mood has moments, as the master. Give Bran a mood that stays");
-        await ok("scene", "open", "--title", "Lupi", "--type", "combat", "--creatures", "Wolf=1");
-        expect(await refused("mood", "Wolf 1", "angry")).toContain("Wolf 1 is a copy of a creature in the open scene: moods are for characters.");
+        await ok("scene", "open", "--title", "Lupi", "--type", "combat", "--creatures", "Bog Hound=1");
+        expect(await refused("mood", "Bog Hound 1", "angry")).toContain("Bog Hound 1 is a copy of a creature in the open scene: moods are for characters.");
         expect(readLogFile(folder).filter((entry) => entry.type.startsWith("mood-"))).toEqual([]);
     });
 
     it("MOOD-3, INH-8: a mood is never inherited from a base, and write checks it as the list says", async () => {
-        await ok("write", "Lupo nero", "--type", "creature", "--set", "creature=[[Wolf]]", "--set", "mood=angry");
+        await ok("write", "Lupo nero", "--type", "creature", "--set", "creature=[[Bog Hound]]", "--set", "mood=angry");
         await ok("write", "Fumo", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo nero]]");
         expect(overview().party.find((member) => member.name === "Fumo")).not.toHaveProperty("mood");
         expect(await refused("write", "Bran", "--set", "mood=furious")).toContain("mood");

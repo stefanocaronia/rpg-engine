@@ -124,7 +124,7 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
     beforeEach(async () => {
         folder = makeTempFolder();
         context = testContext(folder);
-        await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+        await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
         inPlay(folder);
         await ok("write", "Kira", "--type", "character", "--set", "role=pc");
         await ok("write", "Bran", "--type", "character", "--set", "role=companion");
@@ -146,8 +146,8 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
 
     it("moves one on the map of the place they are in, or into a place and onto its map; refuses walls, what blocks, places without a map, more than one", async () => {
         await ok("move", "Kira", "--to", "Locanda");
-        // Through the pool, never across the corner of the wall by the door: three squares.
-        expect(await ok("move", "Kira", "--at", "D3")).toBe("Kira: now on D3 in Locanda, 4.5 m from E5.");
+        // Through the pool, three squares for difficult ground, never across the corner of the wall by the door, then one diagonal: four and a half.
+        expect(await ok("move", "Kira", "--at", "D3")).toBe("Kira: now on D3 in Locanda, 9 m from E5.");
         expect(innPage()).toContain("[[Kira]] D3");
         expect(innPage()).not.toContain("[[Kira]] E5");
         expect(await refused("move", "Kira", "--at", "B2")).toContain("B2 is camino, which blocks: Kira cannot stand there.");
@@ -159,44 +159,45 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(innPage()).not.toContain("Oste");
         expect(await ok("move", "Oste", "--to", "Locanda", "--at", "H3")).toContain("Oste: now on H3 in Locanda.");
         expect(innPage()).toContain("[[Oste]] H3");
-        expect(await ok("move", "Kira", "--at", "E2")).toBe("Kira: now on E2 in Locanda, 3 m from D3.\nE2 is tavolo, difficult ground.");
+        expect(await ok("move", "Kira", "--at", "E2")).toBe("Kira: now on E2 in Locanda, 8 m from D3.\nE2 is tavolo, difficult ground.");
     });
 
     it("says how far one went by the shortest way, whose side they left on it and who stands next to them now; on their turn, what is left of their speed (GRD-5)", async () => {
-        await ok("write", "Kira", "--set", "speed=30 ft");
-        expect(await ok("move", "Kira", "--to", "Locanda", "--at", "B3")).toContain("Kira: now on B3 in Locanda, 7.5 m from E5, where Kira came in.");
+        await ok("write", "Kira", "--set", "stride=12 m");
+        expect(await ok("move", "Kira", "--to", "Locanda", "--at", "B3")).toContain("Kira: now on B3 in Locanda, 13 m from E5, where Kira came in.");
         await ok("move", "Bran", "--to", "Locanda", "--at", "E2");
-        await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Bandit=1");
-        expect(await ok("move", "Bandit 1", "--at", "C4")).toBe("Bandit 1: now on C4 in Locanda.\nC4 is tavolo, difficult ground.");
-        await ok("scene", "order", "--order", "Kira", "--order", "Bandit 1", "--order", "Bran");
+        await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Reed Cutter=1");
+        expect(await ok("move", "Reed Cutter 1", "--at", "C4")).toBe("Reed Cutter 1: now on C4 in Locanda.\nC4 is tavolo, difficult ground.");
+        await ok("scene", "order", "--order", "Kira", "--order", "Reed Cutter 1", "--order", "Bran");
         expect(await ok("move", "Kira", "--at", "F3")).toBe([
-            "Kira: now on F3 in Locanda, 6 m from B3.",
+            "Kira: now on F3 in Locanda, 8 m from B3.",
             "Next to Kira now: Bran.",
-            "Along the shortest way Kira leaves the side of Bandit 1: read Opportunity Attacks.",
-            "This turn Kira has moved 6 m of 9 m: 3 m left.",
+            "Along the shortest way Kira leaves the side of Reed Cutter 1: read Disengage.",
+            "This turn Kira has moved 8 m of 12 m: 4 m left.",
         ].join("\n"));
         // Away from Bran, of her own side: no rule to read.
         const away = await ok("move", "Kira", "--at", "G4");
-        expect(away).toContain("This turn Kira has moved 7.5 m of 9 m: 1.5 m left.");
+        expect(away).toContain("This turn Kira has moved 11 m of 12 m: 1 m left.");
         expect(away).not.toContain("leaves the side");
-        expect(await ok("move", "Kira", "--at", "I3")).toContain("This turn Kira has moved 12 m, 3 m beyond the 9 m of Kira's speed: yours to judge, with what lets one go farther.");
-        // Bran moves out of turn: only the way. On the bandit's turn, its speed is its creature's.
-        expect(await ok("move", "Bran", "--at", "D2")).toBe("Bran: now on D2 in Locanda, 1.5 m from E2.");
+        expect(await ok("move", "Kira", "--at", "I3")).toContain("This turn Kira has moved 17 m, 5 m beyond the 12 m of Kira's speed: yours to judge, with what lets one go farther.");
+        // Bran moves out of turn: only the way. On the cutter's turn, its speed is its creature's.
+        expect(await ok("move", "Bran", "--at", "D2")).toBe("Bran: now on D2 in Locanda, 2 m from E2.");
         await ok("scene", "next");
-        expect(await ok("move", "Bandit 1", "--at", "D3")).toContain("This turn Bandit 1 has moved 1.5 m of 9 m: 7.5 m left.");
+        expect(await ok("move", "Reed Cutter 1", "--at", "D3")).toContain("This turn Reed Cutter 1 has moved 3 m of 10 m: 7 m left.");
     });
 
-    it("counts a turn's move with the speed the sheet works out: slowed by a heavy armor without its Strength, stopped when grappled (GRD-5, SPD-1)", async () => {
-        await ok("write", "Kira", "--set", "speed=30 ft", "--set", "str=10", "--add", "inventory=[[Chain Mail]]", "--add", "equipped=[[Chain Mail]]");
+    it("counts a turn's move with the speed the sheet works out: slowed by what an effect multiplies, stopped when pinned (GRD-5, SPD-1)", async () => {
+        await ok("write", "Kira", "--set", "stride=12 m");
+        await ok("effect", "add", "Kira", "Fango", "--set", "stride-factor=1/2");
         await ok("move", "Kira", "--to", "Locanda", "--at", "B3");
         await ok("move", "Bran", "--to", "Locanda", "--at", "E2");
         await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran");
         await ok("scene", "order", "--order", "Kira", "--order", "Bran");
-        expect(await ok("move", "Kira", "--at", "F3")).toContain("This turn Kira has moved 6 m of 6 m: 0 m left.");
+        expect(await ok("move", "Kira", "--at", "E3")).toContain("This turn Kira has moved 6 m of 6 m: 0 m left.");
         await ok("scene", "next");
         await ok("scene", "next");
-        await ok("effect", "add", "Kira", "Grappled");
-        expect(await ok("move", "Kira", "--at", "G3")).toContain("This turn Kira has moved 1.5 m, 1.5 m beyond the 0 m of Kira's speed");
+        await ok("effect", "add", "Kira", "Pinned");
+        expect(await ok("move", "Kira", "--at", "F3")).toContain("This turn Kira has moved 2 m, 2 m beyond the 0 m of Kira's speed");
     });
 
     it("puts one where no way on foot leads, and says so; says what of a large creature's squares it cannot fill (GRD-4, GRD-5)", async () => {
@@ -205,9 +206,9 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         await ok("write", "Cella", "--text", "```map\n######\n#.#..#\n###..#\n######\n```");
         expect(await ok("move", "Oste", "--at", "D2")).toBe("Oste: now on D2 in Cella.\nNo way on foot leads from B2 to D2: Oste stands there all the same, and how is yours to tell.");
         await ok("move", "Kira", "--to", "Locanda", "--at", "D3");
-        await ok("scene", "open", "--title", "Orco", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--creatures", "Ogre=1");
-        await ok("move", "Ogre 1", "--at", "F2");
-        expect(await ok("move", "Ogre 1", "--at", "G2")).toContain("Ogre 1 fills G2 to H3, but H2 is a wall.");
+        await ok("scene", "open", "--title", "Bue", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--creatures", "Mire Ox=1");
+        await ok("move", "Mire Ox 1", "--at", "F2");
+        expect(await ok("move", "Mire Ox 1", "--at", "G2")).toContain("Mire Ox 1 fills G2 to H3, but H2 is a wall.");
     });
 
     it("puts on a door only who comes in through it: not a thing put down by one who is there, nor one up from a place inside, nor on a wall (GRD-3)", async () => {
@@ -227,34 +228,34 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
 
     it("puts the copies of the open scene on the map of its place, and takes them off when they leave or the scene closes", async () => {
         await ok("move", "Kira", "Bran", "--to", "Locanda");
-        const opened = await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Bandit=2");
-        expect(opened).toContain("Locanda has a map: put Bandit 1, Bandit 2 on it, one at a time, such as page Bandit 1, at D2.");
-        await ok("move", "Bandit 1", "--at", "I2");
+        const opened = await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Reed Cutter=2");
+        expect(opened).toContain("Locanda has a map: put Reed Cutter 1, Reed Cutter 2 on it, one at a time, such as page Reed Cutter 1, at D2.");
+        await ok("move", "Reed Cutter 1", "--at", "I2");
         // Whose turn begins off the map is put on it first (playtest 07, where the wolves never stood anywhere).
-        await ok("scene", "order", "--order", "Kira", "--order", "Bandit 2", "--order", "Bran", "--order", "Bandit 1");
-        expect(await ok("scene", "next")).toContain("Bandit 2 is not on the map of Locanda: put it on its square with move Bandit 2 --at, such as E4, before telling its turn.");
-        await ok("move", "Bandit 2", "--at", "I3");
-        expect(innPage()).toContain("Bandit 1 I2");
-        expect(await refused("move", "Bandit 1", "--to", "Guado", "--at", "D3")).toContain("Bandit 1 is a copy in the open scene");
-        await ok("scene", "leave", "--who", "Bandit 1");
-        expect(innPage()).not.toContain("Bandit 1");
+        await ok("scene", "order", "--order", "Kira", "--order", "Reed Cutter 2", "--order", "Bran", "--order", "Reed Cutter 1");
+        expect(await ok("scene", "next")).toContain("Reed Cutter 2 is not on the map of Locanda: put it on its square with move Reed Cutter 2 --at, such as E4, before telling its turn.");
+        await ok("move", "Reed Cutter 2", "--at", "I3");
+        expect(innPage()).toContain("Reed Cutter 1 I2");
+        expect(await refused("move", "Reed Cutter 1", "--to", "Guado", "--at", "D3")).toContain("Reed Cutter 1 is a copy in the open scene");
+        await ok("scene", "leave", "--who", "Reed Cutter 1");
+        expect(innPage()).not.toContain("Reed Cutter 1");
         await ok("scene", "close", "--summary", "La rissa finisce.");
-        expect(innPage()).not.toContain("Bandit 2");
+        expect(innPage()).not.toContain("Reed Cutter 2");
     });
 
     it("asks for the copies on the map of the place the scene follows the party to (GRD-3)", async () => {
         await ok("write", "Grotta", "--type", "place", "--text", "```map\n#####\n#...#\n##+##\n\nC3 → [[Guado]]\n```");
-        await ok("scene", "open", "--title", "Fuga", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Bran", "--creatures", "Bandit=1");
+        await ok("scene", "open", "--title", "Fuga", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Bran", "--creatures", "Reed Cutter=1");
         const output = await ok("move", "Kira", "Bran", "--to", "Grotta");
         expect(output).toContain("They stand where they came in: Kira on C3, Bran on C3.");
-        expect(output).toContain("Grotta has a map: put Bandit 1 on it");
+        expect(output).toContain("Grotta has a map: put Reed Cutter 1 on it");
     });
 
     it("gives the dashboard the map of the place where the party is, the text without it, who stands where as the character knows them (GRD-6)", async () => {
         await ok("move", "Kira", "Bran", "--to", "Locanda");
         await ok("move", "Oste", "--to", "Locanda", "--at", "H3");
-        await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Bandit=1");
-        await ok("move", "Bandit 1", "--at", "D2");
+        await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Reed Cutter=1");
+        await ok("move", "Reed Cutter 1", "--at", "D2");
         const place = JSON.parse(await ok("view", "--json")).place;
         expect(place.text).toBe("Una locanda.");
         expect(place.map).toMatchObject({ columns: 10, rows: 5, exits: [{ square: "E5", to: "Guado" }] });
@@ -263,10 +264,10 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         expect(place.map.at).toEqual([
             { name: "Kira", role: "pc", square: "E5" },
             { name: "Bran", role: "companion", square: "E5" },
-            { name: "creature 1", role: "other", stranger: true, square: "D2", distance: "4.5 m" },
+            { name: "creature 1", role: "other", stranger: true, square: "D2", distance: "7 m" },
         ]);
         await ok("write", "Kira", "--add", "knows=[[Oste]]");
-        expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual({ name: "Oste", role: "other", square: "H3", distance: "4.5 m" });
+        expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual({ name: "Oste", role: "other", square: "H3", distance: "8 m" });
     });
 
     it("lets the page offer the player exactly the squares the engine lets one stand on (ASK-11)", async () => {
@@ -282,28 +283,29 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
     });
 
     it("gives the dashboard how far each one stands from the player character and how big, and on its turn the squares it can still reach, a hidden pit taken for the floor (D-328)", async () => {
-        await ok("write", "Kira", "--set", "speed=10 ft");
+        await ok("write", "Kira", "--set", "stride=4 m");
         await ok("write", "Sala", "--type", "place", "--text", "```map\n#######\n#.....#\n#..^..#\n#.....#\n#######\n\n^ fossa: pit, blocks, hidden\n```");
         await ok("move", "Kira", "--to", "Sala", "--at", "B3");
-        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--place", "Sala", "--with", "Kira", "--creatures", "Bandit=1", "--creatures", "Ogre=1");
-        await ok("move", "Bandit 1", "--at", "D4");
-        await ok("move", "Ogre 1", "--at", "E2");
-        await ok("scene", "order", "--order", "Kira", "--order", "Bandit 1", "--order", "Ogre 1");
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--place", "Sala", "--with", "Kira", "--creatures", "Reed Cutter=1", "--creatures", "Mire Ox=1");
+        await ok("move", "Reed Cutter 1", "--at", "D4");
+        await ok("move", "Mire Ox 1", "--at", "E2");
+        await ok("scene", "order", "--order", "Kira", "--order", "Reed Cutter 1", "--order", "Mire Ox 1");
         const map = JSON.parse(await ok("view", "--json")).place.map;
         // Two kinds the character does not know: a letter for each, by their names (D-331).
-        expect(map.at).toContainEqual(expect.objectContaining({ name: "creature A1", square: "D4", distance: "3 m" }));
-        expect(map.at).toContainEqual(expect.objectContaining({ name: "creature B1", square: "E2", side: 2, distance: "4.5 m" }));
+        expect(map.at).toContainEqual(expect.objectContaining({ name: "creature B1", square: "D4", distance: "5 m" }));
+        expect(map.at).toContainEqual(expect.objectContaining({ name: "creature A1", square: "E2", side: 2, distance: "6 m" }));
         expect(map.at.find((one: { role: string; }) => one.role === "pc")).not.toHaveProperty("distance");
-        // Two squares of speed: the pit, which the player does not know, is a square like the others.
-        expect(map.reach).toEqual(expect.arrayContaining(["B2", "C3", "D2", "D3"]));
+        // Two squares of speed, a diagonal one and a half: the pit, which the player does not know, is a square like the others.
+        expect(map.reach).toEqual(expect.arrayContaining(["B2", "C2", "C3", "D3"]));
+        expect(map.reach).not.toContain("D2");
         expect(map.reach).not.toContain("E3");
         await ok("scene", "next");
         expect(JSON.parse(await ok("view", "--json")).place.map.reach).toBeUndefined();
-        // When the bandit leaves, the ogre keeps its letter: those who left are counted too.
-        await ok("scene", "leave", "--who", "Bandit 1");
-        expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual(expect.objectContaining({ name: "creature B1", square: "E2" }));
+        // When the cutter leaves, the ox keeps its letter: those who left are counted too.
+        await ok("scene", "leave", "--who", "Reed Cutter 1");
+        expect(JSON.parse(await ok("view", "--json")).place.map.at).toContainEqual(expect.objectContaining({ name: "creature A1", square: "E2" }));
         const sheet = JSON.parse(await ok("view", "Kira", "--json")).sheet as { values: { field: string; text: string; }[]; }[];
-        expect(sheet.flatMap((group) => group.values).find((value) => value.field === "walking")?.text).toBe("3 m");
+        expect(sheet.flatMap((group) => group.values).find((value) => value.field === "speed")?.text).toBe("4 m");
     });
 
     it("draws the ground by the place: a building's floor, a cave's rock and its walls round, a village's paving, the forest it is in (D-325)", async () => {

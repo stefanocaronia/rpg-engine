@@ -458,7 +458,7 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
         started = 0;
         asked = [];
         context = { ...testContext(folder), bookIndex: home, readLibrary: () => started++ };
-        await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+        await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
         fileIn(shelf, "Rules of the Road.md", englishBook);
         const regole = [
             "IL VIAGGIO\nLa compagnia parte con il sole e il traghettatore aspetta sulla riva del fiume. Non parla con chi non paga, ma per una moneta di rame porta una persona e il suo bagaglio.",
@@ -494,7 +494,7 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
         const other = makeTempFolder();
         const first = folder;
         context.folder = other;
-        await ok("init", "--name", "Altrove", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+        await ok("init", "--name", "Altrove", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
         expect(await ok("config", "library")).toContain(`library: ${shelf} (on this computer, not used here: add turns it on)`);
         expect(await ok("rules", "falling")).not.toContain("From the player's books");
         await ok("config", "library", "--add", shelf);
@@ -515,6 +515,8 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     });
 
     it("keeps the books' two excerpts when the system's name was found by one word of a longer search (RUL-8)", async () => {
+        // The 5e's rules, its feet and its words in Italian go with it (D-514, step 8).
+        await ok("config", "system", "5e");
         context.terminal = true;
         fileIn(shelf, "Tiri.md", "TIRO PER COLPIRE\nPer colpire un bersaglio si fa un tiro per colpire con un d20, e si aggiunge il bonus di competenza dell'arma che si usa nel colpo.");
         fileIn(shelf, "Armi.md", "LE ARMI\nOgni arma dice il dado del danno; il tiro per colpire con un'arma da lancio usa la Forza, quello con un'arma a distanza la Destrezza.");
@@ -574,6 +576,8 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     });
 
     it("searches the books after the system, each excerpt with its book and page, and fewer when the system answered", async () => {
+        // The 5e's rules, its feet and its words in Italian go with it (D-514, step 8).
+        await ok("config", "system", "5e");
         context.terminal = true;
         await ok("config", "library", "--add", shelf);
         await readShelf();
@@ -600,6 +604,8 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     });
 
     it("warns of a page the OCR read, and says when the system, written in another language, found nothing", async () => {
+        // The 5e's rules, its feet and its words in Italian go with it (D-514, step 8).
+        await ok("config", "system", "5e");
         context.terminal = true;
         await ok("config", "library", "--add", shelf);
         await readShelf();
@@ -652,7 +658,7 @@ describe("why a book was skipped, in the player's words (LIB-5)", () => {
         const home = makeTempFolder();
         const shut = makeTempFolder();
         const context: Context = { ...testContext(folder), bookIndex: home, terminal: true };
-        await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+        await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake"], context);
         fileIn(shut, "locked.pdf", lockedPdf());
         fileIn(shut, "locked.epub", epub({ "META-INF/rights.xml": "<rights/>" }));
         fileIn(shut, "broken.pdf", "not a PDF at all");
@@ -692,7 +698,7 @@ describe("the library on the dashboard's Packages page (D-491 (13))", () => {
             bookIndex: makeTempFolder(),
             confirm: { ask: (_title, text) => (asked.push(text), Promise.resolve(answer)) },
         };
-        await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e"], context);
+        await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake"], context);
         session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
         const started = await startDashboard({ ...context, files: session }, session, { ports: [0], page: folder });
 

@@ -1,4 +1,4 @@
-import { comparableText } from "../core/text.ts";
+import { comparableText, sameWord } from "../core/text.ts";
 
 /**
  * When an effect ends (EFF-2): at a game date, written as the time module reads it; at the start of someone's turn in a round of the scene;
@@ -110,10 +110,13 @@ export function isSceneDuration(text: string): boolean
     return comparableText(text.trim()) === "scene";
 }
 
-/** The effects with one added, as the newest: an effect with the same name is replaced (EFF-3, EFF-4). */
-export function withEffect(effects: Effect[], effect: Effect): Effect[]
+/**
+ * The effects with one added, as the newest: an effect with the same name is replaced (EFF-3, EFF-4), or with its word in `words`, the game system's in the
+ * campaign's language, Prono for Prone (D-403).
+ */
+export function withEffect(effects: Effect[], effect: Effect, words?: Record<string, string>): Effect[]
 {
-    return [...effects.filter((other) => !sameName(other.name, effect.name)), effect];
+    return [...effects.filter((other) => !sameWord(other.name, effect.name, words)), effect];
 }
 
 /** Who keeps an effect alive, by name: [[Lena]] and Lena are the same; undefined when no one does. */
@@ -122,10 +125,10 @@ export function keeperOf(effect: Effect): string | undefined
     return effect.by === undefined ? undefined : pageName(effect.by);
 }
 
-/** The effect with this name, ignoring case and how accents are written. */
-export function effectNamed(effects: Effect[], name: string): Effect | undefined
+/** The effect with this name, ignoring case and how accents are written, or with its word in `words`, as withEffect reads them. */
+export function effectNamed(effects: Effect[], name: string, words?: Record<string, string>): Effect | undefined
 {
-    return effects.find((effect) => sameName(effect.name, name));
+    return effects.find((effect) => sameWord(effect.name, name, words));
 }
 
 /** Whether an effect counted in rounds has ended when the turn passes to `turn` in `round` (EFF-9): at its turn in its round, at the start of its round when that one is no longer in the order, a round later anyway. */

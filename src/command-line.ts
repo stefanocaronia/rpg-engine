@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
 import { z } from "zod";
 import { findCampaign } from "./campaign/index.ts";
-import { extensionCommands } from "./commands/game-extensions.ts";
+import { loadCampaignCode, packageCommands } from "./commands/game-package-code.ts";
 import { commands } from "./commands/index.ts";
 import { systemConfirm } from "./confirm/index.ts";
 import { type Context, defaultContext, packagesFolder } from "./core/context.ts";
@@ -27,6 +27,9 @@ type AnyCommand = Command<any, any>;
 // The one command that exists only on the command line: cli.ts starts the server when it comes alone.
 const mcpDescription = "Start the MCP server for an AI host. Through it the host uses these commands as tools; the host starts it, with no options.";
 
+/** The core's commands that call the hooks of the campaign's packages after their writes (D-514). */
+const hookCommands = new Set(["ask", "change", "effect", "roll", "scene"]);
+
 /** The `rpg` command line: finds the command, validates its input, runs it and renders the result. */
 export async function runCommandLine(
     argv: string[],
@@ -47,6 +50,11 @@ export async function runCommandLine(
     // The systems' code, loaded once, before any command may call its hooks (D-448).
     context.systemCode ??= await loadSystemCode(context.systemFolders);
     const [commandName, ...args] = argv;
+
+    // And the campaign's extensions', for the commands that call their hooks at once (D-514); never for package, which may take them away.
+    if (hookCommands.has(commandName ?? "")) {
+        await withFiles(context.files ?? new FileStore(context.systemFolders), () => loadCampaignCode(context));
+    }
 
     if (commandName === undefined || commandName === "--help" || commandName === "-h") {
         return success(generalHelp(await campaignCommands(context)));
@@ -180,7 +188,7 @@ async function campaignCommands(context: Context): Promise<AnyCommand[]>
     try {
         return await withFiles(context.files ?? new FileStore(context.systemFolders), async () => {
             const root = findCampaign(context.folder);
-            return root === undefined ? [] : (await extensionCommands(root, context, commands.map((command) => command.name))).commands;
+            return root === undefined ? [] : (await packageCommands(root, context, commands.map((command) => command.name))).commands;
         });
     } catch {
         return [];

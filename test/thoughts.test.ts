@@ -43,7 +43,7 @@ function journal(): Extract<ViewResult, { kind: "journal"; }>
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await ok("init", "--name", "Prova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await ok("init", "--name", "Prova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
     await ok("write", "Kira", "--type", "character", "--set", "role=pc");
     await ok("write", "Bran", "--type", "character", "--set", "role=companion");
@@ -75,9 +75,9 @@ describe("writing a diary (DIA-1)", () => {
     });
 
     it("takes no page of the game system, no copy, and no dead companion", async () => {
-        expect(await refused("thoughts", "Wolf", "Fame.")).toContain("Wolf is not a companion");
-        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--creatures", "Wolf=1");
-        expect(await refused("thoughts", "Wolf 1", "Fame.")).not.toBe("");
+        expect(await refused("thoughts", "Bog Hound", "Fame.")).toContain("Bog Hound is not a companion");
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--creatures", "Bog Hound=1");
+        expect(await refused("thoughts", "Bog Hound 1", "Fame.")).not.toBe("");
         await ok("scene", "close", "--summary", "Il lupo scappa.");
         await ok("write", "Bran", "--set", "status=dead");
         expect(await refused("thoughts", "Bran", "Addio.")).toContain("Bran is dead: the dead keep no diary. Nothing written.");

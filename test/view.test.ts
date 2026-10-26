@@ -16,7 +16,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
     await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--text", "Una cacciatrice.");
     await ok("write", "Bran", "--type", "character", "--set", "role=companion");
@@ -32,7 +32,7 @@ beforeEach(async () => {
     await ok("write", "Strega", "--type", "character", "--set", "role=npc", "--text", "Vive nel bosco.");
     await ok("write", "Coppa", "--type", "item", "--text", "Una coppa d'argento.");
     await ok("write", "Coppa#Veleno", "--secret", "--text", "Il vino è avvelenato.");
-    await ok("write", "Lupo nero", "--type", "creature", "--set", "creature=[[Wolf]]", "--text", "Un lupo enorme.");
+    await ok("write", "Lupo nero", "--type", "creature", "--set", "creature=[[Reed Cutter]]", "--text", "Un lupo enorme.");
 });
 
 afterEach(() => removeFolder(folder));
@@ -57,13 +57,13 @@ const known: [string, "before" | "after" | "always" | "never"][] = [
     ["Zaino", "always"],
     ["Guado", "always"],
     ["Valle", "always"],
-    ["Longsword", "always"],
+    ["Lantern", "always"],
     ["Varro", "after"],
     ["Mulino", "after"],
     ["Coppa", "after"],
     ["Strega", "never"],
     ["Lupo nero", "never"],
-    ["Wolf", "never"],
+    ["Reed Cutter", "never"],
     ["Nessuno", "never"],
 ];
 
@@ -114,7 +114,7 @@ describe("the player's view", () => {
         // The secret is known, the creature that writes it is not.
         expect(await ok("view", "Mugnaio")).toBe("Kira does not know Mugnaio.");
         // An item of the campaign shows the text of the system's item it derives from, which anyone may know.
-        await ok("write", "Spada di Kira", "--type", "item", "--set", "item=[[Alchemist's Fire]]");
+        await ok("write", "Spada di Kira", "--type", "item", "--set", "item=[[Ember Charm]]");
         await ok("write", "Kira", "--add", "inventory=[[Spada di Kira]]");
         expect(await ok("view", "Spada di Kira")).toMatch(/^Spada di Kira \(item\)\n\n\S/);
     });
@@ -126,13 +126,13 @@ describe("the player's view", () => {
         await ok("scene", "open", "--title", "Al mulino", "--type", "social", "--place", "Mulino", "--with", "Kira", "--with", "Varro");
         await ok("roll", "1d20+2", "--who", "Kira", "--why", "convincere Varro del segreto");
         await ok("roll", "1d20", "--hidden", "--why", "la strega osserva");
-        await ok("write", "Kira", "--set", "hp=10/12");
-        await ok("change", "Kira", "hp", "--by=-3", "--why", "colpita dalla strega nascosta");
+        await ok("write", "Kira", "--set", "grit=10/12");
+        await ok("change", "Kira", "grit", "--by=-3", "--why", "colpita dalla strega nascosta");
         await ok("write", "Varro", "--set", "umore=5");
         await ok("change", "Varro", "umore", "--to", "3");
         expect(await ok("view")).toBe(
             [
-                "Kira, in Mulino: hp 7/12",
+                "Kira, in Mulino: grit 7/12",
                 // Kira knows Guado, where she came from, and Valle around it, where she was too (VIEW-2, D-316).
                 "Bran (companion), in Guado › Valle",
                 "",
@@ -147,12 +147,12 @@ describe("the player's view", () => {
                 "- day 1, 18:00 · Kira to Mulino",
                 "- day 1, 18:00 · Scene opened: Al mulino (social)",
                 "- day 1, 18:00 · Kira: 1d20+2 = 6 [4] + 2",
-                "- day 1, 18:00 · Kira: hp 10/12 → 7/12",
+                "- day 1, 18:00 · Kira: grit 10/12 → 7/12",
             ].join("\n"),
         );
         const view = await ok("view", "--diary", "all");
         expect(view).not.toMatch(/conte trama|segreto|strega|umore/);
-        expect(await ok("view", "--diary", "1")).toContain("Diary (the last 1 of 6: view, diary all gives every one):\n- day 1, 18:00 · Kira: hp 10/12 → 7/12");
+        expect(await ok("view", "--diary", "1")).toContain("Diary (the last 1 of 6: view, diary all gives every one):\n- day 1, 18:00 · Kira: grit 10/12 → 7/12");
         expect((await rpg("view", "--diary", "0")).output).toBe('"0" is not how many lines of the diary: give a whole number from 1, or all.');
         expect((await rpg("view", "Varro", "--diary", "2")).output).toBe("Give page or diary, not both: diary goes with the whole view.");
     });
@@ -179,10 +179,10 @@ describe("the player's view", () => {
     it("VIEW-1: says there is no view before there is a player character, and shows the whole sheet of the party", async () => {
         writeFileSync(join(folder, "world", "characters", "Kira.md"), "---\nrole: npc\n---\n");
         expect(await ok("view")).toBe("There is no player character yet: the player's view starts with one.");
-        writeFileSync(join(folder, "world", "characters", "Kira.md"), '---\nrole: pc\nclasses: ["[[Fighter]] 1"]\nstr: 16\ndex: 12\ncon: 14\nint: 10\nwis: 10\ncha: 8\nhp-base: 10\nhp: 12/12\n---\nUna cacciatrice.\n');
-        expect(await ok("view", "Kira")).toMatch(/^Kira \(character\)\n\n.*str 16 \(\+3\)/s);
+        writeFileSync(join(folder, "world", "characters", "Kira.md"), '---\nrole: pc\nvocations: ["[[Warden]] 1"]\nmight: 5\ngrace: 3\nwit: 4\ngrit: 12/12\n---\nUna cacciatrice.\n');
+        expect(await ok("view", "Kira")).toMatch(/^Kira \(character\)\n\n.*might 5 \(\+1\)/s);
         // A group of the sheet, as show gives it (DAT-2).
-        expect(await ok("view", "Kira#Abilities")).toMatch(/^Kira#Abilities\n\n.*str 16 \(\+3\)/s);
+        expect(await ok("view", "Kira#Traits")).toMatch(/^Kira#Traits\n\n.*might 5 \(\+1\)/s);
     });
 });
 
@@ -287,8 +287,8 @@ describe("the view of another character, for the character agent voicing them (V
         await ok("reveal", "Coppa#Veleno", "--to", "Bran");
         expect(await ok("view", "--as", "Bran")).toContain("Discovered:\n- Coppa#Veleno: Il vino è avvelenato.");
         // Another player character is of the party: Kira knows her, with her whole sheet (VIEW-2, VIEW-3).
-        await ok("write", "Lia", "--type", "character", "--set", "role=pc", "--set", "str=16", "--set", "classes=[[Fighter]] 1");
-        expect(await ok("view", "Lia")).toMatch(/^Lia \(character\)\n\n.*str 16 \(\+3\)/s);
+        await ok("write", "Lia", "--type", "character", "--set", "role=pc", "--set", "might=5", "--set", "vocations=[[Warden]] 1");
+        expect(await ok("view", "Lia")).toMatch(/^Lia \(character\)\n\n.*might 5 \(\+1\)/s);
     });
 
     it("reads a secret of knows on the page that writes it: by an alias, of two pages by one name, in any case; once, when it is its own creature's", async () => {
@@ -461,44 +461,45 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(await ok("view", "Varro")).toContain("Il mugnaio.");
     });
 
-    it("gives a fight's fighters in the order of the turns: the party's counter as numbers, a foe's in words, who does not act, the panel of the dying (D-314)", async () => {
-        await ok("write", "Kira", "--set", "hp=0/12");
+    it("gives a fight's fighters in the order of the turns: the party's counter as numbers, a foe's in words, who does not act, who is down (D-314, D-516)", async () => {
+        await ok("write", "Kira", "--set", "grit=0/12");
         await ok("scene", "open", "--title", "Nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Bran", "--creatures", "Lupo nero=2");
         await ok("scene", "order", "--order", "Lupo nero 1", "--order", "Kira", "--order", "Lupo nero 2", "--order", "Bran");
-        // The wolf's 11 hit points, 5 left: half or less.
-        await ok("change", "Lupo nero 1", "hp", "--by=-6");
-        await ok("effect", "add", "Lupo nero 2", "Stunned");
+        // The cutter's 7 grit, 1 left: half or less.
+        await ok("change", "Lupo nero 1", "grit", "--by=-6");
+        await ok("effect", "add", "Lupo nero 2", "Asleep");
         await ok("effect", "add", "Lupo nero 2", "Maledizione");
-        // At the first wolf's turn: the blessing ends at its turn in the next round.
+        // At the first cutter's turn: the blessing ends at its turn in the next round.
         await ok("effect", "add", "Bran", "Benedizione", "--for", "1 round");
         const overview = JSON.parse(await ok("view", "--json"));
         const fighters = overview.openScene.fighters;
         expect(fighters.map((fighter: { name: string; }) => fighter.name)).toEqual(["creature 1", "Kira", "creature 2", "Bran"]);
-        expect(fighters[0]).toEqual({ name: "creature 1", role: "other", stranger: true, health: "bloodied", wound: "low", effects: [] });
+        expect(fighters[0]).toEqual({ name: "creature 1", role: "other", stranger: true, health: "reeling", wound: "low", effects: [] });
         // Of a foe only the conditions anyone sees, by name; a stunned one does not act. The party's effects as their line gives them, with the end, at the turn
         // of a creature the character does not know by its number (VIEW-4).
-        expect(fighters[2]).toMatchObject({ health: "unhurt", effects: [{ name: "Stunned", text: "Stunned" }], inactive: true });
+        expect(fighters[2]).toMatchObject({ health: "steady", effects: [{ name: "Asleep", text: "Asleep" }], inactive: true });
         expect(fighters[3].effects).toEqual([{ name: "Benedizione", end: { round: 2, turn: "creature 1" }, text: "Benedizione until round 2, creature 1" }]);
         expect(overview.party[1].effects).toEqual(fighters[3].effects);
-        expect(fighters[1]).toMatchObject({ role: "pc", health: "0/12", dying: [{ field: "death-successes", value: 0, limit: 3 }, { field: "death-failures", value: 0, limit: 3 }] });
-        // The same panel in the band of her sheet (D-310 (7)); none for Bran, who has no hit points at 0.
-        expect(overview.party[0].dying).toEqual(fighters[1].dying);
-        expect(overview.party[1].dying).toBeUndefined();
+        // At the down point, with no counters for the panel: the system's widget on her draws them (D-514).
+        expect(fighters[1]).toMatchObject({ role: "pc", health: "0/12", down: true });
+        // The same in the band of her sheet (D-310 (7)); none for Bran, who has no hit points at 0.
+        expect(overview.party[0].down).toBe(true);
+        expect(overview.party[1].down).toBeUndefined();
         // Nowhere the copies' names, of a creature the character does not know: in the diary the end is at a creature's turn.
         expect(JSON.stringify(overview)).not.toContain("Lupo nero");
         expect(overview.diary).toContain("Bran: Benedizione until round 2, a creature");
 
-        // The system's four words at equal shares of the 11 hit points: more than half hurt, half or less bloodied, 0 down (D-465).
+        // The system's four words at equal shares of the 7 grit: more than half shaken, half or less reeling, 0 down (D-465).
         const heard = async (): Promise<unknown> => {
             const { health, wound } = JSON.parse(await ok("view", "--json")).openScene.fighters[2];
             return { health, wound };
         };
 
-        await ok("change", "Lupo nero 2", "hp", "--by=-5");
-        expect(await heard()).toEqual({ health: "hurt" });
-        await ok("change", "Lupo nero 2", "hp", "--by=-1");
-        expect(await heard()).toEqual({ health: "bloodied", wound: "low" });
-        await ok("change", "Lupo nero 2", "hp", "--to=0");
+        await ok("change", "Lupo nero 2", "grit", "--by=-2");
+        expect(await heard()).toEqual({ health: "shaken" });
+        await ok("change", "Lupo nero 2", "grit", "--by=-2");
+        expect(await heard()).toEqual({ health: "reeling", wound: "low" });
+        await ok("change", "Lupo nero 2", "grit", "--to=0");
         expect(await heard()).toEqual({ health: "down", wound: "down" });
     });
 
@@ -512,31 +513,31 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         // The witch, seen once only as an old woman, stays unknown: in a scene where the master gives no words, she is someone (D-416).
         await ok("scene", "open", "--title", "Prima", "--type", "social", "--place", "Radura", "--with", "Kira", "--with", "Strega", "--seen", "Strega=vecchia");
         await ok("scene", "close", "--summary", "Una vecchia passa.");
-        await ok("write", "Kira", "--set", "hp=0/12");
-        const args = ["--with", "Kira", "--with", "Bran", "--with", "Varro", "--with", "Strega", "--creatures", "Lupo nero=1", "--creatures", "Wolf=2", "--seen", "Varro=uomo incappucciato"];
+        await ok("write", "Kira", "--set", "grit=0/12");
+        const args = ["--with", "Kira", "--with", "Bran", "--with", "Varro", "--with", "Strega", "--creatures", "Lupo nero=1", "--creatures", "Reed Cutter=2", "--seen", "Varro=uomo incappucciato"];
         await ok("scene", "open", "--title", "Radura", "--type", "combat", "--place", "Radura", ...args);
         await ok("move", "Lupo nero 1", "--at", "B3");
-        await ok("move", "Wolf 1", "--at", "C3");
-        await ok("move", "Wolf 2", "--at", "D3");
-        await ok("effect", "add", "Bran", "Prone");
+        await ok("move", "Reed Cutter 1", "--at", "C3");
+        await ok("move", "Reed Cutter 2", "--at", "D3");
+        await ok("effect", "add", "Bran", "Pinned");
         await ok("effect", "add", "Bran", "Benedizione");
-        await ok("effect", "add", "Varro", "Stunned");
+        await ok("effect", "add", "Varro", "Asleep");
         await ok("effect", "add", "Varro", "Maledizione");
-        await ok("effect", "add", "Strega", "Prone");
-        await ok("change", "Lupo nero 1", "hp", "--to=0");
-        await ok("effect", "add", "Lupo nero 1", "prone");
-        await ok("effect", "add", "Wolf 1", "Prone");
+        await ok("effect", "add", "Strega", "Pinned");
+        await ok("change", "Lupo nero 1", "grit", "--to=0");
+        await ok("effect", "add", "Lupo nero 1", "pinned");
+        await ok("effect", "add", "Reed Cutter 1", "Pinned");
         // Each condition with its drawing, as the 5e gives one (condition-icons).
         const drawn = expect.any(String) as unknown as string;
-        const prone = { name: "Prone", text: "Prone", condition: true, icon: drawn };
+        const prone = { name: "Pinned", text: "Pinned", condition: true, icon: drawn };
         const bran = { effects: [prone, { name: "Benedizione", text: "Benedizione" }] };
-        const varro = { effects: [{ name: "Stunned", text: "Stunned", condition: true, icon: drawn }], inactive: true };
+        const varro = { effects: [{ name: "Asleep", text: "Asleep", condition: true, icon: drawn }], inactive: true };
         const state = ({ effects, inactive, down, dead }: Record<string, unknown>): Record<string, unknown> => JSON.parse(JSON.stringify({ effects, inactive, down, dead }));
         const states = (people: Record<string, unknown>[]): Record<string, unknown> => Object.fromEntries(people.map((one) => [one.name, state(one)]));
         let overview = JSON.parse(await ok("view", "--json"));
         // Kira at 0; Bran's blessing too, which is no condition; the hooded man by the conditions anyone sees, one keeping him from acting; the witch nothing.
         expect(states(overview.place.here)).toEqual({ Kira: { down: true }, Bran: bran });
-        const atZero = { effects: [{ name: "prone", text: "prone", condition: true, icon: drawn }], down: true };
+        const atZero = { effects: [{ name: "pinned", text: "pinned", condition: true, icon: drawn }], down: true };
         // A kind of one copy shows its copy's state, the name as written; a kind of two none, each its own on the map.
         expect(states(overview.openScene.who)).toEqual({ Kira: { down: true }, Bran: bran, "uomo incappucciato": varro, someone: {}, "creature A": atZero, "creature B": {} });
         expect(states(overview.place.map.at)).toEqual({ Kira: { down: true }, Bran: bran, "uomo incappucciato": varro, someone: {}, "creature A1": atZero, "creature B1": { effects: [prone] }, "creature B2": {} });
@@ -549,16 +550,26 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(states(overview.openScene.who)).toMatchObject({ Bran: { ...bran, dead: true }, Varro: varro });
     });
 
-    it("gives someone of the party at the dying point the panel of the dying in their band, outside a fight too; never the dead (D-310 (7))", async () => {
-        await ok("write", "Bran", "--set", "hp=0/9", "--set", "death-failures=2");
-        const dying = [{ field: "death-successes", value: 0, limit: 3, side: "successes", full: "Stable", mark: "Successes" }, { field: "death-failures", value: 2, limit: 3, side: "failures", mark: "Failures" }];
-        expect(JSON.parse(await ok("view", "--json")).party[1].dying).toEqual(dying);
-        await ok("change", "Bran", "hp", "--to=1");
-        expect(JSON.parse(await ok("view", "--json")).party[1].dying).toBeUndefined();
-        await ok("change", "Bran", "hp", "--to=0");
+    it("knows a condition named in the campaign's language by the system's words, its drawing and whether it keeps from acting (D-419, D-516)", async () => {
+        // Bloccato is the fake's Pinned in Italian, A terra its Down; the campaign's own drawing of a name of its language comes before the system's.
+        await ok("effect", "add", "Bran", "Bloccato");
+        await ok("effect", "add", "Kira", "A terra");
+        await ok("config", "condition-icons", "A terra: M1 1h22");
+        const here = JSON.parse(await ok("view", "--json")).place.here as { name: string; effects?: unknown[]; inactive?: true; }[];
+        expect(here.find((one) => one.name === "Bran")?.effects).toEqual([{ name: "Bloccato", text: "Bloccato", condition: true, icon: "M5 5l14 14 M19 5 5 19" }]);
+        expect(here.find((one) => one.name === "Kira")).toMatchObject({ effects: [{ name: "A terra", condition: true, icon: "M1 1h22" }], inactive: true });
+    });
+
+    it("gives someone of the party at the down point, outside a fight too; never the dead (D-310 (7), D-516)", async () => {
+        await ok("write", "Bran", "--set", "grit=0/9", "--set", "fading=2");
+        // Its widget on him draws what he marked (D-514).
+        expect(JSON.parse(await ok("view", "--json")).party[1].down).toBe(true);
+        await ok("change", "Bran", "grit", "--to=1");
+        expect(JSON.parse(await ok("view", "--json")).party[1].down).toBeUndefined();
+        await ok("change", "Bran", "grit", "--to=0");
         await ok("write", "Bran", "--set", "status=dead");
         expect(JSON.parse(await ok("view", "--json")).party[1]).toMatchObject({ dead: true });
-        expect(JSON.parse(await ok("view", "--json")).party[1].dying).toBeUndefined();
+        expect(JSON.parse(await ok("view", "--json")).party[1].down).toBeUndefined();
     });
 
     it("gives the open scene as data: whom it meets there by name (VIEW-2), the copies counted, the turns as the character knows them", async () => {

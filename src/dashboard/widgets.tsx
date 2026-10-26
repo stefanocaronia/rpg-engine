@@ -6,7 +6,7 @@ import type { Member, SheetValue } from "./data.ts";
 import { besideLabel, burnsLabel, effectEndLabel, effectLabel, effectName } from "./game-words.ts";
 import { fieldLabel, itemLabel, phraseLabel, shownText } from "./labels.ts";
 import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
-import { t } from "./text.ts";
+import { numberText, t } from "./text.ts";
 
 // Below this share of its maximum a bar is low: hatched, not only red.
 const low = 0.25;
@@ -138,17 +138,38 @@ function Items({ items, field, fields }: { items: string[]; field: string; field
 export function Effects({ effects, most }: { effects: Member["effects"]; most?: number; })
 {
     const shown = most === undefined ? effects : effects.slice(0, most);
+    // Where few fit (`most`), one with a drawing is its icon alone, its words in its tooltip and for a screen reader (D-516); else its icon before its words.
     return effects.length === 0 ? null : (
         <span class="effects">
-            {shown.map((effect) => (
-                <span key={effect.text} class="effect" title={effectLabel(effect)}>
-                    {effectName(effect.name)}
-                    {effect.end && most === undefined ? <span class="end">{`· ${effectEndLabel(effect.end)}`}</span> : null}
-                    {/* What burns says how many of what it spends are left, as torches. */}
-                    {effect.burns && most === undefined ? <span class="end">{`· ${burnsLabel(effect.name, effect.burns)}`}</span> : null}
-                </span>
-            ))}
-            {effects.length > shown.length && <span class="effect more">+{effects.length - shown.length}</span>}
+            {shown.map((effect) =>
+                effect.icon !== undefined && most !== undefined
+                    ? (
+                        <span key={effect.text} class="effect icon-only" role="img" aria-label={effectLabel(effect)} data-tip={effectLabel(effect)}>
+                            <EffectIcon path={effect.icon} />
+                        </span>
+                    )
+                    : (
+                        <span key={effect.text} class={effect.icon === undefined ? "effect" : "effect with-icon"} title={effectLabel(effect)}>
+                            {effect.icon !== undefined && <EffectIcon path={effect.icon} />}
+                            {effectName(effect.name)}
+                            {effect.end && most === undefined ? <span class="end">{`· ${effectEndLabel(effect.end)}`}</span> : null}
+                            {/* What burns says how many of what it spends are left, as torches. */}
+                            {effect.burns && most === undefined ? <span class="end">{`· ${burnsLabel(effect.name, effect.burns)}`}</span> : null}
+                        </span>
+                    )
+            )}
+            {/* How many more, +1 in a page written from right to left too, the others' words in its tooltip. */}
+            {effects.length > shown.length && <span class="effect more" dir="ltr" data-tip={effects.slice(shown.length).map((effect) => effectLabel(effect)).join(", ")}>{`+${numberText(effects.length - shown.length)}`}</span>}
         </span>
+    );
+}
+
+/** The drawing of an effect, a path on a grid of 24 stroked as the page's icons. */
+function EffectIcon({ path }: { path: string; })
+{
+    return (
+        <svg class="effect-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d={path} />
+        </svg>
     );
 }

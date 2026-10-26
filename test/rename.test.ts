@@ -13,10 +13,10 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
     await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--add", "knows=[[Lupa]]", "--text", "Una cacciatrice, sempre con [[lupa|la sua lupa]].");
-    await ok("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]", "--text", "Una lupa grigia.");
+    await ok("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Bog Hound]]", "--text", "Una lupa grigia.");
     await ok("write", "Lupa#Morso", "--text", "Morde alle caviglie.");
     await ok("write", "Guado", "--type", "place", "--add", "contains=[[Kira]]", "--add", "contains=[[Lupa]]", "--text", "Qui [[Lupa#Morso]] ha fermato un ladro.");
 });
@@ -75,11 +75,11 @@ describe("rename (D-417)", () => {
     it("refuses a name another page has, a page of the game system, a copy of the open scene and a name that cannot be a file, changing nothing", async () => {
         await ok("write", "Neve", "--type", "character", "--text", "Una bambina.");
         expect((await rpg("rename", "Lupa", "neve")).output).toBe("Neve is already a page: give Lupa a name no page has. Nothing changed.");
-        expect((await rpg("rename", "Lupa", "Wolf")).output).toBe("Wolf is already a page of the game system 5e: give Lupa a name no page has. Nothing changed.");
-        expect((await rpg("rename", "Wolf", "Lupo")).output).toBe("Wolf is a page of the game system 5e: read-only, it keeps its name. Nothing changed.");
+        expect((await rpg("rename", "Lupa", "Bog Hound")).output).toBe("Bog Hound is already a page of the game system fake: give Lupa a name no page has. Nothing changed.");
+        expect((await rpg("rename", "Bog Hound", "Lupo")).output).toBe("Bog Hound is a page of the game system fake: read-only, it keeps its name. Nothing changed.");
         expect((await rpg("rename", "Lupa", "Lupa: la grigia")).output).toContain('"Lupa: la grigia" cannot be a page name.');
-        await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--place", "Guado", "--creatures", "Wolf=1");
-        expect((await rpg("rename", "Lupa", "Wolf 1")).output).toBe("Wolf 1 is a copy in the open scene: give Lupa another name, or close the scene first. Nothing changed.");
+        await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--place", "Guado", "--creatures", "Bog Hound=1");
+        expect((await rpg("rename", "Lupa", "Bog Hound 1")).output).toBe("Bog Hound 1 is a copy in the open scene: give Lupa another name, or close the scene first. Nothing changed.");
         expect(readdirSync(join(folder, "world", "characters")).sort()).toEqual(["Kira.md", "Lupa.md", "Neve.md"]);
     });
 
@@ -178,10 +178,10 @@ describe("rename (D-417)", () => {
     it("finds a renamed page by its old name in show and in the scene, and reads who is hostile written by hand as one text", async () => {
         await ok("rename", "Lupa", "Neve");
         expect(await ok("show", "Lupa")).toContain("Neve (character)");
-        expect(await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Lupa", "--creatures", "Bandit=1")).toContain("In it: Kira");
+        expect(await ok("scene", "open", "--title", "Al guado", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Lupa", "--creatures", "Bog Hound=1")).toContain("In it: Kira");
         expect(readFileSync(join(folder, "state.yaml"), "utf8")).toContain("[[Neve]]");
         const state = readFileSync(join(folder, "state.yaml"), "utf8");
-        writeFileSync(join(folder, "state.yaml"), state.replace("  title: Al guado", "  title: Al guado\n  hostile: Bandit 1"));
-        expect(await ok("scene", "calm", "--who", "Bandit 1")).toBe("Calm: Bandit 1. No one is hostile now.");
+        writeFileSync(join(folder, "state.yaml"), state.replace("  title: Al guado", "  title: Al guado\n  hostile: Bog Hound 1"));
+        expect(await ok("scene", "calm", "--who", "Bog Hound 1")).toBe("Calm: Bog Hound 1. No one is hostile now.");
     });
 });

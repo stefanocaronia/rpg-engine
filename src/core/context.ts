@@ -29,10 +29,10 @@ export interface Context
     /** The folders that hold the installed game systems, nearest first (SYS-1). */
     systemFolders: string[];
     /**
-     * The code of the systems that bring some, by name, loaded as the command line, the MCP server or the dashboard starts (D-448): its hooks, which the
-     * systems module types, or what kept it from loading, as another's code without the player's yes (D-511).
+     * The code of the systems that bring some, by name, loaded as the command line, the MCP server or the dashboard starts (D-448): what it gives, a package's
+     * code (D-514), or what kept it from loading, as another's code without the player's yes (D-511) or one made for another API.
      */
-    systemCode?: Record<string, { hooks: object; } | { problem: string; } | { refused: string; }>;
+    systemCode?: Record<string, ({ code: object; } | { problem: string; } | { refused: string; }) & { version?: string; }>;
     /** The folders that hold the installed extensions, each a package folder or npm's node_modules (D-436); none where missing. */
     extensionFolders?: string[];
     /** The AI app the MCP server serves, by the name it gives itself, such as claude-code; missing on the command line. */
@@ -220,21 +220,22 @@ export interface Said
     said: string;
 }
 
-/** Whose sheet a roll's checks read, and by button the field each one rolls, for the page to light that row of the sheet (ASK-12); a death save, what it is. */
+/** Whose sheet a roll's checks read, and by button the field each one rolls, for the page to light that row of the sheet (ASK-12). */
 export interface Rows
 {
     who: string;
     fields: (string | null)[];
-    save?: SaveAsked;
     /** By button, its name and the note under it when a package words it, as Reroll and 3 left (D-507). */
     buttons?: ({ name: string; note?: string; } | null)[];
     /** The rule under the buttons, in a line. */
     rule?: string;
     card?: CardAsked;
+    /** The roll is forced (D-507): no button turns it down, and no words of the player's take its place. */
+    forced?: true;
 }
 
 /**
- * The card of a package's widget a question is asked in (D-507): the widget, by its extension's name and its own, as lockpicking.lock, and which attempt it is;
+ * The card of a package's widget a question is asked in (D-507): the widget, by its package's name and its own, as lockpicking.lock, and which attempt it is;
  * what it shows, read when it is asked for, never in the way of the question.
  */
 export interface CardAsked
@@ -242,17 +243,6 @@ export interface CardAsked
     widget: string;
     key: string;
     shows(): Promise<unknown>;
-}
-
-/** A death save the question asks (DIE-4, D-460): its die, the total that succeeds, its counters as they stand, and what the lowest and highest faces do. */
-export interface SaveAsked
-{
-    sides: number;
-    atLeast: number;
-    successes: { field: string; value: number; most: number; };
-    failures: { field: string; value: number; most: number; };
-    lowest?: number;
-    highest?: { field: string; value: number; };
 }
 
 /** A square of a place's map the player touched, by its name, such as E4 (ASK-11). */
@@ -271,6 +261,8 @@ export interface SpendAsked
     dice: { field: string; sides: number; value: number; max: number; adds: number; }[];
     gives: { field: string; from: number; value: number; max?: number; };
     rolls: { id: string; field: string; face: number; adds: number; total: number; }[];
+    /** A package's rule under the dice (D-514). */
+    rule?: string;
 }
 
 /**
@@ -289,8 +281,8 @@ export interface Player
     choose(question: string, title: string, labels: string[], signal?: AbortSignal, rows?: Rows): Promise<number | Said | undefined | "unavailable" | "absent">;
     /** Asks where a player character, who, moves on the map of its place (ASK-11): the square, the change of mind as its one button (0), or the player's words; only a page can. */
     chooseSquare?(question: string, title: string, change: string, who: string, signal?: AbortSignal): Promise<Picked | 0 | Said | undefined | "absent">;
-    /** Asks the player to spend the dice of a rest one at a time (ASK-14), until the button that ends it (0); only a page can. */
-    spendDice?(question: string, title: string, done: string, spending: Spending, signal?: AbortSignal): Promise<0 | undefined | "absent">;
+    /** Asks the player to spend the dice of a rest one at a time (ASK-14), until the button that ends it (0), maybe in a package's card (D-514); only a page can. */
+    spendDice?(question: string, title: string, done: string, spending: Spending, signal?: AbortSignal, card?: CardAsked): Promise<0 | undefined | "absent">;
     /** Whether a question waits for the player there now, as on the dashboard's page; a form does not say. */
     asking?(): boolean;
     /** As the call whose questions were asked in a card ends: the card as it is after the last dice (D-507). */

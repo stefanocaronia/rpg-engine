@@ -5,12 +5,14 @@ import { campaignFileName, readOneSetting, readTextSetting } from "../campaign/i
 import { packageCodeMayRun } from "../core/consents.ts";
 import type { Context } from "../core/context.ts";
 import type { InstructionPart } from "../core/instruction-parts.ts";
+import { updateEngine } from "../core/package-declarations.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
-import { type Extension, extensionWords, type FigureSize, findExtension, hasConsent, isVerified } from "../extensions/index.ts";
+import { type CodePackage, type Extension, type ExtensionWords, extensionWords, findExtension, hasConsent, isVerified } from "../extensions/index.ts";
+import type { FigureSize } from "../page.ts";
 import { isCoreField } from "../pages/index.ts";
-import { type GameSystem, systemPageModule, systemWords } from "../systems/index.ts";
+import { type GameSystem, systemApiProblem, systemPageModule, systemWords } from "../systems/index.ts";
 
 /** The extensions the campaign uses, and what keeps one from being used, with how to fix it. */
 export interface CampaignExtensions
@@ -48,12 +50,26 @@ export function listedExtensions(root: string): Record<string, string>
 }
 
 /**
- * Whether an extension's code may run, on the server and in the dashboard's page alike (D-441, D-478, D-510): ours, verified; one the player installed from a
- * folder or a file of their own; or another's that the player said yes to, at this version and with these files.
+ * Whether a package's code may run, on the server and in the dashboard's page alike (D-441, D-478, D-510): ours, verified; a system the engine ships; one the
+ * player installed from a folder or a file of their own; or another's that the player said yes to, at this version and with these files.
  */
-export function runsCode(extension: Extension): boolean
+export function runsCode(code: CodePackage): boolean
 {
-    return isVerified(extension.package, extension.linked) || extension.linked || hasConsent(extension.folder, extension.package, extension.version);
+    return code.kind === "system" ? packageCodeMayRun(code.folder) : isVerified(code.package, code.linked) || code.linked || hasConsent(code.folder, code.package, code.version);
+}
+
+/**
+ * A package's words in a language, or its base language, by the English its code writes (D-502): an extension's words/, a game system's words section of its
+ * own; undefined when it has none in it. It throws when they do not read.
+ */
+export function packageWords(code: CodePackage, language: string): ExtensionWords | undefined
+{
+    if (code.kind === "extension") {
+        return extensionWords(code.folder, language);
+    }
+
+    const words = systemWords(code.folder, language);
+    return words === undefined ? undefined : { words: words.words };
 }
 
 /** The code of a package of the campaign for the dashboard's page (D-510, D-511): whose it is, its module's file and address, and its figures. */
@@ -77,7 +93,8 @@ export function campaignPageModules(root: string, context: Context, system: Game
 {
     const own = system === undefined ? undefined : systemPageModule(system.folder);
     const language = readTextSetting(root, "language");
-    const systems = own === undefined || system === undefined || !packageCodeMayRun(system.folder)
+    // A system made for an API this engine does not read brings no code, in the page either.
+    const systems = own === undefined || system === undefined || !packageCodeMayRun(system.folder) || systemApiProblem(system.folder) !== undefined
         ? []
         : [{
             package: own.package,
@@ -85,7 +102,7 @@ export function campaignPageModules(root: string, context: Context, system: Game
             version: own.version,
             file: own.file,
             address: pageAddress(own.package, own.version, own.file),
-            figures: {},
+            figures: system.figures,
             ...wordsIn(language, system.language, () => systemWords(system.folder, language ?? "")?.words),
         }];
     const extensions = campaignExtensions(root, context).extensions.flatMap((extension) =>
@@ -154,7 +171,7 @@ export function extensionsLine(root: string, context: Context): string
     return extensions.length === 0 ? "" : `Extensions: ${extensions.map((extension) => `${extension.name} (${extension.about})`).join("; ")}.`;
 }
 
-/** The fields of the core an extension declares among its fields or counters, which no extension may write (D-505). */
+/** The fields of the core an extension declares among its fields or counters, which no extension may declare (D-505). */
 function coreFieldsOf(extension: Extension): string[]
 {
     return [...Object.keys(extension.adds.fields ?? {}), ...Object.keys(extension.adds.counters ?? {})].filter(isCoreField);
@@ -172,7 +189,9 @@ function readCampaignExtensions(root: string, context: Context): CampaignExtensi
         try {
             extension = findExtension(context.extensionFolders ?? [], name);
         } catch (error) {
-            problems.push({ path: campaignFileName, message: error instanceof Error ? error.message : String(error), fix: `install it again with package install ${name}` });
+            const message = error instanceof Error ? error.message : String(error);
+            // One made for a newer API waits for the engine, never for itself.
+            problems.push({ path: campaignFileName, message, ...(message.includes(updateEngine) ? {} : { fix: `install it again with package install ${name}` }) });
             continue;
         }
 
@@ -183,6 +202,13 @@ function readCampaignExtensions(root: string, context: Context): CampaignExtensi
                 path: campaignFileName,
                 message: `The extension ${name} needs the game system ${extension.needs.system}, and the campaign plays ${system ?? "none"}: it is left out.`,
                 fix: `take it away with package remove ${extension.name}`,
+            });
+        } else if (comparableText(extension.name) === comparableText(system ?? "")) {
+            // Its state, widgets and pictures go by its name, which the system's would share (D-514).
+            problems.push({
+                path: campaignFileName,
+                message: `The extension ${name} has the name of the game system the campaign plays, ${system ?? ""}: it is left out.`,
+                fix: `take it away with package remove ${extension.package}`,
             });
         } else if (coreFieldsOf(extension).length > 0) {
             problems.push({

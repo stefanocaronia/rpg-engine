@@ -1,0 +1,24 @@
+# The fake system's words in Italian, for the tests: one field left out, so that its label falls back to the English name.
+groups:
+  Person: Persona
+  Traits: Tratti
+  Struggle: Lotta
+  Knacks: Doti
+  Gear: Equipaggiamento
+fields:
+  grit: Tempra
+  might: Forza
+  grace: Grazia
+  wit: Ingegno
+  fading: Svanire
+  stamina-d6: Fiato d6
+words:
+  Fading: Svanisce
+  Falling: Cadere
+  Pinned: Bloccato
+  Almanac: Almanacco
+  Rally: Riscossa
+  Down: A terra
+  Steadied: Rinsaldato
+  "{who} is Down, fading {marked} of {most}": "{who} è a terra, svanisce {marked} su {most}"
+headline: "{calling}, grado {level}"

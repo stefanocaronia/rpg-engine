@@ -13,9 +13,9 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
-    await ok("write", "Annegato", "--type", "creature", "--set", "hp=22/22", "--set", "ac=13", "--set", "tags=[mostri]");
+    await ok("write", "Annegato", "--type", "creature", "--set", "hp=22/22", "--set", "guard=13", "--set", "tags=[mostri]");
     await ok("write", "Annegato capo", "--type", "creature", "--set", "creature=[[Annegato]]", "--set", "hp=40/40");
     await ok("write", "Vecchio annegato", "--type", "character", "--set", "role=npc", "--set", "creature=[[Annegato capo]]");
 });
@@ -45,7 +45,7 @@ describe("pages that derive from a creature", () => {
         expect(readFileSync(join(folder, "world", "characters", "Vecchio annegato.md"), "utf8")).toBe('---\nrole: npc\ncreature: "[[Annegato capo]]"\nhp: 35/40\n---\n');
         expect(readFileSync(join(folder, "world", "creatures", "Annegato capo.md"), "utf8")).toContain("hp: 40/40");
         expect(await ok("show", "Vecchio annegato")).toBe(
-            'Vecchio annegato (character) · world/characters/Vecchio annegato.md\nDerives from: Annegato capo › Annegato\n\n---\nrole: npc\ncreature: "[[Annegato capo]]"\nhp: 35/40\n---\n\nFields inherited from Annegato:\nac: 13',
+            'Vecchio annegato (character) · world/characters/Vecchio annegato.md\nDerives from: Annegato capo › Annegato\n\n---\nrole: npc\ncreature: "[[Annegato capo]]"\nhp: 35/40\n---\n\nFields inherited from Annegato:\nguard: 13',
         );
     });
 
@@ -53,7 +53,7 @@ describe("pages that derive from a creature", () => {
         await ok("write", "Annegato", "--set", "status=dead");
         await ok("write", "Lupo", "--type", "creature", "--set", "hp=11/11");
         await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo]]");
-        expect(JSON.parse(await ok("show", "Vecchio annegato", "--json")).inherited).toEqual([{ from: "Annegato capo", fields: { hp: "40/40" }, text: "", parts: [] }, { from: "Annegato", fields: { ac: 13 }, text: "", parts: [] }]);
+        expect(JSON.parse(await ok("show", "Vecchio annegato", "--json")).inherited).toEqual([{ from: "Annegato capo", fields: { hp: "40/40" }, text: "", parts: [] }, { from: "Annegato", fields: { guard: 13 }, text: "", parts: [] }]);
         expect(await ok("status")).toContain("Companions: Zanna: hp 11/11");
 
         const write = await rpg("write", "Zanna", "--set", "hp=5/11");
@@ -111,8 +111,8 @@ describe("pages that derive from a creature, after the review", () => {
 
     it("never pass fixed fields and relations from creature to creature", async () => {
         await ok("write", "Tridente", "--type", "item");
-        writeFileSync(join(folder, "world", "creatures", "Annegato.md"), '---\nhp: 22/22\nac: 13\nstatus: dead\nknows:\n  - "[[Annegato capo]]"\ninventory:\n  - "[[Tridente]]"\n---\n');
-        expect(JSON.parse(await ok("show", "Annegato capo", "--json")).inherited).toEqual([{ from: "Annegato", fields: { ac: 13 }, text: "", parts: [] }]);
+        writeFileSync(join(folder, "world", "creatures", "Annegato.md"), '---\nhp: 22/22\nguard: 13\nstatus: dead\nknows:\n  - "[[Annegato capo]]"\ninventory:\n  - "[[Tridente]]"\n---\n');
+        expect(JSON.parse(await ok("show", "Annegato capo", "--json")).inherited).toEqual([{ from: "Annegato", fields: { guard: 13 }, text: "", parts: [] }]);
     });
 
     it("let the pages of a loop report it, not those that only lead into it", async () => {
@@ -156,7 +156,7 @@ describe("pages that derive from a creature, after the review", () => {
 
     it("keep the copies of a variant from being changed through any creature they read from", async () => {
         await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Annegato capo=2");
-        const result = await rpg("change", "Annegato", "ac", "--by=-1");
+        const result = await rpg("change", "Annegato", "guard", "--by=-1");
         expect(result.exitCode).toBe(1);
         expect(result.output).toContain("Annegato has copies in the open scene, which read from it what they do not change: Annegato capo 1 (hp 40/40), Annegato capo 2 (hp 40/40).");
     });
@@ -218,7 +218,7 @@ describe("write on derived pages, bases and copies (INH-5, INH-7, INH-11, INH-14
                 ["write", "Annegato 2", "--set", "hp=5/22"],
                 'hp is a counter that Annegato 2 reads from Annegato: use change, page "Annegato 2", field hp, to 5/22 (or by an amount), which writes it on Annegato 2 only. To make it something else, set a value that is not a counter.',
             ],
-            [["write", "Annegato 2", "--unset", "ac"], 'Annegato 2 has no field "ac" to remove: it reads ac from Annegato, and holds no value of its own.'],
+            [["write", "Annegato 2", "--unset", "guard"], 'Annegato 2 has no field "guard" to remove: it reads guard from Annegato, and holds no value of its own.'],
             [["write", "Annegato 2"], "Nothing to write on Annegato 2: give fields to set, unset, add or remove."],
         ];
 
@@ -249,7 +249,7 @@ describe("write on derived pages, bases and copies (INH-5, INH-7, INH-11, INH-14
         );
         expect((await rpg("write", "Annegato", "--set", "hp=morto")).output).toBe('hp is a counter: use change, page "Annegato", field hp, to a value (or by an amount). To make it something else, unset it, then set it.');
         await ok("write", "Vecchio annegato", "--set", "hp=morto");
-        expect(await ok("write", "Vecchio annegato", "--set", "ac=13")).toBe("Nothing changed on Vecchio annegato: it already reads like that.");
+        expect(await ok("write", "Vecchio annegato", "--set", "guard=13")).toBe("Nothing changed on Vecchio annegato: it already reads like that.");
         expect(readFileSync(join(folder, "world", "characters", "Vecchio annegato.md"), "utf8")).toBe('---\nrole: npc\ncreature: "[[Annegato capo]]"\nhp: morto\n---\n');
     });
 
@@ -265,20 +265,20 @@ describe("write on derived pages, bases and copies (INH-5, INH-7, INH-11, INH-14
 
         await ok("write", "Vecchio annegato", "--add", "tags=antico");
         expect(JSON.parse(await ok("show", "Vecchio annegato", "--json")).fields.tags).toEqual(["antico"]);
-        writeFileSync(join(folder, "world", "creatures", "Annegato.md"), "---\nhp: 22/22\nac: 13\nattacchi:\n---\n");
+        writeFileSync(join(folder, "world", "creatures", "Annegato.md"), "---\nhp: 22/22\nguard: 13\nattacchi:\n---\n");
         await ok("write", "Annegato", "--add", "attacchi=morso");
         expect((await rpg("write", "Annegato", "--remove", "coda=punta")).output).toBe('There is no "coda" to remove from.');
     });
 
     it("writes a field under the name the page gives it, or inherits, and takes each field once", async () => {
-        expect(await ok("write", "Annegato", "--set", "AC=14")).toBe(
-            "Updated Annegato (creature, world/creatures/Annegato.md): set ac.\nChanged with it, since they read ac from Annegato: Vecchio annegato, Annegato capo. To change only one of them, write that page instead.",
+        expect(await ok("write", "Annegato", "--set", "GUARD=14")).toBe(
+            "Updated Annegato (creature, world/creatures/Annegato.md): set guard.\nChanged with it, since they read guard from Annegato: Vecchio annegato, Annegato capo. To change only one of them, write that page instead.",
         );
-        expect(await ok("write", "Vecchio annegato", "--set", "Ac=12")).toBe("Updated Vecchio annegato (character, world/characters/Vecchio annegato.md): set ac.");
-        expect(readFileSync(join(folder, "world", "characters", "Vecchio annegato.md"), "utf8")).toContain("\nac: 12\n");
-        expect((await rpg("write", "Annegato", "--set", "ac=1", "--set", "AC=2")).output).toBe("The field AC is given twice: give each field once.");
-        expect((await rpg("write", "Annegato", "--set", "ac=1", "--set", "ac=2")).output).toBe("The field ac is given twice: give each field once.");
-        expect((await rpg("write", "Annegato", "--set", "ac=1", "--unset", "AC")).output).toBe("The field AC is given in two ways (set, unset, or add and remove): give it in one.");
+        expect(await ok("write", "Vecchio annegato", "--set", "Guard=12")).toBe("Updated Vecchio annegato (character, world/characters/Vecchio annegato.md): set guard.");
+        expect(readFileSync(join(folder, "world", "characters", "Vecchio annegato.md"), "utf8")).toContain("\nguard: 12\n");
+        expect((await rpg("write", "Annegato", "--set", "guard=1", "--set", "GUARD=2")).output).toBe("The field GUARD is given twice: give each field once.");
+        expect((await rpg("write", "Annegato", "--set", "guard=1", "--set", "guard=2")).output).toBe("The field guard is given twice: give each field once.");
+        expect((await rpg("write", "Annegato", "--set", "guard=1", "--unset", "GUARD")).output).toBe("The field GUARD is given in two ways (set, unset, or add and remove): give it in one.");
         await ok("write", "Annegato", "--add", "attacchi=morso", "--add", "attacchi=coda");
         await ok("write", "Annegato", "--add", "attacchi=artigli", "--remove", "attacchi=coda");
         expect(JSON.parse(await ok("show", "Annegato", "--json")).fields.attacchi).toEqual(["morso", "artigli"]);
@@ -321,34 +321,34 @@ describe("write on derived pages, bases and copies (INH-5, INH-7, INH-11, INH-14
         await ok("write", "Orso", "--type", "character", "--set", "role=npc", "--set", "creature=[[Grande orso]]");
         expect(await ok("write", "Grande orso", "--type", "creature", "--set", "hp=30/30")).toBe(
             "Created Grande orso (creature, world/creatures/Grande orso.md): set hp.\nChanged with it, since they derive from Grande orso: Orso. To change only one of them, write that page instead.\n"
-                + "Grande orso derives from no creature: if it is a kind of one of the system 5e (named in English: find, type creature, with part of its name in English), set creature to it, and its numbers come from there.",
+                + "Grande orso derives from no creature: if it is a kind of one of the system fake (named in English: find, type creature, with part of its name in English), set creature to it, and its numbers come from there.",
         );
 
         for (let index = 1; index <= 12; index++) {
             await ok("write", `Cucciolo ${String(index).padStart(2, "0")}`, "--type", "character", "--set", "role=npc", "--set", "creature=[[Grande orso]]");
         }
 
-        expect(await ok("write", "Grande orso", "--set", "ac=11")).toContain(
-            "Changed with it, since they read ac from Grande orso: Cucciolo 01, Cucciolo 02, Cucciolo 03, Cucciolo 04, Cucciolo 05, Cucciolo 06, Cucciolo 07, Cucciolo 08, Cucciolo 09, Cucciolo 10, and 3 more.",
+        expect(await ok("write", "Grande orso", "--set", "guard=11")).toContain(
+            "Changed with it, since they read guard from Grande orso: Cucciolo 01, Cucciolo 02, Cucciolo 03, Cucciolo 04, Cucciolo 05, Cucciolo 06, Cucciolo 07, Cucciolo 08, Cucciolo 09, Cucciolo 10, and 3 more.",
         );
     });
 
     it("refuses to change what the copies of a creature read while they are in the open scene", async () => {
         await ok("scene", "open", "--title", "Ossario", "--type", "combat", "--creatures", "Annegato capo");
         const refusal = "has copies in the open scene, which read from it what they do not change: Annegato capo 1 (hp 40/40). Change a copy; to change";
-        expect((await rpg("write", "Annegato", "--set", "ac=14")).output).toContain(`Annegato ${refusal}`);
+        expect((await rpg("write", "Annegato", "--set", "guard=14")).output).toContain(`Annegato ${refusal}`);
         expect((await rpg("write", "Annegato capo", "--set", "creature=[[Lupo]]")).output).toContain(`Annegato capo ${refusal}`);
         expect((await rpg("write", "Annegato", "--add", "attacchi=morso")).exitCode).toBe(1);
         await ok("write", "Annegato", "--add", "tags=acqua");
         await ok("write", "Annegato", "--text", "Un corpo gonfio d'acqua.");
-        await ok("write", "Vecchio annegato", "--set", "ac=12");
+        await ok("write", "Vecchio annegato", "--set", "guard=12");
 
         writeFileSync(join(folder, "state.yaml"), "scene:\n  title: Ossario\n");
-        expect((await rpg("write", "Annegato", "--set", "ac=14")).output).toBe(
+        expect((await rpg("write", "Annegato", "--set", "guard=14")).output).toBe(
             'Annegato is a creature, and the open scene, which may hold its copies, cannot be read: The open scene in state.yaml is not valid: type: Invalid option: expected one of "combat"|"social"|"exploration"|"travel"|"rest"|"challenge"|"other". To fix it, close it with scene close and a summary, then open it again. Nothing changed.',
         );
         expect((await rpg("write", "Annegato capo 1", "--set", "spaventato=true")).output).toBe(
-            "There is no page named Annegato capo 1. To create it, give its type: character, place, faction, quest, item, event, topic, creature. The open scene in state.yaml cannot be read, so a copy in it cannot be written: validate shows how to fix it. find looks for the pages of the system 5e in their names and fields, in English.",
+            "There is no page named Annegato capo 1. To create it, give its type: character, place, faction, quest, item, event, topic, creature. The open scene in state.yaml cannot be read, so a copy in it cannot be written: validate shows how to fix it. find looks for the pages of the system fake in their names and fields, in English.",
         );
     });
 });
@@ -375,7 +375,7 @@ describe("show on derived pages and copies (INH-13, INH-14)", () => {
             "hp: 40/40",
             "",
             "Fields inherited from Annegato:",
-            "ac: 13",
+            "guard: 13",
             "",
             "Text inherited from Annegato capo:",
             "",
@@ -423,7 +423,7 @@ describe("show on derived pages and copies (INH-13, INH-14)", () => {
             "---",
             "",
             "Fields inherited from Annegato:",
-            "ac: 13",
+            "guard: 13",
             "",
             "Text inherited from Annegato:",
             "",
@@ -613,24 +613,24 @@ describe("pages that derive from a creature, after the second review (D-124)", (
 
 describe("pages that hold only their differences (D-125)", () => {
     beforeEach(async () => {
-        await ok("write", "Lupo", "--type", "creature", "--set", "hp=11/11", "--set", "ac=13", "--set", "fiuto=2", "--text", "Un lupo grigio.");
-        await ok("write", "Gufo", "--type", "creature", "--set", "hp=1/1", "--set", "ac=11");
+        await ok("write", "Lupo", "--type", "creature", "--set", "hp=11/11", "--set", "guard=13", "--set", "fiuto=2", "--text", "Un lupo grigio.");
+        await ok("write", "Gufo", "--type", "creature", "--set", "hp=1/1", "--set", "guard=11");
     });
 
     it("does not write a value equal to the base's, even when the page is created, and takes off one that becomes equal", async () => {
-        expect(await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo]]", "--set", "ac=13", "--set", "fiuto=3")).toBe(
-            "Created Zanna (character, world/characters/Zanna.md): set role, creature, fiuto; ac as Lupo.",
+        expect(await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo]]", "--set", "guard=13", "--set", "fiuto=3")).toBe(
+            "Created Zanna (character, world/characters/Zanna.md): set role, creature, fiuto; guard as Lupo.",
         );
         expect(readFileSync(join(folder, "world", "characters", "Zanna.md"), "utf8")).toBe('---\nrole: companion\ncreature: "[[Lupo]]"\nfiuto: 3\n---\n');
-        expect(await ok("write", "Zanna", "--set", "fiuto=2", "--set", "ac=12")).toBe("Updated Zanna (character, world/characters/Zanna.md): set ac; fiuto again as Lupo.");
-        expect(readFileSync(join(folder, "world", "characters", "Zanna.md"), "utf8")).toBe('---\nrole: companion\ncreature: "[[Lupo]]"\nac: 12\n---\n');
+        expect(await ok("write", "Zanna", "--set", "fiuto=2", "--set", "guard=12")).toBe("Updated Zanna (character, world/characters/Zanna.md): set guard; fiuto again as Lupo.");
+        expect(readFileSync(join(folder, "world", "characters", "Zanna.md"), "utf8")).toBe('---\nrole: companion\ncreature: "[[Lupo]]"\nguard: 12\n---\n');
     });
 
     it("names the values a page keeps when its creature changes, and the public lines of a companion whose counter a base changes", async () => {
-        await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo]]", "--set", "ac=12");
+        await ok("write", "Zanna", "--type", "character", "--set", "role=companion", "--set", "creature=[[Lupo]]", "--set", "guard=12");
         await ok("change", "Zanna", "hp", "--by=-10");
         expect(await ok("write", "Zanna", "--set", "creature=[[Gufo]]")).toBe(
-            "Updated Zanna (character, world/characters/Zanna.md): set creature.\nZanna keeps its own ac 12 (Gufo gives 11), hp 1/11 (Gufo gives 1/1). If they came from its old creature: unset ac, change hp to 1/1.",
+            "Updated Zanna (character, world/characters/Zanna.md): set creature.\nZanna keeps its own guard 12 (Gufo gives 11), hp 1/11 (Gufo gives 1/1). If they came from its old creature: unset guard, change hp to 1/1.",
         );
 
         await ok("write", "Lupo alfa", "--type", "creature", "--set", "creature=[[Lupo]]");
@@ -640,8 +640,8 @@ describe("pages that hold only their differences (D-125)", () => {
         );
         const [hp] = readLogFile(folder).slice(-1);
         expect(hp).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Ombra", field: "hp", before: "11/11", after: "1/1" } });
-        // ac is a number of the system 5e, never counted (SYS-8): no line for it.
-        expect(readLogFile(folder).some((entry) => entry.type === "counter-changed" && (entry.data as { field?: string; }).field === "ac")).toBe(false);
+        // guard is a number of the system fake, never counted (SYS-8): no line for it.
+        expect(readLogFile(folder).some((entry) => entry.type === "counter-changed" && (entry.data as { field?: string; }).field === "guard")).toBe(false);
     });
 
     it("keeps on a copy only what differs from its creature", async () => {

@@ -29,7 +29,7 @@ describe("the page's words (D-394)", () => {
         const campaign = join(makeTempFolder(), "campaign");
         mkdirSync(campaign);
         const context = { ...testContext(campaign), folder: campaign };
-        await runCommandLine(["init", "--language", "it", "--system", "5e"], context);
+        await runCommandLine(["init", "--language", "it", "--system", "fake"], context);
         overview = JSON.parse((await runCommandLine(["view", "--json"], context)).output);
     });
 

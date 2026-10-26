@@ -29,7 +29,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
+    await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
     await ok("advance", "--to", "day 1, 18:00");
     await ok("write", "Locanda", "--type", "place");
@@ -40,24 +40,19 @@ beforeEach(async () => {
         "character",
         ...[
             "role=pc",
-            "classes=[[Cleric]] 3",
-            "xp=900",
-            "str=14",
-            "dex=8",
-            "con=15",
-            "int=10",
-            "wis=16",
-            "cha=12",
-            "hp-base=18",
-            "hp=20/24",
-            "speed=25 ft.",
-            "hit-dice-d8=3/3",
-            "save-proficiencies=[wis, cha]",
-            "skill-proficiencies=[Insight, Religion]",
-            "languages=[Common, Dwarvish]",
+            "vocations=[[Warden]] 3",
+            "calling=ferryman",
+            "renown=40",
+            "might=5",
+            "grace=3",
+            "wit=4",
+            "skilled=[wit]",
+            "grit=14/16",
+            "stride=8 m",
+            "tongues=[Lowland, Marsh Cant]",
         ].flatMap((field) => ["--set", field]),
     );
-    await ok("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]");
+    await ok("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Bog Hound]]");
     await ok("write", "Locanda", "--add", "contains=[[Ettore]]", "--add", "contains=[[Lupa]]");
     await ok("effect", "add", "Ettore", "Benedizione", "--for", "1h");
     await ok("write", "Varro", "--type", "character", "--set", "role=npc", "--text", "Il mugnaio.");
@@ -87,21 +82,21 @@ describe("view as data (VIEW-1, D-272)", () => {
             place: ["Locanda"],
             effects: [{ name: "Benedizione", end: { date: "day 1, 19:00" }, text: "Benedizione until day 1, 19:00" }],
         });
-        expect(data.party[0].counters).toContainEqual({ field: "hp", kind: "counter", text: "20/24", counter: { value: 20, max: 24 }, marks: 0 });
+        expect(data.party[0].counters).toContainEqual({ field: "grit", kind: "counter", text: "14/16", counter: { value: 14, max: 16 }, marks: 0 });
         // The engine gives places, ends and the levels as data, which the page writes in its language (D-403); English here, as no language is set.
         expect([memberPlaceLabel(data.party[0].place), effectLabel(data.party[0].effects[0])]).toEqual(["Locanda", "Benedizione until day 1, 19:00"]);
-        const xp = data.party[0].counters.find((value: SheetValue) => value.field === "xp");
-        expect([xp.levelNeed, levelNeedLabel(xp.levelNeed)]).toEqual([{ needs: 1800, level: 4 }, "1800 to level 4"]);
+        const renown = data.party[0].counters.find((value: SheetValue) => value.field === "renown");
+        expect([renown.levelNeed, levelNeedLabel(renown.levelNeed)]).toEqual([{ needs: 20, level: 4 }, "20 to level 4"]);
         // The game system the campaign plays, which the page names, with the credit its source asks for (D-284).
-        expect(data.system).toEqual({ name: "5e", title: expect.stringContaining("SRD 5.1"), attribution: expect.stringContaining("Creative Commons Attribution 4.0") });
+        expect(data.system).toEqual({ name: "fake", title: "the fake system of the core's tests", attribution: "The fake system of rpg-engine's tests, made for them; no game's text." });
         // A companion shows the picture of the creature she derives from (D-267).
-        expect(data.party[1]).toMatchObject({ name: "Lupa", role: "companion", image: { file: "wolf-head.svg", version: expect.any(Number) } });
-        // On a token of the party, the icon of their class, as the system draws it; none for a wolf, which has no class (D-414).
+        expect(data.party[1]).toMatchObject({ name: "Lupa", role: "companion", image: { file: "hound.svg", version: expect.any(Number) } });
+        // On a token of the party, the icon of their vocation, as the system draws it; none for a hound, which has no vocation (D-414).
         expect(data.party[0].icon).toMatch(/^M[\d. ]/);
         expect(data.party[1].icon).toBeUndefined();
         expect(await ok("view")).toContain([
-            "Ettore, in Locanda: level 3 · xp 900 (1800 to level 4) · hp 20/24 · ac 9 · passive-perception 13 · hit-dice-d8 3/3 · slots-1 4/4 · slots-2 2/2 · channel-divinity 1/1 · Benedizione until day 1, 19:00",
-            "Lupa (companion), in Locanda: hp 11/11 · ac 13 · passive-perception 13",
+            "Ettore, in Locanda: level 3 · grit 14/16 · guard 8 · stamina-d6 3/3 · renown 40 (20 to level 4) · rallies 2/2 · Benedizione until day 1, 19:00",
+            "Lupa (companion), in Locanda: grit 9/9 · guard 7",
         ].join("\n"));
     });
 
@@ -110,35 +105,34 @@ describe("view as data (VIEW-1, D-272)", () => {
         const group = (name: string) => data.sheet.find((candidate: { name: string; }) => candidate.name === name);
         // Under the name, the system's headline, a list as its items' names (D-288), in the campaign's language where the system has its words (D-403); where
         // the page puts the groups (D-295), and those at hand in a fight (D-315).
-        expect(data.headline).toBe("Chierico di 3° livello");
-        expect(data.cards).toEqual({ rail: ["Abilities", "Saving Throws", "Skills"], order: expect.arrayContaining(["Combat", "Personality"]), atHand: ["ac", "initiative", "walking", "hp", "temp-hp", "Attacks", "Spells"] });
-        // A score rolls the modifier beside it, for fun (D-280).
-        expect(group("Abilities").values[0]).toEqual({ field: "str", kind: "at-least", text: "14", marks: 0, beside: "+2", besideField: "str-mod", roll: { notation: "1d20+2", dice: [20], modifier: 2 } });
-        expect(group("Saving Throws").values).toContainEqual({ field: "wis-save", kind: "modifier", text: "+5", marks: 1, roll: { notation: "1d20+5", dice: [20], modifier: 5 } });
-        expect(group("Combat").values).toContainEqual({ field: "hit-dice-d8", kind: "counter", text: "3/3", counter: { value: 3, max: 3 }, marks: 0 });
-        expect(group("Proficiencies").values).toContainEqual({ field: "languages", kind: "list", text: "Common, Dwarvish", items: ["Common", "Dwarvish"], marks: 0 });
-        // Each group with its icon, when the system gives one (D-284).
-        expect(group("Attacks")).toEqual({
-            name: "Attacks",
-            icon: expect.stringMatching(/^M[\d. ]/),
-            values: [],
-            items: [{ item: "Unarmed Strike", values: [expect.objectContaining({ field: "attack", text: "+4" }), expect.objectContaining({ field: "damage-roll", text: "3 bludgeoning" })] }],
-        });
-        expect(await ok("view", "Ettore")).toContain("Attacks: Unarmed Strike +4, 3 bludgeoning");
+        expect(data.headline).toBe("ferryman, grado 3");
+        // A field left empty takes with it its part of the headline, up to the comma before the next.
+        await ok("write", "Ettore", "--unset", "calling");
+        expect(JSON.parse(await ok("view", "Ettore", "--json")).headline).toBe("grado 3");
+        await ok("write", "Ettore", "--set", "calling=ferryman");
+        expect(data.cards).toEqual({ rail: ["Traits"], order: ["Struggle", "Knacks", "Gear", "Person"], atHand: ["grit", "guard", "speed"] });
+        // A trait rolls the bonus beside it, for fun (D-280).
+        expect(group("Traits").values[0]).toEqual({ field: "might", kind: "at-least", text: "5", marks: 0, beside: "+1", besideField: "might-bonus", roll: { notation: "2d6+1", dice: [6, 6], modifier: 1 } });
+        expect(group("Struggle").values).toContainEqual({ field: "notice", kind: "number", text: "5", marks: 1, roll: { notation: "2d6+5", dice: [6, 6], modifier: 5 } });
+        expect(group("Struggle").values).toContainEqual({ field: "stamina-d6", kind: "counter", text: "3/3", counter: { value: 3, max: 3 }, marks: 0 });
+        expect(group("Knacks").values).toContainEqual({ field: "tongues", kind: "list", text: "Lowland, Marsh Cant", items: ["Lowland", "Marsh Cant"], marks: 0 });
+        // Each group with its icon, when the system gives one (D-284); none where it gives none.
+        expect(group("Struggle").icon).toMatch(/^M[\d. ]/);
+        expect(group("Person")).not.toHaveProperty("icon");
     });
 
-    it("gives a companion who keeps no sheet the stat block of her creature, and the player character the traits and picture of its race (D-275, D-277)", async () => {
+    it("gives a companion who keeps no sheet the stat block of her creature, and the player character the traits and picture of its people (D-275, D-277)", async () => {
         const lupa = JSON.parse(await ok("view", "Lupa", "--json"));
-        expect(lupa.sheet).toEqual([{ name: "Wolf", values: expect.arrayContaining([{ field: "str", kind: "at-least", text: "12", marks: 0, beside: "+1" }]) }]);
-        expect(lupa.text).toContain("### Bite");
-        // A challenge rating of 1/4 is text, not a counter of 1 out of 4.
-        expect(lupa.sheet[0].values).toContainEqual({ field: "cr", kind: "text", text: "1/4", marks: 0 });
-        await ok("write", "Brina", "--type", "character", "--set", "role=companion", "--set", "creature=[[Hill Dwarf]]", "--set", "classes=[[Fighter]] 1");
-        await ok("write", "Ettore", "--set", "creature=[[Hill Dwarf]]");
-        expect(await ok("view", "Ettore")).toContain("### Dwarven Toughness");
+        expect(lupa.sheet).toEqual([{ name: "Bog Hound", values: expect.arrayContaining([{ field: "grit", kind: "counter", text: "9/9", counter: { value: 9, max: 9 }, marks: 0 }]) }]);
+        expect(lupa.text).toContain("## Bite");
+        // A text with a slash, as 1/4, is text, not a counter of 1 out of 4.
+        expect(lupa.sheet[0].values).toContainEqual({ field: "lore", kind: "text", text: "1/4", marks: 0 });
+        await ok("write", "Brina", "--type", "character", "--set", "role=companion", "--set", "creature=[[Fenfolk]]", "--set", "vocations=[[Scout]] 1");
+        await ok("write", "Ettore", "--set", "creature=[[Fenfolk]]");
+        expect(await ok("view", "Ettore")).toContain("## Long Breath");
         const party = JSON.parse(await ok("view", "--json")).party;
-        // Ettore keeps his own picture; Brina, with none, shows her race's.
-        expect(party.map((member: { image?: { file: string; }; }) => member.image?.file)).toEqual(["Ettore.png", "dwarf-face.svg", "wolf-head.svg"]);
+        // Ettore keeps his own picture; Brina, with none, shows her people's.
+        expect(party.map((member: { image?: { file: string; }; }) => member.image?.file)).toEqual(["Ettore.png", "fenfolk.svg", "hound.svg"]);
     });
 
     it("gives the player's settings with their values and what each value means to the player, then the game system's, and only alone (D-341)", async () => {
@@ -165,7 +159,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             "lines",
             "veils",
             "language",
-            "advancement",
+            "harshness",
         ]);
         const named = (name: string) => data.settings.find((setting) => setting.name === name);
         expect(named("difficulty")).toMatchObject({ about: "how hard the world plays", value: "normal" });
@@ -178,12 +172,12 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(named("story")).toMatchObject({ value: "situations" });
         expect(named("author")).toEqual({ name: "author", about: expect.stringMatching(/^an author the master writes like/), most: 80 });
         // A setting the game system adds, with its values but not what they mean to the master.
-        expect(named("advancement")).toEqual({
-            name: "advancement",
-            about: "how your character levels up",
+        expect(named("harshness")).toEqual({
+            name: "harshness",
+            about: "how hard the road is",
             choices: [
-                { value: "xp", means: "your character levels up with experience points, for the foes overcome and what the story rewards" },
-                { value: "milestones", means: "your character levels up at the big moments of the story" },
+                { value: "gentle", means: "the road forgives" },
+                { value: "bitter", means: "the road keeps count" },
             ],
         });
         expect(await ok("view", "--settings")).toContain("lines: ragni");
@@ -244,7 +238,7 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             return result.output;
         };
 
-        await run("init", "--language", "it", "--system", "5e");
+        await run("init", "--language", "it", "--system", "fake");
         await run("config", "difficulty", "normal");
         const setup = JSON.parse(await run("view", "--setup", "--json"));
         expect(setup).toMatchObject({ kind: "setup", mode: "setup", name: "nuova-campagna", folderName: true });
@@ -259,7 +253,7 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             "units",
             "companions",
             "preparation",
-            "advancement",
+            "harshness",
             "lines",
             "veils",
         ]);
@@ -273,7 +267,7 @@ describe("the setup as the dashboard shows it (D-370)", () => {
         // The values the game suggests, never chosen for the player; the lethality as the difficulty has it.
         const suggested = Object.fromEntries(setup.questions.filter((question: { suggested?: string; }) => question.suggested !== undefined).map((question: { name: string; suggested: string; }) => [question.name, question.suggested]));
         expect(suggested).toEqual({ lethality: "dice", saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", preparation: "on the fly" });
-        expect(setup.questions.find((question: { name: string; }) => question.name === "advancement")).toMatchObject({ about: "how your character levels up" });
+        expect(setup.questions.find((question: { name: string; }) => question.name === "harshness")).toMatchObject({ about: "how hard the road is" });
         expect(setup.questions[8]).toMatchObject({ name: "companions", about: "how companions come to your side", choices: expect.arrayContaining([{ value: "none", means: "you play alone" }]) });
         expect(setup.missing).toContain("companions (none, made with the player, made by the master, met in play)");
         // Once the premise is set, a campaign named after its folder: status asks the master to propose a name.
@@ -395,7 +389,7 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
     it("tells the story by scenes, the last first, each with its summary and what happened in it; what came between apart, the saves and rolls left out", async () => {
         await ok("write", "Locanda", "--set", "kind=inn");
         await ok("scene", "open", "--title", "Al guado", "--type", "social");
-        await ok("change", "Ettore", "hp", "--by=-2");
+        await ok("change", "Ettore", "grit", "--by=-2");
         await ok("roll", "1d20", "--who", "Ettore", "--why", "guado");
         // A quest taken is a fact of the story (D-369).
         await ok("write", "Il guado", "--type", "quest", "--set", "status=open");
@@ -421,7 +415,7 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
             date: "day 1, 18:00",
             summary: "Ettore attraversa il guado, ferito.",
             facts: [
-                { kind: "counter", who: "Ettore", field: "hp", before: "20/24", after: "18/24", date: "day 1, 18:00" },
+                { kind: "counter", who: "Ettore", field: "grit", before: "14/16", after: "12/16", date: "day 1, 18:00" },
                 { kind: "quest", status: "open", quest: "Il guado", date: "day 1, 18:00" },
             ],
         });
@@ -430,7 +424,7 @@ describe("the journal as the dashboard shows it (D-367, VIEW-8, VIEW-9)", () => 
         ]);
         // The page writes them in its language (D-403): English here.
         expect([...chapters[2].facts, ...chapters[1].facts].map((fact: JournalFact) => factLabel(fact))).toEqual([
-            "Ettore: HP 20/24 → 18/24",
+            "Ettore: grit 14/16 → 12/16",
             "Quest taken: Il guado",
             "Ettore: Benedizione ended",
         ]);
@@ -629,7 +623,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(picture.status).toBe(200);
         expect(picture.headers).toMatchObject({ "content-type": "image/png", "x-content-type-options": "nosniff", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox" });
         expect((await get("/images/Ettore.png", { "if-none-match": picture.headers.etag ?? "" })).status).toBe(304);
-        expect((await get("/images/wolf-head.svg")).headers["content-type"]).toBe("image/svg+xml");
+        expect((await get("/images/hound.svg")).headers["content-type"]).toBe("image/svg+xml");
         // A stranger's picture by a name of its bytes, which tells nothing of its page (D-420); only the campaign's.
         const hidden = `${createHash("sha256").update(readFileSync(join(folder, "images", "Ettore.png"))).digest("hex").slice(0, 24)}.png`;
         expect((await get(`/images/${hidden}`)).headers["content-type"]).toBe("image/png");
@@ -700,7 +694,7 @@ describe("the session's notices (D-193, D-272)", () => {
         try {
             await opener.open();
             expect(served.dashboard).toBeUndefined();
-            await runCommandLine(["init", "--name", "Nuova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], served);
+            await runCommandLine(["init", "--name", "Nuova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], served);
             await opener.open();
             expect(served.dashboard).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
             expect((await runCommandLine(["status"], served)).output).toContain(`Offer the player their dashboard in your first answer, with its link: ${served.dashboard}.`);
@@ -1014,13 +1008,13 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "player", data: { setting: "difficulty", value: "easy" } });
         expect((await send("POST", "/api/config", { setting: "lines", add: " ragni " })).status).toBe(202);
         expect((await send("POST", "/api/config", { setting: "lines", remove: "ragni" })).status).toBe(202);
-        expect((await send("POST", "/api/config", { setting: "advancement", value: "milestones" })).status).toBe(202);
+        expect((await send("POST", "/api/config", { setting: "harshness", value: "bitter" })).status).toBe(202);
         // The master hears each setting as it is now against how it was: once, the last value; nothing of a list's item added and taken off again.
         expect((await send("POST", "/api/config", { setting: "difficulty", value: "hard" })).status).toBe(202);
         const news = dashboard.news().lines;
         expect(news).toHaveLength(2);
         expect(news[0]).toMatch(/^The player set difficulty to hard on the dashboard: fights .+\. Play by it from now on\.$/);
-        expect(news[1]).toMatch(/^The player set advancement to milestones on the dashboard: the characters rise when the story reaches a milestone.+\. Play by it from now on\.$/);
+        expect(news[1]).toMatch(/^The player set harshness to bitter on the dashboard: every day without food costs at once.+\. Play by it from now on\.$/);
         expect(dashboard.news().lines).toEqual([]);
         // A value that came back as it was says nothing.
         expect((await send("POST", "/api/config", { setting: "lethality", value: "epic" })).status).toBe(202);
@@ -1061,8 +1055,8 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/config", { setting: "prose", value: "plain" })).status).toBe(202);
         expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set prose to plain on the dashboard: short sentences/)]);
         // A setting's name in any case is the player's; one that does not exist is no one's.
-        expect((await send("POST", "/api/config", { setting: "Advancement", value: "xp" })).status).toBe(202);
-        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set advancement to xp on the dashboard: experience points/)]);
+        expect((await send("POST", "/api/config", { setting: "Harshness", value: "gentle" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set harshness to gentle on the dashboard: a day without food/)]);
         const nonsense = await send("POST", "/api/config", { setting: "nonsense", value: "x" });
         expect(nonsense.status).toBe(400);
         expect(JSON.parse(nonsense.body).error).toMatch(/^There is no setting "nonsense": the player's are difficulty, lethality, /);
@@ -1073,7 +1067,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(precedents.status).toBe(403);
         expect(JSON.parse(precedents.body)).toEqual({ error: "precedents is the master's to change, in the chat." });
         expect((await send("POST", "/api/config", { setting: "difficulty", value: "impossibile" })).status).toBe(400);
-        expect((await send("POST", "/api/config", { setting: "advancement", add: "xp" })).status).toBe(400);
+        expect((await send("POST", "/api/config", { setting: "harshness", add: "gentle" })).status).toBe(400);
         expect((await send("POST", "/api/config", { setting: "difficulty", value: "easy", add: "ragni" })).status).toBe(400);
         expect((await send("POST", "/api/config", { setting: "lines", add: "   " })).status).toBe(400);
         expect(dashboard.news().lines).toEqual([]);
@@ -1092,7 +1086,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         dashboard.news();
         expect(await problems()).toBe(0);
         expect(dashboard.news().lines).toEqual([]);
-        await write("--type", "item", "--set", "item=[[Lantern, Hooded]]");
+        await write("--type", "item", "--set", "item=[[Lantern, Old]]");
         expect(await problems()).toBe(1);
         const told = dashboard.news();
         expect(told.lines).toEqual(["The player's dashboard shows that the campaign's files have a problem, and tells them you fix it: call validate and fix them now, behind the scenes."]);
@@ -1101,10 +1095,10 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         told.restore();
         expect(dashboard.news().lines).toEqual(told.lines);
         // Fixed, then broken again: told again.
-        await write("--set", "item=[[Hooded Lantern]]");
+        await write("--set", "item=[[Lantern]]");
         expect(await problems()).toBe(0);
         expect(dashboard.news().lines).toEqual([]);
-        await write("--set", "item=[[Lantern, Hooded]]");
+        await write("--set", "item=[[Lantern, Old]]");
         await problems();
         expect(dashboard.news().lines).toHaveLength(1);
     });
@@ -1337,13 +1331,12 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
     });
 
     it("tells the page whose sheet a roll's checks read and the field each one rolls, for its row to answer too (ASK-12, D-330)", async () => {
-        await runCommandLine(["write", "Ettore", "--set", "str=14"], served);
         const page = await openPage();
-        const asking = ask.run(ask.input.parse({ ...wall, options: ["Atletica 1d20+athletics", "Acrobazia 1d20-1"] }), served);
+        const asking = ask.run(ask.input.parse({ ...wall, options: ["Forza 2d6+might-bonus", "Grazia 2d6-1"] }), served);
         const asked = await waitAsked();
-        expect(asked).toMatchObject({ labels: ["Tiro: Atletica (1d20+2)", "Tiro: Acrobazia (1d20-1)", "Cambio idea"], who: "Ettore", fields: ["athletics", null, null] });
+        expect(asked).toMatchObject({ labels: ["Tiro: Forza (2d6+1)", "Tiro: Grazia (2d6-1)", "Cambio idea"], who: "Ettore", fields: ["might-bonus", null, null] });
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(202);
-        expect(await asking).toMatchObject({ kind: "roll", who: "Ettore", check: "Atletica" });
+        expect(await asking).toMatchObject({ kind: "roll", who: "Ettore", check: "Forza" });
         page.close();
     });
 
@@ -1361,41 +1354,39 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(asked).toMatchObject({ question: "Dove ti sposti?", title: "Movimento", labels: ["Cambio idea"], square: true, who: "Ettore" });
         expect((await send("POST", "/api/answer", { asked: asked.id, square: "zz" })).status).toBe(400);
         expect((await send("POST", "/api/answer", { asked: asked.id, square: "d2" })).status).toBe(202);
-        expect(ask.format(await asking)).toBe("The player chose where to go: Ettore: now on D2 in Sala, 3 m from B2.");
+        expect(ask.format(await asking)).toBe("The player chose where to go: Ettore: now on D2 in Sala, 4 m from B2.");
         page.close();
     });
 
     it("asks the dice of a rest on the page: each spend rolls one die and the question stays with the numbers as they are, until its button (ASK-14, D-492)", async () => {
-        await runCommandLine(["write", "Ettore", "--set", "classes=[[Cleric]] 3"], served);
-        await runCommandLine(["change", "Ettore", "hp", "--to", "10"], served);
+        await runCommandLine(["change", "Ettore", "grit", "--to", "10"], served);
         const page = await openPage();
-        const asking = ask.run(ask.input.parse({ question: "Riposo breve: quanti dadi vita spendi?", recipe: "short rest" }), served);
+        const asking = ask.run(ask.input.parse({ question: "Una sosta: quanti dadi di fiato spendi?", recipe: "breather" }), served);
         const asked = await waitAsked();
-        expect(asked).toMatchObject({ title: "Riposo", labels: ["Ho finito"], who: "Ettore", spend: { who: "Ettore", dice: [{ field: "hit-dice-d8", sides: 8, value: 3, max: 3 }], gives: { field: "hp", from: 10, value: 10 }, rolls: [] } });
-        expect((await send("POST", "/api/answer", { asked: "altro", spend: "hit-dice-d8" })).status).toBe(409);
-        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "hit-dice-d12" })).status).toBe(409);
-        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "hit-dice-d8" })).status).toBe(202);
+        expect(asked).toMatchObject({ title: "Riposo", labels: ["Ho finito"], who: "Ettore", spend: { who: "Ettore", dice: [{ field: "stamina-d6", sides: 6, value: 3, max: 3 }], gives: { field: "grit", from: 10, value: 10 }, rolls: [] } });
+        expect((await send("POST", "/api/answer", { asked: "altro", spend: "stamina-d6" })).status).toBe(409);
+        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "stamina-d4" })).status).toBe(409);
+        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "stamina-d6" })).status).toBe(202);
         const after = await askedNow() as Asked | null;
-        expect(after).toMatchObject({ id: asked.id, spend: { dice: [{ field: "hit-dice-d8", value: 2 }], rolls: [{ field: "hit-dice-d8", face: 4 }] } });
-        expect(readLogFile(folder).find((entry) => entry.id === after?.spend?.rolls[0]?.id)).toMatchObject({ type: "roll", by: "player", data: { who: "Ettore", check: "Dadi vita d8" } });
+        expect(after).toMatchObject({ id: asked.id, spend: { dice: [{ field: "stamina-d6", value: 2 }], rolls: [{ field: "stamina-d6", face: 4 }] } });
+        expect(readLogFile(folder).find((entry) => entry.id === after?.spend?.rolls[0]?.id)).toMatchObject({ type: "roll", by: "player", data: { who: "Ettore", check: "Fiato d6" } });
         expect((await send("POST", "/api/answer", { asked: asked.id, text: "Canto una canzone di riposo" })).status).toBe(409);
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 0 })).status).toBe(202);
-        expect(ask.format(await asking)).toMatch(/^The player spent 1 of Ettore's dice: hit-dice-d8 4/);
+        expect(ask.format(await asking)).toMatch(/^The player spent 1 of Ettore's dice: stamina-d6 4/);
         expect(await askedNow()).toBeNull();
         page.close();
     });
 
     it("tells the master at the next call the dice spent before the call that asked them was stopped (ASK-14, ASK-9)", async () => {
-        await runCommandLine(["write", "Ettore", "--set", "classes=[[Cleric]] 3"], served);
-        await runCommandLine(["change", "Ettore", "hp", "--to", "10"], served);
+        await runCommandLine(["change", "Ettore", "grit", "--to", "10"], served);
         const page = await openPage();
         const stop = new AbortController();
-        const asking = ask.run(ask.input.parse({ question: "Riposo breve: quanti dadi vita spendi?", recipe: "short rest" }), { ...served, signal: stop.signal });
+        const asking = ask.run(ask.input.parse({ question: "Una sosta: quanti dadi di fiato spendi?", recipe: "breather" }), { ...served, signal: stop.signal });
         const asked = await waitAsked();
-        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "hit-dice-d8" })).status).toBe(202);
+        expect((await send("POST", "/api/answer", { asked: asked.id, spend: "stamina-d6" })).status).toBe(202);
         stop.abort();
         await asking;
-        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^While your ask was stopped, the player spent 1 of Ettore's dice: hit-dice-d8 4 \+ \d = \d+; hp 10\/\d+ → \d+\/\d+; hit-dice-d8 3\/3 → 2\/3\./)]);
+        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^While your ask was stopped, the player spent 1 of Ettore's dice: stamina-d6 4 \+ \d = \d+; grit 10\/\d+ → \d+\/\d+; stamina-d6 3\/3 → 2\/3\./)]);
         expect(dashboard.news().lines).toEqual([]);
         page.close();
     });
@@ -1522,7 +1513,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const named = JSON.parse(await ok("view", "--json")).rolls;
         expect(named.map((roll: { who?: string; }) => roll.who)).toEqual(["creature", "someone", "Lupa"]);
         expect(named.map((roll: { stranger?: boolean; }) => roll.stranger)).toEqual([true, true, undefined]);
-        expect(named[2].image).toEqual({ file: "wolf-head.svg", version: expect.any(Number) });
+        expect(named[2].image).toEqual({ file: "hound.svg", version: expect.any(Number) });
 
         for (let count = 0; count < 21; count++) {
             await ok("roll", "1d4", "--why", `colpo ${count}`);

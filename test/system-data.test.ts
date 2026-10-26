@@ -1,3 +1,4 @@
+// The 5e's (D-514): this file goes with the 5e to its own repository at step 8; the core's own tests of the same rules run on the fake system.
 // The game system's data for the engine (MECCANICHE, DAT-1–DAT-7): the cases of the table, through the commands, in a campaign played in Italian with the system 5e.
 import fc from "fast-check";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -290,11 +291,12 @@ describe("a game system that is not installed, or not chosen yet (SYS-1, D-167)"
 });
 
 describe("conditions and rounds (DAT-6, DAT-7)", () => {
-    it("show the text of a condition of the system when an effect bears its name, and nothing for another name", async () => {
+    it("show the text of a condition of the system when an effect bears its name, or its word in the campaign's language, and nothing for another name", async () => {
         expect(await ok("effect", "add", "Ennio", "Poisoned", "--for", "1h")).toBe(
             "Ennio: Poisoned until day 1, 19:00.\n\nPoisoned is a condition of the system 5e:\n## Poisoned\n\n- A poisoned creature has disadvantage on attack rolls and ability checks.",
         );
-        expect(await ok("effect", "add", "Ennio", "Avvelenato", "--for", "1h")).not.toContain("condition");
+        expect(await ok("effect", "add", "Ennio", "Avvelenato", "--for", "1h")).toContain("\n\nPoisoned (Avvelenato) is a condition of the system 5e:\n## Poisoned");
+        expect(await ok("effect", "add", "Ennio", "Veleno di ragno", "--for", "1h")).not.toContain("condition");
     });
 
     it("show a house rule on a condition first, with the precedents on it", async () => {
@@ -327,90 +329,6 @@ describe("conditions and rounds (DAT-6, DAT-7)", () => {
         expect(closed).not.toContain("Veleno");
         expect(await ok("status")).toContain("Veleno until day 1, 19:00");
         expect(await ok("effect", "add", "Lena", "Benedetta", "--for", "1m")).toBe("Lena: Benedetta until day 1, 18:01.");
-    });
-
-    it("round up to a whole round when the system's round does not divide the duration", async () => {
-        const systems = makeTempFolder();
-        mkdirSync(join(systems, "clessidra"));
-        writeFileSync(join(systems, "clessidra", "system.yaml"), "title: a test system whose round lasts 7 seconds\nlanguage: en\nround: 7 seconds\n");
-        removeFolder(folder);
-        folder = makeTempFolder();
-        context = { ...testContext(folder), systemFolders: [systems] };
-        await ok("init", "--name", "Clessidra", "--system", "clessidra");
-        inPlay(folder);
-        await ok("advance", "--to", "day 1, 18:00");
-        await ok("write", "Ennio", "--type", "character", "--set", "role=pc");
-        await ok("scene", "open", "--title", "Scontro", "--type", "combat", "--with", "Ennio");
-        await ok("scene", "order", "--order", "Ennio");
-        expect(await ok("effect", "add", "Ennio", "Benedetto", "--for", "1m")).toBe("Ennio: Benedetto until round 10, Ennio. 1m is 9 rounds of 7 seconds.");
-        removeFolder(systems);
-    });
-});
-
-describe("other game systems", () => {
-    it("work with what a system of our own declares: its sheet, thresholds, recipes, conditions and round", async () => {
-        const systems = makeTempFolder();
-        mkdirSync(join(systems, "prova", "rules"), { recursive: true });
-        writeFileSync(
-            join(systems, "prova", "system.yaml"),
-            [
-                "title: a test system of our own",
-                "language: it",
-                "round: 60 seconds",
-                "fields: { vigore: counter, fatica: counter, punti-a: counter, punti-b: counter, pozioni: counter }",
-                "sheet: { Stato: [vigore, fatica] }",
-                "status-line: [vigore, fatica?]",
-                "thresholds: { vigore 0: Sfinimento, fatica: Fatica }",
-                "recipes:",
-                "  riposo: { set: { vigore: max, fatica: 2, punti-*: max }, rules: [Riposo, Recupero] }",
-                "  sosta: { set: { vigore: max } }",
-                "conditions: [Stordito, Confuso]",
-                "",
-            ].join("\n"),
-        );
-        writeFileSync(join(systems, "prova", "rules", "Regole.md"), "# Fatica\n\nLa fatica toglie un dado.\n\n# Sfinimento\n\nA zero vigore si sviene.\n\n# Stordito\n\nChi è stordito perde il turno.\n");
-        removeFolder(folder);
-        folder = makeTempFolder();
-        context = { ...testContext(folder), systemFolders: [systems] };
-        await ok("init", "--name", "Prova", "--system", "prova");
-        inPlay(folder);
-        expect(await ok("status")).toMatch(/The system prova keeps on a character sheet, by these names: vigore, fatica\.(\n|$)/);
-        await ok("advance", "--to", "day 1, 18:00");
-        await ok("write", "Bea", "--type", "character", "--set", "role=pc", "--set", "vigore=1/5", "--set", "fatica=0/5", "--set", "punti-a=0/2", "--set", "punti-b=1/2", "--set", "pozioni=0/3");
-        expect(await ok("change", "Bea", "vigore", "--by=-1")).toBe('Bea: vigore 1/5 → 0/5: at 0.\nvigore is at 0: read rules "Sfinimento".');
-        expect(await ok("change", "--recipe", "riposo")).toBe([
-            "Riposo (a recipe of the system prova):",
-            "Bea: vigore 0/5 → 5/5; fatica 0/5 → 2/5; punti-a 0/2 → 2/2; punti-b 1/2 → 2/2. Not brought back: pozioni 0/3.",
-            'vigore is no longer at 0: read rules "Sfinimento".',
-            'For the rest, read rules "Riposo" and rules "Recupero".',
-            "The game date did not move: apply a rest once its hours have passed; if they have not yet, advance them now.",
-            "",
-            "fatica changed: Fatica, from the rules of prova:\n# Fatica\n\nLa fatica toglie un dado.",
-        ].join("\n"));
-        expect(await ok("change", "Bea", "--recipe", "sosta")).toBe(
-            'Sosta (a recipe of the system prova):\nBea: nothing changed. Not brought back: fatica 2/5 (rules "Fatica"), pozioni 0/3.\nThe game date did not move: apply a rest once its hours have passed; if they have not yet, advance them now.',
-        );
-        expect(await ok("effect", "add", "Bea", "Stordito", "--for", "1h")).toBe("Bea: Stordito until day 1, 19:00.\n\nStordito is a condition of the system prova:\n# Stordito\n\nChi è stordito perde il turno.");
-        expect(await ok("effect", "add", "Bea", "Confuso", "--for", "1h")).toBe("Bea: Confuso until day 1, 19:00.");
-        await ok("scene", "open", "--title", "Scontro", "--type", "combat", "--with", "Bea");
-        await ok("scene", "order", "--order", "Bea");
-        expect(await ok("effect", "add", "Bea", "Lento", "--for", "1m")).toBe("Bea: Lento until round 2, Bea. 1m is 1 round of 60 seconds.");
-        removeFolder(systems);
-    });
-
-    it("leave a system without a sheet, recipes or round as it was, and say what it lacks", async () => {
-        removeFolder(folder);
-        folder = makeTempFolder();
-        context = testContext(folder);
-        await ok("init", "--name", "Ferro", "--system", "ironsworn");
-        inPlay(folder);
-        expect(await ok("status")).not.toContain("keeps on a character sheet");
-        await ok("advance", "--to", "day 1, 18:00");
-        await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "health=5/5");
-        expect(await ok("effect", "add", "Kira", "Ferita", "--for", "10m")).toBe("Kira: Ferita until day 1, 18:10.");
-        expect(await refused("change", "--recipe", "riposo")).toBe('The system ironsworn has no recipe "riposo". Nothing changed.');
-        writeFileSync(join(folder, "world", "characters", "Kira.md"), '---\nrole: pc\nhealth: 5/5\neffects:\n  - "Stanca until long rest"\n---\n');
-        expect(await ok("validate")).toContain('Stanca on Kira ends "long rest", which is not a game date.');
     });
 });
 

@@ -28,7 +28,7 @@ function part(name: string): string
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await ok("init", "--name", "Prova", "--language", "it", "--system", "5e");
+    await ok("init", "--name", "Prova", "--language", "it", "--system", "fake");
 });
 
 describe("how the master writes (D-395)", () => {

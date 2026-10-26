@@ -14,7 +14,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
     await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--text", "Una cacciatrice.");
     await ok("write", "Bran", "--type", "character", "--set", "role=companion", "--text", "Un arciere taciturno.\n\nViene dai monti.");

@@ -2,7 +2,7 @@
 title: four long seasons, a test extension
 about: a year of four months of ninety days
 language: en
-needs: {system: 5e}
+needs: {system: fake}
 calendar:
   months:
     - {name: Thaw, days: 90, season: spring}

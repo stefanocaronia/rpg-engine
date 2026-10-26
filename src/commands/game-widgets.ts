@@ -1,48 +1,39 @@
-// The widgets of the campaign's extensions on the dashboard (D-502): where each stands, as its extension.yaml puts it and campaign.yaml moves it, and what its
-// code's hook shows now, checked and kept short, in the campaign's language. The extension's state never reaches the page: only what its hook gives.
+// The widgets of the campaign's packages on the dashboard (D-502, D-514), its game system's and its extensions': where each stands, as its extension.yaml or
+// system.yaml puts it and campaign.yaml moves it, and what its code's hook shows now, checked and kept short, in the campaign's language. The package's state
+// never reaches the page: only what its hook gives.
 import { basename } from "node:path";
 import { z } from "zod";
 import { campaignFileName, readOneSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
+import type { CardTint, PackageCode, Track, Widget, WidgetText, WidgetValue } from "../core/package-api.ts";
+import { type DeclaredWidget, type WidgetPlace, widgetPlaces } from "../core/package-declarations.ts";
 import type { Problem } from "../core/problem.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
-import {
-    type DeclaredWidget,
-    type Extension,
-    type ExtensionCode,
-    type ExtensionWords,
-    extensionWords,
-    type FigureSize,
-    type Track,
-    type Widget,
-    type WidgetPage,
-    widgetPages,
-    type WidgetPlace,
-    widgetPlaces,
-    type WidgetText,
-    type WidgetValue,
-    wordIn,
-} from "../extensions/index.ts";
+import { type CodePackage, type ExtensionWords, wordIn } from "../extensions/index.ts";
 import { findImage } from "../images/index.ts";
-import { campaignExtensions, pageAddress, runsCode } from "./game-extension-list.ts";
-import { extensionCode, gameViewOf } from "./game-extensions.ts";
+import { type CardPage, cardPages, type FigureSize } from "../page.ts";
+import { isInParty } from "../pages/index.ts";
+import { campaignExtensions, packageWords, pageAddress, runsCode } from "./game-extension-list.ts";
+import { campaignPackages, gameViewOf, packageCode } from "./game-package-code.ts";
+import { campaignWorld } from "./game-world.ts";
 
 /** Where a widget stands: a place of the dashboard, with its page for a card in one, and its order among the cards there; or off. */
 export interface WidgetSpot
 {
     place: WidgetPlace | "off";
-    page?: WidgetPage;
+    page?: CardPage;
     order: number;
 }
 
 /** A widget as the dashboard shows it (D-502): which it is, whose, its title in the campaign's language, where it stands and where its extension puts it, its icon, what it shows now. */
 export interface ShownWidget extends WidgetSpot
 {
-    /** Its extension's name and its own, as campaign.yaml names it: weather.today. */
+    /** Its package's name and its own, as campaign.yaml names it: weather.today. */
     id: string;
+    /** Its package's name, an extension's or the game system's. */
     extension: string;
-    /** The extension's title, as Settings names whose it is. */
+    /** The package's title, as Settings names whose it is. */
     from: string;
     title: string;
     own: WidgetSpot;
@@ -50,6 +41,8 @@ export interface ShownWidget extends WidgetSpot
     icon?: string;
     /** What it shows now; none while it has nothing to show, or is off. */
     shows?: ShownContent;
+    /** In place person, what it shows on each of the party, by their name: only those it shows something on (D-514). */
+    people?: Record<string, ShownContent>;
     /** Why it shows nothing, for whoever made it: its code failed, or gave what the dashboard does not show. */
     problem?: string;
     /** Its extension's version, which an error of its page code names (D-510). */
@@ -71,6 +64,10 @@ export interface ShownContent
     body?: string;
     icon?: string;
     chip?: WidgetText;
+    /** In place person, dead by the package's rules though not marked so (D-516). */
+    dead?: true;
+    /** In the card of a question, the colour of its moment (D-517). */
+    tint?: CardTint;
     says?: WidgetText;
     note?: WidgetText;
     parts?: ShownPart[];
@@ -83,7 +80,7 @@ export type ShownPart =
     | { image: { extension: string; file: string; version: number; }; alt: WidgetText; };
 
 /** The places a campaign may put a widget in, in campaign.yaml: top, side, a page, which is a card in that page, or off. */
-export const widgetSpots = [...widgetPlaces.filter((place) => place !== "page"), ...widgetPages, "off"] as const;
+export const widgetSpots = [...widgetPlaces.filter((place) => place !== "page" && place !== "card"), ...cardPages, "off"] as const;
 
 // How long the hooks may take, all together, before the page goes on without those still at work, and the most a widget may give, as JSON.
 const hookTime = 2000;
@@ -93,8 +90,8 @@ const mostShown = 12_000;
 const working = new Map<string, Promise<Widget | undefined>>();
 
 /**
- * The widgets of the campaign's extensions, in the order of the extensions and of their widgets, each where it stands and with what its hook shows now. The
- * hooks run together, within one time for all; one that takes longer shows nothing this time, and is not called again while it works.
+ * The widgets of the campaign's packages, its game system's first, in the order of the packages and of their widgets, each where it stands and with what its
+ * hook shows now. The hooks run together, within one time for all; one that takes longer shows nothing this time, and is not called again while it works.
  */
 export async function campaignWidgets(root: string, context: Context): Promise<ShownWidget[]>
 {
@@ -106,9 +103,9 @@ export async function campaignWidgets(root: string, context: Context): Promise<S
     });
     const reading: Promise<ShownWidget>[] = [];
 
-    for (const extension of campaignExtensions(root, context).extensions) {
+    for (const extension of campaignPackages(root, context)) {
         const words = wordsOf(extension, language);
-        const code = extension.widgets.length === 0 ? undefined : extensionCode(extension).then((loaded) => ({ loaded }), (error: unknown) => ({ error: messageOf(error) }));
+        const code = extension.widgets.length === 0 ? undefined : packageCode(extension, context).then((loaded) => ({ loaded }), (error: unknown) => ({ error: messageOf(error) }));
 
         for (const widget of extension.widgets) {
             const id = `${extension.name}.${widget.name}`;
@@ -129,12 +126,14 @@ export async function campaignWidgets(root: string, context: Context): Promise<S
                 ...(extension.page === undefined || words.read === undefined || Object.keys(words.read.words).length === 0 ? {} : { words: words.read.words }),
             };
 
-            if (spot.place === "off" || code === undefined) {
+            // A widget only of the cards of questions is read when one asks in it, never here.
+            if (spot.place === "off" || spot.place === "card" || code === undefined) {
                 reading.push(Promise.resolve(base));
                 continue;
             }
 
-            reading.push(code.then((loaded) => widgetNow(root, context, extension, widget.name, base, loaded, words.read, late)));
+            const party = spot.place === "person" ? partyNames(root, context) : undefined;
+            reading.push(code.then((loaded) => widgetNow(root, context, extension, widget.name, base, loaded, words.read, late, party)));
         }
     }
 
@@ -159,12 +158,13 @@ export function extensionWordsProblems(root: string, context: Context): Problem[
 async function widgetNow(
     root: string,
     context: Context,
-    extension: Extension,
+    extension: CodePackage,
     name: string,
     base: ShownWidget,
-    loaded: { loaded: ExtensionCode | undefined; } | { error: string; },
+    loaded: { loaded: PackageCode | undefined; } | { error: string; },
     words: ExtensionWords | undefined,
     late: Promise<"late">,
+    party?: string[],
 ): Promise<ShownWidget>
 {
     const hook = "error" in loaded ? undefined : loaded.loaded?.widgets?.[name];
@@ -172,6 +172,10 @@ async function widgetNow(
     if (hook === undefined) {
         const problem = "error" in loaded ? `its code cannot be used: ${loaded.error}` : loaded.loaded === undefined ? "its code does not run in this campaign" : `its code gives nothing for the widget ${name}`;
         return { ...base, problem };
+    }
+
+    if (party !== undefined) {
+        return await peopleNow(root, context, extension, name, base, hook, words, late, party);
     }
 
     try {
@@ -188,8 +192,49 @@ async function widgetNow(
     }
 }
 
+/**
+ * A widget in place person with what its hook shows on each of the party, by name (D-514): one called for each, together; one that fails or is late shows
+ * nothing on them, and the first problem says why.
+ */
+async function peopleNow(
+    root: string,
+    context: Context,
+    extension: CodePackage,
+    name: string,
+    base: ShownWidget,
+    hook: NonNullable<PackageCode["widgets"]>[string],
+    words: ExtensionWords | undefined,
+    late: Promise<"late">,
+    party: string[],
+): Promise<ShownWidget>
+{
+    const shown = await Promise.all(party.map(async (who): Promise<{ shows?: [string, ShownContent]; problem?: string; }> => {
+        try {
+            const answer = await Promise.race([hookCall(root, extension, `${name}#person#${who}`, () => hook(gameViewOf(root, context, extension), { who })), late]);
+
+            if (answer === "late") {
+                return { problem: `it gave nothing in ${hookTime / 1000} seconds` };
+            }
+
+            return answer === undefined ? {} : { shows: [who, shownContent(extension, words, answer)] };
+        } catch (error) {
+            return { problem: messageOf(error) };
+        }
+    }));
+    const people = Object.fromEntries(shown.flatMap((one) => (one.shows === undefined ? [] : [one.shows])));
+    // The first in the party's order, whichever answered first.
+    const problem = shown.find((one) => one.problem !== undefined)?.problem;
+    return { ...base, ...(Object.keys(people).length === 0 ? {} : { people }), ...(problem === undefined ? {} : { problem }) };
+}
+
+/** The names of the party, the player's characters and their companions, in the order of the pages. */
+function partyNames(root: string, context: Context): string[]
+{
+    return campaignWorld(root, context).pages.filter(isInParty).map((page) => page.name);
+}
+
 /** A hook's call, or the one already at work for the same widget of the same campaign. */
-function hookCall(root: string, extension: Extension, widget: string, call: () => Widget | undefined | Promise<Widget | undefined>): Promise<Widget | undefined>
+function hookCall(root: string, extension: CodePackage, widget: string, call: () => Widget | undefined | Promise<Widget | undefined>): Promise<Widget | undefined>
 {
     const key = `${root}|${extension.package}@${extension.version}|${widget}`;
     const running = working.get(key);
@@ -203,10 +248,10 @@ function hookCall(root: string, extension: Extension, widget: string, call: () =
     return started;
 }
 
-/** The widgets of the campaign's extensions by the names campaign.yaml gives them, as weather.today, with where each extension puts it. */
+/** The widgets of the campaign's packages by the names campaign.yaml gives them, as weather.today, with where each package puts it. */
 export function campaignWidgetNames(root: string, context: Context): Record<string, WidgetSpot>
 {
-    return Object.fromEntries(campaignExtensions(root, context).extensions.flatMap((extension) => extension.widgets.map((widget) => [`${extension.name}.${widget.name}`, ownSpot(widget)])));
+    return Object.fromEntries(campaignPackages(root, context).flatMap((extension) => extension.widgets.map((widget) => [`${extension.name}.${widget.name}`, ownSpot(widget)])));
 }
 
 /**
@@ -215,12 +260,26 @@ export function campaignWidgetNames(root: string, context: Context): Record<stri
  */
 export function checkWidgetSpots(root: string, context: Context, entries: Record<string, unknown>): void
 {
-    const known = Object.keys(campaignWidgetNames(root, context));
+    const spots = campaignWidgetNames(root, context);
+    const known = Object.keys(spots);
 
     for (const [name, value] of Object.entries(entries)) {
-        if (!known.some((one) => comparableText(one) === comparableText(name))) {
-            const names = known.length === 0 ? "the campaign's extensions have none" : `the campaign's are ${known.join(", ")}`;
+        const own = Object.entries(spots).find(([one]) => comparableText(one) === comparableText(name))?.[1];
+
+        if (own === undefined) {
+            const names = known.length === 0 ? "the campaign's packages have none" : `the campaign's are ${known.join(", ")}`;
             throw new Error(`There is no widget ${name}: ${names}. Write one as ${known[0] ?? "weather.today"}: side. Nothing changed.`);
+        }
+
+        // A widget made for each of the party shows only there, or nowhere, as its hook needs who (D-514); another may come there too (D-516).
+        const place = typeof value === "string" ? value : value !== null && typeof value === "object" && "place" in value ? value.place : undefined;
+
+        if (own.place === "person" && place !== "person" && place !== "off") {
+            throw new Error(`${name} stands on each of the party: write ${name}: off, or ${name}: person. Nothing changed.`);
+        }
+
+        if (own.place === "card") {
+            throw new Error(`${name} shows only in the card its package asks a roll in, so it has no place to choose: take ${name} out of widgets. Nothing changed.`);
         }
 
         if (!spotSchema.safeParse(value).success) {
@@ -232,13 +291,16 @@ export function checkWidgetSpots(root: string, context: Context, entries: Record
     }
 }
 
+// The places campaign.yaml may give a widget.
+const spotPlaces = [...widgetPlaces.filter((place) => place !== "card"), "off"] as const;
+
 // The most and least order of a card among those of its place.
 const orderWords = "is a whole number from -100 to 100";
 
 /** A widget's place in campaign.yaml as its place, page and order. */
 const spotObject = z.object({
-    place: z.enum([...widgetPlaces, "off"], { error: `is ${[...widgetPlaces, "off"].join(", ")}` }).optional(),
-    page: z.enum(widgetPages, { error: `is ${widgetPages.join(", ")}` }).optional(),
+    place: z.enum(spotPlaces, { error: `is ${spotPlaces.join(", ")}` }).optional(),
+    page: z.enum(cardPages, { error: `is ${cardPages.join(", ")}` }).optional(),
     order: z.int({ error: orderWords }).min(-100, { error: orderWords }).max(100, { error: orderWords }).optional(),
 }, { error: (issue) => (issue.code === "unrecognized_keys" ? `has no ${issue.keys.join(", ")}: only place, page and order` : undefined) }).strict().refine(
     (spot) => spot.place !== "page" || spot.page !== undefined,
@@ -274,8 +336,19 @@ function ownSpot(widget: DeclaredWidget): WidgetSpot
 /** Where the campaign puts a widget: a page's name is a card in that page; a place without its page keeps the extension's page, else the Scene. */
 function spotOf(given: z.infer<typeof spotSchema>, own: WidgetSpot): WidgetSpot
 {
+    // A widget made for each of the party is there or off, as its hook needs who; another may come there too, a small card on each (D-516).
+    const named = typeof given === "string" ? given : given.place;
+
+    if (own.place === "person") {
+        return named === "off" ? { place: "off", order: own.order } : own;
+    }
+
+    if (own.place === "card") {
+        return own;
+    }
+
     if (typeof given === "string") {
-        return (widgetPages as readonly string[]).includes(given) ? { place: "page", page: given as WidgetPage, order: own.order } : { place: given as WidgetSpot["place"], order: own.order };
+        return (cardPages as readonly string[]).includes(given) ? { place: "page", page: given as CardPage, order: own.order } : { place: given as WidgetSpot["place"], order: own.order };
     }
 
     const place = given.place ?? (given.page === undefined ? own.place : "page");
@@ -283,15 +356,15 @@ function spotOf(given: z.infer<typeof spotSchema>, own: WidgetSpot): WidgetSpot
     return { place, ...(page === undefined ? {} : { page }), order: given.order ?? own.order };
 }
 
-/** An extension's words in the campaign's language, none where it is written in it; or why they cannot be read, with their file. */
-function wordsOf(extension: Extension, language: string | undefined): { read?: ExtensionWords; problem?: string; }
+/** A package's words in the campaign's language, none where it is written in it; or why they cannot be read, with their file. */
+function wordsOf(extension: CodePackage, language: string | undefined): { read?: ExtensionWords; problem?: string; }
 {
     if (language === undefined || language.split("-")[0] === extension.language.split("-")[0]) {
         return {};
     }
 
     try {
-        const read = extensionWords(extension.folder, language);
+        const read = packageWords(extension, language);
         return read === undefined ? {} : { read };
     } catch (error) {
         return { problem: messageOf(error) };
@@ -330,6 +403,7 @@ const partSchema = z.union([
             stage: z.enum(["start", "center", "end"]).optional(),
             tone: toneSchema.optional(),
             figure: iconName.optional(),
+            field: z.string().min(1).max(60).optional(),
         }).strict(),
     }).strict(),
     z.object({ rows: z.array(z.object({ label: textSchema, value: valueSchema.optional(), note: textSchema.optional() }).strict()).max(24) }).strict(),
@@ -342,13 +416,15 @@ const widgetSchema = z.object({
     body: iconName.optional(),
     icon: iconName.optional(),
     chip: textSchema.optional(),
+    dead: z.boolean().optional(),
+    tint: z.enum(["low", "ally", "gold", "muted"], { error: "a card's tint is low, ally, gold or muted" }).optional(),
     says: textSchema.optional(),
     note: textSchema.optional(),
     parts: z.array(partSchema).max(12).optional(),
 }).strict();
 
-/** What a hook gave, checked, translated, its icons and pictures found; it throws what the dashboard cannot show, for whoever made the extension. */
-function shownContent(extension: Extension, words: ExtensionWords | undefined, given: unknown): ShownContent
+/** What a hook gave, checked, translated, its icons and pictures found; it throws what the dashboard cannot show, for whoever made the package. */
+function shownContent(extension: CodePackage, words: ExtensionWords | undefined, given: unknown): ShownContent
 {
     const parsed = widgetSchema.safeParse(given);
 
@@ -363,7 +439,7 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
 
     const icon = (name: string | undefined): string | undefined => {
         if (name !== undefined && extension.icons[name] === undefined) {
-            throw new Error(`it names the icon ${name}, which its extension.yaml does not have`);
+            throw new Error(`it names the icon ${name}, which its ${fileOf(extension)} does not have`);
         }
 
         return name === undefined ? undefined : extension.icons[name];
@@ -373,16 +449,16 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
 
     const valueIn = (value: WidgetValue): WidgetValue => typeof value === "number" ? value : typeof value === "string" ? wordIn(words, value) : value.unit === undefined ? value : { ...value, unit: wordIn(words, value.unit) };
 
-    // A figure it names is one its extension.yaml declares, for its page code to draw.
+    // A figure it names is one its package declares, for its page code to draw.
     const figure = (name: string | undefined): { figure?: string; } => {
         if (name !== undefined && extension.figures[name] === undefined) {
-            throw new Error(`it names the figure ${name}, which its extension.yaml does not declare in figures`);
+            throw new Error(`it names the figure ${name}, which its ${fileOf(extension)} does not declare in figures`);
         }
 
         return name === undefined ? {} : { figure: name };
     };
 
-    const { icon: ownIcon, chip, says, note, parts, data, body } = parsed.data;
+    const { icon: ownIcon, chip, dead, tint, says, note, parts, data, body } = parsed.data;
     const shownIcon = icon(ownIcon);
     const inside = body === undefined ? {} : { body: figure(body).figure };
     return {
@@ -390,6 +466,8 @@ function shownContent(extension: Extension, words: ExtensionWords | undefined, g
         ...inside,
         ...(shownIcon === undefined ? {} : { icon: shownIcon }),
         ...(chip === undefined ? {} : { chip: said(chip) }),
+        ...(dead === true ? { dead: true as const } : {}),
+        ...(tint === undefined ? {} : { tint }),
         ...(says === undefined ? {} : { says: said(says) }),
         ...(note === undefined ? {} : { note: said(note) }),
         ...(parts === undefined ? {} : {
@@ -457,13 +535,29 @@ function shownTrack<Shown extends Track>(track: Shown): Shown
 }
 
 /**
- * What one widget of an extension shows now, for the card of a question (D-507): read as the dashboard reads it, in the campaign's language; nothing when its
+ * What one widget of a package shows now, for the card of a question (D-507): read as the dashboard reads it, in the campaign's language; nothing when its
  * hook is not there, fails, gives what no part draws, or is late.
  */
-export async function widgetCard(root: string, context: Context, extension: Extension, name: string, key: string): Promise<ShownContent | undefined>
+export async function widgetCard(root: string, context: Context, extension: CodePackage, name: string, key: string, who?: string): Promise<ShownContent | undefined>
+{
+    return await widgetFor(root, context, extension, name, { key, ...(who === undefined ? {} : { who }) });
+}
+
+/**
+ * What one widget of a package shows for a card of its page code, for the character the card shows (D-514): the package by its npm name, the widget declared
+ * by it; nothing when either is not the campaign's, or as for a card of a question.
+ */
+export async function packageWidget(root: string, context: Context, packageName: string, name: string, who: string | undefined): Promise<ShownContent | undefined>
+{
+    const owner = campaignPackages(root, context).find((one) => one.package === packageName);
+    return owner === undefined || !owner.widgets.some((widget) => widget.name === name) ? undefined : await widgetFor(root, context, owner, name, who === undefined ? {} : { who });
+}
+
+/** What a widget shows for a card: for a question, by its key, the attempt; for a card of the page code, by who it shows. */
+async function widgetFor(root: string, context: Context, extension: CodePackage, name: string, asked: { key?: string; who?: string; }): Promise<ShownContent | undefined>
 {
     try {
-        const hook = (await extensionCode(extension))?.widgets?.[name];
+        const hook = (await packageCode(extension, context))?.widgets?.[name];
 
         if (hook === undefined) {
             return undefined;
@@ -473,23 +567,23 @@ export async function widgetCard(root: string, context: Context, extension: Exte
         const late = new Promise<"late">((done) => {
             timer = setTimeout(() => done("late"), hookTime).unref();
         });
-        // Its own call for its key, never one at work for the column or another card.
-        const answer = await Promise.race([hookCall(root, extension, `${name}#${key}`, () => hook(gameViewOf(root, context, extension), { key })), late]).finally(() => clearTimeout(timer));
+        // Its own call for its key or who, never one at work for the column or another card.
+        const answer = await Promise.race([hookCall(root, extension, `${name}#${asked.key ?? ""}#${asked.who ?? ""}`, () => hook(gameViewOf(root, context, extension), asked)), late]).finally(() => clearTimeout(timer));
         return answer === "late" || answer === undefined ? undefined : shownContent(extension, wordsOf(extension, readTextSetting(root, "language")).read, answer);
     } catch {
         return undefined;
     }
 }
 
-/** Where a widget's page code is, when its extension has some and its code runs (D-510): its module's address, its version, its figures. */
-function pageOf(extension: Extension): Pick<ShownWidget, "version" | "module" | "figures">
+/** Where a widget's page code is, when its package has some and its code runs (D-510): its module's address, its version, its figures. */
+function pageOf(extension: CodePackage): Pick<ShownWidget, "version" | "module" | "figures">
 {
     const module = extension.page === undefined || !runsCode(extension) ? {} : { module: pageAddress(extension.package, extension.version, extension.page) };
     return { version: extension.version, ...module, ...(Object.keys(extension.figures).length === 0 ? {} : { figures: extension.figures }) };
 }
 
-/** A picture of the extension's images/, as the dashboard serves it at an address of the extension's own; it throws when the extension has none by that name. */
-function pictureOf(extension: Extension, name: string): { extension: string; file: string; version: number; }
+/** A picture of the package's images/, as the dashboard serves it at an address of the package's own; it throws when the package has none by that name. */
+function pictureOf(extension: CodePackage, name: string): { extension: string; file: string; version: number; }
 {
     const file = findImage([extension.folder], name);
 
@@ -498,6 +592,12 @@ function pictureOf(extension: Extension, name: string): { extension: string; fil
     }
 
     return { extension: extension.name, file: basename(file), version: Math.trunc(files().modified(file) ?? 0) };
+}
+
+/** The file a package declares its widgets, icons and figures in. */
+function fileOf(extension: CodePackage): string
+{
+    return extension.kind === "system" ? "system.yaml" : "extension.yaml";
 }
 
 function messageOf(error: unknown): string

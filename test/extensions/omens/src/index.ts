@@ -1,9 +1,9 @@
 // A test extension's code: a command that reads an omen, rolled with the engine's dice and kept in its state, and an omen at each dawn time passes (D-436).
-import type { ExtensionEntry, Game, GameMoment } from "rpg-engine";
+import type { Game, GameMoment, PackageEntry } from "rpg-engine";
 
 const omens = ["a crow", "a broken wheel", "clear water", "a white stag", "smoke", "a falling star"];
 
-const omensAtDawn: ExtensionEntry = ({ z }) => ({
+const omensAtDawn: PackageEntry = ({ z }) => ({
     commands: [
         {
             name: "omens",
