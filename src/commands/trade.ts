@@ -25,6 +25,7 @@ import {
     stackName,
     type World,
 } from "../pages/index.ts";
+import { coinExamples } from "./game-examples.ts";
 import { campaignCoins } from "./game-money.ts";
 import { afterMoves, pagesPlan } from "./game-moves.ts";
 import { copyName, readOpenScene } from "./game-scene.ts";
@@ -60,13 +61,13 @@ export const trade = defineCommand({
     description: "Buy, sell or barter in one go: what page gives and what it gets, items and money both ways, with the change in coins. "
         + "with is the merchant, a character, or the shop, a place that holds its goods: what is taken comes from there. "
         + "Each entry is money in the campaign's coins, a kind with how many, or an item with a story of its own; never a character. "
-        + 'If one side lacks what it gives, nothing changes. Example: page Ettore, with Bottega di Ugo, gives "2 gp", gets ["Torch 5", "Hempen Rope"].',
+        + 'If one side lacks what it gives, nothing changes. Example: page Ettore, with Bottega di Ugo, gives "2 {{coin}}", gets ["Torch 5", "Hempen Rope"].',
     group: "game",
     positionals: ["page"],
     input: z.object({
         page: z.string().describe("who trades, usually the player character"),
         with: z.string().describe("the other side: a merchant, or a shop, a place that holds its goods"),
-        gives: textList.optional().describe('what page gives: money such as "2 gp", kinds with how many such as Torch 5, items such as Mazza di Matteo'),
+        gives: textList.optional().describe('what page gives: money such as "2 {{coin}}", kinds with how many such as Torch 5, items such as Mazza di Matteo'),
         gets: textList.optional().describe("what page gets, written the same way"),
         why: z.string().optional().describe("what the trade is, such as bought torches at the market"),
     }),
@@ -88,7 +89,7 @@ export const trade = defineCommand({
         const gets = handed(world, coins, seller, buyer, listOf(input.gets), "with");
 
         if (gives.money === undefined && gets.money === undefined && gives.stacks.length + gives.pages.length + gets.stacks.length + gets.pages.length === 0) {
-            throw new Error(`Give what ${buyer.name} gives, gives, and what it gets, gets, such as gives "2 gp", gets "Torch 5". Nothing changed.`);
+            throw new Error(`Give what ${buyer.name} gives, gives, and what it gets, gets, such as gives "2 ${coinExamples(coins).coin}", gets "Torch 5". Nothing changed.`);
         }
 
         if (gives.money !== undefined && gets.money !== undefined) {
@@ -166,7 +167,8 @@ function handed(world: World, coins: Coin[] | undefined, giver: Page, taker: Pag
 
         if (money !== undefined) {
             if (result.money !== undefined) {
-                throw new Error(`Give the money ${giver.name} hands over as one amount, such as "2 gp 5 sp". Nothing changed.`);
+                const { coin, smallCoin } = coinExamples(coins);
+                throw new Error(`Give the money ${giver.name} hands over as one amount, such as "2 ${coin} 5 ${smallCoin}". Nothing changed.`);
             }
 
             result.money = money;

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { type PlayerActs, PlayerActsContext } from "./act-names.tsx";
 import { type ActReply, ActSheet } from "./act-sheet.tsx";
 import { ActStrip } from "./act-strip.tsx";
-import { type ActStart, type SaidAct, saidStates, type SheetActions } from "./acts.ts";
+import { type ActStart, type SaidAct, saidStates, setSystemVerbs, type SheetActions } from "./acts.ts";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
 import { answer, closeCard, readActs, readAsked, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
 import { AskCard } from "./ask-card.tsx";
@@ -225,6 +225,7 @@ function App()
             const language = (overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined) ?? browserLanguage();
             await setLanguage(language);
             setSystemWords(overview.kind === "overview" ? overview.words : undefined);
+            setSystemVerbs(overview.kind === "overview" ? overview.verbs : undefined);
 
             if (number === reading.current) {
                 document.documentElement.lang = language ?? "en";

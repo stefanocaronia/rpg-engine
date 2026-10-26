@@ -690,7 +690,7 @@ function LibraryField({ state, onAdd }: { state: RowState; onAdd(path: string): 
                     readOnly={state.work !== undefined}
                     aria-invalid={state.said?.problem === true || empty}
                     aria-describedby="library-path-about"
-                    placeholder="D:\Books\5e"
+                    placeholder="D:\Books\RPG"
                     onInput={(event) => setPath(event.currentTarget.value)}
                 />
                 <button type="submit" class="button package-button" aria-disabled={state.busy}>

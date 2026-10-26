@@ -59,7 +59,19 @@ export interface SheetGroup
 }
 
 /** What the player does with an item of the sheet, said as their sentence to the master (D-495): the engine's verbs. */
-export type ActVerb = "attack" | "cast" | "use" | "equip" | "unequip" | "prepare";
+/** One of the engine's verbs, attack, use, equip and unequip, or one the system declares (D-514). */
+export type ActVerb = string;
+
+/** A verb the system declares, in its language: its name alone, what it does with a thing, the player's sentence, and on whom when the player chooses (D-514). */
+export interface SheetVerb
+{
+    label: string;
+    title: string;
+    says: string;
+    on?: string;
+    at?: string;
+    self?: string;
+}
 
 /**
  * A sentence the player said on the page: waiting for the master, who may not have heard it yet, rung once the doorbell called them for it; and whether this
@@ -429,6 +441,8 @@ export type View =
         language?: string;
         /** The game system's words in that language, when it has them (D-403). */
         words?: SystemWords;
+        /** The game system's own verbs of the sheet (D-514). */
+        verbs?: Record<string, SheetVerb>;
         /** The game system: its name, what it is, and what its source asks to say. */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;

@@ -6,6 +6,7 @@ import { commands } from "./commands/index.ts";
 import { systemConfirm } from "./confirm/index.ts";
 import { type Context, defaultContext, packagesFolder } from "./core/context.ts";
 import { downloadBytes } from "./core/download.ts";
+import { withExamples } from "./core/examples.ts";
 import { baseType, type Command, isBoolean, isList } from "./core/registry.ts";
 import { FileStore, withFiles } from "./core/store.ts";
 import { firstSentence } from "./core/text.ts";
@@ -199,7 +200,7 @@ async function campaignCommands(context: Context): Promise<AnyCommand[]>
 function generalHelp(own: AnyCommand[]): string
 {
     const width = Math.max(...[...commands, ...own].map((command) => command.name.length));
-    const line = (name: string, description: string): string => `  ${name.padEnd(width)} ${firstSentence(description)}`;
+    const line = (name: string, description: string): string => `  ${name.padEnd(width)} ${firstSentence(withExamples(description))}`;
     const groupLines = (group: string): string[] => commands.filter((command) => command.group === group && !command.needsPlayer).map((command) => line(command.name, command.description));
     return [
         `rpg-engine ${getVersion()}`,
@@ -221,9 +222,9 @@ function commandHelp(command: AnyCommand): string
     const positionals = command.positionals ?? [];
     const optionLines = inputFields(command).map(([name, field]) => {
         const flag = positionals.includes(name) ? `<${name}>${isList(field) ? "..." : ""}` : `--${name}${isBoolean(field) ? "" : " <value>"}${isList(field) ? "..." : ""}`;
-        return `  ${flag.padEnd(20)} ${field.description ?? ""}`;
+        return `  ${flag.padEnd(20)} ${withExamples(field.description ?? "")}`;
     });
-    return [usage(command), "", command.description, "", ...optionLines, `  ${"--json".padEnd(20)} print the result as JSON`].join("\n");
+    return [usage(command), "", withExamples(command.description), "", ...optionLines, `  ${"--json".padEnd(20)} print the result as JSON`].join("\n");
 }
 
 function usage(command: AnyCommand): string

@@ -13,14 +13,14 @@ export const init = defineCommand({
     description: "Create a new campaign. "
         + "It writes the settings, the log, the world's folders, and the .mcp.json, AGENTS.md and CLAUDE.md through which an AI host finds these tools. "
         + "Use it once, when the player starts a new campaign; then ask the player for the missing settings and set them with config. "
-        + 'Example: name "The Salt Isles", language en, system 5e.',
+        + 'Example: name "The Salt Isles", language en.',
     group: "campaign",
     positionals: ["folder"],
     input: z.object({
         folder: z.string().optional().describe("folder of the new campaign; the current folder if left out"),
         name: z.string().optional().describe("name of the campaign; the folder's name if left out"),
         language: z.string().optional().describe("language of the game, as a code such as it or en"),
-        system: z.string().optional().describe("game system: one of those installed, such as 5e"),
+        system: z.string().optional().describe("game system: one of those installed"),
         difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
         lethality: z.enum(lethalities).optional().describe(`what a fall means: ${lethalities.join(", ")}`),
     }),

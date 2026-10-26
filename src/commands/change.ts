@@ -41,6 +41,7 @@ import { damageLists, type DamageTaken, damageTaken } from "./game-damage.ts";
 import { spendableDice, spendDice } from "./game-dice-pool.ts";
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
+import { poolExample, restExample } from "./game-examples.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
 import { screenNote, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
 import { campaignCoins } from "./game-money.ts";
@@ -91,15 +92,15 @@ export const change = defineCommand({
     name: "change",
     description: "Change a counter, money or a stack of goods on a page: hit points, uses, a progress track, an event's clock, coins, torches. "
         + "A counter is a field written as a number (20, from 0 up) or as current/max (12/12, from 0 to the maximum); create it with write, then change it only with this command. "
-        + 'Money is a field in the campaign\'s coins, such as money: 34 gp 4 sp: spend "5 sp" pays and makes change, by "+20 gp" adds coins, to "10 gp" sets the purse. '
+        + 'Money is a field in the campaign\'s coins, such as money: 34 {{coin}} 4 {{smallCoin}}: spend "5 {{smallCoin}}" pays and makes change, by "+20 {{coin}}" adds coins, to "10 {{coin}}" sets the purse. '
         + "A stack of goods by its kind in place of the field, such as page Ettore, field Torch, spend 1. "
         + "recipe applies a rest of the game system once you have advanced its hours. "
-        + 'Example: page Bruna, field hp, by -7, why "bitten by the wolf"; or recipe "long rest".',
+        + 'Example: page Bruna, field {{counter}}, by -3, why "bitten by the wolf"; or recipe "{{rest}}".',
     group: "game",
     positionals: ["page", "field"],
     input: z.object({
         page: z.string().optional().describe("page that holds the counter or the money; with a recipe, left out for the player character and the companions with them"),
-        field: z.string().optional().describe("the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe"),
+        field: z.string().optional().describe("the counter or the money, such as {{counter}}, or the kind of a stack, such as Torch; none with a recipe"),
         by: z.union([wholeNumber, z.string()]).optional().describe(
             "how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here: by -(2d6+3) takes away 2d6+3, by -2d6 a die alone, as the game's rules have them rolled; taking away from the party, the master's roll, hidden or shown as master-rolls says",
         ),
@@ -111,7 +112,7 @@ export const change = defineCommand({
         damage: z.string().optional().describe(
             "the type of the damage, with by negative and as rolled, never halved or doubled by you, such as by -12, damage fire: the page's resistances, immunities and vulnerabilities change it; one call per type",
         ),
-        recipe: z.string().optional().describe("a recipe of the game system, such as long rest; with a page, field and spend, the dice it lets one spend, such as hit-dice-d8, spend 2, recipe short rest"),
+        recipe: z.string().optional().describe("a rest of the game system, by its name; with a page, field and spend, the pool of dice it lets one spend, such as field {{pool}}, spend 2"),
         values: faceValues.optional().describe("with spend and a recipe, the faces the player rolled with physical dice, one for each die, such as 6,1"),
     }),
 
@@ -125,11 +126,14 @@ export const change = defineCommand({
         }
 
         if (input.values !== undefined) {
-            throw new Error('Give values with the dice of a recipe: page, field, spend and recipe, such as page Bruna, field hit-dice-d8, spend 2, recipe "short rest", values 6,1. Nothing changed.');
+            const pool = poolExample(campaignSystem(root, context));
+            throw new Error(`Give values with the dice of a recipe: page, field, spend and recipe, such as page ${input.page ?? "Bruna"}, field ${pool.field}, spend 2, recipe "${pool.recipe}", values 6,1. Nothing changed.`);
         }
 
         if (input.page === undefined || input.field === undefined) {
-            throw new Error('Give the page and the field, such as page Bruna, field hp, by -7; or a recipe of the game system, such as recipe "long rest".');
+            const system = campaignSystem(root, context);
+            const counter = system?.damage?.counter ?? system?.combat?.track ?? "health";
+            throw new Error(`Give the page and the field, such as page ${input.page ?? "Bruna"}, field ${counter}, by -3; or a recipe of the game system, such as recipe "${restExample(system)}".`);
         }
 
         // Dice in by are rolled first and logged once the change is made (D-459): one call for a roll and its damage.
@@ -601,7 +605,9 @@ function recipeResult(
     }
 
     if (input.field !== undefined || input.by !== undefined || input.spend !== undefined || input.to !== undefined || input.values !== undefined) {
-        throw new Error('A recipe changes by itself the fields it names: give it with the page, or alone for the player character and the companions with them, such as recipe "long rest". Nothing changed.');
+        throw new Error(
+            `A recipe changes by itself the fields it names: give it with the page, or alone for the player character and the companions with them, such as recipe "${restExample(named)}". Nothing changed.`,
+        );
     }
 
     const { system, recipe } = recipeNamed(named, input.recipe);

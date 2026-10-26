@@ -310,13 +310,13 @@ describe("rolls from the sheet (DAT-8)", () => {
 
     it("refuses a name without who, with who that is no character, or a field the sheet does not hold as a whole number, logging nothing", async () => {
         const logged = readLogFile(folder).length;
-        expect(await refused("roll", "1d20+athletics")).toBe('"athletics" is no die: to take it from a sheet, give who rolls, such as who Bruna; or give the number, such as 1d20+5.');
+        expect(await refused("roll", "1d20+athletics")).toBe('"athletics" is no die: to take it from a sheet, give who rolls, such as who Bruna; or give the number, such as 1d20+2.');
         expect(await refused("roll", "1d20+athletics", "--who", "Bruno")).toBe(
             "There is no page named Bruno, nor a copy of that name in the open scene, to take athletics from: give who as the name of a character, or the number in the notation.",
         );
         const subtraction = await refused("roll", "1d20+athletics-1", "--who", "Ettore");
         expect(subtraction).toMatch(
-            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, long-jump 14 ft, high-jump 5 ft, push-drag 420 lb, hold-breath 3m, walking 25 ft, ac 18, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6, armor-class 16, armor-class-bonus \+2, attack \+4\. Give one of them, or the number, such as 1d20\+5\./,
+            /^Ettore has no athletics-1\. Its numbers: str-mod \+2, dex-mod -1, .*, passive-perception 13, passive-insight 15, passive-investigation 10, long-jump 14 ft, high-jump 5 ft, push-drag 420 lb, hold-breath 3m, walking 25 ft, ac 18, caster-level 3, cantrips-known 3, spell-save-dc 13, spell-attack \+5, max-prepared 6, armor-class 16, armor-class-bonus \+2, attack \+4\. Give one of them, or the number, such as 1d20\+2\./,
         );
         expect(subtraction).toContain("To subtract, put spaces around the minus, such as 1d20+athletics - 1.");
         expect(await refused("roll", "1d20+sleight of hand", "--who", "Ettore")).toContain("A name of several words is written with hyphens, such as sleight-of-hand.");

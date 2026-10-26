@@ -242,7 +242,12 @@ describe("recipes (DAT-4, DAT-5)", () => {
             expect(await refused("change", "Ennio", "--recipe", "night's sleep", parameter, value)).toContain("A recipe changes by itself the fields it names");
         }
 
-        expect(await refused("change", "Ennio", "grit", "--recipe", "night's sleep")).toContain("A recipe changes by itself the fields it names");
+        expect(await refused("change", "Ennio", "grit", "--recipe", "night's sleep")).toContain('alone for the player character and the companions with them, such as recipe "night\'s sleep".');
+        // The examples with the system's own counter, rest and pool of dice, never the 5e's (D-514).
+        expect(await refused("change", "Ennio")).toBe('Give the page and the field, such as page Ennio, field grit, by -3; or a recipe of the game system, such as recipe "night\'s sleep".');
+        expect(await refused("change", "Ennio", "grit", "--values", "4")).toBe(
+            'Give values with the dice of a recipe: page, field, spend and recipe, such as page Ennio, field stamina-d6, spend 2, recipe "breather", values 6,1. Nothing changed.',
+        );
         expect(await refused("change", "--recipe", "night's", "sleep")).toBe("Put the recipe's name in quotes, such as recipe \"night's sleep\". Nothing changed.");
         await ok("change", "Ennio", "grit", "--to", "0");
         expect(await ok("change", "Ennio", "--recipe", "breather")).toContain(

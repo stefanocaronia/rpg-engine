@@ -673,7 +673,7 @@ function exampleOf(name: string): string | undefined
     const examples: Record<string, string> = {
         lines: t("Add, e.g. spiders"),
         veils: t("Add, e.g. torture"),
-        learned: t("Add what you know, e.g. Advantage"),
+        learned: t("Add what you know, e.g. Initiative"),
         author: t("An author's name"),
         style: t("e.g. third person, past tense; more dialogue"),
     };

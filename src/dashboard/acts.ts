@@ -1,6 +1,6 @@
 // What the player does from the sheet, said as their own sentence to the master (D-493 (1), D-495): the name acts, the number rolls. The system says which
-// lists are actions and with which of the engine's verbs; the page writes the sentence, without articles, and never decides a rule.
-import type { ActsShown, ActVerb, SheetGroup, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
+// lists are actions and with which verbs, the engine's or its own with their words (D-514); the page writes the sentence, without articles, and never decides a rule.
+import type { ActsShown, ActVerb, SheetGroup, SheetVerb, ShownPerson, ShownPlace, ShownScene } from "./data.ts";
 import { strangerLabel } from "./labels.ts";
 import { t } from "./text.ts";
 
@@ -10,10 +10,19 @@ export type ActStart = { verbs: ActVerb[]; item: string; } | { talk: string; };
 /** On whom, or where: someone by the name the page shows, the character itself, no one in particular, or a square of the map. */
 export type ActTarget = { person: string; } | { square: string; } | "self" | "none";
 
-/** Whether a verb asks for someone to act on, lets the player choose one, or goes straight to the sentence (D-495). */
+// The system's own verbs, by name, as the overview gives them (D-514).
+let systemVerbs: Record<string, SheetVerb> = {};
+
+/** Sets the game system's own verbs; none, the engine's alone. */
+export function setSystemVerbs(verbs: Record<string, SheetVerb> | undefined): void
+{
+    systemVerbs = verbs ?? {};
+}
+
+/** Whether a verb asks for someone to act on, lets the player choose one, or goes straight to the sentence (D-495); a system's lets choose when it says on whom. */
 export function targetMode(verb: ActVerb): "asks" | "lets" | "none"
 {
-    return verb === "attack" ? "asks" : verb === "cast" || verb === "use" ? "lets" : "none";
+    return verb === "attack" ? "asks" : verb === "use" || ownVerb(verb)?.on !== undefined ? "lets" : "none";
 }
 
 /** The player's sentence as the page first writes it, which the player may change before it goes: a model of the page's language with the names as shown. */
@@ -21,6 +30,12 @@ export function actSentence(verb: ActVerb, item: string, target: ActTarget = "no
 {
     const on = typeof target === "object" && "person" in target ? target.person : undefined;
     const at = typeof target === "object" && "square" in target ? target.square : undefined;
+    const own = ownVerb(verb);
+
+    if (own !== undefined) {
+        const chosen = on !== undefined ? own.on : at !== undefined ? own.at : target === "self" ? own.self : undefined;
+        return t(chosen ?? own.says, { item, ...(on === undefined ? {} : { target: on }), ...(at === undefined ? {} : { square: at }) });
+    }
 
     switch (verb) {
         case "attack":
@@ -31,14 +46,6 @@ export function actSentence(verb: ActVerb, item: string, target: ActTarget = "no
                 : target === "self"
                 ? t("I attack myself with {item}.", { item })
                 : t("I attack with {item}.", { item });
-        case "cast":
-            return on !== undefined
-                ? t("I cast {item} on {target}.", { target: on, item })
-                : at !== undefined
-                ? t("I cast {item} at {square}.", { square: at, item })
-                : target === "self"
-                ? t("I cast {item} on myself.", { item })
-                : t("I cast {item}.", { item });
         case "use":
             return on !== undefined
                 ? t("I use {item} on {target}.", { target: on, item })
@@ -51,8 +58,8 @@ export function actSentence(verb: ActVerb, item: string, target: ActTarget = "no
             return t("I equip {item}.", { item });
         case "unequip":
             return t("I put away {item}.", { item });
-        case "prepare":
-            return t("I prepare {item}.", { item });
+        default:
+            return t("I use {item}.", { item });
     }
 }
 
@@ -71,38 +78,42 @@ export function spokenBy(sentence: string, who: string | undefined): string
 /** What a verb does with a thing, as a button's tooltip and the sheet's title say it: Attack with Mace. */
 export function actTitle(verb: ActVerb, item: string): string
 {
+    const own = ownVerb(verb);
+
+    if (own !== undefined) {
+        return t(own.title, { item });
+    }
+
     switch (verb) {
         case "attack":
             return t("Attack with {item}", { item });
-        case "cast":
-            return t("Cast {item}", { item });
-        case "use":
-            return t("Use {item}", { item });
         case "equip":
             return t("Equip {item}", { item });
         case "unequip":
             return t("Put away {item}", { item });
-        case "prepare":
-            return t("Prepare {item}", { item });
+        default:
+            return t("Use {item}", { item });
     }
 }
 
 /** A verb alone, for the choice among a thing's verbs. */
 export function verbLabel(verb: ActVerb): string
 {
+    const own = ownVerb(verb);
+
+    if (own !== undefined) {
+        return t(own.label);
+    }
+
     switch (verb) {
         case "attack":
             return t("Attack");
-        case "cast":
-            return t("Cast");
-        case "use":
-            return t("Use");
         case "equip":
             return t("Equip");
         case "unequip":
             return t("Put away");
-        case "prepare":
-            return t("Prepare");
+        default:
+            return t("Use");
     }
 }
 
@@ -197,4 +208,10 @@ export function saidStates(said: SaidAct[], shown: ActsShown | undefined, live: 
             : undefined;
         return state === undefined ? [] : [{ act, state }];
     });
+}
+
+/** A verb the system declares, by its name; undefined for one of the engine's. */
+function ownVerb(verb: ActVerb): SheetVerb | undefined
+{
+    return Object.hasOwn(systemVerbs, verb) ? systemVerbs[verb] : undefined;
 }

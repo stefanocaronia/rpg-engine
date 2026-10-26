@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -109,7 +109,7 @@ describe("what the turn's reminder names (playtests 05 and 05b)", () => {
 describe("the 5e's turns", () => {
     beforeEach(async () => {
         await ok("scene", "close", "--summary", "Fine.");
-        await ok("config", "system", "5e");
+        useSystem(folder, "5e");
         await ok("write", "Ettore", "--unset", "vocations", "--unset", "extra-strikes", "--set", "classes=[[Fighter]] 5", "--set", "hp-base=44");
         await ok("scene", "open", "--title", "Cripta", "--type", "combat", "--with", "Ettore", "--creatures", "Adult Green Dragon=1");
         await ok("scene", "order", "--order", "Ettore", "--order", "Adult Green Dragon 1");

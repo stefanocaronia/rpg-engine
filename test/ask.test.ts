@@ -131,12 +131,17 @@ describe("what ask refuses (ASK-1, ASK-2)", () => {
 
     it("refuses checks mixed with answers, repeated buttons, too many, an empty question, and rolls for anyone but the player's character", async () => {
         expect(await refused({ ...wall, options: ["Atletica 1d20+5", "Corri via"] })).toBe(
-            "Give every check its dice, such as Atletica 1d20+5; for a choice, give only the answers, such as Sì and No. A roll already has its button to change one's mind (Cambio idea): leave out an answer such as No.",
+            "Give every check its dice, such as Atletica 2d6+5; for a choice, give only the answers, such as Sì and No. A roll already has its button to change one's mind (Cambio idea): leave out an answer such as No.",
         );
         // A roll whose dice are not at the end would be one answer, and nothing would be rolled (ASK-2, D-266).
         expect(await refused({ ...wall, options: ["Danni 1d8 radianti"] })).toBe(
             '"Danni 1d8 radianti" alone is no choice: a roll ends with its dice, such as Danni radianti 1d8; a choice gives two answers or more.',
         );
+        // What the roll is against goes in the question, never after the dice (D-518).
+        expect(await refused({ ...wall, options: ["Atletica 1d20+2 (CD 13)"] })).toBe(
+            '"Atletica 1d20+2 (CD 13)" alone is no choice: a roll ends with its dice, such as Atletica 1d20+2, and (CD 13) goes in the question; a choice gives two answers or more.',
+        );
+        expect(await refused({ ...wall, options: ["Corri via"] })).toBe('"Corri via" alone is no choice: a roll ends with its dice, such as Danni 1d8; a choice gives two answers or more.');
         expect(await refused({ ...wall, options: ["Sì", "sì"] })).toBe("sì is given twice: each button needs its own words.");
         expect(await refused({ ...wall, options: ["a", "b", "c", "d", "e"] })).toBe("Give from 1 to 4 options; 5 were given.");
         expect(await refused({ ...wall, options: [" "] })).toBe("Give from 1 to 4 options; none was given.");

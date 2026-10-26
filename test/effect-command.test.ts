@@ -83,6 +83,21 @@ describe("effect add and end (EFF-1, EFF-4, EFF-5)", () => {
         expect((await rpg("effect", "add", "Ennio", "Volo", "--for", "2 rounds")).output).toBe("Rounds are counted in a scene with turns: set the order with scene order, or give a duration in time, such as 1m.");
     });
 
+    it("refuses a value for a field neither the page nor the system has on a character or a creature, saying the system's bonuses; a place takes any (EFF-4, D-518)", async () => {
+        const fields = "The fields an effect adds to in fake: guard-bonus, bonus-might-max, bonus-stride.";
+        expect((await rpg("effect", "add", "Ennio", "Protezione", "--set", "bonus-armor=2")).output).toBe(
+            `bonus-armor is no field of Ennio nor of the system fake, so the effect would change nothing. ${fields} A field of the story alone goes on the page first, with write. Nothing changed.`,
+        );
+        await ok("scene", "open", "--title", "Scontro", "--type", "combat", "--creatures", "Annegato=1");
+        expect((await rpg("effect", "add", "Annegato 1", "Protezione", "--set", "bonus-armor=2")).output).toContain("bonus-armor is no field of Annegato 1 nor of the system fake");
+        expect(page("characters/Ennio.md")).not.toContain("effects");
+        // The system's bonus and a field of the page itself are taken; a place keeps its own values (EFF-1).
+        expect(await ok("effect", "add", "Ennio", "Protezione", "--set", "guard-bonus=2")).toContain("guard-bonus none → +2");
+        await ok("write", "Ennio", "--set", "voto=1");
+        await ok("effect", "add", "Ennio", "Giuramento", "--set", "voto=2");
+        expect(await ok("effect", "add", "Ossario", "Nebbia", "--set", "visibility=low")).toBe("Ossario: Nebbia, until it is ended; visibility none → low.");
+    });
+
     it("refuses a duration in time before the game has a date", async () => {
         writeFileSync(join(folder, "state.yaml"), "date:\n");
         expect((await rpg("effect", "add", "Ennio", "Volo", "--for", "1h")).output).toBe(
@@ -144,7 +159,7 @@ describe("the layer of values (EFF-3, EFF-6, EFF-7, EFF-10)", () => {
     });
 
     it("refuses to change effects with write, on pages and copies", async () => {
-        const refused = 'effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Scudo della fede", for 10m, set bonus-ac=2; action end to take one away. Nothing changed.';
+        const refused = 'effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Protezione", for 10m, set bonus-armor=2; action end to take one away. Nothing changed.';
         expect((await rpg("write", "Ennio", "--set", "effects=[Prono]")).output).toBe(refused);
         await combat();
         expect((await rpg("write", "Annegato 1", "--add", "effects=Prono")).output).toBe(refused);
@@ -181,7 +196,7 @@ describe("validate (EFF-12)", () => {
             '- world/characters/Ennio.md: Scudo della fede on Ennio ended at day 1, 10:00, and is still there. Fix: let time pass with advance, which ends it, or effect end Ennio "Scudo della fede".',
             '- world/characters/Ennio.md: Volo on Ennio ends "domani", which is not a game date nor an occasion of the system fake (night\'s sleep, breather). Fix: effect end Ennio "Volo", then add it again with a duration.',
             '- world/characters/Ennio.md: Schivata on Ennio ends with the scene, but no scene is open. Fix: effect end Ennio "Schivata".',
-            '- world/characters/Lena.md: Lena: The effect prono is written twice: keep one. Fix: write each line of effects in quotes, such as - "Scudo della fede (ac: 15) until day 2, 14:20", and each effect once; or remove them all with write Lena, unset effects, and add again with effect add those that still hold.',
+            '- world/characters/Lena.md: Lena: The effect prono is written twice: keep one. Fix: write each line of effects in quotes, such as - "Protezione (armor: 2) until day 2, 14:20", and each effect once; or remove them all with write Lena, unset effects, and add again with effect add those that still hold.',
         ].join("\n"));
     });
 });

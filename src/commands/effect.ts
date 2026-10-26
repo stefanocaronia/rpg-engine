@@ -44,7 +44,7 @@ export const effect = defineCommand({
     description: "Put a condition or an effect on a character, a place or a copy in the open scene, or end one: frightened, prone, a spell, a form. "
         + "On a place, such as rain or magical darkness, it holds for all inside by its name, and its values are the place's own. "
         + "Beyond the values it gives, what it does in play is yours to rule. It ends by itself, and advance or scene says so; end takes it away sooner. "
-        + 'Example: action add, page Ennio, name "Scudo della fede", for 10m, by [[Lena]], set bonus-ac=2.',
+        + 'Example: action add, page Ennio, name "Protezione", for 10m, by [[Lena]], set {{bonus}}=2.',
     group: "game",
     positionals: ["action", "page", "name"],
     input: z.object({
@@ -52,13 +52,13 @@ export const effect = defineCommand({
         page: z.string().optional().describe("who has it: a page, or a copy in the open scene such as Annegato 2"),
         name: z.string().optional().describe("the effect's name, such as Benedizione; a condition of the game system by its name there, such as Frightened, or by the system's word for it in the campaign's language, such as Spaventato"),
         for: z.string().optional().describe(
-            "add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; scene, until it ends; or an occasion of the game system its recipe brings, such as long rest. "
+            "add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; scene, until it ends; or an occasion of the game system its recipe brings, such as {{rest}}. "
                 + "Left out, until it is ended: so for one that ends with something in the story, such as breathing clean air; end it then",
         ),
         until: z.string().optional().describe("add, in a scene with turns: whose next turn ends it when it starts, such as Ennio, instead of for"),
         by: z.string().optional().describe("add: who keeps it alive, if someone must (concentration), such as [[Lena]]; end: take away every effect they keep, on everyone"),
         set: fieldValues.optional().describe(
-            "add: the values it gives while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-ac=2. "
+            "add: the values it gives while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as {{bonus}}=2. "
                 + "What must outlive it, such as hit points it adds, change on the page instead",
         ),
         why: z.string().optional().describe("what caused it, or ended it"),
@@ -373,8 +373,27 @@ function readValues(world: World, page: Page, set: string[] | Record<string, unk
 
         const text = String(value).trim();
         checkValue(world, page, fields, field, text);
+        checkFieldKnown(world, page, fields, field);
         return [field, text];
     });
+}
+
+/**
+ * On a character or a creature of a system that declares bonuses, a value for a field neither the page nor the system has changes nothing: refused, with the
+ * fields an effect adds to (D-518). A place, and a game without bonuses, keep any value.
+ */
+function checkFieldKnown(world: World, page: Page, fields: Record<string, unknown>, field: string): void
+{
+    const system = world.system;
+    const bonuses = Object.keys(system?.fields ?? {}).filter((name) => declaredKind(world, name) === "bonus");
+    const known = declaredKind(world, field) !== undefined || valueNamed(fields, field) !== undefined || computedField(world, field, fields) !== undefined;
+
+    if (system !== undefined && bonuses.length > 0 && (page.type === "character" || page.type === "creature") && !known) {
+        throw new Error(
+            `${field} is no field of ${page.name} nor of the system ${system.name}, so the effect would change nothing. The fields an effect adds to in ${system.name}: ${bonuses.join(", ")}. `
+                + "A field of the story alone goes on the page first, with write. Nothing changed.",
+        );
+    }
 }
 
 /** A value reads as a page would hold it, and a field the page reads as a counter gets a counter: the value it reads, not a bonus. */

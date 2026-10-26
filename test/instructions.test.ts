@@ -53,6 +53,14 @@ describe("the parts of the instructions (D-121)", () => {
         expect(given).not.toContain("## Setup");
     });
 
+    it("give a fight the core's words for any game, then its system's: attacks and damage are the 5e's (D-514)", async () => {
+        await ok("init", "--name", "Rocca", "--system", "5e");
+        inPlay(folder);
+        const opened = await ok("scene", "open", "--title", "Agguato", "--type", "combat");
+        expect(opened).toContain(`${fightGuidance}\n\nArmor class too is said in words`);
+        expect(fightGuidance).not.toMatch(/armor|damage|d20/i);
+    });
+
     it("give the mentor's part for the way the player wants the game taught, with the system's and what was already explained; none when off (D-347)", async () => {
         await ok("init", "--name", "Rocca", "--system", "fake");
         inPlay(folder);

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { getVersion } from "../src/core/version.ts";
-import { inPlay, makeTempFolder, readLogFile, removeFolder, systemPageCount, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, systemPageCount, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -285,7 +285,7 @@ describe("the names of the system's pages, in a campaign in another language (D-
 
 describe("a campaign of another system: the test system based on Ironsworn", () => {
     it("brings in its foes and counts only what it declares a counter", async () => {
-        await ok("config", "system", "ironsworn");
+        useSystem(folder, "ironsworn");
         expect(await ok("show", "Marsh Stalker")).toContain("Marsh Stalker (creature of the system ironsworn, read-only)");
         expect(await ok("scene", "open", "--title", "Fens", "--type", "combat", "--creatures", "Marsh Stalker")).toContain("Marsh Stalker 1: progress 0/40.");
         expect(await ok("change", "Marsh Stalker 1", "progress", "--by=8")).toBe("Marsh Stalker 1: progress 0/40 → 8/40.");

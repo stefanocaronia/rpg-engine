@@ -11,7 +11,7 @@ import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.
 import { readEffect } from "../effects/index.ts";
 import { type Coin, readAmount } from "../money/index.ts";
 import { declaredKind, entryPage, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, playerCharacters, secretNames, systemPageNamed, textsIn, type World } from "../pages/index.ts";
-import type { ActVerb, GameSystem, SystemWords } from "../systems/index.ts";
+import type { ActVerb, GameSystem, SheetVerb, SystemWords } from "../systems/index.ts";
 import { type CalendarDay, formatGameDate } from "../time/index.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
@@ -111,6 +111,8 @@ export type ViewResult =
         language?: string;
         /** The game system's words in the campaign's language, when it has them (D-403). */
         words?: SystemWords;
+        /** The game system's own verbs of the sheet, beside the engine's, which its words translate (D-514). */
+        verbs?: Record<string, SheetVerb>;
         /** The game system the campaign plays, for the dashboard: its name, what it is, and what its source asks a work that uses it to say (D-284). */
         system?: { name: string; title: string; attribution?: string; };
         now?: string;
@@ -437,6 +439,7 @@ export const view = defineCommand({
             campaign: settings.name,
             ...(settings.language === undefined ? {} : { language: settings.language }),
             ...(words === undefined ? {} : { words }),
+            ...(system === undefined || Object.keys(system.sheetVerbs).length === 0 ? {} : { verbs: system.sheetVerbs }),
             ...(system === undefined ? {} : { system: { name: system.name, title: system.title, ...(system.attribution === undefined ? {} : { attribution: system.attribution }) } }),
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
             ...(today === undefined ? {} : { calendar: today }),

@@ -5,6 +5,7 @@ import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequ
 import { spawn } from "node:child_process";
 import { z } from "zod";
 import { findCampaign, hasCharacterAgent, refreshHostFiles } from "./campaign/index.ts";
+import { campaignExamples } from "./commands/game-examples.ts";
 import { outsideNews, whileClosedNews } from "./commands/game-outside.ts";
 import { packageCommands } from "./commands/game-package-code.ts";
 import { newChatText, wentBackTo } from "./commands/game-saves.ts";
@@ -13,6 +14,7 @@ import { commands } from "./commands/index.ts";
 import { systemConfirm } from "./confirm/index.ts";
 import { type Context, defaultContext, packagesFolder, type Player } from "./core/context.ts";
 import { downloadBytes } from "./core/download.ts";
+import { type Examples, neutralExamples, withExamples } from "./core/examples.ts";
 import type { Command } from "./core/registry.ts";
 import { SessionStore } from "./core/session-store.ts";
 import { FileStore, withFiles } from "./core/store.ts";
@@ -70,12 +72,23 @@ export function createMcpServer(context: Context = defaultContext(), environment
         }
     };
 
+    // The examples of the descriptions in the names of the campaign's system, read without the session's store before the host asks for the tools (D-518).
+    const examples = { shown: examplesFor(context, new FileStore(context.systemFolders)) };
+    const coreTools = new Map<AnyCommand, RegisteredTool>();
+
+    // After every call the descriptions follow the campaign's system, as after init or config system, and the extensions' tools follow campaign.yaml.
+    const afterCall = (): Promise<void> => {
+        refreshExamples(coreTools, examples, examplesFor(context, context.files ?? new FileStore(context.systemFolders)));
+        return extensions();
+    };
+
     // The tools of the campaign's extensions, kept in step after every call, as one that installs an extension or makes the campaign (D-63).
-    const extensions = extensionTools(server, context, (command) => (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside).finally(extensions));
+    const extensions = extensionTools(server, context, (command) => (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside, examples).finally(afterCall));
     firstExtensions.set(server, extensions());
 
     for (const command of commands) {
-        const tool = server.registerTool(command.name, toolConfig(command), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside).finally(extensions));
+        const tool = server.registerTool(command.name, toolConfig(command, examples.shown), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside, examples).finally(afterCall));
+        coreTools.set(command, tool);
 
         if (command.needsPlayer && context.player === undefined) {
             tool.disable();
@@ -219,7 +232,7 @@ function extensionTools(server: McpServer, context: Context, handler: (command: 
             }
 
             if (kept === undefined || kept.source !== source) {
-                registered.set(command.name, { tool: server.registerTool(command.name, toolConfig(command), handler(command)), source });
+                registered.set(command.name, { tool: server.registerTool(command.name, toolConfig(command, neutralExamples), handler(command)), source });
             } else if (!kept.tool.enabled) {
                 kept.tool.enable();
             }
@@ -240,11 +253,41 @@ function extensionTools(server: McpServer, context: Context, handler: (command: 
  * The host is shown each tool's parameters as they are, strict; the SDK lets any object through, so that runTool checks it and says how to call the tool:
  * a master who calls one without loading its schema reads its parameters in the answer, not zod's words before our handler.
  */
-function toolConfig(command: AnyCommand)
+function toolConfig(command: AnyCommand, examples: Examples)
 {
     const annotations = command.readOnly ? { readOnlyHint: true } : undefined;
     const meta = command.alwaysLoad ? { "anthropic/alwaysLoad": true } : undefined;
-    return { description: command.description, inputSchema: z.looseObject({}).meta(shownInput(command)), annotations, _meta: meta };
+    return { description: withExamples(command.description, examples), inputSchema: shownSchema(command, examples), annotations, _meta: meta };
+}
+
+/** The examples for the campaign of the server's folder, read through a store; neutral where it has none, or where it does not read. */
+function examplesFor(context: Context, store: FileStore): Examples
+{
+    try {
+        return withFiles(store, () => campaignExamples(findCampaign(context.folder), context));
+    } catch {
+        return neutralExamples;
+    }
+}
+
+/** Gives the core's tools the examples of a system other than the one shown, as after config system: the host hears that the list changed. */
+function refreshExamples(tools: Map<AnyCommand, RegisteredTool>, examples: { shown: Examples; }, now: Examples): void
+{
+    if (JSON.stringify(now) === JSON.stringify(examples.shown)) {
+        return;
+    }
+
+    examples.shown = now;
+
+    for (const [command, tool] of tools) {
+        tool.inputSchema = shownSchema(command, now);
+        tool.update({ description: withExamples(command.description, now) });
+    }
+}
+
+function shownSchema(command: AnyCommand, examples: Examples)
+{
+    return z.looseObject({}).meta(shownInput(command, examples));
 }
 
 // The JSON schema of each command's input, as the SDK would write it from the strict schema.
@@ -252,7 +295,7 @@ const shownInputs = new WeakMap<AnyCommand, ShownInput>();
 
 type ShownInput = z.core.JSONSchema.BaseSchema & { properties?: Record<string, { description?: string; }>; required?: string[]; };
 
-function shownInput(command: AnyCommand): ShownInput
+function shownInput(command: AnyCommand, examples: Examples): ShownInput
 {
     let shown = shownInputs.get(command);
 
@@ -261,11 +304,13 @@ function shownInput(command: AnyCommand): ShownInput
         shownInputs.set(command, shown);
     }
 
-    return shown;
+    const fields: Record<string, { description?: string; }> = shown.properties ?? {};
+    const properties = Object.entries(fields).map(([name, field]) => [name, field.description === undefined ? field : { ...field, description: withExamples(field.description, examples) }]);
+    return shown.properties === undefined ? shown : { ...shown, properties: Object.fromEntries(properties) as ShownInput["properties"] };
 }
 
 /** The command's input, checked as its schema says; what is wrong comes with every parameter the tool takes, for a call made without the schema. */
-function checkedInput(command: AnyCommand, input: unknown): unknown
+function checkedInput(command: AnyCommand, input: unknown, examples: Examples): unknown
 {
     const parsed = (command.input as z.ZodObject).strict().safeParse(input ?? {});
 
@@ -275,7 +320,7 @@ function checkedInput(command: AnyCommand, input: unknown): unknown
 
     const given = typeof input === "object" && input !== null ? input as Record<string, unknown> : {};
     const wrong = parsed.error.issues.map((issue) => inputIssue(command.name, issue, given));
-    const shown = shownInput(command);
+    const shown = shownInput(command, examples);
     const required = shown.required ?? [];
     const parameters = Object.entries(shown.properties ?? {}).map(([name, field]) => `- ${name}${required.includes(name) ? "" : " (optional)"}${field.description === undefined ? "" : `: ${field.description}`}`);
     const takes = parameters.length === 0 ? `${command.name} takes no parameters.` : `${command.name} takes:\n${parameters.join("\n")}`;
@@ -306,6 +351,7 @@ async function runTool(
     extra: ToolExtra,
     prepare: () => Promise<void>,
     outside: { take(): string[]; giveBack(lines: string[]): void; },
+    examples: { shown: Examples; },
 ): Promise<CallToolResult>
 {
     const keepAlive = command.needsPlayer || command.waitsForPlayer
@@ -342,7 +388,7 @@ async function runTool(
             return { content: [{ type: "text", text: [...(news?.lines ?? []), back.refused].join("\n\n") }], isError: true };
         }
 
-        const checked = checkedInput(command, input);
+        const checked = checkedInput(command, input, examples.shown);
         // What changed outside the chat comes before the command runs on it, its events fired (OUT-3).
         changedOutside = outside.take();
         // The call's own context, with its cancel, as the user stopping it (ASK-9).

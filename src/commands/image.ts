@@ -32,7 +32,7 @@ interface ImageResult
 export const image = defineCommand({
     name: "image",
     description: "Give a page its picture: a portrait for a character, an image for a creature, an item or a place, as the dashboard will show it in a round token. "
-        + "It copies the file into the campaign and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a goblin's icon. "
+        + "It copies the file into the campaign and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a wolf's icon. "
         + "Use it when the player gives you a picture, or after you made or downloaded one with your own tools. "
         + "For a place, a quest, a character or a creature of the campaign, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: "
         + "for the player character or a companion only when the player asks; for a creature once for each kind, whose copies show it. "

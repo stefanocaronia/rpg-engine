@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { readDuration } from "../src/time/index.ts";
-import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -106,7 +106,7 @@ describe("rpg route (TRV-4, TRV-5)", () => {
         await ok("config", "units", "imperial");
         expect(await ok("route", "Rocca")).toBe("Guadoscuro → Bivio → Rocca, 22.4 miles by Strada vecchia (7.5 miles) and Sentiero dei colli (14.9 miles).\nAt a steady pace (2.8 miles an hour): 8h of travel.");
         // The 5e's: its mile of 1.5 km goes with it (D-514, step 8).
-        await ok("config", "system", "5e");
+        useSystem(folder, "5e");
         expect(await ok("route", "Rocca")).toBe("Guadoscuro → Bivio → Rocca, 24 miles by Strada vecchia (8 miles) and Sentiero dei colli (16 miles).\nAt a normal pace (3 miles an hour): 8h of travel.");
     });
 
@@ -363,13 +363,13 @@ describe("the laws of travel (TRV-7–TRV-9)", () => {
 
 describe("a system without paces (TRV-1)", () => {
     it("TRV-1: travel asks for a speed", async () => {
-        await ok("config", "system", "ironsworn");
+        useSystem(folder, "ironsworn");
         expect(await refused("travel", "Rocca")).toContain("The game system gives no pace for travel: give pace as the distance of an hour in metric, such as 4.5 km or 4.5 km/h.");
         expect(await ok("route", "Rocca", "--pace", "4 km")).toBe("Guadoscuro → Bivio → Rocca, 36 km by Strada vecchia (12 km) and Sentiero dei colli (24 km).\nAt 4 km an hour: 9h of travel, 2 days at 8 h a day.");
     });
 
     it("TRV-6: a game that declares no vehicles has none, until the campaign declares them", async () => {
-        await ok("config", "system", "ironsworn");
+        useSystem(folder, "ironsworn");
         await ok("write", "Carro", "--type", "item", "--set", "category=cart");
         await ok("write", "Locanda", "--add", "contains=[[Carro]]");
         await ok("move", "Lena", "--to", "Carro");

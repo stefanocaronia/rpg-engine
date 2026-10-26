@@ -6,12 +6,16 @@ import { entryKind, entryPage, stacksOf } from "./stacks.ts";
 import { containerFieldOf } from "./standard-fields.ts";
 import { type Page, textsIn, validHoldersOf, type World } from "./world.ts";
 
-/** How a system weighs what one carries: the field of an item's weight, how many coins make one unit of weight, and the field of an item whose contents weigh nothing. */
+/**
+ * How a system weighs what one carries: the field of an item's weight, how many coins make one unit of weight, the field of an item whose contents weigh
+ * nothing, and the field of how many pieces one of a kind sold by the bundle holds, its weight the bundle's.
+ */
 export interface LoadRule
 {
     field: string;
     coins?: number;
     weightless?: string;
+    bundle?: string;
 }
 
 /** The weight a holder carries, coins included (LOAD-1). */
@@ -44,8 +48,7 @@ function carriedLoad(world: World, rule: LoadRule, holder: Page, seen = new Set<
         if (stack !== undefined) {
             const first = !counted.has(stack.kind);
             counted.add(stack.kind);
-            const bundle = Number(stack.kind.fields.bundle);
-            return first ? total + (weightOf(world, rule.field, stack.kind) * stack.count) / (Number.isSafeInteger(bundle) && bundle > 1 ? bundle : 1) : total;
+            return first ? total + (weightOf(world, rule.field, stack.kind) * stack.count) / bundleOf(rule.bundle, stack.kind) : total;
         }
 
         const read = readEntry(entry);
@@ -89,6 +92,13 @@ function coinsWeight(fields: Record<string, unknown>, perUnit: number | undefine
     // Thousands written with commas, as 1,000 gp.
     const coins = typeof money === "string" ? [...money.matchAll(/(\d{1,3}(?:,\d{3})+|\d+)\s*\p{L}+/gu)].reduce((total, match) => total + Number(match[1].replace(/,/g, "")), 0) : 0;
     return perUnit === undefined ? 0 : coins / perUnit;
+}
+
+/** How many pieces one of a kind holds, by the field the system declares for its bundle: 1 for a kind not sold by the bundle (STK-2). */
+export function bundleOf(field: string | undefined, kind: Page): number
+{
+    const pieces = field === undefined ? Number.NaN : Number(valueNamed(kind.fields, field));
+    return Number.isSafeInteger(pieces) && pieces > 1 ? pieces : 1;
 }
 
 /** Whether a field is true, as YAML reads it or as text written by hand. */

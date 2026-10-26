@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -60,7 +60,7 @@ async function speed(name: string): Promise<string>
 // The 5e's: its speeds, its armor, its loads and its feet go with it (D-514, step 8).
 describe("the 5e's speeds", () => {
     beforeEach(async () => {
-        await ok("config", "system", "5e");
+        useSystem(folder, "5e");
         await ok("config", "units", "imperial");
         await ok("write", "Ettore", "--unset", "stride", "--set", "creature=[[Human]]", "--set", "str=10");
         await ok("write", "Cotta di Ettore", "--type", "item", "--set", "item=[[Chain Mail]]");

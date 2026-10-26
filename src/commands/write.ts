@@ -577,7 +577,7 @@ function checkNoEffects(change: FieldChange, page: Page | undefined): void
     }
 
     if (changedFieldNames(change).some((name) => comparableText(name) === "effects")) {
-        throw new Error('effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Scudo della fede", for 10m, set bonus-ac=2; action end to take one away. Nothing changed.');
+        throw new Error('effects change only with the effect command: action add with a name, for how long and the values it gives, such as name "Protezione", for 10m, set bonus-armor=2; action end to take one away. Nothing changed.');
     }
 }
 

@@ -18,11 +18,27 @@ export const systemFileName = "system.yaml";
 
 /**
  * What the player does with an item of the sheet on the dashboard, said as their own sentence to the master (D-495): the engine's verbs, whose sentences
- * the page has in every language; a system says which fields take which. Talking to someone comes from the people, never from the sheet.
+ * the page has in every language; a system declares its own beside them in sheet-verbs (D-514), and says which fields take which. Talking to someone comes
+ * from the people, never from the sheet.
  */
-export const actVerbs = ["attack", "cast", "use", "equip", "unequip", "prepare"] as const;
+export const actVerbs = ["attack", "use", "equip", "unequip"] as const;
 
-export type ActVerb = (typeof actVerbs)[number];
+/** One of the engine's verbs, or one the system declares. */
+export type ActVerb = string;
+
+/**
+ * A verb a system declares (D-514), in its language, its words translating it: its name alone, what it does with a thing, the player's sentence, and the
+ * sentences on someone, at a square and on oneself when it lets the player choose one.
+ */
+export interface SheetVerb
+{
+    label: string;
+    title: string;
+    says: string;
+    on?: string;
+    at?: string;
+    self?: string;
+}
 
 // An entry of the sheet: a field, ? when it is written only when it applies, and a field shown beside it in parentheses.
 const sheetEntryPattern = /^([^\s()?]+)(\?)?(?: \(([^\s()?]+)\))?$/;
@@ -34,6 +50,13 @@ const rollNamePattern = /^\d*d(?:\d+|%)(?:[kd][hl]\d*)?$/i;
 const headlineFieldPattern = /\{([^{}]+)\}/g;
 // A group's icon on the dashboard: the d of an SVG path, its letters and numbers alone (D-284).
 const iconPattern = /^[Mm][MmLlHhVvCcSsQqTtAaZz\d.,\s+-]*$/;
+
+/** A sentence of a system's verb, with the {names} the page fills (D-514). */
+function phraseWith(names: string[])
+{
+    const shown = names.map((name) => `{${name}}`).join(" and ");
+    return z.string().min(1).refine((text) => names.every((name) => text.includes(`{${name}}`)), `write it with ${shown}, which the page fills`);
+}
 
 const recipeSchema = z.object({
     set: z.record(z.string(), z.union([z.literal("max"), z.number().int()])).optional(),
@@ -109,10 +132,11 @@ const systemSchema = z.object({
         limit: z.union([z.string().min(1), z.array(z.union([z.string().min(1), z.number()])).min(1)]),
         coins: z.number().int().positive().optional(),
         weightless: z.string().min(1).optional(),
+        bundle: z.string().min(1).optional(),
         stages: z.array(z.object({ name: z.string().min(1), when: z.string().min(1) }).strict()).optional(),
     }, {
         error:
-            "write it as the field of an item's weight, the formula of the limit, and how many coins weigh one unit, such as {field: weight, limit: str * 15, coins: 50}; weightless names the field of an item whose contents weigh nothing; "
+            "write it as the field of an item's weight, the formula of the limit, and how many coins weigh one unit, such as {field: weight, limit: str * 15, coins: 50}; weightless names the field of an item whose contents weigh nothing, bundle the field of how many pieces one of a kind sold by the bundle holds; "
             + "stages lists what a load makes a character, the heaviest last, each with when, the formula that says so above 0, such as [{name: Encumbered, when: ceil(load - 5 * str)}]",
     }).strict().optional(),
     travel: travelSchema.optional(),
@@ -124,9 +148,23 @@ const systemSchema = z.object({
     "sheet-cards": z.object({ rail: z.array(z.string().min(1)).optional(), order: z.array(z.string().min(1)).optional(), "at-hand": z.array(z.string().min(1)).optional() }, {
         error: "write it as the groups the dashboard puts in its rail, the order of the others, and the fields and groups at hand in a fight, such as {rail: [Abilities], order: [Skills, Combat], at-hand: [ac, hp, Attacks]}",
     }).strict().optional(),
-    "sheet-actions": z.record(z.string().min(1), z.array(z.enum(actVerbs)).min(1), {
-        error: `write it as the fields whose items the player acts with on the dashboard, each with its verbs among ${actVerbs.join(", ")}, such as {spells: [cast], inventory: [use, equip]}`,
+    "sheet-actions": z.record(z.string().min(1), z.array(z.string().min(1)).min(1), {
+        error: `write it as the fields whose items the player acts with on the dashboard, each with its verbs, among ${actVerbs.join(", ")} and those of sheet-verbs, such as {inventory: [use, equip]}`,
     }).optional(),
+    "sheet-verbs": z.record(
+        z.string().regex(/^[a-z][a-z-]*$/, "write a verb's name in lowercase, such as invoke"),
+        z.object({
+            label: z.string().min(1),
+            title: phraseWith(["item"]),
+            says: phraseWith(["item"]),
+            "says-on": phraseWith(["item", "target"]).optional(),
+            "says-at": phraseWith(["item", "square"]).optional(),
+            "says-self": phraseWith(["item"]).optional(),
+        }).strict().refine((verb) => [verb["says-on"], verb["says-at"], verb["says-self"]].every((said, _index, all) => (said === undefined) === (all[0] === undefined)), {
+            message: "give says-on, says-at and says-self together, for a verb that lets the player choose on whom, or none of them",
+        }),
+        { error: 'write it as the system\'s own verbs, each with its words, such as {invoke: {label: Invoke, title: "Invoke {item}", says: "I invoke {item}."}}' },
+    ).optional(),
     "sheet-headline": z.string().min(1).regex(/\{[^{}\s]+\}/, "write it as words with fields in braces, such as Level {level} {classes}").optional(),
     "sheet-icons": z.record(z.string().min(1), z.string().max(2000).regex(iconPattern, "write it as the d of an SVG path on a grid of 24, its letters and numbers alone, such as M4 12h16")).optional(),
     "token-icons": z.object({
@@ -462,7 +500,7 @@ export interface GameSystem
      * What a character carries weighs (D-432, LOAD-1): the field of an item's weight, the limit as a formula, how many coins make one unit of weight, and the
      * field of an item whose contents weigh nothing.
      */
-    load?: { field: string; limit: Formula; coins?: number; weightless?: string; stages?: { name: string; formula: Formula; }[]; };
+    load?: { field: string; limit: Formula; coins?: number; weightless?: string; bundle?: string; stages?: { name: string; formula: Formula; }[]; };
     /** The unit its computed lengths are in, as ft, which the sheet writes after them (SPD-1). */
     lengthUnit?: string;
     /** The lists whose pages give their bonus fields to who lists them, as attuned items and feats (D-449). */
@@ -492,6 +530,8 @@ export interface GameSystem
     sheetCards?: { rail: string[]; order: string[]; atHand: string[]; };
     /** The fields whose items the player acts with on the dashboard, each with its verbs, the first the one a click says (D-495). */
     sheetActions?: Record<string, ActVerb[]>;
+    /** Its own verbs beside the engine's, by name (D-514). */
+    sheetVerbs: Record<string, SheetVerb>;
     /** The names a list field accepts, by field, such as the skills of save-proficiencies (SYS-8). */
     values: Record<string, string[]>;
     /** The names a list field accepts on a page that keeps the sheet, the player character's and a companion's, as the languages (D-435). */
@@ -821,6 +861,22 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-actions: the sheet has no field ${actless}.`);
     }
 
+    // Each verb is the engine's or one the system declares, never both (D-514).
+    const ownVerbs = Object.keys(data["sheet-verbs"] ?? {});
+    const taken = ownVerbs.find((verb) => (actVerbs as readonly string[]).includes(verb));
+    const verbs = [...actVerbs, ...ownVerbs];
+    const unknownVerb = Object.entries(data["sheet-actions"] ?? {}).flatMap(([field, listed]) => listed.filter((verb) => !verbs.includes(verb)).map((verb) => `${field}: ${verb}`))[0];
+
+    if (taken !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-verbs: ${taken} is one of the engine's verbs, whose words the dashboard has; leave it out.`);
+    }
+
+    if (unknownVerb !== undefined) {
+        throw new Error(
+            `The game system ${name} cannot be read, because ${path} is not valid: sheet-actions.${unknownVerb} is no verb: give one of ${verbs.join(", ")}, or declare it in sheet-verbs.`,
+        );
+    }
+
     // Each field the headline names is a declared one (D-288).
     const unnamed = [...(data["sheet-headline"] ?? "").matchAll(headlineFieldPattern)].map((match) => match[1]).find((field) => kindOf(field) === undefined);
 
@@ -866,6 +922,7 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
                     : parseFormula(data.load.limit),
                 ...(data.load.coins === undefined ? {} : { coins: data.load.coins }),
                 ...(data.load.weightless === undefined ? {} : { weightless: data.load.weightless }),
+                ...(data.load.bundle === undefined ? {} : { bundle: data.load.bundle }),
                 ...(data.load.stages === undefined ? {} : { stages: data.load.stages.map((stage) => ({ name: stage.name, formula: parseFormula(stage.when) })) }),
             },
         }),
@@ -889,6 +946,7 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
         ...(data["sheet-headline"] === undefined ? {} : { sheetHeadline: data["sheet-headline"] }),
         ...(data["token-icons"] === undefined ? {} : { tokenIcons: data["token-icons"] }),
         ...(data["sheet-actions"] === undefined ? {} : { sheetActions: data["sheet-actions"] }),
+        sheetVerbs: Object.fromEntries(Object.entries(data["sheet-verbs"] ?? {}).map(([verb, words]) => [verb, sheetVerbOf(words)])),
         ...(data["sheet-cards"] === undefined ? {} : { sheetCards: { rail: data["sheet-cards"].rail ?? [], order: data["sheet-cards"].order ?? [], atHand: data["sheet-cards"]["at-hand"] ?? [] } }),
         values,
         sheetValues,
@@ -1170,6 +1228,13 @@ function withoutNames(map: Record<string, unknown>, names: string[]): Record<str
 function nameIn(map: Record<string, unknown>, name: string): string | undefined
 {
     return sameName(Object.keys(map), name);
+}
+
+/** A verb of the system as the dashboard reads it (D-514): with its sentences on someone, at a square and on oneself only when it lets the player choose. */
+function sheetVerbOf(words: { label: string; title: string; says: string; "says-on"?: string; "says-at"?: string; "says-self"?: string; }): SheetVerb
+{
+    const choosing = words["says-on"] === undefined ? {} : { on: words["says-on"], at: words["says-at"], self: words["says-self"] };
+    return { label: words.label, title: words.title, says: words.says, ...choosing };
 }
 
 /** How the system's map of a place counts, as the engine reads it (GRD-4): the square in metres. */

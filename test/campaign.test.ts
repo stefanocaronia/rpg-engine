@@ -324,6 +324,26 @@ describe("rpg config", () => {
         expect((await runCommandLine(["config", "language", "it"], context)).exitCode).toBe(0);
     });
 
+    it("keeps the system once the campaign has a player character, back in setup too, and changes it freely before (SYS-9, D-519)", async () => {
+        await runCommandLine(["config", "system", "fake"], context);
+        expect((await runCommandLine(["config", "system", "free"], context)).exitCode).toBe(0);
+        expect((await runCommandLine(["config", "system", "fake"], context)).exitCode).toBe(0);
+        expect((await runCommandLine(["write", "Ettore", "--type", "character", "--set", "role=pc"], context)).exitCode).toBe(0);
+        const refusal = "The system of Guadoscuro is fake, and the game has begun with Ettore: a campaign keeps its system. To play another, start a new campaign with init. Nothing changed.";
+
+        for (const value of ["free", "none"]) {
+            const refused = await runCommandLine(["config", "system", value], context);
+            expect(refused.exitCode).toBe(1);
+            expect(refused.output).toBe(refusal);
+        }
+
+        await runCommandLine(["mode", "setup"], context);
+        expect((await runCommandLine(["config", "system", "free"], context)).output).toBe(refusal);
+        // The same system, by any case, changes nothing and is no refusal.
+        expect((await runCommandLine(["config", "system", "Fake"], context)).exitCode).toBe(0);
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("system: fake\n");
+    });
+
     it("says to fix by hand a campaign.yaml that holds no settings", async () => {
         writeFileSync(join(folder, "campaign.yaml"), "solo del testo\n");
         expect((await runCommandLine(["config"], context)).output).toBe(`campaign.yaml must hold settings, such as "name: ..."; fix it by hand.`);

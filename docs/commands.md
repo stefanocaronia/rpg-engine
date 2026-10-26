@@ -13,7 +13,7 @@ Read-only: no. Positional parameters: `folder`.
 - `folder` (`string`, optional): folder of the new campaign; the current folder if left out
 - `name` (`string`, optional): name of the campaign; the folder's name if left out
 - `language` (`string`, optional): language of the game, as a code such as it or en
-- `system` (`string`, optional): game system: one of those installed, such as 5e
+- `system` (`string`, optional): game system: one of those installed
 - `difficulty` (`"story" | "easy" | "normal" | "hard" | "brutal"`, optional): how hard the world plays: story, easy, normal, hard, brutal
 - `lethality` (`"narrative" | "epic" | "dice"`, optional): what a fall means: narrative, epic, dice
 
@@ -138,7 +138,7 @@ Read-only: no. Positional parameters: `page`.
 
 - `page` (`string`, required): who trades, usually the player character
 - `with` (`string`, required): the other side: a merchant, or a shop, a place that holds its goods
-- `gives` (`string | string[]`, optional): what page gives: money such as "2 gp", kinds with how many such as Torch 5, items such as Mazza di Matteo
+- `gives` (`string | string[]`, optional): what page gives: money such as "2 gold", kinds with how many such as Torch 5, items such as Mazza di Matteo
 - `gets` (`string | string[]`, optional): what page gets, written the same way
 - `why` (`string`, optional): what the trade is, such as bought torches at the market
 
@@ -222,15 +222,15 @@ Roll dice and log the roll.
 
 Read-only: no. Positional parameters: `notation`.
 
-- `notation` (`string`, optional): dice to roll: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%; with who, a field of their sheet stands for its value, such as 1d20+athletics
+- `notation` (`string`, optional): dice to roll: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%; with who, a field of their sheet stands for its value, such as 2d6+wits
 - `why` (`string`, optional): what the roll is for
 - `check` (`string`, optional): what the roll is, as the player sees it in the dashboard's rolls, such as Bite or Stealth: never what only you know
 - `who` (`string`, optional): character the roll belongs to, or a copy in the open scene, the damage and heals they deal too, never who takes them; leave it out only for a roll that is no one's, such as an oracle
 - `values` (`number[]`, optional): faces rolled by the player with physical dice, separated by commas; on the command line write --values=-1,0,1 for negative faces
 - `hidden` (`boolean`, optional): only the master sees the result; its fingerprint goes to the player only if they ask for it; left out, the master-rolls setting decides for who outside the party
 - `reveal` (`string`, optional): id of a hidden roll whose proof to show, later
-- `keep` (`string`, optional): a field of who that keeps rolls for later, such as portent: the dice rolled go there, in place of what it held
-- `use` (`string`, optional): a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die
+- `keep` (`string`, optional): a field of who that keeps rolls for later, such as omens: the dice rolled go there, in place of what it held
+- `use` (`string`, optional): a kept roll to use instead of the die, as field=value, such as omens=3: the notation has one die
 - `from` (`string`, optional): who keeps the roll that use takes, when it is not who rolls
 - `double` (`boolean`, optional): roll twice the dice, never the numbers added, as a critical hit's damage: 1d8+3 rolls 2d8+3
 - `table` (`string`, optional): a random table to roll on, as Page#Section: the first table under that heading, its die in the first header cell (d8, 2d6, d100, d66) or as big as its highest row
@@ -243,10 +243,10 @@ Ask the player with buttons: every roll of the player's character, and every cho
 Read-only: no.
 
 - `question` (`string`, required): what is at stake either way, or the choice, in one line, in the player's language
-- `options` (`string | string[]`, optional): for a roll, the checks that fit with their dice, such as Atletica 1d20+athletics; for a choice, the answers, such as Sì and No; from 1 to 4
+- `options` (`string | string[]`, optional): for a roll, the checks that fit with their dice, such as Forza 2d6+strength; for a choice, the answers, such as Sì and No; from 1 to 4
 - `who` (`string`, optional): for a roll or a square, the player's character, such as Bruna; the only one there is, if left out
 - `square` (`boolean`, optional): true to ask where the player's character moves on its place's map
-- `recipe` (`string`, optional): the rest's recipe, such as short rest
+- `recipe` (`string`, optional): the rest's recipe that change named
 
 ### change
 
@@ -255,13 +255,13 @@ Change a counter, money or a stack of goods on a page: hit points, uses, a progr
 Read-only: no. Positional parameters: `page`, `field`.
 
 - `page` (`string`, optional): page that holds the counter or the money; with a recipe, left out for the player character and the companions with them
-- `field` (`string`, optional): the counter or the money, such as hp, or the kind of a stack, such as Torch; none with a recipe
+- `field` (`string`, optional): the counter or the money, such as health, or the kind of a stack, such as Torch; none with a recipe
 - `by` (`integer | string`, optional): how much to add, or to take away when negative, or coins; stops at a limit (damage, healing); on the command line write --by=-7. Dice are rolled here: by -(2d6+3) takes away 2d6+3, by -2d6 a die alone, as the game's rules have them rolled; taking away from the party, the master's roll, hidden or shown as master-rolls says
 - `spend` (`integer | string`, optional): how much is paid or used up, or coins; refused when there is not enough
 - `to` (`integer | string`, optional): the new value, even outside the limits: a number, max, current/max such as 15/15 (the maximum changes too), or coins; on the command line write --to=-3
 - `why` (`string`, optional): what the change is for
 - `damage` (`string`, optional): the type of the damage, with by negative and as rolled, never halved or doubled by you, such as by -12, damage fire: the page's resistances, immunities and vulnerabilities change it; one call per type
-- `recipe` (`string`, optional): a recipe of the game system, such as long rest; with a page, field and spend, the dice it lets one spend, such as hit-dice-d8, spend 2, recipe short rest
+- `recipe` (`string`, optional): a rest of the game system, by its name; with a page, field and spend, the pool of dice it lets one spend, such as field stamina-d6, spend 2
 - `values` (`number[]`, optional): with spend and a recipe, the faces the player rolled with physical dice, one for each die, such as 6,1
 
 ### effect
@@ -273,10 +273,10 @@ Read-only: no. Positional parameters: `action`, `page`, `name`.
 - `action` (`"add" | "end"`, required): add or end
 - `page` (`string`, optional): who has it: a page, or a copy in the open scene such as Annegato 2
 - `name` (`string`, optional): the effect's name, such as Benedizione; a condition of the game system by its name there, such as Frightened, or by the system's word for it in the campaign's language, such as Spaventato
-- `for` (`string`, optional): add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; scene, until it ends; or an occasion of the game system its recipe brings, such as long rest. Left out, until it is ended: so for one that ends with something in the story, such as breathing clean air; end it then
+- `for` (`string`, optional): add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; scene, until it ends; or an occasion of the game system its recipe brings, such as night's rest. Left out, until it is ended: so for one that ends with something in the story, such as breathing clean air; end it then
 - `until` (`string`, optional): add, in a scene with turns: whose next turn ends it when it starts, such as Ennio, instead of for
 - `by` (`string`, optional): add: who keeps it alive, if someone must (concentration), such as [[Lena]]; end: take away every effect they keep, on everyone
-- `set` (`string[] | object`, optional): add: the values it gives while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-ac=2. What must outlive it, such as hit points it adds, change on the page instead
+- `set` (`string[] | object`, optional): add: the values it gives while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-armor=2. What must outlive it, such as hit points it adds, change on the page instead
 - `why` (`string`, optional): what caused it, or ended it
 
 ### mood
@@ -346,8 +346,8 @@ Read-only: no. Positional parameters: `action`.
 - `with` (`string | string[]`, optional): open, add: the characters in the scene, the player character included, such as [[Lena]]; at open, the character and the companions with them if left out
 - `creatures` (`string | string[] | { [key]: integer }`, optional): open, add: creatures as numbered copies: Annegato=2 (Annegato alone is one), or through MCP an object such as {"Annegato": 2}
 - `who` (`string | string[]`, optional): leave: who leaves the scene; hostile, calm: who attacks the party, or stops; use: who uses it; characters or copies, such as Annegato 2
-- `uses` (`string`, optional): use: what of a turn, by the game's names, such as action, bonus action, reaction, attack
-- `by` (`string`, optional): use: what gives one more, or lets it in another's turn, such as "Action Surge"
+- `uses` (`string`, optional): use: what of a turn, by the game's names, such as action, move, reaction
+- `by` (`string`, optional): use: what gives one more, or lets it in another's turn, such as a feature
 - `order` (`string | string[]`, optional): order: who takes turns, in order; those left out (fallen, fled) take none
 - `now` (`string`, optional): open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see
 - `summary` (`string`, optional): close: what happened, in one or two sentences, as the player saw it

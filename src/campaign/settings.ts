@@ -159,7 +159,7 @@ function oneLine(most: number)
 export const settingsSchema = z.object({
     name: z.string().min(1).describe("name of the campaign"),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "use a language code such as it, en or pt-BR").optional().describe("language of the game, as a code such as it or en"),
-    system: z.string().min(1).optional().describe("game system of the campaign: one of those installed, such as 5e"),
+    system: z.string().min(1).optional().describe("game system of the campaign: one of those installed"),
     mentor: z.enum(mentorWays).optional().describe(
         "how much the master teaches the game, out of the story: off, hints or tutorial; asked as how well the player knows the game: never played (tutorial), a little (hints), well (off)",
     ),
@@ -210,12 +210,12 @@ export const settingsSchema = z.object({
     calendar: z.unknown().optional().describe("the months of the campaign's own calendar, in place of the real ones and an extension's: months: [{name: January, days: 31, season: winter}, ...]"),
     // What the campaign adds to its game system (CAM-1): checked by the systems module when it reads the system with them, so that a mistake there never hides the
     // other settings.
-    fields: z.unknown().optional().describe("fields the campaign adds to its game system, by name with their kind, such as portent: rolls"),
+    fields: z.unknown().optional().describe("fields the campaign adds to its game system, by name with their kind, such as omens: rolls"),
     tables: z.unknown().optional().describe("tables the campaign adds to its game system, by name, such as bulwark-dice-by-level: {3: 4, 7: 5, 15: 6}"),
     computed: z.unknown().optional().describe("formulas the campaign adds to its game system or puts in place of its own, as a house rule, by field"),
     counters: z.unknown().optional().describe("counters the campaign adds to its game system or changes: their limits and what comes back with a rest, by name"),
-    recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as short rest: {set: {bulwark-dice: max}}"),
-    "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as portent?"),
+    recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as rest: {set: {bulwark-dice: max}}"),
+    "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as omens?"),
     travel: z.unknown().optional().describe("what the campaign adds to how its game system travels, by key: paces, hours, terrain and kinds of road, such as kinds: {canal: {}}"),
     values: z.unknown().optional().describe("names the campaign adds to the closed lists of its game system, by field, such as languages: [Lingua dei Guadi]"),
     "condition-icons": z.unknown().optional().describe("the drawings of effects on the dashboard by their names, over the game system's: the d of an SVG path on a grid of 24, such as Benedizione: M12 3v18"),

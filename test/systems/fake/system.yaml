@@ -13,6 +13,8 @@ load:
   limit: 10 + 5 * might
   coins: 120
   weightless: hollow
+  # A kind sold by the sheaf: its heft is the sheaf's, and a count is in pieces.
+  bundle: sheaf
   stages:
     - {name: Laden, when: "ceil(best(load, 0) - 10 - 5 * best(might, 0))"}
 # Journeys on foot, by cart and by barge: three paces, eight hours a day, a long haul beyond them; a canal by barge, its current with it downstream.
@@ -60,7 +62,17 @@ sheet-cards:
 # What the player does with the items of these fields on the dashboard, said as their own sentence to the master (D-495).
 sheet-actions:
   knacks: [use]
+  rites: [invoke, use]
   inventory: [use, equip]
+# Its own verbs (D-514): a rite is invoked, on someone or not; a knack is only used.
+sheet-verbs:
+  invoke:
+    label: Invoke
+    title: "Invoke {item}"
+    says: "I invoke {item}."
+    says-on: "I invoke {item} upon {target}."
+    says-at: "I invoke {item} toward {square}."
+    says-self: "I invoke {item} upon myself."
 sheet-headline: "{calling}, rank {level}"
 # The icons of the groups, and the symbol on a token of the party by their first vocation: the d of an SVG path on a grid of 24.
 sheet-icons:
@@ -232,6 +244,7 @@ fields:
   extra-strikes: number
   binding: text
   hollow: text
+  sheaf: number
   bulk: text
   bound: list
   days-hungry: number

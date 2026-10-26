@@ -29,7 +29,7 @@ export function readEffect(line: string): { effect: Effect; } | { problem: strin
     const match = linePattern.exec(line.trim());
 
     if (match === null) {
-        return { problem: `"${line}" is not an effect: write its name, then its values in brackets and its end, such as Scudo della fede (ac: 15) until day 2, 14:20.` };
+        return { problem: `"${line}" is not an effect: write its name, then its values in brackets and its end, such as Protezione (armor: 2) until day 2, 14:20.` };
     }
 
     const [, written, valuesText, endText] = match;
@@ -60,7 +60,7 @@ export function readEffects(value: unknown): { effects: Effect[]; } | { problem:
     const lines = (Array.isArray(value) ? value : [value]).map(asLine);
 
     if (lines.some((line) => line === undefined)) {
-        return { problem: "effects must be a list of lines of text, such as Scudo della fede (ac: 15) until day 2, 14:20." };
+        return { problem: "effects must be a list of lines of text, such as Protezione (armor: 2) until day 2, 14:20." };
     }
 
     const effects: Effect[] = [];

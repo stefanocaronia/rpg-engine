@@ -206,7 +206,8 @@ describe("what holds around (ENV-2, ENV-3)", () => {
             "LIGHT is in the environment of Cripta: an effect on a place holds for all inside by its name and end, and its values are the place's own. Leave LIGHT out and let the name say it, such as Magical darkness.",
         );
         expect(await ok("effect", "add", "Ossario", "Oscurità magica", "--for", "10m")).toBe("Ossario: Oscurità magica until day 1, 18:10.");
-        expect(await ok("effect", "add", "Ennio", "Scudo", "--for", "10m", "--set", "light=dark")).toContain("Ennio: Scudo until day 1, 18:10");
+        // On a character, a value nothing of the page or the system reads changes nothing: refused, whatever the environment says (D-518).
+        expect(await refused("effect", "add", "Ennio", "Scudo", "--for", "10m", "--set", "light=dark")).toContain("light is no field of Ennio nor of the system");
         expect(await ok("status")).toContain("Around Ennio: light: dark (Cripta) · encounters: [[Palude#Incontri]] (Palude) · Oscurità magica until day 1, 18:10 (Ossario)");
     });
 

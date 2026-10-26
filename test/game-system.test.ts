@@ -188,12 +188,29 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
     it("reads the fields the player acts with on the dashboard, with the engine's verbs, and refuses another verb or a field the sheet lacks (D-495)", () => {
         system(near, "prova", `${declared}sheet:\n  Corpo: [forza, doti]\nsheet-actions: { doti: [use, equip] }\n`);
         expect(findSystem([near], "prova")?.sheetActions).toEqual({ doti: ["use", "equip"] });
-        system(near, "prova", `${declared}sheet:\n  Corpo: [forza, doti]\nsheet-actions: { doti: [throw] }\n`);
-        expect(() => findSystem([near], "prova")).toThrow(`sheet-actions.doti.0: Invalid option: expected one of "attack"|"cast"|"use"|"equip"|"unequip"|"prepare"`);
+        system(near, "prova", `${declared}sheet:\n  Corpo: [forza, doti]\nsheet-actions: { doti: [cast] }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-actions.doti: cast is no verb: give one of attack, use, equip, unequip, or declare it in sheet-verbs.");
         system(near, "prova", `${declared}sheet:\n  Corpo: [forza]\nsheet-actions: { doti: [use] }\n`);
         expect(() => findSystem([near], "prova")).toThrow("sheet-actions: the sheet has no field doti.");
         system(far, "altro", declared);
         expect(findSystem([far], "altro")?.sheetActions).toBeUndefined();
+        expect(findSystem([far], "altro")?.sheetVerbs).toEqual({});
+    });
+
+    it("reads the system's own verbs with their sentences, on whom only with all three, and refuses one of the engine's, one without its names or without the others (D-514)", () => {
+        const sheet = `${declared}sheet:\n  Corpo: [forza, doti]\n`;
+        const throwing = '{label: Lancia, title: "Lancia {item}", says: "Lancio {item}.", says-on: "Lancio {item} a {target}.", says-at: "Lancio {item} verso {square}.", says-self: "Lancio {item} su di me."}';
+        system(near, "prova", `${sheet}sheet-actions: { doti: [lanciare, use] }\nsheet-verbs: { lanciare: ${throwing}, legare: {label: Lega, title: "Lega {item}", says: "Lego {item}."} }\n`);
+        expect(findSystem([near], "prova")?.sheetVerbs).toEqual({
+            lanciare: { label: "Lancia", title: "Lancia {item}", says: "Lancio {item}.", on: "Lancio {item} a {target}.", at: "Lancio {item} verso {square}.", self: "Lancio {item} su di me." },
+            legare: { label: "Lega", title: "Lega {item}", says: "Lego {item}." },
+        });
+        system(near, "prova", `${sheet}sheet-verbs: { use: {label: Usa, title: "Usa {item}", says: "Uso {item}."} }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-verbs: use is one of the engine's verbs, whose words the dashboard has; leave it out.");
+        system(near, "prova", `${sheet}sheet-verbs: { legare: {label: Lega, title: "Lega", says: "Lego {item}."} }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-verbs.legare.title: write it with {item}, which the page fills");
+        system(near, "prova", `${sheet}sheet-verbs: { legare: {label: Lega, title: "Lega {item}", says: "Lego {item}.", says-on: "Lego {item} a {target}."} }\n`);
+        expect(() => findSystem([near], "prova")).toThrow("give says-on, says-at and says-self together");
     });
 
     it("reads the headline under a character's name, and refuses one that names a field it does not declare (D-288)", () => {

@@ -21,4 +21,10 @@ words:
   Down: A terra
   Steadied: Rinsaldato
   "{who} is Down, fading {marked} of {most}": "{who} è a terra, svanisce {marked} su {most}"
+  Invoke: Invoca
+  "Invoke {item}": "Invoca {item}"
+  "I invoke {item}.": "Invoco {item}."
+  "I invoke {item} upon {target}.": "Invoco {item} su {target}."
+  "I invoke {item} toward {square}.": "Invoco {item} verso {square}."
+  "I invoke {item} upon myself.": "Invoco {item} su di me."
 headline: "{calling}, grado {level}"

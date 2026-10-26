@@ -90,6 +90,10 @@ describe("the armor class (D-231)", () => {
         expect(await ok("effect", "add", "Ada", "Shield of Faith", "--set", "bonus-ac=2")).toContain("bonus-ac none → +2, ac 15 → 17");
         // What changes the armor class through a value the effect changes, as Dexterity, is said too.
         expect(await ok("effect", "add", "Ada", "Agility", "--set", "dex=18")).toBe("Ada: Agility, until it is ended; dex 14 → 18, dex-mod +2 → +4, ac 17 → 19.");
+        // A field the 5e lacks would leave the armor class as it is, and a death save written as an effect is no counter: refused, with its bonuses (D-518).
+        const unknown = await refused("effect", "add", "Ada", "Protezione", "--set", "bonus-armor=2");
+        expect(unknown).toMatch(/^bonus-armor is no field of Ada nor of the system 5e, so the effect would change nothing\. The fields an effect adds to in 5e: .*bonus-ac, /);
+        expect(await refused("effect", "add", "Ada", "Morente", "--set", "death-save-failures=2")).toContain("death-save-failures is no field of Ada nor of the system 5e");
     });
 
     it("takes the first class's Unarmored Defense, as p. 57 wants, and says so when a second class gives one", async () => {

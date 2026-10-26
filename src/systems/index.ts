@@ -18,6 +18,7 @@ export {
     rollName,
     type SheetEntry,
     type SheetGroup,
+    type SheetVerb,
     type SystemCheck,
     systemFileName,
     type SystemLayer,

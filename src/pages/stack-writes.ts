@@ -1,5 +1,6 @@
 // What write may do to the stacks of a container's list (STK-10): count only kinds, one stack of each, whose counts change only with change.
 import { comparableText } from "../core/text.ts";
+import { bundleOf } from "./load.ts";
 import { countedText, countOf, readEntry } from "./stack-entry.ts";
 import { canCount, entryKind, entryPage, goodsNamed, isKind, notKindReason, stacksOf } from "./stacks.ts";
 import { containerFieldOf } from "./standard-fields.ts";
@@ -118,9 +119,9 @@ export function missingKindMessage(world: World, holder: Page, field: string, re
     const named = goodsNamed(world, read.page);
 
     if (named !== undefined) {
-        const bundle = Number(named.fields.bundle);
-        const pieces = Number.isSafeInteger(bundle) && bundle > 1 ? read.count * bundle : read.count;
-        const unit = Number.isSafeInteger(bundle) && bundle > 1 ? `counted in pieces, ${bundle} for each bought` : "counted in the units the system sells it in";
+        const bundle = bundleOf(world.system?.load?.bundle, named);
+        const pieces = read.count * bundle;
+        const unit = bundle > 1 ? `counted in pieces, ${bundle} for each bought` : "counted in the units the system sells it in";
         return `There is no page named ${read.page}, but it is a name of ${named.name}, ${unit}: write ${holder.name}, add ${field}="[[${named.name}]] ${pieces}".`;
     }
 

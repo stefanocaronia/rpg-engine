@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { countedText, readEntry, withStackCount } from "../src/pages/index.ts";
-import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -377,7 +377,7 @@ describe("a campaign with Ironsworn, whose goods are its own kinds", () => {
 // The 5e's: its bundles of pieces, its arrows and its words in Italian go with it (D-514, step 8).
 describe("the 5e's goods", () => {
     beforeEach(async () => {
-        await ok("config", "system", "5e");
+        useSystem(folder, "5e");
     });
 
     it("counts a name of a kind sold in bundles in pieces, takes a word of the campaign's language as a label, and names the system's goods with a word", async () => {

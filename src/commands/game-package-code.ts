@@ -721,7 +721,7 @@ function askedQuestion(question: string, check: string, notation: string): strin
 {
     if (question.trim() === "" || check.trim() === "" || !isCheckDice(notation)) {
         const dice = isCheckDice(notation) ? "" : `: ${notation} are no dice`;
-        throw new Error(`Give ask the question, what is at stake either way, the check's name, such as Stealth, and its dice, such as 1d20+5${dice}. Nothing was asked.`);
+        throw new Error(`Give ask the question, what is at stake either way, the check's name, such as Stealth, and its dice, such as 2d6+1${dice}. Nothing was asked.`);
     }
 
     return question.trim();

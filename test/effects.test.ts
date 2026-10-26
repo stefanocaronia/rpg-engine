@@ -31,7 +31,7 @@ describe("effects as lines (EFF-1, EFF-2)", () => {
     });
 
     it("says why a field of effects does not read", () => {
-        expect(readEffects([42])).toEqual({ problem: "effects must be a list of lines of text, such as Scudo della fede (ac: 15) until day 2, 14:20." });
+        expect(readEffects([42])).toEqual({ problem: "effects must be a list of lines of text, such as Protezione (armor: 2) until day 2, 14:20." });
         expect(readEffects(["Spaventato", "spaventato until round 2, Lena"])).toEqual({ problem: "The effect spaventato is written twice: keep one." });
         expect(readEffect("Spaventato until round 0, Lena")).toEqual({ problem: '"round 0, Lena" is not an end: rounds start from 1.' });
         expect(readEffects(undefined)).toEqual({ effects: [] });
@@ -39,7 +39,7 @@ describe("effects as lines (EFF-1, EFF-2)", () => {
         expect(readEffects(["", "Prono"])).toEqual({ effects: [{ name: "Prono", values: [] }] });
         // A line written in Obsidian without quotes, which YAML reads as a map of one key, is the line it was.
         expect(readEffects([{ "Maledetta (wis": "6) until day 9, 06:00" }])).toEqual({ effects: [{ name: "Maledetta", values: [["wis", "6"]], end: { date: "day 9, 06:00" } }] });
-        expect(readEffects([{ a: 1, b: 2 }])).toEqual({ problem: "effects must be a list of lines of text, such as Scudo della fede (ac: 15) until day 2, 14:20." });
+        expect(readEffects([{ a: 1, b: 2 }])).toEqual({ problem: "effects must be a list of lines of text, such as Protezione (armor: 2) until day 2, 14:20." });
         expect(readEffect("Scudo (until day 1, 20:00)")).toEqual({ problem: '"Scudo (until day 1, 20:00)" has "until" in its name: write the end after the name and the values, such as Scudo until day 2, 14:20.' });
     });
 
@@ -161,10 +161,10 @@ describe("the edges of the lines (EFF-1, EFF-2)", () => {
         expect(readEffect("  Scudo  (ac: 15)  until  day 2, 14:20 ")).toEqual({ effect: { name: "Scudo", values: [["ac", "15"]], end: { date: "day 2, 14:20" } } });
         expect(readEffect("Prono until round 3,   [[ Annegato 1 ]]")).toEqual({ effect: { name: "Prono", values: [], end: { round: 3, turn: "Annegato 1" } } });
         expect(readEffect("Ira until SCENE END")).toEqual({ effect: { name: "Ira", values: [], end: { scene: true } } });
-        expect(readEffect("")).toEqual({ problem: '"" is not an effect: write its name, then its values in brackets and its end, such as Scudo della fede (ac: 15) until day 2, 14:20.' });
+        expect(readEffect("")).toEqual({ problem: '"" is not an effect: write its name, then its values in brackets and its end, such as Protezione (armor: 2) until day 2, 14:20.' });
         expect(readEffects("  ")).toEqual({ effects: [] });
         expect(readEffects(["  ", "Prono"])).toEqual({ effects: [{ name: "Prono", values: [] }] });
-        expect(readEffects(["Prono", 42])).toEqual({ problem: "effects must be a list of lines of text, such as Scudo della fede (ac: 15) until day 2, 14:20." });
+        expect(readEffects(["Prono", 42])).toEqual({ problem: "effects must be a list of lines of text, such as Protezione (armor: 2) until day 2, 14:20." });
     });
 
     it("reads rounds only as a whole duration", () => {

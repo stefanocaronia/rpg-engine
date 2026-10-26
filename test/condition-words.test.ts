@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { allStateChecks } from "../src/commands/game-checks.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -114,7 +114,7 @@ describe("a condition written in the campaign's language", () => {
 
 describe("the 5e in Italian", () => {
     beforeEach(async () => {
-        await ok("config", "system", "5e");
+        useSystem(folder, "5e");
     });
 
     it("worsens the rolls of the sheet and the passives for Avvelenato, and stops the walk for Afferrato (D-445, FOR-2)", async () => {

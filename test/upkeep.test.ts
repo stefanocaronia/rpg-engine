@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { change } from "../src/commands/change.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -227,7 +227,7 @@ describe("what burns", () => {
 // The 5e's: its exhaustion goes with it (D-514, step 8).
 describe("the 5e's exhaustion", () => {
     it("halves the hit point maximum from level 4 (p. 358)", async () => {
-        await ok("config", "system", "5e");
+        useSystem(folder, "5e");
         await ok("write", "Ettore", "--unset", "might", "--set", "con=14", "--set", "classes=[[Fighter]] 1", "--set", "hp-base=10", "--set", "hp=12/12");
         await ok("change", "Ettore", "exhaustion", "--to", "4");
         expect(await ok("show", "Ettore")).toContain("hp 6/6");

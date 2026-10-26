@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { makeTempFolder, readLogFile, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -263,7 +263,7 @@ describe("a system whose formulas do not read (FOR-9)", () => {
 
 describe("Ironsworn: a counter with a minimum and a maximum that debilities lower (FOR-6)", () => {
     it("goes down to -6 and up to 10 less the debilities", async () => {
-        await ok("config", "system", "ironsworn");
+        useSystem(folder, "ironsworn");
         await ok("write", "Kara", "--type", "character", "--set", "role=pc", "--set", "momentum=2/10", "--set", "debilities=[wounded, shaken]");
         expect(pageText("Kara")).toContain("momentum: 2/8");
         expect(await ok("change", "Kara", "momentum", "--by=-10")).toBe("Kara: momentum 2/8 → -6/8: at min, 2 beyond.");
@@ -273,7 +273,7 @@ describe("Ironsworn: a counter with a minimum and a maximum that debilities lowe
     });
 
     it("works out a foe's progress in boxes and the ticks its rank marks", async () => {
-        await ok("config", "system", "ironsworn");
+        useSystem(folder, "ironsworn");
         expect(await workedLines("Marsh Stalker")).toEqual(["progress-score 0: progress 0", "progress-step 8: ranks dangerous: 8"]);
     });
 });
@@ -281,7 +281,7 @@ describe("Ironsworn: a counter with a minimum and a maximum that debilities lowe
 // The 5e's: the sheet of a cleric, counted as the SRD counts it, goes with it (D-514, step 8).
 describe("the 5e's sheet", () => {
     beforeEach(async () => {
-        await ok("config", "system", "5e");
+        useSystem(folder, "5e");
         rmSync(join(folder, "world", "characters", "Ettore.md"));
         await ok(...ettore());
         // His chain mail and shield, which he wears: his armor class, 18 (D-231).

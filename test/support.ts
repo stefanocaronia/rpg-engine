@@ -75,14 +75,13 @@ export function readLogFile(folder: string): LogEntry[]
 
 /** What scene open says about telling a fight: the core's part combat (D-139, D-121, D-238). */
 export const fightGuidance = "Tell the turns in order, as story, each roll the player sees in brackets where it falls, the order of turns too once the threat is in sight; "
-    + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. The foes' numbers are yours: the player hears how hurt they look "
-    + "and how hard they are to hit, never as a number, in brackets or in a question either, unless the table agreed otherwise. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
+    + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. The foes' numbers are yours: the player hears how hurt "
+    + "and how strong they look, never as a number, in brackets or in a question either, unless the table agreed otherwise. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
     + "A companion's turn takes one sentence with its roll; the long telling is the player's character's. When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.\n\n"
     + "Whoever attacks the party turns hostile the moment they do, never before: mark them with `scene hostile`, and with `scene calm` the one who surrenders, "
     + "flees or parleys. Mark it, never announce it: the story shows it.\n\n"
-    + "In a turn of a foe or a companion, send its calls together: its attacks in one message; in the next, the damage of those that hit, with `change` and its dice, "
-    + "such as by -(2d6+3), then `scene next` and the attacks of whoever acts next. Never roll a later turn before the one before it is settled: who falls or flees changes "
-    + "what comes after.";
+    + "In a turn of a foe or a companion, send its calls together: its rolls in one message; in the next, what they change, with `change`, then `scene next` and the rolls "
+    + "of whoever acts next. Never roll a later turn before the one before it is settled: who falls or flees changes what comes after.";
 
 /** What a turn of the player's character says after its name (D-139). */
 export const playerTurn = ", the player's character";
@@ -115,3 +114,14 @@ export function inPlay(folder: string): void
 
 /** The last line of the instructions, before the master's first words of an evening. */
 export const openingLine = "Now read where the game stands, writing nothing: your first words to the player are the opening itself.";
+
+/**
+ * Puts a campaign in another game system by hand, as the tests of one system do on a campaign made with another: config refuses it once there is a player
+ * character (D-519).
+ */
+export function useSystem(folder: string, system: string): void
+{
+    const settings = join(folder, "campaign.yaml");
+    const written = readFileSync(settings, "utf8");
+    writeFileSync(settings, /^system:.*$/m.test(written) ? written.replace(/^system:.*$/m, `system: ${system}`) : `${written}system: ${system}\n`);
+}

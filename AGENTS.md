@@ -81,6 +81,7 @@ Clean, compact, ordered code that is easy to understand.
 - Relative imports use the `.ts` extension; the build rewrites them to `.js`.
 - Comments in English, one or two lines at most: the code should explain itself. A one-line `/** */` on exported functions and types when the name is not enough.
 - Error messages say what went wrong and how to fix it: an AI reads them.
+- An example in a command's description or in a message of the core must hold for a game without a d20 too: in a description, a `{{placeholder}}` of `core/examples.ts`, which the MCP server fills with the names of the campaign's system; in a message, the system's names or a generic one; a game's own example goes in its system's instructions.
 - Use our core utilities before writing new helpers.
 - Test every module through its public API, with randomness and time injected.
 

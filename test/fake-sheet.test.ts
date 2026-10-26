@@ -179,12 +179,16 @@ describe("rolls from the sheet (DAT-8)", () => {
 
     it("refuses a name without who, with who that is no character, or a field the sheet does not hold as a whole number, logging nothing", async () => {
         const logged = readLogFile(folder).length;
-        expect(await refused("roll", "2d6+notice")).toContain('"notice" is no die: to take it from a sheet, give who rolls, such as who Bruna');
+        // The examples with the system's own dice and the master's own field, never a d20 (D-514).
+        expect(await refused("roll", "2d6+notice")).toBe('"notice" is no die: to take it from a sheet, give who rolls, such as who Bruna; or give the number, such as 2d6+2.');
         expect(await refused("roll", "2d6+notice", "--who", "Bruno")).toBe(
             "There is no page named Bruno, nor a copy of that name in the open scene, to take notice from: give who as the name of a character, or the number in the notation.",
         );
-        expect(await refused("roll", "2d6+notice-1", "--who", "Ettore")).toMatch(/^Ettore has no notice-1\. Its numbers: might-bonus \+1, grace-bonus \+0, wit-bonus \+0, level 3, guard 8, notice 5/);
-        expect(await refused("roll", "2d6+might", "--who", "Ettore")).toContain("might 5 is a score: the system fake works out might-bonus +1 from it, which is what a roll adds");
+        const subtraction = await refused("roll", "2d6+notice-1", "--who", "Ettore");
+        expect(subtraction).toMatch(/^Ettore has no notice-1\. Its numbers: might-bonus \+1, grace-bonus \+0, wit-bonus \+0, level 3, guard 8, notice 5/);
+        expect(subtraction).toContain("Give one of them, or the number, such as 2d6+2. To subtract, put spaces around the minus, such as 2d6+notice - 1.");
+        expect(await refused("roll", "2d6+might", "--who", "Ettore")).toBe("might 5 is a score: the system fake works out might-bonus +1 from it, which is what a roll adds, such as 2d6+might-bonus. Nothing rolled.");
+        expect(await refused("roll")).toContain("Give the dice to roll, for example 2d6+2;");
         expect(await refused("roll", "2d6+umore", "--who", "Ettore")).toBe('umore on Ettore is "sereno", not a whole number: give the number in the notation.');
         expect(readLogFile(folder)).toHaveLength(logged);
     });

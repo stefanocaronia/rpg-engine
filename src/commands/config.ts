@@ -49,7 +49,7 @@ import { getVersion } from "../core/version.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 import { hostInstructions } from "../instructions/index.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
-import { declaredKind } from "../pages/index.ts";
+import { declaredKind, playerCharacters } from "../pages/index.ts";
 import { claudeSays, codexSays } from "../pictures/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName, type SystemSetting } from "../systems/index.ts";
 import { readCalendar, readCalendarStart } from "../time/index.ts";
@@ -64,14 +64,14 @@ import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
 
 // A use whose maximum reads what gives it, in quotes for its commas (CAM-1).
-const counterExample = 'bulwark-dice: {max: "4 * has(features, Bulwark)", refill: short rest}';
+const counterExample = 'bulwark-dice: {max: "4 * has(features, Bulwark)", refill: rest}';
 
 export const config = defineCommand({
     name: "config",
     description: "Show or change the campaign settings. "
         + "Without a setting it shows them all and which are missing; with a setting and a value it changes that one. "
         + "Use it at the start of a campaign, to learn what to ask the player, and whenever the player changes a setting. "
-        + "system: one of the installed game systems, listed while it is missing. difficulty, how hard the world plays: story, easy, normal, hard, brutal. "
+        + "system: one of the installed game systems, listed while it is missing; fixed once there is a player character. difficulty, how hard the world plays: story, easy, normal, hard, brutal. "
         + "lethality, what a fall means: narrative (the character never dies), epic (only when it matters), dice (the dice decide). "
         + "saves, when the game may go back: permadeath (never, only to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies), free (to any save, and saves when the player asks). "
         + "rigor, how closely travel, fatigue, food and the like follow the rules: smooth (you gloss over them), rules (as written), simulation (beyond them). "
@@ -94,7 +94,7 @@ export const config = defineCommand({
         + "text, or PDFs whose text can be selected, read best: a scan is read from its pictures, on Windows only, slowly. "
         + 'coins, for a game with money whose system does not give them: each coin with its value in the smallest coin, other names after a slash, "rare" for a coin never given as change; totals count in the first. '
         + "widgets: where the dashboard shows the extensions' widgets, which the player arranges in its Settings, such as value 'weather.today: side' (top, side, scene, sheet, world, journal or off); remove gives one back its extension's place. "
-        + "The game system may add settings, such as advancement for 5e: config lists them with what each value means. "
+        + "The game system may add settings of its own: config lists them with what each value means. "
         + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, "
         + "each replacing the system's one of that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the player character's line. "
         + "A formula with commas goes in quotes; a use's max reads what gives it, so that only who has it has it. "
@@ -201,6 +201,10 @@ function configure(input: ConfigInput, context: Context): ConfigResult
 
         const unwritten = writeEffortFiles(root, context.platform, true);
         return { settings: { effort: shownValue(root, context, readSettings(root), "effort") }, note: "", replaced: ["Taken away for Claude Code and Codex: from the next chat each keeps its own.", ...unwritten], part: "" };
+    }
+
+    if (input.setting?.trim() === "system" && input.value !== undefined) {
+        checkSystemOpen(root, context, input.value);
     }
 
     const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
@@ -757,6 +761,30 @@ function settingValue(root: string, setting: string, value: string, context: Con
     }
 
     return setting === "coins" ? newCoins(root, value, context) : setting === "system" ? installedSystemName(value, context, "config") : value;
+}
+
+/**
+ * The system stays once the campaign has a player character, whose sheet is written in it, whatever the mode (D-519): another installed one, or none, is
+ * refused, with a new campaign as the way; the same one, by any case, is no change.
+ */
+function checkSystemOpen(root: string, context: Context, value: string): void
+{
+    const current = readTextSetting(root, "system");
+    // A name that is no installed system is said as such first; none takes the system away.
+    const asked = value.trim().toLowerCase() === "none" ? value : installedSystemName(value, context, "config");
+
+    if (current === undefined || comparableText(current) === comparableText(asked)) {
+        return;
+    }
+
+    const players = playerCharacters(campaignWorld(root, context));
+
+    if (players.length > 0) {
+        const name = readSettings(root).name;
+        throw new Error(
+            `The system of ${name} is ${current}, and the game has begun with ${players.map((page) => page.name).join(", ")}: a campaign keeps its system. To play another, start a new campaign with init. Nothing changed.`,
+        );
+    }
 }
 
 /** When the story starts, day 1 or a day of the campaign's calendar (TIM-8), checked and written as given. */

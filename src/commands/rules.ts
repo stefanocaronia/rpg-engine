@@ -38,7 +38,7 @@ export const rules = defineCommand({
     name: "rules",
     description: "Find the exact text of a rule: the campaign's house rules first, then the game system's rules, then the table's precedents. "
         + "Use it whenever you are unsure how a rule works, before you rule and say what is at stake, and when the player questions a ruling. "
-        + "Give the book's words, such as grappled, opportunity attack or long rest; a heading, or headings joined by ›, reads that section. "
+        + "Give the book's words, such as grappled, cover or falling; a heading, or headings joined by ›, reads that section. "
         + "It searches the player's own books too, after the system, each excerpt with its book and page: Book › p. 194 reads that page.",
     group: "game",
     readOnly: true,

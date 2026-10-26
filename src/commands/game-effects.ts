@@ -235,7 +235,7 @@ export function effectProblems(world: World, scene: Scene | undefined, now: Game
 
         if ("problem" in read) {
             const fix =
-                `write each line of effects in quotes, such as - "Scudo della fede (ac: 15) until day 2, 14:20", and each effect once; or remove them all with write ${page.name}, unset effects, and add again with effect add those that still hold`;
+                `write each line of effects in quotes, such as - "Protezione (armor: 2) until day 2, 14:20", and each effect once; or remove them all with write ${page.name}, unset effects, and add again with effect add those that still hold`;
             return [{ path, message: `${page.name}: ${read.problem}`, fix }];
         }
 

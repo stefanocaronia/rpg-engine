@@ -40,16 +40,16 @@ export const roll = defineCommand({
         + "Give why and, if it belongs to someone, who; for a roll the player sees, check names it for them, while why stays yours. "
         + "When the player rolls physical dice, pass their faces as values. Make it hidden when the player must not see the result; "
         + "left out, a roll for a foe or anyone outside the party is hidden or shown as the master-rolls setting says. "
-        + "keep stores the dice rolled for later, such as the two d20 of a diviner's Portent, rolled by the player for the player character, by you for a companion; "
+        + "keep stores the dice rolled for later, as a power of foresight does, rolled by the player for the player character, by you for a companion; "
         + "use takes one of those instead of the die and logs which roll it replaced. "
         + "Instead of a notation, table rolls on a random table of a page and gives its row, for you to tell; oracle answers a yes/no question with its odds. "
-        + 'Example: notation 1d20+perception, why "notice the trap", who Lena; table "Colli di Vallerana#Incontri", why "a night on the hills"; oracle likely, why "is the ferryman awake?".',
+        + 'Example: notation {{roll}}, why "notice the trap", who Lena; table "Colli di Vallerana#Incontri", why "a night on the hills"; oracle likely, why "is the ferryman awake?".',
     group: "game",
     positionals: ["notation"],
     input: z.object({
         notation: z.string().optional().describe(
             "dice to roll: 1d20+5, 2d20kh1 (keep the highest), 4d6dl1 (drop the lowest), 2d6ro<=2 (reroll once), 1d6! (exploding), 6d10>=8 (count successes), 4dF, d%; "
-                + "with who, a field of their sheet stands for its value, such as 1d20+athletics",
+                + "with who, a field of their sheet stands for its value, such as {{roll}}",
         ),
         why: z.string().optional().describe("what the roll is for"),
         check: z.string().optional().describe("what the roll is, as the player sees it in the dashboard's rolls, such as Bite or Stealth: never what only you know"),
@@ -59,8 +59,8 @@ export const roll = defineCommand({
             "only the master sees the result; its fingerprint goes to the player only if they ask for it; left out, the master-rolls setting decides for who outside the party",
         ),
         reveal: z.string().optional().describe("id of a hidden roll whose proof to show, later"),
-        keep: z.string().optional().describe("a field of who that keeps rolls for later, such as portent: the dice rolled go there, in place of what it held"),
-        use: z.string().optional().describe("a kept roll to use instead of the die, as field=value, such as portent=3: the notation has one die"),
+        keep: z.string().optional().describe("a field of who that keeps rolls for later, such as omens: the dice rolled go there, in place of what it held"),
+        use: z.string().optional().describe("a kept roll to use instead of the die, as field=value, such as omens=3: the notation has one die"),
         from: z.string().optional().describe("who keeps the roll that use takes, when it is not who rolls"),
         double: z.boolean().optional().describe("roll twice the dice, never the numbers added, as a critical hit's damage: 1d8+3 rolls 2d8+3"),
         table: z.string().optional().describe(
@@ -86,7 +86,7 @@ export const roll = defineCommand({
         }
 
         if (input.notation === undefined && input.table === undefined && input.oracle === undefined) {
-            throw new Error("Give the dice to roll, for example 1d20+5; or table, for a random table, or oracle, for a yes/no question.");
+            throw new Error(`Give the dice to roll, for example ${sheetDiceOf(campaignSystem(root, context))}+2; or table, for a random table, or oracle, for a yes/no question.`);
         }
 
         if (input.values && input.hidden) {
@@ -252,7 +252,7 @@ function keptRoll(root: string, context: Context, holder: string | undefined, us
     const match = /^\s*([^=]+?)\s*=\s*([+-]?\d+)\s*$/.exec(use);
 
     if (match === null) {
-        throw new Error(`Give use as the field and the kept number, such as portent=3, not "${use}". Nothing rolled.`);
+        throw new Error(`Give use as the field and the kept number, such as ${keptExample(campaignWorld(root, context))}=3, not "${use}". Nothing rolled.`);
     }
 
     if (holder === undefined) {
@@ -314,8 +314,27 @@ function notRollsText(world: World, field: string, value: unknown): string
 /** ", such as omen": a field the system or the campaign declares as kept rolls; how to declare one when none is. */
 function rollsExample(world: World): string
 {
-    const declared = Object.keys(world.system?.fields ?? {}).find((name) => declaredKind(world, name) === "rolls");
+    const declared = declaredRolls(world);
     return declared === undefined ? ', which config declares, such as setting fields, value "luck: rolls"' : `, such as ${declared}`;
+}
+
+/** A field of kept rolls for an example: one the system or the campaign declares, else a neutral name (D-514). */
+function keptExample(world: World): string
+{
+    return declaredRolls(world) ?? "omens";
+}
+
+function declaredRolls(world: World): string | undefined
+{
+    return Object.keys(world.system?.fields ?? {}).find((name) => declaredKind(world, name) === "rolls");
+}
+
+/** The dice a game system rolls a number of its sheet with, for an example: that field's, else its first; 2d6 without them (D-280, D-514). */
+export function sheetDiceOf(system: GameSystem | undefined, field?: string): string
+{
+    const dice = Object.entries(system?.sheetDice ?? {});
+    const own = field === undefined ? undefined : dice.find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
+    return own ?? dice[0]?.[1] ?? "2d6";
 }
 
 /** " Elara keeps 3, 4 in portent: give from Elara.": the characters whose field holds the number use asked for, when the page asked does not (KEP-3). */
@@ -342,7 +361,7 @@ function rollWith(notation: string, used: { value: number; } | undefined, source
         // A kept number is not a face rolled now: there is nothing to roll again.
         const why = (error instanceof DiceError ? error.message : String(error)).replace(/: ask the player to roll it again\.$/, "");
         // The example with the notation's own die, as 1d6+2 for 2d6+2.
-        const die = /d(\d+|%|F)/i.exec(notation)?.[1] ?? "20";
+        const die = /d(\d+|%|F)/i.exec(notation)?.[1] ?? "6";
         throw new Error(`A kept roll takes the place of one die, of the kind it was rolled with: give a notation with that one die, such as 1d${die}+2 (${why}). Nothing rolled.`);
     }
 }
@@ -411,7 +430,7 @@ export function withSheetValues(notation: string, roller: { world: World; page: 
         // "sleight of hand": a name of several words, which a notation cannot hold.
         const words = /^\s+[A-Za-z]/.test(notation.slice(offset + whole.length));
         checkNotScore(roller, system, fields, name);
-        const value = sheetValue(roller, fields, name, who, words);
+        const value = sheetValue(roller, fields, name, who, words, system);
         taken[name] = value;
         const negative = (sign === "-") !== (value < 0);
         return `${negative ? "-" : sign === "" ? "" : "+"}${Math.abs(value)}`;
@@ -431,19 +450,19 @@ function checkNotScore(roller: { world: World; page: Page; } | undefined, system
 
     if (roller !== undefined && entry?.beside !== undefined && modifier !== undefined) {
         const worked = `${entry.beside} ${signedText(roller.world, entry.beside, modifier)}`;
-        throw new Error(`${name} ${String(read(name))} is a score: the system ${system?.name ?? ""} works out ${worked} from it, which is what a roll adds, such as 1d20+${entry.beside}. Nothing rolled.`);
+        throw new Error(`${name} ${String(read(name))} is a score: the system ${system?.name ?? ""} works out ${worked} from it, which is what a roll adds, such as ${sheetDiceOf(system, entry.beside)}+${entry.beside}. Nothing rolled.`);
     }
 }
 
 /** The whole number a field holds on the sheet of who rolls; refused, with the numbers it has, when there is no sheet or it holds none. */
-function sheetValue(roller: { world: World; page: Page; } | undefined, fields: Record<string, unknown> | undefined, name: string, who: string | undefined, words: boolean): number
+function sheetValue(roller: { world: World; page: Page; } | undefined, fields: Record<string, unknown> | undefined, name: string, who: string | undefined, words: boolean, system: GameSystem | undefined): number
 {
     const page = roller?.page;
 
     if (roller === undefined || fields === undefined || page === undefined) {
         throw new Error(
             who === undefined
-                ? `"${name}" is no die: to take it from a sheet, give who rolls, such as who Bruna; or give the number, such as 1d20+5.`
+                ? `"${name}" is no die: to take it from a sheet, give who rolls, such as who Bruna; or give the number, such as ${sheetDiceOf(system)}+2.`
                 : `There is no page named ${who}, nor a copy of that name in the open scene, to take ${name} from: give who as the name of a character, or the number in the notation.`,
         );
     }
@@ -455,9 +474,11 @@ function sheetValue(roller: { world: World; page: Page; } | undefined, fields: R
         // Only numbers: a class's martial-arts 1d6 or its features are no bonus (PRO-2).
         const numbers = workedFields(roller.world, fields).filter((worked) => numberOf(worked.value) !== undefined).map((worked) => `${worked.field} ${signedText(roller.world, worked.field, worked.value)}`);
         const has = numbers.length === 0 ? "" : ` Its numbers: ${numbers.join(", ")}.`;
-        const subtraction = /-\d+$/.test(name) ? " To subtract, put spaces around the minus, such as 1d20+athletics - 1." : "";
+        // The master's own field in the example, as athletics - 1 for athletics-1.
+        const subtracted = /^(.+)-(\d+)$/.exec(name);
+        const subtraction = subtracted === null ? "" : ` To subtract, put spaces around the minus, such as ${sheetDiceOf(system, subtracted[1])}+${subtracted[1]} - ${subtracted[2]}.`;
         const hyphens = words ? " A name of several words is written with hyphens, such as sleight-of-hand." : "";
-        throw new Error(`${page.name} has no ${name}.${has} Give one of them, or the number, such as 1d20+5.${subtraction}${hyphens}${missingSystemHint(roller.world)}`);
+        throw new Error(`${page.name} has no ${name}.${has} Give one of them, or the number, such as ${sheetDiceOf(system)}+2.${subtraction}${hyphens}${missingSystemHint(roller.world)}`);
     }
 
     // One value for each item of a list, as the attacks of two weapons (PRO-5): the roll takes the number of the one used.
@@ -465,7 +486,7 @@ function sheetValue(roller: { world: World; page: Page; } | undefined, fields: R
     const first = typeof value === "string" ? /[+-]\d+/.exec(value)?.[0] : undefined;
 
     if (number === undefined && list !== undefined && first !== undefined) {
-        throw new Error(`${name} on ${page.name} is ${JSON.stringify(value)}, one for each item in its ${list}: give the number of the one used, such as 1d20${first}.`);
+        throw new Error(`${name} on ${page.name} is ${JSON.stringify(value)}, one for each item in its ${list}: give the number of the one used, such as ${sheetDiceOf(system, name)}${first}.`);
     }
 
     if (number === undefined || !Number.isInteger(number)) {

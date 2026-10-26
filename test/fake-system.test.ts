@@ -60,6 +60,14 @@ describe("the fake system's counters and money", () => {
         expect(await ok("view", "Tamsin")).toContain("13 shilling");
     });
 
+    it("names its own coins in what trade refuses (D-518)", async () => {
+        await ok("write", "Tamsin", "--set", "money=1 crown");
+        await ok("write", "Ugo", "--type", "character", "--set", "role=npc", "--set", "money=1 crown");
+        const refused = async (...args: string[]): Promise<string> => (await runCommandLine(args, context)).output;
+        expect(await refused("trade", "Tamsin", "--with", "Ugo")).toBe('Give what Tamsin gives, gives, and what it gets, gets, such as gives "2 crown", gets "Torch 5". Nothing changed.');
+        expect(await refused("trade", "Tamsin", "--with", "Ugo", "--gives", "1 crown", "--gives", "2 shilling")).toBe('Give the money Tamsin hands over as one amount, such as "2 crown 5 shilling". Nothing changed.');
+    });
+
     it("lets its ward take harm before grit, and keeps resolve within a minimum below 0", async () => {
         await ok("write", "Tamsin", "--set", "ward=3");
         expect(await ok("change", "Tamsin", "grit", "--by=-5", "--damage", "fire")).toContain("Tamsin: grit 16/16 → 14/16: ward 3 → 0 first.");
@@ -121,6 +129,17 @@ describe("the fake system's words", () => {
         } finally {
             setSystemWords(undefined);
         }
+    });
+});
+
+describe("the fake system's verbs (D-514)", () => {
+    it("gives the dashboard its own verb beside the engine's, for the rites of the sheet", async () => {
+        await ok("write", "Tamsin", "--set", "rites=[Rite of Mist]");
+        const overview = JSON.parse(await ok("view", "--json")) as { verbs?: Record<string, { says: string; }>; };
+        expect(Object.keys(overview.verbs ?? {})).toEqual(["invoke"]);
+        expect(overview.verbs?.invoke.says).toBe("I invoke {item}.");
+        const page = JSON.parse(await ok("view", "Tamsin", "--json")) as { actions?: Record<string, string[]>; };
+        expect(page.actions?.rites).toEqual(["invoke", "use"]);
     });
 });
 

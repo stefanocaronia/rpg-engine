@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { withExamples } from "./examples.ts";
 import type { Command } from "./registry.ts";
 import { firstSentence } from "./text.ts";
 
@@ -23,12 +24,12 @@ function commandSection(command: Command<any, any>): string
     const required = schema.required ?? [];
     const parameters = Object.entries(schema.properties ?? {}).map(([name, field]) => parameterLine(name, field, required.includes(name)));
     const positionals = command.positionals?.length ? ` Positional parameters: ${command.positionals.map(code).join(", ")}.` : "";
-    return [`### ${command.name}`, firstSentence(command.description), `Read-only: ${command.readOnly ? "yes" : "no"}.${positionals}`, parameters.length > 0 ? parameters.join("\n") : "No parameters."].join("\n\n");
+    return [`### ${command.name}`, firstSentence(withExamples(command.description)), `Read-only: ${command.readOnly ? "yes" : "no"}.${positionals}`, parameters.length > 0 ? parameters.join("\n") : "No parameters."].join("\n\n");
 }
 
 function parameterLine(name: string, field: Schema, required: boolean): string
 {
-    const description = typeof field === "object" && field.description ? `: ${field.description}` : "";
+    const description = typeof field === "object" && field.description ? `: ${withExamples(field.description)}` : "";
     return `- ${code(name)} (${code(typeText(field))}, ${required ? "required" : "optional"})${description}`;
 }
 

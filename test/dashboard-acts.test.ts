@@ -1,47 +1,43 @@
 // The player's actions from the dashboard as their own sentences (D-495): the page writes them from models without articles, in the page's language, with
 // the names it shows; which lines act is the system's word; who may be named; how a sentence said stands as the server tells it.
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { actPeople, actSentence, actTitle, itemVerbs, saidStates, spokenBy, talkSentence, targetMode } from "../src/dashboard/acts.ts";
+import { actPeople, actSentence, actTitle, itemVerbs, saidStates, setSystemVerbs, spokenBy, talkSentence, targetMode, verbLabel } from "../src/dashboard/acts.ts";
 import type { ShownPlace, ShownScene } from "../src/dashboard/data.ts";
-import { setLanguage } from "../src/dashboard/text.ts";
-import { pageFolder } from "./i18n/phrases.ts";
+import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
+import { findSystem, systemWords } from "../src/systems/index.ts";
+import { pageFolder, phraseNames } from "./i18n/phrases.ts";
+import { testSystemFolders } from "./support.ts";
 
 const italian = (): Promise<Record<string, string>> => Promise.resolve(JSON.parse(readFileSync(join(pageFolder, "i18n", "it.json"), "utf8")) as Record<string, string>);
 
 describe("the player's sentence (D-495)", () => {
     afterAll(async () => {
+        setSystemVerbs(undefined);
+        setSystemWords(undefined);
         await setLanguage("en");
     });
 
-    it("writes each verb with someone, a square, the character itself or no one, in English", async () => {
+    it("writes each of the engine's verbs with someone, a square, the character itself or no one, in English", async () => {
         await setLanguage("en");
         expect([
             actSentence("attack", "Mace", { person: "Hooded Bandit 1" }),
             actSentence("attack", "Mace", { square: "G7" }),
             actSentence("attack", "Mace"),
-            actSentence("cast", "Healing Word", { person: "Lupa" }),
-            actSentence("cast", "Guiding Bolt", { square: "G7" }),
-            actSentence("cast", "Bless", "self"),
             actSentence("use", "Torches"),
             actSentence("use", "Shield", "none"),
             actSentence("equip", "Shield", { person: "Lupa" }),
             actSentence("unequip", "Shield"),
-            actSentence("prepare", "Bless"),
             talkSentence("Bruno"),
         ]).toEqual([
             "I attack Hooded Bandit 1 with Mace.",
             "I attack at G7 with Mace.",
             "I attack with Mace.",
-            "I cast Healing Word on Lupa.",
-            "I cast Guiding Bolt at G7.",
-            "I cast Bless on myself.",
             "I use Torches.",
             "I use Shield.",
             "I equip Shield.",
             "I put away Shield.",
-            "I prepare Bless.",
             "I talk to Bruno: ",
         ]);
     });
@@ -50,25 +46,44 @@ describe("the player's sentence (D-495)", () => {
         await setLanguage("it", italian);
         expect([
             actSentence("attack", "Mazza", { person: "Brigante incappucciato 1" }),
-            actSentence("cast", "Parola guaritrice", { person: "Lupa" }),
-            actSentence("cast", "Dardo guida", { square: "G7" }),
             actSentence("use", "Torce", "self"),
             actSentence("equip", "Scudo"),
             actSentence("unequip", "Scudo"),
-            actSentence("prepare", "Benedizione"),
             talkSentence("Bruno"),
             actTitle("attack", "Mazza"),
         ]).toEqual([
             "Attacco Brigante incappucciato 1 con Mazza.",
-            "Lancio Parola guaritrice su Lupa.",
-            "Lancio Dardo guida verso G7.",
             "Uso Torce su di me.",
             "Mi equipaggio con Scudo.",
             "Metto via Scudo.",
-            "Preparo Benedizione.",
             "Parlo con Bruno: ",
             "Attacca con Mazza",
         ]);
+    });
+
+    it("writes a verb the system declares with its own sentences, in the campaign's language through its words, and without them as the engine's use (D-514)", async () => {
+        const fake = findSystem(testSystemFolders, "fake");
+        setSystemVerbs(fake?.sheetVerbs);
+        await setLanguage("en");
+        setSystemWords(undefined);
+        expect([actSentence("invoke", "Rite of Mist", { person: "Lupa" }), actSentence("invoke", "Rite of Mist", "self"), actTitle("invoke", "Rite of Mist"), verbLabel("invoke")]).toEqual([
+            "I invoke Rite of Mist upon Lupa.",
+            "I invoke Rite of Mist upon myself.",
+            "Invoke Rite of Mist",
+            "Invoke",
+        ]);
+
+        await setLanguage("it", italian);
+        setSystemWords(systemWords(fake!.folder, "it"));
+        expect([actSentence("invoke", "Rito della nebbia", { square: "G7" }), actSentence("invoke", "Rito della nebbia"), actTitle("invoke", "Rito della nebbia"), verbLabel("invoke")]).toEqual([
+            "Invoco Rito della nebbia verso G7.",
+            "Invoco Rito della nebbia.",
+            "Invoca Rito della nebbia",
+            "Invoca",
+        ]);
+
+        setSystemVerbs(undefined);
+        expect(actSentence("invoke", "Rito della nebbia")).toBe("Uso Rito della nebbia.");
     });
 
     it("puts who acts in front with more than one player character, as the master reads it, and leaves the sentence as it is for one (D-480 (8))", () => {
@@ -76,8 +91,55 @@ describe("the player's sentence (D-495)", () => {
         expect(spokenBy("Parlo con Bruno: ", undefined)).toBe("Parlo con Bruno: ");
     });
 
-    it("asks someone for an attack, lets the player choose for a spell or a use, and goes straight to the sentence for the rest", () => {
-        expect((["attack", "cast", "use", "equip", "unequip", "prepare"] as const).map(targetMode)).toEqual(["asks", "lets", "lets", "none", "none", "none"]);
+    it("asks someone for an attack, lets the player choose for a use or a system's verb that says on whom, and goes straight to the sentence for the rest", () => {
+        setSystemVerbs({
+            invoke: { label: "Invoke", title: "Invoke {item}", says: "I invoke {item}.", on: "on {target} {item}", at: "at {square} {item}", self: "{item}" },
+            bind: { label: "Bind", title: "Bind {item}", says: "I bind {item}." },
+        });
+        expect(["attack", "use", "equip", "unequip", "invoke", "bind"].map(targetMode)).toEqual(["asks", "lets", "none", "none", "lets", "none"]);
+        setSystemVerbs(undefined);
+    });
+});
+
+// The 5e's: its verbs cast and prepare, with its words in 25 languages, go with it (D-514, step 8).
+describe("the 5e's verbs", () => {
+    afterAll(async () => {
+        setSystemVerbs(undefined);
+        setSystemWords(undefined);
+        await setLanguage("en");
+    });
+
+    it("casts on someone, at a square or on oneself, and prepares, in English and in Italian through the 5e's words", async () => {
+        const fifth = findSystem(testSystemFolders, "5e");
+        setSystemVerbs(fifth?.sheetVerbs);
+        await setLanguage("en");
+        expect([actSentence("cast", "Healing Word", { person: "Lupa" }), actSentence("cast", "Guiding Bolt", { square: "G7" }), actSentence("cast", "Bless", "self"), actSentence("prepare", "Bless")]).toEqual([
+            "I cast Healing Word on Lupa.",
+            "I cast Guiding Bolt at G7.",
+            "I cast Bless on myself.",
+            "I prepare Bless.",
+        ]);
+
+        await setLanguage("it", italian);
+        setSystemWords(systemWords(fifth!.folder, "it"));
+        expect([actSentence("cast", "Parola guaritrice", { person: "Lupa" }), actSentence("cast", "Dardo guida", { square: "G7" }), actSentence("prepare", "Benedizione"), verbLabel("cast")]).toEqual([
+            "Lancio Parola guaritrice su Lupa.",
+            "Lancio Dardo guida verso G7.",
+            "Preparo Benedizione.",
+            "Lancia",
+        ]);
+    });
+
+    it("has its verbs' sentences in every language of its words, each with the names it fills", () => {
+        const fifth = findSystem(testSystemFolders, "5e");
+        const sentences = Object.values(fifth?.sheetVerbs ?? {}).flatMap((verb) => [verb.label, verb.title, verb.says, verb.on, verb.at, verb.self]).filter((sentence) => sentence !== undefined);
+        const languages = readdirSync(join(fifth!.folder, "words")).map((file) => file.replace(/\.yaml$/, "")).filter((language) => language !== "en");
+        const lacking = languages.flatMap((language) => {
+            const own = systemWords(fifth!.folder, language)?.words ?? {};
+            return sentences.filter((sentence) => own[sentence] === undefined || phraseNames(own[sentence]).join() !== phraseNames(sentence).join()).map((sentence) => `${language}: ${sentence}`);
+        });
+        expect(languages.length).toBe(25);
+        expect(lacking).toEqual([]);
     });
 });
 

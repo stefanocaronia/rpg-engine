@@ -83,7 +83,7 @@ export interface SystemInfo
     /** The fields the line of the player character and the companions shows, in order (DAT-2). */
     statusLine?: { field: string; whenSet: boolean; }[];
     /** How it weighs what a character carries, which its formulas read as load (LOAD-1). */
-    load?: { field: string; limit: Formula; coins?: number; };
+    load?: { field: string; limit: Formula; coins?: number; weightless?: string; bundle?: string; };
     /** The unit its computed lengths are in, as ft (SPD-1). */
     lengthUnit?: string;
     /** The lists whose pages give their bonus fields to who lists them, as attuned items and feats (D-449). */

@@ -17,7 +17,7 @@ import { recipeNamed } from "./game-recipes.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
 import { placeOnMap } from "./move.ts";
-import { hasNames, namesAsZero, rollerOf, withSheetValues } from "./roll.ts";
+import { hasNames, namesAsZero, rollerOf, sheetDiceOf, withSheetValues } from "./roll.ts";
 
 // The words of the buttons, in the campaign's language, as the dashboard's languages (playtest 15); English for the others (ASK-7).
 const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; rest: string; done: string; }> = {
@@ -83,17 +83,17 @@ export const ask = defineCommand({
         + "In a fight, each roll the player's character makes is its own ask, in the order the game's rules give them. "
         + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
         + "square, without options, once the player says their character moves on the map of its place but not to which square: the engine moves them to the square the player touches and gives you the way. "
-        + "recipe, without options, when change with a rest's recipe says so: the player spends their character's dice, as hit dice, one at a time, and you get what they gave. "
+        + "recipe, without options, when change with a rest's recipe says so: the player spends their character's dice one at a time, and you get what they gave. "
         + "Write nothing before the call: the question carries what is at stake, and the story goes on after the click. "
-        + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"], who Bruna.',
+        + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["{{check}}", "{{otherCheck}}"], who Bruna.',
     group: "game",
     needsPlayer: true,
     input: z.object({
         question: z.string().describe("what is at stake either way, or the choice, in one line, in the player's language"),
-        options: textList.optional().describe("for a roll, the checks that fit with their dice, such as Atletica 1d20+athletics; for a choice, the answers, such as Sì and No; from 1 to 4"),
+        options: textList.optional().describe("for a roll, the checks that fit with their dice, such as {{check}}; for a choice, the answers, such as Sì and No; from 1 to 4"),
         who: z.string().optional().describe("for a roll or a square, the player's character, such as Bruna; the only one there is, if left out"),
         square: z.boolean().optional().describe("true to ask where the player's character moves on its place's map"),
-        recipe: z.string().optional().describe("the rest's recipe, such as short rest"),
+        recipe: z.string().optional().describe("the rest's recipe that change named"),
     }),
 
     async run(input, context): Promise<AskResult>
@@ -132,7 +132,7 @@ export const ask = defineCommand({
 
         // One answer alone is no choice: a roll whose dice are not at the end would become one, and nothing would be rolled (ASK-2, D-266).
         if (checks.length === 0 && options.length === 1) {
-            throw new Error(`"${options[0].label}" alone is no choice: a roll ends with its dice, such as Danni radianti 1d8; a choice gives two answers or more.`);
+            throw new Error(`"${options[0].label}" alone is no choice: a roll ends with its dice, such as ${diceAtTheEnd(options[0].label)}; a choice gives two answers or more.`);
         }
 
         if (checks.length === 0) {
@@ -141,7 +141,9 @@ export const ask = defineCommand({
 
         if (checks.length < options.length) {
             throw new Error(
-                `Give every check its dice, such as Atletica 1d20+5; for a choice, give only the answers, such as Sì and No. A roll already has its button to change one's mind (${words.change}): leave out an answer such as No.`,
+                `Give every check its dice, such as Atletica ${
+                    sheetDiceOf(campaignSystem(root, context))
+                }+5; for a choice, give only the answers, such as Sì and No. A roll already has its button to change one's mind (${words.change}): leave out an answer such as No.`,
             );
         }
 
@@ -228,6 +230,23 @@ export function tonesOf(given: unknown[] | undefined, faces: number[]): { tones?
     return given === undefined || !Array.isArray(given) || given.length !== faces.length || !given.every(known) || given.every((tone) => tone === undefined || tone === null)
         ? {}
         : { tones: given.map((tone) => (tone === "good" || tone === "bad" ? tone : null)) };
+}
+
+/**
+ * A label with its dice in the middle written as a check, for a refusal: words after the dice go before them, as Danni radianti 1d8; what is in brackets,
+ * as (CD 13), goes in the question (D-518). A label without dice gets an example.
+ */
+function diceAtTheEnd(label: string): string
+{
+    const found = /^(.*?)\s*(\d*d(?:\d+|%|F)\S*)\s+(.+)$/i.exec(label.trim());
+
+    if (found === null) {
+        return "Danni 1d8";
+    }
+
+    const [, name, dice, after] = found;
+    const named = (...parts: string[]): string => parts.filter((part) => part !== "").join(" ");
+    return after.startsWith("(") ? `${named(name, dice)}, and ${after} goes in the question` : named(name, after, dice);
 }
 
 /** Whether a text is the dice of a check, as 1d20+5 or 1d20+athletics (ASK-2, ASK-12). */

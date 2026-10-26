@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -53,6 +53,23 @@ describe("the load a character carries", () => {
         expect(await ok("show", "Ettore")).toContain("load 5.3 / 35 kg");
     });
 
+    it("weighs a kind sold by the bundle by the field the system declares for it, never by a field of that name the system does not (LOAD-1, D-514)", async () => {
+        // Twenty reed darts, two sheaves of 1 kg: 5.3 + 2.
+        await ok("write", "Ettore", "--add", "inventory=[[Reed Darts]] 20");
+        expect(await ok("show", "Ettore")).toContain("load 7.3 / 35 kg");
+        // A kind of the campaign with bundle written, which the fake system does not declare: five pegs of 1 kg weigh 5.
+        await ok("write", "Pioli", "--type", "item", "--set", "heft=1 kg", "--set", "bundle=5");
+        await ok("write", "Ettore", "--add", "inventory=[[Pioli]] 5");
+        expect(await ok("show", "Ettore")).toContain("load 12.3 / 35 kg");
+    });
+
+    it("counts a name of a kind sold by the bundle in pieces, by the field the system declares (STK-10, D-514)", async () => {
+        const refused = await runCommandLine(["write", "Ettore", "--add", "inventory=[[Reed Darts (10)]] 2"], context);
+        expect(refused.output).toBe(
+            'There is no page named Reed Darts (10), but it is a name of Reed Darts, counted in pieces, 10 for each bought: write Ettore, add inventory="[[Reed Darts]] 20". Nothing changed.',
+        );
+    });
+
     it("asks a weight for an item written without one, its own or its base's", async () => {
         expect(await ok("write", "Sacco di farina", "--type", "item")).toContain('Sacco di farina has no heft, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set heft="2 kg".');
         expect(await ok("write", "Lanterna di Bruna", "--type", "item", "--set", "item=[[Lantern]]")).not.toContain("has no heft");
@@ -63,7 +80,7 @@ describe("the load a character carries", () => {
 // The 5e's: its sizes, its pound and its gear go with it (D-514, step 8).
 describe("the 5e's load", () => {
     beforeEach(async () => {
-        await ok("config", "system", "5e");
+        useSystem(folder, "5e");
         await ok("write", "Ettore", "--unset", "might", "--set", "str=14");
     });
 
