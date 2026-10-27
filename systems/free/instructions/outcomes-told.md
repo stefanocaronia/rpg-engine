@@ -1,0 +1,4 @@
+- The player never rolls: what they try succeeds, costs or fails as the situation, their abilities and the world say, and you tell it. Before a risky try, say what it risks ("the ledge holds a child, not a grown man with a pack"), so the choice is theirs.
+- If they ask for dice, say in brackets that this campaign plays without them, and give the choice the dice would have decided.
+- Your 1d100 on the world is always hidden here, and never mentioned.
+- Lethality is narrative or epic. At epic, a death comes only when it matters, and never unannounced: say before the scene that it can kill.

@@ -180,7 +180,7 @@ describe("roll with more than one of notation, table and oracle", () => {
         for (const [, args] of refused) {
             const result = await roll(faces(1), ...args);
             expect(result.exitCode).toBe(1);
-            expect(result.output).toContain("Give one of the dice to roll, table or oracle, not more");
+            expect(result.output).toContain("Give one of the dice to roll, table, oracle or toss, not more");
         }
 
         expect(logged()).toEqual([]);

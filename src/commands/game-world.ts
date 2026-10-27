@@ -11,6 +11,7 @@ import { homeSystemWords } from "../page-words.ts";
 import { loadWorld, type PageType, playerCharacters, searchSystemPages, type World, worldFolderName } from "../pages/index.ts";
 import {
     type CampaignData,
+    engineSettingValue,
     findCampaignSystem,
     findSystem,
     type GameSystem,
@@ -41,9 +42,17 @@ export function campaignWorld(root: string, context: Context): World
             words: campaignSystemWords(root, context),
             missingSystem: system === undefined ? named : undefined,
             noSystem: named === undefined,
-            rigor: readTextSetting(root, "rigor"),
+            // As the game plays it, with the values of its settings campaign.yaml writes (DAT-16).
+            rigor: rigorPlayed(root, system),
         });
     });
+}
+
+/** The rigor as the game plays it (DAT-16): with the values of the system's settings as campaign.yaml writes them, as the world reads before its players. */
+function rigorPlayed(root: string, system: GameSystem | undefined): string | undefined
+{
+    const value = engineSettingValue(system, (setting) => systemSettingValue(root, setting), "rigor", readTextSetting(root, "rigor"));
+    return typeof value === "string" ? value : undefined;
 }
 
 /**
@@ -349,17 +358,6 @@ export function systemPagesHint(world: World, type: PageType): string
     const named = language === undefined ? "" : `, named in ${language}`;
     const inLanguage = language === undefined ? "" : ` in ${language}`;
     return ` The system ${world.system.name} has ${count} ${count === 1 ? type : `${type}s`}${named}: find one with find, type ${type} and part of its name${inLanguage}, then give its name here.`;
-}
-
-/** The settings still missing, with the installed game systems beside system, the one to ask for among them (D-167): "system (installed: 5e)". */
-export function missingWithSystems(root: string, missing: string[], context: Context): string[]
-{
-    const names = installedSystems(context.systemFolders).map((system) => system.name);
-    const system = names.length > 0 ? `system (installed: ${names.join(", ")})` : "system";
-    // What the system adds to the setup, with its values: config says what each means (DAT-10).
-    const added = (campaignSystem(root, context)?.settings ?? []).filter((setting) => playedSettingValue(root, context, setting) === undefined).map((setting) => `${setting.name} (${valuesText(setting)})`);
-    // The system first (D-167): the other settings may depend on the game.
-    return [...(missing.includes("system") ? [system, ...missing.filter((name) => name !== "system")] : missing), ...added];
 }
 
 /**

@@ -17,4 +17,16 @@ words:
   I try {item} on {target}.: Jeg prøver {item} på {target}.
   I try {item} at {square}.: Jeg prøver {item} ved {square}.
   I try {item} on myself.: Jeg prøver {item} på mig selv.
+  outcomes: Spilform
+  how what happens is decided: hvem bestemmer, hvad der sker
+  told: Fortalt af spilleder
+  rolled: Terningerne afgør også
+  tossed: Ja eller nej til skæbnen
+  "only choices, no dice: the master tells what comes of them": "kun valg, ingen terninger: spilleder fortæller, hvad der kommer ud af dem"
+  choices, and one die when something is at stake: valg, og én terning, når noget står på spil
+  "no dice: coins, heads or tails, answer yes or no": "ingen terninger: mønter, plat eller krone, svarer ja eller nej"
+  die: Terning
+  the one die of your rolls: den ene terning i dine slag
+  "a six-sided die: simple and quick": "en sekssidet terning: enkel og hurtig"
+  a twenty-sided die, as many games use: en tyvesidet terning, som mange spil bruger
 names: {}

@@ -2,6 +2,7 @@
 // name once, no bases it lacks, every field declared and of its kind, rules in chapters, the pictures its pages link, and where it comes from.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { closedSettings } from "./campaign/index.ts";
 import { parseRollFormula } from "./core/formula.ts";
 import { FileStore, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
@@ -128,7 +129,28 @@ function declarationProblems(system: GameSystem, pageNames: string[], book: Rule
         ...(system.roundSeconds === undefined || system.roundSeconds > 0 ? [] : ["round: not above 0 seconds"]),
         ...lists.map((list) => `always-in ${list}: not a list`),
         ...always.map((name) => `always-in ${name}: no page of that name`),
+        ...engineSettingProblems(system),
     ];
+}
+
+/** The engine's settings a system offers values of, or a value of its settings does, that the engine lacks, or with values the setting lacks (DAT-16). */
+function engineSettingProblems(system: GameSystem): string[]
+{
+    const offerings = [
+        { from: "engine-settings", offers: system.engineSettings },
+        ...system.settings.flatMap((setting) => setting.values.map((value) => ({ from: `settings.${setting.name}.${value.value}`, offers: value.engineSettings }))),
+    ];
+    return offerings.flatMap(({ from, offers }) =>
+        Object.entries(offers).flatMap(([name, values]) => {
+            const known = Object.entries(closedSettings).find(([setting]) => comparableText(setting) === comparableText(name))?.[1];
+
+            if (known === undefined) {
+                return [`${from}: ${name} is no setting of the engine with values to offer`];
+            }
+
+            return values.filter((value) => !known.some((one) => comparableText(one) === comparableText(value))).map((value) => `${from}: ${name} has no value ${value}`);
+        })
+    );
 }
 
 /** The values of declared fields that are not of their kind, or end in a period; a formula of an item that does not read (PRO-5). */

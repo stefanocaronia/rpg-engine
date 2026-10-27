@@ -55,13 +55,14 @@ import { claudeSays, codexSays } from "../pictures/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
 import { readCalendar, readCalendarStart } from "../time/index.ts";
 import { libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./game-library.ts";
-import { campaignNote } from "./game-mode.ts";
+import { campaignMode, campaignNote } from "./game-mode.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
+import { askedBy, heldSystemSettings, isFixedSetting, isLeading, offeredValues, offerRefusal, playedEngineSetting, unofferedLines, valuePart } from "./game-offers.ts";
 import { loadNewSystemCode } from "./game-package-code.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignCalendar, newDatedLogEntry } from "./game-time.ts";
 import { checkWidgetSpots } from "./game-widgets.ts";
-import { campaignSystem, campaignWorld, countedByGame, installedSystemName, missingWithSystems, playedRules, playedSettingValue, playersOfTheGame, systemLayers, systemSetting, valuesText } from "./game-world.ts";
+import { campaignSystem, campaignWorld, countedByGame, installedSystemName, playedRules, playedSettingValue, playersOfTheGame, systemLayers, systemSetting, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
 
@@ -173,6 +174,11 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     const listChange = input.add !== undefined || input.remove !== undefined;
     const own = input.setting === undefined ? undefined : systemSetting(root, context, input.setting);
 
+    // One a value asks holds only with that value (DAT-17).
+    if (own !== undefined && !heldSystemSettings(root, context).some((setting) => setting.name === own.name)) {
+        throw new Error(`${own.name} holds only with ${askedBy(root, context, own.name)}: change that first, if the player wants it. Nothing changed.`);
+    }
+
     // A setting the game system adds, with one of its values (DAT-10).
     if (own !== undefined) {
         return systemSettingResult(root, context, own, input);
@@ -210,6 +216,13 @@ function configure(input: ConfigInput, context: Context): ConfigResult
 
     if (input.setting?.trim() === "system" && input.value !== undefined) {
         checkSystemOpen(root, context, input.value);
+    }
+
+    // An engine's setting the game offers only some values of (DAT-16).
+    const refused = input.setting === undefined || input.value === undefined ? undefined : offerRefusal(root, context, input.setting.trim(), input.value);
+
+    if (refused !== undefined) {
+        throw new Error(refused);
     }
 
     const shown = input.setting === undefined ? settingNames : [checkSettingName(input.setting)];
@@ -273,7 +286,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     // Listed all together, what the campaign adds to its system only when it adds something.
     const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
     const listed = input.setting === undefined ? shown.filter((name) => !(added(name) || name === "calendar" || name === "widgets") || settings[name] !== undefined) : shown;
-    const system = input.setting === undefined ? (campaignSystem(root, context)?.settings ?? []) : [];
+    const system = input.setting === undefined ? heldSystemSettings(root, context) : [];
     // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
     const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
     // And of how the master writes, the parts as they are now (D-395).
@@ -284,7 +297,10 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         ? mentorPart(root, context, settings.mentor)
         : [cleared === undefined ? "" : `${cleared.charAt(0).toUpperCase()}${cleared.slice(1)}.`, style].filter((text) => text !== "").join("\n\n");
     return {
-        settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, context, setting)])) },
+        settings: {
+            ...Object.fromEntries(listed.map((name) => [name, offeredShown(root, context, name, shownValue(root, context, settings, name))])),
+            ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, context, setting)])),
+        },
         note: campaignNote(root, context),
         replaced,
         part,
@@ -507,14 +523,23 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
         return setting === undefined ? [] : [setting];
     };
 
-    const system = (campaignSystem(root, context)?.settings ?? []).map((setting) => setting.name);
+    const held = heldSystemSettings(root, context);
+    const system = held.map((setting) => setting.name);
     const settings = readSettings(root);
     const difficulty = settings.difficulty;
-    const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }) };
-    return [...setupOrder.filter((name) => name !== "preparation" || !writtenWorld), ...system, "lines", "veils"].flatMap(named).map((question) => ({
-        ...(question.name === "mentor" ? mentorQuestion(question) : unsetUnanswered(question, settings)),
-        ...(suggested[question.name] === undefined ? {} : { suggested: suggested[question.name] }),
-    }));
+    // The value a system's setting suggests (DAT-17).
+    const systemSuggests = Object.fromEntries(held.flatMap((setting) => setting.values.filter((value) => value.suggested === true).map((value) => [setting.name, value.value])));
+    const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }), ...systemSuggests };
+    // The system's settings others depend on right after the mentor, before what they change (DAT-16, DAT-17).
+    const leading = held.filter(isLeading).map((setting) => setting.name);
+    const order = setupOrder.filter((name) => name !== "preparation" || !writtenWorld);
+    const others = system.filter((name) => !leading.includes(name));
+    return [...order.slice(0, 1), ...leading, ...order.slice(1), ...others, "lines", "veils"].flatMap(named).map((question) => {
+        const suggestion = suggested[question.name];
+        // A suggestion the game does not offer is none (DAT-16).
+        const offered = suggestion !== undefined && (question.choices === undefined || question.choices.some((choice) => choice.value === suggestion));
+        return { ...(question.name === "mentor" ? mentorQuestion(question) : unsetUnanswered(question, settings)), ...(offered ? { suggested: suggestion } : {}) };
+    });
 }
 
 /** A question whose value is only the one shown while it is unset, as master-rolls behind the screen (D-287): still unanswered in the setup. */
@@ -561,7 +586,7 @@ export function shownPlayerSettings(root: string, context: Context): PlayerSetti
 export function playerSettings(root: string, context: Context): PlayerSetting[]
 {
     const settings = readSettings(root);
-    const own = (campaignSystem(root, context)?.settings ?? []).map((setting): PlayerSetting => {
+    const own = heldSystemSettings(root, context).map((setting): PlayerSetting => {
         const value = playedSettingValue(root, context, setting);
         const choices = setting.values.map((one) => ({ value: one.value, ...(one.player === undefined ? {} : { means: one.player }) }));
         return { name: setting.name, about: setting.about ?? "a setting of the game system", ...(value === undefined ? {} : { value }), choices };
@@ -578,9 +603,27 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
                 ...(choices === undefined ? {} : { choices }),
                 ...(words.most === undefined ? {} : { most: words.most }),
             };
-        }),
+        }).flatMap((setting) => offeredSetting(root, context, setting)),
         ...own,
     ];
+}
+
+/** A player's setting as the game offers it (DAT-16): none where it plays one value alone; only the values it offers, and no value written that it does not. */
+function offeredSetting(root: string, context: Context, setting: PlayerSetting): PlayerSetting[]
+{
+    const offered = offeredValues(root, context, setting.name);
+
+    if (offered === undefined) {
+        return [setting];
+    }
+
+    if (offered.length === 1) {
+        return [];
+    }
+
+    const { value, ...rest } = setting;
+    const kept = offered.some((one) => comparableText(one) === comparableText(value ?? "")) ? { value } : {};
+    return [{ ...rest, ...kept, ...(setting.choices === undefined ? {} : { choices: setting.choices.filter((choice) => offered.some((one) => comparableText(one) === comparableText(choice.value))) }) }];
 }
 
 // Who makes the pictures on this computer, in the player's words (D-390).
@@ -643,10 +686,12 @@ export function playerChangeNews(root: string, context: Context, before: PlayerS
     const meaning = settingMeaning(after.name, after.value, countedByGame(campaignSystem(root, context))) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
     const value = after.most === undefined ? after.value : `"${after.value}"`;
     const author = after.name === "prose" && readSettings(root).author !== undefined ? " An author is written: theirs takes its place until the player takes it away." : "";
-    // The mentor's new part comes with it, once in the chat (D-347).
-    const part = after.name === "mentor" ? mentorPart(root, context, after.value) : "";
+    // The mentor's new part comes with it, once in the chat (D-347); in play, a value of the system's with its own part (DAT-18).
+    const own = systemSetting(root, context, after.name) === undefined || campaignMode(root, campaignWorld(root, context)) !== "play" ? undefined : valuePart(root, context, after.name, after.value);
+    const part = after.name === "mentor" ? mentorPart(root, context, after.value) : (own ?? "");
     return [
         `The player set ${after.name} to ${value} on the dashboard${meaning === undefined ? "" : `: ${meaning}`}. Play by it from now on.${author}${part === "" ? "" : `\n\n${part}`}`,
+        ...unofferedLines(root, context),
         ...(style === "" ? [] : [style]),
     ];
 }
@@ -701,12 +746,37 @@ function systemSettingResult(
             return {
                 settings: { [setting.name]: systemShownValue(root, context, setting) },
                 note: campaignNote(root, context),
-                replaced: [`From now on the campaign plays the rules ${value.value}, in place of ${before}: the pages already written stay as they are.`],
+                replaced: [`From now on the campaign plays the rules ${value.value}, in place of ${before}: the pages already written stay as they are.`, ...unofferedLines(root, context)],
             };
         }
+
+        // The master's own change of a value brings its part, as the player's does with the dashboard's news (DAT-18).
+        const part = context.actor === "player" || campaignMode(root, campaignWorld(root, context)) !== "play" ? undefined : valuePart(root, context, setting.name, value.value);
+        return {
+            settings: { [setting.name]: systemShownValue(root, context, setting) },
+            note: campaignNote(root, context),
+            replaced: unofferedLines(root, context),
+            ...(part === undefined ? {} : { part }),
+        };
     }
 
     return { settings: { [setting.name]: systemShownValue(root, context, setting) }, note: campaignNote(root, context), replaced: [] };
+}
+
+/** An engine's setting as config shows it where the game offers only some of its values (DAT-16): the one it plays alone, or missing with those it offers. */
+function offeredShown(root: string, context: Context, name: string, shown: unknown): unknown
+{
+    const offered = offeredValues(root, context, name);
+
+    if (offered === undefined) {
+        return shown;
+    }
+
+    if (isFixedSetting(root, context, name)) {
+        return `${offered[0]} (the only one this game plays: no choice)`;
+    }
+
+    return playedEngineSetting(root, context, name) === undefined ? `(missing; ${offered.join(", ")})` : shown;
 }
 
 /** A setting of the system as config shows it: its value with what it means, or missing with every value and what it means (DAT-10). */

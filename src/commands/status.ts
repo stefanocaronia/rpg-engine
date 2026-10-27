@@ -21,13 +21,14 @@ import { journeyText, readJourney } from "./game-journey.ts";
 import { campaignMode, campaignNote } from "./game-mode.ts";
 import { campaignCoins } from "./game-money.ts";
 import { livingMood, masterMood } from "./game-moods.ts";
+import { heldSystemSettings, isFixedSetting, playedEngineSetting } from "./game-offers.ts";
 import { packageCodeProblems } from "./game-package-code.ts";
 import { isTickedOpenQuest, openQuestText } from "./game-quests.ts";
 import { measuresOf, roadsOf } from "./game-roads.ts";
 import { interruptedLoad } from "./game-saves.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { datedText, problemText, readPresent } from "./game-time.ts";
-import { campaignSystem, campaignWorld, countedByGame, missingWithSystems, playedSettingValue, systemInStatus } from "./game-world.ts";
+import { campaignSystem, campaignWorld, countedByGame, playedSettingValue, systemInStatus } from "./game-world.ts";
 import { importLine } from "./import.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
@@ -70,6 +71,14 @@ export const status = defineCommand({
         const root = requireCampaign(context.folder);
         const codeProblems = await packageCodeProblems(root, context, []);
         const settings = readSettings(root);
+
+        // An engine's setting as the game plays it, none where it plays one value alone, which is no choice to show (DAT-16).
+        const played = (name: string): string | undefined => {
+            const value = isFixedSetting(root, context, name) ? undefined : playedEngineSetting(root, context, name);
+            return typeof value === "string" ? value : undefined;
+        };
+
+        const rigor = playedEngineSetting(root, context, "rigor");
         const world = campaignWorld(root, context);
         const characters = world.pages.filter((page) => page.type === "character");
         const players = playerCharacters(world);
@@ -100,7 +109,7 @@ export const status = defineCommand({
                 // Under the rigor «rules» or «simulation», a load over the limit (LOAD-3).
                 counters: [
                     ...Object.entries(partyCounters(world, page, coins, system)).map(([field, value]) => countersText({ [field]: value })),
-                    ...(settings.rigor === "rules" || settings.rigor === "simulation" ? [overLoad(world, system, page) ?? ""].filter((text) => text !== "") : []),
+                    ...(rigor === "rules" || rigor === "simulation" ? [overLoad(world, system, page) ?? ""].filter((text) => text !== "") : []),
                 ],
                 effects: [...effectsOf(page).map((effect) => effectShown(world, effect)), ...keptEffects(world, openScene.scene, page.name).map((kept) => `keeps ${kept}`)],
                 ...(mood === "neutral" ? {} : { mood }),
@@ -121,24 +130,25 @@ export const status = defineCommand({
                 settings.name,
                 settings.language,
                 systemInStatus(root, context),
-                named("difficulty", settings.difficulty),
-                named("lethality", settings.lethality),
-                named("saves", settings.saves),
+                named("difficulty", played("difficulty")),
+                named("lethality", played("lethality")),
+                named("saves", played("saves")),
                 // What the master follows in play (D-241).
-                named("rigor", settings.rigor),
-                named("dice", settings.dice),
-                named("units", settings.units),
+                named("rigor", played("rigor")),
+                named("dice", played("dice")),
+                named("units", played("units")),
                 // How much the master teaches, only when they do (D-347).
                 named("mentor", settings.mentor === "off" ? undefined : settings.mentor),
                 // What the system adds to the setup, as advancement xp (DAT-10).
                 // The version of the rules is in the system's own words above (VER-1).
-                ...(system?.settings ?? []).filter((setting) => setting.name !== rulesetSetting).map((setting) => named(setting.name, playedSettingValue(root, context, setting))),
+                ...heldSystemSettings(root, context).filter((setting) => setting.name !== rulesetSetting).map((setting) => named(setting.name, playedSettingValue(root, context, setting))),
                 named("mode", mode),
             ].filter((part) => part !== undefined),
             // What the chosen difficulty and rigor mean in play, one line each (D-263).
             meanings: (["difficulty", "rigor"] as const).flatMap((name) => {
-                const meaning = settingMeaning(name, settings[name], countedByGame(system));
-                return meaning === undefined ? [] : [`${name.charAt(0).toUpperCase()}${name.slice(1)} ${settings[name]}: ${meaning}.`];
+                const value = played(name);
+                const meaning = settingMeaning(name, value, countedByGame(system));
+                return meaning === undefined ? [] : [`${name.charAt(0).toUpperCase()}${name.slice(1)} ${value}: ${meaning}.`];
             }),
             // Before play, what the next mode needs and how to enter it; in play, the settings still missing (MOD-7).
             note: campaignNote(root, context),

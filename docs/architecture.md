@@ -99,7 +99,7 @@ An extension's code and a game system's have one contract, [core/package-api.ts]
 
 | Mechanism | What it does | Where |
 |---|---|---|
-| World | All pages of the campaign and its system in a frozen `World`; campaign pages first, system pages read-only | [pages/world.ts](../src/pages/world.ts), [commands/game-world.ts](../src/commands/game-world.ts) |
+| World | All pages of the campaign and its system in a frozen `World`; campaign pages first, system pages read-only | [pages/world.ts](../src/pages/world.ts), [commands/game-world.ts](../src/commands/game-world.ts); what its system offers of the engine's settings, the settings a value asks and the parts its values choose, [commands/game-offers.ts](../src/commands/game-offers.ts) |
 | Inheritance | A character derives from its `creature`, an item from its `item`; a page keeps only its differences | [pages/inheritance.ts](../src/pages/inheritance.ts) |
 | Containers | A page never records where it is: its container lists it; `locate` climbs the chain | [pages/containers.ts](../src/pages/containers.ts), [commands/move.ts](../src/commands/move.ts) |
 | Stacks | Goods counted where they are held, `[[Torch]] 7`: a kind is in no place; `change` spends, `move` takes pieces, `trade` swaps goods and money in one go | [pages/stacks.ts](../src/pages/stacks.ts), [pages/stack-entry.ts](../src/pages/stack-entry.ts), [commands/game-stacks.ts](../src/commands/game-stacks.ts), [commands/trade.ts](../src/commands/trade.ts) |
@@ -110,7 +110,7 @@ An extension's code and a game system's have one contract, [core/package-api.ts]
 | Formulas | What a system works out: computed fields, tables, counter limits | [core/formula.ts](../src/core/formula.ts), [commands/worked-out.ts](../src/commands/worked-out.ts) |
 | Sheet | The character sheet as data, the same in chat and dashboard | [commands/sheet.ts](../src/commands/sheet.ts) |
 | Progression | Levels, features, uses that a rest refills, experience; the pool of dice a rest lets one spend | [progression/](../src/progression/), [commands/progression.ts](../src/commands/progression.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [commands/game-dice-pool.ts](../src/commands/game-dice-pool.ts) |
-| Rolls and asking | Dice, hidden rolls with proofs, a page's random tables and the yes/no oracle; questions with buttons on the dashboard or in the host's form | [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [commands/game-tables.ts](../src/commands/game-tables.ts), [commands/ask.ts](../src/commands/ask.ts) |
+| Rolls and asking | Dice, hidden rolls with proofs, a page's random tables, the yes/no oracle and coins; questions with buttons on the dashboard or in the host's form | [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [commands/game-tables.ts](../src/commands/game-tables.ts), [commands/ask.ts](../src/commands/ask.ts) |
 | Scenes | The open scene in `state.yaml`: who, copies, turns, who is hostile, what strangers look like | [scene/](../src/scene/), [commands/scene.ts](../src/commands/scene.ts) |
 | Saves | A zip at each scene's end; load and start over as the campaign's setting allows | [saves/](../src/saves/), [commands/save.ts](../src/commands/save.ts) |
 | Pictures | A page's `image`; pictures drawn by the player's Codex or Claude | [images/](../src/images/), [pictures/](../src/pictures/), [commands/image.ts](../src/commands/image.ts) |

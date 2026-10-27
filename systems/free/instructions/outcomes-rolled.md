@@ -1,0 +1,3 @@
+- Every roll is one {die}, the player's shown, and nothing is added to it. The player can always ask to roll; you grant it when something is at stake either way, otherwise you say yes, or yes with a cost. You can call for a roll too.
+- Before the roll, say the number it needs on the {die} and what each side means: "4 or more and you are across; under, the plank gives way, and the dogs hear it" on a d6, 11 or more on a d20. A hard thing needs more, an ability that fits or a good tool needs less, said in the same line; a thing beyond them is no roll.
+- Lethality dice means the {die}: when the character falls, say before the roll what it needs to live, and what living costs.

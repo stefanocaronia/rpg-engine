@@ -292,6 +292,8 @@ export interface ShownRoll
     says?: string;
     /** How each die turned out, by its face in order, when an extension's roll says it: good, bad or none, for the page to colour it (D-507). */
     tones?: (Tone | null)[];
+    /** The coins of a toss, each face in order, said in the page's language in place of the total; a toss has no dice to show. */
+    toss?: ("heads" | "tails")[];
     text: string;
     dice: ThrownDie[];
 }

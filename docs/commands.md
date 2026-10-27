@@ -235,6 +235,7 @@ Read-only: no. Positional parameters: `notation`.
 - `double` (`boolean`, optional): roll twice the dice, never the numbers added, as a critical hit's damage: 1d8+3 rolls 2d8+3
 - `table` (`string`, optional): a random table to roll on, as Page#Section: the first table under that heading, its die in the first header cell (d8, 2d6, d100, d66) or as big as its highest row
 - `oracle` (`string`, optional): odds of a yes/no question, on a d100: almost certain, likely, 50/50, unlikely or small chance; why is the question asked; a double makes the answer extreme
+- `toss` (`integer`, optional): how many coins to toss, 1 to 3, each heads or tails, in their order; why is the question; with physical dice, values gives 1 for heads and 2 for tails
 
 ### ask
 

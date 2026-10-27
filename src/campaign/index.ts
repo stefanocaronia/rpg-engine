@@ -13,6 +13,7 @@ export {
     checkSettingName,
     checkSettings,
     clearSetting,
+    closedSettings,
     companionWays,
     type CountedByGame,
     diceWays,

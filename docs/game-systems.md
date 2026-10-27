@@ -109,6 +109,22 @@ settings:
 
 What the setup asks for this system. `means` is for the master, `player` for the dashboard; `without` lists fields a value leaves out.
 
+```yaml
+settings:
+  outcomes:
+    about: how what happens is decided
+    told: {means: "...", player: "...", engine-settings: {lethality: [narrative, epic]}}
+    rolled: {means: "...", player: "...", asks: [die], suggested: true}
+  die:
+    about: the one die of your rolls
+    d6: {means: "...", player: "...", suggested: true}
+    d20: {means: "...", player: "..."}
+engine-settings:
+  rigor: [smooth]
+```
+
+`engine-settings`, for the system or for one of its values, gives the values the game offers of an engine's setting with closed values, such as `lethality` or `rigor`: those the system and the values played share hold. One value alone is no choice: never asked nor shown to the player, refused by `config`, read so whatever `campaign.yaml` writes. With more, only those are offered, and one written that the game does not offer is asked again. `asks` names settings of the system that hold only with that value: asked, listed and taken only then. `suggested` is the value the setup suggests, one per setting at most. A setting whose values offer or ask goes first in the setup.
+
 ### versions
 
 ```yaml
@@ -327,7 +343,7 @@ words: {Cleric: Chierico, long rest: riposo lungo}
 headline: "{classes} di livello {level}"
 ```
 
-**Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book.
+**Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book. A part named after a setting of the system and a value, such as `outcomes-rolled`, follows `play` while the campaign plays that value, and comes with the player's change of it; in it `{die}`, or any setting of the system in braces, reads as its value.
 
 ## 5. What a campaign adds
 

@@ -17,4 +17,16 @@ words:
   I try {item} on {target}.: 我对{target}尝试{item}。
   I try {item} at {square}.: 我在{square}尝试{item}。
   I try {item} on myself.: 我对自己尝试{item}。
+  outcomes: 游戏方式
+  how what happens is decided: 由谁决定会发生什么
+  told: 由叙述决定
+  rolled: 骰子也参与决定
+  tossed: 命运的是与否
+  "only choices, no dice: the master tells what comes of them": 只有选择,没有骰子:由主持人讲述结果
+  choices, and one die when something is at stake: 做出选择,有风险时掷一个骰子
+  "no dice: coins, heads or tails, answer yes or no": 没有骰子:用硬币,正面或反面,回答是或否
+  die: 骰子
+  the one die of your rolls: 你掷骰时用的唯一一个骰子
+  "a six-sided die: simple and quick": 六面骰子:简单快捷
+  a twenty-sided die, as many games use: 二十面骰子,很多游戏都在用
 names: {}

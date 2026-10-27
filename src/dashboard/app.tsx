@@ -240,7 +240,8 @@ function App()
                 // New are only the rolls after the newest one read before: older ones read at a Load more are not (D-302).
                 const newestSeen = rolls.findLastIndex((roll) => seen.current?.has(roll.id) === true);
                 const added = seen.current === undefined ? [] : rolls.slice(newestSeen + 1);
-                const asking = added.filter((roll) => roll.by === "player" && roll.check !== undefined).at(-1);
+                // A toss of coins has no dice to throw on the page, yet (COIN-3).
+                const asking = added.filter((roll) => roll.by === "player" && roll.check !== undefined && roll.toss === undefined).at(-1);
                 seen.current = new Set(rolls.map((roll) => roll.id));
                 // A roll stays new through the readings that come while its dice roll, until it shows (D-303); the list draws it new once.
                 const addedIds = new Set(added.map((roll) => roll.id));

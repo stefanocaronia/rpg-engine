@@ -9,12 +9,13 @@
 //   npm run translate -- --only fr,de
 //   npm run translate -- --only zh --again    translates again the phrases and words that hold a term of the glossary (never the curated Italian)
 //   npm run translate -- --again master,save  only those that hold these terms
+//   npm run translate -- --system ../rpg-engine-5e   the words of a game system in its own repository, in place of the engine's systems
 // A translation that fails keeps the one the file had; to translate a language anew, delete its file. Not part of the tests: run it after adding or
 // changing phrases, the Italian words of a system or the glossary, then look at what it wrote.
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse, stringify } from "yaml";
 import { fieldLabel } from "../../src/dashboard/labels.ts";
@@ -61,6 +62,8 @@ const sections = ["groups", "fields", "words", "names"] as const;
 const glossary = JSON.parse(readFileSync(new URL("glossary.json", import.meta.url), "utf8")) as { voice: Record<string, string>; terms: Record<string, Term>; };
 const only = listAfter("--only");
 const again = process.argv.includes("--again") ? listAfter("--again") ?? Object.keys(glossary.terms) : [];
+// The folders of game systems in their own repositories whose words to translate, in place of the engine's.
+const givenSystems = listAfter("--system")?.map((folder) => resolve(folder));
 const unknown = again.filter((term) => !(term in glossary.terms));
 
 if (unknown.length > 0) {
@@ -137,11 +140,13 @@ async function pageTarget(): Promise<Target>
  */
 function systemTargets(): Target[]
 {
-    return readdirSync(systemsFolder).filter((name) => existsSync(join(systemsFolder, name, "words", `${curated}.yaml`))).map((name) => {
-        const file = (language: string): string => join(systemsFolder, name, "words", `${language}.yaml`);
+    const folders = givenSystems ?? readdirSync(systemsFolder).map((name) => join(systemsFolder, name));
+    return folders.filter((folder) => existsSync(join(folder, "words", `${curated}.yaml`))).map((folder) => {
+        const name = systemName(folder);
+        const file = (language: string): string => join(folder, "words", `${language}.yaml`);
         const read = (language: string): Record<string, string> => (existsSync(file(language)) ? wordEntries(parse(readFileSync(file(language), "utf8")) as Words) : {});
         const italian = read(curated);
-        const system = parse(readFileSync(join(systemsFolder, name, "system.yaml"), "utf8")) as { title?: string; "sheet-headline"?: string; };
+        const system = parse(readFileSync(join(folder, "system.yaml"), "utf8")) as { title?: string; "sheet-headline"?: string; };
         const englishNames = read("en");
 
         const english = (id: string): string => {
@@ -150,7 +155,7 @@ function systemTargets(): Target[]
         };
 
         return {
-            name: `systems/${name}`,
+            name: givenSystems === undefined ? `systems/${name}` : folder,
             entries: Object.keys(italian).map((id) => ({ id, english: english(id), italian: italian[id] })),
             batch: Math.max(1, Object.keys(italian).length),
             languages: shippedLanguages.filter((language) => language !== curated && language !== "en"),
@@ -197,6 +202,14 @@ function splitId(id: string): [string, string]
 {
     const at = id.indexOf(": ");
     return at < 0 ? [id, ""] : [id.slice(0, at), id.slice(at + 2)];
+}
+
+/** A system's name as a campaign gives it: its package's without its scope and its "system-" (@rpgengine/system-5e is 5e), else its folder's. */
+function systemName(folder: string): string
+{
+    const manifest = join(folder, "package.json");
+    const packageName = existsSync(manifest) ? (JSON.parse(readFileSync(manifest, "utf8")) as { name?: string; }).name : undefined;
+    return basename(packageName ?? folder).replace(/^system-/, "");
 }
 
 /** The comma-separated list after an option, when one follows it. */

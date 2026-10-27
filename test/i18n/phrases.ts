@@ -35,7 +35,8 @@ export async function settingPhrases(): Promise<Set<string>>
     const campaign = join(makeTempFolder(), "campaign");
     mkdirSync(campaign);
     const context = { ...testContext(campaign), folder: campaign };
-    await runCommandLine(["init", "--language", "it", "--system", "free"], context);
+    // Without a system, which may leave some of them out (DAT-16).
+    await runCommandLine(["init", "--language", "it"], context);
 
     const read = async (...args: string[]): Promise<PlayerSetting[]> => {
         const view = JSON.parse((await runCommandLine(["view", ...args, "--json"], context)).output) as { settings?: PlayerSetting[]; questions?: PlayerSetting[]; };

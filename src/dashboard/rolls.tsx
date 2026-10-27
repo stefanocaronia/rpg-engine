@@ -81,7 +81,7 @@ export function RollLog(
                 <CardHeader
                     icon={cardIcons.rolls}
                     title={<h2 id="rolls-title" class="rolls-title">{t("Rolls")}</h2>}
-                    preview={newest === undefined ? undefined : `${[nameOf(newest, of), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.says ?? newest.total}`}
+                    preview={newest === undefined ? undefined : `${[nameOf(newest, of), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${saysOf(newest) ?? newest.total}`}
                     open={open}
                     onToggle={toggle}
                 />
@@ -158,13 +158,19 @@ function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRo
                 {name}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}
-            {roll.says === undefined ? <span class="roll-total num">{roll.total}</span> : <span class="roll-total roll-says">{roll.says}</span>}
+            {saysOf(roll) === undefined ? <span class="roll-total num">{roll.total}</span> : <span class="roll-total roll-says">{saysOf(roll)}</span>}
             <span class="roll-dice">
                 <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} tones={roll.tones} />
                 <span class="visually-hidden">{roll.text}</span>
             </span>
         </li>
     );
+}
+
+/** What a roll's faces mean in place of its total: the coins of a toss in the page's language, or what an extension's roll says. */
+function saysOf(roll: ShownRoll): string | undefined
+{
+    return roll.toss === undefined ? roll.says : roll.toss.map((side) => (side === "heads" ? t("heads") : t("tails"))).join(", ");
 }
 
 /** What the list says with no roll in it: what comes there, that the last half hour had none, or that the player cleared it. */

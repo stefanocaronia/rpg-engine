@@ -7,7 +7,7 @@ import { type LogEntry, readLog } from "../core/log.ts";
 import type { Mood } from "../core/mood.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, firstSentence, withArticle } from "../core/text.ts";
-import { type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
+import { type CoinSide, coinSides, type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
 import { readEffect } from "../effects/index.ts";
 import { type Coin, readAmount } from "../money/index.ts";
 import { declaredKind, entryPage, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, playerCharacters, secretNames, systemPageNamed, textsIn, type World } from "../pages/index.ts";
@@ -73,6 +73,8 @@ export interface ShownRoll
     says?: string;
     /** How each die turned out, by its face in order, when an extension's roll says it: good, bad or none (D-507). */
     tones?: ("good" | "bad" | null)[];
+    /** The coins of a toss, each face in order, which the page says in its language in place of the total; a toss shows no dice (COIN-3). */
+    toss?: CoinSide[];
     text: string;
     dice: ThrownDie[];
 }
@@ -670,12 +672,13 @@ function shownRoll(
     seen: Record<string, string> | undefined,
 ): ShownRoll
 {
-    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; says?: unknown; tones?: unknown; dice?: unknown; physical?: unknown; };
+    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; says?: unknown; tones?: unknown; toss?: unknown; dice?: unknown; physical?: unknown; };
     const known = data.who === undefined ? undefined : named(data.who);
     const who = data.who === undefined ? undefined : known ?? strangerOfRoll(world, data.who, named, seen);
     // A stranger the scene of the roll never named shows no face: it would tell who acted out of sight (D-421).
     const image = data.who === undefined || who === "someone" ? undefined : picture(data.who);
     const words = notationParts(String(data.notation ?? ""));
+    const toss = Array.isArray(data.toss) ? data.toss.filter((side): side is CoinSide => (coinSides as readonly unknown[]).includes(side)) : undefined;
     return {
         id: entry.id,
         ...(entry.date === undefined ? {} : { date: entry.date }),
@@ -691,8 +694,9 @@ function shownRoll(
         total: Number(data.total ?? 0),
         ...(typeof data.says === "string" && data.says.trim() !== "" ? { says: data.says } : {}),
         ...(Array.isArray(data.tones) ? { tones: data.tones.map((tone) => (tone === "good" || tone === "bad" ? tone : null)) } : {}),
+        ...(toss === undefined ? {} : { toss }),
         text: String(data.result ?? ""),
-        dice: Array.isArray(data.dice) ? (data.dice as ThrownDie[]) : [],
+        dice: toss === undefined && Array.isArray(data.dice) ? (data.dice as ThrownDie[]) : [],
     };
 }
 

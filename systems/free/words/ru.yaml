@@ -17,4 +17,16 @@ words:
   I try {item} on {target}.: Я пробую {item} на {target}.
   I try {item} at {square}.: Я пробую {item} в сторону {square}.
   I try {item} on myself.: Я пробую {item} на себе.
+  outcomes: Режим игры
+  how what happens is decided: кто решает, что произойдёт
+  told: Решает рассказ
+  rolled: Решают и кубики
+  tossed: Да или нет судьбе
+  "only choices, no dice: the master tells what comes of them": "только выбор, без кубиков: мастер рассказывает, что из этого выйдет"
+  choices, and one die when something is at stake: выбор и один кубик, когда на кону что-то важное
+  "no dice: coins, heads or tails, answer yes or no": "без кубиков: монеты, орёл или решка, отвечают «да» или «нет»"
+  die: Кубик
+  the one die of your rolls: единственный кубик ваших бросков
+  "a six-sided die: simple and quick": "шестигранный кубик: просто и быстро"
+  a twenty-sided die, as many games use: двадцатигранный кубик, как во многих играх
 names: {}

@@ -7,7 +7,8 @@ import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { isInParty, playerCharacters, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
-import { campaignSystem, campaignWorld, missingWithSystems } from "./game-world.ts";
+import { missingWithSystems, offeredLabel } from "./game-offers.ts";
+import { campaignSystem, campaignWorld } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { partText } from "./parts.ts";
 import { missingSheetFields } from "./sheet.ts";
@@ -105,7 +106,8 @@ export function missingText(blocked: Blocked): string
 export function campaignNote(root: string, context: Context): string
 {
     const world = campaignWorld(root, context);
-    return checklistLine(campaignMode(root, world), root, context, world) ?? missingSettingsNote(missingWithSystems(root, missingSettings(readSettings(root)), context));
+    return checklistLine(campaignMode(root, world), root, context, world)
+        ?? missingSettingsNote(missingWithSystems(root, missingSettings(readSettings(root)), context).map((name) => offeredLabel(root, context, name as SettingName) ?? name));
 }
 
 /** Before play, what the next mode still needs and the call that enters it once the player confirms (MOD-7); undefined in play. */
@@ -155,7 +157,7 @@ function writtenMode(root: string): unknown
 function setupMissing(root: string, context: Context, world: World): string[]
 {
     const unanswered = unansweredSettings(readSettings(root), world.pages.length > 0);
-    return missingWithSystems(root, unanswered, context).map((name) => settingLabels[name as SettingName] ?? name);
+    return missingWithSystems(root, unanswered, context).map((name) => offeredLabel(root, context, name as SettingName) ?? settingLabels[name as SettingName] ?? name);
 }
 
 /** What session zero still has to make (MOD-4): a living player character, the companions the setup said are made in it, and the sheets they keep, whole. */

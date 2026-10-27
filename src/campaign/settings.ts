@@ -124,6 +124,25 @@ export const proseWays = ["plain", "literary", "pulp", "wry"] as const;
 /** How the master builds what they invent (D-395): situations, the core's own, arcs, episodes or a mystery; a written adventure keeps its own. */
 export const storyWays = ["situations", "arcs", "episodes", "mystery"] as const;
 
+/** The settings with a closed list of values, each with them: those a game system may offer only some of (DAT-16). */
+export const closedSettings: Partial<Record<SettingName, readonly string[]>> = {
+    difficulty: difficulties,
+    lethality: lethalities,
+    saves: saveModes,
+    rigor: rigors,
+    mentor: mentorWays,
+    dice: diceWays,
+    "master-rolls": masterRollWays,
+    voices: voiceWays,
+    units: unitSystems,
+    pictures: pictureWays,
+    effort: efforts,
+    companions: companionWays,
+    preparation: preparations,
+    prose: proseWays,
+    story: storyWays,
+};
+
 /** The longest text the player's own words of how the master writes may be, by setting (D-395). */
 export const styleTextLengths = { author: 80, style: 300 } as const;
 
