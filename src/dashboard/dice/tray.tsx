@@ -2,21 +2,22 @@
 // total. The player can also always throw dice from the column of dice over the button, as many as they like and a modifier: dice that make a check the master
 // asks answer it, and the engine rolls it (D-330); any other throw is free, the engine does not hear of it, the dice fade away and its line stays in this
 // browser's rolls alone. With two dice or more of a kind, which count: all, the highest one or the lowest one (D-337, D-397). The dice show as pictures, never as their
-// notation. The dice and their physics load at the first throw.
+// notation. The dice and their physics load at the first throw. Coins too, one to three, never with dice: a toss shown lands on its faces, and the player tosses
+// them as free dice (D-524 (1)).
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie, Tone } from "../data.ts";
-import { DiceFaces } from "../faces.tsx";
+import { CoinFace, CoinFaces, type CoinSide, DiceFaces, tossWords } from "../faces.tsx";
 import type { PageRoll } from "../free-rolls.ts";
 import { DieIcon, Icon } from "../icons.tsx";
 import { notationModifier, shownText, signed } from "../labels.ts";
 import { Token } from "../party.tsx";
 import { soundPref, useChoice, usePref } from "../prefs.ts";
 import { trayCheck, useRequested } from "../requested.ts";
-import { arrowStep, t } from "../text.ts";
-import { diceToThrow, type RareFace, rareFace } from "./models.ts";
-import { diceText, dieName, doubled, droppedBy, type Keep, keptOf, keptTotal, notation, trayDice, withDropped } from "./pool.ts";
+import { arrowStep, capitalized, t } from "../text.ts";
+import { coinsToThrow, diceToThrow, type RareFace, rareFace } from "./models.ts";
+import { diceText, dieName, doubled, droppedBy, type Keep, keptOf, keptTotal, mostCoins, notation, trayCoin, trayDice, withAdded, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
-import { diceEdgesPref, diceSetPref } from "./sets.ts";
+import { diceEdgesPref, type DiceLook, diceSetPref, masterSet } from "./sets.ts";
 import { wakeSound } from "./sounds.ts";
 
 // After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read, then flies into its line of the rolls.
@@ -53,6 +54,8 @@ interface Plate
     /** What the faces mean, in place of the total, when a package's roll says it; and how each die turned out (D-507). */
     says?: string;
     tones?: (Tone | null)[];
+    /** The coins of a toss, each its face, thrown in place of dice. */
+    toss?: CoinSide[];
     text: string;
     shown: boolean;
     /** Whose roll the master asked: their token beside the title. */
@@ -65,10 +68,12 @@ interface Plate
     who?: string;
 }
 
-export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFree }: {
+export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onShown, onFree }: {
     requested?: ShownRoll;
     sheetThrow?: SheetThrow;
     party: Member[];
+    /** The campaign's name, which draws the master's dice (D-525 (3)). */
+    campaign?: string;
     /** A roll of the log whose dice have landed, its plate shown. */
     onLanded?: (roll: string) => void;
     /** A roll of the log whose dice go, its line into the rolls. */
@@ -167,7 +172,7 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
     };
 
     /** Throws these dice, each landing on its value, then shows the plate, and fades it all after a while; the plate alone when the dice cannot be thrown. */
-    const throwAndShow = async (given: Omit<Plate, "shown" | "rare">, linger: number): Promise<void> => {
+    const throwAndShow = async (given: Omit<Plate, "shown" | "rare">, linger: number, look?: DiceLook): Promise<void> => {
         const shown = { ...given, ...rareOf(given.dice) };
         const number = ++throwing.current;
         const current = (): boolean => number === throwing.current;
@@ -189,11 +194,11 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         }
 
         try {
-            const toThrow = loaded === undefined ? [] : diceToThrow(given.dice, loaded.kinds);
+            const toThrow = loaded === undefined ? [] : given.toss === undefined ? diceToThrow(given.dice, loaded.kinds) : coinsToThrow(given.toss);
 
             if (toThrow.length === 0) {
                 loaded?.hide();
-            } else if (await loaded?.roll(toThrow, { instant: matchMedia("(prefers-reduced-motion: reduce)").matches, sound, skipping: () => skipping.current, current }) !== true) {
+            } else if (await loaded?.roll(toThrow, { instant: matchMedia("(prefers-reduced-motion: reduce)").matches, sound, skipping: () => skipping.current, current, ...(look === undefined ? {} : { look }) }) !== true) {
                 return;
             }
         } catch {
@@ -259,24 +264,31 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         }, linger);
     };
 
-    // A roll the master asked, as the engine rolled it: its dice land on its numbers.
+    // A roll the master asked, as the engine rolled it: its dice land on its numbers. A toss shown, the player's or the master's, lands on its faces.
     useEffect(() => {
         if (requested !== undefined) {
-            const title = requested.check ?? requested.notation;
-            const member = party.find((candidate) => candidate.name === requested.who) ?? party.find((candidate) => candidate.role === "pc");
-            void throwAndShow({
-                free: false,
-                title,
-                ...(title === requested.notation ? {} : { notation: requested.notation }),
-                dice: requested.dice,
-                modifier: notationModifier(requested.notation),
-                total: requested.total,
-                ...(requested.says === undefined ? {} : { says: requested.says }),
-                ...(requested.tones === undefined ? {} : { tones: requested.tones }),
-                text: requested.text,
-                ...(member === undefined ? {} : { member }),
-                roll: requested.id,
-            }, lingers.asked);
+            const toss = requested.toss;
+            const title = requested.check ?? (toss === undefined ? requested.notation : t("Coins"));
+            // A check's is the player's character's when it names no one; the master's own is no one's.
+            const member = party.find((candidate) => candidate.name === requested.who) ?? (requested.by === "player" && toss === undefined ? party.find((candidate) => candidate.role === "pc") : undefined);
+            void throwAndShow(
+                {
+                    free: false,
+                    title,
+                    ...(title === requested.notation || toss !== undefined ? {} : { notation: requested.notation }),
+                    dice: requested.dice,
+                    modifier: notationModifier(requested.notation),
+                    total: requested.total,
+                    ...(requested.says === undefined ? {} : { says: requested.says }),
+                    ...(requested.tones === undefined ? {} : { tones: requested.tones }),
+                    ...(toss === undefined ? {} : { toss, says: capitalized(tossWords(toss)) }),
+                    text: toss === undefined ? requested.text : tossWords(toss),
+                    ...(member === undefined ? {} : { member }),
+                    roll: requested.id,
+                },
+                lingers.asked,
+                mastersDice(requested, party, campaign),
+            );
         }
     }, [requested?.id]);
 
@@ -315,11 +327,13 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
         }
     }, [sheetThrow?.number]);
 
+    // Coins chosen, which nothing adds to nor doubles.
+    const coins = pool.filter((chosen) => chosen === trayCoin).length;
     // Only the kinds with two dice or more keep a choice of which count; dice doubled, as a critical hit's damage, all count.
     const shownKeeps = double ? {} : keptOf(pool, keeps);
     // The dice a throw throws: those chosen, or twice as many.
     const thrown = double ? doubled(pool) : pool;
-    // The check the master asks whose dice and number the tray's dice are, when one alone is (D-330); dice doubled are a free throw.
+    // The check the master asks whose dice and number the tray's dice are, when one alone is (D-330), or a toss its coins (ASK-15); dice doubled are a free throw.
     const answering = pool.length === 0 || double ? undefined : asked?.checks.find((check) => check.index === trayCheck(asked, notation(pool, modifier, shownKeeps)));
 
     const throwPool = (): void => {
@@ -332,6 +346,15 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
             return;
         }
 
+        // Coins tossed free, each heads or tails as fairly as the browser can.
+        if (coins > 0) {
+            const toss = pool.map((): CoinSide => (fairDie(2) === 1 ? "heads" : "tails"));
+            const words = tossWords(toss);
+            const heads = toss.filter((side) => side === "heads").length;
+            void throwAndShow({ free: true, title: t("Coins"), notation: `${coins}d2`, dice: [], modifier: 0, total: heads, toss, says: capitalized(words), text: words }, lingers.free);
+            return;
+        }
+
         // A free throw: the page decides it, as fairly as the browser can, leaving the dice in sight.
         const dice = withDropped(thrown.map((sides): ThrownDie => ({ sides, value: fairDie(sides) })), shownKeeps);
         const total = keptTotal(dice, modifier);
@@ -340,6 +363,16 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
 
     const toggleSound = (): void => {
         setSound(!sound);
+    };
+
+    // One die more; a coin takes the dice away, and nothing added nor doubled stays with it; a die takes the coins away.
+    const more = (sides: number): void => {
+        if (sides === trayCoin) {
+            setModifier(0);
+            setDouble(false);
+        }
+
+        setPool(withAdded(pool, sides));
     };
 
     // One die of a kind less; when none is left, the focus goes to the die itself, as its minus goes away.
@@ -393,11 +426,11 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
     const rollWords = answering === undefined
         ? (
             <span class="tray-roll">
-                {t("Roll")}
+                {coins > 0 ? t("Toss") : t("Roll")}
                 <PoolIcons pool={pool} keeps={shownKeeps} />
                 {double && <span class="notation" dir="ltr">×2</span>}
                 {modifier !== 0 && <span class="notation" dir="ltr">{signed(modifier)}</span>}
-                <span class="visually-hidden">{notation(thrown, modifier, shownKeeps)}</span>
+                <span class="visually-hidden">{coins > 0 ? t("Coins") : notation(thrown, modifier, shownKeeps)}</span>
             </span>
         )
         : t("Answer: {check}", { check: answering.check });
@@ -425,6 +458,27 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
                             </button>
                         </p>
                         <ul class="tray-dice">
+                            <li class={coins > 0 ? "chosen" : undefined}>
+                                {coins > 0 && (
+                                    <button key="less" type="button" class="tray-less" aria-label={t("One coin less")} data-tip={t("One less")} onClick={() => less(trayCoin)}>
+                                        <Icon name="minus" />
+                                    </button>
+                                )}
+                                {/* The coin as it is, its word in its tip: no word of every language fits where a die's name does. */}
+                                <button
+                                    key="die"
+                                    type="button"
+                                    class="tray-die tray-coin tip-left"
+                                    data-sides={trayCoin}
+                                    data-tip={t("Coin")}
+                                    aria-disabled={coins >= mostCoins}
+                                    aria-label={coins > 0 ? t("Add a coin: {count} chosen", { count: coins }) : t("Add a coin")}
+                                    onClick={() => coins < mostCoins && more(trayCoin)}
+                                >
+                                    <span class="tray-die-name">{coins > 0 && <span class="tray-count">{coins}</span>}</span>
+                                    <CoinFace side="heads" />
+                                </button>
+                            </li>
                             {trayDice.map((sides) => {
                                 const count = pool.filter((one) => one === sides).length;
                                 return (
@@ -460,7 +514,7 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
                                             data-sides={sides}
                                             disabled={pool.length >= mostDice}
                                             aria-label={count > 0 ? t("Add a {die}: {count} chosen", { die: dieName(sides), count }) : t("Add a {die}", { die: dieName(sides) })}
-                                            onClick={() => setPool([...pool, sides])}
+                                            onClick={() => more(sides)}
                                         >
                                             <span class="tray-die-name">
                                                 {count > 0 && <span class="tray-count">{count}</span>}
@@ -477,21 +531,22 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
                                 type="button"
                                 class="tray-double"
                                 aria-pressed={double}
+                                aria-disabled={coins > 0}
                                 aria-label={t("Double the dice")}
                                 data-tip={t("Twice the dice, the same number added")}
-                                onClick={() => setDouble(!double)}
+                                onClick={() => coins === 0 && setDouble(!double)}
                             >
                                 <span dir="ltr">×2</span>
                             </button>
                             <div class="tray-modifier">
-                                <button type="button" aria-label={t("Modifier: one less")} data-tip="−1" onClick={() => setModifier(modifier - 1)}>
+                                <button type="button" aria-label={t("Modifier: one less")} aria-disabled={coins > 0} data-tip="−1" onClick={() => coins === 0 && setModifier(modifier - 1)}>
                                     <Icon name="minus" />
                                 </button>
                                 <span class="tray-modifier-value">
                                     <span class="tray-modifier-label">{t("Mod")}</span>
                                     <output aria-live="polite">{signed(modifier)}</output>
                                 </span>
-                                <button type="button" aria-label={t("Modifier: one more")} data-tip="+1" onClick={() => setModifier(modifier + 1)}>
+                                <button type="button" aria-label={t("Modifier: one more")} aria-disabled={coins > 0} data-tip="+1" onClick={() => coins === 0 && setModifier(modifier + 1)}>
                                     <Icon name="plus" />
                                 </button>
                             </div>
@@ -528,6 +583,13 @@ export function DiceTray({ requested, sheetThrow, party, onLanded, onShown, onFr
     );
 }
 
+/** The master's dice for a roll of theirs for no one of the party, as a foe's or one of the people's (D-525 (3)); the party rolls with the player's. */
+function mastersDice(roll: ShownRoll, party: Member[], campaign: string | undefined): DiceLook | undefined
+{
+    const ours = roll.by === "player" || party.some((member) => member.name === roll.who);
+    return ours || campaign === undefined ? undefined : masterSet(campaign).look;
+}
+
 /** What the plate says: whose roll and which, the dice one by one with the modifier, the total large, a rare face's words, and for a screen reader the chat's text. */
 function PlateContent({ plate }: { plate: Plate; })
 {
@@ -545,8 +607,12 @@ function PlateContent({ plate }: { plate: Plate; })
                     )}
                 </span>
             </div>
-            <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" tones={plate.tones} />
-            {plate.says === undefined ? <span class="plate-total num">{shownText(String(plate.total))}</span> : <span class="plate-total plate-says">{plate.says}</span>}
+            {plate.toss === undefined
+                ? <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" tones={plate.tones} />
+                : <CoinFaces toss={plate.toss} className="plate-dice" />}
+            {plate.says === undefined
+                ? <span class="plate-total num">{shownText(String(plate.total))}</span>
+                : <span class={plate.toss === undefined ? "plate-total plate-says" : "plate-total plate-says plate-toss"}>{plate.says}</span>}
             {plate.rare && <p class="plate-rare">{plate.rare.words}</p>}
             <span class="visually-hidden">{plate.free ? t("{dice}, free roll, not logged", { dice: plate.text }) : plate.text}</span>
         </>
@@ -564,6 +630,7 @@ function pageRoll(plate: Omit<Plate, "shown">, number: number): PageRoll
         ...(plate.who === undefined ? {} : { who: plate.who, check: plate.title }),
         notation: (plate.notation ?? plate.title).replaceAll("−", "-"),
         total: plate.total,
+        ...(plate.toss === undefined ? {} : { toss: plate.toss }),
         text: plate.text,
         dice: plate.dice,
         free: true,
@@ -619,7 +686,8 @@ function PoolIcons({ pool, keeps }: { pool: number[]; keeps: Partial<Record<numb
                 const count = pool.filter((chosen) => chosen === sides).length;
                 return (
                     <span key={sides} class="die-icons">
-                        {Array.from({ length: Math.min(count, 2) }, (_, index) => <DieIcon key={index} sides={sides} faded={index === 1 && keeps[sides] !== undefined && count === 2} />)}
+                        {Array.from({ length: Math.min(count, 2) }, (_, index) =>
+                            sides === trayCoin ? <CoinFace key={index} side="heads" /> : <DieIcon key={index} sides={sides} faded={index === 1 && keeps[sides] !== undefined && count === 2} />)}
                         {count > 2 && <span class="die-more">×{count}</span>}
                     </span>
                 );

@@ -1,9 +1,10 @@
 // The dice's models (D-278): their shapes and values from dice.json, loaded once, at the first throw; their meshes from dice.glb, or dice-sharp.glb for sharp
-// edges (D-354), all made by make-dice.py, each loaded the first time it is shown.
+// edges (D-354), all made by make-dice.py, each loaded the first time it is shown. The coin beside them, as one more kind, from coin.json and coin.glb, made by
+// make-coin.py (D-524 (1)): the same with either edges.
 // Each mesh gets the coordinates a grain's picture is laid by, as wood or stone (D-352), which make-dice.py does not make.
 import { BufferAttribute, type BufferGeometry, type Material, Mesh, type Object3D } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { type DieModel, faceNormals, type Shape } from "./models.ts";
+import { coinKind, type DieModel, faceNormals, type Shape } from "./models.ts";
 
 /** Each die by its kind, as d20: its shape and values, and how it looks, with its body and its ink, by its edges. */
 export interface LoadedDice
@@ -15,14 +16,20 @@ export interface LoadedDice
 /** Loads the dice's shapes and values, and the meshes of the edges given at once, the others when first asked. */
 export async function loadDice(edges: string): Promise<LoadedDice>
 {
-    const data = await fetch("/assets/dice/dice.json").then(async (response) => await response.json() as Record<string, DieModel>);
+    const read = (file: string): Promise<unknown> => fetch(`/assets/dice/${file}`).then(async (response) => await response.json() as unknown);
+    const [dice, coin] = await Promise.all([read("dice.json"), read("coin.json")]);
+    const data = { ...(dice as Record<string, DieModel>), [coinKind]: coin as DieModel };
     const meshes = new Map<string, Promise<Map<string, Object3D>>>();
 
-    const looks = (edges: string): Promise<Map<string, Object3D>> => {
-        const file = edges === "sharp" ? "dice-sharp.glb" : "dice.glb";
+    const meshesOf = (file: string): Promise<Map<string, Object3D>> => {
         const loaded = meshes.get(file) ?? loadMeshes(file, data);
         meshes.set(file, loaded);
         return loaded;
+    };
+
+    const looks = async (edges: string): Promise<Map<string, Object3D>> => {
+        const [shapes, coins] = await Promise.all([meshesOf(edges === "sharp" ? "dice-sharp.glb" : "dice.glb"), meshesOf("coin.glb")]);
+        return new Map([...shapes, ...coins]);
     };
 
     await looks(edges);

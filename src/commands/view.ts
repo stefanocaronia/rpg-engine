@@ -75,6 +75,8 @@ export interface ShownRoll
     tones?: ("good" | "bad" | null)[];
     /** The coins of a toss, each face in order, which the page says in its language in place of the total; a toss shows no dice (COIN-3). */
     toss?: CoinSide[];
+    /** Whether the page throws it in its tray too, or keeps it in the list alone, when the master says so (VIEW-13). */
+    tray?: boolean;
     text: string;
     dice: ThrownDie[];
 }
@@ -672,7 +674,7 @@ function shownRoll(
     seen: Record<string, string> | undefined,
 ): ShownRoll
 {
-    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; says?: unknown; tones?: unknown; toss?: unknown; dice?: unknown; physical?: unknown; };
+    const data = entry.data as { who?: unknown; check?: unknown; notation?: unknown; total?: unknown; result?: unknown; says?: unknown; tones?: unknown; toss?: unknown; tray?: unknown; dice?: unknown; physical?: unknown; };
     const known = data.who === undefined ? undefined : named(data.who);
     const who = data.who === undefined ? undefined : known ?? strangerOfRoll(world, data.who, named, seen);
     // A stranger the scene of the roll never named shows no face: it would tell who acted out of sight (D-421).
@@ -695,6 +697,7 @@ function shownRoll(
         ...(typeof data.says === "string" && data.says.trim() !== "" ? { says: data.says } : {}),
         ...(Array.isArray(data.tones) ? { tones: data.tones.map((tone) => (tone === "good" || tone === "bad" ? tone : null)) } : {}),
         ...(toss === undefined ? {} : { toss }),
+        ...(typeof data.tray === "boolean" ? { tray: data.tray } : {}),
         text: String(data.result ?? ""),
         dice: toss === undefined && Array.isArray(data.dice) ? (data.dice as ThrownDie[]) : [],
     };

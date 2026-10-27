@@ -72,6 +72,9 @@ export const diceSets: DiceSet[] = [
     { value: "granite", label: "Granite", look: { finish: { roughness: 0.25, metalness: 0, shine: 0.3, texture: "granite" }, body: "#ffffff", ink: "#141416" } },
 ];
 
+/** The coin's look, in every theme and set (D-524 (1)): gold as the Brass set, a little warmer, and its pictures' dark patina. */
+export const coinLook = { gold: "#d9a93f", dark: "#1c1206" };
+
 /** Which set the player rolls. */
 export const diceSetPref: Choice = { key: "rpg-engine.dice-set", initial: "theme", values: diceSets.map((set) => set.value) };
 
@@ -90,8 +93,28 @@ export function diceLook(value = readChoice(diceSetPref)): DiceLook
     return shownTheme() === "dark" ? { finish: resin, body: "#f5c63e", ink: "#182c4c" } : { finish: resin, body: "#182c4c", ink: "#f5c63e" };
 }
 
+/**
+ * The set the master throws with in a campaign (D-525 (3)): one of the sets drawn once by the campaign's name, the same in every browser and chat, never the
+ * player's; when the player takes it, the next one the draw gives.
+ */
+export function masterSet(campaign: string, playerSet: string = readChoice(diceSetPref)): DiceSet
+{
+    const sets = diceSets.filter((set) => set.look !== undefined);
+    // FNV-1a of the name: a draw that repeats, spread over the sets.
+    const drawn = [...campaign].reduce((hash, character) => Math.imul(hash ^ (character.codePointAt(0) ?? 0), 16_777_619) >>> 0, 2_166_136_261);
+    // A step prime to the sets' number goes through all of them, far apart.
+    const stride = [7, 5, 11, 13, 1].find((step) => greatestDivisor(step, sets.length) === 1) ?? 1;
+    const order = sets.map((_, index) => sets[(drawn + index * stride) % sets.length]);
+    return order.find((set) => set.value !== playerSet) ?? order[0];
+}
+
 /** Where the picture of a grain is. */
 export function texturePath(texture: string): string
 {
     return `/assets/dice/textures/${texture}.jpg`;
+}
+
+function greatestDivisor(first: number, second: number): number
+{
+    return second === 0 ? first : greatestDivisor(second, first % second);
 }

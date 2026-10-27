@@ -9,7 +9,7 @@ export type Vector = [number, number, number];
 /** A turn, as a quaternion: x, y, z, w. */
 export type Turn = [number, number, number, number];
 
-/** A die's shape without bevels: its corners, and its faces as corners in order, counterclockwise seen from outside. */
+/** A die's shape without bevels: its corners, and the faces it lies on as corners in order, counterclockwise seen from outside: all a die's, a coin's two. */
 export interface Shape
 {
     vertices: Vector[];
@@ -48,8 +48,17 @@ export interface DieThrow
 /** A face as rare as one throw in ten or rarer: the highest or the lowest of a die that counts, as a natural 20 or a natural 1 (D-281). */
 export type RareFace = "highest" | "lowest";
 
+/** The coin's kind among the dice's (D-524 (1)): a d2 whose 1 is heads and 2 tails, thrown only for a toss (COIN-3). */
+export const coinKind = "coin";
+
 // The direction that is up on the screen, on the floor: away from the camera, which looks from the near side.
 const screenUp: Vector = [0, 0, -1];
+
+/** The coins to throw for a toss, each landing on its face. */
+export function coinsToThrow(toss: readonly ("heads" | "tails")[]): DieThrow[]
+{
+    return toss.map((side) => ({ kind: coinKind, values: [side === "heads" ? 1 : 2], dropped: false }));
+}
 
 /** The dice to throw for the dice of a roll: a d% as its tens and its units, a d10's 10 as its 0; dice with no model, as a d3 or dF, are left out. */
 export function diceToThrow(dice: ThrownDie[], kinds: ReadonlySet<string>): DieThrow[]

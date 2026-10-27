@@ -294,6 +294,8 @@ export interface ShownRoll
     tones?: (Tone | null)[];
     /** The coins of a toss, each face in order, said in the page's language in place of the total; a toss has no dice to show. */
     toss?: ("heads" | "tails")[];
+    /** Whether the master has it thrown in the tray too, or kept in the list alone (VIEW-13); left out, a toss flies and dice do not. */
+    tray?: boolean;
     text: string;
     dice: ThrownDie[];
 }
@@ -334,6 +336,8 @@ export interface Asked
     spend?: RestDice;
     /** A forced roll (D-507), as a death save: no button turns it down, and no words of the player's take its place. */
     forced?: true;
+    /** A toss of coins (ASK-15): its button shows the coins, and the tray's coins answer it, as many as it asks. */
+    toss?: true;
     /** By button, its name and the note under it when a package words it, as Reroll and 3 left, in place of the label's words (D-507). */
     buttons?: ({ name: string; note?: string; } | null)[];
     /** The rule under the buttons, in a line, as "A 1 resets the lock". */

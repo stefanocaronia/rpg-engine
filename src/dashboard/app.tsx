@@ -13,6 +13,7 @@ import { AskedDice } from "./asked-dice.tsx";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
 import type { ActsShown, Asked, AskedNow, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownModule, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
+import { flies } from "./dice/pool.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
 import { PageFoot } from "./footer.tsx";
@@ -240,14 +241,15 @@ function App()
                 // New are only the rolls after the newest one read before: older ones read at a Load more are not (D-302).
                 const newestSeen = rolls.findLastIndex((roll) => seen.current?.has(roll.id) === true);
                 const added = seen.current === undefined ? [] : rolls.slice(newestSeen + 1);
-                // A toss of coins has no dice to throw on the page, yet (COIN-3).
                 const asking = added.filter((roll) => roll.by === "player" && roll.check !== undefined && roll.toss === undefined).at(-1);
+                // A roll shown that the master throws in the tray, as a check's dice, a toss unless the master says not (VIEW-13).
+                const throwing = asking ?? added.filter(flies).at(-1);
                 seen.current = new Set(rolls.map((roll) => roll.id));
                 // A roll stays new through the readings that come while its dice roll, until it shows (D-303); the list draws it new once.
                 const addedIds = new Set(added.map((roll) => roll.id));
                 setFresh((before) => new Set(rolls.map((roll) => roll.id).filter((id) => before.has(id) || addedIds.has(id))));
                 // The robot reacts to a new roll as it comes in, to a check of the player's as its dice go; the master's own moment comes after it (D-305).
-                const coming = added.filter((roll) => roll.id !== asking?.id).at(-1);
+                const coming = added.filter((roll) => roll.id !== throwing?.id).at(-1);
 
                 if (coming !== undefined) {
                     react(coming, party);
@@ -260,9 +262,9 @@ function App()
                     setMoment(told);
                 }
 
-                if (asking !== undefined) {
-                    setThrown(asking);
-                    setHeld(asking.id);
+                if (throwing !== undefined) {
+                    setThrown(throwing);
+                    setHeld(throwing.id);
                 }
 
                 // A roll from a package's card, as a death save, holds back what it changes until its dice land, its marks too (D-461, D-507); so does a die of a
@@ -931,6 +933,7 @@ function App()
                                     requested={thrown}
                                     sheetThrow={sheetThrow}
                                     party={shown.party}
+                                    {...(shown.campaign === undefined ? {} : { campaign: shown.campaign })}
                                     onLanded={land}
                                     onShown={(id) => {
                                         setHeld((now) => (now === id ? undefined : now));

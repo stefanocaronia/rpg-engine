@@ -236,6 +236,7 @@ Read-only: no. Positional parameters: `notation`.
 - `table` (`string`, optional): a random table to roll on, as Page#Section: the first table under that heading, its die in the first header cell (d8, 2d6, d100, d66) or as big as its highest row
 - `oracle` (`string`, optional): odds of a yes/no question, on a d100: almost certain, likely, 50/50, unlikely or small chance; why is the question asked; a double makes the answer extreme
 - `toss` (`integer`, optional): how many coins to toss, 1 to 3, each heads or tails, in their order; why is the question; with physical dice, values gives 1 for heads and 2 for tails
+- `tray` (`boolean`, optional): for a shown roll, true to throw it in the dice tray of the player's dashboard too, landing on its faces; false for the list of rolls alone; left out, coins fly and dice do not
 
 ### ask
 
@@ -248,6 +249,7 @@ Read-only: no.
 - `who` (`string`, optional): for a roll or a square, the player's character, such as Bruna; the only one there is, if left out
 - `square` (`boolean`, optional): true to ask where the player's character moves on its place's map
 - `recipe` (`string`, optional): the rest's recipe that change named
+- `toss` (`integer`, optional): how many coins the player tosses, 1 to 3, each heads or tails; the question says what is at stake
 
 ### change
 

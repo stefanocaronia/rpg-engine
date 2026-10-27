@@ -1,0 +1,8 @@
+name: The master asks the player to toss coins, and the player tosses them from the page
+covers: [asked-toss]
+setup:
+  ask: {question: "La corda regge fino in fondo al pozzo?", toss: 2}
+steps:
+  - assertVisible: La corda regge
+  - tapOn: Toss 2 coins
+  - assertState: {query: answer, contains: "Toss of 2"}

@@ -7,8 +7,8 @@ import { burnAway, crack } from "./burn.ts";
 import { celebrate, type Effect, embers, type Glow, lightInk, makePictures, type Pictures, type Showing } from "./celebration.ts";
 import { floorCrackMaterial } from "./floor-cracks.ts";
 import { frostPicture } from "./frost.ts";
-import type { RareFace, Turn, Vector } from "./models.ts";
-import { diceLook, type Finish, texturePath } from "./sets.ts";
+import { coinKind, type RareFace, type Turn, type Vector } from "./models.ts";
+import { coinLook, type DiceLook, diceLook, type Finish, texturePath } from "./sets.ts";
 import type { Tray } from "./throw.ts";
 
 // A die that does not count, as the lower of two d20 with advantage, goes out, whatever its set: its colour gone and darker, its body to a third of its
@@ -37,8 +37,8 @@ export interface Pose
 export interface Stage
 {
     tray: Tray;
-    /** Puts dice of these kinds, by the meshes given for each kind. */
-    place(kinds: string[], looks: Map<string, THREE.Object3D>): void;
+    /** Puts dice of these kinds, by the meshes given for each kind, in the look given, by default the player's set. */
+    place(kinds: string[], looks: Map<string, THREE.Object3D>, look?: DiceLook): void;
     /**
      * Leaves the window's foot, this many pixels tall, to the plate of the throw, and its head to the page's header: no die lies under them (D-366); `tight`,
      * the dice keep under the head even where that leaves them less room than a tray, at least a die's (D-461).
@@ -51,6 +51,17 @@ export interface Stage
     hide(): void;
     resize(): void;
 }
+
+// Chrome on Windows makes the shaders through Direct3D, whose compiler notes that a sum of 1 and a tiny number is not exact (X4122): three.js says it as a
+// warning for every die that mirrors the room, the coin and the metal and stone sets. Those notes alone stay out of the console; three.js says the rest.
+THREE.setConsoleFunction((kind, message, ...more: unknown[]) => {
+    const noted = kind === "warn" && message === "THREE.WebGLProgram: Program Info Log:"
+        && more.every((part) => typeof part === "string" && part.split("\n").every((line) => line.trim() === "" || line.includes("warning X4122")));
+
+    if (!noted) {
+        (kind === "error" ? console.error : kind === "warn" ? console.warn : console.log)(message, ...more);
+    }
+});
 
 /** Makes the stage on a canvas; throws when the browser has no WebGL. */
 export function makeStage(canvas: HTMLCanvasElement): Stage
@@ -102,6 +113,16 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
     if (chosenTexture !== undefined) {
         grain(chosenTexture);
     }
+
+    // The coin's own, whatever the set: gold mirroring the room, and the dark of its pictures (D-524 (1)).
+    const coinMaterial = (name: string): THREE.MeshStandardMaterial | undefined => {
+        if (name === "coin-gold") {
+            room ??= new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+            return new THREE.MeshStandardMaterial({ name, color: coinLook.gold, roughness: 0.32, metalness: 1, envMap: room, envMapIntensity: 1 });
+        }
+
+        return name === "coin-dark" ? new THREE.MeshStandardMaterial({ name, color: coinLook.dark, roughness: 0.6, metalness: 0 }) : undefined;
+    };
 
     // A body of the set's material; the grain laid from a different place on each die, once its picture is there, so that no two dice look alike.
     const bodyOf = (finish: Finish, colour: string): THREE.MeshStandardMaterial => {
@@ -266,17 +287,18 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
     resize();
     return {
         tray,
-        place(kinds, looks)
+        place(kinds, looks, given)
         {
             clear();
-            const look = diceLook();
+            const look = given ?? diceLook();
             dice = kinds.map((kind) => {
                 const object = (looks.get(kind) ?? new THREE.Group()).clone();
                 const materials: THREE.MeshStandardMaterial[] = [];
                 object.traverse((part) => {
                     if (part instanceof THREE.Mesh) {
                         const ink = (part.material as THREE.Material).name === "ink";
-                        const material = ink ? new THREE.MeshStandardMaterial({ name: "ink", color: look.ink, roughness: 0.6, metalness: 0.05 }) : bodyOf(look.finish, look.body);
+                        const material = coinMaterial((part.material as THREE.Material).name)
+                            ?? (ink ? new THREE.MeshStandardMaterial({ name: "ink", color: look.ink, roughness: 0.6, metalness: 0.05 }) : bodyOf(look.finish, look.body));
 
                         if (ink && look.finish.engraved === true) {
                             engrave(material);
@@ -293,7 +315,8 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
                 table.add(object);
                 return { object, materials };
             });
-            const first = dice[0];
+            // A coin is no die of the set: it never cracks nor burns.
+            const first = dice.find((_, index) => kinds[index] !== coinKind);
 
             if (first !== undefined) {
                 prime(first.object, look.finish);

@@ -609,6 +609,7 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
                     names,
                     ...rows,
                     ...(asked.rows?.forced === true ? { forced: true } : {}),
+                    ...(asked.rows?.toss === true ? { toss: true } : {}),
                     ...(asked.rows?.buttons === undefined ? {} : { buttons: asked.rows.buttons }),
                     ...(asked.rows?.rule === undefined ? {} : { rule: asked.rows.rule }),
                     // Its card, or that one comes, until its widget answers: the page waits for it rather than show the question twice (D-507).

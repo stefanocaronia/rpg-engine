@@ -390,3 +390,55 @@ describe("the dice of a rest, spent one at a time on the page (ASK-14, D-492)", 
         expect(await refused(rest)).toBe("Bruna has no dice left that breather lets one spend (stamina-d6 0/3): there is nothing to ask.");
     });
 });
+
+describe("coins the player tosses (ASK-15, D-525)", () => {
+    const rope = { question: "La corda regge fino in fondo al pozzo?", toss: 2, who: "Bruna" };
+
+    // Each coin a d2, as the engine's dice fall here: tails, then heads.
+    beforeEach(() => {
+        let next = 0;
+        context = { ...context, random: () => [2, 1][next++ % 2] };
+    });
+
+    it("shows the coins' button and the change of mind, tosses them at the click and logs them as the player's roll, the heads as its total", async () => {
+        const result = await asked(rope, 0);
+        expect(shown).toEqual([{ question: rope.question, title: "Tiro", labels: ["Lancia 2 monete", "Cambio idea"] }]);
+        expect(result).toMatch(/^\S+ Bruna, Lancia 2 monete: Toss of 2: tails, heads, rolled by the player\./);
+        expect(readLogFile(folder).at(-1)).toMatchObject({
+            type: "roll",
+            by: "player",
+            visibility: "public",
+            data: { notation: "2d2", total: 1, toss: ["tails", "heads"], check: "Lancia 2 monete", why: `Lancia 2 monete: ${rope.question}`, who: "Bruna", physical: false },
+        });
+    });
+
+    it("tells the page it is a toss, its button the coins' with their dice, and names one coin as one", async () => {
+        let rows: Rows | undefined;
+        const page: Player = {
+            choose: async (...given: Parameters<Player["choose"]>) => {
+                shown.push({ question: given[0], title: given[1], labels: given[2] });
+                rows = given[4];
+                return 0;
+            },
+        };
+        const result = ask.format(await ask.run(ask.input.parse({ question: rope.question, toss: 1 }), { ...context, page }));
+        expect(shown[0].labels).toEqual(["Tiro: Lancia la moneta (1d2)", "Cambio idea"]);
+        expect(rows).toEqual({ who: "Bruna", fields: [null, null], toss: true });
+        expect(result).toMatch(/^\S+ Bruna, Lancia la moneta: Toss: tails, rolled by the player\./);
+    });
+
+    it("tosses nothing when the player changes their mind, and asks in words with physical dice", async () => {
+        expect(await asked(rope, 1)).toBe("The player changed their mind: no roll. Ask what they do instead, and stop.");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "asked", by: "player", data: { question: rope.question, answer: "Cambio idea" } });
+        await rpg("config", "dice", "physical");
+        expect(await asked(rope, 0)).toContain("(the coins: 2, each heads or tails; then roll with toss 2 and values, 1 for heads and 2 for tails)");
+        expect(readLogFile(folder).filter((entry) => entry.type === "roll")).toHaveLength(0);
+    });
+
+    it("refuses options, square or recipe beside it, and fewer than one coin or more than three", async () => {
+        expect(await refused({ ...rope, options: ["Sì", "No"] })).toBe("Give toss without options, square or recipe: the player tosses the coins, and changing their mind has its own button.");
+        expect(await refused({ ...rope, square: true })).toContain("Give toss without options");
+        expect(await refused({ ...rope, toss: 4 })).toBe("Toss one, two or three coins, not 4.");
+        expect(await refused({ ...rope, toss: 0 })).toBe("Toss one, two or three coins, not 0.");
+    });
+});

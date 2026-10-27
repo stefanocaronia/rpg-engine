@@ -1,5 +1,5 @@
 // The dice the tray throws by itself (D-284, D-337): as a notation, which of a kind count, and as the chat writes them. Pure, for the tray and its tests.
-import type { ThrownDie } from "../data.ts";
+import type { ShownRoll, ThrownDie } from "../data.ts";
 
 /** Which dice of a kind count (D-337, D-397): the highest one alone or the lowest one alone, however many were thrown, as advantage keeps one of two. */
 export type Keep = "highest" | "lowest";
@@ -7,6 +7,23 @@ export type Keep = "highest" | "lowest";
 // The dice of the tray, by their sides, from the top of its column: 100 is the d%, thrown as its tens and its units; the d20, the most thrown, is the nearest
 // to the button.
 export const trayDice = [100, 4, 6, 8, 10, 12, 20];
+
+/** Whether a roll shown, not one the player answered, flies in the tray: as the master says, or else a toss and never dice (VIEW-13). */
+export function flies(roll: Pick<ShownRoll, "tray" | "toss">): boolean
+{
+    return roll.tray ?? roll.toss !== undefined;
+}
+
+/** A coin among the tray's dice, as the d2 it is (D-524 (1)): at most three, never thrown with dice (COIN-1). */
+export const trayCoin = 2;
+export const mostCoins = 3;
+
+/** The dice chosen with one more of these sides: a coin to the coins alone, at most three; a die to the dice alone. */
+export function withAdded(pool: number[], sides: number): number[]
+{
+    const kept = pool.filter((chosen) => (chosen === trayCoin) === (sides === trayCoin));
+    return sides === trayCoin && kept.length >= mostCoins ? kept : [...kept, sides];
+}
 
 /** Whether the tray can throw these dice by itself: kinds it has, all counting or with the highest or the lowest one alone kept, as one of two dropped, and a
  * number; never a reroll, an explosion or more dice kept or dropped, which the engine alone makes, so that a check asking one keeps its button by hand (D-339,

@@ -1,7 +1,7 @@
 // A throw of dice (D-278): simulated with Rapier before it is shown, and recorded frame by frame, with the knocks of the dice, for their sound. The same
 // frames, shown, are the physics: the dice land where they landed. A die stops only lying on the floor with a whole face; when one comes to rest leaning
-// on a wall or on another die, or on top of one, the throw goes back to a moment the dice still ran and goes on from there, their speeds a little changed,
-// so that nobody sees the throw that leaned (D-400).
+// on a wall or on another die, or on top of one, or one inside another, as a thin coin sinks through the one it fell on, the throw goes back to a moment the
+// dice still ran and goes on from there, their speeds a little changed, so that nobody sees the throw that leaned (D-400).
 // Rapier by its default export: its declarations name their files without extension, which the tests' NodeNext cannot follow, so only there it is any;
 // the page's own build reads them whole and checks its types.
 import RAPIER from "@dimforge/rapier3d-compat";
@@ -42,13 +42,15 @@ interface Motion extends Frame
     spin: Vector;
 }
 
-/** A stretch of a throw, simulated from given motions: its frames and motions, its knocks, and whether it ended with a die at rest not lying flat. */
+/** A stretch of a throw, simulated from given motions: its frames and motions, its knocks, and whether it ended with a die at rest not lying flat, or inside another. */
 interface Run
 {
     frames: Frame[][];
     motions: Motion[][];
     knocks: Throw["knocks"];
     leaned: boolean;
+    /** The thrown dice that ended inside another, by their place. */
+    inside: number[];
 }
 
 const step = 1 / 60;
@@ -70,6 +72,8 @@ const restingFrames = 12;
 // this long, lean: before, it may still be tipping over.
 const flatAngle = (3 * Math.PI) / 180;
 const floorContact = 0.1;
+// A die is inside another past this depth: lying on each other they touch, by a hair.
+const insideDepth = 0.05;
 const leaningFrames = 30;
 // A throw that leaned goes back to the last frame the dice that leaned ran faster than so much, and so many frames more at each try, never before the
 // dice have flown this long; it changes the speed of the dice still running by this much at most; past so many tries, the dice are thrown anew.
@@ -125,7 +129,7 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
                 return { frames, knocks };
             }
 
-            const leaning = leaningDice(shapes, normals, motions);
+            const leaning = [...new Set([...leaningDice(shapes, normals, motions), ...run.inside])];
 
             if (best === undefined || leaning.length < best.leaning) {
                 best = { thrown: { frames, knocks }, leaning: leaning.length };
@@ -260,21 +264,44 @@ function simulate(shapes: Shape[], normals: Vector[][], tray: Tray, lying: Lying
             }
 
             if (frame.every((die, index) => onTheFloor(shapes[index], normals[index] ?? [], die))) {
-                return { frames, motions, knocks, leaned: false };
+                const inside = insideAnother(world, dice, thrownIndex);
+                return { frames, motions, knocks, leaned: inside.length > 0, inside };
             }
 
             leaningSince ??= now();
 
             if (now() - leaningSince >= leaningFrames) {
-                return { frames, motions, knocks, leaned: true };
+                return { frames, motions, knocks, leaned: true, inside: [] };
             }
         }
 
-        return { frames, motions, knocks, leaned: leaningDice(shapes, normals, motions).length > 0 };
+        const inside = insideAnother(world, dice, thrownIndex);
+        return { frames, motions, knocks, leaned: leaningDice(shapes, normals, motions).length > 0 || inside.length > 0, inside };
     } finally {
         events.free();
         world.free();
     }
+}
+
+/** The thrown dice inside another die, by their place: two thin coins, one fallen on the other, may end one through the other. */
+function insideAnother(world: InstanceType<typeof RAPIER.World>, dice: Set<number>, thrownIndex: Map<number, number>): number[]
+{
+    const handles = [...dice];
+    const inside = new Set<number>();
+
+    handles.forEach((first, at) => {
+        for (const second of handles.slice(at + 1)) {
+            world.contactPair(world.getCollider(first), world.getCollider(second), (manifold: { numContacts(): number; contactDist(index: number): number; }) => {
+                const deep = Array.from({ length: manifold.numContacts() }, (_, index) => manifold.contactDist(index)).some((distance) => distance < -insideDepth);
+
+                if (deep) {
+                    [first, second].forEach((handle) => thrownIndex.has(handle) && inside.add(thrownIndex.get(handle) as number));
+                }
+            });
+        }
+    });
+
+    return [...inside];
 }
 
 /** How hard two colliders that began to touch met: how fast they came together along their contact, the frame before; at least one of them a thrown die. */

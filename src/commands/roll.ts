@@ -44,6 +44,8 @@ export const roll = defineCommand({
         + "use takes one of those instead of the die and logs which roll it replaced. "
         + "Instead of a notation, table rolls on a random table of a page and gives its row, for you to tell; oracle answers a yes/no question with its odds; "
         + "toss tosses one to three coins, each heads or tails, in any game. "
+        + "On the player's dashboard a shown roll goes in its list of rolls; tray true throws it in the dice tray too, landing on its faces, false keeps it in the list alone; "
+        + "left out, coins fly and dice do not. "
         + 'Example: notation {{roll}}, why "notice the trap", who Lena; table "Colli di Vallerana#Incontri", why "a night on the hills"; oracle likely, why "is the ferryman awake?"; '
         + 'toss 2, why "does the rope hold?", who Lena.',
     group: "game",
@@ -71,6 +73,9 @@ export const roll = defineCommand({
         oracle: z.string().optional().describe("odds of a yes/no question, on a d100: almost certain, likely, 50/50, unlikely or small chance; why is the question asked; a double makes the answer extreme"),
         toss: z.preprocess((value) => (typeof value === "string" && /^\s*\d+\s*$/.test(value) ? Number(value) : value), z.number().int()).optional().describe(
             "how many coins to toss, 1 to 3, each heads or tails, in their order; why is the question; with physical dice, values gives 1 for heads and 2 for tails",
+        ),
+        tray: z.boolean().optional().describe(
+            "for a shown roll, true to throw it in the dice tray of the player's dashboard too, landing on its faces; false for the list of rolls alone; left out, coins fly and dice do not",
         ),
     }),
 
@@ -127,7 +132,7 @@ export const roll = defineCommand({
         const keeping = keeper === undefined ? {} : { kept: { field: keeper.field, values: diceRoll.faces } };
         const using = used === undefined ? {} : { used: { from: used.page.name, field: used.field, value: used.value } };
         const checked = input.check === undefined ? {} : { check: input.check };
-        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, ...checked, physical, ...keeping, ...using, dice: diceRoll.dice };
+        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, ...checked, physical, ...keeping, ...using, ...trayOf(input), dice: diceRoll.dice };
         const entry = newDatedLogEntry(root, context, "roll", hidden ? "hidden" : "public", data);
         const shownFingerprint = hidden ? sealHiddenRoll(entry, text, context) : undefined;
 
@@ -175,7 +180,20 @@ export const roll = defineCommand({
  * are for the master to tell.
  */
 function answerRoll(
-    input: { table?: string; oracle?: string; toss?: number; why?: string; who?: string; check?: string; values?: number[]; hidden?: boolean; keep?: string; use?: string; double?: boolean; },
+    input: {
+        table?: string;
+        oracle?: string;
+        toss?: number;
+        why?: string;
+        who?: string;
+        check?: string;
+        values?: number[];
+        hidden?: boolean;
+        keep?: string;
+        use?: string;
+        double?: boolean;
+        tray?: boolean;
+    },
     root: string,
     context: Context,
 ): RollOutput
@@ -196,7 +214,7 @@ function answerRoll(
     const screened = answer.secret || (input.hidden === undefined && !physical && masters && screenUp(root));
     const hidden = input.hidden === true || screened;
     const checked = input.check === undefined ? {} : { check: input.check };
-    const data = { notation: answer.notation, total: answer.total, result: answer.text, ...answer.data, why: input.why, who: input.who, ...checked, physical, dice: answer.dice };
+    const data = { notation: answer.notation, total: answer.total, result: answer.text, ...answer.data, why: input.why, who: input.who, ...checked, physical, ...trayOf(input), dice: answer.dice };
     const entry = newDatedLogEntry(root, context, "roll", hidden ? "hidden" : "public", data);
     const shownFingerprint = hidden ? sealHiddenRoll(entry, answer.text, context) : undefined;
     appendLogEntry(root, entry);
@@ -232,6 +250,12 @@ function oracleAnswer(odds: string, source: FaceSource): Answer
     } catch (error) {
         throw error instanceof DiceError ? new Error(`${error.message} Nothing rolled.`) : error;
     }
+}
+
+/** Whether a shown roll flies in the dashboard's tray, kept in the log only when the master says it (VIEW-13). */
+function trayOf(input: { tray?: boolean; }): { tray?: boolean; }
+{
+    return input.tray === undefined ? {} : { tray: input.tray };
 }
 
 /** The coins tossed, each face in order and the heads as the total (COIN-3). */

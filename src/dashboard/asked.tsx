@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { answer } from "./api.ts";
 import type { Asked, Member, ShownGrid } from "./data.ts";
 import { trayThrows } from "./dice/pool.ts";
+import { CoinFace } from "./faces.tsx";
 import { notationLabel } from "./game-words.ts";
 import { Icon, NotationIcons } from "./icons.tsx";
 import { checkOf, notationModifier, sameDice, signed } from "./labels.ts";
@@ -398,10 +399,14 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
                 type="button"
                 class={sent === index ? `${kind} sent` : kind}
                 disabled={gone}
-                title={notationLabel(asked.words?.[index] ?? undefined)}
+                title={asked.toss === true ? undefined : notationLabel(asked.words?.[index] ?? undefined)}
                 onClick={() => void reply(index)}
             >
-                {check === undefined ? label : <CheckLabel check={check.check} dice={check.dice} name={asked.names?.[index] ?? keptName(check.dice)} />}
+                {check === undefined
+                    ? label
+                    : asked.toss === true
+                    ? <TossLabel words={check.check} coins={Number(/^(\d+)d2$/.exec(check.dice)?.[1] ?? 1)} />
+                    : <CheckLabel check={check.check} dice={check.dice} name={asked.names?.[index] ?? keptName(check.dice)} />}
             </button>
         );
     };
@@ -615,6 +620,17 @@ export function CheckLabel({ check, dice, name }: { check: string; dice: string;
             {modifier !== 0 && <span class="asked-dice">{signed(modifier)}</span>}
             {name !== undefined && <span class="asked-roll-name">{name}</span>}
             <span class="visually-hidden">{dice}</span>
+        </>
+    );
+}
+
+/** A toss's button (ASK-15): its coins as they are, one before the other, at most three, and its words, which say how many. */
+function TossLabel({ words, coins }: { words: string; coins: number; })
+{
+    return (
+        <>
+            <span class="die-icons">{Array.from({ length: coins }, (_, index) => <CoinFace key={index} side="heads" />)}</span>
+            <span class="asked-check-name">{words}</span>
         </>
     );
 }

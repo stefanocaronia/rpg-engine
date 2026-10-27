@@ -7660,6 +7660,21 @@ summary.fixed {
     margin-top: 4px;
 }
 
+/* A toss in the rolls: its coins where the total stands, at most three; their words on the line of the dice, which has the row's width, on one line. */
+.roll-total.roll-coins {
+    gap: 2px;
+    min-width: 0;
+}
+
+.roll-toss {
+    display: block;
+    overflow: hidden;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Words for a screen reader alone. */
 .visually-hidden {
     position: absolute;
@@ -7820,6 +7835,48 @@ summary.fixed {
     color: var(--accent);
 }
 
+/* The coins of a toss as the coin shows them (D-524 (1)), in its own palette, the same in every theme: gold, the sun dark on it, the moon gold on the dark; the
+   rim's edge a deeper gold, which the light page needs. */
+.coin-faces {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.coin-faces li {
+    display: flex;
+}
+
+svg.coin-face {
+    flex: none;
+    width: 22px;
+    height: 22px;
+}
+
+.coin-face .coin-rim {
+    fill: #d9a93f;
+    stroke: #8a6418;
+    stroke-width: 0.8;
+}
+
+.coin-face.heads .coin-field {
+    fill: #d9a93f;
+    stroke: #a87d24;
+    stroke-width: 0.6;
+}
+
+.coin-face.tails .coin-field,
+.coin-face.heads .coin-picture {
+    fill: #1c1206;
+}
+
+.coin-face.tails .coin-picture {
+    fill: #d9a93f;
+}
+
 /* A die of a package's roll that went well or badly for who rolled it, by its colour beside its face (D-507). */
 .die-chip.tone-good {
     box-shadow: inset 0 0 0 1.5px var(--ally);
@@ -7925,6 +7982,11 @@ summary.fixed {
 .plate-dice .die-chip svg.die {
     width: 22px;
     height: 22px;
+}
+
+.plate-dice svg.coin-face {
+    width: 40px;
+    height: 40px;
 }
 
 .plate-dice .die-chip s {
@@ -8495,7 +8557,21 @@ svg.icon {
     color: var(--accent);
 }
 
-.tray-die:disabled {
+/* The coin's button: the coin itself where a die's picture is, its count where a die's name is. */
+.tray-die svg.coin-face {
+    width: 26px;
+    height: 26px;
+}
+
+/* Of the coins chosen, the first two, one before the other, as two dice. */
+.die-icons svg.coin-face + svg.coin-face {
+    margin-inline-start: -10px;
+}
+
+.tray-die:disabled,
+.tray-die[aria-disabled="true"],
+.tray-double[aria-disabled="true"],
+.tray-modifier button[aria-disabled="true"] {
     opacity: 0.55;
     cursor: default;
 }
@@ -8633,6 +8709,10 @@ svg.icon {
 
     .tray-dice li:nth-last-child(7) {
         animation-delay: calc(var(--quick) * 6 / 5);
+    }
+
+    .tray-dice li:nth-last-child(8) {
+        animation-delay: calc(var(--quick) * 7 / 5);
     }
 }
 
@@ -8903,7 +8983,7 @@ svg.icon {
 
 /* A low screen, as a phone on its side, or a phone's when the tray stands over its bar: the dice in two columns of one width, and a kind's choice of which
    count on a line of its own at the foot, so that it never pushes a column off the window (D-396). */
-@media (max-height: 560px), (max-width: 600px) and (max-height: 600px) {
+@media (max-height: 610px), (max-width: 600px) and (max-height: 650px) {
     .tray-dice {
         grid-template-columns: repeat(2, 100px);
         grid-auto-flow: row dense;

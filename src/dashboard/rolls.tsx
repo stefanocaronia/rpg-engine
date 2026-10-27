@@ -5,14 +5,14 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { CardHeader, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
-import { DiceFaces } from "./faces.tsx";
+import { CoinFaces, DiceFaces, tossWords } from "./faces.tsx";
 import type { PageRoll } from "./free-rolls.ts";
 import { gameDateLabel, notationLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { notationModifier, strangerLabel } from "./labels.ts";
 import { rollWindow } from "./layout.ts";
 import { Token, type Tokened } from "./party.tsx";
-import { t } from "./text.ts";
+import { capitalized, t } from "./text.ts";
 
 // Where the browser remembers when the player last cleared the list of a campaign; how many older rolls each Load more shows.
 const clearedKey = "rpg-engine.rolls-cleared";
@@ -137,8 +137,9 @@ function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRo
 
     const player = roll.by === "player";
     const free = "free" in roll;
-    // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299).
-    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, notationLabel(roll.words), rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
+    // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299); a toss's coins in words.
+    const toss = roll.toss === undefined ? undefined : tossWords(roll.toss);
+    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, toss ?? roll.text, toss === undefined ? notationLabel(roll.words) : undefined, rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
         .filter((line) => line !== undefined && line !== "")
         .join("\n");
     return (
@@ -158,10 +159,21 @@ function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRo
                 {name}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}
-            {saysOf(roll) === undefined ? <span class="roll-total num">{roll.total}</span> : <span class="roll-total roll-says">{saysOf(roll)}</span>}
+            {/* A toss's coins as pictures where the total stands, their words on the line of the dice, which has the row's width. */}
+            {roll.toss !== undefined
+                ? <CoinFaces toss={roll.toss} className="roll-total roll-coins" />
+                : roll.says === undefined
+                ? <span class="roll-total num">{roll.total}</span>
+                : <span class="roll-total roll-says">{roll.says}</span>}
             <span class="roll-dice">
-                <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} tones={roll.tones} />
-                <span class="visually-hidden">{roll.text}</span>
+                {toss === undefined
+                    ? (
+                        <>
+                            <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} tones={roll.tones} />
+                            <span class="visually-hidden">{roll.text}</span>
+                        </>
+                    )
+                    : <span class="roll-toss">{capitalized(toss)}</span>}
             </span>
         </li>
     );
@@ -170,7 +182,7 @@ function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRo
 /** What a roll's faces mean in place of its total: the coins of a toss in the page's language, or what an extension's roll says. */
 function saysOf(roll: ShownRoll): string | undefined
 {
-    return roll.toss === undefined ? roll.says : roll.toss.map((side) => (side === "heads" ? t("heads") : t("tails"))).join(", ");
+    return roll.toss === undefined ? roll.says : tossWords(roll.toss);
 }
 
 /** What the list says with no roll in it: what comes there, that the last half hour had none, or that the player cleared it. */

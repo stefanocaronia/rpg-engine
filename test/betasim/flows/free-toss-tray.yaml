@@ -1,0 +1,11 @@
+name: Coins tossed free from the dice button
+covers: [free-toss-tray]
+setup: {}
+steps:
+  - tapOn: {label: Free roll}
+  - tapOn: {label: Add a coin}
+  - tapOn: {label: "Add a coin: 1 chosen"}
+  - tapOn: Toss Coins
+  - advance: 2s
+  - advance: 2s
+  - assertVisible: {css: ".roll-list .roll.free .roll-coins"}
