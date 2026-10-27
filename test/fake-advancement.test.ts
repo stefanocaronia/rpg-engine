@@ -1,6 +1,6 @@
 // How characters rise on the fake system (D-205, D-212, D-233, D-234): the setting the setup asks and what a value leaves out (DAT-10), the renown and the
-// rank it reaches (PRO-6), what the creatures overcome in a scene give the party (DAT-11), and what a quest that ends rewards. The same on the 5e is in
-// advancement.test.ts, which goes with it (D-514, step 8).
+// rank it reaches (PRO-6), what the creatures overcome in a scene give the party (DAT-11), and what a quest that ends rewards. The same on the 5e is in its
+// repository.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

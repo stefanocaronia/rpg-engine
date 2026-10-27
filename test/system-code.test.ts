@@ -13,8 +13,6 @@ describe("the code of a game system (D-448)", () => {
         expect(Object.keys(loaded)).toEqual(["5e", "fake"]);
         expect(loaded.fake).toHaveProperty("code");
         expect(findSystem(testSystemFolders, "fake")?.code).toBe(true);
-        // The 5e's: its dying point goes with it (D-514, step 8).
-        expect(loaded["5e"]).toHaveProperty("code");
         expect(findSystem(testSystemFolders, "ironsworn")?.code).toBe(false);
     });
 

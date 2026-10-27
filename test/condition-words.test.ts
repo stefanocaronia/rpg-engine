@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { allStateChecks } from "../src/commands/game-checks.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -109,28 +109,5 @@ describe("a condition written in the campaign's language", () => {
         await ok("effect", "add", "Ettore", "Bloccato");
         expect(await ok("effect", "end", "Ettore", "Pinned")).toBe("Ettore: Bloccato ended.");
         expect(effects("Ettore")).toBe("");
-    });
-});
-
-describe("the 5e in Italian", () => {
-    beforeEach(async () => {
-        useSystem(folder, "5e");
-    });
-
-    it("worsens the rolls of the sheet and the passives for Avvelenato, and stops the walk for Afferrato (D-445, FOR-2)", async () => {
-        const fields = ["creature=[[Human]]", "classes=[[Fighter]] 1", "str=14", "dex=12", "con=12", "int=10", "wis=10", "cha=10", "hp-base=10"];
-        await ok("write", "Ettore", "--unset", "grit", "--unset", "guard", ...fields.flatMap((field) => ["--set", field]));
-        const before = await ok("show", "Ettore");
-        expect(before).toMatch(/walking 30 ft .*passive-perception 10 /);
-        await ok("effect", "add", "Ettore", "Avvelenato");
-        await ok("effect", "add", "Ettore", "Afferrato");
-        expect(await ok("show", "Ettore")).toMatch(/walking 0 ft .*passive-perception 5 /);
-        const sheet = JSON.parse(await ok("view", "Ettore", "--json")).sheet as { values: { field: string; roll?: { notation: string; }; }[]; }[];
-        expect(sheet.flatMap((group) => group.values).find((value) => value.field === "perception")?.roll?.notation).toMatch(/^2d20kl1/);
-    });
-
-    it("refuses Avvelenato on a creature immune to Poisoned (D-454, EFF-17)", async () => {
-        await ok("scene", "open", "--title", "Cripta", "--type", "combat", "--with", "Ettore", "--creatures", "Zombie=1");
-        expect((await rpg("effect", "add", "Zombie 1", "Avvelenato")).output).toBe("Zombie 1 is immune to Poisoned, in its condition-immunities: it does not take it. Nothing changed.");
     });
 });

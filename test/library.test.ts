@@ -515,16 +515,15 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     });
 
     it("keeps the books' two excerpts when the system's name was found by one word of a longer search (RUL-8)", async () => {
-        // The 5e's rules, its feet and its words in Italian go with it (D-514, step 8).
-        await ok("config", "system", "5e");
         context.terminal = true;
-        fileIn(shelf, "Tiri.md", "TIRO PER COLPIRE\nPer colpire un bersaglio si fa un tiro per colpire con un d20, e si aggiunge il bonus di competenza dell'arma che si usa nel colpo.");
-        fileIn(shelf, "Armi.md", "LE ARMI\nOgni arma dice il dado del danno; il tiro per colpire con un'arma da lancio usa la Forza, quello con un'arma a distanza la Destrezza.");
+        // The fake system's Cadere is its Falling: found by one word of the search.
+        fileIn(shelf, "Ponti.md", "CADERE DAL PONTE\nChi cade dal ponte nel fiume perde il fiato e la corrente lo porta a valle, finché non tocca la riva con una prova di Forza.");
+        fileIn(shelf, "Fiumi.md", "I FIUMI\nChi vuole cadere dal ponte senza farsi male salta dalla sponda bassa del ponte, dove il fondo del fiume è alto.");
         await ok("config", "library", "--add", shelf);
         await readShelf();
-        const output = await ok("rules", "tiro per colpire");
-        expect(output).toContain("searched by its own names too: Archery");
-        expect(output.match(/^(Tiri|Armi), part \d+:$/gm)).toHaveLength(2);
+        const output = await ok("rules", "cadere dal ponte");
+        expect(output).toContain("searched by its own names too: Falling");
+        expect(output.match(/^(Ponti|Fiumi), part \d+:$/gm)).toHaveLength(2);
     });
 
     it("adds a book inside a folder the player allowed without asking again", async () => {
@@ -576,21 +575,20 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     });
 
     it("searches the books after the system, each excerpt with its book and page, and fewer when the system answered", async () => {
-        // The 5e's rules, its feet and its words in Italian go with it (D-514, step 8).
-        await ok("config", "system", "5e");
         context.terminal = true;
+        fileIn(shelf, "Prese.pdf", tinyPdf([{ text: "BLOCCATO\nUna persona bloccata resta dove si trova finché non si libera: non si muove, e chi la tiene non lascia la presa." }, { text: "LA CORDA\nUna corda regge una persona sola." }]));
         await ok("config", "library", "--add", shelf);
         await readShelf();
         const fall = await ok("rules", "falling");
         expect(fall).toContain(`From the player's books, in Italian and English:\n\nRules of the Road, part 1:\n${falling}\n\nThe system's`);
         expect(fall).toContain("The system's sheet numbers win over the books;");
-        expect(fall).toContain('only your own words and the numbers, in ft, with source: "<book>, PDF p. N"');
+        expect(fall).toContain('only your own words and the numbers, in m, with source: "<book>, PDF p. N"');
         expect(fall).not.toContain("No rule matches");
-        // The system answers Grappled; the Italian book is searched with the system's Italian words, one excerpt beside it.
-        const grappled = await ok("rules", "grappled");
-        expect(grappled).toContain("Grappled (5e)");
-        expect(grappled).toContain("Regole del Guado, PDF p. 2:\nAFFERRATO\nUna creatura afferrata");
-        expect(grappled.match(/PDF p\. \d+:/g)).toHaveLength(1);
+        // The system answers Pinned; the Italian book is searched with the system's Italian words, Bloccato, one excerpt beside it.
+        const pinned = await ok("rules", "pinned");
+        expect(pinned).toContain("Pinned (fake)");
+        expect(pinned).toContain("Prese, PDF p. 1:\nBLOCCATO\nUna persona bloccata");
+        expect(pinned.match(/PDF p\. \d+:/g)).toHaveLength(1);
     });
 
     it("reads a page whole, says when a book has no such page, and lists the books when there is no text", async () => {
@@ -604,13 +602,11 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
     });
 
     it("warns of a page the OCR read, and says when the system, written in another language, found nothing", async () => {
-        // The 5e's rules, its feet and its words in Italian go with it (D-514, step 8).
-        await ok("config", "system", "5e");
         context.terminal = true;
         await ok("config", "library", "--add", shelf);
         await readShelf();
         const ford = await ok("rules", "guado");
-        expect(ford).toContain("Nothing in the rules of 5e for these words: it writes its rules in English, so search it with the rule's English name too; the system wins over the books.");
+        expect(ford).toContain("Nothing in the rules of fake for these words: it writes its rules in English, so search it with the rule's English name too; the system wins over the books.");
         expect(ford).toContain("Regole del Guado, PDF p. 3:\nIL GUADO\nIl traghettatore chiede una moneta");
         expect(ford).toContain("Pages the OCR read may lose a number or misread one (O for 0, l for 1)");
     });

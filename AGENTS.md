@@ -23,7 +23,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `.claude/` | a link to `private/.claude/`, where Claude Code looks for it: see "Colleagues" | no | no |
 | `docs/` | the docs for developers and agents: `architecture.md`, `game-systems.md`, `extensions.md`, `dashboard-style.md`, `commands.md` (generated); the player's guide is Help's, `src/dashboard/guide/` | yes | no |
 | `src/` | core, CLI, MCP server, the dashboard's server and page (`src/dashboard/`) | yes | built into `dist/` |
-| `systems/` | built-in game systems (e.g. `5e`): one per campaign, required; each keeps its own tests in its `test/`, and the scripts that wrote its pages in `build/`; `ironsworn` is for now a test system | yes | yes, without their tests and scripts, and without `ironsworn` until it is playable |
+| `systems/` | the game systems the engine ships: one per campaign, required; the `5e` is a copy of its own repo, `../rpg-engine-5e`, changed only there, until the engine stops shipping it; `ironsworn` is for now a test system | yes | yes, without `ironsworn` until it is playable |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
 | `test/` | tests | yes | no |
 | `playtests/` | playtest scenarios: player profiles, starting points, checklists | yes | no |
@@ -39,12 +39,12 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 - `npm run demo`: build, then serve the dashboard of the demo campaign at `http://127.0.0.1:5760`, asking checks in turn: what the browser pane's play button starts (`.claude/launch.json`).
 - `npm run betasim`: build, then run betasim's flows and simulated testers on the dashboard, at 1280 and at 375 (`test/betasim/`): its usability alone, never the game. Reports in `test/betasim/report/`.
 - `npm run translate`: translate the dashboard's phrases that a shipped language lacks (`src/dashboard/i18n/<code>.json`), a game system's words from its Italian list (`systems/<name>/words/<code>.yaml`), and the guide of Help where a language lacks it or has one from an older English (`src/dashboard/guide/<code>.md`), with Claude Code and your own login; `-- --only fr,de` for some. Italian is curated: read what it writes there.
-- Releasing: a tag `v<version>` equal to `package.json`'s version publishes it to npm through GitHub Actions (`.github/workflows/publish.yml`), after lint, build and tests; only on Stefano's word. Our extensions live in their own repos beside this one, `../rpg-engine-weather` and `../rpg-engine-lockpicking` (D-506), each with its tests, CI and release by tag; `npm run test:downstream` runs their tests against this engine, before a release of it.
+- Releasing: a tag `v<version>` equal to `package.json`'s version publishes it to npm through GitHub Actions (`.github/workflows/publish.yml`), after lint, build and tests; only on Stefano's word. Our packages live in their own repos beside this one, the extensions `../rpg-engine-weather` and `../rpg-engine-lockpicking` (D-506) and the 5e `../rpg-engine-5e` (D-514), each with its tests, CI and release by tag; `npm run test:downstream` runs their tests against this engine, before a release of it.
 - `npm link`: install the development build as the global `rpg` command. An MCP server that is already running keeps the code and the game systems it started with: after a build, reconnect it (`/mcp` in Claude Code) or open a new chat.
 
 ## Development vs game
 
-1. **No "magic" names for game files in the repo.** Nothing under `instructions/`, `systems/` or `playtests/`, nor in an extension's repo, is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.
+1. **No "magic" names for game files in the repo.** Nothing under `instructions/`, `systems/` or `playtests/`, nor in a package's repo, is called `AGENTS.md` or `CLAUDE.md`, and nothing sits in `.agents/` or `.claude/`: hosts load those on their own, and a development agent would take the game master's instructions as its own. The files get their real names only when they are installed into a campaign.
 2. **Playtests with an AI run in a campaign outside the repo.** Claude Code also reads the `CLAUDE.md` files of parent folders, so inside the repo development and game instructions would mix.
 
 ## Architecture rules
@@ -122,7 +122,7 @@ Portraits: in the look of 1980s–90s TV anime, head and shoulders on a plain ba
 - TypeScript on Node ≥ 22; zod; yaml; the official MCP SDK; Preact with JSX for the dashboard; vitest; few dependencies.
 - Code, comments, commit messages, public docs, command names, file names and config keys in English; game content in the campaign language.
 - Secret parts of a page go in a `> [!secret]` block (Obsidian callout).
-- Tests use Ironsworn next to `5e`, to keep the core generic: only its CC BY 4.0 parts (the SRD, asset cards and oracles; from Delve, moves, oracles, theme and domain cards), with its attribution.
+- The core's tests run on the fake system of `test/systems/fake`, never published, and on `free`; a game's own tests live in its repo. Ironsworn, a test system for now, holds only its CC BY 4.0 parts (the SRD, asset cards and oracles; from Delve, moves, oracles, theme and domain cards), with its attribution.
 - Never keep the repo under a path containing `&`: on Windows, npm's `.cmd` shims truncate the path and `npm run` fails.
 - Credentials never go in the repo or in a campaign: they belong in the OS keychain.
 - **Licensing and trademarks.** The repo and the npm package hold only original or open-licensed content: for 5e, only SRD 5.1 and 5.2 (CC-BY-4.0) with the required attribution, and compatibility stated only as "compatible with fifth edition". No Wizards of the Coast trademarks in names or presentation, no non-SRD content (Forgotten Realms, non-SRD monsters, art), not even in tests. These rules cover only what we ship: never restrict what a user's AI knows, searches or reads.

@@ -1,13 +1,13 @@
 // The player's actions from the dashboard as their own sentences (D-495): the page writes them from models without articles, in the page's language, with
 // the names it shows; which lines act is the system's word; who may be named; how a sentence said stands as the server tells it.
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { actPeople, actSentence, actTitle, itemVerbs, saidStates, setSystemVerbs, spokenBy, talkSentence, targetMode, verbLabel } from "../src/dashboard/acts.ts";
 import type { ShownPlace, ShownScene } from "../src/dashboard/data.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
 import { findSystem, systemWords } from "../src/systems/index.ts";
-import { pageFolder, phraseNames } from "./i18n/phrases.ts";
+import { pageFolder } from "./i18n/phrases.ts";
 import { testSystemFolders } from "./support.ts";
 
 const italian = (): Promise<Record<string, string>> => Promise.resolve(JSON.parse(readFileSync(join(pageFolder, "i18n", "it.json"), "utf8")) as Record<string, string>);
@@ -98,48 +98,6 @@ describe("the player's sentence (D-495)", () => {
         });
         expect(["attack", "use", "equip", "unequip", "invoke", "bind"].map(targetMode)).toEqual(["asks", "lets", "none", "none", "lets", "none"]);
         setSystemVerbs(undefined);
-    });
-});
-
-// The 5e's: its verbs cast and prepare, with its words in 25 languages, go with it (D-514, step 8).
-describe("the 5e's verbs", () => {
-    afterAll(async () => {
-        setSystemVerbs(undefined);
-        setSystemWords(undefined);
-        await setLanguage("en");
-    });
-
-    it("casts on someone, at a square or on oneself, and prepares, in English and in Italian through the 5e's words", async () => {
-        const fifth = findSystem(testSystemFolders, "5e");
-        setSystemVerbs(fifth?.sheetVerbs);
-        await setLanguage("en");
-        expect([actSentence("cast", "Healing Word", { person: "Lupa" }), actSentence("cast", "Guiding Bolt", { square: "G7" }), actSentence("cast", "Bless", "self"), actSentence("prepare", "Bless")]).toEqual([
-            "I cast Healing Word on Lupa.",
-            "I cast Guiding Bolt at G7.",
-            "I cast Bless on myself.",
-            "I prepare Bless.",
-        ]);
-
-        await setLanguage("it", italian);
-        setSystemWords(systemWords(fifth!.folder, "it"));
-        expect([actSentence("cast", "Parola guaritrice", { person: "Lupa" }), actSentence("cast", "Dardo guida", { square: "G7" }), actSentence("prepare", "Benedizione"), verbLabel("cast")]).toEqual([
-            "Lancio Parola guaritrice su Lupa.",
-            "Lancio Dardo guida verso G7.",
-            "Preparo Benedizione.",
-            "Lancia",
-        ]);
-    });
-
-    it("has its verbs' sentences in every language of its words, each with the names it fills", () => {
-        const fifth = findSystem(testSystemFolders, "5e");
-        const sentences = Object.values(fifth?.sheetVerbs ?? {}).flatMap((verb) => [verb.label, verb.title, verb.says, verb.on, verb.at, verb.self]).filter((sentence) => sentence !== undefined);
-        const languages = readdirSync(join(fifth!.folder, "words")).map((file) => file.replace(/\.yaml$/, "")).filter((language) => language !== "en");
-        const lacking = languages.flatMap((language) => {
-            const own = systemWords(fifth!.folder, language)?.words ?? {};
-            return sentences.filter((sentence) => own[sentence] === undefined || phraseNames(own[sentence]).join() !== phraseNames(sentence).join()).map((sentence) => `${language}: ${sentence}`);
-        });
-        expect(languages.length).toBe(25);
-        expect(lacking).toEqual([]);
     });
 });
 

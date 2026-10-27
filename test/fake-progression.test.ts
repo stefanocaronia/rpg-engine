@@ -1,6 +1,6 @@
 // What the vocations of a character give (D-201, D-219, PRO-1–PRO-4, PRO-7), through the commands on the fake system: the row of each vocation's table at its
 // rank, the knacks up to it with an oath's, the rites an oath adds, and what validate says of a table that gives nothing. The same with the 5e's classes is
-// in progression.test.ts, which goes with the 5e (D-514, step 8).
+// in the 5e's repository.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

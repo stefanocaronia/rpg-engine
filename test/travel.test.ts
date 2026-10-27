@@ -102,12 +102,9 @@ describe("rpg route (TRV-4, TRV-5)", () => {
         expect(await ok("route", "Capitale", "--from", "Rocca")).toContain("At a steady pace (4.5 km an hour): 22h 13m of travel, 3 days at 8 h a day.");
     });
 
-    it("D-262: in imperial, with the true mile where the system gives none, and with the game's mile of the 5e", async () => {
+    it("D-262: in imperial, with the true mile where the system gives none", async () => {
         await ok("config", "units", "imperial");
         expect(await ok("route", "Rocca")).toBe("Guadoscuro → Bivio → Rocca, 22.4 miles by Strada vecchia (7.5 miles) and Sentiero dei colli (14.9 miles).\nAt a steady pace (2.8 miles an hour): 8h of travel.");
-        // The 5e's: its mile of 1.5 km goes with it (D-514, step 8).
-        useSystem(folder, "5e");
-        expect(await ok("route", "Rocca")).toBe("Guadoscuro → Bivio → Rocca, 24 miles by Strada vecchia (8 miles) and Sentiero dei colli (16 miles).\nAt a normal pace (3 miles an hour): 8h of travel.");
     });
 
     it("ROA-5: one spot needs no road; a place no road reaches says how to make one", async () => {

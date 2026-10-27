@@ -1,12 +1,12 @@
-// The character sheet on the fake system (DAT-2, DAT-8, D-206, D-207, D-280, SYS-8): its groups in show, how each value is made, what is written on it, the
-// names a list takes, and the rolls that read it. The same on the 5e is in sheet.test.ts, which goes with it (D-514, step 8).
-import { readFileSync, writeFileSync } from "node:fs";
+// The character sheet on the fake system (DAT-2, DAT-8, D-206, D-207, D-280, D-445, SYS-8): its groups in show, how each value is made, what is written on
+// it, the names a list takes, Ironsworn's too, the rolls that read it, and better and worse that cancel out. The same on the 5e is in the 5e's repository.
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { write } from "../src/commands/write.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -115,6 +115,18 @@ describe("the sheet in show (DAT-2, D-207)", () => {
 });
 
 describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
+    it("takes the names of another game system: the debilities of the test system based on Ironsworn", async () => {
+        removeFolder(folder);
+        folder = makeTempFolder();
+        context = testContext(folder);
+        await ok("init", "--name", "Ferro", "--system", "ironsworn");
+        await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "momentum=2/10", "--add", "debilities=Wounded");
+        expect(await refused("write", "Kira", "--add", "debilities=hungry")).toBe(
+            '"hungry" is not one of the names debilities takes in the system ironsworn: wounded, shaken, unprepared, encumbered, maimed, corrupted, cursed, tormented. Nothing changed.',
+        );
+        expect(await ok("show", "Kira")).toContain("momentum: 2/9");
+    });
+
     it("refuses a map where the system wants a list, as an MCP client may send vocations, and says how to write it (D-246)", async () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=pc");
         const input = write.input.parse({ page: "Mira", set: { vocations: { "[[Warden]]": 1 } } });
@@ -200,5 +212,51 @@ describe("rolls from the sheet (DAT-8)", () => {
         await ok("effect", "add", "Ettore", "Dazed", "--for", "1h");
         await ok("write", "Ettore", "--set", "ward=2");
         expect(await ok("roll", "2d6", "--who", "Ettore")).toContain("\nEttore has Benedizione, Dazed, ward 2: if they change this roll, complete it:");
+    });
+});
+
+describe("better and worse together (D-445)", () => {
+    it("cancel out, in any system that declares them", async () => {
+        const systems = join(folder, "..", `${folder.split(/[\\/]/).at(-1)}-systems`);
+        mkdirSync(join(systems, "prova"), { recursive: true });
+        writeFileSync(
+            join(systems, "prova", "system.yaml"),
+            [
+                "title: a test system",
+                "language: en",
+                "fields: {mira: modifier}",
+                "sheet:",
+                "  Prove: [mira]",
+                "sheet-dice: {1d20: [mira]}",
+                "sheet-odds:",
+                "  better: 2d20kh1",
+                "  worse: 2d20kl1",
+                "  when:",
+                '    - {fields: [mira], better: "has(effects, Aiuto)", worse: "has(effects, Ostacolo)"}',
+                "",
+            ].join("\n"),
+        );
+
+        try {
+            context = { ...context, systemFolders: [systems] };
+            useSystem(folder, "prova");
+            await ok("write", "Ettore", "--set", "mira=2");
+
+            const roll = async (): Promise<string | undefined> => {
+                const sheet = JSON.parse(await ok("view", "Ettore", "--json")).sheet as { values: { field: string; roll?: { notation: string; }; }[]; }[];
+                return sheet.flatMap((group) => group.values).find((value) => value.field === "mira")?.roll?.notation;
+            };
+
+            expect(await roll()).toBe("1d20+2");
+            await ok("effect", "add", "Ettore", "Aiuto");
+            expect(await roll()).toBe("2d20kh1+2");
+            await ok("effect", "add", "Ettore", "Ostacolo");
+            expect(await roll()).toBe("1d20+2");
+            await ok("effect", "end", "Ettore", "Aiuto");
+            expect(await roll()).toBe("2d20kl1+2");
+        } finally {
+            // The test system goes even when the test fails.
+            removeFolder(systems);
+        }
     });
 });

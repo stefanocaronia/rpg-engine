@@ -1,12 +1,12 @@
-// The tests of our extensions' own repositories, beside this one, run against this engine (D-506): each in ../rpg-engine-<name>, with the engine built here
-// installed in it without saving; one that is not there is skipped, and says so.
+// The tests of our packages' own repositories, beside this one, run against this engine (D-506, D-514): the 5e's and the extensions', each in
+// ../rpg-engine-<name>, with the engine built here installed in it without saving; one that is not there is skipped, and says so.
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const engine = fileURLToPath(new URL("../../", import.meta.url));
-const repositories = ["rpg-engine-weather", "rpg-engine-lockpicking"].map((name) => ({ name, folder: resolve(engine, "..", name) }));
+const repositories = ["rpg-engine-5e", "rpg-engine-weather", "rpg-engine-lockpicking"].map((name) => ({ name, folder: resolve(engine, "..", name) }));
 const present = repositories.filter((repository) => existsSync(join(repository.folder, "package.json")));
 
 for (const repository of repositories.filter((one) => !present.includes(one))) {
@@ -14,7 +14,7 @@ for (const repository of repositories.filter((one) => !present.includes(one))) {
 }
 
 if (present.length === 0) {
-    console.log("No repository of an extension to test.");
+    console.log("No repository of a package to test.");
     process.exit(0);
 }
 
@@ -35,5 +35,5 @@ const failed = present.filter((repository) => {
     return !npm(repository.folder, ["install", "--no-save", "--install-links=false", engine]) || !npm(repository.folder, ["test"]);
 });
 
-console.log(failed.length === 0 ? "\nEvery extension's tests passed." : `\nFailed: ${failed.map((repository) => repository.name).join(", ")}.`);
+console.log(failed.length === 0 ? "\nEvery package's tests passed." : `\nFailed: ${failed.map((repository) => repository.name).join(", ")}.`);
 process.exit(failed.length === 0 ? 0 : 1);

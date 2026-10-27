@@ -1,5 +1,5 @@
 // The uses of what a character has and the rests that bring them back (D-204, D-220; DAT-3, DAT-4, DAT-9), through the commands on the fake system: the
-// rallies of a Warden's table, a people's own use, a second deed from a knack. The 5e's classes and features go with it (D-514, step 8).
+// rallies of a Warden's table, a people's own use, a second deed from a knack. The 5e's classes and features are in the 5e's repository.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -95,76 +95,5 @@ describe("a threshold given with write (DAT-3)", () => {
     it("shows the rule of what it touches when write gives it to the player character", async () => {
         await ok("write", "Gara", "--type", "character", "--set", "role=pc", "--set", "vocations=[[Warden]] 1");
         expect(await ok("write", "Gara", "--set", "resolve-loss=1/5")).toContain("resolve-loss changed: Hunger, from the rules of fake:");
-    });
-});
-
-// The 5e's: the uses its classes, features and abilities give, and the features that change its numbers, go with it (D-514, step 8).
-describe("the 5e's uses", () => {
-    beforeEach(async () => {
-        await ok("config", "system", "5e");
-    });
-
-    /** A character of the party with these classes, its abilities at 14 and its race human unless given. */
-    async function character(name: string, ...fields: string[]): Promise<string>
-    {
-        const given = new Set(fields.map((field) => field.split("=")[0]));
-        const base = ["role=pc", "creature=[[Human]]", "str=14", "dex=14", "con=14", "int=14", "wis=14", "cha=14", "hp-base=20"].filter((field) => !given.has(field.split("=")[0]));
-        return ok("write", name, "--type", "character", ...[...base, ...fields].flatMap((field) => ["--set", field]));
-    }
-
-    it("writes the uses its classes give full, with the hit points and the hit dice, and says so", async () => {
-        const written = await character("Gara", "classes=[[Fighter]] 2");
-        expect(written).toContain("Gara has hp 24/24, hit-dice-d10 2/2, action-surge 1/1, second-wind 1/1, full: uses of the system 5e that come back with a rest.");
-        expect(await ok("show", "Gara")).toContain("Features: features Fighting Style, Second Wind, Action Surge (one use) · action-surge 1/1 · second-wind 1/1");
-    });
-
-    it("takes the maximum of a use from the class's row, and from the features and the abilities", async () => {
-        await character("Bruk", "classes=[[Barbarian]] 6, [[Cleric]] 6", "cha=16");
-        const shown = await ok("show", "Bruk");
-        expect(shown).toContain("rages 4/4");
-        expect(shown).toContain("channel-divinity 2/2");
-        await character("Lirà", "classes=[[Bard]] 1, [[Paladin]] 3", "subclasses=[[Oath of Devotion]]", "cha=16");
-        const bard = await ok("show", "Lirà");
-        // Paladin's Channel Divinity from its oath, Bardic Inspiration as many as the Charisma modifier, Divine Sense one more, Lay on Hands 5 per level.
-        expect(bard).toContain("channel-divinity 1/1");
-        expect(bard).toContain("bardic-inspiration 3/3");
-        expect(bard).toContain("divine-sense 4/4");
-        expect(bard).toContain("lay-on-hands 15/15");
-    });
-
-    it("brings back a bard's inspiration with a short rest only from Font of Inspiration, and 4 sorcery points from Sorcerous Restoration", async () => {
-        await character("Lirà", "classes=[[Bard]] 4");
-        await ok("change", "Lirà", "bardic-inspiration", "--by=-1");
-        expect(await ok("change", "--recipe", "short rest")).toContain("Not brought back: bardic-inspiration 1/2.");
-        await ok("write", "Lirà", "--set", "classes=[[Bard]] 5");
-        expect(await ok("change", "--recipe", "short rest")).toContain("bardic-inspiration 1/2 → 2/2");
-        await character("Sef", "classes=[[Sorcerer]] 20");
-        await ok("change", "Sef", "sorcery-points", "--by=-10");
-        expect(await ok("change", "Sef", "--recipe", "short rest")).toContain("sorcery-points 10/20 → 14/20");
-    });
-
-    it("shows the rule of exhaustion when write gives it to the player character (DAT-3)", async () => {
-        await character("Gara", "classes=[[Fighter]] 1");
-        expect(await ok("write", "Gara", "--set", "exhaustion=1/6")).toContain("exhaustion changed: Exhaustion, from the rules of 5e:");
-    });
-
-    it("adds half the proficiency bonus to a check without it: Jack of All Trades rounded down, Remarkable Athlete rounded up on Strength, Dexterity and Constitution (D-222)", async () => {
-        await character("Lirà", "classes=[[Bard]] 2", "skill-proficiencies=[Performance]");
-        const bard = await ok("show", "Lirà");
-        // Proficiency +2: half is +1, on every check without the proficiency, initiative too; none on a skill it is proficient in.
-        expect(bard).toContain("athletics +3 · deception +3");
-        expect(bard).toContain("performance +4 ●");
-        expect(bard).toContain("initiative +3");
-        expect(await ok("show", "Lirà#Skills")).toContain("athletics +3: str-mod +2, proficiency +2, Jack of All Trades in features");
-        await character("Gara", "classes=[[Fighter]] 7", "subclasses=[[Champion]]");
-        const champion = await ok("show", "Gara");
-        // Proficiency +3: half rounded up is +2, on Strength and Dexterity checks only.
-        expect(champion).toContain("acrobatics +4 · animal-handling +2 · arcana +2 · athletics +4");
-        expect(champion).toContain("initiative +4");
-    });
-
-    it("adds Aura of Protection to a paladin's own saves, at least 1 (D-222)", async () => {
-        await character("Ser", "classes=[[Paladin]] 6", "cha=8", "save-proficiencies=[wis, cha]");
-        expect(await ok("show", "Ser")).toContain("Saving Throws: str-save +3 · dex-save +3 · con-save +3 · int-save +3 · wis-save +6 ● · cha-save +3 ●");
     });
 });

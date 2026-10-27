@@ -1,13 +1,13 @@
 // What the party uses up (D-435, D-447; UPK-1–UPK-4), on the fake system: a day's hardtack outside a settlement under the rigor «rules», the days hungry and the
 // resolve lost past them, a night's lodging in a settlement, what burns spent as it is lit, one night's sleep in 20 hours and the stamina dice of a breather.
-// The 5e's exhaustion goes with it (D-514, step 8).
+// The 5e's exhaustion is in the 5e's repository.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { change } from "../src/commands/change.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -221,16 +221,6 @@ describe("what burns", () => {
         writeFileSync(join(folder, "world", "Fiaccola.md"), "---\naliases: [Lume]\n---\n");
         const party = JSON.parse(await ok("view", "--json")).party as { effects: { name: string; burns?: unknown; }[]; }[];
         expect(party[0].effects.find((effect) => effect.name === "Lume")).not.toHaveProperty("burns");
-    });
-});
-
-// The 5e's: its exhaustion goes with it (D-514, step 8).
-describe("the 5e's exhaustion", () => {
-    it("halves the hit point maximum from level 4 (p. 358)", async () => {
-        useSystem(folder, "5e");
-        await ok("write", "Ettore", "--unset", "might", "--set", "con=14", "--set", "classes=[[Fighter]] 1", "--set", "hp-base=10", "--set", "hp=12/12");
-        await ok("change", "Ettore", "exhaustion", "--to", "4");
-        expect(await ok("show", "Ettore")).toContain("hp 6/6");
     });
 });
 

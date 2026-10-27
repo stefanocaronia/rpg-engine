@@ -1,9 +1,9 @@
 // What a character carries weighs (D-432; LOAD-1–LOAD-3), on the fake system: the sheet sums it against the limit, status says when it goes over it under the
-// rigor «rules», and write asks a weight for an item that has none. The 5e's sizes and its pound go with it (D-514, step 8).
+// rigor «rules», and write asks a weight for an item that has none. The 5e's sizes and its pound are in the 5e's repository.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -74,37 +74,6 @@ describe("the load a character carries", () => {
         expect(await ok("write", "Sacco di farina", "--type", "item")).toContain('Sacco di farina has no heft, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set heft="2 kg".');
         expect(await ok("write", "Lanterna di Bruna", "--type", "item", "--set", "item=[[Lantern]]")).not.toContain("has no heft");
         expect(await ok("write", "Pietra", "--type", "item", "--set", "heft=3 kg")).not.toContain("has no heft");
-    });
-});
-
-// The 5e's: its sizes, its pound and its gear go with it (D-514, step 8).
-describe("the 5e's load", () => {
-    beforeEach(async () => {
-        useSystem(folder, "5e");
-        await ok("write", "Ettore", "--unset", "might", "--set", "str=14");
-    });
-
-    it("shows the load in kilograms to a player who counts in metric, at the system's pound (LOAD-2)", async () => {
-        await ok("write", "Bruna", "--type", "character", "--set", "role=companion", "--set", "level=1", "--set", "str=10", "--set", "money=1,000 gp", "--add", "inventory=[[Waterskin]]");
-        expect(await ok("show", "Bruna")).toContain("load 25 / 150 lb");
-        const view = JSON.parse(await ok("view", "Bruna", "--json"));
-        expect(JSON.stringify(view).match(/"field":"load","text":"([^"]+)"/)?.[1]).toBe("12.5 / 75 kg");
-    });
-
-    it("multiplies the limit by the factor of the size, written or from the race, and takes only the system's sizes (LOAD-4)", async () => {
-        await ok("write", "Bruna", "--type", "character", "--set", "role=companion", "--set", "level=1", "--set", "str=10", "--add", "inventory=[[Waterskin]]");
-        await ok("write", "Bruna", "--set", "size=Large");
-        expect(await ok("show", "Bruna")).toContain("load 5 / 300 lb");
-        await ok("write", "Bruna", "--set", "size=Tiny");
-        expect(await ok("show", "Bruna")).toContain("load 5 / 75 lb");
-        await ok("write", "Bruna", "--unset", "size");
-        // A race of the campaign, larger than the SRD's: the character takes its size.
-        await ok("write", "Mezzogigante", "--type", "creature", "--set", "category=race", "--set", "size=Large");
-        await ok("write", "Bruna", "--set", "creature=[[Mezzogigante]]");
-        expect(await ok("show", "Bruna")).toContain("load 5 / 300 lb");
-        const refused = await runCommandLine(["write", "Bruna", "--set", "size=Grande"], context);
-        expect(refused.exitCode).toBe(1);
-        expect(refused.output).toMatch(/^"Grande" is not one of the names size takes in the system 5e: Tiny, Small, Medium, Large, Huge, Gargantuan/);
     });
 });
 

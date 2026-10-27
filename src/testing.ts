@@ -8,6 +8,7 @@ import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
 import { runCommandLine } from "./command-line.ts";
+import { ask } from "./commands/ask.ts";
 import { campaignWidgets, type ShownWidget } from "./commands/game-widgets.ts";
 import { campaignSystem } from "./commands/game-world.ts";
 import type { Context, Player } from "./core/context.ts";
@@ -38,18 +39,30 @@ export interface TestCampaign
     run(...args: string[]): Promise<Ran>;
     /** Runs a command that must succeed, and gives what it printed; it throws with that when it fails. */
     ok(...args: string[]): Promise<string>;
+    /** Asks the player with the core's ask, as through MCP, since the command line asks in words: give the context a page or a player to answer it. */
+    ask(input: AskInput): Promise<Ran>;
     /** The dice show these faces in turn, each one die of any size; when they run out, a roll throws. */
     dice(...faces: number[]): void;
     /** The lines of the campaign's log, in order. */
     log(): LogEntry[];
     /** A file of the campaign, as text, by its path in it; undefined when there is none. */
     read(path: string): string | undefined;
-    /** The widgets of the campaign's extensions, as the dashboard shows them. */
-    widgets(): Promise<ShownWidget[]>;
+    /** The widgets of the campaign's extensions, as the dashboard shows them; given a package's name, that package's alone, its game system's too. */
+    widgets(of?: string): Promise<ShownWidget[]>;
     /** The dashboard of the campaign, served on a port of this computer, with a page open on it. */
     dashboard(): Promise<TestDashboard>;
     /** Takes the campaign's folder away, and anything it started. */
     close(): Promise<void>;
+}
+
+/** What the core's ask takes, as its MCP tool does. */
+export interface AskInput
+{
+    question: string;
+    options?: string | string[];
+    who?: string;
+    square?: boolean;
+    recipe?: string;
 }
 
 /** A campaign's dashboard in a test: the player through its page, what it answers, and what it is sent. */
@@ -144,13 +157,20 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
 
             return ran.output;
         },
+        ask: async (input) => {
+            try {
+                return { output: ask.format(await ask.run(ask.input.parse(input), campaign.context)), exitCode: 0 };
+            } catch (error) {
+                return { output: error instanceof Error ? error.message : String(error), exitCode: 1 };
+            }
+        },
         dice: (...given) => (faces = [...given]),
         log: () => (readText(join(folder, "log.jsonl")) ?? "").split("\n").filter((line) => line.trim() !== "").map((line) => JSON.parse(line) as LogEntry),
         read: (path) => readText(join(folder, path)),
-        // The extensions' alone, as a game system may have widgets of its own, as the 5e's death saves (D-516).
-        widgets: async () => {
+        // The extensions' alone unless a package is named, as a game system may have widgets of its own, as the 5e's death saves (D-516).
+        widgets: async (of) => {
             const system = campaignSystem(folder, campaign.context)?.name;
-            return (await campaignWidgets(folder, campaign.context)).filter((widget) => widget.extension !== system);
+            return (await campaignWidgets(folder, campaign.context)).filter((widget) => of === undefined ? widget.extension !== system : widget.extension === of);
         },
         dashboard: async () => {
             const dashboard = await testDashboard(campaign.context);

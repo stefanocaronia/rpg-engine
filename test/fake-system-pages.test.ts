@@ -1,13 +1,12 @@
 // The pages of the game system (MECCANICHE, SYS-1–SYS-8), on the fake system: found after the campaign's, read-only and in no place, derived from, never
-// hidden by a page of the campaign, and the fields it declares never counted unless counters. The same with the 5e's pages is in systems.test.ts, which
-// goes with the 5e (D-514, step 8).
+// hidden by a page of the campaign, and the fields it declares never counted unless counters; a campaign with no system installed, and one of Ironsworn.
+// The same with the 5e's pages is in the 5e's repository.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { getVersion } from "../src/core/version.ts";
-import { inPlay, makeTempFolder, readLogFile, removeFolder, systemPageCount, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, systemPageCount, testContext, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -53,6 +52,26 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
         );
         handWrite("campaign.yaml", "name: Guadoscuro\nlanguage: it\nsystem: fake\ndifficulty: normal\nlethality: dice\n");
         expect(await refused("show", "Lupastro")).toBe("There is no page named Lupastro. Look for it with the find command.");
+    });
+
+    it("works with no system installed, and says so", async () => {
+        const other = makeTempFolder();
+
+        try {
+            const none = { ...testContext(other), systemFolders: [] };
+            expect((await runCommandLine(["init", "--name", "Nuda", "--language", "it"], none)).output).toContain(
+                "Still to agree with the player: system, mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (",
+            );
+            expect((await runCommandLine(["config", "system", "pf2e"], none)).output).toBe('"pf2e" is not an installed system. No system is installed. Nothing changed.');
+            // One of ours is installed by its name (D-513 (1)).
+            expect((await runCommandLine(["config", "system", "5e"], none)).output).toBe(
+                '"5e" is not an installed system. No system is installed. It is one of RPG Engine\'s own: install it with package install 5e once the player wants it, then give it again. Nothing changed.',
+            );
+            writeFileSync(join(other, "campaign.yaml"), "name: Nuda\nlanguage: it\nsystem: pf2e\n");
+            expect((await runCommandLine(["validate"], none)).output).toContain("Fix: install the game system.");
+        } finally {
+            removeFolder(other);
+        }
     });
 });
 
@@ -203,5 +222,16 @@ describe("SYS-8: the fields the system declares", () => {
         expect(await ok("write", "Ennio", "--set", "wit=5")).toContain("set wit");
         expect(readLogFile(folder).some((entry) => entry.type === "counter-changed" && (entry.data as { field?: string; }).field === "wit")).toBe(false);
         expect(readFileSync(join(folder, "world", "characters", "Ennio.md"), "utf8")).toContain("wit: 5");
+    });
+});
+
+describe("a campaign of another system: the test system based on Ironsworn", () => {
+    it("brings in its foes and counts only what it declares a counter", async () => {
+        useSystem(folder, "ironsworn");
+        expect(await ok("show", "Marsh Stalker")).toContain("Marsh Stalker (creature of the system ironsworn, read-only)");
+        expect(await ok("scene", "open", "--title", "Fens", "--type", "combat", "--creatures", "Marsh Stalker")).toContain("Marsh Stalker 1: progress 0/40.");
+        expect(await ok("change", "Marsh Stalker 1", "progress", "--by=8")).toBe("Marsh Stalker 1: progress 0/40 → 8/40.");
+        expect(await refused("change", "Marsh Stalker 1", "rank", "--by=1")).toContain("rank is text in the system ironsworn, never counted");
+        expect(await refused("show", "Wolf")).toBe("There is no page named Wolf, nor a copy of that name in the open scene. Look for it with the find command.");
     });
 });

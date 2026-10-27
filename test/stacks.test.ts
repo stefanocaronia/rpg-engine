@@ -1,12 +1,12 @@
 // Stacks of goods (MECCANICHE, STK-1–STK-13): the cases of the table, through the commands, in a campaign played in Italian with the fake system and coins
-// of its own, and one with Ironsworn, whose goods are the campaign's own kinds; the 5e's bundles and words go with it (D-514, step 8).
+// of its own, and one with Ironsworn, whose goods are the campaign's own kinds; the 5e's bundles and words are in the 5e's repository.
 import { chmodSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { countedText, readEntry, withStackCount } from "../src/pages/index.ts";
-import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, useSystem } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -371,33 +371,5 @@ describe("a campaign with Ironsworn, whose goods are its own kinds", () => {
         } finally {
             removeFolder(other);
         }
-    });
-});
-
-// The 5e's: its bundles of pieces, its arrows and its words in Italian go with it (D-514, step 8).
-describe("the 5e's goods", () => {
-    beforeEach(async () => {
-        useSystem(folder, "5e");
-    });
-
-    it("counts a name of a kind sold in bundles in pieces, takes a word of the campaign's language as a label, and names the system's goods with a word", async () => {
-        expect(await refused("write", "Lena", "--add", "inventory=[[Arrows (20)]] 1")).toBe(
-            'There is no page named Arrows (20), but it is a name of Arrows, counted in pieces, 20 for each bought: write Lena, add inventory="[[Arrows]] 20". Nothing changed.',
-        );
-        expect(await refused("write", "Lena", "--add", "inventory=[[Torcia]] 3")).toContain('write the one it has with your word as its label, such as write Lena, add inventory="[[Torch|torcia]] 3"');
-        // The system's goods whose names hold the word, which saves a find (Code tab game of 17 October).
-        expect(await refused("write", "Lena", "--add", "inventory=[[Arrow]] 20")).toBe(
-            'There is no page named Arrow, so [[Arrow]] 20 counts nothing. The system has Arrows, Arrow of Slaying, Arrow-Catching Shield: if it is one of them, write Lena, add inventory="[[Arrows]] 20". '
-                + 'Only what the system lacks becomes a kind of the campaign, written first: write "Arrow", type item. Nothing changed.',
-        );
-    });
-
-    it("reports in validate a stack under another name of a kind", async () => {
-        writeFileSync(join(folder, "world", "characters", "Ugo.md"), '---\nrole: npc\nmoney: 5 gp\ninventory: ["[[Arrows (20)]] 2"]\n---\n');
-        const problems = await ok("validate");
-        expect(problems).toContain(
-            'Ugo counts [[Arrows (20)]] in inventory, which counts nothing: There is no page named Arrows (20), but it is a name of Arrows, counted in pieces, 20 for each bought: write Ugo, add inventory="[[Arrows]] 40".',
-        );
-        expect(problems).not.toContain("inventory links to [[Arrows (20)]]");
     });
 });

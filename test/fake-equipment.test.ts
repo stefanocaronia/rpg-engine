@@ -1,5 +1,5 @@
 // What a character holds ready (CON-12, PRO-5), on the fake system: a buckler in equipped gives its parry to the guard, only what one carries is equipped,
-// and what moves away is taken off. The same with the 5e's armor and weapons is in equipment.test.ts, which goes with it (D-514, step 8).
+// and what moves away is taken off. The same with the 5e's armor and weapons is in the 5e's repository.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

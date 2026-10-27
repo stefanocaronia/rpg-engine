@@ -1,6 +1,6 @@
 // The rules command on the fake system's chapter (RUL-2, RUL-3, RUL-6–RUL-8): a section by its title or its path, a table by its caption, the chapters
 // without a text, the system's own names in the campaign's language, what it says when nothing matches, the house rules and the precedents. The same on the
-// 5e's chapters is in rules.test.ts, which goes with it (D-514, step 8).
+// 5e's chapters is in the 5e's repository.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

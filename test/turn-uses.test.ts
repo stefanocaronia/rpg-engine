@@ -1,9 +1,9 @@
 // What one does in a turn (D-453; TRN-1–TRN-5), on the fake system: the move, the deed, the parry in any turn, the strikes within the deed and a flourish once
-// a turn, counted by the engine. The 5e's legendary creatures and Thirsting Blade go with it (D-514, step 8).
+// a turn, counted by the engine. The 5e's legendary creatures and Thirsting Blade are in the 5e's repository.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext, useSystem } from "./support.ts";
+import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -102,40 +102,6 @@ describe("what the turn's reminder names (playtests 05 and 05b)", () => {
         await ok("scene", "next");
         expect(await ok("scene", "next")).toContain("Mark with scene use what Ettore uses of the turn, as it happens: move, deed, parry.");
         expect(await use("Ettore", "deed")).toBe("Ettore: deed used. If it is to attack, mark each strike instead, 2 for Ettore, which takes the deed.");
-    });
-});
-
-// The 5e's: its legendary creatures, what they do not take, and Thirsting Blade go with it (D-514, step 8).
-describe("the 5e's turns", () => {
-    beforeEach(async () => {
-        await ok("scene", "close", "--summary", "Fine.");
-        useSystem(folder, "5e");
-        await ok("write", "Ettore", "--unset", "vocations", "--unset", "extra-strikes", "--set", "classes=[[Fighter]] 5", "--set", "hp-base=44");
-        await ok("scene", "open", "--title", "Cripta", "--type", "combat", "--with", "Ettore", "--creatures", "Adult Green Dragon=1");
-        await ok("scene", "order", "--order", "Ettore", "--order", "Adult Green Dragon 1");
-    });
-
-    it("counts a dragon's legendary actions in others' turns, back at its own, keeps its Legendary Resistance, and refuses a condition it is immune to (D-454)", async () => {
-        expect(await use("Adult Green Dragon 1", "legendary action")).toBe("Adult Green Dragon 1: legendary action used.");
-        await use("Adult Green Dragon 1", "legendary action");
-        await use("Adult Green Dragon 1", "legendary action");
-        expect(await refused("Adult Green Dragon 1", "legendary action")).toContain("Adult Green Dragon 1 has used 3 legendary action until its next turn");
-        expect(await refused("Ettore", "legendary action")).toBe("Ettore has no legendary action: it comes from what the sheet has, as a feature. Nothing changed.");
-        expect(await ok("change", "Adult Green Dragon 1", "legendary-resistance", "--by=-1")).toBe("Adult Green Dragon 1: legendary-resistance 3/3 → 2/3.");
-        await ok("scene", "next");
-        expect(await use("Adult Green Dragon 1", "legendary action")).toBe("Adult Green Dragon 1: legendary action used.");
-        expect((await runCommandLine(["effect", "add", "Adult Green Dragon 1", "Poisoned"], context)).output).toBe(
-            "Adult Green Dragon 1 is immune to Poisoned, in its condition-immunities: it does not take it. Nothing changed.",
-        );
-    });
-
-    it("counts Thirsting Blade as Extra Attack, and Action Surge as one more action (TRN-1, TRN-5)", async () => {
-        expect(await ok("show", "Ettore")).toContain("extra-attacks 1");
-        await use("Ettore", "attack");
-        await use("Ettore", "attack");
-        expect(await use("Ettore", "attack", "Action Surge")).toBe("Ettore: attack 1 of 2, its action used, by Action Surge; action-surge 1 → 0.");
-        await ok("write", "Corvo", "--type", "character", "--set", "role=companion", "--set", "classes=[[Warlock]] 5", "--set", "hp-base=30", "--add", "invocations=Thirsting Blade");
-        expect(await ok("show", "Corvo")).toContain("extra-attacks 1");
     });
 });
 

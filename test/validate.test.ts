@@ -31,7 +31,7 @@ describe("rpg validate", () => {
         expect((await rpg("validate")).output).toBe("No problems.");
     });
 
-    // The 5e's: the playtest scenarios are of the 5e, and go with it (D-514, step 8).
+    // The 5e's: the playtest scenarios are of the 5e and of this repository, so they stay here while the engine ships the 5e.
     it.each(["01-guadoscuro", "02-cripta-del-culto", "04-tre-settimane"])("finds nothing wrong in the playtest scenario %s of the 5e, prepared with its characters", async (scenario) => {
         await rpg("config", "system", "5e");
         cpSync(new URL(`../playtests/${scenario}/world`, import.meta.url), join(folder, "world"), { recursive: true });

@@ -1,6 +1,5 @@
 // The game system's data for the engine (MECCANICHE, DAT-1–DAT-7), through the commands on the fake system: its coins, the line and the sheet, thresholds,
-// recipes, conditions and rounds, and their laws on worlds at random; then systems of the test's own. The same on the 5e is in system-data.test.ts, which
-// goes with it (D-514, step 8).
+// recipes, conditions and rounds, and their laws on worlds at random; then systems of the test's own. The same on the 5e is in the 5e's repository.
 import fc from "fast-check";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
