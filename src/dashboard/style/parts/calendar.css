@@ -20,6 +20,8 @@
     }
 
     .calendar-date {
+        /* The game's face of the big numbers, when it gives one (D-528). */
+        font-family: var(--number-font, inherit);
         margin: 0;
         font-size: 1.6rem;
         font-weight: 700;

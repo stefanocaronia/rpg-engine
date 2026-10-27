@@ -1,8 +1,15 @@
-/* What no style sheet may take away, a package's either (D-523): the ring of the focus and the other rings drawn as outlines, and the tooltips. All !important. */
+/* What no style sheet may take away, a package's either (D-523, D-528): the ring of the focus and the other rings drawn as outlines, no clip or mask on a
+   control, and the tooltips. All !important. */
 @layer guarantees {
     :focus-visible {
         outline: 2px solid var(--accent) !important;
         outline-offset: 2px !important;
+    }
+
+    /* A clip or a mask on a control would cut its focus ring and its tooltip (D-528). */
+    :is(button, a, summary, input, select, textarea, label, [role="tab"], [role="button"], [role="radio"], [tabindex], [data-tip]) {
+        clip-path: none !important;
+        mask: none !important;
     }
 
     .saves-said:focus {

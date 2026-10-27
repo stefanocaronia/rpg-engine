@@ -131,6 +131,8 @@
     }
 
     .widget-lead-value {
+        /* The game's face of the big numbers, when it gives one (D-528). */
+        font-family: var(--number-font, inherit);
         font-size: 1.6rem;
         font-weight: 700;
         white-space: nowrap;

@@ -14,6 +14,7 @@ systems/<name>/
   instructions/*.md  what it adds to the master's instructions (section 4)
   words/<code>.yaml  its words in other languages (section 4)
   versions/<name>/   a version of its rules, in the same shape, over the rest (versions, in section 2)
+  theme/             its theme of the dashboard: theme.yaml, fonts, pictures and icons (theme, in section 2)
   package.json       when it is a package: its npm name, version, the API it is made for, its code (section 6)
   build/, test/      scripts and tests, not shipped
 ```
@@ -35,6 +36,35 @@ attribution: This work includes material taken from the System Reference Documen
 ```
 
 `language` is the language its pages are named in. `attribution` is what its source asks to be credited with; the dashboard shows it.
+
+### theme
+
+The folder of its theme of the dashboard, `theme: theme`: data alone, which the engine checks and turns into the dashboard's CSS, custom properties and nothing else, while the player keeps the game's style on in Settings. The dashboard's style guide says what each value changes ([dashboard-style.md](dashboard-style.md#the-games-style)).
+
+```yaml
+# theme/theme.yaml
+name: Crypt
+fonts:
+  - {family: Grenze Gotisch, file: fonts/GrenzeGotisch.woff2, weight: 100 900, license: fonts/OFL.txt}
+  - {family: Alegreya, file: fonts/Alegreya.woff2, weight: 400 900, license: fonts/OFL.txt}
+text-font: Alegreya           # also title-font, story-font: one of fonts
+title-font: Grenze Gotisch
+number-font: text             # the big numbers in the text's face or the titles'
+corners: 3                    # a card's corner in px, 0 to 16; the rest of the page's corners follow
+titles: {case: as-written, spacing: 0.01}   # or capitals, small-capitals; spacing in em, -0.02 to 0.15
+cards: {inner-line: solid, ornament: images/thorn.svg}   # none, solid, dashed, dotted; an SVG drawn in currentColor
+icons: {party: icons/party.svg, scene: icons/scene.svg}  # party, scene, combat, journal, world, saves, help, settings, about, packages, menu
+light:
+  paper: "#ebe0cc"            # required: paper, panel, rule, ink, muted, accent, gold, on-gold, ally, low
+  panel: "#f7efe1"            # optional, else derived: panel-2, float, gold-ink, warn, on-low
+  # ...
+  card-edge: "#b39478"        # and title-glow, bar-edge: a colour or none
+  page-texture: {picture: images/vellum.svg, fit: tile}   # and bar-texture; tile or cover
+dark:
+  # the same keys, the dark page's colours
+```
+
+Both modes are required. Every file is one of the theme's folder, written from it, never an address of the web: faces as woff2, woff, ttf or otf, each naming in `license` the file of its license, .txt or .md, in the folder; pictures as svg, png, webp or jpg; icons as SVGs of paths alone on a grid of 24; each file at most 1000 KB, its name written with the capitals it has on the disk; the dashboard serves them itself. The engine measures the contrast of the pairs of colours the page sets one on the other, text 4.5:1 (the danger's button, `on-low` on `low`, too) and the focus ring 3:1 on the page, and that friends and foes do not look alike. A theme that fails a check is not used: the dashboard keeps its own look, `status` counts it among the campaign's problems, and `validate` and `systemChecks` say what to change, with the nearest colour that reads and leaves the rest reading, or, when there is none, which colour under it to change.
 
 ### fields
 
@@ -390,4 +420,4 @@ export default system;
 
 ## 7. Checks
 
-The test kit's `systemChecks(folder)` checks a system's folder as the engine's tests check free and the fake: its pages read and pass `validate`, names are unique, every field is declared and fits its kind, every rule named is in its chapters, the pictures its pages link are there, and it has an `attribution`. A system keeps its own tests in its repository, on the kit (see extensions.md, section 6), with these checks among them.
+The test kit's `systemChecks(folder)` checks a system's folder as the engine's tests check free and the fake: its pages read and pass `validate`, names are unique, every field is declared and fits its kind, every rule named is in its chapters, the pictures its pages link are there, it has an `attribution`, and its theme, if it names one, passes the theme's checks (`theme`). A system keeps its own tests in its repository, on the kit (see extensions.md, section 6), with these checks among them.

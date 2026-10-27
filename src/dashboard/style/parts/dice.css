@@ -303,6 +303,8 @@
     }
 
     .plate-total {
+        /* The game's face of the big numbers, when it gives one (D-528). */
+        font-family: var(--number-font, inherit);
         grid-area: total;
         align-self: stretch;
         display: grid;

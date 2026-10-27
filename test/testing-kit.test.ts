@@ -85,7 +85,7 @@ describe("testCampaign for a game system's own tests", () => {
 
     it("checks a system's own folder as every installed system is checked, by its package's name (SYS-2, SYS-8, D-267)", () => {
         const checks = systemChecks(fake);
-        expect(checks).toMatchObject({ name: "fake", unread: [], names: [], declarations: [], values: [], undeclared: [], pictures: [] });
+        expect(checks).toMatchObject({ name: "fake", unread: [], names: [], declarations: [], values: [], undeclared: [], pictures: [], theme: [] });
         expect(checks.pages).toBeGreaterThan(20);
     });
 });

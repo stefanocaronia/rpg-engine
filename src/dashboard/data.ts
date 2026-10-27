@@ -668,6 +668,18 @@ export interface ShownWidget extends WidgetSpot
 /** A package whose code draws in the page (D-510, D-511), as a widget or a module knows it: its name, version, module, figures and words. */
 export type PackageCode = Pick<ShownWidget, "extension" | "version" | "module" | "figures" | "words">;
 
+/** The theme of the campaign's game system as /api/theme gives it (D-528): nothing when it names none; refused when it does not pass its checks. */
+export interface ShownTheme
+{
+    system?: string;
+    name?: string;
+    /** Its CSS: faces, and custom properties in the layer theme. */
+    css?: string;
+    /** The lines of the page's icons it draws anew, by name. */
+    icons?: Record<string, string>;
+    refused?: boolean;
+}
+
 /** A page module of the campaign's system or one of its extensions whose code runs, as /api/modules lists it (D-511). */
 export interface ShownModule
 {

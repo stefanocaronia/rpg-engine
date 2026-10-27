@@ -1,7 +1,9 @@
 /* The player's dashboard (D-273, D-275, D-276, D-524 (3)): the robot's colours, cards that lift a little, a sheet that reads like paper; generic for any game.
    The layers in their order, then the files, which the build joins in this order into one style.css: a layer later wins over one before it, whatever
-   the selectors; a style sheet without a layer wins over them all, but no one takes away the guarantees. docs/dashboard-style.md says where a rule goes. */
-@layer tokens, guarantees, base, parts, pages;
+   the selectors; a style sheet without a layer wins over them all, but never over the guarantees, all !important and first, as among !important
+   declarations the first layer wins. The game's style, the theme of the campaign's system, is the layer theme, which the page adopts while the player keeps
+   it on: custom properties alone, over the tokens (D-528). docs/dashboard-style.md says where a rule goes. */
+@layer guarantees, tokens, theme, base, parts, pages;
 
 @import "tokens.css";
 @import "guarantees.css";

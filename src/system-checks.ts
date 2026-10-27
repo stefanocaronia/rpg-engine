@@ -1,5 +1,5 @@
 // The checks every game system passes (SYS-2, SYS-5, SYS-8, D-172, D-267), for its own tests through the test kit: pages that read like a campaign's, each
-// name once, no bases it lacks, every field declared and of its kind, rules in chapters, the pictures its pages link, and where it comes from.
+// name once, no bases it lacks, every field declared and of its kind, rules in chapters, the pictures its pages link, where it comes from, and its theme.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { closedSettings } from "./campaign/index.ts";
@@ -11,6 +11,7 @@ import { coinsProblem, readCoins } from "./money/index.ts";
 import { checkWorld, isStandardField, listFieldNames, loadWorld } from "./pages/index.ts";
 import { isTitled, readRuleBook } from "./rules/index.ts";
 import { type GameSystem, systemInFolder } from "./systems/index.ts";
+import { readTheme } from "./themes/index.ts";
 
 /** What the checks find in a game system's folder: how much it holds, and what is wrong by check, each list empty when it passes. */
 export interface SystemChecks
@@ -40,6 +41,8 @@ export interface SystemChecks
     undeclared: string[];
     /** A picture its pages link that its images/ lacks, or one there no page links (D-267). */
     pictures: string[];
+    /** What keeps its theme of the dashboard from being used, when it names one: its keys, its files, both modes, the contrast of its colours (D-528). */
+    theme: string[];
 }
 
 /** Checks the game system in this folder, the one with its system.yaml, as the engine reads it; it throws when its system.yaml does not read. */
@@ -70,6 +73,7 @@ export function systemChecks(folder: string): SystemChecks
         values: wrongValues(system, world.pages),
         undeclared: undeclaredFields(system, world.pages),
         pictures: pictureProblems(system.folder, world.pages),
+        theme: system.theme === undefined ? [] : readTheme(system.theme).problems,
     };
 }
 

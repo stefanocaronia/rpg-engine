@@ -84,9 +84,9 @@
         gap: 18px 24px;
         padding: 16px 18px;
         margin-bottom: var(--gap);
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: linear-gradient(180deg, var(--panel-2), var(--panel));
+        background: var(--card-ornament-layer), linear-gradient(180deg, var(--panel-2), var(--panel));
         box-shadow: var(--lift), var(--raise);
     }
 
@@ -98,7 +98,7 @@
 
     .band h2 {
         font-size: 1.9rem;
-        letter-spacing: -0.01em;
+        letter-spacing: var(--title-spacing, -0.01em);
         line-height: 1.1;
     }
 

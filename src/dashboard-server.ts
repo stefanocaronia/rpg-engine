@@ -19,6 +19,7 @@ import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "
 import { campaignMode } from "./commands/game-mode.ts";
 import { campaignPackages, loadCampaignCode, packageCommands } from "./commands/game-package-code.ts";
 import { exportsFolderName, resetPoints } from "./commands/game-saves.ts";
+import { campaignTheme } from "./commands/game-theme.ts";
 import { campaignWidgets, packageWidget } from "./commands/game-widgets.ts";
 import { campaignSystem, campaignWorld } from "./commands/game-world.ts";
 import { importShown } from "./commands/import.ts";
@@ -44,6 +45,7 @@ import { type Acts, actText, giveBackAct, markHeard, markRung, newActs, takeActs
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
 import { installedSystems, rollName } from "./systems/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
+import { drawnOrnament, themeCss, themeFile } from "./themes/index.ts";
 
 /**
  * The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). Windows may keep ranges of ports
@@ -136,6 +138,10 @@ const pageTypes: Record<string, string> = {
     ".md": "text/markdown; charset=utf-8",
     ".wav": "audio/wav",
 };
+
+// Where the page finds the theme's files, and what they may be: faces and pictures.
+const themeAddress = "/theme";
+const themeTypes: Record<string, string> = { ...imageTypes, ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf" };
 
 // A picture runs nothing, even an SVG opened by itself.
 const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
@@ -626,6 +632,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         return;
     }
 
+    if (path === "/api/theme") {
+        await themeNow(response, served);
+        return;
+    }
+
     if (path === "/api/modules") {
         const root = findCampaign(served.context.folder);
         await served.session.ready();
@@ -672,6 +683,8 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         sendImage(path.slice("/images/".length), request, response, served);
     } else if (sendPacked(path, response, served)) {
         // A language package's phrases or Guide, before the page's own (D-485 (3)).
+    } else if (path.startsWith(`${themeAddress}/`)) {
+        await sendThemeFile(path.slice(themeAddress.length + 1), url.searchParams, request, response, served);
     } else if (path.startsWith("/vendor/")) {
         sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response, served);
     } else if (path.startsWith("/pkg/")) {
@@ -1174,6 +1187,65 @@ function watchHidden(served: Served): void
             asked.settle("absent");
         }
     }, served.pageHidden).unref();
+}
+
+/**
+ * The theme of the campaign's game system (D-528): its CSS of custom properties, its icons and its name, which the page uses while the player keeps the game's
+ * style on; refused when it does not pass its checks, which validate says; the system's name alone when it names none.
+ */
+async function themeNow(response: ServerResponse, served: Served): Promise<void>
+{
+    const root = findCampaign(served.context.folder);
+    await served.session.ready();
+    const system = root === undefined ? undefined : withFiles(served.session, () => campaignSystem(root, served.context));
+    const reading = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context));
+
+    if (system === undefined) {
+        sendJson(response, 200, {});
+    } else if (reading === undefined) {
+        // No theme, but the system's name, which keeps the player's switch of its page style, if its page module gives one.
+        sendJson(response, 200, { system: system.name });
+    } else if (reading.theme === undefined) {
+        sendJson(response, 200, { system: reading.system, refused: true });
+    } else {
+        sendJson(response, 200, { system: reading.system, name: reading.theme.name, css: themeCss(reading.theme, themeAddress), icons: reading.theme.icons });
+    }
+}
+
+/**
+ * A file of the theme of the campaign's game system, at theme/<path>, only from its folder, by real paths, and only while the theme passes its checks: a face
+ * or a picture. Its ornament comes in the colour asked, ?ink=#rrggbb, and turned for a page that reads right to left, &mirrored.
+ */
+async function sendThemeFile(name: string, query: URLSearchParams, request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const root = findCampaign(served.context.folder);
+    await served.session.ready();
+    const folder = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context))?.theme?.folder;
+    let file: string | undefined;
+
+    try {
+        file = folder === undefined ? undefined : themeFile(folder, decodeURIComponent(name));
+    } catch {
+        file = undefined;
+    }
+
+    const type = file === undefined ? undefined : themeTypes[extname(file).toLowerCase()];
+
+    if (file === undefined || type === undefined) {
+        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${themeAddress}/${name}.`);
+        return;
+    }
+
+    const ink = query.get("ink");
+    const tinted = type === imageTypes[".svg"] && ink !== null && /^#[0-9a-f]{6}$/i.test(ink);
+    const bytes = withFiles(served.session, () => (tinted ? Buffer.from(drawnOrnament(files().text(file) ?? "", ink, query.has("mirrored"))) : files().bytes(file)));
+
+    if (bytes === undefined) {
+        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${themeAddress}/${name}.`);
+        return;
+    }
+
+    sendTagged(request, response, bytes, { "Content-Type": type, "Content-Security-Policy": type.startsWith("image/") ? picturePolicy : securityHeaders["Content-Security-Policy"] });
 }
 
 /**

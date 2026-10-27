@@ -58,6 +58,10 @@ describe("the installed game systems", () => {
             it("says where it comes from", () => {
                 expect(checks.attribution !== undefined).toBe(sourced);
             });
+
+            it("names a theme of the dashboard that passes its checks, or none (D-528)", () => {
+                expect(checks.theme).toEqual([]);
+            });
         });
     }
 

@@ -50,6 +50,8 @@ describe("architecture", () => {
             // The player's yes to another's code, for its files as installed (D-478, D-510, D-511).
             "core/consents.ts",
             "systems/words.ts",
+            // A game system's theme of the dashboard, read in its package's folder (D-528).
+            "themes/theme.ts",
             "campaign/create-campaign.ts",
             "pictures/claude.ts",
             "pictures/codex.ts",

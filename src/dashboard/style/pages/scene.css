@@ -340,10 +340,10 @@
     .scene-now {
         margin-bottom: var(--gap);
         padding: 14px 18px 16px;
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-inline-start: 4px solid var(--accent);
         border-radius: var(--radius-l);
-        background: var(--panel);
+        background: var(--card-ornament-layer), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 
@@ -658,6 +658,8 @@
     }
 
     .round-number {
+        /* The game's face of the big numbers, when it gives one (D-528). */
+        font-family: var(--number-font, inherit);
         font-size: 2rem;
         font-weight: 700;
         line-height: 1;
@@ -762,9 +764,9 @@
     .turns-card {
         display: grid;
         min-width: 0;
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--panel);
+        background: var(--card-ornament-layer), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 

@@ -564,6 +564,8 @@
 
     /* The outcome, large where the buttons were and as tall: green when it went well, red when not, with the widget's icon. */
     .ask-outcome {
+        /* The game's face of the big numbers, when it gives one (D-528). */
+        font-family: var(--number-font, inherit);
         display: inline-flex;
         align-items: center;
         justify-content: center;

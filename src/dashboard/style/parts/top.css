@@ -54,14 +54,19 @@
         /* To the window's edges, over the page that scrolls under it, out of its flow. */
         padding-block: var(--gap) 0;
         padding-inline: var(--gap);
-        background: var(--paper);
+        /* The game's texture of the bar under the page's veil, and its line under it (D-528). */
+        background:
+            linear-gradient(var(--texture-veil), var(--texture-veil)),
+            var(--bar-texture) 0 0 / var(--bar-texture-size) var(--bar-texture-repeat),
+            var(--paper);
+        box-shadow: 0 2px 0 var(--bar-edge);
     }
 
     /* Down the page, the same top drawn together (D-295): the master and the name smaller, the product and the place folded away, the sections and the chips
        still there, a line under it. */
     .top.compact {
         padding-block: 8px 0;
-        box-shadow: 0 1px 0 var(--rule), var(--raise);
+        box-shadow: 0 1px 0 var(--rule), 0 2px 0 var(--bar-edge), var(--raise);
     }
 
     .top .master {
@@ -424,7 +429,7 @@
         overflow: hidden;
         font-size: 2.4rem;
         line-height: 1.05;
-        letter-spacing: 0.04em;
+        letter-spacing: var(--title-spacing, 0.04em);
         font-variant: small-caps;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -712,7 +717,7 @@
 
         .titles h1 {
             font-size: 1.6rem;
-            letter-spacing: 0.01em;
+            letter-spacing: var(--title-spacing, 0.01em);
         }
 
         .top {

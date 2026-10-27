@@ -7,7 +7,7 @@ import { type ActReply, ActSheet } from "./act-sheet.tsx";
 import { ActStrip } from "./act-strip.tsx";
 import { type ActStart, type SaidAct, saidStates, setSystemVerbs, type SheetActions } from "./acts.ts";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
-import { answer, closeCard, readActs, readAsked, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
+import { answer, closeCard, readActs, readAsked, readGameTheme, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
 import { AskCard } from "./ask-card.tsx";
 import { AskedDice } from "./asked-dice.tsx";
 import { AskedBanner } from "./asked.tsx";
@@ -26,7 +26,7 @@ import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx"
 import { inCard, nextPackCard, type PackCard } from "./pack-card.ts";
 import { PackagePage } from "./package-page.tsx";
 import { PackagesPage } from "./packages.tsx";
-import { codeOfModule, ModulesContext, ownKey, preloadModules, useNavPages } from "./page-code.tsx";
+import { codeOfModule, ModulesContext, ownKey, preloadModules, systemPageStyle, useNavPages } from "./page-code.tsx";
 import { About } from "./pages.tsx";
 import { PartyStrip, type Tokened } from "./party.tsx";
 import { PeopleContext } from "./people.ts";
@@ -38,6 +38,7 @@ import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
+import { gameStyleChanged, takeSystemStyle } from "./system-style.ts";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
 import { browserLanguage, pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
@@ -151,6 +152,14 @@ function App()
     // were when a reading of them fails, and an answer older than one shown left out.
     const [widgets, setWidgets] = useState<ShownWidget[]>([]);
     const [modules, setModules] = useState<ShownModule[]>([]);
+    // The game's style turned on or off, or changed: every icon it draws anew is drawn again (D-528).
+    const [, setStyled] = useState(0);
+
+    useEffect(() => {
+        const follow = (): void => setStyled((count) => count + 1);
+        window.addEventListener(gameStyleChanged, follow);
+        return () => window.removeEventListener(gameStyleChanged, follow);
+    }, []);
     const widgetReading = useRef({ asked: 0, shown: 0 });
     const moduleReading = useRef({ asked: 0, shown: 0 });
     // The card of a package's question as last read, even while the dice that changed it fly; the attempts the player let go, with the question then (D-507).
@@ -183,7 +192,13 @@ function App()
         }, () => undefined);
         // The page modules of the system and the extensions, for their cards in the pages and their own pages (D-511).
         const modulesAsked = ++moduleReading.current.asked;
-        void readModules().then((read) => {
+        const modulesNow = readModules();
+        // The game's style: the theme of the system, and the free style sheet of its page module (D-528).
+        void Promise.all([readGameTheme(), modulesNow.then((read) => systemPageStyle(read.find((one) => one.kind === "system")), () => undefined)]).then(
+            ([theme, free]) => takeSystemStyle(theme, free),
+            () => undefined,
+        );
+        void modulesNow.then((read) => {
             if (modulesAsked <= moduleReading.current.shown) {
                 return;
             }

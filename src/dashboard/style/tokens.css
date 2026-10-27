@@ -105,5 +105,29 @@
         --radius-l: 12px;
         --radius-xl: 16px;
         --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+        --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+        /* The hooks of the game's style (D-528), the page of today until a theme gives them; the titles' and the big numbers' faces only when it gives them. */
+        --title-case: none;
+        --title-variant: normal;
+        --title-glow: none;
+        --page-texture: none;
+        --page-texture-size: auto;
+        --page-texture-repeat: repeat;
+        --bar-texture: none;
+        --bar-texture-size: auto;
+        --bar-texture-repeat: repeat;
+        --bar-edge: transparent;
+        --card-edge: var(--rule);
+        --card-inner-line: none;
+        --card-ornament: none;
+        --card-ornament-mirrored: none;
+        /* How much of a texture shows through the page's own colour, at most: the page's to say, so that its words keep their contrast. */
+        --texture-veil: color-mix(in srgb, var(--paper) 62%, transparent);
+        /* The ornament in a card's lower corner at the end, where no control sits, as a layer of the card's ground; turned right to left. */
+        --card-ornament-layer: var(--card-ornament) right 4px bottom 4px / 26px 26px no-repeat;
+    }
+
+    :root[dir="rtl"] {
+        --card-ornament-layer: var(--card-ornament-mirrored) left 4px bottom 4px / 26px 26px no-repeat;
     }
 }

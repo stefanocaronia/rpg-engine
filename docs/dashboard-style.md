@@ -40,7 +40,7 @@ Two seeds, the robot's navy and gold. Each token is `light-dark()`, so both them
 
 ### Type
 
-The system's sans for everything (`body`: 15px/1.4). The serif (`--serif`) is the story's voice only: the campaign's name, the master's question, what is happening now in a scene, the names on the maps, and the text of documents found in the world.
+The system's sans for everything (`body`: 15px/1.4, `--font`). The serif (`--serif`) is the story's voice only: the campaign's name, the master's question, what is happening now in a scene, the names on the maps, and the text of documents found in the world.
 
 | Size | Weight | Use |
 |---|---|---|
@@ -155,13 +155,32 @@ Plain CSS in cascade layers, no preprocessor. `index.css` names the layers in th
 
 | Layer | What | Where |
 |---|---|---|
+| `guarantees` | What no style sheet may take away: every `outline` (the focus ring, and the rings drawn as outlines), no `clip-path` or `mask` on a control, and the tooltips, all `!important` | `guarantees.css` |
 | `tokens` | The custom properties of `:root`, and the theme | `tokens.css` |
-| `guarantees` | What no style sheet may take away: every `outline` (the focus ring, and the rings drawn as outlines) and the tooltips, all `!important` | `guarantees.css` |
+| `theme` | The game's style: the theme of the campaign's game system, custom properties alone, which the engine writes and the page adopts while the player keeps it on | `/api/theme` |
 | `base` | The elements before any part: the box, the window, the body, the titles | `base.css` |
 | `parts` | The parts of section 2, a file each | `parts/` |
 | `pages` | What belongs to one page | `pages/` |
 
-A later layer wins over an earlier one whatever the selectors; inside a layer, specificity then order, as always. A style sheet without a layer, as a package's own, wins over every layer but the guarantees, which are `!important`.
+A later layer wins over an earlier one whatever the selectors; inside a layer, specificity then order, as always. A style sheet without a layer, as a package's own, wins over every layer but the guarantees: they are `!important` and the first layer, and among `!important` declarations the first layer wins, so no sheet that declares layers of its own takes them away either.
+
+### The game's style
+
+A game system may name a theme ([game-systems.md](game-systems.md#theme)): colours, corners and faces, and the hooks below, light and dark. It changes values, never rules: the page's rules read them, each in its part's layer, with today's look as their default. Settings, in This page, turns it off for that system in this browser ("Game style"); off, the page is as without it.
+
+| Hook | What it changes | Read by |
+|---|---|---|
+| `--font`, `--title-font`, `--serif` | The text's face, the titles' (a card's title, 1.125rem, and up, and the campaign's name), the story's voice | `body`, the titles, the serif's places |
+| `--number-font` | The big numbers: a tile's value, a widget's lead, the round, a roll's total, the calendar's date, a card's outcome | those numbers |
+| `--title-case`, `--title-variant`, `--title-spacing`, `--title-glow` | The titles' capitals or small capitals, their spacing, a glow drawn as their shadow | the titles |
+| `--page-texture`, `--bar-texture` (and `-size`, `-repeat`) | A picture under the page and under the top, always under `--texture-veil`, the page's own colour at 62% | `body`, `.top` |
+| `--bar-edge` | A line under the top | `.top` |
+| `--card-edge` | The cards' edge | each card's border |
+| `--card-inner-line` | A second line inside the cards, an outline 5 px in that takes no room | the cards |
+| `--card-ornament`, `--card-ornament-mirrored` | A drawing in a card's lower corner at the end, 26 px, in the edge's colour, turned right to left; `--card-ornament-layer` places it | each card's background |
+| `--dice-body`, `--dice-ink` | The set Theme's dice and coins | `dice/sets.ts` |
+
+A card's title that the theme's face makes wider than its card, and the campaign's name, go back to the face and spacing they have without a theme (`.title-too-wide`), that title alone, as the page measures them. The page's icons of the sections and the top may be drawn anew by name, as lines the page draws in its own colour. What stays the page's: the layout, room and sizes, motion, the state layer, the focus ring and the tooltips, the robot, the player's dice sets, the paper of the maps and of documents, the words, right to left and the phone. Beside the theme, a game system's page module may give `pageStyle`, a style sheet over the whole page without a layer, with the same switch; its own risk when the page's classes change.
 
 A new rule goes in the file of its part or page, inside that file's `@layer` block, what moves with it, inside `@media (prefers-reduced-motion: no-preference)` (motion has no layer of its own: it would win over the states that stop it); an `outline`, or anything of a tooltip, in `guarantees.css`, `!important`. A new file is imported in `index.css` in its layer's place. Selectors stay as flat as they are; nesting comes into a file when it is rewritten. A rule kept in another layer than its file's says why in a comment over it.
 

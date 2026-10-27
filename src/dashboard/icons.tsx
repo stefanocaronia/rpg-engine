@@ -1,5 +1,6 @@
 // The page's pictures (D-284): each die that is thrown, and the controls that have no words; lines on a grid of 24, in the colour of the text around them.
 import { drawnDiceOf, drawnDie } from "./labels.ts";
+import { themedIcon } from "./system-style.ts";
 
 // The dice by their sides: the d% as two d10, one behind the other; the coin as 2.
 const diePaths: Record<number, string> = {
@@ -212,7 +213,7 @@ export function Icon({ name }: { name: IconName; })
 {
     return (
         <svg class={turning.has(name) ? "icon turns" : "icon"} viewBox="0 0 24 24" aria-hidden="true">
-            <path d={iconPaths[name]} />
+            <path d={themedIcon(name) ?? iconPaths[name]} />
         </svg>
     );
 }

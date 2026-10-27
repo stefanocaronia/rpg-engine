@@ -1,0 +1,37 @@
+# The fake system's theme of the dashboard, for the core's tests (D-528): small, without faces, a drawing of each kind the format takes.
+name: Ledger
+corners: 4
+number-font: text
+titles:
+  case: small-capitals
+  spacing: 0.02
+cards:
+  inner-line: dashed
+  ornament: images/corner.svg
+icons:
+  party: icons/party.svg
+light:
+  paper: "#efeee6"
+  panel: "#fbfaf4"
+  rule: "#cfcbbb"
+  ink: "#1f2a1f"
+  muted: "#55604f"
+  accent: "#2d5a3a"
+  gold: "#2d5a3a"
+  on-gold: "#ffffff"
+  ally: "#1f6b3d"
+  low: "#a3331f"
+  bar-edge: "#2d5a3a"
+  page-texture: {picture: images/ruled.svg, fit: tile}
+dark:
+  paper: "#0f1410"
+  panel: "#18201a"
+  rule: "#33402f"
+  ink: "#eef0e6"
+  muted: "#a9b3a0"
+  accent: "#9fd3a8"
+  gold: "#9fd3a8"
+  on-gold: "#0f1410"
+  ally: "#9fd3a8"
+  low: "#ff9a80"
+  title-glow: "#2d5a3a"

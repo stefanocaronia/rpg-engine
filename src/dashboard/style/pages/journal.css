@@ -103,9 +103,9 @@
         align-content: start;
         gap: 8px;
         padding: 14px 16px;
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--panel);
+        background: var(--card-ornament-layer), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 
@@ -546,9 +546,9 @@
         display: grid;
         gap: 6px;
         padding: 12px 14px 8px;
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--panel);
+        background: var(--card-ornament-layer), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 
@@ -904,9 +904,9 @@
     .chapter {
         display: grid;
         grid-template-columns: 168px minmax(0, 1fr);
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--panel);
+        background: var(--card-ornament-layer), var(--panel);
         box-shadow: var(--lift);
     }
 

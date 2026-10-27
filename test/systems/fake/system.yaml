@@ -4,6 +4,8 @@
 title: the fake system of the core's tests
 language: en
 attribution: The fake system of rpg-engine's tests, made for them; no game's text.
+# Its theme of the dashboard (D-528), in its folder theme/.
+theme: theme
 # Not decimal, as an innkeeper gives change (D-128): a crown is 20 shillings, a mark 160 pence and rare.
 coins: crown 240, mark 160 rare, shilling 12, penny 1
 round: 10 seconds

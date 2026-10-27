@@ -12,16 +12,45 @@
     body {
         margin: 0;
         min-height: 100vh;
-        background: radial-gradient(1200px 400px at 50% -200px, var(--glow), transparent), var(--paper);
+        /* The light from above, then the game's texture under its veil (D-528), on the page's colour. */
+        background:
+            radial-gradient(1200px 400px at 50% -200px, var(--glow), transparent),
+            linear-gradient(var(--texture-veil), var(--texture-veil)),
+            var(--page-texture) center top / var(--page-texture-size) var(--page-texture-repeat),
+            var(--paper);
+        /* The texture stays with the window, the light above scrolls away with the page's top, as without a theme. */
+        background-attachment: scroll, fixed, fixed, scroll;
         color: var(--ink);
-        font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+        font: 15px/1.4 var(--font);
     }
 
-    /* The serif is the story's voice alone: the campaign's name, and the master's question (D-282). */
+    /* The serif is the story's voice alone: the campaign's name, and the master's question (D-282); the name in the game's titles' face, when it gives one. */
     h1 {
-        font-family: var(--serif);
+        font-family: var(--title-font, var(--serif));
         font-weight: 600;
         margin: 0;
+    }
+
+    /* The game's titles (D-528): its face where a title is a title, a card's (1.125rem) and up, never a label or a tab; its case, spacing and glow. */
+    h1,
+    h3,
+    .rolls-title,
+    :is(.card-head, summary) > h2,
+    :is(.band, .place-band, .turn-now, .page-head, .upcoming) h2 {
+        text-transform: var(--title-case);
+        font-variant-caps: var(--title-variant);
+        letter-spacing: var(--title-spacing, normal);
+        text-shadow: var(--title-glow);
+    }
+
+    :is(.band, .place-band, .turn-now, .page-head, .upcoming) h2 {
+        font-family: var(--title-font, inherit);
+    }
+
+    /* A title that the game's face makes wider than its card goes back to its face and spacing without the game's, that title alone (D-528 (4)). */
+    :is(h1, h2, h3, .rolls-title).title-too-wide {
+        --title-font: initial;
+        --title-spacing: initial;
     }
 
     h2 {
@@ -34,7 +63,7 @@
     .rolls-title,
     :is(.card-head, summary) > h2 {
         margin: 0;
-        font-family: inherit;
+        font-family: var(--title-font, inherit);
         font-size: 1.125rem;
         font-weight: 700;
         line-height: 1.3;

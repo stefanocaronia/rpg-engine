@@ -12,8 +12,9 @@ import { DieSwatch, Icon } from "./icons.tsx";
 import { phraseLabel, settingLabel, valueLabel } from "./labels.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
 import { PageHead } from "./pages.tsx";
-import { byHandPref, conditionsPref, soundPref, tokenSymbolsPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
+import { byHandPref, conditionsPref, readChoice, soundPref, tokenSymbolsPref, useChoice, usePref, usePrefChange, writeChoice } from "./prefs.ts";
 import { Confirm } from "./saves.tsx";
+import { applyGameStyle, gameStyle, systemStylePref } from "./system-style.ts";
 import { arrowStep, t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
@@ -480,13 +481,56 @@ export function Command({ text }: { text: string; })
     );
 }
 
+/**
+ * Under the theme, the game's style, when the campaign's system has one, a theme or a page style (D-528): its own or the page's, kept in this browser for that
+ * system; the page's alone when its theme does not pass the check of legibility.
+ */
+function gameStyleRows(): PageRow[]
+{
+    const style = gameStyle();
+
+    if (style.system === undefined || (!style.shows && !style.refused)) {
+        return [];
+    }
+
+    const choice = systemStylePref(style.system);
+    const name = t("Game style");
+
+    if (!style.shows) {
+        const means = t("This game's style does not pass the page's check of legibility: the page keeps its own.");
+        return [{ name, about: t("the colours, faces and pictures of the game system"), options: [{ value: "page", label: t("The page's"), means }], value: "page", pick: () => undefined }];
+    }
+
+    return [{
+        name,
+        about: style.name === undefined ? t("the colours, faces and pictures of the game system") : t("the colours, faces and pictures of {name}, from the game system", { name: style.name }),
+        options: [{ value: "game", label: t("The game's") }, { value: "page", label: t("The page's") }],
+        value: readChoice(choice),
+        pick: (value) => {
+            writeChoice(choice, value);
+            applyGameStyle();
+        },
+    }];
+}
+
 /** A name as a part of an element's id, without spaces: "dice sound" is dice-sound. */
 function idOf(name: string): string
 {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
-/** The page's own settings, in this browser alone: the theme, the tokens' symbols and conditions, the dice's sound, set and edges, the coins, rolling by hand. */
+/** A row of the page's own settings: its name, what it is, its values, the one chosen; a row with many values has them under its name. */
+interface PageRow
+{
+    name: string;
+    about: string;
+    options: Option[];
+    value: string;
+    pick(value: string): void;
+    under?: boolean;
+}
+
+/** The page's own settings, in this browser alone: the theme, the game's style, the tokens' symbols and conditions, the dice's sound, set and edges, the coins, rolling by hand. */
 function PageSettings()
 {
     usePrefChange();
@@ -498,8 +542,7 @@ function PageSettings()
     const [byHand, setByHand] = usePref(byHandPref);
     const [symbols, setSymbols] = usePref(tokenSymbolsPref);
     const [conditions, setConditions] = useChoice(conditionsPref);
-    // A row with many values has them under its name.
-    const rows: { name: string; about: string; options: Option[]; value: string; pick(value: string): void; under?: boolean; }[] = [
+    const rows: PageRow[] = [
         {
             name: t("Theme"),
             about: t("the page's look"),
@@ -507,6 +550,7 @@ function PageSettings()
             value: shownTheme(),
             pick: (value) => pickTheme(value === "dark" ? "dark" : "light"),
         },
+        ...gameStyleRows(),
         {
             name: t("Token symbols"),
             about: t("a mark on each token: you, your companions, your foes"),

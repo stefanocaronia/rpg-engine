@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
 import { type Formula, type FormulaData, formulaOf, parseFormula, readFormulas, type SystemFormulas } from "../core/formula.ts";
@@ -157,6 +157,8 @@ const systemSchema = z.object({
     title: z.string().min(1),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/),
     attribution: z.string().min(1).optional(),
+    // Its theme of the dashboard (D-528): a folder of its own, written from it, as theme.
+    theme: z.string().min(1).refine((folder) => !isAbsolute(folder) && !folder.split(/[\\/]/).includes(".."), { error: "write it as a folder of the system, such as theme" }).optional(),
     fields: z.record(z.string(), z.enum(fieldKinds)).optional(),
     coins: z.union([z.string().min(1), z.record(z.string(), z.unknown())]).optional(),
     "coin-metals": z.record(z.string().min(1), z.string().min(1), { error: "write it as a map, each coin with its metal, such as {gp: gold, sp: silver}" }).optional(),
@@ -520,6 +522,8 @@ export interface GameSystem
     language: string;
     /** What a work that uses it must say of its source, when its license asks for it. */
     attribution?: string;
+    /** The folder of its theme of the dashboard, when it names one (D-528): read and checked by the themes module. */
+    theme?: string;
     /** The kind of each field it declares (SYS-8). */
     fields: Record<string, FieldKind>;
     /** Its coins, as config takes them, "gp 100, sp 10, cp 1", or as campaign.yaml writes them (D-182, DAT-1). */
@@ -1046,6 +1050,7 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
         title: data.title,
         language: data.language,
         attribution: data.attribution,
+        ...(data.theme === undefined ? {} : { theme: join(folder, data.theme) }),
         fields: data.fields ?? {},
         coins: data.coins,
         coinMetals: data["coin-metals"] ?? {},

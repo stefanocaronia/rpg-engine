@@ -23,9 +23,9 @@
     .settings-group {
         display: grid;
         padding: 14px 16px 6px;
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--panel);
+        background: var(--card-ornament-layer), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 

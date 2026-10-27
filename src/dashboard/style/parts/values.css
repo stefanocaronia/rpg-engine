@@ -109,6 +109,8 @@
     }
 
     .tile .big {
+        /* The game's face of the big numbers, when it gives one (D-528). */
+        font-family: var(--number-font, inherit);
         font-size: 1.75rem;
         font-weight: 700;
         font-variant-numeric: tabular-nums;

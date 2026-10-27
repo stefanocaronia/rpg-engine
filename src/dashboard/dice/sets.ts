@@ -107,7 +107,10 @@ export const coinDesignPref: Choice = { key: "rpg-engine.coin-design", initial: 
 /** Whether the dice's edges are rounded or sharp, as a precision die's (D-354). */
 export const diceEdgesPref: Choice = { key: "rpg-engine.dice-edges", initial: "rounded", values: ["rounded", "sharp"] };
 
-/** The look of a set, by default the one chosen; the theme's by the theme shown: yellow resin with navy numbers on the dark page, navy with yellow on the light. */
+/**
+ * The look of a set, by default the one chosen; the theme's by the theme shown: yellow resin with navy numbers on the dark page, navy with yellow on the light,
+ * or the game's style's colours while it is on.
+ */
 export function diceLook(value = readChoice(diceSetPref)): DiceLook
 {
     const chosen = diceSets.find((set) => set.value === value)?.look;
@@ -116,7 +119,19 @@ export function diceLook(value = readChoice(diceSetPref)): DiceLook
         return chosen;
     }
 
-    return shownTheme() === "dark" ? { finish: resin, body: "#f5c63e", ink: "#182c4c" } : { finish: resin, body: "#182c4c", ink: "#f5c63e" };
+    return themedDice() ?? (shownTheme() === "dark" ? { finish: resin, body: "#f5c63e", ink: "#182c4c" } : { finish: resin, body: "#182c4c", ink: "#f5c63e" });
+}
+
+/** The set Theme in the game's style, when it is on (D-528 (5)): its strong colour with its text, as the page shows them now. */
+function themedDice(): DiceLook | undefined
+{
+    if (typeof document === "undefined") {
+        return undefined;
+    }
+
+    const style = getComputedStyle(document.documentElement);
+    const [body, ink] = ["--dice-body", "--dice-ink"].map((token) => style.getPropertyValue(token).trim());
+    return /^#[0-9a-f]{6}$/i.test(body) && /^#[0-9a-f]{6}$/i.test(ink) ? { finish: resin, body, ink } : undefined;
 }
 
 /**

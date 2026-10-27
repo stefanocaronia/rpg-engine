@@ -1,13 +1,13 @@
-/* Card: a card that folds and one always open, their headers, icons, previews and chevrons. */
+/* Card: a card that folds and one always open, their headers, icons, previews and chevrons; the game's edge, second line and ornament (D-528). */
 @layer parts {
     /* A card that is always open: its CardHead, then its body. */
     .card {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
         min-width: 0;
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--panel);
+        background: var(--card-ornament-layer), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 
@@ -19,9 +19,9 @@
         break-inside: avoid;
         margin-bottom: var(--gap);
         padding: 0 16px;
-        border: 1px solid var(--rule);
+        border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--panel);
+        background: var(--card-ornament-layer), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 
@@ -113,5 +113,11 @@
 
     .group[open] {
         padding-bottom: 14px;
+    }
+
+    /* The game's second line inside the cards (D-528): an outline that takes no room, in the colour of their edge. */
+    :is(.card, .group, .band, .rolls-card, .turns-card, .settings-group, .scene-now, .quest-card, .note-card, .save-card, .chapter) {
+        outline: 1px var(--card-inner-line) color-mix(in srgb, var(--card-edge) 70%, transparent);
+        outline-offset: -5px;
     }
 }

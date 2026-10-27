@@ -203,9 +203,10 @@
         font-weight: 600;
     }
 
+    /* Its end, softer than its name: the muted text drawn a little toward the ink, as the muted alone does not read on the accent's tint (4.5:1). */
     .effect .end {
         margin-inline-start: 0.35em;
-        color: var(--muted);
+        color: color-mix(in srgb, var(--muted) 70%, var(--ink));
     }
 
     /* An effect with its drawing (D-516): the icon inside the chip before its word; where few fit, the icon alone, its word in its tooltip. */
