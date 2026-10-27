@@ -2,6 +2,6 @@ Run a challenge as a scene of its own. Say its stake before the first roll: what
 
 - A chase: a line of places between quarry and pursuer, an obstacle at each (a crowd, a wall, a cart); three to six rounds.
 - A heist: the plan is the player's; say when the gathering of information is done; on the job a failure adds a complication, never voids the plan.
-- A puzzle: a success gives a clue, never the answer, and it is never the only way on.
+- A puzzle: its goal plain at a glance, its first step obvious, its progress visible piece by piece, two at once when one may stall; never a riddle that is all or nothing; a success gives a clue, never the answer, and it is never the only way on.
 - A ritual: a clock the participants feed, a pressure (an interruption, a backlash), its cost known before it starts.
 - A race: the rival acts every round too.

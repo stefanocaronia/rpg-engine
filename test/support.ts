@@ -86,6 +86,7 @@ export const fightGuidance = "As the fight starts, give the place two or three t
 
 /** What scene open says about a place to explore: the core's part exploration (D-121, D-530). */
 export const explorationGuidance = "A place worth exploring has more than one way in and through, and two or three things to touch, climb, break or use, given as the party arrives. "
+    + "It also hides one thing a curious player can find, which rewards the looking, never the way on. "
     + "One you improvise can run entrance and guard, a puzzle or a talk, a setback, the climax, a reward or a twist.";
 
 /** What scene open says about a journey: the core's part travel (D-121, D-530). */

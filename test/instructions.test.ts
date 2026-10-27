@@ -35,6 +35,7 @@ describe("the parts of the instructions (D-121)", () => {
         expect(corePart("travel")).toBe(travelGuidance);
         expect(corePart("exploration")).toBe(explorationGuidance);
         expect(corePart("challenge")).toMatch(/^Run a challenge as a scene of its own\. Say its stake before the first roll/);
+        expect(corePart("adventure")).toMatch(/^No adventure is under way\. A written or planned one opens as it is written/);
         expect(corePart("rest")).toBeUndefined();
         expect(corePart("../package")).toBeUndefined();
     });
@@ -54,7 +55,7 @@ describe("the parts of the instructions (D-121)", () => {
         const given = await ok("instructions");
         expect(given).toMatch(/^# Game master: core instructions\n/);
         expect(given).toMatch(
-            /\n\n## Play\n\nThe story is on\.[\s\S]*35\. The player sees their whole sheet[^\n]*\n\n### Before you send\n\nRead your message once as the player will\.[^\n]*handing the choice back\?\n\n### The fake system\n\n- A roll is two six-sided dice and a bonus, 8 or more succeeds/,
+            /\n\n## Play\n\nThe story is on\.[\s\S]*\d+\. The player sees their whole sheet[^\n]*\n\n### Before you send\n\nRead your message once as the player will\.[^\n]*handing the choice back\?\n\n### The fake system\n\n- A roll is two six-sided dice and a bonus, 8 or more succeeds/,
         );
         expect(given).not.toContain("## Setup");
     });
