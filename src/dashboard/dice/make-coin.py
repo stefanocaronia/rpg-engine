@@ -1,5 +1,5 @@
 # The dashboard's coins (D-522 (3), D-524 (1), D-526): one coin, its designs on its two faces, made by Blender from this script alone, as make-dice.py makes
-# the dice. Every design is the same coin, as wide and as thick, with a plain edge: heads its picture raised in the ink on a field of the body, tails its
+# the dice. Every design is the same coin, as wide and as thick, with a reeded edge: heads its picture raised in the ink on a field of the body, tails its
 # picture raised in the body on a field of the ink; the page makes body and ink of the look the player chooses. Run it again when a design changes, from
 # the repository's folder, for all the designs or those named:
 #   blender --background --factory-startup --python src/dashboard/dice/make-coin.py [-- sun crown ...]
@@ -28,6 +28,11 @@ thickness = 0.16
 rimWidth = 0.11
 recess = 0.03
 relief = 0.024
+# The reeding of the edge (D-526): grooves across it, between its bevels, few enough to be seen on a coin as small as the page's.
+reeds = 72
+reedDepth = 0.014
+reedWidth = 0.024
+bevelWidth = 0.014
 # The sides of the prism the physics throws: its rim a little off the round, so that the coin does not roll as a wheel.
 physicsSides = 24
 # The page's grid: the coin's radius is 11 of its 24.
@@ -312,16 +317,31 @@ def face(coin, side, parts, field, picture):
     boolean(coin, raised, "UNION")
 
 
+def reeding(made):
+    """The grooves across the edge, each a box from inside the edge to beyond it, between the bevels of the two faces."""
+    grooves = []
+
+    for step in range(reeds):
+        angle = 2 * math.pi * step / reeds
+        outward, across = (math.cos(angle), math.sin(angle)), (-math.sin(angle) * reedWidth / 2, math.cos(angle) * reedWidth / 2)
+        inner, outer = drawnRadius - reedDepth, drawnRadius + 0.05
+        grooves.append([(outward[0] * size + across[0] * side, outward[1] * size + across[1] * side) for size, side in ((inner, -1), (outer, -1), (outer, 1), (inner, 1))])
+
+    margin = bevelWidth + 0.006
+    return prism("reeds", grooves, -thickness / 2 + margin, thickness / 2 - margin, made)
+
+
 def make_coin(design, body, ink):
     coin = prism("coin", [circle(drawnRadius, 160)], -thickness / 2, thickness / 2, body, weighted=True)
     bevel = coin.modifiers.new("bevel", "BEVEL")
-    bevel.width = 0.014
+    bevel.width = bevelWidth
     bevel.segments = 3
     bevel.limit_method = "WEIGHT"
     bpy.context.view_layer.objects.active = coin
     coin.select_set(True)
     bpy.ops.object.modifier_apply(modifier="bevel")
     coin.select_set(False)
+    boolean(coin, reeding(body), "DIFFERENCE")
     heads, tails = designs[design]
     face(coin, "heads", heads(), body, ink)
     face(coin, "tails", tails(), ink, body)
