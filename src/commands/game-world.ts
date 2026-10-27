@@ -1,14 +1,29 @@
 import { join, resolve } from "node:path";
 import { campaignFileName, type CountedByGame, readCampaignData, readOneSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
+import { ourSystems } from "../core/package-declarations.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { type Extension, extensionWords } from "../extensions/index.ts";
 import { languagePackFor, packSystemFolder } from "../languages/index.ts";
 import { homeSystemWords } from "../page-words.ts";
-import { loadWorld, type PageType, searchSystemPages, type World, worldFolderName } from "../pages/index.ts";
-import { type CampaignData, findCampaignSystem, findSystem, type GameSystem, installedSystems, type SystemLayer, type SystemSetting, type SystemWords, systemWords, withSettings } from "../systems/index.ts";
+import { loadWorld, type PageType, playerCharacters, searchSystemPages, type World, worldFolderName } from "../pages/index.ts";
+import {
+    type CampaignData,
+    findCampaignSystem,
+    findSystem,
+    type GameSystem,
+    installedSystems,
+    layeredSystemWords,
+    rulesetSetting,
+    systemContentFolders,
+    type SystemLayer,
+    type SystemSetting,
+    type SystemWords,
+    systemWords,
+    withSettings,
+} from "../systems/index.ts";
 import { campaignExtensions, extensionSources, layeredParts } from "./game-extension-list.ts";
 
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
@@ -40,7 +55,7 @@ export function systemWordsOf(root: string, system: GameSystem, language: string
     // A language package's words come first, then the system's own, then those translated on the fly (D-485 (3)).
     const pack = languagePackFor(context.extensionFolders ?? [], language);
     const packed = pack === undefined ? undefined : packSystemFolder(pack, system.name);
-    const own = (packed === undefined ? undefined : systemWords(packed, language)) ?? systemWords(system.folder, language) ?? homeSystemWords(context.home, system, language);
+    const own = (packed === undefined ? undefined : systemWords(packed, language)) ?? layeredSystemWords(systemContentFolders(system), language) ?? homeSystemWords(context.home, system, language);
     const added = campaignExtensions(root, context).extensions.reduce((fields, extension) => ({ ...fields, ...extensionFieldWords(extension, language) }), {});
     return Object.keys(added).length === 0 ? own : { ...(own ?? { groups: {}, words: {} }), fields: { ...own?.fields, ...added } };
 }
@@ -84,7 +99,7 @@ function systemOf(root: string, context: Context): { system?: GameSystem; refuse
     // campaign.yaml, and the extensions' packages, whose parts and additions it gives.
     return files().remember(`system ${resolve(root)}`, extensionSources(root, context), () => {
         const name = readTextSetting(root, "system");
-        const found = name === undefined ? { refused: [] } : findCampaignSystem(context.systemFolders, name, systemLayers(root, context, readCampaignData(root)));
+        const found = name === undefined ? { refused: [] } : findCampaignSystem(context.systemFolders, name, systemLayers(root, context, readCampaignData(root)), readTextSetting(root, rulesetSetting));
         // And the parts of the instructions of its extensions over its own (D-121).
         const played = found.system === undefined ? undefined : withSettings(found.system, (setting) => readTextSetting(root, setting));
         return played === undefined ? found : { ...found, system: { ...played, parts: layeredParts(played.parts, campaignExtensions(root, context).extensions) } };
@@ -125,6 +140,22 @@ function extensionFieldWords(extension: Extension, language: string): Record<str
 export function systemSetting(root: string, context: Context, name: string): SystemSetting | undefined
 {
     return campaignSystem(root, context)?.settings.find((setting) => comparableText(setting.name) === comparableText(name.trim()));
+}
+
+/**
+ * The value a setting of the system has in the campaign (DAT-10): the one campaign.yaml gives, when the system has it; for the version of the rules, once the game
+ * has begun, the one it plays unwritten, the first (VER-2). Undefined while it is still to be chosen.
+ */
+export function playedSettingValue(root: string, context: Context, setting: SystemSetting): string | undefined
+{
+    const written = systemSettingValue(root, setting);
+    return written !== undefined || setting.name !== rulesetSetting || playersOfTheGame(root, context).length === 0 ? written : campaignSystem(root, context)?.version?.name;
+}
+
+/** The names of the player characters the game has begun with (D-519): from the first, the campaign keeps its system and the version of its rules (SYS-9, VER-4). */
+export function playersOfTheGame(root: string, context: Context): string[]
+{
+    return playerCharacters(campaignWorld(root, context)).map((page) => page.name);
 }
 
 /** The value campaign.yaml gives a setting of the system, when it is one the system has (DAT-10). */
@@ -208,12 +239,24 @@ export function systemProblems(root: string, context: Context): Problem[]
         return [];
     }
 
-    const [first] = installedSystems(context.systemFolders);
     return [{
         path: "campaign.yaml",
         message: `The system ${name} is not installed: no creatures, items or rules come from a system. ${installedText(context)}`,
-        fix: first === undefined ? "install the game system" : `ask the player which game you play, then config, setting system, value ${first.name}`,
+        fix: missingSystemFix(name, context),
     }];
+}
+
+/** How a campaign gets the system it names that is not installed: one of ours with package install (D-513), else another of those installed, asked of the player. */
+function missingSystemFix(name: string, context: Context): string
+{
+    const ours = ourSystems.find((one) => comparableText(one.name) === comparableText(name.trim()));
+
+    if (ours !== undefined) {
+        return `install it, one of RPG Engine's own, with package install ${ours.name}; until then, play on without its pages`;
+    }
+
+    const [first] = installedSystems(context.systemFolders);
+    return first === undefined ? "install the game system" : `ask the player which game you play, then config, setting system, value ${first.name}`;
 }
 
 /** The name of an installed game system, as it is installed; refused, with those that are, when none has it (D-167). */
@@ -223,7 +266,13 @@ export function installedSystemName(name: string, context: Context, how: "init" 
 
     if (system === undefined) {
         const [first] = installedSystems(context.systemFolders);
-        const example = first === undefined ? "" : ` Give one of them, such as ${how === "init" ? "system" : "setting system, value"} ${first.name}.`;
+        const ours = ourSystems.find((one) => comparableText(one.name) === comparableText(name.trim()));
+        // One of ours is installed first, once the player wants it (D-513 (1)).
+        const example = ours !== undefined
+            ? ` It is one of RPG Engine's own: install it with package install ${ours.name} once the player wants it, then give it again.`
+            : first === undefined
+            ? ""
+            : ` Give one of them, such as ${how === "init" ? "system" : "setting system, value"} ${first.name}.`;
         throw new Error(`"${name}" is not an installed system. ${installedText(context)}${example} Nothing changed.`);
     }
 
@@ -308,7 +357,7 @@ export function missingWithSystems(root: string, missing: string[], context: Con
     const names = installedSystems(context.systemFolders).map((system) => system.name);
     const system = names.length > 0 ? `system (installed: ${names.join(", ")})` : "system";
     // What the system adds to the setup, with its values: config says what each means (DAT-10).
-    const added = (campaignSystem(root, context)?.settings ?? []).filter((setting) => systemSettingValue(root, setting) === undefined).map((setting) => `${setting.name} (${valuesText(setting)})`);
+    const added = (campaignSystem(root, context)?.settings ?? []).filter((setting) => playedSettingValue(root, context, setting) === undefined).map((setting) => `${setting.name} (${valuesText(setting)})`);
     // The system first (D-167): the other settings may depend on the game.
     return [...(missing.includes("system") ? [system, ...missing.filter((name) => name !== "system")] : missing), ...added];
 }
@@ -320,14 +369,29 @@ export function missingWithSystems(root: string, missing: string[], context: Con
 export function systemInStatus(root: string, context: Context): string | undefined
 {
     const name = readTextSetting(root, "system");
-    const system = name === undefined ? undefined : findSystem(context.systemFolders, name);
+    const system = name === undefined ? undefined : findSystem(context.systemFolders, name, readTextSetting(root, rulesetSetting));
 
+    // With the version of its rules the campaign plays (VER-1).
     if (name === undefined || system !== undefined) {
-        return system === undefined ? undefined : `${system.name}, ${system.title}`;
+        return system === undefined ? undefined : `${system.name}, ${system.title}${playedRules(root, context, system)}`;
     }
 
-    const [first] = installedSystems(context.systemFolders);
-    return `${name} ${first === undefined ? "(not installed)" : `(not installed: ask the player, then config, setting system, value ${first.name})`}`;
+    return `${name} (not installed: ${missingSystemFix(name, context)})`;
+}
+
+/**
+ * ", the second rules": the version of its rules a system is played with, when it has more than one to choose from (VER-1), or that it is still to ask, so
+ * that the first, read meanwhile, is never taken as chosen; empty otherwise.
+ */
+export function playedRules(root: string, context: Context, system: GameSystem): string
+{
+    const setting = system.settings.find((one) => one.name === rulesetSetting);
+
+    if (system.version === undefined || setting === undefined) {
+        return "";
+    }
+
+    return playedSettingValue(root, context, setting) === undefined ? ", the version of its rules still to ask" : `, ${system.version.title ?? system.version.name}`;
 }
 
 /** A language as messages name it, such as English for en. */

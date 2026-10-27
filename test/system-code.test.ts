@@ -87,7 +87,8 @@ describe("the code of a game system (D-448)", () => {
         const now = system("now", 5);
         const loaded = await loadSystemCode([systems]);
         expect(loaded.newer).toEqual({
-            refused: "is made for the API 6, and this rpg-engine reads the API 5 for a game system: rpg-engine must be updated first: ask the player to update it as they installed it, then open a new chat",
+            refused:
+                "is made for the API 6, and this rpg-engine reads the API 5 for a game system: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat",
             version: "1.0.0",
         });
         expect(loaded.older).toEqual({ refused: "is made for the API 1, and this rpg-engine reads the API 5 for a game system: install a newer version of it", version: "1.0.0" });

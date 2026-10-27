@@ -27,7 +27,7 @@ export const translate = defineCommand({
         const root = requireCampaign(context.folder);
         const { home, page, language } = translationPlaces(context, readSettings(root).language?.toLowerCase());
         const found = campaignSystem(root, context);
-        const system: WordsSystem | undefined = found === undefined ? undefined : { name: found.name, folder: found.folder };
+        const system: WordsSystem | undefined = found === undefined ? undefined : { name: found.name, folder: found.folder, ...(found.version === undefined ? {} : { version: found.version }) };
         const answer = input.phrases === undefined ? undefined : readAnswer(input.phrases);
         const saved = answer === undefined ? undefined : keepChatAnswer(home, page, language, system, answer);
 
@@ -87,7 +87,7 @@ export function translationOffer(root: string, context: Context): string | undef
     }
 
     const found = campaignSystem(root, context);
-    const left = chatBatch(context.home, context.pageFolder, language, found === undefined ? undefined : { name: found.name, folder: found.folder })?.left;
+    const left = chatBatch(context.home, context.pageFolder, language, found === undefined ? undefined : { name: found.name, folder: found.folder, ...(found.version === undefined ? {} : { version: found.version }) })?.left;
     const lacks = `The dashboard is not in ${languageName(language)} on this computer, and nothing here translates it in the background`;
 
     if (left === undefined) {

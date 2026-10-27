@@ -1,6 +1,6 @@
 # A fake game system for the core's tests (D-513 (3), D-514): names of our own, neither D&D nor Ironsworn, and other shapes than the 5e's, so that what the
 # core does only for the 5e shows. Two dice and their sum for the sheet, coins that are not decimal, a down point that counts one side, a pool of stamina
-# dice spent in a breather. Its versions of the rules, in versions/, wait for the engine to read them (D-513 (5)).
+# dice spent in a breather. Two versions of its rules, each a folder in versions/ over this common part (D-513 (5), VER-1).
 title: the fake system of the core's tests
 language: en
 attribution: The fake system of rpg-engine's tests, made for them; no game's text.
@@ -41,6 +41,11 @@ grid:
   size: bulk
   footprints: {big: 2}
   leaving: Disengage
+# The versions of its rules (VER-1): a campaign plays one, set as ruleset, the first while it chooses none.
+versions:
+  about: which rules of the fens you play
+  first: {means: "the first rules: a night's sleep brings back some stamina dice", player: "the first rules"}
+  second: {means: "the second rules: a night's sleep brings back every stamina die, and a rushlight burns longer", player: "the second rules"}
 settings:
   harshness:
     about: how hard the road is

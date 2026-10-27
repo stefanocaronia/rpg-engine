@@ -13993,6 +13993,41 @@ svg.icon {
     color: var(--ink);
 }
 
+/* What a package's latest needs of the engine (D-515 (2)), under its meta: the words in --muted, the way to the engine's card in the accent. */
+.package-needs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 8px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}
+
+.package-needs .package-see {
+    min-height: 28px;
+}
+
+/* The engine installed (D-515 (3)): what to do for the master to use it, framed in the accent as what to know, its steps numbered. */
+.package-restart {
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--rule));
+    border-radius: var(--radius-m);
+    background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.package-restart p + p {
+    font-weight: 400;
+}
+
+.package-restart ol {
+    display: grid;
+    gap: 2px;
+    margin: 2px 0 0;
+    padding-inline-start: 1.4em;
+    font-weight: 400;
+}
+
 /* The library (D-491 (13)): first, in the accent, that a folder is added once to the computer and turned on in each campaign. */
 .library-scope {
     display: flex;

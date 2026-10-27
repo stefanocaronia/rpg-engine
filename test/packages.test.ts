@@ -109,7 +109,7 @@ describe("a game system as a package (D-485)", () => {
         npm = fakeNpm(modules, { "@test/system-tiny": tiny, "@test/system-future": future });
         context = { ...context, packages: npm, systemFolders: [...context.systemFolders, modules], confirm: windowAnswering("yes") };
         expect((await rpg("package", "install", "@test/system-future")).output).toBe(
-            "@test/system-future 2.0.0 cannot be used, because it is made for the API 6, and this rpg-engine reads the API 5 for a game system: rpg-engine must be updated first: ask the player to update it as they installed it, then open a new chat. Nothing changed.",
+            "@test/system-future 2.0.0 cannot be used, because it is made for the API 6, and this rpg-engine reads the API 5 for a game system: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat. Nothing changed.",
         );
         const result = await rpg("package", "install", "@test/system-tiny");
         expect(result.output).toBe("Installed the game system tiny 1.0.0, a tiny test system, not verified: at the player's risk. It is for a new campaign, chosen in its setup: this one plays ironsworn.");
@@ -292,7 +292,7 @@ describe("rpg package install", () => {
         );
         npm.describe = (spec) => Promise.resolve({ name: spec, version: "5.0.0", kind: "extension", api: 6 });
         expect((await rpg("package", "install", "omens")).output).toBe(
-            "@rpgengine/omens 5.0.0 cannot be used, because it is made for the API 6, and this rpg-engine reads the API 1 to 5 for an extension: rpg-engine must be updated first: ask the player to update it as they installed it, then open a new chat. Nothing changed.",
+            "@rpgengine/omens 5.0.0 cannot be used, because it is made for the API 6, and this rpg-engine reads the API 1 to 5 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat. Nothing changed.",
         );
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
     });

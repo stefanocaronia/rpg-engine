@@ -248,6 +248,7 @@ export function settingLabel(name: string): string
         lethality: t("Lethality"),
         saves: t("Saves"),
         rigor: t("Rigor"),
+        ruleset: t("Ruleset"),
         mentor: t("Mentor"),
         learned: t("Learned"),
         prose: t("Prose"),

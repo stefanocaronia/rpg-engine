@@ -12,7 +12,7 @@ import { comparableText } from "../core/text.ts";
 import { type CodePackage, type Extension, type ExtensionWords, extensionWords, findExtension, hasConsent, isVerified } from "../extensions/index.ts";
 import type { FigureSize } from "../page.ts";
 import { isCoreField } from "../pages/index.ts";
-import { type GameSystem, systemApiProblem, systemPageModule, systemWords } from "../systems/index.ts";
+import { type GameSystem, layeredSystemWords, systemApiProblem, systemContentFolders, systemPageModule, systemWords } from "../systems/index.ts";
 
 /** The extensions the campaign uses, and what keeps one from being used, with how to fix it. */
 export interface CampaignExtensions
@@ -103,7 +103,7 @@ export function campaignPageModules(root: string, context: Context, system: Game
             file: own.file,
             address: pageAddress(own.package, own.version, own.file),
             figures: system.figures,
-            ...wordsIn(language, system.language, () => systemWords(system.folder, language ?? "")?.words),
+            ...wordsIn(language, system.language, () => layeredSystemWords(systemContentFolders(system), language ?? "")?.words),
         }];
     const extensions = campaignExtensions(root, context).extensions.flatMap((extension) =>
         extension.page === undefined || !runsCode(extension)

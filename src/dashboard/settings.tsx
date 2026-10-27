@@ -8,17 +8,18 @@ import type { PlayerSetting, ShownWidget, WidgetPage, WidgetSpot } from "./data.
 import { diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./dice/sets.ts";
 import { WidgetsContext } from "./extension-widgets.tsx";
 import { DieSwatch, Icon } from "./icons.tsx";
-import { settingLabel, valueLabel } from "./labels.ts";
+import { phraseLabel, settingLabel, valueLabel } from "./labels.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
 import { PageHead } from "./pages.tsx";
 import { byHandPref, conditionsPref, soundPref, tokenSymbolsPref, useChoice, usePref, usePrefChange } from "./prefs.ts";
+import { Confirm } from "./saves.tsx";
 import { arrowStep, t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
 // The groups of the campaign's settings, in order; a setting the game system adds goes with the dice, as whether the master's rolls are shown (D-287). How the
 // master plays holds who voices the characters (D-490) and how much the master thinks (D-462) too.
 const groups: { names: string[]; system?: true; }[] = [
-    { names: ["difficulty", "lethality", "saves", "rigor"] },
+    { names: ["ruleset", "difficulty", "lethality", "saves", "rigor"] },
     { names: ["mentor", "learned"] },
     { names: ["prose", "story", "author", "style", "voices", "effort"] },
     { names: ["dice", "master-rolls", "units"], system: true },
@@ -111,6 +112,9 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
     const said = useSaid();
     const value = picked ?? setting.value;
     const id = `setting-${idOf(setting.name)}`;
+    // The version of the rules changes the game's rules: it asks first (D-514 (2)).
+    const [asking, setAsking] = useState<string>();
+    const rules = setting.name === rulesetSetting;
 
     useEffect(() => setPicked(undefined), [setting]);
 
@@ -118,12 +122,41 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
     useEffect(() => () => {
         if (resting.current !== undefined) {
             clearTimeout(resting.current.timer);
-            void onChange({ setting: setting.name, value: resting.current.choice });
+
+            // Never the rules without the player's yes.
+            if (!rules) {
+                void onChange({ setting: setting.name, value: resting.current.choice });
+            }
         }
     }, []);
 
+    const row = useRef<HTMLDivElement>(null);
+
+    // The focus on the value chosen, once the dialog that asked is gone.
+    const focusChosen = (): void => {
+        requestAnimationFrame(() => row.current?.querySelector<HTMLElement>("[role=radio][aria-checked=true]")?.focus());
+    };
+
     const send = (change: SettingChange): void => {
+        // The arrows that rest back on the rules played change nothing, and ask nothing.
+        if (rules && "value" in change) {
+            if (change.value === setting.value) {
+                setPicked(undefined);
+            } else {
+                setAsking(change.value);
+            }
+
+            return;
+        }
+
         void onChange(change).then(said.show);
+    };
+
+    // Not changed after all: the rules played show again, with the focus.
+    const keep = (): void => {
+        setAsking(undefined);
+        setPicked(undefined);
+        focusChosen();
     };
 
     // A click chooses at once; the arrows show each value and send the one they rest on, so that the game is changed once.
@@ -148,7 +181,7 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
     const unset = setting.most === undefined && (setting.choices === undefined ? setting.items === undefined && setting.value === undefined : chosen === undefined);
     const described = [`${id}-about`, ...(chosen?.means === undefined ? [] : [`${id}-means`]), ...(off === undefined ? [] : [`${id}-off`])].join(" ");
     return (
-        <div class={off === undefined ? "setting" : "setting off"}>
+        <div ref={row} class={off === undefined ? "setting" : "setting off"}>
             <div class="setting-what">
                 <span class="setting-name" id={id}>{settingLabel(setting.name)}</span>
                 <span class="setting-about" id={`${id}-about`}>{t(setting.about)}</span>
@@ -158,7 +191,7 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
                     <Segmented
                         label={id}
                         described={described}
-                        options={setting.choices.map((choice) => ({ value: choice.value, label: valueLabel(choice.value) }))}
+                        options={setting.choices.map((choice) => ({ value: choice.value, label: choiceLabel(setting.name, choice) }))}
                         value={value}
                         onPick={choose}
                     />
@@ -170,7 +203,7 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
                 : <ListSetting setting={setting} label={id} onChange={send} />}
             <div class="setting-after">
                 {off !== undefined && <p class="setting-off" id={`${id}-off`}>{off}</p>}
-                {chosen?.means !== undefined && (
+                {chosen?.means !== undefined && !rules && (
                     <p class="setting-means" id={`${id}-means`}>
                         <strong>{valueLabel(chosen.value)}:</strong> {meansText(setting.name, chosen.value, chosen.means, several)}
                     </p>
@@ -180,8 +213,45 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
                 {setting.note !== undefined && <SettingNote note={setting.note} />}
                 <p class={said.now?.problem ? "setting-said problem" : "setting-said"} role="status">{said.now?.text}</p>
             </div>
+            {asking !== undefined && (
+                <Confirm title={t("Play by {rules}?", { rules: choiceLabel(setting.name, setting.choices?.find((choice) => choice.value === asking) ?? { value: asking }, false) })} onClose={keep}>
+                    <p>{t("The game follows these rules from the master's next move: the sheets are worked out with them, and the master reads them.")}</p>
+                    <p class="confirm-note">{t("What is already in play stays as it is, and you can go back whenever you want.")}</p>
+                    <div class="confirm-buttons">
+                        <button type="button" class="button" autoFocus onClick={keep}>{t("Cancel")}</button>
+                        <button
+                            type="button"
+                            class="button gold"
+                            onClick={() => {
+                                setAsking(undefined);
+                                focusChosen();
+                                void onChange({ setting: setting.name, value: asking }).then(said.show);
+                            }}
+                        >
+                            {t("Change the rules")}
+                        </button>
+                    </div>
+                </Confirm>
+            )}
         </div>
     );
+}
+
+// The engine's setting of the version of a game system's rules, whatever the system (VER-1).
+const rulesetSetting = "ruleset";
+
+/**
+ * A value of a setting on its button: a version of the rules by what it is to the player ("The 2014 rules"), as its name says little; any other by its label.
+ * `capital` false keeps it as written, for inside a sentence.
+ */
+function choiceLabel(setting: string, choice: { value: string; means?: string; }, capital = true): string
+{
+    if (setting !== rulesetSetting || choice.means === undefined) {
+        return valueLabel(choice.value);
+    }
+
+    const means = t(choice.means);
+    return capital ? phraseLabel(means) : means;
 }
 
 /** What a change said, in its row: saved for a few seconds, what went wrong until the next change. */

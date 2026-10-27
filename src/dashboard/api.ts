@@ -275,8 +275,60 @@ export type PackageAction = "update" | "remove" | "uninstall";
 export interface PackageWork
 {
     name: string;
-    action: "add" | PackageAction | "library";
+    action: "add" | PackageAction | "library" | "engine";
     phase: "working" | "yes";
+}
+
+/**
+ * RPG Engine itself (D-515 (3)): its version, npm's latest and whether it is newer, or why npm was not asked; how it is installed: by npm globally, which the
+ * page updates, by npm link of a folder, or any other way, from a folder.
+ */
+export interface EngineView
+{
+    version: string;
+    latest?: string;
+    update?: boolean;
+    failed?: string;
+    install: "global" | "link" | "other";
+    folder?: string;
+    working?: PackageWork;
+}
+
+/** RPG Engine and what npm has of it; undefined where the page is not served by the game's own server, which alone updates it. */
+export async function readEngine(): Promise<EngineView | undefined>
+{
+    const response = await fetch("/api/engine");
+    const body = await response.json() as EngineView | { error: string; };
+
+    if (response.status === 400) {
+        return undefined;
+    }
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body;
+}
+
+/** What updating RPG Engine came to: the version installed, and whether a new chat or the app opened again brings it; or the engine's words. */
+export type EngineOutcome = { done: true; version: string; restart: "chat" | "app"; } | { done: false; error: string; code?: "busy"; };
+
+/** Installs npm's latest RPG Engine as it was installed: the chat and this page go on with the one they started with. */
+export async function updateEngine(): Promise<EngineOutcome>
+{
+    try {
+        const response = await fetch("/api/engine", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update" }) });
+        const body = await response.json().catch(() => ({})) as { version?: string; restart?: "chat" | "app"; error?: string; code?: "busy"; };
+
+        if (response.status === 202 && body.version !== undefined) {
+            return { done: true, version: body.version, restart: body.restart === "app" ? "app" : "chat" };
+        }
+
+        return { done: false, error: body.error ?? t("It did not reach the game: try again."), ...(body.code === "busy" ? { code: body.code } : {}) };
+    } catch {
+        return { done: false, error: t("It did not reach the game: try again.") };
+    }
 }
 
 /** The packages as the page shows them (D-485): by kind, with the one being worked on. */
@@ -364,6 +416,8 @@ export interface CatalogEntry
     length?: string;
     language?: string;
     stars?: number;
+    /** Its latest version, when that one needs a newer RPG Engine: `version` is then the newest this one reads (D-515 (2)). */
+    newer?: { version: string; engine?: string; };
 }
 
 /** What npm and GitHub offer, and the one that did not answer, in its own words. */

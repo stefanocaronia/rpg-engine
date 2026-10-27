@@ -7,7 +7,7 @@ import { stringify } from "yaml";
 import type { Context } from "./core/context.ts";
 import { files } from "./core/store.ts";
 import { languagePackFor, packPhrases } from "./languages/index.ts";
-import { type SystemWords, systemWords } from "./systems/index.ts";
+import { layeredSystemWords, systemContentFolders, type SystemWords, systemWords } from "./systems/index.ts";
 
 /** What the page has of a language: its phrases so far, whether they are being translated, whether this computer can, and how many it still lacks. */
 export interface PageWords
@@ -23,6 +23,8 @@ export interface WordsSystem
 {
     name: string;
     folder: string;
+    /** The version of its rules the campaign plays, whose words go over the common ones (VER-3). */
+    version?: { folder: string; };
 }
 
 /** The page's words on the fly: what a language has, and the phrases the page asks first; `notify` tells the pages when more have come. */
@@ -179,7 +181,7 @@ export function homeSystemWords(home: string | undefined, system: WordsSystem, l
 /** The system's words a language still lacks in the player's data folder, against its Italian list. */
 function systemMissing(home: string, language: string, system: WordsSystem): boolean
 {
-    const italian = systemWords(system.folder, "it");
+    const italian = layeredSystemWords(systemContentFolders(system), "it");
     const own = homeSystemWords(home, system, language);
     return italian !== undefined && Object.keys(wordEntries(italian)).some((id) => !(id in wordEntries(own ?? { groups: {}, fields: {}, words: {} })));
 }
@@ -187,7 +189,7 @@ function systemMissing(home: string, language: string, system: WordsSystem): boo
 /** The game system's words translated at once, all in one request so that one concept has one term, after its Italian list. */
 async function translateSystem(writer: NonNullable<Context["writer"]>, home: string, language: string, system: WordsSystem): Promise<void>
 {
-    const italian = systemWords(system.folder, "it");
+    const italian = layeredSystemWords(systemContentFolders(system), "it");
 
     if (italian === undefined || !systemMissing(home, language, system)) {
         return;
@@ -220,7 +222,7 @@ function missingPhrases(home: string, page: string, language: string): { id: str
 /** The game system's words a language still lacks on this computer, each by a short id from its place in the system's Italian list, with what it is. */
 function missingWords(home: string, language: string, system: WordsSystem): { id: string; key: string; english: string; italian: string; kind: string; }[]
 {
-    const italian = systemWords(system.folder, "it");
+    const italian = layeredSystemWords(systemContentFolders(system), "it");
     const own = wordEntries(homeSystemWords(home, system, language) ?? { groups: {}, fields: {}, words: {} });
     return Object.entries(italian === undefined ? {} : wordEntries(italian)).flatMap(([key, word], index) => {
         const section = key.includes(": ") ? key.slice(0, key.indexOf(": ")) : key;

@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { parse, stringify } from "yaml";
 import { z } from "zod";
 import { campaignFileName, findCampaign, readTextSetting, requireCampaign } from "../campaign/index.ts";
-import type { CardAsked, Context } from "../core/context.ts";
+import { type CardAsked, type Context, engineSystemsFolder } from "../core/context.ts";
 import { installedFromFolder, realPath } from "../core/files.ts";
 import { type Formula, parseFormula } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
@@ -20,7 +20,7 @@ import { rollDice } from "../dice/index.ts";
 import { withEffect } from "../effects/index.ts";
 import { type CodePackage, type Extension, type ExtensionWords, wordIn } from "../extensions/index.ts";
 import { concernsPlayer, environmentAt, isInParty, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithNameOrAlias, playerCharacters, type World, writePage } from "../pages/index.ts";
-import { type GameSystem, givenCode, systemHasCode, systemPackage, systemPageModule } from "../systems/index.ts";
+import { type GameSystem, givenCode, loadSystemCode, systemHasCode, systemPackage, systemPageModule } from "../systems/index.ts";
 import { formatGameDate, type GameDate } from "../time/index.ts";
 import { askedRoll, type AskResult, type Button, isCheckDice, type Told, tonesOf } from "./ask.ts";
 import { change } from "./change.ts";
@@ -85,7 +85,7 @@ export async function packageCommands(root: string, context: Context, taken: str
             own.forEach((command) => (sources[command.name] = `${code.package}@${code.version}#${installs}`));
             refused.delete(codeKey(code));
         } catch (error) {
-            problems.push(codeProblem(code, error, context));
+            problems.push(codeProblem(code, error));
             refused.set(codeKey(code), firstLine(error));
         }
     }
@@ -201,6 +201,34 @@ export async function loadCampaignCode(context: Context): Promise<void>
         }
     } catch {
         // A campaign that does not read loads nothing: the command says why.
+    }
+}
+
+/**
+ * The code of the campaign's game system when this process has not loaded it, as one installed in the chat that plays it (D-513 (1)): new to the process, it
+ * is imported now, with the commands of the campaign's packages; a system loaded already, refused or broken, stays as it was.
+ */
+export async function loadNewSystemCode(context: Context): Promise<void>
+{
+    let system: GameSystem | undefined;
+
+    // A campaign or a system that does not read loads nothing: the commands say why.
+    try {
+        const root = findCampaign(context.folder);
+        system = root === undefined ? undefined : campaignSystem(root, context);
+    } catch {
+        return;
+    }
+
+    if (system === undefined || context.systemCode === undefined || context.systemCode[system.name] !== undefined || !systemHasCode(system.folder)) {
+        return;
+    }
+
+    const loaded = (await loadSystemCode(context.systemFolders))[system.name];
+
+    if (loaded !== undefined) {
+        context.systemCode[system.name] = loaded;
+        await loadCampaignCode(context);
     }
 }
 
@@ -742,12 +770,12 @@ function askedOf(result: AskResult): Asked
     }
 }
 
-function codeProblem(code: CodePackage, error: unknown, context: Context): Problem
+function codeProblem(code: CodePackage, error: unknown): Problem
 {
     const why = error instanceof Error ? error.message : String(error);
     const kind = code.kind === "system" ? "game system" : "extension";
     // A system the engine brings comes back with the engine, never with package.
-    const shipped = code.kind === "system" && context.systemFolders[0] !== undefined && isInside(resolve(context.systemFolders[0]), resolve(code.folder));
+    const shipped = code.kind === "system" && isInside(resolve(engineSystemsFolder), resolve(code.folder));
     const fix = shipped ? "install rpg-engine again, or run npm run build in its repository, then start the game's server again" : `install it again, or another version, with package install ${code.name}`;
     return { path: campaignFileName, message: `The code of the ${kind} ${code.package} cannot be used: ${why}. Its commands are left out.`, fix };
 }

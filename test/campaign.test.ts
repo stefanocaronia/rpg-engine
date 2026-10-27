@@ -60,7 +60,7 @@ describe("rpg init", () => {
     it("names the campaign after its folder and takes the settings it is given", async () => {
         const result = await runCommandLine(["init", "guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
         // What the system adds to the setup is asked after (DAT-10).
-        expect(result.output).toContain('veils ("none" is an answer), harshness (gentle or bitter); set each with config.');
+        expect(result.output).toContain('veils ("none" is an answer), ruleset (first or second), harshness (gentle or bitter); set each with config.');
         expect(readFileSync(join(folder, "guadoscuro", "campaign.yaml"), "utf8")).toContain("name: guadoscuro\nlanguage: it\nsystem: fake\ndifficulty: normal\nlethality: dice\n");
     });
 

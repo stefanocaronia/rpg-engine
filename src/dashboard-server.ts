@@ -31,6 +31,7 @@ import { type Command, isBoolean } from "./core/registry.ts";
 import type { SessionStore } from "./core/session-store.ts";
 import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
+import { getVersion, isNewerVersion } from "./core/version.ts";
 import { notationParts } from "./dice/index.ts";
 import { extensionWords, findExtension, verifiedScope } from "./extensions/index.ts";
 import { findHiddenImage, findImage } from "./images/index.ts";
@@ -351,13 +352,16 @@ interface Served
 }
 
 /** What the player does with a package on the page (D-475), or with the library (D-491 (13)). */
-type PackageAction = "add" | "update" | "remove" | "uninstall" | "library";
+type PackageAction = "add" | "update" | "remove" | "uninstall" | "library" | "engine";
 
 /** Where a package's work on the page is: at work, or waiting for the player's yes in a window of their computer (D-478). */
 type PackagePhase = "working" | "yes";
 
 // How long the catalog is kept before npm and GitHub are asked again.
 const catalogLife = 10 * 60 * 1000;
+
+// The version of rpg-engine this server runs, read as it starts: an update on disk comes only with a new chat (D-515 (3)).
+const runningVersion = getVersion();
 
 /** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */
 interface Asked
@@ -567,6 +571,12 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (path === "/api/words" && (request.method === "GET" || (request.method === "POST" && origin !== undefined))) {
         await pageWords(request, response, served, url);
+        return;
+    }
+
+    // rpg-engine itself (D-515 (3)): what it is and what npm has, for the page; its update, from the page alone, never by the master.
+    if (path === "/api/engine" && (request.method === "GET" || (request.method === "POST" && origin !== undefined))) {
+        await engineNow(request, response, served);
         return;
     }
 
@@ -1381,7 +1391,7 @@ async function packageWork(
     served: Served,
     name: string,
     action: PackageAction,
-    work: (context: Context) => Promise<{ kind: string; news: string; }>,
+    work: (context: Context) => Promise<{ kind: string; news: string; answer?: Record<string, unknown>; }>,
 ): Promise<void>
 {
     if (served.packageWork !== undefined) {
@@ -1427,13 +1437,89 @@ async function packageWork(
             served.events.push(done.news);
         }
 
-        sendJson(response, 202, { kind: done.kind });
+        sendJson(response, 202, { kind: done.kind, ...done.answer });
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error), ...(error instanceof YesRefused ? { code: error.code } : {}) });
     } finally {
         served.packageWork = undefined;
         served.notify();
     }
+}
+
+/**
+ * rpg-engine itself on the Packages page (D-515 (3)): its version, npm's latest and whether it is newer, and how it is installed, read at each look; its update,
+ * from the page alone, globally with npm as it was installed, a development link or another install told and never touched; then how the chat takes it.
+ */
+async function engineNow(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const updater = served.context.engine;
+    const version = runningVersion;
+
+    // Where nothing updates it, as in the demo, its version alone.
+    if (updater === undefined) {
+        sendJson(response, request.method === "GET" ? 200 : 400, request.method === "GET" ? { version } : { error: "Only the game's server, started by the chat, updates rpg-engine." });
+        return;
+    }
+
+    // What npm installed since this server started comes with a new chat: said apart, never as the version that runs.
+    const onDisk = updater.onDisk();
+
+    if (request.method === "GET") {
+        const [latest, installed] = await Promise.all([updater.latest(), updater.installed()]);
+        sendJson(response, 200, {
+            version,
+            ...(onDisk === version ? {} : { installed: onDisk }),
+            ...("failed" in latest ? { failed: latest.failed } : { latest: latest.version, update: isNewerVersion(latest.version, onDisk) }),
+            install: installed.how,
+            ...("folder" in installed ? { folder: installed.folder } : {}),
+            ...(served.packageWork === undefined ? {} : { working: served.packageWork }),
+        });
+        return;
+    }
+
+    const parsed = z.object({ action: z.literal("update") }).strict().safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send what to do with rpg-engine: { action: update }." });
+        return;
+    }
+
+    await packageWork(response, served, "rpg-engine", "engine", async () => {
+        const latest = await updater.latest();
+
+        if ("failed" in latest) {
+            throw new Error(`${latest.failed}: update it once this computer is online. Nothing changed.`);
+        }
+
+        if (!isNewerVersion(latest.version, onDisk)) {
+            throw new Error(onDisk === version ? `rpg-engine ${version} is npm's latest: there is nothing to update.` : `rpg-engine ${onDisk} is installed already: it comes with a new chat.`);
+        }
+
+        const installed = await updater.installed();
+
+        if (installed.how !== "global") {
+            throw new Error(
+                installed.how === "link"
+                    ? `rpg-engine here is a link to the folder ${installed.folder}, made by npm link for its development: update it there, with git pull and npm run build. Nothing changed.`
+                    : `rpg-engine runs from ${installed.folder}, not from npm's global folder: update it the way it was installed. Nothing changed.`,
+            );
+        }
+
+        const why = await updater.update(latest.version);
+
+        if (why !== undefined) {
+            throw new Error(`rpg-engine could not be updated: ${why}. Nothing changed.`);
+        }
+
+        // The chat goes on with the server it started, and so does this page: the new engine comes with a new chat, or the app opened again.
+        const host = served.context.host?.() ?? "";
+        const restart = /codex|claude-ai|claude desktop/i.test(host) ? "app" : "chat";
+        return {
+            kind: "engine-updated",
+            news: `The player updated rpg-engine from ${version} to ${latest.version} on the dashboard: this chat goes on with ${version}, the new one comes with their next chat. Nothing to do now.`,
+            answer: { version: latest.version, restart },
+        };
+    });
 }
 
 /** The kind of package a result of package install says it installed. */

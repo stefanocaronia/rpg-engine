@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { ourScope } from "../core/consents.ts";
 import type { PackageInfo, PackageManager } from "../core/context.ts";
+import { packageApi, readsApi } from "../core/package-declarations.ts";
+import { isNewerVersion } from "../core/version.ts";
 import { isTarball, tarballText, unpackTarball } from "./tarball.ts";
 
 /** The keyword of the packages for rpg-engine on npm, by which they are found (D-439). */
@@ -37,14 +39,14 @@ export interface NpmRun
  * npm on this computer, installing in this folder (D-436): never globally, never running a package's scripts, always linking a folder (D-441 tells a package
  * from a folder by its link). Its registry is read directly; `run` runs npm, a fake in tests.
  */
-export function npmPackages(folder: string, run: (args: string) => Promise<NpmRun> = npm): PackageManager
+export function npmPackages(folder: string, run: (args: string) => Promise<NpmRun> = runNpm): PackageManager
 {
     // What each .tgz said of itself when it was described, before the player's yes: the file installed must still say the same.
     const described = new Map<string, string>();
 
     return {
         describe: async (spec) => {
-            const read = isLocalSpec(spec) ? localPackage(spec) : await registryPackage(spec);
+            const read = isLocalSpec(spec) ? localPackage(spec) : await registryPackage(spec).then((found) => ("unreachable" in found ? cachedPackage(spec, run) : found));
 
             if (isLocalSpec(spec) && !("failed" in read)) {
                 described.set(resolve(spec), `${read.name}@${read.version}`);
@@ -62,8 +64,15 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
             const named = spec.replace(/(?<=.)@[^@/]*$/, "");
             const aside = join(folder, "aside", ...named.split("/"));
             mkdirSync(join(aside, ".."), { recursive: true });
-            const ran = await installedAside(join(folder, "node_modules", ...named.split("/")), aside, () => run(`install --prefix ${quotedFolder(folder)} ${checkedSpec(spec)} ${installOptions}`));
-            return ran.code === 0 ? undefined : `npm said: ${npmError(ran)}`;
+
+            // Without the registry, from what npm keeps of it on this computer (D-452).
+            const install = async (): Promise<NpmRun> => {
+                const ran = await run(`install --prefix ${quotedFolder(folder)} ${checkedSpec(spec)} ${installOptions}`);
+                return ran.code !== 0 && isUnreachable(ran) ? await run(`install --prefix ${quotedFolder(folder)} ${checkedSpec(spec)} ${installOptions} --offline`) : ran;
+            };
+
+            const ran = await installedAside(join(folder, "node_modules", ...named.split("/")), aside, install);
+            return ran.code === 0 ? undefined : npmErrorCode(ran) === "ENOTCACHED" ? offlineAdvice(named) : `npm said: ${npmError(ran)}`;
         },
         uninstall: async (name) => {
             const ran = await run(`uninstall --prefix ${quotedFolder(folder)} ${checkedSpec(name)} --ignore-scripts --no-audit --no-fund --json --loglevel=error`);
@@ -149,8 +158,60 @@ function httpsLink(text: string | undefined): string | undefined
     }
 }
 
-/** What npm's registry says of a package, at a version or its latest, with what its package.json says for rpg-engine. */
-async function registryPackage(spec: string): Promise<PackageInfo | { failed: string; missing?: true; }>
+/**
+ * What npm says of a package when its registry does not answer here: by npm itself, which reaches it through the proxy it is told of, else from what it keeps
+ * of it on this computer (D-452); with the two ways to have it when it has nothing.
+ */
+async function cachedPackage(spec: string, run: (args: string) => Promise<NpmRun>): Promise<PackageInfo | { failed: string; missing?: true; }>
+{
+    const online = await run(`view ${checkedSpec(spec)} --json --loglevel=error`);
+    const ran = online.code !== 0 && isUnreachable(online) ? await run(`view ${checkedSpec(spec)} --json --offline --loglevel=error`) : online;
+
+    if (ran.code !== 0) {
+        const code = npmErrorCode(ran);
+        return code === "E404" ? { failed: `npm has no package ${spec}`, missing: true } : { failed: code === "ENOTCACHED" || isUnreachable(ran) ? offlineAdvice(spec) : `npm said: ${npmError(ran)}` };
+    }
+
+    try {
+        // A version range gives a list, its newest last.
+        const read = JSON.parse(ran.out) as Manifest | Manifest[];
+        const manifest = Array.isArray(read) ? read.at(-1) : read;
+        return manifest?.name === undefined ? { failed: `npm has no package ${spec}`, missing: true } : infoOf(manifest);
+    } catch {
+        return { failed: `npm said of ${spec} what does not read: ${ran.out.slice(0, 200)}` };
+    }
+}
+
+/** What to do when npm can reach neither its registry nor a copy of the package on this computer (D-452): connect once, or give it as a file or a folder. */
+function offlineAdvice(spec: string): string
+{
+    const name = spec.replace(/(?<=.)@[^@/]*$/, "");
+    const file = `${name.replace(/^@/, "").replace("/", "-")}-<version>.tgz`;
+    return `npm cannot reach its registry from this computer, and has no copy of ${name} from before: connect the computer to the internet once and install it again, `
+        + `or give the package as a .tgz file or a folder of this computer, such as package install D:/Downloads/${file}`;
+}
+
+// What npm says when it cannot reach its registry, by the codes of Node and of npm's fetch.
+const unreachableCodes = new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH", "ENETDOWN", "ERR_SOCKET_TIMEOUT"]);
+
+/** Whether npm failed because it could not reach its registry, rather than for what it was asked. */
+function isUnreachable(ran: NpmRun): boolean
+{
+    return unreachableCodes.has(npmErrorCode(ran) ?? "") || /FetchError|network|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ETIMEDOUT/i.test(npmError(ran));
+}
+
+/** The code npm's JSON error gives, as ENOTCACHED; undefined when it wrote none. */
+export function npmErrorCode(ran: NpmRun): string | undefined
+{
+    try {
+        return (JSON.parse(ran.out) as { error?: { code?: string; }; }).error?.code;
+    } catch {
+        return undefined;
+    }
+}
+
+/** What npm's registry says of a package, at a version or its latest, with what its package.json says for rpg-engine; unreachable when it does not answer. */
+async function registryPackage(spec: string): Promise<PackageInfo | { failed: string; missing?: true; } | { failed: string; unreachable: true; }>
 {
     const checked = checkedSpec(spec);
     const at = checked.lastIndexOf("@");
@@ -158,9 +219,50 @@ async function registryPackage(spec: string): Promise<PackageInfo | { failed: st
 
     try {
         const read = await json(`${registry}/${name.replace("/", "%2f")}/${version}`) as Manifest | undefined;
-        return read === undefined ? { failed: `npm has no package ${spec}`, missing: true } : infoOf(read);
+
+        if (read === undefined) {
+            return { failed: `npm has no package ${spec}`, missing: true };
+        }
+
+        // Asked by its name alone, the newest version this engine reads, with the newer one and the engine it needs (D-515 (2)).
+        const info = infoOf(read);
+        return at > 0 || !madeForNewer(info) ? info : await readableVersion(name, info);
     } catch (error) {
-        return { failed: `npm's registry could not be reached: ${error instanceof Error ? error.message : String(error)}` };
+        return { failed: `npm's registry could not be reached: ${error instanceof Error ? error.message : String(error)}`, unreachable: true };
+    }
+}
+
+/** Whether a package is an extension or a game system made for a newer API than this engine reads (D-515). */
+function madeForNewer(info: PackageInfo): boolean
+{
+    return (info.kind === "extension" || info.kind === "system") && info.api !== undefined && info.api > packageApi;
+}
+
+/**
+ * The newest version of a package this engine reads, beside its latest, which needs a newer engine (D-515 (2)): with that one and the first rpg-engine on npm
+ * that reads it. The latest alone when no version reads, which is then refused.
+ */
+async function readableVersion(name: string, latest: PackageInfo): Promise<PackageInfo>
+{
+    const all = await json(`${registry}/${name.replace("/", "%2f")}`) as { versions?: Record<string, Manifest>; } | undefined;
+    const kind = latest.kind === "system" ? "system" : "extension";
+    const readable = Object.values(all?.versions ?? {}).map(infoOf).filter((one) => !one.version.includes("-") && readsApi(one.api, kind));
+    const newest = readable.reduce<PackageInfo | undefined>((best, one) => (best === undefined || isNewerVersion(one.version, best.version) ? one : best), undefined);
+    const engine = await engineReading(latest.api ?? 0);
+    const newer = { version: latest.version, ...(engine === undefined ? {} : { engine }) };
+    return newest === undefined ? latest : { ...newest, newer };
+}
+
+/** The first version of rpg-engine on npm that reads a package made for this API, as its package.json says; undefined when none does yet, or npm does not say. */
+async function engineReading(api: number): Promise<string | undefined>
+{
+    try {
+        const all = await json(`${registry}/rpg-engine`) as { versions?: Record<string, Manifest>; } | undefined;
+        const reads = (one: Manifest): boolean => typeof one["rpg-engine"]?.api === "number" && one["rpg-engine"].api >= api;
+        const reading = Object.values(all?.versions ?? {}).filter((one) => typeof one.version === "string" && !one.version.includes("-") && reads(one));
+        return reading.reduce<string | undefined>((first, one) => (first === undefined || isNewerVersion(first, one.version ?? "") ? one.version : first), undefined);
+    } catch {
+        return undefined;
     }
 }
 
@@ -353,7 +455,7 @@ function quotedFolder(folder: string): string
 }
 
 /** What npm said went wrong: its JSON error, with --json, else the last line it wrote that is not the pointer to its log. */
-function npmError(ran: NpmRun): string
+export function npmError(ran: NpmRun): string
 {
     try {
         const read = JSON.parse(ran.out) as { error?: { code?: string; summary?: string; }; };
@@ -370,7 +472,7 @@ function npmError(ran: NpmRun): string
 }
 
 /** Runs npm with these arguments, in a folder of no campaign, stopped with all it started after a while. */
-function npm(args: string): Promise<NpmRun>
+export function runNpm(args: string): Promise<NpmRun>
 {
     return new Promise((done) => {
         const child = spawn(`npm ${args}`, { shell: true, windowsHide: true, cwd: tmpdir(), env: { ...process.env, NoDefaultCurrentDirectoryInExePath: "1" }, stdio: ["ignore", "pipe", "pipe"] });

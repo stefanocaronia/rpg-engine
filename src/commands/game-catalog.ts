@@ -3,7 +3,7 @@
 import { join } from "node:path";
 import { readManifest } from "../adventures/index.ts";
 import type { Context, PackageInfo } from "../core/context.ts";
-import { readsApi } from "../core/package-declarations.ts";
+import { ourSystems, readsApi } from "../core/package-declarations.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
@@ -31,6 +31,8 @@ export interface CatalogEntry
     /** The version here, when it is installed. */
     installed?: string;
     update: boolean;
+    /** Its latest version, when it needs a newer rpg-engine than this one, which version offers the newest it reads (D-515 (2)): with the first engine that reads it. */
+    newer?: { version: string; engine?: string; };
     /** An adventure's levels, length and language, as its adventure.yaml says. */
     levels?: string;
     length?: string;
@@ -43,6 +45,38 @@ export interface Catalog
 {
     entries: CatalogEntry[];
     failed: { npm?: string; github?: string; };
+}
+
+/** A game system one may install for a campaign (D-513 (1)): its name, as package install takes it, what it is, and whether it is ours. */
+export interface InstallableSystem
+{
+    name: string;
+    title: string;
+    verified: boolean;
+}
+
+// How long the setup waits for npm before it offers ours alone.
+const systemsWait = 5000;
+
+/** The game systems npm has that this computer has not, ours first; ours from the engine's list when npm does not answer in time (D-513 (1)). */
+export async function installableSystems(context: Context): Promise<InstallableSystem[]>
+{
+    let timer: NodeJS.Timeout | undefined;
+    const late = new Promise<{ failed: string; }>((done) => (timer = setTimeout(() => done({ failed: "npm took too long" }), systemsWait)));
+    const searched = context.packages === undefined ? { failed: "no npm here" } : await Promise.race([context.packages.search().catch(() => ({ failed: "npm failed" })), late]);
+    clearTimeout(timer);
+    const npm = "failed" in searched ? [] : searched.filter((one) => one.kind === "system" && readsApi(one.api, "system"));
+    // Ours by their name alone, as package install takes it; another's by its npm name.
+    const found = npm.map((one): InstallableSystem => {
+        const title = ourSystems.find((system) => system.package === one.name)?.title ?? one.description ?? shortName(one.name);
+        return isVerified(one.name, false)
+            ? { name: shortName(one.name).replace(/^system-/, ""), title, verified: true }
+            : { name: one.name.startsWith("@") ? one.name : `npm:${one.name}`, title, verified: false };
+    });
+    const listed = "failed" in searched ? ourSystems.map((ours) => ({ name: ours.name, title: ours.title, verified: true })) : found;
+    const here = systemFolders(context.systemFolders).map((one) => comparableText(one.name));
+    const installedName = (system: InstallableSystem): string => comparableText(shortName(system.name.replace(/^npm:/, "")).replace(/^system-/, ""));
+    return listed.filter((system) => !here.includes(installedName(system))).sort((first, second) => Number(second.verified) - Number(first.verified) || first.name.localeCompare(second.name));
 }
 
 /** The topic a GitHub repository carries to be found as an adventure (D-485 (4)). */
@@ -88,6 +122,7 @@ function npmEntry(found: PackageInfo, installed: string | undefined): CatalogEnt
         source: ours ? shortName(found.name) : found.name.startsWith("@") ? found.name : `npm:${found.name}`,
         ...(installed === undefined ? {} : { installed }),
         update: installed !== undefined && isNewerVersion(found.version, installed),
+        ...(found.newer === undefined ? {} : { newer: found.newer }),
     };
 }
 

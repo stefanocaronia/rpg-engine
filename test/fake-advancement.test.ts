@@ -41,17 +41,21 @@ function campaignFile(): string
 
 describe("a setting of the system (DAT-10, D-212)", () => {
     it("is asked with the campaign's, says what each value means, takes only those, and validate reports one written by hand", async () => {
-        expect(await ok("status")).toContain("Still missing: harshness (gentle or bitter). Ask the player, then set it with the config command (setting and value).");
+        expect(await ok("status")).toContain("Still missing: ruleset (first or second), harshness (gentle or bitter). Ask the player, then set each one with the config command (setting and value).");
         expect(await ok("config", "harshness")).toBe(
             "harshness: (missing; gentle: a day without food costs nothing until the third; bitter: every day without food costs at once, and no renown is kept)\n\n"
-                + "Still missing: harshness (gentle or bitter). Ask the player, then set it with the config command (setting and value).",
+                + "Still missing: ruleset (first or second), harshness (gentle or bitter). Ask the player, then set each one with the config command (setting and value).",
         );
         expect(await refused("config", "harshness", "soft")).toContain('"soft" is not a value of harshness, which takes gentle (a day without food costs nothing until the third)');
-        expect(await ok("config", "harshness", "Bitter")).toBe("harshness: bitter: every day without food costs at once, and no renown is kept");
+        expect(await ok("config", "harshness", "Bitter")).toBe(
+            "harshness: bitter: every day without food costs at once, and no renown is kept\n\nStill missing: ruleset (first or second). Ask the player, then set it with the config command (setting and value).",
+        );
         expect(campaignFile()).toContain("harshness: bitter\n");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", visibility: "public", data: { setting: "harshness", value: "bitter" } });
         // The campaign's line says it at every session.
-        expect(await ok("status")).toContain("Prova · en · fake, the fake system of the core's tests · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice digital · units metric · harshness bitter · mode play\n");
+        expect(await ok("status")).toContain(
+            "Prova · en · fake, the fake system of the core's tests, the version of its rules still to ask · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice digital · units metric · harshness bitter · mode play\n",
+        );
         writeFileSync(join(folder, "campaign.yaml"), campaignFile().replace("harshness: bitter", "harshness: dura"));
         expect(await ok("validate")).toContain(
             'harshness is "dura", which the system fake does not take: gentle or bitter. Fix: ask the player, then config, setting harshness, with value gentle or value bitter.',

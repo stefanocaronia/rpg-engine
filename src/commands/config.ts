@@ -41,25 +41,27 @@ import {
     voiceWays,
     writeEffortFiles,
 } from "../campaign/index.ts";
-import type { Context } from "../core/context.ts";
+import { type Context, engineSystemsFolder } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
+import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { getVersion } from "../core/version.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 import { hostInstructions } from "../instructions/index.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
-import { declaredKind, playerCharacters } from "../pages/index.ts";
+import { declaredKind } from "../pages/index.ts";
 import { claudeSays, codexSays } from "../pictures/index.ts";
-import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, systemFileName, type SystemSetting } from "../systems/index.ts";
+import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
 import { readCalendar, readCalendarStart } from "../time/index.ts";
 import { libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./game-library.ts";
 import { campaignNote } from "./game-mode.ts";
 import { campaignCoins, coinsShown } from "./game-money.ts";
+import { loadNewSystemCode } from "./game-package-code.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { campaignCalendar, newDatedLogEntry } from "./game-time.ts";
 import { checkWidgetSpots } from "./game-widgets.ts";
-import { campaignSystem, campaignWorld, countedByGame, installedSystemName, missingWithSystems, systemLayers, systemSetting, systemSettingValue, valuesText } from "./game-world.ts";
+import { campaignSystem, campaignWorld, countedByGame, installedSystemName, missingWithSystems, playedRules, playedSettingValue, playersOfTheGame, systemLayers, systemSetting, valuesText } from "./game-world.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
 
@@ -94,7 +96,7 @@ export const config = defineCommand({
         + "text, or PDFs whose text can be selected, read best: a scan is read from its pictures, on Windows only, slowly. "
         + 'coins, for a game with money whose system does not give them: each coin with its value in the smallest coin, other names after a slash, "rare" for a coin never given as change; totals count in the first. '
         + "widgets: where the dashboard shows the extensions' widgets, which the player arranges in its Settings, such as value 'weather.today: side' (top, side, scene, sheet, world, journal or off); remove gives one back its extension's place. "
-        + "The game system may add settings of its own: config lists them with what each value means. "
+        + "The game system may add settings of its own: config lists them with what each value means; ruleset, the version of its rules, is the player's: change it only when they ask. "
         + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, "
         + "each replacing the system's one of that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the player character's line. "
         + "A formula with commas goes in quotes; a use's max reads what gives it, so that only who has it has it. "
@@ -120,7 +122,10 @@ export const config = defineCommand({
             return changeLibrary(input, context);
         }
 
-        return configure(input, context);
+        const result = configure(input, context);
+
+        // A system installed in this chat, as in the setup, brings its code once the campaign plays it (D-513 (1)).
+        return input.setting?.trim() === "system" && input.value !== undefined ? loadNewSystemCode(context).then(() => result) : result;
     },
 
     format(result)
@@ -279,7 +284,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         ? mentorPart(root, context, settings.mentor)
         : [cleared === undefined ? "" : `${cleared.charAt(0).toUpperCase()}${cleared.slice(1)}.`, style].filter((text) => text !== "").join("\n\n");
     return {
-        settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, setting)])) },
+        settings: { ...Object.fromEntries(listed.map((name) => [name, shownValue(root, context, settings, name)])), ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, context, setting)])) },
         note: campaignNote(root, context),
         replaced,
         part,
@@ -557,7 +562,7 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
 {
     const settings = readSettings(root);
     const own = (campaignSystem(root, context)?.settings ?? []).map((setting): PlayerSetting => {
-        const value = systemSettingValue(root, setting);
+        const value = playedSettingValue(root, context, setting);
         const choices = setting.values.map((one) => ({ value: one.value, ...(one.player === undefined ? {} : { means: one.player }) }));
         return { name: setting.name, about: setting.about ?? "a setting of the game system", ...(value === undefined ? {} : { value }), choices };
     });
@@ -685,18 +690,29 @@ function systemSettingResult(
             throw new Error(`"${given}" is not a value of ${setting.name}, which takes ${setting.values.map((candidate) => `${candidate.value} (${candidate.means})`).join("; or ")}. Nothing changed.`);
         }
 
+        const before = campaignSystem(root, context)?.version?.name;
+
         if (changeOtherSetting(root, setting.name, value.value)) {
             appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: setting.name, value: value.value }));
         }
+
+        // Another version of the rules holds from the next read; what is written stays (VER-4).
+        if (setting.name === rulesetSetting && before !== undefined && comparableText(before) !== comparableText(value.value)) {
+            return {
+                settings: { [setting.name]: systemShownValue(root, context, setting) },
+                note: campaignNote(root, context),
+                replaced: [`From now on the campaign plays the rules ${value.value}, in place of ${before}: the pages already written stay as they are.`],
+            };
+        }
     }
 
-    return { settings: { [setting.name]: systemShownValue(root, setting) }, note: campaignNote(root, context), replaced: [] };
+    return { settings: { [setting.name]: systemShownValue(root, context, setting) }, note: campaignNote(root, context), replaced: [] };
 }
 
 /** A setting of the system as config shows it: its value with what it means, or missing with every value and what it means (DAT-10). */
-function systemShownValue(root: string, setting: SystemSetting): string
+function systemShownValue(root: string, context: Context, setting: SystemSetting): string
 {
-    const value = systemSettingValue(root, setting);
+    const value = playedSettingValue(root, context, setting);
     const chosen = setting.values.find((candidate) => candidate.value === value);
     return chosen === undefined ? `(missing; ${setting.values.map((candidate) => `${candidate.value}: ${candidate.means}`).join("; ")})` : `${chosen.value}: ${chosen.means}`;
 }
@@ -740,7 +756,7 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
         return own[name];
     }
 
-    return name === "coins" ? coinsShown(root, context) : name === "system" ? systemShown(settings.system, context) : settings[name];
+    return name === "coins" ? coinsShown(root, context) : name === "system" ? systemShown(root, settings.system, context) : settings[name];
 }
 
 /** A setting's value as config writes it: an installed system by the name it is installed under (D-167), the coins read and checked (MON-1), anything else as given. */
@@ -777,12 +793,12 @@ function checkSystemOpen(root: string, context: Context, value: string): void
         return;
     }
 
-    const players = playerCharacters(campaignWorld(root, context));
+    const players = playersOfTheGame(root, context);
 
     if (players.length > 0) {
         const name = readSettings(root).name;
         throw new Error(
-            `The system of ${name} is ${current}, and the game has begun with ${players.map((page) => page.name).join(", ")}: a campaign keeps its system. To play another, start a new campaign with init. Nothing changed.`,
+            `The system of ${name} is ${current}, and the game has begun with ${players.join(", ")}: a campaign keeps its system. To play another, start a new campaign with init. Nothing changed.`,
         );
     }
 }
@@ -799,8 +815,11 @@ function calendarStartValue(root: string, context: Context, value: string): stri
     return value.trim().replace(/\s+/g, " ");
 }
 
-/** The system as config shows it: what it is and which version brings it (D-173); missing or not installed, with those that are (D-167). */
-function systemShown(system: string | undefined, context: Context): string
+/**
+ * The system as config shows it (D-173): what it is, the version of its rules it is played with (VER-1), and the package that brings it with its version, or the
+ * engine for one it ships without a package; missing or not installed, with those that are (D-167).
+ */
+function systemShown(root: string, system: string | undefined, context: Context): string
 {
     const installed = `installed: ${installedSystems(context.systemFolders).map((installedSystem) => installedSystem.name).join(", ") || "none"}`;
 
@@ -808,9 +827,16 @@ function systemShown(system: string | undefined, context: Context): string
         return `(missing; ${installed})`;
     }
 
-    // The systems come with the engine until they are packages of their own (D-171).
-    const found = findSystem(context.systemFolders, system);
-    return found === undefined ? `${system} (not installed; ${installed})` : `${found.name}, ${found.title} (rpg-engine ${getVersion()})`;
+    const found = findSystem(context.systemFolders, system, readTextSetting(root, rulesetSetting));
+
+    if (found === undefined) {
+        return `${system} (not installed; ${installed})`;
+    }
+
+    const own = systemPackage(found.folder);
+    const shipped = isInside(engineSystemsFolder, found.folder);
+    const from = own !== undefined ? ` (${own.package} ${own.version})` : shipped ? ` (rpg-engine ${getVersion()})` : "";
+    return `${found.name}, ${found.title}${playedRules(root, context, found)}${from}`;
 }
 
 /** The coins given to config, refused when money already written in the world would no longer read as money with them (MON-1). */
@@ -891,9 +917,13 @@ function replacedEntries(root: string, context: Context, setting: string, names:
         return [];
     }
 
-    const data = readYamlValues(join(system.folder, systemFileName), "what the system is");
-    const own = data !== null && typeof data === "object" ? (data as Record<string, unknown>)[setting] : undefined;
-    const entries = own !== null && typeof own === "object" && !Array.isArray(own) ? Object.entries(own) : [];
+    // Its version's entries over its own (VER-3).
+    const version = campaignSystem(root, context)?.version?.folder;
+    const entries = [system.folder, ...(version === undefined ? [] : [version])].flatMap((folder) => {
+        const data = files().exists(join(folder, systemFileName)) ? readYamlValues(join(folder, systemFileName), "what the system is") : undefined;
+        const own = data !== null && typeof data === "object" ? (data as Record<string, unknown>)[setting] : undefined;
+        return own !== null && typeof own === "object" && !Array.isArray(own) ? Object.entries(own) : [];
+    }).reverse();
     return names.flatMap((name) => {
         const [found, value] = entries.find(([other]) => comparableText(other) === comparableText(name)) ?? [];
         return found === undefined ? [] : [`${setting} ${name} takes the place of the system ${system.name}'s ${found}, ${formatValue(value)}: what this one leaves out of it is gone.`];
@@ -915,7 +945,7 @@ function checkAdditions(root: string, context: Context, setting: string, change:
     const entries = { ...Object.fromEntries(Object.entries(held).filter(([name]) => !dropped.some((other) => comparableText(other) === comparableText(name)))), ...change.set };
     // Over what the campaign's extensions add, as the campaign plays it (CAM-2).
     const layers = systemLayers(root, context, { ...data, [setting]: entries });
-    const problem = findCampaignSystem(context.systemFolders, system, layers).refused.find((layer) => layer.from === layers.at(-1)?.from)?.problem;
+    const problem = findCampaignSystem(context.systemFolders, system, layers, readTextSetting(root, rulesetSetting)).refused.find((layer) => layer.from === layers.at(-1)?.from)?.problem;
 
     if (problem !== undefined) {
         throw new Error(`With this, the system ${system} would not read: ${problem} Nothing changed.`);

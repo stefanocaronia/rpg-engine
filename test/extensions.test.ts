@@ -559,7 +559,7 @@ describe("the API 3 of an extension's code (D-505)", () => {
         cpSync(join(testExtensionFolders[0], "wards"), newer, { recursive: true });
         writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 6 } }));
         expect(() => readExtension(newer)).toThrow(
-            "The extension @rpgengine/wards cannot be used, because it is made for the API 6, and this rpg-engine reads the API 1 to 5 for an extension: rpg-engine must be updated first: ask the player to update it as they installed it, then open a new chat.",
+            "The extension @rpgengine/wards cannot be used, because it is made for the API 6, and this rpg-engine reads the API 1 to 5 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
         );
     });
 });

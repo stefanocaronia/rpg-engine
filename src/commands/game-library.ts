@@ -7,7 +7,7 @@ import { comparableText } from "../core/text.ts";
 import { documentAt, documentKinds } from "../documents/index.ts";
 import { dropUnlisted, foldersIn, isWithin, type LibraryBook, libraryFolders, libraryReader, type LibraryScope, type LibraryState, libraryState, mostBooks, samePath, saveLibraryFolders } from "../library/index.ts";
 import { bookHeadings, findPages, hasAllWords, pageExcerpt, type PageFinding, pageTitle, type SearchedBook } from "../rules/index.ts";
-import { systemWords } from "../systems/index.ts";
+import { layeredSystemWords, systemContentFolders } from "../systems/index.ts";
 import { languageName } from "./game-world.ts";
 import { YesRefused } from "./package.ts";
 
@@ -428,6 +428,7 @@ function translationsOf(system: SearchedSystem, languages: string[], text: strin
 export interface SearchedSystem
 {
     folder: string;
+    version?: { folder: string; };
     language: string;
     combat?: { inWords: string[]; };
 }
@@ -444,7 +445,7 @@ export function systemWordsNamed(system: SearchedSystem, language: string, text:
     }
 
     try {
-        const words = systemWords(system.folder, language);
+        const words = layeredSystemWords(systemContentFolders(system), language);
         const heard = (system.combat?.inWords ?? []).map(comparableText);
         // Not the names, which are of fields by their ids, as cha or str-save.
         const pairs = Object.entries({ ...words?.groups, ...words?.words }).filter(([own]) => !heard.includes(comparableText(own)));

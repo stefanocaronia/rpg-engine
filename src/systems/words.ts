@@ -39,3 +39,16 @@ export function systemWords(folder: string, language: string): SystemWords | und
     const { groups = {}, fields = {}, words = {}, names, headline } = parsed.data;
     return { groups, fields, words, ...(names === undefined ? {} : { names }), ...(headline === undefined ? {} : { headline }) };
 }
+
+/** The words of a system for a language from its folders in order, its own then its version's (VER-3): a later folder's names win; undefined when none has any. */
+export function layeredSystemWords(folders: string[], language: string): SystemWords | undefined
+{
+    const found = folders.map((folder) => systemWords(folder, language)).filter((words) => words !== undefined);
+    return found.length === 0 ? undefined : found.reduce((below, over) => ({
+        groups: { ...below.groups, ...over.groups },
+        fields: { ...below.fields, ...over.fields },
+        words: { ...below.words, ...over.words },
+        ...(below.names === undefined && over.names === undefined ? {} : { names: { ...below.names, ...over.names } }),
+        ...((over.headline ?? below.headline) === undefined ? {} : { headline: over.headline ?? below.headline }),
+    }));
+}

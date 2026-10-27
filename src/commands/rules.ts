@@ -6,8 +6,9 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { findPage, type Page, pageFileNamed, pageNamed as pageWithName, sectionTitles } from "../pages/index.ts";
 import { bookTitles, findRules, hasAllWords, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
+import { type GameSystem, systemContentFolders } from "../systems/index.ts";
 import { libraryAnswer, libraryLines, systemWordsNamed } from "./game-library.ts";
-import { disagreementAdvice, houseRules, precedentRule } from "./game-rules.ts";
+import { disagreementAdvice, houseRules, precedentRule, systemRuleBook } from "./game-rules.ts";
 import { campaignSystem, campaignWorld, foreignLanguage } from "./game-world.ts";
 
 // About how many words an answer shows: a section of the system has about 80 words in the middle (D-178).
@@ -55,7 +56,7 @@ export const rules = defineCommand({
         // Read one by one, as the system is (SYS-1): a mistake elsewhere in campaign.yaml does not stop the rules.
         const precedents = readListSetting(root, "precedents");
         const house = readRuleBook(join(root, houseRulesFolderName), houseRules);
-        const book = system === undefined ? [] : readRuleBook(join(system.folder, "rules"), system.name);
+        const book = system === undefined ? [] : systemRuleBook(system);
         const text = input.text?.trim() ?? "";
         const common = {
             text,
@@ -143,10 +144,11 @@ function isAboutAny(precedent: string, text: string, titles: string[]): boolean
 /**
  * The page of the campaign, or else of the game system, whose name or alias is the text: it holds rules too, such as a spell or how long a potion takes to drink.
  */
-function pageNamed(root: string, context: Context, system: { name: string; folder: string; } | undefined, text: string): { name: string; type?: string; system?: string; } | undefined
+function pageNamed(root: string, context: Context, system: GameSystem | undefined, text: string): { name: string; type?: string; system?: string; } | undefined
 {
     const page = pageFileNamed(root, text);
-    const systemPage = page === undefined && system !== undefined ? pageFileNamed(system.folder, text) : undefined;
+    // The version's page first, which takes the place of a common one (VER-3).
+    const systemPage = page === undefined && system !== undefined ? [...systemContentFolders(system)].reverse().map((folder) => pageFileNamed(folder, text)).find((found) => found !== undefined) : undefined;
 
     if (page !== undefined) {
         return page;

@@ -45,6 +45,8 @@ export interface Context
     terminal?: boolean;
     /** npm on this computer, which installs the packages in the engine's own folder (D-436); missing where nothing installs, as in most tests. */
     packages?: PackageManager;
+    /** rpg-engine itself on npm, which the player updates from the dashboard, never the master (D-515 (3)); missing outside the game's server, and in tests. */
+    engine?: EngineUpdater;
     /** A window of the player's operating system, for a yes the master cannot give (D-478); only where a player sits, never in the tests. */
     confirm?: Confirm;
     /** Downloads a file over https, at most `most` bytes (ADV-1); missing where nothing reaches the web, as in the tests. */
@@ -103,6 +105,8 @@ export interface PackageInfo
     code?: boolean;
     /** Whether it needs other packages, which npm installs beside it. */
     dependencies?: boolean;
+    /** Its latest version, when that one needs a newer rpg-engine than this one and this is the newest this one reads (D-515 (2)): with the first engine that reads it. */
+    newer?: { version: string; engine?: string; };
 }
 
 /** What the window of the player's operating system said: yes, no, or none when it could not be shown. */
@@ -125,6 +129,21 @@ export interface PackageManager
     uninstall(name: string): Promise<string | undefined>;
     /** The packages for rpg-engine npm has, by their keyword and what their package.json says. */
     search(): Promise<PackageInfo[] | { failed: string; }>;
+}
+
+/** How this rpg-engine is installed (D-515 (3)): globally by npm, which updates it; as npm link of a folder in development; or any other way, from that folder. */
+export type EngineInstall = { how: "global"; } | { how: "link"; folder: string; } | { how: "other"; folder: string; };
+
+/** rpg-engine itself on npm (D-515 (3)): its latest version, how this one is installed, and its update to a version, as it was installed. */
+export interface EngineUpdater
+{
+    /** The latest version npm has; why not when npm cannot be asked. */
+    latest(): Promise<{ version: string; } | { failed: string; }>;
+    installed(): Promise<EngineInstall>;
+    /** The version in its folder now, which a chat started after an update runs, the running one being read as the server starts. */
+    onDisk(): string;
+    /** Installs that version globally with npm: undefined once it is installed, else why not. */
+    update(version: string): Promise<string | undefined>;
 }
 
 /** A program of this computer that writes and draws outside the chat, with the player's own login (D-424). */
@@ -300,7 +319,7 @@ export function defaultContext(folder = process.cwd()): Context
         actor: "master",
         platform: process.platform,
         // From src/core/ and from dist/core/ alike, the package's systems/ folder is two levels up; then those npm installed (D-485).
-        systemFolders: [fileURLToPath(new URL("../../systems/", import.meta.url)), join(packagesFolder(), "node_modules")],
+        systemFolders: [engineSystemsFolder, join(packagesFolder(), "node_modules")],
         extensionFolders: [join(packagesFolder(), "node_modules")],
         home: userDataFolder(),
         bookIndex: join(dirname(packagesFolder()), "library"),
@@ -308,6 +327,9 @@ export function defaultContext(folder = process.cwd()): Context
         pageFolder: fileURLToPath(new URL("../../dist/dashboard/", import.meta.url)),
     };
 }
+
+/** The folder of the game systems the engine ships, from src/core/ and from dist/core/ alike two levels up: those it brings without npm (D-171). */
+export const engineSystemsFolder = fileURLToPath(new URL("../../systems/", import.meta.url));
 
 /** Where the engine installs the packages, with npm, on this computer (D-436): the player's local data, beside the programs it installs (D-425). */
 export function packagesFolder(): string

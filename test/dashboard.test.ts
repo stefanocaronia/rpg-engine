@@ -159,6 +159,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             "lines",
             "veils",
             "language",
+            "ruleset",
             "harshness",
         ]);
         const named = (name: string) => data.settings.find((setting) => setting.name === name);
@@ -253,6 +254,7 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             "units",
             "companions",
             "preparation",
+            "ruleset",
             "harshness",
             "lines",
             "veils",
@@ -276,7 +278,7 @@ describe("the setup as the dashboard shows it (D-370)", () => {
         // With the dashboard open, the master offers the Setup page and asks in the chat only what the page does not.
         expect(await run("status")).not.toContain("on the dashboard, one at a time");
         expect((await runCommandLine(["status"], { ...there, dashboard: "http://localhost:5760" })).output).toContain(
-            "The player can make the setup's choices on the dashboard, one at a time: offer it, and meanwhile ask in the chat only the premise, the language and when the story starts. "
+            "The player can make the setup's choices on the dashboard, one at a time: offer it, and meanwhile ask in the chat only the game system, the premise, the language and when the story starts. "
                 + "Ask the rest only when they leave it to you, or once they say they are ready.",
         );
 

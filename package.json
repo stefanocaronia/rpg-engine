@@ -8,6 +8,10 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "rpg-engine": {
+    "kind": "engine",
+    "api": 5
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

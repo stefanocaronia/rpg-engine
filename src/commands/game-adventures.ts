@@ -17,7 +17,7 @@ import { unpackFiles } from "../saves/index.ts";
 import { formatGameDate, readGameDate } from "../time/index.ts";
 import { listedExtensions } from "./game-extension-list.ts";
 import { campaignMode } from "./game-mode.ts";
-import { houseRules } from "./game-rules.ts";
+import { houseRules, systemRuleBook } from "./game-rules.ts";
 import { campaignSaves, exportsFolderName, resetSave, savesFolderName, savesWhy } from "./game-saves.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
@@ -333,7 +333,7 @@ function planInstall(root: string, context: Context, adventure: AdventureFiles, 
     const ownNames = new Map<string, string>();
     const houseTitles = new Set(readRuleBook(join(root, houseRulesFolderName), houseRules).map((section) => comparableText(section.path.at(-1) ?? "")));
     const system = campaignSystem(root, context);
-    const systemTitles = new Map((system === undefined ? [] : readRuleBook(join(system.folder, "rules"), system.name)).map((section) => [comparableText(section.path.at(-1) ?? ""), section.path.at(-1) ?? ""]));
+    const systemTitles = new Map((system === undefined ? [] : systemRuleBook(system)).map((section) => [comparableText(section.path.at(-1) ?? ""), section.path.at(-1) ?? ""]));
 
     for (const [path, original] of Object.entries(adventure.files)) {
         const target = adventureTarget(path, folder);

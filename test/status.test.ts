@@ -57,7 +57,7 @@ describe("rpg status", () => {
         await rpg("write", "Il rituale", "--type", "event", "--set", "status=planned");
 
         expect(await state()).toBe([
-            "Guadoscuro · it · fake, the fake system of the core's tests · difficulty normal · lethality epic · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
+            "Guadoscuro · it · fake, the fake system of the core's tests, the first rules · difficulty normal · lethality epic · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
             "Difficulty normal: fights moderate to high; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); "
             + "random encounters normal; threat clocks at their pace.",
             "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them; a light you put on as an effect, as a Rushlight, still spends one.",

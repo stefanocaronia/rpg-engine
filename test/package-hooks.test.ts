@@ -138,7 +138,7 @@ describe("what a package's code loads and declares (D-514, D-515)", () => {
         const problems = await ok("validate");
         expect(problems).toMatch(/The code of the extension @rpgengine\/hollow cannot be used: [^\n]*hollow[^\n]*index\.ts's default export gave null, not its code: give an object, such as \{ commands: \[\] \}\./);
         expect(problems).not.toContain("file://");
-        expect(problems).toContain("rpg-engine must be updated first: ask the player to update it as they installed it, then open a new chat.");
+        expect(problems).toContain("rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.");
         expect(problems).not.toMatch(/tomorrow[^\n]*Fix: install it again/);
     });
 

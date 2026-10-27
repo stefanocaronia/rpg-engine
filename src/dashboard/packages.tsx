@@ -13,6 +13,7 @@ import {
     type CatalogEntry,
     changeLibrary,
     changePackage,
+    type EngineView,
     exportCampaign,
     type LibraryEntry,
     type LibraryView,
@@ -22,12 +23,14 @@ import {
     type PackagesView,
     type PackageWork,
     readCatalog,
+    readEngine,
     readLibrary,
     readPackages,
     type ShownAdventure,
     type ShownExtension,
     type ShownLanguage,
     type ShownSystem,
+    updateEngine,
 } from "./api.ts";
 import { CardHead, useMedia } from "./card.tsx";
 import { gameDateLabel, sinceDateLabel } from "./game-words.ts";
@@ -77,6 +80,52 @@ interface RowState
     onSee?(kind: PackageKind): void;
 }
 
+/** RPG Engine installed from the page, and how the chat comes to use it; `now` when it was installed since this page was drawn. */
+interface EngineUpdated
+{
+    from: string;
+    to: string;
+    restart: "chat" | "app";
+    now?: boolean;
+}
+
+// The engine's own name, never translated.
+const engineName = "RPG Engine";
+// Where the engine installed from this page is kept while the chat goes on with the one before it: in this tab, through a reload.
+const updatedKey = "rpg-engine-updated";
+
+/** The engine installed from this page in this tab, if any. */
+function keptUpdate(): EngineUpdated | undefined
+{
+    try {
+        const kept = JSON.parse(sessionStorage.getItem(updatedKey) ?? "null") as EngineUpdated | null;
+        return kept !== null && typeof kept.to === "string" && typeof kept.from === "string" ? { from: kept.from, to: kept.to, restart: kept.restart === "app" ? "app" : "chat" } : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+function keepUpdate(updated: EngineUpdated | undefined): void
+{
+    try {
+        if (updated === undefined) {
+            sessionStorage.removeItem(updatedKey);
+        } else {
+            sessionStorage.setItem(updatedKey, JSON.stringify(updated));
+        }
+    } catch {
+        // A browser that keeps nothing says it until the page is drawn again.
+    }
+}
+
+/** The focus to the engine's card: its Update, else its title. */
+function focusEngine(): void
+{
+    const target = document.getElementById("engine-update") ?? document.getElementById("packages-engine");
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: "center" });
+}
+
 // The rows of the catalog shown before "Show more": fewer on a phone, where the installed come after it.
 const shownWide = 5;
 const shownNarrow = 3;
@@ -100,6 +149,10 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     const [library, setLibrary] = useState<LibraryView>();
     const [libraryProblem, setLibraryProblem] = useState<string>();
     const libraryBusy = library?.entries.some((entry) => entry.reading > 0) ?? false;
+    const [engine, setEngine] = useState<{ asking: boolean; read?: EngineView; hidden?: boolean; }>({ asking: true });
+    const [updated, setUpdated] = useState<EngineUpdated | undefined>(keptUpdate);
+    // Asked from a row whose package needs a newer engine: the focus goes to the engine's card once Installed shows.
+    const toEngine = useRef(false);
 
     // Only the last reading counts, as after a change made here and the one the game sends.
     const read = (): void => {
@@ -135,9 +188,26 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
         );
     };
 
+    // The engine and npm's latest, once: npm is asked each time. Only the game's own server has it; elsewhere its card is not shown.
+    const askEngine = (): void => {
+        void readEngine().then(
+            (read) => {
+                setEngine({ asking: false, ...(read === undefined ? { hidden: true } : { read }) });
+
+                // A new chat brought the engine installed here: the way to it is said no more.
+                if (read !== undefined && read.version === updated?.to) {
+                    keepUpdate(undefined);
+                    setUpdated(undefined);
+                }
+            },
+            () => setEngine({ asking: false, hidden: true }),
+        );
+    };
+
     useEffect(read, [version]);
     useEffect(readShelves, [version]);
     useEffect(() => askCatalog(false), []);
+    useEffect(askEngine, []);
 
     // While books are being read in their own process, their counts are read again now and then.
     useEffect(() => {
@@ -164,6 +234,12 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     useEffect(() => {
         const kind = seeing.current;
 
+        if (shownTab === "installed" && toEngine.current) {
+            toEngine.current = false;
+            focusEngine();
+            return;
+        }
+
         if (shownTab !== "installed" || kind === undefined) {
             return;
         }
@@ -182,6 +258,17 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
 
     const see = (kind: PackageKind): void => {
         seeing.current = kind;
+        choose("installed");
+    };
+
+    // From a package that needs a newer engine, to the engine's card, in Installed.
+    const goEngine = (): void => {
+        if (shownTab === "installed") {
+            focusEngine();
+            return;
+        }
+
+        toEngine.current = true;
         choose("installed");
     };
 
@@ -207,6 +294,40 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
             mine.current = Date.now();
             askCatalog(true);
         }
+    };
+
+    /**
+     * npm's latest engine installed, as it was installed: the work said in its card while it lasts; then how a new chat, or the app opened again, takes it, kept
+     * in this tab until the engine the page is served by is that one.
+     */
+    const updateTheEngine = async (): Promise<void> => {
+        const from = engine.read?.version;
+
+        if (busy || from === undefined) {
+            return;
+        }
+
+        setSaid(undefined);
+        setSending({ name: "rpg-engine", action: "engine", phase: "working", at: "engine" });
+        const outcome = await updateEngine();
+        setSending(undefined);
+
+        if (outcome.done) {
+            const done = { from, to: outcome.version, restart: outcome.restart };
+            keepUpdate(done);
+            setUpdated({ ...done, now: true });
+        } else {
+            setSaid({
+                at: "engine",
+                problem: true,
+                ...(outcome.code === "busy"
+                    ? { text: t("One package at a time: wait for the one under way, then try again.") }
+                    : { text: t("RPG Engine was not updated."), why: outcome.error }),
+            });
+            askEngine();
+        }
+
+        read();
     };
 
     const add = (at: string, source: string): Promise<void> => run(at, "add", source, () => addSource(source), addedText);
@@ -247,7 +368,10 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     const systems = view?.systems ?? [];
     const adventures = view?.adventures ?? [];
     const languages = view?.languages ?? [];
-    const updates = view === undefined ? 0 : updateCount(view, catalog.read);
+    // The engine npm has that this page may install: one more update on the Installed tab, and the way for a package that needs it.
+    const engineNew = engine.read?.update === true && engine.read.install === "global" && updated === undefined ? engine.read.latest : undefined;
+    const updates = (view === undefined ? 0 : updateCount(view, catalog.read)) + (engineNew === undefined ? 0 : 1);
+    const needs = (newer: CatalogEntry["newer"]) => newer === undefined ? null : <NeedsEngine newer={newer} canUpdate={engineNew !== undefined} onGo={goEngine} />;
     const missing = view?.missing.length ?? 0;
     const away = library?.entries.filter((entry) => !entry.onComputer).length ?? 0;
     const elsewhere = work !== undefined && tabOf(work.at) !== shownTab ? work : undefined;
@@ -289,6 +413,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                     catalog={catalog}
                                     view={view}
                                     state={(entry) => rowState(`catalog:${entry.source}`)}
+                                    needs={(entry) => needs(entry.newer)}
                                     onAdd={(entry) => void add(`catalog:${entry.source}`, entry.source)}
                                     onUpdate={(entry) => void change(`catalog:${entry.source}`, "update", entry.source, entryTitle(entry))}
                                     onRetry={() => askCatalog(true)}
@@ -299,6 +424,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                     )}
                     {shownTab === "installed" && (
                         <>
+                            {!engine.hidden && <EngineCard engine={engine.read} updated={updated} newer={engineNew} state={rowState("engine")} onUpdate={() => void updateTheEngine()} />}
                             <section class="card" aria-labelledby="packages-systems">
                                 <CardHead icon={iconPath("dice")} title={<h3 id="packages-systems" tabIndex={-1}>{t("Game system")}</h3>} />
                                 <div class="card-body package-body">
@@ -308,6 +434,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                                 key={system.name}
                                                 system={system}
                                                 newer={system.package === undefined ? undefined : newerOf(system.package, "system", catalog.read)}
+                                                needs={system.package === undefined ? null : needs(entryOf(system.package, "system", catalog.read)?.newer)}
                                                 fresh={fresh.includes(`system:${system.name}`)}
                                                 state={rowState(`system:${system.name}`)}
                                                 onUpdate={(target) => void change(`system:${system.name}`, "update", target, system.name)}
@@ -358,6 +485,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                                     key={extension.package}
                                                     extension={extension}
                                                     newer={newerOf(extension.package, "extension", catalog.read)}
+                                                    needs={needs(entryOf(extension.package, "extension", catalog.read)?.newer)}
                                                     fresh={fresh.includes(`extension:${extension.package}`)}
                                                     state={rowState(`extension:${extension.package}`)}
                                                     onUse={(use) =>
@@ -385,6 +513,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                                     key={language.package}
                                                     language={language}
                                                     newer={newerOf(language.package, "language", catalog.read)}
+                                                    needs={needs(entryOf(language.package, "language", catalog.read)?.newer)}
                                                     fresh={fresh.includes(`language:${language.code}`)}
                                                     state={rowState(`language:${language.code}`)}
                                                     onUpdate={() => void change(`language:${language.code}`, "update", language.package, languageTitle(language))}
@@ -836,10 +965,11 @@ function AddField({ state, onAdd, onFile }: { state: RowState; onAdd(source: str
  * the others on asking. A source that does not answer is said in the page's words, with its own under them.
  */
 function CatalogList(
-    { catalog, view, state, onAdd, onUpdate, onRetry }: {
+    { catalog, view, state, needs, onAdd, onUpdate, onRetry }: {
         catalog: { asking: boolean; read?: Catalog; error?: string; };
         view: PackagesView;
         state(entry: CatalogEntry): RowState;
+        needs(entry: CatalogEntry): ComponentChildren;
         onAdd(entry: CatalogEntry): void;
         onUpdate(entry: CatalogEntry): void;
         onRetry(): void;
@@ -919,6 +1049,7 @@ function CatalogList(
                             named={chosen === "all"}
                             view={view}
                             state={state(entry)}
+                            needs={needs(entry)}
                             onAdd={() => onAdd(entry)}
                             onUpdate={() => onUpdate(entry)}
                         />
@@ -970,7 +1101,9 @@ function CatalogAway({ failed, asking, onRetry }: { failed: Catalog["failed"]; a
  * A row of the catalog (D-486 (4)): its tile, its title with its kind in All and whose it is, a line of what it is, its facts; then what can be done: add it,
  * with "…" when a window will ask the player's yes; update it; download a game system for a new campaign; or where it is already.
  */
-function CatalogRow({ entry, named, view, state, onAdd, onUpdate }: { entry: CatalogEntry; named: boolean; view: PackagesView; state: RowState; onAdd(): void; onUpdate(): void; })
+function CatalogRow(
+    { entry, named, view, state, needs, onAdd, onUpdate }: { entry: CatalogEntry; named: boolean; view: PackagesView; state: RowState; needs: ComponentChildren; onAdd(): void; onUpdate(): void; },
+)
 {
     const here = hereState(entry, view);
     const asksYes = !entry.verified && entry.code;
@@ -1022,6 +1155,7 @@ function CatalogRow({ entry, named, view, state, onAdd, onUpdate }: { entry: Cat
                     {facts.map(isolated).join(" · ")}
                 </>
             )}
+            needs={needs}
             focusable
             actions={entry.update && entry.kind !== "adventure"
                 ? action(t("Update"), t("Update {name} to {version}", { name: entryTitle(entry), version: entry.version ?? "" }), "update", onUpdate, true)
@@ -1043,13 +1177,112 @@ function CatalogRow({ entry, named, view, state, onAdd, onUpdate }: { entry: Cat
 }
 
 /**
+ * RPG Engine itself (D-515 (3)), first among the installed: its version and npm's newer one, with Update when npm installed it globally; installed another way,
+ * why the page does not update it; once updated, how a new chat, or the app opened again, brings it, as the chat and this page go on with this one.
+ */
+function EngineCard({ engine, updated, newer, state, onUpdate }: { engine: EngineView | undefined; updated: EngineUpdated | undefined; newer: string | undefined; state: RowState; onUpdate(): void; })
+{
+    const folder = engine?.folder ?? "";
+    const why = engine === undefined
+        ? t("Asking npm for the newest version…")
+        : engine.install === "link"
+        ? t("Installed with npm link from {folder}, for its development: update it there, with git pull and npm run build.", { folder })
+        : engine.install === "other"
+        ? t("Installed another way, in {folder}: update it the way you installed it.", { folder })
+        : engine.failed !== undefined
+        ? t("npm does not answer: a newer version cannot be checked now.")
+        : undefined;
+    // A newer one this page does not install is still said, by its version.
+    const shownNewer = updated === undefined && engine?.update === true ? engine.latest : undefined;
+    return (
+        <section class="card" aria-labelledby="packages-engine">
+            <CardHead icon={iconPath("engine")} title={<h3 id="packages-engine" tabIndex={-1}>{t("Engine")}</h3>} />
+            <div class="card-body package-body">
+                <ul class="package-list">
+                    <PackageRow
+                        tile="engine"
+                        name={engineName}
+                        about={t("What runs the game: the master's tools and this page.")}
+                        meta={engine !== undefined && <VersionMeta version={engine.version} newer={shownNewer} />}
+                        needs={why === undefined ? undefined : <span class="package-needs">{why}</span>}
+                        actions={newer !== undefined
+                            ? <UpdateButton id="engine-update" name={engineName} version={newer} busy={state.busy} onClick={onUpdate} />
+                            : engine?.update === false && engine.install === "global" && updated === undefined && (
+                                <span class="package-here">
+                                    <Icon name="check" />
+                                    {t("Up to date")}
+                                </span>
+                            )}
+                    >
+                        <WorkNote work={state.work} />
+                        <SaidNote said={state.said} />
+                        {updated !== undefined && <RestartNote updated={updated} />}
+                    </PackageRow>
+                </ul>
+            </div>
+        </section>
+    );
+}
+
+/**
+ * The engine installed, and how the master comes to use it, in the player's words: this chat goes on with the one it started with; a new chat, or the app
+ * opened again, takes the new one, and this page is read again after it, never by itself, as the running game would serve it the new one's files.
+ */
+function RestartNote({ updated }: { updated: EngineUpdated; })
+{
+    const note = useRef<HTMLDivElement>(null);
+
+    // Just updated, the focus Update had comes here; kept from before a reload, it stays where the page puts it.
+    useEffect(() => {
+        if (updated.now) {
+            note.current?.focus({ preventScroll: true });
+            note.current?.scrollIntoView({ block: "nearest" });
+        }
+    }, []);
+
+    const steps = updated.restart === "app"
+        ? [t("Quit the app you play in completely, not just its window, then open it again."), t("Start a new chat in the campaign, as you always do."), t("Reload this page.")]
+        : [t("Close this chat."), t("Start a new chat in the campaign, as you always do."), t("Reload this page.")];
+    return (
+        <div ref={note} class="package-said package-restart" role="status" tabIndex={-1}>
+            <p>{`✓ ${t("RPG Engine {version} is installed.", { version: updated.to })}`}</p>
+            <p>{t("The master goes on with {version} in this chat. To play with {next}:", { version: updated.from, next: updated.to })}</p>
+            <ol>
+                {steps.map((step) => <li key={step}>{step}</li>)}
+            </ol>
+        </div>
+    );
+}
+
+/**
+ * What a package's latest needs of the engine (D-515 (2)), under its meta: which version of it, and the way to the engine's card, to update it first; the
+ * version offered meanwhile is the newest this engine reads.
+ */
+function NeedsEngine({ newer, canUpdate, onGo }: { newer: { version: string; engine?: string; }; canUpdate: boolean; onGo(): void; })
+{
+    const { version, engine } = newer;
+    return (
+        <span class="package-needs">
+            <span>
+                {engine === undefined ? t("Version {version} needs a newer RPG Engine.", { version }) : t("Version {version} needs RPG Engine {engine}.", { version, engine })}
+            </span>
+            <button type="button" class="package-see" onClick={onGo}>
+                {canUpdate ? t("Update RPG Engine first") : t("See RPG Engine")}
+                <Icon name="fold" />
+            </button>
+        </span>
+    );
+}
+
+/**
  * A game system here: the campaign's, chosen in its setup and locked; another, for a new campaign, which can go off this computer when npm installed it; npm's
  * newer version, to update it.
  */
 function SystemRow(
-    { system, newer, fresh, state, onUpdate, onUninstall }: {
+    { system, newer, needs, fresh, state, onUpdate, onUninstall }: {
         system: ShownSystem;
         newer?: string | undefined;
+        needs: ComponentChildren;
         fresh: boolean;
         state: RowState;
         onUpdate(target: string): void;
@@ -1072,6 +1305,7 @@ function SystemRow(
                     <OwnPageLinks name={system.package} />
                 </>
             }
+            needs={needs}
             row={`system:${system.name}`}
             fresh={fresh}
             actions={
@@ -1139,9 +1373,10 @@ function AdventureRow({ adventure, fresh, state, onTakeOut }: { adventure: Shown
 
 /** An extension here: whose it is, what it is, its version and npm's newer one; whether the campaign uses it, as a switch; one that does not read, in red. */
 function ExtensionRow(
-    { extension, newer, fresh, state, onUse, onUpdate, onUninstall }: {
+    { extension, newer, needs, fresh, state, onUse, onUpdate, onUninstall }: {
         extension: ShownExtension;
         newer?: string | undefined;
+        needs: ComponentChildren;
         fresh: boolean;
         state: RowState;
         onUse(use: boolean): void;
@@ -1194,6 +1429,7 @@ function ExtensionRow(
                     <OwnPageLinks name={extension.package} />
                 </>
             }
+            needs={needs}
             row={`extension:${extension.package}`}
             fresh={fresh}
             actions={
@@ -1251,9 +1487,10 @@ function MissingRow({ name, state, onInstall }: { name: string; state: RowState;
 
 /** A language package: its name, whose it is, its version and npm's newer one, and whether this page is written in it. */
 function LanguageRow(
-    { language, newer, fresh, state, onUpdate, onUninstall }: {
+    { language, newer, needs, fresh, state, onUpdate, onUninstall }: {
         language: ShownLanguage;
         newer?: string | undefined;
+        needs: ComponentChildren;
         fresh: boolean;
         state: RowState;
         onUpdate(): void;
@@ -1275,6 +1512,7 @@ function LanguageRow(
                     <ReportLink issues={language.issues} name={name} after />
                 </>
             }
+            needs={needs}
             row={`language:${language.code}`}
             fresh={fresh}
             actions={
@@ -1292,13 +1530,15 @@ function LanguageRow(
 
 /** A row of the page: the tile, the words, what can be done at the end; under them, the work going on and what happened. */
 function PackageRow(
-    { tile, tone, name, badges, about, meta, actions, focusable, row, fresh, children }: {
+    { tile, tone, name, badges, about, meta, needs, actions, focusable, row, fresh, children }: {
         tile: IconName;
         tone?: "cover" | "dim" | "broken";
         name: ComponentChildren;
         badges?: ComponentChildren;
         about?: ComponentChildren;
         meta?: ComponentChildren;
+        /** What its latest needs of the engine, under its meta. */
+        needs?: ComponentChildren;
         actions?: ComponentChildren;
         focusable?: boolean;
         /** Its key among the installed, by which what was added is found. */
@@ -1321,6 +1561,7 @@ function PackageRow(
                 </span>
                 {about !== undefined && about !== "" && <span class="package-about">{typeof about === "string" ? <bdi>{about}</bdi> : about}</span>}
                 {meta !== undefined && meta !== false && <span class="package-meta">{meta}</span>}
+                {needs}
             </span>
             {actions !== undefined && <span class="package-actions">{actions}</span>}
             {children}
@@ -1388,10 +1629,10 @@ export function ReportLink({ issues, name, after }: { issues: string | undefined
 }
 
 /** Update, for a row npm has a newer version of. */
-function UpdateButton({ name, version, busy, onClick }: { name: string; version: string; busy: boolean; onClick(): void; })
+function UpdateButton({ id, name, version, busy, onClick }: { id?: string; name: string; version: string; busy: boolean; onClick(): void; })
 {
     return (
-        <button type="button" class="button package-button accent" aria-label={t("Update {name} to {version}", { name, version })} aria-disabled={busy} onClick={() => !busy && onClick()}>
+        <button type="button" id={id} class="button package-button accent" aria-label={t("Update {name} to {version}", { name, version })} aria-disabled={busy} onClick={() => !busy && onClick()}>
             <Icon name="update" />
             {t("Update")}
         </button>
@@ -1657,8 +1898,14 @@ function samePackage(entry: CatalogEntry, name: string): boolean
 /** npm's newer version of a package here, as the catalog says it. */
 function newerOf(name: string, kind: PackageKind, catalog: Catalog | undefined): string | undefined
 {
-    const entry = catalog?.entries.find((one) => one.kind === kind && samePackage(one, name));
+    const entry = entryOf(name, kind, catalog);
     return entry?.update === true ? entry.version : undefined;
+}
+
+/** A package here as the catalog has it. */
+function entryOf(name: string, kind: PackageKind, catalog: Catalog | undefined): CatalogEntry | undefined
+{
+    return catalog?.entries.find((one) => one.kind === kind && samePackage(one, name));
 }
 
 /** How many packages here npm has a newer version of: the count on the Installed tab. */
@@ -1685,7 +1932,7 @@ function rowKeys(view: PackagesView): string[]
 function workTitle(work: Sending, catalog: Catalog | undefined): string
 {
     const entry = catalog?.entries.find((one) => `catalog:${one.source}` === work.at);
-    return entry === undefined ? work.name.replace(/^npm:/, "") : entryTitle(entry);
+    return work.action === "engine" ? engineName : entry === undefined ? work.name.replace(/^npm:/, "") : entryTitle(entry);
 }
 
 /** The tab of a place of the page: the field and the catalog are Add's, the library's field and folders the Library's, the rest Installed's. */
@@ -1714,8 +1961,8 @@ function workPlace(work: PackageWork, view: PackagesView, catalog: Catalog | und
     const language = view.languages?.find((one) => same(one.code, one.package));
     const entry = catalog?.entries.find((one) => same(one.source));
 
-    if (work.action === "library") {
-        return "library";
+    if (work.action === "library" || work.action === "engine") {
+        return work.action;
     }
 
     if (work.action === "add") {
@@ -1786,6 +2033,7 @@ function workingText(action: PackageWork["action"]): string
         remove: t("Taking it out of the campaign…"),
         uninstall: t("Uninstalling…"),
         library: t("Changing the library…"),
+        engine: t("Updating RPG Engine…"),
     };
     return texts[action];
 }

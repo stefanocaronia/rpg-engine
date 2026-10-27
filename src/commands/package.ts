@@ -1,12 +1,12 @@
 import { join } from "node:path";
 import { z } from "zod";
 import { changeExtensions, readTextSetting, requireCampaign } from "../campaign/index.ts";
-import type { Context, PackageInfo } from "../core/context.ts";
+import { type Context, engineSystemsFolder, type PackageInfo } from "../core/context.ts";
 import { installedFromFolder } from "../core/files.ts";
 import { appendLogEntry } from "../core/log.ts";
-import { apiProblem, readsApi } from "../core/package-declarations.ts";
+import { apiProblem, ourSystems, readsApi } from "../core/package-declarations.ts";
 import { defineCommand } from "../core/registry.ts";
-import { files } from "../core/store.ts";
+import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { dropConsent, type Extension, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
@@ -87,6 +87,8 @@ interface Available
     verified: boolean;
     installed?: string;
     update: boolean;
+    /** Its latest version, which needs a newer rpg-engine (D-515 (2)). */
+    newer?: { version: string; engine?: string; };
 }
 
 export const packageCommand = defineCommand({
@@ -173,8 +175,13 @@ export const packageCommand = defineCommand({
             const { system } = result;
             return [
                 `Installed the game system ${system.name}${system.version === undefined ? "" : ` ${system.version}`}, ${system.title}${system.verified ? "" : ", not verified: at the player's risk"}.`,
-                system.used ? "The campaign plays it." : `It is for a new campaign, chosen in its setup: this one plays ${result.plays ?? "none yet"}.`,
-                system.code ? "Its code runs from the next start of the game's server." : "",
+                // In a setup with no system yet, the one just installed is chosen next (D-513 (1)).
+                system.used
+                    ? "The campaign plays it."
+                    : result.plays === undefined
+                    ? `The campaign has no system yet: if the player chose this one, set it with config, setting system, value ${system.name}.`
+                    : `It is for a new campaign, chosen in its setup: this one plays ${result.plays}.`,
+                !system.code ? "" : result.plays === undefined ? "Its code runs once config sets it." : "Its code runs from the next start of the game's server.",
             ].filter((line) => line !== "").join(" ");
         }
 
@@ -208,7 +215,8 @@ export const packageCommand = defineCommand({
             const lines = result.packages.map((one) => {
                 const here = one.installed === undefined ? "" : one.update ? `, installed ${one.installed}: an update` : ", installed";
                 const by = one.author === undefined ? "" : ` by ${one.author}`;
-                return `${one.name} ${one.version}${one.verified ? "" : " (not verified)"}${by}${here}${one.description === undefined ? "" : `: ${one.description.replace(/\.$/, "")}`}`;
+                const newer = one.newer === undefined ? "" : ` (its ${one.newer.version} needs ${one.newer.engine === undefined ? "a newer rpg-engine" : `rpg-engine ${one.newer.engine}`})`;
+                return `${one.name} ${one.version}${one.verified ? "" : " (not verified)"}${by}${here}${newer}${one.description === undefined ? "" : `: ${one.description.replace(/\.$/, "")}`}`;
             });
             return `On npm: ${lines.length === 0 ? "none" : lines.join("; ")}.`;
         }
@@ -276,9 +284,18 @@ async function available(context: Context): Promise<PackageResult>
             verified: isVerified(one.name, copy?.linked ?? false),
             ...(installed === undefined ? {} : { installed: version ?? "broken" }),
             update: version !== undefined && isNewerVersion(one.version, version),
+            ...(one.newer === undefined ? {} : { newer: one.newer }),
         };
     });
     return { kind: "available", packages: packages.sort((first, second) => Number(second.verified) - Number(first.verified) || first.name.localeCompare(second.name)) };
+}
+
+/** The npm names of ours a name alone may be, with its version if given: an extension's, then a game system's; a system of the engine's list first (D-513). */
+function ourNames(name: string): [string, string]
+{
+    const names: [string, string] = [`${verifiedScope}${name}`, `${verifiedScope}system-${name}`];
+    const bare = name.replace(/(?<=.)@[^@/]*$/, "");
+    return ourSystems.some((system) => comparableText(system.name) === comparableText(bare)) ? [names[1], names[0]] : names;
 }
 
 /** Installs a package on this computer and adds it to the campaign (D-27, D-428, D-441): ours, or another once the player wants it; an extension, for this game. */
@@ -290,9 +307,12 @@ async function installed(root: string, context: Context, name: string): Promise<
         throw new Error("Packages are installed only by the game's server or the command line, which reach npm.");
     }
 
-    // A name alone is one of ours: weather is @rpgengine/weather, never a stranger's of that name, which is given as npm:weather.
-    const asked = name.startsWith("npm:") ? name.slice(4) : isLocalSpec(name) || name.startsWith("@") ? name : `${verifiedScope}${name}`;
-    const described = await packages.describe(asked);
+    // A name alone is one of ours: weather is @rpgengine/weather, never a stranger's of that name, which is given as npm:weather; or our game system's, as 5e
+    // is @rpgengine/system-5e (D-513).
+    const [first, second] = name.startsWith("npm:") ? [name.slice(4)] : isLocalSpec(name) || name.startsWith("@") ? [name] : ourNames(name);
+    const tried = await packages.describe(first);
+    const other = second !== undefined && "failed" in tried && tried.missing === true ? await packages.describe(second) : undefined;
+    const [asked, described] = second !== undefined && other !== undefined && !("failed" in other && other.missing === true) ? [second, other] : [first, tried];
 
     if ("failed" in described) {
         throw new Error(`${described.failed}. Nothing changed${asked === name ? "" : `: ${name} alone means ${asked}, one of RPG Engine's; another's is named with its scope, or as npm:${name} without one`}.`);
@@ -470,7 +490,7 @@ function systemsHere(root: string, context: Context): InstalledSystem[]
     return installedSystems(context.systemFolders).map((system): InstalledSystem => {
         const manifest = packageOf(folders.find((one) => one.name === system.name)?.folder ?? system.folder);
         // The engine's own have no package of their own here; one npm installed is ours only by our scope, and never from a folder (D-441).
-        const shipped = system.folder.startsWith(context.systemFolders[0]);
+        const shipped = isInside(engineSystemsFolder, system.folder);
         const linked = installedFromFolder(system.folder);
         return {
             name: system.name,
@@ -481,7 +501,7 @@ function systemsHere(root: string, context: Context): InstalledSystem[]
             used: comparableText(system.name) === comparableText(plays),
             code: systemHasCode(system.folder),
             // The engine's own are reported where the engine is: its package.json is in the folder above its systems.
-            ...issuesOf(shipped ? join(context.systemFolders[0], "..") : system.folder),
+            ...issuesOf(shipped ? join(engineSystemsFolder, "..") : system.folder),
         };
     });
 }

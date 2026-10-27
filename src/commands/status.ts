@@ -6,8 +6,10 @@ import { defineCommand } from "../core/registry.ts";
 import { isInParty, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, parsePageReference, playerCharacters, type World } from "../pages/index.ts";
 import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
+import { rulesetSetting } from "../systems/index.ts";
 import type { GameDate } from "../time/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
+import { installableSystems } from "./game-catalog.ts";
 import { allStateChecks, type Contradiction, markStateChecksTold } from "./game-checks.ts";
 import { effectShown, keptEffects } from "./game-effects.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
@@ -25,7 +27,7 @@ import { measuresOf, roadsOf } from "./game-roads.ts";
 import { interruptedLoad } from "./game-saves.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./game-scene.ts";
 import { datedText, problemText, readPresent } from "./game-time.ts";
-import { campaignSystem, campaignWorld, countedByGame, missingWithSystems, systemInStatus, systemSettingValue } from "./game-world.ts";
+import { campaignSystem, campaignWorld, countedByGame, missingWithSystems, playedSettingValue, systemInStatus } from "./game-world.ts";
 import { importLine } from "./import.ts";
 import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
@@ -112,6 +114,8 @@ export const status = defineCommand({
         const due = events.filter((event) => isDue(event, now, facts));
         const closed = closedScenes(root);
         const mode = campaignMode(root, world);
+        // Before a system is chosen, those this computer can install, beside its own (D-513 (1)).
+        const installable = settings.system === undefined ? await installableSystems(context) : [];
         return {
             campaign: [
                 settings.name,
@@ -127,7 +131,8 @@ export const status = defineCommand({
                 // How much the master teaches, only when they do (D-347).
                 named("mentor", settings.mentor === "off" ? undefined : settings.mentor),
                 // What the system adds to the setup, as advancement xp (DAT-10).
-                ...(system?.settings ?? []).map((setting) => named(setting.name, systemSettingValue(root, setting))),
+                // The version of the rules is in the system's own words above (VER-1).
+                ...(system?.settings ?? []).filter((setting) => setting.name !== rulesetSetting).map((setting) => named(setting.name, playedSettingValue(root, context, setting))),
                 named("mode", mode),
             ].filter((part) => part !== undefined),
             // What the chosen difficulty and rigor mean in play, one line each (D-263).
@@ -137,6 +142,10 @@ export const status = defineCommand({
             }),
             // Before play, what the next mode needs and how to enter it; in play, the settings still missing (MOD-7).
             note: campaignNote(root, context),
+            systems: installable.length === 0
+                ? undefined
+                : `Game systems to install, if the player wants one: ${installable.map((one) => `${one.name} (${one.title}${one.verified ? "" : ", not verified"})`).join(", ")}. `
+                    + "Install the one chosen with package install and its name, then set it with config system: the campaign keeps it once it has a player character.",
             premise: settings.premise === undefined ? undefined : `${settings.premise}${settings.preparation === undefined ? "" : ` (preparation ${settings.preparation})`}`,
             // How the master writes, as the player chose it, under the eyes at every start (D-395).
             writing: [
@@ -207,6 +216,7 @@ export const status = defineCommand({
             result.campaign.join(" · "),
             ...result.meanings,
             result.note,
+            result.systems ?? "",
             result.premise === undefined ? "" : `Premise: ${result.premise}`,
             result.writing.length === 0 ? "" : `Your writing: ${result.writing.join(" · ")}`,
             boundariesLine(result.lines, result.veils),

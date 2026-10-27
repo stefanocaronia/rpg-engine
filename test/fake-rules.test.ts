@@ -43,7 +43,7 @@ describe("the rules command on the fake system", () => {
     it("lists the chapters with their sections without a text, and says when nothing matches how to record a precedent", async () => {
         expect(await ok("rules")).toContain("The rules of the system fake, in English, by chapter:\nBasics: Rolls, Falling, Gone,");
         expect(await ok("rules", "xylophone")).toBe(
-            'No rule matches "xylophone". The system fake writes its rules in English: search with the book\'s words, such as a condition, an action or a heading. The chapters of fake: Basics. '
+            'No rule matches "xylophone". The system fake writes its rules in English: search with the book\'s words, such as a condition, an action or a heading. The chapters of fake: Basics, Rest. '
                 + 'If you rule without the text, tell the player it is your call, and add it to the precedents: config, setting precedents, add "<the rule\'s name in English>: what you said".',
         );
         expect(await ok("rules", "Bog Hound")).toMatch(/^Bog Hound is a page of the system fake \(creature\): show Bog Hound reads it\./);

@@ -13,6 +13,14 @@ export type { CardPage, FigureSize };
  */
 export const packageApi = 5;
 
+/**
+ * Our game systems (D-513): the name a campaign gives each, which package install takes alone, its package, and what it is; the setup offers them even when
+ * npm does not answer. A list of names, as our scope is, never a game's code; Ironsworn joins it once it is playable.
+ */
+export const ourSystems: readonly { name: string; package: string; title: string; }[] = [
+    { name: "5e", package: "@rpgengine/system-5e", title: "compatible with fifth edition, from the SRD" },
+];
+
 /** The kinds of package whose API is read. */
 export type ApiKind = "extension" | "system";
 
@@ -26,7 +34,7 @@ export function readsApi(api: number | undefined, kind: ApiKind): boolean
 }
 
 /** What a package made for a newer API asks of the player, said where it is refused. */
-export const updateEngine = "rpg-engine must be updated first: ask the player to update it as they installed it, then open a new chat";
+export const updateEngine = "rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat";
 
 /** Why this rpg-engine does not read a package made for this API, with what to do; undefined when it reads it. */
 export function apiProblem(api: number | undefined, kind: ApiKind): string | undefined

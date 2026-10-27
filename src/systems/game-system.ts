@@ -16,6 +16,12 @@ import { systemFolders } from "./system-folders.ts";
 /** The file that makes a folder a game system and says what it is. */
 export const systemFileName = "system.yaml";
 
+/** The setting by which a campaign plays one of the versions of its system's rules (VER-1): the engine's name for it, whatever the system. */
+export const rulesetSetting = "ruleset";
+
+// The folder that holds a system's versions of its rules, each in a folder named after it (VER-1).
+const versionsFolderName = "versions";
+
 /**
  * What the player does with an item of the sheet on the dashboard, said as their own sentence to the master (D-495): the engine's verbs, whose sentences
  * the page has in every language; a system declares its own beside them in sheet-verbs (D-514), and says which fields take which. Talking to someone comes
@@ -115,6 +121,22 @@ const gridSchema = z.object({
     footprints: z.record(z.string().min(1), z.number().int().min(1)).optional(),
     leaving: z.string().min(1).optional(),
 }, { error: "write it as a square's length, a diagonal step's cost in squares, the factor of difficult ground and the field of the speed, such as {square: 1.5 m, diagonal: 1, difficult: 2, speed: speed}" }).strict();
+
+// A setting the setup asks (DAT-10), or the versions of the rules (VER-1): what it is to the player, then its values, each with what it means: a setting at
+// least two, the versions at least one.
+function settingSchema(fewest: number)
+{
+    return z.record(
+        z.string().min(1),
+        z.union([z.string().min(1), z.object({ means: z.string().min(1), player: z.string().min(1).optional(), without: z.array(z.string().min(1)).optional() }).strict()]),
+    ).refine(
+        (values) => Object.entries(values).every(([key, value]) => (key === "about") === (typeof value === "string")),
+        "give about as what the setting is to the player, in a few words, and each value with what it means, such as {about: how your character levels up, xp: {means: ...}}",
+    ).refine(
+        (values) => Object.keys(values).filter((key) => key !== "about").length >= fewest,
+        fewest === 1 ? "give at least one version, with what it means, such as {srd-5.1: {means: ...}}" : "give at least two values, each with what it means, such as {xp: {means: ...}, milestones: {means: ...}}",
+    );
+}
 
 const systemSchema = z.object({
     title: z.string().min(1),
@@ -260,19 +282,10 @@ const systemSchema = z.object({
         parts: z.object({ list: z.string().min(1), field: z.string().min(1), lists: z.array(z.string().min(1)).optional() }).strict().optional(),
         experience: z.object({ field: z.string().min(1), table: z.string().min(1), rules: z.string().min(1).optional() }).strict().optional(),
     }).strict().optional(),
-    settings: z.record(
-        z.string().min(1),
-        z.record(
-            z.string().min(1),
-            z.union([z.string().min(1), z.object({ means: z.string().min(1), player: z.string().min(1).optional(), without: z.array(z.string().min(1)).optional() }).strict()]),
-        ).refine(
-            (values) => Object.entries(values).every(([key, value]) => (key === "about") === (typeof value === "string")),
-            "give about as what the setting is to the player, in a few words, and each value with what it means, such as {about: how your character levels up, xp: {means: ...}}",
-        ).refine(
-            (values) => Object.keys(values).filter((key) => key !== "about").length >= 2,
-            "give at least two values, each with what it means, such as {xp: {means: ...}, milestones: {means: ...}}",
-        ),
-    ).optional(),
+    settings: z.record(z.string().min(1).refine((name) => comparableText(name) !== rulesetSetting, `${rulesetSetting} is the engine's setting of the versions: give this one another name`), settingSchema(2))
+        .optional(),
+    // Its versions of the rules, each a folder in versions/ (VER-1): a setting of their own, ruleset.
+    versions: settingSchema(1).optional(),
     rewards: z.record(z.string().min(1), z.object({ from: z.string().min(1), overcome: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"') }).strict()).optional(),
     "item-formulas": z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     "always-in": z.record(z.string().min(1), z.array(z.string().min(1)).min(1), { error: "write it as lists, each with the names of the pages in it, such as equipped: [Unarmed Strike]" }).optional(),
@@ -478,6 +491,8 @@ export interface GameSystem
     name: string;
     /** The folder that holds its system.yaml and its pages. */
     folder: string;
+    /** The version of its rules it is read with, when it has versions (VER-1): its name, its title, and its folder, whose pages win over the common ones (VER-3). */
+    version?: { name: string; title?: string; folder: string; };
     /** Whether it brings code of its own, as its package.json says (D-448): the engine has loaded it, and calls its hooks. */
     code: boolean;
     /** What it is, for messages: "the fifth edition, from the SRD 5.1". */
@@ -674,7 +689,7 @@ export interface SystemLayer
  * The installed system with the layers over it, in order, the nearest to the campaign last and winning (CAM-2); a layer with which it does not read is left out,
  * with why, and the others stay (CAM-3). Undefined as a system when none is installed by that name.
  */
-export function findCampaignSystem(folders: string[], name: string, layers: SystemLayer[]): { system?: GameSystem; refused: { from: string; problem: string; }[]; }
+export function findCampaignSystem(folders: string[], name: string, layers: SystemLayer[], ruleset?: string): { system?: GameSystem; refused: { from: string; problem: string; }[]; }
 {
     const found = systemFolders(folders).find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
     const given = layers.filter((layer) => campaignDataNames.some((key) => layer.data[key] !== undefined && layer.data[key] !== null));
@@ -684,7 +699,7 @@ export function findCampaignSystem(folders: string[], name: string, layers: Syst
     }
 
     try {
-        return { system: readSystem(found.folder, found.name, given), refused: [] };
+        return { system: readSystem(found.folder, found.name, given, ruleset), refused: [] };
     } catch {
         // One layer at a time, to leave out only those that do not read.
     }
@@ -694,7 +709,7 @@ export function findCampaignSystem(folders: string[], name: string, layers: Syst
 
     for (const layer of given) {
         try {
-            readSystem(found.folder, found.name, [...kept, layer]);
+            readSystem(found.folder, found.name, [...kept, layer], ruleset);
             kept.push(layer);
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -702,21 +717,33 @@ export function findCampaignSystem(folders: string[], name: string, layers: Syst
         }
     }
 
-    return { system: readSystem(found.folder, found.name, kept), refused };
+    return { system: readSystem(found.folder, found.name, kept, ruleset), refused };
 }
 
-/** The installed system with this name, ignoring case, from the nearest folder that has it; undefined when none is. Only its own system.yaml is read. */
-export function findSystem(folders: string[], name: string): GameSystem | undefined
+/**
+ * The installed system with this name, ignoring case, from the nearest folder that has it, with the version of its rules asked, else its first (VER-2); undefined
+ * when none is. Only its own system.yaml is read, and its version's.
+ */
+export function findSystem(folders: string[], name: string, ruleset?: string): GameSystem | undefined
 {
     const found = systemFolders(folders).find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
-    return found === undefined ? undefined : readSystem(found.folder, found.name);
+    return found === undefined ? undefined : readSystem(found.folder, found.name, [], ruleset);
 }
 
-function readSystem(folder: string, name: string, layers: SystemLayer[] = []): GameSystem
+/** The folders a system's pages, rules, words, pictures and instructions come from, in order: its own, then its version's, which wins by name (VER-3). */
+export function systemContentFolders(system: { folder: string; version?: { folder: string; }; }): string[]
+{
+    return system.version === undefined ? [system.folder] : [system.folder, system.version.folder];
+}
+
+function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ruleset?: string): GameSystem
 {
     const file = join(folder, systemFileName);
-    const path = layers.length === 0 ? file : `${file} with the additions of ${layers.map((layer) => layer.from).join(", ")}`;
-    const raw = readYamlValues(file, 'what the system is, such as "title: ..."');
+    const own = readYamlValues(file, 'what the system is, such as "title: ..."');
+    const version = chosenVersion(own, file, name, ruleset);
+    const read = version === undefined ? file : `${file} with its version ${version.name}`;
+    const path = layers.length === 0 ? read : `${read} with the additions of ${layers.map((layer) => layer.from).join(", ")}`;
+    const raw = version === undefined || !isMap(own) ? own : withVersion(own, version.data);
     let merged: unknown = raw;
 
     try {
@@ -900,6 +927,7 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
     return frozen({
         name,
         folder,
+        ...(version === undefined ? {} : { version: { name: version.name, ...(version.title === undefined ? {} : { title: version.title }), folder: version.folder } }),
         code: systemHasCode(folder),
         title: data.title,
         language: data.language,
@@ -1000,7 +1028,8 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
         itemFormulas: data["item-formulas"] ?? {},
         alwaysIn: data["always-in"] ?? {},
         uses: usesOf(data),
-        settings: Object.entries(data.settings ?? {}).map(([setting, values]) => ({
+        // The versions first, as the setup asks them before what they may change; one alone is no choice, and no setting (VER-1).
+        settings: [...(Object.keys(data.versions ?? {}).filter((key) => key !== "about").length < 2 ? [] : [[rulesetSetting, data.versions ?? {}] as const]), ...Object.entries(data.settings ?? {})].map(([setting, values]) => ({
             name: setting,
             ...(typeof values.about === "string" ? { about: values.about } : {}),
             values: Object.entries(values).flatMap(([value, meaning]) =>
@@ -1017,8 +1046,61 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = []): G
             const [counter, value] = reward.overcome.split(" ");
             return { field, from: reward.from, counter, value: Number(value) };
         }),
-        parts: readParts(folder, `The game system ${name}`),
+        // A part of its version takes the place of its own of that name (VER-3).
+        parts: { ...readParts(folder, `The game system ${name}`), ...(version === undefined ? {} : readParts(version.folder, `The game system ${name}, its version ${version.name},`)) },
     });
+}
+
+/**
+ * The version of its rules a system is read with (VER-1, VER-2): the one asked, by any case, else the first it lists; none for a system without versions.
+ * Each version it lists has its folder in versions/, with a system.yaml of what it changes, if any, and a title of its own.
+ */
+function chosenVersion(own: unknown, file: string, name: string, asked: string | undefined): { name: string; title?: string; folder: string; data: Record<string, unknown>; } | undefined
+{
+    const versions = isMap(own) && isMap(own.versions) ? Object.keys(own.versions).filter((key) => key !== "about") : [];
+    const folder = join(file, "..");
+    const unfound = versions.find((version) => files().files(join(folder, versionsFolderName, version), () => true).length === 0);
+
+    if (unfound !== undefined) {
+        throw new Error(
+            `The game system ${name} cannot be read, because ${file} is not valid: versions.${unfound}: there is no folder ${versionsFolderName}/${unfound} with files beside it; give each version its folder, with what it changes.`,
+        );
+    }
+
+    const chosen = versions.find((version) => asked !== undefined && comparableText(version) === comparableText(asked.trim())) ?? versions[0];
+
+    if (chosen === undefined) {
+        return undefined;
+    }
+
+    const at = join(folder, versionsFolderName, chosen);
+    const versionFile = join(at, systemFileName);
+    const data = files().exists(versionFile) ? (readYamlValues(versionFile, 'what the version changes, such as "title: ..."') ?? {}) : {};
+
+    if (!isMap(data) || data.versions !== undefined) {
+        const why = isMap(data) ? "a version lists no versions of its own" : "write it as the keys of system.yaml the version changes, such as title: the second rules";
+        throw new Error(`The game system ${name} cannot be read, because ${versionFile} is not valid: ${why}.`);
+    }
+
+    const { title, ...changes } = data;
+    return { name: chosen, ...(typeof title === "string" ? { title } : {}), folder: at, data: changes };
+}
+
+/** A system's data with its version's over it (VER-3): a map by its names, at every depth, the version's winning; a list or a value in the place of the common one. */
+function withVersion(below: Record<string, unknown>, over: Record<string, unknown>): Record<string, unknown>
+{
+    const taken = new Set<string>();
+    const merged = Object.entries(below).map(([key, value]): [string, unknown] => {
+        const named = nameIn(over, key);
+
+        if (named === undefined) {
+            return [key, value];
+        }
+
+        taken.add(named);
+        return [named, isMap(value) && isMap(over[named]) ? withVersion(value, over[named]) : over[named]];
+    });
+    return Object.fromEntries([...merged, ...Object.entries(over).filter(([key]) => !taken.has(key))]);
 }
 
 /**

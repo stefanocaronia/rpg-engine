@@ -44,6 +44,8 @@ describe("architecture", () => {
             "systems/system-folders.ts",
             "extensions/extension.ts",
             "extensions/packages.ts",
+            // How rpg-engine itself is installed, by npm's global folder (D-515).
+            "extensions/engine.ts",
             "extensions/tarball.ts",
             // The player's yes to another's code, for its files as installed (D-478, D-510, D-511).
             "core/consents.ts",

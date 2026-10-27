@@ -13,6 +13,7 @@ systems/<name>/
   images/            the pictures its pages link in `image`
   instructions/*.md  what it adds to the master's instructions (section 4)
   words/<code>.yaml  its words in other languages (section 4)
+  versions/<name>/   a version of its rules, in the same shape, over the rest (versions, in section 2)
   package.json       when it is a package: its npm name, version, the API it is made for, its code (section 6)
   build/, test/      scripts and tests, not shipped
 ```
@@ -107,6 +108,19 @@ settings:
 ```
 
 What the setup asks for this system. `means` is for the master, `player` for the dashboard; `without` lists fields a value leaves out.
+
+### versions
+
+```yaml
+versions:
+  about: which rules you play
+  srd-5.1: {means: "the SRD 5.1, the 2014 rules", player: "the 2014 rules"}
+  srd-5.2.1: {means: "the SRD 5.2.1, the 2024 rules", player: "the 2024 rules"}
+```
+
+The versions of its rules, written as a setting: a campaign plays one with the setting `ruleset`, asked in the setup before the system's other settings, and changed only by the player's choice, from the next read on, the pages already written staying as they are. One version alone is no choice and no setting. Without `ruleset`, or with a name the system lacks, the first listed is played: list the oldest first, so that campaigns made before a new version stay on theirs. Each version has its folder, `versions/<name>/`, in the shape of the system's: a `system.yaml` with its `title` and only the keys it changes, and its `world/`, `rules/`, `words/`, `instructions/` and `images/`. The engine reads the common part, then the version over it, then what extensions and the campaign add (section 5). In the version's `system.yaml` a map is merged by its names at every depth, the version's winning, and a list or a value takes the place of the common one; a page, a chapter of `rules/` (by its file), a word or a part of the instructions with the name of a common one takes its place.
+
+The 5e has one version for now, `srd-5.1`, whose folder holds only its title: everything else is common, and when a second version comes, what differs moves into the folder of the first, so that a campaign of today reads the same before and after.
 
 ### The sheet
 

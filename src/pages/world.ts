@@ -126,7 +126,7 @@ export function createWorld(root: string): void
  */
 export function loadWorld(
     root: string,
-    options: { system?: SystemInfo & { folder: string; }; language?: string; words?: Record<string, string>; missingSystem?: string; noSystem?: boolean; rigor?: string; } = {},
+    options: { system?: SystemInfo & { folder: string; version?: { folder: string; }; }; language?: string; words?: Record<string, string>; missingSystem?: string; noSystem?: boolean; rigor?: string; } = {},
 ): World
 {
     const campaign = readPages(root);
@@ -136,7 +136,7 @@ export function loadWorld(
         return frozen({ root, ...campaign, language, missingSystem, noSystem, ...(rigor === undefined ? {} : { rigor }) });
     }
 
-    const systemPages = packagePages(system.folder, system.name);
+    const systemPages = system.version === undefined ? packagePages(system.folder, system.name) : versionPages(packagePages(system.folder, system.name), packagePages(system.version.folder, system.name));
     const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, bonusWhile } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
@@ -557,6 +557,14 @@ function packagePages(folder: string, system: string): { pages: Page[]; problems
 }
 
 const packages = new Map<string, { pages: Page[]; problems: string[]; }>();
+
+/** A system's pages with those of the version of its rules over them (VER-3): a page of the version takes the place of a common one with its name. */
+function versionPages(common: { pages: Page[]; problems: string[]; }, version: { pages: Page[]; problems: string[]; }): { pages: Page[]; problems: string[]; }
+{
+    const names = new Set(version.pages.map((page) => comparableText(page.name)));
+    const pages = [...common.pages.filter((page) => !names.has(comparableText(page.name))), ...version.pages].sort((first, second) => (first.path < second.path ? -1 : 1));
+    return { pages, problems: [...common.problems, ...version.problems] };
+}
 
 function readPages(root: string, system?: string): { pages: Page[]; problems: string[]; }
 {

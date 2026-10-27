@@ -16,10 +16,12 @@ export {
     type Recipe,
     type Reward,
     rollName,
+    rulesetSetting,
     type SheetEntry,
     type SheetGroup,
     type SheetVerb,
     type SystemCheck,
+    systemContentFolders,
     systemFileName,
     type SystemLayer,
     type SystemSetting,
@@ -31,4 +33,4 @@ export {
 } from "./game-system.ts";
 export { givenCode, type LoadedSystemCode, loadSystemCode, systemApiProblem, systemHasCode, type SystemPackage, systemPackage, systemPageModule } from "./system-code.ts";
 export { type SystemFolder, systemFolders } from "./system-folders.ts";
-export { type SystemWords, systemWords } from "./words.ts";
+export { layeredSystemWords, type SystemWords, systemWords } from "./words.ts";

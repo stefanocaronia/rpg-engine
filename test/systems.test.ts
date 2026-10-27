@@ -66,7 +66,7 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
         }
 
         expect(await refused("config", "system", "quinta")).toBe(`"quinta" is not an installed system. ${installed} Give one of them, such as setting system, value 5e. Nothing changed.`);
-        expect(await ok("config", "system")).toBe(`system: 5e, the fifth edition from the SRD 5.1, the 2014 rules (rpg-engine ${getVersion()})`);
+        expect(await ok("config", "system")).toBe(`system: 5e, the fifth edition from the SRD 5.1, the 2014 rules (@rpgengine/system-5e 0.1.0)`);
         expect(await ok("status")).toContain("Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · difficulty normal");
     });
 
@@ -311,7 +311,7 @@ describe("after the round on the code: the system missing, and the remedies (SYS
             "world/creatures/Lupo.md: creature links to [[Wolf]], which does not exist. Fix: if it is a page of the system Quinta edizione, which is not installed, fix the system first, "
                 + "as the problem on campaign.yaml says; otherwise create Wolf with write if it belongs to this world, or write Lupo, set creature to a page that exists.",
         );
-        expect(await ok("status")).toContain("Guadoscuro · it · Quinta edizione (not installed: ask the player, then config, setting system, value 5e) · difficulty normal");
+        expect(await ok("status")).toContain("Guadoscuro · it · Quinta edizione (not installed: ask the player which game you play, then config, setting system, value 5e) · difficulty normal");
     });
 
     it("points the remedies of change at the campaign's pages, and refuses a field the system never counts even when it is missing", async () => {
@@ -426,8 +426,12 @@ describe("the messages, case by case (SYS-1, SYS-3, SYS-4, SYS-6)", () => {
             expect((await runCommandLine(["init", "--name", "Nuda", "--language", "it"], none)).output).toContain(
                 "Still to agree with the player: system, mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (",
             );
-            expect((await runCommandLine(["config", "system", "5e"], none)).output).toBe('"5e" is not an installed system. No system is installed. Nothing changed.');
-            writeFileSync(join(other, "campaign.yaml"), "name: Nuda\nlanguage: it\nsystem: 5e\n");
+            expect((await runCommandLine(["config", "system", "pf2e"], none)).output).toBe('"pf2e" is not an installed system. No system is installed. Nothing changed.');
+            // One of ours is installed by its name (D-513 (1)).
+            expect((await runCommandLine(["config", "system", "5e"], none)).output).toBe(
+                '"5e" is not an installed system. No system is installed. It is one of RPG Engine\'s own: install it with package install 5e once the player wants it, then give it again. Nothing changed.',
+            );
+            writeFileSync(join(other, "campaign.yaml"), "name: Nuda\nlanguage: it\nsystem: pf2e\n");
             expect((await runCommandLine(["validate"], none)).output).toContain("Fix: install the game system.");
         } finally {
             removeFolder(other);

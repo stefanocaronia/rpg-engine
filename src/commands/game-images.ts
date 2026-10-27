@@ -5,6 +5,7 @@ import type { Problem } from "../core/problem.ts";
 import { files } from "../core/store.ts";
 import { findImage, imageFileName } from "../images/index.ts";
 import { baseChain, isPartyMember, ownField, type Page, type World } from "../pages/index.ts";
+import { systemContentFolders } from "../systems/index.ts";
 import { campaignSystem } from "./game-world.ts";
 
 /**
@@ -60,11 +61,11 @@ export function metPictureNote(root: string, context: Context, entering: Page[])
     return make.length + write.length === 0 ? undefined : [...make, ...write].join(" ");
 }
 
-/** The folders whose images folder holds the pictures pages link: the campaign's first, then its game system's (D-267). */
+/** The folders whose images folder holds the pictures pages link: the campaign's first, then its game system's (D-267), its version's before its own (VER-3). */
 export function imageFolders(root: string, context: Context): string[]
 {
     const system = campaignSystem(root, context);
-    return system === undefined ? [root] : [root, system.folder];
+    return system === undefined ? [root] : [root, ...[...systemContentFolders(system)].reverse()];
 }
 
 /** The picture an image field links, as a file; undefined when the field is not a link or no images folder has the file. */

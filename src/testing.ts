@@ -1,5 +1,6 @@
-// The test kit for whoever writes an extension (D-506): a campaign of a game system in play, with the extension installed from its folder as the player's own,
-// its commands run as the command line runs them, with the dice and the time decided; its log, its widgets and the dashboard read as the page reads them.
+// The test kit for whoever writes an extension or a game system (D-506, D-514): a campaign of a game system in play, the engine's or one from its folder, with
+// the extensions installed from their folders as the player's own, its commands run as the command line runs them, with the dice and the time decided; its
+// log, its widgets and the dashboard read as the page reads them.
 import { mkdirSync, mkdtempSync, readFileSync, rmdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { tmpdir } from "node:os";
@@ -63,10 +64,15 @@ export interface TestDashboard
     close(): Promise<void>;
 }
 
-/** How a test campaign is made: its game system, the folders of the extensions it uses, its language, and whether its setup is done (by default it is). */
+/**
+ * How a test campaign is made: its game system, the folders of the game systems beside the engine's, which win over them, the folders of the extensions it
+ * uses, its language, and whether its setup is done (by default it is).
+ */
 export interface TestCampaignOptions
 {
     system: string;
+    /** Folders of game systems, each with its system.yaml, linked as the player's own: a system's repository its own, as `systems: ["."]`. */
+    systems?: string[];
     extensions?: string[];
     language?: string;
     play?: boolean;
@@ -75,15 +81,28 @@ export interface TestCampaignOptions
 }
 
 /**
- * A campaign in play for a test (D-506): made with init in a temporary folder, its setup done, using these extensions, each linked from its folder as the
- * player's own, never through npm, so that its code runs. Its dice show 4 until told otherwise, its time is a fixed day, its ids count up.
+ * A campaign in play for a test (D-506): made with init in a temporary folder, its setup done, using these extensions and game systems, each linked from its
+ * folder as the player's own, never through npm, so that its code runs. Its dice show 4 until told otherwise, its time is a fixed day, its ids count up.
  */
 export async function testCampaign(options: TestCampaignOptions): Promise<TestCampaign>
 {
     const base = mkdtempSync(join(tmpdir(), "rpg-extension-test-"));
     const folder = join(base, "campaign");
     const packages = join(base, "packages");
-    const linked = (options.extensions ?? []).map((extension) => linkPackage(packages, resolve(extension)));
+    const systems = join(base, "systems");
+    const linked: ReturnType<typeof linkPackage>[] = [];
+
+    try {
+        (options.extensions ?? []).forEach((extension) => linked.push(linkPackage(packages, resolve(extension))));
+        (options.systems ?? []).forEach((system) => linked.push(linkPackage(systems, resolve(system), true)));
+    } catch (error) {
+        // The links first, alone, as close takes them away.
+        linked.forEach((one) => unlink(one.link));
+        rmSync(base, { recursive: true, force: true });
+        throw error;
+    }
+
+    const systemFolders = [systems, enginePath("../systems/")];
     let ids = 0;
     let faces: number[] | undefined;
     const context: Context = {
@@ -106,8 +125,8 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
         newSalt: () => "salt",
         actor: "master",
         platform: process.platform === "win32" || process.platform === "darwin" ? process.platform : "linux",
-        systemFolders: [enginePath("../systems/")],
-        systemCode: await loadSystemCode([enginePath("../systems/")]),
+        systemFolders,
+        systemCode: await loadSystemCode(systemFolders),
         extensionFolders: [packages],
     };
     const started: TestDashboard[] = [];
@@ -151,20 +170,29 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
         inPlay(folder);
     }
 
-    const extensions = Object.fromEntries(linked.map((one) => [one.name, one.version]));
+    const extensions = Object.fromEntries(linked.filter((one) => !one.system).map((one) => [one.name, one.version]));
     const added = { ...options.settings, ...(linked.length === 0 ? {} : { extensions }) };
     const written = readFileSync(join(folder, "campaign.yaml"), "utf8");
     writeFileSync(join(folder, "campaign.yaml"), Object.keys(added).length === 0 ? written : `${written}${stringify(added)}`);
     return campaign;
 }
 
-/** An extension's folder linked into the packages a test campaign reads, as one the player installed from a folder: its name and version. */
-function linkPackage(packages: string, folder: string): { name: string; version: string; link: string; }
+/**
+ * A package's folder linked into those a test campaign reads, as one the player installed from a folder: its name and version. A game system's by the name of
+ * its package, which gives it its name, as @rpgengine/system-5e is 5e; one of data alone, without a package.json, by its folder's.
+ */
+function linkPackage(packages: string, folder: string, system = false): { name: string; version: string; link: string; system: boolean; }
 {
-    const manifest = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { name?: string; version?: string; };
+    const manifest = (readText(join(folder, "package.json")) === undefined && system
+        ? { name: basename(folder), version: "0.0.0" }
+        : JSON.parse(readText(join(folder, "package.json")) ?? "{}")) as { name?: string; version?: string; };
 
     if (manifest.name === undefined || manifest.version === undefined) {
-        throw new Error(`${folder} has no package.json with a name and a version: give the folder of an extension.`);
+        throw new Error(`${folder} has no package.json with a name and a version: give the folder of ${system ? "a game system" : "an extension"}.`);
+    }
+
+    if (system && readText(join(folder, "system.yaml")) === undefined) {
+        throw new Error(`${folder} has no system.yaml: give the folder of a game system.`);
     }
 
     const scope = manifest.name.includes("/") ? manifest.name.split("/")[0] : "";
@@ -172,7 +200,7 @@ function linkPackage(packages: string, folder: string): { name: string; version:
     // A junction on Windows, which needs no rights; a link elsewhere.
     const link = join(packages, scope, basename(manifest.name));
     symlinkSync(folder, link, "junction");
-    return { name: manifest.name, version: manifest.version, link };
+    return { name: manifest.name, version: manifest.version, link, system };
 }
 
 /** Takes a link away, never what it leads to: a junction of Windows goes as an empty folder does. */

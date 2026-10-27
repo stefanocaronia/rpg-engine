@@ -45,8 +45,8 @@ function handWrite(path: string, text: string): void
 
 describe("SYS-1: the campaign's system is one of those installed", () => {
     it("shows the system as it is installed, and goes on without its pages when one written by hand is not", async () => {
-        expect(await ok("config", "system")).toBe(`system: fake, the fake system of the core's tests (rpg-engine ${getVersion()})`);
-        expect(await ok("status")).toContain("Guadoscuro · it · fake, the fake system of the core's tests · difficulty normal");
+        expect(await ok("config", "system")).toBe("system: fake, the fake system of the core's tests, the first rules (@rpgengine/system-fake 1.0.0)");
+        expect(await ok("status")).toContain("Guadoscuro · it · fake, the fake system of the core's tests, the first rules · difficulty normal");
         handWrite("campaign.yaml", "name: Guadoscuro\nlanguage: it\nsystem: Quinta edizione\ndifficulty: normal\nlethality: dice\n");
         expect(await refused("show", "Bog Hound")).toBe(
             "There is no page named Bog Hound. Look for it with the find command. The campaign's system, Quinta edizione, is not installed, so none of its pages can be found: validate says how to fix it.",

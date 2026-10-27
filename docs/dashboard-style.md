@@ -104,7 +104,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 **More than one player character.** Each is named, never "you", and the page with one stays as it is. A fight's card at hand has the tokens of those fighting in its head, a pressed toggle each (one Tab stop, arrows), the one shown ringed in the accent; it follows whose turn it is again at the next turn. The map's list puts the one the distances are from first, "from here". What the character knows has a chip with each one's token after the kinds, what that one knows; only a secret names who found it out, when not all did ("Mira found out · Truth"), else "You found out". Documents carried are grouped by who carries them ("With Mira"). The tray's free dice are no one's: a die on the coin, "Free roll". An action's sentence starts with who acts ("Mira: …").
 
-**Dialogs and sheets.** `role="dialog"` named by its title. It opens with the focus on its first control or its Close; Esc closes it and the focus returns to what opened it. On a wide screen a card beside its thing; on a phone a sheet from the bottom. A modal `<dialog>` that is not full is `height: fit-content`.
+**Dialogs and sheets.** `role="dialog"` named by its title. It opens with the focus on its first control or its Close; Esc closes it and the focus returns to what opened it. On a wide screen a card beside its thing; on a phone a sheet from the bottom. A modal `<dialog>` that is not full is `height: fit-content`. A setting whose value changes the game's rules, as the version of the rules, asks first in a confirm with Cancel focused; whether kept or changed, the focus goes to the value chosen.
 
 **Tooltips.** `data-tip` draws one over the control (`::before`), after a moment under a pointer and at once with the keyboard, never at a touch. `.tip-left` and `.tip-below` keep it inside the window near an edge. Every control without words has one.
 
@@ -122,6 +122,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 - To the player, in the second person: "your character", "the master". With more than one player character the page names each one where it would say "you" of a character: "It's Mira's turn", never "Your turn" or a "You" chip; with one, nothing changes. Short, plain, in the game's words; never the machine's (no "error", "server", "load", "API"). What happened, then a colon and what to do.
 - Buttons and tabs in one or two words, an action's verb first ("Roll", "Show on the map"). Sentence case.
+- What the player does outside the page, as starting a new chat after an update, is a numbered list of short steps in their words, framed in the accent where it was asked, never a notice that goes away.
 - Every phrase through `t()`, written in English in the code, with `{placeholders}`, never glued from pieces; Italian is curated by hand in `i18n/it.json`. A game's words come from its system (`systemWord`, `labels.ts`).
 - The page shows only what the character knows: a page it does not know is never a link, never hinted, never counted.
 

@@ -21,7 +21,7 @@ import { FileStore, withFiles } from "./core/store.ts";
 import { getVersion } from "./core/version.ts";
 import { type Dashboard, startDashboard } from "./dashboard-server.ts";
 import { systemPageReader } from "./documents/index.ts";
-import { npmPackages } from "./extensions/index.ts";
+import { npmEngine, npmPackages } from "./extensions/index.ts";
 import { hostInstructions, startInstructions } from "./instructions/index.ts";
 import { libraryRunner } from "./library-reader.ts";
 import type { World } from "./pages/index.ts";
@@ -140,6 +140,7 @@ export async function startMcpServer(): Promise<void>
         importRunner: (root) => spawn(process.execPath, [process.argv[1] ?? "", "import"], { cwd: root, detached: true, stdio: "ignore", windowsHide: true, env: { ...process.env, RPG_HOST: host() ?? "" } }).unref(),
         helpers: computerHelpers(),
         packages: npmPackages(packagesFolder()),
+        engine: npmEngine(),
         confirm: systemConfirm(process.platform, process.env),
         ocr: systemPageReader(process.platform, process.env),
         readLibrary: libraryRunner(),
