@@ -1,12 +1,13 @@
 // The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, which the page changes as config does,
-// the master hearing of it at their next call; then the page's own, kept in this browser: the theme, the dice's sound, set and edges, rolling by hand.
+// the master hearing of it at their next call; then the page's own, kept in this browser: the theme, the dice's sound, set and edges, the coins, rolling by hand.
 import type { ComponentChildren } from "preact";
 import { useContext, useEffect, useRef, useState } from "preact/hooks";
 import { sectionLabel } from "./address.ts";
 import { changeSetting, readSettings, type SettingChange } from "./api.ts";
 import type { PlayerSetting, ShownWidget, WidgetPage, WidgetSpot } from "./data.ts";
-import { diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./dice/sets.ts";
+import { coinDesignPref, coinDesigns, coinLook, coinMetals, coinPref, diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./dice/sets.ts";
 import { WidgetsContext } from "./extension-widgets.tsx";
+import { CoinFace } from "./faces.tsx";
 import { DieSwatch, Icon } from "./icons.tsx";
 import { phraseLabel, settingLabel, valueLabel } from "./labels.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
@@ -485,13 +486,15 @@ function idOf(name: string): string
     return name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
-/** The page's own settings, in this browser alone: the theme, the tokens' symbols and conditions, the dice's sound, set and edges, rolling by hand. */
+/** The page's own settings, in this browser alone: the theme, the tokens' symbols and conditions, the dice's sound, set and edges, the coins, rolling by hand. */
 function PageSettings()
 {
     usePrefChange();
     const [sound, setSound] = usePref(soundPref);
     const [diceSet, setDiceSet] = useChoice(diceSetPref);
     const [edges, setEdges] = useChoice(diceEdgesPref);
+    const [coin, setCoin] = useChoice(coinPref);
+    const [design, setDesign] = useChoice(coinDesignPref);
     const [byHand, setByHand] = usePref(byHandPref);
     const [symbols, setSymbols] = usePref(tokenSymbolsPref);
     const [conditions, setConditions] = useChoice(conditionsPref);
@@ -525,6 +528,27 @@ function PageSettings()
             options: diceSets.map((set) => ({ value: set.value, label: diceSetLabel(set.value) ?? set.label, picture: <SetSwatch value={set.value} /> })),
             value: diceSet,
             pick: setDiceSet,
+            under: true,
+        },
+        // Beside the dice, the coins: of the dice's material, the initial choice, which follows the set chosen, or of a metal (D-526 (1)).
+        {
+            name: t("Coins"),
+            about: t("what your coins are made of"),
+            options: [
+                { value: "dice", label: t("Like the dice"), picture: <CoinFace side="heads" look={coinLook("dice")} /> },
+                ...coinMetals.map((metal) => ({ value: metal.value, label: coinMetalLabel(metal.value) ?? metal.label, picture: <CoinFace side="heads" look={coinLook(metal.value)} /> })),
+            ],
+            value: coin,
+            pick: setCoin,
+            under: true,
+        },
+        // Under them, their design, heads and tails side by side, of the material chosen (D-526 (2)).
+        {
+            name: t("Coin design"),
+            about: t("the pictures on your coins, heads first"),
+            options: coinDesigns.map((one) => ({ value: one.value, label: coinDesignLabel(one.value) ?? one.label, picture: <CoinPair design={one.value} /> })),
+            value: design,
+            pick: setDesign,
             under: true,
         },
         {
@@ -748,6 +772,38 @@ function exampleOf(name: string): string | undefined
         style: t("e.g. third person, past tense; more dialogue"),
     };
     return examples[name];
+}
+
+/** A design's heads and tails, one before the other, as the player's coins are. */
+function CoinPair({ design }: { design: string; })
+{
+    return (
+        <span class="coin-pair">
+            <CoinFace side="heads" design={design} />
+            <CoinFace side="tails" design={design} />
+        </span>
+    );
+}
+
+/** A coin's design by its name in the page's language; undefined for one the page does not name. */
+function coinDesignLabel(value: string): string | undefined
+{
+    const labels: Record<string, string> = {
+        sun: t("Sun and moon"),
+        crown: t("Crown and tower"),
+        rose: t("Rose and skull"),
+        planet: t("Planet and comet"),
+        gear: t("Gear and lightning"),
+        eye: t("Eye and star"),
+    };
+    return labels[value];
+}
+
+/** A coin's metal by its name in the page's language; undefined for one the page does not name. */
+function coinMetalLabel(value: string): string | undefined
+{
+    const labels: Record<string, string> = { gold: t("Gold"), silver: t("Silver"), copper: t("Copper"), bronze: t("Bronze"), iron: t("Burnished iron") };
+    return labels[value];
 }
 
 /** A set of dice by its name in the page's language; undefined for one the page does not name. */

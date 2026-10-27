@@ -1,16 +1,16 @@
 // The dice's models (D-278): their shapes and values from dice.json, loaded once, at the first throw; their meshes from dice.glb, or dice-sharp.glb for sharp
-// edges (D-354), all made by make-dice.py, each loaded the first time it is shown. The coin beside them, as one more kind, from coin.json and coin.glb, made by
-// make-coin.py (D-524 (1)): the same with either edges.
+// edges (D-354), all made by make-dice.py, each loaded the first time it is shown. The coin beside them, as one more kind, from coin.json and the glb of the
+// design chosen, coin-sun.glb and the others, made by make-coin.py (D-524 (1), D-526): the same with either edges, loaded only when coins are thrown.
 // Each mesh gets the coordinates a grain's picture is laid by, as wood or stone (D-352), which make-dice.py does not make.
 import { BufferAttribute, type BufferGeometry, type Material, Mesh, type Object3D } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { coinKind, type DieModel, faceNormals, type Shape } from "./models.ts";
 
-/** Each die by its kind, as d20: its shape and values, and how it looks, with its body and its ink, by its edges. */
+/** Each die by its kind, as d20: its shape and values, and how it looks, with its body and its ink, by its edges; the coin by its design, when one is given. */
 export interface LoadedDice
 {
     models: Map<string, DieModel>;
-    looks(edges: string): Promise<Map<string, Object3D>>;
+    looks(edges: string, coin?: string): Promise<Map<string, Object3D>>;
 }
 
 /** Loads the dice's shapes and values, and the meshes of the edges given at once, the others when first asked. */
@@ -27,8 +27,8 @@ export async function loadDice(edges: string): Promise<LoadedDice>
         return loaded;
     };
 
-    const looks = async (edges: string): Promise<Map<string, Object3D>> => {
-        const [shapes, coins] = await Promise.all([meshesOf(edges === "sharp" ? "dice-sharp.glb" : "dice.glb"), meshesOf("coin.glb")]);
+    const looks = async (edges: string, coin?: string): Promise<Map<string, Object3D>> => {
+        const [shapes, coins] = await Promise.all([meshesOf(edges === "sharp" ? "dice-sharp.glb" : "dice.glb"), coin === undefined ? new Map<string, Object3D>() : meshesOf(`coin-${coin}.glb`)]);
         return new Map([...shapes, ...coins]);
     };
 

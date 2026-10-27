@@ -147,8 +147,8 @@
         color: var(--accent);
     }
 
-    /* The coins of a toss as the coin shows them (D-524 (1)), in its own palette, the same in every theme: gold, the sun dark on it, the moon gold on the dark; the
-       rim's edge a deeper gold, which the light page needs. */
+    /* The coins of a toss as the coin shows them (D-524 (1), D-526), in its own look, the same in every theme: the sun in its ink on its body, the moon in its
+       body on its ink; the rim's edge a deeper shade of its body, which the light page needs. */
     .coin-faces {
         display: flex;
         align-items: center;
@@ -168,25 +168,13 @@
         height: 22px;
     }
 
+    /* Its colours are the coin's look, given by the page as the svg's own (D-526 (1)). */
     .coin-face .coin-rim {
-        fill: #d9a93f;
-        stroke: #8a6418;
         stroke-width: 0.8;
     }
 
     .coin-face.heads .coin-field {
-        fill: #d9a93f;
-        stroke: #a87d24;
         stroke-width: 0.6;
-    }
-
-    .coin-face.tails .coin-field,
-    .coin-face.heads .coin-picture {
-        fill: #1c1206;
-    }
-
-    .coin-face.tails .coin-picture {
-        fill: #d9a93f;
     }
 
     /* A die of a package's roll that went well or badly for who rolled it, by its colour beside its face (D-507). */
@@ -299,6 +287,11 @@
     .plate-dice svg.coin-face {
         width: 40px;
         height: 40px;
+    }
+
+    /* A toss's coins keep their width, three of them on a phone too: its words beside them wrap instead, never under them. */
+    .dice-result:has(.plate-dice.coin-faces) {
+        grid-template-columns: minmax(max-content, 1fr) auto;
     }
 
     .plate-dice .die-chip s {

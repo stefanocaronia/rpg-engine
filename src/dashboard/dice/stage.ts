@@ -1,5 +1,6 @@
 // Where the dice are shown (D-278): a three.js scene over the page, with a light, the dice's shadows on an invisible floor, and the dice of make-dice.py in the
-// set chosen in Settings, by default the theme's (D-279, D-348, D-352): resin, metal mirroring a room made on the spot, wood or stone with its grain.
+// set chosen in Settings, by default the theme's (D-279, D-348, D-352): resin, metal mirroring a room made on the spot, wood or stone with its grain. The coins
+// of the same materials, or of the metal chosen (D-526 (1)).
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { shownTheme } from "../theme.ts";
@@ -8,7 +9,7 @@ import { celebrate, type Effect, embers, type Glow, lightInk, makePictures, type
 import { floorCrackMaterial } from "./floor-cracks.ts";
 import { frostPicture } from "./frost.ts";
 import { coinKind, type RareFace, type Turn, type Vector } from "./models.ts";
-import { coinLook, type DiceLook, diceLook, type Finish, texturePath } from "./sets.ts";
+import { coinOf, type DiceLook, diceLook, type Finish, texturePath } from "./sets.ts";
 import type { Tray } from "./throw.ts";
 
 // A die that does not count, as the lower of two d20 with advantage, goes out, whatever its set: its colour gone and darker, its body to a third of its
@@ -25,6 +26,8 @@ const plateOnPhone = 220;
 const dimmedInk = 0.55;
 // The fire the highest face's numbers light with, on every set and theme: a gold ink lights brighter, a dark one turns gold.
 const branding = "#ffbf45";
+// What draws a surface's depth alone, unseen: behind it nothing of the same thing is drawn.
+const nearestOnly = new THREE.MeshBasicMaterial({ colorWrite: false });
 
 /** Where a die is shown, and how it is turned. */
 export interface Pose
@@ -37,7 +40,7 @@ export interface Pose
 export interface Stage
 {
     tray: Tray;
-    /** Puts dice of these kinds, by the meshes given for each kind, in the look given, by default the player's set. */
+    /** Puts dice of these kinds, by the meshes given for each kind, in the look given, by default the player's set; the coins as the player chose, or as the dice given. */
     place(kinds: string[], looks: Map<string, THREE.Object3D>, look?: DiceLook): void;
     /**
      * Leaves the window's foot, this many pixels tall, to the plate of the throw, and its head to the page's header: no die lies under them (D-366); `tight`,
@@ -100,7 +103,8 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
             return known;
         }
 
-        const loaded = new THREE.TextureLoader().load(texturePath(name));
+        // Dice shown at once, with reduced motion, are drawn again when their grain comes: the master's set, loaded only then, would stay black.
+        const loaded = new THREE.TextureLoader().load(texturePath(name), () => renderer.render(scene, camera));
         loaded.colorSpace = THREE.SRGBColorSpace;
         loaded.wrapS = THREE.RepeatWrapping;
         loaded.wrapT = THREE.RepeatWrapping;
@@ -113,16 +117,6 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
     if (chosenTexture !== undefined) {
         grain(chosenTexture);
     }
-
-    // The coin's own, whatever the set: gold mirroring the room, and the dark of its pictures (D-524 (1)).
-    const coinMaterial = (name: string): THREE.MeshStandardMaterial | undefined => {
-        if (name === "coin-gold") {
-            room ??= new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
-            return new THREE.MeshStandardMaterial({ name, color: coinLook.gold, roughness: 0.32, metalness: 1, envMap: room, envMapIntensity: 1 });
-        }
-
-        return name === "coin-dark" ? new THREE.MeshStandardMaterial({ name, color: coinLook.dark, roughness: 0.6, metalness: 0 }) : undefined;
-    };
 
     // A body of the set's material; the grain laid from a different place on each die, once its picture is there, so that no two dice look alike.
     const bodyOf = (finish: Finish, colour: string): THREE.MeshStandardMaterial => {
@@ -290,15 +284,19 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
         place(kinds, looks, given)
         {
             clear();
-            const look = given ?? diceLook();
+            const diceOf = given ?? diceLook();
+            // The master's coins of their dice's material, the player's as chosen (D-526 (3)).
+            const coins = coinOf(given).look;
             dice = kinds.map((kind) => {
                 const object = (looks.get(kind) ?? new THREE.Group()).clone();
                 const materials: THREE.MeshStandardMaterial[] = [];
+                const look = kind === coinKind ? coins : diceOf;
                 object.traverse((part) => {
                     if (part instanceof THREE.Mesh) {
+                        // A coin's parts are a die's (D-526 (1)): its body, the field of heads and the picture of tails; its ink, the picture of heads and
+                        // the field of tails.
                         const ink = (part.material as THREE.Material).name === "ink";
-                        const material = coinMaterial((part.material as THREE.Material).name)
-                            ?? (ink ? new THREE.MeshStandardMaterial({ name: "ink", color: look.ink, roughness: 0.6, metalness: 0.05 }) : bodyOf(look.finish, look.body));
+                        const material = ink ? new THREE.MeshStandardMaterial({ name: "ink", color: look.ink, roughness: 0.6, metalness: 0.05 }) : bodyOf(look.finish, look.body);
 
                         if (ink && look.finish.engraved === true) {
                             engrave(material);
@@ -311,6 +309,17 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
                         materials.push(material);
                     }
                 });
+
+                // A clear coin, thin as it is, would show its other face's picture over this one's: only its nearest surface is drawn, the page seen
+                // through it (D-526 (1)).
+                if (kind === coinKind && look.finish.clarity !== undefined) {
+                    object.children.filter((part) => part instanceof THREE.Mesh).forEach((part) => {
+                        const nearest = new THREE.Mesh(part.geometry, nearestOnly);
+                        nearest.renderOrder = -1;
+                        part.add(nearest);
+                    });
+                }
+
                 object.visible = false;
                 table.add(object);
                 return { object, materials };
@@ -319,7 +328,7 @@ export function makeStage(canvas: HTMLCanvasElement): Stage
             const first = dice.find((_, index) => kinds[index] !== coinKind);
 
             if (first !== undefined) {
-                prime(first.object, look.finish);
+                prime(first.object, diceOf.finish);
             }
         },
         cover(foot, head, under = false)

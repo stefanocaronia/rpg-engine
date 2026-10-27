@@ -17,7 +17,7 @@ import { arrowStep, capitalized, t } from "../text.ts";
 import { coinsToThrow, diceToThrow, type RareFace, rareFace } from "./models.ts";
 import { diceText, dieName, doubled, droppedBy, type Keep, keptOf, keptTotal, mostCoins, notation, trayCoin, trayDice, withAdded, withDropped } from "./pool.ts";
 import type { Roller } from "./roller.ts";
-import { diceEdgesPref, type DiceLook, diceSetPref, masterSet } from "./sets.ts";
+import { coinDesignPref, coinOf, coinPref, diceEdgesPref, type DiceLook, diceSetPref, mastersDice } from "./sets.ts";
 import { wakeSound } from "./sounds.ts";
 
 // After a throw, how long the dice stay before they fade: a roll the master asked stays longer, to be read, then flies into its line of the rolls.
@@ -66,6 +66,8 @@ interface Plate
     rare?: { face: RareFace; words: string; };
     /** Whose sheet a free roll of a number is from. */
     who?: string;
+    /** The master's dice, for one of theirs, whose material their coins are too (D-526 (3)). */
+    look?: DiceLook;
 }
 
 export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onShown, onFree }: {
@@ -104,7 +106,9 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
     const [sound, setSound] = usePref(soundPref);
     const [diceSet] = useChoice(diceSetPref);
     const [edges] = useChoice(diceEdgesPref);
-    const shownSet = useRef(`${diceSet} ${edges}`);
+    const [coin] = useChoice(coinPref);
+    const [design] = useChoice(coinDesignPref);
+    const shownSet = useRef(`${diceSet} ${edges} ${coin} ${design}`);
 
     useEffect(() => {
         const onResize = (): void => void roller.current?.then((loaded) => loaded?.resize());
@@ -173,7 +177,7 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
 
     /** Throws these dice, each landing on its value, then shows the plate, and fades it all after a while; the plate alone when the dice cannot be thrown. */
     const throwAndShow = async (given: Omit<Plate, "shown" | "rare">, linger: number, look?: DiceLook): Promise<void> => {
-        const shown = { ...given, ...rareOf(given.dice) };
+        const shown = { ...given, ...rareOf(given.dice), ...(look === undefined ? {} : { look }) };
         const number = ++throwing.current;
         const current = (): boolean => number === throwing.current;
         skipping.current = false;
@@ -292,13 +296,17 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
         }
     }, [requested?.id]);
 
-    // A set of dice or their edges chosen in Settings: a d20 of them rolls, to be seen, with no plate and no line in the rolls, then goes (D-352, D-354).
+    // A set of dice or their edges chosen in Settings: a d20 of them rolls, to be seen, with no plate and no line in the rolls, then goes (D-352, D-354); a coin
+    // or its design chosen, a coin of it (D-526).
     useEffect(() => {
-        if (`${diceSet} ${edges}` === shownSet.current) {
+        const chosen = `${diceSet} ${edges} ${coin} ${design}`;
+
+        if (chosen === shownSet.current) {
             return;
         }
 
-        shownSet.current = `${diceSet} ${edges}`;
+        const coinChosen = shownSet.current.split(" ").slice(2).join(" ") !== `${coin} ${design}`;
+        shownSet.current = chosen;
         const number = ++throwing.current;
         const current = (): boolean => number === throwing.current;
         skipping.current = false;
@@ -307,11 +315,13 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
         void loadRoller().then(async (loaded) => {
             const showing = { instant: matchMedia("(prefers-reduced-motion: reduce)").matches, sound, skipping: () => skipping.current, current };
 
-            if (await loaded?.roll([{ kind: "d20", values: [fairDie(20)], dropped: false }], showing) === true) {
+            const shown = coinChosen ? coinsToThrow([fairDie(2) === 1 ? "heads" : "tails"]) : [{ kind: "d20", values: [fairDie(20)], dropped: false }];
+
+            if (await loaded?.roll(shown, showing) === true) {
                 window.setTimeout(() => current() && loaded?.hide(), lingers.free);
             }
         });
-    }, [diceSet, edges]);
+    }, [diceSet, edges, coin, design]);
 
     // A number of the sheet, rolled for fun: its dice and its number, which counts for nothing (D-280).
     useEffect(() => {
@@ -583,13 +593,6 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
     );
 }
 
-/** The master's dice for a roll of theirs for no one of the party, as a foe's or one of the people's (D-525 (3)); the party rolls with the player's. */
-function mastersDice(roll: ShownRoll, party: Member[], campaign: string | undefined): DiceLook | undefined
-{
-    const ours = roll.by === "player" || party.some((member) => member.name === roll.who);
-    return ours || campaign === undefined ? undefined : masterSet(campaign).look;
-}
-
 /** What the plate says: whose roll and which, the dice one by one with the modifier, the total large, a rare face's words, and for a screen reader the chat's text. */
 function PlateContent({ plate }: { plate: Plate; })
 {
@@ -609,7 +612,7 @@ function PlateContent({ plate }: { plate: Plate; })
             </div>
             {plate.toss === undefined
                 ? <DiceFaces dice={plate.dice} modifier={plate.modifier} className="plate-dice" tones={plate.tones} />
-                : <CoinFaces toss={plate.toss} className="plate-dice" />}
+                : <CoinFaces toss={plate.toss} className="plate-dice" look={coinOf(plate.look).look} />}
             {plate.says === undefined
                 ? <span class="plate-total num">{shownText(String(plate.total))}</span>
                 : <span class={plate.toss === undefined ? "plate-total plate-says" : "plate-total plate-says plate-toss"}>{plate.says}</span>}

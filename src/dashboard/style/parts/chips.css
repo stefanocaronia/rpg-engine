@@ -34,6 +34,42 @@
         stroke-linejoin: round;
     }
 
+    /* A value with its picture: a long name wraps beside the picture, never under it (D-526). */
+    .segmented button:has(> .die-swatch, > .coin-face, > .coin-pair) {
+        display: inline-flex;
+        align-items: center;
+        text-align: start;
+    }
+
+    /* A coin's heads before its name, as a set's d20 (D-526 (1)). */
+    .segmented svg.coin-face {
+        width: 22px;
+        height: 22px;
+        margin-inline-end: 6px;
+        vertical-align: -6px;
+    }
+
+    /* A design's heads and tails, the tails a little under the heads, as two coins on the table (D-526 (2)). */
+    .segmented .coin-pair {
+        display: inline-flex;
+        margin-inline-end: 6px;
+        vertical-align: -6px;
+    }
+
+    .segmented .coin-pair svg.coin-face {
+        margin-inline-end: 0;
+        vertical-align: 0;
+    }
+
+    .segmented .coin-pair svg.coin-face.heads {
+        position: relative;
+        z-index: 1;
+    }
+
+    .segmented .coin-pair svg.coin-face + svg.coin-face {
+        margin-inline-start: -7px;
+    }
+
     /* A grain's picture shows through thin, faded edges. */
     .segmented .die-swatch.grained path + path {
         stroke-width: 0.6;

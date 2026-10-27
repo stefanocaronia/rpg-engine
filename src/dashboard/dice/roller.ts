@@ -3,8 +3,8 @@
 // Rapier, at its first throw.
 import { readChoice } from "../prefs.ts";
 import { loadDice } from "./load.ts";
-import { combine, type DieModel, type DieThrow, landingTurn, symmetries } from "./models.ts";
-import { diceEdgesPref, type DiceLook } from "./sets.ts";
+import { coinKind, combine, type DieModel, type DieThrow, landingTurn, symmetries } from "./models.ts";
+import { coinOf, diceEdgesPref, type DiceLook } from "./sets.ts";
 import { knock } from "./sounds.ts";
 import { makeStage, type Pose } from "./stage.ts";
 import { type Frame, loadPhysics, type Lying, type Throw, throwDice } from "./throw.ts";
@@ -51,8 +51,9 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
         kinds: new Set(loaded.models.keys()),
         async roll(dice, showing)
         {
-            // The edges chosen in Settings, rounded or sharp (D-354).
-            stage.place(dice.map((die) => die.kind), await loaded.looks(readChoice(diceEdgesPref)), showing.look);
+            // The edges chosen in Settings, rounded or sharp (D-354); the coins of the player's design, the master's too (D-526).
+            const coins = dice.some((die) => die.kind === coinKind) ? coinOf(showing.look).design : undefined;
+            stage.place(dice.map((die) => die.kind), await loaded.looks(readChoice(diceEdgesPref), coins), showing.look);
             const poses: (Pose | undefined)[] = dice.map(() => undefined);
             const lying: (Frame | undefined)[] = dice.map(() => undefined);
             const throws = Math.max(0, ...dice.map((die) => die.values.length));
