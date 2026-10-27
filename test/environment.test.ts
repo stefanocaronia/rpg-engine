@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { changedEnvironment, environmentAt, formatEnvironmentEntry, loadWorld, type Page, readEnvironment, type World } from "../src/pages/index.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { explorationGuidance, inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -104,7 +104,7 @@ describe("the environment of a place (ENV-1–ENV-6)", () => {
         expect(await ok("move", "Ennio", "--to", "Palude")).toBe("Moved Ennio: now in Palude.\nNo longer: terrain: wood (Mulino).");
         expect(await ok("move", "Lanterna", "--to", "Ennio")).toBe("Moved Lanterna: now in Ennio › Palude.");
         expect(await ok("scene", "open", "--title", "Nella cripta", "--type", "exploration", "--place", "Cripta")).toBe(
-            "Scene opened: Nella cripta (exploration) at Cripta. In it: Ennio.\nMoved into Cripta: Ennio.\nHere: light: dark (Cripta) · encounters: [[Palude#Incontri]] (Palude).",
+            `Scene opened: Nella cripta (exploration) at Cripta. In it: Ennio.\nMoved into Cripta: Ennio.\nHere: light: dark (Cripta) · encounters: [[Palude#Incontri]] (Palude).\n${explorationGuidance}`,
         );
     });
 

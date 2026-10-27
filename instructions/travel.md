@@ -1,0 +1,1 @@
+On the road, each leg brings at most one event, from a table or the situation, aimed at what one of the party does on the way: guiding, scouting, hunting, keeping watch. The road costs something: food, fatigue, time.

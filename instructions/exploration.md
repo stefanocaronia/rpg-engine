@@ -1,0 +1,1 @@
+A place worth exploring has more than one way in and through, and two or three things to touch, climb, break or use, given as the party arrives. One you improvise can run entrance and guard, a puzzle or a talk, a setback, the climax, a reward or a twist.

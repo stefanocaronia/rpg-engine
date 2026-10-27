@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { scene } from "../src/commands/scene.ts";
 import type { Context } from "../src/core/context.ts";
-import { fightGuidance, inPlay, makeTempFolder, playerStop, playerTurn, quietTurn, readLogFile, removeFolder, systemPageCount, testContext } from "./support.ts";
+import { fightGuidance, inPlay, makeTempFolder, playerStop, playerTurn, quietTurn, readLogFile, removeFolder, systemPageCount, testContext, travelGuidance } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -456,7 +456,7 @@ describe("the party where the scene is (D-152, CON-6)", () => {
 
     it("moves no one in a travel scene, and status gives the calls when a change by hand put the party elsewhere", async () => {
         await ok("write", "Strada", "--type", "place");
-        expect(await ok("scene", "open", "--title", "In viaggio", "--type", "travel", "--place", "Strada")).toBe("Scene opened: In viaggio (travel) at Strada. In it: Ennio: grit 12/12; Lena: grit 7/7.");
+        expect(await ok("scene", "open", "--title", "In viaggio", "--type", "travel", "--place", "Strada")).toBe(`Scene opened: In viaggio (travel) at Strada. In it: Ennio: grit 12/12; Lena: grit 7/7.\n${travelGuidance}`);
         expect(await ok("show", "Ennio")).toContain("Is in: Ossario");
         expect(await ok("status")).not.toContain("in the files");
         await ok("scene", "close", "--summary", "In marcia.");

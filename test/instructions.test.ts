@@ -8,7 +8,7 @@ import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { corePart, layeredPart } from "../src/instructions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
-import { fightGuidance, inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { explorationGuidance, fightGuidance, inPlay, makeTempFolder, removeFolder, testContext, travelGuidance } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -31,7 +31,11 @@ describe("the parts of the instructions (D-121)", () => {
     it("are the core's files by name, none for a name the core lacks or that is no plain name", () => {
         expect(corePart("combat")).toBe(fightGuidance);
         expect(corePart("new-day")).toMatch(/^Move each clock as its event says/);
-        expect(corePart("social")).toBeUndefined();
+        expect(corePart("social")).toMatch(/^In a talk, one speaks for a group/);
+        expect(corePart("travel")).toBe(travelGuidance);
+        expect(corePart("exploration")).toBe(explorationGuidance);
+        expect(corePart("challenge")).toMatch(/^Run a challenge as a scene of its own\. Say its stake before the first roll/);
+        expect(corePart("rest")).toBeUndefined();
         expect(corePart("../package")).toBeUndefined();
     });
 
@@ -49,7 +53,9 @@ describe("the parts of the instructions (D-121)", () => {
         inPlay(folder);
         const given = await ok("instructions");
         expect(given).toMatch(/^# Game master: core instructions\n/);
-        expect(given).toMatch(/\n\n## Play\n\nThe story is on\.[\s\S]*14\. The player sees their whole sheet[^\n]*\n\n### The fake system\n\n- A roll is two six-sided dice and a bonus, 8 or more succeeds/);
+        expect(given).toMatch(
+            /\n\n## Play\n\nThe story is on\.[\s\S]*35\. The player sees their whole sheet[^\n]*\n\n### Before you send\n\nRead your message once as the player will\.[^\n]*handing the choice back\?\n\n### The fake system\n\n- A roll is two six-sided dice and a bonus, 8 or more succeeds/,
+        );
         expect(given).not.toContain("## Setup");
     });
 

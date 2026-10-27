@@ -1,0 +1,7 @@
+Run a challenge as a scene of its own. Say its stake before the first roll: what is won, what is lost. Give it a goal and a pressure, each a planned event with a clock of 4, 6 or 8, named after the obstacle, never the method: the patrols, not sneaking past. Each round is one message: the character picks an approach, rolls if it is uncertain, and the clocks move 1 to 3 by how well it went; with `scene order` when several act in turns. Vary the obstacles so that different strengths count; a clever idea can skip steps or end it. It ends when a clock fills, never on one roll. After each round show the clocks in brackets, as [Escape 2/6 · Pursuers 3/6].
+
+- A chase: a line of places between quarry and pursuer, an obstacle at each (a crowd, a wall, a cart); three to six rounds.
+- A heist: the plan is the player's; say when the gathering of information is done; on the job a failure adds a complication, never voids the plan.
+- A puzzle: a success gives a clue, never the answer, and it is never the only way on.
+- A ritual: a clock the participants feed, a pressure (an interruption, a backlash), its cost known before it starts.
+- A race: the rival acts every round too.

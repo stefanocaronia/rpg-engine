@@ -74,7 +74,8 @@ export function readLogFile(folder: string): LogEntry[]
 }
 
 /** What scene open says about telling a fight: the core's part combat (D-139, D-121, D-238). */
-export const fightGuidance = "Tell the turns in order, as story, each roll the player sees in brackets where it falls, the order of turns too once the threat is in sight; "
+export const fightGuidance = "As the fight starts, give the place two or three things to use: a lantern, a ledge, a rotten rail.\n\n"
+    + "Tell the turns in order, as story, each roll the player sees in brackets where it falls, the order of turns too once the threat is in sight; "
     + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. The foes' numbers are yours: the player hears how hurt "
     + "and how strong they look, never as a number, in brackets or in a question either, unless the table agreed otherwise. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
     + "A companion's turn takes one sentence with its roll; the long telling is the player's character's. When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.\n\n"
@@ -82,6 +83,14 @@ export const fightGuidance = "Tell the turns in order, as story, each roll the p
     + "flees or parleys. Mark it, never announce it: the story shows it.\n\n"
     + "In a turn of a foe or a companion, send its calls together: its rolls in one message; in the next, what they change, with `change`, then `scene next` and the rolls "
     + "of whoever acts next. Never roll a later turn before the one before it is settled: who falls or flees changes what comes after.";
+
+/** What scene open says about a place to explore: the core's part exploration (D-121, D-530). */
+export const explorationGuidance = "A place worth exploring has more than one way in and through, and two or three things to touch, climb, break or use, given as the party arrives. "
+    + "One you improvise can run entrance and guard, a puzzle or a talk, a setback, the climax, a reward or a twist.";
+
+/** What scene open says about a journey: the core's part travel (D-121, D-530). */
+export const travelGuidance = "On the road, each leg brings at most one event, from a table or the situation, aimed at what one of the party does on the way: guiding, scouting, hunting, "
+    + "keeping watch. The road costs something: food, fatigue, time.";
 
 /** What a turn of the player's character says after its name (D-139). */
 export const playerTurn = ", the player's character";
