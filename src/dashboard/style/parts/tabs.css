@@ -1,0 +1,97 @@
+/* Tabs: a section's tabs and their marks. */
+@layer parts {
+    .page-tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    /* A tab's marks follow its name, as the updates of Packages' Installed. */
+    .page-tabs button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 40px;
+        padding: 0 16px;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .page-tabs button[aria-selected="true"] {
+        border-bottom-color: var(--accent);
+        color: var(--accent);
+    }
+
+    /* Four tabs in a long language do not fit a phone: they scroll sideways instead of widening the page, the ring of the focus drawn inside the row. */
+    .page-tabs {
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .page-tabs button {
+        flex: none;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 600px) {
+        .page-tabs {
+            gap: 2px;
+        }
+
+        .page-tabs button {
+            padding: 0 10px;
+        }
+    }
+
+    /* A tab's mark: a count in the accent, or what is missing in red, each with its tip. */
+    .tab-mark {
+        display: inline-flex;
+        position: relative;
+        align-items: center;
+        gap: 3px;
+        min-height: 20px;
+        padding: 0 7px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--accent) 16%, transparent);
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tab-mark.missing {
+        padding: 0 4px;
+        background: color-mix(in srgb, var(--low) 14%, transparent);
+        color: var(--low);
+    }
+
+    .tab-mark svg.icon {
+        width: 13px;
+        height: 13px;
+    }
+
+    /* On the narrowest phones a section's tabs share the row, closer, before they have to scroll. */
+    @media (max-width: 400px) {
+        .page-tabs {
+            gap: 0;
+        }
+
+        .page-tabs button {
+            flex: 1 0 auto;
+            padding: 0 4px;
+        }
+    }
+
+    @media (pointer: coarse) {
+        .calendar-steps .icon-button {
+            min-height: var(--target);
+            min-width: var(--target);
+        }
+    }
+}

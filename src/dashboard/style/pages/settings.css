@@ -1,0 +1,445 @@
+/* Settings. */
+@layer pages {
+    /* The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, the chosen one in gold and what it
+       means under it; the page's own last. */
+    .settings {
+        display: grid;
+        gap: var(--gap);
+        /* Room at the end for the dice button, which stays over the page: no row is left under it. */
+        padding-bottom: 72px;
+    }
+
+    .settings-lead,
+    .settings-problem {
+        margin: -6px 0 0;
+        color: var(--muted);
+        font-size: inherit;
+    }
+
+    .settings-problem {
+        color: var(--low);
+    }
+
+    .settings-group {
+        display: grid;
+        padding: 14px 16px 6px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    .settings-group h3 {
+        margin: 0 0 4px;
+        font-size: 1.1rem;
+    }
+
+    .setting {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 6px 16px;
+        padding: 12px 0;
+        border-top: 1px solid var(--rule);
+    }
+
+    .setting.under > .segmented {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+
+    /* On a phone, many values as a list in two columns, each picture under the one above. */
+    @media (max-width: 600px) {
+        .setting.under > .segmented {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            justify-self: stretch;
+        }
+
+        .setting.under .segmented button {
+            text-align: start;
+        }
+    }
+
+    .settings-group h3 + .setting,
+    .settings-group .setting-about + .setting {
+        border-top: 0;
+    }
+
+    .setting-what {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .setting-name {
+        font-weight: 650;
+    }
+
+    .setting-about {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    /* Under the row: what the chosen value means, tied to it by the gold mark; what is not chosen yet; a note; what a change said. */
+    .setting-after {
+        display: grid;
+        grid-column: 1 / -1;
+        min-width: 0;
+        font-size: 0.85rem;
+    }
+
+    .setting-after > * {
+        margin: 0;
+    }
+
+    .setting-after > * + * {
+        margin-top: 6px;
+    }
+
+    .setting-after > .setting-said:empty {
+        margin-top: 0;
+    }
+
+    .setting-means {
+        padding-inline-start: 8px;
+        border-inline-start: 3px solid var(--gold);
+        color: var(--ink);
+    }
+
+    .setting-unset {
+        color: var(--muted);
+        font-style: italic;
+    }
+
+    .setting-said {
+        color: var(--ally);
+        font-weight: 650;
+    }
+
+    .setting-said.problem {
+        color: var(--low);
+        font-weight: 400;
+    }
+
+    /* What the player should know of a setting on this computer; in ink, with its edge, when it says how to have what is missing. */
+    .setting-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 8px 10px;
+        border: 1px solid transparent;
+        border-radius: var(--radius-m);
+        background: var(--float);
+        color: var(--muted);
+    }
+
+    .setting-note.fix {
+        border-color: var(--rule);
+        color: var(--ink);
+    }
+
+    .setting-note > svg {
+        flex: none;
+        width: 16px;
+        height: 16px;
+        margin-top: 1px;
+    }
+
+    .setting-note-text {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .setting-note-text p,
+    .setting-note-text ol {
+        margin: 0;
+    }
+
+    .setting-note-text ol {
+        display: grid;
+        gap: 4px;
+        padding-inline-start: 20px;
+    }
+
+    .setting-command {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .setting-command code {
+        padding: 1px 6px;
+        border-radius: var(--radius-s);
+        background: var(--cell);
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+    }
+
+    .setting-command .command-word {
+        display: inline-block;
+        max-width: 100%;
+    }
+
+    .setting-copy {
+        min-height: 28px;
+        padding: 0 8px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-s);
+        background: var(--panel);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    /* A list's items as chips to take off, and a field to add one. */
+    .setting-list {
+        display: grid;
+        grid-column: 1 / -1;
+        gap: 8px;
+    }
+
+    .setting-list ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .setting-list ul:empty {
+        display: none;
+    }
+
+    .setting-list li {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding-inline-start: 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+    }
+
+    .setting-list li .icon-button {
+        width: 32px;
+        height: 32px;
+    }
+
+    .setting-list form {
+        display: flex;
+        gap: 6px;
+        max-width: 420px;
+    }
+
+    /* The player's own words (D-395): the field, then Save and Clear, which go under it where the row is narrow. */
+    .setting-text {
+        display: flex;
+        flex-wrap: wrap;
+        grid-column: 1 / -1;
+        align-items: flex-start;
+        gap: 6px;
+        max-width: 560px;
+    }
+
+    .setting-text-buttons {
+        display: flex;
+        gap: 6px;
+    }
+
+    /* A setting that counts for nothing now, as the prose while an author is written: its values faded, still to choose. */
+    .setting.off > .segmented,
+    .setting.off .setting-means {
+        opacity: 0.55;
+    }
+
+    .setting-off {
+        color: var(--muted);
+        font-style: italic;
+    }
+
+    .setting-list input,
+    .setting-text input,
+    .setting-text textarea,
+    .language-choice input {
+        flex: 1;
+        min-width: 0;
+        height: 38px;
+        padding: 0 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+        color: var(--ink);
+        font: inherit;
+    }
+
+    /* After the fields' shared look, which it changes: the player's words take the row, the long ones on two lines. */
+    .setting-text input,
+    .setting-text textarea {
+        flex: 1 1 240px;
+    }
+
+    /* The long words grow with what is written, up to six lines, where the browser can. */
+    .setting-text textarea {
+        field-sizing: content;
+        height: auto;
+        min-height: calc(2lh + 16px);
+        max-height: calc(6lh + 16px);
+        padding: 8px 10px;
+        line-height: 1.35;
+        resize: vertical;
+    }
+
+    /* The language (D-394): a field that searches every language, the chosen one in its own words, and under it the list, those the page is written in first. */
+    .language-choice {
+        position: relative;
+        width: 280px;
+    }
+
+    .language-choice input {
+        width: 100%;
+        padding-inline-end: 34px;
+        cursor: pointer;
+    }
+
+    .language-choice.open input {
+        cursor: text;
+    }
+
+    .language-chevron {
+        position: absolute;
+        top: 50%;
+        inset-inline-end: 10px;
+        width: 18px;
+        height: 18px;
+        transform: translateY(-50%);
+        fill: none;
+        stroke: var(--muted);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
+    }
+
+    .language-choice.open .language-chevron {
+        transform: translateY(-50%) rotate(180deg);
+    }
+
+    .language-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        inset-inline-end: 0;
+        inset-inline-start: 0;
+        z-index: 20;
+        max-height: 320px;
+        margin: 0;
+        padding: 4px;
+        overflow-y: auto;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        box-shadow: var(--lift), var(--raise);
+        list-style: none;
+    }
+
+    .language-list li {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: baseline;
+        column-gap: 8px;
+        padding: 6px 8px;
+        border-radius: var(--radius-s);
+        cursor: pointer;
+    }
+
+    .language-list li.active {
+        background: var(--panel-2);
+        box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .language-list li[aria-selected="true"] .language-own {
+        font-weight: 700;
+    }
+
+    .language-list li.page-last {
+        margin-bottom: 4px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--rule);
+        border-radius: var(--radius-s) var(--radius-s) 0 0;
+    }
+
+    .language-own {
+        grid-column: 1;
+        font-weight: 600;
+    }
+
+    .language-here,
+    .language-page {
+        grid-column: 1;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .language-page {
+        color: var(--accent);
+        font-weight: 650;
+    }
+
+    .language-code {
+        grid-row: 1;
+        grid-column: 2;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .language-list .language-none {
+        display: block;
+        color: var(--muted);
+        cursor: default;
+    }
+
+    /* Where fingers touch, every control as tall as a finger. */
+    @media (pointer: coarse) {
+        .segmented button {
+            min-height: var(--target);
+        }
+
+        .setting-list li .icon-button {
+            width: var(--target);
+            height: var(--target);
+        }
+
+        .setting-list input,
+        .setting-text input,
+        .language-choice input {
+            height: var(--target);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .setting {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .language-choice {
+            width: 100%;
+        }
+
+        /* On a phone the values share the row. */
+        .segmented {
+            display: flex;
+        }
+
+        .segmented button {
+            flex: 1 1 auto;
+            padding: 0 8px;
+        }
+    }
+}

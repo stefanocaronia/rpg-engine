@@ -32,7 +32,7 @@
     "instructions"
   ],
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\"",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$|[^a-z-]style$/.test(path) })\" && node src/dashboard/style/join.mjs dist/dashboard/style.css",
     "dev": "tsc --watch",
     "demo": "npm run build && node --experimental-strip-types --no-warnings test/demo/dashboard.ts --ask --port 5760",
     "betasim": "npm run build && node --experimental-strip-types --no-warnings test/betasim/run.ts",

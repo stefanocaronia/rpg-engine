@@ -1,0 +1,190 @@
+/* Extensions' widgets and a package's drawings: their chips, cards and figures. */
+@layer parts {
+    /* An extension's chip in the top (D-502): a status chip; one that leads to its extension's card is a link, lit as one. */
+    a.status-chip.widget-chip {
+        position: relative;
+        text-decoration: none;
+    }
+
+    /* The extensions' cards (D-502): at the end of a page, or in the table's column over the rolls, drawn with the page's own parts. */
+    .widget-cards {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--gap);
+    }
+
+    /* Two columns that the tracks share, so that the pips of each start in one line; the labels take at most half, and wrap. */
+    .widget-body {
+        display: grid;
+        grid-template-columns: fit-content(50%) minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .widget-body > * {
+        grid-column: 1 / -1;
+        margin: 0;
+    }
+
+    /* A package's drawing (D-510): its place in the page, a shadow root that takes this style sheet. A figure keeps its room while its module comes, its declared
+       width at most and its shape; in the top, as tall as an icon. Turned right to left when it holds no words. What broke says so, and whose it is. */
+    .ext-root {
+        display: block;
+        min-width: 0;
+    }
+
+    .ext-figure {
+        width: var(--figure-width, 100%);
+        max-width: 100%;
+        aspect-ratio: var(--figure-ratio, auto);
+    }
+
+    .ext-figure.at-top {
+        width: auto;
+        height: 20px;
+        aspect-ratio: var(--figure-ratio, 1);
+    }
+
+    [dir="rtl"] .ext-root.mirrored {
+        transform: scaleX(-1);
+    }
+
+    /* A count drawn as a figure takes the width of its place, the figure its own in it. */
+    .ask-track.figured {
+        grid-template-columns: minmax(0, 1fr);
+        justify-self: stretch;
+        justify-items: center;
+    }
+
+    .track-figure {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .figure-count > [dir] {
+        font-weight: 400;
+    }
+
+    .widget-track.figured {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        gap: 4px;
+    }
+
+    .widget-track.figured > .figure-count {
+        display: block;
+    }
+
+    /* The packages' cards in a page, after its widgets' own: none drawn, no room. */
+    .package-cards:empty {
+        display: none;
+    }
+
+    .ext-broken {
+        margin: 0;
+        padding: 8px 12px;
+        border: 1px solid var(--low);
+        border-radius: var(--radius-s);
+        color: var(--low);
+        font-size: 0.85rem;
+        text-align: start;
+        overflow-wrap: anywhere;
+    }
+
+    /* One thing large: its icon, its words, its value, as the sky and the temperature. */
+    .widget-lead {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* Its figure, its extension's drawing, over its words and value. */
+    .widget-lead.figured {
+        grid-template-columns: minmax(0, 1fr) auto;
+        row-gap: 8px;
+    }
+
+    .widget-lead.figured > .ext-figure {
+        grid-column: 1 / -1;
+        justify-self: center;
+    }
+
+    .widget-lead-icon {
+        width: 40px;
+        height: 40px;
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 1.5;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
+
+    .widget-lead-words {
+        min-width: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .widget-lead-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .widget-track {
+        display: grid;
+        grid-template-columns: subgrid;
+        align-items: center;
+    }
+
+    .widget-track > .pips {
+        flex-wrap: wrap;
+    }
+
+    .widget-track-label {
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .widget-table {
+        overflow-x: auto;
+    }
+
+    .widget-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .widget-table :is(th, td) {
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--rule);
+        text-align: start;
+    }
+
+    .widget-table th {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 650;
+    }
+
+    .widget-image {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        border-radius: var(--radius-m);
+    }
+
+    /* In Settings, where a widget stands: its place, and for a card in a page which page. */
+    .widget-spot {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-width: 0;
+    }
+}

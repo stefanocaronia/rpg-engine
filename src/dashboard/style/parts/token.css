@@ -1,0 +1,332 @@
+/* Tokens: a picture of someone as a coin under glass, with the pips of its side and state. */
+@layer parts {
+    /* Tokens as coins (D-409): a round picture on a dark disc, whatever the theme, its edge bevelled and its shadow low on the page; no colour of a side. The
+       disc's dark edge is under the picture, seen only where there is none; the picture is round itself, so that the pip of the side may stand out of it (D-414). */
+    .token {
+        --size: 44px;
+        --coin-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.55), 0 1px 1px rgb(0 0 0 / 0.35), 0 3px 6px -1px rgb(0 0 0 / 0.45);
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+        width: var(--size);
+        height: var(--size);
+        border-radius: 50%;
+        background: var(--disc);
+        box-shadow: var(--coin-shadow);
+        flex: 0 0 auto;
+    }
+
+    /* The token under glass (D-326): a low lens over the picture, which shows to the edge, laid there by the page, never written into it; the same as on the maps.
+       Its flat top takes the light in a band with a crisp edge; only over its outer fifth it rounds off into the edge, soft, with no line where it begins: a little
+       lighter at the top left, a little darker at the bottom right, with a soft gleam where the light catches it; no border of its own. */
+    .token::before,
+    .token::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    /* The glass's top, and the coin's bevel over its rim: lit above, shaded below. */
+    .token::before {
+        z-index: 2;
+        box-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.28), inset 0 -1.5px 0 rgb(0 0 0 / 0.35);
+        background: linear-gradient(135deg, rgb(255 255 255 / 0.3) 0%, rgb(255 255 255 / 0.08) 44%, transparent 45%, transparent 60%, rgb(255 255 255 / 0.05) 61%, transparent 68%);
+    }
+
+    /* The rim, growing from nothing at four fifths of the radius to the edge. */
+    .token::after {
+        background:
+            radial-gradient(circle at 27% 24%, rgb(255 255 255 / 0.6), transparent 40%),
+            linear-gradient(135deg, rgb(255 255 255 / 0.3), transparent 45%, transparent 55%, rgb(0 0 0 / 0.24));
+        mask: radial-gradient(circle closest-side, transparent 78%, rgb(0 0 0 / 0.1) 84%, rgb(0 0 0 / 0.4) 90%, rgb(0 0 0 / 0.75) 95%, #000);
+    }
+
+    /* A foe the master marked (D-415): a thin red ring close round the coin, a hair of the page between them so that it reads in grey too, and a breath of red past it. */
+    .token.hostile {
+        box-shadow:
+            inset 0 0 0 1px rgb(0 0 0 / 0.55),
+            0 1px 1px rgb(0 0 0 / 0.35),
+            0 0 0 1.5px var(--pip-ring, var(--panel)),
+            0 0 0 3px var(--low),
+            0 0 6px 3px color-mix(in srgb, var(--low) 30%, transparent);
+    }
+
+    .token.large {
+        --size: 84px;
+    }
+
+    /* The dead: the picture grey and faded, the pip of their state, a red skull, as it is (D-461). */
+    .token.dead > :is(img, .initials) {
+        filter: grayscale(1) brightness(0.8);
+        opacity: 0.55;
+    }
+
+    /* A party member's token, with their class in its tooltip (D-409). */
+    .token-holder {
+        position: relative;
+        display: inline-flex;
+        flex: 0 0 auto;
+    }
+
+    .token img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    /* The pip of a token's side (D-414): at the start of its lower edge, ringed in the colour of what it stands on; gold round the player's character's, green a
+       companion's; with their class's symbol or the side's; none on a foe (D-415). The pip of their state keeps the other corner (D-419). */
+    .token .side-pip {
+        --pip: 17px;
+        position: absolute;
+        inset-inline-start: -3px;
+        bottom: -3px;
+        z-index: 3;
+        display: grid;
+        place-items: center;
+        width: var(--pip);
+        height: var(--pip);
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px var(--pip-ring, var(--panel));
+    }
+
+    /* As wide as the pip, its symbol within (D-415). */
+    .token .side-pip svg {
+        grid-area: 1 / 1;
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .token .side-pip.you {
+        background: #182c4c;
+        box-shadow: 0 0 0 1.5px var(--gold), 0 0 0 3px var(--pip-ring, var(--panel));
+    }
+
+    .token .side-pip.you svg {
+        stroke: var(--gold);
+    }
+
+    .token .side-pip.ally {
+        background: #2f7d52;
+    }
+
+    .token.large .side-pip {
+        --pip: 24px;
+        inset-inline-start: -2px;
+        bottom: -2px;
+    }
+
+    /* A stranger's number over their picture (D-420): a small dark coin at the end of the token's upper edge, light figures on the stranger's disc as when there is
+       no picture, ringed in the colour of what it stands on; wider for B1. One place for each mark, so that none covers another: the number above, the side below
+       at the start, the state below at the end. */
+    .token .token-number {
+        --pip: 13px;
+        position: absolute;
+        inset-inline-end: -2px;
+        top: -2px;
+        z-index: 3;
+        display: block;
+        width: calc(var(--pip) * var(--wide, 1));
+        height: var(--pip);
+        border-radius: calc(var(--pip) / 2);
+        background: var(--disc);
+        box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3), 0 0 0 1.5px var(--pip-ring, var(--panel));
+    }
+
+    .token .token-number svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        fill: #fff;
+        font: 700 8.5px system-ui, sans-serif;
+    }
+
+    /* On the large token of whoever acts, a little larger. */
+    .turn-now .token-number {
+        --pip: 15px;
+    }
+
+    /* On the next one's small token, a smaller coin. */
+    .next-who .token-number {
+        --pip: 12px;
+        inset-inline-end: -3px;
+        top: -3px;
+    }
+
+    .token.large .token-number {
+        --pip: 17px;
+        inset-inline-end: 0;
+        top: 0;
+    }
+
+    /* The pip of someone's state (D-419): at the end of the token's lower edge, smaller than the side's; a condition dark on cream, a state of the engine (dead, at 0,
+       kept from acting) cream on dark; a second coin behind it, up and out, when there are more, drawn by its shadows; under the mouse only, when the player asks. */
+    .token .status-pip {
+        --pip: 12px;
+        --pip-paper: #f1e8d3;
+        --pip-ink: #1b2233;
+        --pip-back: #cfc4ab;
+        position: absolute;
+        inset-inline-end: -2px;
+        bottom: -2px;
+        z-index: 3;
+        display: grid;
+        place-items: center;
+        width: var(--pip);
+        height: var(--pip);
+        border-radius: 50%;
+        background: var(--pip-paper);
+        box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.35), 0 0 0 1.5px var(--pip-ring, var(--panel));
+    }
+
+    .token .status-pip.strong {
+        --pip-paper: #1b2233;
+        --pip-ink: #f1e8d3;
+        --pip-back: #1b2233;
+        box-shadow: inset 0 0 0 1px #f1e8d3, 0 0 0 1.5px var(--pip-ring, var(--panel));
+    }
+
+    .token .status-pip.stacked {
+        --behind: 3px;
+        box-shadow:
+            inset 0 0 0 1px rgb(0 0 0 / 0.35),
+            0 0 0 1.5px var(--pip-ring, var(--panel)),
+            var(--behind) calc(var(--behind) * -1) 0 0 var(--pip-back),
+            var(--behind) calc(var(--behind) * -1) 0 1px rgb(0 0 0 / 0.35),
+            var(--behind) calc(var(--behind) * -1) 0 2.5px var(--pip-ring, var(--panel));
+    }
+
+    .token .status-pip.strong.stacked {
+        box-shadow:
+            inset 0 0 0 1px #f1e8d3,
+            0 0 0 1.5px var(--pip-ring, var(--panel)),
+            var(--behind) calc(var(--behind) * -1) 0 0 #f1e8d3,
+            var(--behind) calc(var(--behind) * -1) 0 1px var(--pip-back),
+            var(--behind) calc(var(--behind) * -1) 0 2.5px var(--pip-ring, var(--panel));
+    }
+
+    /* The second coin behind, toward the token's outside in either direction of the text. */
+    [dir="rtl"] .token .status-pip.stacked {
+        --behind: -3px;
+    }
+
+    .token .status-pip svg {
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: var(--pip-ink);
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .token.large .status-pip {
+        --pip: 17px;
+        inset-inline-end: -1px;
+        bottom: -1px;
+    }
+
+    .token.large .status-pip.stacked {
+        --behind: 4px;
+    }
+
+    [dir="rtl"] .token.large .status-pip.stacked {
+        --behind: -4px;
+    }
+
+    /* Only a pointer that hovers hides them till then: on a phone they always show. */
+    @media (hover: hover) {
+        .token .status-pip.on-hover {
+            opacity: 0;
+            transition: opacity var(--quick) linear;
+        }
+    }
+
+    :is(.member, .present li, .identity, .turn-now, .next-who, .token):is(:hover, :focus-visible, :focus-within) .status-pip.on-hover {
+        opacity: 1;
+    }
+
+    /* What the pip stands on, where it is not the panel. */
+    .band {
+        --pip-ring: var(--panel-2);
+    }
+
+    .turn-band.mine {
+        --pip-ring: var(--gold);
+    }
+
+    .turn-row {
+        --pip-ring: var(--panel-2);
+    }
+
+    .initials {
+        display: grid;
+        border-radius: 50%;
+        place-items: center;
+        width: 100%;
+        height: 100%;
+        background: hsl(var(--hue) 35% 38%);
+        color: #fff;
+        font-weight: 600;
+        font-size: calc(var(--size) * 0.38);
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        .token.large {
+            --size: 64px;
+        }
+    }
+
+    /* Someone's state as icons, each with its words (D-419): the engine's states in the colour of danger, the conditions in the accent, other effects muted. */
+    .status-icons {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .status-icon {
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        color: var(--accent);
+    }
+
+    .status-icon svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .status-icon.state {
+        background: color-mix(in srgb, var(--low) 16%, transparent);
+        color: var(--low);
+    }
+
+    .status-icon.other {
+        background: color-mix(in srgb, var(--ink) 8%, transparent);
+        color: var(--muted);
+    }
+
+    .turn-health {
+        font-weight: 700;
+    }
+}

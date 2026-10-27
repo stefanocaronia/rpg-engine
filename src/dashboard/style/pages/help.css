@@ -1,0 +1,194 @@
+/* Help: the guide. */
+@layer pages {
+    /* Help (D-409): what it is, an index of chips, each part a card that folds. */
+    .help-lead {
+        margin: 0;
+        font-size: inherit;
+    }
+
+    .help-index {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .help-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 6px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.85rem;
+        line-height: 1.25;
+        text-align: start;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .help-chip svg.icon {
+        width: 18px;
+        height: 18px;
+        color: var(--accent);
+    }
+
+    .help-cards {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--gap);
+    }
+
+    .help-card.group {
+        margin: 0;
+        scroll-margin-top: calc(var(--top-space) + var(--gap));
+    }
+
+    /* A part's title is long: it wraps, the chevron stays in sight. */
+    .help-card > summary h3 {
+        min-width: 0;
+        white-space: normal;
+    }
+
+    .help-card > p {
+        max-width: 64ch;
+        margin: 0;
+    }
+
+    /* At the guide's end, how to tell us what went wrong: two lines and the link to GitHub. */
+    .help-report .card-body p {
+        max-width: 64ch;
+        margin: 0 0 8px;
+        line-height: 1.55;
+    }
+
+    .help-report .help-report-note {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .help-report .about-link {
+        margin-top: 4px;
+    }
+
+    /* The guide's text in its cards (D-413): its headings in the accent, its tables scrolling inside their card, its commands to copy, the chat's lines quoted. */
+    .guide p,
+    .guide ul,
+    .guide ol {
+        margin: 0 0 10px;
+        line-height: 1.55;
+    }
+
+    /* The guide's lead, line by line. */
+    .help-lead p {
+        margin: 0 0 4px;
+        line-height: 1.55;
+    }
+
+    .help-lead > :last-child,
+    .guide > :last-child {
+        margin-bottom: 0;
+    }
+
+    .guide a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 2px;
+    }
+
+    .guide ul,
+    .guide ol {
+        padding-inline-start: 22px;
+    }
+
+    .guide li + li {
+        margin-top: 4px;
+    }
+
+    .guide h4 {
+        margin: 22px 0 8px;
+        color: var(--accent);
+        font-size: 1rem;
+        font-weight: 650;
+        scroll-margin-top: calc(var(--top-space) + var(--gap));
+    }
+
+    .guide > h4:first-child {
+        margin-top: 0;
+    }
+
+    .guide-table {
+        max-width: 100%;
+        margin: 0 0 12px;
+        overflow-x: auto;
+    }
+
+    .guide table {
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        line-height: 1.45;
+    }
+
+    .guide th,
+    .guide td {
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--rule);
+        text-align: start;
+        vertical-align: top;
+    }
+
+    .guide th {
+        color: var(--muted);
+        font-weight: 650;
+    }
+
+    /* A command reads left to right in every language, its quotes where it has them. */
+    .guide code,
+    .guide pre {
+        direction: ltr;
+        unicode-bidi: isolate;
+    }
+
+    .guide code {
+        padding: 1px 4px;
+        border-radius: var(--radius-xs);
+        background: var(--panel-2);
+        font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        font-size: 0.9em;
+    }
+
+    .guide pre {
+        margin: 0 0 12px;
+        padding: 10px 12px;
+        overflow-x: auto;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+    }
+
+    /* An option in a table stays whole: the table scrolls instead. */
+    .guide td code {
+        white-space: nowrap;
+    }
+
+    .guide pre code {
+        padding: 0;
+        background: none;
+    }
+
+    .guide blockquote {
+        margin: 0 0 12px;
+        padding-block: 2px;
+        padding-inline: 14px 0;
+        border-inline-start: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+        color: var(--muted);
+    }
+
+    .guide blockquote p {
+        margin-bottom: 4px;
+    }
+}

@@ -1,0 +1,384 @@
+/* The rolls: the table's column beside the page, and each roll's card. */
+@layer parts {
+    /* The page's body: the sheet, and the rolls below it; on a wide screen the rolls beside it, always in sight (D-276, D-279). */
+    .body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+
+    /* The rolls' card, a panel like the sheet's; its tools in its title stand on it. */
+    .rolls-card {
+        position: relative;
+        padding: 0 16px 6px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    @media (min-width: 900px) {
+        .body {
+            /* The table grows a little with the screen: 340 pixels up to 1280, 380 at 1600, 420 from 1920 on. */
+            grid-template-columns: minmax(0, 1fr) clamp(340px, 340px + (100vw - 1280px) / 8, 420px);
+            align-items: start;
+        }
+
+        /* The table runs the sheet's height, or makes the page as tall as it is; what it holds stays in sight in it as the page scrolls, under what the master
+           asks while it is there (D-291): the turns, the followed quests, the rolls, their list growing with them up to twelve, then scrolling without a bar.
+           Taller than the window, its top goes up so that it stays by its foot (useTableFit). */
+        .play-table {
+            align-self: stretch;
+            /* Its own layer, drawn before it slides: at its first frame the slide would otherwise wait for it. */
+            will-change: transform, opacity;
+        }
+
+        .play-table-stick {
+            position: sticky;
+            top: var(--table-top, calc(var(--gap) + var(--top-space) + var(--asked-space, 0px)));
+            display: grid;
+            gap: 12px;
+        }
+
+        .roll-scroll {
+            max-height: var(--list-room, 72rem);
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .roll-scroll::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    /* Beside the sheet the rolls are always open: their header is no toggle. */
+    summary.fixed {
+        cursor: default;
+    }
+
+    /* More rolls under those in sight (D-304): the list fades into the card's foot, where a bar of the accent breathes, until its end, where Load more waits. */
+    .roll-frame {
+        position: relative;
+    }
+
+    .rolls-below {
+        position: absolute;
+        inset-inline-end: -16px;
+        bottom: -6px;
+        inset-inline-start: -16px;
+        height: 64px;
+        border-radius: 0 0 calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px);
+        background: linear-gradient(to bottom, transparent, var(--panel) 70%);
+        pointer-events: none;
+    }
+
+    .rolls-below::after {
+        content: "";
+        position: absolute;
+        inset-inline-end: 32%;
+        bottom: 12px;
+        inset-inline-start: 32%;
+        height: 4px;
+        border-radius: var(--radius-xs);
+        background: var(--accent);
+        box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent) 55%, transparent);
+        opacity: 0.8;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .rolls-below::after {
+            animation: rolls-below 1.4s ease-in-out infinite alternate;
+        }
+    }
+
+    @keyframes rolls-below {
+        from {
+            opacity: 0.25;
+        }
+
+        to {
+            opacity: 0.9;
+        }
+    }
+
+    /* The rolls' tools in their title (D-302): Clear, and beside the sheet Hide; on a narrow screen left of the chevron. */
+    .rolls-tools {
+        position: absolute;
+        top: 6px;
+        inset-inline-end: 6px;
+        display: flex;
+    }
+
+    .rolls-tools.folding {
+        inset-inline-end: 44px;
+    }
+
+    /* Older rolls, or those cleared: a text button at the end of the list, in its middle, clear of the dice's button. */
+    .rolls-more {
+        display: block;
+        height: 40px;
+        margin: 0 auto 10px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: transparent;
+        color: var(--accent);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* The table folds into a tab on the window's edge (D-293), the marks of what it holds in it; open, a narrow tab in the same place folds it, in a margin of the
+       page kept for it. */
+    .body:has(> .table-away) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .table-away {
+        position: fixed;
+        top: 50%;
+        inset-inline-end: 0;
+        z-index: 17;
+        translate: 0 -50%;
+    }
+
+    .table-fold {
+        position: fixed;
+        top: 50%;
+        inset-inline-end: 0;
+        z-index: 17;
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 56px;
+        padding: 0;
+        border: 1px solid var(--rule);
+        border-inline-end: 0;
+        border-start-start-radius: var(--radius-m);
+        border-start-end-radius: 0;
+        border-end-end-radius: 0;
+        border-end-start-radius: var(--radius-m);
+        background: var(--float);
+        color: var(--muted);
+        translate: 0 -50%;
+        cursor: pointer;
+    }
+
+    .table-fold svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    @media (min-width: 900px) {
+        .page:has(.play-table) {
+            padding-inline-end: calc(var(--gap) + 16px);
+        }
+
+        /* Folded, the tab's width, so that it never covers the page's right edge. */
+        .page:has(.table-away) {
+            padding-inline-end: calc(var(--gap) + 40px);
+        }
+    }
+
+    .rolls-tab {
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+        padding: 12px 8px;
+        border: 1px solid var(--rule);
+        border-inline-end: 0;
+        border-start-start-radius: var(--radius-l);
+        border-start-end-radius: 0;
+        border-end-end-radius: 0;
+        border-end-start-radius: var(--radius-l);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        color: var(--ink);
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .rolls-none {
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: inherit;
+    }
+
+    /* A roll in three lines (D-292): whom, what, the dice; the token and the total at the top, as in a list of three lines. */
+    /* Each roll a small card of its own (D-296); the player's in the accent's lightest tone. */
+    .roll-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 6px 0 8px;
+        list-style: none;
+    }
+
+    .roll {
+        position: relative;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        column-gap: 12px;
+        align-items: start;
+        padding: 10px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+    }
+
+    .roll.by-player {
+        border-color: color-mix(in srgb, var(--accent) 22%, var(--rule));
+        background: color-mix(in srgb, var(--accent) 7%, var(--panel-2));
+    }
+
+    /* A free roll, in this browser alone (D-330 (4)): dashed and dimmed. */
+    .roll.free {
+        border-style: dashed;
+        opacity: 0.68;
+    }
+
+    /* On a roll's card its dice stand out of it. */
+    .roll .die-chip:not(.dropped, .rare-highest, .rare-lowest) {
+        background: var(--float);
+    }
+
+    .roll .token,
+    .roll-robot {
+        grid-row: 1 / span 3;
+        width: 40px;
+        height: 40px;
+    }
+
+    .roll .token {
+        --size: 40px;
+    }
+
+    /* The tray's free dice among several player characters are no one's (D-480 (7)): a die on the coin, where a face would be. */
+    .roll-die {
+        color: var(--accent);
+    }
+
+    .roll-who,
+    .roll-check {
+        grid-column: 2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .roll-who {
+        font-weight: 700;
+    }
+
+    /* A new roll first opens its place at the top of the list, empty, the others sliding down like a blind; then it appears in it (D-301, D-303). */
+    @media (prefers-reduced-motion: no-preference) {
+        .roll.entering {
+            overflow: hidden;
+            animation: roll-open var(--flight) var(--ease), roll-show var(--medium) linear var(--flight) backwards;
+        }
+
+        /* The player's, whose plate flies into it once its place is open, appears as the plate lands: the plate becomes the line (D-376). */
+        .roll.entering.by-player {
+            animation: roll-open var(--flight) var(--ease), roll-show var(--short) linear calc(var(--flight) * 2 - var(--quick)) backwards;
+        }
+    }
+
+    /* From nothing to the card's own height: the browser grows it to its height, whatever it is. */
+    .roll-list {
+        interpolate-size: allow-keywords;
+    }
+
+    @keyframes roll-open {
+        from {
+            height: 0;
+            margin-bottom: -8px;
+            padding-block: 0;
+            border-width: 0;
+        }
+    }
+
+    /* Unseen while its place opens, as its fill backwards holds it before it starts. */
+    @keyframes roll-show {
+        from {
+            opacity: 0;
+        }
+    }
+
+    /* A new roll's mark (D-303): a yellow corner with an exclamation mark, in the card's top left, which fades after a while, as long as markLength. */
+    .roll-flag {
+        position: absolute;
+        top: 0;
+        inset-inline-start: 0;
+        width: 26px;
+        height: 26px;
+        padding-block: 3px 0;
+        padding-inline: 7px 0;
+        border-start-start-radius: calc(var(--radius-m) - 1px);
+        background: var(--gold);
+        color: var(--on-gold);
+        font-size: 0.8rem;
+        font-weight: 700;
+        line-height: 1;
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+        pointer-events: none;
+        animation: roll-flag 9s linear forwards;
+    }
+
+    @keyframes roll-flag {
+        90% {
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
+        }
+    }
+
+    .roll-check {
+        font-size: 0.85rem;
+    }
+
+    .roll-total {
+        grid-row: 1 / span 3;
+        grid-column: 3;
+        line-height: 1.1;
+        min-width: 2ch;
+        font-size: 1.5rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        text-align: end;
+        color: var(--accent);
+    }
+
+    .roll.by-master .roll-total {
+        color: var(--ink);
+    }
+
+    /* What an extension's roll says in place of a total that means nothing: words, smaller, at most two lines. */
+    .roll-total.roll-says {
+        max-width: 12ch;
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-wrap: balance;
+    }
+
+    .roll-dice {
+        grid-column: 2;
+        margin-top: 4px;
+    }
+
+    /* A toss in the rolls: its coins where the total stands, at most three; their words on the line of the dice, which has the row's width, on one line. */
+    .roll-total.roll-coins {
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .roll-toss {
+        display: block;
+        overflow: hidden;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}

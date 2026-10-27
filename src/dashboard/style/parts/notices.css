@@ -1,0 +1,59 @@
+/* Notices: the page's own messages over it. */
+@layer parts {
+    /* The page's own messages, over it (D-298): a problem in red, the game away in amber, a word to know in the accent, each with its icon. */
+    .notices {
+        display: grid;
+        gap: 8px;
+        margin: 0 0 var(--gap);
+    }
+
+    .notice {
+        --tone: var(--accent);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        padding: 10px 14px;
+        border: 1px solid color-mix(in srgb, var(--tone) 45%, var(--rule));
+        border-radius: var(--radius-l);
+        background: color-mix(in srgb, var(--tone) 10%, var(--panel));
+        box-shadow: var(--lift);
+        color: var(--ink);
+        font-weight: 600;
+    }
+
+    .notice svg.icon {
+        width: 20px;
+        height: 20px;
+        color: var(--tone);
+    }
+
+    .notice.problem {
+        --tone: var(--low);
+    }
+
+    /* A notice that counts, as an import's (D-491 (11)): its count at the end of its one line, and a thin bar of how far it is along its bottom edge. */
+    .notice:has(.count) {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .notice .count {
+        margin-inline-start: auto;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .notice .bar {
+        position: absolute;
+        inset-inline-start: 0;
+        bottom: 0;
+        width: var(--done);
+        height: 3px;
+        background: var(--tone);
+    }
+
+    .notice.away {
+        --tone: var(--warn);
+    }
+}

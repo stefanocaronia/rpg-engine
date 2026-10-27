@@ -1,0 +1,100 @@
+/* The page's elements before any part: the box, the window, the body, the titles, words for a screen reader alone. */
+@layer base {
+    * {
+        box-sizing: border-box;
+    }
+
+    /* The room of the scrollbar kept: a card opened that makes the page scroll moves nothing sideways (D-383). */
+    html {
+        scrollbar-gutter: stable;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(1200px 400px at 50% -200px, var(--glow), transparent), var(--paper);
+        color: var(--ink);
+        font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    /* The serif is the story's voice alone: the campaign's name, and the master's question (D-282). */
+    h1 {
+        font-family: var(--serif);
+        font-weight: 600;
+        margin: 0;
+    }
+
+    h2 {
+        margin: 0;
+        font-weight: 700;
+    }
+
+    /* The cards' titles, in the text's own face (D-282), a step larger than the text (D-284); a card of the table titled by an h2, as Turns and Quests, too. */
+    h3,
+    .rolls-title,
+    :is(.card-head, summary) > h2 {
+        margin: 0;
+        font-family: inherit;
+        font-size: 1.125rem;
+        font-weight: 700;
+        line-height: 1.3;
+        color: var(--ink);
+    }
+
+    .num {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* The small label over a title. */
+    .eyebrow {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .eyebrow.accent {
+        color: var(--accent);
+    }
+
+    button {
+        font: inherit;
+        color: inherit;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    /* A language written from right to left mirrors the page through its logical properties (D-394): the maps stay as they are drawn, east on the right, and so
+       the dice; a number, a notation or a value keeps its own order, as +2 or 1d20+5; the icons that point a way turn. */
+    .lm-frame,
+    .map,
+    .dice-stage {
+        direction: ltr;
+    }
+
+    /* Words for a screen reader alone. */
+    .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        /* A field that takes the focus is scrolled clear of the bar and of the dice's button over it (84 + 56 + 12 px). */
+        html {
+            scroll-padding-bottom: 152px;
+        }
+    }
+}

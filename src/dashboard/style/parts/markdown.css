@@ -1,0 +1,79 @@
+/* A page's text: its headings, links and the secrets found in it. */
+@layer parts {
+    /* A page's text, as a companion's traits and actions, in a card of its own: its sections as small headings. */
+    .markdown h4 {
+        margin: 18px 0 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 650;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .markdown > :first-child {
+        margin-top: 0;
+    }
+
+    .markdown h5 {
+        margin: 12px 0 2px;
+        font-size: inherit;
+        font-weight: 700;
+    }
+
+    .markdown p,
+    .markdown ul {
+        margin: 0 0 8px;
+        line-height: 1.5;
+    }
+
+    /* A link of a page's text to a page the character knows. */
+    .md-link {
+        color: var(--accent);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+        text-underline-offset: 2px;
+        border-radius: var(--radius-xs);
+    }
+
+    .md-link:hover {
+        text-decoration-color: currentColor;
+    }
+
+    .markdown blockquote {
+        margin: 0 0 8px;
+        padding-inline-start: 12px;
+        border-inline-start: 3px solid var(--rule);
+        color: var(--muted);
+    }
+
+    /* A secret the character discovered: a note of its own, edged in the accent, its title in the eyebrow. */
+    .md-secret {
+        margin: 0 0 8px;
+        padding: 8px 12px;
+        border-inline-start: 3px solid var(--accent);
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+    }
+
+    .md-pre {
+        margin: 0 0 8px;
+        padding: 8px 10px;
+        overflow-x: auto;
+        border-radius: var(--radius-s);
+        background: var(--panel-2);
+        font-size: 0.85rem;
+    }
+
+    .md-secret .eyebrow {
+        margin-bottom: 4px;
+        color: var(--accent);
+    }
+
+    .md-secret > :last-child,
+    .markdown blockquote > :last-child {
+        margin-bottom: 0;
+    }
+}

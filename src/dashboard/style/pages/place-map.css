@@ -1,0 +1,1131 @@
+/* The map of a place. */
+@layer pages {
+    /* The paper's colours, fixed: the map is a sheet, not a screen. */
+    /* The map of the place (GRD-6, D-323, D-325): ink and washes on paper that stays light in both themes, as the world map's; the ground by the place's look; in Combat beside the order of the turns. */
+    .lm {
+        --l-paper: #f1e6cc;
+        --l-floor: #f6ecd6;
+        --l-grid: #cdb98f;
+        --l-ink: #3f2f1f;
+        --l-wood: #dcb47c;
+        --l-wood-dark: #bb8a52;
+        --l-stone: #d2c7b4;
+        --l-water: #b5d1ea;
+        --l-deep: #84b0db;
+        --l-wave: #3a6d96;
+        --l-flame: #d9682a;
+        --l-cloth: #e2d6e6;
+        --l-metal: #c3c8cc;
+        --l-canopy: #bcd3a8;
+        --l-mud: #cdb48f;
+        --l-hazard: #f0b43c;
+        --l-ally: #1b6b45;
+        --l-foe: #a73929;
+        --l-gold: #f5c63e;
+        --l-disc: #182c4c;
+        --l-accent: #254b83;
+        margin-bottom: var(--gap);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+        overflow: hidden;
+    }
+
+    /* The map's place, at the end of its header, may be long. */
+    .lm > .card-head {
+        border-bottom: 0;
+    }
+
+    .lm .card-head-note {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .lm-frame {
+        background: var(--l-paper);
+        color-scheme: light;
+        border-block: 1px solid color-mix(in srgb, var(--l-ink) 18%, transparent);
+    }
+
+    .lm-frame.panned {
+        overflow-x: auto;
+    }
+
+    .lm-svg {
+        display: block;
+        width: 100%;
+        max-width: 760px;
+        height: auto;
+        margin: 0 auto;
+        font-family: var(--serif);
+    }
+
+    .lm-frame.panned .lm-svg {
+        width: auto;
+        max-width: none;
+    }
+
+    .lm.lm-full {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        margin: 0;
+        border-radius: 0;
+    }
+
+    .lm-full .lm-ask {
+        margin: 0;
+        border-width: 0 0 1px;
+        border-radius: 0;
+        box-shadow: inset 4px 0 0 var(--gold);
+    }
+
+    .lm-full .lm-frame {
+        overflow: auto;
+    }
+
+    .lm-full .lm-key,
+    .lm-full .lm-where {
+        display: none;
+    }
+
+    .lm-paper {
+        fill: var(--l-paper);
+    }
+
+    .lm-floor-fill,
+    .lm-floor-swatch {
+        fill: var(--l-floor);
+    }
+
+    .lm-grid {
+        fill: none;
+        stroke: var(--l-ink);
+        stroke-width: 0.6;
+        stroke-opacity: 0.22;
+    }
+
+    .lm-wall {
+        fill: url(#lm-hatch);
+    }
+
+    .lm-hatch-line {
+        stroke: var(--l-ink);
+        stroke-width: 1;
+        stroke-linecap: round;
+        opacity: 0.6;
+    }
+
+    .lm-outline {
+        fill: none;
+        stroke: var(--l-ink);
+        stroke-width: 3.6;
+        stroke-linecap: round;
+    }
+
+    .lm-difficult {
+        fill: url(#lm-stipple);
+        pointer-events: none;
+    }
+
+    .lm-corner {
+        fill: var(--l-ink);
+        fill-opacity: 0.55;
+        stroke: none !important;
+        pointer-events: none;
+    }
+
+    .lm-dot {
+        fill: var(--l-ink);
+        opacity: 0.55;
+    }
+
+    .lm-diagonal-line {
+        stroke: var(--l-ink);
+        stroke-width: 1.2;
+        opacity: 0.28;
+    }
+
+    .lm-door rect,
+    .lm-door-leaf {
+        fill: var(--l-wood-dark);
+        stroke: var(--l-ink);
+        stroke-width: 1.6;
+    }
+
+    .lm-door-leaf.secret {
+        fill: var(--l-floor);
+        stroke-dasharray: 3 3;
+    }
+
+    .lm-door-swing {
+        fill: none;
+        stroke: var(--l-ink);
+        stroke-width: 1;
+        stroke-dasharray: 2 3;
+    }
+
+    .lm-secret-s {
+        fill: var(--l-ink);
+        font-size: 14px;
+        font-style: italic;
+        font-weight: 700;
+    }
+
+    .lm-thing rect,
+    .lm-thing circle,
+    .lm-thing path,
+    .lm-swatch rect,
+    .lm-swatch circle,
+    .lm-swatch path,
+    .lm-sheet-svg rect,
+    .lm-sheet-svg circle,
+    .lm-sheet-svg path {
+        stroke: var(--l-ink);
+        stroke-width: 1.4;
+        stroke-linejoin: round;
+    }
+
+    .lm-wood {
+        fill: var(--l-wood);
+    }
+
+    .lm-wood.dark {
+        fill: var(--l-wood-dark);
+    }
+
+    .lm-stone {
+        fill: var(--l-stone);
+    }
+
+    .lm-stone.ring {
+        stroke-dasharray: 4 3;
+    }
+
+    .lm-cloth {
+        fill: var(--l-cloth);
+    }
+
+    .lm-metal {
+        fill: var(--l-metal);
+    }
+
+    .lm-paper-fill {
+        fill: var(--l-floor);
+    }
+
+    .lm-ink-fill {
+        fill: var(--l-ink);
+    }
+
+    .lm-canopy {
+        fill: var(--l-canopy);
+    }
+
+    .lm-pit {
+        fill: #6d5a45;
+    }
+
+    .lm-pit.deep {
+        fill: #2a2018;
+    }
+
+    .lm-glass {
+        fill: #e6f1fa;
+        stroke: var(--l-ink);
+        stroke-width: 1.4;
+    }
+
+    .lm-low-wall {
+        fill: none;
+        stroke: var(--l-ink) !important;
+        stroke-width: 3 !important;
+        stroke-dasharray: 1 0;
+    }
+
+    .lm-hazard {
+        fill: var(--l-hazard);
+    }
+
+    .lm-hazard-mark {
+        fill: var(--l-ink);
+        font: 700 13px system-ui, sans-serif;
+    }
+
+    .lm-mark {
+        fill: none;
+        stroke-dasharray: 3 2;
+    }
+
+    .lm-detail {
+        fill: none;
+        stroke: var(--l-ink) !important;
+        stroke-width: 1 !important;
+    }
+
+    .lm-detail.strong {
+        stroke-width: 2 !important;
+    }
+
+    .lm-arrow {
+        fill: none;
+        stroke: var(--l-ink) !important;
+        stroke-width: 1.4 !important;
+    }
+
+    .lm-flame {
+        fill: var(--l-flame);
+        stroke: none !important;
+    }
+
+    .lm-thing-any {
+        fill: var(--l-stone);
+    }
+
+    .lm-thing-symbol {
+        fill: var(--l-ink);
+        font: 700 14px system-ui, sans-serif;
+    }
+
+    .lm-ground-fill {
+        stroke: none !important;
+    }
+
+    .lm-ground-shallow-water .lm-ground-fill {
+        fill: var(--l-water);
+    }
+
+    .lm-ground-deep-water .lm-ground-fill {
+        fill: var(--l-deep);
+    }
+
+    .lm-ground-rubble .lm-ground-fill,
+    .lm-ground-brush .lm-ground-fill,
+    .lm-ground-ground .lm-ground-fill {
+        fill: transparent;
+    }
+
+    .lm-ground-mud .lm-ground-fill {
+        fill: var(--l-mud);
+    }
+
+    .lm-wave {
+        fill: none;
+        stroke: var(--l-wave) !important;
+        stroke-width: 1.2 !important;
+        stroke-linecap: round;
+    }
+
+    .lm-pebble {
+        fill: var(--l-stone);
+        stroke-width: 1 !important;
+    }
+
+    .lm-tuft {
+        fill: none;
+        stroke: #4d6b3a !important;
+        stroke-width: 1.2 !important;
+        stroke-linecap: round;
+    }
+
+    .lm-exit path {
+        fill: none;
+        stroke: var(--l-ink);
+        stroke-width: 1.6;
+    }
+
+    .lm-exit-name {
+        fill: var(--l-ink);
+        font-style: italic;
+    }
+
+    .lm-coordinates text {
+        fill: var(--l-ink);
+        opacity: 0.72;
+    }
+
+    .lm-disc {
+        fill: var(--l-disc);
+    }
+
+    /* The coin's edge (D-409): a dark line under the picture, seen only where there is none; no colour of a side. */
+    .lm-ring {
+        fill: none;
+        stroke: rgb(0 0 0 / 0.55);
+        stroke-width: 1;
+    }
+
+    /* The coin's bevel over the glass (D-414): lit above, shaded below. */
+    .lm-bevel-lit {
+        fill: rgb(255 255 255 / 0.28);
+    }
+
+    .lm-bevel-shade {
+        fill: rgb(0 0 0 / 0.35);
+    }
+
+    /* The pip of a token's side (D-414), as on the page, ringed in the paper's colour. */
+    .lm-pip-paper {
+        fill: var(--l-floor);
+    }
+
+    .lm-pip-gold {
+        fill: #f5c63e;
+    }
+
+    .lm-pip.you .lm-pip-disc {
+        fill: #182c4c;
+    }
+
+    .lm-pip.ally .lm-pip-disc {
+        fill: #2f7d52;
+    }
+
+    .lm-pip-symbol {
+        fill: none;
+        stroke: #fff;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .lm-pip.you .lm-pip-symbol {
+        stroke: #f5c63e;
+    }
+
+    /* The pip of someone's state on the map (D-419), as on the page. */
+    .lm-status-disc {
+        fill: #f1e8d3;
+        stroke: rgb(0 0 0 / 0.35);
+        stroke-width: 0.8;
+    }
+
+    .lm-status-back {
+        fill: #cfc4ab;
+        stroke: rgb(0 0 0 / 0.35);
+        stroke-width: 0.8;
+    }
+
+    .lm-status-symbol {
+        fill: none;
+        stroke: #1b2233;
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .lm-status.strong .lm-status-disc {
+        fill: #1b2233;
+        stroke: #f1e8d3;
+    }
+
+    .lm-status.strong .lm-status-symbol {
+        stroke: #f1e8d3;
+    }
+
+    /* At 0 on the map, as on the page (D-461), on the map's paper, the same in both themes: the heartbeat of one of the party red, green once stable; the dead a
+       red skull, filled; a foe down keeps the dark of the engine's states. */
+    .lm-status:is(.dying, .dead) .lm-status-disc {
+        fill: #a73929;
+    }
+
+    .lm-status.stable .lm-status-disc {
+        fill: #1b6b45;
+    }
+
+    .lm-status-symbol.filled {
+        fill: #f1e8d3;
+        stroke: none;
+        fill-rule: evenodd;
+    }
+
+    /* A token at 0 greyed until its counter rises again; the dead greyer and faded. */
+    .lm-token.fallen image {
+        filter: grayscale(0.85) brightness(0.85);
+    }
+
+    .lm-token.dead image {
+        filter: grayscale(1) brightness(0.8);
+        opacity: 0.55;
+    }
+
+    @media (hover: hover) {
+        .lm-status.on-hover {
+            opacity: 0;
+            transition: opacity var(--quick) linear;
+        }
+    }
+
+    .lm-token:hover .lm-status.on-hover {
+        opacity: 1;
+    }
+
+    /* A foe the master marked (D-415): a thin red ring close round the coin, the paper between them, over a breath of red light. */
+    .lm-hostile {
+        fill: none;
+        stroke: #b8321f;
+        stroke-width: 1.6;
+    }
+
+    /* Whoever acts, raised off the paper as a piece taken in hand (D-419): a little up and larger, with its pips, its shadow wide and soft; no ring. */
+    /* Lifted, as a piece taken in hand: larger over the middle of its square, its shadow falling lower on the paper. */
+    .lm-token.acting {
+        transform-box: view-box;
+        transform: scale(1.1);
+    }
+
+    .lm-token.acting > g[filter] {
+        filter: drop-shadow(0 3px 2px rgb(42 29 16 / 0.4)) drop-shadow(0 12px 8px rgb(42 29 16 / 0.42));
+    }
+
+    /* It breathes in place while it acts, slowly, as if held over the board; still where motion is reduced. */
+    @media (prefers-reduced-motion: no-preference) {
+        .lm-token.acting {
+            animation: lm-breathe 2.6s var(--ease) infinite;
+        }
+
+        .lm-token.acting > g[filter] {
+            animation: lm-breathe-shadow 2.6s var(--ease) infinite;
+        }
+    }
+
+    @keyframes lm-breathe {
+        0%,
+        100% {
+            transform: scale(1.07);
+        }
+
+        50% {
+            transform: scale(1.12);
+        }
+    }
+
+    @keyframes lm-breathe-shadow {
+        0%,
+        100% {
+            filter: drop-shadow(0 2px 2px rgb(42 29 16 / 0.42)) drop-shadow(0 8px 6px rgb(42 29 16 / 0.38));
+        }
+
+        50% {
+            filter: drop-shadow(0 4px 3px rgb(42 29 16 / 0.36)) drop-shadow(0 14px 10px rgb(42 29 16 / 0.4));
+        }
+    }
+
+    .lm-wall-under,
+    .lm-shade {
+        fill: none;
+    }
+
+    .lm-stranger {
+        fill: #cfd6e4;
+    }
+
+    .lm-badge {
+        fill: var(--l-foe);
+        stroke: var(--l-floor);
+        stroke-width: 1.5;
+    }
+
+    .lm-badge-number {
+        fill: #fff;
+        font: 700 10px system-ui, sans-serif;
+    }
+
+    /* Where the player's character goes, when the master asks (D-332): the map over the whole page, a square touched ringed in gold, the bar to send it. */
+    .map-sheet {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        max-height: none;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: var(--paper);
+        color: var(--ink);
+    }
+
+    .map-sheet[open] {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .map-sheet::backdrop {
+        background: rgb(0 0 0 / 0.4);
+    }
+
+    .map-sheet-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--rule);
+        background: var(--panel);
+    }
+
+    .map-sheet-head h2 {
+        flex: 1;
+        font-family: var(--serif);
+        font-size: 1.1rem;
+    }
+
+    .map-sheet-body {
+        overflow: auto;
+        padding: 12px 0;
+    }
+
+    .map-sheet-body .lm {
+        max-width: none;
+    }
+
+    .map-sheet-bar {
+        display: flex;
+        gap: 10px;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+        border-top: 1px solid var(--rule);
+        background: var(--panel);
+    }
+
+    .map-sheet-bar input {
+        width: 6em;
+        min-height: 44px;
+        padding: 0 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        text-transform: uppercase;
+    }
+
+    .map-sheet-go {
+        flex: 1;
+        min-height: 44px;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: var(--gold);
+        color: var(--on-gold);
+        font-weight: 700;
+    }
+
+    .map-sheet-go:disabled {
+        background: color-mix(in srgb, var(--gold) 35%, var(--panel));
+        color: var(--muted);
+    }
+
+    /* The sheet of an action (D-495): over the whole page with the map, else a card in the middle; the verbs, on whom, then the sentence and its buttons. */
+    .act-sheet[open] {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .act-sheet:not(.full) {
+        width: min(560px, calc(100% - 24px));
+        height: fit-content;
+        max-height: calc(100% - 24px);
+        margin: auto;
+        overflow: hidden;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--overlay);
+    }
+
+    .act-verbs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0;
+        padding: 12px 16px 0;
+        border: 0;
+    }
+
+    .act-verb {
+        display: inline-flex;
+        align-items: center;
+        min-height: 40px;
+        padding: 0 16px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .act-verb:has(input:checked) {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+        box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .act-verb input,
+    .act-who-one input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .act-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 12px 16px;
+    }
+
+    .act-sheet:not(.full) .act-body {
+        padding-top: 4px;
+    }
+
+    /* On a narrow screen the list first, the names at hand; the map under it, which scrolls to keep its tokens large enough to touch. */
+    @media (max-width: 899px) {
+        .act-sheet.full .act-body {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .act-sheet.full .act-who {
+            order: -1;
+        }
+    }
+
+    @media (min-width: 900px) {
+        .act-sheet.full .act-body {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 320px;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .act-sheet.full .act-body .lm {
+            margin: 0;
+        }
+    }
+
+    .act-who {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .act-who legend {
+        margin-bottom: 8px;
+        padding: 0;
+    }
+
+    /* One to choose, as on the map's list of who is where: a line in the side's colour, red for a foe the master marked; chosen, ringed in the accent. */
+    .act-who-one {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 8px;
+        min-height: 44px;
+        padding: 6px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel);
+        box-shadow: inset 3px 0 0 var(--ally);
+        cursor: pointer;
+    }
+
+    .act-who-one.other {
+        box-shadow: inset 3px 0 0 color-mix(in srgb, var(--muted) 45%, transparent);
+    }
+
+    .act-who-one.hostile {
+        box-shadow: inset 3px 0 0 var(--low);
+    }
+
+    .act-who-one.plain {
+        box-shadow: none;
+    }
+
+    .act-who-one:has(input:checked) {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+    }
+
+    /* A sign beside the one chosen, not only the colour. */
+    .act-who-one:has(input:checked)::after {
+        content: "";
+        width: 9px;
+        height: 9px;
+        margin-inline-start: auto;
+        border-radius: 50%;
+        background: var(--accent);
+    }
+
+    .act-who-name {
+        font-weight: 600;
+    }
+
+    .act-square {
+        width: 6em;
+        min-height: 44px;
+        padding: 0 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        text-transform: uppercase;
+    }
+
+    .act-bar {
+        display: grid;
+        gap: 10px;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+        border-top: 1px solid var(--rule);
+        background: var(--panel);
+    }
+
+    .act-words {
+        width: 100%;
+        min-height: 3.2em;
+        padding: 10px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        line-height: 1.4;
+        resize: vertical;
+    }
+
+    .act-note {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .act-note svg.icon {
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
+    }
+
+    .act-problem {
+        margin: 0;
+        color: var(--low);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .act-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .act-cancel {
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: none;
+    }
+
+    .act-go {
+        display: inline-flex;
+        flex: 0 1 auto;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 18px;
+    }
+
+    .act-go svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* A token to choose on the map of the sheet, or to talk to on the page (D-495): a ring at the pointer, the one chosen ringed in gold. */
+    .lm-token.choosable {
+        cursor: pointer;
+    }
+
+    .lm-choice {
+        fill: none;
+        stroke: transparent;
+        stroke-width: 3;
+    }
+
+    .lm-token.choosable:hover .lm-choice {
+        stroke: color-mix(in srgb, var(--l-gold) 80%, transparent);
+    }
+
+    .lm-token.chosen .lm-choice {
+        fill: var(--l-gold);
+        fill-opacity: 0.35;
+        stroke: #8a5a00;
+        stroke-width: 3;
+    }
+
+    .lm-pick {
+        fill: transparent;
+        cursor: pointer;
+    }
+
+    .lm-pick:hover {
+        fill: var(--l-gold);
+        fill-opacity: 0.35;
+    }
+
+    .lm-pick.selected {
+        fill: var(--l-gold);
+        fill-opacity: 0.45;
+        stroke: #8a5a00;
+        stroke-width: 2.5;
+    }
+
+    /* The squares the player's character can still reach on its turn (D-328): a gold wash, edged dark as the gold halo, which cream alone would hide. */
+    /* On the player's turn, the floor out of their character's move veiled in ink, what they can reach left as it is (D-340). */
+    .lm-out rect {
+        fill: var(--l-ink);
+        fill-opacity: 0.2;
+    }
+
+    .lm-number {
+        fill: #fff;
+        font: 700 19px system-ui, sans-serif;
+    }
+
+    /* A stranger's number over their picture (D-420), as on the page. */
+    .lm-number-disc {
+        fill: #182c4c;
+        stroke: rgb(255 255 255 / 0.3);
+        stroke-width: 0.8;
+    }
+
+    .lm-number-small {
+        fill: #fff;
+        font-family: system-ui, sans-serif;
+        font-weight: 700;
+    }
+
+    .lm-token.ghost {
+        opacity: 0.4;
+    }
+
+    .lm-token:focus-visible .lm-ring {
+        stroke: var(--l-accent);
+        stroke-width: 3;
+    }
+
+    .lm-wall-under {
+        fill: #dccfb6;
+    }
+
+    .lm-shade {
+        stroke: #a8895a;
+        stroke-width: 16;
+        stroke-opacity: 0.38;
+    }
+
+    .lm-grid {
+        stroke-opacity: 0.3;
+    }
+
+    .lm-hatch-line {
+        opacity: 0.45;
+    }
+
+    /* The legend and who is where, its twin in words, in the page's own colours, under the paper. */
+    /* The legend and the twin in words, in the page's own colours, under the paper. */
+    .lm-key,
+    .lm-where {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        margin: 0;
+        padding: 10px 16px;
+        list-style: none;
+        font-size: 0.85rem;
+    }
+
+    .lm-where {
+        padding-top: 0;
+        padding-bottom: 14px;
+        gap: 6px;
+    }
+
+    .lm-key li {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .lm-swatch {
+        width: 22px;
+        height: 22px;
+        border-radius: var(--radius-xs);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--l-ink) 30%, transparent);
+        flex: 0 0 auto;
+    }
+
+    .lm-key-note {
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .lm-key-square {
+        padding: 0 5px;
+        border-radius: var(--radius-xs);
+        background: var(--cell);
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
+
+    .lm-where li {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding-block: 3px;
+        padding-inline: 8px 10px;
+        border-radius: 999px;
+        background: var(--panel-2);
+        box-shadow: inset 3px 0 0 var(--ally);
+    }
+
+    /* Anyone else plain; red only a foe the master marked, as their token (D-415). */
+    .lm-where li.lm-where-other {
+        box-shadow: inset 3px 0 0 color-mix(in srgb, var(--muted) 45%, transparent);
+    }
+
+    .lm-where li.hostile {
+        box-shadow: inset 3px 0 0 var(--low);
+    }
+
+    .lm-where-name {
+        font-weight: 600;
+    }
+
+    .lm-where-far {
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    /* The ground's look, from the place's kind or its biome (D-325). */
+    /* The ground's look, from the biome or the place's kind. */
+    .lm-look-paving .lm-floor-fill {
+        fill: url(#lm-cobbles);
+    }
+
+    .lm-look-forest .lm-floor-fill,
+    .lm-look-plains .lm-floor-fill,
+    .lm-look-hills .lm-floor-fill,
+    .lm-look-plain .lm-floor-fill {
+        fill: url(#lm-grass);
+    }
+
+    .lm-look-swamp .lm-floor-fill {
+        fill: #d6d9bd;
+    }
+
+    .lm-look-moor .lm-floor-fill {
+        fill: #e8dde4;
+    }
+
+    .lm-look-desert .lm-floor-fill {
+        fill: #f0dfb0;
+    }
+
+    .lm-look-snow .lm-floor-fill {
+        fill: #f4f7fa;
+    }
+
+    .lm-look-water .lm-floor-fill {
+        fill: #dbe8f3;
+    }
+
+    .lm-look-cave .lm-floor-fill,
+    .lm-look-mountains .lm-floor-fill {
+        fill: url(#lm-speckle);
+    }
+
+    .lm-paving {
+        fill: #e2d8c4;
+    }
+
+    .lm-cobble {
+        fill: #ece4d3;
+        stroke: #b9a888 !important;
+        stroke-width: 0.6 !important;
+    }
+
+    .lm-meadow {
+        fill: #e6ecd0;
+    }
+
+    .lm-rockfloor {
+        fill: #ece4d2;
+    }
+
+    .lm-ground-road .lm-ground-fill {
+        fill: #dcc6a0;
+    }
+
+    .lm-rut {
+        fill: none;
+        stroke: #a98d61 !important;
+        stroke-width: 0.8 !important;
+        stroke-dasharray: 6 5;
+        opacity: 0.6;
+    }
+
+    .lm-roof-tiles {
+        fill: #c88a68;
+        stroke: none !important;
+    }
+
+    .lm-roof.tone-1 .lm-roof-tiles {
+        fill: #b9a08a;
+    }
+
+    .lm-roof.tone-2 .lm-roof-tiles {
+        fill: #a8786a;
+    }
+
+    .lm-roof-edge {
+        fill: none;
+        stroke: var(--l-ink) !important;
+        stroke-width: 2.2 !important;
+    }
+
+    .lm-ridge {
+        fill: none;
+        stroke: var(--l-ink) !important;
+        stroke-width: 1.4 !important;
+    }
+
+    .lm-awning {
+        fill: #e7c46a;
+    }
+
+    .lm-basin {
+        fill: var(--l-water);
+    }
+
+    .lm-cliff {
+        fill: none;
+        stroke: var(--l-ink) !important;
+        stroke-width: 1 !important;
+    }
+
+    .lm-exit-name.inside {
+        font-size: 12px;
+        font-weight: 600;
+        paint-order: stroke;
+        stroke: #f6ecd6;
+        stroke-width: 3px;
+    }
+}

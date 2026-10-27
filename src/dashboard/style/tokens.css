@@ -1,0 +1,109 @@
+/* The tokens: every colour, corner, shadow and length of time, as custom properties of :root, and the theme the player picked. */
+@layer tokens {
+    /* The theme the player picked, else the system's (D-300). */
+    :root[data-theme="light"] {
+        color-scheme: light;
+    }
+
+    :root[data-theme="dark"] {
+        color-scheme: dark;
+    }
+
+    :root {
+        color-scheme: light dark;
+        /* The one room around the page and between its cards and stacks, the bar and the master's question included. */
+        --gap: 16px;
+        /* Two seeds from the robot, navy #192d4d and gold #f4c84c, as HCT tones by role. */
+        --ink: light-dark(#182c4c, #eff0fa);
+        --muted: light-dark(#586174, #a8b1c6);
+        --paper: light-dark(#f3ede2, #06132b);
+        --panel: light-dark(#fef9f2, #131f38);
+        --panel-2: light-dark(#f9f3e8, #1e2a43);
+        --float: light-dark(#ffffff, #29344e);
+        --rule: light-dark(#dfd3bd, #36425c);
+        /* The tone of the label's cell of a line of a card (D-284). */
+        --cell: light-dark(color-mix(in srgb, var(--ink) 6%, var(--panel)), var(--panel-2));
+        --accent: light-dark(#254b83, #f5c63e);
+        --gold: #f5c63e;
+        --on-gold: #182c4c;
+        --ally: light-dark(#1b6b45, #7cc99a);
+        --low: light-dark(#a73929, #ff9381);
+        --warn: light-dark(#8a5a00, #f5c63e);
+        --disc: #182c4c;
+        /* Gold as text or a line, readable on the light page; text on the danger's colour. */
+        --gold-ink: light-dark(#8a5a00, var(--gold));
+        --on-low: light-dark(#ffffff, var(--on-gold));
+        /* The land of the map's paper, the same in both themes: each biome's colour and the ink of its marks, on the map and wherever a biome is named. */
+        --m-mark: #6b4a5c;
+        --m-land: #f1e6cc;
+        --m-ink: #3f2f1f;
+        --bio-forest: #bcd3a8;
+        --bio-swamp: #b3c9b4;
+        --bio-moor: #d9c4d7;
+        --bio-hills: #e3d7a8;
+        --bio-mountains: #cdc5ba;
+        --bio-plains: #e6ebc2;
+        --bio-desert: #f0dfb0;
+        --bio-snow: #f2f5f8;
+        --bio-water: #b5d1ea;
+        /* The paper of the documents found, the same in both themes: a thing of the world, not a screen. */
+        --doc-paper: #f6eedb;
+        --doc-ink: #2f261b;
+        --doc-note: #5c4a30;
+        --doc-rule: #b9a47c;
+        --doc-link: #7a3b16;
+        --doc-seal: #9b2f24;
+        --doc-stone: #dcd8cf;
+        --doc-carved: #34322d;
+        --doc-fold: #dccba5;
+        --doc-ruled: #4f7aa8;
+        --doc-nail: #3b3b3b;
+        /* Over a picture, the same in both themes: its veil, the words on it, and a deadline near; a cover without a picture, a quest's and a main quest's. */
+        --veil: #060c1a;
+        --on-veil: #f3f4fa;
+        --on-veil-muted: #c9d0e0;
+        --veil-low: #b3261e;
+        --cover: #2c3f66;
+        --cover-deep: #0e1a33;
+        --cover-main: #6b5320;
+        --cover-main-deep: #1d1a14;
+        /* The seasons, in the calendar alone and always beside their word. */
+        --season-winter: light-dark(#4f7aa8, #9cc0e4);
+        --season-spring: light-dark(#4a8a45, #9ccf8f);
+        --season-summer: light-dark(#b98510, #f2c94c);
+        --season-autumn: light-dark(#b0562a, #e89a6a);
+        /* Depth: shadows on the light page; on the dark one the surfaces' tone, and only what floats casts a shadow. */
+        --lift: 0 1px 2px light-dark(rgb(24 44 76 / 0.08), rgb(0 0 0 / 0.3)), inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.05));
+        --raise: 0 6px 18px -10px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
+        /* The page's light from above, a bar's shadow cast upward from the window's foot, the shade of a little drawn edge. */
+        --glow: light-dark(rgb(66 104 178 / 0.10), rgb(66 104 178 / 0.22));
+        --raise-up: 0 -6px 18px -12px light-dark(rgb(24 44 76 / 0.35), rgb(0 0 0 / 0.6));
+        --shade: light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5));
+        --overlay: 0 14px 32px -12px light-dark(rgb(24 44 76 / 0.45), rgb(0 0 0 / 0.75)), 0 3px 8px -3px light-dark(rgb(24 44 76 / 0.25), rgb(0 0 0 / 0.5));
+        /* One state layer for whatever is clicked, and the least a finger hits. */
+        --state-hover: 0.08;
+        --state-focus: 0.1;
+        --state-press: 0.14;
+        --target: 44px;
+        /* Motion with a name. */
+        --quick: 100ms;
+        --short: 250ms;
+        --medium: 350ms;
+        --flight: 450ms;
+        --long: 600ms;
+        --linger: 900ms;
+        /* The moment a pointer rests on a control before its tooltip shows. */
+        --wait: 500ms;
+        --ease: cubic-bezier(0.2, 0, 0, 1);
+        --ease-out: cubic-bezier(0.05, 0.7, 0.1, 1);
+        --ease-in: cubic-bezier(0.3, 0, 0.8, 0.15);
+        --ease-bounce: cubic-bezier(0.3, 1.4, 0.5, 1);
+        /* Corners on a scale, from a tooltip to the banner: never a pill; round only the tokens and the dots. */
+        --radius-xs: 4px;
+        --radius-s: 6px;
+        --radius-m: 8px;
+        --radius-l: 12px;
+        --radius-xl: 16px;
+        --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    }
+}

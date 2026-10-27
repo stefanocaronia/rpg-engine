@@ -1,0 +1,1251 @@
+/* Scene: the place, who is there, what is happening now; the turns and what the player has at hand. */
+@layer pages {
+    /* In the Scene after what the scene needs, spaced as its other parts; while it goes by turns, over the whole width, and last on a phone. */
+    .place-view > .scene-body > .widget-cards {
+        margin: 0 0 var(--gap);
+    }
+
+    .in-turns > .scene-body > .widget-cards {
+        grid-column: 1 / -1;
+        order: 4;
+        margin: 0;
+    }
+
+    /* Someone to talk to: in the turns and under a token, the name alone, without the chevron. */
+    .present .act.talk {
+        display: block;
+        margin: 0;
+        padding: 2px;
+        text-align: center;
+    }
+
+    /* The Scene section (D-309, VIEW-6): the place's band, its picture with its name over it on a veil, or compact without one; the open scene
+       in a card with the accent at its left; who is there as tokens with names under them; the place's text. */
+    .place-band {
+        position: relative;
+        margin-bottom: var(--gap);
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: linear-gradient(180deg, var(--panel-2), var(--panel));
+        box-shadow: var(--lift), var(--raise);
+        overflow: hidden;
+    }
+
+    /* The picture and the name over it, the text under them (D-444). */
+    .place-shot {
+        position: relative;
+    }
+
+    .place-band.compact > .place-shot {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    /* The text under the picture starts where the name over it does. */
+    .place-about {
+        display: grid;
+        justify-items: start;
+        gap: 4px;
+        padding: 14px 22px 16px;
+    }
+
+    .place-band.compact .place-about {
+        padding: 12px 0 0;
+    }
+
+    .place-about-text > :first-child {
+        margin-top: 0;
+    }
+
+    .place-about-text > :last-child {
+        margin-bottom: 0;
+    }
+
+    /* Three lines, the rest at a click. */
+    .place-about-text.clamped {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+    }
+
+    .place-about-text.clamped > * {
+        display: inline;
+    }
+
+    .place-about-more {
+        padding: 2px 6px;
+        margin-inline-start: -6px;
+        border: 0;
+        border-radius: var(--radius-s);
+        background: none;
+        color: var(--accent);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* While the scene goes by turns, the place in one line: its mark, name and what holds there; its text opens under it. */
+    .place-line {
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    .place-line-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 12px;
+        padding: 8px 12px 8px 16px;
+    }
+
+    .place-line-mark {
+        display: inline-grid;
+        color: var(--accent);
+    }
+
+    .place-line-mark svg.icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .place-line h2 {
+        font-size: 1.125rem;
+    }
+
+    .place-line .place-env {
+        margin: 0;
+    }
+
+    .place-line-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-inline-start: auto;
+        padding: 4px 4px 4px 10px;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: none;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .place-line-toggle[aria-expanded="true"] .chevron {
+        rotate: 180deg;
+    }
+
+    /* The text starts where the place's name does, after its mark. */
+    .place-line-text {
+        padding-block: 12px 14px;
+        padding-inline: 48px 16px;
+        border-top: 1px solid var(--rule);
+    }
+
+    .place-line-text > :first-child {
+        margin-top: 0;
+    }
+
+    .place-line-text > :last-child {
+        margin-bottom: 0;
+    }
+
+    /* While the scene goes by turns the place's picture is a low strip, its name and what holds there over it in one line, the button that opens it at the end;
+       open, the whole band, as the Scene's, and its text under it. */
+    .place-band.folding .place-caption {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 12px;
+    }
+
+    .place-band.folding .place-path {
+        flex-basis: 100%;
+    }
+
+    .place-band.folding .place-env {
+        margin: 0;
+    }
+
+    .place-band.folding .place-line-toggle {
+        align-self: flex-end;
+    }
+
+    .place-view .place-band.low .place-image {
+        height: 112px;
+    }
+
+    .place-band.over.low .place-caption {
+        padding-block: 28px 12px;
+        padding-inline: 22px 18px;
+    }
+
+    .place-band.low .place-path {
+        display: none;
+    }
+
+    .place-band.low h2 {
+        font-size: 1.3rem;
+    }
+
+    .place-image {
+        width: 100%;
+        max-height: 380px;
+        margin: 0;
+        aspect-ratio: 21 / 9;
+        background: var(--disc);
+    }
+
+    /* With a scene open, the picture shrinks to a strip. */
+    .place-view.with-scene .place-image {
+        height: 220px;
+        aspect-ratio: auto;
+    }
+
+    .place-image img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .place-caption {
+        padding: 14px 18px 16px;
+    }
+
+    /* The name over the picture, on a dark veil whatever the theme: its links and the focus ring in gold, as on the dark page. */
+    .place-band.over .place-caption {
+        --accent: var(--gold);
+        --muted: var(--on-veil-muted);
+        --rule: rgb(255 255 255 / 0.22);
+        position: absolute;
+        inset: auto 0 0;
+        padding: 64px 22px 18px;
+        background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--veil) 55%, transparent) 40%, color-mix(in srgb, var(--veil) 88%, transparent));
+        color: var(--on-veil);
+    }
+
+    .place-path {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 0 4px;
+        padding: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+        list-style: none;
+    }
+
+    .place-path li + li::before {
+        content: "›" / "";
+        padding-block: 0;
+        padding-inline: 4px 6px;
+    }
+
+    /* On a wide screen the line under the top says where the place stands (D-333); on a phone, where that line is not, the band. */
+    @media (min-width: 601px) {
+        .place-path {
+            display: none;
+        }
+    }
+
+    .place-band h2 {
+        font-size: 1.9rem;
+        line-height: 1.1;
+    }
+
+    .place-env {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .place-env li {
+        padding: 4px 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--paper) 40%, transparent);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .place-band.over .place-env li {
+        background: rgb(255 255 255 / 0.1);
+        backdrop-filter: blur(4px);
+    }
+
+    .place-env .k {
+        margin-inline-end: 2px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    /* A biome by its picture, as on the map, in place of its word. */
+    .place-env li.biome {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .place-env .key-swatch {
+        width: 22px;
+        height: 16px;
+    }
+
+    .place-env .from {
+        color: var(--muted);
+        font-weight: 400;
+    }
+
+    /* Without a picture, a compact band: the place's drawing on a disc where a token would be. */
+    .place-band.compact {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 16px 18px;
+    }
+
+    .place-band.compact .place-caption {
+        padding: 0;
+    }
+
+    .place-disc {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: 84px;
+        height: 84px;
+        border-radius: var(--radius-l);
+        background: color-mix(in srgb, var(--accent) 14%, var(--panel-2));
+        color: var(--accent);
+    }
+
+    .place-disc svg.icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .scene-now {
+        margin-bottom: var(--gap);
+        padding: 14px 18px 16px;
+        border: 1px solid var(--rule);
+        border-inline-start: 4px solid var(--accent);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    .scene-now header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+    }
+
+    .scene-now h3 {
+        font-size: 1.25rem;
+    }
+
+    .scene-now .eyebrow {
+        flex-basis: 100%;
+    }
+
+    .scene-type {
+        padding: 2px 8px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--ink) 10%, transparent);
+        font-size: 0.8rem;
+        font-weight: 650;
+    }
+
+    .scene-type[data-type="combat"] {
+        background: color-mix(in srgb, var(--low) 16%, transparent);
+        color: var(--low);
+    }
+
+    /* What is happening now, as the master wrote it (SCN-11): the story's voice. */
+    .scene-line {
+        margin: 10px 0 0;
+        font-family: var(--serif);
+        font-size: 1.1rem;
+        font-style: italic;
+        line-height: 1.4;
+    }
+
+    .scene-since {
+        margin-inline-start: auto;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .scene-turn {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .present {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px 10px;
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .present li {
+        position: relative;
+        display: grid;
+        justify-items: center;
+        gap: 6px;
+        width: 76px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 1.2;
+        text-align: center;
+    }
+
+    .present .token {
+        --size: 52px;
+    }
+
+    /* The others after the party, past a line. */
+    .present li.after-party {
+        margin-inline-start: 12px;
+    }
+
+    .present li.after-party::before {
+        content: "";
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        inset-inline-start: -12px;
+        width: 1px;
+        background: var(--rule);
+    }
+
+    .present .count {
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    /* Someone the character does not know: a coin as on the map, the hood or their number light on its dark disc (D-414). */
+    .token.stranger {
+        background: var(--disc);
+        color: #cfd6e4;
+    }
+
+    .token.stranger.numbered {
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: calc(var(--size) * 0.45);
+        font-weight: 700;
+    }
+
+    .token.stranger svg.icon {
+        width: 60%;
+        height: 60%;
+    }
+
+    .place-view > .groups {
+        columns: auto;
+    }
+
+    /* On a phone the picture 16:9 with the name under it; the open scene first. */
+    @media (max-width: 600px) {
+        .place-image {
+            aspect-ratio: 16 / 9;
+        }
+
+        .place-view.with-scene .place-image {
+            height: 120px;
+        }
+
+        .place-view .place-band.low .place-image {
+            height: 72px;
+        }
+
+        .place-band.over.low .place-caption {
+            padding: 10px 14px 12px;
+        }
+
+        .place-band.over .place-about {
+            padding: 12px 14px 14px;
+        }
+
+        .place-line-text {
+            padding-inline: 16px;
+        }
+
+        .place-band.over .place-caption {
+            --accent: inherit;
+            --muted: inherit;
+            --rule: inherit;
+            position: static;
+            padding: 12px 14px 14px;
+            background: none;
+            color: var(--ink);
+        }
+
+        .place-band.over .place-env li {
+            background: color-mix(in srgb, var(--paper) 40%, transparent);
+        }
+
+        .place-band h2 {
+            font-size: 1.5rem;
+        }
+
+        .present li {
+            width: 64px;
+        }
+
+        .present li.after-party {
+            margin-inline-start: 0;
+        }
+
+        .present li.after-party::before {
+            display: none;
+        }
+
+        .scene-since {
+            margin-inline-start: 0;
+        }
+
+        .place-view > .scene-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scene-body > .scene-now {
+            order: -1;
+        }
+
+        .place-band.compact {
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .place-disc {
+            width: 52px;
+            height: 52px;
+        }
+
+        .place-disc svg.icon {
+            width: 30px;
+            height: 30px;
+        }
+    }
+
+    /* The Scene while it goes by turns (D-314, D-315, D-444): the turn's band on top, gold on the player's turn, whoever acts marked by side, the foes red, the
+       companions green, the player gold, as the tokens' rings; the place in a line; the player's character's card beside the map. */
+    .place-view {
+        container: combat / inline-size;
+    }
+
+    .in-turns > .scene-body {
+        display: grid;
+        grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
+        align-items: start;
+        gap: var(--gap);
+    }
+
+    .in-turns > .scene-body > * {
+        margin: 0;
+    }
+
+    .in-turns > .scene-body > :is(.turn-band, .place-line, .place-band) {
+        grid-column: 1 / -1;
+    }
+
+    .turn-side {
+        display: grid;
+        gap: var(--gap);
+        min-width: 0;
+    }
+
+    /* Without a map, the cards side by side over the whole width. */
+    .in-turns > .scene-body:not(:has(> .lm)) > .turn-side {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+
+    /* Where the map beside the card would be too small to read (D-335): the map over the whole width under the place, the cards side by side under it. */
+    @media (min-width: 601px) {
+        @container combat (max-width: 860px) {
+            .in-turns > .scene-body > * {
+                grid-column: 1 / -1;
+            }
+
+            .in-turns > .scene-body > .lm {
+                order: 1;
+            }
+
+            .in-turns > .scene-body > .turn-side {
+                order: 2;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+    }
+
+    /* The band comes in from above as the turns start, and goes as they end, as the master's question folds (D-444); without motion it is simply there. */
+    @media (prefers-reduced-motion: no-preference) {
+        .turn-band.band-in {
+            animation: band-in var(--short) var(--ease-out);
+        }
+
+        .turn-band.band-out {
+            animation: band-in var(--short) var(--ease-in) reverse forwards;
+        }
+    }
+
+    @keyframes band-in {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+    }
+
+    .turn-band {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: "round now next" "line line line";
+        align-items: center;
+        gap: 10px 18px;
+        padding: 14px 18px;
+        border: 1px solid var(--rule);
+        border-inline-start: 4px solid var(--accent);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    .turn-band.other {
+        border-inline-start-color: var(--low);
+    }
+
+    .turn-band.companion {
+        border-inline-start-color: var(--ally);
+    }
+
+    /* The player's own turn: the band in the robot's gold, the words dark on it in both themes. */
+    .turn-band.mine {
+        --muted: color-mix(in srgb, var(--on-gold) 75%, transparent);
+        --rule: color-mix(in srgb, var(--on-gold) 25%, transparent);
+        border-color: var(--gold);
+        background: var(--gold);
+        box-shadow: var(--lift), 0 10px 26px -12px color-mix(in srgb, var(--gold) 70%, transparent);
+        color: var(--on-gold);
+    }
+
+    .round {
+        grid-area: round;
+        display: grid;
+        justify-items: center;
+        margin: 0;
+    }
+
+    .round-number {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .turn-now {
+        grid-area: now;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .turn-now .token {
+        --size: 64px;
+    }
+
+    .turn-now h2 {
+        font-size: 1.9rem;
+        line-height: 1.1;
+        text-wrap: balance;
+    }
+
+    /* What who acts has of the turn: a full pip while free, an empty one once used (D-453). */
+    .turn-marks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        margin: 6px 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .turn-who {
+        display: grid;
+        min-width: 0;
+    }
+
+    .mark-sign {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .mark-pip {
+        width: 9px;
+        height: 9px;
+        margin-inline-start: 2px;
+        border: 2px solid currentColor;
+        transform: rotate(45deg);
+        background: currentColor;
+    }
+
+    .turn-marks .used {
+        color: var(--muted);
+    }
+
+    .turn-marks .used .mark-word {
+        text-decoration: line-through;
+    }
+
+    .turn-marks .used .mark-pip {
+        background: transparent;
+    }
+
+    .turn-next {
+        grid-area: next;
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding-inline-start: 18px;
+        border-inline-start: 1px solid var(--rule);
+    }
+
+    .next-who {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 650;
+    }
+
+    .next-who .token {
+        --size: 32px;
+    }
+
+    .turn-band .scene-line {
+        grid-area: line;
+        margin: 0;
+        padding-top: 10px;
+        border-top: 1px solid var(--rule);
+    }
+
+    /* The scene's title in the band, upright and bold, before its line of now. */
+    .scene-line-title {
+        font-style: normal;
+        font-weight: 700;
+    }
+
+    .turns-card {
+        display: grid;
+        min-width: 0;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    /* The header of a card that is always open (D-419): the look of a card's summary, its icon and title, a note at its end. */
+    .card-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 52px;
+        padding: 8px 16px;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    .card-head h3 {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .card-head-note {
+        flex: none;
+        margin-inline-start: auto;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    /* The order of the turns as small cards (D-419, R1): the place in a strip at the start, told apart by its ground alone, lit in a light yellow on the turn. */
+    .turn-order {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 10px;
+        list-style: none;
+    }
+
+    .turn-row {
+        display: grid;
+        grid-template-columns: 34px auto minmax(0, 1fr);
+        align-items: stretch;
+        overflow: hidden;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+    }
+
+    .turn-row .token {
+        --size: 40px;
+        align-self: center;
+        margin: 8px 10px;
+    }
+
+    .turn-place {
+        display: grid;
+        place-items: center;
+        background: color-mix(in srgb, var(--ink) 5%, transparent);
+        color: var(--muted);
+        font-weight: 700;
+    }
+
+    /* Whoever acts: the strip lit, the card's edge in gold. */
+    .turn-row.now {
+        border-color: color-mix(in srgb, var(--gold) 70%, var(--rule));
+    }
+
+    .turn-row.now .turn-place {
+        background: light-dark(color-mix(in srgb, var(--gold) 45%, var(--panel-2)), color-mix(in srgb, var(--gold) 85%, var(--panel-2)));
+        color: light-dark(var(--ink), var(--on-gold));
+    }
+
+    .turn-main {
+        display: grid;
+        align-content: center;
+        gap: 5px;
+        min-width: 0;
+        padding-block: 8px;
+        padding-inline: 0 10px;
+    }
+
+    .turn-name {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-size: inherit;
+        font-weight: 700;
+        /* Two lines of a like length: never a copy's number alone on the second. */
+        text-wrap: balance;
+    }
+
+    .turn-name .you {
+        padding: 1px 6px;
+        border-radius: var(--radius-xs);
+        background: var(--gold);
+        color: var(--on-gold);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    /* The bar of one of the party, as in the strip, the main's whole width. */
+    .turn-main .bar-line {
+        display: flex;
+        font-size: 0.85rem;
+    }
+
+    .turn-main .bar {
+        flex: 1 1 auto;
+        max-width: 160px;
+    }
+
+    .turn-facts {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .turn-facts:empty {
+        display: none;
+    }
+
+    /* On the table beside the page the order is compact: a smaller token, the name over the bar of one of the party, a foe's look and the state's icons at the
+       end of the name's line; past eight or so the list scrolls inside, whoever acts kept in sight. */
+    .turns-card.on-table .turn-order {
+        /* Each row its own height: the list scrolls, its rows never shrink. */
+        grid-auto-rows: max-content;
+        gap: 6px;
+        max-height: min(30rem, 42vh);
+        padding: 8px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+    }
+
+    .turns-card.on-table .turn-row {
+        grid-template-columns: 26px auto minmax(0, 1fr);
+    }
+
+    .turns-card.on-table .turn-row .token {
+        --size: 32px;
+        margin: 6px 8px;
+    }
+
+    .turns-card.on-table .turn-main {
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 8px;
+        row-gap: 3px;
+        padding-block: 6px;
+        padding-inline-end: 8px;
+    }
+
+    .turns-card.on-table .turn-name {
+        grid-column: 1;
+        gap: 6px;
+        font-size: 0.85rem;
+    }
+
+    .turns-card.on-table .turn-main > .bar-line {
+        grid-column: 1;
+        font-size: 0.8rem;
+    }
+
+    .turns-card.on-table .turn-facts {
+        grid-row: 1;
+        grid-column: 2;
+        justify-content: end;
+    }
+
+    .turns-card.on-table .turn-main > :is(.keeping, .person-panel) {
+        grid-column: 1 / -1;
+    }
+
+    /* A foe's wound in words (D-238): never a number. */
+    .wound {
+        justify-self: start;
+        padding: 1px 8px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--ink) 8%, transparent);
+        font-size: 0.8rem;
+        font-weight: 650;
+    }
+
+    .wound.low {
+        background: color-mix(in srgb, var(--low) 16%, transparent);
+        color: var(--low);
+    }
+
+    .wound.down {
+        background: transparent;
+        color: var(--muted);
+        text-decoration: line-through;
+    }
+
+    .keeping {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    /* What the player has at hand, one panel: the name, what they keep or the death saves, the line of the fields the system names, its groups as sections. */
+    .at-hand {
+        display: grid;
+        /* Never wider than the panel: a long preview of a group would stretch it past a phone's screen. */
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        align-content: start;
+        min-width: 0;
+        padding: 0 16px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+        /* Its width from where it stands, never from what it holds: stretched in the phone's column, whose items start. */
+        container: at-hand / inline-size;
+        align-self: stretch;
+    }
+
+    .at-hand:has(.person-panel) {
+        padding-bottom: 14px;
+    }
+
+    /* Its header the card's whole width, as every card's (D-419). */
+    .at-hand > .card-head {
+        margin: 0 -16px;
+    }
+
+    /* With more than one player character in the fight, their tokens in its header, the one whose card shows ringed in the accent (D-480 (7)). */
+    .at-hand-switch {
+        display: flex;
+        gap: 4px;
+        margin-inline-start: auto;
+    }
+
+    .at-hand-switch button {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: none;
+        cursor: pointer;
+    }
+
+    .at-hand-switch .token {
+        --size: 30px;
+    }
+
+    .at-hand-switch [aria-pressed="false"] .token {
+        opacity: 0.7;
+    }
+
+    .at-hand-switch [aria-pressed="true"] .token {
+        box-shadow: var(--coin-shadow), 0 0 0 2px var(--panel), 0 0 0 4px var(--accent);
+    }
+
+    @media (pointer: coarse) {
+        .at-hand-switch button {
+            width: var(--target);
+            height: var(--target);
+        }
+    }
+
+    /* In a narrow panel, as beside the map, the name keeps its whole width and what the character is goes under it: never the name cut. */
+    @container at-hand (max-width: 400px) {
+        .at-hand > .card-head {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            column-gap: 12px;
+        }
+
+        .at-hand > .card-head > .card-icon {
+            grid-row: 1 / 3;
+        }
+
+        .at-hand > .card-head > h3 {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .at-hand > .card-head > .card-head-note {
+            grid-area: 2 / 2;
+            margin: 0;
+        }
+
+        .at-hand > .card-head > .icon-button {
+            grid-area: 1 / 3 / 3;
+        }
+
+        /* With the tokens of more than one player character, which take the place of what the character is: one line, the tokens before the way to the sheet. */
+        .at-hand > .card-head:has(.at-hand-switch) {
+            grid-template-columns: auto minmax(0, 1fr) auto auto;
+        }
+
+        .at-hand > .card-head > .at-hand-switch {
+            grid-area: 1 / 3;
+        }
+
+        .at-hand > .card-head:has(.at-hand-switch) > :is(.card-icon, .icon-button) {
+            grid-row: 1;
+        }
+
+        .at-hand > .card-head:has(.at-hand-switch) > .icon-button {
+            grid-column: 4;
+        }
+    }
+
+    /* The sheet's cards inside it, as its sections. */
+    .at-hand .group {
+        margin: 0 -16px;
+        border: 0;
+        border-top: 1px solid var(--rule);
+        border-radius: 0;
+        background: none;
+        box-shadow: none;
+    }
+
+    .at-hand .group > summary {
+        border-radius: 0;
+    }
+
+    .at-hand .group:last-child > summary {
+        border-radius: 0 0 calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px);
+    }
+
+    /* The fields at hand: boxes that share the panel's width. */
+    .at-hand .line-value {
+        --box: 64px;
+        flex: 1 1 auto;
+        padding: 8px;
+    }
+
+    /* While the scene goes by turns the Scene's name and picture are gold (D-444); on the player's turn, from another section, they pulse, never a fill that
+       looks like the section chosen; and a notice on top that leads there (D-315, D-349, D-351). Without motion, gold still. */
+    .sections a:is(.in-turns, .your-turn) {
+        color: var(--warn);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .sections a.your-turn {
+            animation: turn-pulse 1.6s ease-in-out infinite;
+        }
+    }
+
+    @keyframes turn-pulse {
+        0%,
+        100% {
+            color: var(--muted);
+        }
+
+        50% {
+            color: var(--warn);
+        }
+    }
+
+    .turn-notice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 var(--gap);
+        padding: 12px 16px;
+        border-radius: var(--radius-l);
+        background: var(--gold);
+        box-shadow: var(--overlay);
+        color: var(--on-gold);
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .turn-notice svg.icon {
+        width: 22px;
+        height: 22px;
+    }
+
+    .turn-notice-go {
+        margin-inline-start: auto;
+        padding: 4px 12px;
+        border-radius: var(--radius-m);
+        background: color-mix(in srgb, var(--on-gold) 12%, transparent);
+    }
+
+    @media (max-width: 600px) {
+        /* On a phone who acts takes the whole width, the marks under them; the round goes beside who comes next (D-453). */
+        .turn-band {
+            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-areas: "now now" "next round" "line line";
+        }
+
+        .turn-who {
+            display: contents;
+        }
+
+        .turn-now {
+            flex-wrap: wrap;
+            row-gap: 8px;
+        }
+
+        .turn-who > [aria-live] {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        .turn-marks {
+            flex-basis: 100%;
+            margin: 0;
+        }
+
+        .round {
+            align-self: stretch;
+            align-content: center;
+            margin-inline-start: -18px;
+            padding-block-start: 8px;
+            padding-inline-start: 18px;
+            border-top: 1px solid var(--rule);
+        }
+
+        .round-number {
+            font-size: 1.5rem;
+        }
+
+        .next-who {
+            text-wrap: balance;
+        }
+
+        .turn-next {
+            padding: 8px 0 0;
+            border-top: 1px solid var(--rule);
+            border-inline-start: 0;
+        }
+
+        .turn-now h2 {
+            font-size: 1.4rem;
+        }
+
+        .turn-now .token {
+            --size: 48px;
+        }
+
+        /* On a phone the band, the place, the order, the map, then the character's card; on the player's turn the card comes up under the place. */
+        .in-turns > .scene-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .in-turns > .scene-body > .turn-band {
+            order: -3;
+        }
+
+        .in-turns > .scene-body > :is(.place-line, .place-band) {
+            order: -2;
+        }
+
+        .turn-side {
+            display: contents;
+        }
+
+        .in-turns .turns-card {
+            order: 1;
+        }
+
+        .in-turns > .scene-body > .lm {
+            order: 2;
+        }
+
+        .in-turns .at-hand {
+            order: 3;
+        }
+
+        .in-turns:has(.turn-band.mine) .at-hand {
+            order: -1;
+        }
+
+        /* The dice's button stands over the end of the rows as the page scrolls: their names and icons keep clear of its column (D-419). */
+        .turn-main {
+            padding-inline-end: 60px;
+        }
+    }
+}

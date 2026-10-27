@@ -1,0 +1,194 @@
+/* Paper: the documents found, drawn as what they are. */
+@layer parts {
+    /* A document on its paper, light in both themes: what it is told by drawing alone, its words always plain text in the story's serif. */
+    .paper {
+        color-scheme: light;
+        position: relative;
+        max-width: 62ch;
+        margin: 8px 16px 20px;
+        padding: 28px 30px 30px;
+        border-radius: var(--radius-xs);
+        background: var(--doc-paper);
+        box-shadow: 0 1px 2px color-mix(in srgb, var(--doc-ink) 20%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--doc-ink) 60%, transparent);
+        color: var(--doc-ink);
+        font-family: var(--serif);
+        font-size: 1.125rem;
+        line-height: 1.6;
+    }
+
+    .paper .markdown p,
+    .paper .markdown ul {
+        line-height: 1.6;
+        margin-bottom: 0.8em;
+    }
+
+    .paper .markdown > :last-child {
+        margin-bottom: 0;
+    }
+
+    .paper .md-link {
+        color: var(--doc-link);
+    }
+
+    .paper .markdown blockquote {
+        border-color: var(--doc-rule);
+        color: var(--doc-note);
+    }
+
+    /* A secret found in it, as a note in its margin: in pencil, dashed off the text. */
+    .paper .md-secret {
+        margin-top: 1em;
+        padding: 4px 0;
+        padding-inline-start: 14px;
+        border-inline-start: 2px dashed var(--doc-rule);
+        border-radius: 0;
+        background: none;
+        color: var(--doc-note);
+        font-style: italic;
+    }
+
+    .paper .md-secret .eyebrow {
+        color: var(--doc-note);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-style: normal;
+    }
+
+    .paper-picture {
+        display: block;
+        margin-bottom: 16px;
+        border-radius: var(--radius-xs);
+    }
+
+    .paper-picture img {
+        display: block;
+        width: 100%;
+        border-radius: var(--radius-xs);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--doc-ink) 20%, transparent);
+    }
+
+    .paper-mark {
+        position: absolute;
+        pointer-events: none;
+    }
+
+    /* A letter: folded in three, sealed in wax at its foot. */
+    .paper.look-letter {
+        padding-bottom: 56px;
+        background:
+            linear-gradient(to bottom, transparent calc(33.3% - 1px), color-mix(in srgb, var(--doc-ink) 7%, transparent) 33.3%, transparent calc(33.3% + 2px)),
+            linear-gradient(to bottom, transparent calc(66.6% - 1px), color-mix(in srgb, var(--doc-ink) 7%, transparent) 66.6%, transparent calc(66.6% + 2px)),
+            var(--doc-paper);
+    }
+
+    .paper.look-letter .paper-mark {
+        inset-block-end: 14px;
+        inset-inline-end: 22px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 38% 34%, rgb(255 255 255 / 0.3), transparent 45%), var(--doc-seal);
+        box-shadow: inset 0 0 0 4px rgb(0 0 0 / 0.14), 0 1px 2px rgb(0 0 0 / 0.35);
+    }
+
+    /* A notice: nailed up, a little askew. */
+    .paper.look-notice {
+        padding-top: 40px;
+        rotate: -0.6deg;
+    }
+
+    .paper.look-notice .paper-mark {
+        top: 12px;
+        left: calc(50% - 6px);
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--doc-nail) 50%, white), var(--doc-nail) 70%);
+        box-shadow: 0 2px 2px rgb(0 0 0 / 0.35);
+    }
+
+    /* A page torn from a book: its top edge ragged. */
+    .paper.look-page {
+        padding-top: 36px;
+        border-radius: 0 0 var(--radius-xs) var(--radius-xs);
+    }
+
+    .paper.look-page .paper-mark {
+        inset-block-start: 0;
+        inset-inline: 0;
+        height: 14px;
+        background:
+            linear-gradient(160deg, var(--panel) 40%, transparent 41%) 0 0 / 23px 14px,
+            linear-gradient(200deg, var(--panel) 40%, transparent 41%) 0 0 / 23px 14px,
+            linear-gradient(150deg, var(--panel) 30%, transparent 31%) 9px 0 / 17px 10px,
+            linear-gradient(210deg, var(--panel) 30%, transparent 31%) 9px 0 / 17px 10px;
+    }
+
+    /* A diary: ruled lines a line apart, and its margin. */
+    .paper.look-diary {
+        padding-inline-start: 44px;
+        background:
+            linear-gradient(to right, transparent 30px, color-mix(in srgb, var(--doc-seal) 35%, transparent) 30px 31px, transparent 31px),
+            repeating-linear-gradient(to bottom, transparent 0 calc(1.6em - 1px), color-mix(in srgb, var(--doc-ruled) 22%, transparent) calc(1.6em - 1px) 1.6em) 0 21px,
+            var(--doc-paper);
+        background-repeat: no-repeat, repeat, no-repeat;
+    }
+
+    [dir="rtl"] .paper.look-diary {
+        background:
+            linear-gradient(to left, transparent 30px, color-mix(in srgb, var(--doc-seal) 35%, transparent) 30px 31px, transparent 31px),
+            repeating-linear-gradient(to bottom, transparent 0 calc(1.6em - 1px), color-mix(in srgb, var(--doc-ruled) 22%, transparent) calc(1.6em - 1px) 1.6em) 0 21px,
+            var(--doc-paper);
+    }
+
+    .paper.look-diary .markdown p,
+    .paper.look-diary .markdown ul {
+        margin-bottom: 1.6em;
+    }
+
+    /* A scroll: its two ends rolled. */
+    .paper.look-scroll {
+        padding-block: 40px;
+        background:
+            linear-gradient(to bottom, color-mix(in srgb, var(--doc-ink) 22%, transparent), color-mix(in srgb, var(--doc-ink) 4%, transparent) 14px, transparent 22px, transparent calc(100% - 22px), color-mix(in srgb, var(--doc-ink) 4%, transparent) calc(100% - 14px), color-mix(in srgb, var(--doc-ink) 22%, transparent)),
+            var(--doc-paper);
+    }
+
+    /* A map: the paper squared under its drawing. */
+    .paper.look-map {
+        background:
+            repeating-linear-gradient(to right, transparent 0 23px, color-mix(in srgb, var(--m-ink) 6%, transparent) 23px 24px),
+            repeating-linear-gradient(to bottom, transparent 0 23px, color-mix(in srgb, var(--m-ink) 6%, transparent) 23px 24px),
+            var(--m-land);
+    }
+
+    /* An inscription: cut in stone, its lines in the middle. */
+    .paper.look-inscription {
+        background: radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.35), transparent 60%), var(--doc-stone);
+        color: var(--doc-carved);
+        letter-spacing: 0.03em;
+        text-shadow: 0 1px 0 rgb(255 255 255 / 0.65);
+        text-align: center;
+    }
+
+    /* A note: smaller, its corner folded. */
+    .paper.look-note {
+        max-width: 46ch;
+        background: linear-gradient(225deg, var(--panel) 0 14px, var(--doc-fold) 14px 21px, var(--doc-paper) 21px);
+    }
+
+    [dir="rtl"] .paper.look-note {
+        background: linear-gradient(135deg, var(--panel) 0 14px, var(--doc-fold) 14px 21px, var(--doc-paper) 21px);
+    }
+
+    @media (max-width: 600px) {
+        .paper {
+            margin-inline: 10px;
+            padding-inline: 20px;
+            font-size: 1rem;
+        }
+
+        .paper.look-diary {
+            padding-inline-start: 40px;
+        }
+    }
+}

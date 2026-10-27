@@ -1,0 +1,145 @@
+/* The player's actions: the sentences after they go, and the sheet of an action. */
+@layer parts {
+    /* The dice's button (D-284): a square with soft corners, always at hand; open, a cross, or with dice chosen the throw itself, its right edge still. */
+    /* The player's sentences after they go (D-495), low at the side of the dice wherever the page is: the sentence in quotes, how it stands in words and a sign. */
+    .act-strip {
+        position: fixed;
+        inset-inline: 20px 96px;
+        bottom: 20px;
+        z-index: 21;
+        display: grid;
+        gap: 6px;
+        max-width: 560px;
+    }
+
+    .act-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        padding: 8px 8px 8px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        font-size: 0.85rem;
+    }
+
+    .act-line.said,
+    .act-line.called {
+        border-color: var(--accent);
+    }
+
+    .act-line.lost {
+        border-color: var(--low);
+    }
+
+    .act-sign {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+        color: var(--accent);
+    }
+
+    .act-line.heard .act-sign {
+        background: color-mix(in srgb, var(--ally) 16%, var(--panel));
+        color: var(--ally);
+    }
+
+    .act-line.lost .act-sign {
+        background: color-mix(in srgb, var(--low) 14%, var(--panel));
+        color: var(--low);
+    }
+
+    .act-sign svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .act-said {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .act-said q {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        font-weight: 600;
+    }
+
+    .act-state {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .act-line.lost .act-state {
+        color: var(--low);
+        font-weight: 600;
+    }
+
+    .act-small {
+        flex: 0 0 auto;
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: none;
+        font-size: 0.85rem;
+        font-weight: 650;
+    }
+
+    .act-close {
+        flex: 0 0 auto;
+        width: 36px;
+        height: 36px;
+    }
+
+    .act-strip .act-problem {
+        padding: 8px 12px;
+        border-radius: var(--radius-m);
+        background: var(--float);
+        box-shadow: var(--overlay);
+    }
+
+    /* On a phone the whole width over the dice's button, which is over the bar; a sentence's button under its words. */
+    @media (max-width: 600px) {
+        .act-strip {
+            inset-inline: 12px;
+            bottom: 152px;
+            max-width: none;
+        }
+
+        .act-line {
+            flex-wrap: wrap;
+        }
+
+        .act-said {
+            flex-basis: 0;
+        }
+
+        .act-small {
+            order: 1;
+            margin-inline-start: 38px;
+        }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .act-line {
+            animation: act-in var(--medium) var(--ease-out);
+        }
+    }
+
+    @keyframes act-in {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+    }
+}

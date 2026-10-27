@@ -1,0 +1,902 @@
+/* Dice and coins: the plate, the dice and coins as chips, the dice's button and the tray. */
+@layer parts {
+    /* The dice (D-278): thrown over the page, the number large below, the button always at hand. */
+    .dice-stage {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 20;
+        transition: opacity var(--long) linear;
+    }
+
+    .dice-stage.fading {
+        opacity: 0;
+    }
+
+    /* The plate (D-284): whose roll and which, the dice one by one, the total large on the right; a rare face's words in a band below. */
+    .dice-result {
+        /* A drawer of the table (D-366): it slides out of the window's foot, cut where it comes from, as from under a table's edge. Where it stands across,
+           centred on a wide screen, which its beat and shudder keep, and how much of it is still in the drawer. */
+        --plate-x: -50%;
+        --plate-in: 0%;
+        --plate-shadow: 0 -12px 30px -14px light-dark(rgb(24 44 76 / 0.4), rgb(0 0 0 / 0.7));
+        position: fixed;
+        left: 50%;
+        bottom: 0;
+        z-index: 23;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "head total" "dice total" "rare rare";
+        align-items: center;
+        gap: 10px 20px;
+        width: min(460px, calc(100vw - 24px));
+        margin: 0;
+        padding: 16px 20px;
+        /* A roll that counts is drawn full, on its three sides out of the drawer: more than a free one, less than a rare face (D-366). */
+        border: 2px solid var(--accent);
+        border-bottom: 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        background: var(--float);
+        box-shadow: var(--plate-shadow);
+        opacity: 0;
+        transform: translate(var(--plate-x), var(--plate-in));
+        clip-path: inset(-48px -48px var(--plate-in) -48px);
+        pointer-events: none;
+    }
+
+    /* It comes out quickly, with a little spring. */
+    .dice-result.shown {
+        --plate-in: 0%;
+        opacity: 1;
+        transition: opacity var(--short) var(--ease-out), transform var(--short) var(--ease-bounce), clip-path var(--short) var(--ease-bounce);
+    }
+
+    /* Its twin, never seen, out where the plate will be: measured before the dice fly, so that they land above it (D-366). */
+    .dice-result.measured {
+        --plate-in: 0%;
+        visibility: hidden;
+    }
+
+    /* It goes where it stands, fading with the dice, or flying into its line of the rolls (D-281, D-303). */
+    .dice-result.going {
+        --plate-in: 0%;
+        opacity: 0;
+        transition: opacity var(--long) var(--ease-in);
+    }
+
+    /* With motion it waits in the drawer, under the window's foot. */
+    @media (prefers-reduced-motion: no-preference) {
+        .dice-result {
+            --plate-in: 100%;
+        }
+    }
+
+    .plate-head {
+        grid-area: head;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .plate-head .token {
+        --size: 32px;
+    }
+
+    .plate-what {
+        display: grid;
+        min-width: 0;
+    }
+
+    .plate-title {
+        overflow: hidden;
+        font-size: 1.125rem;
+        font-weight: 700;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .plate-under {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px 8px;
+    }
+
+    .plate-tag {
+        padding: 1px 6px;
+        border: 1px dashed var(--muted);
+        border-radius: var(--radius-xs);
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* The dice of a roll as chips (D-292): small in the rolls, large on the plate; a dropped one empty, without striking a single figure out, which would read as a cross. */
+    .dice-faces {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .die-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 24px;
+        padding-block: 0;
+        padding-inline: 5px 7px;
+        border-radius: var(--radius-s);
+        background: var(--panel-2);
+        font-size: 0.85rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .die-chip svg.die {
+        width: 14px;
+        height: 14px;
+        color: var(--accent);
+    }
+
+    /* The coins of a toss as the coin shows them (D-524 (1)), in its own palette, the same in every theme: gold, the sun dark on it, the moon gold on the dark; the
+       rim's edge a deeper gold, which the light page needs. */
+    .coin-faces {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .coin-faces li {
+        display: flex;
+    }
+
+    svg.coin-face {
+        flex: none;
+        width: 22px;
+        height: 22px;
+    }
+
+    .coin-face .coin-rim {
+        fill: #d9a93f;
+        stroke: #8a6418;
+        stroke-width: 0.8;
+    }
+
+    .coin-face.heads .coin-field {
+        fill: #d9a93f;
+        stroke: #a87d24;
+        stroke-width: 0.6;
+    }
+
+    .coin-face.tails .coin-field,
+    .coin-face.heads .coin-picture {
+        fill: #1c1206;
+    }
+
+    .coin-face.tails .coin-picture {
+        fill: #d9a93f;
+    }
+
+    /* A die of a package's roll that went well or badly for who rolled it, by its colour beside its face (D-507). */
+    .die-chip.tone-good {
+        box-shadow: inset 0 0 0 1.5px var(--ally);
+        color: var(--ally);
+    }
+
+    .die-chip.tone-bad {
+        box-shadow: inset 0 0 0 1.5px var(--low);
+        color: var(--low);
+    }
+
+    .die-chip:is(.tone-good, .tone-bad) svg.die {
+        color: currentColor;
+    }
+
+    .die-chip.dropped {
+        background: transparent;
+        box-shadow: inset 0 0 0 1px var(--rule);
+        color: var(--muted);
+    }
+
+    .die-chip.dropped svg.die {
+        color: var(--muted);
+    }
+
+    .die-chip s {
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    .die-chip.rare-highest {
+        background: var(--gold);
+        color: var(--on-gold);
+    }
+
+    .die-chip.rare-lowest {
+        background: var(--low);
+        color: var(--float);
+    }
+
+    .die-chip:is(.rare-highest, .rare-lowest) svg.die {
+        color: inherit;
+    }
+
+    .die-modifier {
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .plate-dice {
+        grid-area: dice;
+        gap: 8px;
+    }
+
+    /* On the plate a die that does not count shows a moment, then shrinks away as it burns on the table: the line of the rolls keeps it (D-398). */
+    .plate-dice .die-chip.dropped {
+        display: none;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .plate-dice .die-chip.dropped {
+            display: inline-flex;
+        }
+
+        .dice-result.shown .plate-dice .die-chip.dropped {
+            overflow: hidden;
+            animation: chip-goes var(--short) var(--ease-in) var(--flight) forwards;
+        }
+    }
+
+    @keyframes chip-goes {
+        to {
+            max-width: 0;
+            margin-inline-end: -8px;
+            padding-inline: 0;
+            opacity: 0;
+        }
+    }
+
+    .plate-dice .die-chip {
+        max-width: 160px;
+        gap: 6px;
+        height: 40px;
+        padding-block: 0;
+        padding-inline: 7px 10px;
+        border-radius: var(--radius-m);
+        font-size: 1.3rem;
+    }
+
+    /* On the plate a die that does not count is grey, as it turns on the floor before it burns (D-366). */
+    .plate-dice .die-chip.dropped {
+        background: light-dark(#b4b8c0, #59606f);
+        box-shadow: none;
+        color: light-dark(#2e3442, #e8ebf1);
+    }
+
+    .plate-dice .die-chip.dropped svg.die {
+        color: inherit;
+    }
+
+    .plate-dice .die-chip svg.die {
+        width: 22px;
+        height: 22px;
+    }
+
+    .plate-dice svg.coin-face {
+        width: 40px;
+        height: 40px;
+    }
+
+    .plate-dice .die-chip s {
+        font-size: 0.85rem;
+    }
+
+    .plate-dice .die-modifier {
+        font-size: 1.125rem;
+    }
+
+    .plate-total {
+        grid-area: total;
+        align-self: stretch;
+        display: grid;
+        place-items: center;
+        min-width: 2.2ch;
+        padding-inline-start: 20px;
+        border-inline-start: 1px solid var(--rule);
+        color: var(--accent);
+        font-size: 3.5rem;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.02em;
+    }
+
+    .plate-rare {
+        grid-area: rare;
+        margin: 2px -20px -16px;
+        padding: 8px 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    /* A rare face (D-281): gold for the highest, red for the lowest, and its words, so that the colour is not all that says it. */
+    .dice-result.highest {
+        border-color: var(--gold);
+        box-shadow: var(--plate-shadow), 0 0 32px -6px color-mix(in srgb, var(--gold) 60%, transparent);
+    }
+
+    .dice-result.highest .plate-rare {
+        background: var(--gold);
+        color: var(--on-gold);
+    }
+
+    .dice-result.lowest {
+        border-color: var(--low);
+        box-shadow: var(--plate-shadow);
+    }
+
+    .dice-result.lowest .plate-rare {
+        background: var(--low);
+        color: var(--float);
+    }
+
+    .dice-result.lowest .plate-total {
+        color: var(--low);
+    }
+
+    /* The plate beats once for the highest face and shudders for the lowest (D-363). */
+    @media (prefers-reduced-motion: no-preference) {
+        .dice-result.shown.highest {
+            animation: plate-beat var(--flight) var(--ease-out) var(--quick);
+        }
+
+        .dice-result.shown.lowest {
+            animation: plate-shudder var(--flight) var(--ease) var(--quick);
+        }
+    }
+
+    @keyframes plate-beat {
+        0%,
+        100% {
+            transform: translate(var(--plate-x), 0) scale(1);
+        }
+
+        35% {
+            transform: translate(var(--plate-x), 0) scale(1.06);
+        }
+
+        65% {
+            transform: translate(var(--plate-x), 0) scale(0.99);
+        }
+    }
+
+    @keyframes plate-shudder {
+        0%,
+        100% {
+            transform: translate(var(--plate-x), 0);
+        }
+
+        20% {
+            transform: translate(calc(var(--plate-x) - 6px), 0);
+        }
+
+        40% {
+            transform: translate(calc(var(--plate-x) + 5px), 0);
+        }
+
+        60% {
+            transform: translate(calc(var(--plate-x) - 3px), 0);
+        }
+
+        80% {
+            transform: translate(calc(var(--plate-x) + 2px), 0);
+        }
+    }
+
+    /* A free throw counts for nothing: its plate is only drawn in thin, quiet dashes, its total in ink, gold marking what counts (D-279, D-366). */
+    .dice-result.free {
+        border: 1px dashed color-mix(in srgb, var(--rule), var(--muted) 40%);
+        border-bottom: 0;
+    }
+
+    .dice-result.free:not(.highest, .lowest) {
+        box-shadow: var(--plate-shadow);
+    }
+
+    /* What the faces of a package's roll mean, in place of the total: words, smaller (D-507). */
+    .plate-total.plate-says {
+        max-width: 9em;
+        color: var(--ink);
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: normal;
+        text-align: center;
+        text-wrap: balance;
+    }
+
+    .dice-result.free .plate-total {
+        color: var(--ink);
+    }
+
+    /* The line of the rolls a plate flew into lights up as it lands. */
+    /* The pictures of the dice and the controls: lines in the colour of the text around them. */
+    svg.die,
+    svg.icon {
+        flex: none;
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
+
+    svg.icon {
+        stroke-width: 1.75;
+    }
+
+    .die-icons {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* Two dice of a roll, one in front of the other: the front one hides the lines of the one behind it. */
+    .die-icons svg.die + svg.die {
+        margin-inline-start: -12px;
+    }
+
+    .die-icons svg.die path {
+        fill: var(--die-ground, transparent);
+    }
+
+    /* Of two dice one counts: the other faded (D-297). */
+    .die-icons svg.die.faded {
+        opacity: 0.45;
+    }
+
+    .die-more {
+        margin-inline-start: 2px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .dice-fab {
+        position: fixed;
+        inset-inline-end: 20px;
+        bottom: 20px;
+        z-index: 22;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .dice-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-width: 56px;
+        height: 56px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: var(--radius-xl);
+        background: var(--gold);
+        color: var(--on-gold);
+        box-shadow: var(--overlay);
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .dice-button :is(svg.die, svg.icon) {
+        width: 28px;
+        height: 28px;
+    }
+
+    .dice-button.extended {
+        --die-ground: var(--gold);
+        padding-block: 0;
+        padding-inline: 16px 22px;
+    }
+
+    .dice-button .notation {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* The free tray: a column of dice over the button, as on a virtual tabletop, the d20 nearest to the thumb; it counts for nothing (D-279, D-284). */
+    .dice-tray {
+        position: fixed;
+        inset-inline-end: 20px;
+        bottom: 88px;
+        z-index: 22;
+        display: grid;
+        justify-items: end;
+        gap: 6px;
+    }
+
+    /* Above the dice, the sound's switch alone. */
+    .tray-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        padding: 2px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .tray-note .icon-button {
+        width: 36px;
+        height: 36px;
+        color: var(--ink);
+    }
+
+    .tray-note svg.icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .tray-dice {
+        display: grid;
+        justify-items: end;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .tray-dice li {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* With two dice or more of a kind, which count (D-337), on the die's line left of its minus, as tall: all, the highest, the lowest; the one chosen in gold. */
+    .tray-keep {
+        display: inline-flex;
+        gap: 2px;
+        height: 36px;
+        padding: 2px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        box-shadow: var(--overlay);
+    }
+
+    .tray-keep button {
+        position: relative;
+        height: 30px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: var(--radius-s);
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    /* A place to touch as tall as the dice's, wider than the pill shows. */
+    .tray-keep button::before {
+        content: "";
+        position: absolute;
+        inset: -7px 0;
+    }
+
+    .tray-keep button[aria-checked="true"] {
+        background: var(--gold);
+        color: var(--on-gold);
+    }
+
+    /* The throw's button: Roll, the dice as pictures, the number added. */
+    .tray-roll {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .tray-roll .die-icons svg.die {
+        width: 22px;
+        height: 22px;
+    }
+
+    .tray-die {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        column-gap: 6px;
+        width: 100px;
+        height: 44px;
+        padding-block: 0;
+        padding-inline: 12px 9px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        color: var(--ink);
+        font-weight: 700;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .tray-die svg.die {
+        width: 24px;
+        height: 24px;
+        color: var(--accent);
+    }
+
+    /* The coin's button: the coin itself where a die's picture is, its count where a die's name is. */
+    .tray-die svg.coin-face {
+        width: 26px;
+        height: 26px;
+    }
+
+    /* Of the coins chosen, the first two, one before the other, as two dice. */
+    .die-icons svg.coin-face + svg.coin-face {
+        margin-inline-start: -10px;
+    }
+
+    .tray-die:disabled,
+    .tray-die[aria-disabled="true"],
+    .tray-double[aria-disabled="true"],
+    .tray-modifier button[aria-disabled="true"] {
+        opacity: 0.55;
+        cursor: default;
+    }
+
+    .tray-dice .chosen .tray-die {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 16%, var(--float));
+        box-shadow: var(--overlay), inset 0 0 0 1px var(--accent);
+    }
+
+    .tray-count {
+        margin-inline-end: 4px;
+        padding: 1px 6px;
+        border-radius: var(--radius-xs);
+        background: var(--accent);
+        color: var(--paper);
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tray-less {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        color: var(--ink);
+        cursor: pointer;
+    }
+
+    .tray-less svg.icon,
+    .tray-modifier svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .tray-modifier {
+        display: grid;
+        grid-template-columns: 32px 1fr 32px;
+        align-items: center;
+        width: 100px;
+        height: 44px;
+        padding: 0 3px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        text-align: center;
+    }
+
+    .tray-modifier button {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 36px;
+        padding: 0;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .tray-modifier output {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tray-modifier-label {
+        display: block;
+        color: var(--muted);
+        font-size: 0.62rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        text-transform: uppercase;
+    }
+
+    /* The tray's last row: the dice doubled, as a critical hit's damage, beside the number added. */
+    .tray-last {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .tray-double {
+        min-width: 44px;
+        height: 44px;
+        padding: 0 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .tray-double[aria-pressed="true"] {
+        border-color: transparent;
+        background: var(--gold);
+        color: var(--on-gold);
+    }
+
+    /* The column rises from the button, a chip after the other. */
+    @media (prefers-reduced-motion: no-preference) {
+        .dice-tray > *,
+        .tray-dice li {
+            animation: tray-in var(--short) var(--ease-out) backwards;
+        }
+
+        .tray-dice li:nth-last-child(2) {
+            animation-delay: calc(var(--quick) * 1 / 5);
+        }
+
+        .tray-dice li:nth-last-child(3) {
+            animation-delay: calc(var(--quick) * 2 / 5);
+        }
+
+        .tray-dice li:nth-last-child(4) {
+            animation-delay: calc(var(--quick) * 3 / 5);
+        }
+
+        .tray-dice li:nth-last-child(5) {
+            animation-delay: calc(var(--quick) * 4 / 5);
+        }
+
+        .tray-dice li:nth-last-child(6) {
+            animation-delay: calc(var(--quick) * 5 / 5);
+        }
+
+        .tray-dice li:nth-last-child(7) {
+            animation-delay: calc(var(--quick) * 6 / 5);
+        }
+
+        .tray-dice li:nth-last-child(8) {
+            animation-delay: calc(var(--quick) * 7 / 5);
+        }
+    }
+
+    @keyframes tray-in {
+        from {
+            opacity: 0;
+            translate: 0 8px;
+        }
+    }
+
+    /* The open tray veils the page behind it, which it no longer blends into: a touch there closes it; dark on the dark page, where the page's own colour would
+       not show (D-396). */
+    .tray-scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 21;
+        background: light-dark(color-mix(in srgb, var(--paper) 60%, transparent), rgb(0 0 0 / 0.4));
+        backdrop-filter: blur(2px);
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        .dice-fab {
+            bottom: 84px;
+        }
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        .dice-tray {
+            bottom: 152px;
+        }
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        /* The plate over the button, the whole width; the title in two lines rather than cut. */
+        .dice-result {
+            --plate-x: 0px;
+            inset-inline-start: 12px;
+            inset-inline-end: 12px;
+            /* Out of the top of the bar of the sections, over the dice button while it is out. */
+            bottom: 68px;
+            width: auto;
+            column-gap: 14px;
+            padding: 14px 16px;
+        }
+
+        .plate-title {
+            display: -webkit-box;
+            white-space: normal;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .plate-rare {
+            margin: 2px -16px -14px;
+        }
+
+        .plate-total {
+            padding-inline-start: 14px;
+            font-size: 3rem;
+        }
+
+        .plate-dice .die-chip {
+            height: 36px;
+            font-size: 1.15rem;
+        }
+    }
+
+    /* A low screen, as a phone on its side, or a phone's when the tray stands over its bar: the dice in two columns of one width, and a kind's choice of which
+       count on a line of its own at the foot, so that it never pushes a column off the window (D-396). */
+    @media (max-height: 610px), (max-width: 600px) and (max-height: 650px) {
+        .tray-dice {
+            grid-template-columns: repeat(2, 100px);
+            grid-auto-flow: row dense;
+        }
+
+        .tray-dice li:has(.tray-keep) {
+            grid-column: 1 / -1;
+            justify-self: end;
+            width: max-content;
+        }
+    }
+
+    .tray-keep button {
+        white-space: nowrap;
+    }
+
+    /* A finger needs room (D-282): the buttons at least so big; the sheet's lines a little less, or eighteen skills would grow a third. */
+    @media (pointer: coarse) {
+        .tray-less {
+            width: var(--target);
+            height: var(--target);
+        }
+    }
+}
