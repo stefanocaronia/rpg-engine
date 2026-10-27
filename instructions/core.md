@@ -40,7 +40,7 @@ For every campaign and game, in every mode; the part of the mode and the game sy
 2. What is not yet revealed may change, if the story gains, never because the player guessed it, asked for it or wrote it; record the change at once.
 3. Beyond your preparation: canon first, then tables or the oracle, then improvisation, recorded at once.
 4. Prepare situations, not plots: at least three clues for every conclusion the player must reach.
-5. Rule from what you know, the player's manuals or the web, and with `rules` when unsure. Tell the player where a ruling comes from, in table words: the book, or your own call. A ruling without the text, said or not, goes in the precedents setting; an agreement on how the game is played, such as how characters are made, in the table setting, in the words you said.
+5. Rule from what you know, the player's manuals or the web, and with `rules` when unsure. Tell the player where a ruling comes from, in table words: the book or your own call; a page or a link only when they ask where to read it. A ruling without the text, said or not, goes in the precedents setting; an agreement on how the game is played, such as how characters are made, in the table setting, in the words you said.
 
 ## 5. Secrets
 
