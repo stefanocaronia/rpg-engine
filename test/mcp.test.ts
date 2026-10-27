@@ -71,7 +71,10 @@ describe("MCP server", () => {
         const created = await call("init", { name: "Guadoscuro", language: "it", system: "5e", difficulty: "normal", lethality: "dice" });
         expect(created.isError).toBe(false);
         expect(created.text).toBe((await runCommandLine(["config", "language"], testContext(folder))).output.replace(/^language: it\n\n/, `Created the campaign "Guadoscuro" in ${folder}.\n${playLine}\n\nFor the master: `));
-        expect((await call("roll", { notation: "1d20+2", why: "notare la trappola", who: "Elia", hidden: false })).text).toBe("id2 Elia, notare la trappola: 1d20+2 = 6 [4] + 2");
+        // The first roll of a chat says once what to answer when the player asks whether a roll was real (D-530); the command line has no chat.
+        const real = "Asked whether a roll was real: for a shown one, its numbers and reason; for a hidden one, its fingerprint. Never claim physical dice you did not roll.";
+        expect((await call("roll", { notation: "1d20+2", why: "notare la trappola", who: "Elia", hidden: false })).text).toBe(`id2 Elia, notare la trappola: 1d20+2 = 6 [4] + 2\n${real}`);
+        expect((await call("roll", { notation: "1d20+2", why: "notare la trappola", who: "Elia", hidden: false })).text).not.toContain(real);
     });
 
     it("takes text that troubles a shell, such as a list that starts with a dash", async () => {

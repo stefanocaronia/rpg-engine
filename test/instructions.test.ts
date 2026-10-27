@@ -35,7 +35,8 @@ describe("the parts of the instructions (D-121)", () => {
         expect(corePart("travel")).toBe(travelGuidance);
         expect(corePart("exploration")).toBe(explorationGuidance);
         expect(corePart("challenge")).toMatch(/^Run a challenge as a scene of its own\. Say its stake before the first roll/);
-        expect(corePart("adventure")).toMatch(/^No adventure is under way\. A written or planned one opens as it is written/);
+        expect(corePart("adventure")).toMatch(/^An adventure is a quest with its secrets and events; a written or planned one opens as it is written\. Build one so:\n\n1\. /);
+        expect(corePart("session")).toMatch(/^Before this session opens, choose about ten secrets not tied to places[^\n]*Open it with a short recap of what the files hold/);
         expect(corePart("rest")).toBeUndefined();
         expect(corePart("../package")).toBeUndefined();
     });

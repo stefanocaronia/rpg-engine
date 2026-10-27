@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { changeState, requireCampaign } from "../campaign/index.ts";
+import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
@@ -9,6 +10,7 @@ import { dueEvents, dueText, isDated, plannedEvents } from "./game-events.ts";
 import { timePassedLines } from "./game-package-code.ts";
 import { newDatedLogEntry, presentDate } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
+import { firstInChat } from "./parts.ts";
 
 export const advance = defineCommand({
     name: "advance",
@@ -23,7 +25,7 @@ export const advance = defineCommand({
         why: z.string().optional().describe("what the time is spent on"),
     }),
 
-    async run(input, context): Promise<TimePassed>
+    async run(input, context): Promise<TimePassed & { timeWords?: string; }>
     {
         const root = requireCampaign(context.folder);
         const request = readRequest(input);
@@ -56,6 +58,7 @@ export const advance = defineCommand({
                 calendar,
                 extensionLines,
                 ...unreadNotes(world),
+                ...timeWords(context),
             };
         }
 
@@ -75,14 +78,14 @@ export const advance = defineCommand({
         const lines = passed.passed === 0 ? passed : { ...passed, extensionLines: await timePassedLines(root, context, now, addDuration(now, passed.passed)) };
         // What the time passed leaves that cannot be true together, as one knocked out who woke at 0 (CHK-3).
         const checks = newStateChecks(root, context);
-        return checks.length === 0 ? lines : { ...lines, checks };
+        return { ...(checks.length === 0 ? lines : { ...lines, checks }), ...timeWords(context) };
     },
 
     format(result)
     {
         const rest = result.wanted - result.passed;
         const then = rest > 0 ? ` Then advance the other ${formatDuration(rest)}, if they are still doing what they were.` : "";
-        return [movedLine(result, rest), ...passedLines(result, then), ...(result.checks ?? [])].filter((line) => line !== "").join("\n");
+        return [movedLine(result, rest), ...passedLines(result, then), ...(result.checks ?? []), result.timeWords ?? ""].filter((line) => line !== "").join("\n");
     },
 });
 
@@ -125,4 +128,12 @@ function movedLine(result: TimePassed, rest: number): string
     }
 
     return `${result.from} → ${to}${rest > 0 ? `: stopped after ${formatDuration(result.passed)} of ${formatDuration(result.wanted)}` : ""}.`;
+}
+
+/** How the world tells time, once in a chat at the call that moves it, as play's rule left the instructions for it (D-530). */
+function timeWords(context: Context): { timeWords?: string; }
+{
+    return firstInChat(context, "time-words")
+        ? { timeWords: "Tell time and how long things take the way the world measures it: dawn, the third bell, a candle's length. Exact hours only where the world has clocks; the game date stays behind the scenes." }
+        : {};
 }

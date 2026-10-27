@@ -26,6 +26,23 @@ export function situationPart(name: string, context: Context, system: GameSystem
     return text;
 }
 
+/** Whether a note is due: the first time in a chat where the MCP server keeps what it told, until instructions; never on the command line, where no master plays. */
+export function firstInChat(context: Context, key: string): boolean
+{
+    if (context.told === undefined || context.told.has(key)) {
+        return false;
+    }
+
+    context.told.add(key);
+    return true;
+}
+
+/** How to build an adventure as a designer (D-530 (8)): the line that says why it comes now, then the part adventure once in a chat; after that the line alone. */
+export function adventurePart(lead: string, context: Context, system: GameSystem | undefined): string
+{
+    return [lead, situationPart("adventure", context, system)].filter((text) => text !== "").join("\n\n");
+}
+
 /** How to run the table for more than one living player character (D-450, D-480), once in a chat as a situation's part; none with fewer. */
 export function partyPart(context: Context, system: GameSystem | undefined, world: World): string
 {

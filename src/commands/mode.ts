@@ -4,10 +4,12 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { blockingMode, campaignMode, missingText, type Mode, modePart, modes } from "./game-mode.ts";
+import { adventureUnderWay } from "./game-quests.ts";
 import { campaignSaves, makeSave, type ResetPoint, savesWhy, saveText } from "./game-saves.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { voicesPart } from "./game-voices.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
+import { adventurePart, situationPart } from "./parts.ts";
 
 export const mode = defineCommand({
     name: "mode",
@@ -41,12 +43,16 @@ export const mode = defineCommand({
         changeState(root, { mode: input.to });
         appendLogEntry(root, newDatedLogEntry(root, context, "mode-changed", "public", { from, to: input.to }));
         const start = startSave(root, context, input.to);
+        const system = campaignSystem(root, context);
+        // Into play, how a session opens, and how to build an adventure when none is open or planned (D-530 (8)).
+        const session = input.to === "play" ? situationPart("session", context, system) : "";
+        const adventure = input.to === "play" && !adventureUnderWay(world) ? adventurePart("No quest is open or planned: before the first scene, build an adventure.", context, system) : "";
         return {
             to: input.to,
             changed: true,
             dateless: readPresent(root).date === undefined,
             // Play's part with Voices, as instructions gives it, for a campaign that reaches play in the chat that made it (playtest 01).
-            part: [modePart(input.to, campaignSystem(root, context)) ?? "", input.to === "play" ? voicesPart(root, context) : ""].filter((part) => part !== "").join("\n\n"),
+            part: [modePart(input.to, system) ?? "", input.to === "play" ? voicesPart(root, context) : "", session, adventure].filter((part) => part !== "").join("\n\n"),
             ...(start === undefined ? {} : { start }),
         };
     },

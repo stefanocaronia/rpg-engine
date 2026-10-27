@@ -73,6 +73,12 @@ export function openQuestText(page: Page, now: GameDate | undefined): string
     return notes.length === 0 ? page.name : `${page.name} (${notes.join("; ")})`;
 }
 
+/** Whether an adventure is under way or ready (D-530 (8)): a quest of the campaign open or planned, or written without a status, as a new one starts planned. */
+export function adventureUnderWay(world: World): boolean
+{
+    return world.pages.some((page) => page.type === "quest" && page.system === undefined && !["done", "failed"].includes(comparableText(String(page.fields.status ?? ""))));
+}
+
 /** What write says when it makes a quest (D-239): every goal ticked. */
 export function tickedQuestNotes(existing: Page | undefined, page: Page): string[]
 {

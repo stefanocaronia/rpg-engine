@@ -1,4 +1,4 @@
-No adventure is under way. A written or planned one opens as it is written; otherwise build the next, as a quest with its secrets and events:
+An adventure is a quest with its secrets and events; a written or planned one opens as it is written. Build one so:
 
 1. Name in one line the experience it gives this player, such as dread, wonder, cunning or a hard choice, and keep only what serves it; write that line in the quest's secret.
 2. Draw on what the player said they enjoy and on what they have chosen and lingered on: give them more of it, and one thing they rarely get.

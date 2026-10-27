@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
+import { readCounter } from "../counters/index.ts";
 import {
     backlinks,
     baseChain,
@@ -9,6 +10,8 @@ import {
     formatFields,
     inheritedByBase,
     inheritedFields,
+    isEmptyField,
+    isPartyMember,
     locate,
     namesakes,
     type Page,
@@ -24,11 +27,13 @@ import {
     type World,
 } from "../pages/index.ts";
 import { featureParts } from "../progression/index.ts";
+import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
 import { closedScenes, copyLink, copyPage, openSceneLog, readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
+import { firstInChat } from "./parts.ts";
 import { featureSource, progressionOf } from "./progression.ts";
 import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./sheet.ts";
 import { signedText, type WorkedField, workedFields, workedLine, workedParts } from "./worked-out.ts";
@@ -141,6 +146,9 @@ export const show = defineCommand({
             text: group === undefined ? (part?.text ?? page.body) : "",
             linkedFrom: isCopy ? [] : backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
             problems: world.problems,
+            loot: reference.section === undefined ? lootNote(world, system, page, chain) : undefined,
+            // What the character knows is view's, once in a chat (D-530): show holds what they have not found out.
+            knows: firstInChat(context, "show-knows") ? knowsNote : undefined,
         };
     },
 
@@ -163,7 +171,8 @@ export const show = defineCommand({
 
         // A group of the sheet is its values, with what effects cover in them.
         if (result.group) {
-            return [[title, result.covered.length === 0 ? "" : `While they last: ${result.covered.join(", ")}`].filter((line) => line !== "").join("\n"), result.sheet.join("\n")].join("\n\n");
+            const values = [title, result.covered.length === 0 ? "" : `While they last: ${result.covered.join(", ")}`].filter((line) => line !== "").join("\n");
+            return [values, result.sheet.join("\n"), result.knows ?? ""].filter((block) => block !== "").join("\n\n");
         }
 
         const header = [
@@ -198,9 +207,31 @@ export const show = defineCommand({
             ? result.inherited.filter((group) => group.parts.length > 0).map((group) => `From ${group.from}: ${group.parts.join(", ")}. show ${result.page}#${group.parts[0]} gives one.`)
             : result.inherited.filter((group) => group.text !== "").map((group) => `Text inherited from ${group.from}:\n\n${group.text}`);
         const links = result.linkedFrom.length > 0 ? `Linked from:\n${result.linkedFrom.map((link) => `- ${link.page}: ${link.places.join(", ")}`).join("\n")}` : "";
-        return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
+        const notes = [result.loot ?? "", result.knows ?? ""].filter((note) => note !== "").join("\n");
+        return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems), notes].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** What show says once in a chat, as play's rule on what the character knows left the instructions for it (D-530). */
+const knowsNote = "When the player asks what their character knows, remembers or has seen, answer from view, never from show, which holds what they have not found out.";
+
+/**
+ * What lies on one dead or down, or in an item that holds something, is there to be found, and what is taken is the player's to say (D-530, Elena's tests of
+ * 27 October, where the master put a fallen foe's coins in the character's pocket); none for what the party holds.
+ */
+function lootNote(world: World, system: GameSystem | undefined, page: Page, chain: Page[]): string | undefined
+{
+    if (isPartyMember(page) || chain.some(isPartyMember)) {
+        return undefined;
+    }
+
+    const fields = inheritedFields(world, page);
+    const down = system?.down;
+    const counter = down === undefined ? undefined : readCounter(valueNamed(fields, down.field));
+    const fallen = (page.type === "character" || page.type === "creature") && (page.fields.status === "dead" || (down !== undefined && counter !== undefined && counter.value <= down.value));
+    const holds = page.type === "item" && !isEmptyField(valueNamed(fields, "contains"));
+    return fallen || holds ? `What is on or in ${page.name} is there to be found: tell what the party sees, and let the player say what is taken, and by whom.` : undefined;
+}
 
 /** The fields with a list longer than `listedItems` cut to its first ones and how to see them all, as knows of a well-travelled character (D-468). */
 function cutLists(fields: Record<string, unknown>, page: string): Record<string, unknown>

@@ -17,6 +17,7 @@ import { copyPage, readOpenScene } from "./game-scene.ts";
 import { rollPageTable } from "./game-tables.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "./game-world.ts";
+import { firstInChat } from "./parts.ts";
 import { itemList, signedText, workedFields } from "./worked-out.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
@@ -31,7 +32,23 @@ const namePattern = /(^|[+-])(\s*)(\p{L}[\p{L}0-9]*(?:-[\p{L}0-9]+)*)/gu;
 const diePattern = /^\d*d(\d+|%|F)/i;
 
 type RollOutput =
-    | { kind: "roll"; id: string; text: string; total: number; why?: string; who?: string; check?: string; physical: boolean; hidden: boolean; screened?: true; stranger?: true; fingerprint?: string; note?: string; kept?: string; }
+    | {
+        kind: "roll";
+        id: string;
+        text: string;
+        total: number;
+        why?: string;
+        who?: string;
+        check?: string;
+        physical: boolean;
+        hidden: boolean;
+        screened?: true;
+        stranger?: true;
+        fingerprint?: string;
+        note?: string;
+        kept?: string;
+        real?: string;
+    }
     | { kind: "reveal"; id: string; text: string; proof: string; sha256: string; fingerprint: string; };
 
 export const roll = defineCommand({
@@ -138,7 +155,7 @@ export const roll = defineCommand({
         const shown = { kind: "roll" as const, id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden, fingerprint: shownFingerprint, note, kept };
         // A who of no page may be a party member named wrongly: the master is told how to undo the screen (review of 25 October).
         const stranger = screened && input.who !== undefined && namesNoOne(root, context, input.who) ? { stranger: true as const } : {};
-        return screened ? { ...shown, screened: true, ...stranger } : shown;
+        return withRealNote(context, screened ? { ...shown, screened: true, ...stranger } : shown);
     },
 
     format(output)
@@ -148,7 +165,7 @@ export const roll = defineCommand({
             return `Hidden roll ${output.id} revealed: ${output.text}. ${tell}\nProof: ${output.proof}\nSHA-256 of the proof: ${output.sha256} (it starts with the fingerprint ${output.fingerprint})`;
         }
 
-        const note = [output.kept, output.note].filter((line) => line !== undefined).map((line) => `\n${line}`).join("");
+        const note = [output.kept, output.note, output.real].filter((line) => line !== undefined).map((line) => `\n${line}`).join("");
 
         if (output.hidden) {
             const screen = output.screened === true ? `. ${screenNote}` : "";
@@ -162,6 +179,14 @@ export const roll = defineCommand({
         return `${output.id} ${label ? label + ": " : ""}${output.text}${output.physical ? " (physical dice)" : ""}${note}`;
     },
 });
+
+/** A roll with what to say when the player asks whether a roll was real, once in a chat, as the core's rule left the instructions for it (D-530). */
+function withRealNote(context: Context, output: Extract<RollOutput, { kind: "roll"; }>): RollOutput
+{
+    return firstInChat(context, "roll-real")
+        ? { ...output, real: "Asked whether a roll was real: for a shown one, its numbers and reason; for a hidden one, its fingerprint. Never claim physical dice you did not roll." }
+        : output;
+}
 
 /** A roll on a page's random table or of the oracle (D-503): logged as any roll, hidden or shown as any roll; the row or the answer is for the master to tell. */
 function answerRoll(input: { table?: string; oracle?: string; why?: string; who?: string; check?: string; values?: number[]; hidden?: boolean; keep?: string; use?: string; double?: boolean; }, root: string, context: Context): RollOutput
@@ -187,7 +212,7 @@ function answerRoll(input: { table?: string; oracle?: string; why?: string; who?
     const shownFingerprint = hidden ? sealHiddenRoll(entry, answer.text, context) : undefined;
     appendLogEntry(root, entry);
     const shown = { kind: "roll" as const, id: entry.id, text: answer.text, total: answer.total, why: input.why, who: input.who, check: input.check, physical, hidden, fingerprint: shownFingerprint };
-    return screened ? { ...shown, screened: true } : shown;
+    return withRealNote(context, screened ? { ...shown, screened: true } : shown);
 }
 
 /** A roll that answers: its die, the number read, its text, the dice thrown and what the log keeps of the table or the oracle. */

@@ -8,7 +8,7 @@ import { makeTempFolder, readLogFile, removeFolder, testContext } from "./suppor
 
 // The settings the setup asks of a new campaign without a written world, after the system and the language (MOD-3), and the call that moves on (MOD-7).
 const asked =
-    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone and a few elements of the world, in the player's words), preparation (on the fly, all at the start), "
+    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly, all at the start), "
     + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation), dice (digital, physical), "
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
     + "companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "

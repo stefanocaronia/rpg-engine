@@ -28,7 +28,7 @@ export interface Blocked
 const settingLabels: Partial<Record<SettingName, string>> = {
     language: "language (a code, such as it)",
     mentor: "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off)",
-    premise: "premise (the genre, the tone and a few elements of the world, in the player's words)",
+    premise: "premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words)",
     preparation: `preparation (${preparations.join(", ")})`,
     difficulty: `difficulty (${difficulties.join(", ")})`,
     lethality: `lethality (${lethalities.join(", ")})`,

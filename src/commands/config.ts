@@ -82,7 +82,7 @@ export const config = defineCommand({
         + "voices, who voices the characters where your app has subagents: master (you, always), auto (a subagent at key moments, as you choose), "
         + "important (always a subagent for the companions and the characters with kind main), always (always a subagent); unset, auto. "
         + "companions: none, made with the player or made by the master in session zero, or met in play. "
-        + "Without a written world: premise (the genre, the tone and a few elements of the world, in the player's words) and preparation (on the fly or all at the start). "
+        + "Without a written world: premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words) and preparation (on the fly or all at the start). "
         + "lines (what never appears in the game) and veils (what happens only off screen) change with add and remove, or value none when the player wants none; when the player signals stop, add that content to lines. "
         + "mentor, how much you teach the game, out of the story: off (the story alone, answering what the player asks between brackets), "
         + "hints (a tip before choices that matter and when a rule slips by), tutorial (each mechanic explained the first time, a roll's whole sum, a debrief after fights). "

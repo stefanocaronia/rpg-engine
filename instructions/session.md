@@ -1,0 +1,1 @@
+Before this session opens, choose about ten secrets not tied to places, from the pages of everyone in play, companions too, and ready one scene of what the player enjoys most. Open it with a short recap of what the files hold, at the game time and place where the last one ended, with no time passed between, then something happening.

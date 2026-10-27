@@ -163,7 +163,9 @@ export const settingsSchema = z.object({
     mentor: z.enum(mentorWays).optional().describe(
         "how much the master teaches the game, out of the story: off, hints or tutorial; asked as how well the player knows the game: never played (tutorial), a little (hints), well (off)",
     ),
-    premise: z.string().min(1).optional().describe("without a written campaign: the genre, the tone and a few elements of the world, in the player's words"),
+    premise: z.string().min(1).optional().describe(
+        "without a written campaign: the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words",
+    ),
     preparation: z.enum(preparations).optional().describe("without a written campaign: on the fly (the master makes the world just before it is needed) or all at the start"),
     prose: z.enum(proseWays).optional().describe("how the master writes, as the player chose it: plain, literary, pulp or wry; the tone stays in the premise; an author takes its place"),
     story: z.enum(storyWays).optional().describe("how the master builds what they invent: situations, arcs, episodes or mystery; a written adventure keeps its own"),

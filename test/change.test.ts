@@ -107,9 +107,10 @@ describe("rpg change", () => {
     });
 
     it("stops at a limit with by, and says how far it went beyond", async () => {
-        // The threshold's rule, then what the system's code says at the down point.
+        // The threshold's rule, what the fall means with the campaign's lethality (D-530), then what the system's code says at the down point.
         expect((await rpg("change", "Bruna", "grit", "--by=-15")).output).toBe(
-            'Bruna: grit 12/12 → 0/12: at 0, 3 beyond.\ngrit is at 0, 3 beyond: read rules "Falling".\nBruna falls: one fading at the start of each of their turns, 3 and they are gone. Read rules Falling.',
+            'Bruna: grit 12/12 → 0/12: at 0, 3 beyond.\ngrit is at 0, 3 beyond: read rules "Falling".\n'
+                + "Bruna is down: with lethality dice, the dice decide, as the rules say. If they die, write status=dead: it says what the saves allow.\nBruna falls: one fading at the start of each of their turns, 3 and they are gone. Read rules Falling.",
         );
         expect((await rpg("change", "Bruna", "grit", "--by=20")).output).toBe('Bruna: grit 0/12 → 12/12: at max, 8 beyond.\ngrit is no longer at 0: read rules "Falling".\nBruna rises: Down ended, fading 0.');
         expect((await rpg("change", "Bruna", "grit", "--by=1")).output).toBe("Nothing changed: grit on Bruna is 12/12: at max, 1 beyond.");

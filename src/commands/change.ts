@@ -22,6 +22,7 @@ import {
     isCounterField,
     isDeclaredUncounted,
     isPartyMember,
+    isPlayerCharacter,
     isStandardField,
     keepersOf,
     kindNamed,
@@ -51,7 +52,7 @@ import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed
 import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
 import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
 import { changeStack } from "./game-stacks.ts";
-import { thresholdNotes } from "./game-thresholds.ts";
+import { fallNotes, thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
@@ -514,7 +515,9 @@ function applyStep(
     const levels = changed && party && after !== undefined
         ? newLevelNotes(page, experienceOf(world, effectiveFields(world, holder.page)), experienceOf(updated, effectiveFields(updated, after)), companion, levelUp)
         : [];
-    const thresholds = [...(touched && party ? thresholdNotes(root, system, field, step, layer?.name) : []), ...levels];
+    // The player character's own counter, never a form's, falling to the system's down value: what lethality makes of it (D-530).
+    const fall = changed && holder.kind === "page" && layer === undefined && isPlayerCharacter(holder.page) ? fallNotes(root, system, page, field, step) : [];
+    const thresholds = [...(touched && party ? thresholdNotes(root, system, field, step, layer?.name) : []), ...fall, ...levels];
     // What the loss may break that someone keeps alive, on anyone, and what shields the counter that went down (EFF-14, DAT-14).
     const lost = touched ? lostBy(step) : 0;
     // What goes past 0 in an effect that gives the counter, as a beast form, may carry over to the page's own (D-454).

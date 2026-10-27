@@ -86,7 +86,7 @@ import { questPictureNote } from "./game-images.ts";
 import { checkLimits } from "./game-limits.ts";
 import { campaignCoins } from "./game-money.ts";
 import { mapLookNotes, shortRoadNotes } from "./game-positions.ts";
-import { logQuestChange, newQuestNotes, tickedQuestNotes } from "./game-quests.ts";
+import { adventureUnderWay, logQuestChange, newQuestNotes, tickedQuestNotes } from "./game-quests.ts";
 import { deathNotes, isPlayerDead, partyDeathNotes } from "./game-saves.ts";
 import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game-scene.ts";
 import { diaryDueLine } from "./game-thoughts.ts";
@@ -94,7 +94,7 @@ import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game-world.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
-import { partText, partyPart, situationPart } from "./parts.ts";
+import { adventurePart, partText, partyPart, situationPart } from "./parts.ts";
 import { givenItems, progressionOf } from "./progression.ts";
 import { checkListValues, joiningNotes, weightlessNote } from "./sheet.ts";
 import { computedField, counterLimits, directBonuses, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, startingAtZero, workedMaximum, workedParts } from "./worked-out.ts";
@@ -286,7 +286,11 @@ export const write = defineCommand({
         const picture = opened.length === 0 ? undefined : questPictureNote(root, context, now, page);
         // A quest that ends is a time to write a diary (DIA-2).
         const diary = changed && questEnds(existing, page) ? diaryDueLine(root, context, now) : "";
-        const quest = changed ? [...questEndNotes(context, system, existing, page), ...(diary === "" ? [] : [diary]), ...tickedQuestNotes(existing, page), ...opened, ...(picture === undefined ? [] : [picture])] : [];
+        // The last quest ended: the next adventure is to build (D-530 (8)).
+        const next = changed && questEnds(existing, page) && !adventureUnderWay(now) ? adventurePart("No quest is open or planned now: build the next adventure.", context, system) : "";
+        const quest = changed
+            ? [...questEndNotes(context, system, existing, page), ...(diary === "" ? [] : [diary]), ...(next === "" ? [] : [next]), ...tickedQuestNotes(existing, page), ...opened, ...(picture === undefined ? [] : [picture])]
+            : [];
 
         // The story tells a quest taken, done or failed (D-369).
         if (changed) {
