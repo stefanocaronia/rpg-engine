@@ -72,7 +72,8 @@ ${text}
  */
 export function enlargeSystem(source: string, target: string, times: number): void
 {
-    cpSync(source, target, { recursive: true });
+    // A system's repository holds its packages and its history too: never copied.
+    cpSync(source, target, { recursive: true, filter: (path) => !/[\\/](node_modules|\.git)([\\/]|$)/.test(path.slice(source.length)) });
 
     for (const entry of readdirSync(join(source, "world"), { recursive: true, withFileTypes: true }).filter((candidate) => candidate.isFile() && candidate.name.endsWith(".md"))) {
         const content = readFileSync(join(entry.parentPath, entry.name), "utf8");

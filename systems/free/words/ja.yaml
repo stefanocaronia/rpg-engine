@@ -1,0 +1,20 @@
+# The words of the free system in Japanese, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: キャラクター
+  Equipment: 装備
+fields:
+  concept: コンセプト
+  abilities: 能力
+  factions: 勢力・組織
+  money: 所持金
+words:
+  free play, without a game system: フリープレイ(ゲームシステムなし)
+  free: 自由
+  Try: 試す
+  Try {item}: "{item}を試す"
+  I try {item}.: "{item}を試す。"
+  I try {item} on {target}.: "{target}に{item}を試す。"
+  I try {item} at {square}.: "{square}に{item}を試す。"
+  I try {item} on myself.: 自分に{item}を試す。
+names: {}

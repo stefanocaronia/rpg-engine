@@ -11,6 +11,7 @@ import { packageCommands } from "./commands/game-package-code.ts";
 import { newChatText, wentBackTo } from "./commands/game-saves.ts";
 import { campaignWorld } from "./commands/game-world.ts";
 import { commands } from "./commands/index.ts";
+import { installCampaignSystem } from "./commands/package.ts";
 import { systemConfirm } from "./confirm/index.ts";
 import { type Context, defaultContext, packagesFolder, type Player } from "./core/context.ts";
 import { downloadBytes } from "./core/download.ts";
@@ -55,16 +56,21 @@ const preloadAfter = 250;
  */
 export function createMcpServer(context: Context = defaultContext(), environment: Record<string, string | undefined> = process.env, beforeCall?: () => Promise<void>): McpServer
 {
-    const server = new McpServer({ name: "rpg", version: getVersion() }, { instructions: startInstructions() });
+    // The descriptions change together, after a call: hosts hear one list_changed for all of them.
+    const server = new McpServer({ name: "rpg", version: getVersion() }, { instructions: startInstructions(), debouncedNotificationMethods: ["notifications/tools/list_changed"] });
     const askingTools: RegisteredTool[] = [];
     // A server lives as long as its chat: it gives each part of the instructions once (D-97).
     context.told ??= new Set();
     context.chat ??= { calls: 0 };
     // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4).
     const outside = context.files instanceof SessionStore ? watchOutside(context, context.files) : { take: () => [], giveBack: () => undefined };
+    // The campaign's game system, one of ours, installed by itself when it is not on this computer, and said once (SYS-10).
+    const installer = systemInstaller(context);
 
     // Before each call, once the files are read again: the dashboard opens, and its page asks the player too, so the asking tools are there, forms or not (ASK-1, D-279).
     const prepare = async (): Promise<void> => {
+        // The campaign's game system first, when it is one of ours missing here, so that the dashboard reads it with its code (SYS-10).
+        await installer.install();
         await beforeCall?.();
 
         if (context.page !== undefined) {
@@ -83,11 +89,11 @@ export function createMcpServer(context: Context = defaultContext(), environment
     };
 
     // The tools of the campaign's extensions, kept in step after every call, as one that installs an extension or makes the campaign (D-63).
-    const extensions = extensionTools(server, context, (command) => (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside, examples).finally(afterCall));
+    const extensions = extensionTools(server, context, (command) => (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, installer, outside, examples).finally(afterCall));
     firstExtensions.set(server, extensions());
 
     for (const command of commands) {
-        const tool = server.registerTool(command.name, toolConfig(command, examples.shown), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, outside, examples).finally(afterCall));
+        const tool = server.registerTool(command.name, toolConfig(command, examples.shown), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, installer, outside, examples).finally(afterCall));
         coreTools.set(command, tool);
 
         if (command.needsPlayer && context.player === undefined) {
@@ -110,9 +116,14 @@ export function createMcpServer(context: Context = defaultContext(), environment
             askingTools.forEach((tool) => tool.enable());
         }
 
-        // The world is read once the host has the tools, never before: initialize and the list of tools answer at once (D-194).
+        // The world is read once the host has the tools, never before: initialize and the list of tools answer at once (D-194). The campaign's system, one of
+        // ours missing here, starts to install then, while the player writes: the first call waits for the same install and says it (SYS-10, D-520).
+        const installing = (): void => void installer.install().then(afterCall).catch(() => undefined);
+
         if (context.files instanceof SessionStore) {
-            setTimeout(() => void preload(context, context.files as SessionStore), preloadAfter);
+            setTimeout(() => void preload(context, context.files as SessionStore).then(installing), preloadAfter);
+        } else {
+            installing();
         }
     };
 
@@ -261,6 +272,16 @@ function toolConfig(command: AnyCommand, examples: Examples)
     return { description: withExamples(command.description, examples), inputSchema: shownSchema(command, examples), annotations, _meta: meta };
 }
 
+/** What a host reads of each of the core's tools in the campaign of this context's folder: its description, then its parameters', with the examples of its system (D-518). */
+export function toolDescriptions(context: Context): Record<string, string>
+{
+    const examples = examplesFor(context, new FileStore(context.systemFolders));
+    return Object.fromEntries(commands.map((command) => {
+        const fields = Object.values(shownInput(command, examples).properties ?? {}).map((field) => field.description ?? "");
+        return [command.name, [withExamples(command.description, examples), ...fields].join("\n")];
+    }));
+}
+
 /** The examples for the campaign of the server's folder, read through a store; neutral where it has none, or where it does not read. */
 function examplesFor(context: Context, store: FileStore): Examples
 {
@@ -351,7 +372,8 @@ async function runTool(
     context: Context,
     extra: ToolExtra,
     prepare: () => Promise<void>,
-    outside: { take(): string[]; giveBack(lines: string[]): void; },
+    installer: Told,
+    outside: Told,
     examples: { shown: Examples; },
 ): Promise<CallToolResult>
 {
@@ -362,6 +384,7 @@ async function runTool(
         : undefined;
     let news: { lines: string[]; restore(): void; } | undefined;
     let changedOutside: string[] = [];
+    let installed: string[] = [];
     // What the chat was told before the call: an answer that never goes tells nothing, so its parts are told again (D-97).
     const told = new Set(context.told);
     const chat = context.chat;
@@ -381,12 +404,14 @@ async function runTool(
         }
 
         await prepare();
+        // The campaign's system installed by itself, said first (SYS-10); a call stopped while it installed leaves the line to the next.
+        installed = extra.signal.aborted ? [] : installer.take();
         // After a load the chat going on remembers what is gone: nothing runs in it, until a new chat begins with instructions (D-361).
         const back = chatAfterLoad(context, command.name, input);
 
         if (back.refused !== undefined) {
             news = context.news?.();
-            return { content: [{ type: "text", text: [...(news?.lines ?? []), back.refused].join("\n\n") }], isError: true };
+            return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), back.refused].join("\n\n") }], isError: true };
         }
 
         const checked = checkedInput(command, input, examples.shown);
@@ -396,16 +421,17 @@ async function runTool(
         const text = command.format(await command.run(checked, { ...context, signal: extra.signal }));
         // What the player changed on the dashboard comes first, once, what they changed while the call waited included (D-341).
         news = context.news?.();
-        return { content: [{ type: "text", text: [...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }] };
+        return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }] };
     } catch (error) {
         news ??= context.news?.();
-        return { content: [{ type: "text", text: [...(news?.lines ?? []), ...changedOutside, error instanceof Error ? error.message : String(error)].join("\n\n") }], isError: true };
+        return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, error instanceof Error ? error.message : String(error)].join("\n\n") }], isError: true };
     } finally {
         clearInterval(keepAlive);
 
         // An answer that never goes, as for a call the user stopped, gives what the player changed back to the next one, and its parts.
         if (extra.signal.aborted) {
             news?.restore();
+            installer.giveBack(installed);
             outside.giveBack(changedOutside);
             context.told?.clear();
             told.forEach((name) => context.told?.add(name));
@@ -422,11 +448,46 @@ async function runTool(
     }
 }
 
+/** Lines for the master at the head of a call, once: taken by the call, given back by one whose answer never goes. */
+interface Told
+{
+    take(): string[];
+    giveBack(lines: string[]): void;
+}
+
+/**
+ * The campaign's game system installed by itself when it is one of ours not on this computer (SYS-10, D-514 (3)): tried once for each system a campaign of
+ * the server's folder names, before a call; its line, that it was installed or why not, for the call that answers.
+ */
+function systemInstaller(context: Context): Told & { install(): Promise<void>; }
+{
+    const tried = new Set<string>();
+    let untold: string[] = [];
+    let installing = Promise.resolve();
+
+    return {
+        // One at a time: two calls at once wait for the same install.
+        install: () => (installing = installing.then(async () => {
+            // A campaign that does not read installs nothing: the call says why.
+            const line = await installCampaignSystem(context, tried).catch(() => undefined);
+            untold = line === undefined ? untold : [...untold, line];
+        })),
+        take: () => {
+            const lines = untold;
+            untold = [];
+            return lines;
+        },
+        giveBack: (lines) => {
+            untold = [...lines, ...untold];
+        },
+    };
+}
+
 /**
  * What changed outside the chat's commands since its last call (OUT-1–OUT-4): the world as it was is read before the session lets the changes in, so that the
  * events they set off fire; at the server's first call, the files changed while no chat was open.
  */
-function watchOutside(context: Context, session: SessionStore): { take(): string[]; giveBack(lines: string[]): void; }
+function watchOutside(context: Context, session: SessionStore): Told
 {
     let before: World | undefined;
     let first = true;

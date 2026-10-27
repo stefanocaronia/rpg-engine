@@ -1,0 +1,20 @@
+# The words of the free system in Greek, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Χαρακτήρας
+  Equipment: Εξοπλισμός
+fields:
+  concept: Ιδέα
+  abilities: Ικανότητες
+  factions: Φατρίες
+  money: Χρήματα
+words:
+  free play, without a game system: ελεύθερο παιχνίδι, χωρίς σύστημα παιχνιδιού
+  free: ελεύθερο
+  Try: Δοκιμή
+  Try {item}: Δοκιμή με {item}
+  I try {item}.: Δοκιμάζω {item}.
+  I try {item} on {target}.: Δοκιμάζω {item} στον/στην {target}.
+  I try {item} at {square}.: Δοκιμάζω {item} στο {square}.
+  I try {item} on myself.: Δοκιμάζω {item} στον εαυτό μου.
+names: {}

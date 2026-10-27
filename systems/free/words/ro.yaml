@@ -1,0 +1,20 @@
+# The words of the free system in Romanian, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Personaj
+  Equipment: Echipament
+fields:
+  concept: concept
+  abilities: abilități
+  factions: facțiuni
+  money: bani
+words:
+  free play, without a game system: joc liber, fără sistem de joc
+  free: liber
+  Try: Încearcă
+  Try {item}: Încearcă {item}
+  I try {item}.: Încerc {item}.
+  I try {item} on {target}.: Încerc {item} asupra lui {target}.
+  I try {item} at {square}.: Încerc {item} la {square}.
+  I try {item} on myself.: Încerc {item} asupra mea.
+names: {}

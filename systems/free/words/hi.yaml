@@ -1,0 +1,20 @@
+# The words of the free system in Hindi, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: किरदार
+  Equipment: साज-सामान
+fields:
+  concept: अवधारणा
+  abilities: क्षमताएँ
+  factions: गुट और संगठन
+  money: धन
+words:
+  free play, without a game system: फ्री प्ले, बिना किसी गेम सिस्टम के
+  free: मुक्त
+  Try: आज़माएँ
+  Try {item}: "{item} आज़माएँ"
+  I try {item}.: मैं {item} आज़माता हूँ।
+  I try {item} on {target}.: मैं {target} पर {item} आज़माता हूँ।
+  I try {item} at {square}.: मैं {square} की ओर {item} आज़माता हूँ।
+  I try {item} on myself.: मैं खुद पर {item} आज़माता हूँ।
+names: {}

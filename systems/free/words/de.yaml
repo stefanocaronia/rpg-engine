@@ -1,0 +1,20 @@
+# The words of the free system in German, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Charakter
+  Equipment: Ausrüstung
+fields:
+  concept: Konzept
+  abilities: Fähigkeiten
+  factions: Fraktionen
+  money: Geld
+words:
+  free play, without a game system: freies Spiel, ohne Spielsystem
+  free: frei
+  Try: Versuchen
+  Try {item}: "{item} versuchen"
+  I try {item}.: Ich versuche {item}.
+  I try {item} on {target}.: Ich versuche {item} an {target}.
+  I try {item} at {square}.: Ich versuche {item} bei {square}.
+  I try {item} on myself.: Ich versuche {item} an mir selbst.
+names: {}

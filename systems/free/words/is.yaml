@@ -1,0 +1,20 @@
+# The words of the free system in Icelandic, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Persóna
+  Equipment: Búnaður
+fields:
+  concept: Hugmynd
+  abilities: Hæfni
+  factions: Bandamenn og fylkingar
+  money: Peningar
+words:
+  free play, without a game system: frjálst spil, án leikjakerfis
+  free: frjálst
+  Try: Prófa
+  Try {item}: Prófa {item}
+  I try {item}.: Ég prófa {item}.
+  I try {item} on {target}.: Ég prófa {item} á {target}.
+  I try {item} at {square}.: Ég prófa {item} á {square}.
+  I try {item} on myself.: Ég prófa {item} á sjálfum mér.
+names: {}

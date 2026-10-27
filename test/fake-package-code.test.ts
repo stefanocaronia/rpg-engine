@@ -230,17 +230,17 @@ describe("an extension's code under the same contract (D-511, D-514)", () => {
 });
 
 describe("a game system's own lines and problems (D-514)", () => {
-    it("logs its lines as a system's, and says to install the engine again for the code of a system it brings", async () => {
+    it("logs its lines as a system's, and says to install it again with package for code that does not load", async () => {
         await ok("change", "Tamsin", "grit", "--to=0");
         await ok("advance", "--to", "day 1, 08:00");
         await ok("advance", "--by", "1d");
         expect(readLogFile(folder).find((entry) => entry.type === "system")).toMatchObject({ visibility: "hidden", data: { system: "fake", text: "a new day with Tamsin Down" } });
 
         const other = makeTempFolder();
-        const own = { ...testContext(other), systemCode: { ...context.systemCode, "5e": { problem: "broken on purpose" } } };
-        await runCommandLine(["init", "--name", "Altra", "--language", "en", "--system", "5e", "--difficulty", "normal", "--lethality", "dice"], own);
+        const own = { ...testContext(other), systemCode: { ...context.systemCode, fake: { problem: "broken on purpose" } } };
+        await runCommandLine(["init", "--name", "Altra", "--language", "en", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], own);
         expect((await runCommandLine(["validate"], own)).output).toContain(
-            "The code of the game system @rpgengine/system-5e cannot be used: broken on purpose. Its commands are left out. Fix: install rpg-engine again, or run npm run build in its repository, then start the game's server again.",
+            "The code of the game system @rpgengine/system-fake cannot be used: broken on purpose. Its commands are left out. Fix: install it again, or another version, with package install fake.",
         );
     });
 });

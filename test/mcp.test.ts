@@ -68,7 +68,7 @@ describe("MCP server", () => {
     });
 
     it("answers with the same text as the command line", async () => {
-        const created = await call("init", { name: "Guadoscuro", language: "it", system: "5e", difficulty: "normal", lethality: "dice" });
+        const created = await call("init", { name: "Guadoscuro", language: "it", system: "fake", difficulty: "normal", lethality: "dice" });
         expect(created.isError).toBe(false);
         expect(created.text).toBe((await runCommandLine(["config", "language"], testContext(folder))).output.replace(/^language: it\n\n/, `Created the campaign "Guadoscuro" in ${folder}.\n${playLine}\n\nFor the master: `));
         expect((await call("roll", { notation: "1d20+2", why: "notare la trappola", who: "Elia", hidden: false })).text).toBe("id2 Elia, notare la trappola: 1d20+2 = 6 [4] + 2");

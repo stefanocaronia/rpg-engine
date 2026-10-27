@@ -1,0 +1,20 @@
+# The words of the free system in Russian, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Персонаж
+  Equipment: Снаряжение
+fields:
+  concept: концепция
+  abilities: способности
+  factions: фракции
+  money: деньги
+words:
+  free play, without a game system: свободная игра, без игровой системы
+  free: свободный
+  Try: Попробовать
+  Try {item}: Попробовать {item}
+  I try {item}.: Я пробую {item}.
+  I try {item} on {target}.: Я пробую {item} на {target}.
+  I try {item} at {square}.: Я пробую {item} в сторону {square}.
+  I try {item} on myself.: Я пробую {item} на себе.
+names: {}

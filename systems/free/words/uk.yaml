@@ -1,0 +1,20 @@
+# The words of the free system in Ukrainian, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Персонаж
+  Equipment: Спорядження
+fields:
+  concept: концепція
+  abilities: здібності
+  factions: союзники та організації
+  money: гроші
+words:
+  free play, without a game system: вільна гра, без ігрової системи
+  free: вільний
+  Try: Спробувати
+  Try {item}: Спробувати {item}
+  I try {item}.: Пробую {item}.
+  I try {item} on {target}.: Пробую {item} на {target}.
+  I try {item} at {square}.: Пробую {item} у напрямку {square}.
+  I try {item} on myself.: Пробую {item} на собі.
+names: {}

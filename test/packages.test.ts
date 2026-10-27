@@ -89,7 +89,7 @@ beforeEach(async () => {
         "left-pad": join(tests, "..", "systems"),
     });
     context = { ...testContext(folder), extensionFolders: [modules], packages: npm };
-    await rpg("init", "--name", "Prova", "--language", "en", "--system", "ironsworn", "--difficulty", "normal", "--lethality", "dice");
+    await rpg("init", "--name", "Prova", "--language", "en", "--system", "free", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
 });
 
@@ -112,9 +112,9 @@ describe("a game system as a package (D-485)", () => {
             "@test/system-future 2.0.0 cannot be used, because it is made for the API 6, and this rpg-engine reads the API 5 for a game system: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat. Nothing changed.",
         );
         const result = await rpg("package", "install", "@test/system-tiny");
-        expect(result.output).toBe("Installed the game system tiny 1.0.0, a tiny test system, not verified: at the player's risk. It is for a new campaign, chosen in its setup: this one plays ironsworn.");
+        expect(result.output).toBe("Installed the game system tiny 1.0.0, a tiny test system, not verified: at the player's risk. It is for a new campaign, chosen in its setup: this one plays free.");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-installed", data: { package: "@test/system-tiny", kind: "system", verified: false } });
-        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("system: ironsworn");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("system: free");
     });
 });
 
@@ -288,7 +288,7 @@ describe("rpg package install", () => {
         npm.describe = (spec) => Promise.resolve({ name: spec, version: "0.1.0", kind: "extension", api: 1 });
         context = { ...context, confirm: windowAnswering("yes") };
         expect((await rpg("package", "install", "npm:seasons-of-the-test")).output).toBe(
-            "seasons-of-the-test is installed on this computer, but it is for the game system fake, and the campaign plays ironsworn: the campaign does not use it.",
+            "seasons-of-the-test is installed on this computer, but it is for the game system fake, and the campaign plays free: the campaign does not use it.",
         );
         npm.describe = (spec) => Promise.resolve({ name: spec, version: "5.0.0", kind: "extension", api: 6 });
         expect((await rpg("package", "install", "omens")).output).toBe(
@@ -334,7 +334,7 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
         const listed = JSON.parse((await rpg("package", "list", "--json")).output) as { installed: Record<string, unknown>[]; systems: Record<string, unknown>[]; languages: Record<string, unknown>[]; };
         const ours = "https://github.com/stefanocaronia/rpg-engine/issues";
         expect(listed.installed.map((one) => [one.name, one.issues])).toEqual([["omens", "https://example.org/omens/bugs"], ["skies", ours]]);
-        expect(listed.systems.find((one) => one.name === "ironsworn")).toMatchObject({ issues: ours });
+        expect(listed.systems.find((one) => one.name === "free")).toMatchObject({ issues: ours });
         expect(listed.languages).toMatchObject([{ code: "de", issues: "https://github.com/someone/lingua-de/issues" }]);
     });
 
@@ -439,7 +439,7 @@ describe("the packages on the dashboard's page (D-475)", () => {
 
     it("lists the system and the packages, adds and takes out one of ours as the player, and the master hears of each", async () => {
         const before = JSON.parse((await send("GET", "/api/packages")).body);
-        expect(before.system).toMatchObject({ name: "ironsworn" });
+        expect(before.system).toMatchObject({ name: "free" });
         expect(before.otherSystems.map((one: { name: string; }) => one.name)).toContain("fake");
         expect(before.installed).toEqual([]);
         const shop = JSON.parse((await send("GET", "/api/packages?npm=true")).body);
@@ -448,7 +448,7 @@ describe("the packages on the dashboard's page (D-475)", () => {
         expect(added.status).toBe(202);
         expect(JSON.parse(added.body)).toEqual({ kind: "extension" });
         const listed = JSON.parse((await send("GET", "/api/packages")).body);
-        expect(listed.systems.map((one: { name: string; used: boolean; }) => [one.name, one.used])).toEqual(expect.arrayContaining([["ironsworn", true], ["fake", false]]));
+        expect(listed.systems.map((one: { name: string; used: boolean; }) => [one.name, one.used])).toEqual(expect.arrayContaining([["free", true], ["fake", false]]));
         const offered = JSON.parse((await send("GET", "/api/catalog")).body);
         expect(offered.entries).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "extension", title: "skies", source: "skies", verified: true, installed: skiesVersion })]));
         expect(offered.failed).toMatchObject({ github: expect.stringContaining("reach GitHub") });

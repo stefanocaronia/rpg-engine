@@ -1,0 +1,20 @@
+# The words of the free system in Turkish, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Karakter
+  Equipment: Ekipman
+fields:
+  concept: Konsept
+  abilities: Yetenekler
+  factions: Gruplar ve Örgütler
+  money: Para
+words:
+  free play, without a game system: serbest oyun, oyun sistemi olmadan
+  free: serbest
+  Try: Dene
+  Try {item}: "{item} dene"
+  I try {item}.: "{item} denerim."
+  I try {item} on {target}.: "{item} öğesini {target} üzerinde denerim."
+  I try {item} at {square}.: "{item} öğesini {square} karesinde denerim."
+  I try {item} on myself.: "{item} öğesini kendi üzerimde denerim."
+names: {}

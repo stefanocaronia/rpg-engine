@@ -1,0 +1,20 @@
+# The words of the free system in Finnish, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Hahmo
+  Equipment: Varusteet
+fields:
+  concept: konsepti
+  abilities: kyvyt
+  factions: ryhmittymät
+  money: raha
+words:
+  free play, without a game system: vapaa peli, ilman pelijärjestelmää
+  free: vapaa
+  Try: Yritä
+  Try {item}: "Yritä: {item}"
+  I try {item}.: "Yritän: {item}."
+  I try {item} on {target}.: "Yritän: {item} kohteeseen {target}."
+  I try {item} at {square}.: "Yritän: {item} ruutuun {square}."
+  I try {item} on myself.: "Yritän: {item} itseeni."
+names: {}

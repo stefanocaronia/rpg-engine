@@ -45,7 +45,11 @@ describe("the hooks of a system's code (D-448)", () => {
             "Ettore: grit 10/20 → 7/20.\nThe game system fake failed after this change: broken: on purpose. It is done all the same; meanwhile apply its rules yourself, as its pages say.",
         );
         expect(await ok("change", "Ettore", "grit", "--by=-1", { ...context, systemCode: {} })).toContain("The game system fake's code is not loaded: start the MCP server again (/mcp in Claude Code)");
-        expect(await ok("show", "Ettore")).toContain("grit 6/20");
+        // Code that does not load comes back with its package: the engine brings no system with code (D-513 (1)).
+        expect(await ok("change", "Ettore", "grit", "--by=-1", { ...context, systemCode: { fake: { problem: "broken on purpose" } } })).toContain(
+            "cannot load (broken on purpose): install it again with package install fake, or run npm run build in its repository, then start the MCP server again",
+        );
+        expect(await ok("show", "Ettore")).toContain("grit 5/20");
     });
 
     it("keep the engine's own notes when the code is not loaded: the marks of the turn, what a roll's effects ask", async () => {

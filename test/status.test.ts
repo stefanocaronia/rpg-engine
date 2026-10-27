@@ -30,9 +30,11 @@ describe("rpg status", () => {
     it("says the mode and what the setup still needs before the game starts, and leaves the instructions to their own command (MOD-7)", async () => {
         const status = await state();
         expect(status).toMatch(
-            /^Guadoscuro · mode setup\nStill to agree with the player: system \(installed: 5e, free, ironsworn, fake\), language \(a code, such as it\), mentor \(ask how well the player knows the game: never played, tutorial; a little, hints; well, off\), premise \(/,
+            /^Guadoscuro · mode setup\nStill to agree with the player: system \(installed: free, fake\), language \(a code, such as it\), mentor \(ask how well the player knows the game: never played, tutorial; a little, hints; well, off\), premise \(/,
         );
-        expect(status).toMatch(/veils \("none" is an answer\); set each with config\. When none is left and the player confirms: mode, to "session zero"\.\nNo player character yet\.$/);
+        expect(status).toMatch(
+            /veils \("none" is an answer\); set each with config\. When none is left and the player confirms: mode, to "session zero"\.\nGame systems to install, if the player wants one: 5e \(compatible with fifth edition, from the SRD\)\. .+\nNo player character yet\.$/,
+        );
         const file = (name: string): string => readFileSync(new URL(`../instructions/${name}`, import.meta.url), "utf8").replace(/\r\n/g, "\n").trim();
         expect((await rpg("instructions")).output).toBe(`${file("core.md")}\n\n${file("setup.md")}\n\n${openingLine}`);
     });
@@ -86,7 +88,9 @@ describe("rpg status", () => {
             [
                 "Guadoscuro · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
                 "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them.",
-                "Still missing: system (installed: 5e, free, ironsworn, fake), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
+                "Still missing: system (installed: free, fake), language, difficulty, lethality. Ask the player, then set each one with the config command (setting and value).",
+                // The engine brings free alone: ours are offered from its list, as npm cannot be asked here (D-513 (1)).
+                "Game systems to install, if the player wants one: 5e (compatible with fifth edition, from the SRD). Install the one chosen with package install and its name, then set it with config system: the campaign keeps it once it has a player character.",
                 "No game date yet: at the first scene, set it with advance to, at the scene's hour, such as day 1, 18:00.",
                 "PC: Ennio",
                 "Planned events: Sparizione di Rosa (day 1, 23:00) · Il rituale (day 2, 23:00) · La fiera (day 3, 06:00), and 1 more: find text planned, type event",

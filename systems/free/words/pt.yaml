@@ -1,0 +1,20 @@
+# The words of the free system in Portuguese, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Personagem
+  Equipment: Equipamento
+fields:
+  concept: conceito
+  abilities: habilidades
+  factions: facções
+  money: dinheiro
+words:
+  free play, without a game system: jogo livre, sem sistema de jogo
+  free: livre
+  Try: Tentar
+  Try {item}: Tentar {item}
+  I try {item}.: Eu tento {item}.
+  I try {item} on {target}.: Eu tento {item} em {target}.
+  I try {item} at {square}.: Eu tento {item} em {square}.
+  I try {item} on myself.: Eu tento {item} em mim mesmo.
+names: {}

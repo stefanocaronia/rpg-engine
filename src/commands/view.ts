@@ -535,9 +535,10 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
     const language = readSettings(root).language;
     const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context)) : undefined;
     const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;
-    // Only the player's own characters act from the sheet: the others act as the master says (D-495).
+    // Only the player's own characters act from the sheet: the others act as the master says (D-495). Talking to someone needs no game: a system without
+    // actions of its own still gives the player's characters theirs, none, so that the people around can be talked to.
     const own = isPlayerCharacter(page) && (page === knowledge.pc || knowledge.each !== undefined);
-    const actions = own ? system?.sheetActions : undefined;
+    const actions = own ? (system?.sheetActions ?? {}) : undefined;
     const story = own ? playerStory(page) : undefined;
     const secrets = knownSecretsApart(world, knowledge, page);
     const whoKnows = pageKnownBy(knowledge, page);

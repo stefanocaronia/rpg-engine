@@ -61,6 +61,8 @@ describe("architecture", () => {
             "library/folders.ts",
             // The test kit for extensions makes its campaigns in temporary folders, its extensions linked into them (D-506).
             "testing.ts",
+            // And its checks of a game system's own folder, read as it is, never a campaign (D-514).
+            "system-checks.ts",
         ];
         const sources = (readdirSync(sourceFolder, { recursive: true }) as string[]).map((path) => path.replaceAll("\\", "/")).filter((path) => path.endsWith(".ts"));
         const touching = sources.filter((path) => /from "node:fs(\/promises)?"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));

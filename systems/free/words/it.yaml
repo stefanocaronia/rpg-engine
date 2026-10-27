@@ -1,0 +1,19 @@
+# The words of free play in Italian, as the dashboard shows them (D-403): ours.
+groups:
+  Character: Personaggio
+  Equipment: Equipaggiamento
+fields:
+  concept: Concetto
+  abilities: Capacità
+  factions: Alleati e organizzazioni
+  money: Denaro
+words:
+  free play, without a game system: gioco libero, senza un sistema di gioco
+  # The system's name, as the top of the page shows it (D-521)
+  free: libero
+  "Try": "Prova"
+  "Try {item}": "Prova con {item}"
+  "I try {item}.": "Provo con {item}."
+  "I try {item} on {target}.": "Provo con {item} su {target}."
+  "I try {item} at {square}.": "Provo con {item} verso {square}."
+  "I try {item} on myself.": "Provo con {item} su di me."

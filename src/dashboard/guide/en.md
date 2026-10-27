@@ -28,7 +28,7 @@ The world stays the same from one evening to the next, even in a new chat, even 
 - **The world moves.** Threats advance while you rest or travel, and you see their signs.
 - **A campaign is a folder** on your computer: stop whenever you want, pick it up later.
 
-Today RPG Engine plays one game system, **fifth edition**, from the free System Reference Document 5.1. Others will come ([Coming later](#9-coming-later)).
+A game comes as a game system, a package the master installs for your campaign: today ours is **fifth edition**, from the free System Reference Document 5.1. Without one you play free, a story without numbers. Others will come ([Coming later](#9-coming-later)).
 
 ---
 
@@ -219,9 +219,11 @@ When the master asks you something, its banner stays at the top, whatever sectio
 
 The data of one game: its sheet, its numbers, its creatures, items, spells and rules text. Each campaign plays one system. RPG Engine works out the sheet and what is spent and comes back; how a feature works, the master reads in the rules and decides, as at a table.
 
-### 5.2 Fifth edition, included
+### 5.2 Fifth edition
 
 The races, classes, subclasses, a background and a feat of the SRD 5.1; the 319 spells, the weapons, armor, magic items and monsters; the rules chapters, which the master reads by their exact text; the full sheet, worked out.
+
+It is a package of its own: the master offers it when you set up a campaign and installs it. A campaign that plays it installs it by itself the first time it opens on a computer without it, and the master tells you.
 
 You can also play content the SRD lacks, from a book you own: the master writes it as pages of your campaign, and RPG Engine treats them as its own. RPG Engine ships only open content; what your master knows is not limited.
 
@@ -233,7 +235,7 @@ Ask the master: *[House rule: a natural 1 on an attack means you drop your weapo
 
 ### 5.4 Adding or importing your own game system
 
-Not yet: today RPG Engine plays only fifth edition ([Coming later](#9-coming-later)).
+A game system is a package: the master installs one from npm, a folder or a file, and one that is not ours only with your yes, in a window of your computer. Making one is a developer's work, described in RPG Engine's documents on GitHub. Turning a book of yours into a game system is not here yet ([Coming later](#9-coming-later)).
 
 ---
 

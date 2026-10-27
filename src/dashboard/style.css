@@ -5612,6 +5612,7 @@ button.row,
     display: inline-block;
     max-width: 100%;
     margin: -2px -4px;
+    vertical-align: top;
     padding: 2px 4px;
     border: 0;
     border-radius: var(--radius-s);
@@ -5623,6 +5624,11 @@ button.row,
     text-decoration: underline dotted color-mix(in srgb, var(--accent) 75%, transparent) 1px;
     text-underline-offset: 3px;
     cursor: pointer;
+}
+
+/* In a bulleted list a long name wraps as the item's text does, under its bullet. */
+.notes .act {
+    max-width: none;
 }
 
 /* Inline, a character after the last word, so that it never goes to a line of its own; mirrored by itself from right to left. */

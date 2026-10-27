@@ -1,7 +1,7 @@
 // The performance bench (step 11, D-194): times the commands on campaigns of several sizes, in one process as the MCP server runs them, with the files kept
 // for the session (D-193), and from the command line.
-// Run it with: node test/bench/bench.ts [sizes, such as 100,1000,5000] [--big for a game system as large as a whole SRD]. The command line runs dist/cli.js when
-// the engine is built, else src/cli.ts, which loads more slowly.
+// Run it with: node test/bench/bench.ts [sizes, such as 100,1000,5000] [--big for a game system as large as a whole SRD]. The game system is the 5e of its
+// repository beside this one, ../rpg-engine-5e. The command line runs dist/cli.js when the engine is built, else src/cli.ts, which loads more slowly.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,6 +13,8 @@ import { SessionStore } from "../../src/core/session-store.ts";
 import { enlargeSystem, generateWorld } from "./generate.ts";
 
 const engine = fileURLToPath(new URL("../../", import.meta.url));
+// The engine brings free alone (D-513 (1)): the 5e, as large as a game gets, comes from its repository.
+const fifthEdition = join(engine, "..", "rpg-engine-5e");
 const sizes = (process.argv.find((argument) => /^\d+(,\d+)*$/.test(argument)) ?? "100,1000").split(",").map(Number);
 const big = process.argv.includes("--big");
 const warmRuns = 5;
@@ -41,7 +43,11 @@ const cli = existsSync(join(engine, "dist", "cli.js")) ? join(engine, "dist", "c
 
 // The scratch folder goes even when a command fails half way.
 try {
-    enlargeSystem(join(engine, "systems", "5e"), join(systems, "5e"), big ? 45 : 1);
+    if (!existsSync(join(fifthEdition, "system.yaml"))) {
+        throw new Error(`The bench plays the 5e of its repository, which is not at ${fifthEdition}: clone rpg-engine-5e beside this repository.`);
+    }
+
+    enlargeSystem(fifthEdition, join(systems, "5e"), big ? 45 : 1);
     console.log(`| pages | command | first call | then (median of ${warmRuns}) |\n|---|---|---|---|`);
 
     for (const size of sizes) {
@@ -69,9 +75,9 @@ try {
         }
 
         const started = performance.now();
-        // The command line reads the systems of the package: the game system is the 5e as it ships.
+        // The command line reads the systems of this computer, where the 5e is installed or not: its pages are read only where it is.
         const run = spawnSync(process.execPath, [cli, "status"], { cwd: folder });
-        console.log(`| ${size} | status from the command line (${cli.endsWith(".js") ? "dist" : "src"}), with the 5e as it ships | ${Math.round(performance.now() - started)} ms (exit ${run.status}) | |`);
+        console.log(`| ${size} | status from the command line (${cli.endsWith(".js") ? "dist" : "src"}), with the systems of this computer | ${Math.round(performance.now() - started)} ms (exit ${run.status}) | |`);
         session.close();
     }
 } finally {

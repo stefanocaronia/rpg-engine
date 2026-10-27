@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef d90880b0 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -15,21 +15,21 @@ Deze handleiding is voor spelers: je hoeft niet te kunnen programmeren.
 
 ## 1. Wat RPG Engine is <!-- icon: about -->
 
-| Wie | Wat doet die |
+| Wie | Wat die doet |
 |---|---|
-| **Jij** | Je speelt je personage: wat het doet, zegt en probeert. |
-| **De spelleider** (de AI) | Vertelt het verhaal, speelt alle anderen, beslist wat er gebeurt en vraagt om worpen. |
-| **RPG Engine** | Bewaart de wereld in bestanden, gooit de dobbelstenen, telt levenspunten, geld, tijd en afstanden en houdt geheimen verborgen tot je ze ontdekt. |
+| **Jij** | Jij speelt je personage: wat die doet, zegt en probeert. |
+| **De spelleider** (de AI) | Vertelt het verhaal, speelt alle anderen, bepaalt wat er gebeurt en vraagt om worpen. |
+| **RPG Engine** | Bewaart de wereld in bestanden, gooit de dobbelstenen, telt hitpoints, geld, tijd en afstanden en houdt geheimen verborgen tot jij ze ontdekt. |
 
 De wereld blijft van de ene avond op de andere hetzelfde, ook in een nieuwe chat, ook met een andere AI:
 
 - **Wat gezegd is, blijft waar.** Een dode schurk blijft dood.
-- **De dobbelstenen zijn echt.** De spelleider kan ze niet buigen, behalve bij de makkelijkste moeilijkheid, als je die kiest.
-- **Geheimen blijven geheim.** De spelleider vertelt je nooit wat je personage niet weet.
-- **De wereld beweegt mee.** Dreigingen rukken op terwijl je rust of reist, en je ziet er de tekenen van.
-- **Een campagne is een map** op je computer: stop wanneer je wilt en pak het later weer op.
+- **De dobbelstenen zijn echt.** De spelleider kan ze niet buigen, behalve bij de makkelijkste moeilijkheidsgraad, als je die kiest.
+- **Geheimen blijven geheim.** De spelleider vertelt je nooit wat jouw personage niet weet.
+- **De wereld beweegt mee.** Dreigingen rukken op terwijl je rust of reist, en je ziet de tekenen ervan.
+- **Een campagne is een map** op je computer: stop wanneer je wilt en ga later verder.
 
-Op dit moment speelt RPG Engine één spelsysteem, de **vijfde editie**, uit het vrije System Reference Document 5.1. Andere volgen ([Komt later](#9-coming-later)).
+Een spel komt als spelsysteem, een pakket dat de spelleider voor je campagne installeert. Op dit moment is dat van ons de **vijfde editie**, uit de gratis System Reference Document 5.1. Zonder spelsysteem speel je vrij: een verhaal zonder cijfers. Er komen er meer ([Binnenkort](#9-coming-later)).
 
 ---
 
@@ -218,23 +218,25 @@ Als de spelleider je iets vraagt, blijft de banner bovenaan staan, in welk onder
 
 ### 5.1 Wat een spelsysteem is
 
-De gegevens van één spel: het karakterblad, de getallen, de wezens, voorwerpen, spreuken en de regeltekst. Elke campagne speelt één systeem. RPG Engine rekent het karakterblad uit en houdt bij wat er wordt uitgegeven en wat terugkomt. Hoe een eigenschap werkt, leest de spelleider in de regels en beslist die, zoals aan een echte speltafel.
+De gegevens van één spel: het karakterblad, de cijfers, de wezens, voorwerpen, spreuken en regelteksten. Elke campagne speelt één systeem. RPG Engine berekent het karakterblad en wat er wordt uitgegeven en terugkomt. Hoe een eigenschap werkt, leest de spelleider in de regels en beslist die, zoals aan een echte tafel.
 
-### 5.2 Vijfde editie, inbegrepen
+### 5.2 Vijfde editie
 
-De rassen, klassen, subklassen, een achtergrond en een talent uit de SRD 5.1; de 319 spreuken, de wapens, wapenrustingen, magische voorwerpen en monsters; de regelhoofdstukken, die de spelleider op hun exacte tekst leest; het volledige karakterblad, uitgerekend.
+De rassen, klassen, subklassen, een achtergrond en een feat van de SRD 5.1; de 319 spreuken, de wapens, wapenrustingen, magische voorwerpen en monsters; de hoofdstukken met regels, die de spelleider op de exacte tekst leest; het volledige karakterblad, uitgerekend.
 
-Je kunt ook inhoud spelen die in de SRD ontbreekt, uit een boek dat je zelf hebt: de spelleider schrijft die uit als pagina's van je campagne, en RPG Engine behandelt ze als eigen inhoud. RPG Engine levert alleen open inhoud mee; wat jouw spelleider weet, is niet beperkt.
+Het is een pakket op zich: de spelleider biedt het aan als je een campagne opzet en installeert het. Een campagne die dit systeem speelt, installeert het zelf de eerste keer dat de campagne opent op een computer zonder het pakket. De spelleider zegt dat dan tegen je.
 
-Je eigen handboeken kunnen je bibliotheek zijn. Vertel de spelleider waar ze staan, *[Mijn handboeken staan in D:\Books\5e.]*, of voeg hun map toe bij Packages › Library en zeg één keer ja in het venster dat je computer toont. RPG Engine leest ze op deze computer. Elke campagne gebruikt de mappen die je daar aanzet. De spelleider doorzoekt ze als er een regel moet worden beslist, na de SRD, en noemt daarbij het boek en de pagina. Ze lezen het best als tekst, of als pdf's waarvan je de tekst kunt selecteren. Een gescande pdf wordt gelezen vanaf de afbeeldingen van de pagina's, alleen op Windows, in een paar minuten en met een paar fouten. RPG Engine verandert je handboeken nooit, stuurt hun tekst nergens heen en kopieert die nooit naar een campagne.
+Je kunt ook inhoud spelen die de SRD niet heeft, uit een boek dat je bezit: de spelleider schrijft die uit als pagina's van je campagne en RPG Engine behandelt ze als eigen inhoud. RPG Engine levert alleen open inhoud mee; wat jouw spelleider weet, is niet beperkt.
+
+Je eigen handboeken kunnen je bibliotheek zijn. Vertel de spelleider waar ze staan, *[Mijn handboeken staan in D:\Books\5e.]*, of voeg hun map toe via Packages › Library en zeg één keer ja in het venster dat je computer toont. RPG Engine leest ze op deze computer. Elke campagne gebruikt de mappen die je daar aanzet. De spelleider zoekt erin als die een regel beslist, na de SRD, en noemt het boek en de pagina. Ze lezen het best als tekst of als pdf's waarvan je de tekst kunt selecteren. Een gescande pdf wordt gelezen aan de hand van afbeeldingen van de pagina's, alleen op Windows, in een paar minuten en met een paar fouten. RPG Engine verandert je handboeken nooit, stuurt de tekst nergens heen en kopieert die nooit naar een campagne.
 
 ### 5.3 Huisregels en je eigen aanvullingen
 
-Vraag het de spelleider: *[Huisregel: bij een natuurlijke 1 op een aanval laat je je wapen vallen.]* De spelleider bewaart die als afspraak van de tafel, of schrijft een pagina of een getal op het karakterblad als dat nodig is. Huisregels die al uitgeschreven zijn, kunnen als tekstbestanden in de map `rules` van de campagne.
+Vraag het aan de spelleider: *[Huisregel: bij een natuurlijke 1 op een aanval laat je je wapen vallen.]* De spelleider bewaart die als afspraak van de tafel, of schrijft een pagina of een getal van het karakterblad uit als dat nodig is. Huisregels die al uitgeschreven zijn, kunnen als tekstbestanden in de map `rules` van de campagne.
 
 ### 5.4 Je eigen spelsysteem toevoegen of importeren
 
-Nog niet: nu speelt RPG Engine alleen de vijfde editie ([Komt later](#9-coming-later)).
+Een spelsysteem is een pakket: de spelleider installeert er een uit npm, een map of een bestand. Eén dat niet van ons is, installeert de spelleider alleen met jouw ja, in een venster van je computer. Een spelsysteem maken is werk voor een ontwikkelaar en staat beschreven in de documenten van RPG Engine op GitHub. Een boek van jezelf omzetten in een spelsysteem kan nog niet ([Binnenkort](#9-coming-later)).
 
 ---
 

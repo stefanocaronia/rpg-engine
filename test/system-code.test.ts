@@ -8,12 +8,12 @@ import { findSystem, loadSystemCode, systemApiProblem, systemHasCode } from "../
 import { makeTempFolder, testSystemFolders } from "./support.ts";
 
 describe("the code of a game system (D-448)", () => {
-    it("loads the code of a system with a package of kind system, as the fake one, and none for one without, as Ironsworn", async () => {
+    it("loads the code of a system with a package of kind system, as the fake one, and none for one without, as free", async () => {
         const loaded = await loadSystemCode(testSystemFolders);
-        expect(Object.keys(loaded)).toEqual(["5e", "fake"]);
+        expect(Object.keys(loaded)).toEqual(["fake"]);
         expect(loaded.fake).toHaveProperty("code");
         expect(findSystem(testSystemFolders, "fake")?.code).toBe(true);
-        expect(findSystem(testSystemFolders, "ironsworn")?.code).toBe(false);
+        expect(findSystem(testSystemFolders, "free")?.code).toBe(false);
     });
 
     it("says why code that gives nothing cannot load, and leaves a package of another kind alone", async () => {
@@ -44,11 +44,11 @@ describe("the code of a game system (D-448)", () => {
         };
 
         system("@test/system-evil", "brought along");
-        system("@test/system-ironsworn", "another Ironsworn");
+        system("@test/system-free", "another free");
         system("@test/system-mine", "the player's own");
-        writeFileSync(join(modules, "..", "package.json"), JSON.stringify({ dependencies: { "@test/system-mine": "1.0.0", "@test/system-ironsworn": "1.0.0" } }));
+        writeFileSync(join(modules, "..", "package.json"), JSON.stringify({ dependencies: { "@test/system-mine": "1.0.0", "@test/system-free": "1.0.0" } }));
         const loaded = await loadSystemCode([...testSystemFolders, modules]);
-        expect(Object.keys(loaded).sort()).toEqual(["5e", "fake", "mine"]);
+        expect(Object.keys(loaded).sort()).toEqual(["fake", "mine"]);
     });
 
     it("runs another's code only after the player's yes, for its version and its files: a file changed since stops it again (D-478, D-511)", async () => {
@@ -95,7 +95,7 @@ describe("the code of a game system (D-448)", () => {
         expect(systemApiProblem(now)).toBeUndefined();
         // Its system.yaml with a key this engine does not know says to update it, beside what zod says.
         expect(() => findSystem([systems], "newer")).toThrow(/unknown key "shiny"\. Besides, it is made for the API 6, .*: rpg-engine must be updated first: .*, then open a new chat\.$/);
-        // A folder without a package.json is data alone, read whatever API: Ironsworn.
-        expect(systemApiProblem(findSystem(testSystemFolders, "ironsworn")?.folder ?? "")).toBeUndefined();
+        // A folder without a package.json is data alone, read whatever API: free.
+        expect(systemApiProblem(findSystem(testSystemFolders, "free")?.folder ?? "")).toBeUndefined();
     });
 });

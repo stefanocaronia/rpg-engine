@@ -1,7 +1,7 @@
 name: In the fight, attack a foe from the sheet, as words to the master
 covers: [act-sheet, act-target, act-strip]
-# Claude Code's hook listens: the sentence goes to the master by itself (D-495).
-setup: {bell: true}
+# Claude Code's hook listens: the sentence goes to the master by itself (D-495). On the 5e's demo, whose sheet has attacks.
+setup: {bell: true, system: 5e}
 steps:
   - phone: {tapOn: Attacks}   # on a phone the lists of the Combat card start closed
   - tapOn: Attack with Mace

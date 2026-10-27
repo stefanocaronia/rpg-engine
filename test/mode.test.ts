@@ -2,17 +2,28 @@
 import fc from "fast-check";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { madeSystem, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 let folder: string;
 let context: Context;
+let systems: string;
+
+/** A context in this folder that sees, beside the tests' own, a system of its fields alone: no sheet, no settings, no part of the instructions. */
+function bareContext(root: string): Context
+{
+    return { ...testContext(root), systemFolders: [systems, ...testSystemFolders] };
+}
+
+beforeAll(() => {
+    systems = madeSystem("bare", { "system.yaml": "title: a test system of its fields alone\nlanguage: en\nfields:\n  health: counter\n" });
+});
 
 beforeEach(() => {
     folder = makeTempFolder();
-    context = testContext(folder);
+    context = bareContext(folder);
 });
 
 afterEach(() => removeFolder(folder));
@@ -44,7 +55,7 @@ function file(name: string): string
 /** A campaign of the test system without a sheet, whose setup is done but for what `left` leaves out, with a written world. */
 async function setUp(left: string[] = []): Promise<void>
 {
-    await ok("init", "--name", "Ferro", "--system", "ironsworn");
+    await ok("init", "--name", "Ferro", "--system", "bare");
     await ok("write", "Guado", "--type", "place");
     const answers: [string, string][] = [
         ["language", "it"],
@@ -69,9 +80,9 @@ async function setUp(left: string[] = []): Promise<void>
 
 describe("the mode (MOD-1–MOD-7)", () => {
     it("MOD-1: a new campaign starts in setup; one made before modes is in play once it had a scene, in session zero once it has a player character", async () => {
-        await ok("init", "--name", "Ferro", "--system", "ironsworn");
+        await ok("init", "--name", "Ferro", "--system", "bare");
         expect(file("state.yaml")).toContain("mode: setup\n");
-        expect(await ok("status")).toMatch(/^Ferro · ironsworn, a test system based on Ironsworn · mode setup\n/);
+        expect(await ok("status")).toMatch(/^Ferro · bare, a test system of its fields alone · mode setup\n/);
 
         writeFileSync(join(folder, "state.yaml"), "date: day 1\n");
         expect(await ok("status")).toContain("· mode setup\n");
@@ -197,7 +208,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
     it("MOD-7: status says the mode on the campaign's line, and before play what the next one needs; in play the settings the master follows", async () => {
         await setUp(["dice"]);
         expect(await ok("status")).toContain(
-            "Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · units metric · mode setup\n"
+            "Ferro · it · bare, a test system of its fields alone · difficulty normal · lethality dice · saves checkpoint · rigor smooth · units metric · mode setup\n"
                 + "Difficulty normal: fights moderate to high; foes with sensible tactics, average toughness, normal morale; three clues to every conclusion; "
                 + "resources standard (treasure, supplies, prices); random encounters normal; threat clocks at their pace.\n"
                 + "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them.\n"
@@ -207,10 +218,10 @@ describe("the mode (MOD-1–MOD-7)", () => {
         await ok("write", "Kira", "--type", "character", "--set", "role=pc");
         await ok("mode", "play");
         expect(await ok("status")).toMatch(
-            /^Ferro · it · ironsworn, a test system based on Ironsworn · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice physical · units metric · mode play\nDifficulty normal: .+\nRigor smooth: .+\n(?!Still)/,
+            /^Ferro · it · bare, a test system of its fields alone · difficulty normal · lethality dice · saves checkpoint · rigor smooth · dice physical · units metric · mode play\nDifficulty normal: .+\nRigor smooth: .+\n(?!Still)/,
         );
         // config gives the chosen value with what it means in play, and status follows a change (D-263).
-        // Ironsworn counts no food nor what burns: its master is never promised them (review of 17 October).
+        // A system that counts no food nor what burns: its master is never promised them (review of 17 October).
         expect(await ok("config", "rigor", "rules")).toMatch(
             /^rigor: rules: as written: charge with change what is used up; encumbrance, fatigue and the like as the rules say; warn before something runs out, and once it has, the rule applies$/m,
         );
@@ -219,7 +230,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
     });
 
     it("answers a list with none only while it holds nothing, and an emptied list stays answered", async () => {
-        await ok("init", "--name", "Ferro", "--system", "ironsworn");
+        await ok("init", "--name", "Ferro", "--system", "bare");
         await ok("config", "lines", "--add", "ragni");
         expect(await refused("config", "lines", "none")).toBe('"lines" holds ragni: remove each one with remove, if the player no longer wants it. Nothing changed.');
         await ok("config", "lines", "--remove", "ragni");
@@ -269,7 +280,7 @@ describe("the laws of the mode, on campaigns made at random", () => {
                 try {
                     const settings = [
                         "name: Prova",
-                        "system: ironsworn",
+                        "system: bare",
                         ...Object.keys(answers).filter((setting) => setting !== made.unanswered).map((setting) => answers[setting]),
                         ...(made.companions === undefined ? [] : [`companions: ${made.companions}`]),
                     ];
@@ -288,7 +299,7 @@ describe("the laws of the mode, on campaigns made at random", () => {
                     const expected = setup && (made.to === "session zero" || zero);
                     outcomes.add(expected);
 
-                    const result = await runCommandLine(["mode", made.to], testContext(root));
+                    const result = await runCommandLine(["mode", made.to], bareContext(root));
                     expect(result.exitCode === 0, result.output).toBe(expected);
                     expect(readFileSync(join(root, "state.yaml"), "utf8")).toBe(expected ? `mode: ${made.to}\n` : "mode: setup\n");
                 } finally {

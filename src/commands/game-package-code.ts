@@ -1,18 +1,18 @@
 // The code of the campaign's packages, its game system's and its extensions', with one contract (D-63, D-428, D-436, D-514): their commands, what they do
 // when time passes, and the game they reach it through.
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parse, stringify } from "yaml";
 import { z } from "zod";
 import { campaignFileName, findCampaign, readTextSetting, requireCampaign } from "../campaign/index.ts";
-import { type CardAsked, type Context, engineSystemsFolder } from "../core/context.ts";
+import type { CardAsked, Context } from "../core/context.ts";
 import { installedFromFolder, realPath } from "../core/files.ts";
 import { type Formula, parseFormula } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
 import type { Asked, AskedRoll, Asking, ButtonWords, Game, GameMoment, GamePage, GameView, PackageCode, PackageCommand, PackageEntry, Rolled, RollFor, WidgetText, WidgetValue } from "../core/package-api.ts";
 import type { Problem } from "../core/problem.ts";
 import { type Command, defineCommand } from "../core/registry.ts";
-import { files, isInside } from "../core/store.ts";
+import { files } from "../core/store.ts";
 import { sameName, sameWord, valueNamed } from "../core/text.ts";
 import { getVersion } from "../core/version.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
@@ -548,7 +548,9 @@ function systemCode(code: CodePackage, context: Context): PackageCode | string |
         return loaded.refused;
     }
 
-    return "problem" in loaded ? `cannot load (${loaded.problem}): install rpg-engine again, or run npm run build in its repository, then start the MCP server again` : (loaded.code as PackageCode);
+    return "problem" in loaded
+        ? `cannot load (${loaded.problem}): install it again with package install ${code.name}, or run npm run build in its repository, then start the MCP server again`
+        : (loaded.code as PackageCode);
 }
 
 /** The address an extension's code is imported from, for its version and the installs so far; undefined when its code does not run. */
@@ -774,8 +776,7 @@ function codeProblem(code: CodePackage, error: unknown): Problem
 {
     const why = error instanceof Error ? error.message : String(error);
     const kind = code.kind === "system" ? "game system" : "extension";
-    // A system the engine brings comes back with the engine, never with package.
-    const shipped = code.kind === "system" && isInside(resolve(engineSystemsFolder), resolve(code.folder));
-    const fix = shipped ? "install rpg-engine again, or run npm run build in its repository, then start the game's server again" : `install it again, or another version, with package install ${code.name}`;
+    // The engine brings no system with code (D-513 (1)): a system's comes back with its package, as an extension's.
+    const fix = `install it again, or another version, with package install ${code.name}`;
     return { path: campaignFileName, message: `The code of the ${kind} ${code.package} cannot be used: ${why}. Its commands are left out.`, fix };
 }

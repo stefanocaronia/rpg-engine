@@ -1,4 +1,6 @@
-// The demo campaign of the dashboard (D-272), in tmp/dashboard-demo: made the first time, then kept, so that rpg can change it from its folder. Not part of the tests.
+// The demo campaigns of the dashboard (D-272), made the first time, then kept, so that rpg can change them from their folder. Not part of the tests. One plays
+// free, the engine's own system, in tmp/dashboard-demo; the other the 5e of its repository beside this one, in tmp/dashboard-demo-5e, for the 5e's cards:
+// the death saves and the hit dice (D-513 (1)).
 import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseDocument } from "yaml";
@@ -17,34 +19,69 @@ import { codexPictures, hostWriter } from "../../src/pictures/index.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { inPlay } from "../support.ts";
 
-export const demoFolder = join(import.meta.dirname, "..", "..", "tmp", "dashboard-demo");
+/** The game systems a demo plays: free, which the engine brings, or the 5e of its repository. */
+export type DemoSystem = "free" | "5e";
+
+/** The folder of each demo campaign. */
+export function demoFolderOf(system: DemoSystem): string
+{
+    return join(import.meta.dirname, "..", "..", "tmp", system === "free" ? "dashboard-demo" : "dashboard-demo-5e");
+}
+
+/** The demo of free, the engine's own system. */
+export const demoFolder = demoFolderOf("free");
+
+/** The 5e's repository, beside the engine's (D-506, D-514). */
+export const fifthEditionRepository = resolve(import.meta.dirname, "..", "..", "..", "rpg-engine-5e");
+
+/** Why the demo of the 5e cannot be made here, with what to do; undefined when its repository is beside the engine, built. */
+export function fifthEditionMissing(): string | undefined
+{
+    if (!existsSync(join(fifthEditionRepository, "system.yaml"))) {
+        return `the 5e's repository is not beside the engine (${fifthEditionRepository}): clone rpg-engine-5e there`;
+    }
+
+    return existsSync(join(fifthEditionRepository, "dist", "index.js")) ? undefined : `the 5e's repository is not built: run npm run build in ${fifthEditionRepository}`;
+}
 
 /** A question the demo asks as the master does with ask: checks or answers, the dice of a rest (ASK-14), or an attempt on a lock with the lockpicking extension (D-507). */
 export type DemoQuestion = { question: string; options: string[]; } | { question: string; recipe: string; } | { question: string; lock: string; check: string; };
 
-/**
- * The checks and the choice the demo asks in turn, of Ettore, a cleric of the third level: one die, two with advantage, an answer, dice rerolled, the hit dice
- * of a short rest, and an attempt on Bertoldo's chest when the lockpicking extension is there.
- */
-export const demoQuestions: DemoQuestion[] = [
-    { question: "Il guado è gonfio di pioggia: se scivoli, la corrente ti porta verso le rapide", options: ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"] },
-    { question: "Lo spettro ti stringe la gola: se cedi, il gelo ti toglie le forze", options: ["Tiro salvezza Saggezza 2d20kh1+wis-save"] },
-    { question: "Il mercante giura che il sigillo è autentico: se sbagli, perdi l'unico indizio", options: ["Intuizione 1d20+insight"] },
+/** The choices the demos ask alike: a way to jump, and four ways past the captain. */
+const demoChoices: DemoQuestion[] = [
     { question: "La passerella si spezza sotto di te: da che parte salti?", options: ["Verso la riva", "Verso la barca"] },
-    { question: "La mazza cala sullo scheletro: quanto fa male?", options: ["Danni, rilanciando 1 e 2 una volta 2d6ro<=2+2"] },
     {
         question: "Il capitano delle guardie vi sbarra la strada del ponte",
         options: ["Gli mostro il sigillo del vescovo", "Provo a corromperlo con le monete d'argento", "Torniamo indietro e cerchiamo il guado", "Lo sfido a duello davanti ai suoi uomini"],
     },
-    { question: "Riposo breve sotto il mulino, mentre la pioggia batte sulle pale: quanti dadi vita spendi?", recipe: "short rest" },
-    { question: "Il forziere di Bertoldo, mentre i briganti rovesciano i tavoli: un 1 fa scattare la molla", lock: "Forziere di Bertoldo", check: "Scasso" },
 ];
 
-/** Our extensions, in their repositories beside the engine's (D-506): the demo uses each that is there and built, as the player's own. */
-const demoExtensions = ["rpg-engine-weather", "rpg-engine-lockpicking"];
+/**
+ * The checks and the choices the demo asks in turn, of Ettore. In free play a die when the player wants one (one, two with the better kept, rerolled); in the
+ * 5e, of a cleric of the third level, with the hit dice of a short rest, and an attempt on Bertoldo's chest when the lockpicking extension is there.
+ */
+const demoQuestions: Record<DemoSystem, DemoQuestion[]> = {
+    free: [
+        { question: "Il guado è gonfio di pioggia: se scivoli, la corrente ti porta verso le rapide", options: ["Tira il dado 1d6"] },
+        { question: "Lo spettro ti stringe la gola: se cedi, il gelo ti toglie le forze", options: ["Tira con la fede dalla tua 2d6kh1"] },
+        demoChoices[0],
+        { question: "La mazza cala sullo scheletro: quanto fa male?", options: ["Danni, rilanciando 1 e 2 una volta 2d6ro<=2+2"] },
+        demoChoices[1],
+    ],
+    "5e": [
+        { question: "Il guado è gonfio di pioggia: se scivoli, la corrente ti porta verso le rapide", options: ["Atletica 1d20+athletics", "Acrobazia 1d20+acrobatics"] },
+        { question: "Lo spettro ti stringe la gola: se cedi, il gelo ti toglie le forze", options: ["Tiro salvezza Saggezza 2d20kh1+wis-save"] },
+        { question: "Il mercante giura che il sigillo è autentico: se sbagli, perdi l'unico indizio", options: ["Intuizione 1d20+insight"] },
+        demoChoices[0],
+        { question: "La mazza cala sullo scheletro: quanto fa male?", options: ["Danni, rilanciando 1 e 2 una volta 2d6ro<=2+2"] },
+        demoChoices[1],
+        { question: "Riposo breve sotto il mulino, mentre la pioggia batte sulle pale: quanti dadi vita spendi?", recipe: "short rest" },
+        { question: "Il forziere di Bertoldo, mentre i briganti rovesciano i tavoli: un 1 fa scattare la molla", lock: "Forziere di Bertoldo", check: "Scasso" },
+    ],
+};
 
-/** Where the demo links them, apart from the packages the Packages page installs: the first folder by a name wins. */
-const linkedFolder = `${demoFolder}-linked`;
+/** Our extensions, in their repositories beside the engine's (D-506): the demo uses each that is there and built, as the player's own; the lockpicking needs the 5e. */
+const demoExtensions: { repository: string; system?: DemoSystem; }[] = [{ repository: "rpg-engine-weather" }, { repository: "rpg-engine-lockpicking", system: "5e" }];
 
 /**
  * The demo's dashboard, which can also ask the player on its page, as the master does with ask (D-279), where Ettore goes on the map (ASK-11), and roll as the
@@ -52,45 +89,62 @@ const linkedFolder = `${demoFolder}-linked`;
  */
 export interface DemoDashboard extends Dashboard
 {
-    /** Whether the lockpicking extension is there: without it, the demo asks no attempt on a lock. */
-    lockpicking: boolean;
+    /** Its campaign's folder, and the game system it plays. */
+    folder: string;
+    system: DemoSystem;
+    /** What the demo asks in turn: an attempt on a lock only with the lockpicking extension. */
+    questions: DemoQuestion[];
     ask(asked: DemoQuestion): Promise<string>;
     askSquare(question: string): Promise<string>;
     roll(...args: string[]): Promise<string>;
 }
 
-/** Serves the built dashboard of the demo campaign, making the campaign first when it is not there; on the dashboard's ports unless others are given. */
-export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
+/**
+ * Serves the built dashboard of a demo campaign, free's unless the 5e is asked, making the campaign first when it is not there; on the dashboard's ports unless
+ * others are given. The 5e's demo needs its repository beside the engine, built.
+ */
+export async function serveDemo(ports?: number[], system: DemoSystem = "free"): Promise<DemoDashboard>
 {
+    const folder = demoFolderOf(system);
+    const missing = system === "5e" ? fifthEditionMissing() : undefined;
+
+    if (missing !== undefined) {
+        throw new Error(`The demo of the 5e cannot be made: ${missing}.`);
+    }
+
     // Codex as the chat has it, for Settings to say whether pictures can be made here (D-341); the demo never has one made.
     // And what translates the page into a language the package does not ship, with a data folder of the demo's own, never the player's (D-406).
     // And npm, the web and the window of the player's yes, for the Packages page's catalog to list, add and take away for real: in a folder of packages of the
     // demo's own, so that the player's campaigns never see what the demo installs (D-436, D-485).
-    const own = defaultContext(demoFolder);
-    const packages = `${demoFolder}-packages`;
+    const own = defaultContext(folder);
+    const packages = `${folder}-packages`;
+    const linked = `${folder}-linked`;
     const context: Context = {
         ...own,
-        systemFolders: [own.systemFolders[0], join(packages, "node_modules")],
-        extensionFolders: [linkedFolder, join(packages, "node_modules")],
+        // The 5e linked from its repository, as the player's own: the first folder by a name wins.
+        systemFolders: [own.systemFolders[0], ...(system === "5e" ? [linkFifthEdition(`${folder}-systems`)] : []), join(packages, "node_modules")],
+        extensionFolders: [linked, join(packages, "node_modules")],
         packages: npmPackages(packages),
         download: downloadBytes,
         confirm: systemConfirm(process.platform, process.env),
         pictures: codexPictures(),
         writer: hostWriter(() => undefined),
-        home: `${demoFolder}-home`,
+        home: `${folder}-home`,
         // The library's books indexed in the demo's own folder, read here in the demo's process (D-491 (13)).
-        bookIndex: join(`${demoFolder}-home`, "library"),
-        readLibrary: () => void readLibraryHere(join(`${demoFolder}-home`, "library")),
+        bookIndex: join(`${folder}-home`, "library"),
+        readLibrary: () => void readLibraryHere(join(`${folder}-home`, "library")),
     };
 
-    if (!existsSync(join(demoFolder, "campaign.yaml"))) {
-        await makeDemo(context);
+    if (!existsSync(join(folder, "campaign.yaml"))) {
+        // The 5e's code works out the sheet as Ettore is written.
+        context.systemCode = await loadSystemCode(context.systemFolders);
+        await makeDemo(context, folder, system);
     }
 
-    const lockpicking = linkDemoExtensions(join(packages, "node_modules")).includes("@rpgengine/lockpicking");
+    const lockpicking = linkDemoExtensions(folder, linked, join(packages, "node_modules"), system).includes("@rpgengine/lockpicking");
 
     // The lock and the tools, written once, on a demo made before them too.
-    if (lockpicking && !existsSync(join(demoFolder, "world", "items", `${demoLock}.md`))) {
+    if (lockpicking && !existsSync(join(folder, "world", "items", `${demoLock}.md`))) {
         await makeDemoLock(context);
     }
 
@@ -110,7 +164,9 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
 
     return {
         ...dashboard,
-        lockpicking,
+        folder,
+        system,
+        questions: demoQuestions[system].filter((question) => !("lock" in question) || lockpicking),
         ask: async (asked) => {
             await session.ready();
 
@@ -141,45 +197,60 @@ export async function serveDemo(ports?: number[]): Promise<DemoDashboard>
     };
 }
 
+/** Links the 5e's repository into the demo's own folder of systems, as rpg-engine/testing does: by its package's name, so that it is the 5e. The folder. */
+function linkFifthEdition(systems: string): string
+{
+    const link = join(systems, "@rpgengine", "system-5e");
+    unlinkFolder(link);
+    mkdirSync(join(systems, "@rpgengine"), { recursive: true });
+    // A junction on Windows, which needs no rights; a link elsewhere.
+    symlinkSync(fifthEditionRepository, link, "junction");
+    return systems;
+}
+
 /**
  * Links our extensions that are beside the engine and built into the demo's own folder, as rpg-engine/testing does: installed from a folder, so never asked
- * the player's yes, and listed in campaign.yaml. One not there is unlinked and left out, unless the Packages page installed it, and the terminal says so.
- * The packages linked, by name.
+ * the player's yes, and listed in campaign.yaml. One not there, or made for another system, is unlinked and left out, unless the Packages page installed it,
+ * and the terminal says so. The packages linked, by name.
  */
-function linkDemoExtensions(installed: string): string[]
+function linkDemoExtensions(folder: string, linkedFolder: string, installed: string, system: DemoSystem): string[]
 {
     const linked: string[] = [];
     const listed: Record<string, string | undefined> = {};
 
-    for (const repository of demoExtensions) {
-        const folder = resolve(import.meta.dirname, "..", "..", "..", repository);
-        const manifest = readManifest(folder);
-        const name = `@rpgengine/${repository.replace(/^rpg-engine-/, "")}`;
+    for (const extension of demoExtensions) {
+        const repository = resolve(import.meta.dirname, "..", "..", "..", extension.repository);
+        const manifest = readManifest(repository);
+        const name = `@rpgengine/${extension.repository.replace(/^rpg-engine-/, "")}`;
         const link = join(linkedFolder, name);
         unlinkFolder(link);
 
-        if (manifest === undefined || !existsSync(join(folder, manifest.main ?? "dist/index.js"))) {
-            const why = manifest === undefined ? `not beside the engine (${folder})` : `not built: run npm run build in ${folder}`;
-            console.log(`${repository}: ${why}. The demo runs without it.`);
+        if (extension.system !== undefined && extension.system !== system) {
+            continue;
+        }
+
+        if (manifest === undefined || !existsSync(join(repository, manifest.main ?? "dist/index.js"))) {
+            const why = manifest === undefined ? `not beside the engine (${repository})` : `not built: run npm run build in ${repository}`;
+            console.log(`${extension.repository}: ${why}. The demo runs without it.`);
             listed[name] = readManifest(join(installed, name))?.version;
             continue;
         }
 
         mkdirSync(join(linkedFolder, "@rpgengine"), { recursive: true });
         // A junction on Windows, which needs no rights; a link elsewhere.
-        symlinkSync(folder, link, "junction");
+        symlinkSync(repository, link, "junction");
         listed[manifest.name] = manifest.version;
         linked.push(manifest.name);
     }
 
-    listExtensions(listed);
+    listExtensions(folder, listed);
     return linked;
 }
 
 /** Sets the extensions campaign.yaml lists, by name, each to its version or left out when undefined; the others, its comments and the rest as written. */
-function listExtensions(listed: Record<string, string | undefined>): void
+function listExtensions(folder: string, listed: Record<string, string | undefined>): void
 {
-    const file = join(demoFolder, "campaign.yaml");
+    const file = join(folder, "campaign.yaml");
     const written = readFileSync(file, "utf8");
     const document = parseDocument(written);
     const extensions = { ...(document.toJS() as { extensions?: Record<string, string>; }).extensions };
@@ -383,10 +454,11 @@ const caveMap = [
 ];
 
 /**
- * Ettore, a cleric of the third level hurt and with a blessing, and Lupa, a wolf at his side, at the inn: under the rigor simulation, so that his chain mail
- * and his pack make him encumbered, a night at the camp eats a ration, and the torch he lit on the road still burns; attuned to two of three things.
+ * Ettore, hurt and with a blessing, and Lupa, a wolf at his side, at the inn, under the rigor simulation; in free play a cleric of his own words, with the
+ * coins of the campaign. In the 5e a cleric of the third level, whose chain mail and pack make him encumbered, a night at the camp eats a ration, and the
+ * torch he lit on the road still burns; attuned to two of three things.
  */
-async function makeDemo(context: Context): Promise<void>
+async function makeDemo(context: Context, folder: string, system: DemoSystem): Promise<void>
 {
     const rpg = async (...args: string[]): Promise<void> => {
         const result = await runCommandLine(args, context);
@@ -396,9 +468,15 @@ async function makeDemo(context: Context): Promise<void>
         }
     };
 
-    await rpg("init", "--name", "Guadoscuro", "--language", "it", "--system", "5e", "--difficulty", "normal", "--lethality", "dice");
-    inPlay(demoFolder);
+    await rpg("init", "--name", "Guadoscuro", "--language", "it", "--system", system, "--difficulty", "normal", "--lethality", "dice");
+    inPlay(folder);
     await rpg("config", "rigor", "simulation");
+
+    // Free play gives no coins: the campaign does (MON-1).
+    if (system === "free") {
+        await rpg("config", "coins", "mo 100, ma 10, mr 1");
+    }
+
     await rpg("advance", "--to", "day 1, 07:00");
     await rpg(
         "write",
@@ -411,11 +489,51 @@ async function makeDemo(context: Context): Promise<void>
     // Its map (GRD-1, D-324): the hall with the hearth and the tables, the back room with the counter, the stairs and the barrels, the door to the village.
     await rpg("write", "Locanda del Guado#Pianta", "--text", ["```map", ...innMap, "```"].join("\n"));
     // Its picture (D-308), made once by Codex for the demo.
-    mkdirSync(join(demoFolder, "images"), { recursive: true });
-    copyFileSync(join(import.meta.dirname, "locanda-del-guado.webp"), join(demoFolder, "images", "Locanda del Guado.webp"));
+    mkdirSync(join(folder, "images"), { recursive: true });
+    copyFileSync(join(import.meta.dirname, "locanda-del-guado.webp"), join(folder, "images", "Locanda del Guado.webp"));
     await rpg("write", "Locanda del Guado", "--set", "image=[[Locanda del Guado.webp]]");
     // Before session zero, the point to start over from with a new character (D-361).
-    makeSave(demoFolder, context, "session zero", "session zero");
+    makeSave(folder, context, "session zero", "session zero");
+    await (system === "free" ? makeFreeParty(rpg) : makeFifthEditionParty(rpg));
+
+    // Their portraits (D-408), made once by Codex for the demo and cut to the face.
+    for (const name of ["Ettore", "Lupa"]) {
+        copyFileSync(join(import.meta.dirname, `${name.toLowerCase()}.webp`), join(folder, "images", `${name}.webp`));
+        await rpg("write", name, "--set", `image=[[${name}.webp]]`);
+    }
+
+    // The torch he lights on the road: the 5e's, which burns down (UPK-3); in free play an effect of the campaign's words.
+    await makeDemoWorld(rpg, (label, why) => makeSave(folder, context, label, why), system === "5e" ? "Torch" : "Torcia");
+    await makeDemoFight(rpg, folder, system);
+    await rpg("effect", "add", "Ettore", "Benedizione", "--for", "1m");
+}
+
+/** Ettore and Lupa in free play: who they are and what they do well, in the player's words; what he carries, a pack with what it holds, and his coins. */
+async function makeFreeParty(rpg: (...args: string[]) => Promise<void>): Promise<void>
+{
+    const ettore = [
+        "role=pc",
+        "concept=Un chierico nano della Rocca, che cura i viandanti e cita le scritture a ogni pasto",
+        "abilities=[curare le ferite, leggere le persone, la mazza, le preghiere che scacciano i morti]",
+        "money=15 mo 7 ma",
+    ];
+    await rpg("write", "Ettore", "--type", "character", ...ettore.flatMap((field) => ["--set", field]));
+
+    // The kinds of goods are the campaign's own: a pouch in the pack, with something in it, two levels inside (STK-1).
+    for (const kind of ["Gessetti", "Acciarino", "Razioni", "Torce", "Corda di canapa"]) {
+        await rpg("write", kind, "--type", "item");
+    }
+
+    await rpg("write", "Borsa di Ettore", "--type", "item", "--add", "contains=[[Gessetti]] 3", "--add", "contains=[[Acciarino]] 1");
+    await rpg("write", "Zaino di Ettore", "--type", "item", "--add", "contains=[[Razioni]] 5", "--add", "contains=[[Torce]] 6", "--add", "contains=[[Borsa di Ettore]]");
+    await rpg("write", "Ettore", "--add", "inventory=una mazza", "--add", "inventory=una cotta di maglia", "--add", "inventory=uno scudo", "--add", "inventory=[[Zaino di Ettore]]");
+    await rpg("write", "Ettore", "--add", "inventory=[[Corda di canapa]] 1", "--add", "inventory=simbolo sacro d'argento");
+    await rpg("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "concept=Una lupa grigia che Ettore curò da cucciola", "--set", "abilities=[il fiuto, il morso]");
+}
+
+/** Ettore, a cleric of the third level of the 5e, with what he carries, the arms he wears and what he is attuned to, and Lupa, a wolf (D-431, D-429, BND-1). */
+async function makeFifthEditionParty(rpg: (...args: string[]) => Promise<void>): Promise<void>
+{
     const ettore = [
         "role=pc",
         "alignment=lawful good",
@@ -442,26 +560,17 @@ async function makeDemo(context: Context): Promise<void>
     ];
     await rpg("write", "Ettore", "--type", "character", ...ettore.flatMap((field) => ["--set", field]));
     await rpg("write", "Ettore", "--set", "prepared=[[Healing Word]], [[Guiding Bolt]]");
-    // What a cleric carries (D-431, D-429): kinds of the system in stacks, a pack with what it holds, the arms worn, the coins.
-    // A pouch in the pack, with something in it: two levels inside.
+    // What a cleric carries: kinds of the system in stacks, a pack with what it holds, the arms worn, the coins. A pouch in the pack, with something in it:
+    // two levels inside.
     await rpg("write", "Borsa di Ettore", "--type", "item", "--set", "item=[[Pouch]]", "--add", "contains=[[Chalk|gessetti]] 3", "--add", "contains=[[Tinderbox|acciarino]] 1");
     await rpg("write", "Zaino di Ettore", "--type", "item", "--set", "item=[[Backpack]]", "--add", "contains=[[Rations|razioni]] 5", "--add", "contains=[[Torch|torce]] 6", "--add", "contains=[[Borsa di Ettore]]");
     await rpg("write", "Ettore", "--add", "inventory=[[Mace]] 1", "--add", "inventory=[[Chain Mail]] 1", "--add", "inventory=[[Shield]] 1", "--add", "inventory=[[Zaino di Ettore]]");
     await rpg("write", "Ettore", "--add", "inventory=[[Hempen Rope|corda di canapa]] 1", "--add", "inventory=simbolo sacro d'argento", "--set", "money=15 gp 7 sp");
-    // Two things he is attuned to, of three at most (BND-1): a pendant a life cleric would wear, and a ring against the mountains' cold.
+    // Two things he is attuned to, of three at most: a pendant a life cleric would wear, and a ring against the mountains' cold.
     await rpg("write", "Ettore", "--add", "inventory=[[Periapt of Wound Closure|pendente della chiusura delle ferite]] 1", "--add", "inventory=[[Ring of Warmth|anello del calore]] 1");
     await rpg("write", "Ettore", "--set", "equipped=[[Mace]], [[Chain Mail]], [[Shield]], [[Periapt of Wound Closure]], [[Ring of Warmth]]");
     await rpg("write", "Ettore", "--set", "attuned=[[Periapt of Wound Closure]], [[Ring of Warmth]]");
     await rpg("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Wolf]]");
-
-    // Their portraits (D-408), made once by Codex for the demo and cut to the face.
-    for (const name of ["Ettore", "Lupa"]) {
-        copyFileSync(join(import.meta.dirname, `${name.toLowerCase()}.webp`), join(demoFolder, "images", `${name}.webp`));
-        await rpg("write", name, "--set", `image=[[${name}.webp]]`);
-    }
-
-    await makeDemoWorld(rpg, (label, why) => makeSave(demoFolder, context, label, why));
-    await rpg("effect", "add", "Ettore", "Benedizione", "--for", "1m");
 }
 
 /**
@@ -471,7 +580,7 @@ async function makeDemo(context: Context): Promise<void>
  * and Lupa came down the road from the castle, with a night at a camp: the trail, and a save at the castle, the start, at the camp and at the inn (D-359). The
  * cave and the spring stay unknown.
  */
-async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (label: string, why: string) => void): Promise<void>
+async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (label: string, why: string) => void, torch: string): Promise<void>
 {
     const place = (name: string, ...fields: string[]): Promise<void> => rpg("write", name, "--type", "place", ...fields.flatMap((field) => [field.startsWith("environment=") || field.startsWith("contains=") ? "--add" : "--set", field]));
     await place("Guadoscuro", "kind=village", "contains=[[Locanda del Guado]]");
@@ -549,7 +658,7 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (l
         // Down to the ford at dusk, in the rain, with a torch lit (UPK-3): it still burns at the inn.
         if (stop === "Guadoscuro") {
             await rpg("advance", "--to", "day 2, 17:40");
-            await rpg("effect", "add", "Ettore", "Torch");
+            await rpg("effect", "add", "Ettore", torch);
             await rpg("advance", "--to", "day 2, 18:00");
         }
     }
@@ -559,26 +668,29 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (l
     // In from the village by the door, then by the fire.
     await rpg("move", "Ettore", "--at", "E6");
     await rpg("move", "Lupa", "--at", "F6");
-    await makeDemoFight(rpg);
 }
 
 /**
  * A brawl at the inn, so that Combat is always there to look at (D-314): two bandits the character does not know, as it sees them (D-416), marked hostile as
  * they attack (D-415), on the map, in the order of the turns, Ettore's first.
  */
-async function makeDemoFight(rpg: (...args: string[]) => Promise<void>): Promise<void>
+async function makeDemoFight(rpg: (...args: string[]) => Promise<void>, folder: string, system: DemoSystem): Promise<void>
 {
     const now = "Due incappucciati rovesciano i tavoli e sguainano i coltelli";
-    // A creature of the campaign over the system's, with its mini (D-420), made once by Codex for the demo.
-    copyFileSync(join(import.meta.dirname, "brigante.webp"), join(demoFolder, "images", "Brigante.webp"));
-    await rpg("write", "Brigante", "--type", "creature", "--set", "creature=[[Bandit]]", "--set", "image=[[Brigante.webp]]", "--text", "Un brigante della Strada del Re.");
+    // A creature of the campaign, over the system's in the 5e, with its mini (D-420), made once by Codex for the demo.
+    copyFileSync(join(import.meta.dirname, "brigante.webp"), join(folder, "images", "Brigante.webp"));
+    const base = system === "5e" ? ["--set", "creature=[[Bandit]]"] : [];
+    await rpg("write", "Brigante", "--type", "creature", ...base, "--set", "image=[[Brigante.webp]]", "--text", "Un brigante della Strada del Re.");
     await rpg("scene", "open", "--title", "Rissa alla locanda", "--type", "combat", "--place", "Locanda del Guado", "--creatures", "Brigante=2", "--seen", "Brigante=brigante incappucciato", "--now", now);
     await rpg("move", "Brigante 1", "--at", "I4");
     await rpg("move", "Brigante 2", "--at", "G7");
     await rpg("scene", "order", "--order", "Ettore", "--order", "Brigante 1", "--order", "Lupa", "--order", "Brigante 2");
     await rpg("scene", "hostile", "--who", "Brigante 1", "--who", "Brigante 2");
-    // Ettore has swung once: his action is used, the bonus action and the reaction free (D-453).
-    await rpg("scene", "use", "--who", "Ettore", "--uses", "attack");
+
+    // Ettore has swung once in the 5e: his action is used, the bonus action and the reaction free (D-453); free play counts no uses of a turn.
+    if (system === "5e") {
+        await rpg("scene", "use", "--who", "Ettore", "--uses", "attack");
+    }
 }
 
 /**

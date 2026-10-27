@@ -1,7 +1,7 @@
 name: In a fight, on the character's turn, see how hurt the first foe is
 covers: [combat-turn]
-# The demo's own fight: the brawl at the inn, Ettore's turn.
-setup: {}
+# The demo's own fight: the brawl at the inn, Ettore's turn; on the 5e's demo, whose foes have hit points to look hurt by.
+setup: {system: 5e}
 steps:
   - assertVisible: Your turn
   - tapOn: Your turn

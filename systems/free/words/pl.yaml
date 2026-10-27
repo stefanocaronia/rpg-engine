@@ -1,0 +1,20 @@
+# The words of the free system in Polish, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Postać
+  Equipment: Ekwipunek
+fields:
+  concept: Koncepcja
+  abilities: Cechy
+  factions: Frakcje
+  money: Pieniądze
+words:
+  free play, without a game system: wolna gra, bez systemu gry
+  free: wolny
+  Try: Spróbuj
+  Try {item}: "Spróbuj: {item}"
+  I try {item}.: "Próbuję: {item}."
+  I try {item} on {target}.: "Próbuję: {item} na {target}."
+  I try {item} at {square}.: "Próbuję: {item} w kierunku {square}."
+  I try {item} on myself.: "Próbuję: {item} na sobie."
+names: {}

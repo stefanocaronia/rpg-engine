@@ -1,9 +1,14 @@
-import { appendFileSync, cpSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
+import { testCampaign } from "../src/testing.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
+
+// The 5e's repository, beside this one (D-506, D-514).
+const fifthEdition = fileURLToPath(new URL("../../rpg-engine-5e/", import.meta.url));
 
 let folder: string;
 let context: Context;
@@ -31,12 +36,21 @@ describe("rpg validate", () => {
         expect((await rpg("validate")).output).toBe("No problems.");
     });
 
-    // The 5e's: the playtest scenarios are of the 5e and of this repository, so they stay here while the engine ships the 5e.
-    it.each(["01-guadoscuro", "02-cripta-del-culto", "04-tre-settimane"])("finds nothing wrong in the playtest scenario %s of the 5e, prepared with its characters", async (scenario) => {
-        await rpg("config", "system", "5e");
-        cpSync(new URL(`../playtests/${scenario}/world`, import.meta.url), join(folder, "world"), { recursive: true });
-        expect((await rpg("validate")).output).toBe("No problems.");
-    });
+    // The playtest scenarios are of this repository and of the 5e, which the engine no longer brings (D-513 (1)): they are read with the 5e's repository beside
+    // this one, through the test kit, and wait for it where it is not, as in CI.
+    it.skipIf(!existsSync(join(fifthEdition, "system.yaml"))).each(["01-guadoscuro", "02-cripta-del-culto", "04-tre-settimane"])(
+        "finds nothing wrong in the playtest scenario %s of the 5e, prepared with its characters",
+        async (scenario) => {
+            const campaign = await testCampaign({ system: "5e", systems: [fifthEdition], language: "it" });
+
+            try {
+                cpSync(new URL(`../playtests/${scenario}/world`, import.meta.url), join(campaign.folder, "world"), { recursive: true });
+                expect((await campaign.run("validate")).output).toBe("No problems.");
+            } finally {
+                await campaign.close();
+            }
+        },
+    );
 
     it("finds knows that points to a section everyone can read (D-61)", async () => {
         await rpg("write", "Annegato", "--type", "creature", "--text", "Un corpo gonfio.");

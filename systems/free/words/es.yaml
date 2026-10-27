@@ -1,0 +1,20 @@
+# The words of the free system in Spanish, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Personaje
+  Equipment: Equipo
+fields:
+  concept: Concepto
+  abilities: Habilidades
+  factions: Facciones
+  money: Dinero
+words:
+  free play, without a game system: juego libre, sin sistema de juego
+  free: libre
+  Try: Probar
+  Try {item}: Probar {item}
+  I try {item}.: Pruebo {item}.
+  I try {item} on {target}.: Pruebo {item} en {target}.
+  I try {item} at {square}.: Pruebo {item} en {square}.
+  I try {item} on myself.: Me pruebo {item} a mí mismo.
+names: {}

@@ -1,0 +1,20 @@
+# The words of the free system in Czech, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Postava
+  Equipment: Vybavení
+fields:
+  concept: koncept
+  abilities: schopnosti
+  factions: frakce
+  money: peníze
+words:
+  free play, without a game system: volná hra, bez herního systému
+  free: volný
+  Try: Vyzkoušet
+  Try {item}: Vyzkoušet {item}
+  I try {item}.: Zkouším {item}.
+  I try {item} on {target}.: Zkouším {item} na {target}.
+  I try {item} at {square}.: Zkouším {item} na políčku {square}.
+  I try {item} on myself.: Zkouším {item} na sobě.
+names: {}

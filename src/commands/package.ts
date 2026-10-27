@@ -1,22 +1,24 @@
 import { join } from "node:path";
 import { z } from "zod";
-import { changeExtensions, readTextSetting, requireCampaign } from "../campaign/index.ts";
+import { changeExtensions, findCampaign, readTextSetting, requireCampaign } from "../campaign/index.ts";
 import { type Context, engineSystemsFolder, type PackageInfo } from "../core/context.ts";
+import { type Examples, neutralExamples } from "../core/examples.ts";
 import { installedFromFolder } from "../core/files.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { apiProblem, ourSystems, readsApi } from "../core/package-declarations.ts";
 import { defineCommand } from "../core/registry.ts";
-import { files, isInside } from "../core/store.ts";
+import { files, FileStore, isInside, withFiles } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { dropConsent, type Extension, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
-import { installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
+import { findSystem, installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
 import { chooseAnswer } from "./ask.ts";
 import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game-adventures.ts";
+import { campaignExamples } from "./game-examples.ts";
 import { listedExtensions, runsCode } from "./game-extension-list.ts";
 import { campaignMode } from "./game-mode.ts";
-import { loadCampaignCode, packageCommandNames, packagesInstalled } from "./game-package-code.ts";
+import { loadCampaignCode, loadNewSystemCode, packageCommandNames, packagesInstalled } from "./game-package-code.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
 
@@ -26,7 +28,7 @@ type PackageResult =
     | { kind: "installed"; extension: Extension; verified: boolean; commands: string[]; codeLeftOut: boolean; already: boolean; part?: string; tools: string; }
     | { kind: "removed"; name: string; }
     | { kind: "uninstalled"; name: string; wasUsed: boolean; extension: boolean; }
-    | { kind: "system-installed"; system: InstalledSystem; plays?: string; }
+    | { kind: "system-installed"; system: InstalledSystem; plays?: string; loaded?: { runs: true; } | { why: string; }; }
     | { kind: "language-installed"; language: InstalledLanguage; replaced?: string; missing: number; }
     | ({ kind: "adventure-installed"; } & AdventureInstalled)
     | { kind: "adventure-removed"; title: string; }
@@ -181,7 +183,7 @@ export const packageCommand = defineCommand({
                     : result.plays === undefined
                     ? `The campaign has no system yet: if the player chose this one, set it with config, setting system, value ${system.name}.`
                     : `It is for a new campaign, chosen in its setup: this one plays ${result.plays}.`,
-                !system.code ? "" : result.plays === undefined ? "Its code runs once config sets it." : "Its code runs from the next start of the game's server.",
+                !system.code ? "" : result.plays === undefined ? "Its code runs once config sets it." : codeText(result.loaded),
             ].filter((line) => line !== "").join(" ");
         }
 
@@ -479,7 +481,29 @@ async function systemInstalled(root: string, context: Context, spec: string, nam
 
     appendLogEntry(root, newDatedLogEntry(root, context, "package-installed", "public", { package: described.name, version: described.version, verified: system.verified, kind: "system" }));
     const plays = readTextSetting(root, "system");
-    return { kind: "system-installed", system, ...(plays === undefined ? {} : { plays }) };
+    const loaded = system.used && system.code ? await loadedNow(context, system.name) : undefined;
+    return { kind: "system-installed", system, ...(plays === undefined ? {} : { plays }), ...(loaded === undefined ? {} : { loaded }) };
+}
+
+/** The code of the system the campaign plays, installed now, loaded at once when the process has none of it yet, as config system does (D-513 (1)). */
+async function loadedNow(context: Context, name: string): Promise<{ runs: true; } | { why: string; } | undefined>
+{
+    // A version the process has already loaded runs until it starts again.
+    const code = context.systemCode;
+
+    if (code === undefined || Object.hasOwn(code, name)) {
+        return undefined;
+    }
+
+    await loadNewSystemCode(context);
+    const loaded = code[name];
+    return loaded === undefined ? undefined : "code" in loaded ? { runs: true } : { why: "refused" in loaded ? `it ${loaded.refused}` : loaded.problem };
+}
+
+/** When the code of the system just installed runs, for the campaign that plays it. */
+function codeText(loaded: { runs: true; } | { why: string; } | undefined): string
+{
+    return loaded === undefined ? "Its code runs from the next start of the game's server." : "runs" in loaded ? "Its code runs from now." : `Its code does not run: ${loaded.why.replace(/\.$/, "")}.`;
 }
 
 /** The game systems on this computer, those shipped with the engine first, with the package each came in when npm installed it (D-485). */
@@ -592,6 +616,80 @@ function languagesHere(context: Context): InstalledLanguage[]
         verified: isVerified(pack.package, installedFromFolder(pack.folder)),
         ...issuesOf(pack.folder),
     }));
+}
+
+/**
+ * Installs the game system the campaign in this context's folder plays, when it is one of ours that is not on this computer, as package install does, from
+ * npm's cache when the registry does not answer, then loads its code (SYS-10, D-514 (3)); once for each system, as `tried` keeps them. The line that says
+ * so to the master, or why it could not; undefined when there is no campaign or nothing to install, and for a system not ours, which asks the player's yes.
+ */
+export async function installCampaignSystem(context: Context, tried: Set<string>): Promise<string | undefined>
+{
+    const packages = context.packages;
+    return packages === undefined ? undefined : await withFiles(context.files ?? new FileStore(context.systemFolders), async () => {
+        const root = findCampaign(context.folder);
+        const name = root === undefined ? undefined : readTextSetting(root, "system");
+        const ours = name === undefined ? undefined : ourSystems.find((one) => comparableText(one.name) === comparableText(name.trim()));
+
+        // Each system is looked for once: one here stays, as package uninstall keeps the one the campaign plays.
+        if (root === undefined || ours === undefined || tried.has(ours.name)) {
+            return undefined;
+        }
+
+        tried.add(ours.name);
+
+        if (isSystemHere(context, ours.name)) {
+            return undefined;
+        }
+
+        let result: PackageResult;
+
+        try {
+            // As package install, which loads the code of the system the campaign plays.
+            result = await installed(root, context, ours.package);
+        } catch (error) {
+            // npm's why, without what package install adds for the master, and without its period: the master tells the player, and the player chooses (D-514 (3)).
+            const why = (error instanceof Error ? error.message : String(error)).replace(/^\S+ could not be installed: /, "").replace(/\s*Nothing changed[^.]*\.$/, "").replace(/\.$/, "");
+            return `The campaign's game system, ${ours.name}, is not on this computer, and could not be installed: ${why}. Tell the player off-game, in brackets and in a table's words, `
+                + `that this computer lacks the ${ours.name} rules and could not download them: once it is online, you install them with package install ${ours.name}, no yes needed. `
+                + "Until then you play without its pages and the sheet's worked-out numbers, or wait, as the player chooses.";
+        }
+
+        const version = result.kind === "system-installed" && result.system.version !== undefined ? ` ${result.system.version}` : "";
+        return `The campaign's game system, ${ours.name}, was not on this computer: RPG Engine installed it, ${ours.package}${version}, one of its own. Its pages and rules are there from now.`
+            + namesNote(root, context, ours.name);
+    });
+}
+
+/**
+ * The names of a system just installed in the chat, which the host's list of tools may not have yet (D-518): its counter, its rest and its coins, those that
+ * are not the neutral ones; nothing when it names none of them.
+ */
+function namesNote(root: string, context: Context, system: string): string
+{
+    let examples: Examples;
+
+    try {
+        examples = campaignExamples(root, context);
+    } catch {
+        return "";
+    }
+
+    const own = (name: keyof Examples): string | undefined => (examples[name] === neutralExamples[name] ? undefined : examples[name]);
+    const coins = [own("coin"), own("smallCoin")].filter((coin) => coin !== undefined).join(" and ");
+    const counter = own("counter");
+    const names = [counter === undefined ? undefined : `${counter} for damage`, own("rest"), coins === "" ? undefined : coins].filter((name) => name !== undefined);
+    return names.length === 0 ? "" : ` The commands' descriptions may keep neutral examples until a new chat: in ${system} use its own names, such as ${names.join(", ")}.`;
+}
+
+/** Whether a game system by this name is on this computer; one whose system.yaml does not read is there too, and validate says why. */
+function isSystemHere(context: Context, name: string): boolean
+{
+    try {
+        return findSystem(context.systemFolders, name) !== undefined;
+    } catch {
+        return true;
+    }
 }
 
 /** Whether a package is on this computer, by its name as package takes it: an extension, a game system or a language npm installed (D-510). */

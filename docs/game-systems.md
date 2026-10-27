@@ -1,6 +1,6 @@
 # Game systems
 
-A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from [systems/5e](../systems/5e/), from [systems/ironsworn](../systems/ironsworn/), a test system based on Ironsworn, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
+A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from the [5e](https://github.com/stefanocaronia/rpg-engine-5e), a package of its own, from [test/systems/fake](../test/systems/fake/), the fake system the engine's tests play, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers, the one system the engine brings. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
 
 ## 1. The folder
 
@@ -18,7 +18,7 @@ systems/<name>/
   build/, test/      scripts and tests, not shipped
 ```
 
-The engine's own systems are in its `systems/` folder; any other is installed as a package with `package install`: from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 5}}`. A campaign names it in `campaign.yaml` (`system: 5e`). A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the systems it started with.
+The engine brings `free` alone, in its `systems/` folder; any other is installed as a package with `package install`: ours by its name alone, `package install 5e`, from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 5}}`. A campaign names it in `campaign.yaml` (`system: 5e`); one of ours that this computer lacks, the MCP server installs as it starts in the campaign, and says so at its first call, while `validate` and `status` give the way when it cannot. A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the code of the systems it started with; one installed while it runs has its code loaded then.
 
 The schema of `system.yaml` is part of the package API (section 6), which goes up with every addition a package may use: a new key comes with a new API number, and a system that uses it says that number, so that an older engine asks to be updated instead of refusing an unknown key. A folder without a `package.json` is data alone: it is read as made for the engine that reads it, and brings no code.
 
@@ -370,8 +370,8 @@ export default system;
 - The engine loads the code once, as the command line, the MCP server or the dashboard starts: a system changed since needs the server started again. A system made for an API the engine does not read brings no code, and says why.
 - In the hooks, `game` is a package's (see extensions.md): `set` writes as `write --set`, `change` changes a counter as the `change` command, the way for hit points and any counter the rules watch, and calls no hook from inside one; `addEffect` and `endEffect`. A roll for anyone outside the party is hidden while the campaign's `master-rolls` setting keeps it behind the screen. Each write has its line in the log, public or hidden as the engine shows that page; a write calls no hook. Its state is kept in `extensions/<name>/state.yaml`, as an extension's.
 - A hook that fails, or code that cannot load, is a line for the master, with what to do: the command's change stands.
-- The code reaches the game only through `game`; in this repository, lint refuses `Math.random`, `Date`, `process`, `globalThis`, `import()` and Node's modules in `systems/*/src`.
+- The code reaches the game only through `game`: never `Math.random`, `Date`, `process`, `globalThis`, `import()` nor Node's modules, which this repository's lint refuses in the fake system's code.
 
 ## 7. Checks
 
-[test/system-packages.test.ts](../test/system-packages.test.ts) runs on every installed system: its pages read and pass `validate`, names are unique, every field is declared and fits its kind, every rule named is in its chapters, and it has an `attribution`. A system keeps its own tests in its `test/`.
+The test kit's `systemChecks(folder)` checks a system's folder as the engine's tests check free and the fake: its pages read and pass `validate`, names are unique, every field is declared and fits its kind, every rule named is in its chapters, the pictures its pages link are there, and it has an `attribution`. A system keeps its own tests in its repository, on the kit (see extensions.md, section 6), with these checks among them.

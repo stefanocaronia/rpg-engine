@@ -1,0 +1,20 @@
+# The words of the free system in Dutch, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Personage
+  Equipment: Uitrusting
+fields:
+  concept: concept
+  abilities: vaardigheden
+  factions: facties
+  money: geld
+words:
+  free play, without a game system: vrij spel, zonder spelsysteem
+  free: vrij
+  Try: Probeer
+  Try {item}: Probeer {item}
+  I try {item}.: Ik probeer {item}.
+  I try {item} on {target}.: Ik probeer {item} op {target}.
+  I try {item} at {square}.: Ik probeer {item} op {square}.
+  I try {item} on myself.: Ik probeer {item} op mezelf.
+names: {}

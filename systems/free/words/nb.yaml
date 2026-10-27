@@ -1,0 +1,20 @@
+# The words of the free system in Norwegian Bokmål, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Karakter
+  Equipment: Utstyr
+fields:
+  concept: konsept
+  abilities: egenskaper
+  factions: fraksjoner
+  money: penger
+words:
+  free play, without a game system: fri lek, uten et spillsystem
+  free: fri
+  Try: Prøv
+  Try {item}: Prøv {item}
+  I try {item}.: Jeg prøver {item}.
+  I try {item} on {target}.: Jeg prøver {item} på {target}.
+  I try {item} at {square}.: Jeg prøver {item} mot {square}.
+  I try {item} on myself.: Jeg prøver {item} på meg selv.
+names: {}

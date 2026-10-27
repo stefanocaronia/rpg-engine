@@ -1,0 +1,20 @@
+# The words of the free system in French, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Personnage
+  Equipment: Équipement
+fields:
+  concept: concept
+  abilities: caractéristiques
+  factions: alliés et organisations
+  money: argent
+words:
+  free play, without a game system: jeu libre, sans système de jeu
+  free: libre
+  Try: Essayer
+  Try {item}: Essayer {item}
+  I try {item}.: J'essaie {item}.
+  I try {item} on {target}.: J'essaie {item} sur {target}.
+  I try {item} at {square}.: J'essaie {item} sur {square}.
+  I try {item} on myself.: J'essaie {item} sur moi-même.
+names: {}

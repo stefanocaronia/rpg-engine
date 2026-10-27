@@ -1,0 +1,20 @@
+# The words of the free system in Hebrew, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: דמות
+  Equipment: ציוד
+fields:
+  concept: קונספט
+  abilities: יכולות
+  factions: בריתות וארגונים
+  money: כסף
+words:
+  free play, without a game system: משחק חופשי, ללא מערכת משחק
+  free: חופשי
+  Try: נסה
+  Try {item}: נסה את {item}
+  I try {item}.: אני מנסה את {item}.
+  I try {item} on {target}.: אני מנסה את {item} על {target}.
+  I try {item} at {square}.: אני מנסה את {item} על {square}.
+  I try {item} on myself.: אני מנסה את {item} על עצמי.
+names: {}

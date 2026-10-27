@@ -1,0 +1,20 @@
+# The words of the free system in Chinese, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: 角色
+  Equipment: 装备
+fields:
+  concept: 概念
+  abilities: 属性
+  factions: 阵营与组织
+  money: 金钱
+words:
+  free play, without a game system: 自由游玩，无游戏系统
+  free: 自由
+  Try: 尝试
+  Try {item}: 尝试{item}
+  I try {item}.: 我尝试{item}。
+  I try {item} on {target}.: 我对{target}尝试{item}。
+  I try {item} at {square}.: 我在{square}尝试{item}。
+  I try {item} on myself.: 我对自己尝试{item}。
+names: {}

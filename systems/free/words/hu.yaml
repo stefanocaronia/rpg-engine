@@ -1,0 +1,20 @@
+# The words of the free system in Hungarian, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Karakter
+  Equipment: Felszerelés
+fields:
+  concept: koncepció
+  abilities: képességek
+  factions: frakciók
+  money: pénz
+words:
+  free play, without a game system: szabad játék, játékrendszer nélkül
+  free: szabad
+  Try: Próba
+  Try {item}: "{item} kipróbálása"
+  I try {item}.: "Kipróbálom: {item}."
+  I try {item} on {target}.: "Kipróbálom a következőt: {item}, ezen: {target}."
+  I try {item} at {square}.: "Kipróbálom a következőt: {item}, ide: {square}."
+  I try {item} on myself.: "Kipróbálom a következőt magamon: {item}."
+names: {}

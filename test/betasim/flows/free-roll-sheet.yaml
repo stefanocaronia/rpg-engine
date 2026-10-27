@@ -1,6 +1,7 @@
 name: A free roll of a skill from the sheet, just to see
 covers: [free-roll-sheet, sheet-read]
-setup: {}
+# On the 5e's demo, whose sheet has skills.
+setup: {system: 5e}
 steps:
   # On a phone only the sheet's first card starts open, Combat for 5e: Skills is opened first.
   - phone: {tapOn: Skills}

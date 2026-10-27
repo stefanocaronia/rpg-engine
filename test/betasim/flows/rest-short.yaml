@@ -1,6 +1,8 @@
 name: On a short rest, spend hit dice one at a time
 covers: [rest-spend]
+# On the 5e's demo: the hit dice are its card.
 setup:
+  system: 5e
   rpg:
     - [change, Ettore, hit-dice-d8, --to, "2"]
     - [change, Ettore, hp, --to, "14"]

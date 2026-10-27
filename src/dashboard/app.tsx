@@ -20,7 +20,7 @@ import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Help } from "./help.tsx";
 import { Icon } from "./icons.tsx";
 import { FollowedQuests, JournalView, QuestEndings } from "./journal.tsx";
-import { checkOf } from "./labels.ts";
+import { checkOf, systemNameLabel } from "./labels.ts";
 import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx";
 import { inCard, nextPackCard, type PackCard } from "./pack-card.ts";
 import { PackagePage } from "./package-page.tsx";
@@ -756,7 +756,7 @@ function App()
                                     <Top
                                         campaign={shown.campaign}
                                         product={productName}
-                                        system={shown.system?.name}
+                                        system={shown.system === undefined ? undefined : systemNameLabel(shown.system.name)}
                                         now={shown.now}
                                         calendar={shown.calendar}
                                         path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}

@@ -8,5 +8,18 @@ fields:
 sheet:
   Character: [concept, abilities, factions?]
   Equipment: [money?, inventory?]
+sheet-headline: "{concept}"
+sheet-cards:
+  at-hand: [abilities]
+# The player tries an ability, and uses a thing (D-521): the master rules what comes of it.
+sheet-actions: {abilities: [try], inventory: [use]}
+sheet-verbs:
+  try:
+    label: Try
+    title: "Try {item}"
+    says: "I try {item}."
+    says-on: "I try {item} on {target}."
+    says-at: "I try {item} at {square}."
+    says-self: "I try {item} on myself."
 sheet-notes:
   Character: "concept is who the character is, in one line, in the player's words; abilities, three to five things they do well, also in the player's words, such as [sailing, reading people, the long knife]: what they do with them succeeds when the story allows it."

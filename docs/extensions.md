@@ -148,7 +148,7 @@ With `--json`, each gives its result as data.
 
 ## 6. Tests
 
-An extension tests itself with the engine's test kit, `rpg-engine/testing`, never with the engine's own files: what it gives is part of the extension API.
+An extension or a game system tests itself with the engine's test kit, `rpg-engine/testing`, never with the engine's own files: what it gives is part of the package API.
 
 ```ts
 import { testCampaign } from "rpg-engine/testing";
@@ -159,11 +159,13 @@ expect(await campaign.ok("advance", "--to", "day 1, 18:00")).toContain("Weather:
 await campaign.close();
 ```
 
-- `testCampaign({system, systems?, extensions, language?, play?, settings?})` makes a campaign in a temporary folder with `init`, its setup done unless `play: false`, the extensions linked from their folders as the player's own, so that their code runs, and `settings` written in `campaign.yaml` as by hand, such as `{ruleset: "srd-5.1"}`. The systems are those the engine ships and those of the folders in `systems`, which win over them by name: a system's own repository gives `systems: ["."]`, an extension for the 5e the 5e's folder. A system's folder takes its name from its package, `@rpgengine/system-5e` is `5e`, or from the folder when it has no `package.json`.
+- `testCampaign({system, systems?, extensions, language?, play?, settings?})` makes a campaign in a temporary folder with `init`, its setup done unless `play: false`, the extensions linked from their folders as the player's own, so that their code runs, and `settings` written in `campaign.yaml` as by hand, such as `{ruleset: "srd-5.1"}`. The systems are those of the folders in `systems`, then those the package's repository installs in its `node_modules`, then the engine's, `free` alone; the first by a name wins. A system's own repository gives `systems: ["."]`; an extension for the 5e has `@rpgengine/system-5e` among its devDependencies, or gives its folder. A system's folder takes its name from its package, `@rpgengine/system-5e` is `5e`, or from the folder when it has no `package.json`.
 - `run(...args)` runs a command as the command line does, giving `{output, exitCode}`; `ok(...args)` one that must succeed, giving its output. `dice(...faces)` sets the faces the dice show in turn; else each shows 4. The time is a fixed day.
 - `ask({question, options?, who?, square?, recipe?})` asks the player with the core's `ask`, as through MCP, since the command line asks in words; give `context` a `page` or a `player` to answer, and it gives `{output, exitCode}`.
+- `descriptions()` gives each of the core's tools as a host reads it in the campaign, its description then its parameters', with the examples in the names of its game system.
+- `systemChecks(folder)`, beside `testCampaign`, checks a game system's folder as the engine checks every system it tests (see game-systems.md, section 7): it gives its `name`, how many `pages` and `chapters` it has, its `attribution`, and lists of what is wrong, each empty when it passes: `unread`, `names`, `unquoted`, `bases`, `declarations`, `rules`, `values`, `undeclared`, `pictures`.
 - `log()` gives the log's lines, `read(path)` a file of the campaign, `widgets()` the extensions' widgets as the dashboard shows them, each with its `problem` when it shows nothing, `widgets(name)` those of one package, the game system's too, `dashboard()` the campaign's dashboard on a port of this computer with a page open, its `player`, `get` and `post`. `context` is what the commands run with: give it a `page`, a fake player whose `choose` answers the questions, or a `signal`.
 - `close()` takes the campaign away, the links first, never what they lead to.
 - Its code runs from its built `dist/`, as installed: build it before its tests. In the engine's repository its source runs, and its tests run with the engine's.
 
-In this repository `test/extensions.test.ts` checks the mechanism with test extensions in [test/extensions/](../test/extensions/), on Ironsworn; `test/packages.test.ts` the `package` command with npm faked. `npm run test:downstream` runs the tests of our packages' own repositories beside this one, `../rpg-engine-5e`, `../rpg-engine-weather` and `../rpg-engine-lockpicking`, against the engine built here, and skips those that are not there.
+In this repository `test/extensions.test.ts` checks the mechanism with test extensions in [test/extensions/](../test/extensions/), on the fake system and on free; `test/packages.test.ts` the `package` command with npm faked. `npm run test:downstream` runs the tests of our packages' own repositories beside this one, `../rpg-engine-5e`, `../rpg-engine-ironsworn`, `../rpg-engine-weather` and `../rpg-engine-lockpicking`, against the engine built here, the 5e's repository installed beside the engine in the others, and skips those that are not there.

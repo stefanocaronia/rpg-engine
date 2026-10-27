@@ -1,0 +1,20 @@
+# The words of the free system in Danish, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Karakter
+  Equipment: Udstyr
+fields:
+  concept: koncept
+  abilities: evner
+  factions: fraktioner
+  money: penge
+words:
+  free play, without a game system: frit spil, uden et rollespilssystem
+  free: fri
+  Try: Prøv
+  Try {item}: Prøv {item}
+  I try {item}.: Jeg prøver {item}.
+  I try {item} on {target}.: Jeg prøver {item} på {target}.
+  I try {item} at {square}.: Jeg prøver {item} ved {square}.
+  I try {item} on myself.: Jeg prøver {item} på mig selv.
+names: {}

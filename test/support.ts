@@ -1,14 +1,14 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Context } from "../src/core/context.ts";
 import type { LogEntry } from "../src/core/log.ts";
 import { loadSystemCode } from "../src/systems/index.ts";
 
 /**
- * The game systems the tests see: those of the package, 5e and ironsworn, the second kept out of the npm package until it is playable; and the fake system
- * of the core's tests, in test/systems/, never published (D-513 (3)).
+ * The game systems the tests see: the one of the package, free, and the fake system of the core's tests, in test/systems/, never published (D-513 (1), (3));
+ * the 5e and Ironsworn are in their own repositories.
  */
 export const testSystemFolders = [fileURLToPath(new URL("../systems/", import.meta.url)), fileURLToPath(new URL("./systems/", import.meta.url))];
 
@@ -18,7 +18,23 @@ export const testSystemCode = await loadSystemCode(testSystemFolders);
 /** The extensions the tests see: the test ones, made for them; ours have repositories of their own (D-506). */
 export const testExtensionFolders = [fileURLToPath(new URL("./extensions/", import.meta.url))];
 
-/** How many pages a game system the tests see has, in a folder of its world if given: "The system 5e has 22 more pages". */
+/**
+ * A temporary folder of game systems with one a test makes, by its files' paths and texts, system.yaml first: a system without a sheet, or one whose fight has
+ * no turns. Give it before the tests' own, in a context's systemFolders.
+ */
+export function madeSystem(name: string, files: Record<string, string>): string
+{
+    const systems = makeTempFolder();
+
+    for (const [path, text] of Object.entries(files)) {
+        mkdirSync(dirname(join(systems, name, path)), { recursive: true });
+        writeFileSync(join(systems, name, path), text);
+    }
+
+    return systems;
+}
+
+/** How many pages a game system the tests see has, in a folder of its world if given: "The system fake has 22 more pages". */
 export function systemPageCount(system: string, folder?: string): number
 {
     const world = join(testSystemFolders.find((candidate) => readdirSync(candidate).includes(system)) ?? testSystemFolders[0], system, "world", folder ?? "");

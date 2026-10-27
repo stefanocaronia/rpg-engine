@@ -1,0 +1,20 @@
+# The words of the free system in Swedish, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Rollperson
+  Equipment: Utrustning
+fields:
+  concept: koncept
+  abilities: förmågor
+  factions: fraktioner
+  money: pengar
+words:
+  free play, without a game system: fritt spel, utan spelsystem
+  free: fri
+  Try: Pröva
+  Try {item}: Pröva {item}
+  I try {item}.: Jag prövar {item}.
+  I try {item} on {target}.: Jag prövar {item} på {target}.
+  I try {item} at {square}.: Jag prövar {item} på {square}.
+  I try {item} on myself.: Jag prövar {item} på mig själv.
+names: {}

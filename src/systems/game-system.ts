@@ -730,6 +730,12 @@ export function findSystem(folders: string[], name: string, ruleset?: string): G
     return found === undefined ? undefined : readSystem(found.folder, found.name, [], ruleset);
 }
 
+/** The game system in this folder by the name a campaign gives it, as installed, without a version of its rules; it throws when its system.yaml does not read. */
+export function systemInFolder(folder: string, name: string): GameSystem
+{
+    return readSystem(folder, name);
+}
+
 /** The folders a system's pages, rules, words, pictures and instructions come from, in order: its own, then its version's, which wins by name (VER-3). */
 export function systemContentFolders(system: { folder: string; version?: { folder: string; }; }): string[]
 {

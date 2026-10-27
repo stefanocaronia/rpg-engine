@@ -1,0 +1,20 @@
+# The words of the free system in Arabic, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: الشخصية
+  Equipment: العتاد
+fields:
+  concept: الفكرة
+  abilities: القدرات
+  factions: الحلفاء والمنظمات
+  money: المال
+words:
+  free play, without a game system: لعب حر، بدون نظام لعبة
+  free: حر
+  Try: جرّب
+  Try {item}: جرّب {item}
+  I try {item}.: أجرّب {item}.
+  I try {item} on {target}.: أجرّب {item} على {target}.
+  I try {item} at {square}.: أجرّب {item} عند {square}.
+  I try {item} on myself.: أجرّب {item} على نفسي.
+names: {}

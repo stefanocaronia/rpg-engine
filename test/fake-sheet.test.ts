@@ -1,5 +1,5 @@
 // The character sheet on the fake system (DAT-2, DAT-8, D-206, D-207, D-280, D-445, SYS-8): its groups in show, how each value is made, what is written on
-// it, the names a list takes, Ironsworn's too, the rolls that read it, and better and worse that cancel out. The same on the 5e is in the 5e's repository.
+// it, the names a list takes, the rolls that read it, and better and worse that cancel out. The same on the 5e is in the 5e's repository, on Ironsworn in Ironsworn's.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -115,18 +115,6 @@ describe("the sheet in show (DAT-2, D-207)", () => {
 });
 
 describe("what is written on the sheet (DAT-2, D-206, SYS-8)", () => {
-    it("takes the names of another game system: the debilities of the test system based on Ironsworn", async () => {
-        removeFolder(folder);
-        folder = makeTempFolder();
-        context = testContext(folder);
-        await ok("init", "--name", "Ferro", "--system", "ironsworn");
-        await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "momentum=2/10", "--add", "debilities=Wounded");
-        expect(await refused("write", "Kira", "--add", "debilities=hungry")).toBe(
-            '"hungry" is not one of the names debilities takes in the system ironsworn: wounded, shaken, unprepared, encumbered, maimed, corrupted, cursed, tormented. Nothing changed.',
-        );
-        expect(await ok("show", "Kira")).toContain("momentum: 2/9");
-    });
-
     it("refuses a map where the system wants a list, as an MCP client may send vocations, and says how to write it (D-246)", async () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=pc");
         const input = write.input.parse({ page: "Mira", set: { vocations: { "[[Warden]]": 1 } } });

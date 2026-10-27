@@ -1,0 +1,20 @@
+# The words of the free system in Korean, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: 캐릭터
+  Equipment: 장비
+fields:
+  concept: 콘셉트
+  abilities: 능력
+  factions: 세력과 단체
+  money: 돈
+words:
+  free play, without a game system: 자유 플레이, 게임 시스템 없음
+  free: 자유
+  Try: 시도
+  Try {item}: "{item} 시도"
+  I try {item}.: 나는 {item}을(를) 시도한다.
+  I try {item} on {target}.: 나는 {target}에게 {item}을(를) 시도한다.
+  I try {item} at {square}.: 나는 {square}에 {item}을(를) 시도한다.
+  I try {item} on myself.: 나는 나 자신에게 {item}을(를) 시도한다.
+names: {}

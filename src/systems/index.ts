@@ -23,6 +23,7 @@ export {
     type SystemCheck,
     systemContentFolders,
     systemFileName,
+    systemInFolder,
     type SystemLayer,
     type SystemSetting,
     type Threshold,
