@@ -10,16 +10,16 @@ import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isKin
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
-import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./effect-layer.ts";
-import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects, systemNamed } from "./game-effects.ts";
-import { allSaid, packagesEffectAdded } from "./game-package-hooks.ts";
-import { keepingConditionNote, secondKeptNote } from "./game-reminders.ts";
-import { houseRules, ruleBlock, ruleTitled } from "./game-rules.ts";
-import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game-scene.ts";
-import { newDatedLogEntry, presentDate } from "./game-time.ts";
-import { burning, burnOne } from "./game-upkeep.ts";
-import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game-world.ts";
-import { aloneNote, computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./worked-out.ts";
+import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./game/effect-layer.ts";
+import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects, systemNamed } from "./game/effects.ts";
+import { allSaid, packagesEffectAdded } from "./game/package-hooks.ts";
+import { keepingConditionNote, secondKeptNote } from "./game/reminders.ts";
+import { houseRules, ruleBlock, ruleTitled } from "./game/rules.ts";
+import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game/scene.ts";
+import { newDatedLogEntry, presentDate } from "./game/time.ts";
+import { burning, burnOne } from "./game/upkeep.ts";
+import { aloneNote, computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./game/worked-out.ts";
+import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game/world.ts";
 
 const actions = ["add", "end"] as const;
 

@@ -1,7 +1,7 @@
 // What one does in a turn (D-453; TRN-1–TRN-5), on the fake system: the move, the deed, the parry in any turn, the strikes within the deed and a flourish once
 // a turn, counted by the engine. The 5e's legendary creatures and Thirsting Blade are in the 5e's repository.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 

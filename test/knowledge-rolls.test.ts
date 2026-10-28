@@ -1,7 +1,7 @@
 // A check of what the player character knows (sheet-knowledge): roll and ask tell the master to say what it reveals as knowledge, never as an episode of the
 // character's past the player has not told (Elena's tests of 28 October). Text for the master, not a mechanic: nothing else of the roll changes.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { Context, Player } from "../src/core/context.ts";
 import { madeSystem, makeTempFolder, removeFolder, testContext } from "./support.ts";

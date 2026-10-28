@@ -4,7 +4,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { dirname, join } from "node:path";
 import type { Page } from "playwright-core";
 import { parse } from "yaml";
-import { runCommandLine } from "../../src/command-line.ts";
+import { runCommandLine } from "../../src/cli/command-line.ts";
 import { ask } from "../../src/commands/ask.ts";
 import { type Context, defaultContext } from "../../src/core/context.ts";
 import { SessionStore } from "../../src/core/session-store.ts";

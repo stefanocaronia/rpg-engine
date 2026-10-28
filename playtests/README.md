@@ -78,7 +78,7 @@ Cost: a run of 50 + 15 messages is about 6–9 $ at list prices, or quota with a
 
 Before the first turn the run stops unless:
 
-- the repo has no uncommitted changes, unless `--uncommitted` says to test them, `npm run build` succeeds, and the `rpg` on the PATH is npm's global link to this repo's `dist/cli.js`;
+- the repo has no uncommitted changes, unless `--uncommitted` says to test them, `npm run build` succeeds, and the `rpg` on the PATH is npm's global link to this repo's `dist/cli/cli.js`;
 - the campaign and the output folder are outside the home folder and the repo, and neither holds the other;
 - the campaign's `AGENTS.md`, `CLAUDE.md` and `.claude/settings.json` are what this commit's `rpg init` writes (the start lines, the import, auto memory off), and it has nothing else in `.claude/` and no `CLAUDE.local.md`;
 - session 1 has a new output folder and a campaign never played: nothing in its `log.jsonl` after `campaign-created`, and no page with `role: pc`; with `--prepared`, no scene opened and no roll;

@@ -9,16 +9,16 @@ import { DiceError, mostCoins, parseNotation, rollDice, tossCoins } from "../dic
 import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, playerCharacters, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
-import { effectiveFields } from "./effect-layer.ts";
-import { type RestDice, restDice, spendDice } from "./game-dice-pool.ts";
-import { placeGrid } from "./game-grids.ts";
-import { allSaid, packagesAsking, packagesRolled } from "./game-package-hooks.ts";
-import { recipeNamed } from "./game-recipes.ts";
-import { newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
+import { type RestDice, restDice, spendDice } from "./game/dice-pool.ts";
+import { effectiveFields } from "./game/effect-layer.ts";
+import { placeGrid } from "./game/grids.ts";
+import { allSaid, packagesAsking, packagesRolled } from "./game/package-hooks.ts";
+import { recipeNamed } from "./game/recipes.ts";
+import { knowledgeNote } from "./game/sheet.ts";
+import { newDatedLogEntry } from "./game/time.ts";
+import { campaignSystem, campaignWorld, systemWordsOf } from "./game/world.ts";
 import { placeOnMap } from "./move.ts";
 import { hasNames, namesAsZero, rollerOf, sheetDiceOf, withSheetValues } from "./roll.ts";
-import { knowledgeNote } from "./sheet.ts";
 
 // The words of the buttons, in the campaign's language, as the dashboard's languages (playtest 15); English for the others (ASK-7). A toss's for one coin and for
 // more (ASK-15).

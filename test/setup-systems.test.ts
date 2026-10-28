@@ -8,10 +8,10 @@ import { cpSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, PackageInfo, PackageManager } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { createMcpServer } from "../src/mcp-server.ts";
+import { createMcpServer } from "../src/server/mcp.ts";
 import { makeTempFolder, testContext } from "./support.ts";
 
 const engineSystems = fileURLToPath(new URL("../systems/", import.meta.url));

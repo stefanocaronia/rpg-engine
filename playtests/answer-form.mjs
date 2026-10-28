@@ -8,7 +8,7 @@ import { notYetRead, oneAnswer } from "./one-answer.mjs";
 
 const [out, folder, profile, model] = process.argv.slice(2);
 const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith("CLAUDE")));
-// A form refused faster than a person could read it is taken for one never shown, and the server stops showing forms (tooFastForPerson in src/mcp-server.ts).
+// A form refused faster than a person could read it is taken for one never shown, and the server stops showing forms (tooFastForPerson in src/server/mcp.ts).
 const personReads = 1600;
 const started = Date.now();
 

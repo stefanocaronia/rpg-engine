@@ -1,13 +1,13 @@
 // The performance bench (step 11, D-194): times the commands on campaigns of several sizes, in one process as the MCP server runs them, with the files kept
 // for the session (D-193), and from the command line.
 // Run it with: node test/bench/bench.ts [sizes, such as 100,1000,5000] [--big for a game system as large as a whole SRD]. The game system is the 5e of its
-// repository beside this one, ../rpg-engine-5e. The command line runs dist/cli.js when the engine is built, else src/cli.ts, which loads more slowly.
+// repository beside this one, ../rpg-engine-5e. The command line runs dist/cli/cli.js when the engine is built, else src/cli/cli.ts, which loads more slowly.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runCommandLine } from "../../src/command-line.ts";
+import { runCommandLine } from "../../src/cli/command-line.ts";
 import type { Context } from "../../src/core/context.ts";
 import { SessionStore } from "../../src/core/session-store.ts";
 import { enlargeSystem, generateWorld } from "./generate.ts";
@@ -39,7 +39,7 @@ const calls: { args: string[]; once?: boolean; }[] = [
 
 const scratch = mkdtempSync(join(tmpdir(), "rpg-bench-"));
 const systems = join(scratch, "systems");
-const cli = existsSync(join(engine, "dist", "cli.js")) ? join(engine, "dist", "cli.js") : join(engine, "src", "cli.ts");
+const cli = existsSync(join(engine, "dist", "cli", "cli.js")) ? join(engine, "dist", "cli", "cli.js") : join(engine, "src", "cli", "cli.ts");
 
 // The scratch folder goes even when a command fails half way.
 try {

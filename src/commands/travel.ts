@@ -7,12 +7,12 @@ import { directionHelp, directionName, distanceBetween, pointAlong, pointFrom, r
 import { environmentAt, locate, mapKey, mapOf, type Page, pageNamed, parsePageReference, playerCharacters, type Position, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../time/index.ts";
-import { aroundLead, passedLines, passTime, type TimePassed } from "./game-advance.ts";
-import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, ridersOf, sameMovers, saveJourney, travelledSinceRest } from "./game-journey.ts";
-import { movePages } from "./game-moves.ts";
-import { acrossHint, crossedRoads, openLegs } from "./game-open.ts";
-import { timePassedLines } from "./game-package-code.ts";
-import { nearPlaces, pointText, positionOf, regionAt } from "./game-positions.ts";
+import { aroundLead, passedLines, passTime, type TimePassed } from "./game/advance.ts";
+import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, ridersOf, sameMovers, saveJourney, travelledSinceRest } from "./game/journey.ts";
+import { movePages } from "./game/moves.ts";
+import { acrossHint, crossedRoads, openLegs } from "./game/open.ts";
+import { timePassedLines } from "./game/package-code.ts";
+import { nearPlaces, pointText, positionOf, regionAt } from "./game/positions.ts";
 import {
     dayHours,
     durationText,
@@ -38,10 +38,10 @@ import {
     unknownOnRoad,
     wayFor,
     wayText,
-} from "./game-roads.ts";
-import { readOpenScene } from "./game-scene.ts";
-import { presentDate } from "./game-time.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
+} from "./game/roads.ts";
+import { readOpenScene } from "./game/scene.ts";
+import { presentDate } from "./game/time.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./game/world.ts";
 
 // A list, or one text, as an MCP client may send it.
 const textList = z.union([z.string(), z.array(z.string())]);

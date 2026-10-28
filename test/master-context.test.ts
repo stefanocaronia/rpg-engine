@@ -1,7 +1,7 @@
 // The master's context (D-530): the part adventure when an adventure is to build, how a session opens, and the rules that left the instructions for the
 // outputs of the calls they belong to, each once in a chat or when it applies, never lost.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { corePart, masterInstructions } from "../src/instructions/index.ts";
 import { inPlay, madeSystem, makeTempFolder, removeFolder, testContext } from "./support.ts";

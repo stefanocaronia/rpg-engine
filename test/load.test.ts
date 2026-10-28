@@ -1,7 +1,7 @@
 // What a character carries weighs (D-432; LOAD-1–LOAD-3), on the fake system: the sheet sums it against the limit, status says when it goes over it under the
 // rigor «rules», and write asks a weight for an item that has none. The 5e's sizes and its pound are in the 5e's repository.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 

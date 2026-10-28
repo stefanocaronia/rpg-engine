@@ -3,7 +3,7 @@ import { requireCampaign } from "../campaign/index.ts";
 import type { HelperName } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { newDatedLogEntry } from "./game-time.ts";
+import { newDatedLogEntry } from "./game/time.ts";
 
 type InstallResult =
     | { kind: "ready"; program: HelperName; installed: boolean; }

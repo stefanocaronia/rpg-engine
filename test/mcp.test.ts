@@ -7,13 +7,13 @@ import { join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { commands } from "../src/commands/index.ts";
 import type { Context, Player } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { startInstructions } from "../src/instructions/index.ts";
-import { createMcpServer } from "../src/mcp-server.ts";
 import { unpackFiles } from "../src/saves/index.ts";
+import { createMcpServer } from "../src/server/mcp.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 // What init tells the player who made the campaign in a terminal.
@@ -605,7 +605,7 @@ describe("rpg mcp, as a host starts it", () => {
     {
         // Not as the host that runs the tests may be: one whose forms the server leaves out.
         const env = { ...process.env, CLAUDE_CODE_ENTRYPOINT: "" };
-        const server = spawn(process.execPath, [fileURLToPath(new URL("../src/cli.ts", import.meta.url)), "mcp"], { cwd: folder, env, stdio: ["pipe", "pipe", "ignore"] });
+        const server = spawn(process.execPath, [fileURLToPath(new URL("../src/cli/cli.ts", import.meta.url)), "mcp"], { cwd: folder, env, stdio: ["pipe", "pipe", "ignore"] });
         server.stdout.on("data", (data: Buffer) => output.push(data.toString()));
         const send = (message: object): boolean => server.stdin.write(`${JSON.stringify(message)}\n`);
         send({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: LATEST_PROTOCOL_VERSION, capabilities, clientInfo: { name: "test", version: "1" } } });

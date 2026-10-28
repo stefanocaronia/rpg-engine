@@ -4,7 +4,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, HelperLogin, HelperName, Helpers, HelperState } from "../src/core/context.ts";
 import { helperChanges, installedLine, startLogin } from "../src/pictures/helpers.ts";
 import { makeTempFolder, readLogFile, testContext } from "./support.ts";

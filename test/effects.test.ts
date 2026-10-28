@@ -1,8 +1,8 @@
 // Effects as lines of text (MECCANICHE, EFF-1, EFF-2, EFF-9): the table of what reads, and laws checked at random (D-118).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { effectiveFields } from "../src/commands/effect-layer.ts";
-import { endedByDate } from "../src/commands/game-effects.ts";
+import { effectiveFields } from "../src/commands/game/effect-layer.ts";
+import { endedByDate } from "../src/commands/game/effects.ts";
 import { type Effect, effectNamed, endsAtTurn, formatEffect, readEffect, readEffects, readRounds, withEffect } from "../src/effects/index.ts";
 import { type Page, readFieldValue, type World } from "../src/pages/index.ts";
 import { nextTurn } from "../src/scene/index.ts";

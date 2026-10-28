@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, utimesSync, writeFileSync } from "
 import { dirname, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { importShown } from "../src/commands/import.ts";
 import type { Context, DocumentReader } from "../src/core/context.ts";
 import { FileStore } from "../src/core/store.ts";

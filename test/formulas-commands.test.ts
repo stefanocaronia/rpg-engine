@@ -5,7 +5,7 @@ import fc from "fast-check";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { findSystem } from "../src/systems/index.ts";
 import { madeSystem, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";

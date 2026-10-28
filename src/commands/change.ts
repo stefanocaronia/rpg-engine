@@ -37,29 +37,29 @@ import {
     writePage,
 } from "../pages/index.ts";
 import type { GameSystem, Recipe } from "../systems/index.ts";
-import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
-import { damageLists, type DamageTaken, damageTaken } from "./game-damage.ts";
-import { spendableDice, spendDice } from "./game-dice-pool.ts";
-import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
-import { fireEvents, nowDueNote } from "./game-events.ts";
-import { coinExamples, poolExample, restExample } from "./game-examples.ts";
-import { experienceOf, newLevelNotes } from "./game-experience.ts";
-import { screenNote, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
-import { campaignCoins } from "./game-money.ts";
-import { allSaid, packagesCounterChanged } from "./game-package-hooks.ts";
-import { logRecipeApplied, tooSoonNote } from "./game-recipe-pace.ts";
-import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game-recipes.ts";
-import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game-reminders.ts";
-import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game-scene.ts";
-import { changeStack } from "./game-stacks.ts";
-import { fallNotes, thresholdNotes } from "./game-thresholds.ts";
-import { newDatedLogEntry, readPresent } from "./game-time.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
-import { followersNote, keepersNote, skippedPagesNote } from "./notes.ts";
-import { keptRolls } from "./page-counters.ts";
-import { situationPart } from "./parts.ts";
+import { damageLists, type DamageTaken, damageTaken } from "./game/damage.ts";
+import { spendableDice, spendDice } from "./game/dice-pool.ts";
+import { effectGiving, effectiveFields, effectsOf, withValue } from "./game/effect-layer.ts";
+import { checkEffectsReadable, saveEffects } from "./game/effects.ts";
+import { fireEvents, nowDueNote } from "./game/events.ts";
+import { coinExamples, poolExample, restExample } from "./game/examples.ts";
+import { experienceOf, newLevelNotes } from "./game/experience.ts";
+import { screenNote, screenUp, sealHiddenRoll } from "./game/master-rolls.ts";
+import { campaignCoins } from "./game/money.ts";
+import { followersNote, keepersNote, skippedPagesNote } from "./game/notes.ts";
+import { allSaid, packagesCounterChanged } from "./game/package-hooks.ts";
+import { keptRolls } from "./game/page-counters.ts";
+import { situationPart } from "./game/parts.ts";
+import { logRecipeApplied, tooSoonNote } from "./game/recipe-pace.ts";
+import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "./game/recipes.ts";
+import { keepingLossNote, restingEffectsNote, shieldNotes } from "./game/reminders.ts";
+import { checkNotCopied, checkNotSystemPage, pageOrCopy, readOpenScene, updateScene } from "./game/scene.ts";
+import { changeStack } from "./game/stacks.ts";
+import { fallNotes, thresholdNotes } from "./game/thresholds.ts";
+import { newDatedLogEntry, readPresent } from "./game/time.ts";
+import { computedField, computedMessage, counterLimits, hasSheet, maximumHint, maximumSources, startingAtZero } from "./game/worked-out.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./game/world.ts";
 import { faceValues } from "./roll.ts";
-import { computedField, computedMessage, counterLimits, hasSheet, maximumHint, maximumSources, startingAtZero } from "./worked-out.ts";
 
 /** What holds a counter: a page, or a copy in the open scene, seen as a page that derives from its creature (INH-14). */
 interface CounterHolder

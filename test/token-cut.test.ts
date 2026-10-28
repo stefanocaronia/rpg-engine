@@ -1,7 +1,7 @@
 // The cut of the master's tokens (D-532): rules that left the instructions always given for the parts of their situations and the outputs of the calls they
 // belong to, each once in a chat or when it applies; the dashboard's sections only when the player asks how to use it; two rules of play gone (D-531 (6)).
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { corePart, masterInstructions } from "../src/instructions/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";

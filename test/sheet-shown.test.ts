@@ -1,7 +1,7 @@
 // What the sheet gives the dashboard past its text, for the numbers of 15 October to be drawn, on the fake system: why a roll is better or worse, the load
 // and its stage, how many bonds a list may hold, the written stride beside the speed, what a lit rushlight has left, and the facts the day's upkeep wrote.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 

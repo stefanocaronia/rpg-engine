@@ -528,7 +528,7 @@ function checkBuild()
         throw new Error(`The rpg command on the PATH is ${onPath || "missing"}, not npm's global one in ${npmBin}: run npm link in ${repo} and remove any other rpg from the PATH.`);
     }
 
-    return realpathSync(join(linked, "dist", "cli.js"));
+    return realpathSync(join(linked, "dist", "cli", "cli.js"));
 }
 
 /** The output, and the campaign when given, sit outside the home folder and the repo and apart from each other: Claude Code loads the instructions of every folder above its own. */

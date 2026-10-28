@@ -6,16 +6,16 @@ import { appendFileSync, cpSync, mkdirSync, readFileSync, writeFileSync } from "
 import { request } from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { tonesOf } from "../src/commands/ask.ts";
-import { campaignPageModules } from "../src/commands/game-extension-list.ts";
-import { campaignWidgets, widgetCard } from "../src/commands/game-widgets.ts";
+import { campaignPageModules } from "../src/commands/game/extension-list.ts";
+import { campaignWidgets, widgetCard } from "../src/commands/game/widgets.ts";
 import type { Context, Rows } from "../src/core/context.ts";
 import { readsApi } from "../src/core/package-declarations.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { findExtension, installedExtensions, packageFingerprint, readExtension } from "../src/extensions/index.ts";
-import { createMcpServer } from "../src/mcp-server.ts";
 import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
+import { createMcpServer } from "../src/server/mcp.ts";
 import { type GameSystem, systemPageModule } from "../src/systems/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 

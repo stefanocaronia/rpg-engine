@@ -5,7 +5,7 @@ import { request } from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Confirm, Confirmed, Context, PackageInfo, PackageManager, Player } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { issuesPage } from "../src/extensions/index.ts";

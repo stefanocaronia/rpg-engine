@@ -3,9 +3,9 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Player } from "../src/core/context.ts";
-import { createMcpServer } from "../src/mcp-server.ts";
+import { createMcpServer } from "../src/server/mcp.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;

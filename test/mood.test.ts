@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { readStateValues } from "../src/campaign/index.ts";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { mood } from "../src/commands/mood.ts";
 import { view, type ViewResult } from "../src/commands/view.ts";
 import type { Context } from "../src/core/context.ts";

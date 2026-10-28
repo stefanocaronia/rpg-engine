@@ -9,17 +9,17 @@ import { readCounter } from "../counters/index.ts";
 import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256, type ThrownDie, tossCoins } from "../dice/index.ts";
 import { declaredKind, findPage, isPlayerCharacter, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
-import { effectiveFields, effectsOf } from "./effect-layer.ts";
-import { systemNamed } from "./game-effects.ts";
-import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
-import { packagesRolled } from "./game-package-hooks.ts";
-import { copyPage, readOpenScene } from "./game-scene.ts";
-import { rollPageTable } from "./game-tables.ts";
-import { newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "./game-world.ts";
-import { firstInChat } from "./parts.ts";
-import { knowledgeNote } from "./sheet.ts";
-import { itemList, signedText, workedFields } from "./worked-out.ts";
+import { effectiveFields, effectsOf } from "./game/effect-layer.ts";
+import { systemNamed } from "./game/effects.ts";
+import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "./game/master-rolls.ts";
+import { packagesRolled } from "./game/package-hooks.ts";
+import { firstInChat } from "./game/parts.ts";
+import { copyPage, readOpenScene } from "./game/scene.ts";
+import { knowledgeNote } from "./game/sheet.ts";
+import { rollPageTable } from "./game/tables.ts";
+import { newDatedLogEntry } from "./game/time.ts";
+import { itemList, signedText, workedFields } from "./game/worked-out.ts";
+import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "./game/world.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
 export const faceValues = z.preprocess(

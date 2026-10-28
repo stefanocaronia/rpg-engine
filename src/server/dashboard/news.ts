@@ -4,14 +4,14 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { findCampaign, requireCampaign } from "../../campaign/index.ts";
 import { playerChangeNews, type PlayerSetting, playerSettings, setupSettingNamed } from "../../commands/config.ts";
-import { playerStory } from "../../commands/game-knowledge.ts";
-import { campaignWorld } from "../../commands/game-world.ts";
+import { playerStory } from "../../commands/game/knowledge.ts";
+import { campaignWorld } from "../../commands/game/world.ts";
 import { withFiles } from "../../core/store.ts";
 import { comparableText } from "../../core/text.ts";
 import { playerCharacters } from "../../pages/index.ts";
 import { codexClient } from "../../pictures/index.ts";
-import { type Acts, actText, giveBackAct, markHeard, markRung, takeActs, withdrawAct } from "../../player-acts.ts";
 import { type Note, readNotes, removeNote, writeNote } from "../../player-notes/index.ts";
+import { type Acts, actText, giveBackAct, markHeard, markRung, takeActs, withdrawAct } from "../player-acts.ts";
 import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
 import type { Served } from "./index.ts";
 

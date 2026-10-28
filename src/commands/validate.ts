@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { stateCheckProblems } from "./game-checks.ts";
-import { packageCodeProblems } from "./game-package-code.ts";
-import { campaignWorld } from "./game-world.ts";
-import { campaignProblems } from "./problems.ts";
+import { stateCheckProblems } from "./game/checks.ts";
+import { packageCodeProblems } from "./game/package-code.ts";
+import { campaignProblems } from "./game/problems.ts";
+import { campaignWorld } from "./game/world.ts";
 
 export const validate = defineCommand({
     name: "validate",

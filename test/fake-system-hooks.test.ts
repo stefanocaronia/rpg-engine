@@ -1,7 +1,7 @@
 // The hooks of a game system's code (D-448), on the fake system: called after the engine's own writes, the roll that made a change first in the log; one that
 // fails, or code that is not loaded, is a line for the master and the change stands. The 5e's dying point is in the 5e's repository.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 

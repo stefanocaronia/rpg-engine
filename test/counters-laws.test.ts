@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { LogEntry } from "../src/core/log.ts";
 import { canSpend, changeCounter, type Counter, counterLimit, formatCounter, readCounter, readCounterText } from "../src/counters/index.ts";
 import { concernsPlayer, type Page, type PageType, type World } from "../src/pages/index.ts";

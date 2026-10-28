@@ -33,12 +33,12 @@ import {
     writeImportState,
 } from "../importer/index.ts";
 import { stopProcess } from "../pictures/index.ts";
-import { installedAdventures } from "./game-adventures.ts";
-import { isImportRunning, runImport, stopImport, writingState } from "./game-import.ts";
-import { campaignMode } from "./game-mode.ts";
-import { newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem, campaignWorld } from "./game-world.ts";
-import { situationPart } from "./parts.ts";
+import { installedAdventures } from "./game/adventures.ts";
+import { isImportRunning, runImport, stopImport, writingState } from "./game/import.ts";
+import { campaignMode } from "./game/mode.ts";
+import { situationPart } from "./game/parts.ts";
+import { newDatedLogEntry } from "./game/time.ts";
+import { campaignSystem, campaignWorld } from "./game/world.ts";
 
 interface ImportResult
 {

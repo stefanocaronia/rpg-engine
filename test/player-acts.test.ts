@@ -2,10 +2,10 @@
 // doorbell of Claude Code's hook rings for each, never for anything else; in Codex they go to its queue, as the player's own messages.
 import { request } from "node:http";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { bellLine, waitForBell } from "../src/bell-listener.ts";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { ChatState, Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
+import { bellLine, waitForBell } from "../src/server/bell-listener.ts";
 import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 

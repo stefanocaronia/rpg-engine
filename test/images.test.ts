@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, PictureMaker } from "../src/core/context.ts";
 import { FileStore, withFiles } from "../src/core/store.ts";
 import { imageFileName, readImage } from "../src/images/index.ts";

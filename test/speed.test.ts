@@ -1,7 +1,7 @@
 // The speed the sheet works out (D-445; SPD-1, SPD-2), on the fake system: the stride written, then what effects add and multiply, and a condition that
 // stops one. The 5e's speeds, armor, loads and feet are in the 5e's repository.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 

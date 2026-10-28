@@ -53,16 +53,16 @@ import { declaredKind } from "../pages/index.ts";
 import { claudeSays, codexSays } from "../pictures/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, readableSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
 import { readCalendar, readCalendarStart } from "../time/index.ts";
-import { libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./game-library.ts";
-import { campaignMode, campaignNote } from "./game-mode.ts";
-import { campaignCoins, coinsShown } from "./game-money.ts";
-import { askedBy, heldSystemSettings, isFixedSetting, isLeading, offeredValues, offerRefusal, playedEngineSetting, unofferedLines, valuePart } from "./game-offers.ts";
-import { loadNewSystemCode } from "./game-package-code.ts";
-import { readOpenScene } from "./game-scene.ts";
-import { campaignCalendar, newDatedLogEntry } from "./game-time.ts";
-import { checkWidgetSpots } from "./game-widgets.ts";
-import { campaignSystem, campaignWorld, countedByGame, installedSystemName, playedRules, playedSettingValue, playersOfTheGame, systemLayers, systemSetting, valuesText } from "./game-world.ts";
-import { mentorPart, stylePart } from "./parts.ts";
+import { libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./game/library.ts";
+import { campaignMode, campaignNote } from "./game/mode.ts";
+import { campaignCoins, coinsShown } from "./game/money.ts";
+import { askedBy, heldSystemSettings, isFixedSetting, isLeading, offeredValues, offerRefusal, playedEngineSetting, unofferedLines, valuePart } from "./game/offers.ts";
+import { loadNewSystemCode } from "./game/package-code.ts";
+import { mentorPart, stylePart } from "./game/parts.ts";
+import { readOpenScene } from "./game/scene.ts";
+import { campaignCalendar, newDatedLogEntry } from "./game/time.ts";
+import { checkWidgetSpots } from "./game/widgets.ts";
+import { campaignSystem, campaignWorld, countedByGame, installedSystemName, playedRules, playedSettingValue, playersOfTheGame, systemLayers, systemSetting, valuesText } from "./game/world.ts";
 
 // A use whose maximum reads what gives it, in quotes for its commas (CAM-1).
 const counterExample = 'bulwark-dice: {max: "4 * has(features, Bulwark)", refill: {{rest}}}';

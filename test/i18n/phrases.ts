@@ -4,7 +4,7 @@
 import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runCommandLine } from "../../src/command-line.ts";
+import { runCommandLine } from "../../src/cli/command-line.ts";
 import { picturesNotes, playerSettingNames } from "../../src/commands/config.ts";
 import type { PlayerSetting } from "../../src/dashboard/data.ts";
 import { makeTempFolder, testContext } from "../support.ts";

@@ -4,10 +4,10 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { corePart, layeredPart } from "../src/instructions/index.ts";
-import { createMcpServer } from "../src/mcp-server.ts";
+import { createMcpServer } from "../src/server/mcp.ts";
 import { explorationGuidance, fightGuidance, inPlay, madeSystem, makeTempFolder, removeFolder, testContext, travelGuidance } from "./support.ts";
 
 let folder: string;

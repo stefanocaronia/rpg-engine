@@ -7,9 +7,9 @@ import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { applyRename, type Page, pageNamed, pageWithPath, planRename, renamedLinks, type World } from "../pages/index.ts";
-import { readOpenScene, updateScene } from "./game-scene.ts";
-import { newDatedLogEntry } from "./game-time.ts";
-import { campaignWorld } from "./game-world.ts";
+import { readOpenScene, updateScene } from "./game/scene.ts";
+import { newDatedLogEntry } from "./game/time.ts";
+import { campaignWorld } from "./game/world.ts";
 
 interface RenameResult
 {

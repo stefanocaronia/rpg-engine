@@ -1,7 +1,7 @@
 // Asking the player with buttons (MECCANICHE, ASK-1–ASK-7; D-148).
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { Context, Picked, Player, Rows, SpendAsked } from "../src/core/context.ts";
 import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";

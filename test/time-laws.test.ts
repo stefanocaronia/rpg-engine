@@ -4,7 +4,7 @@ import fc from "fast-check";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import type { LogEntry } from "../src/core/log.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, minutesBetween, readDuration, readGameDate } from "../src/time/index.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";

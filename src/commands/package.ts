@@ -14,13 +14,13 @@ import { isNewerVersion } from "../core/version.ts";
 import { dropConsent, type Extension, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
 import { findSystem, readableSystems, systemFolders, systemHasCode, systemInFolder } from "../systems/index.ts";
-import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game-adventures.ts";
-import { campaignExamples } from "./game-examples.ts";
-import { listedExtensions, runsCode } from "./game-extension-list.ts";
-import { campaignMode } from "./game-mode.ts";
-import { loadCampaignCode, loadNewSystemCode, packageCommandNames, packagesInstalled } from "./game-package-code.ts";
-import { newDatedLogEntry } from "./game-time.ts";
-import { campaignWorld } from "./game-world.ts";
+import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game/adventures.ts";
+import { campaignExamples } from "./game/examples.ts";
+import { listedExtensions, runsCode } from "./game/extension-list.ts";
+import { campaignMode } from "./game/mode.ts";
+import { loadCampaignCode, loadNewSystemCode, packageCommandNames, packagesInstalled } from "./game/package-code.ts";
+import { newDatedLogEntry } from "./game/time.ts";
+import { campaignWorld } from "./game/world.ts";
 
 type PackageResult =
     | { kind: "list"; installed: Installed[]; missing: string[]; adventures: { title: string; version: string; since?: string; removable: boolean; }[]; systems: InstalledSystem[]; languages: InstalledLanguage[]; }

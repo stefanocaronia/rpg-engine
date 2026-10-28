@@ -1,7 +1,7 @@
 // The laws of planned events (MECCANICHE, EVT-1–EVT-4), checked on thousands of worlds made at random, against a model written another way (D-118).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { eventsToFire, isDue, plannedEvents, worldFacts } from "../src/commands/game-events.ts";
+import { eventsToFire, isDue, plannedEvents, worldFacts } from "../src/commands/game/events.ts";
 import type { Page, World } from "../src/pages/index.ts";
 import { type GameDate, minutesBetween, readGameDate } from "../src/time/index.ts";
 import { readTriggers, triggerHolds } from "../src/triggers/index.ts";

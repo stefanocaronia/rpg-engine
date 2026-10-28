@@ -1,7 +1,7 @@
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { write } from "../src/commands/write.ts";
 import type { Context } from "../src/core/context.ts";
 import { baseChain, inheritedFields, type Page } from "../src/pages/index.ts";

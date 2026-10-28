@@ -4,7 +4,7 @@
   "description": "Play a tabletop role-playing game with an AI as your game master: the AI tells the story; RPG Engine remembers the world, rolls the dice and keeps the accounts.",
   "type": "module",
   "bin": {
-    "rpg": "dist/cli.js"
+    "rpg": "dist/cli/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

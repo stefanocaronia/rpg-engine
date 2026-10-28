@@ -25,14 +25,14 @@ import {
     stackName,
     type World,
 } from "../pages/index.ts";
-import { coinExamples } from "./game-examples.ts";
-import { campaignCoins } from "./game-money.ts";
-import { afterMoves, pagesPlan } from "./game-moves.ts";
-import { copyName, readOpenScene } from "./game-scene.ts";
-import { heldStack, logStackSteps, stackEdits, type StackMove, stackMoveSteps, type StackStep, stackStepText, unequipKinds } from "./game-stacks.ts";
-import { newDatedLogEntry } from "./game-time.ts";
-import { campaignWorld, missingSystemHint } from "./game-world.ts";
-import { skippedPagesNote } from "./notes.ts";
+import { coinExamples } from "./game/examples.ts";
+import { campaignCoins } from "./game/money.ts";
+import { afterMoves, pagesPlan } from "./game/moves.ts";
+import { skippedPagesNote } from "./game/notes.ts";
+import { copyName, readOpenScene } from "./game/scene.ts";
+import { heldStack, logStackSteps, stackEdits, type StackMove, stackMoveSteps, type StackStep, stackStepText, unequipKinds } from "./game/stacks.ts";
+import { newDatedLogEntry } from "./game/time.ts";
+import { campaignWorld, missingSystemHint } from "./game/world.ts";
 
 // A list, or one text, as an MCP client may send it.
 const textList = z.union([z.string(), z.array(z.string())]);

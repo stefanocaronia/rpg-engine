@@ -6,17 +6,17 @@ import { defineCommand } from "../core/registry.ts";
 import { closedSquare, featureAt, firstOpenSquare, type Grid, readSquare, type Square, squareName } from "../grid/index.ts";
 import { canHold, isInParty, kindNamed, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, stackName, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
-import { type Surrounding, surroundings, surroundingsChange } from "./game-environment.ts";
-import { moveFacts } from "./game-grid-moves.ts";
-import { atEntries, atEntry, clearCopies, offMapNote, placeGrid, type Standing, standing } from "./game-grids.ts";
-import { picturesNote } from "./game-images.ts";
-import { movePages } from "./game-moves.ts";
-import { measuresOf, roadsOf, sameSpot, stopOf } from "./game-roads.ts";
-import { copyName, readOpenScene, updateScene } from "./game-scene.ts";
-import { heldStack, type StackMove, stackMoveSteps, writeStacks } from "./game-stacks.ts";
-import { newDatedLogEntry } from "./game-time.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
-import { shortList, skippedPagesNote } from "./notes.ts";
+import { type Surrounding, surroundings, surroundingsChange } from "./game/environment.ts";
+import { moveFacts } from "./game/grid-moves.ts";
+import { atEntries, atEntry, clearCopies, offMapNote, placeGrid, type Standing, standing } from "./game/grids.ts";
+import { picturesNote } from "./game/images.ts";
+import { movePages } from "./game/moves.ts";
+import { shortList, skippedPagesNote } from "./game/notes.ts";
+import { measuresOf, roadsOf, sameSpot, stopOf } from "./game/roads.ts";
+import { copyName, readOpenScene, updateScene } from "./game/scene.ts";
+import { heldStack, type StackMove, stackMoveSteps, writeStacks } from "./game/stacks.ts";
+import { newDatedLogEntry } from "./game/time.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./game/world.ts";
 
 // A list, or one text, as an MCP client may send it.
 const textList = z.union([z.string(), z.array(z.string())]);

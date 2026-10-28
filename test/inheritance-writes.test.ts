@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { comparableText } from "../src/core/text.ts";
 import { findPage, loadWorld, sameAsBase } from "../src/pages/index.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";

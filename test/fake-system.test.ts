@@ -2,9 +2,9 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
-import { campaignPageModules } from "../src/commands/game-extension-list.ts";
-import { campaignWidgets } from "../src/commands/game-widgets.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
+import { campaignPageModules } from "../src/commands/game/extension-list.ts";
+import { campaignWidgets } from "../src/commands/game/widgets.ts";
 import type { Context } from "../src/core/context.ts";
 import { fieldLabel } from "../src/dashboard/labels.ts";
 import { setSystemWords, systemWord } from "../src/dashboard/text.ts";

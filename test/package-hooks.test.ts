@@ -4,10 +4,10 @@ import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { request } from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
 import { change } from "../src/commands/change.ts";
-import { campaignPageModules } from "../src/commands/game-extension-list.ts";
-import { packageWidget } from "../src/commands/game-widgets.ts";
+import { campaignPageModules } from "../src/commands/game/extension-list.ts";
+import { packageWidget } from "../src/commands/game/widgets.ts";
 import { packageCommand } from "../src/commands/package.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";

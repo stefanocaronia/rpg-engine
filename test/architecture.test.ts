@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 
 const sourceFolder = new URL("../src/", import.meta.url);
 
-// A module is a folder of src/ other than core (the shared utilities) and commands (the glue between modules).
+// A module is a folder of src/ other than core (the shared utilities), commands (the glue between modules), and server and cli, the processes that serve them.
 const modules = readdirSync(sourceFolder, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name !== "core" && entry.name !== "commands")
+    .filter((entry) => entry.isDirectory() && !["core", "commands", "server", "cli"].includes(entry.name))
     .map((entry) => entry.name);
 
 describe("architecture", () => {
@@ -56,7 +56,7 @@ describe("architecture", () => {
             "pictures/claude.ts",
             "pictures/codex.ts",
             "pictures/helpers.ts",
-            "page-words.ts",
+            "server/dashboard/words.ts",
             "documents/read.ts",
             "importer/work.ts",
             "library/books.ts",

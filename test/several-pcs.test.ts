@@ -4,9 +4,9 @@
 import fc from "fast-check";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runCommandLine } from "../src/command-line.ts";
-import { knowledgeOf, knowsPage, playerKnowledge } from "../src/commands/game-knowledge.ts";
-import { campaignWorld } from "../src/commands/game-world.ts";
+import { runCommandLine } from "../src/cli/command-line.ts";
+import { knowledgeOf, knowsPage, playerKnowledge } from "../src/commands/game/knowledge.ts";
+import { campaignWorld } from "../src/commands/game/world.ts";
 import type { Context } from "../src/core/context.ts";
 import { pageNamed } from "../src/pages/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
