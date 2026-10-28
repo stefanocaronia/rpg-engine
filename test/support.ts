@@ -77,6 +77,7 @@ export function readLogFile(folder: string): LogEntry[]
 export const fightGuidance = "As the fight starts, give the place two or three things that change it, such as a lantern, a ledge, a rotten rail; foes who know the place use them too, and first.\n\n"
     + "Give the fight a question beyond who wins, such as holding the gate or saving the child, and at least one choice that changes its outcome; "
     + "end it once the question is answered: foes flee, yield or bargain.\n\n"
+    + "- Foes act by their intelligence and motives.\n"
     + "- Keep positions as places the player can picture (on the stairs, behind the cart, in the doorway), and say each move that changes who can reach, see or flank whom.\n"
     + "- The place can fight too: a hazard with its own clock, such as rising water or spreading fire, grows each round and acts on its own turn, shown a turn ahead.\n"
     + "- Give a hard fight a moment that asks for the right move, shown a turn ahead, such as a beam heaved or a bridge catching fire, so that what was saved for it pays there.\n"

@@ -7,19 +7,29 @@ import { campaignMode, modePart } from "./game-mode.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { voicesPart } from "./game-voices.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
-import { mentorPart, partyPart, situationPart, stylePart } from "./parts.ts";
+import { mentorPart, partText, partyPart, situationPart, stylePart } from "./parts.ts";
+
+// The parts instructions gives alone, when the master asks for them (D-532): how the player uses the dashboard.
+const onRequestParts = ["dashboard"] as const;
 
 export const instructions = defineCommand({
     name: "instructions",
     description: "Your instructions as game master, in full: how to run this campaign and use these tools. They end with the part of the mode the campaign is in. "
-        + "Call it before your first reply in every chat, and again after the conversation has been summarized; then call status. Read-only, no parameters.",
+        + "Call it before your first reply in every chat, and again after the conversation has been summarized; then call status. "
+        + "With part dashboard, only how the player uses their dashboard, when they ask. Read-only.",
     group: "game",
     readOnly: true,
     alwaysLoad: true,
-    input: z.object({}),
+    input: z.object({
+        part: z.enum(onRequestParts).optional().describe("only this part, when its situation asks for it: dashboard, how the player uses their dashboard, when they ask"),
+    }),
 
-    run(_input, context)
+    run(input, context)
     {
+        if (input.part !== undefined) {
+            return { text: requestedPart(context) };
+        }
+
         // A chat that starts, or follows a summary, gets every part of the instructions again when its situation opens (D-97).
         context.told?.clear();
         // Where the host shows the player forms, or the dashboard shows its buttons, they take the place of the stop in words (D-148, D-279).
@@ -46,6 +56,17 @@ export const instructions = defineCommand({
         return result.text;
     },
 });
+
+/** How the player uses their dashboard (D-404, D-532): the core's with the system's, which instructions gives only when the player asks. */
+function requestedPart(context: Context): string
+{
+    if (context.dashboard === undefined) {
+        throw new Error("No dashboard is served in this chat: answer in words what the player asked.");
+    }
+
+    const root = findCampaign(context.folder);
+    return partText("dashboard-guide", root === undefined ? undefined : campaignSystem(root, context)) ?? "";
+}
 
 /**
  * The part of the open scene's type, such as combat, for a chat that starts in the middle of a scene, where scene open will not give it (MOD-5, D-266); then it

@@ -328,7 +328,7 @@ words: {Cleric: Chierico, long rest: riposo lungo}
 headline: "{classes} di livello {level}"
 ```
 
-**Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `session` (how a session opens in play), `adventure` (how to build one, when none is open or planned), `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book.
+**Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `session` (how a session opens in play), `adventure` (how to build one, when none is open or planned), `dashboard-guide` (how the player uses the dashboard, which `instructions` gives when they ask), `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book.
 
 ## 5. What a campaign adds
 

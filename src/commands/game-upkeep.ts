@@ -15,6 +15,7 @@ import { partyPages } from "./game-recipes.ts";
 import { writeStacks } from "./game-stacks.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignWorld } from "./game-world.ts";
+import { firstInChat } from "./parts.ts";
 import { formulaValue, hasSheet } from "./worked-out.ts";
 
 // Where a day's meals come from the lifestyle, not from what one carries: a place of these kinds, or one inside it (UPK-1).
@@ -140,7 +141,16 @@ function lifestylePaid(root: string, context: Context, world: World, member: Pag
     const after = formatAmount(payment.purse, coins);
     writePage(world, member.name, undefined, { set: { money: after } });
     appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: member.name, field: "money", before, after, why: `a ${named} day`, upkeep: true }));
-    return `${member.name} pays ${withArticle(named)} day: money ${before} → ${after}.`;
+    // Once in a chat, what a lifestyle is, as the 5e's rule of play left the instructions for it (D-532).
+    const meaning = firstInChat(context, "lifestyle") ? ` ${lifestyleMeaning(lifestyle.field)}` : "";
+    return `${member.name} pays ${withArticle(named)} day: money ${before} → ${after}.${meaning}`;
+}
+
+/** What a lifestyle paid by the day stands for, by the system's field. */
+function lifestyleMeaning(field: string): string
+{
+    return `What ${field} pays is the day's bed and board: while it is set, never charge rooms and meals again; for nights paid one by one, or board earned by work, `
+        + "clear it while it lasts.";
 }
 
 /** Whether a page stands in a settlement, or in a place inside one (UPK-1). */

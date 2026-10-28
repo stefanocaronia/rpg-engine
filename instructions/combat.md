@@ -2,6 +2,7 @@ As the fight starts, give the place two or three things that change it, such as 
 
 Give the fight a question beyond who wins, such as holding the gate or saving the child, and at least one choice that changes its outcome; end it once the question is answered: foes flee, yield or bargain.
 
+- Foes act by their intelligence and motives.
 - Keep positions as places the player can picture (on the stairs, behind the cart, in the doorway), and say each move that changes who can reach, see or flank whom.
 - The place can fight too: a hazard with its own clock, such as rising water or spreading fire, grows each round and acts on its own turn, shown a turn ahead.
 - Give a hard fight a moment that asks for the right move, shown a turn ahead, such as a beam heaved or a bridge catching fire, so that what was saved for it pays there.

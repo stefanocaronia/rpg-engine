@@ -1,1 +1,1 @@
-Move each clock as its event says, or a step for each day its owner worked unhindered, at the pace the difficulty says; show each step as a sign, never the plan, and after days skipped, in their summary.
+Move each clock as its event says, or a step for each day its owner worked unhindered, at the pace the difficulty says; show each step as a sign, never the plan, and after days skipped, in their summary. Before you skip days again, see which clock would fill and stop there.

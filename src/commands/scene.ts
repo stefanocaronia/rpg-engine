@@ -48,7 +48,7 @@ import { newDatedLogEntry, readPresent } from "./game-time.ts";
 import { turnUsesOf, useInTurn, usesAtTurn } from "./game-turn-uses.ts";
 import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint, systemPagesHint } from "./game-world.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
-import { situationPart } from "./parts.ts";
+import { firstInChat, situationPart } from "./parts.ts";
 import { hasSheet, startingAtZero } from "./worked-out.ts";
 
 const actions = ["open", "add", "leave", "order", "next", "use", "now", "hostile", "calm", "close"] as const;
@@ -135,7 +135,7 @@ type SceneResult =
     | { action: "now"; title: string; now: string; members: string[]; }
     | { action: "use"; line: string; }
     | { action: "hostile" | "calm"; title: string; marked: string[]; hostile: string[]; }
-    | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; fallen?: string; quests: string[]; } & Saved);
+    | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; fallen?: string; afterPeak?: string; quests: string[]; } & Saved);
 
 /** The save the end of a scene made, or why it made none (SAV-3). */
 interface Saved
@@ -719,6 +719,7 @@ function close(root: string, world: World, summary: string, context: Context): S
         endless,
         ...(rewards.length === 0 ? {} : { rewards }),
         ...(fallen === "" ? {} : { fallen }),
+        ...(peakEnded(current.type) && firstInChat(context, "after-peak") ? { afterPeak } : {}),
         quests,
         ...saved,
     };
@@ -795,6 +796,16 @@ function rewardLines(world: World, system: GameSystem | undefined, scene: Scene)
     });
 }
 
+/** What a fight or a challenge that ends asks of the master, once in a chat, as play's rules left the instructions for it (D-532). */
+const afterPeak = "After a peak, give a quiet scene the player can fill: a meal, rain, a talk. Judge a challenge by what it cost, not by whether it was won: "
+    + "after two that cost nothing, let the next rise, within what the difficulty allows.";
+
+/** Whether a scene of this type is a peak: a fight or a challenge. */
+function peakEnded(type: string): boolean
+{
+    return type === "combat" || type === "challenge";
+}
+
 /** Who fell in a scene, dead or down: its copies, those that left during it too, each with its creature, and the characters outside the party. */
 function fallenOf(world: World, system: GameSystem | undefined, scene: Scene): { name: string; kind?: string; }[]
 {
@@ -814,7 +825,7 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
 }
 
 function closedText(
-    result: { title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; fallen?: string; quests: string[]; } & Saved,
+    result: { title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; fallen?: string; afterPeak?: string; quests: string[]; } & Saved,
 ): string
 {
     const saved = result.saved === undefined ? (result.unsaved === undefined ? "" : `\n${result.unsaved}`) : `\nSaved: ${result.saved}.`;
@@ -834,7 +845,8 @@ function closedText(
         : `\nLeft during the scene: ${membersText(result.gone ?? [])}. A copy ends with its scene: if one may come back, give it a page now, with its wounds.`;
     const rewards = (result.rewards ?? []).map((line) => `\n${line}`).join("");
     const fallen = result.fallen === undefined ? "" : `\n${result.fallen}`;
-    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${fallen}${rewards}${quests}${saved}`;
+    const peak = result.afterPeak === undefined ? "" : `\n${result.afterPeak}`;
+    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${fallen}${rewards}${quests}${peak}${saved}`;
 }
 
 /** "\nEnded: Spaventato on Annegato 2.", or nothing when no effect ended. */

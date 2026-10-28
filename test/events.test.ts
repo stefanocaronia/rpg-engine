@@ -19,7 +19,7 @@ const judge = "If an event no longer goes as planned, write it: its status, date
 const questJudge = "If the story of a quest has ended, set its status.";
 // The part new-day, which the command line gives every time (D-97, D-134).
 const turn = "Move each clock as its event says, or a step for each day its owner worked unhindered, at the pace the difficulty says; show each step as a sign, never the plan, "
-    + "and after days skipped, in their summary.";
+    + "and after days skipped, in their summary. Before you skip days again, see which clock would fill and stop there.";
 
 beforeEach(async () => {
     folder = makeTempFolder();

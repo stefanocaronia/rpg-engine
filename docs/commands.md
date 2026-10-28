@@ -64,7 +64,7 @@ Your instructions as game master, in full: how to run this campaign and use thes
 
 Read-only: yes.
 
-No parameters.
+- `part` (`"dashboard"`, optional): only this part, when its situation asks for it: dashboard, how the player uses their dashboard, when they ask
 
 ### status
 
