@@ -6,7 +6,7 @@ import { appendLogEntry, readLog } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
-import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256, type ThrownDie } from "../dice/index.ts";
+import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256, type ThrownDie, tossCoins } from "../dice/index.ts";
 import { declaredKind, findPage, isPlayerCharacter, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
@@ -60,8 +60,12 @@ export const roll = defineCommand({
         + "left out, a roll for a foe or anyone outside the party is hidden or shown as the master-rolls setting says. "
         + "keep stores the dice rolled for later, as a power of foresight does, rolled by the player for the player character, by you for a companion; "
         + "use takes one of those instead of the die and logs which roll it replaced. "
-        + "Instead of a notation, table rolls on a random table of a page and gives its row, for you to tell; oracle answers a yes/no question with its odds. "
-        + 'Example: notation {{roll}}, why "notice the trap", who Lena; table "Colli di Vallerana#Incontri", why "a night on the hills"; oracle likely, why "is the ferryman awake?".',
+        + "Instead of a notation, table rolls on a random table of a page and gives its row, for you to tell; oracle answers a yes/no question with its odds; "
+        + "toss tosses one to three coins, each heads or tails, in any game. "
+        + "On the player's dashboard a shown roll goes in its list of rolls; tray true throws it in the dice tray too, landing on its faces, false keeps it in the list alone; "
+        + "left out, coins fly and dice do not. "
+        + 'Example: notation {{roll}}, why "notice the trap", who Lena; table "Colli di Vallerana#Incontri", why "a night on the hills"; oracle likely, why "is the ferryman awake?"; '
+        + 'toss 2, why "does the rope hold?", who Lena.',
     group: "game",
     positionals: ["notation"],
     input: z.object({
@@ -85,6 +89,12 @@ export const roll = defineCommand({
             "a random table to roll on, as Page#Section: the first table under that heading, its die in the first header cell (d8, 2d6, d100, d66) or as big as its highest row",
         ),
         oracle: z.string().optional().describe("odds of a yes/no question, on a d100: almost certain, likely, 50/50, unlikely or small chance; why is the question asked; a double makes the answer extreme"),
+        toss: z.preprocess((value) => (typeof value === "string" && /^\s*\d+\s*$/.test(value) ? Number(value) : value), z.number().int()).optional().describe(
+            "how many coins to toss, 1 to 3, each heads or tails, in their order; why is the question; with physical dice, values gives 1 for heads and 2 for tails",
+        ),
+        tray: z.boolean().optional().describe(
+            "for a shown roll, true to throw it in the dice tray of the player's dashboard too, landing on its faces; false for the list of rolls alone; left out, coins fly and dice do not",
+        ),
     }),
 
     run(input, context): RollOutput
@@ -92,19 +102,21 @@ export const roll = defineCommand({
         const root = requireCampaign(context.folder);
 
         if (input.reveal !== undefined) {
-            if (input.notation !== undefined || input.table !== undefined || input.oracle !== undefined) {
-                throw new Error("Give either the dice to roll, a table or the oracle, or the id of a hidden roll to reveal, not both.");
+            if (input.notation !== undefined || input.table !== undefined || input.oracle !== undefined || input.toss !== undefined) {
+                throw new Error("Give either the dice to roll, a table, the oracle or coins to toss, or the id of a hidden roll to reveal, not both.");
             }
 
             return revealHiddenRoll(input.reveal, root, context);
         }
 
-        if ([input.notation, input.table, input.oracle].filter((given) => given !== undefined).length > 1) {
-            throw new Error("Give one of the dice to roll, table or oracle, not more: each is a roll of its own. Nothing rolled.");
+        if ([input.notation, input.table, input.oracle, input.toss].filter((given) => given !== undefined).length > 1) {
+            throw new Error("Give one of the dice to roll, table, oracle or toss, not more: each is a roll of its own. Nothing rolled.");
         }
 
-        if (input.notation === undefined && input.table === undefined && input.oracle === undefined) {
-            throw new Error(`Give the dice to roll, for example ${sheetDiceOf(campaignSystem(root, context))}+2; or table, for a random table, or oracle, for a yes/no question.`);
+        if (input.notation === undefined && input.table === undefined && input.oracle === undefined && input.toss === undefined) {
+            throw new Error(
+                `Give the dice to roll, for example ${sheetDiceOf(campaignSystem(root, context))}+2; or table, for a random table; oracle, for a yes/no question; or toss, for coins.`,
+            );
         }
 
         if (input.values && input.hidden) {
@@ -138,7 +150,7 @@ export const roll = defineCommand({
         const keeping = keeper === undefined ? {} : { kept: { field: keeper.field, values: diceRoll.faces } };
         const using = used === undefined ? {} : { used: { from: used.page.name, field: used.field, value: used.value } };
         const checked = input.check === undefined ? {} : { check: input.check };
-        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, ...checked, physical, ...keeping, ...using, dice: diceRoll.dice };
+        const data = { notation: input.notation, total: diceRoll.total, result: text, ...sheet, why: input.why, who: input.who, ...checked, physical, ...keeping, ...using, ...trayOf(input), dice: diceRoll.dice };
         const entry = newDatedLogEntry(root, context, "roll", hidden ? "hidden" : "public", data);
         const shownFingerprint = hidden ? sealHiddenRoll(entry, text, context) : undefined;
 
@@ -191,11 +203,31 @@ function withRealNote(context: Context, output: Extract<RollOutput, { kind: "rol
         : output;
 }
 
-/** A roll on a page's random table or of the oracle (D-503): logged as any roll, hidden or shown as any roll; the row or the answer is for the master to tell. */
-function answerRoll(input: { table?: string; oracle?: string; why?: string; who?: string; check?: string; values?: number[]; hidden?: boolean; keep?: string; use?: string; double?: boolean; }, root: string, context: Context): RollOutput
+/**
+ * A roll on a page's random table, of the oracle (D-503) or of coins (COIN-1): logged as any roll, hidden or shown as any roll; the row, the answer or the faces
+ * are for the master to tell.
+ */
+function answerRoll(
+    input: {
+        table?: string;
+        oracle?: string;
+        toss?: number;
+        why?: string;
+        who?: string;
+        check?: string;
+        values?: number[];
+        hidden?: boolean;
+        keep?: string;
+        use?: string;
+        double?: boolean;
+        tray?: boolean;
+    },
+    root: string,
+    context: Context,
+): RollOutput
 {
     if (input.keep !== undefined || input.use !== undefined || input.double === true) {
-        throw new Error("keep, use and double go with dice to roll, not with a table or the oracle. Nothing rolled.");
+        throw new Error("keep, use and double go with dice to roll, not with a table, the oracle or coins. Nothing rolled.");
     }
 
     if (input.oracle !== undefined && (input.why === undefined || input.why.trim() === "")) {
@@ -204,13 +236,13 @@ function answerRoll(input: { table?: string; oracle?: string; why?: string; who?
 
     const physical = input.values !== undefined;
     const source = input.values ? { values: input.values } : { random: context.random };
-    const answer = input.table !== undefined ? tableAnswer(root, context, input.table, source) : oracleAnswer(input.oracle ?? "", source);
+    const answer = input.table !== undefined ? tableAnswer(root, context, input.table, source) : input.toss !== undefined ? tossAnswer(input.toss, source) : oracleAnswer(input.oracle ?? "", source);
     // A table or the oracle is the master's own roll, behind the screen as master-rolls says, but for a party member's (D-287); a secret's table is never shown.
     const masters = input.who === undefined || !ofTheParty(root, context, input.who);
     const screened = answer.secret || (input.hidden === undefined && !physical && masters && screenUp(root));
     const hidden = input.hidden === true || screened;
     const checked = input.check === undefined ? {} : { check: input.check };
-    const data = { notation: answer.notation, total: answer.total, result: answer.text, ...answer.data, why: input.why, who: input.who, ...checked, physical, dice: answer.dice };
+    const data = { notation: answer.notation, total: answer.total, result: answer.text, ...answer.data, why: input.why, who: input.who, ...checked, physical, ...trayOf(input), dice: answer.dice };
     const entry = newDatedLogEntry(root, context, "roll", hidden ? "hidden" : "public", data);
     const shownFingerprint = hidden ? sealHiddenRoll(entry, answer.text, context) : undefined;
     appendLogEntry(root, entry);
@@ -243,6 +275,23 @@ function oracleAnswer(odds: string, source: FaceSource): Answer
     try {
         const asked = askOracle(odds, source);
         return { secret: false, notation: "d100", total: asked.roll.total, text: asked.text, dice: asked.roll.dice, data: { oracle: asked.odds, odds: asked.chance, answer: `${asked.extreme ? "extreme " : ""}${asked.yes ? "yes" : "no"}` } };
+    } catch (error) {
+        throw error instanceof DiceError ? new Error(`${error.message} Nothing rolled.`) : error;
+    }
+}
+
+/** Whether a shown roll flies in the dashboard's tray, kept in the log only when the master says it (VIEW-13). */
+function trayOf(input: { tray?: boolean; }): { tray?: boolean; }
+{
+    return input.tray === undefined ? {} : { tray: input.tray };
+}
+
+/** The coins tossed, each face in order and the heads as the total (COIN-3). */
+function tossAnswer(count: number, source: FaceSource): Answer
+{
+    try {
+        const toss = tossCoins(count, source);
+        return { secret: false, notation: toss.roll.notation, total: toss.heads, text: toss.text, dice: toss.roll.dice, data: { toss: toss.sides } };
     } catch (error) {
         throw error instanceof DiceError ? new Error(`${error.message} Nothing rolled.`) : error;
     }

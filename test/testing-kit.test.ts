@@ -1,10 +1,11 @@
 // The test kit of a package's repository (D-506, D-514): a campaign on a game system whose folder it is given, beside the engine's, as the 5e's repository,
-// the lockpicking's and the weather's run theirs; its code loaded from there, its versions of the rules read, its own widgets, and the core's ask.
-import { cpSync, existsSync, rmSync } from "node:fs";
+// the lockpicking's and the weather's run theirs; its code loaded from there, its versions of the rules read, its own widgets, the core's ask, the tools' descriptions, and the
+// checks of a system's folder.
+import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { type TestCampaign, testCampaign } from "../src/testing.ts";
+import { systemChecks, type TestCampaign, testCampaign } from "../src/testing.ts";
 import { makeTempFolder } from "./support.ts";
 
 const fake = fileURLToPath(new URL("./systems/fake/", import.meta.url));
@@ -26,6 +27,26 @@ describe("testCampaign with the folders of game systems", () => {
         campaign = undefined;
         // Taken away, the link goes and the system's own folder stays.
         expect(existsSync(join(fake, "system.yaml"))).toBe(true);
+    });
+
+    it("plays a system the package's repository installs, as a devDependency in its node_modules, after the folders given (D-513 (1))", async () => {
+        const repository = makeTempFolder();
+        const installed = join(repository, "node_modules", "@rpgengine", "system-fake");
+        cpSync(fake, installed, { recursive: true });
+        const settings = join(installed, "system.yaml");
+        writeFileSync(settings, readFileSync(settings, "utf8").replace(/^title: .*$/m, "title: the fake as the repository installs it"));
+        const here = process.cwd();
+        process.chdir(repository);
+
+        try {
+            campaign = await testCampaign({ system: "fake" });
+            expect(await campaign.ok("config", "system")).toMatch(/^system: fake, the fake as the repository installs it/);
+            await campaign.close();
+            campaign = await testCampaign({ system: "fake", systems: [fake] });
+            expect(await campaign.ok("config", "system")).toMatch(/^system: fake, the fake system of the core's tests/);
+        } finally {
+            process.chdir(here);
+        }
     });
 
     it("takes a system of data alone by its folder's name, and refuses a folder that is no system", async () => {
@@ -52,5 +73,19 @@ describe("testCampaign for a game system's own tests", () => {
         campaign.context = { ...campaign.context, page: { choose: async (_question, _title, labels) => (shown.push(labels), 1) } };
         expect(await campaign.ask({ question: "Which way?", options: ["Left", "Right"] })).toEqual({ exitCode: 0, output: "The player chose: Right." });
         expect(shown).toEqual([["Left", "Right"]]);
+    });
+
+    it("gives the core's tools as a host reads them in the campaign, with the examples of its system (D-518)", async () => {
+        campaign = await testCampaign({ system: "fake", systems: [fake] });
+        const tools = campaign.descriptions();
+        expect(tools.change).toContain('field grit, by -3, why "bitten by the wolf"; or recipe "night\'s sleep".');
+        expect(tools.roll).toContain("Example: notation 2d6+notice, why");
+        expect(Object.values(tools).join("\n")).not.toMatch(/\{\{\w+\}\}/);
+    });
+
+    it("checks a system's own folder as every installed system is checked, by its package's name (SYS-2, SYS-8, D-267)", () => {
+        const checks = systemChecks(fake);
+        expect(checks).toMatchObject({ name: "fake", unread: [], names: [], declarations: [], values: [], undeclared: [], pictures: [], theme: [] });
+        expect(checks.pages).toBeGreaterThan(20);
     });
 });

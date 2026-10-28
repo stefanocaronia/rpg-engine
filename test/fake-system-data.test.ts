@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { inPlay, madeSystem, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -394,18 +394,21 @@ describe("other game systems", () => {
     });
 
     it("leave a system without a sheet, recipes or round as it was, and say what it lacks", async () => {
+        // A system of its fields alone.
+        const systems = madeSystem("spoglio", { "system.yaml": "title: a test system of its fields alone\nlanguage: en\nfields:\n  health: counter\n" });
         removeFolder(folder);
         folder = makeTempFolder();
-        context = testContext(folder);
-        await ok("init", "--name", "Ferro", "--system", "ironsworn");
+        context = { ...testContext(folder), systemFolders: [systems] };
+        await ok("init", "--name", "Ferro", "--system", "spoglio");
         inPlay(folder);
         expect(await ok("status")).not.toContain("keeps on a character sheet");
         await ok("advance", "--to", "day 1, 18:00");
         await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "health=5/5");
         expect(await ok("effect", "add", "Kira", "Ferita", "--for", "10m")).toBe("Kira: Ferita until day 1, 18:10.");
-        expect(await refused("change", "--recipe", "riposo")).toBe('The system ironsworn has no recipe "riposo". Nothing changed.');
+        expect(await refused("change", "--recipe", "riposo")).toBe('The system spoglio has no recipe "riposo". Nothing changed.');
         writeFileSync(join(folder, "world", "characters", "Kira.md"), '---\nrole: pc\nhealth: 5/5\neffects:\n  - "Stanca until long rest"\n---\n');
         expect(await ok("validate")).toContain('Stanca on Kira ends "long rest", which is not a game date.');
+        removeFolder(systems);
     });
 });
 

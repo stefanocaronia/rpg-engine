@@ -1,6 +1,7 @@
 name: Take back a sentence before the master hears it
 covers: [act-strip]
-setup: {bell: true, busy: true}   # the master is answering: the sentence waits for their call, and can be taken back
+# On the 5e's demo, whose sheet has spells; the master is answering: the sentence waits for their call, and can be taken back.
+setup: {bell: true, busy: true, system: 5e}
 steps:
   - phone: {tapOn: Spells}   # on a phone the lists of the Combat card start closed
   - tapOn: Cast Healing Word

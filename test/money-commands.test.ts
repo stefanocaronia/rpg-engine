@@ -74,6 +74,10 @@ describe("the coins of the campaign (MON-1, MON-8)", () => {
         );
         await ok("config", "coins", "oro/gp 100, argento/sp 10, rame/cp 1");
         expect(await ok("change", "Ennio", "money", "--by", "+1 rame")).toBe("Ennio: money 34 oro 4 argento → 34 oro 4 argento 1 rame (34.41 oro).");
+        // The example names the campaign's coins, never another game's.
+        expect((await rpg("change", "Ennio", "money", "--by", "1 rame", "--spend", "1 rame")).output).toBe(
+            'Give one of by (coins received, or paid with a minus), spend (what is paid) or to (what the purse holds), such as spend "5 argento".',
+        );
     });
 });
 
@@ -105,8 +109,14 @@ describe("change on money (MON-4, MON-5, MON-7)", () => {
             [["change", "Ennio", "money", "--to=-3"], '"-3" is not coins for money on Ennio: give coins of the campaign (gp/mo, pp, ep, sp/ma, cp/mr), such as to "3 gp".'],
             [["change", "Ennio", "money", "--by", "5 sp", "--spend", "1 sp"], 'Give one of by (coins received, or paid with a minus), spend (what is paid) or to (what the purse holds), such as spend "5 sp".'],
             [["change", "Ennio", "grit", "--by", "5 sp"], "grit on Ennio is a counter: give by a whole number, such as by -7."],
-            [["change", "Ennio", "oro", "--spend", "5 gp"], 'Ennio has no field "oro". Its counters and money: grit 12/12, money 34 gp 4 sp. To add one, use write, such as set oro=10 gp (what it holds, not the price).'],
-            [["change", "Ennio", "pf", "--to", "max"], 'Ennio has no field "pf". Its counters and money: grit 12/12, money 34 gp 4 sp. To add one, use write, such as set pf=12/12.'],
+            [
+                ["change", "Ennio", "oro", "--spend", "5 gp"],
+                'Ennio has no field "oro". Its counters and money: grit 12/12, money 34 gp 4 sp. If you meant a counter of the system fake, give its name, such as grit; only one it lacks is added, with write, such as set oro=10 gp (what it holds, not the price).',
+            ],
+            [
+                ["change", "Ennio", "pf", "--to", "max"],
+                'Ennio has no field "pf". Its counters and money: grit 12/12, money 34 gp 4 sp. If you meant a counter of the system fake, give its name, such as grit; only one it lacks is added, with write, such as set pf=12/12.',
+            ],
         ];
 
         for (const [args, message] of refusals) {

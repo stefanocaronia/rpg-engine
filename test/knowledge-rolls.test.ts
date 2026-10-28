@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { Context, Player } from "../src/core/context.ts";
-import { makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { madeSystem, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -66,7 +66,10 @@ describe("a check of what the character knows", () => {
 
 describe("a system that declares no checks of knowledge", () => {
     it("never says it, whatever is rolled", async () => {
-        await ok("init", "--name", "Ferro", "--language", "it", "--system", "ironsworn", "--difficulty", "normal", "--lethality", "dice");
+        // A system of its fields alone, with a number to roll and no sheet-knowledge.
+        const systems = madeSystem("bare", { "system.yaml": "title: a test system of its fields alone\nlanguage: en\nfields:\n  wits: number\n" });
+        context = { ...context, systemFolders: [systems, ...(context.systemFolders ?? [])] };
+        await ok("init", "--name", "Ferro", "--language", "it", "--system", "bare", "--difficulty", "normal", "--lethality", "dice");
         await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "wits=3");
         expect(await ok("roll", "1d6+wits", "--who", "Kira", "--why", "il sigillo")).not.toContain(note);
     });

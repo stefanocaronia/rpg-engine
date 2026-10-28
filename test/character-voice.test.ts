@@ -60,7 +60,7 @@ describe("the character agent (D-490)", () => {
             ["config", "calendar-start", "day 1"],
             ["config", "lines", "none"],
             ["config", "veils", "none"],
-            ["config", "advancement", "xp"],
+            ["config", "outcomes", "tossed"],
             ["mode", "session zero"],
         ];
 

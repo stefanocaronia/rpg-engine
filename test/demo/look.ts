@@ -1,14 +1,15 @@
 // Looks at the dashboard in Chrome as a player would (D-272): a screenshot, what the console said (errors of the page and of its policy included), and with --aria
 // the page as a screen reader reads it. `npm run build`, then, for one:
-//   node --experimental-strip-types test/demo/look.ts --width 360 --theme light --click "text=Combat" --click ".rows >> text=insight" --out tmp/look/combat.png
+//   node --experimental-strip-types test/demo/look.ts --system 5e --width 360 --theme light --click "text=Combat" --click ".rows >> text=insight" --out tmp/look/combat.png
 // --click takes a Playwright selector, --press a key (Tab, ArrowRight), --wait milliseconds, in the order given; --full takes the whole page, --still reduces
 // motion; --ask 1 has the demo ask the page the first of its questions (D-279), as with --ask 1 --click ".asked-check" --wait 900 for a die in the air.
-// Without --url it serves the demo campaign of tmp/dashboard-demo on a free port. It uses the Chrome installed. Not part of the tests.
+// Without --url it serves the demo campaign of tmp/dashboard-demo on a free port, of free play, or with --system 5e the 5e's of tmp/dashboard-demo-5e, with
+// the 5e's repository beside this one. It uses the Chrome installed. Not part of the tests.
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { chromium } from "playwright-core";
-import { demoQuestions, serveDemo } from "./demo.ts";
+import { serveDemo } from "./demo.ts";
 
 const { values, tokens } = parseArgs({
     options: {
@@ -24,12 +25,13 @@ const { values, tokens } = parseArgs({
         still: { type: "boolean" },
         aria: { type: "boolean" },
         ask: { type: "string" },
+        system: { type: "string", default: "free" },
     },
     tokens: true,
 });
 
 const steps = tokens.flatMap((token) => (token.kind === "option" && ["click", "press", "wait"].includes(token.name) ? [{ name: token.name, value: token.value ?? "" }] : []));
-const demo = values.url === undefined ? await serveDemo([0]) : undefined;
+const demo = values.url === undefined ? await serveDemo([0], values.system === "5e" ? "5e" : "free") : undefined;
 const browser = await chromium.launch({ channel: "chrome" });
 
 try {
@@ -46,7 +48,7 @@ try {
     await page.waitForSelector(".band, .notice, .setup", { timeout: 10_000 });
 
     // The demo asks on the page, and the call waits for the click of the steps: what it said comes at the end.
-    const question = values.ask === undefined ? undefined : demoQuestions[(Number(values.ask) - 1) % demoQuestions.length];
+    const question = values.ask === undefined || demo === undefined ? undefined : demo.questions[(Number(values.ask) - 1) % demo.questions.length];
     const asking = question === undefined ? undefined : demo?.ask(question);
 
     if (asking !== undefined) {

@@ -1,0 +1,850 @@
+/* World: the world map, its places and its tabs. */
+@layer pages {
+    [dir="rtl"] .map .place-card {
+        direction: rtl;
+    }
+
+    [dir="rtl"] .map-key[open] summary::before {
+        transform: rotate(-90deg);
+    }
+
+    /* The World section (D-318): hexes on paper that stays light in both themes, lit around what the character knows and coloured by the
+       biome of their region, the rest the paper not drawn yet; the ways in ink, the names in the story's serif. The card and its key follow the theme. */
+    .world {
+        display: grid;
+        gap: var(--gap);
+        /* Room at the end for the dice button, which stays over the page. */
+        padding-bottom: 72px;
+    }
+
+    /* What the page brings into view stops under the top that stays. */
+    .map-card,
+    .browse {
+        scroll-margin-top: calc(var(--top-space) + var(--asked-space, 0px) + var(--gap));
+    }
+
+    .world-panel,
+    .world-map {
+        display: grid;
+        gap: var(--gap);
+        min-width: 0;
+    }
+
+    .map-card,
+    .map-list {
+        overflow: hidden;
+    }
+
+    .map-card {
+        --m-fog: #dccaa2;
+        --m-halo: #f1e6cc;
+        --m-river: #3a6d96;
+        --m-trail: #b2361f;
+        --m-region-ink: #5a3f4f;
+    }
+
+    .map-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 10px;
+        padding: 12px 16px;
+    }
+
+    .map-sub {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .map-to-list {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-inline-start: auto;
+        padding: 6px 10px;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: none;
+        color: var(--accent);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .map-to-list svg.icon,
+    .map-tool svg.icon,
+    .pc-close svg.icon,
+    .pc-ways svg.icon,
+    .pc-scene svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .map {
+        color-scheme: light;
+        position: relative;
+        height: 540px;
+        overflow: hidden;
+        border-top: 1px solid var(--rule);
+        border-bottom: 1px solid var(--rule);
+        background: var(--m-fog);
+        touch-action: none;
+        cursor: grab;
+    }
+
+    .map:focus-visible {
+        box-shadow: inset 0 0 0 3px var(--accent);
+    }
+
+    .map-svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        user-select: none;
+    }
+
+    .map-svg text {
+        font-family: var(--serif);
+    }
+
+    .map-fog {
+        fill: var(--m-fog);
+    }
+
+    .map-grain {
+        fill: var(--m-land);
+        pointer-events: none;
+    }
+
+    .hex {
+        stroke-width: 1;
+    }
+
+    .hex.lit {
+        fill: var(--m-land);
+        stroke: rgb(63 47 31 / 0.14);
+    }
+
+    .hex.lit.forest {
+        fill: var(--bio-forest);
+    }
+
+    .hex.lit.swamp {
+        fill: var(--bio-swamp);
+    }
+
+    .hex.lit.moor {
+        fill: var(--bio-moor);
+    }
+
+    .hex.lit.hills {
+        fill: var(--bio-hills);
+    }
+
+    .hex.lit.mountains {
+        fill: var(--bio-mountains);
+    }
+
+    .hex.lit.plains {
+        fill: var(--bio-plains);
+    }
+
+    .hex.lit.desert {
+        fill: var(--bio-desert);
+    }
+
+    .hex.lit.snow {
+        fill: var(--bio-snow);
+    }
+
+    .hex.lit.water {
+        fill: var(--bio-water);
+    }
+
+    /* A biome the page does not know: the bare land, its edges dashed. */
+    .hex.lit.unknown-biome {
+        stroke: rgb(63 47 31 / 0.4);
+        stroke-dasharray: 3 3;
+    }
+
+    .hex.fogged {
+        fill: var(--m-fog);
+        stroke: rgb(63 47 31 / 0.06);
+    }
+
+    .tuft {
+        fill: none;
+        stroke: var(--m-mark);
+        stroke-width: 1.1;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .tuft.forest {
+        fill: var(--m-mark);
+        fill-opacity: 0.35;
+    }
+
+    .tuft.hills {
+        stroke: #7a6230;
+    }
+
+    /* The ways in the map's own ink, their widths set by the drawing: a road as two lines, a path dashed, a river in water outlined in ink. */
+    .road-ink,
+    .road-paper,
+    .path-ink,
+    .other-ink,
+    .tail {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .road-ink,
+    .path-ink,
+    .other-ink {
+        stroke: var(--m-ink);
+    }
+
+    .road-paper {
+        stroke: var(--m-land);
+    }
+
+    .path-ink {
+        stroke-dasharray: 5 3.5;
+    }
+
+    .other-ink {
+        stroke-dasharray: 1 4;
+    }
+
+    .river-water {
+        fill: var(--m-river);
+        stroke: #234a6b;
+        stroke-width: 0.8;
+        stroke-linejoin: round;
+    }
+
+    /* Beyond the known ends, the ways fade into the fog. */
+    .tail.river {
+        stroke: var(--m-river);
+    }
+
+    .tail.road,
+    .tail.path,
+    .tail.other {
+        stroke: var(--m-ink);
+    }
+
+    .tail.path {
+        stroke-dasharray: 5 3.5;
+    }
+
+    /* The ink round each region, along the edges of its hexes. */
+    .region-edge {
+        fill: none;
+        stroke: var(--m-region-ink);
+        stroke-width: 1.7;
+        stroke-opacity: 0.6;
+        stroke-linecap: round;
+    }
+
+    .region-edge.forest {
+        stroke: #3f5a35;
+    }
+
+    .region-edge.swamp {
+        stroke: #3d5a4f;
+    }
+
+    .region-edge.hills {
+        stroke: #7a6230;
+    }
+
+    .region-edge.mountains {
+        stroke: #5b5148;
+    }
+
+    .region-edge.water {
+        stroke: #2f5b80;
+    }
+
+    /* The paper aged at its edges. */
+    .map-age {
+        pointer-events: none;
+    }
+
+    /* The maps the character knows, as tabs (D-320); a gold dot where the party is. */
+    .map-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0 16px 10px;
+    }
+
+    .map-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 14px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        background: none;
+        color: var(--ink);
+        font: inherit;
+        font-family: var(--serif);
+        font-size: inherit;
+        cursor: pointer;
+    }
+
+    .map-tab[aria-current="true"] {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    .map-tab-party {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 35%, transparent);
+    }
+
+    /* The map this one lies under or mirrors, faint under its ways and places. */
+    .ghost {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+
+    /* A passage to another map: a ring of violet ink round its place (ROA-8). */
+    .passage-ring {
+        fill: none;
+        stroke: #6b3fa0;
+        stroke-width: 2;
+        stroke-dasharray: 3 3;
+    }
+
+    .way-to-map {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--accent);
+        font: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    /* The trail: a band of red under the ways, where the party has been. */
+    .trail {
+        fill: none;
+        stroke: var(--m-trail);
+        stroke-opacity: 0.32;
+        stroke-width: 9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .key-way .trail {
+        stroke-width: 8;
+    }
+}
+
+/* The map's labels share the name .label with the labels of a card's lines, whose own rules must still win: in the parts' layer. */
+@layer parts {
+    .label {
+        font-size: 13.5px;
+        font-weight: 600;
+        fill: var(--m-ink);
+        paint-order: stroke;
+        stroke: var(--m-halo);
+        stroke-width: 3.5px;
+        stroke-linejoin: round;
+    }
+}
+
+@layer pages {
+    .place-label.big {
+        font-size: 16px;
+        font-variant: small-caps;
+        letter-spacing: 0.04em;
+    }
+
+    .region-label {
+        font-size: 15px;
+        font-style: italic;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        fill: var(--m-region-ink);
+    }
+
+    .region-note {
+        font-size: 12px;
+        font-style: italic;
+        fill: var(--m-region-ink);
+    }
+
+    .way-label {
+        font-size: 12.5px;
+        font-style: italic;
+        font-weight: 600;
+        fill: var(--m-ink);
+        paint-order: stroke;
+        stroke: var(--m-halo);
+        stroke-width: 3px;
+    }
+
+    .way-label.river {
+        fill: var(--m-river);
+        letter-spacing: 0.08em;
+    }
+
+    .spot,
+    .party-mark {
+        cursor: pointer;
+    }
+
+    .spot-disc {
+        fill: var(--m-land);
+        stroke: var(--m-ink);
+        stroke-width: 1.2;
+    }
+
+    .spot.size-2 .spot-disc,
+    .spot.size-3 .spot-disc {
+        stroke-width: 2.2;
+    }
+
+    .spot-glyph {
+        fill: none;
+        stroke: var(--m-ink);
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .spot.size-0 .spot-glyph {
+        stroke-width: 2.4;
+    }
+
+    .spot-dot {
+        fill: var(--m-ink);
+        stroke: var(--m-halo);
+        stroke-width: 2;
+    }
+
+    .spot-hit {
+        fill: transparent;
+    }
+
+    .spot.selected .spot-disc,
+    .spot.selected .spot-dot,
+    .party-mark.selected .party-ring {
+        stroke: var(--gold);
+        stroke-width: 3.5;
+    }
+
+    /* The party: the player character's token on a gold ring, breathing. */
+    .party-ring {
+        fill: var(--gold);
+        stroke: var(--on-gold);
+        stroke-width: 1;
+    }
+
+    .party-disc {
+        fill: var(--disc);
+    }
+
+    .party-pulse {
+        fill: none;
+        stroke: var(--gold);
+        stroke-width: 2;
+        opacity: 0;
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .party-pulse {
+            animation: map-pulse 2.6s var(--ease-out) infinite;
+        }
+    }
+
+    @keyframes map-pulse {
+        0% {
+            opacity: 0.8;
+            transform: scale(1);
+        }
+
+        70%,
+        100% {
+            opacity: 0;
+            transform: scale(1.9);
+        }
+    }
+
+    .compass-ring {
+        fill: var(--m-halo);
+        fill-opacity: 0.85;
+        stroke: var(--m-ink);
+        stroke-width: 1;
+    }
+
+    .compass-diagonals {
+        stroke: var(--m-ink);
+        stroke-width: 1;
+    }
+
+    .compass-point {
+        fill: var(--m-land);
+        stroke: var(--m-ink);
+        stroke-width: 1.1;
+        stroke-linejoin: round;
+    }
+
+    .compass-shade {
+        fill: var(--m-ink);
+    }
+
+    .compass-n {
+        font-size: 13px;
+        font-weight: 700;
+        fill: var(--m-ink);
+        paint-order: stroke;
+        stroke: var(--m-halo);
+        stroke-width: 3px;
+    }
+
+    .scale-text {
+        font-size: 11px;
+        font-weight: 700;
+        fill: var(--m-ink);
+        paint-order: stroke;
+        stroke: var(--m-halo);
+        stroke-width: 3px;
+    }
+
+    .scale-back {
+        fill: var(--m-halo);
+        fill-opacity: 0.7;
+    }
+
+    .scale-a {
+        fill: var(--m-ink);
+    }
+
+    .scale-b {
+        fill: var(--m-halo);
+        stroke: var(--m-ink);
+    }
+
+    /* The tools: a column at the top right, out of the dice's corner. */
+    .map-tools {
+        position: absolute;
+        top: 12px;
+        inset-inline-end: 12px;
+        display: grid;
+        gap: 6px;
+    }
+
+    .map-tool {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        box-shadow: var(--raise);
+        color: var(--ink);
+        cursor: pointer;
+    }
+
+    .map-tool:nth-child(2) {
+        margin-bottom: 8px;
+    }
+
+    @media (pointer: coarse) {
+        .map-tool {
+            width: var(--target);
+            height: var(--target);
+        }
+    }
+
+    /* The card of a place: at the top left on a wide screen, a sheet from the bottom on a phone. */
+    .place-card {
+        position: absolute;
+        top: 12px;
+        inset-inline-start: 12px;
+        width: 316px;
+        max-height: calc(100% - 24px);
+        overflow: auto;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        color: var(--ink);
+        cursor: auto;
+    }
+
+    .place-card.sheet {
+        top: auto;
+        inset-inline-end: 8px;
+        bottom: 8px;
+        inset-inline-start: 8px;
+        width: auto;
+        max-height: 66%;
+    }
+
+    .pc-image {
+        display: block;
+        width: 100%;
+        height: 132px;
+        object-fit: cover;
+    }
+
+    .place-card.sheet .pc-image {
+        height: 88px;
+    }
+
+    .pc-close {
+        position: absolute;
+        top: 8px;
+        inset-inline-end: 8px;
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: var(--float);
+        box-shadow: var(--raise);
+        color: var(--ink);
+        cursor: pointer;
+    }
+
+    .pc-body {
+        padding: 12px 14px 14px;
+    }
+
+    .pc-eyebrow {
+        margin-block: 0 2px;
+        margin-inline: 0 36px;
+    }
+
+    .place-card h3 {
+        margin-inline-end: 36px;
+        font-family: var(--serif);
+        font-size: 1.35rem;
+    }
+
+    .pc-here {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 6px 0 0;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .here-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--gold);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
+    }
+
+    .pc-text {
+        margin: 8px 0 0;
+        font-size: inherit;
+    }
+
+    .pc-sub {
+        margin: 12px 0 4px;
+    }
+
+    .in-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        font-size: 0.8rem;
+        list-style: none;
+    }
+
+    .in-chip {
+        padding: 2px 6px;
+        border-radius: var(--radius-s);
+        background: var(--cell);
+    }
+
+    .in-path {
+        opacity: 0.75;
+        font-weight: 600;
+    }
+
+    .pc-ways {
+        margin: 0;
+        padding: 0;
+        font-size: 0.85rem;
+        list-style: none;
+    }
+
+    .pc-ways li {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .way-km {
+        color: var(--muted);
+    }
+
+    .pc-scene {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 8px 14px;
+        border-radius: var(--radius-m);
+        background: var(--accent);
+        color: var(--panel);
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    /* The key under the map. */
+    .map-key summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        font-weight: 700;
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .map-key summary::before {
+        content: "▸";
+        color: var(--accent);
+        transition: transform var(--short) var(--ease);
+    }
+
+    .map-key[open] summary::before {
+        transform: rotate(90deg);
+    }
+
+    .key-groups {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 4px 20px;
+        padding: 0 16px 14px;
+    }
+
+    .key-title {
+        margin: 0 0 6px;
+    }
+
+    .key-group ul {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 12px;
+        margin: 0;
+        padding: 0;
+        font-size: 0.85rem;
+        list-style: none;
+    }
+
+    .key-group li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .key-way {
+        flex: none;
+        width: 30px;
+        height: 16px;
+        border-radius: var(--radius-xs);
+        background: var(--m-land);
+    }
+
+    .key-symbol {
+        flex: none;
+        width: 24px;
+        height: 24px;
+    }
+
+    .key-swatch {
+        flex: none;
+        width: 28px;
+        height: 20px;
+    }
+
+    /* The list, the map's twin. */
+    .map-list .pc-sub {
+        margin: 4px 16px;
+    }
+
+    .places {
+        margin: 0 0 8px;
+        padding: 0;
+        list-style: none;
+    }
+
+    .place-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "name far" "kind far";
+        column-gap: 12px;
+        align-items: center;
+        width: 100%;
+        min-height: 40px;
+        padding: 6px 16px;
+        border: 0;
+        border-top: 1px solid var(--rule);
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .place-row.static {
+        cursor: default;
+    }
+
+    .pr-name {
+        grid-area: name;
+        font-weight: 600;
+    }
+
+    .pr-kind {
+        grid-area: kind;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .pr-kind .key-swatch {
+        width: 18px;
+        height: 13px;
+        margin-inline-end: 5px;
+        vertical-align: -0.2em;
+    }
+
+    .pr-far {
+        grid-area: far;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+        .map {
+            height: 460px;
+        }
+    }
+}

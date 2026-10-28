@@ -5,7 +5,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
-import { DiceError, parseNotation, rollDice } from "../dice/index.ts";
+import { DiceError, mostCoins, parseNotation, rollDice, tossCoins } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, playerCharacters, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
@@ -20,34 +20,35 @@ import { placeOnMap } from "./move.ts";
 import { hasNames, namesAsZero, rollerOf, sheetDiceOf, withSheetValues } from "./roll.ts";
 import { knowledgeNote } from "./sheet.ts";
 
-// The words of the buttons, in the campaign's language, as the dashboard's languages (playtest 15); English for the others (ASK-7).
-const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; rest: string; done: string; }> = {
-    en: { roll: "Roll", change: "Change my mind", choice: "Choice", square: "Move", rest: "Rest", done: "Done" },
-    it: { roll: "Tiro", change: "Cambio idea", choice: "Scelta", square: "Movimento", rest: "Riposo", done: "Ho finito" },
-    ar: { roll: "رمية", change: "غيّرت رأيي", choice: "اختيار", square: "حركة", rest: "استراحة", done: "انتهيت" },
-    cs: { roll: "Hod", change: "Rozmyslet si to", choice: "Volba", square: "Pohyb", rest: "Odpočinek", done: "Hotovo" },
-    da: { roll: "Slag", change: "Jeg fortryder", choice: "Valg", square: "Bevægelse", rest: "Hvile", done: "Færdig" },
-    de: { roll: "Wurf", change: "Ich überlege es mir anders", choice: "Wahl", square: "Bewegung", rest: "Rast", done: "Fertig" },
-    el: { roll: "Ζαριά", change: "Άλλαξα γνώμη", choice: "Επιλογή", square: "Κίνηση", rest: "Ανάπαυση", done: "Τελείωσα" },
-    es: { roll: "Tirada", change: "Cambio de idea", choice: "Elección", square: "Movimiento", rest: "Descanso", done: "He terminado" },
-    fi: { roll: "Heitto", change: "Muutan mieleni", choice: "Valinta", square: "Liike", rest: "Lepo", done: "Valmis" },
-    fr: { roll: "Jet", change: "Je change d'avis", choice: "Choix", square: "Déplacement", rest: "Repos", done: "J'ai fini" },
-    he: { roll: "הטלה", change: "שיניתי את דעתי", choice: "בחירה", square: "תנועה", rest: "מנוחה", done: "סיימתי" },
-    hi: { roll: "पासा", change: "मैंने मन बदल लिया", choice: "चुनाव", square: "चाल", rest: "विश्राम", done: "हो गया" },
-    hu: { roll: "Dobás", change: "Meggondoltam magam", choice: "Választás", square: "Mozgás", rest: "Pihenő", done: "Kész" },
-    is: { roll: "Kast", change: "Ég skipti um skoðun", choice: "Val", square: "Hreyfing", rest: "Hvíld", done: "Búið" },
-    ja: { roll: "判定", change: "やっぱりやめる", choice: "選択", square: "移動", rest: "休息", done: "終わり" },
-    ko: { roll: "굴림", change: "마음을 바꿀게요", choice: "선택", square: "이동", rest: "휴식", done: "다 했어요" },
-    nb: { roll: "Kast", change: "Jeg ombestemmer meg", choice: "Valg", square: "Forflytning", rest: "Hvile", done: "Ferdig" },
-    nl: { roll: "Worp", change: "Ik bedenk me", choice: "Keuze", square: "Verplaatsen", rest: "Rust", done: "Klaar" },
-    pl: { roll: "Rzut", change: "Zmieniam zdanie", choice: "Wybór", square: "Ruch", rest: "Odpoczynek", done: "Gotowe" },
-    pt: { roll: "Rolagem", change: "Mudei de ideia", choice: "Escolha", square: "Movimento", rest: "Descanso", done: "Terminei" },
-    ro: { roll: "Aruncare", change: "M-am răzgândit", choice: "Alegere", square: "Mișcare", rest: "Odihnă", done: "Am terminat" },
-    ru: { roll: "Бросок", change: "Передумать", choice: "Выбор", square: "Перемещение", rest: "Отдых", done: "Готово" },
-    sv: { roll: "Slag", change: "Jag ångrar mig", choice: "Val", square: "Förflyttning", rest: "Vila", done: "Klar" },
-    tr: { roll: "Zar", change: "Fikrimi değiştirdim", choice: "Seçim", square: "Hareket", rest: "Dinlenme", done: "Bitirdim" },
-    uk: { roll: "Кидок", change: "Передумати", choice: "Вибір", square: "Переміщення", rest: "Відпочинок", done: "Готово" },
-    zh: { roll: "掷骰", change: "我改主意了", choice: "选择", square: "移动", rest: "休息", done: "完成" },
+// The words of the buttons, in the campaign's language, as the dashboard's languages (playtest 15); English for the others (ASK-7). A toss's for one coin and for
+// more (ASK-15).
+const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; rest: string; done: string; toss: string; tosses: string; }> = {
+    en: { roll: "Roll", change: "Change my mind", choice: "Choice", square: "Move", rest: "Rest", done: "Done", toss: "Toss the coin", tosses: "Toss {count} coins" },
+    it: { roll: "Tiro", change: "Cambio idea", choice: "Scelta", square: "Movimento", rest: "Riposo", done: "Ho finito", toss: "Lancia la moneta", tosses: "Lancia {count} monete" },
+    ar: { roll: "رمية", change: "غيّرت رأيي", choice: "اختيار", square: "حركة", rest: "استراحة", done: "انتهيت", toss: "ارمِ العملة", tosses: "ارمِ {count} عملات" },
+    cs: { roll: "Hod", change: "Rozmyslet si to", choice: "Volba", square: "Pohyb", rest: "Odpočinek", done: "Hotovo", toss: "Hodit mincí", tosses: "Hodit {count} mincemi" },
+    da: { roll: "Slag", change: "Jeg fortryder", choice: "Valg", square: "Bevægelse", rest: "Hvile", done: "Færdig", toss: "Kast mønten", tosses: "Kast {count} mønter" },
+    de: { roll: "Wurf", change: "Ich überlege es mir anders", choice: "Wahl", square: "Bewegung", rest: "Rast", done: "Fertig", toss: "Münze werfen", tosses: "{count} Münzen werfen" },
+    el: { roll: "Ζαριά", change: "Άλλαξα γνώμη", choice: "Επιλογή", square: "Κίνηση", rest: "Ανάπαυση", done: "Τελείωσα", toss: "Στρίψε το νόμισμα", tosses: "Στρίψε {count} νομίσματα" },
+    es: { roll: "Tirada", change: "Cambio de idea", choice: "Elección", square: "Movimiento", rest: "Descanso", done: "He terminado", toss: "Lanzar la moneda", tosses: "Lanzar {count} monedas" },
+    fi: { roll: "Heitto", change: "Muutan mieleni", choice: "Valinta", square: "Liike", rest: "Lepo", done: "Valmis", toss: "Heitä kolikkoa", tosses: "Heitä {count} kolikkoa" },
+    fr: { roll: "Jet", change: "Je change d'avis", choice: "Choix", square: "Déplacement", rest: "Repos", done: "J'ai fini", toss: "Lancer la pièce", tosses: "Lancer {count} pièces" },
+    he: { roll: "הטלה", change: "שיניתי את דעתי", choice: "בחירה", square: "תנועה", rest: "מנוחה", done: "סיימתי", toss: "להטיל את המטבע", tosses: "להטיל {count} מטבעות" },
+    hi: { roll: "पासा", change: "मैंने मन बदल लिया", choice: "चुनाव", square: "चाल", rest: "विश्राम", done: "हो गया", toss: "सिक्का उछालें", tosses: "{count} सिक्के उछालें" },
+    hu: { roll: "Dobás", change: "Meggondoltam magam", choice: "Választás", square: "Mozgás", rest: "Pihenő", done: "Kész", toss: "Érme feldobása", tosses: "{count} érme feldobása" },
+    is: { roll: "Kast", change: "Ég skipti um skoðun", choice: "Val", square: "Hreyfing", rest: "Hvíld", done: "Búið", toss: "Kasta myntinni", tosses: "Kasta {count} myntum" },
+    ja: { roll: "判定", change: "やっぱりやめる", choice: "選択", square: "移動", rest: "休息", done: "終わり", toss: "コインを投げる", tosses: "コインを{count}枚投げる" },
+    ko: { roll: "굴림", change: "마음을 바꿀게요", choice: "선택", square: "이동", rest: "휴식", done: "다 했어요", toss: "동전 던지기", tosses: "동전 {count}개 던지기" },
+    nb: { roll: "Kast", change: "Jeg ombestemmer meg", choice: "Valg", square: "Forflytning", rest: "Hvile", done: "Ferdig", toss: "Kast mynten", tosses: "Kast {count} mynter" },
+    nl: { roll: "Worp", change: "Ik bedenk me", choice: "Keuze", square: "Verplaatsen", rest: "Rust", done: "Klaar", toss: "Munt opgooien", tosses: "{count} munten opgooien" },
+    pl: { roll: "Rzut", change: "Zmieniam zdanie", choice: "Wybór", square: "Ruch", rest: "Odpoczynek", done: "Gotowe", toss: "Rzuć monetą", tosses: "Rzuć {count} monetami" },
+    pt: { roll: "Rolagem", change: "Mudei de ideia", choice: "Escolha", square: "Movimento", rest: "Descanso", done: "Terminei", toss: "Lançar a moeda", tosses: "Lançar {count} moedas" },
+    ro: { roll: "Aruncare", change: "M-am răzgândit", choice: "Alegere", square: "Mișcare", rest: "Odihnă", done: "Am terminat", toss: "Aruncă moneda", tosses: "Aruncă {count} monede" },
+    ru: { roll: "Бросок", change: "Передумать", choice: "Выбор", square: "Перемещение", rest: "Отдых", done: "Готово", toss: "Бросить монету", tosses: "Бросить {count} монеты" },
+    sv: { roll: "Slag", change: "Jag ångrar mig", choice: "Val", square: "Förflyttning", rest: "Vila", done: "Klar", toss: "Singla slant", tosses: "Singla {count} mynt" },
+    tr: { roll: "Zar", change: "Fikrimi değiştirdim", choice: "Seçim", square: "Hareket", rest: "Dinlenme", done: "Bitirdim", toss: "Parayı at", tosses: "{count} para at" },
+    uk: { roll: "Кидок", change: "Передумати", choice: "Вибір", square: "Переміщення", rest: "Відпочинок", done: "Готово", toss: "Кинути монету", tosses: "Кинути {count} монети" },
+    zh: { roll: "掷骰", change: "我改主意了", choice: "选择", square: "移动", rest: "休息", done: "完成", toss: "抛硬币", tosses: "抛{count}枚硬币" },
 };
 
 // A list, or one text, as an MCP client may send it.
@@ -85,6 +86,7 @@ export const ask = defineCommand({
         + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
         + "square, without options, once the player says their character moves on the map of its place but not to which square: the engine moves them to the square the player touches and gives you the way. "
         + "recipe, without options, when change with a rest's recipe says so: the player spends their character's dice one at a time, and you get what they gave. "
+        + "toss, without options, for one to three coins the player tosses, as roll's toss: the engine tosses them at the click, logs them as the player's roll, and gives you the faces. "
         + "Write nothing before the call: the question carries what is at stake, and the story goes on after the click. "
         + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["{{check}}", "{{otherCheck}}"], who Bruna.',
     group: "game",
@@ -95,6 +97,9 @@ export const ask = defineCommand({
         who: z.string().optional().describe("for a roll or a square, the player's character, such as Bruna; the only one there is, if left out"),
         square: z.boolean().optional().describe("true to ask where the player's character moves on its place's map"),
         recipe: z.string().optional().describe("the rest's recipe that change named"),
+        toss: z.preprocess((value) => (typeof value === "string" && /^\s*\d+\s*$/.test(value) ? Number(value) : value), z.number().int()).optional().describe(
+            "how many coins the player tosses, 1 to 3, each heads or tails; the question says what is at stake",
+        ),
     }),
 
     async run(input, context): Promise<AskResult>
@@ -110,6 +115,14 @@ export const ask = defineCommand({
 
         if (question === "") {
             throw new Error("Give the question: for a roll, what is at stake either way; for a choice, what the player chooses.");
+        }
+
+        if (input.toss !== undefined) {
+            if (input.options !== undefined || input.square === true || input.recipe !== undefined) {
+                throw new Error("Give toss without options, square or recipe: the player tosses the coins, and changing their mind has its own button.");
+            }
+
+            return coinsTossed(root, context, question, input.toss, input.who, words);
         }
 
         if (input.recipe !== undefined) {
@@ -342,6 +355,54 @@ async function rollChosen(root: string, context: Context, question: string, chec
         ...(knowledge === undefined ? {} : { knowledge }),
         ...(notes.length === 0 ? {} : { notes }),
     };
+}
+
+/**
+ * Coins the player tosses (ASK-15): their button and a change of mind; at the click the engine tosses them as roll's toss and logs them as the player's roll,
+ * outside the packages' hooks (COIN-2). With physical dice they are asked in words.
+ */
+async function coinsTossed(root: string, context: Context, question: string, count: number, given: string | undefined, words: typeof buttonWords.en): Promise<AskResult>
+{
+    if (!Number.isInteger(count) || count < 1 || count > mostCoins) {
+        throw new Error(`Toss one, two or three coins, not ${count}.`);
+    }
+
+    const who = playerCharacter(loadWorld(root), given);
+    const label = count === 1 ? words.toss : words.tosses.replace("{count}", String(count));
+    const notation = `${count}d2`;
+    const asked = `${question} (the coins: ${count}, each heads or tails; then roll with toss ${count} and values, 1 for heads and 2 for tails)`;
+
+    if (readSettings(root).dice === "physical") {
+        return { kind: "physical", asked };
+    }
+
+    const labels = [`${words.roll}: ${label} (${notation})`, words.change];
+    const chosen = await chooseAnswer(context, question, words.roll, labels, { who, fields: [null, null], toss: true }, [label, words.change]);
+
+    // A call the user stopped logs nothing (ASK-9).
+    if (chosen === "absent" || context.signal?.aborted === true) {
+        return { kind: chosen === "absent" ? "absent" : "unanswered", asked };
+    }
+
+    if (isSaid(chosen)) {
+        return said(root, context, question, labels, chosen);
+    }
+
+    if (chosen === "unavailable") {
+        logAnswer(root, context, question, labels, undefined);
+        return { kind: "unavailable", asked };
+    }
+
+    if (chosen !== 0) {
+        logAnswer(root, context, question, labels, chosen === 1 ? words.change : undefined);
+        return chosen === 1 ? { kind: "changed" } : { kind: "unanswered", asked };
+    }
+
+    const toss = tossCoins(count, { random: context.random });
+    const data = { notation: toss.roll.notation, total: toss.heads, result: toss.text, toss: toss.sides, why: `${label}: ${question}`, check: label, who, physical: false, dice: toss.roll.dice };
+    const entry = newDatedLogEntry(root, { ...context, actor: "player" }, "roll", "public", data);
+    appendLogEntry(root, entry);
+    return { kind: "roll", id: entry.id, who, check: label, text: toss.text, total: toss.heads, faces: toss.roll.faces };
 }
 
 /**

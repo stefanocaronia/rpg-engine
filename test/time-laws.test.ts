@@ -81,7 +81,7 @@ describe("the laws of advance, on campaigns made at random", () => {
                 const root = makeTempFolder();
 
                 try {
-                    writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: ironsworn\nlanguage: it\n");
+                    writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: free\nlanguage: it\n");
                     writeFileSync(join(root, "state.yaml"), `mode: play\n${start === undefined ? "" : `date: ${formatGameDate(start)}\n`}`);
                     mkdirSync(join(root, "world", "events"), { recursive: true });
 

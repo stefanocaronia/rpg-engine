@@ -5,14 +5,15 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { CardHeader, useOpen } from "./card.tsx";
 import type { Member, ShownRoll } from "./data.ts";
-import { DiceFaces } from "./faces.tsx";
+import { coinOf, type DiceLook, mastersDice } from "./dice/sets.ts";
+import { CoinFaces, DiceFaces, tossWords } from "./faces.tsx";
 import type { PageRoll } from "./free-rolls.ts";
 import { gameDateLabel, notationLabel } from "./game-words.ts";
 import { cardIcons, Icon } from "./icons.tsx";
 import { notationModifier, strangerLabel } from "./labels.ts";
 import { rollWindow } from "./layout.ts";
 import { Token, type Tokened } from "./party.tsx";
-import { t } from "./text.ts";
+import { capitalized, t } from "./text.ts";
 
 // Where the browser remembers when the player last cleared the list of a campaign; how many older rolls each Load more shows.
 const clearedKey = "rpg-engine.rolls-cleared";
@@ -81,7 +82,7 @@ export function RollLog(
                 <CardHeader
                     icon={cardIcons.rolls}
                     title={<h2 id="rolls-title" class="rolls-title">{t("Rolls")}</h2>}
-                    preview={newest === undefined ? undefined : `${[nameOf(newest, of), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${newest.says ?? newest.total}`}
+                    preview={newest === undefined ? undefined : `${[nameOf(newest, of), newest.check].filter((part) => part !== undefined && part !== "").join(" · ")} · ${saysOf(newest) ?? newest.total}`}
                     open={open}
                     onToggle={toggle}
                 />
@@ -99,7 +100,16 @@ export function RollLog(
                             : (
                                 <ol class="roll-list">
                                     {[...listed.shown].reverse().map((roll) => (
-                                        <RollRow key={roll.id} roll={roll} name={nameOf(roll, of)} token={tokenOf(roll, party, of)} fresh={fresh.has(roll.id)} greeted={greeted.current} several={several} />
+                                        <RollRow
+                                            key={roll.id}
+                                            roll={roll}
+                                            name={nameOf(roll, of)}
+                                            token={tokenOf(roll, party, of)}
+                                            coins={coinsOf(roll, party, campaign)}
+                                            fresh={fresh.has(roll.id)}
+                                            greeted={greeted.current}
+                                            several={several}
+                                        />
                                     ))}
                                 </ol>
                             )}
@@ -119,7 +129,16 @@ export function RollLog(
  * its tooltip the whole roll, which the lines may cut, with the notation in words; the chat's text for a screen reader. A new one first opens its place, then
  * appears in it, with a yellow corner for a while (D-303): as it first shows, whatever the readings after, and once.
  */
-function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRoll; name: string; token?: Tokened | "die"; fresh: boolean; greeted: Set<string>; several: boolean; })
+function RollRow({ roll, name, token, coins, fresh, greeted, several }: {
+    roll: ShownRoll;
+    name: string;
+    token?: Tokened | "die";
+    /** The look of the master's coins, for a toss of theirs (D-526 (3)); left out, the player's. */
+    coins?: DiceLook | undefined;
+    fresh: boolean;
+    greeted: Set<string>;
+    several: boolean;
+})
 {
     const [entering] = useState(() => fresh && !greeted.has(roll.id));
     const [marked, setMarked] = useState(entering);
@@ -137,8 +156,9 @@ function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRo
 
     const player = roll.by === "player";
     const free = "free" in roll;
-    // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299).
-    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, roll.text, notationLabel(roll.words), rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
+    // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299); a toss's coins in words.
+    const toss = roll.toss === undefined ? undefined : tossWords(roll.toss);
+    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, toss ?? roll.text, toss === undefined ? notationLabel(roll.words) : undefined, rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
         .filter((line) => line !== undefined && line !== "")
         .join("\n");
     return (
@@ -158,13 +178,30 @@ function RollRow({ roll, name, token, fresh, greeted, several }: { roll: ShownRo
                 {name}
             </span>
             {roll.check && <span class="roll-check">{roll.check}</span>}
-            {roll.says === undefined ? <span class="roll-total num">{roll.total}</span> : <span class="roll-total roll-says">{roll.says}</span>}
+            {/* A toss's coins as pictures where the total stands, their words on the line of the dice, which has the row's width. */}
+            {roll.toss !== undefined
+                ? <CoinFaces toss={roll.toss} className="roll-total roll-coins" {...(coins === undefined ? {} : { look: coins })} />
+                : roll.says === undefined
+                ? <span class="roll-total num">{roll.total}</span>
+                : <span class="roll-total roll-says">{roll.says}</span>}
             <span class="roll-dice">
-                <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} tones={roll.tones} />
-                <span class="visually-hidden">{roll.text}</span>
+                {toss === undefined
+                    ? (
+                        <>
+                            <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} tones={roll.tones} />
+                            <span class="visually-hidden">{roll.text}</span>
+                        </>
+                    )
+                    : <span class="roll-toss">{capitalized(toss)}</span>}
             </span>
         </li>
     );
+}
+
+/** What a roll's faces mean in place of its total: the coins of a toss in the page's language, or what an extension's roll says. */
+function saysOf(roll: ShownRoll): string | undefined
+{
+    return roll.toss === undefined ? roll.says : tossWords(roll.toss);
 }
 
 /** What the list says with no roll in it: what comes there, that the last half hour had none, or that the player cleared it. */
@@ -293,4 +330,11 @@ function rolledWhen(roll: ShownRoll): string
     const real = new Date(roll.at);
     const time = Number.isNaN(real.getTime()) ? undefined : t("rolled at {time}", { time: real.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) });
     return [roll.date === undefined ? undefined : t("{date} in the game", { date: gameDateLabel(roll.date) }), time].filter((part) => part !== undefined).join(" · ");
+}
+
+/** The look of the coins of a toss of the master's for no one of the party: their dice's material (D-526 (3)); undefined for the player's. */
+function coinsOf(roll: ShownRoll, party: Member[], campaign: string | undefined): DiceLook | undefined
+{
+    const master = mastersDice(roll, party, campaign);
+    return master === undefined ? undefined : coinOf(master).look;
 }

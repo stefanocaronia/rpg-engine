@@ -360,13 +360,13 @@ describe("the laws of travel (TRV-7–TRV-9)", () => {
 
 describe("a system without paces (TRV-1)", () => {
     it("TRV-1: travel asks for a speed", async () => {
-        useSystem(folder, "ironsworn");
+        useSystem(folder, "free");
         expect(await refused("travel", "Rocca")).toContain("The game system gives no pace for travel: give pace as the distance of an hour in metric, such as 4.5 km or 4.5 km/h.");
         expect(await ok("route", "Rocca", "--pace", "4 km")).toBe("Guadoscuro → Bivio → Rocca, 36 km by Strada vecchia (12 km) and Sentiero dei colli (24 km).\nAt 4 km an hour: 9h of travel, 2 days at 8 h a day.");
     });
 
     it("TRV-6: a game that declares no vehicles has none, until the campaign declares them", async () => {
-        useSystem(folder, "ironsworn");
+        useSystem(folder, "free");
         await ok("write", "Carro", "--type", "item", "--set", "category=cart");
         await ok("write", "Locanda", "--add", "contains=[[Carro]]");
         await ok("move", "Lena", "--to", "Carro");

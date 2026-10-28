@@ -1,5 +1,5 @@
 // Stacks of goods (MECCANICHE, STK-1–STK-13): the cases of the table, through the commands, in a campaign played in Italian with the fake system and coins
-// of its own, and one with Ironsworn, whose goods are the campaign's own kinds; the 5e's bundles and words are in the 5e's repository.
+// of its own, and one of free play, whose goods are the campaign's own kinds; the 5e's bundles and words are in the 5e's repository.
 import { chmodSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -354,13 +354,13 @@ describe("after the round on the code: what the master is told, and trade writte
     });
 });
 
-describe("a campaign with Ironsworn, whose goods are its own kinds", () => {
+describe("a campaign of free play, whose goods are its own kinds", () => {
     it("counts, moves and trades the campaign's kinds as the system's", async () => {
         const other = makeTempFolder();
         const run = (...args: string[]) => runCommandLine(args, testContext(other));
 
         try {
-            await run("init", "--name", "Ferro", "--language", "it", "--system", "ironsworn");
+            await run("init", "--name", "Ferro", "--language", "it", "--system", "free");
             inPlay(other);
             await run("write", "Razione", "--type", "item");
             await run("write", "Kai", "--type", "character", "--set", "role=pc", "--add", "inventory=[[Razione]] 5");

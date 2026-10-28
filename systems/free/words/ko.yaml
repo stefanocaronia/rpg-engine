@@ -1,0 +1,32 @@
+# The words of the free system in Korean, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: 캐릭터
+  Equipment: 장비
+fields:
+  concept: 콘셉트
+  abilities: 능력
+  factions: 세력과 단체
+  money: 돈
+words:
+  free play, without a game system: 자유 플레이, 게임 시스템 없음
+  free: 자유
+  Try: 시도
+  Try {item}: "{item} 시도"
+  I try {item}.: 나는 {item}을(를) 시도한다.
+  I try {item} on {target}.: 나는 {target}에게 {item}을(를) 시도한다.
+  I try {item} at {square}.: 나는 {square}에 {item}을(를) 시도한다.
+  I try {item} on myself.: 나는 나 자신에게 {item}을(를) 시도한다.
+  outcomes: 진행 방식
+  how what happens is decided: 일어나는 일을 결정하는 방식
+  told: 이야기로 결정
+  rolled: 주사위로도 결정
+  tossed: 운명에 예 아니오
+  "only choices, no dice: the master tells what comes of them": "선택만 있고 주사위는 없음: 그 결과는 GM이 들려줍니다"
+  choices, and one die when something is at stake: 선택, 그리고 걸린 것이 있을 때 주사위 하나
+  "no dice: coins, heads or tails, answer yes or no": "주사위 없음: 동전의 앞면 또는 뒷면이 예 또는 아니오로 답합니다"
+  die: 주사위
+  the one die of your rolls: 내 굴림에 쓰는 하나뿐인 주사위
+  "a six-sided die: simple and quick": "6면체 주사위: 간단하고 빠릅니다"
+  a twenty-sided die, as many games use: "20면체 주사위: 많은 게임에서 쓰는 방식입니다"
+names: {}

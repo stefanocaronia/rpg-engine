@@ -243,7 +243,7 @@ describe("other ends (EFF-4, EFF-9)", () => {
     it("turns a duration in time given in a scene with turns into rounds of the system, and warns where the system has no round (DAT-7)", async () => {
         await combat();
         expect(await ok("effect", "add", "Ennio", "Benedizione", "--for", "1m")).toBe("Ennio: Benedizione until round 7, Ennio. 1m is 6 rounds of 10 seconds.");
-        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: fake", "system: ironsworn"));
+        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: fake", "system: free"));
         expect(await ok("effect", "add", "Ennio", "Ispirato", "--for", "1m")).toBe(
             "Ennio: Ispirato until day 1, 18:01. The scene counts turns, and time does not pass with them: if it should end during the turns, give it in rounds.",
         );

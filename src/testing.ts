@@ -15,11 +15,13 @@ import type { Context, Player } from "./core/context.ts";
 import type { LogEntry } from "./core/log.ts";
 import { SessionStore } from "./core/session-store.ts";
 import { startDashboard } from "./dashboard-server.ts";
+import { toolDescriptions } from "./mcp-server.ts";
 import { loadSystemCode } from "./systems/index.ts";
 
 export type { ShownWidget } from "./commands/game-widgets.ts";
 export type { CardAsked, Context, Player, Rows, Said } from "./core/context.ts";
 export type { LogEntry } from "./core/log.ts";
+export { type SystemChecks, systemChecks } from "./system-checks.ts";
 
 /** What a command printed, and its exit code: 0 when it did what it was asked. */
 export interface Ran
@@ -49,6 +51,8 @@ export interface TestCampaign
     read(path: string): string | undefined;
     /** The widgets of the campaign's extensions, as the dashboard shows them; given a package's name, that package's alone, its game system's too. */
     widgets(of?: string): Promise<ShownWidget[]>;
+    /** What a host reads of each of the core's tools, by name, as the MCP server gives it in this campaign: its description, then its parameters', with the examples of its game system (D-518). */
+    descriptions(): Record<string, string>;
     /** The dashboard of the campaign, served on a port of this computer, with a page open on it. */
     dashboard(): Promise<TestDashboard>;
     /** Takes the campaign's folder away, and anything it started. */
@@ -79,7 +83,8 @@ export interface TestDashboard
 
 /**
  * How a test campaign is made: its game system, the folders of the game systems beside the engine's, which win over them, the folders of the extensions it
- * uses, its language, and whether its setup is done (by default it is).
+ * uses, its language, and whether its setup is done (by default it is). A game system the package's repository installs, as a devDependency such as
+ * @rpgengine/system-5e, is there too, after those given.
  */
 export interface TestCampaignOptions
 {
@@ -115,7 +120,8 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
         throw error;
     }
 
-    const systemFolders = [systems, enginePath("../systems/")];
+    // The systems given first, then those the package's repository installs, as a devDependency (@rpgengine/system-5e), then the engine's own.
+    const systemFolders = [systems, resolve("node_modules"), enginePath("../systems/")];
     let ids = 0;
     let faces: number[] | undefined;
     const context: Context = {
@@ -172,6 +178,7 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
             const system = campaignSystem(folder, campaign.context)?.name;
             return (await campaignWidgets(folder, campaign.context)).filter((widget) => of === undefined ? widget.extension !== system : widget.extension === of);
         },
+        descriptions: () => toolDescriptions(campaign.context),
         dashboard: async () => {
             const dashboard = await testDashboard(campaign.context);
             started.push(dashboard);

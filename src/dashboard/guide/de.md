@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -19,9 +19,9 @@ Dieser Leitfaden richtet sich an Spielende: Du musst nicht programmieren können
 |---|---|
 | **Du** | Du spielst deinen Charakter: was er tut, sagt und versucht. |
 | **Die Spielleitung** (die KI) | Erzählt die Geschichte, spielt alle anderen, entscheidet, was passiert, und verlangt Würfe. |
-| **RPG Engine** | Hält die Welt in Dateien fest, würfelt, zählt Trefferpunkte, Geld, Zeit und Entfernungen und hält Geheimnisse zurück, bis du sie entdeckst. |
+| **RPG Engine** | Hält die Welt in Dateien fest, würfelt, zählt Trefferpunkte, Geld, Zeit und Entfernungen und bewahrt Geheimnisse, bis du sie entdeckst. |
 
-Die Welt bleibt von einem Abend zum nächsten gleich, auch in einem neuen Chat, sogar mit einer anderen KI:
+Die Welt bleibt von einem Abend zum nächsten gleich, auch in einem neuen Chat, auch mit einer anderen KI:
 
 - **Was gesagt wurde, bleibt wahr.** Ein toter Schurke bleibt tot.
 - **Die Würfel sind echt.** Die Spielleitung kann sie nicht beugen, außer bei der leichtesten Schwierigkeit, wenn du sie wählst.
@@ -29,7 +29,7 @@ Die Welt bleibt von einem Abend zum nächsten gleich, auch in einem neuen Chat, 
 - **Die Welt bewegt sich.** Bedrohungen rücken vor, während ihr rastet oder reist, und du siehst ihre Zeichen.
 - **Eine Kampagne ist ein Ordner** auf deinem Computer: Hör auf, wann du willst, und mach später weiter.
 
-Heute spielt RPG Engine ein Spielsystem: die **fünfte Edition**, aus dem freien System Reference Document 5.1. Weitere folgen ([Später geplant](#9-coming-later)).
+Ein Spiel kommt als Spielsystem, ein Paket, das die Spielleitung für deine Kampagne installiert: Heute ist unseres die **fünfte Edition** aus dem freien System Reference Document 5.1. Ohne Spielsystem spielst du frei, eine Geschichte ohne Zahlen. Weitere werden folgen ([Später geplant](#9-coming-later)).
 
 ---
 
@@ -218,23 +218,25 @@ Wenn die Spielleitung dir eine Frage stellt, bleibt ihr Banner oben stehen, in w
 
 ### 5.1 Was ein Spielsystem ist
 
-Die Daten eines Spiels: sein Charakterbogen, seine Zahlen, seine Kreaturen, Gegenstände, Zauber und Regeltexte. Jede Kampagne spielt ein System. RPG Engine berechnet den Charakterbogen und das, was verbraucht wird und wiederkommt. Wie eine Fähigkeit funktioniert, liest die Spielleitung in den Regeln nach und entscheidet, wie an einem echten Spieltisch.
+Die Daten eines Spiels: sein Charakterbogen, seine Zahlen, seine Kreaturen, Gegenstände, Zauber und Regeltexte. Jede Kampagne spielt ein System. RPG Engine berechnet den Charakterbogen und was verbraucht wird und zurückkommt. Wie eine Fähigkeit funktioniert, liest die Spielleitung in den Regeln nach und entscheidet, wie an einem Spieltisch.
 
-### 5.2 Fünfte Edition, inklusive
+### 5.2 Fünfte Edition
 
-Die Völker, Klassen, Unterklassen, ein Hintergrund und ein Talent aus dem SRD 5.1; die 319 Zauber, die Waffen, Rüstungen, magischen Gegenstände und Monster; die Regelkapitel, die die Spielleitung in ihrem genauen Wortlaut liest; der vollständige, berechnete Charakterbogen.
+Die Völker, Klassen, Unterklassen, ein Hintergrund und ein Talent des SRD 5.1; die 319 Zauber, die Waffen, Rüstungen, magischen Gegenstände und Monster; die Regelkapitel, welche die Spielleitung nach ihrem genauen Wortlaut liest; der vollständige, berechnete Charakterbogen.
 
-Du kannst auch Inhalte spielen, die im SRD fehlen, aus einem Buch, das du besitzt: Die Spielleitung schreibt sie als Seiten deiner Kampagne, und RPG Engine behandelt sie wie eigene Inhalte. RPG Engine liefert nur offene Inhalte mit; was deine Spielleitung kennt, ist nicht begrenzt.
+Es ist ein eigenes Paket: Die Spielleitung bietet es an, wenn du eine Kampagne einrichtest, und installiert es. Eine Kampagne, die es spielt, installiert es von selbst, wenn sie zum ersten Mal auf einem Computer ohne das Paket geöffnet wird, und die Spielleitung sagt dir Bescheid.
 
-Deine eigenen Regelbücher können deine Bibliothek sein: Sag der Spielleitung, wo sie liegen, *[Meine Regelbücher liegen in D:\Books\5e.]*, oder füge ihren Ordner unter Pakete › Bibliothek hinzu und bestätige einmal mit „Ja" im Fenster, das dein Computer zeigt. RPG Engine liest sie auf diesem Computer. Jede Kampagne nutzt die Ordner, die du dort aktivierst. Die Spielleitung durchsucht sie, wenn sie eine Regel entscheidet, nach dem SRD, und nennt dabei das Buch und die Seite. Am besten lassen sie sich als Text lesen oder als PDF, dessen Text sich markieren lässt. Ein gescanntes PDF wird anhand der Bilder seiner Seiten gelesen, nur unter Windows, in einigen Minuten und mit ein paar Fehlern. RPG Engine verändert deine Regelbücher nie, schickt ihren Text nie irgendwohin und kopiert ihn nie in eine Kampagne.
+Du kannst auch Inhalte spielen, die im SRD fehlen, aus einem Buch, das du besitzt: Die Spielleitung schreibt sie als Seiten deiner Kampagne, und RPG Engine behandelt sie wie eigene. RPG Engine liefert nur offene Inhalte mit; was deine Spielleitung kennt, ist nicht begrenzt.
+
+Deine eigenen Regelbücher können deine Bibliothek sein: Sag der Spielleitung, wo sie liegen, *[Meine Regelbücher liegen in D:\Books\5e.]*, oder füge ihren Ordner unter Pakete › Bibliothek hinzu und sag einmalig Ja in dem Fenster, das dein Computer zeigt. RPG Engine liest sie auf diesem Computer. Jede Kampagne nutzt die Ordner, die du dort einschaltest, und die Spielleitung durchsucht sie, wenn sie eine Regel entscheidet, nach dem SRD und nennt dabei Buch und Seite. Am besten lesen sich Texte oder PDFs, deren Text sich markieren lässt. Ein gescanntes PDF wird anhand der Bilder seiner Seiten gelesen, nur unter Windows, in ein paar Minuten und mit einigen Fehlern. RPG Engine verändert deine Regelbücher nie, schickt ihren Text nie irgendwohin und kopiert ihn nie in eine Kampagne.
 
 ### 5.3 Hausregeln und eigene Ergänzungen
 
-Frag die Spielleitung: *[Hausregel: Bei einer natürlichen 1 auf einen Angriff lässt du deine Waffe fallen.]* Sie hält sie als Absprache des Tisches fest oder schreibt eine Seite oder einen Wert des Charakterbogens, wenn das nötig ist. Hausregeln, die schon ausgeschrieben sind, kannst du als Textdateien in den Ordner `rules` der Kampagne legen.
+Frag die Spielleitung: *[Hausregel: Bei einer natürlichen 1 auf einen Angriff lässt du deine Waffe fallen.]* Sie hält sie als Absprache des Tisches fest oder schreibt eine Seite oder einen Wert des Charakterbogens, wenn das nötig ist. Bereits ausgeschriebene Hausregeln können als Textdateien in den Ordner `rules` der Kampagne gelegt werden.
 
 ### 5.4 Ein eigenes Spielsystem hinzufügen oder importieren
 
-Noch nicht: Heute spielt RPG Engine nur die fünfte Edition ([Kommt später](#9-coming-later)).
+Ein Spielsystem ist ein Paket: Die Spielleitung installiert eines aus npm, aus einem Ordner oder aus einer Datei, und eines, das nicht von uns ist, nur mit deinem Ja in einem Fenster deines Computers. Eines zu erstellen ist Arbeit für Entwickler und steht in den Dokumenten von RPG Engine auf GitHub. Ein eigenes Buch in ein Spielsystem zu verwandeln, gibt es noch nicht ([Später geplant](#9-coming-later)).
 
 ---
 

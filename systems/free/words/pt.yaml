@@ -1,0 +1,32 @@
+# The words of the free system in Portuguese, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the
+# words of words/it.yaml; with the terms of the official translation in this language, where one is.
+groups:
+  Character: Personagem
+  Equipment: Equipamento
+fields:
+  concept: conceito
+  abilities: habilidades
+  factions: facções
+  money: dinheiro
+words:
+  free play, without a game system: jogo livre, sem sistema de jogo
+  free: livre
+  Try: Tentar
+  Try {item}: Tentar {item}
+  I try {item}.: Eu tento {item}.
+  I try {item} on {target}.: Eu tento {item} em {target}.
+  I try {item} at {square}.: Eu tento {item} em {square}.
+  I try {item} on myself.: Eu tento {item} em mim mesmo.
+  outcomes: Modo de jogo
+  how what happens is decided: quem decide o que acontece
+  told: O mestre decide a história
+  rolled: Os dados também decidem
+  tossed: Sim ou não para o destino
+  "only choices, no dice: the master tells what comes of them": "apenas escolhas, sem dados: o mestre conta o que resulta delas"
+  choices, and one die when something is at stake: escolhas, e um dado quando algo está em jogo
+  "no dice: coins, heads or tails, answer yes or no": "sem dados: as moedas, cara ou coroa, respondem sim ou não"
+  die: Dado
+  the one die of your rolls: o único dado das suas rolagens
+  "a six-sided die: simple and quick": "um dado de seis faces: simples e rápido"
+  a twenty-sided die, as many games use: um dado de vinte faces, como em muitos jogos
+names: {}

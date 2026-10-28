@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -29,7 +29,7 @@ Il mondo resta lo stesso da una sera all'altra, anche in una chat nuova, anche c
 - **Il mondo si muove.** Le minacce avanzano mentre riposi o viaggi, e tu ne vedi i segni.
 - **Una campagna è una cartella** sul tuo computer: ti fermi quando vuoi, riprendi dopo.
 
-Oggi RPG Engine gioca un solo sistema di gioco, la **quinta edizione**, dal System Reference Document 5.1 gratuito. Altri arriveranno ([In arrivo](#9-coming-later)).
+Un gioco arriva come sistema di gioco, un pacchetto che il master installa per la tua campagna: oggi il nostro è la **quinta edizione**, dal System Reference Document 5.1 gratuito. Senza, giochi libero: una storia senza numeri. Altri arriveranno ([In arrivo](#9-coming-later)).
 
 ---
 
@@ -220,9 +220,11 @@ Quando il master ti chiede qualcosa, il suo banner resta in alto, in qualsiasi s
 
 I dati di un gioco: la sua scheda, i suoi numeri, le sue creature, gli oggetti, gli incantesimi e il testo delle regole. Ogni campagna gioca un sistema. RPG Engine calcola la scheda e ciò che si spende e ritorna; come funziona un privilegio, il master lo legge nelle regole e decide, come al tavolo.
 
-### 5.2 La quinta edizione, inclusa
+### 5.2 La quinta edizione
 
 Le razze, le classi, le sottoclassi, un background e un talento della SRD 5.1; i 319 incantesimi, le armi, le armature, gli oggetti magici e i mostri; i capitoli delle regole, che il master legge nel testo esatto; la scheda completa, calcolata.
+
+È un pacchetto a sé: il master lo propone quando prepari una campagna, e lo installa. Una campagna di quinta edizione lo installa da sé la prima volta che si apre su un computer che non ce l'ha, e il master te lo dice.
 
 Puoi giocare anche contenuti che la SRD non ha, da un manuale che possiedi: il master li scrive come pagine della tua campagna, e RPG Engine li tratta come suoi. RPG Engine distribuisce solo contenuti aperti; ciò che il tuo master conosce non ha limiti.
 
@@ -234,7 +236,7 @@ Chiedi al master: *[Regola della casa: un 1 naturale in attacco ti fa cadere l'a
 
 ### 5.4 Aggiungere o importare un sistema tuo
 
-Non ancora: oggi RPG Engine gioca solo la quinta edizione ([In arrivo](#9-coming-later)).
+Un sistema di gioco è un pacchetto: il master ne installa uno da npm, da una cartella o da un file, e uno che non è nostro solo col tuo sì, in una finestra del tuo computer. Farne uno è lavoro da sviluppatori, descritto nei documenti di RPG Engine su GitHub. Trasformare un tuo libro in un sistema di gioco non c'è ancora ([In arrivo](#9-coming-later)).
 
 ---
 

@@ -201,6 +201,11 @@ export interface PageModule
     pages?: Record<string, OwnPage>;
     /** Its own style sheet, which each of its drawings takes after the page's: its layout and motion, with the page's tokens. */
     style?: string;
+    /**
+     * A game system's alone (D-528 (6)): a style sheet over the whole page's, without a layer, so it wins over the page's rules whatever their selectors, while
+     * the player keeps the game's style on; never over the focus ring and the tooltips. The page's classes may change: it is the system's to keep up.
+     */
+    pageStyle?: string;
 }
 
 /** The page modules of the campaign's packages whose code runs, its system's first (D-511), as last read. */
@@ -396,6 +401,44 @@ function moduleAt(address: string): Promise<void>
     }
 
     return promise;
+}
+
+/** The style sheet over the whole page that the campaign's system's page module gives, once it comes (D-528 (6)); undefined when it gives none or fails. */
+export async function systemPageStyle(module: ShownModule | undefined): Promise<string | undefined>
+{
+    if (module?.kind !== "system") {
+        return undefined;
+    }
+
+    await moduleAt(module.address);
+    const loaded = modules.get(module.address);
+    const style = loaded === undefined || loaded instanceof Error ? undefined : loaded.pageStyle;
+
+    if (typeof style !== "string") {
+        return undefined;
+    }
+
+    // A sheet of its own layers could name the page's, and take a guarantee away with an !important of its own there: read as the browser reads it, in any
+    // spelling.
+    if (declaresLayers(style)) {
+        console.warn(`${module.package}: its pageStyle declares @layer, which a game system's page style may not; the page leaves it out.`);
+        return undefined;
+    }
+
+    return style;
+}
+
+/** Whether a style sheet has a cascade layer anywhere, its nested rules too, as the browser parses it. */
+function declaresLayers(style: string): boolean
+{
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(style);
+    return hasLayer(sheet.cssRules);
+}
+
+function hasLayer(rules: CSSRuleList): boolean
+{
+    return Array.from(rules).some((rule) => rule instanceof CSSLayerBlockRule || rule instanceof CSSLayerStatementRule || ("cssRules" in rule && hasLayer(rule.cssRules as CSSRuleList)));
 }
 
 // The page's style sheet, read once and adopted by every drawing's shadow root: the page's parts look the same inside.

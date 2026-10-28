@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { actPeople, actSentence, actTitle, itemVerbs, saidStates, setSystemVerbs, spokenBy, talkSentence, targetMode, verbLabel } from "../src/dashboard/acts.ts";
 import type { ShownPlace, ShownScene } from "../src/dashboard/data.ts";
+import { systemNameLabel } from "../src/dashboard/labels.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
 import { findSystem, systemWords } from "../src/systems/index.ts";
 import { pageFolder } from "./i18n/phrases.ts";
@@ -84,6 +85,35 @@ describe("the player's sentence (D-495)", () => {
 
         setSystemVerbs(undefined);
         expect(actSentence("invoke", "Rito della nebbia")).toBe("Uso Rito della nebbia.");
+    });
+
+    it("tries an ability of free play and uses its things, in Italian with its words; its badge says libero, another system's its name (D-521)", async () => {
+        const free = findSystem(testSystemFolders, "free");
+        expect(free?.sheetActions).toEqual({ abilities: ["try"], inventory: ["use"] });
+        setSystemVerbs(free?.sheetVerbs);
+        await setLanguage("it", italian);
+        setSystemWords(systemWords(free!.folder, "it"));
+        expect([
+            actSentence("try", "Leggere le persone", { person: "Bertoldo" }),
+            actSentence("try", "Navigare"),
+            actSentence("try", "Il coltello lungo", "self"),
+            actTitle("try", "Navigare"),
+            verbLabel("try"),
+            actSentence("use", "Corda"),
+            systemNameLabel("free"),
+            systemNameLabel("5e"),
+        ]).toEqual([
+            "Provo con Leggere le persone su Bertoldo.",
+            "Provo con Navigare.",
+            "Provo con Il coltello lungo su di me.",
+            "Prova con Navigare",
+            "Prova",
+            "Uso Corda.",
+            "libero",
+            "5e",
+        ]);
+        setSystemVerbs(undefined);
+        setSystemWords(undefined);
     });
 
     it("puts who acts in front with more than one player character, as the master reads it, and leaves the sentence as it is for one (D-480 (8))", () => {

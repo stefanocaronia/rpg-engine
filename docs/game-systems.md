@@ -1,6 +1,6 @@
 # Game systems
 
-A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from [systems/5e](../systems/5e/), from [systems/ironsworn](../systems/ironsworn/), a test system based on Ironsworn, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
+A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from the [5e](https://github.com/stefanocaronia/rpg-engine-5e), a package of its own, from [test/systems/fake](../test/systems/fake/), the fake system the engine's tests play, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers, the one system the engine brings. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
 
 ## 1. The folder
 
@@ -14,11 +14,12 @@ systems/<name>/
   instructions/*.md  what it adds to the master's instructions (section 4)
   words/<code>.yaml  its words in other languages (section 4)
   versions/<name>/   a version of its rules, in the same shape, over the rest (versions, in section 2)
+  theme/             its theme of the dashboard: theme.yaml, fonts, pictures and icons (theme, in section 2)
   package.json       when it is a package: its npm name, version, the API it is made for, its code (section 6)
   build/, test/      scripts and tests, not shipped
 ```
 
-The engine's own systems are in its `systems/` folder; any other is installed as a package with `package install`: from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 6}}`. A campaign names it in `campaign.yaml` (`system: 5e`). A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the systems it started with.
+The engine brings `free` alone, in its `systems/` folder; any other is installed as a package with `package install`: ours by its name alone, `package install 5e`, from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 6}}`. A campaign names it in `campaign.yaml` (`system: 5e`); one of ours that this computer lacks, the MCP server installs as it starts in the campaign, and says so at its first call, while `validate` and `status` give the way when it cannot. A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the code of the systems it started with; one installed while it runs has its code loaded then.
 
 The schema of `system.yaml` is part of the package API (section 6), which goes up with every addition a package may use: a new key comes with a new API number, and a system that uses it says that number, so that an older engine asks to be updated instead of refusing an unknown key. A folder without a `package.json` is data alone: it is read as made for the engine that reads it, and brings no code.
 
@@ -35,6 +36,35 @@ attribution: This work includes material taken from the System Reference Documen
 ```
 
 `language` is the language its pages are named in. `attribution` is what its source asks to be credited with; the dashboard shows it.
+
+### theme
+
+The folder of its theme of the dashboard, `theme: theme`: data alone, which the engine checks and turns into the dashboard's CSS, custom properties and nothing else, while the player keeps the game's style on in Settings. The dashboard's style guide says what each value changes ([dashboard-style.md](dashboard-style.md#the-games-style)).
+
+```yaml
+# theme/theme.yaml
+name: Crypt
+fonts:
+  - {family: Grenze Gotisch, file: fonts/GrenzeGotisch.woff2, weight: 100 900, license: fonts/OFL.txt}
+  - {family: Alegreya, file: fonts/Alegreya.woff2, weight: 400 900, license: fonts/OFL.txt}
+text-font: Alegreya           # also title-font, story-font: one of fonts
+title-font: Grenze Gotisch
+number-font: text             # the big numbers in the text's face or the titles'
+corners: 3                    # a card's corner in px, 0 to 16; the rest of the page's corners follow
+titles: {case: as-written, spacing: 0.01}   # or capitals, small-capitals; spacing in em, -0.02 to 0.15
+cards: {inner-line: solid, ornament: images/thorn.svg}   # none, solid, dashed, dotted; an SVG drawn in currentColor
+icons: {party: icons/party.svg, scene: icons/scene.svg}  # party, scene, combat, journal, world, saves, help, settings, about, packages, menu
+light:
+  paper: "#ebe0cc"            # required: paper, panel, rule, ink, muted, accent, gold, on-gold, ally, low
+  panel: "#f7efe1"            # optional, else derived: panel-2, float, gold-ink, warn, on-low
+  # ...
+  card-edge: "#b39478"        # and title-glow, bar-edge: a colour or none
+  page-texture: {picture: images/vellum.svg, fit: tile}   # and bar-texture; tile or cover
+dark:
+  # the same keys, the dark page's colours
+```
+
+Both modes are required. Every file is one of the theme's folder, written from it, never an address of the web: faces as woff2, woff, ttf or otf, each naming in `license` the file of its license, .txt or .md, in the folder; pictures as svg, png, webp or jpg; icons as SVGs of paths alone on a grid of 24; each file at most 1000 KB, its name written with the capitals it has on the disk; the dashboard serves them itself. The engine measures the contrast of the pairs of colours the page sets one on the other, text 4.5:1 (the danger's button, `on-low` on `low`, too) and the focus ring 3:1 on the page, and that friends and foes do not look alike. A theme that fails a check is not used: the dashboard keeps its own look, `status` counts it among the campaign's problems, and `validate` and `systemChecks` say what to change, with the nearest colour that reads and leaves the rest reading, or, when there is none, which colour under it to change.
 
 ### fields
 
@@ -108,6 +138,22 @@ settings:
 ```
 
 What the setup asks for this system. `means` is for the master, `player` for the dashboard; `without` lists fields a value leaves out.
+
+```yaml
+settings:
+  outcomes:
+    about: how what happens is decided
+    told: {means: "...", player: "...", engine-settings: {lethality: [narrative, epic]}}
+    rolled: {means: "...", player: "...", asks: [die], suggested: true}
+  die:
+    about: the one die of your rolls
+    d6: {means: "...", player: "...", suggested: true}
+    d20: {means: "...", player: "..."}
+engine-settings:
+  rigor: [smooth]
+```
+
+`engine-settings`, for the system or for one of its values, gives the values the game offers of an engine's setting with closed values, such as `lethality` or `rigor`: those the system and the values played share hold. One value alone is no choice: never asked nor shown to the player, refused by `config`, read so whatever `campaign.yaml` writes. With more, only those are offered, and one written that the game does not offer is asked again. `asks` names settings of the system that hold only with that value: asked, listed and taken only then. `suggested` is the value the setup suggests, one per setting at most. A setting whose values offer or ask goes first in the setup.
 
 ### versions
 
@@ -328,7 +374,7 @@ words: {Cleric: Chierico, long rest: riposo lungo}
 headline: "{classes} di livello {level}"
 ```
 
-**Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `session` (how a session opens in play), `adventure` (how to build one, when none is open or planned), `dashboard-guide` (how the player uses the dashboard, which `instructions` gives when they ask), `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book.
+**Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `session` (how a session opens in play), `adventure` (how to build one, when none is open or planned), `dashboard-guide` (how the player uses the dashboard, which `instructions` gives when they ask), `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book. A part named after a setting of the system and a value, such as `outcomes-rolled`, follows `play` while the campaign plays that value, and comes with the player's change of it; in it `{die}`, or any setting of the system in braces, reads as its value.
 
 ## 5. What a campaign adds
 
@@ -371,8 +417,8 @@ export default system;
 - The engine loads the code once, as the command line, the MCP server or the dashboard starts: a system changed since needs the server started again. A system made for an API the engine does not read brings no code, and says why.
 - In the hooks, `game` is a package's (see extensions.md): `set` writes as `write --set`, `change` changes a counter as the `change` command, the way for hit points and any counter the rules watch, and calls no hook from inside one; `addEffect` and `endEffect`. A roll for anyone outside the party is hidden while the campaign's `master-rolls` setting keeps it behind the screen. Each write has its line in the log, public or hidden as the engine shows that page; a write calls no hook. Its state is kept in `extensions/<name>/state.yaml`, as an extension's.
 - A hook that fails, or code that cannot load, is a line for the master, with what to do: the command's change stands.
-- The code reaches the game only through `game`; in this repository, lint refuses `Math.random`, `Date`, `process`, `globalThis`, `import()` and Node's modules in `systems/*/src`.
+- The code reaches the game only through `game`: never `Math.random`, `Date`, `process`, `globalThis`, `import()` nor Node's modules, which this repository's lint refuses in the fake system's code.
 
 ## 7. Checks
 
-[test/system-packages.test.ts](../test/system-packages.test.ts) runs on every installed system: its pages read and pass `validate`, names are unique, every field is declared and fits its kind, every rule named is in its chapters, and it has an `attribution`. A system keeps its own tests in its `test/`.
+The test kit's `systemChecks(folder)` checks a system's folder as the engine's tests check free and the fake: its pages read and pass `validate`, names are unique, every field is declared and fits its kind, every rule named is in its chapters, the pictures its pages link are there, it has an `attribution`, and its theme, if it names one, passes the theme's checks (`theme`). A system keeps its own tests in its repository, on the kit (see extensions.md, section 6), with these checks among them.

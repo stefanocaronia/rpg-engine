@@ -1,6 +1,7 @@
 name: Speak to a companion from the page, in the player's own words
 covers: [act-talk, act-strip]
-setup: {bell: true}
+# On the 5e's demo: the page has the player's actions only for a system whose sheet names some, and free names none (D-495).
+setup: {bell: true, system: 5e}
 steps:
   - phone: {tapOn: Scene}   # on a phone who is here is in Scene
   - tapOn: Talk to Lupa

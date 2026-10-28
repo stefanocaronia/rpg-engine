@@ -1,0 +1,67 @@
+/* Page: the page's frame, a section's head and its stack of cards. */
+@layer parts {
+    /* The page takes the whole window: the cards fall into as many columns as fit. */
+    .page {
+        /* Room at the bottom for the dice's button, which stays over the page. */
+        padding: var(--gap) var(--gap) 96px;
+    }
+
+    .page.stale .sheet,
+    .page.stale .party {
+        opacity: 0.6;
+        transition: opacity var(--short) var(--ease);
+    }
+
+    /* A page's head, out of Party and Scene (D-409): its section's icon and its title, both in the accent, out of any card. */
+    .page-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--accent);
+    }
+
+    .page-head h2 {
+        margin: 0;
+        font-size: 1.4rem;
+        line-height: 1.2;
+    }
+
+    .page-mark {
+        display: inline-grid;
+        place-items: center;
+    }
+
+    .page-mark svg.icon {
+        width: 26px;
+        height: 26px;
+        stroke-width: 1.6;
+    }
+
+    /* A page of cards under its head, one room between them; room at the end for the dice button, which stays over the page. */
+    .page-stack {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--gap);
+        padding-bottom: 72px;
+    }
+
+    .upcoming {
+        padding: 20px;
+    }
+
+    .upcoming h2 {
+        margin: 0 0 8px;
+        font-size: 1.3rem;
+    }
+
+    .upcoming p {
+        margin: 0 0 6px;
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        .page {
+            padding-bottom: 160px;
+        }
+    }
+}

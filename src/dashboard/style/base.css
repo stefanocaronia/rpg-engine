@@ -1,0 +1,129 @@
+/* The page's elements before any part: the box, the window, the body, the titles, words for a screen reader alone. */
+@layer base {
+    * {
+        box-sizing: border-box;
+    }
+
+    /* The room of the scrollbar kept: a card opened that makes the page scroll moves nothing sideways (D-383). */
+    html {
+        scrollbar-gutter: stable;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        /* The light from above, then the game's texture under its veil (D-528), on the page's colour. */
+        background:
+            radial-gradient(1200px 400px at 50% -200px, var(--glow), transparent),
+            linear-gradient(var(--texture-veil), var(--texture-veil)),
+            var(--page-texture) center top / var(--page-texture-size) var(--page-texture-repeat),
+            var(--paper);
+        /* The texture stays with the window, the light above scrolls away with the page's top, as without a theme. */
+        background-attachment: scroll, fixed, fixed, scroll;
+        color: var(--ink);
+        font: 15px/1.4 var(--font);
+    }
+
+    /* The serif is the story's voice alone: the campaign's name, and the master's question (D-282); the name in the game's titles' face, when it gives one. */
+    h1 {
+        font-family: var(--title-font, var(--serif));
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* The game's titles (D-528): its face where a title is a title, a card's (1.125rem) and up, never a label or a tab; its case, spacing and glow. */
+    h1,
+    h3,
+    .rolls-title,
+    :is(.card-head, summary) > h2,
+    :is(.band, .place-band, .turn-now, .page-head, .upcoming) h2 {
+        text-transform: var(--title-case);
+        font-variant-caps: var(--title-variant);
+        letter-spacing: var(--title-spacing, normal);
+        text-shadow: var(--title-glow);
+    }
+
+    :is(.band, .place-band, .turn-now, .page-head, .upcoming) h2 {
+        font-family: var(--title-font, inherit);
+    }
+
+    /* A title that the game's face makes wider than its card goes back to its face and spacing without the game's, that title alone (D-528 (4)). */
+    :is(h1, h2, h3, .rolls-title).title-too-wide {
+        --title-font: initial;
+        --title-spacing: initial;
+    }
+
+    h2 {
+        margin: 0;
+        font-weight: 700;
+    }
+
+    /* The cards' titles, in the text's own face (D-282), a step larger than the text (D-284); a card of the table titled by an h2, as Turns and Quests, too. */
+    h3,
+    .rolls-title,
+    :is(.card-head, summary) > h2 {
+        margin: 0;
+        font-family: var(--title-font, inherit);
+        font-size: 1.125rem;
+        font-weight: 700;
+        line-height: 1.3;
+        color: var(--ink);
+    }
+
+    .num {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* The small label over a title. */
+    .eyebrow {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .eyebrow.accent {
+        color: var(--accent);
+    }
+
+    button {
+        font: inherit;
+        color: inherit;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    /* A language written from right to left mirrors the page through its logical properties (D-394): the maps stay as they are drawn, east on the right, and so
+       the dice; a number, a notation or a value keeps its own order, as +2 or 1d20+5; the icons that point a way turn. */
+    .lm-frame,
+    .map,
+    .dice-stage {
+        direction: ltr;
+    }
+
+    /* Words for a screen reader alone. */
+    .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        /* A field that takes the focus is scrolled clear of the bar and of the dice's button over it (84 + 56 + 12 px). */
+        html {
+            scroll-padding-bottom: 152px;
+        }
+    }
+}

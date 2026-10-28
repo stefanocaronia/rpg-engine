@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { ActsShown, AskedNow, PlayerSetting, ResetPoint, ShownModule, ShownWidget, View, WorldMap } from "./data.ts";
+import type { ActsShown, AskedNow, PlayerSetting, ResetPoint, ShownModule, ShownTheme, ShownWidget, View, WorldMap } from "./data.ts";
 import { t } from "./text.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
@@ -381,6 +381,19 @@ export async function readWidgetData(owner: string, widget: string, who: string 
     }
 
     return body.shows;
+}
+
+/** The theme of the campaign's game system (D-528): its CSS, icons and name; nothing when it names none, or refused when it does not pass its checks. */
+export async function readGameTheme(): Promise<ShownTheme>
+{
+    const response = await fetch("/api/theme");
+    const body = await response.json() as ShownTheme | { error: string; };
+
+    if ("error" in body) {
+        throw new Error(body.error);
+    }
+
+    return body;
 }
 
 /** The page modules of the campaign's system and extensions whose code runs (D-510, D-511), the system's first. */

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -18,18 +18,18 @@ Tämä opas on pelaajille: ohjelmointitaitoja ei tarvita.
 | Kuka | Mitä tekee |
 |---|---|
 | **Sinä** | Pelaat hahmoasi: mitä hahmo tekee, sanoo ja yrittää. |
-| **Pelinjohtaja** (tekoäly) | Kertoo tarinaa, esittää kaikkia muita, päättää mitä tapahtuu ja pyytää heittoja. |
-| **RPG Engine** | Pitää maailman tiedostoissa, heittää nopat, laskee osumapisteet, rahat, ajan ja etäisyydet sekä pitää salaisuudet piilossa, kunnes ne paljastuvat. |
+| **Pelinjohtaja** (tekoäly) | Kertoo tarinan, esittää kaikkia muita, päättää, mitä tapahtuu, ja pyytää heittoja. |
+| **RPG Engine** | Säilyttää maailman tiedostoissa, heittää nopat, laskee osumapisteet, rahat, ajan ja etäisyydet sekä pitää salaisuudet piilossa, kunnes ne paljastuvat. |
 
-Maailma pysyy samana illasta toiseen, vaikka keskustelu vaihtuisi tai tekoäly olisi toinen:
+Maailma pysyy samana illasta toiseen, vaikka avaisit uuden keskustelun tai käyttäisit eri tekoälyä:
 
-- **Sanottu pysyy totena.** Kuollut konna pysyy kuolleena.
-- **Nopat ovat aitoja.** Pelinjohtaja ei voi vääntää niitä, paitsi helpoimmalla vaikeustasolla, jos valitset sen.
-- **Salaisuudet pysyvät salaisina.** Pelinjohtaja ei koskaan kerro, mitä hahmosi ei tiedä.
+- **Mikä on sanottu, se pysyy totena.** Kuollut konna pysyy kuolleena.
+- **Nopat ovat oikeat.** Pelinjohtaja ei voi taivuttaa niitä, paitsi helpoimmalla vaikeustasolla, jos valitset sen.
+- **Salaisuudet pysyvät salaisina.** Pelinjohtaja ei koskaan kerro sinulle sitä, mitä hahmosi ei tiedä.
 - **Maailma liikkuu.** Uhat etenevät, kun lepäätte tai matkaatte, ja näet niiden merkit.
 - **Kampanja on kansio** tietokoneellasi: voit lopettaa milloin haluat ja jatkaa myöhemmin.
 
-Nykyisin RPG Engine pelaa yhtä pelijärjestelmää, **viidettä editiota**, ilmaisesta System Reference Document 5.1 -aineistosta. Muita on tulossa ([Tulossa myöhemmin](#9-coming-later)).
+Peli tulee pelijärjestelmänä. Se on paketti, jonka pelinjohtaja asentaa kampanjaasi. Nyt meillä on **viides painos** ilmaisesta System Reference Document 5.1 -aineistosta. Ilman pelijärjestelmää pelaat vapaasti: tarinaa ilman lukuja. Lisää on tulossa ([Tulossa myöhemmin](#9-coming-later)).
 
 ---
 
@@ -214,27 +214,29 @@ Kun pelinjohtaja kysyy sinulta jotain, sen palkki pysyy ylhäällä, missä osio
 
 ---
 
-## 5. Pelijärjestelmät ja kotisäännöt <!-- icon: dice -->
+## 5. Pelijärjestelmät ja talosäännöt <!-- icon: dice -->
 
 ### 5.1 Mikä pelijärjestelmä on
 
-Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntötekstit. Jokainen kampanja pelaa yhtä järjestelmää. RPG Engine laskee hahmolomakkeen sekä sen, mitä kuluu ja mitä palautuu. Pelinjohtaja lukee säännöistä, miten ominaisuus toimii, ja päättää asiasta niin kuin pelipöydässä.
+Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntötekstit. Jokainen kampanja pelaa yhtä järjestelmää. RPG Engine laskee hahmolomakkeen sekä sen, mikä kuluu ja mikä palautuu. Pelinjohtaja lukee säännöistä, miten kyky toimii, ja päättää, kuten pelipöydässä.
 
-### 5.2 Viides laitos mukana
+### 5.2 Viides painos
 
-SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja erikoistaito; 319 loitsua, aseet, panssarit, taikaesineet ja hirviöt; sääntöluvut, jotka pelinjohtaja lukee tarkalleen sellaisinaan; täysi hahmolomake laskettuna valmiiksi.
+SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja erikoistaito; 319 loitsua, aseet, haarniskat, taikaesineet ja hirviöt; sääntöluvut, jotka pelinjohtaja lukee tarkalta sanamuodolta; täysi hahmolomake laskettuna valmiiksi.
 
-Voit pelata myös sisältöä, jota SRD:ssä ei ole, omistamastasi kirjasta: pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee sitä omanaan. RPG Engine sisältää vain avointa sisältöä, mutta pelinjohtajan tietämys ei rajoitu siihen.
+Se on oma pakettinsa: pelinjohtaja tarjoaa sitä, kun luot kampanjaa, ja asentaa sen. Kampanja, joka pelaa sitä, asentaa paketin itse, kun se avataan ensimmäistä kertaa tietokoneella, jolla pakettia ei ole. Pelinjohtaja kertoo siitä sinulle.
 
-Omat sääntökirjasi voivat olla kirjastosi. Kerro pelinjohtajalle, missä ne ovat, *[Sääntökirjani ovat kansiossa D:\Books\5e.]*, tai lisää niiden kansio kohdassa Packages › Library ja vastaa kerran myöntävästi tietokoneesi näyttämään ikkunaan. RPG Engine lukee kirjat tällä tietokoneella. Jokainen kampanja käyttää kansioita, jotka olet siellä ottanut käyttöön. Pelinjohtaja hakee niistä, kun ratkaisee sääntöä, SRD:n jälkeen, ja mainitsee kirjan ja sivun. Kirjat luetaan parhaiten tekstinä tai PDF-tiedostoina, joiden tekstin voi valita. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, muutamassa minuutissa ja muutamin virhein. RPG Engine ei koskaan muuta kirjojasi, ei lähetä niiden tekstiä minnekään eikä kopioi sitä kampanjaan.
+Voit pelata myös sisältöä, jota SRD:stä puuttuu, omistamastasi kirjasta: pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee ne ominaan. RPG Engine toimittaa vain avointa sisältöä, mutta pelinjohtajan tiedot eivät rajoitu siihen.
 
-### 5.3 Kotisäännöt ja omat lisäykset
+Omat sääntökirjasi voivat olla kirjastosi: kerro pelinjohtajalle, missä ne ovat, *[Sääntökirjani ovat kansiossa D:\Books\5e.]*, tai lisää niiden kansio kohdassa Packages › Library ja vastaa kerran myöntävästi tietokoneesi näyttämään ikkunaan. RPG Engine lukee ne tällä tietokoneella. Jokainen kampanja käyttää kansioita, jotka olet siellä ottanut käyttöön. Pelinjohtaja hakee niistä, kun hän ratkaisee sääntöä, SRD:n jälkeen, ja mainitsee kirjan ja sivun. Ne luetaan parhaiten tekstinä tai PDF-tiedostoina, joiden teksti on valittavissa. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, muutamassa minuutissa ja muutamin virhein. RPG Engine ei koskaan muuta sääntökirjojasi, ei koskaan lähetä niiden tekstiä minnekään eikä koskaan kopioi sitä kampanjaan.
 
-Pyydä pelinjohtajalta: *[Kotisääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Pelinjohtaja pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, jos sellaista tarvitaan. Valmiiksi kirjoitetut kotisäännöt voi laittaa tekstitiedostoina kampanjan `rules`-kansioon.
+### 5.3 Talosäännöt ja omat lisäykset
+
+Pyydä pelinjohtajaa: *[Talosääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Pelinjohtaja pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, kun sellainen tarvitaan. Valmiiksi kirjoitetut talosäännöt voivat olla tekstitiedostoina kampanjan `rules`-kansiossa.
 
 ### 5.4 Oman pelijärjestelmän lisääminen tai tuominen
 
-Ei vielä: nykyisin RPG Engine pelaa vain viidettä laitosta ([Tulossa myöhemmin](#9-coming-later)).
+Pelijärjestelmä on paketti: pelinjohtaja asentaa sen npm:stä, kansiosta tai tiedostosta. Jos paketti ei ole meidän, asennus vaatii sinun myöntävän vastauksesi tietokoneesi ikkunassa. Paketin tekeminen on kehittäjän työtä, ja se kuvataan RPG Enginen dokumenteissa GitHubissa. Oman kirjasi muuttaminen pelijärjestelmäksi ei ole vielä mahdollista ([Tulossa myöhemmin](#9-coming-later)).
 
 ---
 

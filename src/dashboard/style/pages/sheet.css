@@ -1,0 +1,519 @@
+/* The sheet of one of the party: the band, the columns of cards, the equipment and the money, the character's story. */
+@layer pages {
+    /* The player character's story, written by the player in Description (D-373). */
+    .story-box {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        margin-top: 10px;
+    }
+
+    .story-box.editing {
+        display: grid;
+    }
+
+    .story-box svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .story-sent {
+        display: flex;
+        flex-basis: 100%;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .story-sent svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .story-box label {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .story-box textarea {
+        width: 100%;
+        min-height: 10lh;
+        padding: 8px 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-s);
+        background: var(--float);
+        color: var(--ink);
+        font: inherit;
+        line-height: 1.45;
+        resize: vertical;
+        field-sizing: content;
+    }
+
+    .story-box textarea:focus-visible {
+        border-color: var(--accent);
+    }
+
+    .story-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .story-status {
+        flex: 1;
+        min-width: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .sheet-main > .widget-cards {
+        margin-block-start: var(--gap);
+    }
+
+    /* The band: the hero of the sheet; the token and the name at the top left, with the system's headline (D-288), then the line in boxes of one height. */
+    .band {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 18px 24px;
+        padding: 16px 18px;
+        margin-bottom: var(--gap);
+        border: 1px solid var(--card-edge);
+        border-radius: var(--radius-l);
+        background: var(--card-ornament-layer), linear-gradient(180deg, var(--panel-2), var(--panel));
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    .identity {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .band h2 {
+        font-size: 1.9rem;
+        letter-spacing: var(--title-spacing, -0.01em);
+        line-height: 1.1;
+    }
+
+    .headline {
+        margin: 4px 0 2px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    /* The mood, in the band alone (D-305, D-419): its face of 20 pixels on a disc like the robot's screen, then its word. */
+    .mood-word {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        vertical-align: bottom;
+    }
+
+    .mood-word .mood-face {
+        flex: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--disc);
+        box-shadow: inset 0 0 0 1.5px var(--gold);
+        color: #fff4d5;
+        stroke-width: 1.6;
+    }
+
+    .mood-word .mood-face .mood-eyes {
+        stroke-width: 2.8;
+    }
+
+    /* The boxes beside the name while there is room for them; under it, the band's whole width, when the band is narrow (D-299). */
+    .band .line {
+        flex: 1 1 460px;
+        min-width: 0;
+    }
+
+    .band .effects {
+        flex-basis: 100%;
+    }
+
+    .place {
+        display: flex;
+        gap: 4px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    /* Where someone is, after the place's pin, without a preposition that each language would bend to the name (D-403). */
+    .place svg.icon {
+        flex: none;
+        width: 1em;
+        height: 1.4em;
+    }
+
+    /* The sheet: a rail of tiles beside columns of boxes, with no holes. */
+    .sheet-body {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: var(--gap);
+        align-items: start;
+    }
+
+    .sheet-body:not(:has(.rail)) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .groups {
+        columns: 300px;
+        column-gap: var(--gap);
+    }
+
+    /* A narrow sheet, as beside the rolls under a thousand pixels: the rail goes above the cards, in a row, so that the cards keep their width. */
+    .sheet {
+        container-type: inline-size;
+    }
+
+    @container (max-width: 640px) {
+        .sheet-body {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .sheet-body > .rail {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            align-items: start;
+            gap: var(--gap);
+        }
+
+        .sheet-body > .rail > .group {
+            margin-bottom: 0;
+        }
+
+        /* A card left alone on its row takes the whole row, as the cards under it. */
+        .sheet-body > .rail > .group:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+        }
+    }
+
+    /* The last card of a column takes no room under it: the column's own gap is the room. */
+    :is(.rail, .fixed-column) > .group:last-child {
+        margin-bottom: 0;
+    }
+
+    /* The sheet's cards in columns that stay (D-383): each card in its column, whatever opens or closes. */
+    .fixed-columns {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--gap);
+    }
+
+    .fixed-column {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    /* The page's text under the columns, the whole width; a long one set in two columns where they have room, as a book's page. */
+    .wide-cards .markdown:has(> :nth-child(4)) {
+        columns: 2 260px;
+        column-gap: 32px;
+    }
+
+    .wide-cards .markdown > * {
+        break-inside: avoid;
+    }
+
+    .wide-cards .markdown h4,
+    .wide-cards .markdown h5 {
+        break-after: avoid;
+    }
+
+    /* The items of a list, as the attacks. */
+    .items {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .items th,
+    .items td {
+        padding: 8px;
+        border-top: 1px solid var(--rule);
+        text-align: start;
+    }
+
+    .items td.num {
+        font-weight: 700;
+    }
+
+    /* What is inside another thing (D-431): a step in for each level, a lighter weight, no rule between it and its container, which opens and closes it with
+       its chevron where the picture of a thing at its level stands, its own picture after it; so what is inside stands under its container's picture. */
+    .items tbody th {
+        --mark-lane: 0px;
+        --picture: 0px;
+        position: relative;
+        padding-inline-start: calc(8px + var(--mark-lane) + var(--depth, 0) * var(--picture));
+        font-weight: 600;
+    }
+
+    .items.marked tbody th.holds {
+        --mark-lane: var(--picture);
+    }
+
+    .items.marked tbody th {
+        --picture: 1.35em;
+        /* A long name goes on under itself, its picture hanging before it. */
+        padding-inline-start: calc(8px + var(--mark-lane) + (var(--depth, 0) + 1) * var(--picture));
+        text-indent: calc(-1 * var(--picture));
+    }
+
+    .items tbody tr.inside > * {
+        border-top-color: transparent;
+    }
+
+    .items tbody tr.inside th {
+        font-weight: 400;
+    }
+
+    .item-picture {
+        display: inline-block;
+        width: 1.1em;
+        height: 1.1em;
+        margin-inline-end: 0.25em;
+        vertical-align: -0.2em;
+        text-indent: 0;
+    }
+
+    /* The game's drawing, white on clear, painted in the colour of the words. */
+    .item-picture.drawn {
+        background: currentColor;
+        mask: var(--picture-url) center / contain no-repeat;
+    }
+
+    /* What is equipped has its picture in gold, dark enough on the light page. */
+    .item-picture.equipped {
+        color: var(--gold-ink);
+    }
+
+    .item-picture svg.icon {
+        display: block;
+        width: 100%;
+        height: 100%;
+        stroke-width: 1.9;
+    }
+
+    /* A container's name is its toggle, the chevron in the lane: down while what it holds shows. */
+    .items .fold {
+        display: inline-grid;
+        grid-template-columns: var(--mark-lane) var(--picture) auto;
+        align-items: baseline;
+        margin: -2px 0 -2px calc(-1 * var(--mark-lane));
+        padding: 2px 4px 2px 0;
+        text-indent: 0;
+        border: 0;
+        border-radius: var(--radius-s);
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .items .fold:hover {
+        background: color-mix(in srgb, var(--ink) 7%, transparent);
+    }
+
+    .items .fold svg.icon {
+        width: 1em;
+        height: 1em;
+        align-self: start;
+        margin-top: calc((1lh - 1em) / 2);
+        color: var(--muted);
+        vertical-align: -0.14em;
+        stroke-width: 2.25;
+    }
+
+    .items .fold[aria-expanded="true"] svg.icon {
+        rotate: 90deg;
+    }
+
+    [dir="rtl"] .items .fold[aria-expanded="true"] svg.icon {
+        rotate: -90deg;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .items .fold svg.icon {
+            transition: rotate var(--short) var(--ease);
+        }
+    }
+
+    /* The group's values, as the money, above its table. */
+    .rows + .items {
+        margin-top: 12px;
+    }
+
+    .items thead th {
+        padding: 0 8px 6px;
+        border-top: 0;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 650;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    /* Money as its coins (D-431): a disc of the coin's metal, the count, the coin's short name; a coin without a metal the page knows has a plain disc. */
+    .coins {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 2px 0.7em;
+        align-items: baseline;
+        justify-content: center;
+    }
+
+    .coin {
+        --coin-face: color-mix(in srgb, var(--muted) 22%, transparent);
+        --coin-rim: var(--muted);
+        display: inline-flex;
+        gap: 0.25em;
+        align-items: baseline;
+        white-space: nowrap;
+    }
+
+    .coin-disc {
+        flex: none;
+        width: 1em;
+        height: 1em;
+        align-self: center;
+    }
+
+    .coin-face {
+        fill: var(--coin-face);
+        stroke: var(--coin-rim);
+        stroke-width: 1.4;
+    }
+
+    .coin-ring {
+        fill: none;
+        stroke: var(--coin-rim);
+        stroke-opacity: 0.5;
+        stroke-width: 0.9;
+    }
+
+    .coin-glint {
+        fill: none;
+        stroke: #fff;
+        stroke-linecap: round;
+        stroke-opacity: 0.75;
+        stroke-width: 1.1;
+    }
+
+    .coin:not([data-metal]) .coin-glint {
+        display: none;
+    }
+
+    .coin .num {
+        min-width: 0;
+    }
+
+    .coin-name {
+        color: var(--muted);
+        font-size: 0.72em;
+        font-weight: 600;
+    }
+
+    /* The metals, as the game systems name them: a face and a darker rim, which stays clear of the paper in both themes. */
+    .coin[data-metal="gold"] {
+        --coin-face: #e2a922;
+        --coin-rim: light-dark(#8a5d06, #a8730c);
+    }
+
+    .coin[data-metal="silver"] {
+        --coin-face: #c6ccd5;
+        --coin-rim: light-dark(#5f6876, #7d8796);
+    }
+
+    .coin[data-metal="copper"] {
+        --coin-face: #c9703a;
+        --coin-rim: light-dark(#7c3b17, #93481f);
+    }
+
+    .coin[data-metal="platinum"] {
+        --coin-face: #e3ebf5;
+        --coin-rim: light-dark(#5a6c88, #8394b0);
+    }
+
+    .coin[data-metal="electrum"] {
+        --coin-face: #cfc576;
+        --coin-rim: light-dark(#6c6420, #8a8130);
+    }
+
+    .coin[data-metal="bronze"] {
+        --coin-face: #b0793a;
+        --coin-rim: light-dark(#5f3c14, #75491b);
+    }
+
+    .coin[data-metal="brass"] {
+        --coin-face: #d2b04c;
+        --coin-rim: light-dark(#76601a, #8f7520);
+    }
+
+    .coin[data-metal="iron"] {
+        --coin-face: #858b93;
+        --coin-rim: light-dark(#40454c, #555b63);
+    }
+
+    .coin[data-metal="steel"] {
+        --coin-face: #a4afbc;
+        --coin-rim: light-dark(#4f5a68, #66717f);
+    }
+
+    .coin[data-metal="lead"] {
+        --coin-face: #767b84;
+        --coin-rim: light-dark(#3b3f46, #4c5058);
+    }
+
+    .coin[data-metal="tin"] {
+        --coin-face: #b8bcc2;
+        --coin-rim: light-dark(#5b6068, #757a82);
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        .sheet-body {
+            display: block;
+        }
+    }
+
+    /* A thing in a list of bonds, as attuned: two rings after its name, in the accent. */
+    .item-bond {
+        display: inline-block;
+        margin-inline-start: 0.35em;
+        color: var(--accent);
+        text-indent: 0;
+        vertical-align: -0.15em;
+    }
+
+    .item-bond svg.icon {
+        display: block;
+        width: 1em;
+        height: 1em;
+        stroke-width: 2;
+    }
+
+    /* How many of a thing, after its name (D-431). */
+    .items .item-count {
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    /* What is carried is a list, not a table: no lines between its things, closer together (D-431). */
+    .items.carried th,
+    .items.carried td {
+        padding-block: 5px;
+        border-top: 0;
+    }
+}

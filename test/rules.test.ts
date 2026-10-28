@@ -274,9 +274,9 @@ describe("the rules command, beyond a system's own (RUL-2)", () => {
         expect(await ok("rules", "flanking")).not.toContain("config, setting precedents");
     });
 
-    it("reads the rules of the campaign's own system only: Ironsworn's moves in a campaign of Ironsworn", async () => {
-        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: fake", "system: ironsworn"));
-        expect(await ok("rules", "face danger")).toContain("Moves › Adventure Moves › Face Danger (ironsworn)");
-        expect(await ok("rules", "grappled")).toContain('No rule matches "grappled"');
+    it("reads the rules of the campaign's own system only: the fake's in a campaign of the fake, none of them in one of free play", async () => {
+        expect(await ok("rules", "hunger")).toContain("Basics › Hunger (fake)");
+        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: fake", "system: free"));
+        expect(await ok("rules", "hunger")).toContain('No rule matches "hunger"');
     });
 });

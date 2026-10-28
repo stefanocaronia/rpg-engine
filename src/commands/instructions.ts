@@ -4,6 +4,7 @@ import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { buttonsInstructions, dashboardInstructions, masterInstructions } from "../instructions/index.ts";
 import { campaignMode, modePart } from "./game-mode.ts";
+import { valueParts } from "./game-offers.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { voicesPart } from "./game-voices.ts";
 import { campaignSystem, campaignWorld } from "./game-world.ts";
@@ -158,7 +159,9 @@ function modeText(folder: string, context: Context): string
     }
 
     try {
-        return modePart(campaignMode(root, campaignWorld(root, context)), campaignSystem(root, context)) ?? "";
+        const mode = campaignMode(root, campaignWorld(root, context));
+        // In play, the parts of the values the campaign plays of its system's settings follow (DAT-18).
+        return [modePart(mode, campaignSystem(root, context)) ?? "", mode === "play" ? valueParts(root, context) : ""].filter((part) => part !== "").join("\n\n");
     } catch {
         return "";
     }

@@ -1,0 +1,42 @@
+/* The player's dashboard (D-273, D-275, D-276, D-524 (3)): the robot's colours, cards that lift a little, a sheet that reads like paper; generic for any game.
+   The layers in their order, then the files, which the build joins in this order into one style.css: a layer later wins over one before it, whatever
+   the selectors; a style sheet without a layer wins over them all, but never over the guarantees, all !important and first, as among !important
+   declarations the first layer wins. The game's style, the theme of the campaign's system, is the layer theme, which the page adopts while the player keeps
+   it on: custom properties alone, over the tokens (D-528). docs/dashboard-style.md says where a rule goes. */
+@layer guarantees, tokens, theme, base, parts, pages;
+
+@import "tokens.css";
+@import "guarantees.css";
+@import "base.css";
+@import "parts/page.css";
+@import "parts/cards.css";
+@import "parts/buttons.css";
+@import "parts/top.css";
+@import "parts/chips.css";
+@import "parts/dialogs.css";
+@import "parts/tabs.css";
+@import "parts/strips.css";
+@import "parts/widgets.css";
+@import "parts/notices.css";
+@import "parts/token.css";
+@import "parts/values.css";
+@import "parts/markdown.css";
+@import "parts/asked.css";
+@import "parts/person-panel.css";
+@import "parts/rolls.css";
+@import "parts/dice.css";
+@import "parts/acts.css";
+@import "parts/list-reader.css";
+@import "parts/documents.css";
+@import "parts/calendar.css";
+@import "pages/settings.css";
+@import "pages/saves.css";
+@import "pages/journal.css";
+@import "pages/sheet.css";
+@import "pages/setup.css";
+@import "pages/help.css";
+@import "pages/about.css";
+@import "pages/scene.css";
+@import "pages/world.css";
+@import "pages/place-map.css";
+@import "pages/packages.css";

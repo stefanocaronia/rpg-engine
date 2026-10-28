@@ -27,9 +27,9 @@ function brunaFile(): string
     return readFileSync(join(folder, "world", "characters", "Bruna.md"), "utf8");
 }
 
-// The table of cases of change (CNT-2–CNT-9): each kind of counter crossed with each way of changing it, on a character of the test system based on Ironsworn,
-// whose momentum goes from -6 to a maximum the system works out, 10, above which it never goes (FOR-6). What the change gives, with its note; "same" when nothing changed; "refused" when nothing could.
-const kinds = { frecce: "5", ferite: "5/12", "ferite a 0": "0/12", "ferite al massimo": "12/12", "ferite sotto": "-3/10", "ferite sopra": "15/12", momentum: "-6/10" };
+// The table of cases of change (CNT-2–CNT-9): each kind of counter crossed with each way of changing it, on a character of the fake system,
+// whose nerve goes from -6 to a maximum the system works out, 10, above which it never goes (FOR-6). What the change gives, with its note; "same" when nothing changed; "refused" when nothing could.
+const kinds = { frecce: "5", ferite: "5/12", "ferite a 0": "0/12", "ferite al massimo": "12/12", "ferite sotto": "-3/10", "ferite sopra": "15/12", nerve: "-6/10" };
 const asks = ["--by=-7", "--by=7", "--by=0", "--spend=5", "--spend=6", "--to=3", "--to=max", "--to=4/8", "--to=13"];
 const outcomes: Record<keyof typeof kinds, string[]> = {
     frecce: ["0: at 0, 2 beyond", "12", "same 5", "0: at 0", "refused", "3", "refused", "4/8", "13"],
@@ -38,13 +38,13 @@ const outcomes: Record<keyof typeof kinds, string[]> = {
     "ferite al massimo": ["5/12", "same 12/12: at max, 7 beyond", "same 12/12: at max", "7/12", "6/12", "3/12", "same 12/12: at max", "4/8", "13/12: outside 0–12"],
     "ferite sotto": ["same -3/10: outside 0–10, 7 beyond", "4/10", "same -3/10: outside 0–10", "refused", "refused", "3/10", "10/10: at max", "4/8", "13/10: outside 0–10"],
     "ferite sopra": ["8/12", "same 15/12: outside 0–12, 7 beyond", "same 15/12: outside 0–12", "10/12", "9/12", "3/12", "12/12: at max", "4/8", "13/12: outside 0–12"],
-    momentum: ["same -6/10: at min, 7 beyond", "1/10", "same -6/10: at min", "refused", "refused", "3/10", "10/10: at max", "refused", "refused"],
+    nerve: ["same -6/10: at min, 7 beyond", "1/10", "same -6/10: at min", "refused", "refused", "3/10", "10/10: at max", "refused", "refused"],
 };
 
 describe("the table of cases of change", () => {
     it("CNT-2–CNT-9: gives each kind of counter what each change asks, says where it stands, and refuses what it cannot do without writing anything", async () => {
         const root = makeTempFolder();
-        writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: ironsworn\nlanguage: it\n");
+        writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: fake\nlanguage: it\n");
         mkdirSync(join(root, "world", "characters"), { recursive: true });
         const file = join(root, "world", "characters", "Bran.md");
 
@@ -77,13 +77,13 @@ describe("the table of cases of change", () => {
 
     it("CNT-5: sets no value above a maximum the game system works out, which would read as the maximum", async () => {
         const root = makeTempFolder();
-        writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: ironsworn\nlanguage: it\n");
+        writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: fake\nlanguage: it\n");
         mkdirSync(join(root, "world", "characters"), { recursive: true });
-        writeFileSync(join(root, "world", "characters", "Kira.md"), "---\nrole: npc\nmomentum: 0/9\ndebilities: [wounded]\n---\n");
+        writeFileSync(join(root, "world", "characters", "Kira.md"), "---\nrole: npc\nnerve: 0/9\nscars: [burned]\n---\n");
 
         try {
-            expect((await runCommandLine(["change", "Kira", "momentum", "--to", "10"], testContext(root))).output).toBe(
-                "momentum on Kira goes no higher than its maximum, which the game system works out: 9. Give to 9 or less. Nothing changed.",
+            expect((await runCommandLine(["change", "Kira", "nerve", "--to", "10"], testContext(root))).output).toBe(
+                "nerve on Kira goes no higher than its maximum, which the game system works out: 9. Give to 9 or less. Nothing changed.",
             );
         } finally {
             removeFolder(root);
@@ -128,7 +128,7 @@ describe("rpg change", () => {
         expect((await rpg("change", "Bruna", "arrows", "--to", "max")).output).toBe("arrows on Bruna has no maximum: give to a number, or write the field as current/max with write.");
     });
 
-    it("keeps Ironsworn's momentum below 0 when set there (Ironsworn by Shawn Tomkin, CC-BY 4.0)", async () => {
+    it("keeps a counter the system does not declare below 0 when set there, as a momentum", async () => {
         await rpg("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "momentum=2/10", "--set", "supply=5/5");
         expect((await rpg("change", "Kira", "momentum", "--to=-3")).output).toBe("Kira: momentum 2/10 → -3/10: outside 0–10.");
         expect((await rpg("change", "Kira", "momentum", "--by=2")).output).toBe("Kira: momentum -3/10 → -1/10: outside 0–10.");
@@ -191,7 +191,9 @@ describe("rpg change", () => {
     });
 
     it("explains what is missing or wrong", async () => {
-        expect((await rpg("change", "Bruna", "mana", "--by=1")).output).toBe('Bruna has no field "mana". Its counters: grit 12/12, arrows 2. To add one, use write, such as set mana=12/12.');
+        expect((await rpg("change", "Bruna", "mana", "--by=1")).output).toBe(
+            'Bruna has no field "mana". Its counters: grit 12/12, arrows 2. If you meant a counter of the system fake, give its name, such as grit; only one it lacks is added, with write, such as set mana=12/12.',
+        );
         expect((await rpg("change", "Bruna", "role", "--by=1")).output).toBe("role is a fixed field of Bruna, not a counter: change it with write.");
         expect((await rpg("change", "Bruna", "grit")).output).toBe("Give one of by (damage, healing), spend (what is paid or used up) or to (a value, max, or current/max).");
         expect((await rpg("change", "Bruna", "grit", "--by=1", "--to", "max")).exitCode).toBe(1);

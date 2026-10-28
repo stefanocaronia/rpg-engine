@@ -58,7 +58,7 @@ export interface InstallableSystem
 // How long the setup waits for npm before it offers ours alone.
 const systemsWait = 5000;
 
-/** The game systems npm has that this computer has not, ours first; ours from the engine's list when npm does not answer in time (D-513 (1)). */
+/** The game systems npm has that this computer has not, ours first, with ours from the engine's list beside them, npm answering in time or not (D-513 (1)). */
 export async function installableSystems(context: Context): Promise<InstallableSystem[]>
 {
     let timer: NodeJS.Timeout | undefined;
@@ -73,9 +73,11 @@ export async function installableSystems(context: Context): Promise<InstallableS
             ? { name: shortName(one.name).replace(/^system-/, ""), title, verified: true }
             : { name: one.name.startsWith("@") ? one.name : `npm:${one.name}`, title, verified: false };
     });
-    const listed = "failed" in searched ? ourSystems.map((ours) => ({ name: ours.name, title: ours.title, verified: true })) : found;
-    const here = systemFolders(context.systemFolders).map((one) => comparableText(one.name));
     const installedName = (system: InstallableSystem): string => comparableText(shortName(system.name.replace(/^npm:/, "")).replace(/^system-/, ""));
+    // Ours from the engine's list always, as npm's search may not find one yet; npm's own entry first, by name.
+    const engines = ourSystems.map((ours): InstallableSystem => ({ name: ours.name, title: ours.title, verified: true }));
+    const listed = [...found, ...engines.filter((ours) => !found.some((one) => one.verified && installedName(one) === installedName(ours)))];
+    const here = systemFolders(context.systemFolders).map((one) => comparableText(one.name));
     return listed.filter((system) => !here.includes(installedName(system))).sort((first, second) => Number(second.verified) - Number(first.verified) || first.name.localeCompare(second.name));
 }
 

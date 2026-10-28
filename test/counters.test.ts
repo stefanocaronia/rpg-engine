@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { canSpend, changeCounter, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../src/counters/index.ts";
 
-// Counters for any game: fifth edition hit points next to Ironsworn's health, momentum and progress (Ironsworn by Shawn Tomkin, CC-BY 4.0).
+// Counters for any game: hit points next to a health, a momentum and a progress track, as in Ironsworn.
 describe("counters", () => {
     it("reads a whole number and current/max, and nothing else", () => {
         expect(readCounter(20)).toEqual({ value: 20 });

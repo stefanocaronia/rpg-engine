@@ -292,6 +292,10 @@ export interface ShownRoll
     says?: string;
     /** How each die turned out, by its face in order, when an extension's roll says it: good, bad or none, for the page to colour it (D-507). */
     tones?: (Tone | null)[];
+    /** The coins of a toss, each face in order, said in the page's language in place of the total; a toss has no dice to show. */
+    toss?: ("heads" | "tails")[];
+    /** Whether the master has it thrown in the tray too, or kept in the list alone (VIEW-13); left out, a toss flies and dice do not. */
+    tray?: boolean;
     text: string;
     dice: ThrownDie[];
 }
@@ -332,6 +336,8 @@ export interface Asked
     spend?: RestDice;
     /** A forced roll (D-507), as a death save: no button turns it down, and no words of the player's take its place. */
     forced?: true;
+    /** A toss of coins (ASK-15): its button shows the coins, and the tray's coins answer it, as many as it asks. */
+    toss?: true;
     /** By button, its name and the note under it when a package words it, as Reroll and 3 left, in place of the label's words (D-507). */
     buttons?: ({ name: string; note?: string; } | null)[];
     /** The rule under the buttons, in a line, as "A 1 resets the lock". */
@@ -661,6 +667,18 @@ export interface ShownWidget extends WidgetSpot
 
 /** A package whose code draws in the page (D-510, D-511), as a widget or a module knows it: its name, version, module, figures and words. */
 export type PackageCode = Pick<ShownWidget, "extension" | "version" | "module" | "figures" | "words">;
+
+/** The theme of the campaign's game system as /api/theme gives it (D-528): nothing when it names none; refused when it does not pass its checks. */
+export interface ShownTheme
+{
+    system?: string;
+    name?: string;
+    /** Its CSS: faces, and custom properties in the layer theme. */
+    css?: string;
+    /** The lines of the page's icons it draws anew, by name. */
+    icons?: Record<string, string>;
+    refused?: boolean;
+}
 
 /** A page module of the campaign's system or one of its extensions whose code runs, as /api/modules lists it (D-511). */
 export interface ShownModule

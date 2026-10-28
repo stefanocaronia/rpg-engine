@@ -1,0 +1,683 @@
+/* Values: the lines of a card, tiles, rows, pips, bars and tracks, and the dice of a number the system rolls. */
+@layer parts {
+    [dir="rtl"] :is(span.num:not([dir]), .asked-dice, .die-modifier, .tray-die-name, .tray-modifier-value) {
+        direction: ltr;
+        unicode-bidi: isolate;
+    }
+
+    .line {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    /* A box of the line: square at the least, those of a row of one height, what it holds in its middle; taller only to hold what it has, as a list. */
+    .line-value {
+        --box: 72px;
+        display: inline-grid;
+        grid-template-rows: auto 1fr;
+        justify-items: center;
+        align-items: center;
+        gap: 2px;
+        min-width: var(--box);
+        min-height: var(--box);
+        padding: 8px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: color-mix(in srgb, var(--paper) 50%, transparent);
+        text-align: center;
+    }
+
+    /* A list in a box, as the spells at hand, reads from its start, its label over it. */
+    .line-value:has(.chips-block) {
+        justify-items: start;
+        text-align: start;
+    }
+
+    .line-value > .label {
+        color: var(--muted);
+        font-size: 0.68rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .line-value .num {
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+
+    /* What is written beside a number worked out, as the speed written beside the one that counts now: small, under it. */
+    .line-value:has(> .beside) {
+        grid-template-rows: auto 1fr auto;
+        height: auto;
+        min-height: var(--box);
+    }
+
+    .line-value > .beside {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .line-value:has(.bar) .bar {
+        width: 160px;
+        height: 10px;
+    }
+
+    .line-value .bar.progress {
+        width: 150px;
+        height: 6px;
+        border-radius: var(--radius-xs);
+    }
+
+    /* Tiles, as the boxes of a paper sheet: the modifier big, the score in a little tab below. */
+    .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+        gap: 8px;
+    }
+
+    .rail .tiles {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .tile {
+        position: relative;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        justify-items: center;
+        align-items: center;
+        gap: 2px;
+        min-height: 88px;
+        padding: 8px 4px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+    }
+
+    .tile .label {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .tile .big {
+        /* The game's face of the big numbers, when it gives one (D-528). */
+        font-family: var(--number-font, inherit);
+        font-size: 1.75rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+    }
+
+    .tile .small {
+        min-width: 2.2em;
+        min-height: 1.3em;
+        padding: 0 6px;
+        border-radius: var(--radius-xs);
+        background: var(--panel);
+        color: var(--ink);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .tile .small:empty {
+        visibility: hidden;
+    }
+
+    /* The odd tile at the end of the rail takes the whole line, lying down: its label on the left, its number on the right. */
+    .rail .tiles .tile:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto;
+        min-height: 52px;
+        padding: 8px 14px;
+    }
+
+    .rail .tiles .tile:last-child:nth-child(odd) .label {
+        justify-self: start;
+    }
+
+    .rail .tiles .tile:last-child:nth-child(odd) .small {
+        display: none;
+    }
+
+    /* The lines of a card (D-284): a run of them is one block, each label in a tonal cell as wide as the longest, its value on the card; the block's outer
+       corners at its two ends. A list or a long text comes after, under its own small heading. */
+    .rows {
+        display: grid;
+        /* The value keeps its own width, 4.5 m whole; the label and what is beside it, as a speed's note, wrap first. */
+        grid-template-columns: fit-content(62%) minmax(min-content, 1fr) fit-content(40%);
+    }
+
+    .rows > * {
+        grid-column: 1 / -1;
+    }
+
+    .row {
+        position: relative;
+        display: grid;
+        align-items: center;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        text-align: start;
+    }
+
+    .row > .label {
+        min-width: 0;
+    }
+
+    .row .num,
+    .row .changing {
+        font-weight: 650;
+    }
+
+    .row .num {
+        min-width: 2.6ch;
+        text-align: end;
+    }
+
+    /* A value and its unit together: 4.5 m, never broken at a phone's width; what is beside it may wrap. */
+    .row > .changing .num {
+        white-space: nowrap;
+    }
+
+    button.row,
+    .tile {
+        cursor: pointer;
+    }
+
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) {
+        grid-template-columns: subgrid;
+        grid-template-areas: "label value beside";
+        min-height: 38px;
+        border: 1px solid var(--rule);
+        border-top-width: 0;
+    }
+
+    /* The label's cell, its marks in the margin before it, so that the labels line up. */
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .label {
+        grid-area: label;
+        align-self: stretch;
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding-block: 6px;
+        padding-inline: 18px 14px;
+        border-inline-end: 1px solid var(--rule);
+        background: var(--cell);
+        color: var(--ink);
+    }
+
+    .row > .label .marks {
+        position: absolute;
+        inset-inline-start: 6px;
+    }
+
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .changing {
+        grid-area: value;
+        justify-self: end;
+        padding: 0 12px;
+    }
+
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .beside {
+        grid-area: beside;
+        padding-inline-end: 12px;
+    }
+
+    /* What is beside keeps its own direction, as 40 ft (hover): on a page from right to left its room is on the line's end, its left. */
+    [dir="rtl"] .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) > .beside {
+        padding-right: 0;
+        padding-left: 12px;
+    }
+
+    /* A value with nothing beside it takes the whole of the value's side. */
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track):not(:has(> .beside)) > .changing {
+        grid-column: 2 / -1;
+    }
+
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress):not(:is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) + *) {
+        border-top-width: 1px;
+        border-start-start-radius: var(--radius-l);
+        border-start-end-radius: var(--radius-l);
+    }
+
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress):not(:is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) + *) > .label {
+        border-start-start-radius: calc(var(--radius-l) - 1px);
+    }
+
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress):not(:has(+ :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress))) {
+        border-end-start-radius: var(--radius-l);
+        border-end-end-radius: var(--radius-l);
+    }
+
+    .rows > :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress):not(:has(+ :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress))) > .label {
+        border-end-start-radius: calc(var(--radius-l) - 1px);
+    }
+
+    /* A number's progress, as the experience: the label's cell two lines tall, the bar under the value. */
+    .rows > .row-progress {
+        grid-template-areas: "label value beside" "label bar bar";
+    }
+
+    .rows > .row-progress > :is(.changing, .beside) {
+        padding-top: 8px;
+    }
+
+    .rows > .row-progress > .changing {
+        justify-self: start;
+    }
+
+    .row-progress .bar.progress {
+        grid-area: bar;
+        width: auto;
+        height: 6px;
+        margin: 0 12px 10px;
+        border-radius: var(--radius-xs);
+    }
+
+    .row-bar .bar {
+        width: 90px;
+    }
+
+    /* How many a list of bonds holds of the most it may, after its name: 2/3, in the danger's colour past the most. */
+    /* Its room on both sides: a number keeps its own direction, so its start is not the label's on a page from right to left. */
+    .row-most {
+        margin: 0 8px;
+        color: var(--ink);
+        letter-spacing: 0;
+    }
+
+    .row-most.over {
+        color: var(--low);
+    }
+
+    /* A load past one of the system's stages: the stage's word in the warning's colour before the number, which takes it too. */
+    .load-stage {
+        display: inline-block;
+        padding: 1px 8px;
+        border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--rule));
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--warn) 10%, var(--panel));
+        color: var(--warn);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    /* The stage and the number side by side, the stage above it where the line is narrow. */
+    .row.staged > .changing {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 4px 8px;
+        padding-block: 6px;
+    }
+
+    .row.staged .num {
+        color: var(--warn);
+    }
+
+    .row-list,
+    .row-text {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 6px;
+        margin-top: 12px;
+        padding: 0 2px;
+    }
+
+    .rows > :is(.row-list, .row-text):first-child {
+        margin-top: 0;
+    }
+
+    :is(.row-list, .row-text) > .label,
+    .always-from {
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 650;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+    }
+
+    .row-text .text {
+        font-size: inherit;
+        font-weight: 400;
+        line-height: 1.45;
+    }
+
+    .row-bar > .changing,
+    .row-track > .changing {
+        min-width: 0;
+    }
+
+    .marks {
+        color: var(--accent);
+        font-size: 0.55rem;
+    }
+
+    .beside {
+        min-width: 2.6ch;
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-align: end;
+    }
+
+    .text {
+        white-space: pre-wrap;
+    }
+
+    /* Pips: one for each use, full while it is there. */
+    .pips {
+        display: inline-flex;
+        gap: 3px;
+        vertical-align: middle;
+    }
+
+    .pip {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        border: 1.5px solid var(--accent);
+    }
+
+    .pip.on {
+        background: var(--accent);
+    }
+
+    /* A count of a widget (D-507): good ones circles in the allies' green, bad ones squares in the red of what goes against, by shape as well as colour, as
+       the marks of the dying; a progress as tall steps. After those lit: held ones half full, a failed one crossed, those this roll may light dashed. */
+    .pips.good {
+        --mark: var(--ally);
+    }
+
+    .pips.bad {
+        --mark: var(--low);
+    }
+
+    .pips:is(.good, .bad, .steps) .pip {
+        position: relative;
+        border-color: var(--mark, var(--accent));
+    }
+
+    .pips:is(.good, .bad, .steps) .pip.on {
+        background: var(--mark, var(--accent));
+    }
+
+    .pips.bad .pip {
+        border-radius: 18%;
+    }
+
+    .pips.steps {
+        align-items: flex-end;
+        gap: 4px;
+    }
+
+    .pips.steps .pip {
+        width: 10px;
+        height: 22px;
+        border-radius: 3px;
+    }
+
+    .pip.held {
+        background: color-mix(in srgb, var(--mark, var(--accent)) 35%, var(--float));
+    }
+
+    .pip.marked {
+        position: relative;
+        border-color: var(--low);
+        background: color-mix(in srgb, var(--low) 12%, var(--float));
+    }
+
+    .pip.marked::before,
+    .pip.marked::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 80%;
+        max-width: 14px;
+        height: 2px;
+        border-radius: 2px;
+        background: var(--low);
+        transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    .pip.marked::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+    }
+
+    .pip.coming {
+        border-style: dashed;
+        background: color-mix(in srgb, var(--mark, var(--accent)) 10%, transparent);
+    }
+
+    /* The count of steps, under them in a question's card; beside the page its marks say it. */
+    .track-count {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .widget-track > .track-count {
+        display: none;
+    }
+
+    /* Bars and tracks: the track's edge stands out of the page enough to see (WCAG 1.4.11). */
+    .bar-line {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .bar,
+    .track {
+        position: relative;
+        display: inline-block;
+        width: 120px;
+        height: 8px;
+        border-radius: var(--radius-xs);
+        background: color-mix(in srgb, var(--ink) 14%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 45%, transparent);
+        overflow: hidden;
+    }
+
+    .bar .fill {
+        position: absolute;
+        inset-block: 0;
+        inset-inline: 0 auto;
+        width: calc(var(--fill) * 100%);
+        background: var(--ally);
+    }
+
+    .bar.low .fill {
+        background: repeating-linear-gradient(135deg, var(--low) 0 4px, color-mix(in srgb, var(--low) 60%, transparent) 4px 7px);
+    }
+
+    .bar.progress .fill {
+        background: var(--accent);
+    }
+
+    .progress-line {
+        display: grid;
+        gap: 5px;
+    }
+
+    .progress-first {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .progress-next {
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .track .fill {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        inset-inline-start: calc(var(--from) * 100%);
+        width: calc((var(--to) - var(--from)) * 100%);
+        background: var(--accent);
+    }
+
+    .track .zero {
+        position: absolute;
+        top: -2px;
+        bottom: -2px;
+        inset-inline-start: calc(var(--zero) * 100%);
+        width: 2px;
+        background: var(--ink);
+    }
+
+    .limit {
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    /* The die inside a number the system rolls (D-280): quiet until the number is pointed at, as a click throws it. */
+    .roll-mark {
+        display: inline-grid;
+        place-items: center;
+        margin-inline-end: 8px;
+        color: var(--muted);
+        opacity: 0.7;
+        transition: opacity var(--quick) linear, color var(--quick) linear;
+    }
+
+    .roll-mark svg.die {
+        width: 18px;
+        height: 18px;
+    }
+
+    .tile .roll-mark {
+        position: absolute;
+        top: 6px;
+        inset-inline-end: 6px;
+        margin: 0;
+    }
+
+    .tile .roll-mark svg.die {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* A roll the sheet makes better or worse: an arrow beside its die, up in the party's colour, down in the danger's, both muted when they cancel out; its
+       tooltip says why. Never the colour alone: the arrow's way says it. */
+    .roll-mark:is(.better, .worse, .even) {
+        display: inline-flex;
+        align-items: center;
+        gap: 1px;
+        opacity: 1;
+    }
+
+    .roll-mark svg.icon {
+        width: 13px;
+        height: 13px;
+        stroke-width: 2.6;
+    }
+
+    .roll-mark.better svg.icon {
+        color: var(--ally);
+    }
+
+    .roll-mark.worse svg.icon {
+        color: var(--low);
+    }
+
+    .roll-mark.even svg.icon {
+        color: var(--muted);
+    }
+
+    .roll-mark:is(.better, .worse, .even) svg.die {
+        opacity: 0.7;
+    }
+
+    :is(button.row, button.tile):is(:hover, :focus-visible) .roll-mark {
+        color: var(--accent);
+        opacity: 1;
+    }
+
+    /* A value that just changed: a short colour on the number. */
+    .changing {
+        display: inline-flex;
+        align-items: center;
+        min-width: 0;
+        border-radius: var(--radius-xs);
+    }
+
+    @keyframes changed {
+        from {
+            background: color-mix(in srgb, var(--gold) 45%, transparent);
+        }
+
+        to {
+            background: transparent;
+        }
+    }
+
+    /* What moves of the cards, the bars and the table's column; a value changed flashes. */
+    @media (prefers-reduced-motion: no-preference) {
+        .chevron {
+            transition: rotate var(--short) var(--ease);
+        }
+
+        .bar .fill {
+            transition: width var(--short) var(--ease);
+        }
+
+        .track .fill {
+            transition: left var(--short) var(--ease), width var(--short) var(--ease);
+        }
+
+        .changed {
+            animation: changed var(--linger) var(--ease-out);
+        }
+    }
+
+    @media (prefers-reduced-motion: no-preference) and (min-width: 900px) {
+        .play-table-stick {
+            transition: top var(--short) var(--ease);
+        }
+    }
+
+    /* What leaves runs its leaving at once: it reaches its end, and the page goes on from there. */
+    @media (prefers-reduced-motion: reduce) {
+        .asked.leaving {
+            animation-duration: 0.01s;
+        }
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        .line-value {
+            min-width: 0;
+            height: auto;
+            padding: 2px 0;
+            border: 0;
+            background: none;
+            justify-items: start;
+            text-align: start;
+        }
+    }
+
+    /* A finger needs room (D-282): the buttons at least so big; the sheet's lines a little less, or eighteen skills would grow a third. */
+    @media (pointer: coarse) {
+        button.row {
+            min-height: 36px;
+        }
+    }
+}

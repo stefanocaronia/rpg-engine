@@ -1,6 +1,6 @@
 // What a game system works out, through the commands (MECCANICHE, FOR-3–FOR-9): the sheet of a Warden of the fake system, a creature's, and the laws of
-// the worked-out sheet against the fake's own counting; the momentum of the test system based on Ironsworn. The sheet of a cleric of the 5e, counted as the
-// SRD counts it, is in the 5e's repository.
+// the worked-out sheet against the fake's own counting. The sheet of a cleric of the 5e, counted as the SRD counts it,
+// is in the 5e's repository; Ironsworn's momentum in Ironsworn's.
 import fc from "fast-check";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -131,6 +131,15 @@ describe("the limits of counters (FOR-6)", () => {
         expect(readLogFile(folder).at(-2)?.data).toMatchObject({ page: "Ettore", field: "grit", before: "17/16", after: "16/16" });
     });
 
+    it("goes down to a minimum below 0, and up to a maximum that a list lowers: nerve, -6 to 10 less the scars", async () => {
+        await ok("write", "Kara", "--type", "character", "--set", "role=pc", "--set", "nerve=2/10", "--set", "scars=[burned, lamed]");
+        expect(pageText("Kara")).toContain("nerve: 2/8");
+        expect(await ok("change", "Kara", "nerve", "--by=-10")).toBe("Kara: nerve 2/8 → -6/8: at min, 2 beyond.");
+        expect(await ok("change", "Kara", "nerve", "--by=20")).toBe("Kara: nerve -6/8 → 8/8: at max, 6 beyond.");
+        await ok("write", "Kara", "--remove", "scars=lamed");
+        expect(pageText("Kara")).toContain("nerve: 8/9");
+    });
+
     it("works out the maximum of a counter the page writes without one", async () => {
         await ok("write", "Mira", "--type", "character", "--set", "role=companion", "--set", "vocations=[[Scout]] 1", "--set", "might=5", "--set", "grit=10");
         expect(pageText("Mira")).toContain("grit: 10/10");
@@ -258,22 +267,5 @@ describe("a system whose formulas do not read (FOR-9)", () => {
         removeFolder(systems);
         expect(output).toContain("The game system broken cannot be read, because");
         expect(output).toContain('is not valid: computed.str-mod: "floor((str - 10) /" is not a formula');
-    });
-});
-
-describe("Ironsworn: a counter with a minimum and a maximum that debilities lower (FOR-6)", () => {
-    it("goes down to -6 and up to 10 less the debilities", async () => {
-        useSystem(folder, "ironsworn");
-        await ok("write", "Kara", "--type", "character", "--set", "role=pc", "--set", "momentum=2/10", "--set", "debilities=[wounded, shaken]");
-        expect(pageText("Kara")).toContain("momentum: 2/8");
-        expect(await ok("change", "Kara", "momentum", "--by=-10")).toBe("Kara: momentum 2/8 → -6/8: at min, 2 beyond.");
-        expect(await ok("change", "Kara", "momentum", "--by=20")).toBe("Kara: momentum -6/8 → 8/8: at max, 6 beyond.");
-        await ok("write", "Kara", "--remove", "debilities=shaken");
-        expect(pageText("Kara")).toContain("momentum: 8/9");
-    });
-
-    it("works out a foe's progress in boxes and the ticks its rank marks", async () => {
-        useSystem(folder, "ironsworn");
-        expect(await workedLines("Marsh Stalker")).toEqual(["progress-score 0: progress 0", "progress-step 8: ranks dangerous: 8"]);
     });
 });

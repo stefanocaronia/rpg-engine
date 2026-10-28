@@ -7,12 +7,13 @@ import { type ActReply, ActSheet } from "./act-sheet.tsx";
 import { ActStrip } from "./act-strip.tsx";
 import { type ActStart, type SaidAct, saidStates, setSystemVerbs, type SheetActions } from "./acts.ts";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
-import { answer, closeCard, readActs, readAsked, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
+import { answer, closeCard, readActs, readAsked, readGameTheme, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
 import { AskCard } from "./ask-card.tsx";
 import { AskedDice } from "./asked-dice.tsx";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
 import type { ActsShown, Asked, AskedNow, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownModule, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
+import { flies } from "./dice/pool.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
 import { PageFoot } from "./footer.tsx";
@@ -20,12 +21,12 @@ import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Help } from "./help.tsx";
 import { Icon } from "./icons.tsx";
 import { FollowedQuests, JournalView, QuestEndings } from "./journal.tsx";
-import { checkOf } from "./labels.ts";
+import { checkOf, systemNameLabel } from "./labels.ts";
 import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx";
 import { inCard, nextPackCard, type PackCard } from "./pack-card.ts";
 import { PackagePage } from "./package-page.tsx";
 import { PackagesPage } from "./packages.tsx";
-import { codeOfModule, ModulesContext, ownKey, preloadModules, useNavPages } from "./page-code.tsx";
+import { codeOfModule, ModulesContext, ownKey, preloadModules, systemPageStyle, useNavPages } from "./page-code.tsx";
 import { About } from "./pages.tsx";
 import { PartyStrip, type Tokened } from "./party.tsx";
 import { PeopleContext } from "./people.ts";
@@ -37,6 +38,7 @@ import { SceneView } from "./scene.tsx";
 import { SettingsView } from "./settings.tsx";
 import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
+import { gameStyleChanged, takeSystemStyle } from "./system-style.ts";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
 import { browserLanguage, pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
@@ -150,6 +152,14 @@ function App()
     // were when a reading of them fails, and an answer older than one shown left out.
     const [widgets, setWidgets] = useState<ShownWidget[]>([]);
     const [modules, setModules] = useState<ShownModule[]>([]);
+    // The game's style turned on or off, or changed: every icon it draws anew is drawn again (D-528).
+    const [, setStyled] = useState(0);
+
+    useEffect(() => {
+        const follow = (): void => setStyled((count) => count + 1);
+        window.addEventListener(gameStyleChanged, follow);
+        return () => window.removeEventListener(gameStyleChanged, follow);
+    }, []);
     const widgetReading = useRef({ asked: 0, shown: 0 });
     const moduleReading = useRef({ asked: 0, shown: 0 });
     // The card of a package's question as last read, even while the dice that changed it fly; the attempts the player let go, with the question then (D-507).
@@ -182,7 +192,13 @@ function App()
         }, () => undefined);
         // The page modules of the system and the extensions, for their cards in the pages and their own pages (D-511).
         const modulesAsked = ++moduleReading.current.asked;
-        void readModules().then((read) => {
+        const modulesNow = readModules();
+        // The game's style: the theme of the system, and the free style sheet of its page module (D-528).
+        void Promise.all([readGameTheme(), modulesNow.then((read) => systemPageStyle(read.find((one) => one.kind === "system")), () => undefined)]).then(
+            ([theme, free]) => takeSystemStyle(theme, free),
+            () => undefined,
+        );
+        void modulesNow.then((read) => {
             if (modulesAsked <= moduleReading.current.shown) {
                 return;
             }
@@ -240,13 +256,15 @@ function App()
                 // New are only the rolls after the newest one read before: older ones read at a Load more are not (D-302).
                 const newestSeen = rolls.findLastIndex((roll) => seen.current?.has(roll.id) === true);
                 const added = seen.current === undefined ? [] : rolls.slice(newestSeen + 1);
-                const asking = added.filter((roll) => roll.by === "player" && roll.check !== undefined).at(-1);
+                const asking = added.filter((roll) => roll.by === "player" && roll.check !== undefined && roll.toss === undefined).at(-1);
+                // A roll shown that the master throws in the tray, as a check's dice, a toss unless the master says not (VIEW-13).
+                const throwing = asking ?? added.filter(flies).at(-1);
                 seen.current = new Set(rolls.map((roll) => roll.id));
                 // A roll stays new through the readings that come while its dice roll, until it shows (D-303); the list draws it new once.
                 const addedIds = new Set(added.map((roll) => roll.id));
                 setFresh((before) => new Set(rolls.map((roll) => roll.id).filter((id) => before.has(id) || addedIds.has(id))));
                 // The robot reacts to a new roll as it comes in, to a check of the player's as its dice go; the master's own moment comes after it (D-305).
-                const coming = added.filter((roll) => roll.id !== asking?.id).at(-1);
+                const coming = added.filter((roll) => roll.id !== throwing?.id).at(-1);
 
                 if (coming !== undefined) {
                     react(coming, party);
@@ -259,9 +277,9 @@ function App()
                     setMoment(told);
                 }
 
-                if (asking !== undefined) {
-                    setThrown(asking);
-                    setHeld(asking.id);
+                if (throwing !== undefined) {
+                    setThrown(throwing);
+                    setHeld(throwing.id);
                 }
 
                 // A roll from a package's card, as a death save, holds back what it changes until its dice land, its marks too (D-461, D-507); so does a die of a
@@ -756,7 +774,7 @@ function App()
                                     <Top
                                         campaign={shown.campaign}
                                         product={productName}
-                                        system={shown.system?.name}
+                                        system={shown.system === undefined ? undefined : systemNameLabel(shown.system.name)}
                                         now={shown.now}
                                         calendar={shown.calendar}
                                         path={shown.place === undefined ? undefined : [...shown.place.within, shown.place.name]}
@@ -930,6 +948,7 @@ function App()
                                     requested={thrown}
                                     sheetThrow={sheetThrow}
                                     party={shown.party}
+                                    {...(shown.campaign === undefined ? {} : { campaign: shown.campaign })}
                                     onLanded={land}
                                     onShown={(id) => {
                                         setHeld((now) => (now === id ? undefined : now));

@@ -1,0 +1,128 @@
+/* Buttons: buttons of words and of icons, and the state layer of whatever is clicked. */
+@layer parts {
+    /* A button of words: gold for the one main action of a view, quiet for a secondary one, danger for one that loses something. */
+    .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 38px;
+        padding: 0 14px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .button svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .button.gold {
+        border-color: transparent;
+        background: var(--gold);
+        color: var(--on-gold);
+    }
+
+    .button.quiet {
+        border-color: transparent;
+        background: transparent;
+        color: var(--accent);
+    }
+
+    .button.danger {
+        border-color: var(--low);
+        color: var(--low);
+    }
+
+    .button.danger:not(:disabled):hover {
+        background: color-mix(in srgb, var(--low) 10%, var(--float));
+    }
+
+    .button:disabled,
+    .button[aria-disabled="true"] {
+        border-color: var(--rule);
+        background: var(--float);
+        color: var(--muted);
+        cursor: default;
+    }
+
+    .button.quiet:disabled,
+    .button.quiet[aria-disabled="true"] {
+        border-color: transparent;
+        background: transparent;
+    }
+
+    @media (pointer: coarse) {
+        .button {
+            min-height: var(--target);
+        }
+    }
+
+    /* One state layer for whatever is clicked (D-282): the content's colour, a little, over it. */
+    :where(button, summary, a[href]) {
+        position: relative;
+    }
+
+    :where(button, summary, a[href])::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: currentColor;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--quick) linear;
+    }
+
+    /* Only a pointer that hovers: after a tap the layer does not stay lit. */
+    @media (hover: hover) {
+        :where(button, summary, a[href]):not(:disabled):hover::after {
+            opacity: var(--state-hover);
+        }
+    }
+
+    :where(button, summary, a[href]):focus-visible::after {
+        opacity: var(--state-focus);
+    }
+
+    :where(button, summary, a[href]):not(:disabled):active::after {
+        opacity: var(--state-press);
+        transition-duration: 0s;
+    }
+
+    :is(.asked-buttons button, .dice-button) {
+        transition: scale var(--quick) var(--ease);
+    }
+
+    :is(.asked-buttons button, .dice-button):not(:disabled):active {
+        scale: 0.96;
+    }
+
+    .icon-button {
+        display: inline-grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+    }
+
+    .icon-button.tonal {
+        width: 48px;
+        height: 48px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        color: var(--ink);
+        box-shadow: var(--overlay);
+    }
+}

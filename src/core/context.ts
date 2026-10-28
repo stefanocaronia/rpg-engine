@@ -251,6 +251,8 @@ export interface Rows
     card?: CardAsked;
     /** The roll is forced (D-507): no button turns it down, and no words of the player's take its place. */
     forced?: true;
+    /** The roll is a toss of coins (ASK-15): its button shows them, and the tray's coins answer it. */
+    toss?: true;
 }
 
 /**

@@ -50,6 +50,8 @@ describe("architecture", () => {
             // The player's yes to another's code, for its files as installed (D-478, D-510, D-511).
             "core/consents.ts",
             "systems/words.ts",
+            // A game system's theme of the dashboard, read in its package's folder (D-528).
+            "themes/theme.ts",
             "campaign/create-campaign.ts",
             "pictures/claude.ts",
             "pictures/codex.ts",
@@ -61,6 +63,8 @@ describe("architecture", () => {
             "library/folders.ts",
             // The test kit for extensions makes its campaigns in temporary folders, its extensions linked into them (D-506).
             "testing.ts",
+            // And its checks of a game system's own folder, read as it is, never a campaign (D-514).
+            "system-checks.ts",
         ];
         const sources = (readdirSync(sourceFolder, { recursive: true }) as string[]).map((path) => path.replaceAll("\\", "/")).filter((path) => path.endsWith(".ts"));
         const touching = sources.filter((path) => /from "node:fs(\/promises)?"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));

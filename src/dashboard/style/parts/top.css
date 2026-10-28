@@ -1,0 +1,908 @@
+/* The top: the master, the campaign's name, the sections and the menu, the chips, the theme's corner, the foot, the robot and its moods. */
+@layer parts {
+    /* The top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below, and the time and whether the game is live
+       as chips, clear of the theme's corner; under the name the sections and the pages, the menu at the row's end (D-309); under them all, where the party is. */
+    /* The title first, never wrapped; the chips in what is left of its line (D-355). */
+    /* The top's room in the page, as tall as the top whole (top.tsx), with the two marks that tell the top to draw itself together and to open again. */
+    /* How tall the top is drawn together, which what stays on top under it, the master's question and the rolls, keeps clear of. */
+    :root {
+        --top-space: 87px;
+    }
+
+    @media (max-width: 600px) {
+        :root {
+            --top-space: 52px;
+        }
+    }
+
+    /* A page with no top, as the setup's, keeps nothing clear. */
+    .page:not(:has(.top)) {
+        --top-space: 0px;
+    }
+
+    .top-room {
+        position: relative;
+        margin-block: calc(-1 * var(--gap)) 18px;
+        margin-inline: calc(-1 * var(--gap));
+    }
+
+    .top-mark {
+        position: absolute;
+        inset-inline-start: 0;
+        width: 1px;
+        height: 1px;
+    }
+
+    .top-mark.near {
+        top: 8px;
+    }
+
+    .top-mark.far {
+        top: 40px;
+    }
+
+    .top {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 21;
+        display: grid;
+        grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
+        grid-template-areas: "robot titles chips" "robot nav nav" "place place place";
+        align-items: center;
+        column-gap: 20px;
+        row-gap: 4px;
+        /* To the window's edges, over the page that scrolls under it, out of its flow. */
+        padding-block: var(--gap) 0;
+        padding-inline: var(--gap);
+        /* The game's texture of the bar under the page's veil, and its line under it (D-528). */
+        background:
+            linear-gradient(var(--texture-veil), var(--texture-veil)),
+            var(--bar-texture) 0 0 / var(--bar-texture-size) var(--bar-texture-repeat),
+            var(--paper);
+        box-shadow: 0 2px 0 var(--bar-edge);
+    }
+
+    /* Down the page, the same top drawn together (D-295): the master and the name smaller, the product and the place folded away, the sections and the chips
+       still there, a line under it. */
+    .top.compact {
+        padding-block: 8px 0;
+        box-shadow: 0 1px 0 var(--rule), 0 2px 0 var(--bar-edge), var(--raise);
+    }
+
+    .top .master {
+        transition-property: width, height;
+    }
+
+    .top .titles h1 {
+        transition-property: font-size;
+    }
+
+    .top .product {
+        max-height: 2em;
+        transition-property: max-height, margin, opacity;
+    }
+
+    .top .top-place {
+        max-height: 3em;
+        transition-property: max-height, padding, margin, opacity, border-color;
+    }
+
+    .top :is(.status-chip, .sections a) {
+        transition-property: height;
+    }
+
+    .top.compact .master {
+        width: 64px;
+        height: 64px;
+    }
+
+    .top.compact .titles h1 {
+        font-size: 1.6rem;
+    }
+
+    .top.compact :is(.product, .top-place) {
+        max-height: 0;
+        margin-block: 0;
+        padding-block: 0;
+        overflow: hidden;
+        border-color: transparent;
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .top.compact .status-chip {
+        height: 30px;
+    }
+
+    @media (min-width: 601px) {
+        .top.compact .sections a {
+            height: 36px;
+        }
+    }
+
+    /* The top draws itself together as one: each part with the properties above, in the same time. */
+    @media (prefers-reduced-motion: no-preference) {
+        .top {
+            transition: padding var(--short) var(--ease), box-shadow var(--short) var(--ease);
+        }
+
+        .top :is(.master, .titles h1, .product, .top-place, .status-chip, .sections a) {
+            transition-duration: var(--short);
+            transition-timing-function: var(--ease);
+        }
+    }
+
+    .top > .master-home {
+        grid-area: robot;
+    }
+
+    /* The robot leads back to the party: no layer over it, it answers with a face. */
+    .master-home {
+        display: block;
+        border-radius: 50%;
+    }
+
+    .master-home::after,
+    .title-home::after {
+        display: none;
+    }
+
+    .title-home {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .top > .titles {
+        grid-area: titles;
+        min-width: 0;
+    }
+
+    /* The chips to the right edge, in line with what the master asks and the cards under them. */
+    .top > .status-chips {
+        grid-area: chips;
+        margin: 0;
+    }
+
+    .top > .nav-row {
+        grid-area: nav;
+        margin-inline-start: -14px;
+    }
+
+    /* The row of the sections (D-333): the sections, then the pages at its end, then the menu with what does not fit; what does not fit stays in the row unseen,
+       for the page to measure it. */
+    .nav-row {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .nav-row > .sections {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .sections a.pages-start {
+        margin-inline-start: auto;
+    }
+
+    /* The pages at the row's end, icons alone (D-409): a square as tall as the tabs. */
+    .sections a.page-link {
+        gap: 0;
+        padding: 0 10px;
+    }
+
+    .sections :is(a, .packages-menu).away {
+        position: absolute;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    /* A package's page as a tab (D-512): its title as long as a section's at most, cut short beyond. */
+    .sections a.own-tab .section-name {
+        max-width: 12em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* The packages' icon as the menu of their other pages (D-512): a page's icon that opens, lit while one of them or Packages is shown. */
+    .sections .packages-menu {
+        position: relative;
+        display: inline-flex;
+    }
+
+    .packages-menu-button {
+        display: inline-flex;
+        align-items: center;
+        height: 40px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: var(--radius-m) var(--radius-m) 0 0;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .packages-menu-button.shown {
+        background: linear-gradient(var(--accent), var(--accent)) no-repeat center bottom / 100% 3px;
+        color: var(--accent);
+    }
+
+    .packages-menu-button svg.icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .packages-menu .menu-pop {
+        min-width: 220px;
+    }
+
+    /* Packages, where they are added and taken away, under their pages; in the menu of a phone their pages under Packages, set in. */
+    .menu-pop .menu-manage {
+        margin-top: 4px;
+        border-top: 1px solid var(--rule);
+        border-radius: 0 0 var(--radius-m) var(--radius-m);
+    }
+
+    .menu-sub {
+        display: grid;
+        padding-inline-start: 20px;
+    }
+
+    .menu-pop :is(.menu-sub, .packages-menu .menu-pop) a {
+        height: auto;
+        min-height: 40px;
+        padding-block: 6px;
+    }
+
+    /* Where the party is (D-333): from the largest place to its own, which stays whole while the others give way; it leads to Scene. */
+    .top-place {
+        grid-area: place;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        margin-block: -4px 0;
+        margin-inline: -16px;
+        padding-block: 10px 0;
+        padding-inline: 16px;
+        border-top: 1px solid var(--rule);
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-decoration: none;
+    }
+
+    .top-place svg.icon {
+        flex: none;
+        width: 16px;
+        height: 16px;
+        color: var(--accent);
+    }
+
+    .top-place ol {
+        display: flex;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .top-place li {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .top-place li + li::before {
+        content: "›" / "";
+        padding-block: 0;
+        padding-inline: 4px 6px;
+        color: var(--muted);
+        font-weight: 400;
+    }
+
+    .top-place li:last-child {
+        flex: none;
+        color: var(--ink);
+        font-weight: 650;
+    }
+
+    .top-place a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .top-place a:hover {
+        text-decoration: underline;
+    }
+
+    .top-place a::after {
+        display: none;
+    }
+
+    /* The sections (D-309): links with their pictures, the one shown in the accent with a bar under it, drawn as a background since ::after is the state layer. */
+    .sections {
+        display: flex;
+        gap: 2px;
+    }
+
+    .sections a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 14px;
+        border-radius: var(--radius-m) var(--radius-m) 0 0;
+        color: var(--muted);
+        font-size: inherit;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    /* The section shown: in the accent, its tab lit as under a pointer, with a bar as wide as the tab. */
+    .sections a[aria-current="page"] {
+        background: linear-gradient(var(--accent), var(--accent)) no-repeat center bottom / 100% 3px;
+        color: var(--accent);
+    }
+
+    .sections a[aria-current="page"]::after {
+        opacity: var(--state-hover);
+    }
+
+    .sections svg.icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .section-mark {
+        display: inline-grid;
+        place-items: center;
+    }
+
+    /* The menu (D-309): the saves, the settings, About; the theme only on a phone, which has no switch of its own. */
+    /* The menu always at the row's end, whatever the sections leave (D-355). */
+    .menu {
+        position: relative;
+        margin-inline-start: auto;
+    }
+
+    .icon-button.tonal.menu-button {
+        width: 34px;
+        height: 34px;
+        border-radius: var(--radius-m);
+        box-shadow: var(--lift);
+    }
+
+    .menu-button svg.icon,
+    .menu-pop svg.icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .menu-pop {
+        position: absolute;
+        top: calc(100% + 6px);
+        inset-inline-end: 0;
+        z-index: 30;
+        display: grid;
+        min-width: 200px;
+        padding: 6px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        box-shadow: var(--overlay);
+    }
+
+    .menu-pop :is(a, button) {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 40px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        text-align: start;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .menu-pop a[aria-current="page"] {
+        color: var(--accent);
+    }
+
+    .menu-pop svg.icon {
+        color: var(--muted);
+    }
+
+    .menu-pop .menu-theme {
+        display: none;
+    }
+
+    .titles h1 {
+        overflow: hidden;
+        font-size: 2.4rem;
+        line-height: 1.05;
+        letter-spacing: var(--title-spacing, 0.04em);
+        font-variant: small-caps;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .product {
+        margin: 4px 0 0;
+        unicode-bidi: isolate;
+        white-space: nowrap;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-variant: small-caps;
+        letter-spacing: 0.12em;
+        text-transform: lowercase;
+    }
+
+    /* The chips on one line, from the right: one that does not fit goes to a second line, which is never seen, the time before live (D-355); the page marks those
+       wrapped, so that the row need not clip the tooltips under its chips (D-502). */
+    .status-chips {
+        display: flex;
+        flex-direction: row-reverse;
+        flex-wrap: wrap;
+        align-content: flex-start;
+        gap: 8px;
+        min-width: 0;
+        height: 34px;
+        margin-inline-start: auto;
+    }
+
+    .status-chips > .wrapped {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* A chip that leads somewhere, unseen, is out of the keyboard's way too. */
+    .status-chips > a.wrapped {
+        visibility: hidden;
+    }
+
+    .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        height: 34px;
+        padding-block: 0;
+        padding-inline: 10px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel);
+        box-shadow: var(--lift);
+        color: var(--ink);
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .status-chip svg.icon {
+        width: 16px;
+        height: 16px;
+        color: var(--accent);
+    }
+
+    .status-chip .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--muted);
+    }
+
+    .status-chip.live.on {
+        border-color: color-mix(in srgb, var(--ally) 45%, var(--rule));
+        color: var(--ally);
+    }
+
+    .status-chip.live.on .dot {
+        background: var(--ally);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--ally) 25%, transparent);
+    }
+
+    /* The switch of the theme (D-300, D-310): the window's top right corner, folded like a page's, with the theme it goes to; on a phone, in the menu. */
+    .theme-corner {
+        position: fixed;
+        top: 0;
+        inset-inline-end: 0;
+        z-index: 22;
+        width: 52px;
+        height: 52px;
+        padding: 0;
+        border: 0;
+        background: linear-gradient(to bottom left, color-mix(in srgb, var(--accent) 40%, var(--panel)) 50%, transparent 50%);
+        color: var(--accent);
+        filter: drop-shadow(-1px 1px 1px var(--shade));
+        cursor: pointer;
+    }
+
+    .theme-corner::after {
+        clip-path: polygon(0 0, 100% 0, 100% 100%);
+    }
+
+    /* Down the page the top drawn together keeps the chips to its edge: the corner waits at the top of the page. */
+    .theme-corner {
+        transition: opacity var(--short) var(--ease), visibility var(--short);
+    }
+
+    .top.compact ~ .theme-corner {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .theme-corner svg.icon {
+        position: absolute;
+        top: 6px;
+        inset-inline-end: 6px;
+        width: 18px;
+        height: 18px;
+        color: var(--ink);
+    }
+
+    /* The game system the campaign plays, beside the product's name; what it is and its source's credit at the foot of the page (D-284). */
+    .system-chip {
+        display: inline-block;
+        margin-inline-start: 0.6em;
+        padding: 1px 6px;
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+        border-radius: var(--radius-xs);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 700;
+        font-variant: normal;
+        letter-spacing: 0.04em;
+        line-height: 1.3;
+        text-transform: none;
+        vertical-align: 1px;
+    }
+
+    /* The page's foot, under a line across the whole page as the head's: who made it and where it lives, support, and the system's credits. */
+    .page-foot {
+        display: grid;
+        gap: 6px;
+        margin-block: 32px 0;
+        margin-inline: -16px;
+        padding-block: 14px 0;
+        padding-inline: 16px;
+        border-top: 1px solid var(--rule);
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.45;
+        text-align: center;
+    }
+
+    .page-foot p {
+        margin: 0;
+    }
+
+    .foot-own {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 6px 14px;
+    }
+
+    .foot-own a {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .foot-own a:hover,
+    .foot-own a:focus-visible {
+        color: var(--ink);
+    }
+
+    .foot-own svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .foot-support svg.icon {
+        color: var(--low);
+    }
+
+    .foot-system details {
+        display: inline;
+        margin-inline-start: 12px;
+    }
+
+    .foot-system summary {
+        display: inline;
+        cursor: pointer;
+        list-style: none;
+        text-decoration: underline dotted;
+        text-underline-offset: 3px;
+    }
+
+    .foot-system summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .foot-system details p {
+        max-width: 90ch;
+        margin: 8px auto 0;
+    }
+
+    /* The master: the robot, which blinks and breathes; one mood at a time (D-274). */
+    .master {
+        display: block;
+        flex: 0 0 auto;
+        width: 112px;
+        height: 112px;
+    }
+
+    .master svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    .master :is(.robot-head, .robot-eyes) {
+        transform-box: view-box;
+    }
+
+    .master .robot-head {
+        transform-origin: 256px 275px;
+    }
+
+    .master .robot-eyes {
+        transform-origin: 256px 208px;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .master .robot-head {
+            transition: rotate var(--short) var(--ease-bounce);
+        }
+
+        .master .robot-eyes {
+            transition: scale var(--quick);
+        }
+    }
+
+    .master.blink .robot-can-blink {
+        scale: 1 0.1;
+    }
+
+    .master[data-mood="curious"] .robot-head {
+        rotate: -7deg;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .master .robot-head {
+            animation: breathe 4.8s ease-in-out infinite;
+        }
+    }
+
+    @keyframes breathe {
+        50% {
+            translate: 0 6px;
+        }
+    }
+
+    /* The corner of the theme folds from the other side, and what opens a folded part points the way it reads. */
+    [dir="rtl"] .theme-corner {
+        background: linear-gradient(to bottom right, color-mix(in srgb, var(--accent) 40%, var(--panel)) 50%, transparent 50%);
+        filter: drop-shadow(1px 1px 1px var(--shade));
+    }
+
+    [dir="rtl"] .theme-corner::after {
+        clip-path: polygon(0 0, 100% 0, 0 100%);
+    }
+
+    [dir="rtl"] svg.icon.turns {
+        scale: -1 1;
+    }
+
+    /* A narrow screen, as the browser beside the chat or a phone: one column, the band stacked, the strip small. */
+    @media (max-width: 600px) {
+        .master {
+            width: 64px;
+            height: 64px;
+        }
+
+        .titles h1 {
+            font-size: 1.6rem;
+            letter-spacing: var(--title-spacing, 0.01em);
+        }
+
+        .top {
+            gap: 12px;
+        }
+
+        .top.compact .master {
+            width: 44px;
+            height: 44px;
+        }
+
+        .top.compact .titles h1 {
+            font-size: 1.2rem;
+        }
+
+        /* A phone keeps only whether the game is live, as its dot; the word stays for a screen reader. */
+        .status-chip:not(.live) {
+            display: none;
+        }
+
+        .top .status-chip.live {
+            justify-content: center;
+            width: 34px;
+            padding: 0;
+            gap: 0;
+            font-size: 0;
+        }
+
+        .top {
+            grid-template-columns: auto minmax(0, 1fr) auto auto;
+            grid-template-areas: "robot titles chips menu";
+        }
+
+        /* On a phone the sections go to the bottom, the pages into the menu, which stands beside whether the game is live; where the party is, Scene says. */
+        .top > .nav-row {
+            display: contents;
+        }
+
+        .top .menu {
+            grid-area: menu;
+        }
+
+        .top > .status-chips {
+            margin-inline-end: 0;
+        }
+
+        .top-place,
+        .top .sections .page-link,
+        .theme-corner {
+            display: none;
+        }
+
+        .menu-pop .menu-theme {
+            display: flex;
+        }
+
+        /* The sections in a bar at the bottom (D-309), each its picture over its name; the dice's button and its tray above it. */
+        .top .main-nav {
+            position: fixed;
+            inset: auto 0 0;
+            z-index: 21;
+            display: grid;
+            grid-auto-columns: 1fr;
+            grid-auto-flow: column;
+            height: 68px;
+            margin: 0;
+            padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+            border-top: 1px solid var(--rule);
+            background: var(--panel);
+            box-shadow: var(--raise-up);
+        }
+
+        .top .main-nav a {
+            flex-direction: column;
+            justify-content: center;
+            gap: 3px;
+            height: auto;
+            padding: 0;
+            border-radius: 0;
+            font-size: 0.72rem;
+        }
+
+        .top .main-nav a[aria-current="page"] {
+            background: none;
+            color: var(--ink);
+        }
+
+        /* A package's tab in the bar as a section, its title cut short to its share of the bar. */
+        .top .main-nav a {
+            min-width: 0;
+        }
+
+        .top .main-nav .section-name {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-inline: 2px;
+        }
+
+        .top .main-nav .section-mark {
+            width: 52px;
+            height: 30px;
+            border-radius: var(--radius-m);
+        }
+
+        .top .main-nav a[aria-current="page"] .section-mark {
+            background: color-mix(in srgb, var(--accent) 22%, transparent);
+            color: var(--accent);
+        }
+    }
+
+    /* Moods (D-305): the robot's faces fade one into the other, the old one going first; a moment's face pops; asleep, a screen on standby, dimmed, eyes shut
+       and low, the antenna's light off. The party's badges, a disc like the robot's screen with the face in lines; their place on a token is with the token's rules. */
+    .master .robot-mood {
+        display: inline;
+        opacity: 0;
+    }
+
+    .master .robot-mood.shown {
+        opacity: 1;
+    }
+
+    .master .robot-mood:not(.shown) {
+        pointer-events: none;
+    }
+
+    .master .robot-antenna circle {
+        transition: fill var(--short) var(--ease);
+    }
+
+    .master.asleep .robot-mood.shown {
+        opacity: 0.55;
+    }
+
+    .master.asleep .robot-antenna circle {
+        fill: #8a8f9c;
+    }
+
+    .master.asleep .robot-can-blink {
+        translate: 0 6px;
+    }
+
+    .master.asleep .robot-head {
+        animation-duration: 8s;
+    }
+
+    .mood-face {
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .mood-face .mood-eyes {
+        stroke-width: 2.6;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .master.moment .robot-mood.shown {
+            transform-box: view-box;
+            transform-origin: 256px 208px;
+            animation: mood-pop var(--medium) var(--ease-bounce);
+        }
+
+        .mood-face {
+            animation: mood-pop var(--medium) var(--ease-bounce);
+        }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .master .robot-mood {
+            transition: opacity var(--short) var(--ease);
+        }
+
+        .master .robot-mood:not(.shown) {
+            transition-duration: var(--quick);
+        }
+    }
+
+    @keyframes mood-pop {
+        from {
+            scale: 0.8;
+        }
+    }
+}

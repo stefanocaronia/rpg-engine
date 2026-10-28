@@ -60,7 +60,11 @@ describe("installed systems", () => {
         const settings = "settings:\n  pace:\n    about: how fast the story runs\n    slow: {means: one scene a day}\n    fast: {means: a scene an hour}\n";
         system(near, "lenta", `title: one of our own\nlanguage: it\n${settings}`);
         expect(installedSystems([near])[0].settings).toEqual([
-            { name: "pace", about: "how fast the story runs", values: [{ value: "slow", means: "one scene a day", without: [] }, { value: "fast", means: "a scene an hour", without: [] }] },
+            {
+                name: "pace",
+                about: "how fast the story runs",
+                values: [{ value: "slow", means: "one scene a day", without: [], engineSettings: {}, asks: [] }, { value: "fast", means: "a scene an hour", without: [], engineSettings: {}, asks: [] }],
+            },
         ]);
         system(near, "lenta", "title: one of our own\nlanguage: it\nsettings:\n  pace:\n    slow: one scene a day\n    fast: {means: a scene an hour}\n");
         expect(() => installedSystems([near])).toThrow("give about as what the setting is to the player");

@@ -29,15 +29,10 @@
   "files": [
     "dist",
     "systems",
-    "!systems/*/test",
-    "!systems/*/build",
-    "!systems/*/src",
-    "!systems/*/tsconfig.json",
-    "!systems/ironsworn",
     "instructions"
   ],
   "scripts": {
-    "build": "node -e \"for (const folder of ['dist', 'systems/5e/dist']) require('node:fs').rmSync(folder, { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$/.test(path) })\" && tsc -p systems/5e",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc -p src/dashboard && node -e \"require('node:fs').cpSync('src/dashboard', 'dist/dashboard', { recursive: true, filter: (path) => !/[.](tsx?|py)$|tsconfig[.]json$|[^a-z-]style$/.test(path) })\" && node src/dashboard/style/join.mjs dist/dashboard/style.css",
     "dev": "tsc --watch",
     "demo": "npm run build && node --experimental-strip-types --no-warnings test/demo/dashboard.ts --ask --port 5760",
     "betasim": "npm run build && node --experimental-strip-types --no-warnings test/betasim/run.ts",
@@ -63,7 +58,6 @@
     "role-playing",
     "solo-rpg",
     "5e",
-    "srd",
     "claude-code",
     "codex"
   ],
@@ -71,7 +65,7 @@
     "name": "Stefano Caronia",
     "url": "https://stefanocaronia.it"
   },
-  "license": "(MIT AND CC-BY-4.0 AND CC-BY-3.0)",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/stefanocaronia/rpg-engine.git"

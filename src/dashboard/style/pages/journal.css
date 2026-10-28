@@ -1,0 +1,1103 @@
+/* Journal: the quests, the notes, the quest tracker and the story. */
+@layer pages {
+    /* The Journal (D-367): the quest log as a video game's, cards with goals, bars, a clock and the time left, the main quests in gold; the story by chapters. */
+    .journal {
+        display: grid;
+        gap: var(--gap);
+        /* Room at the end for the dice button, which stays over the page. */
+        padding-bottom: 72px;
+    }
+
+    .journal-none,
+    .journal-problem {
+        margin: 0;
+        color: var(--muted);
+    }
+
+    .journal-problem {
+        color: var(--low);
+    }
+
+    .quest-log {
+        display: grid;
+        gap: var(--gap);
+    }
+
+    .diaries {
+        display: grid;
+        gap: 8px;
+    }
+
+    /* A line no longer than a book's on a wide screen. */
+    .diary-lines {
+        display: grid;
+        gap: 14px;
+        max-width: 72ch;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .diary-when {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 10px;
+        margin: 0 0 4px;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .diary-when b {
+        color: var(--ink);
+    }
+
+    .diary-lines blockquote {
+        margin: 0;
+        padding-block: 2px;
+        padding-inline-start: 12px;
+        border-inline-start: 3px solid var(--rule);
+        overflow-wrap: anywhere;
+    }
+
+    .quest-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0 0;
+    }
+
+    .quest-group span {
+        padding: 0 7px;
+        border-radius: var(--radius-xs);
+        background: var(--panel-2);
+        color: var(--ink);
+        letter-spacing: 0;
+    }
+
+    .quest-folded summary {
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .quest-folded summary::before {
+        content: "▸" / "";
+        transition: rotate var(--short) var(--ease);
+    }
+
+    .quest-folded[open] summary::before {
+        rotate: 90deg;
+    }
+
+    .quest-folded .quest-cards {
+        margin-top: 10px;
+    }
+
+    .quest-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: var(--gap);
+    }
+
+    .quest-card {
+        display: grid;
+        align-content: start;
+        gap: 8px;
+        padding: 14px 16px;
+        border: 1px solid var(--card-edge);
+        border-radius: var(--radius-l);
+        background: var(--card-ornament-layer), var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    .quest-card.main {
+        border-color: color-mix(in srgb, var(--gold) 70%, var(--rule));
+        background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 9%, var(--panel)), var(--panel) 55%);
+    }
+
+    .quest-card.done,
+    .quest-card.failed {
+        opacity: 0.8;
+    }
+
+    /* The quest card's head is its picture (D-388, D-389): the star, the time left and Main over its top, its name over its foot, on a dark veil
+       that keeps them light in both themes, as the place's band in Scene; its width given, so that the height's cap crops the picture. Its margins follow the
+       card's padding. */
+    .quest-card {
+        padding-top: 0;
+    }
+
+    .quest-cover {
+        position: relative;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        width: calc(100% + 32px);
+        min-height: 132px;
+        max-height: 168px;
+        margin: 0 -16px 2px;
+        overflow: hidden;
+        aspect-ratio: 16 / 6;
+        border-bottom: 1px solid var(--rule);
+        border-radius: calc(var(--radius-l) - 1px) calc(var(--radius-l) - 1px) 0 0;
+        color: var(--on-veil);
+    }
+
+    .quest-cover > img,
+    .quest-cover > .quest-cover-mark {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .quest-cover > img {
+        object-fit: cover;
+        object-position: 50% 40%;
+    }
+
+    .quest-cover:has(> .quest-cover-mark) {
+        background: radial-gradient(120% 140% at 85% 30%, var(--cover), var(--cover-deep) 70%);
+    }
+
+    .quest-card.main .quest-cover:has(> .quest-cover-mark) {
+        background: radial-gradient(120% 140% at 85% 30%, var(--cover-main), var(--cover-main-deep) 72%);
+    }
+
+    .quest-cover > .quest-cover-mark {
+        display: grid;
+        place-items: center end;
+        padding-inline-end: 9%;
+    }
+
+    .quest-cover-mark svg {
+        width: auto;
+        height: 62%;
+        fill: none;
+        stroke: var(--m-land);
+        stroke-width: 1.1;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: 0.42;
+    }
+
+    .quest-cover::before {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--veil) 38%, transparent), transparent 34%, transparent 42%, color-mix(in srgb, var(--veil) 55%, transparent) 68%, color-mix(in srgb, var(--veil) 88%, transparent));
+        content: "";
+        pointer-events: none;
+    }
+
+    .quest-cover-top {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding-block: 8px 0;
+        padding-inline: 8px 10px;
+    }
+
+    .quest-cover-top .followed-star {
+        background: color-mix(in srgb, var(--veil) 62%, transparent);
+        color: var(--on-veil);
+        backdrop-filter: blur(4px);
+    }
+
+    .quest-cover-top .followed-star.on {
+        color: var(--gold);
+    }
+
+    .quest-cover-top .quest-deadline {
+        margin-inline-start: auto;
+        background: color-mix(in srgb, var(--veil) 62%, transparent);
+        color: var(--on-veil);
+        backdrop-filter: blur(4px);
+    }
+
+    .quest-cover-top .quest-deadline.near {
+        background: var(--veil-low);
+        color: var(--on-veil);
+    }
+
+    .quest-cover-top > .quest-badge:first-child,
+    .quest-cover-top > .followed-star + .quest-badge {
+        margin-inline-start: auto;
+    }
+
+    .quest-cover .quest-name {
+        position: relative;
+        z-index: 2;
+        display: -webkit-box;
+        grid-row: 3;
+        margin: 0 0 12px;
+        padding: 0 16px;
+        overflow: hidden;
+        color: var(--on-veil);
+        font-size: 1.3rem;
+        line-height: 1.15;
+        text-wrap: balance;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .quest-card.failed .quest-cover > img,
+    .quest-card.failed .quest-cover-mark {
+        filter: grayscale(1);
+    }
+
+    .followed-picture {
+        flex: none;
+        width: 40px;
+        height: 40px;
+        overflow: hidden;
+        border-radius: var(--radius-m);
+        box-shadow: 0 0 0 1px var(--rule);
+        object-fit: cover;
+    }
+
+    .followed-picture.quest-cover-mark {
+        display: grid;
+        place-items: center;
+        background: color-mix(in srgb, var(--cover) 50%, var(--cover-deep));
+    }
+
+    .followed-picture.quest-cover-mark svg {
+        height: 24px;
+        opacity: 0.8;
+    }
+
+    @media (max-width: 600px) {
+        .quest-cover .quest-name {
+            margin-bottom: 10px;
+            padding: 0 14px;
+            font-size: 1.15rem;
+        }
+
+        .followed-picture {
+            width: 36px;
+            height: 36px;
+        }
+    }
+
+    .quest-name {
+        min-width: 0;
+        font-family: var(--serif);
+        overflow-wrap: anywhere;
+    }
+
+    .quest-badge,
+    .quest-status,
+    .chapter-now,
+    .chapter-type {
+        padding: 1px 8px;
+        border-radius: var(--radius-xs);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .quest-badge {
+        background: var(--gold);
+        color: var(--on-gold);
+    }
+
+    .quest-status.done {
+        background: color-mix(in srgb, var(--ally) 16%, var(--panel));
+        color: var(--ally);
+    }
+
+    .quest-status.failed {
+        background: color-mix(in srgb, var(--low) 14%, var(--panel));
+        color: var(--low);
+    }
+
+    .followed-star {
+        display: inline-grid;
+        flex: none;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        border-radius: var(--radius-m);
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+    }
+
+    .followed-star .star {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linejoin: round;
+    }
+
+    .followed-star.on {
+        color: var(--gold);
+    }
+
+    .followed-star.on .star {
+        fill: var(--gold);
+    }
+
+    .followed-star:hover {
+        background: color-mix(in srgb, var(--ink) calc(var(--state-hover) * 100%), transparent);
+    }
+
+    .quest-from {
+        margin: -4px 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .quest-text {
+        font-size: inherit;
+    }
+}
+
+/* Under the parts: where a quest's text is a page's text, the parts' .markdown p has always set the room of its paragraphs, and still does. */
+@layer base {
+    .quest-text p {
+        margin: 0 0 6px;
+    }
+}
+
+@layer pages {
+    .quest-goals {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .quest-goals li {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .quest-goals li p {
+        margin: 0;
+    }
+
+    .quest-tick {
+        display: inline-grid;
+        flex: none;
+        place-items: center;
+        width: 18px;
+        height: 18px;
+        margin-top: 1px;
+        border: 1.5px solid var(--muted);
+        border-radius: var(--radius-xs);
+        color: var(--on-gold);
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .quest-goals li.done .quest-tick {
+        border-color: var(--gold);
+        background: var(--gold);
+    }
+
+    .quest-goals li.done > span:nth-child(2) {
+        color: var(--muted);
+        text-decoration: line-through;
+    }
+
+    .quest-goals li.missed .quest-tick {
+        border-color: transparent;
+        color: var(--muted);
+    }
+
+    .quest-goals li.missed > span:nth-child(2) {
+        color: var(--muted);
+    }
+
+    .quest-measures {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 14px;
+        padding-top: 8px;
+        border-top: 1px solid var(--rule);
+    }
+
+    .quest-bar {
+        display: flex;
+        flex: 1 1 200px;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+    }
+
+    .quest-bar-label {
+        color: var(--muted);
+    }
+
+    .quest-bar-track {
+        flex: 1;
+        min-width: 60px;
+        height: 8px;
+        overflow: hidden;
+        border-radius: var(--radius-xs);
+        background: var(--panel-2);
+        box-shadow: inset 0 0 0 1px var(--rule);
+    }
+
+    .quest-bar-track span {
+        display: block;
+        height: 100%;
+        border-radius: var(--radius-xs);
+        background: var(--gold);
+        /* The gold's own edge, as the gold chips have it: the bar shows on the light page too. */
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold), var(--ink) 35%);
+    }
+
+    .quest-bar-value {
+        font-variant-numeric: tabular-nums;
+        font-weight: 650;
+    }
+
+    .quest-clock {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+    }
+
+    .clock-face {
+        flex: none;
+    }
+
+    .clock-slice {
+        fill: var(--panel-2);
+        stroke: var(--rule);
+        stroke-width: 1;
+    }
+
+    .clock-slice.filled {
+        fill: var(--gold);
+        stroke: color-mix(in srgb, var(--gold), var(--ink) 30%);
+    }
+
+    .quest-deadline {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 8px;
+        border-radius: var(--radius-s);
+        background: var(--panel-2);
+        font-size: 0.85rem;
+        font-weight: 650;
+        white-space: nowrap;
+    }
+
+    .quest-deadline svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .quest-deadline.near {
+        background: color-mix(in srgb, var(--low) 14%, var(--panel));
+        color: var(--low);
+    }
+
+    /* The player's notes (D-371): cards to write in, saved by themselves. */
+    .player-notes {
+        display: grid;
+        gap: var(--gap);
+    }
+
+    .player-notes-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 16px;
+    }
+
+    .player-notes-about {
+        flex: 1 1 280px;
+        margin: 0;
+        color: var(--muted);
+        font-size: inherit;
+    }
+
+    .player-notes-head svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .note-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        align-items: start;
+        gap: var(--gap);
+    }
+
+    .note-card {
+        display: grid;
+        gap: 6px;
+        padding: 12px 14px 8px;
+        border: 1px solid var(--card-edge);
+        border-radius: var(--radius-l);
+        background: var(--card-ornament-layer), var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    .note-card:focus-within {
+        border-color: color-mix(in srgb, var(--accent) 60%, var(--rule));
+    }
+
+    .note-title,
+    .note-text {
+        width: 100%;
+        padding: 4px 6px;
+        border: 1px solid transparent;
+        border-radius: var(--radius-s);
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+    }
+
+    .note-title {
+        font-family: var(--serif);
+        font-size: 1.15rem;
+        font-weight: 650;
+    }
+
+    .note-text {
+        min-height: 6lh;
+        resize: vertical;
+        field-sizing: content;
+        line-height: 1.45;
+    }
+
+    /* At rest a dashed line under the title says the card is written in; full on hover and focus. */
+    .note-title {
+        border-bottom: 1px dashed var(--rule);
+        border-radius: var(--radius-s) var(--radius-s) 0 0;
+    }
+
+    .note-title:hover,
+    .note-text:hover {
+        border-color: var(--rule);
+        border-bottom-style: solid;
+    }
+
+    .note-title:focus-visible,
+    .note-text:focus-visible {
+        border-color: var(--accent);
+        background: var(--float);
+    }
+
+    /* One line: when it was written, what became of the share, Share, and the trash in the card's corner. */
+    .note-foot {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-inline-end: -8px;
+        padding-top: 6px;
+        border-top: 1px solid var(--rule);
+        font-size: 0.85rem;
+    }
+
+    .note-when {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        color: var(--muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .note-state:empty {
+        display: none;
+    }
+
+    .note-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 8px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+        color: var(--accent);
+        font-weight: 650;
+        white-space: nowrap;
+    }
+
+    .note-chip.read {
+        background: color-mix(in srgb, var(--ally) 14%, var(--panel));
+        color: var(--ally);
+    }
+
+    .note-chip svg.icon {
+        width: 15px;
+        height: 15px;
+    }
+
+    .note-foot .icon-button svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .note-when span {
+        margin-inline-start: 4px;
+    }
+
+    .note-said {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .note-said:empty {
+        display: none;
+    }
+
+    .note-remove {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 650;
+    }
+
+    @media (pointer: coarse) {
+        .note-foot .icon-button {
+            width: var(--target);
+            height: var(--target);
+        }
+    }
+
+    /* On the table the quests followed are one card, as a video game's quest tracker, closing to its header: a line for each, all of them, which opens where it
+       stands into its goals. The way to the Journal in the header, left of the chevron. */
+    .quest-tracker {
+        position: relative;
+        min-width: 0;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+    }
+
+    .tracker-journal {
+        position: absolute;
+        top: 6px;
+        inset-inline-end: 44px;
+    }
+
+    .quest-tracker .preview {
+        margin-inline-end: 40px;
+    }
+
+    .tracker-list {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding: 8px 12px 10px;
+        list-style: none;
+    }
+
+    /* A quest's line: its mark at the top of it, beside the name; the name in bold, whole; the next goal on one line; the clock and the time left at the end. */
+    .tracked {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: start;
+        column-gap: 10px;
+        padding-block: 4px;
+    }
+
+    /* A quest's mark, the flag of the quests: filled for the main one, drawn for the others, in the accent of the cards' icons. */
+    .tracked-mark {
+        display: inline-grid;
+        margin-top: 1px;
+    }
+
+    .tracked-mark svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 1.6;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
+
+    .tracked-mark svg.main {
+        fill: var(--accent);
+    }
+
+    /* The name and next goal open the quest: a button that reads as the line, with no ground on hover; the focus a ring. */
+    .tracked-what {
+        display: grid;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        border-radius: var(--radius-s);
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .tracked-what::after {
+        display: none;
+    }
+
+    .tracked .followed-name {
+        font-size: 0.85rem;
+        white-space: normal;
+    }
+
+    .tracked .followed-next {
+        font-size: 0.8rem;
+    }
+
+    .tracked-time {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .tracked-time .quest-deadline {
+        padding: 1px 6px;
+        font-size: 0.8rem;
+    }
+
+    .tracked-time .quest-deadline-left {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        border: 0;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .clock-tip {
+        display: inline-grid;
+    }
+
+    .tracked-more {
+        display: grid;
+        grid-column: 2 / -1;
+        gap: 6px;
+        padding-top: 6px;
+    }
+
+    .tracked .quest-goals {
+        gap: 4px;
+        font-size: 0.85rem;
+    }
+
+    .tracked .quest-tick {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Stop following: a small button of words, under the goals. */
+    .tracked-unfollow {
+        justify-self: start;
+        padding: 4px 6px;
+        margin-inline-start: -6px;
+        border: 0;
+        border-radius: var(--radius-s);
+        background: none;
+        color: var(--accent);
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* The story as a timeline (D-384): Now at the top, the chapters the last first, each with its place's picture or the mark of its kind, The start at the bottom. */
+    .story {
+        position: relative;
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding-block: 0;
+        padding-inline: 34px 0;
+        list-style: none;
+    }
+
+    .story::before {
+        position: absolute;
+        top: 14px;
+        bottom: 14px;
+        inset-inline-start: 11px;
+        width: 2px;
+        background: color-mix(in srgb, var(--muted) 45%, transparent);
+        content: "";
+    }
+
+    .story > li {
+        position: relative;
+    }
+
+    .story > li::before {
+        position: absolute;
+        top: 18px;
+        inset-inline-start: -29px;
+        width: 12px;
+        height: 12px;
+        box-sizing: border-box;
+        border: 2px solid var(--muted);
+        border-radius: 50%;
+        background: var(--panel);
+        content: "";
+    }
+
+    .story > li.between::before {
+        top: 8px;
+        inset-inline-start: -26px;
+        width: 6px;
+        height: 6px;
+        border: 0;
+        background: var(--muted);
+    }
+
+    .story > li.chapter.now::before {
+        border-color: var(--gold);
+    }
+
+    .story-mark {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .story > li.story-mark::before {
+        top: 1px;
+        inset-inline-start: -31px;
+        width: 16px;
+        height: 16px;
+    }
+
+    .story > li.story-mark.now::before {
+        border-color: var(--gold);
+        background: var(--gold);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 30%, transparent);
+    }
+
+    .story-mark b {
+        color: var(--ink);
+    }
+
+    .story-mark span {
+        font-weight: 400;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+
+    .chapter {
+        display: grid;
+        grid-template-columns: 168px minmax(0, 1fr);
+        border: 1px solid var(--card-edge);
+        border-radius: var(--radius-l);
+        background: var(--card-ornament-layer), var(--panel);
+        box-shadow: var(--lift);
+    }
+
+    .chapter.bare {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .chapter.now {
+        border-color: color-mix(in srgb, var(--gold) 60%, var(--rule));
+    }
+
+    .chapter-body {
+        min-width: 0;
+        padding: 12px 16px;
+    }
+
+    .chapter-picture {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 112px;
+        overflow: hidden;
+        border-start-start-radius: var(--radius-l);
+        border-start-end-radius: 0;
+        border-end-end-radius: 0;
+        border-end-start-radius: var(--radius-l);
+    }
+
+    .chapter-picture img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* A place without a picture: the mark of its kind on the map's paper, which stays light in both themes, as in Saves. */
+    .chapter-picture.kind {
+        background: var(--m-land);
+    }
+
+    .chapter-picture svg {
+        width: 52px;
+        height: 52px;
+        fill: none;
+        stroke: var(--m-ink);
+        stroke-width: 1.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .chapter-number {
+        flex-basis: 100%;
+    }
+
+    .chapter.between {
+        display: block;
+        padding: 0 16px;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .chapter.between .chapter-facts {
+        margin: 0;
+    }
+
+    .chapter.between summary {
+        color: var(--muted);
+    }
+
+    .chapter-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px 8px;
+    }
+
+    .chapter-head h3 {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        font-family: var(--serif);
+        font-size: 1.1rem;
+    }
+
+    .chapter-now {
+        background: var(--gold);
+        color: var(--on-gold);
+    }
+
+    .chapter-type {
+        background: var(--panel-2);
+        color: var(--muted);
+    }
+
+    .chapter-when {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .chapter-summary {
+        margin: 8px 0 0;
+        font-family: var(--serif);
+        font-size: 1rem;
+    }
+
+    .chapter-facts {
+        margin-top: 8px;
+        font-size: 0.85rem;
+    }
+
+    .chapter-facts summary {
+        color: var(--accent);
+        cursor: pointer;
+    }
+
+    .chapter-facts ul {
+        margin: 6px 0 0;
+        padding-inline-start: 18px;
+        color: var(--muted);
+    }
+
+    /* What the day's upkeep used up, together under its name. */
+    .chapter-facts li.fact-upkeep > ul {
+        margin: 2px 0 0;
+        padding-inline-start: 16px;
+        list-style: circle;
+    }
+
+    /* The game date, once whenever it changes. */
+    .chapter-facts li.fact-date {
+        margin-block: 6px 2px;
+        margin-inline: -18px 0;
+        color: var(--ink);
+        font-size: 0.8rem;
+        font-weight: 700;
+        list-style: none;
+    }
+
+    /* On a phone the line comes closer, and the picture is a band at the top of the card, lower with only a mark. */
+    @media (max-width: 600px) {
+        .story {
+            padding-inline-start: 26px;
+        }
+
+        .story::before {
+            inset-inline-start: 7px;
+        }
+
+        .story > li::before {
+            inset-inline-start: -25px;
+        }
+
+        .story > li.between::before {
+            inset-inline-start: -22px;
+        }
+
+        .story > li.story-mark::before {
+            inset-inline-start: -27px;
+        }
+
+        .chapter {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .chapter-picture {
+            min-height: 0;
+            aspect-ratio: 16 / 7;
+            border-radius: var(--radius-l) var(--radius-l) 0 0;
+        }
+
+        .chapter-picture.kind {
+            aspect-ratio: 16 / 4;
+        }
+    }
+
+    @media (pointer: coarse) {
+        .followed-star,
+        .page-tabs button {
+            min-height: var(--target);
+            min-width: var(--target);
+        }
+    }
+
+    [dir="rtl"] :is(.quest-folded, .map-key) summary::before {
+        content: "◂" / "";
+    }
+
+    [dir="rtl"] .quest-folded[open] summary::before {
+        rotate: -90deg;
+    }
+}

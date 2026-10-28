@@ -1,6 +1,8 @@
 name: The master asks, and the player answers with an action from the sheet
 covers: [act-sheet, asked-choice]
+# On the 5e's demo, whose sheet has spells.
 setup:
+  system: 5e
   ask: {question: "Il secondo brigante alza il coltello verso Lupa: che fai?", options: ["Mi metto in mezzo", "Lascio fare a Lupa"]}
 steps:
   - phone: {tapOn: Spells}   # on a phone the lists of the Combat card start closed

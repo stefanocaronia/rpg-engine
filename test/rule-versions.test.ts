@@ -7,7 +7,7 @@ import { runCommandLine } from "../src/command-line.ts";
 import { campaignSystem, campaignSystemWords } from "../src/commands/game-world.ts";
 import type { Context } from "../src/core/context.ts";
 import { findSystem } from "../src/systems/index.ts";
-import { makeTempFolder, removeFolder, testContext, testSystemFolders, useSystem } from "./support.ts";
+import { madeSystem, makeTempFolder, removeFolder, testContext, testSystemFolders, useSystem } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -127,12 +127,18 @@ describe("VER-4: the version changes only as the player chooses", () => {
 
 describe("VER-1: a system with one version alone, as the 5e for now", () => {
     it("reads it with no setting to choose, and says nothing more of it", async () => {
-        const fifth = findSystem(testSystemFolders, "5e");
-        expect(fifth?.version).toMatchObject({ name: "srd-5.1", title: "the SRD 5.1, the 2014 rules" });
-        expect(fifth?.settings.map((setting) => setting.name)).toEqual(["advancement"]);
-        expect(fifth?.title).toBe("the fifth edition from the SRD 5.1, the 2014 rules");
-        useSystem(folder, "5e");
-        expect(await refused("config", "ruleset", "srd-5.1")).toContain('There is no setting "ruleset".');
-        expect(await ok("status")).toContain("Guadoscuro · it · 5e, the fifth edition from the SRD 5.1, the 2014 rules · ");
+        const systems = madeSystem("lone", {
+            "system.yaml": 'title: a test system\nlanguage: en\nversions:\n  about: which rules you play\n  only: {means: "the only rules", player: "the only rules"}\n'
+                + 'settings:\n  pace:\n    about: how fast it goes\n    slow: {means: "slow", player: "slow"}\n    quick: {means: "quick", player: "quick"}\n',
+            "versions/only/system.yaml": "title: the only rules\n",
+        });
+        const lone = findSystem([systems], "lone");
+        expect(lone?.version).toMatchObject({ name: "only", title: "the only rules" });
+        expect(lone?.settings.map((setting) => setting.name)).toEqual(["pace"]);
+        expect(lone?.title).toBe("a test system");
+        context = { ...context, systemFolders: [systems, ...testSystemFolders] };
+        useSystem(folder, "lone");
+        expect(await refused("config", "ruleset", "only")).toContain('There is no setting "ruleset".');
+        expect(await ok("status")).toContain("Guadoscuro · it · lone, a test system · ");
     });
 });

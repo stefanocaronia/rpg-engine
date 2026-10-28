@@ -1,8 +1,11 @@
 // The dice the tray throws by itself (D-284, D-337): which of a kind count, as a notation and as the chat writes them, and the checks they answer (D-330).
 import { describe, expect, it } from "vitest";
-import { diceText, doubled, droppedBy, keptOf, keptTotal, notation, trayThrows, withDropped } from "../src/dashboard/dice/pool.ts";
+import { coinPictures } from "../src/dashboard/dice/coin-pictures.ts";
+import { diceText, doubled, droppedBy, flies, keptOf, keptTotal, notation, trayCoin, trayThrows, withAdded, withDropped } from "../src/dashboard/dice/pool.ts";
+import { coinDesignPref, coinDesigns, coinLook, coinMetals, coinOf, coinPref, diceLook, diceSets, mastersDice, masterSet } from "../src/dashboard/dice/sets.ts";
 import { type PageRoll, readFree, withFree } from "../src/dashboard/free-rolls.ts";
 import { sameDice } from "../src/dashboard/labels.ts";
+import { readChoice } from "../src/dashboard/prefs.ts";
 import { requestedOf, trayCheck } from "../src/dashboard/requested.ts";
 
 describe("which dice of a kind count in the tray (D-337)", () => {
@@ -77,6 +80,117 @@ describe("the free rolls this browser keeps (D-330 (4))", () => {
             const key = [...kept.keys()][0];
             kept.set(key, JSON.stringify([roll, { ...roll, id: "free-2", dice: "oops" }, { ...roll, id: "free-3", notation: 5 }, { ...roll, id: "free-4", at: "never" }, null]));
             expect(readFree("Prova").map((one) => one.id)).toEqual(["free-1"]);
+        } finally {
+            Reflect.deleteProperty(globalThis, "localStorage");
+        }
+    });
+});
+
+describe("the tray's coins (D-524 (1))", () => {
+    it("adds a coin to the coins alone, at most three, and a die to the dice alone: coins and dice are never thrown together", () => {
+        expect(withAdded([], trayCoin)).toEqual([trayCoin]);
+        expect(withAdded([trayCoin, trayCoin], trayCoin)).toEqual([trayCoin, trayCoin, trayCoin]);
+        expect(withAdded([trayCoin, trayCoin, trayCoin], trayCoin)).toEqual([trayCoin, trayCoin, trayCoin]);
+        expect(withAdded([20, 6], trayCoin)).toEqual([trayCoin]);
+        expect(withAdded([trayCoin, trayCoin], 20)).toEqual([20]);
+        expect(withAdded([20], 20)).toEqual([20, 20]);
+        // The tray answers no check with a coin: a d2 is none of its dice.
+        expect(trayThrows("1d2")).toBe(false);
+    });
+
+    it("answers a toss the master asks with its coins, as many as it asks; never a toss with dice, nor a check with coins (ASK-15)", () => {
+        const toss = requestedOf({ id: "a1", question: "La corda regge?", title: "Tiro", labels: ["Tiro: Lancia 2 monete (2d2)", "Cambio idea"], who: "Bruna", toss: true }, () => undefined);
+        expect(toss?.toss).toBe(true);
+        expect([notation([trayCoin, trayCoin], 0, {}), notation([trayCoin], 0, {}), "1d20"].map((thrown) => trayCheck(toss, thrown))).toEqual([0, undefined, undefined]);
+        const check = requestedOf({ id: "a2", question: "Il muro", title: "Tiro", labels: ["Tiro: Sorte (1d2)", "Cambio idea"] }, () => undefined);
+        expect([trayCheck(check, notation([trayCoin], 0, {}))]).toEqual([undefined]);
+    });
+});
+
+describe("the master's rolls in the tray (VIEW-13, D-525 (2))", () => {
+    it("throws a roll the master shows when they say so, dice or coins; left out, a toss flies and dice stay in the list", () => {
+        expect([{ tray: true }, { tray: false, toss: ["heads" as const] }, { toss: ["tails" as const] }, {}].map(flies)).toEqual([true, false, true, false]);
+    });
+});
+
+describe("the master's dice (D-525 (3))", () => {
+    it("draws a set for each campaign, the same at every look, never the player's, and the next one drawn when the player takes it", () => {
+        const named = diceSets.filter((set) => set.look !== undefined).map((set) => set.value);
+        const drawn = masterSet("Guadoscuro", "theme").value;
+        expect(named).toContain(drawn);
+        expect(masterSet("Guadoscuro", "theme").value).toBe(drawn);
+        // Another set of the player's leaves the master's as it was.
+        expect(masterSet("Guadoscuro", named.find((value) => value !== drawn) ?? "theme").value).toBe(drawn);
+        const taken = masterSet("Guadoscuro", drawn).value;
+        expect(taken).not.toBe(drawn);
+        expect(named).toContain(taken);
+        // Campaigns draw apart: ten names give more than a few sets.
+        expect(new Set(Array.from({ length: 10 }, (_, index) => masterSet(`Campagna ${index}`, "theme").value)).size).toBeGreaterThan(4);
+    });
+});
+
+describe("the coins' looks (D-526)", () => {
+    it("keeps the player's coins in this browser: as the dice at first, or one of the five metals; a value it no longer offers is the dice's", () => {
+        const kept = new Map<string, string>();
+        Object.assign(globalThis, { localStorage: { getItem: (key: string) => kept.get(key) ?? null, setItem: (key: string, value: string) => kept.set(key, value) } });
+
+        try {
+            expect(coinMetals.map((metal) => metal.value)).toEqual(["gold", "silver", "copper", "bronze", "iron"]);
+            expect(readChoice(coinPref)).toBe("dice");
+            kept.set(coinPref.key, "copper");
+            expect(readChoice(coinPref)).toBe("copper");
+            kept.set(coinPref.key, "platinum");
+            expect(readChoice(coinPref)).toBe("dice");
+        } finally {
+            Reflect.deleteProperty(globalThis, "localStorage");
+        }
+    });
+
+    it("makes the coins as the dice, their body the coin's and their ink its pictures', grain and crystal too; a metal whatever the dice", () => {
+        const look = (value: string) => diceSets.find((set) => set.value === value)?.look;
+        expect(coinLook("dice", diceLook("obsidian"))).toEqual(look("obsidian"));
+        expect(coinLook("dice", diceLook("walnut")).finish.texture).toBe("walnut");
+        expect(coinLook("dice", diceLook("ruby-crystal")).finish.clarity).toBeGreaterThan(0);
+        const copper = coinMetals.find((metal) => metal.value === "copper")?.look;
+        expect(["obsidian", "walnut", "glass"].map((set) => coinLook("copper", diceLook(set)))).toEqual([copper, copper, copper]);
+        expect(copper?.finish.metalness).toBe(1);
+    });
+
+    it("tosses the master's coins of their dice's material, whatever metal the player chose; the party's toss with the player's (D-526 (3))", () => {
+        const party = [{ name: "Ettore" }, { name: "Lupa" }];
+        const masters = masterSet("Guadoscuro").look;
+        const foes = mastersDice({ by: "master", who: "Brigante" }, party, "Guadoscuro");
+        expect(foes).toEqual(masters);
+        expect(coinLook("dice", foes)).toEqual(masters);
+        expect(coinLook("dice", mastersDice({ by: "master" }, party, "Guadoscuro"))).toEqual(masters);
+        // The party's rolls and the player's own are the player's: no look of the master's.
+        expect([mastersDice({ by: "master", who: "Lupa" }, party, "Guadoscuro"), mastersDice({ by: "player" }, party, "Guadoscuro"), mastersDice({ by: "master" }, party, undefined)])
+            .toEqual([undefined, undefined, undefined]);
+    });
+
+    it("offers the designs make-coin.py draws, Sun and moon first and at first, each face a picture to add to, in the order of the coin's relief (D-526 (2))", () => {
+        expect(coinDesigns.map((design) => design.value)).toEqual(Object.keys(coinPictures));
+        expect(coinDesignPref.initial).toBe("sun");
+        expect(coinDesignPref.values).toEqual(["sun", "crown", "rose", "planet", "gear", "eye"]);
+
+        for (const { heads, tails } of Object.values(coinPictures)) {
+            for (const parts of [heads, tails]) {
+                expect(parts[0]?.[0]).toBe("add");
+                expect(parts.every(([step, outline]) => ["add", "cut"].includes(step) && /^M[\d.]/.test(outline) && outline.endsWith("Z"))).toBe(true);
+            }
+        }
+    });
+
+    it("tosses everyone's coins with the player's design; the master's of their dice's material, the player's of what they chose (D-526 (3))", () => {
+        const kept = new Map<string, string>([[coinDesignPref.key, "rose"], [coinPref.key, "silver"]]);
+        Object.assign(globalThis, { localStorage: { getItem: (key: string) => kept.get(key) ?? null, setItem: (key: string, value: string) => kept.set(key, value) } });
+
+        try {
+            const masters = masterSet("Guadoscuro").look;
+            expect(coinOf(masters)).toEqual({ look: masters, design: "rose" });
+            expect(coinOf()).toEqual({ look: coinMetals.find((metal) => metal.value === "silver")?.look, design: "rose" });
+            kept.set(coinDesignPref.key, "dragon");
+            expect(coinOf().design).toBe("sun");
         } finally {
             Reflect.deleteProperty(globalThis, "localStorage");
         }

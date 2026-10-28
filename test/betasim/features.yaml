@@ -4,6 +4,8 @@
 - {id: roll-plate, area: Rolls, name: "The result's plate, and the roll in the Rolls column", decision: D-366}
 - {id: free-roll-sheet, area: Party, name: "A free roll from a line of the sheet, not logged", decision: D-330}
 - {id: free-roll-tray, area: Rolls, name: "The free roll button and its tray of dice", decision: D-349}
+- {id: free-toss-tray, area: Rolls, name: "Coins tossed free from the tray, one to three", decision: D-524}
+- {id: asked-toss, area: Asked, name: "The master asks for a toss of coins: the coins on its button, or the tray's", decision: D-525}
 - {id: sheet-read, area: Party, name: "The sheet: hit points, resources, abilities, skills", decision: D-270}
 - {id: story-propose, area: Party, name: "The character's story proposed to the master", decision: D-386}
 - {id: scene-where, area: Scene, name: "Where the party is: the place, its map, who is where", decision: D-325}

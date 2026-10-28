@@ -42,7 +42,7 @@ import { damageLists, type DamageTaken, damageTaken } from "./game-damage.ts";
 import { spendableDice, spendDice } from "./game-dice-pool.ts";
 import { checkEffectsReadable, saveEffects } from "./game-effects.ts";
 import { fireEvents, nowDueNote } from "./game-events.ts";
-import { poolExample, restExample } from "./game-examples.ts";
+import { coinExamples, poolExample, restExample } from "./game-examples.ts";
 import { experienceOf, newLevelNotes } from "./game-experience.ts";
 import { screenNote, screenUp, sealHiddenRoll } from "./game-master-rolls.ts";
 import { campaignCoins } from "./game-money.ts";
@@ -855,7 +855,7 @@ function moneyStep(input: { by?: number | string; spend?: number | string; to?: 
     const given = [input.by, input.spend, input.to].filter((part) => part !== undefined);
 
     if (given.length !== 1) {
-        throw new Error('Give one of by (coins received, or paid with a minus), spend (what is paid) or to (what the purse holds), such as spend "5 sp".');
+        throw new Error(`Give one of by (coins received, or paid with a minus), spend (what is paid) or to (what the purse holds), such as spend "5 ${coinExamples(coins).smallCoin}".`);
     }
 
     // Coins in quotes, as a model may send "\"5 sp\"", are the coins.
@@ -1054,7 +1054,8 @@ function fieldName(world: World, holder: CounterHolder, fields: Record<string, u
     const counted = stacks.length === 0 ? "" : `Its stacks: ${stacks.join(", ")}. `;
     // Its maximum, everyone's, in the example: the master writes it as the system works it out (FOR-7).
     const shown = everyones && given !== undefined ? `0/${counterLimits(world, fields, given).max ?? 0}` : example;
-    const how = goods === undefined ? howToAdd(world, holder, name, shown) : `Goods are a stack, changed by its kind, such as change ${page.name}, ${goods.name}, spend 1.`;
+    const theirs = systemCountersHeld(world, fields);
+    const how = goods === undefined ? howToAdd(world, holder, name, shown, theirs) : `Goods are a stack, changed by its kind, such as change ${page.name}, ${goods.name}, spend 1.`;
     throw new Error(`${page.name} has no field "${name}". ${counted}${listed} ${how}`);
 }
 
@@ -1080,8 +1081,11 @@ function counterOf(world: World, page: Page, field: string): unknown
 /**
  * How to add a counter that neither the page nor its bases hold, on the nearest base of the campaign, since the system's are read-only (SYS-6); or why its base cannot be read.
  */
-function howToAdd(world: World, holder: CounterHolder, name: string, example: string): string
+function howToAdd(world: World, holder: CounterHolder, name: string, example: string, theirs: string[]): string
 {
+    // A name the system does not have is most often one of its counters by another name, as health for hp: those first, an added field after (D-518).
+    const meant = theirs.length === 0 ? "" : `If you meant a counter of the system ${world.system?.name ?? ""}, give its name, such as ${theirs.join(", ")}`;
+
     const page = holder.page;
     const field = baseFieldOf(page.type);
     const link = field === undefined || typeof page.fields[field] !== "string" ? undefined : page.fields[field];
@@ -1095,17 +1099,24 @@ function howToAdd(world: World, holder: CounterHolder, name: string, example: st
     }
 
     if (base === undefined) {
-        return `To add one, use write, such as set ${name}=${example}.`;
+        return meant === "" ? `To add one, use write, such as set ${name}=${example}.` : `${meant}; only one it lacks is added, with write, such as set ${name}=${example}.`;
     }
 
     // A page of the campaign named like one of the system's hides it (SYS-4): writing on it is not what the master means.
     const hides = systemPageNamed(world, base.name) === undefined ? "" : ` But ${base.name} hides the system ${world.system?.name ?? ""}'s ${base.name}: validate says how to fix it.`;
+    const first = meant === "" ? "" : `${meant}. `;
 
     if (holder.kind === "copy") {
-        return `To add one to ${page.name} alone, use write, such as set ${name}=${example}. To give it to every ${base.name}, write it on ${base.name} once the scene is closed.${hides}`;
+        return `${first}To add one to ${page.name} alone, use write, such as set ${name}=${example}. To give it to every ${base.name}, write it on ${base.name} once the scene is closed.${hides}`;
     }
 
-    return `${page.name} reads what it does not hold from ${base.name}: write the counter there, such as set ${name}=${example}, and everything that derives from ${base.name} takes it; or on ${page.name} alone.${hides}`;
+    return `${first}${page.name} reads what it does not hold from ${base.name}: write the counter there, such as set ${name}=${example}, and everything that derives from ${base.name} takes it; or on ${page.name} alone.${hides}`;
+}
+
+/** The counters the game system declares among a page's fields, at most three, in the page's order. */
+function systemCountersHeld(world: World, fields: Record<string, unknown>): string[]
+{
+    return Object.keys(fields).filter((key) => declaredKind(world, key) === "counter" && readCounter(fields[key]) !== undefined).slice(0, 3);
 }
 
 /**

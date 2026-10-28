@@ -1,0 +1,259 @@
+/* What no style sheet may take away, a package's either (D-523, D-528): the ring of the focus and the other rings drawn as outlines, no clip or mask on a
+   control, and the tooltips. All !important. */
+@layer guarantees {
+    :focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 2px !important;
+    }
+
+    /* A clip or a mask on a control would cut its focus ring and its tooltip (D-528). */
+    :is(button, a, summary, input, select, textarea, label, [role="tab"], [role="button"], [role="radio"], [tabindex], [data-tip]) {
+        clip-path: none !important;
+        mask: none !important;
+    }
+
+    .saves-said:focus {
+        outline: none !important;
+    }
+
+    .page-tabs button:focus-visible {
+        outline-offset: -2px !important;
+    }
+
+    /* The last tab's mark is near the page's edge: its tip ends at the mark, else on a phone the page grows wider. */
+    .page-tabs > [role="tab"]:last-child .tab-mark[data-tip]::before {
+        left: auto !important;
+        inset-inline-end: 0 !important;
+        translate: 0 4px !important;
+    }
+
+    @media (hover: hover) {
+        .page-tabs > [role="tab"]:last-child .tab-mark[data-tip]:hover::before {
+            translate: 0 0 !important;
+        }
+    }
+
+    .quest-cover-top :focus-visible {
+        outline-color: var(--on-veil) !important;
+    }
+
+    .note-title:focus-visible,
+    .note-text:focus-visible {
+        outline: none !important;
+    }
+
+    .story-box textarea:focus-visible {
+        outline: none !important;
+    }
+
+    .tracked-what:focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 3px !important;
+    }
+
+    .setup-card h2:focus {
+        outline: none !important;
+    }
+
+    .setup-card h2:focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 4px !important;
+    }
+
+    /* Its tooltip from the pip toward the name, where there is room, in lines when it is long. */
+    .token .status-pip[data-tip]::before {
+        left: auto !important;
+        inset-inline-start: 0 !important;
+        width: max-content !important;
+        max-width: 240px !important;
+        white-space: normal !important;
+        translate: 0 4px !important;
+    }
+
+    @media (hover: hover) {
+        .token .status-pip[data-tip]:hover::before {
+            translate: 0 0 !important;
+        }
+    }
+
+    /* Over the pip, its tooltip alone: not the one of the class of whom it is on. */
+    .token-holder:has(.status-pip:hover)::before {
+        opacity: 0 !important;
+    }
+
+    .row:focus-visible {
+        outline-offset: -2px !important;
+    }
+
+    :is(.effect.icon-only, .effect.more)[data-tip]::before {
+        left: auto !important;
+        inset-inline-start: 0 !important;
+        width: max-content !important;
+        max-width: 240px !important;
+        white-space: normal !important;
+        translate: 0 4px !important;
+    }
+
+    @media (hover: hover) {
+        :is(.effect.icon-only, .effect.more)[data-tip]:hover::before {
+            translate: 0 0 !important;
+        }
+    }
+
+    :is(.effect.icon-only, .effect.more)[data-tip]:focus-visible::before {
+        translate: 0 0 !important;
+    }
+
+    /* How a number is made, in its tooltip (FOR-8): lines that wrap, its free roll on the last. */
+    [data-tip].tip-wide::before {
+        width: max-content !important;
+        max-width: 260px !important;
+        text-align: start !important;
+        white-space: pre-line !important;
+    }
+
+    .asked.folded .asked-fold:focus-visible {
+        outline: none !important;
+    }
+
+    .asked.folded:has(.asked-fold:focus-visible) {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 3px !important;
+    }
+
+    .asked-buttons button.sent {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 2px !important;
+    }
+
+    .ask-choices > .sent {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 2px !important;
+    }
+
+    .requested {
+        outline: 2px solid var(--gold) !important;
+        outline-offset: -1px !important;
+    }
+
+    :is(.asked-hand, .package-use) input:focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 2px !important;
+    }
+
+    .asked-own input:focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 1px !important;
+    }
+
+    /* A control without words says its name when hovered, after a moment, or reached by the keyboard; never at a touch, where it would stay lit. */
+    [data-tip]::before {
+        content: attr(data-tip) !important;
+        position: absolute !important;
+        bottom: calc(100% + 8px) !important;
+        left: 50% !important;
+        z-index: 40 !important;
+        padding: 5px 8px !important;
+        border-radius: var(--radius-xs) !important;
+        background: var(--ink) !important;
+        color: var(--paper) !important;
+        font: 400 0.8rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+        letter-spacing: 0 !important;
+        text-transform: none !important;
+        white-space: nowrap !important;
+        opacity: 0 !important;
+        translate: -50% 4px !important;
+        pointer-events: none !important;
+        transition: opacity var(--quick) linear, translate var(--quick) var(--ease) !important;
+    }
+
+    [data-tip].tip-left::before {
+        inset-inline-start: auto !important;
+        inset-inline-end: calc(100% + 8px) !important;
+        bottom: 50% !important;
+        translate: 4px 50% !important;
+    }
+
+    /* Under the control, where one over it would cover what is above, as the chips of the head over the row's icons (D-409). */
+    [data-tip].tip-below::before {
+        top: calc(100% + 8px) !important;
+        bottom: auto !important;
+        translate: -50% -4px !important;
+    }
+
+    @media (hover: hover) {
+        [data-tip]:hover::before {
+            opacity: 1 !important;
+            translate: -50% 0 !important;
+            transition-delay: var(--wait) !important;
+        }
+
+        [data-tip].tip-left:hover::before {
+            translate: 0 50% !important;
+        }
+    }
+
+    [data-tip]:focus-visible::before {
+        opacity: 1 !important;
+        translate: -50% 0 !important;
+    }
+
+    [data-tip].tip-left:focus-visible::before {
+        translate: 0 50% !important;
+    }
+
+    /* The title takes the focus for a screen reader to read it; no ring, as it is no control. */
+    .reader-head h3:focus {
+        outline: none !important;
+    }
+
+    /* A chapter the calendar led to, ringed while it has the focus. */
+    .chapter:focus {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 4px !important;
+    }
+
+    .act-verb:has(input:focus-visible),
+    .act-who-one:has(input:focus-visible) {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 2px !important;
+    }
+
+    .act-words:focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 1px !important;
+    }
+
+    .lm-token:focus-visible {
+        outline: none !important;
+    }
+
+    .map {
+        outline: none !important;
+    }
+
+    :is(.package-add-line, .package-credits, .search) input:focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 0 !important;
+    }
+
+    .filter-chips button:focus-visible,
+    .package-show:focus-visible,
+    .package-row:focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 2px !important;
+    }
+
+    .package-bin:focus-visible {
+        outline: 2px solid var(--accent) !important;
+    }
+
+    .package-said:focus {
+        outline: none !important;
+    }
+
+    .package-said:focus-visible {
+        outline: 2px solid var(--accent) !important;
+        outline-offset: 2px !important;
+    }
+}

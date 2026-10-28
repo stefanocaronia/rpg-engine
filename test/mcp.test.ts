@@ -68,7 +68,7 @@ describe("MCP server", () => {
     });
 
     it("answers with the same text as the command line", async () => {
-        const created = await call("init", { name: "Guadoscuro", language: "it", system: "5e", difficulty: "normal", lethality: "dice" });
+        const created = await call("init", { name: "Guadoscuro", language: "it", system: "fake", difficulty: "normal", lethality: "dice" });
         expect(created.isError).toBe(false);
         expect(created.text).toBe((await runCommandLine(["config", "language"], testContext(folder))).output.replace(/^language: it\n\n/, `Created the campaign "Guadoscuro" in ${folder}.\n${playLine}\n\nFor the master: `));
         // The first roll of a chat says once what to answer when the player asks whether a roll was real (D-530); the command line has no chat.

@@ -162,6 +162,11 @@ export interface PageModule
     pages?: Record<string, OwnPage>;
     /** Its own style sheet, which each of its drawings takes after the dashboard's: the layout and motion of its own parts, with the dashboard's tokens. */
     style?: string;
+    /**
+     * A game system's alone: a style sheet over the whole dashboard's, without a layer, which wins over its rules whatever their selectors while the player keeps
+     * the game's style on; never over the focus ring and the tooltips. Its classes are not a contract: a change of the dashboard may break it.
+     */
+    pageStyle?: string;
 }
 
 // The dashboard's own parts, which /kit.js gives in the page (src/dashboard/kit.tsx): drawn as the dashboard draws its own, with its style sheet's classes.

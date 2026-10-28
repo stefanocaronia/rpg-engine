@@ -11,5 +11,5 @@
       "rpg-engine/page": ["./src/page.ts"]
     }
   },
-  "include": ["src", "test", "systems/*/src"]
+  "include": ["src", "test"]
 }

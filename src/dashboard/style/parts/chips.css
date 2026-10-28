@@ -1,0 +1,332 @@
+/* Chips: lists as chips, names that act, effects, segmented controls, search fields and filters. */
+@layer parts {
+    /* Values to choose one of, the chosen one in gold, edged so that it stands out on light paper too. */
+    .segmented {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 2px;
+        padding: 3px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+    }
+
+    .segmented button {
+        min-height: 36px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: var(--radius-s);
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    /* A set of dice's d20 before its name (D-348). */
+    .segmented .die-swatch {
+        width: 22px;
+        height: 22px;
+        margin-inline-end: 6px;
+        vertical-align: -6px;
+        stroke-width: 1.2;
+        stroke-linejoin: round;
+    }
+
+    /* A value with its picture: a long name wraps beside the picture, never under it (D-526). */
+    .segmented button:has(> .die-swatch, > .coin-face, > .coin-pair) {
+        display: inline-flex;
+        align-items: center;
+        text-align: start;
+    }
+
+    /* A coin's heads before its name, as a set's d20 (D-526 (1)). */
+    .segmented svg.coin-face {
+        width: 22px;
+        height: 22px;
+        margin-inline-end: 6px;
+        vertical-align: -6px;
+    }
+
+    /* A design's heads and tails, the tails a little under the heads, as two coins on the table (D-526 (2)). */
+    .segmented .coin-pair {
+        display: inline-flex;
+        margin-inline-end: 6px;
+        vertical-align: -6px;
+    }
+
+    .segmented .coin-pair svg.coin-face {
+        margin-inline-end: 0;
+        vertical-align: 0;
+    }
+
+    .segmented .coin-pair svg.coin-face.heads {
+        position: relative;
+        z-index: 1;
+    }
+
+    .segmented .coin-pair svg.coin-face + svg.coin-face {
+        margin-inline-start: -7px;
+    }
+
+    /* A grain's picture shows through thin, faded edges. */
+    .segmented .die-swatch.grained path + path {
+        stroke-width: 0.6;
+        stroke-opacity: 0.7;
+    }
+
+    .segmented button[aria-checked="true"] {
+        background: var(--gold);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold), var(--ink) 35%);
+        color: var(--on-gold);
+    }
+
+    /* Lists as chips; what the parts add, apart. */
+    .chips-block {
+        display: grid;
+        gap: 4px;
+    }
+
+    .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .chips li {
+        padding: 3px 9px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--accent) 11%, var(--panel));
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* A name that acts (D-495): the name acts, the number rolls. A dotted line in the accent under it and a chevron after it; in a chip or a line, its whole
+       width the target. */
+    .act {
+        display: inline-block;
+        max-width: 100%;
+        margin: -2px -4px;
+        vertical-align: top;
+        padding: 2px 4px;
+        border: 0;
+        border-radius: var(--radius-s);
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+        text-indent: 0;
+        text-decoration: underline dotted color-mix(in srgb, var(--accent) 75%, transparent) 1px;
+        text-underline-offset: 3px;
+        cursor: pointer;
+    }
+
+    /* In a bulleted list a long name wraps as the item's text does, under its bullet. */
+    .notes .act {
+        max-width: none;
+    }
+
+    /* Inline, a character after the last word, so that it never goes to a line of its own; mirrored by itself from right to left. */
+    .act-mark {
+        margin-inline-start: 0.25em;
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    .chips.acting li {
+        padding: 0;
+    }
+
+    .chips.acting .act {
+        margin: 0;
+        padding: 3px 9px;
+        border-radius: inherit;
+    }
+
+    @media (pointer: coarse) {
+        .chips.acting .act {
+            min-height: 36px;
+        }
+
+        .items th .act {
+            min-height: 36px;
+        }
+    }
+
+    /* What the character's parts always give: outlined, not chosen. */
+    .always {
+        display: grid;
+        gap: 6px;
+        margin-top: 6px;
+    }
+
+    .always .chips li {
+        padding: 2px 8px;
+        border: 1px solid var(--rule);
+        background: transparent;
+    }
+
+    /* A list of sentences, not of names: lines, not chips. */
+    .notes {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding-block: 0;
+        padding-inline: 1.1em 0;
+        font-size: inherit;
+    }
+
+    .notes li::marker {
+        color: var(--accent);
+    }
+
+    .effects {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .member .effects {
+        grid-column: 2;
+    }
+
+    .effect {
+        padding: 2px 8px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--accent) 16%, transparent);
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* Its end, softer than its name: the muted text drawn a little toward the ink, as the muted alone does not read on the accent's tint (4.5:1). */
+    .effect .end {
+        margin-inline-start: 0.35em;
+        color: color-mix(in srgb, var(--muted) 70%, var(--ink));
+    }
+
+    /* An effect with its drawing (D-516): the icon inside the chip before its word; where few fit, the icon alone, its word in its tooltip. */
+    .effect.with-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding-inline-start: 5px;
+    }
+
+    .effect-icon {
+        flex: none;
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .effect.icon-only {
+        display: inline-grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+    }
+
+    .effect.icon-only .effect-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Their tooltip over the chip, from its start toward the name, inside the party's strip, which scrolls and so cuts what leaves it. */
+    :is(.effect.icon-only, .effect.more) {
+        position: relative;
+    }
+
+    /* A package's small card among the values under a name (D-516): a lead's words and value on one line. */
+    .person-box-lead {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        font-weight: 700;
+    }
+
+    .search {
+        display: inline-flex;
+        position: relative;
+        align-items: center;
+        width: min(220px, 50%);
+    }
+
+    .search svg.icon {
+        position: absolute;
+        inset-inline-start: 10px;
+        width: 16px;
+        height: 16px;
+        color: var(--muted);
+        pointer-events: none;
+    }
+
+    .search input {
+        width: 100%;
+        height: 36px;
+        padding: 0 10px;
+        padding-inline-start: 32px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.85rem;
+    }
+
+    /* The kinds, with how many each has: one line on a screen, two on a phone, never a row to scroll. */
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 6px 0 4px;
+    }
+
+    .filter-chips button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .filter-chips button:hover {
+        background: color-mix(in srgb, var(--ink) 5%, transparent);
+    }
+
+    .filter-chips button[aria-pressed="true"] {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    /* A finger needs the room of a target, after the chip's own height. */
+    @media (pointer: coarse) {
+        .filter-chips button {
+            min-height: var(--target);
+        }
+    }
+
+    /* On a phone the actions go under the row's words, so that the name keeps the width; the tile is smaller, the field takes its line. */
+    @media (max-width: 600px) {
+        .search {
+            width: 150px;
+        }
+    }
+}

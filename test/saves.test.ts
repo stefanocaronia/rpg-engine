@@ -48,7 +48,7 @@ let context: Context;
 beforeEach(async () => {
     folder = makeTempFolder();
     context = testContext(folder);
-    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "ironsworn", "--difficulty", "normal", "--lethality", "dice"], context);
+    await runCommandLine(["init", "--name", "Prova", "--language", "it", "--system", "free", "--difficulty", "normal", "--lethality", "dice"], context);
     inPlay(folder);
     await rpg("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "health=5/5");
 });

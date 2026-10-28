@@ -9,12 +9,13 @@
 //   npm run translate -- --only fr,de
 //   npm run translate -- --only zh --again    translates again the phrases and words that hold a term of the glossary (never the curated Italian)
 //   npm run translate -- --again master,save  only those that hold these terms
+//   npm run translate -- --system ../rpg-engine-5e   the words of a game system in its own repository, in place of the engine's systems
 // A translation that fails keeps the one the file had; to translate a language anew, delete its file. Not part of the tests: run it after adding or
 // changing phrases, the Italian words of a system or the glossary, then look at what it wrote.
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse, stringify } from "yaml";
 import { fieldLabel } from "../../src/dashboard/labels.ts";
@@ -61,6 +62,8 @@ const sections = ["groups", "fields", "words", "names"] as const;
 const glossary = JSON.parse(readFileSync(new URL("glossary.json", import.meta.url), "utf8")) as { voice: Record<string, string>; terms: Record<string, Term>; };
 const only = listAfter("--only");
 const again = process.argv.includes("--again") ? listAfter("--again") ?? Object.keys(glossary.terms) : [];
+// The folders of game systems in their own repositories whose words to translate, in place of the engine's.
+const givenSystems = listAfter("--system")?.map((folder) => resolve(folder));
 const unknown = again.filter((term) => !(term in glossary.terms));
 
 if (unknown.length > 0) {
@@ -137,11 +140,13 @@ async function pageTarget(): Promise<Target>
  */
 function systemTargets(): Target[]
 {
-    return readdirSync(systemsFolder).filter((name) => existsSync(join(systemsFolder, name, "words", `${curated}.yaml`))).map((name) => {
-        const file = (language: string): string => join(systemsFolder, name, "words", `${language}.yaml`);
+    const folders = givenSystems ?? readdirSync(systemsFolder).map((name) => join(systemsFolder, name));
+    return folders.filter((folder) => existsSync(join(folder, "words", `${curated}.yaml`))).map((folder) => {
+        const name = systemName(folder);
+        const file = (language: string): string => join(folder, "words", `${language}.yaml`);
         const read = (language: string): Record<string, string> => (existsSync(file(language)) ? wordEntries(parse(readFileSync(file(language), "utf8")) as Words) : {});
         const italian = read(curated);
-        const system = parse(readFileSync(join(systemsFolder, name, "system.yaml"), "utf8")) as { title?: string; "sheet-headline"?: string; };
+        const system = parse(readFileSync(join(folder, "system.yaml"), "utf8")) as { title?: string; "sheet-headline"?: string; };
         const englishNames = read("en");
 
         const english = (id: string): string => {
@@ -150,7 +155,7 @@ function systemTargets(): Target[]
         };
 
         return {
-            name: `systems/${name}`,
+            name: givenSystems === undefined ? `systems/${name}` : folder,
             entries: Object.keys(italian).map((id) => ({ id, english: english(id), italian: italian[id] })),
             batch: Math.max(1, Object.keys(italian).length),
             languages: shippedLanguages.filter((language) => language !== curated && language !== "en"),
@@ -160,14 +165,12 @@ function systemTargets(): Target[]
                 const headline = translations.headline === undefined ? {} : { headline: translations.headline };
                 const label = new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
                 const head = `# The words of the ${name} system in ${label}, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the\n`
-                    + "# words of words/it.yaml, which come from the system's official Italian translation; with the terms of the official translation in this language, where one is.\n";
+                    + "# words of words/it.yaml; with the terms of the official translation in this language, where one is.\n";
                 writeFileSync(file(language), head + stringify({ ...words, ...headline }, { lineWidth: 0 }));
             },
             brief: (language, label) => [
-                `Translate the words a game system shows on the dashboard of a tabletop role-playing game into ${label} (${language}). The system is ${system.title ?? name}:`,
-                "the fifth edition of the world's oldest fantasy role-playing game, in its System Reference Document 5.1.",
-                `- Where the game has an official translation in ${label}, use its terms exactly, as its books write them (the SRD 5.1 itself was published in French,`,
-                `  German, Italian and Spanish); else the words its players use in ${label}.`,
+                `Translate the words a game system shows on the dashboard of a tabletop role-playing game into ${label} (${language}). The system is ${system.title ?? name}.`,
+                `- Where the game has an official translation in ${label}, use its terms exactly, as its books write them; else the words its players use in ${label}.`,
                 "- Each entry has an id: group (a heading of the character sheet), field (the label of a value of the sheet, short; an ability score as the translation",
                 "  abbreviates it, as FOR for Strength in Italian), word (a name the game uses: races, classes, conditions, damage types, sizes, languages, armor and",
                 "  weapons a character is proficient in, the words of a setting), name (the whole name of a field whose label is short, as a roll tells it:",
@@ -176,7 +179,7 @@ function systemTargets(): Target[]
                 "  only its case following the entry's. An entry such as until long rest or difficult terrain is a whole phrase: bend the words as the language needs.",
                 "- Keep each word's case as given: a lowercase word stays lowercase, a capitalized name stays capitalized.",
                 "- Keep every {name} in braces exactly as it is; move it where the language wants it.",
-                "- The Italian beside an entry, from the official Italian translation, shows what it means.",
+                "- The Italian beside an entry shows what it means.",
             ],
         };
     });
@@ -199,6 +202,14 @@ function splitId(id: string): [string, string]
 {
     const at = id.indexOf(": ");
     return at < 0 ? [id, ""] : [id.slice(0, at), id.slice(at + 2)];
+}
+
+/** A system's name as a campaign gives it: its package's without its scope and its "system-" (@rpgengine/system-5e is 5e), else its folder's. */
+function systemName(folder: string): string
+{
+    const manifest = join(folder, "package.json");
+    const packageName = existsSync(manifest) ? (JSON.parse(readFileSync(manifest, "utf8")) as { name?: string; }).name : undefined;
+    return basename(packageName ?? folder).replace(/^system-/, "");
 }
 
 /** The comma-separated list after an option, when one follows it. */

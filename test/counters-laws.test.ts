@@ -131,14 +131,14 @@ describe("the laws of whom a counter's change concerns, on worlds made at random
     });
 });
 
-// What a change asks for, and what a write gives: the fields of a page in the test system based on Ironsworn, where momentum goes down to -6 (FOR-6).
+// What a change asks for, and what a write gives: the fields of a page in the fake system, where nerve goes down to -6 (FOR-6).
 type Operation =
     | { command: "change"; field: string; by: number; }
     | { command: "change"; field: string; spend: number; }
     | { command: "change"; field: string; to: string; }
     | { command: "write"; field: string; value: string; };
 
-const fieldNames = ["frecce", "ferite", "momentum"];
+const fieldNames = ["frecce", "ferite", "nerve"];
 const counterTexts = fc.oneof(fc.integer({ min: -4, max: 14 }).map(String), fc.tuple(fc.integer({ min: -3, max: 14 }), fc.integer({ min: 0, max: 12 })).map(([value, max]) => `${value}/${max}`));
 const operations: fc.Arbitrary<Operation> = fc.oneof(
     fc.record({ command: fc.constant("change" as const), field: fc.constantFrom(...fieldNames), by: fc.integer({ min: -16, max: 16 }) }),
@@ -151,10 +151,10 @@ const holders = fc.constantFrom("pc", "companion", "npc", "carried", "item", "op
 const startingFields = fc.record({
     frecce: fc.integer({ min: -2, max: 20 }).map(String),
     ferite: fc.tuple(fc.integer({ min: -2, max: 14 }), fc.integer({ min: 0, max: 12 })).map(([value, max]) => `${value}/${max}`),
-    momentum: fc.integer({ min: -8, max: 10 }).map((value) => `${value}/10`),
+    nerve: fc.integer({ min: -8, max: 10 }).map((value) => `${value}/10`),
 });
 // Two runs that give every outcome, on a page that concerns the player and on one that does not: they come before the random ones, so coverage never hangs on chance.
-const everyOutcome: [string, { frecce: string; ferite: string; momentum: string; }, Operation[]][] = ["pc", "npc"].map((holder) => [holder, { frecce: "5", ferite: "3/6", momentum: "2/10" }, [
+const everyOutcome: [string, { frecce: string; ferite: string; nerve: string; }, Operation[]][] = ["pc", "npc"].map((holder) => [holder, { frecce: "5", ferite: "3/6", nerve: "2/10" }, [
     { command: "write", field: "frecce", value: "8" },
     { command: "change", field: "frecce", by: -2 },
     { command: "change", field: "ferite", by: 0 },
@@ -216,10 +216,10 @@ describe("the laws of change and write on counters, on pages made at random", ()
     }, 120000);
 });
 
-/** A campaign in the test system based on Ironsworn with one page that holds the counters: whose it is decides whom its changes concern (D-93). */
+/** A campaign in the fake system with one page that holds the counters: whose it is decides whom its changes concern (D-93). */
 function counterCampaign(root: string, holder: string, start: Record<string, string>): { file: string; name: string; }
 {
-    writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: ironsworn\nlanguage: it\n");
+    writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: fake\nlanguage: it\n");
     writeFileSync(join(root, "state.yaml"), "mode: play\n");
     const counted = Object.entries(start).map(([field, value]) => `${field}: ${value}`);
     const [type, name, fields] = holder.includes("quest")
@@ -249,13 +249,13 @@ function commandOf(name: string, operation: Operation): string[]
 }
 
 /**
- * What a change or a write leaves in the field, or "refused" (CNT-3–CNT-7): momentum's maximum is the system's, 10, and its minimum -6 (FOR-6, FOR-7);
+ * What a change or a write leaves in the field, or "refused" (CNT-3–CNT-7): nerve's maximum is the system's, 10, and its minimum -6 (FOR-6, FOR-7);
  * a current/max counter changes only with change (D-92).
  */
 function applyByModel(model: Record<string, Counter>, operation: Operation): Counter | "refused"
 {
     const counter = model[operation.field];
-    const worked = operation.field === "momentum" ? { min: -6, max: 10 } : {};
+    const worked = operation.field === "nerve" ? { min: -6, max: 10 } : {};
     const given = "to" in operation ? operation.to : operation.command === "write" ? operation.value : undefined;
     const target = given === undefined || given === "max" ? undefined : readCounterText(given);
 

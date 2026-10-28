@@ -18,6 +18,7 @@ import { shortRoadProblems } from "./game-positions.ts";
 import { questProblems } from "./game-quests.ts";
 import { passageProblems, roadProblems } from "./game-roads.ts";
 import { readOpenScene, sceneProblems } from "./game-scene.ts";
+import { themeProblems } from "./game-theme.ts";
 import { readPresent, timeProblems } from "./game-time.ts";
 import { extensionWordsProblems } from "./game-widgets.ts";
 import { campaignSystem, systemOccasions, systemProblems, systemSettingProblems } from "./game-world.ts";
@@ -32,6 +33,7 @@ export function campaignProblems(root: string, world: World, context: Context): 
         ...checkSettings(root),
         ...system,
         ...systemSettingProblems(root, context),
+        ...themeProblems(root, context),
         ...moneyProblems(root, context),
         ...checkLog(root),
         ...checkWorld(world),

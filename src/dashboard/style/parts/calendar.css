@@ -1,0 +1,357 @@
+/* Days: the calendar of the world. */
+@layer parts {
+    /* The calendar (TIM-8): today and the deadlines beside the month on a wide screen. */
+    .calendar {
+        display: grid;
+        gap: var(--gap);
+        align-items: start;
+    }
+
+    .calendar-side {
+        display: grid;
+        gap: var(--gap);
+        min-width: 0;
+    }
+
+    @media (min-width: 900px) {
+        .calendar {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+        }
+    }
+
+    .calendar-date {
+        /* The game's face of the big numbers, when it gives one (D-528). */
+        font-family: var(--number-font, inherit);
+        margin: 0;
+        font-size: 1.6rem;
+        font-weight: 700;
+        line-height: 1.15;
+    }
+
+    .calendar-now {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0 0;
+        color: var(--muted);
+    }
+
+    .season-winter {
+        --season: var(--season-winter);
+    }
+
+    .season-spring {
+        --season: var(--season-spring);
+    }
+
+    .season-summer {
+        --season: var(--season-summer);
+    }
+
+    .season-autumn {
+        --season: var(--season-autumn);
+    }
+
+    .season-other {
+        --season: var(--muted);
+    }
+
+    .calendar-season {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 8px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--season) 16%, var(--panel));
+        color: var(--ink);
+        font-size: 0.85rem;
+        font-weight: 650;
+    }
+
+    .calendar-season-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--season);
+    }
+
+    .calendar-month-name::first-letter {
+        text-transform: uppercase;
+    }
+
+    .calendar-steps {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: 2px;
+        margin-inline-start: auto;
+    }
+
+    .calendar-steps .icon-button svg.icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .calendar-steps .calendar-back svg.icon,
+    [dir="rtl"] .calendar-steps .icon-button:last-child svg.icon {
+        scale: -1 1;
+    }
+
+    [dir="rtl"] .calendar-steps .calendar-back svg.icon {
+        scale: 1;
+    }
+
+    /* The year as a ribbon of its months, each as long as its days, in its season's colour; the month shown taller, today's with a dot under it. */
+    .calendar-year {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        margin-bottom: 14px;
+    }
+
+    .calendar-year-month {
+        position: relative;
+        flex-basis: 0;
+        height: 6px;
+        border-radius: var(--radius-xs);
+        background: color-mix(in srgb, var(--season) 45%, var(--panel));
+    }
+
+    .calendar-year-month.shown {
+        height: 14px;
+        background: var(--season);
+    }
+
+    .calendar-year-month.now::after {
+        content: "";
+        position: absolute;
+        top: calc(100% + 3px);
+        left: calc(50% - 2px);
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--ink);
+    }
+
+    .calendar-year .calendar-season {
+        margin-inline-start: 10px;
+    }
+
+    /* The days in rows of ten, or five on a phone: a calendar of months alone has no weeks. */
+    .calendar-days {
+        display: grid;
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+        gap: 4px;
+    }
+
+    .calendar-days.rows-5 {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .calendar-day {
+        display: grid;
+        grid-template-rows: 1fr 12px;
+        justify-items: center;
+        align-items: center;
+        min-height: 48px;
+        padding: 4px 2px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .calendar-day-number {
+        font-weight: 650;
+    }
+
+    .calendar-day.lived {
+        background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+    }
+
+    .calendar-day.before {
+        border-style: dashed;
+        background: transparent;
+        color: var(--muted);
+    }
+
+    .calendar-day.due {
+        border-color: color-mix(in srgb, var(--low) 60%, var(--rule));
+    }
+
+    .calendar-day.today {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .calendar-day.today .calendar-day-number {
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    .calendar-day[aria-pressed="true"] {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: var(--paper);
+    }
+
+    .calendar-day[aria-pressed="true"] .calendar-day-number {
+        color: inherit;
+    }
+
+    .calendar-day-marks {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        height: 12px;
+    }
+
+    .calendar-scene-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+    }
+
+    .calendar-day-marks svg.icon {
+        width: 12px;
+        height: 12px;
+        color: var(--low);
+        stroke-width: 2.4;
+    }
+
+    .calendar-day[aria-pressed="true"] :is(.calendar-scene-dot, .calendar-day-marks svg.icon) {
+        background: currentColor;
+        color: inherit;
+    }
+
+    .calendar-day[aria-pressed="true"] .calendar-day-marks svg.icon {
+        background: none;
+    }
+
+    /* What the marks of the days say. */
+    .calendar-key {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .calendar-key > span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .calendar-key > span::before {
+        content: "";
+        flex: none;
+        width: 12px;
+        height: 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-xs);
+    }
+
+    .calendar-key > .calendar-key-today::before {
+        border: 2px solid var(--accent);
+    }
+
+    .calendar-key > .calendar-key-lived::before {
+        background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+    }
+
+    .calendar-key > .calendar-key-scene::before {
+        width: 6px;
+        height: 6px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--accent);
+    }
+
+    .calendar-key > .calendar-key-deadline::before {
+        display: none;
+    }
+
+    .calendar-key-deadline svg.icon {
+        width: 12px;
+        height: 12px;
+        color: var(--low);
+        stroke-width: 2.4;
+    }
+
+    /* The day chosen: its name and what it holds, each leading to the Journal. */
+    .calendar-chosen {
+        display: grid;
+        gap: 6px;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--rule);
+    }
+
+    .calendar-chosen-title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .calendar-chosen-list,
+    .calendar-deadlines {
+        display: grid;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .calendar-deadlines {
+        padding: 6px 6px 8px;
+    }
+
+    .calendar-line,
+    .calendar-deadline {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 4px 8px;
+        border-radius: var(--radius-m);
+        color: var(--ink);
+    }
+
+    .calendar-deadline {
+        min-height: 56px;
+        padding-inline: 10px;
+    }
+
+    .calendar-line svg.icon {
+        width: 18px;
+        height: 18px;
+        color: var(--accent);
+    }
+
+    .calendar-scene {
+        display: grid;
+        gap: 1px;
+        min-width: 0;
+    }
+
+    .calendar-scene-place {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .calendar-chapter {
+        color: var(--muted);
+        font-weight: 650;
+    }
+}

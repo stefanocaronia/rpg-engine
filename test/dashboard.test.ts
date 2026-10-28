@@ -200,28 +200,28 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(refused.output).toContain("Give settings alone");
     });
 
-    it("works the same for another game: momentum from -6, with the maximum the debilities leave", async () => {
-        // The test system based on Ironsworn, with a sheet and a line of its own.
+    it("works the same for a counter below 0: nerve from -6, with the maximum the scars leave", async () => {
+        // The fake system with nerve and scars in a group of the sheet and on its line.
         const systems = makeTempFolder();
-        cpSync(join(testSystemFolders[0], "ironsworn"), join(systems, "ironsworn"), { recursive: true });
-        const settings = join(systems, "ironsworn", "system.yaml");
-        writeFileSync(settings, `${readFileSync(settings, "utf8")}\nsheet:\n  Stats: [edge, heart, iron, shadow, wits]\n  Condition: [health, spirit, supply, momentum, debilities?]\nstatus-line: [health, spirit, supply, momentum]\n`);
-        const ironsworn = makeTempFolder();
-        // Its copy with a sheet first: the nearest folder wins over the package's ironsworn.
-        context = { ...testContext(ironsworn), systemFolders: [systems, testSystemFolders[0]] };
+        cpSync(join(testSystemFolders[1], "fake"), join(systems, "fake"), { recursive: true });
+        const settings = join(systems, "fake", "system.yaml");
+        writeFileSync(settings, readFileSync(settings, "utf8").replace(/^sheet:\n/m, "sheet:\n  Condition: [nerve, scars?]\n").replace(/^status-line: .*$/m, "status-line: [grit, nerve]"));
+        const fen = makeTempFolder();
+        // Its copy first: the nearest folder wins over the tests' fake.
+        context = { ...testContext(fen), systemFolders: [systems, ...testSystemFolders] };
 
         try {
-            await ok("init", "--name", "Ferro", "--language", "en", "--system", "ironsworn");
-            inPlay(ironsworn);
-            await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "edge=2", "--set", "health=5/5", "--set", "momentum=2", "--set", "debilities=[wounded]");
+            await ok("init", "--name", "Ferro", "--language", "en", "--system", "fake");
+            inPlay(fen);
+            await ok("write", "Kira", "--type", "character", "--set", "role=pc", "--set", "grit=5/5", "--set", "nerve=2", "--set", "scars=[burned]");
             const data = JSON.parse(await ok("view", "Kira", "--json"));
             const condition = data.sheet.find((group: { name: string; }) => group.name === "Condition");
-            expect(condition.values).toContainEqual({ field: "momentum", kind: "counter", text: "2/9", counter: { min: -6, max: 9, value: 2 }, marks: 0 });
-            expect(condition.values).toContainEqual({ field: "debilities", kind: "list", text: "wounded", items: ["wounded"], marks: 0 });
+            expect(condition.values).toContainEqual({ field: "nerve", kind: "counter", text: "2/9", counter: { min: -6, max: 9, value: 2 }, marks: 0 });
+            expect(condition.values).toContainEqual({ field: "scars", kind: "list", text: "burned", items: ["burned"], marks: 0 });
             const party = JSON.parse(await ok("view", "--json")).party;
-            expect(party[0].counters.map((value: { field: string; }) => value.field)).toEqual(["health", "momentum"]);
+            expect(party[0].counters.map((value: { field: string; }) => value.field)).toEqual(["grit", "nerve"]);
         } finally {
-            removeFolder(ironsworn);
+            removeFolder(fen);
             removeFolder(systems);
         }
     });

@@ -263,7 +263,7 @@ function sceneInState(root: string): Record<string, unknown> | undefined
 function sceneCampaign(): string
 {
     const root = makeTempFolder();
-    writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: ironsworn\nlanguage: it\n");
+    writeFileSync(join(root, "campaign.yaml"), "name: Prova\nsystem: free\nlanguage: it\n");
     writeFileSync(join(root, "state.yaml"), "mode: play\n");
     mkdirSync(join(root, "world", "characters"), { recursive: true });
     mkdirSync(join(root, "world", "creatures"), { recursive: true });

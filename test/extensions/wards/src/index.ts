@@ -49,7 +49,7 @@ const wards: PackageEntry = ({ z }) => ({
                 const asked = await game.ask({
                     question: input.question,
                     check: "Ward",
-                    notation: input.notation ?? "1d6+wits",
+                    notation: input.notation ?? "1d6+wit-bonus",
                     ...(input.forced === true ? { decline: false } : {}),
                     ...card,
                     tones: (faces) => faces.map((face) => (face === 1 ? "bad" : undefined)),

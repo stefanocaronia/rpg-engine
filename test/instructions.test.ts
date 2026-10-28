@@ -8,7 +8,7 @@ import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { corePart, layeredPart } from "../src/instructions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
-import { explorationGuidance, fightGuidance, inPlay, makeTempFolder, removeFolder, testContext, travelGuidance } from "./support.ts";
+import { explorationGuidance, fightGuidance, inPlay, madeSystem, makeTempFolder, removeFolder, testContext, travelGuidance } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -100,10 +100,16 @@ describe("the parts of the instructions (D-121)", () => {
     });
 
     it("come from the system of the campaign too: a game without turns tells a fight its own way (D-111)", async () => {
-        await ok("init", "--name", "Ferro", "--system", "ironsworn");
+        // A system of the test's own, whose part combat takes the core's place.
+        const systems = madeSystem("duello", {
+            "system.yaml": "title: a test system without turns\nlanguage: en\n",
+            "instructions/combat.md": "---\nreplace: true\n---\nA fight has no turns: whoever has the upper hand acts, and a miss gives it to the foe.\n",
+        });
+        context = { ...context, systemFolders: [systems] };
+        await ok("init", "--name", "Ferro", "--system", "duello");
         inPlay(folder);
         const opened = await ok("scene", "open", "--title", "Il guado", "--type", "combat");
-        expect(opened).toContain("A fight has no turns: whoever has initiative acts");
+        expect(opened).toContain("A fight has no turns: whoever has the upper hand acts");
         expect(opened).not.toContain(fightGuidance);
         expect(await ok("scene", "close", "--summary", "Passati.")).not.toContain("initiative");
     });

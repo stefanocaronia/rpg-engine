@@ -1,11 +1,12 @@
 // The dashboard's dice (D-278): the seven dice of dice.json, which make-dice.py writes with Blender, their symmetries, a throw simulated and recorded, and the
-// number decided before the throw brought up by turning the die by one of its symmetries.
+// number decided before the throw brought up by turning the die by one of its symmetries. The coin of coin.json, by make-coin.py, as one more (D-524 (1)).
 import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
-import { combine, diceToThrow, type DieModel, landedValue, landingTurn, rareFace, rotate, symmetries, type Vector } from "../src/dashboard/dice/models.ts";
+import { coinsToThrow, combine, diceToThrow, type DieModel, landedValue, landingTurn, rareFace, rotate, symmetries, type Vector } from "../src/dashboard/dice/models.ts";
 import { loadPhysics, throwDice } from "../src/dashboard/dice/throw.ts";
 
 const models = JSON.parse(readFileSync(new URL("../src/dashboard/assets/dice/dice.json", import.meta.url), "utf8")) as Record<string, DieModel>;
+const coin = JSON.parse(readFileSync(new URL("../src/dashboard/assets/dice/coin.json", import.meta.url), "utf8")) as DieModel;
 const tray = { width: 7, depth: 4.5 };
 
 beforeAll(() => loadPhysics());
@@ -188,5 +189,59 @@ describe("the dice of the dashboard (D-278)", () => {
             { kind: "d6", values: [6, 3], dropped: false },
             { kind: "d6", values: [1, 6, 3], dropped: false },
         ]);
+    });
+});
+
+describe("the coin of the dashboard (D-524 (1))", () => {
+    it("is a coin: heads up on one face, tails on the other, and the turns of a prism of 24 sides, the flips among them", () => {
+        expect(coin.values.map((value) => value.value)).toEqual([1, 2]);
+        expect(near(coin.values[0].up, [0, 1, 0]) && near(coin.values[1].up, [0, -1, 0])).toBe(true);
+        // Its faces for the physics are only the two it lies on.
+        expect(coin.shape.faces).toHaveLength(2);
+        const turns = symmetries(coin.shape);
+        expect(turns).toHaveLength(48);
+        expect(turns.some((turn) => near(rotate(turn, coin.values[0].up), coin.values[1].up))).toBe(true);
+    });
+
+    it("lands on the face decided, as it fell, its picture as upright as its turns allow; one, two or three coins, each flat on the floor, never on its edge", () => {
+        const random = seeded(31);
+        const turns = symmetries(coin.shape);
+        const still = (): number => 0;
+        const fell = new Set<number>();
+
+        for (const [width, depth, count] of [[7, 4.5, 1], [7, 4.5, 3], [3, 4.1, 2], [3, 4.1, 3]] as const) {
+            for (let throwNumber = 0; throwNumber < 12; throwNumber++) {
+                const last = throwDice(Array.from({ length: count }, () => coin.shape), { width, depth }, random, [], still).frames.at(-1) ?? [];
+                expect(last).toHaveLength(count);
+                // A thin coin fallen on another never ends through it: two coins on the floor are a coin apart.
+                const across = 2 * Math.hypot(coin.shape.vertices[0][0], coin.shape.vertices[0][2]);
+                last.forEach((one, index) => last.slice(index + 1).forEach((other) => expect(Math.hypot(one.position[0] - other.position[0], one.position[2] - other.position[2])).toBeGreaterThan(across * 0.97)));
+
+                for (const [index, lying] of last.entries()) {
+                    const up = rotate(lying.quaternion, landedValue(coin, lying.quaternion).up);
+                    expect(up[1]).toBeGreaterThan(Math.cos((3.5 * Math.PI) / 180));
+                    expect(Math.abs(lying.position[0])).toBeLessThan(width);
+                    fell.add(landedValue(coin, lying.quaternion).value);
+                    const wanted = (throwNumber + index) % 2 === 0 ? 1 : 2;
+                    const landing = combine(lying.quaternion, landingTurn(coin, turns, lying.quaternion, wanted));
+                    expect(landedValue(coin, landing).value).toBe(wanted);
+                    // Of 24 turns about its axis, the one nearest upright: its top within half a side, 7.5 degrees, of the screen's up.
+                    const top = rotate(landing, coin.values[wanted - 1].top ?? [0, 0, 0]);
+                    expect(-top[2] / Math.hypot(top[0], top[2])).toBeGreaterThan(Math.cos((7.6 * Math.PI) / 180));
+                }
+            }
+        }
+
+        expect(fell).toEqual(new Set([1, 2]));
+    });
+
+    it("throws a toss's coins, each on its face: 1 heads, 2 tails", () => {
+        expect(coinsToThrow(["heads", "tails", "tails"])).toEqual([
+            { kind: "coin", values: [1], dropped: false },
+            { kind: "coin", values: [2], dropped: false },
+            { kind: "coin", values: [2], dropped: false },
+        ]);
+        // A d2 rolled by its notation is no coin: the page has no model for it.
+        expect(diceToThrow([{ sides: 2, value: 1 }], new Set([...Object.keys(models), "coin"]))).toEqual([]);
     });
 });

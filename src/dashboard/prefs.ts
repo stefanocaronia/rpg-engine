@@ -69,6 +69,12 @@ export function readChoice(choice: Choice): string
     return value !== undefined && choice.values.includes(value) ? value : choice.initial;
 }
 
+/** Keeps a choice's value, for what changes it outside a component, as the game's style for one system. */
+export function writeChoice(choice: Choice, value: string): void
+{
+    writeKept(choice.key, value);
+}
+
 /**
  * A text the page keeps by its key, as the quest the player follows, and what changes it, on every part of the page that uses it: undefined while the player
  * never chose, empty once they chose none.

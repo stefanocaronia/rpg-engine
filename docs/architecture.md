@@ -16,10 +16,10 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | [src/mcp-server.ts](../src/mcp-server.ts) | The MCP server |
 | [src/bell-listener.ts](../src/bell-listener.ts) | `rpg --listen`, Claude Code's Stop hook that `init` writes: it waits at its chat's dashboard and wakes the chat when the player acts there |
 | [src/dashboard-server.ts](../src/dashboard-server.ts), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
-| [src/testing.ts](../src/testing.ts) | `rpg-engine/testing`, the test kit for extensions: a campaign with its extensions linked, its commands, log, widgets and dashboard; see [extensions.md](extensions.md#6-tests) |
-| [systems/](../systems/) | Built-in game systems: [5e](../systems/5e/) |
+| [src/testing.ts](../src/testing.ts), [src/system-checks.ts](../src/system-checks.ts) | `rpg-engine/testing`, the test kit for extensions and game systems: a campaign with its packages linked, its commands, log, widgets, the tools' descriptions and dashboard, and the checks of a system's folder; see [extensions.md](extensions.md#6-tests) |
+| [systems/](../systems/) | The one game system the engine brings, [free](../systems/free/); the others are packages of their own, as the [5e](https://github.com/stefanocaronia/rpg-engine-5e) |
 | [instructions/](../instructions/) | The game master's instructions |
-| [test/](../test/) | Tests and the Ironsworn-based test system |
+| [test/](../test/) | Tests, and the fake game system they play, [test/systems/fake](../test/systems/fake/) |
 
 | Module | Job |
 |---|---|
@@ -89,7 +89,7 @@ A folder or a `.zip` with `adventure.yaml` (title, about, language, version, aut
 
 ### A game system
 
-`systems/<name>/` holds `system.yaml`, `world/` (pages, as in a campaign), `rules/` (chapters of rules text), `images/`, `LICENSE.md`, `versions/<name>/` (a version of its rules in the same shape, read over the rest as the campaign's `ruleset` says), and, not published, `test/` and `build/`. [systems/game-system.ts](../src/systems/game-system.ts) validates it into a frozen `GameSystem`. A system may bring code, `package.json` and `src/` built to `dist/`: [systems/system-code.ts](../src/systems/system-code.ts) loads it as an entry starts, into the `Context`, and [commands/game-package-hooks.ts](../src/commands/game-package-hooks.ts) calls its hooks, and the extensions', after the commands' writes. See [game-systems.md](game-systems.md).
+A game system is a folder that holds `system.yaml`, `world/` (pages, as in a campaign), `rules/` (chapters of rules text), `images/`, `LICENSE.md`, `versions/<name>/` (a version of its rules in the same shape, read over the rest as the campaign's `ruleset` says). The engine brings `systems/free/` alone; any other is a package npm installs into the player's data folder, with `package install`, and lives in a repository of its own with its tests. The MCP server installs one of ours that a campaign plays and this computer lacks as it starts, once the world is read; its first call waits for it, before the dashboard opens, and says so in its answer ([commands/package.ts](../src/commands/package.ts), `installCampaignSystem`). [systems/game-system.ts](../src/systems/game-system.ts) validates it into a frozen `GameSystem`. A system may bring code, `package.json` and `src/` built to `dist/`: [systems/system-code.ts](../src/systems/system-code.ts) loads it as an entry starts, into the `Context`, and [commands/game-package-hooks.ts](../src/commands/game-package-hooks.ts) calls its hooks, and the extensions', after the commands' writes. See [game-systems.md](game-systems.md).
 
 ### A package's code
 
@@ -99,7 +99,7 @@ An extension's code and a game system's have one contract, [core/package-api.ts]
 
 | Mechanism | What it does | Where |
 |---|---|---|
-| World | All pages of the campaign and its system in a frozen `World`; campaign pages first, system pages read-only | [pages/world.ts](../src/pages/world.ts), [commands/game-world.ts](../src/commands/game-world.ts) |
+| World | All pages of the campaign and its system in a frozen `World`; campaign pages first, system pages read-only | [pages/world.ts](../src/pages/world.ts), [commands/game-world.ts](../src/commands/game-world.ts); what its system offers of the engine's settings, the settings a value asks and the parts its values choose, [commands/game-offers.ts](../src/commands/game-offers.ts) |
 | Inheritance | A character derives from its `creature`, an item from its `item`; a page keeps only its differences | [pages/inheritance.ts](../src/pages/inheritance.ts) |
 | Containers | A page never records where it is: its container lists it; `locate` climbs the chain | [pages/containers.ts](../src/pages/containers.ts), [commands/move.ts](../src/commands/move.ts) |
 | Stacks | Goods counted where they are held, `[[Torch]] 7`: a kind is in no place; `change` spends, `move` takes pieces, `trade` swaps goods and money in one go | [pages/stacks.ts](../src/pages/stacks.ts), [pages/stack-entry.ts](../src/pages/stack-entry.ts), [commands/game-stacks.ts](../src/commands/game-stacks.ts), [commands/trade.ts](../src/commands/trade.ts) |
@@ -110,10 +110,11 @@ An extension's code and a game system's have one contract, [core/package-api.ts]
 | Formulas | What a system works out: computed fields, tables, counter limits | [core/formula.ts](../src/core/formula.ts), [commands/worked-out.ts](../src/commands/worked-out.ts) |
 | Sheet | The character sheet as data, the same in chat and dashboard | [commands/sheet.ts](../src/commands/sheet.ts) |
 | Progression | Levels, features, uses that a rest refills, experience; the pool of dice a rest lets one spend | [progression/](../src/progression/), [commands/progression.ts](../src/commands/progression.ts), [commands/game-recipes.ts](../src/commands/game-recipes.ts), [commands/game-dice-pool.ts](../src/commands/game-dice-pool.ts) |
-| Rolls and asking | Dice, hidden rolls with proofs, a page's random tables and the yes/no oracle; questions with buttons on the dashboard or in the host's form | [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [commands/game-tables.ts](../src/commands/game-tables.ts), [commands/ask.ts](../src/commands/ask.ts) |
+| Rolls and asking | Dice, hidden rolls with proofs, a page's random tables, the yes/no oracle and coins; questions with buttons on the dashboard or in the host's form | [dice/](../src/dice/), [commands/roll.ts](../src/commands/roll.ts), [commands/game-tables.ts](../src/commands/game-tables.ts), [commands/ask.ts](../src/commands/ask.ts) |
 | Scenes | The open scene in `state.yaml`: who, copies, turns, who is hostile, what strangers look like | [scene/](../src/scene/), [commands/scene.ts](../src/commands/scene.ts) |
 | Saves | A zip at each scene's end; load and start over as the campaign's setting allows | [saves/](../src/saves/), [commands/save.ts](../src/commands/save.ts) |
 | Pictures | A page's `image`; pictures drawn by the player's Codex or Claude | [images/](../src/images/), [pictures/](../src/pictures/), [commands/image.ts](../src/commands/image.ts) |
+| Themes | A game system's theme of the dashboard, data alone: read and checked (files in its folder, both modes, contrast), turned into CSS of custom properties; served by the dashboard and turned off in its Settings | [themes/](../src/themes/), [commands/game-theme.ts](../src/commands/game-theme.ts), [dashboard/system-style.ts](../src/dashboard/system-style.ts) |
 | Moods | The master's and the characters' moods, from a closed list | [core/mood.ts](../src/core/mood.ts), [commands/mood.ts](../src/commands/mood.ts) |
 | Companions' diaries | A few lines of what a companion thinks, kept in the log, never on their page; outputs say whose is due on a new day or a quest's end; `view as` gives them their last three, the journal all | [commands/thoughts.ts](../src/commands/thoughts.ts), [commands/game-thoughts.ts](../src/commands/game-thoughts.ts) |
 | The player's view | What the player may see, never a secret: party, place, scene, map, journal, what the character knows with its documents and the calendar, settings, saves; with more than one player character, what any of them knows and who, with one in the foreground for the place and the map; with `as`, what another character knows, for the character agent voicing them, which the dashboard never asks | [commands/view.ts](../src/commands/view.ts), [commands/game-knowledge.ts](../src/commands/game-knowledge.ts), [commands/game-view-world.ts](../src/commands/game-view-world.ts) |
@@ -139,14 +140,14 @@ The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's f
 
 ## 6. Tests
 
-`npm test` runs vitest on `test/`; the 5e and our extensions keep their tests in their own repos, and `npm run test:downstream` runs them against this engine. Commands are tested through `runCommandLine(args, testContext(folder))`; `*-laws.test.ts` check rules with fast-check on random worlds; [systems/ironsworn](../systems/ironsworn/) is an Ironsworn-based test system, kept out of the npm package, so the core stays generic; [test/system-packages.test.ts](../test/system-packages.test.ts) checks every installed system.
+`npm test` runs vitest on `test/`; the 5e, Ironsworn and our extensions keep their tests in their own repos, and `npm run test:downstream` runs them against this engine, with the 5e beside the others whose tests play it. Commands are tested through `runCommandLine(args, testContext(folder))`; `*-laws.test.ts` check rules with fast-check on random worlds. The tests play [test/systems/fake](../test/systems/fake/), a game system of names and shapes of its own made for them, never published, and `free`; a test that needs a system without something makes one in a temporary folder (`madeSystem` in [test/support.ts](../test/support.ts)). [test/system-packages.test.ts](../test/system-packages.test.ts) checks every installed system with the kit's `systemChecks`, which a system's repository runs on itself.
 
 ## 7. How to add things
 
 **A command.** Create `src/commands/<name>.ts` with `defineCommand`. In `run`: `requireCampaign`, `campaignWorld`, read with `effectiveFields`, check everything, write through the modules, log. Return a result; `format` tells the AI what happened and what next. Add it to [commands/index.ts](../src/commands/index.ts), test it through `runCommandLine`, run `npm run docs`.
 
-**A field kind.** Add it to `fieldKinds` in [core/field-kind.ts](../src/core/field-kind.ts), give it a meaning where kinds are read (`declaredKind` in [pages/system-pages.ts](../src/pages/system-pages.ts) and its callers), and its check to `fits` in [test/system-packages.test.ts](../test/system-packages.test.ts).
+**A field kind.** Add it to `fieldKinds` in [core/field-kind.ts](../src/core/field-kind.ts), give it a meaning where kinds are read (`declaredKind` in [pages/system-pages.ts](../src/pages/system-pages.ts) and its callers), and its check to `fits` in [system-checks.ts](../src/system-checks.ts).
 
-**A key of `system.yaml`.** Add it to `systemSchema` and `readSystem` in [systems/game-system.ts](../src/systems/game-system.ts), use it from a command helper, check it in [test/system-packages.test.ts](../test/system-packages.test.ts), describe it in [game-systems.md](game-systems.md).
+**A key of `system.yaml`.** Add it to `systemSchema` and `readSystem` in [systems/game-system.ts](../src/systems/game-system.ts), use it from a command helper, check it in [system-checks.ts](../src/system-checks.ts) when a value of it can be wrong, have the fake system use it, describe it in [game-systems.md](game-systems.md).
 
-**A page of a system.** Add `systems/<name>/world/<type>/<Name>.md`; [test/system-packages.test.ts](../test/system-packages.test.ts) checks its name, fields and links. Only open-licensed content, with its attribution.
+**A page of a system.** Add `world/<type>/<Name>.md` in the system's own repository; the kit's `systemChecks`, in its tests, checks its name, fields and links. Only open-licensed content, with its attribution.

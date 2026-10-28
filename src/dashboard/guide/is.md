@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -15,21 +15,21 @@
 
 ## 1. Hvað RPG Engine er <!-- icon: about -->
 
-| Hver | Hvað viðkomandi gerir |
+| Hver | Hvað gerir hann |
 |---|---|
 | **Þú** | Þú spilar persónuna þína: hvað hún gerir, segir og reynir. |
-| **Sögumaðurinn** (gervigreindin) | Segir söguna, leikur alla aðra, ákveður hvað gerist og biður um köst. |
-| **RPG Engine** | Geymir heiminn í skrám, kastar teningunum, telur lífspunkta, peninga, tíma og vegalengdir og heldur leyndarmálum þar til þú uppgötvar þau. |
+| **Sögumaður** (gervigreindin) | Segir söguna, leikur alla aðra, ákveður hvað gerist og biður um köst. |
+| **RPG Engine** | Geymir heiminn í skrám, kastar teningunum, telur lífsstig, peninga, tíma og vegalengdir og heldur leyndarmálum földum þar til þú uppgötvar þau. |
 
-Heimurinn helst eins frá einu kvöldi til annars, jafnvel í nýju spjalli og jafnvel með annarri gervigreind:
+Heimurinn helst eins frá einu kvöldi til þess næsta, jafnvel í nýju spjalli, jafnvel með annarri gervigreind:
 
-- **Það sem hefur verið sagt stendur.** Dauður óvinur helst dauður.
-- **Teningarnir eru raunverulegir.** Sögumaðurinn getur ekki hnikað þeim til, nema á léttasta erfiðleikastiginu, ef þú velur það.
-- **Leyndarmál haldast leyndarmál.** Sögumaðurinn segir þér aldrei það sem persónan þín veit ekki.
-- **Heimurinn hreyfist.** Ógnir færast nær á meðan þið hvílist eða ferðist og þú sérð merki þeirra.
-- **Herferð er mappa** á tölvunni þinni: hættu hvenær sem þú vilt og taktu upp þráðinn síðar.
+- **Það sem hefur verið sagt stendur.** Dauður óþokki helst dauður.
+- **Teningarnir eru raunverulegir.** Sögumaður getur ekki hnikað þeim til, nema á léttasta erfiðleikastiginu, ef þú velur það.
+- **Leyndarmál haldast leyndarmál.** Sögumaður segir þér aldrei það sem persónan þín veit ekki.
+- **Heimurinn hreyfist.** Ógnir færast nær á meðan þú hvílist eða ferðast og þú sérð merki þeirra.
+- **Herferð er mappa** á tölvunni þinni: þú hættir hvenær sem þú vilt og heldur áfram síðar.
 
-Í dag spilar RPG Engine eitt leikjakerfi, **fimmtu útgáfu**, úr ókeypis System Reference Document 5.1. Fleiri koma ([Væntanlegt](#9-coming-later)).
+Leikur kemur sem leikjakerfi, pakki sem sögumaður setur upp fyrir herferðina þína. Núna er það okkar **fimmta útgáfa**, úr ókeypis System Reference Document 5.1. Án leikjakerfis spilar þú frjálst, sögu án talna. Fleiri koma síðar ([Væntanlegt síðar](#9-coming-later)).
 
 ---
 
@@ -218,23 +218,25 @@ Síða á þinni eigin tölvu, sem opnast aðeins í vafra þeirrar tölvu og er
 
 ### 5.1 Hvað leikjakerfi er
 
-Gögn eins leiks: persónublað hans, tölur, verur, hlutir, galdrar og reglutexti. Hver herferð spilar eitt kerfi. RPG Engine reiknar út persónublaðið og það sem er eytt og það sem kemur aftur. Hvernig eiginleiki virkar les sögumaðurinn í reglunum og ákveður, eins og við borðið.
+Gögn eins leiks: persónublaðið, tölurnar, verurnar, hlutirnir, galdrarnir og reglutextinn. Hver herferð spilar eitt kerfi. RPG Engine reiknar út persónublaðið og það sem er eytt og kemur aftur. Hvernig eiginleiki virkar les sögumaður í reglunum og ákveður, eins og við borðið.
 
-### 5.2 Fimmta útgáfa, innifalin
+### 5.2 Fimmta útgáfa
 
-Kynþættirnir, flokkarnir, undirflokkarnir, bakgrunnur og hæfileiki (feat) úr SRD 5.1; galdrarnir 319, vopnin, brynjurnar, töfragripirnir og skrímslin; reglukaflarnir, sem sögumaðurinn les eftir nákvæmum texta þeirra; allt persónublaðið, útreiknað.
+Kynþættir, flokkar og undirflokkar, bakgrunnur og hæfileiki úr SRD 5.1; 319 galdrar, vopn, brynjur, töfragripir og skrímsli; reglukaflarnir, sem sögumaður les eftir nákvæmum texta þeirra; allt persónublaðið, útreiknað.
 
-Þú getur líka spilað efni sem vantar í SRD, úr bók sem þú átt: sögumaðurinn skrifar það sem síður í herferðinni þinni og RPG Engine meðhöndlar þær eins og sínar eigin. RPG Engine fylgir aðeins opið efni. Þekking sögumannsins er ekki takmörkuð við það.
+Þetta er sérstakur pakki: sögumaður býður hann þegar þú setur upp herferð og setur hann upp. Herferð sem spilar hann setur hann upp sjálf í fyrsta sinn sem hún opnast á tölvu sem hefur hann ekki, og sögumaður lætur þig vita.
 
-Þínar eigin handbækur geta orðið bókasafnið þitt. Segðu sögumanninum hvar þær eru: *[Handbækurnar mínar eru í D:\Books\5e.]*, eða bættu möppunni þeirra við í Packages › Library og segðu já í glugganum sem tölvan sýnir, í eitt skipti. RPG Engine les þær á þessari tölvu. Hver herferð notar möppurnar sem þú kveikir á þar, og sögumaðurinn leitar í þeim þegar hann ákveður reglu, á eftir SRD, og vísar í bókina og blaðsíðuna. Þær lesast best sem texti eða sem PDF-skjöl þar sem hægt er að velja textann. PDF-skjal sem er skannað er lesið úr myndum af síðunum, aðeins á Windows, á nokkrum mínútum og með nokkrum villum. RPG Engine breytir aldrei handbókunum þínum, sendir texta þeirra aldrei neitt og afritar hann aldrei inn í herferð.
+Þú getur líka spilað efni sem SRD vantar, úr bók sem þú átt: sögumaður skrifar það sem síður í herferðinni þinni og RPG Engine meðhöndlar það eins og sitt eigið. RPG Engine fylgir aðeins opið efni; þekking sögumanns er ekki takmörkuð.
+
+Þínar eigin handbækur geta orðið safnið þitt: segðu sögumanni hvar þær eru, *[Handbækurnar mínar eru í D:\Books\5e.]*, eða bættu möppunni þeirra við í Packages › Library og segðu já í glugganum sem tölvan sýnir, einu sinni. RPG Engine les þær á þessari tölvu. Hver herferð notar möppurnar sem þú kveikir á þar, og sögumaður leitar í þeim þegar hann ákveður reglu, á eftir SRD, og vísar í bókina og blaðsíðuna. Þær lesast best sem texti eða sem PDF-skrár þar sem hægt er að velja textann. Skönnuð PDF-skrá er lesin út frá myndum blaðsíðnanna, aðeins á Windows, á nokkrum mínútum og með nokkrum villum. RPG Engine breytir aldrei handbókunum þínum, sendir aldrei texta þeirra neitt og afritar hann aldrei inn í herferð.
 
 ### 5.3 Húsreglur og þínar eigin viðbætur
 
-Biddu sögumanninn: *[Húsregla: náttúrulegur 1 í árás þýðir að þú missir vopnið.]* Sögumaðurinn geymir hana sem samkomulag borðsins, eða skrifar síðu eða tölu á persónublaðið þegar þess þarf. Húsreglur sem þegar eru skrifaðar má setja sem textaskrár í `rules` möppu herferðarinnar.
+Spurðu sögumann: *[Húsregla: náttúrulegur 1 í árás þýðir að þú missir vopnið.]* Sögumaður geymir hana sem samkomulag borðsins, eða skrifar síðu eða tölu á persónublaðið þegar þarf. Húsreglur sem þegar eru skrifaðar út geta farið sem textaskrár í `rules` möppu herferðarinnar.
 
 ### 5.4 Að bæta við eða flytja inn eigið leikjakerfi
 
-Ekki enn: í dag spilar RPG Engine aðeins fimmtu útgáfu ([Væntanlegt síðar](#9-coming-later)).
+Leikjakerfi er pakki: sögumaður setur hann upp úr npm, möppu eða skrá, og pakka sem er ekki frá okkur aðeins með þínu samþykki, í glugga á tölvunni þinni. Að búa til slíkan pakka er verk forritara og er lýst í skjölum RPG Engine á GitHub. Að breyta bók frá þér í leikjakerfi er ekki komið enn ([Væntanlegt síðar](#9-coming-later)).
 
 ---
 

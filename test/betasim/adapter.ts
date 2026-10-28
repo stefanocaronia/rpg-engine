@@ -1,4 +1,4 @@
-// How betasim talks to the dashboard: it serves the demo campaign (test/demo/demo.ts) on a port of its own, puts a copy of it in the state each flow asks for,
+// How betasim talks to the dashboard: it serves a demo campaign (test/demo/demo.ts) on a port of its own, free's or the 5e's as the flow says, puts a copy of it in the state each flow asks for,
 // and plays the master's part, asking the page a check or a choice as ask does (D-279). Usability only, never the game. `npm run betasim`; betasim's README.md says how it works.
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -11,13 +11,17 @@ import { SessionStore } from "../../src/core/session-store.ts";
 import { withFiles } from "../../src/core/store.ts";
 import { type Dashboard, startDashboard } from "../../src/dashboard-server.ts";
 import { saveLibraryFolders } from "../../src/library/folders.ts";
-import { demoFolder, serveDemo } from "../demo/demo.ts";
+import { loadSystemCode } from "../../src/systems/index.ts";
+import { demoFolderOf, type DemoSystem, serveDemo } from "../demo/demo.ts";
 
 /** The port in betasim.yaml and betasim-phone.yaml: never 5760, which the app's browser pane uses. */
 const port = 5791;
 const folders = join(import.meta.dirname, "..", "..", "tmp", "betasim");
-// The demo as it was the first time betasim ran, kept so that one run compares with the next; to take a newer demo, delete tmp/betasim/base and tmp/dashboard-demo.
-const base = join(folders, "base");
+// Each demo as it was the first time betasim ran, kept so that one run compares with the next; to take a newer demo, delete tmp/betasim/base and
+// tmp/dashboard-demo, or tmp/betasim/base-5e and tmp/dashboard-demo-5e.
+const bases: Record<DemoSystem, string> = { free: join(folders, "base"), "5e": join(folders, "base-5e") };
+// Where the 5e's demo links its repository, as the player's own.
+const fifthEditionLink = `${demoFolderOf("5e")}-systems`;
 const work = join(folders, "campaign");
 // The player's data folder of betasim's own, never the player's: the library added to this computer lives there (D-491). And a shelf of books to add.
 const home = join(folders, "home");
@@ -36,6 +40,8 @@ interface Setup
     shelf?: boolean;
     /** A call of the master's running: a sentence said now waits for it, and can still be taken back (D-495). */
     busy?: boolean;
+    /** The demo the flow plays: free's unless it needs the 5e's cards, as the hit dice of a rest, or its sheet, as its skills and attacks. */
+    system?: DemoSystem;
     /** The master asks the page, as ask does: a check (an option with its notation), a choice, or the dice of a rest's recipe (ASK-14). */
     ask?: { question: string; options?: string[]; recipe?: string; };
 }
@@ -210,24 +216,26 @@ async function answer(page: Page): Promise<string>
 }
 
 /** The demo's copy back as it was, the commands run on it and the files written, and the dashboard on its port, even when a command failed. */
-async function reset({ rpg = [], files = {}, busy = false }: Setup = {}): Promise<void>
+async function reset({ rpg = [], files = {}, busy = false, system = "free" }: Setup = {}): Promise<void>
 {
     await dashboard?.close();
     session?.close();
     asked = undefined;
 
-    if (!existsSync(base)) {
-        // serveDemo makes the demo the first time; its own dashboard is not needed.
-        await (await serveDemo([0])).close();
-        cpSync(demoFolder, base, { recursive: true });
+    if (!existsSync(bases[system]) || (system === "5e" && !existsSync(join(fifthEditionLink, "@rpgengine", "system-5e", "system.yaml")))) {
+        // serveDemo makes the demo the first time, and links the 5e's repository; its own dashboard is not needed.
+        await (await serveDemo([0], system)).close();
+        cpSync(demoFolderOf(system), bases[system], { recursive: true });
     }
 
     rmSync(work, { recursive: true, force: true });
-    cpSync(base, work, { recursive: true });
+    cpSync(bases[system], work, { recursive: true });
     rmSync(home, { recursive: true, force: true });
     mkdirSync(books, { recursive: true });
     writeFileSync(join(books, "Manuale del Guado.md"), "# Manuale del Guado\n\nLe regole della casa per il guado: chi scivola nella corrente fa un tiro salvezza di Forza.\n");
-    context = gameContext(busy);
+    context = gameContext(busy, system);
+    // The systems' code, as the MCP server loads it: the 5e's cards read their widgets through it (D-514).
+    context.systemCode = await loadSystemCode(context.systemFolders);
 
     try {
         // The page in English, whatever the demo's language (D-394): the flows and the terms name its English words. The game's own words stay Italian.
@@ -252,10 +260,13 @@ async function reset({ rpg = [], files = {}, busy = false }: Setup = {}): Promis
  * The game as the MCP server has it for the copy of the demo, with betasim's own data folder and the player's yes to a folder of books (D-491); `busy`, while a
  * call of the master's runs, which takes the player's sentences at its head (D-495).
  */
-function gameContext(busy = false): Context
+function gameContext(busy = false, system: DemoSystem = "free"): Context
 {
+    const own = defaultContext(work);
     return {
-        ...defaultContext(work),
+        ...own,
+        // The 5e as its demo links it from its repository, before the packages of this computer.
+        systemFolders: system === "5e" ? [own.systemFolders[0], fifthEditionLink, ...own.systemFolders.slice(1)] : own.systemFolders,
         home,
         bookIndex: join(home, "library"),
         readLibrary: () => undefined,

@@ -273,6 +273,12 @@ export function settingLabel(name: string): string
     return labels[name] ?? phraseLabel(systemWord("words", name) ?? fieldLabel(name));
 }
 
+/** A game system's name as the top of the page shows it, in its words when it gives one, as libero for free; else its name, as 5e (D-521). */
+export function systemNameLabel(name: string): string
+{
+    return systemWord("words", name) ?? name;
+}
+
 /** What a game system is, as its system.yaml titles it, in its words when it has them: The fifth edition from the SRD 5.1. */
 export function systemTitleLabel(title: string): string
 {

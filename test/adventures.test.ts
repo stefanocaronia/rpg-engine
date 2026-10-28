@@ -115,7 +115,7 @@ describe("package install of an adventure (ADV-1–ADV-5)", () => {
     });
 
     it("refuses what is not for the campaign: another game system, an extension it lacks, levels where the system has none", async () => {
-        expect((await rpg("package", "install", adventureFolder({}, manifest.replace("system: fake", "system: ironsworn")))).output).toContain("is for the game system ironsworn");
+        expect((await rpg("package", "install", adventureFolder({}, manifest.replace("system: fake", "system: free")))).output).toContain("is for the game system free");
         expect((await rpg("package", "install", adventureFolder({}, manifest.replace("{system: fake}", "{system: fake, extensions: {weather: 0.1.0}}")))).output).toContain(
             "needs the extension weather: install it with package install weather first",
         );

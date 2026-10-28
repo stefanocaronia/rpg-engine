@@ -68,17 +68,17 @@ describe("what breaks what someone keeps alive (EFF-14)", () => {
     });
 
     it("says nothing in a game system without it", async () => {
-        const iron = makeTempFolder();
-        const other = testContext(iron);
+        const free = makeTempFolder();
+        const other = testContext(free);
 
         try {
-            await runCommandLine(["init", "--name", "Ferro", "--system", "ironsworn"], other);
-            inPlay(iron);
+            await runCommandLine(["init", "--name", "Ferro", "--system", "free"], other);
+            inPlay(free);
             await runCommandLine(["write", "Kira", "--type", "character", "--set", "role=pc", "--set", "health=5/5"], other);
             await runCommandLine(["effect", "add", "Kira", "Vigilanza", "--by", "[[Kira]]"], other);
             expect((await runCommandLine(["change", "Kira", "health", "--by=-2"], other)).output).not.toContain("keeps");
         } finally {
-            removeFolder(iron);
+            removeFolder(free);
         }
     });
 });

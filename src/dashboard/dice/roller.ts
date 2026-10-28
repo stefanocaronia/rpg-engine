@@ -3,8 +3,8 @@
 // Rapier, at its first throw.
 import { readChoice } from "../prefs.ts";
 import { loadDice } from "./load.ts";
-import { combine, type DieModel, type DieThrow, landingTurn, symmetries } from "./models.ts";
-import { diceEdgesPref } from "./sets.ts";
+import { coinKind, combine, type DieModel, type DieThrow, landingTurn, symmetries } from "./models.ts";
+import { coinOf, diceEdgesPref, type DiceLook } from "./sets.ts";
 import { knock } from "./sounds.ts";
 import { makeStage, type Pose } from "./stage.ts";
 import { type Frame, loadPhysics, type Lying, type Throw, throwDice } from "./throw.ts";
@@ -14,13 +14,15 @@ const beforeReroll = 300;
 // How many frames late a knock may still sound.
 const lateKnock = 4;
 
-/** How a throw is shown: at once, with reduced motion; with its sound or not; cut short when the tray says so; and stopped by a newer throw. */
+/** How a throw is shown: at once, with reduced motion; with its sound or not; cut short when the tray says so; stopped by a newer throw; in whose dice. */
 export interface Showing
 {
     instant: boolean;
     sound: boolean;
     skipping(): boolean;
     current(): boolean;
+    /** The master's dice, for one of theirs (D-525 (3)); left out, the player's. */
+    look?: DiceLook;
 }
 
 /** The dice of the page: the kinds it has, a throw shown landing on the values given, true when it ended and false when a newer throw stopped it. */
@@ -49,8 +51,9 @@ export async function makeRoller(canvas: HTMLCanvasElement): Promise<Roller>
         kinds: new Set(loaded.models.keys()),
         async roll(dice, showing)
         {
-            // The edges chosen in Settings, rounded or sharp (D-354).
-            stage.place(dice.map((die) => die.kind), await loaded.looks(readChoice(diceEdgesPref)));
+            // The edges chosen in Settings, rounded or sharp (D-354); the coins of the player's design, the master's too (D-526).
+            const coins = dice.some((die) => die.kind === coinKind) ? coinOf(showing.look).design : undefined;
+            stage.place(dice.map((die) => die.kind), await loaded.looks(readChoice(diceEdgesPref), coins), showing.look);
             const poses: (Pose | undefined)[] = dice.map(() => undefined);
             const lying: (Frame | undefined)[] = dice.map(() => undefined);
             const throws = Math.max(0, ...dice.map((die) => die.values.length));

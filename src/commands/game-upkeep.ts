@@ -1,6 +1,5 @@
 // What the party uses up each day under the rigor «rules» (D-435, UPK-1–UPK-3): a ration each outside a settlement, the days without food and what they bring,
 // and a word on water.
-import { readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { parseFormula } from "../core/formula.ts";
 import { appendLogEntry } from "../core/log.ts";
@@ -11,6 +10,7 @@ import { baseChain, heldStacksOfKind, kindNamed, locate, type Page, type World, 
 import type { GameSystem, Lifestyle } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { campaignCoins } from "./game-money.ts";
+import { playedEngineSetting } from "./game-offers.ts";
 import { partyPages } from "./game-recipes.ts";
 import { writeStacks } from "./game-stacks.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -25,7 +25,8 @@ const settlementKinds = ["city", "town", "village", "inn"];
 export function dailyUpkeep(root: string, context: Context, system: GameSystem | undefined, days: number): string[]
 {
     const upkeep = system?.upkeep;
-    const rigor = readSettings(root).rigor;
+    // As the game plays it: one that fixes it to smooth counts nothing (DAT-16).
+    const rigor = playedEngineSetting(root, context, "rigor");
 
     if (upkeep === undefined || days <= 0 || (rigor !== "rules" && rigor !== "simulation")) {
         return [];

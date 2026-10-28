@@ -4,6 +4,8 @@
 title: the fake system of the core's tests
 language: en
 attribution: The fake system of rpg-engine's tests, made for them; no game's text.
+# Its theme of the dashboard (D-528), in its folder theme/.
+theme: theme
 # Not decimal, as an innkeeper gives change (D-128): a crown is 20 shillings, a mark 160 pence and rare.
 coins: crown 240, mark 160 rare, shilling 12, penny 1
 round: 10 seconds
@@ -105,6 +107,8 @@ roll-names:
 # The traits one may be skilled in, a list the system closes; the knacks stay open, as an oath's pages add theirs with their rank.
 values:
   skilled: [might, grace, wit]
+  # The scars one carries, each taking one from the most nerve one has.
+  scars: [burned, lamed, haunted]
 sheet-values:
   tongues: [Lowland, Marsh Cant]
   lodging: [Hayloft, Inn, Manor]
@@ -218,6 +222,9 @@ fields:
   ward: counter
   resolve: counter
   resolve-loss: counter
+  # Nerve goes below 0, down to -6; scars lower its most (FOR-6).
+  nerve: counter
+  scars: list
   fading: counter
   stamina-d6: counter
   stamina-d4: counter
@@ -278,6 +285,7 @@ counters:
   grit: {max: "6 + 3 * level + might-bonus"}
   ward: {shields: grit}
   resolve: {min: -3, max: 3}
+  nerve: {min: -6, max: 10 - count(scars)}
   resolve-loss: {max: 5}
   stamina-d6: {max: "sum(vocations, stamina-die = d6)"}
   stamina-d4: {max: "sum(vocations, stamina-die = d4)"}

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -17,19 +17,19 @@ Ten przewodnik jest dla graczy: nie musisz umieć programować.
 
 | Kto | Co robi |
 |---|---|
-| **Ty** | Grasz swoją postacią: co robi, mówi i próbuje. |
-| **Mistrz Gry** (AI) | Opowiada historię, gra wszystkich pozostałych, decyduje, co się dzieje, prosi o rzuty. |
-| **RPG Engine** | Trzyma świat w plikach, rzuca kośćmi, liczy punkty życia, pieniądze, czas i odległości, ukrywa sekrety, dopóki ich nie odkryjesz. |
+| **Ty** | Grasz swoją postacią: decydujesz, co robi, mówi i próbuje zrobić. |
+| **Mistrz Gry** (AI) | Opowiada historię, gra wszystkich pozostałych, decyduje, co się dzieje, i prosi o rzuty. |
+| **RPG Engine** | Przechowuje świat w plikach, rzuca kośćmi, liczy punkty życia, pieniądze, czas i odległości oraz strzeże sekretów, dopóki ich nie odkryjesz. |
 
 Świat pozostaje taki sam z wieczoru na wieczór, nawet w nowym czacie, nawet z inną AI:
 
 - **To, co zostało powiedziane, pozostaje prawdą.** Martwy złoczyńca pozostaje martwy.
 - **Kości są prawdziwe.** Mistrz Gry nie może ich naginać, chyba że na najłatwiejszym poziomie trudności, jeśli go wybierzesz.
-- **Sekrety pozostają sekretami.** Mistrz Gry nigdy nie zdradza tego, czego Twoja postać nie wie.
-- **Świat się porusza.** Zagrożenia rosną, gdy odpoczywacie lub podróżujecie, a Ty widzisz ich znaki.
-- **Kampania to folder** na Twoim komputerze: przerwij, kiedy chcesz, wróć później.
+- **Sekrety pozostają sekretami.** Mistrz Gry nigdy nie zdradza tego, czego postać nie wie.
+- **Świat się porusza.** Zagrożenia narastają, gdy odpoczywacie lub podróżujecie, a Ty widzisz ich znaki.
+- **Kampania to folder** na komputerze: przerywasz, kiedy chcesz, i wracasz później.
 
-Obecnie RPG Engine obsługuje jeden system gry, **piątą edycję**, opartą na darmowym System Reference Document 5.1. Kolejne dopiero powstaną ([Wkrótce](#9-coming-later)).
+Gra działa w oparciu o system gry, czyli pakiet, który Mistrz Gry instaluje do kampanii. Obecnie nasz to **piąta edycja**, oparta na darmowym System Reference Document 5.1. Bez systemu gry grasz za darmo w historię bez liczb. Kolejne systemy pojawią się później ([Plany na przyszłość](#9-coming-later)).
 
 ---
 
@@ -214,27 +214,29 @@ Gdy Mistrz Gry o coś pyta, jego baner zostaje na górze, w jakiejkolwiek sekcji
 
 ---
 
-## 5. Systemy gier i zasady domowe <!-- icon: dice -->
+## 5. Systemy gry i zasady domowe <!-- icon: dice -->
 
 ### 5.1 Czym jest system gry
 
-To dane jednej gry: jej karta postaci, liczby, stworzenia, przedmioty, zaklęcia i tekst zasad. Każda kampania korzysta z jednego systemu. RPG Engine liczy kartę postaci oraz to, co zostaje wydane i co wraca. Jak działa dana cecha, Mistrz Gry czyta w zasadach i rozstrzyga, tak jak przy stole.
+To dane jednej gry: jej karta postaci, liczby, stworzenia, przedmioty, zaklęcia i tekst zasad. Każda kampania korzysta z jednego systemu. RPG Engine oblicza kartę postaci oraz to, co się zużywa i odnawia. Jak działa dana zdolność, Mistrz Gry czyta w zasadach i rozstrzyga, tak jak przy stole.
 
-### 5.2 Piąta edycja w zestawie
+### 5.2 Piąta edycja
 
-Rasy, klasy, podklasy, pochodzenie i atut z SRD 5.1; 319 zaklęć, broń, pancerze, przedmioty magiczne i potwory; rozdziały zasad, które Mistrz Gry czyta w dokładnym brzmieniu; pełna karta postaci, z policzonymi wartościami.
+Rasy, klasy, podklasy, pochodzenie i atut z SRD 5.1; 319 zaklęć, broń, pancerze, przedmioty magiczne i potwory; rozdziały z zasadami, które Mistrz Gry czyta w dokładnym brzmieniu; pełna, wyliczona karta postaci.
 
-Można też grać treściami, których brakuje w SRD, z podręcznika, który posiadasz: Mistrz Gry zapisuje je jako strony Twojej kampanii, a RPG Engine traktuje je jak własne. RPG Engine zawiera tylko treści otwarte, ale wiedza Mistrza Gry nie ma takiego ograniczenia.
+To osobny pakiet: Mistrz Gry proponuje go przy zakładaniu kampanii i instaluje. Kampania, która z niego korzysta, instaluje go sama przy pierwszym otwarciu na komputerze, na którym go nie ma, a Mistrz Gry daje Ci o tym znać.
 
-Własne podręczniki mogą stać się Twoją biblioteką. Powiedz Mistrzowi Gry, gdzie są: *[Moje podręczniki są w D:\Books\5e.]*, albo dodaj ich folder w Packages › Library i raz zgódź się w oknie, które pokaże komputer. RPG Engine czyta je na tym komputerze. Każda kampania używa folderów, które tam włączysz. Mistrz Gry przeszukuje je, gdy rozstrzyga zasadę, po SRD, i podaje książkę oraz stronę. Najlepiej czytają się jako tekst albo jako pliki PDF z zaznaczalnym tekstem. Zeskanowany PDF jest czytany z obrazów stron, tylko w systemie Windows, przez kilka minut i z kilkoma błędami. RPG Engine nigdy nie zmienia Twoich podręczników, nigdy nie wysyła ich tekstu w żadne miejsce i nigdy nie kopiuje go do kampanii.
+Możesz też grać treściami, których brakuje w SRD, z posiadanego podręcznika: Mistrz Gry zapisuje je jako strony Twojej kampanii, a RPG Engine traktuje je jak własne. RPG Engine dostarcza wyłącznie treści otwarte, ale wiedza Mistrza Gry nie jest niczym ograniczona.
+
+Własne podręczniki mogą stać się Twoją biblioteką: powiedz Mistrzowi Gry, gdzie są, *[Moje podręczniki są w D:\Books\5e.]*, albo dodaj ich folder w Packages › Library i raz zgódź się w oknie, które pokaże komputer. RPG Engine czyta je na tym komputerze. Każda kampania korzysta z folderów, które tam włączysz, a Mistrz Gry przeszukuje je przy rozstrzyganiu zasad, po SRD, podając książkę i stronę. Najlepiej czytają się jako tekst albo jako pliki PDF z tekstem, który można zaznaczyć. Zeskanowany PDF jest odczytywany z obrazów stron, tylko w systemie Windows, w kilka minut i z kilkoma błędami. RPG Engine nigdy nie zmienia Twoich podręczników, nigdzie nie wysyła ich tekstu i nigdy nie kopiuje go do kampanii.
 
 ### 5.3 Zasady domowe i własne dodatki
 
-Poproś Mistrza Gry: *[Zasada domowa: naturalna 1 w ataku oznacza upuszczenie broni.]* Mistrz Gry zapisuje ją jako ustalenie stołu albo tworzy stronę lub liczbę na karcie postaci, gdy jest potrzebna. Gotowe, spisane zasady domowe można dodać jako pliki tekstowe w folderze `rules` kampanii.
+Poproś Mistrza Gry: *[Zasada domowa: naturalna 1 w ataku oznacza upuszczenie broni.]* Mistrz Gry zapisuje ją jako umowę przy stole albo tworzy stronę lub wartość na karcie postaci, jeśli jest potrzebna. Gotowe zasady domowe można umieścić jako pliki tekstowe w folderze `rules` kampanii.
 
-### 5.4 Dodawanie lub import własnego systemu gry
+### 5.4 Dodawanie lub importowanie własnego systemu gry
 
-Jeszcze nie: obecnie RPG Engine obsługuje tylko piątą edycję ([Wkrótce](#9-coming-later)).
+System gry to pakiet: Mistrz Gry instaluje go z npm, z folderu lub z pliku, a pakiet spoza naszej oferty tylko po Twojej zgodzie, w oknie na komputerze. Stworzenie takiego pakietu to praca dla programisty, opisana w dokumentach RPG Engine na GitHubie. Zamiana Twojego podręcznika w system gry jeszcze nie jest dostępna ([Plany na przyszłość](#9-coming-later)).
 
 ---
 

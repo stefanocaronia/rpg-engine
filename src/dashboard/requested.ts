@@ -9,6 +9,8 @@ import { checkOf, sameDice } from "./labels.ts";
 export interface Requested
 {
     who?: string;
+    /** A toss of coins (ASK-15): the tray's coins answer it, and its dice nothing. */
+    toss?: true;
     rows: Map<string, number>;
     checks: { index: number; check: string; dice: string; }[];
     answer(index: number): void;
@@ -31,7 +33,7 @@ export function requestedOf(asked: Asked | undefined, answer: (index: number) =>
     // A field two checks name answers neither, as the tray's dice do not.
     const fields = asked.fields?.map((field) => field?.toLowerCase() ?? null) ?? [];
     const rows = new Map(fields.flatMap((field, index): [string, number][] => (field === null || fields.indexOf(field) !== fields.lastIndexOf(field) ? [] : [[field, index]])));
-    return { ...(asked.who === undefined ? {} : { who: asked.who }), rows, checks, answer };
+    return { ...(asked.who === undefined ? {} : { who: asked.who }), ...(asked.toss === true ? { toss: true as const } : {}), rows, checks, answer };
 }
 
 export function useRequested(): Requested | undefined
@@ -45,9 +47,13 @@ export function requestedRow(requested: Requested | undefined, member: string, f
     return requested === undefined || requested.who !== member ? undefined : requested.rows.get(field.toLowerCase());
 }
 
-/** The check the tray's dice answer, by its place: the one whose dice and number they are, when one alone is. */
+/** The check the tray's dice answer, by its place: the one whose dice and number they are, when one alone is. Its coins answer only a toss, as many as it asks, and its dice never one (ASK-15). */
 export function trayCheck(requested: Requested | undefined, notation: string): number | undefined
 {
+    if (/^\d*d2$/i.test(notation.trim()) !== (requested?.toss === true)) {
+        return undefined;
+    }
+
     const matching = requested?.checks.filter((check) => sameDice(check.dice, notation)) ?? [];
     return matching.length === 1 ? matching[0].index : undefined;
 }

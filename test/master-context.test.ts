@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { corePart, masterInstructions } from "../src/instructions/index.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, madeSystem, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -49,10 +49,12 @@ async function playing(): Promise<void>
     await ok("write", "Bruna", "--type", "character", "--set", "role=pc", "--set", "grit=12/12");
 }
 
-/** A campaign of Ironsworn whose setup is done, its player character made, in session zero. */
+/** A campaign of a system of its fields alone whose setup is done, its player character made, in session zero. */
 async function readyForPlay(): Promise<void>
 {
-    await ok("init", "--name", "Ferro", "--system", "ironsworn");
+    const systems = madeSystem("bare", { "system.yaml": "title: a test system of its fields alone\nlanguage: en\nfields:\n  health: counter\n" });
+    context = { ...context, systemFolders: [systems, ...(context.systemFolders ?? [])] };
+    await ok("init", "--name", "Ferro", "--system", "bare");
     await ok("write", "Guado", "--type", "place");
     const answers = [
         ["language", "it"],

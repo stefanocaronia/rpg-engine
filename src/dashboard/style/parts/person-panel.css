@@ -1,0 +1,319 @@
+/* The panel of a package on one of the party, as the death saves, and its marks. */
+@layer parts {
+    /* The marks of a panel on someone of the party (D-461, D-516): good ones as circles on one side, bad ones as squares on the other, by shape as well as
+       colour, each side under its word. */
+    .person-side {
+        position: relative;
+        display: grid;
+        min-width: 0;
+        gap: 6px;
+        justify-items: start;
+    }
+
+    .person-side.bad {
+        justify-items: end;
+    }
+
+    /* A system's word, which may be long in a language: it breaks rather than leave its card. */
+    .person-label {
+        color: var(--ally);
+        overflow-wrap: anywhere;
+        hyphens: auto;
+    }
+
+    .person-side.bad .person-label {
+        color: var(--low);
+        text-align: end;
+    }
+
+    .person-marks {
+        display: inline-flex;
+        gap: 8px;
+    }
+
+    .person-mark {
+        --mark: var(--ally);
+        position: relative;
+        width: 26px;
+        height: 26px;
+        border: 2px solid var(--mark);
+        border-radius: 50%;
+    }
+
+    .person-side.bad .person-mark {
+        --mark: var(--low);
+        border-radius: var(--radius-xs);
+    }
+
+    .person-mark.marked {
+        background: var(--mark);
+    }
+
+    /* What the cards of the packages' questions move with: a mark that pops as it lights, a ring that leaves it, an outcome that comes up. */
+    @keyframes mark-pop {
+        0% {
+            transform: scale(0.4);
+        }
+
+        60% {
+            transform: scale(1.25);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @keyframes mark-ring {
+        from {
+            opacity: 0.9;
+            transform: scale(0.8);
+        }
+
+        to {
+            opacity: 0;
+            transform: scale(1.6);
+        }
+    }
+
+    @keyframes word-rise {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+    }
+
+    /* The panel of a package's widget on one of the party at 0 (D-461, D-516), as the 5e's death saves: the good counts on one side, the bad ones on the other,
+       the package's figure and the word between them, tinted by where they stand: red by a bad tone, green by a good one, grey dead. */
+    .person-panel {
+        --tint: var(--low);
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 14px;
+        margin: 0;
+        padding: 12px 16px;
+        border: 1px solid color-mix(in srgb, var(--tint) 50%, transparent);
+        border-radius: var(--radius-m);
+        background: color-mix(in srgb, var(--tint) 9%, transparent);
+    }
+
+    .person-panel.stable {
+        --tint: var(--ally);
+    }
+
+    .person-panel.dead {
+        --tint: var(--muted);
+    }
+
+    /* Its lead's word at a lead's size without a figure, quiet without a tone; with one side only, the word beside it, the two in the middle. */
+    .person-panel.quiet {
+        --tint: var(--muted);
+    }
+
+    .person-panel:not(.compact, .figured) .person-word {
+        font-size: 1.25rem;
+    }
+
+    .person-panel.quiet .person-word,
+    .member-state.quiet {
+        color: var(--ink);
+    }
+
+    .person-panel.one-side:not(.compact) {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 12px 32px;
+    }
+
+    /* A package's figure over the word, as the 5e's line of the heart: a band the width of the middle and as tall as a line; short in a row of the turns. */
+    .person-panel .ext-figure {
+        width: 100%;
+        height: 34px;
+        aspect-ratio: auto;
+    }
+
+    .person-panel.compact .ext-figure {
+        width: 34px;
+        height: 14px;
+    }
+
+    .band .person-panel {
+        flex-basis: 100%;
+    }
+
+    .person-middle {
+        display: grid;
+        justify-items: center;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .person-word {
+        color: var(--low);
+        font-weight: 700;
+    }
+
+    .person-panel.stable .person-word {
+        color: var(--ally);
+    }
+
+    .person-panel .person-mark {
+        width: 22px;
+        height: 22px;
+    }
+
+    .person-panel.dead .person-mark {
+        opacity: 0.55;
+    }
+
+    /* Narrow, in the card at hand beside the map or on a phone: the two sides above, the line and the word under them. */
+    .at-hand .person-panel {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .at-hand .person-middle {
+        grid-row: 2;
+        grid-column: 1 / -1;
+    }
+
+    @media (max-width: 600px) {
+        .band .person-panel {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .band .person-middle {
+            grid-row: 2;
+            grid-column: 1 / -1;
+        }
+    }
+
+    /* In a row of the turns, one line: the marks small, the line short, the word after them. */
+    .person-panel.compact {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 8px;
+        padding: 0;
+        border: 0;
+        background: none;
+    }
+
+    .person-panel.compact .person-label {
+        display: none;
+    }
+
+    .person-panel.compact .person-marks {
+        gap: 4px;
+    }
+
+    .person-panel.compact .person-mark {
+        width: 14px;
+        height: 14px;
+    }
+
+    .person-panel.compact .person-middle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        order: 3;
+    }
+
+    .person-panel.compact .person-word {
+        font-size: 0.8rem;
+    }
+
+    /* One of the party at their dying point (D-461): the picture greyed, as on the card, darker and faded when dead; the pip of their state in the tint of
+       where they stand. */
+    .token.fallen > :is(img, .initials) {
+        filter: grayscale(0.85) brightness(0.85);
+    }
+
+    .token .status-pip.dying {
+        --pip-paper: var(--low);
+        --pip-ink: var(--float);
+    }
+
+    .token .status-pip.stable {
+        --pip-paper: var(--ally);
+        --pip-ink: var(--float);
+    }
+
+    .token .status-pip.dead {
+        --pip-paper: var(--low);
+        --pip-ink: var(--float);
+    }
+
+    /* The skull is drawn filled, its eyes, nose and teeth holes in it, to read at 12 pixels. */
+    .token .status-pip svg path.filled,
+    .status-icon svg path.filled,
+    .person-skull path {
+        fill: currentColor;
+        stroke: none;
+        fill-rule: evenodd;
+    }
+
+    .token .status-pip svg path.filled {
+        fill: var(--pip-ink);
+    }
+
+    .person-skull {
+        width: 1em;
+        height: 1em;
+        margin-inline-end: 0.3em;
+        vertical-align: -0.12em;
+    }
+
+    .status-icon.state.stable {
+        background: color-mix(in srgb, var(--ally) 16%, transparent);
+        color: var(--ally);
+    }
+
+    /* In the party's strip, a ring of that tint round the token, and the word and the marks, small, in place of the bar. */
+    .member .token.fallen {
+        --tint: var(--low);
+        box-shadow: var(--coin-shadow), 0 0 0 2px var(--panel), 0 0 0 4px var(--tint);
+    }
+
+    .member .token.fallen.stable {
+        --tint: var(--ally);
+    }
+
+    .member-state {
+        display: grid;
+        gap: 2px;
+        color: var(--low);
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .member-state.stable {
+        color: var(--ally);
+    }
+
+    .strip-marks {
+        display: flex;
+        gap: 3px;
+    }
+
+    .strip-mark {
+        width: 9px;
+        height: 9px;
+        border: 1.5px solid var(--ally);
+        border-radius: 50%;
+    }
+
+    .strip-mark.failure {
+        border-color: var(--low);
+        border-radius: calc(var(--radius-xs) / 2);
+    }
+
+    .strip-mark.success.marked {
+        background: var(--ally);
+    }
+
+    .strip-mark.failure.marked {
+        background: var(--low);
+    }
+}

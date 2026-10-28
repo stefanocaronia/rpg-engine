@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
 import { type Formula, type FormulaData, formulaOf, parseFormula, readFormulas, type SystemFormulas } from "../core/formula.ts";
@@ -124,11 +124,26 @@ const gridSchema = z.object({
 
 // A setting the setup asks (DAT-10), or the versions of the rules (VER-1): what it is to the player, then its values, each with what it means: a setting at
 // least two, the versions at least one.
+// The values of the engine's settings a game offers, or one of its values (DAT-16): one alone is no choice.
+const engineSettingsSchema = z.record(z.string().min(1), z.array(z.string().min(1)).min(1), {
+    error: "write it as the engine's settings, each with the values the game offers, such as {rigor: [smooth]}",
+});
+
 function settingSchema(fewest: number)
 {
     return z.record(
         z.string().min(1),
-        z.union([z.string().min(1), z.object({ means: z.string().min(1), player: z.string().min(1).optional(), without: z.array(z.string().min(1)).optional() }).strict()]),
+        z.union([
+            z.string().min(1),
+            z.object({
+                means: z.string().min(1),
+                player: z.string().min(1).optional(),
+                without: z.array(z.string().min(1)).optional(),
+                "engine-settings": engineSettingsSchema.optional(),
+                asks: z.array(z.string().min(1)).optional(),
+                suggested: z.literal(true).optional(),
+            }).strict(),
+        ]),
     ).refine(
         (values) => Object.entries(values).every(([key, value]) => (key === "about") === (typeof value === "string")),
         "give about as what the setting is to the player, in a few words, and each value with what it means, such as {about: how your character levels up, xp: {means: ...}}",
@@ -142,6 +157,8 @@ const systemSchema = z.object({
     title: z.string().min(1),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/),
     attribution: z.string().min(1).optional(),
+    // Its theme of the dashboard (D-528): a folder of its own, written from it, as theme.
+    theme: z.string().min(1).refine((folder) => !isAbsolute(folder) && !folder.split(/[\\/]/).includes(".."), { error: "write it as a folder of the system, such as theme" }).optional(),
     fields: z.record(z.string(), z.enum(fieldKinds)).optional(),
     coins: z.union([z.string().min(1), z.record(z.string(), z.unknown())]).optional(),
     "coin-metals": z.record(z.string().min(1), z.string().min(1), { error: "write it as a map, each coin with its metal, such as {gp: gold, sp: silver}" }).optional(),
@@ -287,6 +304,7 @@ const systemSchema = z.object({
         .optional(),
     // Its versions of the rules, each a folder in versions/ (VER-1): a setting of their own, ruleset.
     versions: settingSchema(1).optional(),
+    "engine-settings": engineSettingsSchema.optional(),
     rewards: z.record(z.string().min(1), z.object({ from: z.string().min(1), overcome: z.string().regex(/^[^\s]+ -?\d+$/, 'write it as "hp 0"') }).strict()).optional(),
     "item-formulas": z.record(z.string().min(1), z.array(z.string().min(1)).min(1)).optional(),
     "always-in": z.record(z.string().min(1), z.array(z.string().min(1)).min(1), { error: "write it as lists, each with the names of the pages in it, such as equipped: [Unarmed Strike]" }).optional(),
@@ -426,8 +444,11 @@ export interface SystemSetting
     name: string;
     /** What it is to the player, in a few words, as the setup asks it (D-370). */
     about?: string;
-    /** Each value with what it means to the master, and to the player when the system says it, as the dashboard shows it (D-341). */
-    values: { value: string; means: string; player?: string; without: string[]; }[];
+    /**
+     * Each value with what it means to the master, and to the player when the system says it, as the dashboard shows it (D-341); the values of the engine's
+     * settings it offers (DAT-16), the settings of the system it asks (DAT-17), and whether the setup suggests it.
+     */
+    values: { value: string; means: string; player?: string; without: string[]; engineSettings: Record<string, string[]>; asks: string[]; suggested?: true; }[];
 }
 
 /** What the creatures overcome in a scene give the party (DAT-11): the field of the party, the creatures' field that gives it, and the counter at which one is overcome. */
@@ -502,6 +523,8 @@ export interface GameSystem
     language: string;
     /** What a work that uses it must say of its source, when its license asks for it. */
     attribution?: string;
+    /** The folder of its theme of the dashboard, when it names one (D-528): read and checked by the themes module. */
+    theme?: string;
     /** The kind of each field it declares (SYS-8). */
     fields: Record<string, FieldKind>;
     /** Its coins, as config takes them, "gp 100, sp 10, cp 1", or as campaign.yaml writes them (D-182, DAT-1). */
@@ -606,6 +629,8 @@ export interface GameSystem
     uses: string[];
     /** The settings it adds to the setup (DAT-10). */
     settings: SystemSetting[];
+    /** The values of the engine's settings it offers, by setting (DAT-16): one alone is no choice. */
+    engineSettings: Record<string, string[]>;
     /** The fields the campaign's settings leave out, as xp with milestones (DAT-10). */
     leftOut: string[];
     /** What the creatures overcome in a scene give the party (DAT-11). */
@@ -615,6 +640,87 @@ export interface GameSystem
      * its place when its frontmatter says replace: true (D-121).
      */
     parts: Record<string, InstructionPart>;
+}
+
+/** What is wrong in the settings a value asks, or in the value a setting suggests (DAT-17): "die.d6: asks die, which is its own setting"; undefined when nothing is. */
+function settingsAsking(settings: Record<string, Record<string, string | { asks?: string[]; suggested?: true; }>>): string | undefined
+{
+    const names = Object.keys(settings);
+
+    for (const [setting, values] of Object.entries(settings)) {
+        const shown = Object.entries(values).flatMap(([value, meaning]) => (typeof meaning === "string" ? [] : [[value, meaning] as const]));
+
+        if (shown.filter(([, meaning]) => meaning.suggested === true).length > 1) {
+            return `${setting}: suggest one value at most`;
+        }
+
+        for (const [value, meaning] of shown) {
+            const stray = (meaning.asks ?? []).find((asked) => comparableText(asked) === comparableText(setting) || !names.some((name) => comparableText(name) === comparableText(asked)));
+
+            if (stray !== undefined) {
+                return `${setting}.${value}: asks ${stray}, which is ${comparableText(stray) === comparableText(setting) ? "its own setting" : "no setting of the system"}: name another of its settings`;
+            }
+        }
+    }
+
+    return undefined;
+}
+
+/** The settings of a system that hold, in its order (DAT-17): those no value asks, and those a value played asks; `valueOf` gives the value played. */
+export function heldSettings(system: GameSystem, valueOf: (setting: SystemSetting) => string | undefined): SystemSetting[]
+{
+    const asked = (setting: SystemSetting): boolean => system.settings.some((other) => other.values.some((value) => value.asks.some((name) => comparableText(name) === comparableText(setting.name))));
+    const held = system.settings.filter((setting) => !asked(setting));
+
+    for (let index = 0; index < held.length; index++) {
+        for (const name of playedValueOf(held[index], valueOf)?.asks ?? []) {
+            const found = system.settings.find((setting) => comparableText(setting.name) === comparableText(name));
+
+            if (found !== undefined && !held.includes(found)) {
+                held.push(found);
+            }
+        }
+    }
+
+    return system.settings.filter((setting) => held.includes(setting));
+}
+
+/** The value of a system's setting played, with what it offers and asks; undefined while it is to be chosen. */
+export function playedValueOf(setting: SystemSetting, valueOf: (setting: SystemSetting) => string | undefined): SystemSetting["values"][number] | undefined
+{
+    const value = valueOf(setting);
+    return setting.values.find((one) => value !== undefined && comparableText(one.value) === comparableText(value));
+}
+
+/** What narrows the engine's settings (DAT-16): the system, then each value played, with whom to name. */
+export function engineOfferings(system: GameSystem, valueOf: (setting: SystemSetting) => string | undefined): { from: string; offers: Record<string, string[]>; }[]
+{
+    return [
+        { from: `the game system ${system.name}`, offers: system.engineSettings },
+        ...heldSettings(system, valueOf).flatMap((setting) => {
+            const value = playedValueOf(setting, valueOf);
+            return value === undefined ? [] : [{ from: `${setting.name} ${value.value}`, offers: value.engineSettings }];
+        }),
+    ];
+}
+
+/** The values a game offers of an engine's setting (DAT-16): those the system and the values played share; undefined when none of them narrows it. */
+export function offeredEngineValues(system: GameSystem | undefined, valueOf: (setting: SystemSetting) => string | undefined, name: string): string[] | undefined
+{
+    const lists = (system === undefined ? [] : engineOfferings(system, valueOf)).flatMap((offering) => Object.entries(offering.offers).filter(([setting]) => comparableText(setting) === comparableText(name)).map(([, values]) => values));
+    return lists.length === 0 ? undefined : lists.reduce((shared, list) => shared.filter((value) => list.some((other) => comparableText(other) === comparableText(value))));
+}
+
+/** An engine's setting as a game plays it (DAT-16): the one value it offers, else the written one when it offers it; undefined while it is to be asked. */
+export function engineSettingValue(system: GameSystem | undefined, valueOf: (setting: SystemSetting) => string | undefined, name: string, written: unknown): unknown
+{
+    const offered = offeredEngineValues(system, valueOf, name);
+
+    if (offered === undefined) {
+        return written;
+    }
+
+    return offered.length === 1 ? offered[0] : offered.find((value) => typeof written === "string" && comparableText(value) === comparableText(written));
 }
 
 /**
@@ -731,6 +837,12 @@ export function findSystem(folders: string[], name: string, ruleset?: string): G
 {
     const found = systemFolders(folders).find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
     return found === undefined ? undefined : readSystem(found.folder, found.name, [], ruleset);
+}
+
+/** The game system in this folder by the name a campaign gives it, as installed, without a version of its rules; it throws when its system.yaml does not read. */
+export function systemInFolder(folder: string, name: string): GameSystem
+{
+    return readSystem(folder, name);
 }
 
 /** The folders a system's pages, rules, words, pictures and instructions come from, in order: its own, then its version's, which wins by name (VER-3). */
@@ -927,6 +1039,12 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: token-icons.field: ${iconField} is not declared in fields.`);
     }
 
+    const asking = settingsAsking(data.settings ?? {});
+
+    if (asking !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: settings.${asking}.`);
+    }
+
     const experience = data.progression?.experience?.table;
 
     if (experience !== undefined && !Object.keys(formulas.tables).some((table) => comparableText(table) === comparableText(experience))) {
@@ -941,6 +1059,7 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
         title: data.title,
         language: data.language,
         attribution: data.attribution,
+        ...(data.theme === undefined ? {} : { theme: join(folder, data.theme) }),
         fields: data.fields ?? {},
         coins: data.coins,
         coinMetals: data["coin-metals"] ?? {},
@@ -1048,9 +1167,13 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
                     means: meaning.means,
                     ...(meaning.player === undefined ? {} : { player: meaning.player }),
                     without: meaning.without ?? [],
+                    engineSettings: meaning["engine-settings"] ?? {},
+                    asks: meaning.asks ?? [],
+                    ...(meaning.suggested === true ? { suggested: true as const } : {}),
                 }]
             ),
         })),
+        engineSettings: data["engine-settings"] ?? {},
         leftOut: [],
         rewards: Object.entries(data.rewards ?? {}).map(([field, reward]) => {
             const [counter, value] = reward.overcome.split(" ");

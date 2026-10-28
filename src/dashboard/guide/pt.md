@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -17,19 +17,19 @@ Este guia é para quem joga: você não precisa saber programar.
 
 | Quem | O que faz |
 |---|---|
-| **Você** | Joga com seu personagem: o que ele faz, diz e tenta. |
-| **O mestre** (a IA) | Conta a história, interpreta todos os outros, decide o que acontece e pede rolagens. |
+| **Você** | Interpreta seu personagem: o que ele faz, diz e tenta. |
+| **O mestre** (a IA) | Conta a história, interpreta todas as outras pessoas, decide o que acontece e pede rolagens. |
 | **RPG Engine** | Guarda o mundo em arquivos, rola os dados, conta pontos de vida, dinheiro, tempo e distâncias, e mantém os segredos até você descobri-los. |
 
-O mundo continua o mesmo de uma noite para outra, até em um chat novo, até com outra IA:
+O mundo continua o mesmo de uma noite para a outra, mesmo em um novo chat, mesmo com outra IA:
 
 - **O que foi dito continua valendo.** Um vilão morto continua morto.
-- **Os dados são de verdade.** O mestre não pode alterá-los, exceto na dificuldade mais fácil, se você escolher.
+- **Os dados são de verdade.** O mestre não pode manipulá-los, exceto na dificuldade mais fácil, se você escolher.
 - **Segredos continuam secretos.** O mestre nunca conta o que seu personagem não sabe.
 - **O mundo se move.** As ameaças avançam enquanto você descansa ou viaja, e você vê os sinais delas.
 - **Uma campanha é uma pasta** no seu computador: pare quando quiser e retome depois.
 
-Hoje o RPG Engine joga um sistema de jogo, a **quinta edição**, a partir do System Reference Document 5.1, que é gratuito. Outros virão ([Em breve](#9-coming-later)).
+Um jogo vem como um sistema de jogo, um pacote que o mestre instala para a sua campanha: hoje o nosso é a **quinta edição**, do System Reference Document 5.1, gratuito. Sem um sistema, você joga livremente, uma história sem números. Outros virão ([Em breve](#9-coming-later)).
 
 ---
 
@@ -218,23 +218,25 @@ Quando o mestre pergunta algo a você, o aviso dele fica no topo, em qualquer se
 
 ### 5.1 O que é um sistema de jogo
 
-Os dados de um jogo: sua ficha, seus números, suas criaturas, itens, magias e o texto das regras. Cada campanha usa um sistema. O RPG Engine calcula a ficha e o que é gasto e recuperado. Como uma característica funciona, o mestre lê nas regras e decide, como em uma mesa.
+Os dados de um jogo: a ficha, os números, as criaturas, os itens, as magias e o texto das regras. Cada campanha usa um sistema. O RPG Engine calcula a ficha e o que é gasto e recuperado; como uma característica funciona, o mestre lê nas regras e decide, como em uma mesa.
 
-### 5.2 Quinta edição, incluída
+### 5.2 Quinta edição
 
-As raças, classes, subclasses, um antecedente e uma façanha do SRD 5.1; as 319 magias, as armas, armaduras, itens mágicos e monstros; os capítulos de regras, que o mestre lê pelo texto exato; a ficha completa, já calculada.
+As raças, classes, subclasses, um antecedente e um talento do SRD 5.1; as 319 magias, as armas, armaduras, itens mágicos e monstros; os capítulos de regras, que o mestre lê pelo texto exato; a ficha completa, calculada.
 
-Você também pode jogar com conteúdo que o SRD não traz, de um livro que você tenha: o mestre o escreve como páginas da sua campanha, e o RPG Engine as trata como suas. O RPG Engine inclui apenas conteúdo aberto; o que o seu mestre conhece não tem esse limite.
+É um pacote à parte: o mestre o oferece quando você configura uma campanha e o instala. Uma campanha que usa esse sistema o instala sozinha na primeira vez que é aberta em um computador que não o tenha, e o mestre avisa você.
 
-Seus próprios manuais podem ser sua biblioteca: diga ao mestre onde estão, *[Meus manuais estão em D:\Books\5e.]*, ou adicione a pasta deles em Packages › Library, e diga sim na janela que o seu computador mostrar, uma única vez. O RPG Engine lê os manuais neste computador; cada campanha usa as pastas que você ativar ali, e o mestre as consulta quando decide uma regra, depois do SRD, citando o livro e a página. Eles são lidos melhor como texto, ou como PDFs cujo texto pode ser selecionado. Um PDF escaneado é lido a partir das imagens das páginas, apenas no Windows, em alguns minutos e com alguns erros. O RPG Engine nunca altera seus manuais, nunca envia o texto deles para lugar nenhum e nunca o copia para uma campanha.
+Você também pode jogar com conteúdo que o SRD não tem, de um livro que você possui: o mestre o escreve como páginas da sua campanha, e o RPG Engine as trata como suas. O RPG Engine inclui apenas conteúdo aberto; o que o seu mestre conhece não tem limite.
+
+Seus próprios manuais podem ser a sua biblioteca: diga ao mestre onde estão, *[Meus manuais estão em D:\Books\5e.]*, ou adicione a pasta deles em Pacotes › Biblioteca, e diga sim na janela que o computador mostrar, uma única vez. O RPG Engine lê os manuais neste computador; cada campanha usa as pastas que você ativar ali, e o mestre as consulta quando decide uma regra, depois do SRD, citando o livro e a página. Eles são lidos melhor como texto ou como PDFs com texto selecionável; um PDF escaneado é lido a partir das imagens das páginas, somente no Windows, em alguns minutos e com alguns erros. O RPG Engine nunca altera seus manuais, nunca envia o texto deles para lugar nenhum e nunca o copia para uma campanha.
 
 ### 5.3 Regras da casa e acréscimos seus
 
-Peça ao mestre: *[Regra da casa: um 1 natural em um ataque faz você largar a arma.]* O mestre a guarda como um acordo da mesa, ou escreve uma página ou um número da ficha quando for preciso. Regras da casa que você já tenha escrito podem entrar como arquivos de texto na pasta `rules` da campanha.
+Peça ao mestre: *[Regra da casa: um 1 natural em um ataque faz você derrubar a arma.]* Ele guarda a regra como um acordo da mesa ou escreve uma página ou um número da ficha quando for preciso. Regras da casa já escritas podem ir como arquivos de texto na pasta `rules` da campanha.
 
 ### 5.4 Adicionar ou importar seu próprio sistema de jogo
 
-Ainda não: hoje o RPG Engine joga apenas a quinta edição ([Em breve](#9-coming-later)).
+Um sistema de jogo é um pacote: o mestre instala um a partir do npm, de uma pasta ou de um arquivo, e um que não seja nosso só com o seu sim, em uma janela do seu computador. Criar um é trabalho de quem desenvolve, descrito nos documentos do RPG Engine no GitHub. Transformar um livro seu em um sistema de jogo ainda não é possível ([Em breve](#9-coming-later)).
 
 ---
 

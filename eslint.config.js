@@ -20,7 +20,7 @@ export default [
     },
     // A system's code reaches the game only through its hooks (D-448): the engine's dice and time, never its own, nor Node.
     {
-        files: ["systems/*/src/**/*.ts"],
+        files: ["systems/*/src/**/*.ts", "test/systems/*/src/**/*.ts"],
         rules: {
             "no-restricted-properties": ["error", { object: "Math", property: "random", message: "Roll with the game's roll: the engine's dice." }],
             "no-restricted-globals": ["error", { name: "Date", message: "The game's time comes from the engine." }, { name: "process", message: "A system's code reaches only the game." }],
