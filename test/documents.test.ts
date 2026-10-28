@@ -59,6 +59,22 @@ describe("documents of text, in parts of about a page", () => {
         expect(document.pictures.map((one) => [one.name, one.label])).toEqual([["image1.jpg", "part 1"]]);
     });
 
+    it("unpacks only the files it reads, up to a size: a document that says it unpacks to more is refused with what to do", async () => {
+        const docx = zipped({ "word/document.xml": "<w:document><w:body><w:p><w:r><w:t>A short adventure.</w:t></w:r></w:p></w:body></w:document>", "word/media/big.bin": "x" });
+        // The central directory as a document full of zeros writes it: the uncompressed size of its text, at 24 past the mark of its entry, past 512 MB.
+        const view = new DataView(docx.buffer, docx.byteOffset, docx.byteLength);
+
+        for (let at = 0; at < docx.length - 4; at++) {
+            if (view.getUint32(at, true) === 0x02014b50 && new TextDecoder().decode(docx.subarray(at + 46, at + 63)) === "word/document.xml") {
+                view.setUint32(at + 24, 0xf0000000, true);
+            }
+        }
+
+        await expect(readDocument(fileOf("bomb.docx", docx))).rejects.toThrow("unpacks to more than 512 MB of text and pictures: save it again without its largest pictures, or as a PDF.");
+        const plain = zipped({ "word/document.xml": "<w:document><w:body><w:p><w:r><w:t>A short adventure.</w:t></w:r></w:p></w:body></w:document>", "word/media/big.bin": new Uint8Array(64) });
+        expect((await readDocument(fileOf("plain.docx", plain))).parts).toEqual([{ label: "part 1", text: "A short adventure." }]);
+    });
+
     it("reads an OpenDocument's paragraphs, an EPUB's chapters in the order of its spine, HTML, RTF and text", async () => {
         const odt = zipped({
             "content.xml": '<office:document-content><office:body><text:h text:outline-level="2">The Serai</text:h><text:p>Two<text:s/>men<text:tab/>wait.</text:p>'

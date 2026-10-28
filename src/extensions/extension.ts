@@ -5,7 +5,7 @@ import { installedFromFolder, packageFoldersIn, realPath } from "../core/files.t
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
 import { apiProblem, type DeclaredWidget, declaredWidgets, type FigureSize, packagePartsIssues, packagePartsShape } from "../core/package-declarations.ts";
 import { files, isInside } from "../core/store.ts";
-import { comparableText } from "../core/text.ts";
+import { comparableText, wordCount } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
 /** The file that makes a folder an extension of rpg-engine (D-427). */
@@ -165,10 +165,10 @@ export function readExtension(folder: string): Extension
     const parts = readParts(folder, owner);
     // What the master reads of it in every chat, kept short (D-441).
     const long = [["about", about, aboutWords] as const, ...Object.entries(parts).map(([name, part]) => [`instructions/${name}.md`, part.text, partWords] as const)]
-        .find(([, text, most]) => words(text) > most);
+        .find(([, text, most]) => wordCount(text) > most);
 
     if (long !== undefined) {
-        throw new Error(`${owner} cannot be used, because its ${long[0]} has ${words(long[1])} words, and ${long[2]} at most are read.`);
+        throw new Error(`${owner} cannot be used, because its ${long[0]} has ${wordCount(long[1])} words, and ${long[2]} at most are read.`);
     }
 
     return {
@@ -220,9 +220,4 @@ function readJson(path: string): unknown
     } catch {
         return undefined;
     }
-}
-
-function words(text: string): number
-{
-    return text.split(/\s+/).filter((word) => word !== "").length;
 }

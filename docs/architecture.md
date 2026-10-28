@@ -8,7 +8,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 
 | Path | What it holds |
 |---|---|
-| [src/core/](../src/core/) | Shared utilities: command registry, context, file store, log, YAML files, text comparison, formulas, problems |
+| [src/core/](../src/core/) | Shared utilities: command registry, context, file store, log, YAML files, text comparison, formulas, problems, the mark of a process that works alone |
 | `src/<module>/` | One job each, behind its `index.ts` (table below) |
 | [src/commands/](../src/commands/) | The commands, and `game-*.ts` helpers that join modules for several commands |
 | [src/cli.ts](../src/cli.ts), [src/command-line.ts](../src/command-line.ts) | The `rpg` binary |

@@ -60,6 +60,8 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
                 return await installCopy(folder, spec, described.get(resolve(spec)), run);
             }
 
+            // What npm is given is checked before anything moves.
+            const [prefix, checked] = [quotedFolder(folder), checkedSpec(spec)];
             // What npm installed of the same version goes aside first, as it would keep it whatever it holds now: the files are npm's (D-510).
             const named = spec.replace(/(?<=.)@[^@/]*$/, "");
             const aside = join(folder, "aside", ...named.split("/"));
@@ -67,8 +69,8 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
 
             // Without the registry, from what npm keeps of it on this computer (D-452).
             const install = async (): Promise<NpmRun> => {
-                const ran = await run(`install --prefix ${quotedFolder(folder)} ${checkedSpec(spec)} ${installOptions}`);
-                return ran.code !== 0 && isUnreachable(ran) ? await run(`install --prefix ${quotedFolder(folder)} ${checkedSpec(spec)} ${installOptions} --offline`) : ran;
+                const ran = await run(`install --prefix ${prefix} ${checked} ${installOptions}`);
+                return ran.code !== 0 && isUnreachable(ran) ? await run(`install --prefix ${prefix} ${checked} ${installOptions} --offline`) : ran;
             };
 
             const ran = await installedAside(join(folder, "node_modules", ...named.split("/")), aside, install);
@@ -370,11 +372,25 @@ async function installedAside(installed: string, aside: string, install: () => P
         renameSync(installed, aside);
     }
 
-    const ran = await install();
+    // What npm installed comes back when the new one fails, or when npm could not even be run.
+    const putBack = (): void => {
+        if (moved) {
+            rmSync(installed, { recursive: true, force: true });
+            renameSync(aside, installed);
+        }
+    };
 
-    if (moved && ran.code !== 0) {
-        rmSync(installed, { recursive: true, force: true });
-        renameSync(aside, installed);
+    let ran: NpmRun;
+
+    try {
+        ran = await install();
+    } catch (error) {
+        putBack();
+        throw error;
+    }
+
+    if (ran.code !== 0) {
+        putBack();
     }
 
     rmSync(aside, { recursive: true, force: true });

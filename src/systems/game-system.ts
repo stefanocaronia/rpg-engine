@@ -1,7 +1,7 @@
 import { isAbsolute, join } from "node:path";
 import { z } from "zod";
 import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
-import { type Formula, type FormulaData, formulaOf, parseFormula, readFormulas, type SystemFormulas } from "../core/formula.ts";
+import { type Formula, type FormulaData, formulaOf, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
 import { type ImperialUnits, lengthHelp, readLength, readSpeed, speedHelp } from "../core/length.ts";
@@ -591,7 +591,6 @@ export interface GameSystem
     icons: Record<string, string>;
     widgets: DeclaredWidget[];
     figures: Record<string, FigureSize>;
-    /** What can break what someone keeps alive, when the game has it (EFF-14). */
     /** The lists a character binds items in, as attunement (BND-1): at most so many, each an item whose field asks for it, with the rules to read. */
     bonds: Record<string, { most: number; needs: string; while?: string; rules: string; }>;
     /** By bonus list, the list its pages must be in too to give their bonuses, as an attuned ring worn (BND-4). */
@@ -608,6 +607,7 @@ export interface GameSystem
     atMost: Record<string, Formula>;
     /** What damage of a type does, by the lists of who takes it (DMG-1). */
     damage?: DamageRule;
+    /** What can break what someone keeps alive, when the game has it (EFF-14). */
     keeping?: Keeping;
     /** What a fight follows on the dashboard (D-314). */
     combat?: CombatData;
@@ -729,7 +729,8 @@ export function engineSettingValue(system: GameSystem | undefined, valueOf: (set
  */
 export function withSettings(system: GameSystem, valueOf: (setting: string) => string | undefined): GameSystem
 {
-    const leftOut = system.settings.flatMap((setting) => {
+    // A setting asked by a value the campaign does not play does not hold, nor what its value leaves out (DAT-17).
+    const leftOut = heldSettings(system, (setting) => valueOf(setting.name)).flatMap((setting) => {
         const chosen = valueOf(setting.name);
         return setting.values.find((value) => chosen !== undefined && comparableText(value.value) === comparableText(chosen))?.without ?? [];
     });
@@ -757,7 +758,7 @@ export function withSettings(system: GameSystem, valueOf: (setting: string) => s
 export function rollName(system: GameSystem, dice: string, language: string): string | undefined
 {
     const names = system.rollNames[plainRoll(dice)];
-    return names === undefined ? undefined : (names[language] ?? names[language.split("-")[0] ?? language] ?? names[system.language]);
+    return names === undefined ? undefined : (names[language] ?? names[language.split("-")[0]] ?? names[system.language]);
 }
 
 /** A roll's dice as a name reads them: in lower case, the highest or the lowest kept one when one of two is dropped, as 2d20dl1 is 2d20kh1. */
@@ -1074,12 +1075,12 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
                 field: data.load.field,
                 // Formulas in order, the first with a value counts, as a computed field's (D-210).
                 limit: Array.isArray(data.load.limit)
-                    ? { kind: "first", options: data.load.limit.map((option) => parseFormula(String(option))) }
-                    : parseFormula(data.load.limit),
+                    ? { kind: "first", options: data.load.limit.map((option, index) => formulaAt(String(option), `load.limit.${index}`, name, path)) }
+                    : formulaAt(data.load.limit, "load.limit", name, path),
                 ...(data.load.coins === undefined ? {} : { coins: data.load.coins }),
                 ...(data.load.weightless === undefined ? {} : { weightless: data.load.weightless }),
                 ...(data.load.bundle === undefined ? {} : { bundle: data.load.bundle }),
-                ...(data.load.stages === undefined ? {} : { stages: data.load.stages.map((stage) => ({ name: stage.name, formula: parseFormula(stage.when) })) }),
+                ...(data.load.stages === undefined ? {} : { stages: data.load.stages.map((stage) => ({ name: stage.name, formula: formulaAt(stage.when, `load.stages.${stage.name}`, name, path) })) }),
             },
         }),
         ...(data.travel === undefined ? {} : { travel: travelOf(data.travel) }),
@@ -1093,8 +1094,8 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
                 worse: data["sheet-odds"].worse,
                 when: data["sheet-odds"].when.map((when) => ({
                     fields: when.fields,
-                    ...(when.better === undefined ? {} : { better: parseFormula(when.better) }),
-                    ...(when.worse === undefined ? {} : { worse: parseFormula(when.worse) }),
+                    ...(when.better === undefined ? {} : { better: formulaAt(when.better, "sheet-odds.when.better", name, path) }),
+                    ...(when.worse === undefined ? {} : { worse: formulaAt(when.worse, "sheet-odds.when.worse", name, path) }),
                     ...(when.why === undefined ? {} : { why: when.why }),
                 })),
             },
@@ -1117,11 +1118,11 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
             name: recipe,
             set: value.set ?? {},
             regain: regainOf(value.regain ?? {}, name, path, recipe),
-            lower: Object.fromEntries(Object.entries(value.lower ?? {}).map(([field, amount]) => [field, parseFormula(String(amount))])),
+            lower: Object.fromEntries(Object.entries(value.lower ?? {}).map(([field, amount]) => [field, formulaAt(String(amount), `recipes.${recipe}.lower.${field}`, name, path)])),
             ...(value.needs === undefined ? {} : { needs: value.needs }),
             ...(value["once-per"] === undefined ? {} : { oncePer: value["once-per"] }),
             ...(value.lasts === undefined ? {} : { lasts: value.lasts }),
-            spend: Object.fromEntries(Object.entries(value.spend ?? {}).map(([field, rule]) => [field, { gives: rule.gives, adds: parseFormula(String(rule.adds ?? 0)) }])),
+            spend: Object.fromEntries(Object.entries(value.spend ?? {}).map(([field, rule]) => [field, { gives: rule.gives, adds: formulaAt(String(rule.adds ?? 0), `recipes.${recipe}.spend.${field}`, name, path) }])),
             ends: value.ends ?? [],
             rules: value.rules ?? [],
         })),
@@ -1136,16 +1137,16 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
         ...(data.immune === undefined ? {} : { immune: data.immune }),
         turnUses: Object.fromEntries(
             Object.entries(data["turn-uses"] ?? {}).map(([use, rule]) => [use, {
-                ...(rule.most === undefined ? {} : { most: parseFormula(String(rule.most)) }),
+                ...(rule.most === undefined ? {} : { most: formulaAt(String(rule.most), `turn-uses.${use}.most`, name, path) }),
                 ...(rule.within === undefined ? {} : { within: rule.within }),
-                ...(rule.needs === undefined ? {} : { needs: parseFormula(rule.needs) }),
+                ...(rule.needs === undefined ? {} : { needs: formulaAt(rule.needs, `turn-uses.${use}.needs`, name, path) }),
                 anyTurn: rule["any-turn"] ?? false,
                 resets: rule.resets ?? "own turn",
                 ...(rule.note === undefined ? {} : { note: rule.note }),
-                ...(rule["note-when"] === undefined ? {} : { noteWhen: parseFormula(rule["note-when"]) }),
+                ...(rule["note-when"] === undefined ? {} : { noteWhen: formulaAt(rule["note-when"], `turn-uses.${use}.note-when`, name, path) }),
             }]),
         ),
-        atMost: Object.fromEntries(Object.entries(data["at-most"] ?? {}).map(([field, most]) => [field, parseFormula(String(most))])),
+        atMost: Object.fromEntries(Object.entries(data["at-most"] ?? {}).map(([field, most]) => [field, formulaAt(String(most), `at-most.${field}`, name, path)])),
         ...(data.damage === undefined ? {} : { damage: data.damage }),
         ...(data.keeping === undefined ? {} : { keeping: { counter: data.keeping.counter, conditions: data.keeping.conditions ?? [], rules: data.keeping.rules } }),
         ...(data.combat === undefined ? {} : { combat: { track: data.combat.track, inWords: data.combat["in-words"] ?? [], inactive: data.combat.inactive ?? [] } }),
@@ -1192,6 +1193,13 @@ function chosenVersion(own: unknown, file: string, name: string, asked: string |
 {
     const versions = isMap(own) && isMap(own.versions) ? Object.keys(own.versions).filter((key) => key !== "about") : [];
     const folder = join(file, "..");
+    // A version is a folder of versions/ itself, never one a path leads to out of the system.
+    const astray = versions.find((version) => /[\\/]/.test(version) || version.trim() === "." || version.trim() === "..");
+
+    if (astray !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${file} is not valid: versions.${astray}: a version is a folder of ${versionsFolderName}/, named such as srd-5.1.`);
+    }
+
     const unfound = versions.find((version) => files().files(join(folder, versionsFolderName, version), () => true).length === 0);
 
     if (unfound !== undefined) {
@@ -1512,15 +1520,17 @@ function usesOf(data: z.infer<typeof systemSchema>): string[]
 /** The formulas of a recipe's regain, each read at its place (FOR-9). */
 function regainOf(regain: Record<string, number | string>, name: string, path: string, recipe: string): Record<string, Formula>
 {
-    return Object.fromEntries(
-        Object.entries(regain).map(([field, amount]) => {
-            try {
-                return [field, formulaOf(amount)];
-            } catch (error) {
-                throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: recipes.${recipe}.regain.${field}: ${error instanceof Error ? error.message : String(error)}`);
-            }
-        }),
-    );
+    return Object.fromEntries(Object.entries(regain).map(([field, amount]) => [field, formulaAt(amount, `recipes.${recipe}.regain.${field}`, name, path)]));
+}
+
+/** A formula of a system's file, refused with the key it stands at (FOR-9). */
+function formulaAt(written: number | string, place: string, name: string, path: string): Formula
+{
+    try {
+        return formulaOf(written);
+    } catch (error) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: ${place}: ${error instanceof Error ? error.message : String(error)}`);
+    }
 }
 
 /** The formulas of a system, read once; a system whose formulas do not read cannot be read either (FOR-9). */

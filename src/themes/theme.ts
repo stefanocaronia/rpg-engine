@@ -13,16 +13,16 @@ export const themeFileName = "theme.yaml";
 export const themeIconNames = ["party", "scene", "combat", "journal", "world", "saves", "help", "settings", "about", "packages", "menu"] as const;
 
 /** The two looks of the page; a theme gives both. */
-export const themeModes = ["light", "dark"] as const;
+const themeModes = ["light", "dark"] as const;
 
 /** One of the two looks of the page. */
 export type ThemeModeName = (typeof themeModes)[number];
 
 /** The colours each mode must give: the page's ground, the cards', lines, text, softer text, the accent, the strong colour and its text, friends and danger. */
-export const requiredColours = ["paper", "panel", "rule", "ink", "muted", "accent", "gold", "on-gold", "ally", "low"] as const;
+const requiredColours = ["paper", "panel", "rule", "ink", "muted", "accent", "gold", "on-gold", "ally", "low"] as const;
 
 /** The colours a mode may give, else the page derives them from the others. */
-export const optionalColours = ["panel-2", "float", "gold-ink", "warn", "on-low"] as const;
+const optionalColours = ["panel-2", "float", "gold-ink", "warn", "on-low"] as const;
 
 type ColourName = (typeof requiredColours)[number] | (typeof optionalColours)[number];
 

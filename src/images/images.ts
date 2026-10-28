@@ -19,7 +19,14 @@ export type ReadImage = { bytes: Uint8Array; extension: ImageExtension; } | { pr
 /** Reads the picture at `path`, by what its bytes are rather than by its extension: PNG, JPEG, WebP or SVG, up to largestImage. */
 export function readImage(path: string): ReadImage
 {
-    const bytes = files().bytes(path);
+    // Its size first, from the disk: a file of gigabytes is never read to be refused.
+    const size = files().size(path);
+
+    if (size !== undefined && size > largestImage) {
+        return { problem: `${basename(path)} is ${megabytes(size)} MB, and a picture can be ${megabytes(largestImage)} MB at most: make it smaller (512 pixels a side are enough).` };
+    }
+
+    const bytes = size === undefined ? undefined : files().bytes(path);
 
     if (bytes === undefined) {
         return { problem: `There is no file at ${path}: give the full path of the picture.` };
@@ -29,10 +36,6 @@ export function readImage(path: string): ReadImage
 
     if (extension === undefined) {
         return { problem: `${basename(path)} is not a PNG, JPEG, WebP or SVG picture: convert it to one of those, or give another file.` };
-    }
-
-    if (bytes.length > largestImage) {
-        return { problem: `${basename(path)} is ${megabytes(bytes.length)} MB, and a picture can be ${megabytes(largestImage)} MB at most: make it smaller (512 pixels a side are enough).` };
     }
 
     return { bytes, extension };

@@ -8,7 +8,8 @@ import { runCommandLine } from "../src/command-line.ts";
 import { importShown } from "../src/commands/import.ts";
 import type { Context, DocumentReader } from "../src/core/context.ts";
 import { FileStore } from "../src/core/store.ts";
-import { openLicense } from "../src/importer/index.ts";
+import { type ExtensionWords, wordIn } from "../src/extensions/index.ts";
+import { finishAdventure, openLicense } from "../src/importer/index.ts";
 import { tinyPdf } from "./pdf-fixture.ts";
 import { makeTempFolder, readLogFile, testContext } from "./support.ts";
 
@@ -372,5 +373,30 @@ describe("free play, without a game system (D-307, D-489 (7))", () => {
         await rpg("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "concept=un marinaio senza nave", "--set", "abilities=[vela, il coltello lungo]");
         expect((await rpg("show", "Ettore")).output).toContain("Character: concept un marinaio senza nave · abilities vela, il coltello lungo");
         expect((await rpg("validate")).output).toBe("No problems.");
+    });
+});
+
+describe("the adventure an import finishes (LIB-8)", () => {
+    it("copies a page's picture by its name alone, never a file a path leads to out of the pictures, as the document's text", () => {
+        const folder = join(makeTempFolder(), ".imports", "Book");
+        mkdirSync(join(folder, "document", "pictures"), { recursive: true });
+        mkdirSync(join(folder, "adventure", "world", "places"), { recursive: true });
+        writeFileSync(join(folder, "document", "01.md"), "[p. 1]\n\nThe whole text of the player's document.\n");
+        writeFileSync(join(folder, "document", "pictures", "well.png"), "png");
+        writeFileSync(join(folder, "adventure", "world", "places", "Well.md"), '---\nimage: "[[../01.md]]"\n---\nA well.\n');
+        writeFileSync(join(folder, "adventure", "world", "places", "Inn.md"), '---\nimage: "[[well.png]]"\n---\nAn inn.\n');
+        writeFileSync(join(folder, "adventure", "adventure.yaml"), "title: Book\nabout: a book\n");
+        finishAdventure(folder, "Book", "en");
+        expect(existsSync(join(folder, "adventure", "01.md"))).toBe(false);
+        expect(existsSync(join(folder, "adventure", "images", "well.png"))).toBe(true);
+    });
+});
+
+describe("an extension's words", () => {
+    it("gives a text as written when the list lacks it, whatever names an object has", () => {
+        const words = { words: { rain: "pioggia" } } as unknown as ExtensionWords;
+        expect(wordIn(words, "Rain")).toBe("Pioggia");
+        expect(wordIn(words, "Constructor")).toBe("Constructor");
+        expect(wordIn(words, "ToString")).toBe("ToString");
     });
 });

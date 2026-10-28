@@ -16,7 +16,6 @@ export {
     importFile,
     importFolder,
     importPiece,
-    importsFolderName,
     type ImportStart,
     importStarts,
     type ImportState,
@@ -32,6 +31,5 @@ export {
     readImportState,
     releaseImport,
     runElsewhere,
-    textSize,
     writeImportState,
 } from "./work.ts";

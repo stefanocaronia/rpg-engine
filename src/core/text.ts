@@ -9,6 +9,19 @@ export function comparableText(text: string): string
 
 const rememberedComparable = rememberedByText(comparable);
 
+/** How many words a text has, as the spaces part them. */
+export function wordCount(text: string): number
+{
+    return text.split(/\s+/).filter((word) => word !== "").length;
+}
+
+/** How long a text is, in words: a Chinese, Japanese or Korean letter counts as one, as a model reads it; else about six letters a word. */
+export function textSize(text: string): number
+{
+    const letters = text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/gu)?.length ?? 0;
+    return Math.max(wordCount(text) + letters, Math.ceil(text.length / 6));
+}
+
 function comparable(text: string): string
 {
     return text.normalize("NFC").toLowerCase().replace(/[‘’]/g, "'");

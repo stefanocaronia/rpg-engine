@@ -3,6 +3,8 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { parse, stringify } from "yaml";
+import { claimMark, isAlive, markHolder, releaseMark } from "../core/process-mark.ts";
+import { textSize } from "../core/text.ts";
 
 /** A document as the importer takes it: its parts, each with how it is cited, and its pictures. */
 export interface ImportedText
@@ -131,33 +133,20 @@ export function writeImportState(folder: string, state: ImportState): void
  */
 export function claimImport(folder: string): boolean
 {
-    const file = join(folder, ".running");
-    const holder = existsSync(file) ? Number(readFileSync(file, "utf8")) : undefined;
-
-    if (holder !== undefined && holder !== process.pid && isAlive(holder)) {
-        return false;
-    }
-
-    writeFileSync(file, String(process.pid));
-    return true;
+    return claimMark(join(folder, ".running"));
 }
 
 /** The live process that runs the import now, other than this one, as the runner the MCP server started apart; undefined when none does. */
 export function runElsewhere(folder: string): number | undefined
 {
-    const file = join(folder, ".running");
-    const holder = existsSync(file) ? Number(readFileSync(file, "utf8")) : undefined;
-    return holder !== undefined && holder !== process.pid && isAlive(holder) ? holder : undefined;
+    const holder = markHolder(join(folder, ".running"));
+    return holder === process.pid ? undefined : holder;
 }
 
 /** Lets the import go, once this process stops running it. */
 export function releaseImport(folder: string): void
 {
-    const file = join(folder, ".running");
-
-    if (existsSync(file) && Number(readFileSync(file, "utf8")) === process.pid) {
-        rmSync(file, { force: true });
-    }
+    releaseMark(join(folder, ".running"));
 }
 
 /** The import's folder made from a document: its text in pieces, each part headed by its label, its pictures, and the mark at the start of the reading. */
@@ -358,7 +347,8 @@ export function finishAdventure(folder: string, title: string, language: string)
         for (const file of readdirSync(join(world, type.name)).filter((name) => name.endsWith(".md"))) {
             const image = /^\[\[([^\]|#]+)\]\]$/.exec(String(frontmatterOf(join(world, type.name, file)).image ?? "").trim())?.[1];
 
-            if (image !== undefined && existsSync(join(pictures, image))) {
+            // A picture's name alone, never a path the helper wrote out of the pictures, as the document's own text (LIB-8).
+            if (image !== undefined && basename(image) === image && /\.(?:png|jpe?g|webp|svg)$/i.test(image) && existsSync(join(pictures, image))) {
                 mkdirSync(join(folder, "adventure", "images"), { recursive: true });
                 copyFileSync(join(pictures, image), join(folder, "adventure", "images", image));
             }
@@ -398,26 +388,9 @@ export function pieceName(index: number): string
     return `${String(index + 1).padStart(2, "0")}.md`;
 }
 
-/** How long a text is, in words: a Chinese, Japanese or Korean letter counts as one, as a model reads it; else about six letters a word. */
-export function textSize(text: string): number
-{
-    const letters = text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/gu)?.length ?? 0;
-    return Math.max(text.split(/\s+/).filter((word) => word !== "").length + letters, Math.ceil(text.length / 6));
-}
-
 function openingFile(root: string): string
 {
     return join(root, importsFolderName, "opening.yaml");
-}
-
-function isAlive(pid: number): boolean
-{
-    try {
-        process.kill(pid, 0);
-        return true;
-    } catch (error) {
-        return (error as NodeJS.ErrnoException).code === "EPERM";
-    }
 }
 
 // A page's frontmatter as YAML; nothing when it has none or it does not read.

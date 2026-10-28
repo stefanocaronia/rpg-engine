@@ -4,7 +4,7 @@ import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import type { HelperLogin, HelperName, Helpers, HelperState } from "../core/context.ts";
+import type { HelperLogin, HelperName, Helpers, HelperState, PicturesReady } from "../core/context.ts";
 import { stopTree } from "./stop.ts";
 
 // The npm package of each program.
@@ -18,6 +18,9 @@ const linkWait = 5000;
 
 // How long an installation may take: the probe's took 13 to 21 seconds.
 const installWait = 5 * 60 * 1000;
+
+// How long Codex may take to queue a message: the probe's took well under a second.
+const queueWait = 15_000;
 
 // The sign-ins under way, or failed and not yet told, by program; the installations under way; how each program stood when last asked; and how many times one
 // came ready here, after which the makers of pictures ask again.
@@ -132,6 +135,25 @@ export function helperState(name: HelperName, folder = toolsFolder()): { state: 
 export function helperChanges(): number
 {
     return changes;
+}
+
+/**
+ * A maker's ready, as its `check` says it: asked once; a no again after a minute, only where the player may be waiting for it, as Settings and image, never on
+ * every call of the master; and again at once after a program came ready here, as after the player signs in (D-424).
+ */
+export function knownReady(check: () => PicturesReady): (again?: boolean) => PicturesReady
+{
+    let known: { said: PicturesReady; at: number; changes: number; } | undefined;
+
+    return (again) => {
+        const late = again === true && Date.now() - (known?.at ?? 0) > 60_000;
+
+        if (known === undefined || (!known.said.ready && (late || known.changes !== changes))) {
+            known = { said: check(), at: Date.now(), changes };
+        }
+
+        return known.said;
+    };
 }
 
 /**
@@ -274,9 +296,6 @@ export function queueInCodex(thread: string, message: string, folder = toolsFold
         });
     });
 }
-
-// How long Codex may take to queue a message: the probe's took well under a second.
-const queueWait = 15_000;
 
 /** The file a package's bin names for a program, in a node_modules folder; undefined where it is not there. */
 function packageBin(name: HelperName, modules: string): string | undefined

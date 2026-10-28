@@ -98,7 +98,7 @@ function rollDiceTerm(term: DiceTerm, nextFace: NextFace): TermResult
 
         while (matches(term.explode.condition, lastFace)) {
             if (++explosionCount > maxExplosions) {
-                throw new DiceError("Too many explosions in a single roll.");
+                throw new DiceError("Too many explosions in a single roll: explode on fewer faces, such as 1d10!>=10.");
             }
 
             lastFace = nextFace(term.sides);

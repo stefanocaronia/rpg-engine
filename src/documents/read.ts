@@ -2,6 +2,7 @@ import { unzipSync } from "fflate";
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, extname, join, posix, relative, resolve } from "node:path";
+import { textSize } from "../core/text.ts";
 import { htmlText, openDocumentText, pictureMark, rtfText, wordText } from "./markup.ts";
 import type { PageReader } from "./ocr.ts";
 import { pngOf } from "./png.ts";
@@ -54,6 +55,10 @@ export const documentKinds = [".pdf", ".docx", ".odt", ".epub", ".html", ".htm",
 
 /** The most pictures a document gives, and the longest side of each. */
 const mostPictures = 300;
+// What a .docx, .odt or .epub may unpack to, its text and pictures alone, as an adventure (ADV-1): never a file of zeros that fills the memory.
+const largestUnpacked = 512 * 1024 * 1024;
+// The files of a packed document the reader uses: its XML, relations, chapters and pictures.
+const unpackedKinds = /\.(?:xml|rels|opf|xhtml|html?|ncx|png|jpe?g|webp|svg)$/i;
 const longestSide = 1600;
 // Smaller pictures are ornaments, letters or icons; a picture on more pages than this is a page's decoration.
 const smallestSide = 160;
@@ -298,7 +303,7 @@ function readText(kind: string, bytes: Uint8Array, file: string, name: string): 
     let words = 0;
 
     for (const block of blocks.filter((one) => one.trim() !== "").flatMap(pageSized)) {
-        const count = sizeOf(block);
+        const count = textSize(block);
 
         if (parts.length === 0 || words + count > partWords) {
             parts.push({ label: "", text: block });
@@ -352,17 +357,10 @@ function lockOf(kind: string, bytes: Uint8Array): string | undefined
         : undefined;
 }
 
-/** How long a text is, in words: a Chinese, Japanese or Korean letter counts as one, as a model reads it; else about six letters a word. */
-function sizeOf(text: string): number
-{
-    const letters = text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/gu)?.length ?? 0;
-    return Math.max(text.split(/\s+/).filter((word) => word !== "").length + letters, Math.ceil(text.length / 6));
-}
-
 // A block longer than a page, as a text with a line for each paragraph or with no spaces, cut by its lines, then by its length.
 function pageSized(block: string): string[]
 {
-    if (sizeOf(block) <= partWords) {
+    if (textSize(block) <= partWords) {
         return [block];
     }
 
@@ -374,7 +372,7 @@ function pageSized(block: string): string[]
         for (const line of lines) {
             const last = cut.at(-1);
 
-            if (last !== undefined && sizeOf(`${last}\n${line}`) <= partWords) {
+            if (last !== undefined && textSize(`${last}\n${line}`) <= partWords) {
                 cut[cut.length - 1] = `${last}\n${line}`;
             } else {
                 cut.push(line);
@@ -385,7 +383,7 @@ function pageSized(block: string): string[]
     }
 
     // A block of one line is cut by its length: as many letters as make a page by sizeOf.
-    const letters = Math.max(1, Math.floor((block.length * partWords) / sizeOf(block)));
+    const letters = Math.max(1, Math.floor((block.length * partWords) / textSize(block)));
     return Array.from({ length: Math.ceil(block.length / letters) }, (_, index) => block.slice(index * letters, (index + 1) * letters));
 }
 
@@ -423,7 +421,7 @@ function fromPlain(kind: string, bytes: Uint8Array): Unpacked
 // A Word document: its text from word/document.xml, its pictures by the ids its relations give them.
 function fromWord(bytes: Uint8Array): Unpacked
 {
-    const zip = unzipSync(bytes);
+    const zip = unpacked(bytes);
     const xml = textOf(zip, "word/document.xml");
 
     if (xml === undefined) {
@@ -455,7 +453,7 @@ function fromWord(bytes: Uint8Array): Unpacked
 
 function fromOpenDocument(bytes: Uint8Array): Unpacked
 {
-    const zip = unzipSync(bytes);
+    const zip = unpacked(bytes);
     const xml = textOf(zip, "content.xml");
 
     if (xml === undefined) {
@@ -468,7 +466,7 @@ function fromOpenDocument(bytes: Uint8Array): Unpacked
 // An EPUB: its chapters in the order of its spine, its pictures by their path in the book.
 function fromEpub(bytes: Uint8Array): Unpacked
 {
-    const zip = unzipSync(bytes);
+    const zip = unpacked(bytes);
     const root = /full-path="([^"]+)"/.exec(textOf(zip, "META-INF/container.xml") ?? "")?.[1];
     const opf = root === undefined ? undefined : textOf(zip, root);
 
@@ -489,6 +487,27 @@ function fromEpub(bytes: Uint8Array): Unpacked
         .filter((chapter) => chapter !== "")
         .join("\n\n");
     return { text, files: zip };
+}
+
+/** A packed document's files that the reader uses, unpacked up to a size; it throws, saying what to do, past it. */
+function unpacked(bytes: Uint8Array): Record<string, Uint8Array>
+{
+    let declared = 0;
+    return unzipSync(bytes, {
+        filter: (file) => {
+            if (!unpackedKinds.test(file.name)) {
+                return false;
+            }
+
+            declared += file.originalSize;
+
+            if (declared > largestUnpacked) {
+                throw new Error(`This document unpacks to more than ${largestUnpacked / 1024 / 1024} MB of text and pictures: save it again without its largest pictures, or as a PDF.`);
+            }
+
+            return true;
+        },
+    });
 }
 
 // A path an EPUB writes encoded, as it is when it is not: a % in a file's name.

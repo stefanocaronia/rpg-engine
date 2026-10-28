@@ -2,4 +2,4 @@
 // .zip an export writes (ADV-7).
 export { type AdventureManifest, manifestFileName, manifestLine, readManifest, writeManifest } from "./manifest.ts";
 export { adventureFolderName, adventureTarget } from "./placement.ts";
-export { type AdventureFiles, adventureFolders, isAdventureFolder, largestAdventure, packAdventure, readAdventureFolder, readAdventureZip } from "./source.ts";
+export { type AdventureFiles, isAdventureFolder, largestAdventure, packAdventure, readAdventureFolder, readAdventureZip } from "./source.ts";

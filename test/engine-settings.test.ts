@@ -7,7 +7,7 @@ import { runCommandLine } from "../src/command-line.ts";
 import { playerChangeNews, playerSettings, setupQuestions } from "../src/commands/config.ts";
 import { campaignWorld } from "../src/commands/game-world.ts";
 import type { Context } from "../src/core/context.ts";
-import { installedSystems } from "../src/systems/index.ts";
+import { installedSystems, withSettings } from "../src/systems/index.ts";
 import { systemChecks } from "../src/testing.ts";
 import { madeSystem, makeTempFolder, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
@@ -150,6 +150,24 @@ describe("DAT-17: a setting a value asks", () => {
         expect(() => installedSystems([system("  pace:\n    slow: {means: slow, asks: [pace]}\n    fast: {means: fast}\n")])).toThrow("settings.pace.slow: asks pace, which is its own setting");
         expect(() => installedSystems([system("  pace:\n    slow: {means: slow, suggested: true}\n    fast: {means: fast, suggested: true}\n")])).toThrow("settings.pace: suggest one value at most");
         expect(installedSystems(testSystemFolders).find((one) => one.name === "free")?.settings.map((setting) => setting.name)).toEqual(["outcomes", "die"]);
+    });
+});
+
+describe("DAT-17: what a value leaves out", () => {
+    it("holds only where the setting it is of holds: a setting no value the campaign plays asks takes nothing off the sheet", () => {
+        const folder = madeSystem("asked", {
+            "system.yaml":
+                "title: a test system of its settings\nlanguage: en\nfields: {renown: number}\nsettings:\n  pace:\n    slow: {means: slow, asks: [diet]}\n    fast: {means: fast}\n  diet:\n    lean: {means: lean, without: [renown]}\n    rich: {means: rich}\n",
+        });
+        const system = installedSystems([folder]).find((one) => one.name === "asked");
+
+        if (system === undefined) {
+            throw new Error("the test system does not read");
+        }
+
+        const leftOut = (values: Record<string, string>): string[] => withSettings(system, (setting) => values[setting]).leftOut ?? [];
+        expect(leftOut({ pace: "slow", diet: "lean" })).toEqual(["renown"]);
+        expect(leftOut({ pace: "fast", diet: "lean" })).toEqual([]);
     });
 });
 

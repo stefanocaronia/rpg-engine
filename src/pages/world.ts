@@ -508,7 +508,9 @@ export function checkPageName(name: string): void
 
     // A name that ends as a file does, as Bruna.md or Mappa.png, makes a page no link reaches (LNK-1).
     if (links(`[[${name}]]`)[0]?.page !== name) {
-        throw new Error(`"${name}" cannot be a page name: a link to it would not reach it. Give the name without its file ending, as "${name.replace(/\.[^.]*$/, "")}".`);
+        const ending = /\.[a-z0-9]+$/i.test(name);
+        const remedy = ending ? `Give the name without its file ending, as "${name.replace(/\.[a-z0-9]+$/i, "")}".` : "Give the name without ` or %%, which make code and comments.";
+        throw new Error(`"${name}" cannot be a page name: a link to it would not reach it. ${remedy}`);
     }
 }
 

@@ -1,4 +1,4 @@
-import { comparableText, linkTargetName } from "../core/text.ts";
+import { comparableText, linkTargetName, sameWord } from "../core/text.ts";
 
 /** What a condition names: a page, by the name its link gives, or the party, the player character and the living companions. */
 export type Subject = { party: true; } | { page: string; };
@@ -86,17 +86,17 @@ export function triggerHolds(trigger: Trigger, facts: TriggerFacts): boolean
     }
 
     const { what, where } = trigger;
-    const isMember = (name: string): boolean => facts.party.some((member) => sameText(member, name));
+    const isMember = (name: string): boolean => facts.party.some((member) => sameWord(member, name));
 
     if ("party" in what) {
-        return "page" in where && facts.isPage(where.page) && facts.party.some((member) => facts.containersOf(member).some((holder) => sameText(holder, where.page)));
+        return "page" in where && facts.isPage(where.page) && facts.party.some((member) => facts.containersOf(member).some((holder) => sameWord(holder, where.page)));
     }
 
     if ("party" in where) {
         return facts.isPage(what.page) && (isMember(what.page) || facts.containersOf(what.page).some(isMember));
     }
 
-    return facts.isPage(where.page) && facts.containersOf(what.page).some((holder) => sameText(holder, where.page));
+    return facts.isPage(where.page) && facts.containersOf(what.page).some((holder) => sameWord(holder, where.page));
 }
 
 /** A condition of the form "A in B", once both sides read: nothing is inside itself. */
@@ -110,7 +110,7 @@ function insideTrigger(written: string, what: { subject: Subject; } | { problem:
         return where;
     }
 
-    if ("party" in what.subject ? "party" in where.subject : "page" in where.subject && sameText(what.subject.page, where.subject.page)) {
+    if ("party" in what.subject ? "party" in where.subject : "page" in where.subject && sameWord(what.subject.page, where.subject.page)) {
         return { problem: `"${written}" can never hold: nothing is inside itself.` };
     }
 
@@ -152,9 +152,4 @@ function notConditionProblem(written: string): string
     }
 
     return `"${written}" is not a condition: write ${forms}, with the pages as links.`;
-}
-
-function sameText(first: string, second: string): boolean
-{
-    return comparableText(first) === comparableText(second);
 }

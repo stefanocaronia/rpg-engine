@@ -27,7 +27,7 @@ const languageSchema = z.object({
 }).strict();
 const phrasesSchema = z.record(z.string(), z.string());
 // Characters that turn the order of a text, which could make it read otherwise than it is.
-const turning = /[‪-‮⁦-⁩]/;
+const turning = /[\u202A-\u202E\u2066-\u2069]/;
 
 /** The language packages in these folders, as npm keeps them, in scopes' folders too; the first by a code wins. */
 export function installedLanguages(folders: string[]): LanguagePack[]
@@ -73,7 +73,7 @@ export function readLanguagePack(folder: string): LanguagePack
 /** The dashboard's phrases the package translates, by their English; none when it has none that reads. */
 export function packPhrases(pack: LanguagePack): Record<string, string>
 {
-    const read = phrasesSchema.safeParse(JSON.parse(files().text(join(pack.folder, "phrases.json")) ?? "{}"));
+    const read = phrasesSchema.safeParse(phrasesJson(pack));
     return read.success ? read.data : {};
 }
 
@@ -96,7 +96,11 @@ export function packSystemFolder(pack: LanguagePack, system: string): string | u
  */
 export function languagePackProblems(pack: LanguagePack, english: string[]): { problems: string[]; missing: number; }
 {
-    const raw = JSON.parse(files().text(join(pack.folder, "phrases.json")) ?? "null") as unknown;
+    const raw = phrasesJson(pack);
+
+    if (raw instanceof Error) {
+        return { problems: [`phrases.json does not read as JSON: ${raw.message}`], missing: english.length };
+    }
 
     if (!phrasesSchema.safeParse(raw).success) {
         return { problems: ["phrases.json is not an object from each English phrase to its translation"], missing: english.length };
@@ -121,4 +125,14 @@ export function languagePackProblems(pack: LanguagePack, english: string[]): { p
 function packageFolders(folders: string[]): string[]
 {
     return packageFoldersIn(folders).filter((candidate) => files().exists(join(candidate, languageFileName)));
+}
+
+/** The package's phrases.json as JSON: undefined when it has none, the error when it does not read. */
+function phrasesJson(pack: LanguagePack): unknown
+{
+    try {
+        return JSON.parse(files().text(join(pack.folder, "phrases.json")) ?? "null");
+    } catch (error) {
+        return error instanceof Error ? error : new Error(String(error));
+    }
 }

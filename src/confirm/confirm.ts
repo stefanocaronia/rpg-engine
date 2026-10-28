@@ -42,6 +42,11 @@ export function systemConfirm(platform: string, env: Record<string, string | und
 {
     return {
         ask: async (title, text, signal, answers) => {
+            // A call stopped before the window: nothing is asked, so no yes can come after the stop.
+            if (signal?.aborted === true) {
+                return "none";
+            }
+
             for (const command of dialogCommands(platform, env, title, text, answers)) {
                 const ran = await run(command, signal);
 
@@ -81,12 +86,17 @@ export function dialogCommands(platform: string, env: Record<string, string | un
 }
 
 /** What a window said, from how its program ended: yes, no, or none when it could not show one. */
-export function dialogAnswer(command: DialogCommand, ran: { code: number | null; out: string; }): Confirmed
+export function dialogAnswer(command: DialogCommand, ran: { code: number | null; out: string; err?: string; }): Confirmed
 {
     const said = command.yes.out === undefined ? ran.code === command.yes.code : ran.out.trim() === command.yes.out && ran.code === 0;
 
     if (said) {
         return "yes";
+    }
+
+    // macOS's script ends with -128 when the player turns it down; any other error is a window never shown, as with no desktop.
+    if (command.yes.out !== undefined && ran.code !== 0) {
+        return (ran.err ?? "").includes("(-128)") ? "no" : "none";
     }
 
     // Windows' script says when there is no desktop; anything else that ended is the player's no, or the window closed.
@@ -101,11 +111,11 @@ export function plainText(text: string, most: number): string
 }
 
 /** Runs a window's program: how it ended and what it wrote; "missing" when it is not on this computer. Closed when the call is stopped, or after half an hour. */
-function runDialog(command: DialogCommand, signal?: AbortSignal): Promise<{ code: number | null; out: string; } | "missing">
+function runDialog(command: DialogCommand, signal?: AbortSignal): Promise<{ code: number | null; out: string; err?: string; } | "missing">
 {
     return new Promise((done) => {
-        const child = spawn(command.file, command.args, { env: { ...process.env, ...command.env }, stdio: ["ignore", "pipe", "ignore"], windowsHide: false });
-        let out = "";
+        const child = spawn(command.file, command.args, { env: { ...process.env, ...command.env }, stdio: ["ignore", "pipe", "pipe"], windowsHide: false });
+        let [out, err] = ["", ""];
 
         const stop = (): void => {
             child.kill();
@@ -115,14 +125,16 @@ function runDialog(command: DialogCommand, signal?: AbortSignal): Promise<{ code
         signal?.addEventListener("abort", stop, { once: true });
         child.stdout.setEncoding("utf8");
         child.stdout.on("data", (chunk: string) => (out += chunk));
+        child.stderr.setEncoding("utf8");
+        child.stderr.on("data", (chunk: string) => (err += chunk));
         child.on("error", (error: NodeJS.ErrnoException) => {
             clearTimeout(timer);
-            done(error.code === "ENOENT" ? "missing" : { code: null, out });
+            done(error.code === "ENOENT" ? "missing" : { code: null, out, err });
         });
         child.on("close", (code) => {
             clearTimeout(timer);
             signal?.removeEventListener("abort", stop);
-            done({ code, out });
+            done({ code, out, err });
         });
     });
 }

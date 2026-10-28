@@ -1,3 +1,4 @@
+import { wordCount } from "../core/text.ts";
 import { sameWord, searchWords } from "./search.ts";
 
 /** A book as a search reads it: its name, and its pages, or the parts of a document without pages, each with how it is cited. */
@@ -158,6 +159,7 @@ const lengthWeight = 0.75;
 const longestTitle = 60;
 const mostTitleWords = 6;
 const fewestTitleLetters = 4;
+const titleLetters = new RegExp(`\\p{L}{${fewestTitleLetters}}`, "u");
 const fewestWords = 60;
 // A line on this many pages of a book or more, and on one in fifty, is the page's running head, never a title.
 const runningPages = 3;
@@ -222,7 +224,7 @@ function titleLines(lines: string[], running: Set<string>): boolean[]
         const capitals = trimmed.match(/\p{Lu}/gu)?.length ?? 0;
         const short = trimmed.length <= longestTitle && trimmed.split(/\s+/).length <= mostTitleWords;
         const goesOn = /^\s*\p{Ll}/u.test(lines[index + 1] ?? "");
-        return short && cased >= 3 && capitals >= cased * 0.7 && new RegExp(`\\p{L}{${fewestTitleLetters}}`, "u").test(trimmed) && !goesOn && !running.has(lineKey(trimmed));
+        return short && cased >= 3 && capitals >= cased * 0.7 && titleLetters.test(trimmed) && !goesOn && !running.has(lineKey(trimmed));
     });
 }
 
@@ -295,9 +297,4 @@ function headingAbove(headings: boolean[], line: number): number | undefined
     }
 
     return undefined;
-}
-
-function wordCount(text: string): number
-{
-    return text.split(/\s+/).filter((word) => word !== "").length;
 }

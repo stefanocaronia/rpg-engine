@@ -89,7 +89,10 @@ export function readCalendarStart(text: string, calendar: Calendar): CalendarSta
     }
 
     const match = startPattern.exec(text.trim().replace(/\s+/g, " "));
-    const month = match === null ? -1 : calendar.months.findIndex((candidate) => comparableText(candidate.name) === comparableText(match[2]));
+    const monthNamed = (name: string): number => calendar.months.findIndex((candidate) => comparableText(candidate.name) === comparableText(name));
+    // A month named with a number, as Month 3, takes the number when no month has the name without it: then the year is not given.
+    const numbered = match !== null && match[3] !== undefined && monthNamed(match[2]) === -1 && monthNamed(`${match[2]} ${match[3]}`) !== -1;
+    const month = match === null ? -1 : numbered ? monthNamed(`${match[2]} ${match[3]}`) : monthNamed(match[2]);
     const names = calendar.months.map((candidate) => candidate.name).join(", ");
 
     if (match === null || match[2] === "") {
@@ -108,7 +111,7 @@ export function readCalendarStart(text: string, calendar: Calendar): CalendarSta
         throw new Error(`${name} has days 1 to ${days}, not ${day}: give a day it has.`);
     }
 
-    return match[3] === undefined ? { day, month } : { day, month, year: Number(match[3]) };
+    return match[3] === undefined || numbered ? { day, month } : { day, month, year: Number(match[3]) };
 }
 
 /** The day of the calendar that a game day falls on, counting from the start as day 1; after the last month the first comes again, a year later. */

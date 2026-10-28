@@ -54,7 +54,8 @@ export function wordIn(words: ExtensionWords | undefined, text: string): string
 
     const first = text.charAt(0);
     const other = first === first.toLowerCase() ? first.toUpperCase() : first.toLowerCase();
-    const found = list[`${other}${text.slice(1)}`];
+    const key = `${other}${text.slice(1)}`;
+    const found = Object.hasOwn(list, key) ? list[key] : undefined;
 
     if (found === undefined) {
         return text;

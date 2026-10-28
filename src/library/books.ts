@@ -1,8 +1,9 @@
 // The player's books and their index (D-491, LIB-2, LIB-3): the documents in the folders of the library, and the text of each kept in a file of its own in
 // the index's folder, once for all their campaigns. The engine reads the books' folders and never writes in them.
 import { createHash } from "node:crypto";
-import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, type Stats, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, type Stats, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { claimMark, markHolder, releaseMark } from "../core/process-mark.ts";
 import { bookLanguage } from "./language.ts";
 
 /** A book as the index holds it, read (LIB-3). */
@@ -170,58 +171,19 @@ export function foldersIn(folder: string): string[]
 /** Takes the reading of the library for this process, at once or not at all: false while another live process reads it, one at a time on a computer. */
 export function claimLibrary(folder: string): boolean
 {
-    mkdirSync(folder, { recursive: true });
-    // The mark is written whole beside it, then linked in place at once: never seen empty, and only one process links it.
-    const own = `${lockFile(folder)}.${process.pid}`;
-    writeFileSync(own, String(process.pid));
-
-    try {
-        for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-                linkSync(own, lockFile(folder));
-                return true;
-            } catch (error) {
-                if (!["EEXIST", "EPERM"].includes((error as NodeJS.ErrnoException).code ?? "")) {
-                    throw error;
-                }
-            }
-
-            const holder = libraryReader(folder);
-
-            if (holder !== undefined) {
-                return holder === process.pid;
-            }
-
-            // A mark left by a reader that is gone, taken away once, and only while it is still that one: another process may have just put its own.
-            dropStaleLock(folder);
-        }
-
-        return false;
-    } finally {
-        rmSync(own, { force: true });
-    }
+    return claimMark(lockFile(folder));
 }
 
 /** Lets the reading go, once this process stops. */
 export function releaseLibrary(folder: string): void
 {
-    if (libraryReader(folder) === process.pid) {
-        rmSync(lockFile(folder), { force: true });
-    }
+    releaseMark(lockFile(folder));
 }
 
 /** The live process that reads the library now, if one does. */
 export function libraryReader(folder: string): number | undefined
 {
-    let holder: number;
-
-    try {
-        holder = Number(readFileSync(lockFile(folder), "utf8"));
-    } catch {
-        return undefined;
-    }
-
-    return Number.isInteger(holder) && holder > 0 && isAlive(holder) ? holder : undefined;
+    return markHolder(lockFile(folder));
 }
 
 /**
@@ -506,19 +468,6 @@ function lockFile(folder: string): string
     return join(folder, ".reading");
 }
 
-function dropStaleLock(folder: string): void
-{
-    try {
-        const stale = readFileSync(lockFile(folder), "utf8");
-
-        if (!isAlive(Number(stale)) && readFileSync(lockFile(folder), "utf8") === stale) {
-            rmSync(lockFile(folder), { force: true });
-        }
-    } catch {
-        // Gone already, or taken away by another process at the same time.
-    }
-}
-
 function stampOf(file: FoundFile): string
 {
     return `${file.size} ${file.modified}`;
@@ -549,15 +498,5 @@ function statOf(path: string): Stats | undefined
         return statSync(path);
     } catch {
         return undefined;
-    }
-}
-
-function isAlive(pid: number): boolean
-{
-    try {
-        process.kill(pid, 0);
-        return true;
-    } catch (error) {
-        return (error as NodeJS.ErrnoException).code === "EPERM";
     }
 }

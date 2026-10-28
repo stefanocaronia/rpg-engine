@@ -43,6 +43,10 @@ describe("TIM-8: the calendar", () => {
         expect(readCalendarStart("14 April", realCalendar)).toEqual({ day: 14, month: 3 });
         expect(readCalendarStart(" 14  april  1491 ", realCalendar)).toEqual({ day: 14, month: 3, year: 1491 });
         expect(readCalendarStart("1 Deep Winter", { months: [{ name: "Deep Winter", days: 30 }] })).toEqual({ day: 1, month: 0 });
+        // Months named with a number, the year not given or given.
+        const numbered = { months: [{ name: "Month 1", days: 30 }, { name: "Month 2", days: 30 }, { name: "Month 3", days: 30 }] };
+        expect(readCalendarStart("14 Month 3", numbered)).toEqual({ day: 14, month: 2 });
+        expect(readCalendarStart("14 Month 3 1491", numbered)).toEqual({ day: 14, month: 2, year: 1491 });
         expect(() => readCalendarStart("April 14", realCalendar)).toThrow(
             '"April 14" is not when the story starts: write day 1 to count the days, or a day of the calendar, the year if wanted, such as 14 January or 14 January 1491.',
         );

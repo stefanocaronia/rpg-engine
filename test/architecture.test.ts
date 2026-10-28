@@ -61,6 +61,8 @@ describe("architecture", () => {
             "importer/work.ts",
             "library/books.ts",
             "library/folders.ts",
+            // The mark of the one process that reads the books or runs an import, beside their folders (LIB-3).
+            "core/process-mark.ts",
             // The test kit for extensions makes its campaigns in temporary folders, its extensions linked into them (D-506).
             "testing.ts",
             // And its checks of a game system's own folder, read as it is, never a campaign (D-514).

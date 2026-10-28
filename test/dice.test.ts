@@ -39,6 +39,18 @@ describe("dice notation", () => {
     );
 });
 
+describe("a notation that does not read", () => {
+    it("says the shapes dice are written in, and refuses a number too large to count", () => {
+        const roll = (notation: string) => () => rollDice(notation, { random: () => 1 });
+
+        for (const notation of ["", "1d20+", "2d6x", "d"]) {
+            expect(roll(notation), notation).toThrow("write dice as 1d20+5, 2d20kh1");
+        }
+
+        expect(roll("1d20+99999999999999999999")).toThrow("a number added to the dice is 1000000 at most");
+    });
+});
+
 describe("a notation in words (D-292)", () => {
     it.each([
         ["2d20kh1+5", "2d20, keep the highest, +5"],

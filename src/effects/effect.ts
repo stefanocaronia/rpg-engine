@@ -72,7 +72,7 @@ export function readEffects(value: unknown): { effects: Effect[]; } | { problem:
             return read;
         }
 
-        if (effects.some((effect) => sameName(effect.name, read.effect.name))) {
+        if (effects.some((effect) => sameWord(effect.name, read.effect.name))) {
             return { problem: `The effect ${read.effect.name} is written twice: keep one.` };
         }
 
@@ -138,7 +138,7 @@ export function endsAtTurn(end: { round: number; turn: string; }, round: number,
         return round > end.round;
     }
 
-    return sameName(turn, end.turn) || !order.some((name) => sameName(name, end.turn));
+    return sameWord(turn, end.turn) || !order.some((name) => sameWord(name, end.turn));
 }
 
 function withEnd(effect: Effect, endText: string): { effect: Effect; } | { problem: string; }
@@ -184,9 +184,4 @@ function asLine(item: unknown): string | undefined
 function pageName(text: string): string
 {
     return text.trim().replace(/^\[\[(.*?)(?:\|.*)?\]\]$/, "$1").trim();
-}
-
-function sameName(first: string, second: string): boolean
-{
-    return comparableText(first.trim()) === comparableText(second.trim());
 }

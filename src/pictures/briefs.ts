@@ -22,13 +22,12 @@ export function paintedBrief(subject: PictureSubject): string
 export function placeBrief(name: string, seen: string, unseen: string[] = []): string
 {
     return [
-        "Use your built-in image generation tool to make exactly one new image from the brief below. Do not copy, save or edit any file and run no commands: "
-        + 'the caller collects the image itself. If you cannot make it, reply with one line saying why; otherwise reply with only "done".',
+        imageAsk,
         "",
         "Use case: illustration-story",
         "Asset type: wide banner for the location screen of a tabletop role-playing game, landscape, 21:9",
         `Primary request: ${name}, as adventurers see it arriving: ${seen}`,
-        "Style/medium: painterly digital illustration, fantasy concept art, muted natural colours, soft brushwork",
+        paintedStyle,
         "Composition/framing: wide establishing shot at eye level, the subject in the middle third, edges that can be cropped",
         "Constraints: show only what is described; no people or creatures; no text, letters, numbers, signs, captions, logos, watermark or frame",
         ...(unseen.length === 0 ? [] : [`Never show: ${unseen.join("; ")}`]),
@@ -42,13 +41,12 @@ export function placeBrief(name: string, seen: string, unseen: string[] = []): s
 export function questBrief(name: string, known: string, unseen: string[] = []): string
 {
     return [
-        "Use your built-in image generation tool to make exactly one new image from the brief below. Do not copy, save or edit any file and run no commands: "
-        + 'the caller collects the image itself. If you cannot make it, reply with one line saying why; otherwise reply with only "done".',
+        imageAsk,
         "",
         "Use case: illustration-story",
         "Asset type: wide low banner for a quest card of a tabletop role-playing game, landscape, 16:6",
         `Primary request: the quest ${name}, as an emblem of what it is about: ${known}`,
-        "Style/medium: painterly digital illustration, fantasy concept art, muted natural colours, soft brushwork",
+        paintedStyle,
         "Composition/framing: the subject in the middle third, half of the height shown, edges that can be cropped",
         "Constraints: people or creatures only as small distant figures, never faces; no text, letters, numbers, signs, captions, logos, watermark or frame",
         ...(unseen.length === 0 ? [] : [`Never show: ${unseen.join("; ")}`]),
@@ -62,14 +60,13 @@ export function questBrief(name: string, known: string, unseen: string[] = []): 
 export function portraitBrief(name: string, seen: string, unseen: string[] = [], who?: string): string
 {
     return [
-        "Use your built-in image generation tool to make exactly one new image from the brief below. Do not copy, save or edit any file and run no commands: "
-        + 'the caller collects the image itself. If you cannot make it, reply with one line saying why; otherwise reply with only "done".',
+        imageAsk,
         "",
         "Use case: illustration-story",
         "Asset type: square portrait for the round token of a character of a tabletop role-playing game, 1:1",
         ...portraitRequest(name, seen, who),
-        "Style/medium: painterly digital illustration, fantasy concept art, muted natural colours, soft brushwork",
-        "Composition/framing: a close-up of the face, centred, from the top of the head to the chin and only a hint of the shoulders, the face filling most of the picture; a plain softly lit background, nothing that matters near the corners, which a circle crops",
+        paintedStyle,
+        `Composition/framing: ${faceFraming}`,
         "Constraints: this one figure alone; no text, letters, numbers, signs, captions, logos, watermark or frame",
         ...(unseen.length === 0 ? [] : [`Never show: ${unseen.join("; ")}`]),
     ].join("\n");
@@ -82,19 +79,25 @@ export function portraitBrief(name: string, seen: string, unseen: string[] = [],
 export function creatureBrief(name: string, seen: string, unseen: string[] = [], who?: string): string
 {
     return [
-        "Use your built-in image generation tool to make exactly one new image from the brief below. Do not copy, save or edit any file and run no commands: "
-        + 'the caller collects the image itself. If you cannot make it, reply with one line saying why; otherwise reply with only "done".',
+        imageAsk,
         "",
         "Use case: illustration-story",
         "Asset type: square picture of a creature for the round token of a tabletop role-playing game, 1:1",
         ...creatureRequest(name, seen, who),
-        "Style/medium: painterly digital illustration, fantasy concept art, muted natural colours, soft brushwork",
+        paintedStyle,
         `Composition/framing: ${creatureFraming}`,
         "Constraints: this one creature alone; no text, letters, numbers, signs, captions, logos, watermark or frame",
         ...(unseen.length === 0 ? [] : [`Never show: ${unseen.join("; ")}`]),
     ].join("\n");
 }
 
+// What every brief asks of the helper first, and the style every picture is painted in.
+const imageAsk = "Use your built-in image generation tool to make exactly one new image from the brief below. Do not copy, save or edit any file and run no commands: "
+    + 'the caller collects the image itself. If you cannot make it, reply with one line saying why; otherwise reply with only "done".';
+const paintedStyle = "Style/medium: painterly digital illustration, fantasy concept art, muted natural colours, soft brushwork";
+// A portrait, a person's or a creature's, as a circle crops it.
+const faceFraming = "a close-up of the face, centred, from the top of the head to the chin and only a hint of the shoulders, the face filling most of the picture; "
+    + "a plain softly lit background, nothing that matters near the corners, which a circle crops";
 const creatureFraming = "a close-up of the head, its face or muzzle centred and filling most of the picture, only a hint of the neck; "
     + "a plain softly lit background, nothing that matters near the corners, which a circle crops";
 
@@ -114,7 +117,7 @@ export function svgBrief(subject: PictureSubject): string
         'Asset type: square portrait for the round token of a character of a tabletop role-playing game, viewBox="0 0 1024 1024" (1:1)',
         ...portraitRequest(subject.name, subject.seen, subject.who),
         svgStyle,
-        "Composition/framing: a close-up of the face, centred, from the top of the head to the chin and only a hint of the shoulders, the face filling most of the picture; a plain softly lit background, nothing that matters near the corners, which a circle crops",
+        `Composition/framing: ${faceFraming}`,
         "Constraints: this one figure alone; no text, letters, numbers, signs, logos or frame",
     ];
     const creature = [

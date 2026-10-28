@@ -134,12 +134,12 @@ function paragraphs(text: string): string
 {
     return text
         .split(/\n\s*\n/)
-        .map((block) => block.replace(/[ \t ]+/g, " ").replace(/ *\n */g, "\n").trim())
+        .map((block) => block.replace(/[ \t\u00a0]+/g, " ").replace(/ *\n */g, "\n").trim())
         .filter((block) => block !== "")
         .join("\n\n");
 }
 
-const named: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", mdash: "—", ndash: "–", hellip: "…", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”" };
+const named: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0", mdash: "—", ndash: "–", hellip: "…", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”" };
 
 function entities(text: string): string
 {

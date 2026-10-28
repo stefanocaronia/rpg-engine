@@ -38,6 +38,9 @@ export class DiceError extends Error
 const maxTerms = 20;
 const maxDice = 100;
 const maxSides = 1000;
+const maxConstant = 1_000_000;
+// What a notation that does not read is told, for any game: the shapes it takes.
+const notationForm = "write dice as 1d20+5, 2d20kh1, 4d6dl1, 2d6ro<=2, 1d6!, 6d10>=8, 4dF or d%";
 const conditionPattern = /^(<=|>=|<|>|=)(\d+)/;
 
 /** Reads a notation valid for any game, such as `1d20+5`, `2d20kh1`, `4d6dl1`, `2d6ro<=2`, `1d6!`, `6d10>=8`, `4dF`, `d%`. */
@@ -46,13 +49,13 @@ export function parseNotation(notation: string): Term[]
     const compact = notation.replace(/\s+/g, "");
 
     if (compact === "") {
-        throw new DiceError("The dice notation is empty.");
+        throw new DiceError(`The dice notation is empty: ${notationForm}.`);
     }
 
     const signedTerms = compact.match(/[+-]?[^+-]+/g) ?? [];
 
     if (signedTerms.join("") !== compact) {
-        throw new DiceError(`Cannot read "${notation}".`);
+        throw new DiceError(`Cannot read "${notation}": ${notationForm}.`);
     }
 
     if (signedTerms.length > maxTerms) {
@@ -90,13 +93,17 @@ function parseTerm(signedTerm: string, notation: string): Term
     const termText = signedTerm.replace(/^[+-]/, "");
 
     if (/^\d+$/.test(termText)) {
+        if (Number(termText) > maxConstant) {
+            throw new DiceError(`"${termText}": a number added to the dice is ${maxConstant} at most.`);
+        }
+
         return { kind: "constant", sign, value: Number(termText) };
     }
 
     const match = /^(\d*)d(\d+|%|F)(.*)$/i.exec(termText);
 
     if (!match) {
-        throw new DiceError(`Cannot read "${termText}" in "${notation}".`);
+        throw new DiceError(`Cannot read "${termText}" in "${notation}": ${notationForm}.`);
     }
 
     const [, countText, sidesText, modifiers] = match;
@@ -176,7 +183,7 @@ function parseModifiers(modifiers: string, term: DiceTerm & { sides: number; }, 
 
             term.success = toCondition(match[1], match[2]);
         } else {
-            throw new DiceError(`"${termText}": unknown modifier "${remaining}".`);
+            throw new DiceError(`"${termText}": unknown modifier "${remaining}": ${notationForm}.`);
         }
 
         remaining = remaining.slice(match[0].length);

@@ -7,7 +7,7 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DocumentReader, MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
 import { paintedBrief } from "./briefs.ts";
-import { helperChanges, helperEnvironment, helperState } from "./helpers.ts";
+import { helperEnvironment, helperState, knownReady } from "./helpers.ts";
 import { stopTree } from "./stop.ts";
 
 // How long a picture may take before the engine gives it up (D-308): the probe's took 31 to 45 seconds.
@@ -46,21 +46,7 @@ let codex = "codex";
 /** Codex on this computer, as the player's ChatGPT login lets it make pictures. */
 export function codexPictures(): PictureMaker
 {
-    let known: { said: PicturesReady; at: number; changes: number; } | undefined;
-    return {
-        // Asked once; a no again after a minute, only where the player may be waiting for it, as Settings and image: never on every call of the master; and
-        // again at once after a program came ready here, as after the player signs in (D-424).
-        ready: (again) => {
-            const late = again === true && Date.now() - (known?.at ?? 0) > 60_000;
-
-            if (known === undefined || (!known.said.ready && (late || known.changes !== helperChanges()))) {
-                known = { said: codexReady(), at: Date.now(), changes: helperChanges() };
-            }
-
-            return known.said;
-        },
-        make,
-    };
+    return { ready: knownReady(codexReady), make };
 }
 
 /** Codex on this computer as a writer of text (D-406): ready where its ChatGPT login makes pictures too. */
@@ -118,7 +104,7 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
                 }
             });
             const thread = events.find((event) => event.type === "thread.started")?.thread_id;
-            const pictures = typeof thread === "string" ? join(process.env.CODEX_HOME ?? join(homedir(), ".codex"), "generated_images", thread) : undefined;
+            const pictures = typeof thread === "string" ? join(process.env.CODEX_HOME || join(homedir(), ".codex"), "generated_images", thread) : undefined;
             const file = pictures === undefined || !existsSync(pictures) ? undefined : readdirSync(pictures).find((name) => name.toLowerCase().endsWith(".png"));
 
             const clean = (): void => {

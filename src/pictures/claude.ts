@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DocumentReader, MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
 import { svgBrief } from "./briefs.ts";
-import { helperChanges, helperEnvironment, helperState } from "./helpers.ts";
+import { helperEnvironment, helperState, knownReady } from "./helpers.ts";
 import { stopTree } from "./stop.ts";
 import { cleanSvg, svgIn } from "./svg.ts";
 
@@ -15,15 +15,13 @@ const longest = 3 * 60 * 1000;
 // How long a run of the importer may take: Elena's probe read sixteen pages in about four minutes (D-489).
 const longestReading = 30 * 60 * 1000;
 
-// Claude Code without the chat's own settings, tools, memory or session: only the brief, and the SVG as its answer.
-const drawing = (claude: string): string =>
+// Claude Code without the chat's own settings, tools, memory or session, Sonnet at low effort: only the brief, and what the system prompt asks as its answer.
+const briefOnly = (claude: string, prompt: string): string =>
     `${claude} -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
-    + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "You draw pictures as SVG code from a brief. You reply with the SVG alone."`;
-
-// Claude Code as a writer of text (D-406): Sonnet at low effort, with nothing but the brief.
-const writing = (claude: string): string =>
-    `${claude} -p --model sonnet --effort low --output-format json --tools "" --setting-sources "" --strict-mcp-config --no-session-persistence `
-    + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "You write what a brief asks, and only that."`;
+    + `--disable-slash-commands --max-budget-usd 0.5 --system-prompt "${prompt}"`;
+// The SVG as its answer, and a writer of text (D-406).
+const drawing = (claude: string): string => briefOnly(claude, "You draw pictures as SVG code from a brief. You reply with the SVG alone.");
+const writing = (claude: string): string => briefOnly(claude, "You write what a brief asks, and only that.");
 
 /** Claude Code on this computer as a writer of text (D-406): ready where the player's Claude login lets it draw too. */
 export function claudeWriter(maker: PictureMaker = claudePictures()): TextWriter
@@ -49,19 +47,7 @@ let claude = "claude";
 /** Claude Code on this computer, as the player's Claude login lets it draw pictures. */
 export function claudePictures(): PictureMaker
 {
-    let known: { said: PicturesReady; at: number; changes: number; } | undefined;
-    return {
-        ready: (again) => {
-            const late = again === true && Date.now() - (known?.at ?? 0) > 60_000;
-
-            if (known === undefined || (!known.said.ready && (late || known.changes !== helperChanges()))) {
-                known = { said: claudeReady(), at: Date.now(), changes: helperChanges() };
-            }
-
-            return known.said;
-        },
-        make,
-    };
+    return { ready: knownReady(claudeReady), make };
 }
 
 /** Whether Claude Code is there and logged in with the player's Claude plan: asked in a moment, without spending anything. */

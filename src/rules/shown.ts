@@ -1,3 +1,4 @@
+import { wordCount } from "../core/text.ts";
 import type { RuleSection } from "./rule-book.ts";
 import type { RuleFinding } from "./search.ts";
 
@@ -55,9 +56,4 @@ function holds(outer: RuleSection, inner: RuleSection): boolean
 {
     return outer.source === inner.source && outer.file === inner.file && outer.path.length <= inner.path.length && outer.path.every((title, index) => inner.path[index] === title)
         && outer.text.includes(inner.text);
-}
-
-function wordCount(text: string): number
-{
-    return text.split(/\s+/).filter((word) => word !== "").length;
 }

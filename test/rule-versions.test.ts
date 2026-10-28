@@ -142,3 +142,13 @@ describe("VER-1: a system with one version alone, as the 5e for now", () => {
         expect(await ok("status")).toContain("Guadoscuro · it · lone, a test system · ");
     });
 });
+
+describe("VER-1: a version is a folder of versions/", () => {
+    it("refuses one that a path leads out of the system to", () => {
+        const systems = madeSystem("astray", {
+            "system.yaml": 'title: a test system\nlanguage: en\nversions:\n  about: which rules you play\n  ../../outside: {means: "far rules", player: "far rules"}\n',
+            "versions/x/system.yaml": "title: x\n",
+        });
+        expect(() => findSystem([systems], "astray")).toThrow("versions.../../outside: a version is a folder of versions/, named such as srd-5.1.");
+    });
+});

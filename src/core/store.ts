@@ -175,6 +175,12 @@ export class FileStore
         mkdirSync(path, { recursive: true });
     }
 
+    /** How many bytes a file has, as the disk says now, without reading it; undefined when there is none. */
+    size(path: string): number | undefined
+    {
+        return existsSync(path) && statSync(path).isFile() ? statSync(path).size : undefined;
+    }
+
     /** When a file last changed, in milliseconds, as the disk says now; undefined when there is none. */
     modified(path: string): number | undefined
     {

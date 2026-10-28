@@ -7,7 +7,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
+import { findSystem } from "../src/systems/index.ts";
+import { madeSystem, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -267,5 +268,19 @@ describe("a system whose formulas do not read (FOR-9)", () => {
         removeFolder(systems);
         expect(output).toContain("The game system broken cannot be read, because");
         expect(output).toContain('is not valid: computed.str-mod: "floor((str - 10) /" is not a formula');
+    });
+
+    it("says where a formula stands outside computed too, as the limit of the load and the most of a turn's use", () => {
+        const read = (yaml: string): string => {
+            try {
+                findSystem([madeSystem("broken", { "system.yaml": `title: a broken system\nlanguage: en\n${yaml}` })], "broken");
+                return "";
+            } catch (error) {
+                return error instanceof Error ? error.message : String(error);
+            }
+        };
+
+        expect(read('load:\n  field: inventory\n  limit: "10 + * might"\n')).toMatch(/^The game system broken cannot be read, because .* is not valid: load\.limit: "10 \+ \* might" is not a formula/);
+        expect(read('turn-uses:\n  dash:\n    most: "1 +"\n')).toContain('is not valid: turn-uses.dash.most: "1 +" is not a formula');
     });
 });
