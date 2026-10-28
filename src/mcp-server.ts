@@ -20,13 +20,13 @@ import type { Command } from "./core/registry.ts";
 import { SessionStore } from "./core/session-store.ts";
 import { FileStore, withFiles } from "./core/store.ts";
 import { getVersion } from "./core/version.ts";
-import { type Dashboard, startDashboard } from "./dashboard-server.ts";
 import { systemPageReader } from "./documents/index.ts";
 import { npmEngine, npmPackages } from "./extensions/index.ts";
 import { hostInstructions, startInstructions } from "./instructions/index.ts";
 import { libraryRunner } from "./library-reader.ts";
 import type { World } from "./pages/index.ts";
 import { computerHelpers, hostPictures, hostReader, hostWriter } from "./pictures/index.ts";
+import { type Dashboard, startDashboard } from "./server/dashboard/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
 
 type AnyCommand = Command<any, any>;

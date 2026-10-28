@@ -13,9 +13,9 @@ import { campaignWidgets, widgetCard } from "../src/commands/game-widgets.ts";
 import type { Context, Rows } from "../src/core/context.ts";
 import { readsApi } from "../src/core/package-declarations.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { findExtension, installedExtensions, packageFingerprint, readExtension } from "../src/extensions/index.ts";
 import { createMcpServer } from "../src/mcp-server.ts";
+import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { type GameSystem, systemPageModule } from "../src/systems/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 

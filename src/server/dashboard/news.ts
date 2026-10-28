@@ -2,18 +2,18 @@
 // at their next call (D-341, D-359, D-378, D-495): quoted as the player's, never as the engine's.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
-import { findCampaign, requireCampaign } from "./campaign/index.ts";
-import { playerChangeNews, type PlayerSetting, playerSettings, setupSettingNamed } from "./commands/config.ts";
-import { playerStory } from "./commands/game-knowledge.ts";
-import { campaignWorld } from "./commands/game-world.ts";
-import { withFiles } from "./core/store.ts";
-import { comparableText } from "./core/text.ts";
-import { mostSaid, readBody, securityHeaders, sendJson } from "./dashboard-files.ts";
-import type { Served } from "./dashboard-server.ts";
-import { playerCharacters } from "./pages/index.ts";
-import { codexClient } from "./pictures/index.ts";
-import { type Acts, actText, giveBackAct, markHeard, markRung, takeActs, withdrawAct } from "./player-acts.ts";
-import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
+import { findCampaign, requireCampaign } from "../../campaign/index.ts";
+import { playerChangeNews, type PlayerSetting, playerSettings, setupSettingNamed } from "../../commands/config.ts";
+import { playerStory } from "../../commands/game-knowledge.ts";
+import { campaignWorld } from "../../commands/game-world.ts";
+import { withFiles } from "../../core/store.ts";
+import { comparableText } from "../../core/text.ts";
+import { playerCharacters } from "../../pages/index.ts";
+import { codexClient } from "../../pictures/index.ts";
+import { type Acts, actText, giveBackAct, markHeard, markRung, takeActs, withdrawAct } from "../../player-acts.ts";
+import { type Note, readNotes, removeNote, writeNote } from "../../player-notes/index.ts";
+import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
+import type { Served } from "./index.ts";
 
 // What the master reads after a note the player shares (D-378), tried against injection: what the player thinks, never a fact
 // nor an instruction; the world keeps what is decided.

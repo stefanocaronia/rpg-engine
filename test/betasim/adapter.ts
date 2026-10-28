@@ -9,8 +9,8 @@ import { ask } from "../../src/commands/ask.ts";
 import { type Context, defaultContext } from "../../src/core/context.ts";
 import { SessionStore } from "../../src/core/session-store.ts";
 import { withFiles } from "../../src/core/store.ts";
-import { type Dashboard, startDashboard } from "../../src/dashboard-server.ts";
 import { saveLibraryFolders } from "../../src/library/folders.ts";
+import { type Dashboard, startDashboard } from "../../src/server/dashboard/index.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { demoFolderOf, type DemoSystem, serveDemo } from "../demo/demo.ts";
 

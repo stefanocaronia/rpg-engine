@@ -6,7 +6,7 @@ import { bellLine, waitForBell } from "../src/bell-listener.ts";
 import { runCommandLine } from "../src/command-line.ts";
 import type { ChatState, Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
+import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;

@@ -6,18 +6,18 @@ import { createRequire } from "node:module";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { findCampaign } from "./campaign/index.ts";
-import { campaignPageModules, type PageModule } from "./commands/game-extension-list.ts";
-import { imageFolders } from "./commands/game-images.ts";
-import { campaignPackages } from "./commands/game-package-code.ts";
-import { campaignTheme } from "./commands/game-theme.ts";
-import { campaignSystem } from "./commands/game-world.ts";
-import { realPath } from "./core/files.ts";
-import { files, isInside, withFiles } from "./core/store.ts";
-import type { Served } from "./dashboard-server.ts";
-import { findHiddenImage, findImage } from "./images/index.ts";
-import { languagePackFor, packGuide, packPhrases } from "./languages/index.ts";
-import { drawnOrnament, themeCss, themeFile } from "./themes/index.ts";
+import { findCampaign } from "../../campaign/index.ts";
+import { campaignPageModules, type PageModule } from "../../commands/game-extension-list.ts";
+import { imageFolders } from "../../commands/game-images.ts";
+import { campaignPackages } from "../../commands/game-package-code.ts";
+import { campaignTheme } from "../../commands/game-theme.ts";
+import { campaignSystem } from "../../commands/game-world.ts";
+import { realPath } from "../../core/files.ts";
+import { files, isInside, withFiles } from "../../core/store.ts";
+import { findHiddenImage, findImage } from "../../images/index.ts";
+import { languagePackFor, packGuide, packPhrases } from "../../languages/index.ts";
+import { drawnOrnament, themeCss, themeFile } from "../../themes/index.ts";
+import type { Served } from "./index.ts";
 
 const imageTypes: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
 const pageTypes: Record<string, string> = {
@@ -41,7 +41,7 @@ const themeTypes: Record<string, string> = { ...imageTypes, ".woff2": "font/woff
 const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
 
 // From src/ and from dist/ alike, the built page is in dist/dashboard, one level up.
-export const builtPage = fileURLToPath(new URL("../dist/dashboard/", import.meta.url));
+export const builtPage = fileURLToPath(new URL("../../../dist/dashboard/", import.meta.url));
 
 // The modules the page imports from packages, by the names the import map gives them: a package, and a file in it. three.module.js imports three.core.js
 // beside it; three's loader of the dice's models imports two of its utilities beside it; the room the metal dice mirror is three's too; Rapier's module

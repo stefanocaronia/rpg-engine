@@ -3,13 +3,13 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
-import { findCampaign, readTextSetting } from "./campaign/index.ts";
-import { campaignSystem } from "./commands/game-world.ts";
-import type { CardAsked, Picked, Player, Rows, Said, SpendAsked, Spending } from "./core/context.ts";
-import { withFiles } from "./core/store.ts";
-import { mostSaid, readBody, securityHeaders, sendJson } from "./dashboard-files.ts";
-import type { Served } from "./dashboard-server.ts";
-import { rollName } from "./systems/index.ts";
+import { findCampaign, readTextSetting } from "../../campaign/index.ts";
+import { campaignSystem } from "../../commands/game-world.ts";
+import type { CardAsked, Picked, Player, Rows, Said, SpendAsked, Spending } from "../../core/context.ts";
+import { withFiles } from "../../core/store.ts";
+import { rollName } from "../../systems/index.ts";
+import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
+import type { Served } from "./index.ts";
 
 // How long the page waits for the player's click: as long as a host waits for a call that keeps reporting progress, as ask does with a form.
 const playerWait = 30 * 60 * 1000;

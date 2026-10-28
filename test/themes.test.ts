@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { startDashboard } from "../src/dashboard-server.ts";
+import { startDashboard } from "../src/server/dashboard/index.ts";
 import { contrast, drawnOrnament, readTheme, themeCss, themeFile, themeIconNames } from "../src/themes/index.ts";
 import { inPlay, makeTempFolder, testContext } from "./support.ts";
 

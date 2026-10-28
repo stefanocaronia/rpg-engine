@@ -11,7 +11,7 @@ import { packageWidget } from "../src/commands/game-widgets.ts";
 import { packageCommand } from "../src/commands/package.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { startDashboard } from "../src/dashboard-server.ts";
+import { startDashboard } from "../src/server/dashboard/index.ts";
 import type { GameSystem } from "../src/systems/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 

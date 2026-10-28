@@ -10,7 +10,7 @@ import { packageCommands } from "../src/commands/game-package-code.ts";
 import { campaignWidgets } from "../src/commands/game-widgets.ts";
 import type { Context, Rows } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { startDashboard } from "../src/dashboard-server.ts";
+import { startDashboard } from "../src/server/dashboard/index.ts";
 import { findSystem } from "../src/systems/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 

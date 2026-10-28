@@ -11,7 +11,7 @@ import { makeSave } from "../src/commands/game-saves.ts";
 import type { Context } from "../src/core/context.ts";
 import { appendLogEntry, newLogEntry } from "../src/core/log.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
+import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { inPlay, makeTempFolder, readLogFile, testContext } from "./support.ts";
 
 const manifest = [

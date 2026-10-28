@@ -12,10 +12,10 @@ import { type Context, defaultContext } from "../../src/core/context.ts";
 import { downloadBytes } from "../../src/core/download.ts";
 import { SessionStore } from "../../src/core/session-store.ts";
 import { withFiles } from "../../src/core/store.ts";
-import { type Dashboard, startDashboard } from "../../src/dashboard-server.ts";
 import { npmPackages } from "../../src/extensions/index.ts";
 import { readLibraryHere } from "../../src/library-reader.ts";
 import { codexPictures, hostWriter } from "../../src/pictures/index.ts";
+import { type Dashboard, startDashboard } from "../../src/server/dashboard/index.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { inPlay } from "../support.ts";
 

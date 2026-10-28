@@ -2,8 +2,8 @@
 // chat and, when the player says a sentence, tells the chat to call status. It never carries the sentence, which reaches the master in that call.
 import { get } from "node:http";
 import { findCampaign } from "./campaign/index.ts";
-import { campaignPorts } from "./dashboard-server.ts";
 import { samePath } from "./library/index.ts";
+import { campaignPorts } from "./server/dashboard/index.ts";
 
 /** What the chat hears from the doorbell: never the player's words, only where to read them. */
 export const bellLine = "The player acted on the dashboard: call status to read what they did.";

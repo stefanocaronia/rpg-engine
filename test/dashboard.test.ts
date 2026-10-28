@@ -10,7 +10,6 @@ import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view.ts";
 import type { Context, PicturesReady, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
-import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/dashboard-server.ts";
 import { readAddress, sectionAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
 import type { Asked, JournalFact, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
@@ -19,6 +18,7 @@ import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initia
 import { arrangedGroups, columnsByHeight, endedQuests, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { dashboardOpener } from "../src/mcp-server.ts";
 import { unpackFiles } from "../src/saves/index.ts";
+import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/server/dashboard/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);

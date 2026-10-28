@@ -9,10 +9,10 @@ import { runCommandLine } from "../src/command-line.ts";
 import { libraryContents, libraryEntries, libraryScope, skippedKind } from "../src/commands/game-library.ts";
 import type { Confirmed, Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { type Dashboard, startDashboard } from "../src/dashboard-server.ts";
 import { isReadable, pagesWritten, readDocument } from "../src/documents/index.ts";
 import { bookLanguage, type BookResume, claimLibrary, dropUnlisted, libraryFolders, libraryReader, libraryState, readLibrary, releaseLibrary, saveLibraryFolders } from "../src/library/index.ts";
 import { findPages, pageExcerpt } from "../src/rules/index.ts";
+import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { tinyPdf } from "./pdf-fixture.ts";
 import { makeTempFolder, testContext } from "./support.ts";
 

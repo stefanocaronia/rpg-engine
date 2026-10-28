@@ -14,8 +14,8 @@ import { campaignSystem } from "./commands/game-world.ts";
 import type { Context, Player } from "./core/context.ts";
 import type { LogEntry } from "./core/log.ts";
 import { SessionStore } from "./core/session-store.ts";
-import { startDashboard } from "./dashboard-server.ts";
 import { toolDescriptions } from "./mcp-server.ts";
+import { startDashboard } from "./server/dashboard/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
 
 export type { ShownWidget } from "./commands/game-widgets.ts";
