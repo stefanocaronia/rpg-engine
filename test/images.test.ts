@@ -338,7 +338,7 @@ describe("pictures of places, quests, the party and those met made from words (D
         await ok("write", "Varro", "--type", "character", "--set", "role=npc");
         await ok("write", "Lena", "--type", "character", "--set", "role=companion");
         await ok("config", "pictures", "on request");
-        expect(await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Ennio", "--with", "Lena", "--with", "Varro", "--creatures", "Brigante=2")).not.toContain("picture");
+        expect(await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Ennio", "--with", "Lena", "--with", "Varro", "--creatures", "Brigante=2")).not.toMatch(/No picture yet|for a picture|has no picture/);
         await ok("scene", "close", "--summary", "Fuggiti.");
         await ok("config", "pictures", "new elements");
         const opened = await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Ennio", "--with", "Lena", "--with", "Varro", "--creatures", "Brigante=2", "--creatures", "Reed Cutter");

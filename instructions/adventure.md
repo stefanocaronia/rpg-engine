@@ -4,8 +4,10 @@ An adventure is a quest with its secrets and events; a written or planned one op
 2. Draw on what the player said they enjoy and on what they have chosen and lingered on: give them more of it, and one thing they rarely get.
 3. Give it a goal the character can say in one sentence, that looks within reach, with a reward they glimpse before they earn it, and two or three steps on the way as the quest's goals.
 4. Shape it: a hook in its first scene, stakes that rise with quiet scenes between, and a climax bigger than anything before, which answers the question the hook posed.
-5. Put someone behind the obstacles, with reasons of their own; let the obstacles grow, the last asking for what the character has gained.
-6. Vary the rewards: a place opened, a power, wealth, an ally, a truth, a mark on the world; not always the same kind, nor on a fixed beat.
-7. Show its strangest element before it matters, so that it already belongs to the world when it counts.
-8. In a campaign's first adventure, make the first challenge one the character can win.
-9. Let someone in it change because of what the character did, and show it.
+5. Put someone behind the obstacles, with reasons of their own; let the obstacles grow, the last asking for what the character has gained. If fewer than two threats are in motion, make them one, a planned event with its clock.
+6. Between full rests, give it as many fights as the difficulty says, with a reason not to rest: a clock, someone in danger, a place unsafe at night.
+7. Let how well a challenge went show in what comes after, not only in winning: who was saved, what was kept, who remembers it; a cleverer way earns a better ending.
+8. Vary the rewards: a place opened, a power, wealth, an ally, a truth, a mark on the world; not always the same kind, nor on a fixed beat.
+9. Show its strangest element before it matters, so that it already belongs to the world when it counts.
+10. In a campaign's first adventure, make the first challenge one the character can win.
+11. Let someone in it change because of what the character did, and show it.
