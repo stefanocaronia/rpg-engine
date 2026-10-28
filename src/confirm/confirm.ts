@@ -12,7 +12,7 @@ export interface DialogCommand
 }
 
 // The longest text a window shows: what the package says of itself is cut there.
-const mostText = 600;
+const mostText = 1000;
 // How long the window waits, as a form does.
 const longestWait = 30 * 60 * 1000;
 // The buttons of a window that asks nothing else: a package's install (D-478).

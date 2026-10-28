@@ -13,7 +13,7 @@ import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { dropConsent, type Extension, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
-import { findSystem, readableSystems, systemFolders, systemHasCode } from "../systems/index.ts";
+import { findSystem, readableSystems, systemFolders, systemHasCode, systemInFolder } from "../systems/index.ts";
 import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game-adventures.ts";
 import { campaignExamples } from "./game-examples.ts";
 import { listedExtensions, runsCode } from "./game-extension-list.ts";
@@ -371,7 +371,8 @@ async function installed(root: string, context: Context, name: string): Promise<
         packagesInstalled();
     }
 
-    const extension = usable(context, described.name);
+    // By its whole name: another's skies is not ours, nor ours another's.
+    const extension = usable(context, described.name, true);
 
     // What npm installed is not what the player said yes to, or no extension: it goes off this computer again, and never runs.
     if (extension === undefined || extension.version !== described.version) {
@@ -470,16 +471,10 @@ async function systemInstalled(root: string, context: Context, spec: string, nam
         recordConsent(installed, described.name, described.version);
     }
 
-    let system: InstalledSystem | undefined;
-
-    try {
-        system = systemsHere(root, context).find((one) => one.package === described.name);
-    } catch (error) {
-        throw new Error(`${described.name} was installed, but its system.yaml does not read: ${error instanceof Error ? error.message : String(error)}. Uninstall it with package uninstall ${described.name}.`);
-    }
+    const system = systemsHere(root, context).find((one) => one.package === described.name);
 
     if (system === undefined) {
-        throw new Error(`${described.name} was installed, but it has no system.yaml: it is no game system. Uninstall it with package uninstall ${described.name}.`);
+        throw new Error(`${described.name} was installed, but ${unreadSystemWhy(installed, described.name)}. Uninstall it with package uninstall ${described.name}.`);
     }
 
     appendLogEntry(root, newDatedLogEntry(root, context, "package-installed", "public", { package: described.name, version: described.version, verified: system.verified, kind: "system" }));
@@ -731,7 +726,8 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
 
     // Said in plain words, the fixed text before the name its author chose; and where the request comes from (D-510). The package's own words cut short, so
     // that a window, which shows so much at most, never loses the warning to them.
-    [name, holds] = [plainText(name, 120), holds.length > 160 ? `${holds.slice(0, 159)}…` : holds];
+    const clean = (text: string, most: number): string => plainText(text.replace(/\s+/g, " "), most);
+    [name, holds] = [clean(name, 120), holds.trim() === "" ? "" : ` ${clean(holds, 160)}`];
     const from = context.actor === "player" ? "the dashboard" : context.host === undefined ? "the command line" : "the chat";
     const can = "Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you.";
     const warning = local
@@ -773,12 +769,28 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
 }
 
 /** The installed extension of this package, when it reads; undefined when it is missing or broken. */
-function usable(context: Context, name: string): Extension | undefined
+function usable(context: Context, name: string, whole = false): Extension | undefined
 {
     try {
-        return findExtension(context.extensionFolders ?? [], name);
+        const found = whole ? installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name) : undefined;
+        return whole ? (found === undefined ? undefined : readExtension(found.folder)) : findExtension(context.extensionFolders ?? [], name);
     } catch {
         return undefined;
+    }
+}
+
+/** Why a system npm installed is not among those that read: its system.yaml does not, or it has none. */
+function unreadSystemWhy(folder: string | undefined, name: string): string
+{
+    if (folder === undefined || !files().exists(join(folder, "system.yaml"))) {
+        return "it has no system.yaml: it is no game system";
+    }
+
+    try {
+        systemInFolder(folder, shortName(name).replace(/^system-/, ""));
+        return "it does not read as a game system";
+    } catch (error) {
+        return `its system.yaml does not read: ${error instanceof Error ? error.message : String(error)}`;
     }
 }
 

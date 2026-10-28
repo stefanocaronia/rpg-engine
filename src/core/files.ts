@@ -58,7 +58,8 @@ export function packageFoldersIn(folders: string[]): string[]
         const named = (child: string): string => relative(folder, child).split(sep).join("/");
         // Only the packages the player installed: one npm brought as another's dependency is never theirs to use (D-485). In npm's folder a package is
         // where its name puts it: one whose package.json names another, as an alias that says it is ours, is no package at all.
-        return chosen === undefined ? found : found.filter((child) => chosen.has(named(child)) && [undefined, named(child)].includes(manifestName(child)));
+        const fits = (child: string): boolean => basename(folder) !== "node_modules" || [undefined, named(child)].includes(manifestName(child));
+        return found.filter((child) => (chosen === undefined || chosen.has(named(child))) && fits(child));
     });
 }
 

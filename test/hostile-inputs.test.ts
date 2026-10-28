@@ -1,10 +1,12 @@
 // Inputs an AI may give that the commands' own tests do not (D-537): a field named as an object's own property, dice out of their bounds in brackets, two
 // names where one goes. Each is a field like any other, or a refusal that says what to give.
+import { chmodSync } from "node:fs";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import { write } from "../src/commands/write.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, testContext } from "./support.ts";
 
 let context: Context;
 
@@ -38,5 +40,26 @@ describe("inputs the commands must not trip on", () => {
         const used = await rpg("scene", "use", "--who", "Ettore", "--who", "Vespa", "--uses", "attack");
         expect(used.exitCode).toBe(1);
         expect(used.output).toContain("One at a time: give who as one name, then use again for Vespa.");
+    });
+});
+
+describe("a reveal that stops half way", () => {
+    it("logs what those before learned, and says what to fix, so that the diary knows who learned it", async () => {
+        const folder = context.folder;
+        await rpg("write", "Bruna", "--type", "character", "--set", "role=companion");
+        await rpg("write", "Coppa", "--type", "item");
+        await rpg("write", "Coppa#Veleno", "--secret", "--text", "The wine is poisoned.");
+        const bruna = join(folder, "world", "characters", "Bruna.md");
+        chmodSync(bruna, 0o444);
+
+        try {
+            const revealed = await rpg("reveal", "Coppa#Veleno", "--to", "Ettore", "--to", "Bruna");
+            expect(revealed.exitCode).toBe(1);
+            expect(revealed.output).toContain("Bruna's page could not be written");
+            expect(revealed.output).toContain("Ettore learned it, and the log says so. Fix the file, then reveal it again for Bruna.");
+            expect(readLogFile(folder).filter((entry) => entry.type === "learned").map((entry) => entry.data.page)).toEqual(["Ettore"]);
+        } finally {
+            chmodSync(bruna, 0o666);
+        }
     });
 });

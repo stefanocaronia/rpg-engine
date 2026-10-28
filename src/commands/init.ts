@@ -18,7 +18,7 @@ export const init = defineCommand({
     positionals: ["folder"],
     input: z.object({
         folder: z.string().optional().describe("folder of the new campaign; the current folder if left out"),
-        name: z.string().optional().describe("name of the campaign; the folder's name if left out"),
+        name: z.string().trim().min(1, "give the campaign a name, or leave name out for the folder's").optional().describe("name of the campaign; the folder's name if left out"),
         language: z.string().optional().describe("language of the game, as a code such as it or en"),
         system: z.string().optional().describe("game system: one of those installed"),
         difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),

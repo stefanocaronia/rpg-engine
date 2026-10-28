@@ -70,7 +70,18 @@ export const reveal = defineCommand({
                 continue;
             }
 
-            const written = writePage(world, learner.name, undefined, { add: { knows: learned.map((item) => item.link) } });
+            let written: ReturnType<typeof writePage>;
+
+            try {
+                written = writePage(world, learner.name, undefined, { add: { knows: learned.map((item) => item.link) } });
+            } catch (error) {
+                // Those already written have their lines, so that the diary knows who learned it.
+                logLearned(root, context, world, lines);
+                const before = result.learned.map((one) => one.who);
+                const done = before.length === 0 ? "" : ` ${before.join(", ")} learned it, and the log says so.`;
+                throw new Error(`${learner.name}'s page could not be written: ${error instanceof Error ? error.message : String(error)}.${done} Fix the file, then reveal it again for ${learner.name}.`);
+            }
+
             world = withPage(world, learner, written.page);
             lines.push({ learner, links: learned.map((item) => item.link) });
             result.learned.push({ who: learner.name, what: learned.map((item) => (item.asked === undefined ? item.shown : `${item.shown} (as ${item.asked} shows it)`)) });

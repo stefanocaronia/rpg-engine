@@ -248,7 +248,7 @@ export const status = defineCommand({
             result.mood === "neutral" ? "" : `Your mood is ${result.mood}: let your voice follow it.`,
             ...result.incompleteSheets,
             ...result.levelsDue,
-            namesLine("Also there", result.alsoThere, `show ${result.place}`),
+            namesLine("Also there", result.alsoThere, result.place === undefined ? "find" : `show ${result.place}`),
             result.scene === undefined ? "" : `Scene: ${result.scene}`,
             result.journey === undefined ? "" : `Journey: ${result.journey}`,
             result.lastScenes.length === 0 ? "" : `Last scenes: ${result.lastScenes.join(" · ")}`,
