@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -101,7 +101,7 @@ El máster pregunta solo lo que aún falta, unas pocas preguntas cada vez; el pa
 
 La quinta edición añade el **avance**: puntos de experiencia o hitos.
 
-Si no hay un mundo escrito, el máster también pregunta una **premisa** (género, tono, algunos elementos, con tus palabras) y la **preparación**: crear el mundo sobre la marcha, mientras juegas, o todo al principio.
+Si no hay un mundo escrito, el máster también pregunta una **premisa** (género, tono, algunos elementos y lo que más disfrutas en un juego, como combates, misterios, conversaciones o explorar, con tus palabras) y la **preparación**: construir el mundo sobre la marcha, mientras juegas, o todo al principio.
 
 **El estilo del máster** nunca se pregunta, pero puedes cambiarlo en el chat o en **Ajustes**: la **prosa** (sencilla, literaria, pulp, irónica), las **historias** que inventa (situaciones, arcos, episodios, misterio), un autor con el que **escribir al estilo**, o cualquier otra cosa **con tus palabras**.
 

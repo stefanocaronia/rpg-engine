@@ -226,4 +226,26 @@ describe("the loot of the fallen (D-530, Elena's tests of 27 October)", () => {
         await ok("change", copy, "grit", "--to", "0");
         expect(await ok("show", copy)).toContain(loot(copy));
     });
+
+    it("scene close says once who fell there, copies by their creature, and that what they carried lies there; never the living, the fled or the party", async () => {
+        await playing();
+        await ok("write", "Lupo", "--type", "creature", "--set", "grit=4/4");
+        await ok("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "grit=6/6");
+        await ok("write", "Mira", "--type", "character", "--set", "role=npc", "--set", "grit=6/6");
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Bruna", "--with", "Varro", "--with", "Mira", "--creatures", "Lupo=4");
+        await ok("change", "Lupo 1", "grit", "--to", "0");
+        await ok("change", "Lupo 2", "grit", "--to", "0");
+        await ok("change", "Lupo 3", "grit", "--to", "0");
+        // One left the scene fallen, one fled whole: only the fallen leave what they carried.
+        await ok("scene", "leave", "--who", "Lupo 3", "--who", "Lupo 4");
+        await ok("change", "Varro", "grit", "--to", "0");
+        await ok("change", "Bruna", "grit", "--to", "0");
+        const closed = await ok("scene", "close", "--summary", "I lupi cadono.");
+        const line = "Fallen here: Lupo 1, Lupo 2, Lupo 3 (show Lupo), Varro. What they carried lies where they fell: tell what the party sees, and let the player say what is taken, and by whom.";
+        expect(closed).toContain(`\n${line}\n`);
+        expect(closed.split("Fallen here")).toHaveLength(2);
+        expect(closed).not.toMatch(/Fallen here:[^\n]*(Lupo 4|Mira|Bruna)/);
+        await ok("scene", "open", "--title", "Il guado", "--type", "social", "--with", "Bruna", "--with", "Mira");
+        expect(await ok("scene", "close", "--summary", "Parlano.")).not.toContain("Fallen here");
+    });
 });

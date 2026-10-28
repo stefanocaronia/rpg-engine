@@ -30,6 +30,7 @@ import { featureParts } from "../progression/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { surroundings, surroundingsText } from "./game-environment.ts";
+import { holdsItems, isFallen, lootAdvice } from "./game-loot.ts";
 import { closedScenes, copyLink, copyPage, openSceneLog, readOpenScene } from "./game-scene.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { skippedPagesNote } from "./notes.ts";
@@ -225,12 +226,7 @@ function lootNote(world: World, system: GameSystem | undefined, page: Page, chai
         return undefined;
     }
 
-    const fields = inheritedFields(world, page);
-    const down = system?.down;
-    const counter = down === undefined ? undefined : readCounter(valueNamed(fields, down.field));
-    const fallen = (page.type === "character" || page.type === "creature") && (page.fields.status === "dead" || (down !== undefined && counter !== undefined && counter.value <= down.value));
-    const holds = page.type === "item" && !isEmptyField(valueNamed(fields, "contains"));
-    return fallen || holds ? `What is on or in ${page.name} is there to be found: tell what the party sees, and let the player say what is taken, and by whom.` : undefined;
+    return isFallen(world, system, page) || holdsItems(world, page) ? `What is on or in ${page.name} is there to be found: ${lootAdvice}` : undefined;
 }
 
 /** The fields with a list longer than `listedItems` cut to its first ones and how to see them all, as knows of a well-travelled character (D-468). */

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -101,7 +101,7 @@ Mistrz Gry pyta tylko o to, czego jeszcze brakuje, po kilka pytań naraz. Krok *
 
 Piąta edycja dodaje **rozwój postaci**: punkty doświadczenia albo kamienie milowe.
 
-Gdy nie ma gotowego świata, Mistrz Gry pyta też o **założenie** (gatunek, ton, kilka elementów, Twoimi słowami) oraz o **przygotowanie**: budować świat w locie, w trakcie gry, czy w całości na początku.
+Gdy nie ma gotowego świata, Mistrz Gry pyta też o **założenie** (gatunek, ton, kilka elementów i to, co w grze lubisz najbardziej, na przykład walki, zagadki, rozmowy lub eksplorację, własnymi słowami) oraz o **przygotowanie**: czy budować świat w locie, w trakcie gry, czy całość na początku.
 
 **Styl Mistrza Gry** nie jest nigdy pytany, ale można go zmienić w czacie lub w **Ustawieniach**: **proza** (prosta, literacka, pulpowa, ironiczna), wymyślane **historie** (sytuacje, wątki, odcinki, tajemnica), autor, **na wzór którego pisać**, albo cokolwiek innego **Twoimi słowami**.
 

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -101,7 +101,7 @@ Die Spielleitung fragt nur, was noch fehlt, ein paar Fragen auf einmal. Der Schr
 
 Die fünfte Edition fügt den **Aufstieg** hinzu: Erfahrungspunkte oder Meilensteine.
 
-Ohne eine ausgearbeitete Welt fragt die Spielleitung außerdem nach einer **Prämisse** (Genre, Ton, ein paar Elemente, in deinen Worten) und nach der **Vorbereitung**: die Welt unterwegs aufbauen, während du spielst, oder alles gleich am Anfang.
+Wenn es keine geschriebene Welt gibt, fragt die Spielleitung außerdem nach einer **Prämisse** (Genre, Ton, ein paar Elemente und was dir an einem Spiel am meisten Spaß macht, etwa Kämpfe, Rätsel, Gespräche oder Erkunden, in deinen Worten) und nach der **Vorbereitung**: die Welt unterwegs aufbauen, während ihr spielt, oder alles gleich am Anfang.
 
 Der **Stil der Spielleitung** wird nie abgefragt, aber du kannst ihn im Chat oder unter **Einstellungen** ändern: die **Prosa** (schlicht, literarisch, Pulp, trocken-ironisch), die **Geschichten**, die die Spielleitung erfindet (Situationen, Handlungsbögen, Episoden, Rätsel), eine Autorin oder ein Autor, in deren Stil **geschrieben** wird, oder alles andere **in deinen Worten**.
 

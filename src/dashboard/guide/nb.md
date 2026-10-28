@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den komplette veiledningen
 
 **RPG Engine** lar deg spille et rollespill rundt bordet med en **AI som spilleder**. Du snakker med spillederen i en **chat**. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**. Ved siden av chatten har du en side åpen i nettleseren, **dashbordet**, med karakterarket, terningene, kartene og dagboken din.
@@ -101,7 +101,7 @@ Spilleder spør bare om det som fortsatt mangler, noen få spørsmål om gangen.
 
 Femte utgave legger til **avansement**: erfaringspoeng eller milepæler.
 
-Uten en skrevet verden spør spilleder også om en **premiss** (sjanger, tone, noen få elementer, med dine egne ord) og om **forberedelsen**: bygge verden underveis, mens dere spiller, eller alt i starten.
+Uten en skrevet verden spør spillederen også om en **premiss** (sjanger, tone, noen elementer og hva du liker best i et spill, for eksempel kamper, mysterier, samtaler eller utforsking, med dine egne ord) og om **forberedelsen**: å bygge verdenen underveis, mens du spiller, eller alt i starten.
 
 **Spillederens stil** blir aldri spurt om, men du kan endre den i chatten eller i **Innstillinger**: **prosaen** (enkel, litterær, pulp, tørrvittig), **historiene** spilleder finner på (situasjoner, buer, episoder, mysterium), en forfatter å **skrive som**, eller hva som helst annet **med dine egne ord**.
 

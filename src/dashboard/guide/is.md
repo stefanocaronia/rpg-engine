@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -101,7 +101,7 @@ Sögumaðurinn spyr aðeins um það sem vantar enn, nokkrar spurningar í einu.
 
 Fimmta útgáfa bætir við **framvindu**: reynslustigum eða áföngum.
 
-Án skrifaðs heims spyr sögumaðurinn líka um **söguforsendu** (tegund, tón, nokkur atriði, með þínum orðum) og **undirbúning**: að byggja heiminn jafnóðum, eftir því sem líður á, eða allan í upphafi.
+Ef enginn heimur er skrifaður spyr sögumaðurinn líka um **söguforsendu** (tegund, tón, nokkur atriði og hvað þér þykir skemmtilegast í leik, til dæmis bardaga, ráðgátur, samtöl eða könnun, með þínum orðum) og um **undirbúninginn**: að smíða heiminn jafnóðum, eftir því sem líður á, eða allan í byrjun.
 
 **Stíll sögumanns** er aldrei spurt um, en þú getur breytt honum í spjallinu eða í **Stillingar**: **textinn** (einfaldur, bókmenntalegur, pulp, kíminn), **sögurnar** sem hann semur (aðstæður, söguþræðir, þættir, ráðgáta), höfundur til að **skrifa eins og**, eða hvað sem er **með þínum orðum**.
 

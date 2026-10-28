@@ -100,7 +100,7 @@ The master asks only what is still missing, a few questions at a time; the dashb
 
 Fifth edition adds **advancement**: experience points or milestones.
 
-Without a written world, the master also asks a **premise** (genre, tone, a few elements, in your words) and the **preparation**: build the world on the fly, as you go, or all at the start.
+Without a written world, the master also asks a **premise** (genre, tone, a few elements and what you enjoy most in a game, such as fights, mysteries, talk or exploring, in your words) and the **preparation**: build the world on the fly, as you go, or all at the start.
 
 **The master's style** is never asked, but you can change it in the chat or in **Settings**: the **prose** (plain, literary, pulp, wry), the **stories** it invents (situations, arcs, episodes, mystery), an author to **write like**, or anything else **in your words**.
 

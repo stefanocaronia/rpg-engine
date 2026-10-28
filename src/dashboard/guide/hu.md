@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
 Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
@@ -101,7 +101,7 @@ A mesélő csak azt kérdezi, ami még hiányzik, egyszerre néhány kérdést. 
 
 Az ötödik kiadás hozzáadja a **fejlődést**: tapasztalati pontokat vagy mérföldköveket.
 
-Ha nincs megírt világ, a mesélő egy **alaphelyzetet** is kérdez (műfaj, hangvétel, néhány elem, a te szavaiddal), és a **felkészülést**: a világot menet közben építi fel, ahogy haladtok, vagy az egészet az elején.
+Ha nincs megírt világ, a mesélő egy **alaphelyzetet** is kérdez (műfaj, hangulat, néhány elem, és hogy mit élvezel a legjobban egy játékban, például a harcot, a rejtélyeket, a beszélgetést vagy a felfedezést, a saját szavaiddal), valamint az **előkészítést**: menet közben építse a világot, vagy az elején mindet.
 
 **A mesélő stílusát** sosem kérdezi, de megváltoztathatod a chaten vagy a **Beállítások** között: a **próza** (egyszerű, irodalmi, pulp, szárazon szellemes), az általa kitalált **történetek** (helyzetek, ívek, epizódok, rejtély), egy szerző, akihez hasonlóan **írjon**, vagy bármi más, **a te szavaiddal**.
 

@@ -35,6 +35,7 @@ import { surroundings, surroundingsText } from "./game-environment.ts";
 import { clearCopies, offMapNote, placeGrid, standing } from "./game-grids.ts";
 import { metPictureNote, picturesNote } from "./game-images.ts";
 import { readJourney } from "./game-journey.ts";
+import { fallenLine, isFallen } from "./game-loot.ts";
 import { campaignMode, checklistLine } from "./game-mode.ts";
 import { movePages } from "./game-moves.ts";
 import { packagesTurnStarted } from "./game-package-hooks.ts";
@@ -134,7 +135,7 @@ type SceneResult =
     | { action: "now"; title: string; now: string; members: string[]; }
     | { action: "use"; line: string; }
     | { action: "hostile" | "calm"; title: string; marked: string[]; hostile: string[]; }
-    | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved);
+    | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; fallen?: string; quests: string[]; } & Saved);
 
 /** The save the end of a scene made, or why it made none (SAV-3). */
 interface Saved
@@ -681,6 +682,8 @@ function close(root: string, world: World, summary: string, context: Context): S
         return page === undefined ? [] : effectsOf(page).filter((effect) => effect.end === undefined && !keptByCopy(effect)).map((effect) => `${effect.name} on ${page.name}`);
     });
     const rewards = current === undefined ? [] : rewardLines(world, campaignSystem(root, context), current);
+    // What the fallen carried stays where they fell, a copy's read on its creature, which ends with the scene (D-530).
+    const fallen = current === undefined ? "" : fallenLine(fallenOf(world, campaignSystem(root, context), current));
     // A scene that ends may end the story of a quest whose goals are all ticked: the master says whether it did (D-239).
     const quests = world.pages.filter(isTickedOpenQuest).map(tickedQuestNote);
     const ended = endEffects(root, context, world, undefined, (effect) => endsWithScene(effect) || keptByCopy(effect), "scene closed");
@@ -706,7 +709,19 @@ function close(root: string, world: World, summary: string, context: Context): S
     // The copies that left during the scene, fled or fallen, end with it too: one that may come back needs a page now, with its wounds (D-246).
     const gone = copyMembers(world, current.gone ?? {});
     const saved = endOfSceneSave(root, context, world, current.title);
-    return { action: "close", title: current.title, rounds: current.round, copies: copyMembers(world, current.copies), gone, ended, endless, ...(rewards.length === 0 ? {} : { rewards }), quests, ...saved };
+    return {
+        action: "close",
+        title: current.title,
+        rounds: current.round,
+        copies: copyMembers(world, current.copies),
+        gone,
+        ended,
+        endless,
+        ...(rewards.length === 0 ? {} : { rewards }),
+        ...(fallen === "" ? {} : { fallen }),
+        quests,
+        ...saved,
+    };
 }
 
 /**
@@ -780,6 +795,15 @@ function rewardLines(world: World, system: GameSystem | undefined, scene: Scene)
     });
 }
 
+/** Who fell in a scene, dead or down: its copies, those that left during it too, each with its creature, and the characters outside the party. */
+function fallenOf(world: World, system: GameSystem | undefined, scene: Scene): { name: string; kind?: string; }[]
+{
+    const copies = [...Object.entries(scene.copies), ...Object.entries(scene.gone ?? {})].map(([name, copy]) => ({ page: copyPage(name, copy), kind: parsePageReference(copy.creature).name }));
+    const names = [...new Set([...scene.with.map((link) => parsePageReference(link).name), ...(scene.left ?? [])])];
+    const characters = names.flatMap((name) => findPage(world, name) ?? []).map((page) => ({ page, kind: undefined }));
+    return [...copies, ...characters].filter(({ page }) => isFallen(world, system, page)).map(({ page, kind }) => ({ name: page.name, ...(kind === undefined ? {} : { kind }) }));
+}
+
 /** The title and type of a scene that cannot be read, as far as they can be, so that the log still holds a closed scene. */
 function rawTitleAndType(raw: unknown): { title: string; type: string; }
 {
@@ -789,7 +813,9 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
     return { title, type };
 }
 
-function closedText(result: { title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; quests: string[]; } & Saved): string
+function closedText(
+    result: { title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; fallen?: string; quests: string[]; } & Saved,
+): string
 {
     const saved = result.saved === undefined ? (result.unsaved === undefined ? "" : `\n${result.unsaved}`) : `\nSaved: ${result.saved}.`;
     const advance = "Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.";
@@ -807,7 +833,8 @@ function closedText(result: { title?: string; rounds?: number; copies: Member[];
         ? ""
         : `\nLeft during the scene: ${membersText(result.gone ?? [])}. A copy ends with its scene: if one may come back, give it a page now, with its wounds.`;
     const rewards = (result.rewards ?? []).map((line) => `\n${line}`).join("");
-    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${rewards}${quests}${saved}`;
+    const fallen = result.fallen === undefined ? "" : `\n${result.fallen}`;
+    return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${fallen}${rewards}${quests}${saved}`;
 }
 
 /** "\nEnded: Spaventato on Annegato 2.", or nothing when no effect ended. */

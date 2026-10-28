@@ -103,6 +103,8 @@ describe("rpg scene", () => {
 
         expect(await ok("scene", "close", "--summary", "Gli annegati cadono; Lena è ferita.")).toBe(
             "Scene closed after 2 rounds: Ossario. Copies gone: Annegato 1: grit 13/22 · uses 1/1; Annegato 2: grit 0/22 · uses 1/1. Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken."
+                // Who fell, by their creature, and that what they carried is there for the player to take (D-530).
+                + "\nFallen here: Annegato 2 (show Annegato). What they carried lies where they fell: tell what the party sees, and let the player say what is taken, and by whom."
                 // A creature of the campaign written without its experience points is named, not left out in silence (DAT-11).
                 + "\nrenown: Annegato 2 counts nothing, with no renown-value on Annegato: write it, such as write Annegato, set renown-value=…, and share it. Leave out what the party summoned; "
                 + "count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained."

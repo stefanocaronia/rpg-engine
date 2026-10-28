@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -101,7 +101,7 @@ Pán jeskyně se ptá jen na to, co ještě chybí, vždy na několik otázek na
 
 Pátá edice přidává **postup**: zkušenostní body nebo milníky.
 
-Pokud nemáš napsaný svět, Pán jeskyně se zeptá také na **předpoklad** (žánr, tón, několik prvků, tvými slovy) a na **přípravu**: vytvářet svět za pochodu, jak hra postupuje, nebo celý na začátku.
+Pokud nemáš napsaný svět, Pán jeskyně se zeptá také na **námět** (žánr, tón, několik prvků a to, co tě ve hře baví nejvíc, třeba boje, záhady, rozhovory nebo objevování, tvými slovy) a na **přípravu**: vytvářet svět za pochodu, jak hra postupuje, nebo celý na začátku.
 
 Na **Styl Pána jeskyně** se Pán jeskyně nikdy neptá, ale můžeš ho změnit v chatu nebo v **Nastavení**: **próza** (prostá, literární, pulp, ironická), **příběhy**, které vymýšlí (situace, oblouky, epizody, záhada), autor, **podle něhož psát**, nebo cokoli jiného **tvými slovy**.
 

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -101,7 +101,7 @@ O mestre pergunta só o que ainda falta, algumas perguntas por vez; a etapa **Co
 
 A quinta edição acrescenta o **avanço**: pontos de experiência ou marcos.
 
-Sem um mundo escrito, o mestre também pergunta uma **premissa** (gênero, tom, alguns elementos, com suas palavras) e a **preparação**: construir o mundo na hora, conforme você avança, ou tudo no início.
+Sem um mundo escrito, o mestre também pergunta uma **premissa** (gênero, tom, alguns elementos e o que você mais gosta em um jogo, como combates, mistérios, conversas ou exploração, com suas palavras) e a **preparação**: construir o mundo na hora, conforme o jogo avança, ou todo no começo.
 
 **O estilo do mestre** nunca é perguntado, mas você pode mudá-lo no chat ou em **Configurações**: a **prosa** (simples, literária, pulp, irônica), as **histórias** que ele inventa (situações, arcos, episódios, mistério), um autor para **escrever à maneira de**, ou qualquer outra coisa **com suas palavras**.
 

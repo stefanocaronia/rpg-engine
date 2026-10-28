@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -101,7 +101,7 @@ De spelleider vraagt alleen wat nog ontbreekt, een paar vragen tegelijk. De stap
 
 De vijfde editie voegt **voortgang** toe: ervaringspunten of mijlpalen.
 
-Zonder een uitgeschreven wereld vraagt de spelleider ook om een **uitgangspunt** (genre, toon, een paar elementen, in je eigen woorden) en om de **voorbereiding**: de wereld al spelend bouwen, of alles aan het begin.
+Als er geen uitgeschreven wereld is, vraagt de spelleider ook om een **uitgangspunt** (genre, toon, een paar elementen en wat je het leukst vindt aan een spel, zoals gevechten, mysteries, praten of verkennen, in je eigen woorden) en om de **voorbereiding**: de wereld al spelend opbouwen, of alles aan het begin.
 
 **De stijl van de spelleider** wordt nooit gevraagd, maar je kunt hem veranderen in de chat of bij **Instellingen**: het **proza** (eenvoudig, literair, pulp, droog), de **verhalen** die de spelleider bedenkt (situaties, bogen, afleveringen, mysterie), een schrijver om **op te lijken**, of iets anders **in je eigen woorden**.
 

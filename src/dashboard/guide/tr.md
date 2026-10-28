@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
@@ -101,7 +101,7 @@ Oyun yöneticisi yalnızca eksik kalanı sorar, her seferinde birkaç soru. Pano
 
 Beşinci sürüm **ilerleme** ekler: deneyim puanları ya da kilometre taşları.
 
-Yazılı bir dünya yoksa oyun yöneticisi ayrıca bir **öncül** (tür, ton, birkaç öğe, kendi sözlerinle) ve **hazırlık** sorar: dünyayı oynarken akış içinde mi kuracak, yoksa baştan hepsini mi.
+Yazılı bir dünya yoksa oyun yöneticisi bir de **temel fikir** sorar (tür, ton, birkaç öğe ve bir oyunda en çok neyden keyif aldığın: çatışma, gizem, sohbet ya da keşif gibi, kendi sözlerinle) ve **hazırlığı** sorar: dünyayı oyun sırasında anında kurmak ya da hepsini baştan hazırlamak.
 
 **Oyun yöneticisinin üslubu** hiç sorulmaz, ama sohbette ya da **Ayarlar**'da değiştirebilirsin: **anlatım** (sade, edebi, pulp, alaycı), uydurduğu **hikâyeler** (durumlar, yaylar, bölümler, gizem), **tarzında yazması** için bir yazar ya da **kendi sözlerinle** başka herhangi bir şey.
 

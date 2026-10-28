@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -101,7 +101,7 @@ Spelledaren frågar bara efter det som fortfarande saknas, några frågor i tage
 
 Femte utgåvan lägger till **utveckling**: erfarenhetspoäng eller milstolpar.
 
-Utan en färdig värld frågar spelledaren också efter en **premiss** (genre, ton, några element, med dina egna ord) och efter **förberedelsen**: bygga världen allt eftersom du spelar, eller allt i början.
+Om det inte finns någon färdig värld frågar spelledaren också efter en **premiss** (genre, ton, några inslag och vad du tycker mest om i ett spel, till exempel strider, mysterier, samtal eller utforskande, med dina egna ord) och efter **förberedelsen**: bygga världen allt eftersom, under spelets gång, eller allt i början.
 
 **Spelledarens stil** efterfrågas aldrig, men du kan ändra den i chatten eller i **Inställningar**: **prosan** (enkel, litterär, pulp, torr), de **berättelser** spelledaren hittar på (situationer, bågar, episoder, mysterium), en författare att **skriva som**, eller något annat **med dina ord**.
 

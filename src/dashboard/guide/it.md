@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -101,7 +101,7 @@ Il master chiede solo ciò che manca, poche domande alla volta; il passo **Impos
 
 La quinta edizione aggiunge l'**avanzamento**: punti esperienza o traguardi.
 
-Senza un mondo scritto, il master chiede anche una **premessa** (genere, tono, qualche elemento, con parole tue) e la **preparazione**: costruire il mondo al momento, man mano, o tutto all'inizio.
+Senza un mondo scritto, il master chiede anche una **premessa** (genere, tono, qualche elemento e cosa ti piace di più in un gioco, come i combattimenti, i misteri, le conversazioni o l'esplorazione, con parole tue) e la **preparazione**: costruire il mondo al momento, man mano, o tutto all'inizio.
 
 **Lo stile del master** non viene chiesto, ma puoi cambiarlo in chat o nelle **Impostazioni**: la **narrazione** (asciutta, letteraria, pulp, ironica), le **storie** che inventa (situazioni, archi, episodi, mistero), **scrivi come** un autore, o altro **a parole tue**.
 

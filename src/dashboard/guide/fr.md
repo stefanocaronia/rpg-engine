@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
@@ -101,7 +101,7 @@ Le MJ ne demande que ce qui manque encore, quelques questions à la fois ; l'ét
 
 La cinquième édition ajoute la **progression** : points d'expérience ou paliers.
 
-Sans monde écrit, le MJ demande aussi un **pitch** (genre, ton, quelques éléments, avec tes mots) et la **préparation** : construire le monde au fil du jeu, ou tout d'un coup au départ.
+Si tu n'as pas de monde écrit, le MJ demande aussi une **prémisse** (le genre, le ton, quelques éléments, et ce que tu préfères dans un jeu, comme les combats, les mystères, les dialogues ou l'exploration, avec tes propres mots) et la **préparation** : construire le monde au fil du jeu, ou tout au début.
 
 **Le style du MJ** n'est jamais demandé, mais tu peux le changer dans le chat ou dans **Paramètres** : la **prose** (simple, littéraire, pulp, pince-sans-rire), les **histoires** qu'il invente (situations, arcs, épisodes, mystère), un auteur dont **imiter la plume**, ou toute autre chose **avec tes mots**.
 

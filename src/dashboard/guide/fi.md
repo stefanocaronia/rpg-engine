@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb d90880b0 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 2020efdb 4c5cd093 019e9516 8e136927 ece214f0 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -101,7 +101,7 @@ Pelinjohtaja kysyy vain sen, mikä vielä puuttuu, muutaman kysymyksen kerrallaa
 
 Viides editio lisää **kehittymisen**: kokemuspisteet tai merkkipaalut.
 
-Jos maailmaa ei ole kirjoitettu valmiiksi, pelinjohtaja kysyy myös **lähtökohdan** (genre, sävy, muutama elementti, omin sanoin) ja **valmistelun**: rakennetaanko maailma lennossa pelin edetessä vai kokonaan alussa.
+Jos maailmaa ei ole kirjoitettu valmiiksi, pelinjohtaja kysyy myös **lähtökohdan** (tyylilaji, sävy, muutama aines ja se, mistä pelissä nautit eniten, kuten taisteluista, arvoituksista, puheesta tai tutkimisesta, omin sanoin) sekä **valmistelun**: rakennetaanko maailma lennossa pelin edetessä vai kokonaan alussa.
 
 **Pelinjohtajan tyyliä** ei koskaan kysytä, mutta voit muuttaa sitä keskustelussa tai kohdassa **Asetukset**: **proosa** (selkeä, kirjallinen, pulp, kuiva), **tarinat**, joita pelinjohtaja keksii (tilanteet, juonikaaret, jaksot, mysteeri), kirjailija, jonka tyyliin **kirjoitetaan**, tai mikä tahansa muu **omin sanoin**.
 
