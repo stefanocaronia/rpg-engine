@@ -117,15 +117,18 @@ describe("the parts of a package's card (D-507)", () => {
 
 describe("the kit of rpg-engine/page (D-510)", () => {
     it("gives in the page every part its types declare to the extensions, and no other", () => {
-        const declared = [...readFileSync("src/page.ts", "utf8").matchAll(/^export (?:declare function|const) (\w+)/gm)].map((match) => match[1]).sort();
+        const page = readFileSync("src/page.ts", "utf8");
+        // Its functions, and the values it passes on from the core, as the pages a card stands in.
+        const passed = [...page.matchAll(/^export \{ ([^}]+) \} from/gm)].flatMap((match) => match[1].split(", ").filter((name) => !name.startsWith("type ")));
+        const declared = [...page.matchAll(/^export declare function (\w+)/gm)].map((match) => match[1]).concat(passed).sort();
         const kit = readFileSync("src/dashboard/kit.tsx", "utf8");
         const given = [...kit.matchAll(/^export function (\w+)/gm)].map((match) => match[1]).concat(...[...kit.matchAll(/^export \{ ([^}]+) \}/gm)].map((match) => match[1].split(", "))).sort();
         expect(given).toEqual(declared);
     });
 
-    it("lists the pages a card stands in as src/page.ts declares them, in the page code and in Settings (D-514)", () => {
+    it("lists the pages a card stands in as the core declares them to the packages, in the page code and in Settings (D-514)", () => {
         const list = (file: string, pattern: RegExp): string[] => (JSON.parse(`[${pattern.exec(readFileSync(file, "utf8"))?.[1] ?? ""}]`) as string[]).sort();
-        const declared = list("src/page.ts", /export const cardPages = \[([^\]]*)\]/);
+        const declared = list("src/core/package-api.ts", /export const cardPages = \[([^\]]*)\]/);
         expect(declared).toEqual(["journal", "scene", "sheet", "world"]);
         expect(list("src/dashboard/page-code.tsx", /export const cardPages = \[([^\]]*)\]/)).toEqual(declared);
         expect(list("src/dashboard/settings.tsx", /const widgetPages: WidgetPage\[\] = \[([^\]]*)\]/)).toEqual(declared);

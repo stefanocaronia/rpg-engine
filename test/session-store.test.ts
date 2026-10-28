@@ -235,10 +235,42 @@ describe("the store of a session", () => {
     it("says so when a command stops there after it wrote other files, which repeating it would change twice (D-196)", async () => {
         const ennioPath = join(folder, "world", "characters", "Ennio.md");
         await session.ready();
-        withFiles(session, () => files().text(ennioPath));
+
+        withFiles(session, () => {
+            files().text(ennioPath);
+            writeFileSync(ennioPath, ennio("2/12"));
+            session.write(join(folder, "world", "places", "Locanda.md"), "La locanda.\n");
+            expect(() => session.fresh(ennioPath)).toThrow("so the command stopped before writing it, after other files: look at them again with status and validate");
+        });
+    });
+
+    it("tells each call whether it wrote itself, though the page's requests come between its steps (D-196)", async () => {
+        const ennioPath = join(folder, "world", "characters", "Ennio.md");
+        const campaignFile = join(folder, "campaign.yaml");
+        await warm("status");
+        let resume = (): void => undefined;
+        const paused = new Promise<void>((done) => (resume = done));
+
+        // The master's call writes, then waits for the player, as a package's command that asks.
+        const master = withFiles(session, async () => {
+            files().text(ennioPath);
+            session.write(join(folder, "world", "places", "Locanda.md"), "La locanda.\n");
+            await paused;
+            expect(() => session.fresh(ennioPath)).toThrow("so the command stopped before writing it, after other files");
+        });
+
+        // Meanwhile a request of the page, which writes nothing.
+        await session.ready();
+
+        withFiles(session, () => {
+            files().text(campaignFile);
+            writeFileSync(campaignFile, readFileSync(campaignFile, "utf8").replace("Guadoscuro", "Guadochiaro"));
+            expect(() => session.fresh(campaignFile)).toThrow("so the command wrote nothing");
+        });
+
         writeFileSync(ennioPath, ennio("2/12"));
-        session.write(join(folder, "world", "places", "Locanda.md"), "La locanda.\n");
-        expect(() => session.fresh(ennioPath)).toThrow("so the command stopped before writing it, after other files: look at them again with status and validate");
+        resume();
+        await master;
     });
 
     it("reads again what it kept of a campaign before it started watching it", async () => {

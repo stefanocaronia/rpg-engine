@@ -1,17 +1,9 @@
 // The types of rpg-engine/page (D-510): what a package's page code gets from the dashboard to draw its figures inside the dashboard's own frame. In the
 // page, rpg-engine/page is the dashboard's kit, its components and its style sheet, given with the dashboard's own Preact.
 import type { ComponentChildren, ComponentType, JSX } from "preact";
-import type { DieTone, Track, WidgetText, WidgetValue } from "./core/package-api.ts";
+import type { CardPage, DieTone, FigureSize, Track, WidgetText, WidgetValue } from "./core/package-api.ts";
 
-export type { DieTone, Track, WidgetText, WidgetValue } from "./core/package-api.ts";
-
-/** The room a figure takes on a wide screen, as its extension.yaml or system.yaml declares it; on a phone it shrinks to the width there is, keeping its shape. */
-export interface FigureSize
-{
-    width: number;
-    height: number;
-    mirror?: boolean;
-}
+export { type CardPage, cardPages, type DieTone, type FigureSize, type Track, type WidgetText, type WidgetValue } from "./core/package-api.ts";
 
 /** Where a figure is drawn: a chip in the top, a card beside the rolls, a card in a page, a roll's card, or the panel on someone of the party (D-516). */
 export type FigurePlace = "top" | "side" | "page" | "ask" | "person";
@@ -50,11 +42,6 @@ export interface FigureProps extends PageProps
     place: FigurePlace;
     size: FigureSize;
 }
-
-/** The pages of the dashboard a package's card or widget stands in, after their own cards (D-502, D-511): the Scene, the sheet, the World and the Journal. */
-export const cardPages = ["scene", "sheet", "world", "journal"] as const;
-
-export type CardPage = (typeof cardPages)[number];
 
 /** A card a package puts in a page of the dashboard (D-511): its title and icon (a path on a grid of 24) in the dashboard's frame, its order, its inside. */
 export interface PageCard

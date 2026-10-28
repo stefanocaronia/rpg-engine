@@ -1,7 +1,7 @@
 // What every package for rpg-engine declares alike, an extension in extension.yaml and a game system in system.yaml (D-502, D-510, D-514): the version of the
 // API it is made for, and its icons, widgets and figures, with the same limits.
 import { z } from "zod";
-import { type CardPage, cardPages, type FigureSize } from "../page.ts";
+import { type CardPage, cardPages, type FigureSize } from "./package-api.ts";
 
 // The pages a card stands in and the room of a figure, as rpg-engine/page declares them to the packages, for the modules that read a package.
 export type { CardPage, FigureSize };
@@ -23,7 +23,7 @@ export const ourSystems: readonly { name: string; package: string; title: string
 ];
 
 /** The kinds of package whose API is read. */
-export type ApiKind = "extension" | "system";
+type ApiKind = "extension" | "system";
 
 // The oldest API each kind is read at: a system's first is 5, the one contract.
 const oldestApi: Record<ApiKind, number> = { extension: 1, system: 5 };
@@ -100,7 +100,7 @@ export const packagePartsShape = {
 };
 
 /** A package's icons, widgets and figures, as its file declares them. */
-export interface DeclaredParts
+interface DeclaredParts
 {
     icons?: Record<string, string>;
     widgets?: Record<string, z.infer<typeof widgetSchema>>;

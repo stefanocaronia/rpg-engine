@@ -5,14 +5,14 @@ export const moods = ["neutral", "happy", "delighted", "curious", "focused", "de
 
 export type Mood = (typeof moods)[number];
 
-export function isMood(value: unknown): value is Mood
-{
-    return typeof value === "string" && (moods as readonly string[]).includes(value);
-}
-
 /** The mood a value holds, as a page's field or state.yaml writes it; neutral for anything else. */
 export function readMood(value: unknown): Mood
 {
     const written = typeof value === "string" ? value.trim().toLowerCase() : value;
     return isMood(written) ? written : "neutral";
+}
+
+function isMood(value: unknown): value is Mood
+{
+    return typeof value === "string" && (moods as readonly string[]).includes(value);
 }

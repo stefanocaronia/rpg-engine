@@ -91,6 +91,19 @@ describe("the store of a call", () => {
         expect(store.text(join(folder, "log.jsonl"))).toBe("a\nb\n");
     });
 
+    it("lists a folder's files as a new store would after its writes: the nearer first, then by path", () => {
+        mkdirSync(join(folder, "images", "sub"), { recursive: true });
+        writeFileSync(join(folder, "images", "sub", "x.png"), "sub");
+        writeFileSync(join(folder, "images", "b.png"), "b");
+        const store = new FileStore();
+        const listed = (from: FileStore): string[] => from.files(join(folder, "images"), () => true);
+        expect(listed(store)).toEqual([join(folder, "images", "b.png"), join(folder, "images", "sub", "x.png")]);
+        store.write(join(folder, "images", "x.png"), "x");
+        store.write(join(folder, "images", "A.png"), "a");
+        expect(listed(store)).toEqual(listed(new FileStore()));
+        expect(listed(store)).toEqual([join(folder, "images", "A.png"), join(folder, "images", "b.png"), join(folder, "images", "x.png"), join(folder, "images", "sub", "x.png")]);
+    });
+
     it("lists a folder once, as it was when first listed", () => {
         writeFileSync(join(folder, "a.md"), "uno");
         const store = new FileStore();

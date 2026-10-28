@@ -117,6 +117,16 @@ describe("what a result came from (FOR-8)", () => {
         expect(contributingReads(table, scope({ level: 3 }, tables), worked)).toEqual([{ field: "level", value: 3, key: true }, { table: "proficiency", key: "3", value: 2 }]);
     });
 
+    it("tries each value with the pages the list names, as a filtered count reads them", () => {
+        const formula = parseFormula("count(classes, spellcasting = full) * 2 + skill * proficiency");
+        const fields: Record<string, unknown> = { classes: ["[[Wizard]] 3"], skill: 0, proficiency: 2 };
+        const pages: Record<string, Record<string, unknown>> = { wizard: { spellcasting: "full" } };
+        const withPages = { ...scope(fields), page: (name: string) => pages[name.toLowerCase()] };
+        const worked = workOut(formula, withPages);
+        expect(worked.value).toBe(2);
+        expect(contributingReads(formula, withPages, worked).map((reading) => ("field" in reading ? reading.field : "list" in reading ? reading.list : reading.table))).toEqual(["classes", "skill"]);
+    });
+
     it("keeps of min, max and best only what the operand that gives the result read, and of a tie one that read something", () => {
         const read = (text: string, fields: Record<string, unknown>, tables: Record<string, Record<string, number>> = {}): string[] => {
             const formula = parseFormula(text);

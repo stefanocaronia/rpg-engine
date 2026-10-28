@@ -138,7 +138,7 @@ export interface RollFormula
 }
 
 /** One of the dice a roll may begin with (D-235): dice as written, a number, as an unarmed strike's 1, or a field that holds dice, as a monk's martial-arts. */
-export type DiceChoice = { dice: string; } | { number: number; } | { field: string; };
+type DiceChoice = { dice: string; } | { number: number; } | { field: string; };
 
 /**
  * Reads a formula that may begin with dice, such as 1d8 or 2d6, or with dice(…), the largest of several, such as dice(1d6, martial-arts) (D-235), and end with
@@ -293,7 +293,7 @@ export function contributingReads(formula: Formula, scope: FormulaScope, worked:
         const name = "field" in read ? read.field : read.list;
         // Tried in several ways: a value halved and rounded down moves only on one side of it.
         const probes: unknown[] = "field" in read ? [read.value + 1, read.value - 1, 0, read.value + 10] : [[]];
-        return probes.some((probe) => workOut(formula, { field: (field) => (comparableText(field) === comparableText(name) ? probe : scope.field(field)), table: scope.table }).value !== worked.value);
+        return probes.some((probe) => workOut(formula, { ...scope, field: (field) => (comparableText(field) === comparableText(name) ? probe : scope.field(field)) }).value !== worked.value);
     });
 }
 
@@ -348,13 +348,28 @@ export function tableOf(rows: Record<string, number>): Table
 /** The names of the items of a list field, as has, count and item read them (FOR-2): a link as the page or the section it names, without the number after a name. */
 export function listItemNames(value: unknown): string[]
 {
-    return itemsOf(value).map((item) => item.name);
+    return listItems(value).map((item) => item.name);
 }
 
-/** The items of a list field with the number after each name, such as Fighter and 3 for [[Fighter]] 3 (FOR-2); a single value is a list of one. */
+/**
+ * The items of a list field, each with its name and the number after it, if any, such as Fighter and 3 for [[Fighter]] 3 (FOR-2). A link reads as the page
+ * it names, or as its section, as a feature [[Cleric#Channel Divinity]] does. A value in parentheses after the name is not part of it, and gives the number it
+ * begins with when no number follows the name: Channel Divinity (2/rest) is Channel Divinity with 2, Bardic Inspiration (d8) has none (D-220). A single value
+ * is a list of one.
+ */
 export function listItems(value: unknown): { name: string; number?: number; }[]
 {
-    return itemsOf(value);
+    const values = value === undefined || value === null ? [] : Array.isArray(value) ? value : [value];
+    return values.map((item) => {
+        const text = String(item).trim();
+        const match = itemPattern.exec(text);
+        const valued = match === null ? valuePattern.exec(text) : null;
+        const written = (match !== null ? match[1] : valued !== null ? valued[1] : text).trim();
+        const link = linkPattern.exec(written);
+        const name = link === null ? written : (link[2] ?? linkTargetName(link[1])).trim();
+        const inside = valued === null ? null : /^\s*([+-]?\d+)/.exec(valued[2]);
+        return { name, number: match !== null ? Number(match[2]) : inside === null ? undefined : Number(inside[1]) };
+    });
 }
 
 /** A factor as an effect gives it (FOR-5): 2, 0.5, 1/2 or ½; undefined for anything else. */
@@ -546,7 +561,7 @@ function listValue(formula: Extract<Formula, { kind: "list"; }>, scope: FormulaS
 
     // sum(classes, hit-die = d10): only the items whose page has that value in that field (D-215).
     const where = formula.where;
-    const items = itemsOf(raw).filter((item) => {
+    const items = listItems(raw).filter((item) => {
         const fields = where === undefined ? undefined : scope.page?.(item.name);
         const value = fields === undefined || where === undefined ? undefined : valueNamed(fields, where.field);
         return where === undefined || (value !== undefined && comparableText(String(value).trim()) === comparableText(where.value));
@@ -564,26 +579,6 @@ function listValue(formula: Extract<Formula, { kind: "list"; }>, scope: FormulaS
     const counted = formula.name === "count" ? { count: true as const } : {};
     reads.push(formula.item === undefined ? { list: formula.list, value, ...filter, ...counted } : { list: formula.list, item: formula.item, value });
     return value;
-}
-
-/**
- * The items of a list field, each with its name and the number after it, if any. A link reads as the page it names, or as its section, as a feature
- * [[Cleric#Channel Divinity]] does. A value in parentheses after the name is not part of it, and gives the number it begins with when no number follows the
- * name: Channel Divinity (2/rest) is Channel Divinity with 2, Bardic Inspiration (d8) has none (D-220). A single value is a list of one.
- */
-function itemsOf(value: unknown): { name: string; number?: number; }[]
-{
-    const values = value === undefined || value === null ? [] : Array.isArray(value) ? value : [value];
-    return values.map((item) => {
-        const text = String(item).trim();
-        const match = itemPattern.exec(text);
-        const valued = match === null ? valuePattern.exec(text) : null;
-        const written = (match !== null ? match[1] : valued !== null ? valued[1] : text).trim();
-        const link = linkPattern.exec(written);
-        const name = link === null ? written : (link[2] ?? linkTargetName(link[1])).trim();
-        const inside = valued === null ? null : /^\s*([+-]?\d+)/.exec(valued[2]);
-        return { name, number: match !== null ? Number(match[2]) : inside === null ? undefined : Number(inside[1]) };
-    });
 }
 
 function unique(names: string[]): string[]

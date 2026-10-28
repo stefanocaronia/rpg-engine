@@ -3,7 +3,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
-import { filesIn } from "./files.ts";
+import { fileOrder, filesIn } from "./files.ts";
 import { frozen } from "./frozen.ts";
 
 /** What a store keeps of a file: its text, undefined when there is no file, and what it read as, by kind of reading. */
@@ -147,6 +147,7 @@ export class FileStore
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, text, "utf8");
         this.changed(path, { text }, true);
+        markWritten();
     }
 
     /** Writes a file's bytes as they are, with the folders it needs, as a save gives them back: what the store kept of it is read again. */
@@ -155,6 +156,7 @@ export class FileStore
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, bytes);
         this.changed(path, undefined, true);
+        markWritten();
     }
 
     /** Adds text at the end of a file, as the log grows. */
@@ -164,6 +166,7 @@ export class FileStore
         appendFileSync(path, text, "utf8");
         // A file never read stays to be read: what is kept of it would be only its end.
         this.changed(path, before === undefined ? undefined : { text: `${before.text ?? ""}${text}` }, true);
+        markWritten();
     }
 
     /** Makes a folder, with those it needs, if it is not there. */
@@ -183,6 +186,7 @@ export class FileStore
     {
         rmSync(path);
         this.changed(path, { text: undefined }, false);
+        markWritten();
     }
 
     protected entry(path: string): Kept
@@ -244,6 +248,7 @@ export class FileStore
 
             if (inside && exists && !listed) {
                 listing.push(key);
+                listing.sort(fileOrder);
             } else if (inside && !exists && listed) {
                 listing.splice(listing.indexOf(key), 1);
             }
@@ -271,18 +276,25 @@ export class FileStore
     }
 }
 
-const running = new AsyncLocalStorage<FileStore>();
+// The running call: its store, and whether it wrote a file yet, its own even when a session's store serves several calls at once (D-196).
+const running = new AsyncLocalStorage<{ store: FileStore; wrote: boolean; }>();
 
 /** The store of the running command; outside one, a new store for each use, which reads the files as they are. */
 export function files(): FileStore
 {
-    return running.getStore() ?? new FileStore();
+    return running.getStore()?.store ?? new FileStore();
 }
 
 /** Runs `work` with `store` as the store its modules read and write through; a command run inside another keeps that one's. */
 export function withFiles<T>(store: FileStore, work: () => T): T
 {
-    return running.getStore() === undefined ? running.run(store, work) : work();
+    return running.getStore() === undefined ? running.run({ store, wrote: false }, work) : work();
+}
+
+/** Whether the running call has written a file yet; false outside a call. */
+export function wroteInCall(): boolean
+{
+    return running.getStore()?.wrote === true;
 }
 
 /** Whether a path is inside a folder, below it: a folder named like "..notes" is inside too. */
@@ -310,5 +322,15 @@ export function readText(path: string): string | undefined
         }
 
         throw error;
+    }
+}
+
+/** Notes that the running call wrote a file, which a stop before its next write says (D-196). */
+function markWritten(): void
+{
+    const call = running.getStore();
+
+    if (call !== undefined) {
+        call.wrote = true;
     }
 }

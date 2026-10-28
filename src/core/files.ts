@@ -34,7 +34,15 @@ export function filesIn(folder: string, keep: (name: string) => boolean): string
         }
     }
 
-    return files;
+    return files.sort(fileOrder);
+}
+
+/** The order of a folder's files, the same on every system: those nearer the folder first, then by path, as Windows lists them, case aside. */
+export function fileOrder(first: string, second: string): number
+{
+    const depth = (path: string): number => path.split(sep).length;
+    const [one, other] = [first.toUpperCase(), second.toUpperCase()];
+    return depth(first) - depth(second) || (one < other ? -1 : one > other ? 1 : first < second ? -1 : first > second ? 1 : 0);
 }
 
 /**
@@ -94,8 +102,12 @@ export function installedFromFolder(folder: string): boolean
             return true;
         }
 
+        if (at < 0) {
+            return false;
+        }
+
         const read = JSON.parse(readFileSync(join(parts.slice(0, at).join(sep), "package.json"), "utf8")) as { dependencies?: Record<string, unknown>; };
-        const spec = at < 0 ? undefined : read.dependencies?.[parts.slice(at + 1).join("/")];
+        const spec = read.dependencies?.[parts.slice(at + 1).join("/")];
         return typeof spec === "string" && /^(file|link):/.test(spec);
     } catch {
         return false;

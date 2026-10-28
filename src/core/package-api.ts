@@ -341,3 +341,16 @@ export type WidgetPart =
     | { rows: { label: WidgetText; value?: WidgetValue; note?: WidgetText; }[]; }
     | { table: { head: WidgetText[]; rows: WidgetValue[][]; }; }
     | { image: string; alt: WidgetText; };
+
+/** The room a figure takes on a wide screen, as its extension.yaml or system.yaml declares it; on a phone it shrinks to the width there is, keeping its shape. */
+export interface FigureSize
+{
+    width: number;
+    height: number;
+    mirror?: boolean;
+}
+
+/** The pages of the dashboard a package's card or widget stands in, after their own cards (D-502, D-511): the Scene, the sheet, the World and the Journal. */
+export const cardPages = ["scene", "sheet", "world", "journal"] as const;
+
+export type CardPage = (typeof cardPages)[number];

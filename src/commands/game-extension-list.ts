@@ -5,12 +5,12 @@ import { campaignFileName, readOneSetting, readTextSetting } from "../campaign/i
 import { packageCodeMayRun } from "../core/consents.ts";
 import type { Context } from "../core/context.ts";
 import type { InstructionPart } from "../core/instruction-parts.ts";
+import type { FigureSize } from "../core/package-api.ts";
 import { updateEngine } from "../core/package-declarations.ts";
 import type { Problem } from "../core/problem.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { type CodePackage, type Extension, type ExtensionWords, extensionWords, findExtension, hasConsent, isVerified } from "../extensions/index.ts";
-import type { FigureSize } from "../page.ts";
 import { isCoreField } from "../pages/index.ts";
 import { type GameSystem, layeredSystemWords, systemApiProblem, systemContentFolders, systemPageModule, systemWords } from "../systems/index.ts";
 

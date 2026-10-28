@@ -229,10 +229,6 @@ export interface PictureMaker
     make(subject: PictureSubject): Promise<MadePicture | { refused: string; }>;
 }
 
-/**
- * Asks the player one question with buttons: the index of the label they chose; undefined when no one answered; "unavailable" when the surface turned out
- * unable to show the buttons, so that from then on the master asks in words; "absent" when no one is there to see them now, as a dashboard with no page open.
- */
 /** The player's own words in place of a button, as the dashboard's page lets them write (ASK-10). */
 export interface Said
 {
@@ -299,6 +295,10 @@ export interface Spending
 
 export interface Player
 {
+    /**
+     * Asks the player one question with buttons: the index of the label they chose; undefined when no one answered; "unavailable" when the surface turned out
+     * unable to show the buttons, so that from then on the master asks in words; "absent" when no one is there to see them now, as a dashboard with no page open.
+     */
     choose(question: string, title: string, labels: string[], signal?: AbortSignal, rows?: Rows): Promise<number | Said | undefined | "unavailable" | "absent">;
     /** Asks where a player character, who, moves on the map of its place (ASK-11): the square, the change of mind as its one button (0), or the player's words; only a page can. */
     chooseSquare?(question: string, title: string, change: string, who: string, signal?: AbortSignal): Promise<Picked | 0 | Said | undefined | "absent">;
@@ -353,8 +353,8 @@ function userDataFolder(): string
     const home = homedir();
 
     if (process.platform === "win32") {
-        return join(process.env.APPDATA ?? join(home, "AppData", "Roaming"), "rpg-engine");
+        return join(process.env.APPDATA || join(home, "AppData", "Roaming"), "rpg-engine");
     }
 
-    return process.platform === "darwin" ? join(home, "Library", "Application Support", "rpg-engine") : join(process.env.XDG_DATA_HOME ?? join(home, ".local", "share"), "rpg-engine");
+    return process.platform === "darwin" ? join(home, "Library", "Application Support", "rpg-engine") : join(process.env.XDG_DATA_HOME || join(home, ".local", "share"), "rpg-engine");
 }

@@ -28,7 +28,7 @@ export function readParts(folder: string, owner: string): Record<string, Instruc
 /** A part from its file: the text after its frontmatter, which says only whether it takes the place of the core's part, replace: true (D-121). */
 function partOf(file: string, owner: string, path: string): InstructionPart
 {
-    const text = file.replace(/^﻿/, "").replace(/\r\n/g, "\n");
+    const text = file.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
     const frontmatter = text.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
     let settings: unknown;
 

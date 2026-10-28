@@ -13,6 +13,10 @@ export async function downloadBytes(url: string, most: number, signal?: AbortSig
             throw new Error(`${url} did not answer (${error instanceof Error ? error.message : String(error)}): check the address, or download it and give the file.`);
         });
 
+    if (response.redirected && !/^https:\/\//i.test(response.url)) {
+        throw new Error(`${url} led to ${response.url}, which is not https: only https addresses are downloaded.`);
+    }
+
     if (!response.ok || response.body === null) {
         throw new Error(`${url} answered ${response.status}: check the address, or download it and give the file.`);
     }
@@ -20,14 +24,22 @@ export async function downloadBytes(url: string, most: number, signal?: AbortSig
     const chunks: Uint8Array[] = [];
     let size = 0;
 
-    for await (const chunk of response.body) {
-        size += chunk.length;
+    try {
+        for await (const chunk of response.body) {
+            size += chunk.length;
 
-        if (size > most) {
-            throw new Error(`${url} is more than ${most / 1024 / 1024} MB, more than an adventure may.`);
+            if (size > most) {
+                break;
+            }
+
+            chunks.push(chunk);
         }
+    } catch (error) {
+        throw new Error(`${url} stopped half way (${error instanceof Error ? error.message : String(error)}): check the address, or download it and give the file.`);
+    }
 
-        chunks.push(chunk);
+    if (size > most) {
+        throw new Error(`${url} is more than ${most / 1024 / 1024} MB, more than an adventure may.`);
     }
 
     const bytes = new Uint8Array(size);

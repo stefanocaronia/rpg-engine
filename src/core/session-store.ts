@@ -5,7 +5,7 @@ import { watch } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { filesIn, foldersIn } from "./files.ts";
-import { FileStore, isInside, readText } from "./store.ts";
+import { FileStore, isInside, readText, wroteInCall } from "./store.ts";
 
 /** Tells which names change in one folder, not in the folders inside it, and when it can no longer tell: Node's fs.watch, or a fake one in the tests. */
 export type WatchFolder = (folder: string, changed: (name: string | undefined) => void, failed: () => void) => { close(): void; };
@@ -41,7 +41,6 @@ export class SessionStore extends FileStore
     private checkAll = false;
     private unwatchable = false;
     private changes = 0;
-    private wrote = false;
     // The files changed outside the session since they were last taken, each with its text before; and who reads the world before they are let in (OUT-1).
     private readonly outside = new Map<string, { before: string | undefined; after?: { text: string | undefined; }; }>();
     private beforeOutside: (() => void) | undefined;
@@ -97,7 +96,6 @@ export class SessionStore extends FileStore
     async ready(everything = false): Promise<void>
     {
         await new Promise((done) => setImmediate(done));
-        this.wrote = false;
         this.forgetPassing();
 
         if (everything || this.checkAll || this.unwatchable || this.changes > tooManyChanges) {
@@ -128,7 +126,7 @@ export class SessionStore extends FileStore
             this.checkAll = true;
             const name = this.shownPath(resolve(path));
             throw new Error(
-                this.wrote
+                wroteInCall()
                     ? `${name} was changed by hand since this call read it, so the command stopped before writing it, after other files: look at them again with status and validate, and finish by hand only what is missing.`
                     : `${name} was changed by hand since this call read it, so the command wrote nothing: look at it again, as with show or status, and repeat the command if it still fits.`,
             );
@@ -141,28 +139,24 @@ export class SessionStore extends FileStore
     {
         this.freezeOutside(path);
         super.write(path, text);
-        this.wrote = true;
     }
 
     override append(path: string, text: string): void
     {
         this.freezeOutside(path);
         super.append(path, text);
-        this.wrote = true;
     }
 
     override writeBytes(path: string, bytes: Uint8Array): void
     {
         this.freezeOutside(path);
         super.writeBytes(path, bytes);
-        this.wrote = true;
     }
 
     override remove(path: string): void
     {
         this.freezeOutside(path);
         super.remove(path);
-        this.wrote = true;
     }
 
     /** Stops watching, as the server closes. */
@@ -323,20 +317,23 @@ export class SessionStore extends FileStore
         this.checkAll = false;
         this.changes = 0;
         const paths = [...this.kept.keys()].filter((path) => [...this.roots].some((root) => isInside(root, path)));
-        const texts = await Promise.all(paths.map((path) => readFile(path, "utf8").catch(() => undefined)));
+        const before = paths.map((path) => this.kept.get(path));
+        const read = await Promise.all(paths.map((path) => readFile(path, "utf8").catch(() => undefined)));
+        // A file the session wrote while they were read keeps the text it wrote, never the one read before.
+        const settled = paths.flatMap((path, index) => (this.kept.get(path) === before[index] ? [{ path, text: read[index] }] : []));
         // The files that came into a folder listed, which the session did not write: new, outside it (OUT-1).
         const listed = [...this.listings].filter(([folder]) => [...this.roots].some((root) => folder === root || isInside(root, folder)));
         const added = listed.flatMap(([folder, listing]) => {
             const known = new Set(listing);
             return filesIn(folder, () => true).filter((path) => !known.has(path) && !this.kept.has(path));
         });
-        this.noteOutside([...paths.filter((path, index) => this.kept.get(path)?.text !== texts[index]), ...new Set(added)]);
+        this.noteOutside([...settled.filter(({ path, text }) => this.kept.get(path)?.text !== text).map(({ path }) => path), ...new Set(added)]);
 
-        paths.forEach((path, index) => {
-            if (this.kept.get(path)?.text !== texts[index]) {
-                this.changed(path, { text: texts[index] }, texts[index] !== undefined);
+        for (const { path, text } of settled) {
+            if (this.kept.get(path)?.text !== text) {
+                this.changed(path, { text }, text !== undefined);
             }
-        });
+        }
 
         this.roots.forEach((root) => {
             this.forgetUnder(root, false);
