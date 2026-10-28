@@ -20,7 +20,6 @@ import {
     mapSettingNames,
     masterRollWays,
     mentorWays,
-    missingSettings,
     pictureWays,
     preparations,
     proseWays,
@@ -63,7 +62,6 @@ import { readOpenScene } from "./game-scene.ts";
 import { campaignCalendar, newDatedLogEntry } from "./game-time.ts";
 import { checkWidgetSpots } from "./game-widgets.ts";
 import { campaignSystem, campaignWorld, countedByGame, installedSystemName, playedRules, playedSettingValue, playersOfTheGame, systemLayers, systemSetting, valuesText } from "./game-world.ts";
-import { missingSettingsNote } from "./notes.ts";
 import { mentorPart, stylePart } from "./parts.ts";
 
 // A use whose maximum reads what gives it, in quotes for its commas (CAM-1).

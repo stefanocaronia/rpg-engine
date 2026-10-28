@@ -4,7 +4,7 @@ import { ActName, usePlayerActs } from "./act-names.tsx";
 import { Coins } from "./coins.tsx";
 import type { Member, SheetValue } from "./data.ts";
 import { besideLabel, burnsLabel, effectEndLabel, effectLabel, effectName } from "./game-words.ts";
-import { fieldLabel, itemLabel, phraseLabel, shownText } from "./labels.ts";
+import { itemLabel, shownText } from "./labels.ts";
 import { progressShare, trackPlaces, widgetOf } from "./layout.ts";
 import { numberText, t } from "./text.ts";
 

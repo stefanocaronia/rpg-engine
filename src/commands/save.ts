@@ -5,7 +5,6 @@ import type { Save } from "../saves/index.ts";
 import {
     campaignSaves,
     interruptedLoad,
-    isPlayerDead,
     loadRefusal,
     loadRule,
     loadSave,

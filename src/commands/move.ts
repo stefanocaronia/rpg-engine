@@ -3,7 +3,6 @@ import { requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { comparableText } from "../core/text.ts";
 import { closedSquare, featureAt, firstOpenSquare, type Grid, readSquare, type Square, squareName } from "../grid/index.ts";
 import { canHold, isInParty, kindNamed, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, stackName, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";

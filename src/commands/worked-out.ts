@@ -20,10 +20,10 @@ import {
     workOut,
 } from "../core/formula.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText, sameName, valueNamed } from "../core/text.ts";
+import { comparableText, sameName } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { readEffects } from "../effects/index.ts";
-import { bonusPages, carriedWeight, declaredKind, findPage, inheritedFields, isEmptyField, linksIn, type Page, pagesWithName, readFieldValue, systemPageNamed, weightUnit, type World } from "../pages/index.ts";
+import { bonusPages, carriedWeight, declaredKind, inheritedFields, isEmptyField, type Page, pagesWithName, readFieldValue, systemPageNamed, weightUnit, type World } from "../pages/index.ts";
 import { formatDuration } from "../time/index.ts";
 import { type Progression, progressionOf, progressionProblems, progressionValue } from "./progression.ts";
 

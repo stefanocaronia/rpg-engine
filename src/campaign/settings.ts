@@ -25,16 +25,16 @@ export const rigors = ["smooth", "rules", "simulation"] as const;
 /** What each difficulty means in play, from the GDD's table, which status and config give for the chosen one (D-263); fights in the words of a budget of low, moderate and high (D-266). */
 export const difficultyMeanings: Record<(typeof difficulties)[number], string> = {
     story: "fights low, yet each asks one choice that counts; the plain approach wins at a small cost, the risk falling on goals and allies; foes naive, ignoring the place, quick to flee; "
-        + "clues obvious, four or more; resources plentiful; random encounters rare; threat clocks slow: one of them a step every other day; you may soften your own rolls",
+        + "clues obvious, four or more; resources plentiful; random encounters rare; threat clocks slow: one of them a step every other day; you may soften your own rolls; take-backs granted whenever asked",
     easy: "fights low to moderate; the plain approach wins at a cost; foes with simple tactics, using the plainest feature of the place; three clues or more; resources generous; "
-        + "random encounters rare; threat clocks slow: one of them a step every other day",
+        + "random encounters rare; threat clocks slow: one of them a step every other day; small take-backs granted gladly",
     normal: "fights moderate to high; two to four between full rests, with a reason not to rest; the plain approach wins at a real cost, a good choice cheaply; "
         + "foes with sensible tactics, using the place, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); random encounters normal; "
-        + "threat clocks at their pace: one of them a step each day",
+        + "threat clocks at their pace: one of them a step each day; a take-back now and then, when little hangs on it",
     hard: "fights high and beyond; the plain approach may lose, a good choice wins at a cost; foes smart (focus, control), taking the place first, tenacious; three subtle clues; "
-        + "resources scarce; random encounters frequent; threat clocks fast: each of them a step each day",
+        + "resources scarce; random encounters frequent; threat clocks fast: each of them a step each day; take-backs rare",
     brutal: "fights far beyond high; the plain approach loses, only good choices win; foes optimized (prepared ground, retreats, ambushes, finishing the fallen), fanatical; "
-        + "three subtle clues; resources very scarce; random encounters frequent; threat clocks fast: each of them a step each day; rests at their harshest",
+        + "three subtle clues; resources very scarce; random encounters frequent; threat clocks fast: each of them a step each day; rests at their harshest; no take-backs",
 };
 
 /** What each rigor means in play (D-42, D-263): what the master counts, which status and config give for the chosen one. */

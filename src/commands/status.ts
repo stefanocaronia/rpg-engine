@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { z } from "zod";
-import { houseRulesFolderName, missingSettings, readSettings, requireCampaign, settingMeaning } from "../campaign/index.ts";
+import { houseRulesFolderName, readSettings, requireCampaign, settingMeaning } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isInParty, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, parsePageReference, playerCharacters, type World } from "../pages/index.ts";
@@ -30,7 +30,6 @@ import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, 
 import { datedText, problemText, readPresent } from "./game-time.ts";
 import { campaignSystem, campaignWorld, countedByGame, playedSettingValue, systemInStatus } from "./game-world.ts";
 import { importLine } from "./import.ts";
-import { missingSettingsNote } from "./notes.ts";
 import { countersText, pageCounters, partyCounters } from "./page-counters.ts";
 import { adventurePart, firstInChat, situationPart } from "./parts.ts";
 import { campaignProblems } from "./problems.ts";

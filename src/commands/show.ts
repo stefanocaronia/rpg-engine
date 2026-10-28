@@ -2,7 +2,6 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
-import { readCounter } from "../counters/index.ts";
 import {
     backlinks,
     baseChain,
@@ -10,7 +9,6 @@ import {
     formatFields,
     inheritedByBase,
     inheritedFields,
-    isEmptyField,
     isPartyMember,
     locate,
     namesakes,

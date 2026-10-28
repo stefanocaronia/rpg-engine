@@ -34,7 +34,7 @@ import { files, isInside, withFiles } from "./core/store.ts";
 import { comparableText } from "./core/text.ts";
 import { getVersion, isNewerVersion } from "./core/version.ts";
 import { notationParts } from "./dice/index.ts";
-import { extensionWords, findExtension, verifiedScope } from "./extensions/index.ts";
+import { extensionWords, findExtension } from "./extensions/index.ts";
 import { findHiddenImage, findImage } from "./images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "./languages/index.ts";
 import { samePath } from "./library/index.ts";

@@ -3,7 +3,7 @@
 // player character's story in a card of its own, where the player writes their own character's story (D-373); a click on a number the system rolls throws it for fun (D-280), and its tooltip says how it is made
 // (FOR-8). While the master asks a roll, the number its check names lights up and answers it (D-330, ASK-12). A companion who keeps no sheet shows the stat
 // block of its creature (D-275).
-import { type ComponentChildren, Fragment } from "preact";
+import type { ComponentChildren } from "preact";
 import { useContext, useEffect, useId, useRef, useState } from "preact/hooks";
 import { ActName, usePlayerActs } from "./act-names.tsx";
 import { itemVerbs } from "./acts.ts";

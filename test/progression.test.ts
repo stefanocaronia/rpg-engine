@@ -1,6 +1,5 @@
 // The rows of their tables that the vocations of a character give, and its features (D-201, D-219, PRO-1–PRO-4): the module on tables. The same through the
 // commands is in fake-progression.test.ts, and on the 5e's classes in the 5e's repository.
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fieldName, gainedFeatures, levelledFeatures, levelTable, mergedFeatures, rowFields } from "../src/progression/index.ts";
 

@@ -10,7 +10,7 @@ import { checkStackEdits, checkStacks, isKindNamed } from "./stack-writes.ts";
 import { isKind, notKindReason } from "./stacks.ts";
 import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
 import { alwaysInList, alwaysInMessage, heldSystemPageMessage, hidingMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
-import { checkPageName, findPage, heldNames, holdersOf, isCountedItem, linksIn, locate, type Page, pageNamed, readPage, textsIn, validHoldersOf, withPage, type World } from "./world.ts";
+import { checkPageName, findPage, heldNames, holdersOf, isCountedItem, linksIn, locate, type Page, readPage, validHoldersOf, withPage, type World } from "./world.ts";
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */
 export interface PageChange extends FieldChange

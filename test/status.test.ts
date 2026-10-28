@@ -62,7 +62,7 @@ describe("rpg status", () => {
             "Guadoscuro · it · fake, the fake system of the core's tests, the first rules · difficulty normal · lethality epic · saves checkpoint · rigor smooth · dice digital · units metric · mode play",
             "Difficulty normal: fights moderate to high; two to four between full rests, with a reason not to rest; the plain approach wins at a real cost, a good choice cheaply; "
             + "foes with sensible tactics, using the place, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); random encounters normal; "
-            + "threat clocks at their pace: one of them a step each day.",
+            + "threat clocks at their pace: one of them a step each day; a take-back now and then, when little hangs on it.",
             "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them; a light you put on as an effect, as a Rushlight, still spends one.",
             "Still missing: harshness (gentle or bitter). Ask the player, then set it with the config command (setting and value).",
             "Lines: harm to children · Veils: none",

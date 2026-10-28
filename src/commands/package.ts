@@ -13,7 +13,6 @@ import { isNewerVersion } from "../core/version.ts";
 import { dropConsent, type Extension, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
 import { findSystem, installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
-import { chooseAnswer } from "./ask.ts";
 import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game-adventures.ts";
 import { campaignExamples } from "./game-examples.ts";
 import { listedExtensions, runsCode } from "./game-extension-list.ts";

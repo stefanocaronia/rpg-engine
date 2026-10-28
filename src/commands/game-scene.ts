@@ -3,7 +3,7 @@ import { z } from "zod";
 import { changeStateAt, readStateValues } from "../campaign/index.ts";
 import { readLog } from "../core/log.ts";
 import type { Problem } from "../core/problem.ts";
-import { comparableText, sameName } from "../core/text.ts";
+import { sameName } from "../core/text.ts";
 import { baseChain, findPage, isEmptyField, isInParty, kindMessage, locate, type Page, pagesWithName, parsePageReference, readOnlyMessage, systemFirstFix, systemLabel, systemPageNamed, type World } from "../pages/index.ts";
 import { readScene, type Scene, type SceneCopy } from "../scene/index.ts";
 import { missingSystemHint } from "./game-world.ts";

@@ -3,9 +3,8 @@
 // tinted by the lead's tone, greyed when dead by its rules; large under the name and in the card at hand, one line in a row of the turns, small in the
 // party's strip; with one side only, the word beside it, the two in the middle. Any other is a small card of its package among the boxes of values under the
 // name, as the rerolls of a lock.
-import { useContext } from "preact/hooks";
 import type { ShownWidget, Tone, WidgetPart, WidgetShows, WidgetText, WidgetTrack, WidgetValue } from "./data.ts";
-import { Figure, textOf, Value, WidgetsContext } from "./extension-widgets.tsx";
+import { Figure, textOf, Value } from "./extension-widgets.tsx";
 import { statusIcons } from "./icons.tsx";
 import { usePageModule } from "./page-code.tsx";
 import { numberText, t } from "./text.ts";
@@ -33,13 +32,6 @@ export function personBoxes(widgets: ShownWidget[], name: string): PersonShown[]
 export function saysState({ widget, shows }: PersonShown): boolean
 {
     return shows.chip !== undefined && widget.own.place === "person";
-}
-
-/** The widgets on someone of the party, from the page's widgets as last read: their panels and their boxes. */
-export function usePerson(name: string): { panels: PersonShown[]; boxes: PersonShown[]; }
-{
-    const widgets = useContext(WidgetsContext);
-    return { panels: personShown(widgets, name), boxes: personBoxes(widgets, name) };
 }
 
 /**

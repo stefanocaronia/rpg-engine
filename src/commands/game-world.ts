@@ -122,13 +122,6 @@ export function systemLayers(root: string, context: Context, campaign: CampaignD
     return [...extensions, { from: campaignFileName, data: campaign }];
 }
 
-/** The layers over the campaign's system that it plays with, in order, and by name those left out because the system would not read with them (CAM-3). */
-export function playedLayers(root: string, context: Context): { kept: SystemLayer[]; refused: string[]; }
-{
-    const refused = systemOf(root, context).refused.map((layer) => layer.from);
-    return { kept: systemLayers(root, context, readCampaignData(root)).filter((layer) => !refused.includes(layer.from)), refused };
-}
-
 /** The name of an extension's layer of additions, as messages give it. */
 export function extensionLayer(name: string): string
 {

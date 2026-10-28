@@ -1,6 +1,6 @@
 // The game's language as a choice with a search (D-394): every language, each in its own words and in the page's, those the page is written in first; a code
 // not in the list can be written whole, as pt-PT. A choice is saved at once, as the other settings'.
-import { useEffect, useId, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useId, useMemo, useState } from "preact/hooks";
 import { languageName, languageOf, languages, matches } from "./languages.ts";
 import { pageTranslation, t } from "./text.ts";
 

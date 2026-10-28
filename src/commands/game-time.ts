@@ -1,5 +1,5 @@
 // The game time as several commands use it: the present date from state.yaml, the log lines stamped with it, and the calendar that shows it.
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { campaignFileName, readOneSetting, readState, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { type LogEntry, newLogEntry } from "../core/log.ts";
