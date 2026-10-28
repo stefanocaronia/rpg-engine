@@ -1,12 +1,12 @@
 // What the World section shows besides the map (D-276, VIEW-11): the pages the player character knows, each as it knows it, the documents it has or read, and
 // the calendar with the deadlines it knows and the days of its scenes.
-import type { Context } from "../../../core/context.ts";
-import { firstSentence } from "../../../core/text.ts";
-import { isPartyMember, isPlayerCharacter, locate, type Page, withoutFencedBlocks, type World } from "../../../pages/index.ts";
-import { type CalendarMonth, formatGameDate, readGameDate } from "../../../time/index.ts";
-import { shownImage } from "../images.ts";
-import { type Knowledge, knownIntroduction, knownText, knowsPage, pageKnownBy, writesKnownText } from "../knowledge.ts";
-import { calendarDayOf, campaignCalendar, readPresent } from "../time.ts";
+import type { Context } from "../../core/context.ts";
+import { firstSentence } from "../../core/text.ts";
+import { isPartyMember, isPlayerCharacter, locate, type Page, withoutFencedBlocks, type World } from "../../pages/index.ts";
+import { type CalendarMonth, formatGameDate, readGameDate } from "../../time/index.ts";
+import { shownImage } from "../shared/images.ts";
+import { type Knowledge, knownIntroduction, knownText, knowsPage, pageKnownBy, writesKnownText } from "../shared/knowledge.ts";
+import { calendarDayOf, campaignCalendar, readPresent } from "../shared/time.ts";
 import { placeKind } from "./map.ts";
 
 /** A page the player character knows, as the World section lists it (VIEW-11): its name and type, a place's kind and the places that hold it, the opening of its text. */

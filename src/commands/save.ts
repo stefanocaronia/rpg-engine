@@ -20,8 +20,8 @@ import {
     savesWhy,
     saveText,
     wentBackTo,
-} from "./game/saves.ts";
-import { campaignWorld } from "./game/world.ts";
+} from "./shared/saves.ts";
+import { campaignWorld } from "./shared/world.ts";
 
 const actions = ["list", "make", "load", "reset", "new chat"] as const;
 

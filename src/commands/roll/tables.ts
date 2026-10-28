@@ -3,7 +3,7 @@ import type { Context } from "../../core/context.ts";
 import { comparableText } from "../../core/text.ts";
 import { DiceError, type FaceSource, readRandomTable, rollOnTable, type TableRoll } from "../../dice/index.ts";
 import { baseChain, findPage, firstTable, pageNamed, parsePageReference, readSection, secretNames, sectionTitles } from "../../pages/index.ts";
-import { campaignWorld, missingSystemHint } from "./world.ts";
+import { campaignWorld, missingSystemHint } from "../shared/world.ts";
 
 /** A roll on the table of a page's section, given as Page#Section; refused, saying what to fix, before anything is rolled. */
 export function rollPageTable(root: string, context: Context, reference: string, source: FaceSource): TableRoll & { table: string; secret: boolean; }

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { testCampaign } from "../src/testing.ts";
+import { testCampaign } from "../src/testing/index.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 // The 5e's repository, beside this one (D-506, D-514).

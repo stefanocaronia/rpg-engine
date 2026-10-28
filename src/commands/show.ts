@@ -26,16 +26,16 @@ import {
 } from "../pages/index.ts";
 import { featureParts } from "../progression/index.ts";
 import type { GameSystem } from "../systems/index.ts";
-import { effectiveFields, effectsOf } from "./game/effect-layer.ts";
-import { surroundings, surroundingsText } from "./game/environment.ts";
-import { holdsItems, isFallen, lootAdvice } from "./game/loot.ts";
-import { skippedPagesNote } from "./game/notes.ts";
-import { firstInChat } from "./game/parts.ts";
-import { featureSource, progressionOf } from "./game/progression.ts";
-import { closedScenes, copyLink, copyPage, openSceneLog, readOpenScene } from "./game/scene.ts";
-import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./game/sheet.ts";
-import { signedText, type WorkedField, workedFields, workedLine, workedParts } from "./game/worked-out.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "./game/world.ts";
+import { effectiveFields, effectsOf } from "./shared/effect-layer.ts";
+import { surroundings, surroundingsText } from "./shared/environment.ts";
+import { holdsItems, isFallen, lootAdvice } from "./shared/loot.ts";
+import { skippedPagesNote } from "./shared/notes.ts";
+import { firstInChat } from "./shared/parts.ts";
+import { featureSource, progressionOf } from "./shared/progression.ts";
+import { closedScenes, copyLink, copyPage, openSceneLog, readOpenScene } from "./shared/scene.ts";
+import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./shared/sheet.ts";
+import { signedText, type WorkedField, workedFields, workedLine, workedParts } from "./shared/worked-out.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./shared/world.ts";
 
 // A list longer than this shows its first items only (D-468).
 const listedItems = 8;

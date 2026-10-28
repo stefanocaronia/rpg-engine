@@ -7,7 +7,7 @@
     "jsxImportSource": "preact",
     "paths": {
       "rpg-engine": ["./src/index.ts"],
-      "rpg-engine/testing": ["./src/testing.ts"],
+      "rpg-engine/testing": ["./src/testing/index.ts"],
       "rpg-engine/page": ["./src/page.ts"]
     }
   },

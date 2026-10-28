@@ -6,7 +6,7 @@ import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node
 import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { campaignWorld } from "../src/commands/game/world.ts";
+import { campaignWorld } from "../src/commands/shared/world.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { files, withFiles } from "../src/core/store.ts";

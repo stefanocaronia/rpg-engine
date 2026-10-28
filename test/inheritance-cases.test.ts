@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { write } from "../src/commands/write.ts";
+import { write } from "../src/commands/write/write.ts";
 import type { Context } from "../src/core/context.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
 

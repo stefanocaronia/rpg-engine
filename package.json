@@ -22,8 +22,8 @@
       "default": "./dist/page.js"
     },
     "./testing": {
-      "types": "./dist/testing.d.ts",
-      "default": "./dist/testing.js"
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
     }
   },
   "files": [

@@ -3,14 +3,14 @@ import { changeState, requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { blockingMode, campaignMode, missingText, type Mode, modePart, modes } from "./game/mode.ts";
-import { valueParts } from "./game/offers.ts";
-import { adventurePart, situationPart } from "./game/parts.ts";
-import { adventureUnderWay } from "./game/quests.ts";
-import { campaignSaves, makeSave, type ResetPoint, savesWhy, saveText } from "./game/saves.ts";
-import { newDatedLogEntry, readPresent } from "./game/time.ts";
-import { voicesPart } from "./game/voices.ts";
-import { campaignSystem, campaignWorld } from "./game/world.ts";
+import { blockingMode, campaignMode, missingText, type Mode, modePart, modes } from "./shared/mode.ts";
+import { valueParts } from "./shared/offers.ts";
+import { adventurePart, situationPart } from "./shared/parts.ts";
+import { adventureUnderWay } from "./shared/quests.ts";
+import { campaignSaves, makeSave, type ResetPoint, savesWhy, saveText } from "./shared/saves.ts";
+import { newDatedLogEntry, readPresent } from "./shared/time.ts";
+import { voicesPart } from "./shared/voices.ts";
+import { campaignSystem, campaignWorld } from "./shared/world.ts";
 
 export const mode = defineCommand({
     name: "mode",

@@ -10,7 +10,7 @@ if (args.length === 1 && args[0] === "mcp") {
     const { startMcpServer } = await import("../server/mcp.ts");
     await startMcpServer();
 } else if (args[0] === "--read-library") {
-    const { readLibraryHere } = await import("../commands/game/library-reader.ts");
+    const { readLibraryHere } = await import("../commands/shared/library-reader.ts");
     await readLibraryHere();
 } else if (args.length === 1 && args[0] === "--listen") {
     const { listenHere } = await import("../server/bell-listener.ts");

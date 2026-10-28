@@ -5,10 +5,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { playerChangeNews, playerSettings, setupQuestions } from "../src/commands/config.ts";
-import { campaignWorld } from "../src/commands/game/world.ts";
+import { campaignWorld } from "../src/commands/shared/world.ts";
 import type { Context } from "../src/core/context.ts";
 import { installedSystems, withSettings } from "../src/systems/index.ts";
-import { systemChecks } from "../src/testing.ts";
+import { systemChecks } from "../src/testing/index.ts";
 import { madeSystem, makeTempFolder, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 let folder: string;

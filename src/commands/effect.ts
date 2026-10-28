@@ -10,16 +10,16 @@ import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isKin
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
-import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./game/effect-layer.ts";
-import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects, systemNamed } from "./game/effects.ts";
-import { allSaid, packagesEffectAdded } from "./game/packages/hooks.ts";
-import { keepingConditionNote, secondKeptNote } from "./game/reminders.ts";
-import { houseRules, ruleBlock, ruleTitled } from "./game/rules.ts";
-import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game/scene.ts";
-import { newDatedLogEntry, presentDate } from "./game/time.ts";
-import { burning, burnOne } from "./game/upkeep.ts";
-import { aloneNote, computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./game/worked-out.ts";
-import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./game/world.ts";
+import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./shared/effect-layer.ts";
+import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects, systemNamed } from "./shared/effects.ts";
+import { allSaid, packagesEffectAdded } from "./shared/packages/hooks.ts";
+import { keepingConditionNote, secondKeptNote } from "./shared/reminders.ts";
+import { houseRules, ruleBlock, ruleTitled } from "./shared/rules.ts";
+import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./shared/scene.ts";
+import { newDatedLogEntry, presentDate } from "./shared/time.ts";
+import { burning, burnOne } from "./shared/upkeep.ts";
+import { aloneNote, computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./shared/worked-out.ts";
+import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./shared/world.ts";
 
 const actions = ["add", "end"] as const;
 

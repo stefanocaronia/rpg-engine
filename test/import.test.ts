@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { importShown } from "../src/commands/import.ts";
+import { importShown } from "../src/commands/import/import.ts";
 import type { Context, DocumentReader } from "../src/core/context.ts";
 import { FileStore } from "../src/core/store.ts";
 import { type ExtensionWords, wordIn } from "../src/extensions/index.ts";

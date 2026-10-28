@@ -1,14 +1,14 @@
 import { z } from "zod";
-import { requireCampaign } from "../campaign/index.ts";
-import type { Context } from "../core/context.ts";
-import { fieldsRead, listItemNames, numberOf } from "../core/formula.ts";
-import { appendLogEntry } from "../core/log.ts";
-import type { Problem } from "../core/problem.ts";
-import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName, valueNamed, withArticle } from "../core/text.ts";
-import { formatCounter, readCounter } from "../counters/index.ts";
-import { readEffects } from "../effects/index.ts";
-import { type Coin, formatAmount, namesCoins, readAmount } from "../money/index.ts";
+import { requireCampaign } from "../../campaign/index.ts";
+import type { Context } from "../../core/context.ts";
+import { fieldsRead, listItemNames, numberOf } from "../../core/formula.ts";
+import { appendLogEntry } from "../../core/log.ts";
+import type { Problem } from "../../core/problem.ts";
+import { defineCommand } from "../../core/registry.ts";
+import { comparableText, sameName, valueNamed, withArticle } from "../../core/text.ts";
+import { formatCounter, readCounter } from "../../counters/index.ts";
+import { readEffects } from "../../effects/index.ts";
+import { type Coin, formatAmount, namesCoins, readAmount } from "../../money/index.ts";
 import {
     alwaysInList,
     baseFieldOf,
@@ -72,32 +72,32 @@ import {
     type World,
     writePage,
     writtenFieldName,
-} from "../pages/index.ts";
-import { featureParts, mergedFeatures } from "../progression/index.ts";
-import type { Scene } from "../scene/index.ts";
-import type { GameSystem } from "../systems/index.ts";
-import { bondNotes, checkBonds } from "./game/bonds.ts";
-import { effectiveFields, effectsField } from "./game/effect-layer.ts";
-import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "./game/events.ts";
-import { experienceOf, leastNotes, newLevelNotes } from "./game/experience.ts";
-import { gridNotes } from "./game/grids.ts";
-import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./game/here.ts";
-import { questPictureNote } from "./game/images.ts";
-import { checkLimits } from "./game/limits.ts";
-import { campaignCoins } from "./game/money.ts";
-import { followersNote, keepersNote, skippedPagesNote } from "./game/notes.ts";
-import { adventurePart, partText, partyPart, situationPart } from "./game/parts.ts";
-import { mapLookNotes, shortRoadNotes } from "./game/positions.ts";
-import { givenItems, progressionOf } from "./game/progression.ts";
-import { adventureUnderWay, logQuestChange, newQuestNotes, tickedQuestNotes } from "./game/quests.ts";
-import { deathNotes, isPlayerDead, partyDeathNotes } from "./game/saves.ts";
-import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "./game/scene.ts";
-import { checkListValues, joiningNotes, weightlessNote } from "./game/sheet.ts";
-import { diaryDueLine } from "./game/thoughts.ts";
-import { thresholdNotes } from "./game/thresholds.ts";
-import { newDatedLogEntry, readPresent } from "./game/time.ts";
-import { computedField, counterLimits, directBonuses, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, startingAtZero, workedMaximum, workedParts } from "./game/worked-out.ts";
-import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "./game/world.ts";
+} from "../../pages/index.ts";
+import { featureParts, mergedFeatures } from "../../progression/index.ts";
+import type { Scene } from "../../scene/index.ts";
+import type { GameSystem } from "../../systems/index.ts";
+import { bondNotes, checkBonds } from "../shared/bonds.ts";
+import { effectiveFields, effectsField } from "../shared/effect-layer.ts";
+import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "../shared/events.ts";
+import { experienceOf, leastNotes, newLevelNotes } from "../shared/experience.ts";
+import { gridNotes } from "../shared/grids.ts";
+import { questPictureNote } from "../shared/images.ts";
+import { checkLimits } from "../shared/limits.ts";
+import { campaignCoins } from "../shared/money.ts";
+import { followersNote, keepersNote, skippedPagesNote } from "../shared/notes.ts";
+import { adventurePart, partText, partyPart, situationPart } from "../shared/parts.ts";
+import { mapLookNotes, shortRoadNotes } from "../shared/positions.ts";
+import { givenItems, progressionOf } from "../shared/progression.ts";
+import { adventureUnderWay, logQuestChange, newQuestNotes, tickedQuestNotes } from "../shared/quests.ts";
+import { deathNotes, isPlayerDead, partyDeathNotes } from "../shared/saves.ts";
+import { checkNotCopied, copyChanges, copyLink, copyName, copyPage, readOpenScene, updateScene } from "../shared/scene.ts";
+import { checkListValues, joiningNotes, weightlessNote } from "../shared/sheet.ts";
+import { diaryDueLine } from "../shared/thoughts.ts";
+import { thresholdNotes } from "../shared/thresholds.ts";
+import { newDatedLogEntry, readPresent } from "../shared/time.ts";
+import { computedField, counterLimits, directBonuses, hasSheet, isUse, itemLines, maximumHint, maximumSources, missingUses, signedText, startingAtZero, workedMaximum, workedParts } from "../shared/worked-out.ts";
+import { campaignSystem, campaignWorld, foreignSystemLanguage, leftOutNote, missingSystemHint, systemBaseHint, systemProblems, systemSearchHint } from "../shared/world.ts";
+import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./here.ts";
 
 /** What a write did, on a page or on a copy in the open scene. */
 interface WriteResult

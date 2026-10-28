@@ -7,20 +7,20 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
-import { runCommandLine } from "./cli/command-line.ts";
-import { ask } from "./commands/ask.ts";
-import { campaignWidgets, type ShownWidget } from "./commands/game/packages/widgets.ts";
-import { campaignSystem } from "./commands/game/world.ts";
-import type { Context, Player } from "./core/context.ts";
-import type { LogEntry } from "./core/log.ts";
-import { SessionStore } from "./core/session-store.ts";
-import { startDashboard } from "./server/dashboard/index.ts";
-import { toolDescriptions } from "./server/mcp.ts";
-import { loadSystemCode } from "./systems/index.ts";
+import { runCommandLine } from "../cli/command-line.ts";
+import { ask } from "../commands/ask.ts";
+import { campaignWidgets, type ShownWidget } from "../commands/shared/packages/widgets.ts";
+import { campaignSystem } from "../commands/shared/world.ts";
+import type { Context, Player } from "../core/context.ts";
+import type { LogEntry } from "../core/log.ts";
+import { SessionStore } from "../core/session-store.ts";
+import { startDashboard } from "../server/dashboard/index.ts";
+import { toolDescriptions } from "../server/mcp.ts";
+import { loadSystemCode } from "../systems/index.ts";
 
-export type { ShownWidget } from "./commands/game/packages/widgets.ts";
-export type { CardAsked, Context, Player, Rows, Said } from "./core/context.ts";
-export type { LogEntry } from "./core/log.ts";
+export type { ShownWidget } from "../commands/shared/packages/widgets.ts";
+export type { CardAsked, Context, Player, Rows, Said } from "../core/context.ts";
+export type { LogEntry } from "../core/log.ts";
 export { type SystemChecks, systemChecks } from "./system-checks.ts";
 
 /** What a command printed, and its exit code: 0 when it did what it was asked. */
@@ -121,7 +121,7 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
     }
 
     // The systems given first, then those the package's repository installs, as a devDependency (@rpgengine/system-5e), then the engine's own.
-    const systemFolders = [systems, resolve("node_modules"), enginePath("../systems/")];
+    const systemFolders = [systems, resolve("node_modules"), enginePath("../../systems/")];
     let ids = 0;
     let faces: number[] | undefined;
     const context: Context = {
@@ -291,7 +291,7 @@ async function testDashboard(context: Context): Promise<TestDashboard>
     };
 }
 
-/** A path of the engine's package, from this file in src/ or dist/ alike. */
+/** A path of the engine's package, from this file in src/testing/ or dist/testing/ alike. */
 function enginePath(relative: string): string
 {
     return fileURLToPath(new URL(relative, import.meta.url));

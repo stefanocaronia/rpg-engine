@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, 
 import { join, relative, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { makeSave } from "../src/commands/game/saves.ts";
+import { makeSave } from "../src/commands/shared/saves.ts";
 import type { Context } from "../src/core/context.ts";
 import { packFiles, readSaves, saveFileName, unpackFiles } from "../src/saves/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";

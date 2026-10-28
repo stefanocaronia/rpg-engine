@@ -1,15 +1,15 @@
 import { z } from "zod";
-import { requireCampaign } from "../campaign/index.ts";
-import { defineCommand } from "../core/registry.ts";
-import type { Start } from "../map/index.ts";
-import { distanceBetween } from "../map/index.ts";
-import { locate, mapKey, type Page, pageNamed, parsePageReference, type Position, type World } from "../pages/index.ts";
-import type { GameSystem } from "../systems/index.ts";
-import { journeyStart, moversPosition, readJourney } from "./game/journey.ts";
-import { acrossHint, openLegs } from "./game/open.ts";
-import { pointText, positionOf } from "./game/positions.ts";
-import { dayHours, durationText, type Going, goingText, lengthText, type Measures, measuresOf, moversOf, noWayText, paceOf, partyLead, roadsOf, sameSpot, stopOf, travellingParty, unknownOnRoad, wayFor, wayText } from "./game/roads.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "./game/world.ts";
+import { requireCampaign } from "../../campaign/index.ts";
+import { defineCommand } from "../../core/registry.ts";
+import type { Start } from "../../map/index.ts";
+import { distanceBetween } from "../../map/index.ts";
+import { locate, mapKey, type Page, pageNamed, parsePageReference, type Position, type World } from "../../pages/index.ts";
+import type { GameSystem } from "../../systems/index.ts";
+import { journeyStart, moversPosition, readJourney } from "../shared/journey.ts";
+import { pointText, positionOf } from "../shared/positions.ts";
+import { dayHours, durationText, type Going, goingText, lengthText, type Measures, measuresOf, moversOf, noWayText, paceOf, partyLead, roadsOf, sameSpot, stopOf, travellingParty, unknownOnRoad, wayFor, wayText } from "../shared/roads.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "../shared/world.ts";
+import { acrossHint, openLegs } from "./open.ts";
 
 /** What route found, as its output tells it (TRV-5). */
 type RouteResult =

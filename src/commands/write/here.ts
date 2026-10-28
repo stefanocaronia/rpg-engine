@@ -3,11 +3,11 @@ import type { Context } from "../../core/context.ts";
 import { appendLogEntry } from "../../core/log.ts";
 import { comparableText } from "../../core/text.ts";
 import { type FieldChange, formatPosition, type Page, pagesWithName, type Position, readStops, withPage, type World, writePage } from "../../pages/index.ts";
-import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, type OnRoad, readJourney, saveJourney } from "./journey.ts";
-import { movePages } from "./moves.ts";
-import { positionFromWrite, regionAt } from "./positions.ts";
-import { lengthText, roadsOf } from "./roads.ts";
-import { newDatedLogEntry } from "./time.ts";
+import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, type OnRoad, readJourney, saveJourney } from "../shared/journey.ts";
+import { movePages } from "../shared/moves.ts";
+import { positionFromWrite, regionAt } from "../shared/positions.ts";
+import { lengthText, roadsOf } from "../shared/roads.ts";
+import { newDatedLogEntry } from "../shared/time.ts";
 
 /** Where a place written `here` goes (TRV-14): on a road at the point its journey stopped, or at a point in the open; with the journey and who travels. */
 export interface Here

@@ -1,25 +1,25 @@
 import { z } from "zod";
-import { requireCampaign } from "../campaign/index.ts";
-import type { Context } from "../core/context.ts";
-import { numberOf } from "../core/formula.ts";
-import { appendLogEntry, readLog } from "../core/log.ts";
-import { defineCommand } from "../core/registry.ts";
-import { comparableText, sameName, valueNamed } from "../core/text.ts";
-import { readCounter } from "../counters/index.ts";
-import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256, type ThrownDie, tossCoins } from "../dice/index.ts";
-import { declaredKind, findPage, isPlayerCharacter, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
-import type { GameSystem } from "../systems/index.ts";
-import { effectiveFields, effectsOf } from "./game/effect-layer.ts";
-import { systemNamed } from "./game/effects.ts";
-import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "./game/master-rolls.ts";
-import { packagesRolled } from "./game/packages/hooks.ts";
-import { firstInChat } from "./game/parts.ts";
-import { copyPage, readOpenScene } from "./game/scene.ts";
-import { knowledgeNote } from "./game/sheet.ts";
-import { rollPageTable } from "./game/tables.ts";
-import { newDatedLogEntry } from "./game/time.ts";
-import { itemList, signedText, workedFields } from "./game/worked-out.ts";
-import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "./game/world.ts";
+import { requireCampaign } from "../../campaign/index.ts";
+import type { Context } from "../../core/context.ts";
+import { numberOf } from "../../core/formula.ts";
+import { appendLogEntry, readLog } from "../../core/log.ts";
+import { defineCommand } from "../../core/registry.ts";
+import { comparableText, sameName, valueNamed } from "../../core/text.ts";
+import { readCounter } from "../../counters/index.ts";
+import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256, type ThrownDie, tossCoins } from "../../dice/index.ts";
+import { declaredKind, findPage, isPlayerCharacter, type Page, pagesWithName, type World, writePage } from "../../pages/index.ts";
+import type { GameSystem } from "../../systems/index.ts";
+import { effectiveFields, effectsOf } from "../shared/effect-layer.ts";
+import { systemNamed } from "../shared/effects.ts";
+import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "../shared/master-rolls.ts";
+import { packagesRolled } from "../shared/packages/hooks.ts";
+import { firstInChat } from "../shared/parts.ts";
+import { copyPage, readOpenScene } from "../shared/scene.ts";
+import { knowledgeNote } from "../shared/sheet.ts";
+import { newDatedLogEntry } from "../shared/time.ts";
+import { itemList, signedText, workedFields } from "../shared/worked-out.ts";
+import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "../shared/world.ts";
+import { rollPageTable } from "./tables.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
 export const faceValues = z.preprocess(

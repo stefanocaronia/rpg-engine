@@ -2,7 +2,7 @@
 import { comparableText, valueNamed } from "../../core/text.ts";
 import { bonusPages, inheritedFields, type Page, textsIn, type World } from "../../pages/index.ts";
 import type { DamageRule, GameSystem } from "../../systems/index.ts";
-import { effectsOf } from "./effect-layer.ts";
+import { effectsOf } from "../shared/effect-layer.ts";
 
 /** What a page takes of an amount of damage of a type, and the note that says why when it is not the amount. */
 export interface DamageTaken

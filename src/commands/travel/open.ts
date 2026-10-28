@@ -2,8 +2,8 @@
 import { crossingAlong, distanceBetween, pointAlong } from "../../map/index.ts";
 import { mapKey, type Page, pagesWithName, type Position, type World } from "../../pages/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
-import { placedPosition, positionOf, regionAt, relationText } from "./positions.ts";
-import { lengthText, type Measures, type Roads, terrainFactor } from "./roads.ts";
+import { placedPosition, positionOf, regionAt, relationText } from "../shared/positions.ts";
+import { lengthText, type Measures, type Roads, terrainFactor } from "../shared/roads.ts";
 
 /** A leg of a straight line across country: the region it runs in, none in the open, its length in metres and the metres a minute at the pace there. */
 export interface OpenLeg

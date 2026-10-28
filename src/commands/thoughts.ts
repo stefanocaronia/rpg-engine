@@ -3,9 +3,9 @@ import { requireCampaign } from "../campaign/index.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isInParty, type Page, pageNamed, type World } from "../pages/index.ts";
-import { thoughtsLength, thoughtsType } from "./game/thoughts.ts";
-import { newDatedLogEntry } from "./game/time.ts";
-import { campaignWorld } from "./game/world.ts";
+import { thoughtsLength, thoughtsType } from "./shared/thoughts.ts";
+import { newDatedLogEntry } from "./shared/time.ts";
+import { campaignWorld } from "./shared/world.ts";
 
 interface ThoughtsResult
 {

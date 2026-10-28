@@ -2,16 +2,16 @@
 // name once, no bases it lacks, every field declared and of its kind, rules in chapters, the pictures its pages link, where it comes from, and its theme.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { closedSettings } from "./campaign/index.ts";
-import { parseRollFormula } from "./core/formula.ts";
-import { FileStore, withFiles } from "./core/store.ts";
-import { comparableText } from "./core/text.ts";
-import { findImage, imageFileName, imagesFolderName } from "./images/index.ts";
-import { coinsProblem, readCoins } from "./money/index.ts";
-import { checkWorld, isStandardField, listFieldNames, loadWorld } from "./pages/index.ts";
-import { isTitled, readRuleBook } from "./rules/index.ts";
-import { type GameSystem, systemInFolder } from "./systems/index.ts";
-import { readTheme } from "./themes/index.ts";
+import { closedSettings } from "../campaign/index.ts";
+import { parseRollFormula } from "../core/formula.ts";
+import { FileStore, withFiles } from "../core/store.ts";
+import { comparableText } from "../core/text.ts";
+import { findImage, imageFileName, imagesFolderName } from "../images/index.ts";
+import { coinsProblem, readCoins } from "../money/index.ts";
+import { checkWorld, isStandardField, listFieldNames, loadWorld } from "../pages/index.ts";
+import { isTitled, readRuleBook } from "../rules/index.ts";
+import { type GameSystem, systemInFolder } from "../systems/index.ts";
+import { readTheme } from "../themes/index.ts";
 
 /** What the checks find in a game system's folder: how much it holds, and what is wrong by check, each list empty when it passes. */
 export interface SystemChecks

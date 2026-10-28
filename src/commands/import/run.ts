@@ -6,7 +6,7 @@ import type { DocumentReader } from "../../core/context.ts";
 import { claimImport, dropDocumentText, finishAdventure, importedPages, importStarts, type ImportState, pieceName, readImportState, releaseImport, writeImportState } from "../../importer/index.ts";
 import { coreSection } from "../../instructions/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
-import { partText } from "./parts.ts";
+import { partText } from "../shared/parts.ts";
 
 // The imports running in this process, by their folder, each with what stops it: a second call never starts a second reader on the same files.
 const running = new Map<string, { work: Promise<void>; stop: AbortController; }>();

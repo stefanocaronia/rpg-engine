@@ -8,7 +8,7 @@ const source = (path: string): string => fileURLToPath(new URL(path, import.meta
 // The command tests run many commands each, and slow down when the files run side by side: a longer limit than vitest's 5 s. test/setup.ts removes the
 // temporary folders of each file when its tests end, and test/global-setup.ts those left over a day ago by runs stopped half way.
 export default defineConfig({
-    resolve: { alias: [{ find: /^rpg-engine\/testing$/, replacement: source("./src/testing.ts") }, { find: /^rpg-engine$/, replacement: source("./src/index.ts") }] },
+    resolve: { alias: [{ find: /^rpg-engine\/testing$/, replacement: source("./src/testing/index.ts") }, { find: /^rpg-engine$/, replacement: source("./src/index.ts") }] },
     test: { include: ["test/**/*.test.ts"], setupFiles: ["test/setup.ts"],
         globalSetup: ["test/global-setup.ts"], testTimeout: 30_000, hookTimeout: 30_000 },
 });

@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
-import type { ViewResult } from "../src/commands/view.ts";
+import type { ViewResult } from "../src/commands/view/view.ts";
 import type { Context, PicturesReady, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { readAddress, sectionAddress } from "../src/dashboard/address.ts";

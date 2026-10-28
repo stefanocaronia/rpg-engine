@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readAdventureZip, readManifest } from "../src/adventures/index.ts";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { makeSave } from "../src/commands/game/saves.ts";
+import { makeSave } from "../src/commands/shared/saves.ts";
 import type { Context } from "../src/core/context.ts";
 import { appendLogEntry, newLogEntry } from "../src/core/log.ts";
 import { SessionStore } from "../src/core/session-store.ts";

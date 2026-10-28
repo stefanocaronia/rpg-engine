@@ -15,13 +15,13 @@ import { dropConsent, type Extension, findExtension, installedExtensions, readEx
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
 import { isLocalSpec, issuesPage, isTarball, isVerified, verifiedScope } from "../packages/index.ts";
 import { findSystem, readableSystems, systemFolders, systemHasCode, systemInFolder } from "../systems/index.ts";
-import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game/adventures.ts";
-import { campaignExamples } from "./game/examples.ts";
-import { campaignMode } from "./game/mode.ts";
-import { loadCampaignCode, loadNewSystemCode, packageCommandNames, packagesInstalled } from "./game/packages/code.ts";
-import { listedExtensions, runsCode } from "./game/packages/extensions.ts";
-import { newDatedLogEntry } from "./game/time.ts";
-import { campaignWorld } from "./game/world.ts";
+import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./shared/adventures.ts";
+import { campaignExamples } from "./shared/examples.ts";
+import { campaignMode } from "./shared/mode.ts";
+import { loadCampaignCode, loadNewSystemCode, packageCommandNames, packagesInstalled } from "./shared/packages/code.ts";
+import { listedExtensions, runsCode } from "./shared/packages/extensions.ts";
+import { newDatedLogEntry } from "./shared/time.ts";
+import { campaignWorld } from "./shared/world.ts";
 
 type PackageResult =
     | { kind: "list"; installed: Installed[]; missing: string[]; adventures: { title: string; version: string; since?: string; removable: boolean; }[]; systems: InstalledSystem[]; languages: InstalledLanguage[]; }

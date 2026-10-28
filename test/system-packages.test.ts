@@ -3,7 +3,7 @@
 // on free and the fake; the 5e and Ironsworn run them in their repositories.
 import { describe, expect, it } from "vitest";
 import { installedSystems } from "../src/systems/index.ts";
-import { systemChecks } from "../src/testing.ts";
+import { systemChecks } from "../src/testing/index.ts";
 import { madeSystem, testSystemFolders } from "./support.ts";
 
 describe("the installed game systems", () => {

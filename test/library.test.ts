@@ -6,7 +6,7 @@ import { request } from "node:http";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { libraryContents, libraryEntries, libraryScope, skippedKind } from "../src/commands/game/library.ts";
+import { libraryContents, libraryEntries, libraryScope, skippedKind } from "../src/commands/shared/library.ts";
 import type { Confirmed, Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { isReadable, pagesWritten, readDocument } from "../src/documents/index.ts";

@@ -1,12 +1,12 @@
 import type { Command } from "../core/registry.ts";
 import { advance } from "./advance.ts";
 import { ask } from "./ask.ts";
-import { change } from "./change.ts";
+import { change } from "./change/change.ts";
 import { config } from "./config.ts";
 import { effect } from "./effect.ts";
 import { find } from "./find.ts";
 import { image } from "./image.ts";
-import { importCommand } from "./import.ts";
+import { importCommand } from "./import/import.ts";
 import { init } from "./init.ts";
 import { install } from "./install.ts";
 import { instructions } from "./instructions.ts";
@@ -16,8 +16,7 @@ import { move } from "./move.ts";
 import { packageCommand } from "./package.ts";
 import { rename } from "./rename.ts";
 import { reveal } from "./reveal.ts";
-import { roll } from "./roll.ts";
-import { route } from "./route.ts";
+import { roll } from "./roll/roll.ts";
 import { rules } from "./rules.ts";
 import { save } from "./save.ts";
 import { scene } from "./scene.ts";
@@ -26,10 +25,11 @@ import { status } from "./status.ts";
 import { thoughts } from "./thoughts.ts";
 import { trade } from "./trade.ts";
 import { translate } from "./translate.ts";
-import { travel } from "./travel.ts";
+import { route } from "./travel/route.ts";
+import { travel } from "./travel/travel.ts";
 import { validate } from "./validate.ts";
-import { view } from "./view.ts";
-import { write } from "./write.ts";
+import { view } from "./view/view.ts";
+import { write } from "./write/write.ts";
 
 /** Every command of rpg-engine. */
 export const commands: Command<any, any>[] = [

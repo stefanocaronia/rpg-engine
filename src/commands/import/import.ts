@@ -1,12 +1,12 @@
 import { basename, extname, join, relative, resolve, sep } from "node:path";
 import { z } from "zod";
-import { adventureFolderName } from "../adventures/index.ts";
-import { changeSetting, readSettings, requireCampaign, storyWays } from "../campaign/index.ts";
-import type { Context } from "../core/context.ts";
-import { appendLogEntry } from "../core/log.ts";
-import { defineCommand } from "../core/registry.ts";
-import { documentAt, readDocument } from "../documents/index.ts";
-import { stopProcess } from "../helpers/index.ts";
+import { adventureFolderName } from "../../adventures/index.ts";
+import { changeSetting, readSettings, requireCampaign, storyWays } from "../../campaign/index.ts";
+import type { Context } from "../../core/context.ts";
+import { appendLogEntry } from "../../core/log.ts";
+import { defineCommand } from "../../core/registry.ts";
+import { documentAt, readDocument } from "../../documents/index.ts";
+import { stopProcess } from "../../helpers/index.ts";
 import {
     beginOpening,
     clearOpening,
@@ -32,13 +32,13 @@ import {
     readImportState,
     runElsewhere,
     writeImportState,
-} from "../importer/index.ts";
-import { installedAdventures } from "./game/adventures.ts";
-import { isImportRunning, runImport, stopImport, writingState } from "./game/import.ts";
-import { campaignMode } from "./game/mode.ts";
-import { situationPart } from "./game/parts.ts";
-import { newDatedLogEntry } from "./game/time.ts";
-import { campaignSystem, campaignWorld } from "./game/world.ts";
+} from "../../importer/index.ts";
+import { installedAdventures } from "../shared/adventures.ts";
+import { campaignMode } from "../shared/mode.ts";
+import { situationPart } from "../shared/parts.ts";
+import { newDatedLogEntry } from "../shared/time.ts";
+import { campaignSystem, campaignWorld } from "../shared/world.ts";
+import { isImportRunning, runImport, stopImport, writingState } from "./run.ts";
 
 interface ImportResult
 {

@@ -1,12 +1,12 @@
 // The player's journal (D-367, VIEW-8, VIEW-9): the quests the player character knows, as a video game's quest log, with their goals, counters, clock and
 // deadline; and the story by its scenes, as chapters, each with what the diary tells of it.
-import { type LogEntry, readLog } from "../../../core/log.ts";
-import { comparableText } from "../../../core/text.ts";
-import { goalsIn, links, type Page, textsIn, type World } from "../../../pages/index.ts";
-import type { GameDate } from "../../../time/index.ts";
-import type { SeenEffect } from "../effects.ts";
-import { type Knowledge, knownSecretsApart, knownText } from "../knowledge.ts";
-import { measuresText, questMeasures } from "../quests.ts";
+import { type LogEntry, readLog } from "../../core/log.ts";
+import { comparableText } from "../../core/text.ts";
+import { goalsIn, links, type Page, textsIn, type World } from "../../pages/index.ts";
+import type { GameDate } from "../../time/index.ts";
+import type { SeenEffect } from "../shared/effects.ts";
+import { type Knowledge, knownSecretsApart, knownText } from "../shared/knowledge.ts";
+import { measuresText, questMeasures } from "../shared/quests.ts";
 
 /** A quest as the journal shows it (VIEW-8). */
 export interface ShownQuest

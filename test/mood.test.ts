@@ -7,7 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { readStateValues } from "../src/campaign/index.ts";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { mood } from "../src/commands/mood.ts";
-import { view, type ViewResult } from "../src/commands/view.ts";
+import { view, type ViewResult } from "../src/commands/view/view.ts";
 import type { Context } from "../src/core/context.ts";
 import { type Mood, moods } from "../src/core/mood.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";

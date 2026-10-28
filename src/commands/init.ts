@@ -5,8 +5,8 @@ import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { hostInstructions } from "../instructions/index.ts";
 import { createWorld } from "../pages/index.ts";
-import { campaignNote } from "./game/mode.ts";
-import { installedSystemName } from "./game/world.ts";
+import { campaignNote } from "./shared/mode.ts";
+import { installedSystemName } from "./shared/world.ts";
 
 export const init = defineCommand({
     name: "init",

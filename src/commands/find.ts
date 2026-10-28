@@ -2,8 +2,8 @@ import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
 import { pageTypeNames, searchPages, searchSystemPages } from "../pages/index.ts";
-import { skippedPagesNote } from "./game/notes.ts";
-import { campaignWorld, foreignSystemLanguage, systemSearchHint } from "./game/world.ts";
+import { skippedPagesNote } from "./shared/notes.ts";
+import { campaignWorld, foreignSystemLanguage, systemSearchHint } from "./shared/world.ts";
 
 // The pages of the game system that find lists for one text; the others are counted.
 const listedSystemPages = 10;

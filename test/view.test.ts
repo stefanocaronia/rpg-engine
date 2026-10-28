@@ -5,7 +5,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { type Knowledge, knownText } from "../src/commands/game/knowledge.ts";
+import { type Knowledge, knownText } from "../src/commands/shared/knowledge.ts";
 import type { Context } from "../src/core/context.ts";
 import type { Page, World } from "../src/pages/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";

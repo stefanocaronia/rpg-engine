@@ -1,9 +1,9 @@
 import { parseArgs } from "node:util";
 import { z } from "zod";
 import { findCampaign } from "../campaign/index.ts";
-import { libraryRunner } from "../commands/game/library-reader.ts";
-import { loadCampaignCode, packageCommands } from "../commands/game/packages/code.ts";
 import { commands } from "../commands/index.ts";
+import { libraryRunner } from "../commands/shared/library-reader.ts";
+import { loadCampaignCode, packageCommands } from "../commands/shared/packages/code.ts";
 import { systemConfirm } from "../confirm/index.ts";
 import { type Context, defaultContext, packagesFolder } from "../core/context.ts";
 import { downloadBytes } from "../core/download.ts";

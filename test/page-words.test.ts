@@ -3,7 +3,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { homeSystemWords, pageTranslator } from "../src/commands/game/page-words.ts";
+import { homeSystemWords, pageTranslator } from "../src/commands/shared/page-words.ts";
 import type { TextWriter } from "../src/core/context.ts";
 import { makeTempFolder, testContext } from "./support.ts";
 

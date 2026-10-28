@@ -5,7 +5,7 @@ import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { systemChecks, type TestCampaign, testCampaign } from "../src/testing.ts";
+import { systemChecks, type TestCampaign, testCampaign } from "../src/testing/index.ts";
 import { makeTempFolder } from "./support.ts";
 
 const fake = fileURLToPath(new URL("./systems/fake/", import.meta.url));

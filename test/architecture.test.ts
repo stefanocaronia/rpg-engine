@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 
 const sourceFolder = new URL("../src/", import.meta.url);
 
-// A module is a folder of src/ other than core (the shared utilities), commands (the glue between modules), and server and cli, the processes that serve them.
+// A module is a folder of src/ other than core (the shared utilities), commands (the glue between modules), server and cli, the processes that serve them,
+// and testing, the kit that plays the commands for packages' tests.
 const modules = readdirSync(sourceFolder, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && !["core", "commands", "server", "cli"].includes(entry.name))
+    .filter((entry) => entry.isDirectory() && !["core", "commands", "server", "cli", "testing"].includes(entry.name))
     .map((entry) => entry.name);
 
 describe("architecture", () => {
@@ -65,7 +66,7 @@ describe("architecture", () => {
             "helpers/codex.ts",
             "helpers/programs.ts",
             // The page's words translated on the fly, in the player's data folder (D-406).
-            "commands/game/page-words.ts",
+            "commands/shared/page-words.ts",
             "documents/read.ts",
             "importer/work.ts",
             "library/books.ts",
@@ -73,9 +74,9 @@ describe("architecture", () => {
             // The mark of the one process that reads the books or runs an import, beside their folders (LIB-3).
             "core/process-mark.ts",
             // The test kit for extensions makes its campaigns in temporary folders, its extensions linked into them (D-506).
-            "testing.ts",
+            "testing/index.ts",
             // And its checks of a game system's own folder, read as it is, never a campaign (D-514).
-            "system-checks.ts",
+            "testing/system-checks.ts",
         ];
         const sources = (readdirSync(sourceFolder, { recursive: true }) as string[]).map((path) => path.replaceAll("\\", "/")).filter((path) => path.endsWith(".ts"));
         const touching = sources.filter((path) => /from "node:fs(\/promises)?"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));

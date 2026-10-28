@@ -2,7 +2,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { conditionMark } from "../src/commands/game/effects.ts";
+import { conditionMark } from "../src/commands/shared/effects.ts";
 import { findSystem, installedSystems, rollName } from "../src/systems/index.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 

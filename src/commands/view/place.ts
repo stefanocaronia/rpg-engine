@@ -1,27 +1,27 @@
 // Where the player character is and the open scene, as data for the dashboard (VIEW-6, D-310): what the player may see of them, as the character knows them.
-import type { Context } from "../../../core/context.ts";
-import { formatStep } from "../../../core/length.ts";
-import { files } from "../../../core/store.ts";
-import { comparableText } from "../../../core/text.ts";
-import { readCounter } from "../../../counters/index.ts";
-import type { Effect, EffectEnd } from "../../../effects/index.ts";
-import { type Grid, reachable, type Square, squareName, squaresApart, withoutMapBlock } from "../../../grid/index.ts";
-import { hiddenImageName } from "../../../images/index.ts";
-import { environmentAt, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, placesAround, type World } from "../../../pages/index.ts";
-import type { Scene } from "../../../scene/index.ts";
-import type { GameSystem, GridRules } from "../../../systems/index.ts";
-import { effectsOf } from "../effect-layer.ts";
-import { conditionMark, effectParts, keptEffects, type SeenEffect, systemNamed } from "../effects.ts";
-import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "../grid-moves.ts";
-import { placeGrid, placeLook, type Standing, standing } from "../grids.ts";
-import { imageFile, ownImage, shownImage } from "../images.ts";
-import { type Knowledge, knownSecretsApart, knownText, knowsPage } from "../knowledge.ts";
-import { pageCounters } from "../page-counters.ts";
-import { type Measures, measuresOf } from "../roads.ts";
-import { copyPage, readOpenScene } from "../scene.ts";
-import { tokenIcon } from "../sheet.ts";
-import { turnMarks } from "../turn-uses.ts";
-import { campaignSystem } from "../world.ts";
+import type { Context } from "../../core/context.ts";
+import { formatStep } from "../../core/length.ts";
+import { files } from "../../core/store.ts";
+import { comparableText } from "../../core/text.ts";
+import { readCounter } from "../../counters/index.ts";
+import type { Effect, EffectEnd } from "../../effects/index.ts";
+import { type Grid, reachable, type Square, squareName, squaresApart, withoutMapBlock } from "../../grid/index.ts";
+import { hiddenImageName } from "../../images/index.ts";
+import { environmentAt, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, placesAround, type World } from "../../pages/index.ts";
+import type { Scene } from "../../scene/index.ts";
+import type { GameSystem, GridRules } from "../../systems/index.ts";
+import { effectsOf } from "../shared/effect-layer.ts";
+import { conditionMark, effectParts, keptEffects, type SeenEffect, systemNamed } from "../shared/effects.ts";
+import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "../shared/grid-moves.ts";
+import { placeGrid, placeLook, type Standing, standing } from "../shared/grids.ts";
+import { imageFile, ownImage, shownImage } from "../shared/images.ts";
+import { type Knowledge, knownSecretsApart, knownText, knowsPage } from "../shared/knowledge.ts";
+import { pageCounters } from "../shared/page-counters.ts";
+import { type Measures, measuresOf } from "../shared/roads.ts";
+import { copyPage, readOpenScene } from "../shared/scene.ts";
+import { tokenIcon } from "../shared/sheet.ts";
+import { turnMarks } from "../shared/turn-uses.ts";
+import { campaignSystem } from "../shared/world.ts";
 
 /** Someone at the place or in the scene as the player sees them: a name, or someone; their role and picture; for copies of a creature, how many. */
 export interface ShownPerson

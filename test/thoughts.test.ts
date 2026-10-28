@@ -1,7 +1,7 @@
 // The companions' diaries (MECCANICHE, DIA-1–DIA-4; D-497): writing a line, whose diary is due and when outputs say so, what view as gives back, what the journal shows.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { view, type ViewResult } from "../src/commands/view.ts";
+import { view, type ViewResult } from "../src/commands/view/view.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 

@@ -7,7 +7,7 @@ import type { EngineInstall, EngineUpdater } from "../src/core/context.ts";
 import { packageApi } from "../src/core/package-declarations.ts";
 import { getVersion } from "../src/core/version.ts";
 import { npmEngine } from "../src/packages/index.ts";
-import { type TestCampaign, testCampaign } from "../src/testing.ts";
+import { type TestCampaign, testCampaign } from "../src/testing/index.ts";
 import { makeTempFolder } from "./support.ts";
 
 let campaign: TestCampaign | undefined;

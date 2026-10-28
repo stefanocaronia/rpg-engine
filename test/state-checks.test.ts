@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { allStateChecks } from "../src/commands/game/checks.ts";
+import { allStateChecks } from "../src/commands/shared/checks.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 

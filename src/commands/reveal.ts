@@ -6,10 +6,10 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { baseChain, isEmptyField, isPartyMember, isPlayerCharacter, links, locate, type Page, pageNamed, parsePageReference, playerCharacters, secretNames, shownPart, systemLabel, withPage, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
-import { placedPosition } from "./game/positions.ts";
-import { copyName, readOpenScene } from "./game/scene.ts";
-import { newDatedLogEntry } from "./game/time.ts";
-import { campaignWorld } from "./game/world.ts";
+import { placedPosition } from "./shared/positions.ts";
+import { copyName, readOpenScene } from "./shared/scene.ts";
+import { newDatedLogEntry } from "./shared/time.ts";
+import { campaignWorld } from "./shared/world.ts";
 
 // A list, or one text, as an MCP client may send it.
 const textList = z.union([z.string(), z.array(z.string())]);

@@ -1,43 +1,58 @@
 import { basename } from "node:path";
 import { z } from "zod";
-import { readSettings, requireCampaign } from "../campaign/index.ts";
-import type { Context } from "../core/context.ts";
-import { lengthsInUnits } from "../core/length.ts";
-import { type LogEntry, readLog } from "../core/log.ts";
-import type { Mood } from "../core/mood.ts";
-import { defineCommand } from "../core/registry.ts";
-import { comparableText, firstSentence, withArticle } from "../core/text.ts";
-import { type CoinSide, coinSides, type NotationPart, notationParts, type ThrownDie } from "../dice/index.ts";
-import { readEffect } from "../effects/index.ts";
-import { type Coin, readAmount } from "../money/index.ts";
-import { declaredKind, entryPage, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, playerCharacters, secretNames, systemPageNamed, textsIn, type World } from "../pages/index.ts";
-import type { ActVerb, GameSystem, SheetVerb, SystemWords } from "../systems/index.ts";
-import { type CalendarDay, formatGameDate } from "../time/index.ts";
-import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "./config.ts";
-import { effectiveFields, effectsOf } from "./game/effect-layer.ts";
-import { effectShown, type SeenEffect } from "./game/effects.ts";
-import { shownImage } from "./game/images.ts";
-import { readJourney } from "./game/journey.ts";
-import { discoveredSecrets, type Knowledge, knowledgeOf, knownIntroduction, knownPart, knownSecretsApart, knownText, knowsPage, pageKnownBy, playerKnowledge, playerStory, scenesLivedBy, secretKnownBy } from "./game/knowledge.ts";
-import { blockingMode, campaignMode, type Mode, modes } from "./game/mode.ts";
-import { campaignCoins } from "./game/money.ts";
-import { lastMoment, livingMood, masterMood, type MoodMoment } from "./game/moods.ts";
-import { countersText, lineCounters, lineExperience } from "./game/page-counters.ts";
-import { campaignProblems } from "./game/problems.ts";
-import { type Measures, measuresOf } from "./game/roads.ts";
-import { campaignSaves, loadRefusal, loadRule, mayGoBack, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "./game/saves.ts";
-import { readOpenScene } from "./game/scene.ts";
-import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock, tokenIcon } from "./game/sheet.ts";
-import { thoughtsIn, thoughtsRule, thoughtsShown } from "./game/thoughts.ts";
-import { calendarDayOf, readPresent } from "./game/time.ts";
-import { fuelLeft } from "./game/upkeep.ts";
-import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./game/view/journal.ts";
-import { mapText, type ShownMap, shownMap } from "./game/view/map.ts";
-import { isDown, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game/view/place.ts";
-import { knownDocuments, knownEntries, type KnownEntry, knownEntryText, type ShownCalendar, shownCalendar, type ShownDocument } from "./game/view/world.ts";
-import { hasSheet } from "./game/worked-out.ts";
-import { campaignSystem, campaignWorld, systemWordsOf } from "./game/world.ts";
-import { importShown, type ShownImport } from "./import.ts";
+import { readSettings, requireCampaign } from "../../campaign/index.ts";
+import type { Context } from "../../core/context.ts";
+import { lengthsInUnits } from "../../core/length.ts";
+import { type LogEntry, readLog } from "../../core/log.ts";
+import type { Mood } from "../../core/mood.ts";
+import { defineCommand } from "../../core/registry.ts";
+import { comparableText, firstSentence, withArticle } from "../../core/text.ts";
+import { type CoinSide, coinSides, type NotationPart, notationParts, type ThrownDie } from "../../dice/index.ts";
+import { readEffect } from "../../effects/index.ts";
+import { type Coin, readAmount } from "../../money/index.ts";
+import {
+    declaredKind,
+    entryPage,
+    isPartyMember,
+    isPlayerCharacter,
+    locate,
+    type Page,
+    pagesWithName,
+    pagesWithNameOrAlias,
+    parsePageReference,
+    playerCharacters,
+    secretNames,
+    systemPageNamed,
+    textsIn,
+    type World,
+} from "../../pages/index.ts";
+import type { ActVerb, GameSystem, SheetVerb, SystemWords } from "../../systems/index.ts";
+import { type CalendarDay, formatGameDate } from "../../time/index.ts";
+import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "../config.ts";
+import { importShown, type ShownImport } from "../import/import.ts";
+import { effectiveFields, effectsOf } from "../shared/effect-layer.ts";
+import { effectShown, type SeenEffect } from "../shared/effects.ts";
+import { shownImage } from "../shared/images.ts";
+import { readJourney } from "../shared/journey.ts";
+import { discoveredSecrets, type Knowledge, knowledgeOf, knownIntroduction, knownPart, knownSecretsApart, knownText, knowsPage, pageKnownBy, playerKnowledge, playerStory, scenesLivedBy, secretKnownBy } from "../shared/knowledge.ts";
+import { blockingMode, campaignMode, type Mode, modes } from "../shared/mode.ts";
+import { campaignCoins } from "../shared/money.ts";
+import { lastMoment, livingMood, masterMood, type MoodMoment } from "../shared/moods.ts";
+import { countersText, lineCounters, lineExperience } from "../shared/page-counters.ts";
+import { campaignProblems } from "../shared/problems.ts";
+import { type Measures, measuresOf } from "../shared/roads.ts";
+import { campaignSaves, loadRefusal, loadRule, mayGoBack, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "../shared/saves.ts";
+import { readOpenScene } from "../shared/scene.ts";
+import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock, tokenIcon } from "../shared/sheet.ts";
+import { thoughtsIn, thoughtsRule, thoughtsShown } from "../shared/thoughts.ts";
+import { calendarDayOf, readPresent } from "../shared/time.ts";
+import { fuelLeft } from "../shared/upkeep.ts";
+import { hasSheet } from "../shared/worked-out.ts";
+import { campaignSystem, campaignWorld, systemWordsOf } from "../shared/world.ts";
+import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./journal.ts";
+import { mapText, type ShownMap, shownMap } from "./map.ts";
+import { isDown, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./place.ts";
+import { knownDocuments, knownEntries, type KnownEntry, knownEntryText, type ShownCalendar, shownCalendar, type ShownDocument } from "./world.ts";
 
 // How many lines of the diary the view gives when no number is asked.
 const diaryLines = 10;

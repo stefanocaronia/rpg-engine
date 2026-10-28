@@ -1,17 +1,17 @@
 // The world map as the player character knows it, for the dashboard (VIEW-7, D-316, D-318, D-320): the maps it knows; on each, the places it knows with their
 // kind and where they are, the regions with their biome, the roads as far as it knows their stops, the party and its trail. Never a place it does not know,
 // neither its name nor its point.
-import { formatLength, trueImperialUnits } from "../../../core/length.ts";
-import { readLog } from "../../../core/log.ts";
-import { comparableText } from "../../../core/text.ts";
-import { directionName, directionTo, distanceBetween, type Point } from "../../../map/index.ts";
-import { environmentAt, locate, mapKey, mapOf, type Page, pagesWithName, parsePageReference, readStops, type World } from "../../../pages/index.ts";
-import { shownImage } from "../images.ts";
-import { moversMap, moversNamed, moversPosition, readJourney } from "../journey.ts";
-import { knowsPage } from "../knowledge.ts";
-import { placedPosition, positionOf, regionsOf } from "../positions.ts";
-import { kindOf, type Measures, type Roads, roadsOf, travellingParty } from "../roads.ts";
-import { campaignSystem } from "../world.ts";
+import { formatLength, trueImperialUnits } from "../../core/length.ts";
+import { readLog } from "../../core/log.ts";
+import { comparableText } from "../../core/text.ts";
+import { directionName, directionTo, distanceBetween, type Point } from "../../map/index.ts";
+import { environmentAt, locate, mapKey, mapOf, type Page, pagesWithName, parsePageReference, readStops, type World } from "../../pages/index.ts";
+import { shownImage } from "../shared/images.ts";
+import { moversMap, moversNamed, moversPosition, readJourney } from "../shared/journey.ts";
+import { knowsPage } from "../shared/knowledge.ts";
+import { placedPosition, positionOf, regionsOf } from "../shared/positions.ts";
+import { kindOf, type Measures, type Roads, roadsOf, travellingParty } from "../shared/roads.ts";
+import { campaignSystem } from "../shared/world.ts";
 import type { PlaceSight } from "./place.ts";
 
 /** A point of a map, in km east and north of its centre; with the map it is on, by the place that holds it, none for the main map (POS-8). */

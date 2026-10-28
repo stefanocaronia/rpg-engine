@@ -8,12 +8,12 @@ import { files, isInside } from "../core/store.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { imageFileName, imageLink, imagesFolderName, readImage } from "../images/index.ts";
 import { baseChain, findPage, isPartyMember, ownField, type Page, pageNamed, parsePageReference, type World, writePage } from "../pages/index.ts";
-import { imageFile, ownImage } from "./game/images.ts";
-import { knowsPage, playerKnowledge } from "./game/knowledge.ts";
-import { readOpenScene } from "./game/scene.ts";
-import { sheetHeadline } from "./game/sheet.ts";
-import { newDatedLogEntry } from "./game/time.ts";
-import { campaignSystem, campaignWorld } from "./game/world.ts";
+import { imageFile, ownImage } from "./shared/images.ts";
+import { knowsPage, playerKnowledge } from "./shared/knowledge.ts";
+import { readOpenScene } from "./shared/scene.ts";
+import { sheetHeadline } from "./shared/sheet.ts";
+import { newDatedLogEntry } from "./shared/time.ts";
+import { campaignSystem, campaignWorld } from "./shared/world.ts";
 
 interface ImageResult
 {

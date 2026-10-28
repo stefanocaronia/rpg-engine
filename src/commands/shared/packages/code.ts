@@ -23,8 +23,8 @@ import { concernsPlayer, environmentAt, isInParty, isPartyMember, isPlayerCharac
 import { type GameSystem, givenCode, loadSystemCode, systemHasCode, systemPackage, systemPageModule } from "../../../systems/index.ts";
 import { formatGameDate, type GameDate } from "../../../time/index.ts";
 import { askedRoll, type AskResult, type Button, isCheckDice, type Told, tonesOf } from "../../ask.ts";
-import { change } from "../../change.ts";
-import { writePackageFields } from "../../write.ts";
+import { change } from "../../change/change.ts";
+import { writePackageFields } from "../../write/write.ts";
 import { effectiveFields, effectsOf } from "../effect-layer.ts";
 import { checkEffectsReadable, saveEffects } from "../effects.ts";
 import { behindTheScreen, sealHiddenRoll } from "../master-rolls.ts";
