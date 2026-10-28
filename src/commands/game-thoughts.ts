@@ -2,6 +2,7 @@
 import type { Context } from "../core/context.ts";
 import { type LogEntry, readLog } from "../core/log.ts";
 import { isInParty, type Page, pagesWithNameOrAlias, parsePageReference, type World } from "../pages/index.ts";
+import { textList } from "./game-knowledge.ts";
 import { readOpenScene } from "./game-scene.ts";
 import { agentVoices } from "./game-voices.ts";
 
@@ -51,7 +52,7 @@ export function diaryDueLine(root: string, context: Context, world: World): stri
 }
 
 /** The companion whose diary is due (DIA-2), or none. */
-export function diaryDue(root: string, world: World): Page | undefined
+function diaryDue(root: string, world: World): Page | undefined
 {
     const log = readLog(root);
     const { scene } = readOpenScene(root);
@@ -77,9 +78,4 @@ function thoughtOf(world: World, entry: LogEntry): Thought | undefined
 function pageOf(world: World, name: string): Page | undefined
 {
     return pagesWithNameOrAlias(world, parsePageReference(name).name)[0];
-}
-
-function textList(value: unknown): string[]
-{
-    return (Array.isArray(value) ? value : [value]).filter((item): item is string => typeof item === "string");
 }

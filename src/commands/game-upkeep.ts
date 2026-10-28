@@ -43,8 +43,24 @@ export function dailyUpkeep(root: string, context: Context, system: GameSystem |
         lines.push(...members.map((member) => safeUpkeep(root, context, member.name, upkeep)).filter((line) => line !== ""));
     }
 
-    // Water once, however many midnights passed outside a settlement; a line that says the same each day, once.
-    return [...new Set(lines), ...(thirsty && upkeep.water !== undefined ? [`Water: ${upkeep.water}. Read ${upkeep.rules}.`] : [])];
+    // Water once, however many midnights passed outside a settlement.
+    return [...alikeOnce(lines), ...(thirsty && upkeep.water !== undefined ? [`Water: ${upkeep.water}. Read ${upkeep.rules}.`] : [])];
+}
+
+/**
+ * The days' lines with those alike said once, the last of them, which holds the counts as they are now, and how many days said it: a long advance is a few
+ * lines for each member, never one a day; each day's writes and log lines stay as they were.
+ */
+function alikeOnce(lines: string[]): string[]
+{
+    const alike = new Map<string, { line: string; days: number; }>();
+
+    for (const line of lines) {
+        const shape = line.replace(/\d+/g, "#");
+        alike.set(shape, { line, days: (alike.get(shape)?.days ?? 0) + 1 });
+    }
+
+    return [...alike.values()].map(({ line, days }) => (days === 1 ? line : `${line} (${days} days alike; the last shown)`));
 }
 
 /** One member's day, which never stops the time that has passed: a page that cannot be written becomes a line with what to do (UPK-1). */

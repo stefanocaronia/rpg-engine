@@ -353,7 +353,8 @@ interface LogRead
     scene: Scene | undefined;
 }
 
-function textList(value: unknown): string[]
+/** The texts of a field, one or a list, without what is not text. */
+export function textList(value: unknown): string[]
 {
     return (Array.isArray(value) ? value : [value]).filter((item): item is string => typeof item === "string");
 }

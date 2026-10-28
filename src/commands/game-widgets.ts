@@ -80,7 +80,7 @@ export type ShownPart =
     | { image: { extension: string; file: string; version: number; }; alt: WidgetText; };
 
 /** The places a campaign may put a widget in, in campaign.yaml: top, side, a page, which is a card in that page, or off. */
-export const widgetSpots = [...widgetPlaces.filter((place) => place !== "page" && place !== "card"), ...cardPages, "off"] as const;
+const widgetSpots = [...widgetPlaces.filter((place) => place !== "page" && place !== "card"), ...cardPages, "off"] as const;
 
 // How long the hooks may take, all together, before the page goes on without those still at work, and the most a widget may give, as JSON.
 const hookTime = 2000;
@@ -249,7 +249,7 @@ function hookCall(root: string, extension: CodePackage, widget: string, call: ()
 }
 
 /** The widgets of the campaign's packages by the names campaign.yaml gives them, as weather.today, with where each package puts it. */
-export function campaignWidgetNames(root: string, context: Context): Record<string, WidgetSpot>
+function campaignWidgetNames(root: string, context: Context): Record<string, WidgetSpot>
 {
     return Object.fromEntries(campaignPackages(root, context).flatMap((extension) => extension.widgets.map((widget) => [`${extension.name}.${widget.name}`, ownSpot(widget)])));
 }

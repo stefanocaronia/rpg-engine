@@ -37,10 +37,12 @@ import { formulaValue } from "./worked-out.ts";
 import { writePackageFields } from "./write.ts";
 
 /** The folder of the campaign where a package keeps its own files, its state among them (D-433, D-436): an extension's, or its game system's. */
-export const extensionsFolderName = "extensions";
+const extensionsFolderName = "extensions";
 
 /** The longest description a command of a package may give the master, in words (D-441): it is read in every chat. */
 const descriptionWords = 150;
+// The longest a package's timePassed may take, a question to the player included: past it, or after the call is stopped, the time has passed all the same.
+const longestPackageWait = 10 * 60 * 1000;
 
 /** The packages that bring code to the campaign (D-514): its game system first, then its extensions in the order campaign.yaml lists them. */
 export function campaignPackages(root: string, context: Context): CodePackage[]
@@ -130,7 +132,13 @@ export async function timePassedLines(root: string, context: Context, from: Game
             const given = await packageCode(code, context);
 
             if (given?.timePassed !== undefined) {
-                lines.push(...cappedLines(code, await given.timePassed({ from: momentOf(root, context, from), to: momentOf(root, context, to) }, gameOf(root, context, code))));
+                const said: unknown = await withinCall(given.timePassed({ from: momentOf(root, context, from), to: momentOf(root, context, to) }, gameOf(root, context, code)), context.signal);
+
+                if (said !== undefined && (!Array.isArray(said) || !said.every((line) => typeof line === "string"))) {
+                    throw new Error("its timePassed gave no list of lines, which is what it gives");
+                }
+
+                lines.push(...cappedLines(code, (said ?? []) as string[]));
             }
         } catch (error) {
             // One line: the master reads it among others.
@@ -255,7 +263,7 @@ export function cappedLines(code: CodePackage, lines: string[]): string[]
 }
 
 /** A package that is an extension. */
-export function isExtension(code: CodePackage): code is Extension
+function isExtension(code: CodePackage): code is Extension
 {
     return code.kind === "extension";
 }
@@ -300,11 +308,12 @@ export function gameOf(root: string, context: Context, code: CodePackage, option
         },
         change: (page, field, amount, why) => {
             live();
-            const result = change.run(change.input.parse({ page, field, ...amount, why }), context);
+            // By, to or spend alone, as the kit's types say: never a recipe or faces, which code written by hand could slip in.
+            const { by, to, spend } = amount as { by?: unknown; to?: unknown; spend?: unknown; };
+            const result = change.run(change.input.parse({ page, field, by, to, spend, why }), context);
 
-            // The change of a counter is made at once; only a rest's dice wait, which change is not given here.
             if (result instanceof Promise) {
-                throw new Error("game.change changes a counter or money at once: give it by, to or spend, never a recipe. Nothing changed.");
+                throw new Error("game.change changes a counter or money at once: give it by, to or spend. Nothing changed.");
             }
 
             return change.format(result);
@@ -438,6 +447,7 @@ function systemCodePackage(system: GameSystem): CodePackage
 /** A command of a package as a command of rpg-engine, refused when its name is not the package's or is taken, or its description is too long. */
 function asCommand(code: CodePackage, command: PackageCommand, taken: string[]): Command
 {
+    checkCommandShape(command);
     const name = command.name.trim();
     const words = command.description.split(/\s+/).length;
 
@@ -468,7 +478,13 @@ function asCommand(code: CodePackage, command: PackageCommand, taken: string[]):
             const asked: { card?: CardAsked; } = {};
 
             try {
-                return { text: await command.run(input, gameOf(campaign, called, code, { asked })) };
+                const text: unknown = await command.run(input, gameOf(campaign, called, code, { asked }));
+
+                if (typeof text !== "string") {
+                    throw new Error(`The extension ${code.package}'s command ${name} gave no text: a command gives the master its answer as text. Tell its author.`);
+                }
+
+                return { text };
             } finally {
                 // The card of its last question, as it is after the dice, read once the call ends, however it ends (D-507).
                 if (asked.card !== undefined) {
@@ -478,6 +494,55 @@ function asCommand(code: CodePackage, command: PackageCommand, taken: string[]):
         },
         format: (result) => result.text,
     });
+}
+
+/** What a package's code gives, unless the call is stopped first or it takes longer than any answer of the player's should: then why not. */
+async function withinCall<T>(work: T | Promise<T>, signal: AbortSignal | undefined): Promise<T>
+{
+    // Never a rejection that nothing handles, when it ends after the call went on without it.
+    Promise.resolve(work).catch(() => undefined);
+    let timer: NodeJS.Timeout | undefined;
+    let abort = (): void => undefined;
+    const stopped = new Promise<never>((_, refuse) => {
+        timer = setTimeout(() => refuse(new Error(`it gave nothing for ${longestPackageWait / 60_000} minutes`)), longestPackageWait);
+        abort = () => refuse(new Error("the call was stopped before it gave anything"));
+
+        if (signal?.aborted === true) {
+            abort();
+        }
+
+        signal?.addEventListener("abort", abort, { once: true });
+    });
+
+    try {
+        return await Promise.race([Promise.resolve(work), stopped]);
+    } finally {
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", abort);
+    }
+}
+
+/** A package's command as its code must give it, for an author who writes it by hand: refused with the shape it takes. */
+function checkCommandShape(command: PackageCommand): void
+{
+    const given = command as Partial<Record<keyof PackageCommand, unknown>>;
+    const name = typeof given.name === "string" ? given.name.trim() : "";
+
+    if (name === "") {
+        throw new Error("a command has no name: give each command a name, the package's or one starting with it");
+    }
+
+    if (typeof given.description !== "string" || given.description.trim() === "") {
+        throw new Error(`its command ${name} has no description: give it one, written for an AI`);
+    }
+
+    if (!(given.input instanceof z.ZodObject)) {
+        throw new Error(`its command ${name} gives its input in another shape: give it as z.object({...}), with the z the kit gives`);
+    }
+
+    if (typeof given.run !== "function") {
+        throw new Error(`its command ${name} has no run: give it run(input, game), which gives its answer as text`);
+    }
 }
 
 // The code of each extension, by its file and version, loaded once for the process: an import is never undone, a new version is another. What each gave,

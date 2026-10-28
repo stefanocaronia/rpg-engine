@@ -1,3 +1,4 @@
+// The campaign's world and game system as the commands read them: the system with the layers over it, the settings it plays with, and the world built from both.
 import { join, resolve } from "node:path";
 import { campaignFileName, type CountedByGame, readCampaignData, readOneSetting, readTextSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
@@ -123,7 +124,7 @@ export function systemLayers(root: string, context: Context, campaign: CampaignD
 }
 
 /** The name of an extension's layer of additions, as messages give it. */
-export function extensionLayer(name: string): string
+function extensionLayer(name: string): string
 {
     return `the extension ${name}`;
 }
@@ -161,7 +162,7 @@ export function playersOfTheGame(root: string, context: Context): string[]
 }
 
 /** The value campaign.yaml gives a setting of the system, when it is one the system has (DAT-10). */
-export function systemSettingValue(root: string, setting: SystemSetting): string | undefined
+function systemSettingValue(root: string, setting: SystemSetting): string | undefined
 {
     const written = readTextSetting(root, setting.name);
     return setting.values.find((value) => written !== undefined && comparableText(value.value) === comparableText(written))?.value;

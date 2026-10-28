@@ -1,6 +1,6 @@
 // What one does in a turn (D-453, TRN-1–TRN-4): the uses the system names, as an action, a bonus action, a reaction, the attacks of an action and what a
 // feature gives once a turn, each at most so many until it comes back.
-import { comparableText, valueNamed } from "../core/text.ts";
+import { comparableText, sameWord, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import type { Page, World } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
@@ -61,7 +61,7 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
     const tagged = (entry: string, by?: string): string => (by === undefined ? entry : `${entry} by ${by}`);
 
     if (rule.within === undefined) {
-        const count = list.filter((entry) => same(baseOf(entry), use)).length;
+        const count = list.filter((entry) => sameWord(baseOf(entry), use)).length;
         const limit = most(rule);
 
         if (limit !== undefined && count >= limit && by === undefined) {
@@ -71,7 +71,7 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
         const noted = rule.note !== undefined && (rule.noteWhen === undefined || (formulaValue(world, fields, rule.noteWhen) ?? 0) > 0);
         const note = noted ? ` ${rule.note}` : "";
         // An action that holds more than one attack is marked by its attacks, each in turn (TRN-3).
-        const inner = Object.entries(uses).find(([, other]) => other.within !== undefined && same(other.within, use) && (most(other) ?? 0) > 1);
+        const inner = Object.entries(uses).find(([, other]) => other.within !== undefined && sameWord(other.within, use) && (most(other) ?? 0) > 1);
         const attacks = inner === undefined ? "" : ` If it is to attack, mark each ${inner[0]} instead, ${most(inner[1])} for ${name}, which takes the ${use}.`;
         return { used: [...list, tagged(use, by)], line: `${name}: ${use} used${by === undefined ? "" : `, by ${by}`}${spent}.${note}${attacks}`, ...(spends === undefined ? {} : { spends }) };
     }
@@ -79,18 +79,18 @@ export function useInTurn(world: World, system: GameSystem | undefined, scene: S
     // An attack counts within the action it took, until another action is used (TRN-3).
     const within = rule.within;
     const taken = `${within} for ${use}`;
-    const last = list.findLastIndex((entry) => same(withoutBy(entry), taken));
+    const last = list.findLastIndex((entry) => sameWord(withoutBy(entry), taken));
     const since = last < 0 ? [] : list.slice(last + 1);
-    const counted = since.filter((entry) => same(entry, use)).length;
+    const counted = since.filter((entry) => sameWord(entry, use)).length;
     const limit = most(rule);
     const of = limit === undefined ? "" : ` of ${limit}`;
 
-    if (last >= 0 && !since.some((entry) => same(baseOf(entry), within)) && (limit === undefined || counted < limit)) {
+    if (last >= 0 && !since.some((entry) => sameWord(baseOf(entry), within)) && (limit === undefined || counted < limit)) {
         return { used: [...list, use], line: `${name}: ${use} ${counted + 1}${of}.` };
     }
 
     const withinRule = system.turnUses[within];
-    const withinCount = list.filter((entry) => same(baseOf(entry), within)).length;
+    const withinCount = list.filter((entry) => sameWord(baseOf(entry), within)).length;
     const withinLimit = withinRule === undefined ? 1 : most(withinRule);
 
     if (withinLimit !== undefined && withinCount >= withinLimit && by === undefined) {
@@ -107,12 +107,12 @@ export function usesAtTurn(system: GameSystem | undefined, used: Scene["used"], 
     const uses = system?.turnUses ?? {};
 
     const lasting = (entry: string): boolean => {
-        const use = Object.keys(uses).find((name) => same(name, baseOf(entry)));
+        const use = Object.keys(uses).find((name) => sameWord(name, baseOf(entry)));
         return use === undefined || uses[use].resets !== "each turn";
     };
 
     const left = Object.entries(used ?? {}).flatMap(([name, entries]): [string, string[]][] => {
-        const kept = same(name, turn) ? [] : entries.filter(lasting);
+        const kept = sameWord(name, turn) ? [] : entries.filter(lasting);
         return kept.length === 0 ? [] : [[name, kept]];
     });
     return left.length === 0 ? undefined : Object.fromEntries(left);
@@ -133,7 +133,7 @@ export function turnMarks(system: GameSystem | undefined, scene: Scene, name: st
     const list = scene.used?.[name] ?? [];
     return Object.entries(system?.turnUses ?? {}).filter(([, rule]) => rule.within === undefined && rule.needs === undefined).map(([use]) => ({
         use,
-        used: list.some((entry) => same(baseOf(entry), use)),
+        used: list.some((entry) => sameWord(baseOf(entry), use)),
     }));
 }
 
@@ -166,7 +166,7 @@ function spentCounter(world: World, system: GameSystem, fields: Record<string, u
 /** What a refusal adds (TRN-2): what another use makes is marked as that use, the game's own named; by only for what gives one more. */
 function giveMore(uses: Record<string, TurnUse>, use: string): string
 {
-    const others = Object.entries(uses).filter(([name, rule]) => !same(name, use) && rule.within === undefined && rule.needs === undefined).map(([name]) => name);
+    const others = Object.entries(uses).filter(([name, rule]) => !sameWord(name, use) && rule.within === undefined && rule.needs === undefined).map(([name]) => name);
     const as = others.length === 0 ? "" : `, as with ${others.join(" or ")},`;
     return `: what another use makes${as} is marked as that use; add by and what only for what gives one more, as a feature by its name`;
 }
@@ -181,9 +181,4 @@ function baseOf(entry: string): string
 function withoutBy(entry: string): string
 {
     return entry.replace(/ by .*$/, "");
-}
-
-function same(one: string, other: string): boolean
-{
-    return comparableText(one) === comparableText(other);
 }

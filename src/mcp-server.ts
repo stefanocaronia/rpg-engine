@@ -244,7 +244,12 @@ function extensionTools(server: McpServer, context: Context, handler: (command: 
             }
 
             if (kept === undefined || kept.source !== source) {
-                registered.set(command.name, { tool: server.registerTool(command.name, toolConfig(command, neutralExamples), handler(command)), source });
+                // A command that does not register leaves the others theirs: validate names what is wrong with it.
+                try {
+                    registered.set(command.name, { tool: server.registerTool(command.name, toolConfig(command, neutralExamples), handler(command)), source });
+                } catch {
+                    registered.delete(command.name);
+                }
             } else if (!kept.tool.enabled) {
                 kept.tool.enable();
             }

@@ -31,7 +31,7 @@ interface Placed
 }
 
 /** How to write a relation, for messages. */
-export const relationHelp = "a distance, a direction and a place with a position, such as 12 km NE of [[Guadoscuro]]";
+const relationHelp = "a distance, a direction and a place with a position, such as 12 km NE of [[Guadoscuro]]";
 
 /**
  * Where a page is on the map (POS-4): the first of its chain, itself first, with a position: its own; for a stop, on the line between the nearest stops of its

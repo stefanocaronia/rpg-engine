@@ -235,3 +235,28 @@ async function ok(...args: string[]): Promise<string>
     expect(result.exitCode, result.output).toBe(0);
     return result.output;
 }
+
+describe("many midnights at once (UPK-1)", () => {
+    it("says each member's days alike once, the last of them, while every day is counted and logged", async () => {
+        const days = 30;
+        const own = makeTempFolder();
+        const there = testContext(own);
+        const run = async (...args: string[]): Promise<string> => (await runCommandLine(args, there)).output;
+        await run("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
+        inPlay(own);
+        await run("config", "rigor", "rules");
+        await run("advance", "--to", "day 1, 18:00");
+        await run("write", "Bosco", "--type", "place");
+
+        for (const name of ["Ettore", "Lena", "Bruna"]) {
+            await run("write", name, "--type", "character", "--set", name === "Ettore" ? "role=pc" : "role=companion", "--set", "might=5", "--add", "inventory=[[Hardtack]] 40");
+            await run("write", "Bosco", "--add", `contains=[[${name}]]`);
+        }
+
+        const out = await run("advance", "--by", `${days}d`);
+        const eats = out.split("\n").filter((line) => line.includes("eats a day's food"));
+        expect(eats).toHaveLength(3);
+        expect(eats[0]).toContain(`(${days} days alike; the last shown)`);
+        expect(readFileSync(join(own, "world", "characters", "Ettore.md"), "utf8")).toContain(`[[Hardtack]] ${40 - days}`);
+    }, 60_000);
+});

@@ -129,7 +129,7 @@ export function writeStacks(root: string, context: Context, world: World, steps:
  * Writes a plan with stack steps in it, and their lines in the log (STK-12): stopped halfway, the lines of the stacks already written are still logged, then the stop is
  * said (STK-9).
  */
-export function applyLogged(root: string, context: Context, world: World, plan: MovePlan, steps: StackStep[], why?: string, asked: Record<string, unknown> = {}): World
+function applyLogged(root: string, context: Context, world: World, plan: MovePlan, steps: StackStep[], why?: string, asked: Record<string, unknown> = {}): World
 {
     try {
         const after = applyMove(world, plan);
@@ -288,7 +288,7 @@ function piecesOf(value: number | string | undefined, parameter: "by" | "spend" 
 }
 
 /** Whether two pages are the same one, as read in two worlds. */
-export function samePage(first: Page, second: Page): boolean
+function samePage(first: Page, second: Page): boolean
 {
     return first.path === second.path && first.system === second.system;
 }
