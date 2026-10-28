@@ -4,14 +4,14 @@
 import type { ComponentChildren } from "preact";
 import { useContext } from "preact/hooks";
 import type { WidgetText } from "./data.ts";
-import { Drawn, Text } from "./extension-widgets.tsx";
 import { NotationIcons } from "./icons.tsx";
+import { PeopleContext } from "./packages/people.ts";
+import { Drawn, Text } from "./packages/widgets.tsx";
 import { sideOf, Token } from "./party.tsx";
-import { PeopleContext } from "./people.ts";
 
-export { Choices } from "./ask-card.tsx";
-export { Text, Track, Value, Who } from "./extension-widgets.tsx";
-export { cardPages } from "./page-code.tsx";
+export { Choices } from "./packages/ask-card.tsx";
+export { cardPages } from "./packages/page-code.tsx";
+export { Text, Track, Value, Who } from "./packages/widgets.tsx";
 
 /** A button of words, as the page's: gold for the one main action, quiet for a secondary one, danger for one that loses something. */
 export function Button({ children, onClick, kind, disabled, tip }: {

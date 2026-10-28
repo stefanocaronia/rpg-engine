@@ -39,7 +39,7 @@ import { readJourney } from "./game/journey.ts";
 import { fallenLine, isFallen } from "./game/loot.ts";
 import { campaignMode, checklistLine } from "./game/mode.ts";
 import { movePages } from "./game/moves.ts";
-import { packagesTurnStarted } from "./game/package-hooks.ts";
+import { packagesTurnStarted } from "./game/packages/hooks.ts";
 import { countersText, pageCounters, partyCounters } from "./game/page-counters.ts";
 import { firstInChat, situationPart } from "./game/parts.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "./game/quests.ts";

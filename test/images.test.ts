@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, PictureMaker } from "../src/core/context.ts";
 import { FileStore, withFiles } from "../src/core/store.ts";
+import { paintedBrief } from "../src/helpers/index.ts";
 import { imageFileName, readImage } from "../src/images/index.ts";
-import { paintedBrief } from "../src/pictures/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);

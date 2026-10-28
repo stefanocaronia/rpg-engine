@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { fromLabel } from "../src/dashboard/game-words.ts";
-import { lengthText } from "../src/dashboard/world-map.ts";
+import { lengthText } from "../src/dashboard/world/map.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;

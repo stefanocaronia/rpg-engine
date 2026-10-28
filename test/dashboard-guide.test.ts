@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { anchorOf, markdownBlocks, plainText } from "../src/dashboard/guide-blocks.ts";
+import { anchorOf, markdownBlocks, plainText } from "../src/dashboard/help/blocks.ts";
 import { shippedLanguages } from "../src/dashboard/text.ts";
 import { englishGuide, guideIn, guideParts, guideShape, marksOf, partMarks } from "./i18n/guide.ts";
 

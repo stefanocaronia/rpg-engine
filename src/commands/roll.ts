@@ -12,7 +12,7 @@ import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./game/effect-layer.ts";
 import { systemNamed } from "./game/effects.ts";
 import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "./game/master-rolls.ts";
-import { packagesRolled } from "./game/package-hooks.ts";
+import { packagesRolled } from "./game/packages/hooks.ts";
 import { firstInChat } from "./game/parts.ts";
 import { copyPage, readOpenScene } from "./game/scene.ts";
 import { knowledgeNote } from "./game/sheet.ts";

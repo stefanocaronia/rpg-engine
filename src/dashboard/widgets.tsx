@@ -1,6 +1,6 @@
 // The widgets of a value (D-273, D-284): pips, a bar, a track centred on zero, a number's progress, chips or a list of sentences; each says its value in words
 // for a screen reader.
-import { ActName, usePlayerActs } from "./act-names.tsx";
+import { ActName, usePlayerActs } from "./acts/names.tsx";
 import { Coins } from "./coins.tsx";
 import type { Member, SheetValue } from "./data.ts";
 import { besideLabel, burnsLabel, effectEndLabel, effectLabel, effectName } from "./game-words.ts";

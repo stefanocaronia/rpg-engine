@@ -1,8 +1,8 @@
 // What a character carries weighs (D-432, LOAD-1): its stacks by their bundle, its items with what they hold, and its coins.
 import { valueNamed } from "../core/text.ts";
 import { inheritedFields } from "./inheritance.ts";
-import { readEntry } from "./stack-entry.ts";
-import { entryKind, entryPage, stacksOf } from "./stacks.ts";
+import { readEntry } from "./stacks/entry.ts";
+import { entryKind, entryPage, stacksOf } from "./stacks/kinds.ts";
 import { containerFieldOf } from "./standard-fields.ts";
 import { type Page, textsIn, validHoldersOf, type World } from "./world.ts";
 

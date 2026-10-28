@@ -15,8 +15,8 @@ import { locate, type Page, pageNamed, pageNamedQuietly, readFields, splitPageFi
 import { readRuleBook, ruleSections } from "../../rules/index.ts";
 import { unpackFiles } from "../../saves/index.ts";
 import { formatGameDate, readGameDate } from "../../time/index.ts";
-import { listedExtensions } from "./extension-list.ts";
 import { campaignMode } from "./mode.ts";
+import { listedExtensions } from "./packages/extensions.ts";
 import { houseRules, systemRuleBook } from "./rules.ts";
 import { campaignSaves, exportsFolderName, resetSave, savesFolderName, savesWhy } from "./saves.ts";
 import { newDatedLogEntry, readPresent } from "./time.ts";

@@ -10,7 +10,7 @@ import type { GameSystem, Recipe } from "../../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
 import { saveEffects } from "./effects.ts";
 import { behindTheScreen, screenNote, sealHiddenRoll } from "./master-rolls.ts";
-import { allSaid, packagesCounterChanged } from "./package-hooks.ts";
+import { allSaid, packagesCounterChanged } from "./packages/hooks.ts";
 import { thresholdNotes } from "./thresholds.ts";
 import { newDatedLogEntry } from "./time.ts";
 import { formulaValue } from "./worked-out.ts";

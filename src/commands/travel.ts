@@ -11,7 +11,7 @@ import { aroundLead, passedLines, passTime, type TimePassed } from "./game/advan
 import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, ridersOf, sameMovers, saveJourney, travelledSinceRest } from "./game/journey.ts";
 import { movePages } from "./game/moves.ts";
 import { acrossHint, crossedRoads, openLegs } from "./game/open.ts";
-import { timePassedLines } from "./game/package-code.ts";
+import { timePassedLines } from "./game/packages/code.ts";
 import { nearPlaces, pointText, positionOf, regionAt } from "./game/positions.ts";
 import {
     dayHours,

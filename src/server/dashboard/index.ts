@@ -5,9 +5,10 @@ import { connect } from "node:net";
 import { z } from "zod";
 import { findCampaign } from "../../campaign/index.ts";
 import type { PlayerSetting } from "../../commands/config.ts";
-import type { Catalog } from "../../commands/game/catalog.ts";
-import { loadCampaignCode } from "../../commands/game/package-code.ts";
-import { campaignWidgets, packageWidget } from "../../commands/game/widgets.ts";
+import type { Catalog } from "../../commands/game/packages/catalog.ts";
+import { loadCampaignCode } from "../../commands/game/packages/code.ts";
+import { campaignWidgets, packageWidget } from "../../commands/game/packages/widgets.ts";
+import { type PageTranslator, pageTranslator } from "../../commands/game/page-words.ts";
 import { importShown } from "../../commands/import.ts";
 import { view } from "../../commands/view.ts";
 import type { Context, Player } from "../../core/context.ts";
@@ -15,13 +16,12 @@ import { type Command, isBoolean } from "../../core/registry.ts";
 import type { SessionStore } from "../../core/session-store.ts";
 import { withFiles } from "../../core/store.ts";
 import { notationParts } from "../../dice/index.ts";
-import { helperCommand, queueInCodex } from "../../pictures/index.ts";
+import { helperCommand, queueInCodex } from "../../helpers/index.ts";
 import { loadSystemCode } from "../../systems/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
 import { builtPage, packagePageFile, pageFile, pageHtml, pageModulesOf, pagePolicy, pageWords, securityHeaders, send, sendFile, sendImage, sendJson, sendPacked, sendThemeFile, themeAddress, themeNow, vendorModule } from "./files.ts";
 import { act, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
 import { answerAsked, type Asked, closeCard, listenForChanges, pagePlayer, pageSeen, rollNamesOf, type ShownCard, spendShown } from "./player.ts";
-import { type PageTranslator, pageTranslator } from "./words.ts";
 import { addPackage, catalogNow, changeLibrary, changePackage, changeSaves, changeSetting, engineNow, exportCampaign, exportedFile, libraryNow, type PackageAction, type PackagePhase, packagesNow, runForPlayer } from "./writes.ts";
 
 /**

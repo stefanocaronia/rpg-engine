@@ -12,7 +12,7 @@ import { rollName } from "../systems/index.ts";
 import { type RestDice, restDice, spendDice } from "./game/dice-pool.ts";
 import { effectiveFields } from "./game/effect-layer.ts";
 import { placeGrid } from "./game/grids.ts";
-import { allSaid, packagesAsking, packagesRolled } from "./game/package-hooks.ts";
+import { allSaid, packagesAsking, packagesRolled } from "./game/packages/hooks.ts";
 import { recipeNamed } from "./game/recipes.ts";
 import { knowledgeNote } from "./game/sheet.ts";
 import { newDatedLogEntry } from "./game/time.ts";

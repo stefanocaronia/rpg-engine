@@ -5,10 +5,10 @@ import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequ
 import { spawn } from "node:child_process";
 import { z } from "zod";
 import { findCampaign, hasCharacterAgent, refreshHostFiles } from "../campaign/index.ts";
-import { libraryRunner } from "../cli/library-reader.ts";
 import { campaignExamples } from "../commands/game/examples.ts";
+import { libraryRunner } from "../commands/game/library-reader.ts";
 import { outsideNews, whileClosedNews } from "../commands/game/outside.ts";
-import { packageCommands } from "../commands/game/package-code.ts";
+import { packageCommands } from "../commands/game/packages/code.ts";
 import { newChatText, wentBackTo } from "../commands/game/saves.ts";
 import { campaignWorld } from "../commands/game/world.ts";
 import { commands } from "../commands/index.ts";
@@ -22,10 +22,10 @@ import { SessionStore } from "../core/session-store.ts";
 import { FileStore, withFiles } from "../core/store.ts";
 import { getVersion } from "../core/version.ts";
 import { systemPageReader } from "../documents/index.ts";
-import { npmEngine, npmPackages } from "../extensions/index.ts";
+import { computerHelpers, hostPictures, hostReader, hostWriter } from "../helpers/index.ts";
 import { hostInstructions, startInstructions } from "../instructions/index.ts";
+import { npmEngine, npmPackages } from "../packages/index.ts";
 import type { World } from "../pages/index.ts";
-import { computerHelpers, hostPictures, hostReader, hostWriter } from "../pictures/index.ts";
 import { loadSystemCode } from "../systems/index.ts";
 import { type Dashboard, startDashboard } from "./dashboard/index.ts";
 

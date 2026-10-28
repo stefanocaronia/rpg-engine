@@ -4,9 +4,9 @@
 // party's strip; with one side only, the word beside it, the two in the middle. Any other is a small card of its package among the boxes of values under the
 // name, as the rerolls of a lock.
 import type { ShownWidget, Tone, WidgetPart, WidgetShows, WidgetText, WidgetTrack, WidgetValue } from "./data.ts";
-import { Figure, textOf, Value } from "./extension-widgets.tsx";
 import { statusIcons } from "./icons.tsx";
-import { usePageModule } from "./page-code.tsx";
+import { usePageModule } from "./packages/page-code.tsx";
+import { Figure, textOf, Value } from "./packages/widgets.tsx";
 import { numberText, t } from "./text.ts";
 
 /** What the widgets on someone of the party show on them, in their order; only those that draw something, a count or a lead. */

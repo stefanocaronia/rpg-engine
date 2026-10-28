@@ -7,7 +7,7 @@ import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay
 import { calendarText, nextAfter, passedLines, passTime, type TimePassed, unreadNotes } from "./game/advance.ts";
 import { newStateChecks } from "./game/checks.ts";
 import { dueEvents, dueText, isDated, plannedEvents } from "./game/events.ts";
-import { timePassedLines } from "./game/package-code.ts";
+import { timePassedLines } from "./game/packages/code.ts";
 import { firstInChat } from "./game/parts.ts";
 import { newDatedLogEntry, presentDate } from "./game/time.ts";
 import { campaignWorld } from "./game/world.ts";

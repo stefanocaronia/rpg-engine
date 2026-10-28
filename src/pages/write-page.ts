@@ -6,8 +6,8 @@ import { baseChain, baseFieldOf, baseValue, derivedPages, ownFieldChange, sameAs
 import { introductionText, partContent, readSection, repeatedNames, secretNames, sectionTitles, type TextMode, writeText } from "./markdown.ts";
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
-import { checkStackEdits, checkStacks, isKindNamed } from "./stack-writes.ts";
-import { isKind, notKindReason } from "./stacks.ts";
+import { isKind, notKindReason } from "./stacks/kinds.ts";
+import { checkStackEdits, checkStacks, isKindNamed } from "./stacks/writes.ts";
 import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
 import { alwaysInList, alwaysInMessage, heldSystemPageMessage, hidingMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
 import { checkPageName, findPage, heldNames, holdersOf, isCountedItem, linksIn, locate, type Page, readPage, validHoldersOf, withPage, type World } from "./world.ts";

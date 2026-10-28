@@ -4,7 +4,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { markdownBlocks } from "../../src/dashboard/guide-blocks.ts";
+import { markdownBlocks } from "../../src/dashboard/help/blocks.ts";
 import { pageFolder } from "./phrases.ts";
 
 /** The folder of the guide's files. */

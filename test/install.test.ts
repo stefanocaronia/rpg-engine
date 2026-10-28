@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, HelperLogin, HelperName, Helpers, HelperState } from "../src/core/context.ts";
-import { helperChanges, installedLine, startLogin } from "../src/pictures/helpers.ts";
+import { helperChanges, installedLine, startLogin } from "../src/helpers/programs.ts";
 import { makeTempFolder, readLogFile, testContext } from "./support.ts";
 
 let folder: string;

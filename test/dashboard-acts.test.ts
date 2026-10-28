@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { actPeople, actSentence, actTitle, itemVerbs, saidStates, setSystemVerbs, spokenBy, talkSentence, targetMode, verbLabel } from "../src/dashboard/acts.ts";
+import { actPeople, actSentence, actTitle, itemVerbs, saidStates, setSystemVerbs, spokenBy, talkSentence, targetMode, verbLabel } from "../src/dashboard/acts/acts.ts";
 import type { ShownPlace, ShownScene } from "../src/dashboard/data.ts";
 import { systemNameLabel } from "../src/dashboard/labels.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";

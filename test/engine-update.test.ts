@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { EngineInstall, EngineUpdater } from "../src/core/context.ts";
 import { packageApi } from "../src/core/package-declarations.ts";
 import { getVersion } from "../src/core/version.ts";
-import { npmEngine } from "../src/extensions/index.ts";
+import { npmEngine } from "../src/packages/index.ts";
 import { type TestCampaign, testCampaign } from "../src/testing.ts";
 import { makeTempFolder } from "./support.ts";
 

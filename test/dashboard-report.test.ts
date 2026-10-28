@@ -8,8 +8,8 @@ import { setLanguage } from "../src/dashboard/text.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': loaded by their address, with their functions' types.
-const { ReportCard, issuesLink } = await import(new URL("../src/dashboard/help.tsx", import.meta.url).href) as { ReportCard: () => ComponentChildren; issuesLink: string; };
-const { ReportLink } = await import(new URL("../src/dashboard/packages.tsx", import.meta.url).href) as {
+const { ReportCard, issuesLink } = await import(new URL("../src/dashboard/help/help.tsx", import.meta.url).href) as { ReportCard: () => ComponentChildren; issuesLink: string; };
+const { ReportLink } = await import(new URL("../src/dashboard/packages/packages.tsx", import.meta.url).href) as {
     ReportLink: (props: { issues: string | undefined; name: string; after: boolean; }) => ComponentChildren;
 };
 

@@ -1,7 +1,7 @@
 import { Document, isMap, isScalar, isSeq, parseDocument, stringify } from "yaml";
 import { comparableText } from "../core/text.ts";
 import { links, trimBlankLines } from "./markdown.ts";
-import { readEntry } from "./stack-entry.ts";
+import { readEntry } from "./stacks/entry.ts";
 import { isEmptyField } from "./standard-fields.ts";
 
 const singleLink = /^\[\[[^\]]+\]\]$/;

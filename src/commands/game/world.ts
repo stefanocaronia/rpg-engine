@@ -9,7 +9,6 @@ import { comparableText } from "../../core/text.ts";
 import { type Extension, extensionWords } from "../../extensions/index.ts";
 import { languagePackFor, packSystemFolder } from "../../languages/index.ts";
 import { loadWorld, type PageType, playerCharacters, searchSystemPages, type World, worldFolderName } from "../../pages/index.ts";
-import { homeSystemWords } from "../../server/dashboard/words.ts";
 import {
     type CampaignData,
     engineSettingValue,
@@ -26,7 +25,8 @@ import {
     systemWords,
     withSettings,
 } from "../../systems/index.ts";
-import { campaignExtensions, extensionSources, layeredParts } from "./extension-list.ts";
+import { campaignExtensions, extensionSources, layeredParts } from "./packages/extensions.ts";
+import { homeSystemWords } from "./page-words.ts";
 
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
 export function campaignWorld(root: string, context: Context): World

@@ -2,9 +2,9 @@
 // their effects; the dead go last.
 import { useContext } from "preact/hooks";
 import type { Member, ShownScene } from "./data.ts";
-import { WidgetsContext } from "./extension-widgets.tsx";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
+import { WidgetsContext } from "./packages/widgets.tsx";
 import { personShown, PersonStrip } from "./person-panel.tsx";
 import { tokenSymbolsPref, usePref } from "./prefs.ts";
 import { besideWord, type DownTint, downTint, memberStatus, StatusPip, statusWords, type TokenStatus } from "./status.tsx";

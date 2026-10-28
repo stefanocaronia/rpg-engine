@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { stringify } from "yaml";
 import { runCommandLine } from "./cli/command-line.ts";
 import { ask } from "./commands/ask.ts";
-import { campaignWidgets, type ShownWidget } from "./commands/game/widgets.ts";
+import { campaignWidgets, type ShownWidget } from "./commands/game/packages/widgets.ts";
 import { campaignSystem } from "./commands/game/world.ts";
 import type { Context, Player } from "./core/context.ts";
 import type { LogEntry } from "./core/log.ts";
@@ -18,7 +18,7 @@ import { startDashboard } from "./server/dashboard/index.ts";
 import { toolDescriptions } from "./server/mcp.ts";
 import { loadSystemCode } from "./systems/index.ts";
 
-export type { ShownWidget } from "./commands/game/widgets.ts";
+export type { ShownWidget } from "./commands/game/packages/widgets.ts";
 export type { CardAsked, Context, Player, Rows, Said } from "./core/context.ts";
 export type { LogEntry } from "./core/log.ts";
 export { type SystemChecks, systemChecks } from "./system-checks.ts";

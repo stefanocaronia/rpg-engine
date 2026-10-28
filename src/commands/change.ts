@@ -47,7 +47,7 @@ import { experienceOf, newLevelNotes } from "./game/experience.ts";
 import { screenNote, screenUp, sealHiddenRoll } from "./game/master-rolls.ts";
 import { campaignCoins } from "./game/money.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "./game/notes.ts";
-import { allSaid, packagesCounterChanged } from "./game/package-hooks.ts";
+import { allSaid, packagesCounterChanged } from "./game/packages/hooks.ts";
 import { keptRolls } from "./game/page-counters.ts";
 import { situationPart } from "./game/parts.ts";
 import { logRecipeApplied, tooSoonNote } from "./game/recipe-pace.ts";

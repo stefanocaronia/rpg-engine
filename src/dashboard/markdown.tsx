@@ -2,8 +2,8 @@
 // italics, links as their names, or as links where the page reading it says where they lead. Never HTML: every piece is text, so nothing in a page can run in
 // the dashboard.
 import { type ComponentChildren, Fragment } from "preact";
-import { linkedName } from "./lore.ts";
 import { foldedText, listText, t } from "./text.ts";
+import { linkedName } from "./world/known.ts";
 
 /** Where a link of the text leads: the address of the page it names, or nothing, and the link stays its words. */
 export type LinkTo = (name: string) => string | undefined;

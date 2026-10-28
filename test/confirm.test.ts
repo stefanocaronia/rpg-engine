@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { dialogAnswer, dialogCommands, plainText, systemConfirm } from "../src/confirm/index.ts";
-import { npmPackages } from "../src/extensions/index.ts";
+import { npmPackages } from "../src/packages/index.ts";
 import { makeTempFolder } from "./support.ts";
 
 describe("the window of the player's computer (D-478)", () => {

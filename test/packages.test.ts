@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Confirm, Confirmed, Context, PackageInfo, PackageManager, Player } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { issuesPage } from "../src/extensions/index.ts";
+import { issuesPage } from "../src/packages/index.ts";
 import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 

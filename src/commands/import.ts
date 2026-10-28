@@ -6,6 +6,7 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { documentAt, readDocument } from "../documents/index.ts";
+import { stopProcess } from "../helpers/index.ts";
 import {
     beginOpening,
     clearOpening,
@@ -32,7 +33,6 @@ import {
     runElsewhere,
     writeImportState,
 } from "../importer/index.ts";
-import { stopProcess } from "../pictures/index.ts";
 import { installedAdventures } from "./game/adventures.ts";
 import { isImportRunning, runImport, stopImport, writingState } from "./game/import.ts";
 import { campaignMode } from "./game/mode.ts";

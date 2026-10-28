@@ -2,8 +2,8 @@
 // ways to have it when it keeps nothing; and the newest version this engine reads, beside a latest made for a newer API, with the engine that reads that one
 // (D-515 (2)). npm and its registry are fakes here.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { npmPackages } from "../src/extensions/index.ts";
-import type { NpmRun } from "../src/extensions/packages.ts";
+import { npmPackages } from "../src/packages/index.ts";
+import type { NpmRun } from "../src/packages/npm.ts";
 import { makeTempFolder } from "./support.ts";
 
 afterEach(() => vi.unstubAllGlobals());

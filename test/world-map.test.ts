@@ -25,7 +25,7 @@ import {
     trailCourse,
     wayShapes,
     waysOf,
-} from "../src/dashboard/world-map.ts";
+} from "../src/dashboard/world/map.ts";
 import { biomes, placeKinds } from "../src/map/index.ts";
 
 // Guado at the centre in the Colli, a hills region; Rocca 20 km north; the road Guado –8– (a stop the character does not know) –12– Rocca, then on toward

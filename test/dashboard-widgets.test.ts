@@ -3,7 +3,7 @@ import type { ComponentChildren, VNode } from "preact";
 import { describe, expect, it } from "vitest";
 
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': loaded by their address, with their functions' types.
-const { Track } = await import(new URL("../src/dashboard/extension-widgets.tsx", import.meta.url).href) as {
+const { Track } = await import(new URL("../src/dashboard/packages/widgets.tsx", import.meta.url).href) as {
     Track: (
         props: { track: { label: string; value: number; max: number; look?: "pips" | "bar" | "steps"; held?: number; marked?: number; coming?: number; tone?: "good" | "bad"; }; place?: "start" | "center" | "end"; },
     ) => ComponentChildren;

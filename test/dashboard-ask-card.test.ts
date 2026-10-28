@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { closeCard } from "../src/dashboard/api.ts";
 import type { Asked, AskedCard, WidgetShows, WidgetTrack } from "../src/dashboard/data.ts";
-import { cardLayout, inCard, nextPackCard, type PackCard, trackChanges } from "../src/dashboard/pack-card.ts";
+import { cardLayout, inCard, nextPackCard, type PackCard, trackChanges } from "../src/dashboard/packages/card.ts";
 // The page's .tsx modules are typed by the page's own tsconfig: loaded by their address, with their functions' types.
-const { cardsIn, ownPageIn, navPagesOf } = await import(new URL("../src/dashboard/page-code.tsx", import.meta.url).href) as {
+const { cardsIn, ownPageIn, navPagesOf } = await import(new URL("../src/dashboard/packages/page-code.tsx", import.meta.url).href) as {
     cardsIn: (loaded: object | Error | undefined, page: string) => [string, { page: string; order?: number; }][] | Error;
     ownPageIn: (loaded: object | Error | undefined, page: string) => object | Error | undefined;
     navPagesOf: (loaded: { module: { package: string; }; loaded: object | Error | undefined; }[]) => object[];
@@ -130,7 +130,7 @@ describe("the kit of rpg-engine/page (D-510)", () => {
         const list = (file: string, pattern: RegExp): string[] => (JSON.parse(`[${pattern.exec(readFileSync(file, "utf8"))?.[1] ?? ""}]`) as string[]).sort();
         const declared = list("src/core/package-api.ts", /export const cardPages = \[([^\]]*)\]/);
         expect(declared).toEqual(["journal", "scene", "sheet", "world"]);
-        expect(list("src/dashboard/page-code.tsx", /export const cardPages = \[([^\]]*)\]/)).toEqual(declared);
+        expect(list("src/dashboard/packages/page-code.tsx", /export const cardPages = \[([^\]]*)\]/)).toEqual(declared);
         expect(list("src/dashboard/settings.tsx", /const widgetPages: WidgetPage\[\] = \[([^\]]*)\]/)).toEqual(declared);
         const union = /export type WidgetPage = ([^;]+);/.exec(readFileSync("src/dashboard/data.ts", "utf8"))?.[1] ?? "";
         expect(union.split("|").map((page) => page.trim().replace(/"/g, "")).sort()).toEqual(declared);

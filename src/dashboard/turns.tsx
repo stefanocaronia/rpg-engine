@@ -3,13 +3,13 @@
 // strip that lights up on their turn, their counter, the party's as numbers and a foe's in words, their state as icons, what they keep, the death saves at 0;
 // and the player's character's card, the fields and groups of its sheet the system names. The page never decides a rule: it shows.
 import { useContext, useEffect, useRef } from "preact/hooks";
-import { TalkName } from "./act-names.tsx";
+import { TalkName } from "./acts/names.tsx";
 import { CardHead, CardHeader, useOpen } from "./card.tsx";
 import type { Fighter, Member, SheetCards, SheetGroup, ShownScene, ShownWidget } from "./data.ts";
-import { WidgetsContext } from "./extension-widgets.tsx";
 import { Icon, iconPath } from "./icons.tsx";
 import { fieldLabel, itemLabel, phraseLabel, shownText, strangerLabel } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
+import { WidgetsContext } from "./packages/widgets.tsx";
 import { sideOf, Token } from "./party.tsx";
 import { PersonPanel, type PersonShown, personShown } from "./person-panel.tsx";
 import { type FreeRoll, SheetAtHand } from "./sheet.tsx";

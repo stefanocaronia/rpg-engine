@@ -1,7 +1,8 @@
 import { parseArgs } from "node:util";
 import { z } from "zod";
 import { findCampaign } from "../campaign/index.ts";
-import { loadCampaignCode, packageCommands } from "../commands/game/package-code.ts";
+import { libraryRunner } from "../commands/game/library-reader.ts";
+import { loadCampaignCode, packageCommands } from "../commands/game/packages/code.ts";
 import { commands } from "../commands/index.ts";
 import { systemConfirm } from "../confirm/index.ts";
 import { type Context, defaultContext, packagesFolder } from "../core/context.ts";
@@ -12,10 +13,9 @@ import { FileStore, withFiles } from "../core/store.ts";
 import { firstSentence } from "../core/text.ts";
 import { getVersion } from "../core/version.ts";
 import { systemPageReader } from "../documents/index.ts";
-import { npmPackages } from "../extensions/index.ts";
-import { hostPictures, hostReader } from "../pictures/index.ts";
+import { hostPictures, hostReader } from "../helpers/index.ts";
+import { npmPackages } from "../packages/index.ts";
 import { loadSystemCode } from "../systems/index.ts";
-import { libraryRunner } from "./library-reader.ts";
 
 export interface CommandLineResult
 {

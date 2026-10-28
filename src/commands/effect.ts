@@ -12,7 +12,7 @@ import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
 import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./game/effect-layer.ts";
 import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects, systemNamed } from "./game/effects.ts";
-import { allSaid, packagesEffectAdded } from "./game/package-hooks.ts";
+import { allSaid, packagesEffectAdded } from "./game/packages/hooks.ts";
 import { keepingConditionNote, secondKeptNote } from "./game/reminders.ts";
 import { houseRules, ruleBlock, ruleTitled } from "./game/rules.ts";
 import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./game/scene.ts";

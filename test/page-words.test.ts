@@ -3,8 +3,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { homeSystemWords, pageTranslator } from "../src/commands/game/page-words.ts";
 import type { TextWriter } from "../src/core/context.ts";
-import { homeSystemWords, pageTranslator } from "../src/server/dashboard/words.ts";
 import { makeTempFolder, testContext } from "./support.ts";
 
 /** A writer that translates each entry of a brief as VI: and its English, losing the {name} of one, and keeps what it was asked. */

@@ -2,34 +2,34 @@
 // names and the table beside it, the turns of a fight, the followed quest and the rolls (D-279), read again whenever the server says something changed.
 import { render } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { type PlayerActs, PlayerActsContext } from "./act-names.tsx";
-import { type ActReply, ActSheet } from "./act-sheet.tsx";
-import { ActStrip } from "./act-strip.tsx";
-import { type ActStart, type SaidAct, saidStates, setSystemVerbs, type SheetActions } from "./acts.ts";
+import { type ActStart, type SaidAct, saidStates, setSystemVerbs, type SheetActions } from "./acts/acts.ts";
+import { type PlayerActs, PlayerActsContext } from "./acts/names.tsx";
+import { type ActReply, ActSheet } from "./acts/sheet.tsx";
+import { ActStrip } from "./acts/strip.tsx";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
 import { answer, closeCard, readActs, readAsked, readGameTheme, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
-import { AskCard } from "./ask-card.tsx";
 import { AskedDice } from "./asked-dice.tsx";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
 import type { ActsShown, Asked, AskedNow, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownModule, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
 import { flies } from "./dice/pool.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
-import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
 import { PageFoot } from "./footer.tsx";
 import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
-import { Help } from "./help.tsx";
+import { Help } from "./help/help.tsx";
 import { Icon } from "./icons.tsx";
 import { FollowedQuests, JournalView, QuestEndings } from "./journal.tsx";
 import { checkOf, systemNameLabel } from "./labels.ts";
 import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx";
-import { inCard, nextPackCard, type PackCard } from "./pack-card.ts";
-import { PackagePage } from "./package-page.tsx";
-import { PackagesPage } from "./packages.tsx";
-import { codeOfModule, ModulesContext, ownKey, preloadModules, systemPageStyle, useNavPages } from "./page-code.tsx";
+import { AskCard } from "./packages/ask-card.tsx";
+import { inCard, nextPackCard, type PackCard } from "./packages/card.ts";
+import { PackagePage } from "./packages/package-page.tsx";
+import { PackagesPage } from "./packages/packages.tsx";
+import { codeOfModule, ModulesContext, ownKey, preloadModules, systemPageStyle, useNavPages } from "./packages/page-code.tsx";
+import { PeopleContext } from "./packages/people.ts";
+import { WidgetCards, WidgetsContext } from "./packages/widgets.tsx";
 import { About } from "./pages.tsx";
 import { PartyStrip, type Tokened } from "./party.tsx";
-import { PeopleContext } from "./people.ts";
 import { rollReaction } from "./reactions.ts";
 import { requestedOf, RequestedRoll } from "./requested.ts";
 import { RollLog } from "./rolls.tsx";
@@ -44,7 +44,7 @@ import { browserLanguage, pageDirection, setLanguage, setSystemWords, t } from "
 import { restoreTheme } from "./theme.ts";
 import { SetupCorner, Top } from "./top.tsx";
 import { hasTurns, TurnsCard, turnWords } from "./turns.tsx";
-import { WorldView } from "./world.tsx";
+import { WorldView } from "./world/world.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
 const productName = "RPG Engine";

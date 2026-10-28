@@ -4,8 +4,8 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { npmPackages, type NpmRun } from "../src/extensions/packages.ts";
-import { isTarball, tarballText, unpackTarball } from "../src/extensions/tarball.ts";
+import { npmPackages, type NpmRun } from "../src/packages/npm.ts";
+import { isTarball, tarballText, unpackTarball } from "../src/packages/tarball.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
 interface TestEntry

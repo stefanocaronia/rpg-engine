@@ -1,9 +1,9 @@
 // The World section's lore, documents and calendar (D-276, TIM-8): which day of the calendar a game day is, the months around today, what a day holds, the
 // story's days without a calendar; the lore's groups and search, the links of a text, and the look of each kind of document.
 import { describe, expect, it } from "vitest";
-import { calendarDateOf, dayMarks, monthAt, monthOffsetOf, storyDays } from "../src/dashboard/calendar.ts";
 import type { KnownEntry, ShownCalendar } from "../src/dashboard/data.ts";
-import { documentLook, foundLore, groupedLore, knownTo, linkedName, loreGroupOf } from "../src/dashboard/lore.ts";
+import { calendarDateOf, dayMarks, monthAt, monthOffsetOf, storyDays } from "../src/dashboard/world/days.ts";
+import { documentLook, foundLore, groupedLore, knownTo, linkedName, loreGroupOf } from "../src/dashboard/world/known.ts";
 
 // Three months, the last with no season, as a story's own calendar: today is game day 5, the 3rd of Mud, year 12.
 const calendar: ShownCalendar = {

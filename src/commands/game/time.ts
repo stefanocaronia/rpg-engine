@@ -7,7 +7,7 @@ import type { Problem } from "../../core/problem.ts";
 import { files } from "../../core/store.ts";
 import { isEmptyField } from "../../pages/index.ts";
 import { type Calendar, type CalendarDay, calendarDay, type CalendarStart, formatCalendarDay, formatGameDate, type GameDate, readCalendar, readCalendarStart, readGameDate, realCalendar } from "../../time/index.ts";
-import { campaignExtensions, extensionSources } from "./extension-list.ts";
+import { campaignExtensions, extensionSources } from "./packages/extensions.ts";
 
 /** The campaign's calendar and the day of it that is day 1, if the story starts on one (TIM-8); what does not read is a problem, never a stop. */
 export interface CampaignCalendar

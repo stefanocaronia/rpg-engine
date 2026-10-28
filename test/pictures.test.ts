@@ -1,7 +1,7 @@
 // The pictures by the chat in use (D-390): Codex first, Claude's SVG where Codex is not ready, never Claude in Codex; the SVG cleaned from a white list (D-342).
 import { describe, expect, it } from "vitest";
 import type { DocumentReader, PictureMaker, PicturesReady, PictureSubject } from "../src/core/context.ts";
-import { cleanSvg, hostPictures, hostReader, svgBrief, svgIn } from "../src/pictures/index.ts";
+import { cleanSvg, hostPictures, hostReader, svgBrief, svgIn } from "../src/helpers/index.ts";
 
 /** A maker that says whether it is ready and records what it was asked to make. */
 function maker(said: PicturesReady): PictureMaker & { made: PictureSubject[]; }

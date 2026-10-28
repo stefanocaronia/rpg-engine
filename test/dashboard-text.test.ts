@@ -7,7 +7,7 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import { effectEndLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { itemLabel, settingLabel, shownText } from "../src/dashboard/labels.ts";
 import { arrowStep, browserLanguage, pageDirection, pageLanguageOf, pageTranslation, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
-import { lengthText } from "../src/dashboard/world-map.ts";
+import { lengthText } from "../src/dashboard/world/map.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./i18n/phrases.ts";
 import { makeTempFolder, testContext } from "./support.ts";
 

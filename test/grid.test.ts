@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import type { ShownGrid } from "../src/dashboard/data.ts";
-import { drawnKinds, floorLoops, isStandable } from "../src/dashboard/place-map.ts";
+import { drawnKinds, floorLoops, isStandable } from "../src/dashboard/place/map.ts";
 import { closedSquare, mapBlock, readGrid, readSquare, squareName, withoutMapBlock } from "../src/grid/index.ts";
 import { squareKinds } from "../src/map/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";

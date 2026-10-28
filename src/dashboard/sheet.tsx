@@ -5,19 +5,19 @@
 // block of its creature (D-275).
 import type { ComponentChildren } from "preact";
 import { useContext, useEffect, useId, useRef, useState } from "preact/hooks";
-import { ActName, usePlayerActs } from "./act-names.tsx";
-import { itemVerbs } from "./acts.ts";
+import { itemVerbs } from "./acts/acts.ts";
+import { ActName, usePlayerActs } from "./acts/names.tsx";
 import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
 import { FixedColumns } from "./columns.tsx";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownScene } from "./data.ts";
-import { WidgetCards, WidgetsContext } from "./extension-widgets.tsx";
 import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { fieldLabel, groupLabels, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { knowersOf, Markdown, plainLine } from "./markdown.tsx";
 import { MoodFace, moodLabel } from "./mood.tsx";
+import { WidgetCards, WidgetsContext } from "./packages/widgets.tsx";
 import { MemberToken } from "./party.tsx";
 import { PersonBoxes, personBoxes, personFields, PersonPanel, type PersonShown, personShown } from "./person-panel.tsx";
 import { requestedRow, useRequested } from "./requested.ts";

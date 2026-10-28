@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
+import { posix } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const sourceFolder = new URL("../src/", import.meta.url);
@@ -13,22 +14,27 @@ describe("architecture", () => {
         expect(modules).toEqual(expect.arrayContaining(["campaign", "dice", "pages", "counters"]));
     });
 
-    it("keeps every module independent: it imports only its own files, the core utilities, Node and packages", () => {
+    it("keeps every module independent: it imports only its own files, in any of its folders, the core utilities, Node and packages", () => {
+        const checked: string[] = [];
+
         for (const module of modules) {
-            const folder = new URL(`${module}/`, sourceFolder);
-            // Its code, not the pictures and style sheets a module such as the dashboard holds.
-            const sources = readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name));
+            // Its code in every subfolder, not the pictures and style sheets a module such as the dashboard holds.
+            const sources = (readdirSync(new URL(`${module}/`, sourceFolder), { recursive: true }) as string[]).map((path) => `${module}/${path.replaceAll("\\", "/")}`).filter((path) => /\.tsx?$/.test(path));
 
-            for (const { name: fileName } of sources) {
-                const source = readFileSync(new URL(fileName, folder), "utf8");
+            for (const path of sources) {
+                const source = readFileSync(new URL(path, sourceFolder), "utf8");
+                checked.push(path);
 
-                // from "x", import "x" and import("x")
+                // from "x", import "x" and import("x"); a relative one must land inside the module's folder or in core/.
                 for (const [, imported] of source.matchAll(/(?:from|import)\s*\(?\s*"([^"]+)"/g)) {
-                    const allowed = imported.startsWith("./") || imported.startsWith("../core/") || !imported.startsWith(".");
-                    expect(allowed, `${module}/${fileName} imports ${imported}`).toBe(true);
+                    const target = posix.join(posix.dirname(path), imported);
+                    const allowed = !imported.startsWith(".") || target.startsWith(`${module}/`) || target.startsWith("core/");
+                    expect(allowed, `${path} imports ${imported}`).toBe(true);
                 }
             }
         }
+
+        expect(checked).toEqual(expect.arrayContaining(["dashboard/dice/roller.ts", "pages/stacks/entry.ts"]));
     });
 
     it("reads and writes the campaign only through the store of the call, so that the MCP server can keep it (D-137, D-194)", () => {
@@ -43,20 +49,23 @@ describe("architecture", () => {
             "systems/system-code.ts",
             "systems/system-folders.ts",
             "extensions/extension.ts",
-            "extensions/packages.ts",
+            // npm for every package, and a package's .tgz unpacked (D-452).
+            "packages/npm.ts",
+            "packages/tarball.ts",
             // How rpg-engine itself is installed, by npm's global folder (D-515).
-            "extensions/engine.ts",
-            "extensions/tarball.ts",
+            "packages/engine.ts",
             // The player's yes to another's code, for its files as installed (D-478, D-510, D-511).
             "core/consents.ts",
             "systems/words.ts",
             // A game system's theme of the dashboard, read in its package's folder (D-528).
             "themes/theme.ts",
             "campaign/create-campaign.ts",
-            "pictures/claude.ts",
-            "pictures/codex.ts",
-            "pictures/helpers.ts",
-            "server/dashboard/words.ts",
+            // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).
+            "helpers/claude.ts",
+            "helpers/codex.ts",
+            "helpers/programs.ts",
+            // The page's words translated on the fly, in the player's data folder (D-406).
+            "commands/game/page-words.ts",
             "documents/read.ts",
             "importer/work.ts",
             "library/books.ts",

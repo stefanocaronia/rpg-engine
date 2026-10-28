@@ -31,10 +31,10 @@ import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, t
 import { thoughtsIn, thoughtsRule, thoughtsShown } from "./game/thoughts.ts";
 import { calendarDayOf, readPresent } from "./game/time.ts";
 import { fuelLeft } from "./game/upkeep.ts";
-import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./game/view-journal.ts";
-import { mapText, type ShownMap, shownMap } from "./game/view-map.ts";
-import { isDown, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game/view-place.ts";
-import { knownDocuments, knownEntries, type KnownEntry, knownEntryText, type ShownCalendar, shownCalendar, type ShownDocument } from "./game/view-world.ts";
+import { questText, type ShownChapter, shownJournal, type ShownQuest, type ShownThought, type StoryFact } from "./game/view/journal.ts";
+import { mapText, type ShownMap, shownMap } from "./game/view/map.ts";
+import { isDown, type PlaceSight, sceneNames, seenEffect, type ShownPlace, shownPlace, type ShownScene, shownScene, strangerImage } from "./game/view/place.ts";
+import { knownDocuments, knownEntries, type KnownEntry, knownEntryText, type ShownCalendar, shownCalendar, type ShownDocument } from "./game/view/world.ts";
 import { hasSheet } from "./game/worked-out.ts";
 import { campaignSystem, campaignWorld, systemWordsOf } from "./game/world.ts";
 import { importShown, type ShownImport } from "./import.ts";

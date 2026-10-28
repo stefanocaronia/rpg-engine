@@ -8,7 +8,7 @@ import { comparableText, valueNamed } from "../core/text.ts";
 import { linkedPages, links } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
-import { readEntry } from "./stack-entry.ts";
+import { readEntry } from "./stacks/entry.ts";
 import { canHold, containerFieldOf } from "./standard-fields.ts";
 
 const forbiddenCharacters = /[\\/:*?"<>|#^[\]\u0000-\u001f]/;

@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { npmPackages } from "../src/extensions/packages.ts";
+import { npmPackages } from "../src/packages/npm.ts";
 import { inPlay, makeTempFolder, readLogFile, testContext } from "./support.ts";
 
 describe("a path with an ampersand", () => {
