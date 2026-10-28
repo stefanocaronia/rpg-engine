@@ -489,7 +489,10 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     const own = [`http://localhost:${served.port}`, `http://127.0.0.1:${served.port}`];
     const origin = request.headers.origin;
 
-    if (!own.includes(`http://${request.headers.host ?? ""}`) || (origin !== undefined && !own.includes(origin))) {
+    // A request another site makes the browser send, as an image's, which carries no origin, says so in Sec-Fetch-Site: never ours, nor the hook's, which sends none.
+    const crossSite = request.headers["sec-fetch-site"] === "cross-site";
+
+    if (!own.includes(`http://${request.headers.host ?? ""}`) || (origin !== undefined && !own.includes(origin)) || crossSite) {
         send(response, 403, "text/plain; charset=utf-8", `The dashboard answers only its own page, at http://localhost:${served.port}.`);
         return;
     }

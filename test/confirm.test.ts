@@ -103,3 +103,19 @@ describe("a package npm installs again (D-510)", () => {
         expect(readFileSync(join(installed, "package.json"), "utf8")).toBe("{}");
     });
 });
+
+describe("npm on this computer", () => {
+    it("installs one package at a time, so that two at once both stay in its package.json", async () => {
+        let running = 0;
+        let most = 0;
+        const packages = npmPackages(makeTempFolder(), async () => {
+            running++;
+            most = Math.max(most, running);
+            await new Promise((done) => setTimeout(done, 50));
+            running--;
+            return { code: 0, out: "", errors: "" };
+        });
+        await Promise.all([packages.install("@rpgengine/weather@0.3.0"), packages.install("@rpgengine/lockpicking@0.2.0")]);
+        expect(most).toBe(1);
+    });
+});

@@ -99,7 +99,8 @@ export function pageTranslator(context: Context, page: string, notify: () => voi
 
             if (can && !waiting && !running.has(language) && (missing > 0 || (system !== undefined && systemMissing(context.home as string, language, system)))) {
                 running.set(language, new Set());
-                void run(language, system).finally(() => {
+                // A translation that fails leaves the page in English, never the server down with it.
+                void run(language, system).catch(() => undefined).finally(() => {
                     running.delete(language);
                     stopped.set(language, context.now().getTime());
                 });

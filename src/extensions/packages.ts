@@ -57,7 +57,7 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
         install: async (spec) => {
             // A file or a folder is copied, so that the yes holds for the code it held then, whatever the folder holds later (D-452, D-478).
             if (isLocalSpec(spec)) {
-                return await installCopy(folder, spec, described.get(resolve(spec)), run);
+                return await installCopy(folder, spec, described.get(resolve(spec)), inTurn(run));
             }
 
             // What npm is given is checked before anything moves.
@@ -69,15 +69,15 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
 
             // Without the registry, from what npm keeps of it on this computer (D-452).
             const install = async (): Promise<NpmRun> => {
-                const ran = await run(`install --prefix ${prefix} ${checked} ${installOptions}`);
-                return ran.code !== 0 && isUnreachable(ran) ? await run(`install --prefix ${prefix} ${checked} ${installOptions} --offline`) : ran;
+                const ran = await inTurn(run)(`install --prefix ${prefix} ${checked} ${installOptions}`);
+                return ran.code !== 0 && isUnreachable(ran) ? await inTurn(run)(`install --prefix ${prefix} ${checked} ${installOptions} --offline`) : ran;
             };
 
             const ran = await installedAside(join(folder, "node_modules", ...named.split("/")), aside, install);
             return ran.code === 0 ? undefined : npmErrorCode(ran) === "ENOTCACHED" ? offlineAdvice(named) : `npm said: ${npmError(ran)}`;
         },
         uninstall: async (name) => {
-            const ran = await run(`uninstall --prefix ${quotedFolder(folder)} ${checkedSpec(name)} --ignore-scripts --no-audit --no-fund --json --loglevel=error`);
+            const ran = await inTurn(run)(`uninstall --prefix ${quotedFolder(folder)} ${checkedSpec(name)} --ignore-scripts --no-audit --no-fund --json --loglevel=error`);
 
             if (ran.code !== 0) {
                 return `npm said: ${npmError(ran)}`;
@@ -485,6 +485,19 @@ export function npmError(ran: NpmRun): string
 
     const lines = ran.errors.split("\n").map((line) => line.trim()).filter((line) => line !== "" && !/complete log of this run/i.test(line));
     return lines.at(-1) ?? "nothing";
+}
+
+// The installs and uninstalls of this process, one at a time: two npm runs at once in one folder keep only one of them in its package.json.
+let npmTurn: Promise<unknown> = Promise.resolve();
+
+/** An npm run that waits for the one before it to end. */
+function inTurn(run: (args: string) => Promise<NpmRun>): (args: string) => Promise<NpmRun>
+{
+    return (args) => {
+        const next = npmTurn.then(() => run(args));
+        npmTurn = next.catch(() => undefined);
+        return next;
+    };
 }
 
 /** Runs npm with these arguments, in a folder of no campaign, stopped with all it started after a while. */

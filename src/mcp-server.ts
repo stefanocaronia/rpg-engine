@@ -420,6 +420,12 @@ async function runTool(
         }
 
         const checked = checkedInput(command, input, examples.shown);
+
+        // Stopped while the call was made ready, as while the system installed: the command never runs, so that calling it again does it once.
+        if (extra.signal.aborted) {
+            throw new Error("The call was stopped before it ran: nothing changed.");
+        }
+
         // What changed outside the chat comes before the command runs on it, its events fired (OUT-3).
         changedOutside = outside.take();
         // The call's own context, with its cancel, as the user stopping it (ASK-9).
