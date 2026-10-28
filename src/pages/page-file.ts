@@ -15,7 +15,7 @@ const yamlStyle = { flowCollectionPadding: false, lineWidth: 0 };
 const nodeOptions = { aliasDuplicateObjects: false };
 
 /** A page file: its YAML frontmatter, if any, and its markdown text. */
-export interface PageFile
+interface PageFile
 {
     frontmatter?: string;
     body: string;
@@ -32,7 +32,7 @@ export interface FieldChange
 
 export function splitPageFile(text: string): PageFile
 {
-    const lines = text.replace(/^﻿/, "").replaceAll("\r\n", "\n").split("\n");
+    const lines = text.replace(/^\uFEFF/, "").replaceAll("\r\n", "\n").split("\n");
     const end = isSeparator(lines[0]) ? lines.findIndex((line, index) => index > 0 && isSeparator(line)) : -1;
 
     if (end === -1) {
@@ -158,8 +158,11 @@ function addToList(document: Document, name: string, values: unknown[]): void
 {
     const list = document.get(name);
 
+    // Each value once, however it is written, as [[A]] and [[a]]: the new ones among themselves too.
+    const added = values.filter((value, index) => !values.slice(0, index).some((before) => sameValue(before, value)));
+
     if (isEmptyField(list)) {
-        document.set(name, [...new Set(values)]);
+        document.set(name, added);
         return;
     }
 
@@ -167,7 +170,7 @@ function addToList(document: Document, name: string, values: unknown[]): void
         throw new Error(`"${name}" is not a list, so nothing can be added to it.`);
     }
 
-    for (const value of values.filter((candidate) => !list.items.some((item) => sameValue(item, candidate)))) {
+    for (const value of added.filter((candidate) => !list.items.some((item) => sameValue(item, candidate)))) {
         list.add(document.createNode(value, nodeOptions));
     }
 }

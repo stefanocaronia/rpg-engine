@@ -7,10 +7,10 @@ import { type Link, links, readSection, repeatedNames, unreadSecretLines } from 
 import { readStops } from "./roads.ts";
 import { countedText, entryOfKind, readEntry } from "./stack-entry.ts";
 import { missingKindMessage } from "./stack-writes.ts";
-import { carriesKind, entryPage, goodsNamed, isKind, notKindReason, stacksOf } from "./stacks.ts";
+import { carriesKind, entryPage, goodsNamed, isKind, notKindReason, pageNamedQuietly, stacksOf } from "./stacks.ts";
 import { canHold, containerFieldOf, containerFields, heldTypesText, isEmptyField, isStandardField, misspelledStandardField, standardFieldProblem } from "./standard-fields.ts";
 import { alwaysInList, alwaysInMessage, declaredKind, systemKnowsReason, systemLabel } from "./system-pages.ts";
-import { isCountedItem, linksIn, locate, type Page, pageNamed, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
+import { isCountedItem, linksIn, locate, type Page, systemFirstFix, systemPageNamed, textsIn, validHoldersOf, type World } from "./world.ts";
 
 /** A container listing a page: which container, in which field, with which entry as written. */
 interface Listing
@@ -222,7 +222,6 @@ function written(link: Link): string
     return link.section === undefined ? `[[${link.page}]]` : `[[${link.page}#${link.section}]]`;
 }
 
-/** How to fix a broken link: remove the list entry as it is written, set the field again, or correct the text. */
 /**
  * How to fix a link in a field to a page that does not exist: what the world lacks gets its page, as a spell the system does not have (D-216); a wrong link goes. A
  * campaign played in another language than its system's is told the system's.
@@ -240,6 +239,7 @@ function missingFix(world: World, page: Page, target: string, field: string | un
     return `create ${target} with write if it belongs to this world, or ${linkFix(page, field, entry, inList)}${inList ? " if the link is wrong" : ""}${language}`;
 }
 
+/** How to fix a broken link: remove the list entry as it is written, set the field again, or correct the text. */
 function linkFix(page: Page, field: string | undefined, entry: string | undefined, inList: boolean): string
 {
     if (field === undefined) {
@@ -437,16 +437,6 @@ export function goodsFieldProblems(world: World, page: Page, names?: string[]): 
             fix: `write ${page.name}, unset ${name}, add ${field}="[[${kind.name}]] ${count}"`,
         }];
     });
-}
-
-/** The page with a name or alias, or none, without stopping at a name two pages share. */
-function pageNamedQuietly(world: World, name: string): Page | undefined
-{
-    try {
-        return pageNamed(world, name);
-    } catch {
-        return undefined;
-    }
 }
 
 /** What a character has equipped and does not hold (CON-12), as write says it after a change of its inventory or of what it has equipped. */

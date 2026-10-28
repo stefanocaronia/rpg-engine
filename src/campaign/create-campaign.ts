@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { type Dirent, existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { stringify } from "yaml";
 import { z } from "zod";
@@ -72,7 +72,7 @@ function campaignBelow(folder: string, depth: number): string | undefined
         return undefined;
     }
 
-    for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    for (const entry of readableEntries(folder)) {
         if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name === "node_modules") {
             continue;
         }
@@ -86,4 +86,14 @@ function campaignBelow(folder: string, depth: number): string | undefined
     }
 
     return undefined;
+}
+
+/** The entries of a folder; none for one the system will not let be read, as System Volume Information at the root of a disk. */
+function readableEntries(folder: string): Dirent[]
+{
+    try {
+        return readdirSync(folder, { withFileTypes: true });
+    } catch {
+        return [];
+    }
 }

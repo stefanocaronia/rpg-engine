@@ -17,6 +17,8 @@ const wordedLinkPattern = /!?\[\[([^\]|#^]+)(?:#([^\]|^]*))?(?:\^[^\]|]*)?(?:\|(
 const goalPattern = /^[ \t>]*[-*+][ \t]+\[([ xX])\]/;
 // The row of dashes under a table's header, as |---|:--:| or --- | ---.
 const tableDividerPattern = /^\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?$/;
+// The files a link may name besides a page, as Obsidian embeds them: pictures, sounds, videos, documents.
+const attachmentExtensions = new Set(["png", "jpg", "jpeg", "webp", "svg", "gif", "bmp", "avif", "pdf", "mp3", "wav", "m4a", "ogg", "flac", "mp4", "webm", "mov", "mkv", "canvas", "base"]);
 
 /** Where a link points: a page, and a section or secret of it. */
 export interface Link
@@ -189,10 +191,11 @@ const rememberedLinks = rememberedByText((text: string): Link[] => {
     return lineViews(text.split("\n")).flatMap((view) => [...view.prose.matchAll(linkPattern)].filter((match) => !isAttachment(match[1])).map((match) => linkOf(match[1], match[2])));
 }, 20_000);
 
-/** Whether a link's target is a file of another kind, as ![[map.png]]: an attachment, not a page. */
+/** Whether a link's target is a file of another kind, as ![[map.png]]: an attachment, not a page, which may have a dot in its name, as Lettera n.7 (LNK-1). */
 function isAttachment(target: string): boolean
 {
-    return /\.(?!md$)[a-z0-9]+$/i.test(target.trim());
+    const extension = /\.([a-z0-9]+)$/i.exec(target.trim())?.[1]?.toLowerCase();
+    return extension !== undefined && attachmentExtensions.has(extension);
 }
 
 /** Removes the blank lines at the start and the white space at the end. */
@@ -366,6 +369,14 @@ export function withLinksAsWords(text: string, keep: (link: Link) => boolean): s
     ).join("\n");
 }
 
+/** A text with `change` made to its prose alone: never in code, fenced or inline, nor in %% comments %%, as links are read (LNK-2). */
+export function inProse(text: string, change: (prose: string) => string): string
+{
+    const lines = text.split("\n");
+    const views = lineViews(lines);
+    return lines.map((line, index) => (views[index].code ? line : changedOutside(line, views[index].commented, change))).join("\n");
+}
+
 /** A text without its fenced blocks, as a map or code, which say nothing as prose. */
 export function withoutFencedBlocks(text: string): string
 {
@@ -436,6 +447,34 @@ function lineViews(lines: string[]): LineView[]
         comment = parts.length % 2 === 0 ? !comment : comment;
         return { code: false, commented, prose: parts.filter((_, index) => (index % 2 === 0) === !commented).join("") };
     });
+}
+
+/** A line with `change` made outside its inline code and its comments, as lineViews reads it; begun inside a comment when `commented`. */
+function changedOutside(line: string, commented: boolean, change: (prose: string) => string): string
+{
+    const parts: string[] = [];
+    let inside = commented;
+    let at = 0;
+
+    const outsideCode = (piece: string): void => {
+        piece.split("%%").forEach((part, index) => {
+            if (index > 0) {
+                parts.push("%%");
+                inside = !inside;
+            }
+
+            parts.push(inside ? part : change(part));
+        });
+    };
+
+    for (const code of line.matchAll(inlineCodePattern)) {
+        outsideCode(line.slice(at, code.index));
+        parts.push(code[0]);
+        at = code.index + code[0].length;
+    }
+
+    outsideCode(line.slice(at));
+    return parts.join("");
 }
 
 /** The cells of a table's row, without the pipes at its ends; a pipe written \| stays in its cell, as in [[Page\|words]], and loses its backslash. */

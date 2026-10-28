@@ -1,5 +1,5 @@
 // The coins of a campaign as several commands use them: from campaign.yaml, read on their own, or else from its game system (DAT-1); checked, and shown (D-126–D-129, D-182).
-import { readCoinsSetting } from "../campaign/index.ts";
+import { readOneSetting } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import type { Problem } from "../core/problem.ts";
 import { type Coin, coinList, coinsProblem, coinsText, readCoins } from "../money/index.ts";
@@ -15,7 +15,7 @@ export function campaignCoins(root: string, context: Context): { coins?: Coin[];
     let value: unknown;
 
     try {
-        value = readCoinsSetting(root);
+        value = readOneSetting(root, "coins");
     } catch (error) {
         return { problem: { path: "campaign.yaml", message: error instanceof Error ? error.message : String(error), fix: "fix campaign.yaml by hand" } };
     }

@@ -262,11 +262,8 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     // The effort written where each app reads it in the campaign's folder (D-462).
     if (input.setting?.trim() === "effort" && input.value !== undefined) {
         const unwritten = writeEffortFiles(root, context.platform);
-        replaced = [
-            ...replaced,
-            "Written for Claude Code and Codex: it applies from the next chat; in Codex only in a folder it trusts; an effort picked in the app for one chat wins there.",
-            ...unwritten,
-        ];
+        const written = "Written for Claude Code and Codex: it applies from the next chat; in Codex only in a folder it trusts; an effort picked in the app for one chat wins there.";
+        replaced = [...replaced, ...(unwritten.length === 0 ? [written] : unwritten)];
     }
 
     // The character agent written or taken away at once, not when the server starts again (D-490).

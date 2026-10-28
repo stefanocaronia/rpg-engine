@@ -26,7 +26,7 @@ export {
     writtenFieldName,
 } from "./inheritance.ts";
 export { carriedWeight, type LoadRule, weightUnit } from "./load.ts";
-export { type MapField, mapHelp, readMapField } from "./maps.ts";
+export { type MapField, readMapField } from "./maps.ts";
 export {
     everyGoalTicked,
     firstTable,
@@ -40,35 +40,19 @@ export {
     sectionTitles,
     type TextMode,
     textParts,
-    unreadSecretLines,
     withLinksAsWords,
     withoutComments,
     withoutFencedBlocks,
 } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, linkListItems, readFields, readFieldValue, splitPageFile } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
-export { formatPosition, type Position, positionHelp, readPosition } from "./positions.ts";
+export { formatPosition, type Position, readPosition } from "./positions.ts";
 export { applyRename, planRename, type Renamed, renamedLinks, type RenamePlan } from "./rename-page.ts";
-export { readStops, type Stops, stopsHelp } from "./roads.ts";
-export { countedText, entryOfKind, type EntryReading, isStackEntry, readEntry, stackEntry, withStackCount } from "./stack-entry.ts";
-export { canCount, carriesKind, entryKind, entryPage, goodsNamed, type HeldStack, heldStacks, heldStacksOfKind, isKind, kindNamed, notKindReason, ownStack, type Stack, stackName, stacksOf } from "./stacks.ts";
-export {
-    canHold,
-    containerFieldOf,
-    containerFields,
-    heldTypesText,
-    isCoreField,
-    isCounterField,
-    isEmptyField,
-    isFieldName,
-    isStandardField,
-    listFieldNames,
-    misspelledFieldProblem,
-    misspelledStandardField,
-    newPageFields,
-    standardValues,
-} from "./standard-fields.ts";
-export { alwaysInList, alwaysInMessage, declaredKind, heldSystemPageMessage, hidingMessage, isDeclaredUncounted, kindMessage, readOnlyMessage, systemKnowsReason, systemLabel } from "./system-pages.ts";
+export { readStops, type Stops } from "./roads.ts";
+export { countedText, entryOfKind, type EntryReading, readEntry, withStackCount } from "./stack-entry.ts";
+export { carriesKind, entryKind, entryPage, goodsNamed, type HeldStack, heldStacks, heldStacksOfKind, isKind, kindNamed, ownStack, type Stack, stackName, stacksOf } from "./stacks.ts";
+export { canHold, containerFieldOf, isCoreField, isCounterField, isEmptyField, isStandardField, listFieldNames, misspelledFieldProblem, misspelledStandardField, newPageFields, standardValues } from "./standard-fields.ts";
+export { alwaysInList, declaredKind, hidingMessage, isDeclaredUncounted, kindMessage, readOnlyMessage, systemKnowsReason, systemLabel } from "./system-pages.ts";
 export {
     type Backlink,
     backlinks,
@@ -76,7 +60,6 @@ export {
     concernsPlayer,
     createWorld,
     findPage,
-    heldNames,
     isCountedItem,
     isInParty,
     isPartyMember,

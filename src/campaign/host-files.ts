@@ -18,7 +18,7 @@ export interface HostInstructions
 }
 
 /** A file to write, with its new text; without one, a file that goes, as the character agent's when the master voices every character (D-490). */
-export interface HostFile
+interface HostFile
 {
     path: string;
     text?: string;
@@ -249,10 +249,10 @@ function codexConfigFile(root: string, platform: string, effort = chosenEffort(r
  */
 function withTopKey(text: string, key: string, value: string | undefined): string
 {
-    const plain = text.replace(/^﻿/, "").replace(/\r\n/g, "\n");
+    const plain = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
     const lines = plain.split("\n");
-    // A table's header, not a line of an array that begins with a bracket.
-    const firstTable = lines.findIndex((line) => /^\s*\[\[?[A-Za-z0-9_."-]+\]\]?\s*(#.*)?$/.test(line));
+    // A table's header, its keys bare or quoted as [profiles."deep think"], not a line of an array that begins with a bracket.
+    const firstTable = lines.findIndex((line) => /^\s*\[\[?\s*(?:[\w-]+|"[^"]*"|'[^']*')(?:\s*\.\s*(?:[\w-]+|"[^"]*"|'[^']*'))*\s*\]\]?\s*(#.*)?$/.test(line));
     const keyLine = new RegExp(`^\\s*"?${key}"?\\s*=`);
     const top = (firstTable === -1 ? lines : lines.slice(0, firstTable)).filter((line) => !keyLine.test(line));
     const rest = firstTable === -1 ? [] : lines.slice(firstTable);
@@ -273,7 +273,7 @@ function jsonObject(path: string, text: string, cannot: string): Record<string, 
     }
 
     if (!isObject(settings)) {
-        throw new Error(`${path} is not valid JSON, so ${cannot}. Fix it or remove it by hand, then create the campaign again.`);
+        throw new Error(`${path} is not valid JSON, so ${cannot}. Fix it or remove it by hand, then try again.`);
     }
 
     return settings;

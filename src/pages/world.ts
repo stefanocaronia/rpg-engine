@@ -5,7 +5,7 @@ import { frozen } from "../core/frozen.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
-import { linkedPages } from "./markdown.ts";
+import { linkedPages, links } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
 import { readEntry } from "./stack-entry.ts";
@@ -505,6 +505,11 @@ export function checkPageName(name: string): void
     if (name === "" || name.length > longestName || name.trim() !== name || name.endsWith(".") || forbiddenCharacters.test(name)) {
         throw new Error(`"${name}" cannot be a page name. Names become file names and links: at most ${longestName} characters, without \\ / : * ? " < > | # ^ [ ], line breaks, spaces at the ends or a final dot.`);
     }
+
+    // A name that ends as a file does, as Bruna.md or Mappa.png, makes a page no link reaches (LNK-1).
+    if (links(`[[${name}]]`)[0]?.page !== name) {
+        throw new Error(`"${name}" cannot be a page name: a link to it would not reach it. Give the name without its file ending, as "${name.replace(/\.[^.]*$/, "")}".`);
+    }
 }
 
 /** Reads one page file of the campaign in `root`, once in a call (D-194). */
@@ -543,7 +548,6 @@ export function pageFileNamed(root: string, name: string): { name: string; type?
     return file === undefined ? undefined : { name: basename(file).slice(0, -3), type: typeOfFolder(relative(worldPath, file).split(sep)[0]) };
 }
 
-/** The pages of a folder's world/, each marked with the game system it comes from, if any; a file that cannot be read is a problem, and the others still work. */
 /**
  * The pages of a game system, read once in a process: they ship with the package and are read-only, so a running server keeps those it started with, as a
  * change to a system asks for a reconnection (D-194).
@@ -566,6 +570,7 @@ function versionPages(common: { pages: Page[]; problems: string[]; }, version: {
     return { pages, problems: [...common.problems, ...version.problems] };
 }
 
+/** The pages of a folder's world/, each marked with the game system it comes from, if any; a file that cannot be read is a problem, and the others still work. */
 function readPages(root: string, system?: string): { pages: Page[]; problems: string[]; }
 {
     const pages: Page[] = [];

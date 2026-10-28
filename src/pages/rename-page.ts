@@ -3,6 +3,7 @@
 import { dirname, join } from "node:path";
 import { files } from "../core/store.ts";
 import { comparableText, linkTargetName } from "../core/text.ts";
+import { inProse } from "./markdown.ts";
 import { changeFields, type FieldChange, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { checkPageName, otherPagesWithAlias, type Page, pagesWithName, systemPageNamed, textsIn, type World } from "./world.ts";
 
@@ -112,19 +113,23 @@ export function applyRename(plan: RenamePlan): void
     }
 }
 
-/** A text with its links to a page renamed, [[Lupa]], [[Lupa#Morso]] and [[Lupa|la lupa]] alike, in any case; and how many it renamed. */
+/**
+ * A text with its links to a page renamed, [[Lupa]], [[Lupa#Morso]] and [[Lupa|la lupa]] alike, in any case, never in code or in a comment, where there are no
+ * links (LNK-2); and how many it renamed.
+ */
 export function renamedLinks(text: string, from: string, to: string): { renamed: string; count: number; }
 {
     let count = 0;
-    const renamed = text.replace(/\[\[([^\][|#^]+?)(\s*[#^][^\][|]*)?(\|[^\][]*)?\]\]/g, (link: string, name: string, section: string | undefined, words: string | undefined) => {
-        // A link with its folder, [[items/Spada.md]], leads to the page as its name alone does (LNK-1).
-        if (comparableText(linkTargetName(name)) !== comparableText(from)) {
-            return link;
-        }
+    const renamed = inProse(text, (prose) =>
+        prose.replace(/\[\[([^\][|#^]+?)(\s*[#^][^\][|]*)?(\|[^\][]*)?\]\]/g, (link: string, name: string, section: string | undefined, words: string | undefined) => {
+            // A link with its folder, [[items/Spada.md]], leads to the page as its name alone does (LNK-1).
+            if (comparableText(linkTargetName(name)) !== comparableText(from)) {
+                return link;
+            }
 
-        count += 1;
-        return `[[${to}${section ?? ""}${words ?? ""}]]`;
-    });
+            count += 1;
+            return `[[${to}${section ?? ""}${words ?? ""}]]`;
+        }));
     return { renamed, count };
 }
 

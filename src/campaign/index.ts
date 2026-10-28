@@ -30,7 +30,6 @@ export {
     preparations,
     proseWays,
     readCampaignData,
-    readCoinsSetting,
     readListSetting,
     readOneSetting,
     readSettings,

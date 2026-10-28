@@ -423,7 +423,7 @@ function isAlive(pid: number): boolean
 // A page's frontmatter as YAML; nothing when it has none or it does not read.
 function frontmatterOf(path: string): Record<string, unknown>
 {
-    const match = /^﻿?---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(path, "utf8"));
+    const match = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(path, "utf8"));
 
     try {
         const fields: unknown = match === null ? {} : parse(match[1] ?? "");

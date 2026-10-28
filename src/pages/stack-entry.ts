@@ -42,12 +42,6 @@ export function readEntry(entry: string): EntryReading
     return { shape: "other", page: found[0].page };
 }
 
-/** Whether an entry is written as a stack, a link to a page and a count (STK-1). */
-export function isStackEntry(entry: unknown): boolean
-{
-    return typeof entry === "string" && readEntry(entry).shape === "stack";
-}
-
 /** A stack as the engine writes it: [[Torch]] 7, or [[Torch|torce]] 7 with the label its entry had. */
 export function stackEntry(kind: string, count: number, label?: string): string
 {

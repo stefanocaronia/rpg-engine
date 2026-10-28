@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { FileStore } from "../src/core/store.ts";
+import { renamedLinks } from "../src/pages/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -183,5 +184,14 @@ describe("rename (D-417)", () => {
         const state = readFileSync(join(folder, "state.yaml"), "utf8");
         writeFileSync(join(folder, "state.yaml"), state.replace("  title: Al guado", "  title: Al guado\n  hostile: Bog Hound 1"));
         expect(await ok("scene", "calm", "--who", "Bog Hound 1")).toBe("Calm: Bog Hound 1. No one is hostile now.");
+    });
+});
+
+describe("the links rename renames (LNK-2)", () => {
+    it("renames them in the prose alone, never in code, fenced or inline, nor in a comment", () => {
+        const text = ["[[Lupa]] in chiaro", "```", "[[Lupa]]", "```", "%% [[Lupa]] %% e `[[Lupa]]`, poi [[lupa|la lupa]]"].join("\n");
+        const { renamed, count } = renamedLinks(text, "Lupa", "Zanna");
+        expect(count).toBe(2);
+        expect(renamed).toBe(["[[Zanna]] in chiaro", "```", "[[Lupa]]", "```", "%% [[Lupa]] %% e `[[Lupa]]`, poi [[Zanna|la lupa]]"].join("\n"));
     });
 });

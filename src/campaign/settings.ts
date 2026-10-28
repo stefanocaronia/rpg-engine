@@ -23,7 +23,7 @@ export const saveModes = ["permadeath", "checkpoint", "free"] as const;
 export const rigors = ["smooth", "rules", "simulation"] as const;
 
 /** What each difficulty means in play, from the GDD's table, which status and config give for the chosen one (D-263); fights in the words of a budget of low, moderate and high (D-266). */
-export const difficultyMeanings: Record<(typeof difficulties)[number], string> = {
+const difficultyMeanings: Record<(typeof difficulties)[number], string> = {
     story: "fights low, yet each asks one choice that counts; the plain approach wins at a small cost, the risk falling on goals and allies; foes naive, ignoring the place, quick to flee; "
         + "clues obvious, four or more; resources plentiful; random encounters rare; threat clocks slow: one of them a step every other day; you may soften your own rolls; take-backs granted whenever asked",
     easy: "fights low to moderate; the plain approach wins at a cost; foes with simple tactics, using the plainest feature of the place; three clues or more; resources generous; "
@@ -38,7 +38,7 @@ export const difficultyMeanings: Record<(typeof difficulties)[number], string> =
 };
 
 /** What each rigor means in play (D-42, D-263): what the master counts, which status and config give for the chosen one. */
-export const rigorMeanings: Record<(typeof rigors)[number], string> = {
+const rigorMeanings: Record<(typeof rigors)[number], string> = {
     smooth: "you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them",
     rules: "as written: charge with change what is used up; encumbrance, fatigue and the like as the rules say; warn before something runs out, and once it has, the rule applies",
     simulation: "as rules, and beyond what is written: wear, spoilage, weather and the like",
@@ -74,7 +74,7 @@ function rigorMeaning(rigor: string, counted: CountedByGame | undefined): string
 export const mentorWays = ["off", "hints", "tutorial"] as const;
 
 /** What each way of the mentor means to the master, which config gives for the chosen one, and the player's change of it on the dashboard (D-347). */
-export const mentorMeanings: Record<(typeof mentorWays)[number], string> = {
+const mentorMeanings: Record<(typeof mentorWays)[number], string> = {
     off: "the story alone: no tips or explanations of yours, only your answers to what the player asks between brackets",
     hints: "a tip of a sentence or two, in brackets, before a choice that matters and when a rule slips by, as the mentor's part of your instructions says; no lessons",
     tutorial: "each mechanic explained the first time it comes up, the whole sum of a roll shown, a debrief after fights and at the end of a session, "
@@ -270,7 +270,7 @@ export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets"];
 export const setupSettingNames: SettingName[] = ["mentor", "master-rolls", "companions", "calendar-start", "lines", "veils"];
 
 /** What the setup asks only of a campaign without a written world (D-79, D-80, MOD-3). */
-export const premiseSettingNames: SettingName[] = ["premise", "preparation"];
+const premiseSettingNames: SettingName[] = ["premise", "preparation"];
 
 // Settings that only some games have, or that only the setup asks: never asked for in play when missing.
 // The pictures: status asks for them once, only where they can be made (D-308).
@@ -281,12 +281,6 @@ const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voi
 export function readSettings(root: string): CampaignSettings
 {
     return validateSettings(readYamlValues(join(root, campaignFileName), settingsHold));
-}
-
-/** The coins as campaign.yaml writes them, unchecked and read on their own, so that a mistake in another setting does not hide them; the money module checks them (MON-1). */
-export function readCoinsSetting(root: string): unknown
-{
-    return readOneSetting(root, "coins");
 }
 
 /**
@@ -314,6 +308,7 @@ export function readListSetting(root: string, name: SettingName): string[]
     }
 }
 
+/** One setting as campaign.yaml writes it, unchecked and read on its own, so that a mistake in another does not hide it, as the coins (MON-1). */
 export function readOneSetting(root: string, name: string): unknown
 {
     const values = readYamlValues(join(root, campaignFileName), settingsHold);

@@ -416,7 +416,7 @@ interface Unpacked
 
 function fromPlain(kind: string, bytes: Uint8Array): Unpacked
 {
-    const text = decoded(bytes).replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+    const text = decoded(bytes).replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
     return { text: kind === ".rtf" ? rtfText(text) : kind === ".txt" || kind === ".md" ? text.trim() : htmlText(text), files: {} };
 }
 

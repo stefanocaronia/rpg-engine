@@ -51,7 +51,7 @@ export function bookTitles(sections: RuleSection[]): string[]
  */
 export function ruleSections(text: string, file: string, source: string): RuleSection[]
 {
-    const content = withoutProperties(text.replace(/^﻿/, "").replace(/\r\n/g, "\n"));
+    const content = withoutProperties(text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n"));
     const markers = markersOf(content);
     const firstStart = markers[0]?.start ?? content.length;
 

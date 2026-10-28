@@ -15,7 +15,7 @@ const baseFields: Partial<Record<PageType, "creature" | "item">> = { character: 
 const neverInherited = new Set(["role", "status", "creature", "item", "inventory", "equipped", "knows", "factions", "contains", "date", "place", "tags", "aliases", "effects", "mood"]);
 
 /** A field and its value as a page writes it. */
-export interface FieldValue
+interface FieldValue
 {
     name: string;
     value: unknown;

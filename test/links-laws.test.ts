@@ -21,6 +21,7 @@ const pieces = [
     "cartella/",
     ".md",
     ".png",
+    ".7",
     "!",
     "\\",
     "`",
@@ -43,6 +44,7 @@ const cases: [string, Link[]][] = [
     ["| [[Lupo\\|il lupo]] | [[Lupo#Tana\\|tana]] |", [{ page: "Lupo" }, { page: "Lupo", section: "Tana" }]],
     ["[[Lupo#^b1]] [[Lupo#]] [[ Lupo ]]", [{ page: "Lupo" }, { page: "Lupo" }, { page: "Lupo" }]],
     ["![[mappa.png]] ![[Lupo]]", [{ page: "Lupo" }]],
+    ["[[Lettera n.7]] [[nota.PDF]] [[Mappa v2.1]]", [{ page: "Lettera n.7" }, { page: "Mappa v2.1" }]],
     ["[[]] [[#Tana]] [[|x]] [[Lupo]", []],
     ["`[[Lupo]]` e ``[[Ombra]]``", []],
     ["```\n[[Lupo]]\n```\n[[Ombra]]", [{ page: "Ombra" }]],
@@ -236,7 +238,8 @@ function linksByModel(text: string): Link[]
             at = end + 2;
 
             const page = (name.endsWith("\\") ? name.slice(0, -1) : name).split("/").at(-1)?.replace(/\.md$/i, "").trim() ?? "";
-            const attachment = /\.[a-z0-9]+$/i.test(name.trim()) && !/\.md$/i.test(name.trim());
+            // A file of a kind Obsidian embeds; of the pieces, only a picture: a page may have a dot in its name, as Lupo.7.
+            const attachment = /\.png$/i.test(name.trim());
             const rest = inner.slice(name.length);
             const sectionText = rest.startsWith("#") ? rest.slice(1).split(/[|^]/)[0] : undefined;
             const section = sectionText?.replace(/\\$/, "").trim();

@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { files } from "../core/store.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { holdRefusal } from "./containers.ts";
-import { baseChain, baseValue, derivedPages, ownFieldChange, sameAsBase } from "./inheritance.ts";
+import { baseChain, baseFieldOf, baseValue, derivedPages, ownFieldChange, sameAsBase } from "./inheritance.ts";
 import { introductionText, partContent, readSection, repeatedNames, secretNames, sectionTitles, type TextMode, writeText } from "./markdown.ts";
 import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
@@ -165,10 +165,11 @@ function withoutBaseValues(world: World, existing: Page | undefined, page: { nam
         return frontmatter;
     }
 
-    // When the creature changes, every value the page holds is checked against the new one.
+    // When the base changes, its creature or its item, every value the page holds is checked against the new one.
     const written = { name: existing?.name ?? page.name, type: existing?.type ?? page.type, path: page.path, fields: readFields(frontmatter, page.path), body: "" };
     const now = withPage(world, existing, written);
-    const checked = changed.some((field) => comparableText(field) === "creature") ? Object.keys(written.fields) : changed;
+    const base = baseFieldOf(written.type);
+    const checked = base !== undefined && changed.some((field) => comparableText(field) === base) ? Object.keys(written.fields) : changed;
     const same = checked.filter((field) => Object.hasOwn(written.fields, field) && sameAsBase(now, written, field));
     return same.length === 0 ? frontmatter : changeFields(frontmatter, { unset: same }, page.path);
 }

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -40,6 +40,19 @@ afterEach(() => removeFolder(folder));
 const bell = { type: "command", command: "rpg --listen", asyncRewake: true, timeout: 86_400 };
 
 describe("rpg init", () => {
+    // Windows has no mode to take away; there a folder such as System Volume Information is one.
+    it.skipIf(process.platform === "win32")("creates a campaign beside a folder that cannot be read, which it passes over", async () => {
+        const locked = join(folder, "chiusa");
+        mkdirSync(locked);
+        chmodSync(locked, 0o000);
+
+        try {
+            expect((await runCommandLine(["init", "--name", "Guadoscuro"], context)).exitCode).toBe(0);
+        } finally {
+            chmodSync(locked, 0o755);
+        }
+    });
+
     it("creates the files and folders of a campaign", async () => {
         const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro"], context);
         expect(result.exitCode).toBe(0);
@@ -237,6 +250,17 @@ describe("rpg config", () => {
         expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toBe(
             'model_reasoning_effort = "low"\nnotify = [\n  ["a", "b"],\n]\n\n[mcp_servers.rpg] # mine\ncommand = "rpg"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n',
         );
+    });
+
+    it("leaves the effort of a table with a quoted name to the player, and says how to fix a settings file that does not read without creating the campaign again", async () => {
+        mkdirSync(join(folder, ".codex"), { recursive: true });
+        mkdirSync(join(folder, ".claude"), { recursive: true });
+        writeFileSync(join(folder, ".codex", "config.toml"), '[profiles."deep think"]\nmodel_reasoning_effort = "low"\n');
+        writeFileSync(join(folder, ".claude", "settings.json"), "{ broken");
+        const set = await runCommandLine(["config", "effort", "high"], { ...context, terminal: true });
+        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model_reasoning_effort = "high"\n\n\[profiles\."deep think"\]\nmodel_reasoning_effort = "low"\n/);
+        expect(set.output).toContain("settings.json is not valid JSON, so Claude Code cannot be set up for the game in it. Fix it or remove it by hand, then try again.");
+        expect(set.output).not.toContain("Written for Claude Code and Codex");
     });
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {

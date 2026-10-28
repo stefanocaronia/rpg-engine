@@ -682,6 +682,14 @@ describe("pages that derive from a creature, after the third review", () => {
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Zanna", field: "hp", before: "11/11", after: "30/30" } });
     });
 
+    it("takes off the values the new base gives all the same when an item's base changes too (INH-9)", async () => {
+        await ok("write", "Spada lunga", "--type", "item", "--set", "damage=1d10");
+        await ok("write", "Spada", "--type", "item", "--set", "damage=1d8");
+        await ok("write", "Lama di Bruna", "--type", "item", "--set", "item=[[Spada lunga]]", "--set", "damage=1d8");
+        expect(await ok("write", "Lama di Bruna", "--set", "item=[[Spada]]")).toBe("Updated Lama di Bruna (item, world/items/Lama di Bruna.md): set item; damage again as Spada.");
+        expect(readFileSync(join(folder, "world", "items", "Lama di Bruna.md"), "utf8")).toBe('---\nitem: "[[Spada]]"\n---\n');
+    });
+
     it("takes every spelling of a counter off when change brings it back to the base's value", async () => {
         writeFileSync(join(folder, "world", "characters", "Bruno.md"), '---\nrole: npc\ncreature: "[[Lupo]]"\nhp: 5/11\nHP: 7/11\n---\n');
         expect(await ok("change", "Bruno", "hp", "--by=4")).toBe("Bruno: HP 7/11 → 11/11: at max; again as Lupo.");

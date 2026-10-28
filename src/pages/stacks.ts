@@ -118,28 +118,10 @@ export function heldStacks(world: World, holder: Page, kind: Page): HeldStack[]
         return [{ container: holder, stack: own }];
     }
 
-    const found: HeldStack[] = [];
-    const seen = new Set<Page>([holder]);
-    let level = itemsHeldBy(world, holder);
-
-    while (level.length > 0) {
-        const next: Page[] = [];
-
-        for (const item of level.filter((page) => !seen.has(page))) {
-            seen.add(item);
-            const stack = ownStack(world, item, kind);
-
-            if (stack !== undefined) {
-                found.push({ container: item, stack });
-            }
-
-            next.push(...itemsHeldBy(world, item));
-        }
-
-        level = next;
-    }
-
-    return found;
+    return itemsWithin(world, holder).flatMap((item) => {
+        const stack = ownStack(world, item, kind);
+        return stack === undefined ? [] : [{ container: item, stack }];
+    });
 }
 
 /**
@@ -149,24 +131,7 @@ export function heldStacks(world: World, holder: Page, kind: Page): HeldStack[]
 export function heldStacksOfKind(world: World, holder: Page, kind: Page): HeldStack[]
 {
     const derives = (candidate: Page): boolean => candidate === kind || baseChain(world, candidate).includes(kind);
-    const own = stacksOf(world, holder).filter((stack) => derives(stack.kind)).map((stack) => ({ container: holder, stack }));
-    const found: HeldStack[] = [...own];
-    const seen = new Set<Page>([holder]);
-    let level = itemsHeldBy(world, holder);
-
-    while (level.length > 0) {
-        const next: Page[] = [];
-
-        for (const item of level.filter((page) => !seen.has(page))) {
-            seen.add(item);
-            found.push(...stacksOf(world, item).filter((stack) => derives(stack.kind)).map((stack) => ({ container: item, stack })));
-            next.push(...itemsHeldBy(world, item));
-        }
-
-        level = next;
-    }
-
-    return found;
+    return [holder, ...itemsWithin(world, holder)].flatMap((container) => stacksOf(world, container).filter((stack) => derives(stack.kind)).map((stack) => ({ container, stack })));
 }
 
 /** Whether a character carries some of a kind, in its own list or inside what it carries (STK-11). */
@@ -199,7 +164,7 @@ export function goodsNamed(world: World, name: string): Page | undefined
 {
     const spoken = name.trim().replace(/[-_]/g, " ");
     const names = [...new Set([spoken, spoken.replace(/es$/i, ""), spoken.replace(/s$/i, "")])];
-    return names.map((candidate) => quietly(() => pageNamed(world, candidate))).find((page) => page !== undefined && (isKind(world, page) || canCount(world, page)));
+    return names.map((candidate) => pageNamedQuietly(world, candidate)).find((page) => page !== undefined && (isKind(world, page) || canCount(world, page)));
 }
 
 /** The name a kind goes by in a stack: its label, else its own name (STK-12). */
@@ -208,11 +173,11 @@ export function stackName(stack: Stack): string
     return stack.label ?? stack.kind.name;
 }
 
-/** What a lookup gives, or undefined when it stops at a name two pages share. */
-function quietly(find: () => Page | undefined): Page | undefined
+/** The page a name means, or undefined when it means none or two pages share it. */
+export function pageNamedQuietly(world: World, name: string): Page | undefined
 {
     try {
-        return find();
+        return pageNamed(world, name);
     } catch {
         return undefined;
     }
@@ -231,7 +196,7 @@ function itemsWithin(world: World, container: Page): Page[]
     let level = itemsHeldBy(world, container);
 
     while (level.length > 0) {
-        const fresh = level.filter((page) => page !== container && !found.includes(page));
+        const fresh = level.filter((page, index) => page !== container && !found.includes(page) && level.indexOf(page) === index);
         found.push(...fresh);
         level = fresh.flatMap((page) => itemsHeldBy(world, page));
     }

@@ -91,7 +91,7 @@ const isFormat: Record<ImageExtension, (bytes: Uint8Array) => boolean> = {
     jpg: (bytes) => startsWith(bytes, [0xff, 0xd8, 0xff]),
     webp: (bytes) => ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 12) === "WEBP",
     // An SVG is text: its root element comes after an XML declaration, a doctype or comments, if any.
-    svg: (bytes) => /^(?:﻿)?\s*(?:<\?xml[^>]*>\s*)?(?:(?:<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<svg[\s>]/i.test(new TextDecoder().decode(bytes.subarray(0, 4096))),
+    svg: (bytes) => /^(?:\uFEFF)?\s*(?:<\?xml[^>]*>\s*)?(?:(?:<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<svg[\s>]/i.test(new TextDecoder().decode(bytes.subarray(0, 4096))),
 };
 
 function startsWith(bytes: Uint8Array, prefix: number[]): boolean

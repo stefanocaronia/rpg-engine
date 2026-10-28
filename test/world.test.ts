@@ -94,6 +94,7 @@ describe("rpg write", () => {
             [["write", "Varro", "--unset", "role"], `Varro has no field "role" to remove.`],
             [["write", "Nessuno", "--set", "role=npc"], "There is no page named Nessuno. To create it, give its type: character, place, faction, quest, item, event, topic, creature."],
             [["write", "Va/rro", "--type", "character"], `"Va/rro" cannot be a page name.`],
+            [["write", "Bruna.md", "--type", "character"], `"Bruna.md" cannot be a page name: a link to it would not reach it. Give the name without its file ending, as "Bruna".`],
             [["write", "Varro"], "Nothing to write on Varro: give fields to set, add or remove, or text."],
             [["write", "Varro", "--set", "role"], `Write a field as field=value, not "role". To remove a field, use unset.`],
             [["write", "Varro", "--set", "1st=x"], `"1st" cannot be a field name`],
@@ -107,6 +108,12 @@ describe("rpg write", () => {
             expect(result.exitCode, args.join(" ")).toBe(1);
             expect(result.output, args.join(" ")).toContain(message);
         }
+    });
+
+    it("adds a value once, however the call writes it twice, to a list that has some and to one that has none", async () => {
+        await rpg("write", "Varro", "--type", "character", "--set", "role=npc", "--add", "knows=[[Ombra]], [[ombra]]");
+        await rpg("write", "Varro", "--add", "knows=[[Lupo]], [[lupo]], [[Ombra]]");
+        expect(readFileSync(join(folder, "world", "characters", "Varro.md"), "utf8")).toContain('knows:\n  - "[[Ombra]]"\n  - "[[Lupo]]"\n');
     });
 
     it("logs everything a write changes, text included, as hidden lines", async () => {
