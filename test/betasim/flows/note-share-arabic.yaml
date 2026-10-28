@@ -1,0 +1,13 @@
+name: On the page in Arabic, right to left, write a note and share it with the master
+covers: [right-to-left, note-write, note-share]
+# The page in the campaign's language (D-394 (6)): Journal, Notes, New note, the note's title, Share with the master, in Arabic.
+setup:
+  rpg: [[config, language, ar]]
+steps:
+  - tapOn: السجل
+  - tapOn: الملاحظات
+  - tapOn: ملاحظة جديدة
+  - inputText: {into: {label: عنوان الملاحظة}, text: التاجر}
+  - inputText: {into: {label: الملاحظة التاجر}, text: "أظن أن تاجر الأختام يعمل لصالح الخاطفين."}
+  - tapOn: {label: مشاركة مع مدير اللعبة}
+  - assertState: {query: news, contains: التاجر}

@@ -1,0 +1,10 @@
+name: The master asks where the character moves, and the player writes the square, as from the keyboard or with a screen reader
+covers: [asked-square]
+# The squares of the map are for a pointer; the field under it is the way of the keyboard and of a screen reader (answer-asked-square touches one).
+setup:
+  ask: {question: "Il brigante ti sbarra la porta: dove ti sposti?", square: true}
+steps:
+  - tapOn: Choose on the map
+  - inputText: {into: {label: "The square, such as E4"}, text: D2}
+  - tapOn: Move to D2
+  - assertState: {query: answer, contains: D2}

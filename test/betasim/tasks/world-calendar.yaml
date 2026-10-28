@@ -1,5 +1,5 @@
 goal: "See on which day the main quest runs out of time, and what happened today."
 flow: world-calendar
-audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 1
-expected_seconds: 45
+expected_seconds: 75

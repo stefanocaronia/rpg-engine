@@ -27,3 +27,7 @@
 - {id: world-lore, area: World, name: "What the character knows, as a codex: browse by kind, search, read a page whole", decision: D-276}
 - {id: world-documents, area: World, name: "The documents found, read again on their paper", decision: D-276}
 - {id: world-calendar, area: World, name: "The calendar: today, the deadlines with the time left, the days of the story", decision: D-276}
+- {id: asked-square, area: Asked, name: "The master asks where the character moves: a square touched on the place's map", decision: D-332}
+- {id: world-map, area: World, name: "The world map: the places known, how far, and where each leads", decision: D-318}
+- {id: journal-story, area: Journal, name: "The story so far, scene by scene", decision: D-367}
+- {id: right-to-left, area: Language, name: "The page right to left, in Arabic and in Hebrew", decision: D-394}

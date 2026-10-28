@@ -1,5 +1,5 @@
 goal: "Find where your character stands in the inn."
 flow: scene-where
-audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 4
-expected_seconds: 8
+expected_seconds: 20

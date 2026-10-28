@@ -1,0 +1,6 @@
+goal: "The master asks you to toss two coins: toss them."
+flow: answer-asked-toss
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
+frequency: 3
+critical: true
+expected_seconds: 10

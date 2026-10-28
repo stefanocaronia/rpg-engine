@@ -1,5 +1,5 @@
 goal: "Find out who Bertoldo is, as your character knows him."
 flow: world-lore
-audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 2
-expected_seconds: 40
+expected_seconds: 85

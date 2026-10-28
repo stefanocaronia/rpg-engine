@@ -1,0 +1,14 @@
+name: Noa
+age: 35
+summary: Reads the page in Hebrew, right to left; has played fifth edition for ten years and runs games for her friends. Wants the page quick and out of the way.
+education: degree
+tags: [rpg, right-to-left]   # her tasks run on the page in Hebrew
+tech: 4
+english: 4
+vision: none
+motor: normal
+explore: 4
+reading: 2
+patience: 3
+hurry: 3
+context: [laptop, the page in Hebrew, the chat with the master beside it]

@@ -1,5 +1,5 @@
 goal: "Things went badly: go back to the night at the camp."
 flow: save-back
-audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 1
-expected_seconds: 20
+expected_seconds: 50

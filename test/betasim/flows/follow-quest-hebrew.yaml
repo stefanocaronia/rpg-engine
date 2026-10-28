@@ -1,0 +1,11 @@
+name: On the page in Hebrew, right to left, follow the side quest and read its next goal in Scene
+covers: [right-to-left, quest-follow]
+# The page in the campaign's language (D-394 (6)): Journal, Follow, Scene, in Hebrew; the quest's words stay the game's.
+setup:
+  rpg: [[config, language, he]]
+steps:
+  - tapOn: יומן
+  - tapOn: {label: מעקב אחרי Il vino di Bertoldo}
+    concept: {name: following a quest shows it elsewhere, difficulty: 1}
+  - tapOn: סצנה
+  - assertVisible: Trovare tre botti al Mulino Rosso

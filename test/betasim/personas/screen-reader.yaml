@@ -1,0 +1,16 @@
+name: Andrea
+age: 45
+summary: Blind from birth, uses a screen reader with skill; has played fifth edition online with friends for years. Wants to reach every control by its name and to know where things stand.
+education: degree
+tags: [rpg, accessibility]
+tech: 4
+english: 3
+vision: blind
+motor: normal
+explore: 3
+reading: 5
+patience: 4
+hurry: 2
+pace: 3   # by ear a task takes up to three times as long: the time finding expects it of him
+assistive: screen reader
+context: [screen reader, headphones sometimes, the chat with the master in another window]

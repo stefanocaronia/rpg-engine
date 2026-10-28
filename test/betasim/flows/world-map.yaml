@@ -1,0 +1,9 @@
+name: Find a place on the world map, and where it leads
+covers: [world-map]
+# The list under the map gives each place's distance; its card, opened from there, the ways it leads by (D-318): the mill's well, down to another map.
+setup: {}
+steps:
+  - tapOn: World
+  - assertNotVisible: Città delle Radici, on Sottosuolo
+  - tapOn: Mulino Rosso
+  - assertVisible: Città delle Radici, on Sottosuolo

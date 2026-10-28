@@ -1,0 +1,6 @@
+goal: "The master asks where you move: choose the square on the map."
+flow: answer-asked-square
+audience: [newcomer, veteran-5e]
+frequency: 3
+critical: true
+expected_seconds: 30

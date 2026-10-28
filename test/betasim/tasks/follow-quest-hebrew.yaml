@@ -1,0 +1,5 @@
+goal: "On the page in Hebrew, keep the wine quest in view while you play, and see what to do next for it."
+flow: follow-quest-hebrew
+audience: [hebrew]
+frequency: 2
+expected_seconds: 30

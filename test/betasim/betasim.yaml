@@ -15,8 +15,8 @@ target:
   disclosure: "[aria-expanded=false], details:not([open]) > summary"
 adapter: adapter.ts
 ui_language: native   # the page will be translated (D-311): words count for how much they are jargon, not because they are English
-suites: {flows: flows, usability: tasks}
-personas: [builtin, personas]   # the tasks pick their people with audience: four of the built-in ones and the project's two
+suites: {flows: flows, usability: tasks}   # a task's expected_seconds: the median of its slowest player today at either width (by ear, a third of it), rounded up; twice that is a finding
+personas: [personas]   # our players, in personas/: who starts out, who has played for years, the screen reader, the keyboard, Arabic and Hebrew
 targets: targets.yaml
 features: features.yaml
 screens:
@@ -38,29 +38,15 @@ runs: 300
 seed: 7
 familiar_icons: [Close, Free roll]
 # How much a word the player taps is jargon, from 0 to 3, as the page writes it today. The same for everybody: for a veteran AC is plain (betasim's limit).
-# Matched as a substring of the tapped control's name, so "AC" is left out: it would weigh on every "Go back" and "place".
+# Matched as a substring of the tapped control's name, so "AC" is left out: it would weigh on every "Go back" and "place". Only the words a flow taps: add one with its flow.
 terms:
   Insight: 2
-  Perception: 2
-  Religion: 2
-  Investigation: 2
-  WIS save: 3
-  Initiative: 2
   hit dice: 3
   slots: 3
-  channel divinity: 3
-  passive: 3
-  proficiency: 2
   Free roll: 1
   Follow: 1
   Share with the master: 1
   Take it back: 1
   Go back here: 1
-  Checkpoint: 2
-  Mentor: 2
-  Lethality: 3
-  Difficulty: 1
-  Session zero: 3
-  Character voices: 2
   Library: 1
   Lore: 1

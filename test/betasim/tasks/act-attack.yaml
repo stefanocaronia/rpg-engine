@@ -1,6 +1,6 @@
 goal: "In the fight, attack the first hooded bandit with your mace, from the page."
 flow: act-attack
-audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 4
 critical: true
-expected_seconds: 12
+expected_seconds: 40

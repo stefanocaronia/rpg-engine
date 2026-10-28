@@ -1,0 +1,5 @@
+goal: "On the world map, find the Red Mill and where it leads."
+flow: world-map
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
+frequency: 1
+expected_seconds: 40

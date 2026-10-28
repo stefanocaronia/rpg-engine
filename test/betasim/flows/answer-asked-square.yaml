@@ -1,0 +1,11 @@
+name: The master asks where the character moves, and the player touches a square of the place's map
+covers: [asked-square]
+# A pointer's way: answer-asked-square-typed writes the square, as the keyboard and a screen reader do.
+setup:
+  ask: {question: "Il brigante ti sbarra la porta: dove ti sposti?", square: true}
+steps:
+  - tapOn: Choose on the map
+  - tapOn: {css: ".lm-pick", index: 0}
+    concept: {name: a square of the map is touched to move there, difficulty: 1}
+  - tapOn: Move to
+  - assertState: {query: answer, contains: Ettore}

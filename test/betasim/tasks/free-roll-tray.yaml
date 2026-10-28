@@ -1,0 +1,5 @@
+goal: "Roll a d20 from the dice tray, just to see how it goes."
+flow: free-roll-tray
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
+frequency: 2
+expected_seconds: 40

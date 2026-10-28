@@ -1,6 +1,6 @@
 goal: "On a short rest, spend one hit die, then stop."
 flow: rest-short
-audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 3
 critical: true
-expected_seconds: 10
+expected_seconds: 20

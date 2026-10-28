@@ -1,0 +1,15 @@
+name: Luca
+age: 41
+summary: A wrist injury keeps him off the mouse; plays from the keyboard alone, Tab, arrow keys and Enter, following the focus ring. Has played fifth edition online for years.
+education: degree
+tags: [rpg, accessibility]
+tech: 4
+english: 3
+vision: none
+motor: normal
+keyboard: true   # betasim counts the Tab stops to each control, and stops him where the keyboard does not reach
+explore: 3
+reading: 3
+patience: 3
+hurry: 2
+context: [laptop, no mouse, the chat with the master in another window]

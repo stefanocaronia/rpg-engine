@@ -40,6 +40,8 @@ interface Setup
     shelf?: boolean;
     /** A call of the master's running: a sentence said now waits for it, and can still be taken back (D-495). */
     busy?: boolean;
+    /** A note of the player's, shared with the master who has not heard it yet: it can still be taken back (D-381). */
+    note?: { title: string; text: string; };
     /** The demo the flow plays: free's unless it needs the 5e's cards, as the hit dice of a rest, or its sheet, as its skills and attacks. */
     system?: DemoSystem;
     /** The master asks the page, as ask does: a check (an option with its notation), a choice, or the dice of a rest's recipe (ASK-14). */
@@ -56,10 +58,13 @@ const calls = new WeakMap<Page, Set<unknown>>();
 await reset();
 
 export default {
-    /** The page has read view when it shows a sheet, the Setup or why not. */
+    /**
+     * The page has read view when it shows a sheet, the Setup or why not. Here it reads the game the flow before left, now and then blank as that one ends:
+     * every flow has a setup, which makes the game again and waits for the page, so a page that does not come here is no failure.
+     */
     async ready(page: Page): Promise<void>
     {
-        await shown(page, ".band, .notice, .setup");
+        await shown(page, ".band, .notice, .setup").catch(() => undefined);
     },
 
     /** A fresh copy of the demo for each flow, its commands run, then the page again and the master's question. */
@@ -72,6 +77,10 @@ export default {
 
         if (setup.shelf === true) {
             saveLibraryFolders(join(home, "library"), [books]);
+        }
+
+        if (setup.note !== undefined) {
+            await share(setup.note);
         }
 
         if (setup.bell === true) {
@@ -164,6 +173,27 @@ async function idle(page: Page): Promise<boolean>
 {
     await page.clock.runFor(30);
     return (calls.get(page)?.size ?? 0) === 0;
+}
+
+/** Writes a note and shares it as the page does, from the page's own address. */
+async function share(note: { title: string; text: string; }): Promise<void>
+{
+    const post = async (body: object): Promise<{ notes: { id: string; title: string; }[]; }> => {
+        const response = await fetch(`http://127.0.0.1:${port}/api/notes`, {
+            method: "POST",
+            headers: { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            throw new Error(`The note was not shared: ${await response.text()}`);
+        }
+
+        return response.json() as Promise<{ notes: { id: string; title: string; }[]; }>;
+    };
+
+    const { notes } = await post(note);
+    await post({ share: notes.find((one) => one.title === note.title)?.id ?? "" });
 }
 
 /** Waits until the dashboard says the chat has its doorbell, so that the page sends the player's sentences instead of copying them. */

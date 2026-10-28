@@ -1,12 +1,12 @@
 name: Take a shared note back from the master
 covers: [note-share]
-setup: {}
+# The note is shared already, and the master has not heard it yet (D-381): note-share writes and shares one.
+setup:
+  note: {title: Il mercante, text: "Secondo me il mercante dei sigilli lavora per i rapitori."}
 steps:
   - tapOn: Journal
   - tapOn: Notes
-  - tapOn: New note
-  - inputText: {into: {label: "The note's title"}, text: Il mercante}
-  - inputText: {into: {label: The note Il mercante}, text: "Secondo me il mercante dei sigilli lavora per i rapitori."}
-  - tapOn: {label: Share with the master}
+  - tapOn: Il mercante
   - tapOn: {label: Take it back from the master}
+  - assertNotVisible: {label: Take it back from the master}
   - assertState: {query: news, notContains: lavora per i rapitori}

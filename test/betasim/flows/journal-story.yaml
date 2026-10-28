@@ -1,0 +1,8 @@
+name: Read the story so far, scene by scene, in the Journal
+covers: [journal-story]
+# The demo's three scenes on the way are its chapters, the last first (D-367): the night at the camp among them.
+setup: {}
+steps:
+  - tapOn: Journal
+  - tapOn: Story
+  - assertVisible: La notte al campo

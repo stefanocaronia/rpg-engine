@@ -1,0 +1,6 @@
+goal: "The master asks where you move: give the square, from the keyboard or with your screen reader."
+flow: answer-asked-square-typed
+audience: [screen-reader, keyboard]
+frequency: 3
+critical: true
+expected_seconds: 30

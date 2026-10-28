@@ -1,5 +1,5 @@
 goal: "Write down that you suspect the merchant, and let the master know."
 flow: note-share
-audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 2
-expected_seconds: 45
+expected_seconds: 125

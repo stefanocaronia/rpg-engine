@@ -1,0 +1,5 @@
+goal: "Find in Help how to play with the chat and the page."
+flow: help-read
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
+frequency: 1
+expected_seconds: 55

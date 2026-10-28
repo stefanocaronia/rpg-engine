@@ -1,17 +1,18 @@
-# Who the dashboard is for: the player beside the chat with the AI master. Weights and goals are a first guess, to compare runs, not to predict.
-- id: plays-5e
-  name: Who plays 5e
+# Who the dashboard is for: the player beside the chat with the AI master. The weights are a guess; each goal sits a point under what the page gives today,
+# at the worse of the two widths, so that a change that costs one of them shows (betasim's model is exact: the same page, the same numbers).
+- id: veterans
+  name: Who has played for years
   weight: 3
-  personas: [veteran-5e, giocatrice-da-tavolo, non-vedente]
-  goal: {success: 0.95, critical: 0.9}
+  personas: [veteran-5e, screen-reader, keyboard, hebrew]
+  goal: {success: 0.98, critical: 0.95}
 - id: beginners
   name: Who starts out
   weight: 3
-  personas: [newcomer, ragazzino, adulto-adhd]
-  goal: {success: 0.9, critical: 0.85}
-# A promise, not a market: nobody below the floor on a task meant for them (AGENTS.md's player who does not program; contrast, keyboard, screen readers).
+  personas: [newcomer, arabic]
+  goal: {success: 0.95, critical: 0.88}
+# A promise, not a market: nobody below the floor on a task meant for them, whatever their eyes, hands or alphabet (docs/dashboard-style.md, 4).
 - id: everyone
   name: Everyone can play
   kind: floor
-  floor: 0.8
-  personas: [non-vedente, adulto-adhd, newcomer]
+  floor: 0.85
+  personas: [newcomer, veteran-5e, screen-reader, keyboard, arabic, hebrew]

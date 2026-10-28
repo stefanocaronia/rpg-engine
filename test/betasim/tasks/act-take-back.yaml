@@ -1,5 +1,5 @@
 goal: "You sent the wrong spell to the master: take it back before they read it."
 flow: act-take-back
-audience: [veteran-5e, newcomer, giocatrice-da-tavolo, ragazzino, non-vedente, adulto-adhd]
+audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 1
-expected_seconds: 10
+expected_seconds: 75
