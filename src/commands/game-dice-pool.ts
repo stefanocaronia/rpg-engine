@@ -5,10 +5,11 @@ import { appendLogEntry } from "../core/log.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { formatCounter, readCounter } from "../counters/index.ts";
 import { rollDice } from "../dice/index.ts";
-import { findPage, isPartyMember, type Page, withPage, type World, writePage } from "../pages/index.ts";
+import { concernsPlayer, findPage, isPartyMember, type Page, withPage, type World, writePage } from "../pages/index.ts";
 import type { GameSystem, Recipe } from "../systems/index.ts";
 import { effectGiving, effectiveFields, effectsOf, withValue } from "./effect-layer.ts";
 import { saveEffects } from "./game-effects.ts";
+import { behindTheScreen, screenNote, sealHiddenRoll } from "./game-master-rolls.ts";
 import { allSaid, packagesCounterChanged } from "./game-package-hooks.ts";
 import { thresholdNotes } from "./game-thresholds.ts";
 import { newDatedLogEntry } from "./game-time.ts";
@@ -92,7 +93,10 @@ export function spendDice(
     const added = adds * count;
     const notation = added === 0 ? roll.notation : `${roll.notation}${added > 0 ? "+" : "-"}${Math.abs(added)}`;
     const result = `${notation} = [${roll.faces.join(", ")}]${added === 0 ? "" : ` ${added > 0 ? "+" : "-"} ${Math.abs(added)}`}, ${healed}`;
-    const entry = newDatedLogEntry(root, context, "roll", "public", {
+    // Dice of someone the party does not hold stay behind the screen, as master-rolls says (D-287); their counters are seen where the player sees them.
+    const hidden = values === undefined && behindTheScreen(root, context, page.name);
+    const counters = concernsPlayer(world, page) ? "public" : "hidden";
+    const entry = newDatedLogEntry(root, context, "roll", hidden ? "hidden" : "public", {
         notation,
         total: healed,
         result,
@@ -102,11 +106,16 @@ export function spendDice(
         physical: values !== undefined,
         dice: roll.dice,
     });
+
+    if (hidden) {
+        sealHiddenRoll(entry, result, context);
+    }
+
     appendLogEntry(root, entry);
 
     for (const [changed, before, now] of [[field, dice.value, dice.value - count], [rule.gives, target.value, after]] as const) {
         const data = { page: page.name, field: changed, effect: layers.get(changed), before: String(before), after: String(now), why };
-        appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", data));
+        appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", counters, data));
     }
 
     const max = (counter: { max?: number; }): string => (counter.max === undefined ? "" : `/${counter.max}`);
@@ -119,7 +128,7 @@ export function spendDice(
     const line = `${page.name} spends ${count} ${field}: ${result}; ${rule.gives} ${target.value}${max(target)} → ${after}${max(target)}${within(rule.gives)}; ${field} ${dice.value}${max(dice)} → ${dice.value - count}${max(dice)}${
         within(field)
     }.`;
-    return { text: [line, ...notes, ...hooked].join("\n"), notes: [...notes, ...hooked], faces: roll.faces, adds, total: healed, id: entry.id };
+    return { text: [hidden ? `${line} ${screenNote}` : line, ...notes, ...hooked].join("\n"), notes: [...notes, ...hooked], faces: roll.faces, adds, total: healed, id: entry.id };
 }
 
 /** The counters of dice a recipe lets this page spend, as the page reads them, with a maximum above 0: those at 0 too, as a page shows them spent. */

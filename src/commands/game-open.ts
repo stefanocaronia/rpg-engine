@@ -1,8 +1,7 @@
 // Travel off the roads (D-259, TRV-12, TRV-13): a straight line across the regions of the map, each with its terrain, and the roads it crosses.
 import { crossingAlong, distanceBetween, pointAlong } from "../map/index.ts";
-import { type Page, pagesWithName, type Position, type World } from "../pages/index.ts";
+import { mapKey, type Page, pagesWithName, type Position, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
-import { mapKey } from "./game-maps.ts";
 import { placedPosition, positionOf, regionAt, relationText } from "./game-positions.ts";
 import { lengthText, type Measures, type Roads, terrainFactor } from "./game-roads.ts";
 

@@ -11,7 +11,7 @@ import { comparableText, linkTargetName } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { shortName } from "../extensions/index.ts";
 import { findImage, imageFileName, largestImage } from "../images/index.ts";
-import { locate, type Page, pageNamed, readFields, splitPageFile, textsIn, type World, worldFolderName } from "../pages/index.ts";
+import { locate, type Page, pageNamed, pageNamedQuietly, readFields, splitPageFile, textsIn, type World, worldFolderName } from "../pages/index.ts";
 import { readRuleBook, ruleSections } from "../rules/index.ts";
 import { unpackFiles } from "../saves/index.ts";
 import { formatGameDate, readGameDate } from "../time/index.ts";
@@ -185,7 +185,7 @@ export function storyTouching(root: string, adventure: InstalledAdventure): LogE
     const log = readLog(root);
     const names = new Set(adventure.files.filter((path) => path.startsWith(`${worldFolderName}/`)).flatMap((path) => pageNames(root, path)).map(comparableText));
     const after = log.slice(log.findIndex((entry) => entry.id === adventure.entry) + 1);
-    return after.find((entry) => textsOf(entry.data).some((text) => names.has(comparableText(linkTargetName(unlinked(text))))));
+    return after.find((entry) => textsIn(entry.data).some((text) => names.has(comparableText(linkTargetName(unlinked(text))))));
 }
 
 /**
@@ -257,7 +257,7 @@ function systemUsed(kept: Record<string, Uint8Array>, world: World, fields: Reco
         }
 
         const text = new TextDecoder().decode(bytes);
-        const linked = [...text.matchAll(/\[\[([^\]]+)\]\]/g)].some((link) => pageNamed(world, linkTargetName(link[1] ?? ""))?.system !== undefined);
+        const linked = [...text.matchAll(/\[\[([^\]]+)\]\]/g)].some((link) => pageNamedQuietly(world, linkTargetName(link[1] ?? ""))?.system !== undefined);
         return linked || Object.entries(fieldsOf(path, bytes)).some(([key, value]) => declared.has(comparableText(key)) && /\d/.test(String(value)));
     });
 }
@@ -558,16 +558,6 @@ function pageNames(root: string, path: string): string[]
     }
 
     return [basename(path, ".md"), ...aliases];
-}
-
-/** Every text a log line's data holds, in lists and objects too. */
-function textsOf(value: unknown): string[]
-{
-    if (typeof value === "string") {
-        return [value];
-    }
-
-    return Array.isArray(value) ? value.flatMap(textsOf) : value !== null && typeof value === "object" ? Object.values(value).flatMap(textsOf) : [];
 }
 
 /** A text as the page it may name: [[Oste#Segreto|lui]] as Oste. */

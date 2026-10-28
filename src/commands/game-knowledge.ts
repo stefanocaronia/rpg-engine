@@ -51,7 +51,7 @@ export function playerCharacter(world: World): Page | undefined
  * The player character in the foreground (VIEW-12), whose place, map and squares the view shows: the one named; else, of the living, the one whose turn it is in
  * the open scene, then one in the open scene, then the first; else the first. Undefined before there is one.
  */
-export function foregroundCharacter(root: string, world: World, wanted?: string): Page | undefined
+function foregroundCharacter(root: string, world: World, wanted?: string): Page | undefined
 {
     const players = playerCharacters(world);
 

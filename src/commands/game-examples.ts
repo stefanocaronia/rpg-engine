@@ -24,7 +24,7 @@ export function campaignExamples(root: string | undefined, context: Context): Ex
 }
 
 /** The examples a game system gives, with the labels of its words and the campaign's coins. */
-export function systemExamples(system: GameSystem, words: SystemWords | undefined, coins: Coin[]): Examples
+function systemExamples(system: GameSystem, words: SystemWords | undefined, coins: Coin[]): Examples
 {
     const [check, otherCheck] = rolledFields(system);
     const checkText = (field: string): string => `${checkLabel(field, words)} ${system.sheetDice[field]}+${field}`;
@@ -66,7 +66,7 @@ export function poolExample(system: GameSystem | undefined): { recipe: string; f
 }
 
 /** The fields an effect adds to in a game system, those it declares bonuses. */
-export function bonusFields(system: GameSystem): string[]
+function bonusFields(system: GameSystem): string[]
 {
     return Object.entries(system.fields).filter(([, kind]) => kind === "bonus").map(([name]) => name);
 }

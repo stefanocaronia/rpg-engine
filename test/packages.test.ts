@@ -480,3 +480,19 @@ describe("the packages on the dashboard's page (D-475)", () => {
         expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toMatchObject([{ name: "rumors", used: true, verified: false }]);
     });
 });
+
+describe("the extensions campaign.yaml lists, written by hand", () => {
+    it("reads a version written as a number, and says when they are written as a list, never playing without them in silence", async () => {
+        const validate = async (written: string): Promise<string> => {
+            const folder = makeTempFolder();
+            const context = testContext(folder);
+            await runCommandLine(["init", "--name", "Valle", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
+            appendFileSync(join(folder, "campaign.yaml"), written);
+            return (await runCommandLine(["validate"], context)).output;
+        };
+
+        expect(await validate('extensions:\n  "@rpgengine/weather": "0.2.3"\n')).toContain("The extension @rpgengine/weather is not installed on this computer");
+        expect(await validate('extensions:\n  "@rpgengine/weather": 1.0\n')).toContain("The extension @rpgengine/weather is not installed on this computer");
+        expect(await validate('extensions:\n  - "@rpgengine/weather"\n')).toContain("extensions in campaign.yaml does not read: it is a map of each package and its version");
+    });
+});

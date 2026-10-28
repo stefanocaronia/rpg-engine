@@ -134,7 +134,7 @@ export function clearCopies(world: World, scene: Scene, names: string[]): void
  * The square a page enters a place's map by (GRD-3): the open one that leads to where it comes from, the nearest of its containers first; none when no such
  * square leads there, or it comes from inside the place itself, as up from its cellar, or put down by one who is there.
  */
-export function doorFrom(world: World, grid: Grid, page: Page, place: Page): Square | undefined
+function doorFrom(world: World, grid: Grid, page: Page, place: Page): Square | undefined
 {
     const holders = locate(world, page).chain;
     const inside = holders.findIndex((holder) => holder.path === place.path);

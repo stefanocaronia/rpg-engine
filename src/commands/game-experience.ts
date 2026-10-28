@@ -31,8 +31,8 @@ export function experienceOf(world: World, fields: Record<string, unknown>): Exp
     const progression = world.system?.progression;
     const rule = progression?.experience;
     const table = rule === undefined ? undefined : Object.entries(world.system?.formulas?.tables ?? {}).find(([name]) => comparableText(name) === comparableText(rule.table))?.[1];
-    const points = rule === undefined ? undefined : numberOf(fieldOf(fields, rule.field));
-    const level = progression === undefined ? 0 : listItems(fieldOf(fields, progression.list)).reduce((total, item) => total + (item.number ?? 0), 0);
+    const points = rule === undefined ? undefined : numberOf(valueNamed(fields, rule.field));
+    const level = progression === undefined ? 0 : listItems(valueNamed(fields, progression.list)).reduce((total, item) => total + (item.number ?? 0), 0);
 
     if (rule === undefined || table === undefined || points === undefined || level === 0) {
         return undefined;
@@ -136,8 +136,8 @@ export function experienceProblems(world: World): Problem[]
     const field = world.system?.progression?.experience?.field;
     return world.pages.filter(isInParty).flatMap((page): Problem[] => {
         const experience = experienceOf(world, effectiveFields(world, page));
-        const written = experience === undefined ? undefined : readCounter(fieldOf(page.fields, experience.field));
-        const raw = field === undefined ? undefined : fieldOf(page.fields, field);
+        const written = experience === undefined ? undefined : readCounter(valueNamed(page.fields, experience.field));
+        const raw = field === undefined ? undefined : valueNamed(page.fields, field);
 
         // Points written as text, such as 350 XP, count for nothing.
         if (field !== undefined && raw !== undefined && raw !== null && readCounter(raw) === undefined) {
@@ -158,9 +158,4 @@ export function experienceProblems(world: World): Problem[]
             fix: `change ${page.name}, field ${experience.field}, to ${experience.least}`,
         }];
     });
-}
-
-function fieldOf(fields: Record<string, unknown>, field: string): unknown
-{
-    return valueNamed(fields, field);
 }

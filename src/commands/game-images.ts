@@ -1,3 +1,4 @@
+// The pictures of the world as several commands use them (D-308): what is missing one, where the campaign keeps them, and the file a page's image field names.
 import { basename } from "node:path";
 import { readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";

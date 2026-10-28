@@ -231,6 +231,15 @@ describe("package export (ADV-7)", () => {
         expect(readFileSync(file).equals(first)).toBe(true);
     });
 
+    it("exports a world whose link names an alias two pages share, which leads to no page of the system", async () => {
+        writeFileSync(join(folder, "world", "characters", "Gemello Alto.md"), "---\naliases: [Gemello]\n---\nThe elder twin.\n");
+        writeFileSync(join(folder, "world", "characters", "Gemello Basso.md"), "---\naliases: [Gemello]\n---\nThe younger twin.\n");
+        writeFileSync(join(folder, "world", "places", "Locanda.md"), "---\n---\nWhere [[Gemello]] waits.\n");
+        makeSave(folder, context, undefined, "session zero");
+        const result = await rpg("package", "export");
+        expect(result.exitCode, result.output).toBe(0);
+    });
+
     it("needs the game system only where a page uses it, and keeps to the player the pages from their own documents (D-489 (6))", async () => {
         await rpg("write", "Borgo", "--type", "place", "--set", "source=The King, p. 3");
         await rpg("write", "Grosh", "--type", "character", "--set", "creature=[[Bog Hound]]");

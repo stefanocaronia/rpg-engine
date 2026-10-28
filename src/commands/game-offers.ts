@@ -1,7 +1,7 @@
 // What the campaign's game system offers of the engine's settings (DAT-16), the settings of its own that a value asks (DAT-17), and the parts its values choose (DAT-18).
 import { readSettings, type SettingName, settingNames } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
-import { comparableText } from "../core/text.ts";
+import { sameWord } from "../core/text.ts";
 import { engineOfferings, engineSettingValue, heldSettings, installedSystems, offeredEngineValues, playedValueOf, type SystemSetting } from "../systems/index.ts";
 import { campaignSystem, playedSettingValue, valuesText } from "./game-world.ts";
 import { partText } from "./parts.ts";
@@ -68,7 +68,7 @@ export function unofferedLines(root: string, context: Context): string[]
         const value = written[name];
         const offered = offeredValues(root, context, name);
 
-        if (typeof value !== "string" || offered === undefined || offered.length < 2 || offered.some((one) => same(one, value))) {
+        if (typeof value !== "string" || offered === undefined || offered.length < 2 || offered.some((one) => sameWord(one, value))) {
             return [];
         }
 
@@ -81,7 +81,7 @@ export function offerRefusal(root: string, context: Context, name: string, value
 {
     const offered = offeredValues(root, context, name);
 
-    if (offered === undefined || offered.some((one) => same(one, value))) {
+    if (offered === undefined || offered.some((one) => sameWord(one, value))) {
         return undefined;
     }
 
@@ -93,7 +93,7 @@ export function offerRefusal(root: string, context: Context, name: string, value
 /** "outcomes told, which offers only narrative or epic": the settings of the system whose values ask a setting of its own (DAT-17), as config names them. */
 export function askedBy(root: string, context: Context, name: string): string
 {
-    const askers = (campaignSystem(root, context)?.settings ?? []).flatMap((setting) => setting.values.filter((value) => value.asks.some((asked) => same(asked, name))).map((value) => `${setting.name} ${value.value}`));
+    const askers = (campaignSystem(root, context)?.settings ?? []).flatMap((setting) => setting.values.filter((value) => value.asks.some((asked) => sameWord(asked, name))).map((value) => `${setting.name} ${value.value}`));
     return orList(askers);
 }
 
@@ -136,7 +136,7 @@ function excluding(root: string, context: Context, name: string, value: string):
     const system = campaignSystem(root, context);
     const offering = system === undefined
         ? undefined
-        : engineOfferings(system, played(root, context)).find((one) => Object.entries(one.offers).some(([setting, values]) => same(setting, name) && !values.some((other) => same(other, value))));
+        : engineOfferings(system, played(root, context)).find((one) => Object.entries(one.offers).some(([setting, values]) => sameWord(setting, name) && !values.some((other) => sameWord(other, value))));
     return offering?.from ?? "this game";
 }
 
@@ -144,11 +144,6 @@ function excluding(root: string, context: Context, name: string, value: string):
 function played(root: string, context: Context): (setting: SystemSetting) => string | undefined
 {
     return (setting) => playedSettingValue(root, context, setting);
-}
-
-function same(one: string, other: string): boolean
-{
-    return comparableText(one) === comparableText(other.trim());
 }
 
 /** "narrative or epic". */

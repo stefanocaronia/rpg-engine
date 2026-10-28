@@ -1,5 +1,5 @@
 // Positions, regions and travel off the roads (MECCANICHE, POS-1–POS-6, TRV-12–TRV-15): the cases of the table, through the commands.
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
@@ -188,6 +188,17 @@ describe("a place where the party is (TRV-14)", () => {
         expect(await ok("show", "Lena")).toContain("Is in: Osteria › Strada vecchia");
         expect(await ok("route", "Rocca")).toContain("Osteria → Bivio → Rocca, 11 km by Strada vecchia.");
         expect(await ok("travel", "Rocca")).toContain("Arrived at day 3, 12:27: now in Rocca.");
+    });
+
+    it("TRV-14: stopped on a stretch under 200 m, the place splits it to the metre, never at an end", async () => {
+        await ok("write", "Agguato", "--type", "event", "--set", "date=day 3, 10:00");
+        await ok("travel", "Rocca");
+        // The first stretch made short by hand, the journey halfway along it.
+        const road = join(folder, "world", "places", "Strada vecchia.md");
+        writeFileSync(road, readFileSync(road, "utf8").replace("12 km", "60 m"));
+        const state = join(folder, "state.yaml");
+        writeFileSync(state, readFileSync(state, "utf8").replace(/done: .*/, "done: 30 m"));
+        expect(await ok("write", "Osteria", "--type", "place", "--here")).toContain("Osteria is now a stop of Strada vecchia: [[Guadoscuro]], 30 m, [[Osteria]], 30 m, [[Bivio]]");
     });
 
     it("TRV-14: stopped in the open, the new place takes the point, in the region that covers it; without a journey stopped, here is refused", async () => {

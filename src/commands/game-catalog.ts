@@ -82,7 +82,7 @@ export async function installableSystems(context: Context): Promise<InstallableS
 }
 
 /** The topic a GitHub repository carries to be found as an adventure (D-485 (4)). */
-export const adventureTopic = "rpg-engine-adventure";
+const adventureTopic = "rpg-engine-adventure";
 
 // How many repositories are read, each with its adventure.yaml: GitHub answers without a login only so many times an hour.
 const mostAdventures = 30;
@@ -91,12 +91,12 @@ const kinds = new Set<string>(["system", "extension", "language"]);
 /** What npm and GitHub offer now, ours first, then by title; each source asked once, side by side. */
 export async function catalog(root: string, context: Context): Promise<Catalog>
 {
-    const [npm, github] = await Promise.all([npmEntries(root, context), githubEntries(root, context)]);
+    const [npm, github] = await Promise.all([npmEntries(context), githubEntries(root, context)]);
     const entries = [...npm.entries, ...github.entries].sort((first, second) => Number(second.verified) - Number(first.verified) || first.title.localeCompare(second.title));
     return { entries, failed: { ...(npm.failed === undefined ? {} : { npm: npm.failed }), ...(github.failed === undefined ? {} : { github: github.failed }) } };
 }
 
-async function npmEntries(root: string, context: Context): Promise<{ entries: CatalogEntry[]; failed?: string; }>
+async function npmEntries(context: Context): Promise<{ entries: CatalogEntry[]; failed?: string; }>
 {
     const searched = context.packages === undefined ? { failed: "only the game's server and the command line reach npm" } : await context.packages.search();
 
@@ -106,7 +106,7 @@ async function npmEntries(root: string, context: Context): Promise<{ entries: Ca
 
     // A package made for an API this engine does not read is not offered (D-515).
     const listed = searched.filter((one) => kinds.has(one.kind ?? "") && (one.kind === "language" || readsApi(one.api, one.kind === "system" ? "system" : "extension")));
-    return { entries: listed.map((one) => npmEntry(one, installedVersion(root, context, one))) };
+    return { entries: listed.map((one) => npmEntry(one, installedVersion(context, one))) };
 }
 
 function npmEntry(found: PackageInfo, installed: string | undefined): CatalogEntry
@@ -129,7 +129,7 @@ function npmEntry(found: PackageInfo, installed: string | undefined): CatalogEnt
 }
 
 /** The version of this npm package installed here: an extension's, or a game system's. */
-function installedVersion(root: string, context: Context, found: PackageInfo): string | undefined
+function installedVersion(context: Context, found: PackageInfo): string | undefined
 {
     if (found.kind === "extension") {
         const here = installedExtensions(context.extensionFolders ?? []).find((one) => one.package === found.name);
@@ -146,18 +146,8 @@ function installedVersion(root: string, context: Context, found: PackageInfo): s
     }
 
     // A system npm installed, by its package's own version.
-    const folder = systemFolders(context.systemFolders).find((one) => packageNameIn(one.folder) === found.name)?.folder;
-    return folder === undefined ? undefined : packageVersionIn(folder);
-}
-
-function packageNameIn(folder: string): string | undefined
-{
-    return packageIn(folder)?.name;
-}
-
-function packageVersionIn(folder: string): string | undefined
-{
-    return packageIn(folder)?.version;
+    const folder = systemFolders(context.systemFolders).find((one) => packageIn(one.folder)?.name === found.name)?.folder;
+    return folder === undefined ? undefined : packageIn(folder)?.version;
 }
 
 function packageIn(folder: string): { name?: string; version?: string; } | undefined

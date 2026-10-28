@@ -43,7 +43,8 @@ export function listedExtensions(root: string): Record<string, string>
 {
     try {
         const listed = readOneSetting(root, "extensions");
-        return z.record(z.string(), z.string()).safeParse(listed).data ?? {};
+        // A version written as a number, as 1.0, is the version all the same.
+        return z.record(z.string(), z.union([z.string(), z.number().transform(String)])).safeParse(listed).data ?? {};
     } catch {
         return {};
     }
@@ -183,6 +184,15 @@ function readCampaignExtensions(root: string, context: Context): CampaignExtensi
     const problems: Problem[] = [];
     const system = readTextSetting(root, "system");
 
+    // A list written by hand, or a map that does not read, would leave the campaign without its extensions in silence.
+    if (extensionsUnread(root)) {
+        problems.push({
+            path: campaignFileName,
+            message: 'extensions in campaign.yaml does not read: it is a map of each package and its version, such as "@rpgengine/weather": "0.2.3"; the campaign plays without them.',
+            fix: "add each with package install",
+        });
+    }
+
     for (const name of Object.keys(listedExtensions(root))) {
         let extension: Extension | undefined;
 
@@ -228,4 +238,16 @@ function readCampaignExtensions(root: string, context: Context): CampaignExtensi
     }
 
     return { extensions, problems };
+}
+
+/** Whether campaign.yaml writes extensions that do not read as a map of package and version, as a list. */
+function extensionsUnread(root: string): boolean
+{
+    try {
+        const written = readOneSetting(root, "extensions");
+        const none = written === undefined || written === null || (typeof written === "object" && !Array.isArray(written) && Object.keys(written).length === 0);
+        return !none && Object.keys(listedExtensions(root)).length === 0;
+    } catch {
+        return false;
+    }
 }

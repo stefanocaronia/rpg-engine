@@ -125,7 +125,7 @@ export function libraryRemovals(root: string, context: Context, given: string[],
 }
 
 /** The campaign's library as it is used: the entries it turns on that are in this computer's library, which the player allowed (LIB-1). */
-export function campaignLibrary(root: string, context: Context): string[]
+function campaignLibrary(root: string, context: Context): string[]
 {
     return readListSetting(root, "library").filter((entry) => computerSpelling(context, entry) !== undefined);
 }
@@ -179,7 +179,10 @@ export function libraryEntries(root: string, context: Context): LibraryEntryStat
             path: entry,
             books: state?.books.length ?? 0,
             reading: state?.waiting.length ?? 0,
-            skipped: state?.skipped.map((one) => ({ name: relative(entry, one.path) || basename(one.path), why: skippedWhy(one.path, one.why), kind: skippedKind(skippedWhy(one.path, one.why)) })) ?? [],
+            skipped: state?.skipped.map((one) => {
+                const why = skippedWhy(one.path, one.why);
+                return { name: relative(entry, one.path) || basename(one.path), why, kind: skippedKind(why) };
+            }) ?? [],
             missing: state === undefined ? false : state.missing.length > 0,
             crowded: state === undefined ? false : state.crowded.length > 0,
             used: held.some((other) => samePath(other, entry)),
@@ -301,7 +304,7 @@ export function libraryAnswer(
         books: state.books.map((book) => `${book.name} (${[book.language === undefined ? "" : languageName(book.language), partsOf(book)].filter((part) => part !== "").join(", ")})`),
         ...(system?.lengthUnit === undefined ? {} : { unit: system.lengthUnit }),
     };
-    const page = pageNamed(state.books, text);
+    const page = bookPageNamed(state.books, text);
 
     if (page !== undefined || text === "") {
         return { ...base, ...(page === undefined ? {} : { page }) };
@@ -391,7 +394,7 @@ function byBook(found: PageFinding<LibraryBook>[], text: string, also: string[])
  * The page a text names, read whole, or saying it has no readable text: "Book › p. 194", or as an excerpt cites it, "Book, PDF p. 194"; undefined when the text
  * names no book's page. Refused for a page the book has not.
  */
-function pageNamed(books: LibraryBook[], text: string): LibraryAnswer["page"]
+function bookPageNamed(books: LibraryBook[], text: string): LibraryAnswer["page"]
 {
     const match = /^(.+?)[\s›>,]+(?:pdf\s*)?(?:p|pp|pag|page|pagina|part|parte)\.?\s*(\d+)$/i.exec(text.trim());
     const name = match?.[1].trim() ?? "";

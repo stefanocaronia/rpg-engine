@@ -46,6 +46,20 @@ export function masterInstructions(): string
     return readInstructions("core.md");
 }
 
+/** A section of the master's instructions by its title, up to the next one or the end, as the importer's brief takes the pages' rules; it throws when there is none. */
+export function coreSection(title: string): string
+{
+    const lines = masterInstructions().split("\n");
+    const start = lines.findIndex((line) => line.trim() === `## ${title}`);
+
+    if (start === -1) {
+        throw new Error(`core.md has no section "${title}": the instructions changed, so the code that reads it must change with them.`);
+    }
+
+    const end = lines.findIndex((line, index) => index > start && line.startsWith("## "));
+    return lines.slice(start + 1, end === -1 ? undefined : end).join("\n").trim();
+}
+
 /** The core's text of a part of the instructions that a situation opens, such as combat (D-121); undefined when the core has none. */
 export function corePart(name: string): string | undefined
 {

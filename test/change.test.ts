@@ -201,3 +201,17 @@ describe("rpg change", () => {
         expect((await rpg("change", "Varro", "grit", "--by=1")).output).toBe("There is no page named Varro. Look for it with the find command.");
     });
 });
+
+describe("dice spent by someone the party does not hold (D-287)", () => {
+    it("are rolled behind the screen, and their counters seen only by the master; the player's own stay in view", async () => {
+        await rpg("write", "Sicario", "--type", "character", "--set", "role=npc", "--set", "grit=2/10", "--set", "stamina-d6=3/3", "--set", "might-bonus=1");
+        const spent = await rpg("change", "Sicario", "stamina-d6", "--recipe", "breather", "--spend", "2");
+        expect(spent.output).toContain("Behind the screen, as master-rolls says");
+        const lines = readLogFile(folder).filter((entry) => entry.type === "roll" || entry.type === "counter-changed");
+        expect(lines.map((entry) => entry.visibility)).toEqual(["hidden", "hidden", "hidden"]);
+        expect(lines[0].data).toHaveProperty("fingerprint");
+        await rpg("write", "Bruna", "--set", "stamina-d6=2/2");
+        await rpg("change", "Bruna", "stamina-d6", "--recipe", "breather", "--spend", "1");
+        expect(readLogFile(folder).filter((entry) => entry.type === "roll" || entry.type === "counter-changed").slice(3).map((entry) => entry.visibility)).toEqual(["public", "public", "public"]);
+    });
+});

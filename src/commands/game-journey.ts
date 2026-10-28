@@ -4,9 +4,8 @@ import { changeStateAt, readStateValues } from "../campaign/index.ts";
 import { readLength } from "../core/length.ts";
 import { comparableText } from "../core/text.ts";
 import { pointAlong, type Start, type Stretch } from "../map/index.ts";
-import { formatPosition, isEmptyField, locate, type Page, pagesWithName, parsePageReference, type Position, readPosition, type World } from "../pages/index.ts";
+import { formatPosition, isEmptyField, locate, mapOf, type Page, pagesWithName, parsePageReference, type Position, readPosition, type World } from "../pages/index.ts";
 import { formatDuration, formatGameDate, type GameDate, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
-import { mapOf } from "./game-maps.ts";
 import { pointText, positionOf, regionAt } from "./game-positions.ts";
 import { hoursText, lengthText, type Measures, type Roads } from "./game-roads.ts";
 
@@ -21,7 +20,7 @@ export interface OnRoad
 }
 
 /** How long a stop must last for the hours of travel to start again (TRV-8): a night's rest. */
-export const restMinutes = 8 * 60;
+const restMinutes = 8 * 60;
 
 /** A journey as state.yaml keeps it. */
 export interface Journey
@@ -228,18 +227,17 @@ export function journeyText(world: World, roads: Roads, journey: Journey | undef
     }
 
     const onRoad = journey.on === undefined ? undefined : journeyStart(world, roads, journey, movers);
-    const open = journey.at === undefined ? undefined : journeyPoint(world, journey, movers);
 
-    if ((journey.on !== undefined && onRoad === undefined) || (journey.at !== undefined && open === undefined)) {
+    if ((journey.on !== undefined && onRoad === undefined) || (journey.at !== undefined && stopped === undefined)) {
         return undefined;
     }
 
     const goal = journey.to === undefined ? `${journey.heading}${journey.left === undefined ? "" : ` for ${lengthText(journey.left, measures)} more`}` : `to ${journey.to}`;
-    const region = open === undefined ? undefined : regionAt(world, open, map)?.page.name;
+    const region = stopped === undefined ? undefined : regionAt(world, stopped, map)?.page.name;
     const where = journey.on !== undefined
         ? `, on ${journey.on.road}, ${lengthText(journey.on.done, measures)} past ${journey.on.from}, toward ${journey.on.toward}`
-        : open !== undefined
-        ? `, ${region === undefined ? "in the open" : `in ${region}`}, ${pointText(world, open, measures, map)}`
+        : stopped !== undefined
+        ? `, ${region === undefined ? "in the open" : `in ${region}`}, ${pointText(world, stopped, measures, map)}`
         : "";
     const call = journey.to === undefined ? `travel toward ${journey.heading}` : `travel to ${journey.to}${journey.at === undefined ? "" : ", across"}`;
     return `${goal}${where}; ${hoursText(journey.travelled)} of travel since the last rest. To go on: ${call}.`;

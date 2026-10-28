@@ -132,7 +132,7 @@ export function checklistLine(mode: Mode, root: string, context: Context, world:
 }
 
 /** The call that enters a mode, as outputs give it: mode, to "session zero". */
-export function modeCall(mode: Mode): string
+function modeCall(mode: Mode): string
 {
     return `mode, to ${mode.includes(" ") ? `"${mode}"` : mode}`;
 }

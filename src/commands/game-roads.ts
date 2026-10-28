@@ -5,10 +5,9 @@ import { formatLength, formatSpeed, type ImperialUnits, readSpeed, speedHelp, tr
 import type { Problem } from "../core/problem.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { quickestWay, type Speed, type Start, type Step, type Stretch, stretchesOf, type Way } from "../map/index.ts";
-import { environmentAt, isEmptyField, isInParty, locate, type Page, pagesWithName, playerCharacters, readStops, type World } from "../pages/index.ts";
+import { environmentAt, isEmptyField, isInParty, locate, mapKey, type Page, pagesWithName, playerCharacters, readStops, type World } from "../pages/index.ts";
 import type { GameSystem, TravelKind } from "../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
-import { mapKey } from "./game-maps.ts";
 
 /** The roads of the world (ROA-4): their stretches, in the order of the pages and of their stops; the page of each road by its name; the names of the stops. */
 export interface Roads

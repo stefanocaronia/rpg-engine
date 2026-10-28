@@ -1,6 +1,6 @@
 // The files of a folder and of the folders inside it, listed one folder at a time: listing a whole tree at once looks at every file again on Windows (D-194).
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { basename, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
 /** The full paths of `folder` and of the folders inside it, however deep; none when there is no such folder. */
 export function foldersIn(folder: string): string[]
@@ -78,13 +78,17 @@ function chosenPackages(folder: string): Set<string> | undefined
     }
 }
 
-/** A path by the folders it really is in, through any link on the way, as Node resolves a module; as given when it is not there. */
+/**
+ * A path by the folders it really is in, through any link on the way, as Node resolves a module; one not there yet by the real path of the folder it would be
+ * in, as /var is /private/var on macOS.
+ */
 export function realPath(path: string): string
 {
     try {
         return realpathSync(path);
     } catch {
-        return path;
+        const folder = dirname(path);
+        return folder === path ? path : join(realPath(folder), basename(path));
     }
 }
 

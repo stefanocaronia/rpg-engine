@@ -105,7 +105,8 @@ describe("import of the player's document (D-489)", () => {
         expect(readFileSync(join(work(), "document", "02.md"), "utf8")).toMatch(/^\[p\. 14\]/);
         expect(reader.briefs).toHaveLength(2);
         expect(reader.briefs[0]).toContain("## Import");
-        expect(reader.briefs[0]).toContain("## Pages");
+        // The pages' rules as the core writes them, never an empty section.
+        expect(reader.briefs[0]).toContain("## Pages\n\n- Every named thing has a page");
         expect(reader.briefs[0]).toContain('document/01.md, piece 1 of 2 of "The King"');
         expect(reader.briefs[0]).toContain("No pages yet.");
         // The second run knows what the first wrote, by its names.

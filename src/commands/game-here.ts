@@ -15,6 +15,8 @@ export interface Here
     journey: Journey;
     movers: Page[];
     on?: OnRoad;
+    /** On a road, its stops with the new place between the two of the stretch, worked out before anything is written. */
+    stops?: string[];
     at?: Position;
 }
 
@@ -50,7 +52,9 @@ export function hereOf(root: string, world: World, name: string, existing: Page 
         );
     }
 
-    return { journey, movers, on, at };
+    // The road's stops worked out now, so that one that cannot take the place refuses before the page is written.
+    const stops = on === undefined ? undefined : splitStops(pagesWithName(world, on.road)[0], on, name);
+    return { journey, movers, on, ...(stops === undefined ? {} : { stops }), at };
 }
 
 /** The fields a place written `here` in the open takes: the point's position (TRV-14). */
@@ -71,7 +75,7 @@ export function placeHere(root: string, context: Context, world: World, page: Pa
 
     if (here.on !== undefined) {
         const road = pagesWithName(now, here.on.road)[0];
-        const stops = splitStops(road, here.on, page.name);
+        const stops = here.stops ?? splitStops(road, here.on, page.name);
         now = withPage(now, road, writePage(now, road.name, undefined, { set: { stops } }).page);
         appendLogEntry(root, newDatedLogEntry(root, context, "page-updated", "hidden", { page: road.name, set: { stops }, why: `${page.name} written where the journey stopped` }));
         notes.push(`${page.name} is now a stop of ${road.name}: ${stops.join(", ")}.`);
@@ -133,8 +137,14 @@ function splitStops(road: Page, on: OnRoad, name: string): string[]
     // The stretch by its place in the road, so that a road through the same two stops twice splits the right one.
     const index = joins(on.index) ? on.index : read.stops.findIndex((_, at) => joins(at));
     const length = read.lengths[index];
-    const along = same(read.stops[index], on.from) ? on.done : length - on.done;
-    const first = Math.min(Math.max(Math.round(along / 100) * 100, 100), length - 100);
+
+    if (length < 2) {
+        throw new Error(`The stretch of ${road.name} where the party stopped is ${Math.round(length)} m long, too short to hold a place: write the place at one of its ends. Nothing changed.`);
+    }
+
+    const along = Math.min(Math.max(same(read.stops[index], on.from) ? on.done : length - on.done, 0), length);
+    // The point to the hundred metres, never at an end; to the metre on a stretch under 200 m.
+    const first = length < 200 ? Math.min(Math.max(Math.round(along), 1), length - 1) : Math.min(Math.max(Math.round(along / 100) * 100, 100), length - 100);
     const metres = (value: number): string => (value % 100 === 0 ? lengthText(value, { units: "metric", imperial: { mile: 0, foot: 0 } }) : `${Math.round(value)} m`);
     const written = road.fields.stops.map(String);
     // The stop at `index` is item 2 * index of the list; the length after it, 2 * index + 1.

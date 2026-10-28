@@ -4,8 +4,7 @@ import { lengthHelp, readLength } from "../core/length.ts";
 import type { Problem } from "../core/problem.ts";
 import { comparableText } from "../core/text.ts";
 import { biomes, directionHelp, directionName, directionTo, distanceBetween, meanPoint, placeKinds, pointAlong, pointFrom, readDirection } from "../map/index.ts";
-import { environmentAt, formatPosition, isEmptyField, locate, type Page, pageNamed, pagesWithName, parsePageReference, type Position, readPosition, readStops, type World } from "../pages/index.ts";
-import { mapKey, mapOf, sameFrame } from "./game-maps.ts";
+import { environmentAt, formatPosition, isEmptyField, locate, mapKey, mapOf, type Page, pageNamed, pagesWithName, parsePageReference, type Position, readPosition, readStops, sameFrame, type World } from "../pages/index.ts";
 import { lengthText, type Measures, roadsOf } from "./game-roads.ts";
 
 /** A region (POS-6): a place with a position and a radius, which covers the circle. */

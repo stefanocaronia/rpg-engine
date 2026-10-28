@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { readAdventureFolder } from "../adventures/index.ts";
 import type { DocumentReader } from "../core/context.ts";
 import { claimImport, dropDocumentText, finishAdventure, importedPages, importStarts, type ImportState, pieceName, readImportState, releaseImport, writeImportState } from "../importer/index.ts";
-import { masterInstructions } from "../instructions/index.ts";
+import { coreSection } from "../instructions/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { partText } from "./parts.ts";
 
@@ -130,8 +130,9 @@ function finishImport(folder: string, state: ImportState, language: string): voi
 // What the helper reads at each run: the importer's part of the instructions, the pages as the core writes them, and what to do now.
 function brief(folder: string, state: ImportState, system: GameSystem | undefined, language: string): string
 {
-    const instructions = (partText("import", system) ?? "").replaceAll("{title}", state.title).replaceAll("{language}", language);
-    const pagesSection = /## 3\. The world's pages\n([\s\S]*?)\n## /.exec(masterInstructions())?.[1]?.trim() ?? "";
+    // Filled by parts, never with replaceAll's own marks: a title with $& in it stays as it is.
+    const instructions = (partText("import", system) ?? "").split("{title}").join(state.title).split("{language}").join(language);
+    const pagesSection = coreSection("The world's pages");
     const written = Object.entries(importedPages(folder)).map(([type, names]) => `- ${type}: ${names.join(", ")}`);
     const pages = written.length === 0 ? "No pages yet." : `The pages written so far (read one before you add to it; never write a page twice):\n${written.join("\n")}`;
     return [instructions, helperFolder, `## Pages\n\n${pagesSection}`, `## Now\n\n${task(folder, state)}`, pages].join("\n\n");

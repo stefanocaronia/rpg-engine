@@ -118,7 +118,7 @@ export function dueText(event: PlannedEvent): string
 /** A planned event still to come, with what brings it (EVT-9): "La marcia della Confraternita (clock 2/4, day 3, 06:00, in 1d)", "I servitori si svegliano (when party in Ossario)". */
 export function plannedText(event: PlannedEvent, now: GameDate | undefined): string
 {
-    const clock = eventClock(event.page);
+    const clock = clockOf(event.page.fields.clock);
     const until = now === undefined || event.date === undefined ? 0 : minutesBetween(now, event.date);
     const triggers = eventTriggers(event.page).map((trigger) => formatTrigger(trigger, false));
     return withParts(event.page.name, [
@@ -132,9 +132,11 @@ export function plannedText(event: PlannedEvent, now: GameDate | undefined): str
 /** What to do with due events (D-106): seen or heard, a scene; out of sight, off screen; then their status, or a later date. */
 export function dueAdvice(count: number): string
 {
+    const after = "happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again. If what it needs is gone, cancel it, "
+        + "or let whoever wanted it try another way; never bend the world back to the written story.";
     return count === 1
-        ? "If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Then set its status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again. If what it needs is gone, cancel it, or let whoever wanted it try another way; never bend the world back to the written story."
-        : "Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: happened if it went as written, cancelled if it never will; or give it a later date if it is put off or tried again. If what it needs is gone, cancel it, or let whoever wanted it try another way; never bend the world back to the written story.";
+        ? `If the characters see or hear it, play it as a scene; if not, it happens off screen, and they will find its traces. Then set its status: ${after}`
+        : `Play as scenes those the characters see or hear; the others happen off screen, and they will find their traces. Then set each one's status: ${after}`;
 }
 
 /**
@@ -257,7 +259,7 @@ function storyAdvice(linked: Page[]): string
 export function clocksToMove(world: World, now: GameDate | undefined, facts = worldFacts(world)): string[]
 {
     return plannedEvents(world).filter((event) => !isDue(event, now, facts)).flatMap((event) => {
-        const clock = eventClock(event.page);
+        const clock = clockOf(event.page.fields.clock);
         const makers = linksIn(event.page.fields.by);
         return clock === undefined ? [] : [`${event.page.name} ${formatCounter(clock)}${makers.length === 0 ? "" : ` (${makers.join(", ")})`}`];
     });
@@ -321,7 +323,7 @@ export function eventProblems(world: World): Problem[]
 /** What sets an event off now: its full clock, or the first of its conditions that holds; undefined when nothing does (EVT-2, EVT-3). */
 function triggerOf(page: Page, facts: TriggerFacts): string | undefined
 {
-    const clock = eventClock(page);
+    const clock = clockOf(page.fields.clock);
 
     if (clock !== undefined && clock.value >= clock.max) {
         return `clock ${formatCounter(clock)}`;
@@ -418,12 +420,6 @@ function statusOf(page: Page): string | undefined
     }
 
     return isEmptyField(page.fields.status) ? String(newPageFields(page.type).status ?? "alive") : String(page.fields.status);
-}
-
-/** An event's clock: current/max with a maximum of at least 1 (EVT-2); undefined for anything else. */
-function eventClock(page: Page): { value: number; max: number; } | undefined
-{
-    return clockOf(page.fields.clock);
 }
 
 function clockOf(value: unknown): { value: number; max: number; } | undefined
