@@ -8,6 +8,7 @@ import { comparableText, sameName, valueNamed, withArticle } from "../core/text.
 import { readCounter } from "../counters/index.ts";
 import type { Effect } from "../effects/index.ts";
 import {
+    concernsPlayer,
     findPage,
     isEmptyField,
     isInParty,
@@ -587,10 +588,14 @@ function keptTurn(current: Scene, named: string[]): { round: number; turn: strin
 /** One use of a turn by one in the scene (TRN-1–TRN-3), kept in the scene, with its line in the log. */
 function useOfTurn(root: string, world: World, input: SceneInput, context: Context, current: Scene): SceneResult
 {
-    const [who] = input.who ?? [];
+    const [who, ...others] = input.who ?? [];
 
     if (who === undefined || input.uses === undefined || input.uses.trim() === "") {
         throw new Error("Give who and what they use, such as who Ettore, uses attack.");
+    }
+
+    if (others.length > 0) {
+        throw new Error(`One at a time: give who as one name, then use again for ${others.join(", ")}. Nothing changed.`);
     }
 
     if (current.order === undefined) {
@@ -640,7 +645,8 @@ function spendOne(root: string, context: Context, world: World, who: { name: str
         writePage(world, who.page.name, undefined, { set: { [spends.field]: value } });
     }
 
-    const visibility = who.copy ? "hidden" : "public";
+    // Seen where the player sees the page, as change writes it: never a foe's count.
+    const visibility = who.copy || !concernsPlayer(world, who.page) ? "hidden" : "public";
     appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", visibility, { page: who.name, field: spends.field, before: String(spends.before), after: String(after), why }));
 }
 

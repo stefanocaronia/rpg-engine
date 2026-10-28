@@ -1223,7 +1223,8 @@ function readFields(fields: string[] | Record<string, unknown>): Record<string, 
 /** Items for list fields: each value gives one item, or several when it is a list; the same field may come more than once. */
 function readListItems(fields: string[] | Record<string, unknown>): Record<string, unknown[]>
 {
-    const items: Record<string, unknown[]> = {};
+    // No prototype: a field named constructor or toString is a field like any other.
+    const items: Record<string, unknown[]> = Object.create(null) as Record<string, unknown[]>;
 
     for (const [name, given] of Array.isArray(fields) ? fields.map(readAssignment) : Object.entries(fields)) {
         const value = listFromText(name, given);

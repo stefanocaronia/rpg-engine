@@ -132,7 +132,11 @@ export async function timePassedLines(root: string, context: Context, from: Game
             const given = await packageCode(code, context);
 
             if (given?.timePassed !== undefined) {
-                const said: unknown = await withinCall(given.timePassed({ from: momentOf(root, context, from), to: momentOf(root, context, to) }, gameOf(root, context, code)), context.signal);
+                // Its own stop, which the cap and the call's own stop both give: past either, its game writes nothing more.
+                const own = new AbortController();
+                const signal = context.signal === undefined ? own.signal : AbortSignal.any([context.signal, own.signal]);
+                const game = gameOf(root, { ...context, signal }, code);
+                const said: unknown = await withinCall(given.timePassed({ from: momentOf(root, context, from), to: momentOf(root, context, to) }, game), signal, () => own.abort());
 
                 if (said !== undefined && (!Array.isArray(said) || !said.every((line) => typeof line === "string"))) {
                     throw new Error("its timePassed gave no list of lines, which is what it gives");
@@ -141,8 +145,12 @@ export async function timePassedLines(root: string, context: Context, from: Game
                 lines.push(...cappedLines(code, (said ?? []) as string[]));
             }
         } catch (error) {
-            // One line: the master reads it among others.
-            lines.push(`The ${packageLabel(code)} failed after the time passed: ${firstLine(error)}. The time did pass: do not advance again; validate says how to fix it.`);
+            // One line: the master reads it among others; a call the player stopped is no fault of the package's.
+            lines.push(
+                error instanceof StoppedCall
+                    ? `The ${packageLabel(code)} gave nothing before the call was stopped. The time did pass: do not advance again.`
+                    : `The ${packageLabel(code)} failed after the time passed: ${firstLine(error)}. The time did pass: do not advance again; validate says how to fix it.`,
+            );
         }
     }
 
@@ -496,16 +504,23 @@ function asCommand(code: CodePackage, command: PackageCommand, taken: string[]):
     });
 }
 
+/** A call the player stopped while a package's code had not answered. */
+class StoppedCall extends Error
+{}
+
 /** What a package's code gives, unless the call is stopped first or it takes longer than any answer of the player's should: then why not. */
-async function withinCall<T>(work: T | Promise<T>, signal: AbortSignal | undefined): Promise<T>
+async function withinCall<T>(work: T | Promise<T>, signal: AbortSignal | undefined, giveUp: () => void): Promise<T>
 {
     // Never a rejection that nothing handles, when it ends after the call went on without it.
     Promise.resolve(work).catch(() => undefined);
     let timer: NodeJS.Timeout | undefined;
     let abort = (): void => undefined;
     const stopped = new Promise<never>((_, refuse) => {
-        timer = setTimeout(() => refuse(new Error(`it gave nothing for ${longestPackageWait / 60_000} minutes`)), longestPackageWait);
-        abort = () => refuse(new Error("the call was stopped before it gave anything"));
+        timer = setTimeout(() => {
+            refuse(new Error(`it gave nothing for ${longestPackageWait / 60_000} minutes`));
+            giveUp();
+        }, longestPackageWait);
+        abort = () => refuse(new StoppedCall("the call was stopped before it gave anything"));
 
         if (signal?.aborted === true) {
             abort();

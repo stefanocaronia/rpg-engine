@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
+import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
 let context: Context;
@@ -123,3 +123,22 @@ async function ok(...args: string[]): Promise<string>
     expect(result.exitCode, result.output).toBe(0);
     return result.output;
 }
+
+describe("a count spent in a turn by someone the player does not see (D-287)", () => {
+    it("is a hidden line of the log, as change writes it, and the player's own stays in view", async () => {
+        const own = makeTempFolder();
+        const there = testContext(own);
+        const run = async (...args: string[]): Promise<string> => (await runCommandLine(args, there)).output;
+        await run("init", "--name", "Guadoscuro", "--language", "en", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
+        inPlay(own);
+        await run("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "vocations=[[Scout]] 2");
+        await run("write", "Varro", "--type", "character", "--set", "role=npc", "--set", "vocations=[[Scout]] 2", "--set", "hostile=true");
+        await run("write", "Varro", "--set", "second-deed=1/1");
+        await run("scene", "open", "--title", "Cripta", "--type", "combat", "--with", "Ettore", "--with", "Varro");
+        await run("scene", "order", "--order", "Varro", "--order", "Ettore");
+        await run("scene", "use", "--who", "Varro", "--uses", "deed");
+        await run("scene", "use", "--who", "Varro", "--uses", "deed", "--by", "Second Deed");
+        const spent = readLogFile(own).filter((entry) => entry.type === "counter-changed" && entry.data.page === "Varro");
+        expect(spent.map((entry) => entry.visibility)).toEqual(["hidden"]);
+    });
+});

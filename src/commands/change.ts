@@ -236,9 +236,15 @@ function diceBy(by: number | string | undefined, context: Context): { by: number
         return undefined;
     }
 
-    // Dice that do not read as a roll, as -(2d6)+3 with brackets around a part: the whole roll goes in them.
-    if (!isDiceNotation(notation)) {
-        throw new Error(`by ${String(by)} does not read as a roll: put the whole roll in brackets after the sign, such as by -(2d6+3), which takes away 2d6+3. Nothing changed.`);
+    // Dice that do not read as a roll: as -(2d6)+3, with brackets around a part, the whole roll goes in them; in brackets already, what the dice say is wrong.
+    const problem = diceProblem(notation);
+
+    if (problem !== undefined) {
+        throw new Error(
+            bracketed === undefined
+                ? `by ${String(by)} does not read as a roll: put the whole roll in brackets after the sign, such as by -(2d6+3), which takes away 2d6+3. Nothing changed.`
+                : `by ${String(by)} does not read as a roll: ${problem} Nothing changed.`,
+        );
     }
 
     // -1d8-2 reads as 1d8+2 taken away or as 1d8-2 taken away: a minus before more than one term asks for brackets (playtest 08).
@@ -294,14 +300,14 @@ function rolledText(rolled: string, hidden: HiddenDice | undefined): string
     return hidden === undefined ? `Rolled ${rolled}.` : `Hidden roll ${hidden.id}, only for the master: ${rolled}${screen}\nIts fingerprint, only if the player asks for it: ${hidden.fingerprint}`;
 }
 
-/** Whether a text reads as dice, such as 2d6+3: coins and names of fields do not. */
-function isDiceNotation(text: string): boolean
+/** What keeps a text from reading as dice, such as 2d6+3, as roll says it; a text of no dice, as coins or a field's name, is no roll either. Undefined when it reads. */
+function diceProblem(text: string): string | undefined
 {
     try {
-        return parseNotation(text).some((term) => term.kind === "dice");
+        return parseNotation(text).some((term) => term.kind === "dice") ? undefined : `${text} holds no dice.`;
     } catch (error) {
         if (error instanceof DiceError) {
-            return false;
+            return error.message;
         }
 
         throw error;

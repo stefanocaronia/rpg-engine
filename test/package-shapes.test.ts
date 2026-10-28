@@ -89,7 +89,18 @@ describe("a package's timePassed written wrongly", () => {
         context = { ...context, signal: stop.signal };
         setTimeout(() => stop.abort(), 300);
         const ran = await rpg("advance", "--by", "2h");
-        expect(ran.output).toContain("failed after the time passed: the call was stopped before it gave anything");
+        expect(ran.output).toContain("gave nothing before the call was stopped. The time did pass: do not advance again.");
         expect(readLogFile(folder).filter((entry) => entry.type === "time-advanced")).toHaveLength(2);
+    }, 10_000);
+
+    it("writes nothing more once the call is stopped, though its code goes on", async () => {
+        await rpg("advance", "--to", "day 1, 08:00");
+        extension("late", "export default () => ({ timePassed: async (_p, game) => { await new Promise((done) => setTimeout(done, 600)); game.log('LATE WRITE', 'public'); return []; } });");
+        const stop = new AbortController();
+        context = { ...context, signal: stop.signal };
+        setTimeout(() => stop.abort(), 200);
+        await rpg("advance", "--by", "2h");
+        await new Promise((done) => setTimeout(done, 800));
+        expect(JSON.stringify(readLogFile(folder))).not.toContain("LATE WRITE");
     }, 10_000);
 });
