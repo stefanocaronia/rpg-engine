@@ -893,3 +893,15 @@ function wrongText(system: GameSystem, field: string, wrong: string[], onSheet: 
     const names = wrong.map((name) => `"${name}"`).join(", ");
     return `${names} ${wrong.length === 1 ? "is not one of the names" : "are not names"} ${field} takes in the system ${system.name}: ${allowed.join(", ")}.${list}${own}`;
 }
+
+/**
+ * What the master is told as a roll of the player character recalls what they know, as History, by the fields the system declares (sheet-knowledge): its
+ * outcome said as knowledge, never as an episode of their past the player did not tell (Elena's tests of 28 October, where a high roll brought one).
+ */
+export function knowledgeNote(system: GameSystem | undefined, fields: string[]): string | undefined
+{
+    const knowledge = new Set((system?.sheetKnowledge ?? []).map(comparableText));
+    return fields.some((field) => knowledge.has(comparableText(field)))
+        ? "What it reveals is what the world shows or their trade knows, said as knowledge: an episode of their past the player has not told is a question to them."
+        : undefined;
+}

@@ -18,7 +18,7 @@ systems/<name>/
   build/, test/      scripts and tests, not shipped
 ```
 
-The engine's own systems are in its `systems/` folder; any other is installed as a package with `package install`: from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 5}}`. A campaign names it in `campaign.yaml` (`system: 5e`). A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the systems it started with.
+The engine's own systems are in its `systems/` folder; any other is installed as a package with `package install`: from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 6}}`. A campaign names it in `campaign.yaml` (`system: 5e`). A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the systems it started with.
 
 The schema of `system.yaml` is part of the package API (section 6), which goes up with every addition a package may use: a new key comes with a new API number, and a system that uses it says that number, so that an older engine asks to be updated instead of refusing an unknown key. A folder without a `package.json` is data alone: it is read as made for the engine that reads it, and brings no code.
 
@@ -149,6 +149,7 @@ marks: [save-proficiencies, skill-proficiencies, expertise]
 - `sheet-actions`: the fields whose items the player acts with on the dashboard, each with its verbs, the engine's (`attack`, `use`, `equip`, `unequip`) or the system's own, the first the one a click says. The page makes it the player's own sentence to the master, who rules it; it checks nothing. Without it, the sheet only shows.
 - `sheet-verbs`: the system's own verbs, each with its `label`, its `title` with `{item}` and the sentence it `says`; `says-on` (`{target}`), `says-at` (`{square}`) and `says-self` together let the player choose on whom. In the system's language; its `words` translate them.
 - `sheet-dice`: the dice of the dashboard's free roll for each number. `sheet-odds`: the dice of a better and a worse free roll, and `when`, fields with the formulas that make them `better` or `worse` above 0; both cancel out, and `why`, a word of the system the dashboard shows beside the roll, as `{better: 2d20kh1, worse: 2d20kl1, when: [{fields: [stealth], worse: "count(equipped, stealth-disadvantage = true)", why: Armor}]}`.
+- `sheet-knowledge`: the fields whose checks recall what a character knows, as `[arcana, history, medicine, nature, religion]`. When `roll` or `ask` rolls one for the player character, the output tells the master to say what it reveals as knowledge, never as an episode of the character's past the player has not told.
 - `status-line`: the character's line in `status`; `?` hides a field at zero.
 - `values`: the names a closed list or text takes, such as the skills or the alignments, written in the system's language and shown in the campaign's. `sheet-values`: the same, only on a page that keeps the sheet, as the languages, while a creature's stat block keeps its own words. `marks`: lists that mark the numbers reading them (`stealth +7 ●●`).
 
@@ -346,7 +347,7 @@ An extension adds the same keys but `status-line` and `travel`, in its `extensio
 Where data is not enough, a system brings code, as the 5e does for its dying point, its death saves and its hit dice on the dashboard. Its `package.json` says so, as an extension's does, with the API it is made for:
 
 ```json
-{ "name": "@rpgengine/system-5e", "version": "1.0.0", "type": "module", "main": "dist/index.js", "rpg-engine": { "kind": "system", "api": 5, "page": "dist/page.js" } }
+{ "name": "@rpgengine/system-5e", "version": "1.0.0", "type": "module", "main": "dist/index.js", "rpg-engine": { "kind": "system", "api": 6, "page": "dist/page.js" } }
 ```
 
 A system's code has the contract of an extension's, `PackageEntry`, described in [extensions.md](extensions.md#3-code): its `commands`, `timePassed`, the hooks of its `widgets`, and its page module. `system.yaml` declares `icons`, `widgets` and `figures` with the keys and limits of an `extension.yaml`. The engine calls the hooks after its own writes for the system first, then for the extensions, each optional, each giving lines for the command's output:

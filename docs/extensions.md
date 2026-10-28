@@ -6,7 +6,7 @@ An extension adds to a campaign what its game system lacks: rules as text, parts
 
 ```text
 rpg-engine-<name>/
-  package.json       its npm name, version and code; "rpg-engine": {"kind": "extension", "api": 5, "page": "dist/page.js"}; the keyword rpg-engine-package;
+  package.json       its npm name, version and code; "rpg-engine": {"kind": "extension", "api": 6, "page": "dist/page.js"}; the keyword rpg-engine-package;
                      bugs, or a repository on GitHub, for the dashboard's "Report a problem" link
   extension.yaml     what it is (section 2)
   instructions/*.md  what it adds to the master's instructions, as a system's parts
@@ -17,7 +17,7 @@ rpg-engine-<name>/
   test/              its tests, not shipped
 ```
 
-Its name without the scope is the name its commands start with: `@rpgengine/weather` gives `weather` and `weather-set`. `api` is the version of the package API it is made for, one number for every kind of package: the contract of its code (section 3) and what its `extension.yaml` or `system.yaml` may declare. It goes up with every addition a package may use, and the engine reads a range: an extension made for the API 1 to its own, a game system made for 5 to its own. 2 added the widgets, 3 the additions to the game system, the pages, the scene, writing its own fields and asking the player, 4 its code in the dashboard's page, 5 one contract for extensions and game systems. A package made for a newer API is refused, before installing it, saying that rpg-engine must be updated first; one made for an API the engine no longer reads, saying to install a newer version of it.
+Its name without the scope is the name its commands start with: `@rpgengine/weather` gives `weather` and `weather-set`. `api` is the version of the package API it is made for, one number for every kind of package: the contract of its code (section 3) and what its `extension.yaml` or `system.yaml` may declare. It goes up with every addition a package may use, and the engine reads a range: an extension made for the API 1 to its own, a game system made for 5 to its own. 2 added the widgets, 3 the additions to the game system, the pages, the scene, writing its own fields and asking the player, 4 its code in the dashboard's page, 5 one contract for extensions and game systems, 6 a game system's `sheet-knowledge`. A package made for a newer API is refused, before installing it, saying that rpg-engine must be updated first; one made for an API the engine no longer reads, saying to install a newer version of it.
 
 ## 2. extension.yaml
 

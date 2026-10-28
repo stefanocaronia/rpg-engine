@@ -7,7 +7,7 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
 import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256, type ThrownDie } from "../dice/index.ts";
-import { declaredKind, findPage, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
+import { declaredKind, findPage, isPlayerCharacter, type Page, pagesWithName, type World, writePage } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { effectiveFields, effectsOf } from "./effect-layer.ts";
 import { systemNamed } from "./game-effects.ts";
@@ -18,6 +18,7 @@ import { rollPageTable } from "./game-tables.ts";
 import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "./game-world.ts";
 import { firstInChat } from "./parts.ts";
+import { knowledgeNote } from "./sheet.ts";
 import { itemList, signedText, workedFields } from "./worked-out.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.
@@ -151,7 +152,9 @@ export const roll = defineCommand({
             : packagesRolled(root, context, { who: input.who, notation: diceRoll.notation, total: diceRoll.total, faces: diceRoll.faces, dice: diceRoll.dice, text, id: entry.id });
         const own = said.lines.length > 0 ? said.lines.join("\n") : roller === undefined ? undefined : rollerNote(roller.world, system, roller.page, campaignSystemWords(root, context));
         // The system's lines take the place of the engine's note, as a death save does; the extensions' come after it (D-514).
-        const note = [own, ...said.added, said.problem].filter((line) => line !== undefined && line !== "").join("\n") || undefined;
+        // A check of what the player character knows is told as knowledge (sheet-knowledge).
+        const knowledge = roller !== undefined && isPlayerCharacter(roller.page) ? knowledgeNote(system, Object.keys(named.taken)) : undefined;
+        const note = [own, knowledge, ...said.added, said.problem].filter((line) => line !== undefined && line !== "").join("\n") || undefined;
         const shown = { kind: "roll" as const, id: entry.id, text, total: diceRoll.total, why: input.why, who: input.who, check: input.check, physical, hidden, fingerprint: shownFingerprint, note, kept };
         // A who of no page may be a party member named wrongly: the master is told how to undo the screen (review of 25 October).
         const stranger = screened && input.who !== undefined && namesNoOne(root, context, input.who) ? { stranger: true as const } : {};

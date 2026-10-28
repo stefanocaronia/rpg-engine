@@ -18,6 +18,7 @@ import { newDatedLogEntry } from "./game-time.ts";
 import { campaignSystem, campaignWorld, systemWordsOf } from "./game-world.ts";
 import { placeOnMap } from "./move.ts";
 import { hasNames, namesAsZero, rollerOf, sheetDiceOf, withSheetValues } from "./roll.ts";
+import { knowledgeNote } from "./sheet.ts";
 
 // The words of the buttons, in the campaign's language, as the dashboard's languages (playtest 15); English for the others (ASK-7).
 const buttonWords: Record<string, { roll: string; change: string; choice: string; square: string; rest: string; done: string; }> = {
@@ -65,7 +66,7 @@ type InWords = { kind: "unanswered" | "unavailable" | "absent" | "physical" | "d
 
 /** What the player answered, or the question to ask them in words. */
 export type AskResult =
-    | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; faces: number[]; notes?: string[]; }
+    | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; faces: number[]; knowledge?: string; notes?: string[]; }
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
     | { kind: "said"; words: string; }
@@ -155,7 +156,7 @@ export const ask = defineCommand({
         switch (result.kind) {
             case "roll":
                 return `${result.id} ${result.who}, ${result.check}: ${result.text}, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides; write nothing until your message is ready.${
-                    (result.notes ?? []).map((line) => `\n${line}`).join("")
+                    [result.knowledge, ...(result.notes ?? [])].filter((line) => line !== undefined).map((line) => `\n${line}`).join("")
                 }`;
             case "changed":
                 return "The player changed their mind: no roll. Ask what they do instead, and stop.";
@@ -328,7 +329,19 @@ async function rollChosen(root: string, context: Context, question: string, chec
     appendLogEntry(root, entry);
     // What the packages' code makes of the roll, as the 5e's death save (D-448).
     const notes = allSaid(packagesRolled(root, context, { who, notation: diceRoll.notation, total: diceRoll.total, faces: diceRoll.faces, dice: diceRoll.dice, text: diceRoll.text, id: entry.id }));
-    return { kind: "roll", id: entry.id, who, check: check.label, text: diceRoll.text, total: diceRoll.total, faces: diceRoll.faces, ...(notes.length === 0 ? {} : { notes }) };
+    // A check of what the character knows is told as knowledge (sheet-knowledge).
+    const knowledge = knowledgeNote(campaignSystem(root, context), check.field === undefined ? [] : [check.field]);
+    return {
+        kind: "roll",
+        id: entry.id,
+        who,
+        check: check.label,
+        text: diceRoll.text,
+        total: diceRoll.total,
+        faces: diceRoll.faces,
+        ...(knowledge === undefined ? {} : { knowledge }),
+        ...(notes.length === 0 ? {} : { notes }),
+    };
 }
 
 /**

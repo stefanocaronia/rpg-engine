@@ -104,12 +104,12 @@ describe("a game system as a package (D-485)", () => {
         // A system made for a newer API is never installed (D-515).
         const future = join(makeTempFolder(), "system-future");
         mkdirSync(future, { recursive: true });
-        writeFileSync(join(future, "package.json"), JSON.stringify({ name: "@test/system-future", version: "2.0.0", "rpg-engine": { kind: "system", api: 6 } }));
+        writeFileSync(join(future, "package.json"), JSON.stringify({ name: "@test/system-future", version: "2.0.0", "rpg-engine": { kind: "system", api: 7 } }));
         writeFileSync(join(future, "system.yaml"), "title: a system of tomorrow\nlanguage: en\n");
         npm = fakeNpm(modules, { "@test/system-tiny": tiny, "@test/system-future": future });
         context = { ...context, packages: npm, systemFolders: [...context.systemFolders, modules], confirm: windowAnswering("yes") };
         expect((await rpg("package", "install", "@test/system-future")).output).toBe(
-            "@test/system-future 2.0.0 cannot be used, because it is made for the API 6, and this rpg-engine reads the API 5 for a game system: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat. Nothing changed.",
+            "@test/system-future 2.0.0 cannot be used, because it is made for the API 7, and this rpg-engine reads the API 5 to 6 for a game system: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat. Nothing changed.",
         );
         const result = await rpg("package", "install", "@test/system-tiny");
         expect(result.output).toBe("Installed the game system tiny 1.0.0, a tiny test system, not verified: at the player's risk. It is for a new campaign, chosen in its setup: this one plays ironsworn.");
@@ -290,9 +290,9 @@ describe("rpg package install", () => {
         expect((await rpg("package", "install", "npm:seasons-of-the-test")).output).toBe(
             "seasons-of-the-test is installed on this computer, but it is for the game system fake, and the campaign plays ironsworn: the campaign does not use it.",
         );
-        npm.describe = (spec) => Promise.resolve({ name: spec, version: "5.0.0", kind: "extension", api: 6 });
+        npm.describe = (spec) => Promise.resolve({ name: spec, version: "5.0.0", kind: "extension", api: 7 });
         expect((await rpg("package", "install", "omens")).output).toBe(
-            "@rpgengine/omens 5.0.0 cannot be used, because it is made for the API 6, and this rpg-engine reads the API 1 to 5 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat. Nothing changed.",
+            "@rpgengine/omens 5.0.0 cannot be used, because it is made for the API 7, and this rpg-engine reads the API 1 to 6 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat. Nothing changed.",
         );
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("extensions:");
     });

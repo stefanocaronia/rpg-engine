@@ -88,6 +88,8 @@ token-icons:
   icons:
     Warden: "M4 20V8l8-5 8 5v12Z M9 20v-6h6v6"
     Scout: "M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+# Wit recalls what a character knows; noticing is what they see.
+sheet-knowledge: [wit-bonus]
 # Two six-sided dice and a bonus; a better roll keeps two of three dice, the higher, a worse one the lower.
 sheet-dice:
   2d6: [might-bonus, grace-bonus, wit-bonus, notice]

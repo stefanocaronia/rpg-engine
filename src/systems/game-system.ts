@@ -196,6 +196,7 @@ const systemSchema = z.object({
     "sheet-dice": z.record(z.string().regex(sheetDicePattern), z.array(z.string().min(1)).min(1), {
         error: "write it as dice alone, as 1d20 or 2d6+1d4, and the fields of the sheet rolled with them, such as 1d20: [athletics, stealth]",
     }).optional(),
+    "sheet-knowledge": z.array(z.string().min(1)).min(1).optional(),
     "sheet-odds": z.object({
         better: z.string().regex(rollNamePattern),
         worse: z.string().regex(rollNamePattern),
@@ -530,6 +531,8 @@ export interface GameSystem
     sheet: SheetGroup[];
     /** By field, the dice a number of the sheet is rolled with, for the dashboard's free roll (D-280), such as 1d20 by insight. */
     sheetDice: Record<string, string>;
+    /** The fields of the sheet whose rolls recall what the character knows, as History: their outcome is told as knowledge (D-530, Elena's tests of 28 October). */
+    sheetKnowledge: string[];
     /**
      * The dice of a better and a worse free roll, and the fields of the sheet that formulas make better or worse above 0, as Stealth in heavy armor or a check
      * at exhaustion 1; both cancel out (D-445).
@@ -870,6 +873,12 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
         throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-dice: ${twice[0]} is listed twice; give each field one set of dice.`);
     }
 
+    const unknownKnowledge = (data["sheet-knowledge"] ?? []).find((field) => kindOf(field) === undefined);
+
+    if (unknownKnowledge !== undefined) {
+        throw new Error(`The game system ${name} cannot be read, because ${path} is not valid: sheet-knowledge: ${unknownKnowledge} is not declared in fields.`);
+    }
+
     // The cards the dashboard places are groups of the sheet (D-295); at hand in a fight, its fields too (D-315).
     for (const [key, names] of Object.entries(data["sheet-cards"] ?? {})) {
         const fields = key === "at-hand" ? sheet.flatMap((group) => group.entries.map((entry) => comparableText(entry.field))) : [];
@@ -958,6 +967,7 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
         ...(data.grid === undefined ? {} : { grid: gridOf(data.grid) }),
         sheet,
         sheetDice: Object.fromEntries(rolled),
+        sheetKnowledge: data["sheet-knowledge"] ?? [],
         ...(data["sheet-odds"] === undefined ? {} : {
             sheetOdds: {
                 better: data["sheet-odds"].better,

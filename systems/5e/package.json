@@ -7,7 +7,7 @@
   "main": "dist/index.js",
   "rpg-engine": {
     "kind": "system",
-    "api": 5,
+    "api": 6,
     "page": "dist/page.js"
   }
 }

@@ -547,19 +547,19 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(readLogFile(folder)).toHaveLength(lines);
     });
 
-    it("read packages made for the API 1 to 5, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
-        expect([0, 1, 2, 3, 4, 5, 6, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, false, false, false]);
+    it("read packages made for the API 1 to 6, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
+        expect([0, 1, 2, 3, 4, 5, 6, 7, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, true, false, false, false]);
         // A game system's first API is 5, the one contract (D-514).
-        expect([1, 4, 5, 6].map((api) => readsApi(api, "system"))).toEqual([false, false, true, false]);
+        expect([1, 4, 5, 6, 7].map((api) => readsApi(api, "system"))).toEqual([false, false, true, true, false]);
         expect(findExtension(testExtensionFolders, "omens")?.adds).toEqual({});
         expect(findExtension(testExtensionFolders, "skies")?.name).toBe("skies");
         expect(findExtension(testExtensionFolders, "wards")?.adds.counters).toEqual({ "ward-charges": { max: "wits + 1" }, momentum: { min: -6, max: 8 } });
 
         const newer = join(folder, "newer");
         cpSync(join(testExtensionFolders[0], "wards"), newer, { recursive: true });
-        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 6 } }));
+        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 7 } }));
         expect(() => readExtension(newer)).toThrow(
-            "The extension @rpgengine/wards cannot be used, because it is made for the API 6, and this rpg-engine reads the API 1 to 5 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
+            "The extension @rpgengine/wards cannot be used, because it is made for the API 7, and this rpg-engine reads the API 1 to 6 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
         );
     });
 });

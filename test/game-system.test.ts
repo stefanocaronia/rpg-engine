@@ -172,6 +172,15 @@ describe("the sheet of a system (DAT-2, SYS-8)", () => {
         expect(found?.values).toEqual({ Doti: ["agile", "forte"] });
     });
 
+    it("reads the fields whose checks recall what a character knows, none when it declares none, and refuses a field it does not declare", () => {
+        system(near, "prova", `${declared}sheet-knowledge: [forza-mod]\n`);
+        expect(findSystem([near], "prova")?.sheetKnowledge).toEqual(["forza-mod"]);
+        system(near, "prova", declared);
+        expect(findSystem([near], "prova")?.sheetKnowledge).toEqual([]);
+        system(near, "prova", `${declared}sheet-knowledge: [sapienza]\n`);
+        expect(() => findSystem([near], "prova")).toThrow("sheet-knowledge: sapienza is not declared in fields.");
+    });
+
     it("reads the dice each number of the sheet is rolled with, and refuses a field it does not declare, one listed twice, and more than dice (D-280)", () => {
         system(near, "prova", `${declared}sheet-dice:\n  1d20: [forza-mod]\n  2d6+1d4: [vigore]\n`);
         expect(findSystem([near], "prova")?.sheetDice).toEqual({ "forza-mod": "1d20", "vigore": "2d6+1d4" });
