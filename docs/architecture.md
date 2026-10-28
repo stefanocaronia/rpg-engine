@@ -16,6 +16,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | [src/mcp-server.ts](../src/mcp-server.ts) | The MCP server |
 | [src/bell-listener.ts](../src/bell-listener.ts) | `rpg --listen`, Claude Code's Stop hook that `init` writes: it waits at its chat's dashboard and wakes the chat when the player acts there |
 | [src/dashboard-server.ts](../src/dashboard-server.ts), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
+| [src/dashboard-files.ts](../src/dashboard-files.ts), [src/dashboard-player.ts](../src/dashboard-player.ts), [src/dashboard-news.ts](../src/dashboard-news.ts), [src/dashboard-writes.ts](../src/dashboard-writes.ts) | The server's parts: the files it serves, the master's question on the page, the player's words and what the master hears of the page, what the page writes |
 | [src/testing.ts](../src/testing.ts), [src/system-checks.ts](../src/system-checks.ts) | `rpg-engine/testing`, the test kit for extensions and game systems: a campaign with its packages linked, its commands, log, widgets, the tools' descriptions and dashboard, and the checks of a system's folder; see [extensions.md](extensions.md#6-tests) |
 | [systems/](../systems/) | The one game system the engine brings, [free](../systems/free/); the others are packages of their own, as the [5e](https://github.com/stefanocaronia/rpg-engine-5e) |
 | [instructions/](../instructions/) | The game master's instructions |
