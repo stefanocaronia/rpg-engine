@@ -43,7 +43,7 @@ import { playerCharacters } from "./pages/index.ts";
 import { codexClient, helperCommand, queueInCodex } from "./pictures/index.ts";
 import { type Acts, actText, giveBackAct, markHeard, markRung, newActs, takeActs, withdrawAct } from "./player-acts.ts";
 import { type Note, readNotes, removeNote, writeNote } from "./player-notes/index.ts";
-import { installedSystems, rollName } from "./systems/index.ts";
+import { readableSystems, rollName } from "./systems/index.ts";
 import { loadSystemCode } from "./systems/index.ts";
 import { drawnOrnament, themeCss, themeFile } from "./themes/index.ts";
 
@@ -1264,7 +1264,7 @@ async function packagesNow(response: ServerResponse, served: Served, npm: boolea
             return {
                 system: system === undefined ? null : { name: system.name, title: system.title },
                 // The other systems of this computer, for a new campaign: a campaign's own is chosen in its setup (D-475).
-                otherSystems: installedSystems(served.context.systemFolders).filter((other) => other.name !== system?.name).map((other) => ({ name: other.name, title: other.title })),
+                otherSystems: readableSystems(served.context.systemFolders).filter((other) => other.name !== system?.name).map((other) => ({ name: other.name, title: other.title })),
                 ...(list.kind === "list" ? { installed: inLanguage(list.installed, served, readTextSetting(root, "language")), missing: list.missing, adventures: list.adventures, systems: list.systems, languages: list.languages } : {}),
                 ...(available?.kind === "available" ? { available: available.packages, ...(available.failed === undefined ? {} : { failed: available.failed }) } : {}),
                 ...(served.packageWork === undefined ? {} : { working: served.packageWork }),

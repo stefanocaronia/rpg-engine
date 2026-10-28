@@ -782,6 +782,22 @@ export function installedSystems(folders: string[]): GameSystem[]
     return systems;
 }
 
+/** The installed game systems that read, for a list of them: one whose system.yaml does not read stops no list, and the campaign that plays it hears why. */
+export function readableSystems(folders: string[]): GameSystem[]
+{
+    return systemFolders(folders).flatMap((found, index, all) => {
+        if (all.slice(0, index).some((before) => comparableText(before.name) === comparableText(found.name))) {
+            return [];
+        }
+
+        try {
+            return [readSystem(found.folder, found.name)];
+        } catch {
+            return [];
+        }
+    });
+}
+
 /** What a campaign may add to its game system in campaign.yaml (CAM-1): its own fields, tables, formulas, counters, recipes, line of the player character and travel. */
 export const campaignDataNames = ["fields", "tables", "computed", "counters", "recipes", "status-line", "travel", "values", "condition-icons"] as const;
 

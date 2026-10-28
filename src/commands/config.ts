@@ -51,7 +51,7 @@ import { hostInstructions } from "../instructions/index.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
 import { claudeSays, codexSays } from "../pictures/index.ts";
-import { campaignDataNames, findCampaignSystem, findSystem, installedSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
+import { campaignDataNames, findCampaignSystem, findSystem, readableSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
 import { readCalendar, readCalendarStart } from "../time/index.ts";
 import { libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./game-library.ts";
 import { campaignMode, campaignNote } from "./game-mode.ts";
@@ -65,7 +65,9 @@ import { campaignSystem, campaignWorld, countedByGame, installedSystemName, play
 import { mentorPart, stylePart } from "./parts.ts";
 
 // A use whose maximum reads what gives it, in quotes for its commas (CAM-1).
-const counterExample = 'bulwark-dice: {max: "4 * has(features, Bulwark)", refill: rest}';
+const counterExample = 'bulwark-dice: {max: "4 * has(features, Bulwark)", refill: {{rest}}}';
+// The same in a message, which no system's names fill: its maximum alone.
+const counterShape = 'bulwark-dice: {max: "4 * has(features, Bulwark)"}';
 
 export const config = defineCommand({
     name: "config",
@@ -188,7 +190,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     }
 
     if (input.add !== undefined && input.setting !== undefined && entrySettingNames.includes(checkSettingName(input.setting))) {
-        throw new Error(`"${input.setting}" takes entries by name as the value, such as setting counters, value '${counterExample}'; remove takes their names.`);
+        throw new Error(`"${input.setting}" takes entries by name as the value, such as setting counters, value '${counterShape}'; remove takes their names.`);
     }
 
     if (listChange && (input.setting === undefined || (input.value !== undefined && !entrySettingNames.includes(checkSettingName(input.setting))))) {
@@ -886,7 +888,7 @@ function calendarStartValue(root: string, context: Context, value: string): stri
  */
 function systemShown(root: string, system: string | undefined, context: Context): string
 {
-    const installed = `installed: ${installedSystems(context.systemFolders).map((installedSystem) => installedSystem.name).join(", ") || "none"}`;
+    const installed = `installed: ${readableSystems(context.systemFolders).map((installedSystem) => installedSystem.name).join(", ") || "none"}`;
 
     if (system === undefined) {
         return `(missing; ${installed})`;
@@ -954,7 +956,7 @@ function entriesOf(setting: string, text: string): Record<string, unknown>
     const value = yamlValue(text, "the entries", "name: value");
 
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
-        throw new Error(`${setting} takes entries by name, written as in system.yaml, such as ${setting === "counters" ? `'${counterExample}'` : '"name: value"'}. Nothing changed.`);
+        throw new Error(`${setting} takes entries by name, written as in system.yaml, such as ${setting === "counters" ? `'${counterShape}'` : '"name: value"'}. Nothing changed.`);
     }
 
     return value as Record<string, unknown>;

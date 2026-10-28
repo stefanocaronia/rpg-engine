@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { z } from "zod";
 import { changeExtensions, findCampaign, readTextSetting, requireCampaign } from "../campaign/index.ts";
+import { plainText } from "../confirm/index.ts";
 import { type Context, engineSystemsFolder, type PackageInfo } from "../core/context.ts";
 import { type Examples, neutralExamples } from "../core/examples.ts";
 import { installedFromFolder } from "../core/files.ts";
@@ -12,7 +13,7 @@ import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { dropConsent, type Extension, findExtension, installedExtensions, isLocalSpec, issuesPage, isTarball, isVerified, readExtension, recordConsent, shortName, verifiedScope } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
-import { findSystem, installedSystems, systemFolders, systemHasCode } from "../systems/index.ts";
+import { findSystem, readableSystems, systemFolders, systemHasCode } from "../systems/index.ts";
 import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./game-adventures.ts";
 import { campaignExamples } from "./game-examples.ts";
 import { listedExtensions, runsCode } from "./game-extension-list.ts";
@@ -372,8 +373,11 @@ async function installed(root: string, context: Context, name: string): Promise<
 
     const extension = usable(context, described.name);
 
-    if (extension === undefined) {
-        throw new Error(`${described.name} was installed, but RPG Engine cannot use it as an extension. Nothing changed in the campaign.`);
+    // What npm installed is not what the player said yes to, or no extension: it goes off this computer again, and never runs.
+    if (extension === undefined || extension.version !== described.version) {
+        await packages.uninstall(described.name);
+        (context.extensionFolders ?? []).forEach((folder) => files().refresh(folder));
+        throw new Error(`npm installed ${described.name}, but not as the extension ${described.version} the player said yes to: RPG Engine cannot use it, and took it off this computer again. Nothing changed in the campaign.`);
     }
 
     // The player's yes holds for this version and these files, on this computer: its code runs on the server and in the page (D-478, D-510).
@@ -510,7 +514,7 @@ function systemsHere(root: string, context: Context): InstalledSystem[]
 {
     const plays = readTextSetting(root, "system") ?? "";
     const folders = systemFolders(context.systemFolders);
-    return installedSystems(context.systemFolders).map((system): InstalledSystem => {
+    return readableSystems(context.systemFolders).map((system): InstalledSystem => {
         const manifest = packageOf(folders.find((one) => one.name === system.name)?.folder ?? system.folder);
         // The engine's own have no package of their own here; one npm installed is ours only by our scope, and never from a folder (D-441).
         const shipped = isInside(engineSystemsFolder, system.folder);
@@ -725,7 +729,9 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
         throw new YesRefused(`The player said no to ${pack} in this session: it is not asked again until the game's server starts again. Nothing changed.`, "declined");
     }
 
-    // Said in plain words, the fixed text before the name its author chose; and where the request comes from (D-510).
+    // Said in plain words, the fixed text before the name its author chose; and where the request comes from (D-510). The package's own words cut short, so
+    // that a window, which shows so much at most, never loses the warning to them.
+    [name, holds] = [plainText(name, 120), holds.length > 160 ? `${holds.slice(0, 159)}…` : holds];
     const from = context.actor === "player" ? "the dashboard" : context.host === undefined ? "the command line" : "the chat";
     const can = "Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you.";
     const warning = local
@@ -835,6 +841,17 @@ async function uninstalled(root: string, context: Context, name: string): Promis
     const found = other === undefined
         ? installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name || comparableText(shortName(one.package)) === comparableText(name))
         : { package: other };
+
+    // A package that reads as nothing, as a system whose system.yaml is broken, is still npm's to take away by its folder.
+    if (found === undefined && packages !== undefined && (context.extensionFolders ?? []).some((folder) => name.startsWith("@") && files().entries(join(folder, ...name.split("/"))).length > 0)) {
+        const why = await packages.uninstall(name);
+
+        if (why !== undefined) {
+            throw new Error(`${name} could not be taken off this computer: ${why}. Nothing changed.`);
+        }
+
+        return { kind: "uninstalled", name, wasUsed: false, extension: false };
+    }
 
     if (found === undefined) {
         const here = installedExtensions(context.extensionFolders ?? []).map((one) => shortName(one.package));

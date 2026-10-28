@@ -16,8 +16,8 @@ import {
     findCampaignSystem,
     findSystem,
     type GameSystem,
-    installedSystems,
     layeredSystemWords,
+    readableSystems,
     rulesetSetting,
     systemContentFolders,
     type SystemLayer,
@@ -258,7 +258,7 @@ function missingSystemFix(name: string, context: Context): string
         return `install it, one of RPG Engine's own, with package install ${ours.name}; until then, play on without its pages`;
     }
 
-    const [first] = installedSystems(context.systemFolders);
+    const [first] = readableSystems(context.systemFolders);
     return first === undefined ? "install the game system" : `ask the player which game you play, then config, setting system, value ${first.name}`;
 }
 
@@ -268,7 +268,7 @@ export function installedSystemName(name: string, context: Context, how: "init" 
     const system = findSystem(context.systemFolders, name);
 
     if (system === undefined) {
-        const [first] = installedSystems(context.systemFolders);
+        const [first] = readableSystems(context.systemFolders);
         const ours = ourSystems.find((one) => comparableText(one.name) === comparableText(name.trim()));
         // One of ours is installed first, once the player wants it (D-513 (1)).
         const example = ours !== undefined
@@ -285,7 +285,7 @@ export function installedSystemName(name: string, context: Context, how: "init" 
 /** "Installed: 5e (the fifth edition, from the SRD 5.1)." */
 function installedText(context: Context): string
 {
-    const systems = installedSystems(context.systemFolders);
+    const systems = readableSystems(context.systemFolders);
     return systems.length === 0 ? "No system is installed." : `Installed: ${systems.map((system) => `${system.name} (${system.title})`).join(", ")}.`;
 }
 

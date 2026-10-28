@@ -55,8 +55,10 @@ export function packageFoldersIn(folders: string[]): string[]
     return folders.filter((folder) => existsSync(folder)).flatMap((folder) => {
         const chosen = chosenPackages(folder);
         const found = children(folder).flatMap((child) => (basename(child).startsWith("@") ? children(child) : [child]));
-        // Only the packages the player installed: one npm brought as another's dependency is never theirs to use (D-485).
-        return chosen === undefined ? found : found.filter((child) => chosen.has(relative(folder, child).split(sep).join("/")));
+        const named = (child: string): string => relative(folder, child).split(sep).join("/");
+        // Only the packages the player installed: one npm brought as another's dependency is never theirs to use (D-485). In npm's folder a package is
+        // where its name puts it: one whose package.json names another, as an alias that says it is ours, is no package at all.
+        return chosen === undefined ? found : found.filter((child) => chosen.has(named(child)) && [undefined, named(child)].includes(manifestName(child)));
     });
 }
 
@@ -124,5 +126,16 @@ function isLinkedFolder(path: string): boolean
         return lstatSync(path).isSymbolicLink() && statSync(path).isDirectory();
     } catch {
         return false;
+    }
+}
+
+/** The name a package's package.json gives itself; undefined when it gives none that reads. */
+function manifestName(folder: string): string | undefined
+{
+    try {
+        const read = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { name?: unknown; };
+        return typeof read.name === "string" ? read.name : undefined;
+    } catch {
+        return undefined;
     }
 }

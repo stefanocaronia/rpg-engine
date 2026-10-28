@@ -17,6 +17,7 @@ export {
     type Lifestyle,
     offeredEngineValues,
     playedValueOf,
+    readableSystems,
     type Recipe,
     type Reward,
     rollName,

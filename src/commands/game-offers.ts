@@ -2,7 +2,7 @@
 import { readSettings, type SettingName, settingNames } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { sameWord } from "../core/text.ts";
-import { engineOfferings, engineSettingValue, heldSettings, installedSystems, offeredEngineValues, playedValueOf, type SystemSetting } from "../systems/index.ts";
+import { engineOfferings, engineSettingValue, heldSettings, offeredEngineValues, playedValueOf, readableSystems, type SystemSetting } from "../systems/index.ts";
 import { campaignSystem, playedSettingValue, valuesText } from "./game-world.ts";
 import { partText } from "./parts.ts";
 
@@ -37,7 +37,7 @@ export function isFixedSetting(root: string, context: Context, name: string): bo
  */
 export function missingWithSystems(root: string, missing: string[], context: Context): string[]
 {
-    const names = installedSystems(context.systemFolders).map((system) => system.name);
+    const names = readableSystems(context.systemFolders).map((system) => system.name);
     const system = names.length > 0 ? `system (installed: ${names.join(", ")})` : "system";
     const written = readSettings(root) as Record<string, unknown>;
     const unoffered = (name: string): boolean => written[name] !== undefined && written[name] !== null && playedEngineSetting(root, context, name) === undefined;
