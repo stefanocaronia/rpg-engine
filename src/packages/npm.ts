@@ -111,6 +111,12 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
     };
 }
 
+/** Whether a text is an npm package's name alone, such as notes or @me/notes: never a path, nor a version. */
+export function isPackageName(name: string): boolean
+{
+    return packageName.test(name);
+}
+
 /** Whether a package is given by its folder or its .tgz on this computer rather than by its name on npm (D-452): a .tgz by its file name alone too. */
 export function isLocalSpec(spec: string): boolean
 {
@@ -142,6 +148,50 @@ export function issuesPage(manifest: { bugs?: unknown; repository?: unknown; }):
 
 // A repository on GitHub as package.json may write it: a git, https or ssh address, github:owner/name, or owner/name alone, which npm reads as GitHub's.
 const githubRepository = /^(?:(?:git\+)?(?:https?|git|ssh):\/\/(?:[^@/]+@)?github\.com[/:]|git@github\.com:|github:)?([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?(?:#.*)?$/i;
+
+/** The code npm's JSON error gives, as ENOTCACHED; undefined when it wrote none. */
+export function npmErrorCode(ran: NpmRun): string | undefined
+{
+    try {
+        return (JSON.parse(ran.out) as { error?: { code?: string; }; }).error?.code;
+    } catch {
+        return undefined;
+    }
+}
+
+/** What npm said went wrong: its JSON error, with --json, else the last line it wrote that is not the pointer to its log. */
+export function npmError(ran: NpmRun): string
+{
+    try {
+        const read = JSON.parse(ran.out) as { error?: { code?: string; summary?: string; }; };
+
+        if (read.error?.summary !== undefined) {
+            return `${read.error.code === undefined ? "" : `${read.error.code}, `}${read.error.summary}`;
+        }
+    } catch {
+        // Not JSON: the lines it wrote say it.
+    }
+
+    const lines = ran.errors.split("\n").map((line) => line.trim()).filter((line) => line !== "" && !/complete log of this run/i.test(line));
+    return lines.at(-1) ?? "nothing";
+}
+
+/** Runs npm with these arguments, in a folder of no campaign, stopped with all it started after a while. */
+export function runNpm(args: string): Promise<NpmRun>
+{
+    return new Promise((done) => {
+        const child = spawn(`npm ${args}`, { shell: true, windowsHide: true, cwd: tmpdir(), env: { ...process.env, NoDefaultCurrentDirectoryInExePath: "1" }, stdio: ["ignore", "pipe", "pipe"] });
+        let [out, errors] = ["", ""];
+        const timer = setTimeout(() => stopTree(child.pid), installWait);
+        child.stdout.setEncoding("utf8").on("data", (chunk: string) => (out += chunk));
+        child.stderr.setEncoding("utf8").on("data", (chunk: string) => (errors += chunk));
+        child.on("error", (error) => (errors += error.message));
+        child.on("close", (code) => {
+            clearTimeout(timer);
+            done({ code, out, errors });
+        });
+    });
+}
 
 /** A field of an object read from JSON, when it is a string. */
 function fieldOf(value: unknown, field: string): string | undefined
@@ -200,16 +250,6 @@ const unreachableCodes = new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ETI
 function isUnreachable(ran: NpmRun): boolean
 {
     return unreachableCodes.has(npmErrorCode(ran) ?? "") || /FetchError|network|ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ETIMEDOUT/i.test(npmError(ran));
-}
-
-/** The code npm's JSON error gives, as ENOTCACHED; undefined when it wrote none. */
-export function npmErrorCode(ran: NpmRun): string | undefined
-{
-    try {
-        return (JSON.parse(ran.out) as { error?: { code?: string; }; }).error?.code;
-    } catch {
-        return undefined;
-    }
 }
 
 /** What npm's registry says of a package, at a version or its latest, with what its package.json says for rpg-engine; unreachable when it does not answer. */
@@ -470,23 +510,6 @@ function quotedFolder(folder: string): string
     return `"${path}"`;
 }
 
-/** What npm said went wrong: its JSON error, with --json, else the last line it wrote that is not the pointer to its log. */
-export function npmError(ran: NpmRun): string
-{
-    try {
-        const read = JSON.parse(ran.out) as { error?: { code?: string; summary?: string; }; };
-
-        if (read.error?.summary !== undefined) {
-            return `${read.error.code === undefined ? "" : `${read.error.code}, `}${read.error.summary}`;
-        }
-    } catch {
-        // Not JSON: the lines it wrote say it.
-    }
-
-    const lines = ran.errors.split("\n").map((line) => line.trim()).filter((line) => line !== "" && !/complete log of this run/i.test(line));
-    return lines.at(-1) ?? "nothing";
-}
-
 // The installs and uninstalls of this process, one at a time: two npm runs at once in one folder keep only one of them in its package.json.
 let npmTurn: Promise<unknown> = Promise.resolve();
 
@@ -498,23 +521,6 @@ function inTurn(run: (args: string) => Promise<NpmRun>): (args: string) => Promi
         npmTurn = next.catch(() => undefined);
         return next;
     };
-}
-
-/** Runs npm with these arguments, in a folder of no campaign, stopped with all it started after a while. */
-export function runNpm(args: string): Promise<NpmRun>
-{
-    return new Promise((done) => {
-        const child = spawn(`npm ${args}`, { shell: true, windowsHide: true, cwd: tmpdir(), env: { ...process.env, NoDefaultCurrentDirectoryInExePath: "1" }, stdio: ["ignore", "pipe", "pipe"] });
-        let [out, errors] = ["", ""];
-        const timer = setTimeout(() => stopTree(child.pid), installWait);
-        child.stdout.setEncoding("utf8").on("data", (chunk: string) => (out += chunk));
-        child.stderr.setEncoding("utf8").on("data", (chunk: string) => (errors += chunk));
-        child.on("error", (error) => (errors += error.message));
-        child.on("close", (code) => {
-            clearTimeout(timer);
-            done({ code, out, errors });
-        });
-    });
 }
 
 /** Stops a process with the ones it started: on Windows the shell's child, npm, outlives a kill of the shell alone. */

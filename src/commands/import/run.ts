@@ -48,6 +48,14 @@ export async function stopImport(folder: string): Promise<void>
     await going?.work.catch(() => undefined);
 }
 
+/** The import set to write the world at the start chosen: a step for each folder of pages, then the opening. */
+export function writingState(folder: string, state: ImportState, start: number, character?: string): ImportState
+{
+    const steps = [...Object.keys(importedPages(folder)), "opening"];
+    const { failed: _, ...kept } = state;
+    return { ...kept, phase: "writing", done: 0, start, steps, ...(character === undefined ? {} : { character }) };
+}
+
 async function steps(folder: string, reader: DocumentReader, system: GameSystem | undefined, language: string, signal: AbortSignal): Promise<void>
 {
     for (;;) {
@@ -90,14 +98,6 @@ async function steps(folder: string, reader: DocumentReader, system: GameSystem 
             writeImportState(folder, { ...state, done });
         }
     }
-}
-
-/** The import set to write the world at the start chosen: a step for each folder of pages, then the opening. */
-export function writingState(folder: string, state: ImportState, start: number, character?: string): ImportState
-{
-    const steps = [...Object.keys(importedPages(folder)), "opening"];
-    const { failed: _, ...kept } = state;
-    return { ...kept, phase: "writing", done: 0, start, steps, ...(character === undefined ? {} : { character }) };
 }
 
 /**

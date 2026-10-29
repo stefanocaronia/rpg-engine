@@ -3,7 +3,7 @@
 import { get } from "node:http";
 import { findCampaign } from "../campaign/index.ts";
 import { samePath } from "../library/index.ts";
-import { campaignPorts } from "./dashboard/index.ts";
+import { campaignPorts } from "./dashboard/ports.ts";
 
 /** What the chat hears from the doorbell: never the player's words, only where to read them. */
 export const bellLine = "The player acted on the dashboard: call status to read what they did.";

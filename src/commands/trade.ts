@@ -26,6 +26,7 @@ import {
     type World,
 } from "../pages/index.ts";
 import { coinExamples } from "./shared/examples.ts";
+import { textList } from "./shared/inputs.ts";
 import { campaignCoins } from "./shared/money.ts";
 import { afterMoves, pagesPlan } from "./shared/moves.ts";
 import { skippedPagesNote } from "./shared/notes.ts";
@@ -33,9 +34,6 @@ import { copyName, readOpenScene } from "./shared/scene.ts";
 import { heldStack, logStackSteps, stackEdits, type StackMove, stackMoveSteps, type StackStep, stackStepText, unequipKinds } from "./shared/stacks.ts";
 import { newDatedLogEntry } from "./shared/time.ts";
 import { campaignWorld, missingSystemHint } from "./shared/world.ts";
-
-// A list, or one text, as an MCP client may send it.
-const textList = z.union([z.string(), z.array(z.string())]);
 
 /** What one side of a trade hands over: money, pieces of stacks, and items with a story of their own (STK-7). */
 interface Handed

@@ -142,6 +142,23 @@ export function nextAfter(events: DatedEvent[], date: GameDate): string | undefi
     return next === undefined ? undefined : events.filter((event) => minutesBetween(next.date, event.date) === 0).map((event) => plannedText(event, date)).join(" · ");
 }
 
+/**
+ * "Ettore: light: dark (Cripta)": what holds around the player characters, once for each place of the living (VIEW-12), for rules that count the hours spent
+ * there (ENV-5); undefined when nothing does.
+ */
+export function aroundLead(world: World): string | undefined
+{
+    const players = playerCharacters(world);
+    const living = players.filter((page) => page.fields.status !== "dead");
+    const placeOf = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
+    const groups = living.length === 0 ? players.slice(0, 1).map((page) => [page]) : [...new Set(living.map(placeOf))].map((place) => living.filter((page) => placeOf(page) === place));
+    const lines = groups.flatMap((group) => {
+        const around = surroundingsText(surroundings(world, group[0]));
+        return around === "" ? [] : [`${group.map((page) => page.name).join(" and ")}: ${around}`];
+    });
+    return lines.length === 0 ? undefined : lines.join("; ");
+}
+
 /** A new day is the world's turn (EVT-8): the clocks to move as the time moved them, which they never do by themselves; how, the part new-day says (D-134). */
 function clocksLine(newDays: number, to: string, clocks: string[]): string
 {
@@ -168,21 +185,4 @@ function openSceneText(root: string): string | undefined
 {
     const { scene } = readOpenScene(root);
     return scene === undefined ? undefined : `${scene.title}${scene.opened === undefined ? "" : ` (since ${scene.opened})`}`;
-}
-
-/**
- * "Ettore: light: dark (Cripta)": what holds around the player characters, once for each place of the living (VIEW-12), for rules that count the hours spent
- * there (ENV-5); undefined when nothing does.
- */
-export function aroundLead(world: World): string | undefined
-{
-    const players = playerCharacters(world);
-    const living = players.filter((page) => page.fields.status !== "dead");
-    const placeOf = (page: Page): Page | undefined => locate(world, page).chain.find((holder) => holder.type === "place");
-    const groups = living.length === 0 ? players.slice(0, 1).map((page) => [page]) : [...new Set(living.map(placeOf))].map((place) => living.filter((page) => placeOf(page) === place));
-    const lines = groups.flatMap((group) => {
-        const around = surroundingsText(surroundings(world, group[0]));
-        return around === "" ? [] : [`${group.map((page) => page.name).join(" and ")}: ${around}`];
-    });
-    return lines.length === 0 ? undefined : lines.join("; ");
 }

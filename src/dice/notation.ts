@@ -43,6 +43,20 @@ const maxConstant = 1_000_000;
 const notationForm = "write dice as 1d20+5, 2d20kh1, 4d6dl1, 2d6ro<=2, 1d6!, 6d10>=8, 4dF or d%";
 const conditionPattern = /^(<=|>=|<|>|=)(\d+)/;
 
+/** What keeps a text from reading as dice to roll, as parseNotation says it; a text of no dice, as a number alone, is no roll either. Undefined when it reads. */
+export function diceProblem(text: string): string | undefined
+{
+    try {
+        return parseNotation(text).some((term) => term.kind === "dice") ? undefined : `${text} holds no dice.`;
+    } catch (error) {
+        if (error instanceof DiceError) {
+            return error.message;
+        }
+
+        throw error;
+    }
+}
+
 /** Reads a notation valid for any game, such as `1d20+5`, `2d20kh1`, `4d6dl1`, `2d6ro<=2`, `1d6!`, `6d10>=8`, `4dF`, `d%`. */
 export function parseNotation(notation: string): Term[]
 {

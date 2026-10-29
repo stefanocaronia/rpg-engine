@@ -310,13 +310,6 @@ export function isInside(folder: string, path: string): boolean
     return below !== "" && below !== ".." && !below.startsWith(`..${sep}`) && !isAbsolute(below);
 }
 
-/** Whether a file changed after a time, or is gone. */
-function changedSince(path: string, time: number): boolean
-{
-    const stats = statSync(path, { throwIfNoEntry: false });
-    return stats === undefined || stats.mtimeMs >= time;
-}
-
 /** The text of a file, or undefined when there is none: a folder or a file that cannot be read fails as before. */
 export function readText(path: string): string | undefined
 {
@@ -329,6 +322,13 @@ export function readText(path: string): string | undefined
 
         throw error;
     }
+}
+
+/** Whether a file changed after a time, or is gone. */
+function changedSince(path: string, time: number): boolean
+{
+    const stats = statSync(path, { throwIfNoEntry: false });
+    return stats === undefined || stats.mtimeMs >= time;
 }
 
 /** Notes that the running call wrote a file, which a stop before its next write says (D-196). */

@@ -35,6 +35,7 @@ import { effectShown, endedByTurn, endEffects, endsWithScene, keptBy, systemName
 import { surroundings, surroundingsText } from "./shared/environment.ts";
 import { clearCopies, offMapNote, placeGrid, standing } from "./shared/grids.ts";
 import { metPictureNote, picturesNote } from "./shared/images.ts";
+import { textList } from "./shared/inputs.ts";
 import { readJourney } from "./shared/journey.ts";
 import { fallenLine, isFallen } from "./shared/loot.ts";
 import { campaignMode, checklistLine } from "./shared/mode.ts";
@@ -46,7 +47,7 @@ import { isTickedOpenQuest, tickedQuestNote } from "./shared/quests.ts";
 import { turnEffectsNote } from "./shared/reminders.ts";
 import { partyLead, playersApart } from "./shared/roads.ts";
 import { isPlayerDead, makeSave, saveText } from "./shared/saves.ts";
-import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, updateScene } from "./shared/scene.ts";
+import { copyCounters, copyPage, openScene, rawScene, readOpenScene, saveScene, scenePlace, updateScene } from "./shared/scene.ts";
 import { newDatedLogEntry, readPresent } from "./shared/time.ts";
 import { turnUsesOf, useInTurn, usesAtTurn } from "./shared/turn-uses.ts";
 import { hasSheet, startingAtZero } from "./shared/worked-out.ts";
@@ -71,9 +72,6 @@ const actionParameters: Record<Action, string[]> = {
 
 // The most copies of one creature a scene takes.
 const mostCopies = 50;
-
-// A list, or one text, as an MCP client may send it; run turns one text into a list of one.
-const textList = z.union([z.string(), z.array(z.string())]);
 
 interface SceneInput
 {
@@ -919,7 +917,7 @@ function withActing(root: string, context: Context, before: Scene, result: Scene
 /** Who acts and stands on no square of the scene's map, when its place has one (GRD-3, playtest 07): where it stands decides reach, cover and the way. */
 function offTheMap(world: World, scene: Scene | undefined, name: string): string
 {
-    const place = scene?.place === undefined ? undefined : pagesWithName(world, parsePageReference(scene.place).name)[0];
+    const place = scenePlace(world, scene);
 
     if (place === undefined || placeGrid(place) === undefined || standing(world, place, scene).some((one) => sameName([one.name], name) !== undefined && one.square !== undefined)) {
         return "";

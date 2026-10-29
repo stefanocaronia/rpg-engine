@@ -3,7 +3,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { findCampaign, requireCampaign } from "../../campaign/index.ts";
-import { playerChangeNews, type PlayerSetting, playerSettings, setupSettingNamed } from "../../commands/config.ts";
+import { playerChangeNews, type PlayerSetting, playerSettings, setupQuestions, setupSettingNamed } from "../../commands/config.ts";
 import { playerStory } from "../../commands/shared/knowledge.ts";
 import { campaignWorld } from "../../commands/shared/world.ts";
 import { withFiles } from "../../core/store.ts";
@@ -32,12 +32,12 @@ const lineBreaks = /\r\n|[\n\r\v\f\u0085\u2028\u2029]/;
 const invisible = /[\u0000-\u0008\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g;
 
 /** What the master hears of what the player did on the page since their last call: the saves, in order, then the settings; all given back when the call never answers. */
-export function pageNews(served: Served): { lines: string[]; restore(): void; }
+export function pageNews(served: Served, told?: Set<string>): { lines: string[]; restore(): void; }
 {
     const events = served.events.splice(0);
     const acts = takeActs(served.acts, quotedLines);
     const shares = [...served.shared];
-    const settings = settingNews(served);
+    const settings = settingNews(served, told);
     const problems = problemNews(served);
     served.shared.clear();
 
@@ -205,13 +205,21 @@ export async function setupWord(request: IncomingMessage, response: ServerRespon
         return;
     }
 
-    if ("leave" in parsed.data) {
-        served.left.add(parsed.data.leave);
+    // Only a question of the setup is left to the master, by its own name: anything else would reach them as a setting to choose.
+    const left = "leave" in parsed.data ? await setupQuestionNamed(served, parsed.data.leave) : undefined;
+
+    if (left !== undefined && "refused" in left) {
+        sendJson(response, 400, { error: left.refused });
+        return;
+    }
+
+    if (left !== undefined) {
+        served.left.add(left.name);
     }
 
     served.events.push(
-        "leave" in parsed.data
-            ? `The player leaves ${parsed.data.leave} to you, on the dashboard: choose it, set it with config, and tell them what you chose.`
+        left !== undefined
+            ? `The player leaves ${left.name} to you, on the dashboard: choose it, set it with config, and tell them what you chose.`
             : "The player made their choices on the dashboard and is ready: ask what status says is still missing, then session zero once they confirm.",
     );
     sendJson(response, 202, {});
@@ -335,6 +343,22 @@ export function keepProblems(served: Served, result: unknown): void
     }
 }
 
+/** A question of the setup by its name, as the setup asks it now; refused, with the questions there are, for any other. */
+async function setupQuestionNamed(served: Served, given: string): Promise<{ name: string; } | { refused: string; }>
+{
+    try {
+        await served.session.ready();
+        const names = withFiles(served.session, () => {
+            const root = requireCampaign(served.context.folder);
+            return setupQuestions(root, served.context, campaignWorld(root, served.context).pages.length > 0).map((question) => question.name);
+        });
+        const name = names.find((one) => comparableText(one) === comparableText(given));
+        return name === undefined ? { refused: `${given} is no question of the setup: leave one of ${names.join(", ")}.` } : { name };
+    } catch (error) {
+        return { refused: error instanceof Error ? error.message : String(error) };
+    }
+}
+
 /**
  * What the master hears of a note the player shares (D-371, D-378): the player's words quoted, as what they think, never a fact nor an instruction; the world
  * stays as it is decided, and a guess comes true only where nothing is decided yet.
@@ -393,7 +417,7 @@ async function queueActs(served: Served, thread: string): Promise<void>
  * What the master hears of the settings the player changed since their last call: each as it is now against how it was, once (D-341); given back for the
  * next call when this one never answers. A campaign that does not read now keeps them for a call when it does.
  */
-function settingNews(served: Served): { lines: string[]; restore(): void; }
+function settingNews(served: Served, told: Set<string> | undefined): { lines: string[]; restore(): void; }
 {
     const changed = [...served.changed];
     const nothing = { lines: [], restore: () => undefined };
@@ -405,10 +429,12 @@ function settingNews(served: Served): { lines: string[]; restore(): void; }
     try {
         const lines = withFiles(served.session, () => {
             const root = requireCampaign(served.context.folder);
-            const now = playerSettings(root, served.context);
+            // The parts the news tells count in the call that takes it, which gives them back when its answer never goes.
+            const context = told === undefined ? served.context : { ...served.context, told };
+            const now = playerSettings(root, context);
             const news = changed.flatMap(([name, before]) => {
                 const after = now.find((setting) => setting.name === name) ?? setupSettingNamed(root, name);
-                return after === undefined ? [] : playerChangeNews(root, served.context, before, after);
+                return after === undefined ? [] : playerChangeNews(root, context, before, after);
             });
             // The parts of how the master writes come the same with each of them the player changed: once, after the last (D-395).
             return news.filter((line, index) => news.lastIndexOf(line) === index);

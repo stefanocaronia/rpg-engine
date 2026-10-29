@@ -195,21 +195,6 @@ export function resetSave(saves: Save[], why: Map<number, string>, to: ResetPoin
         : (saves.find((save) => why.get(save.number) === "start") ?? saves.find((save) => why.get(save.number) !== "session zero"));
 }
 
-/** "before load 003.zip", or "before load 003 (2).zip" when that one is there: a copy before a load never takes the place of another. */
-function freeCopyName(root: string, save: Save): string
-{
-    const taken = new Set(files().entries(join(root, savesFolderName)).map((entry) => entry.name.toLowerCase()));
-    const base = `before load ${String(save.number).padStart(3, "0")}`;
-
-    for (let count = 1;; count++) {
-        const name = count === 1 ? `${base}.zip` : `${base} (${count}).zip`;
-
-        if (!taken.has(name.toLowerCase())) {
-            return name;
-        }
-    }
-}
-
 /** "3 - day 2, 06.10 - Scontro all'ossario": a save as outputs name it. */
 export function saveText(save: Save): string
 {
@@ -278,52 +263,10 @@ export function partyDeathNotes(root: string, name: string): string[]
     ];
 }
 
-/** The files a save holds, by their path inside it; refused, with what to do, when the zip cannot be read. */
-function readSave(root: string, save: Save): Record<string, Uint8Array>
-{
-    try {
-        return unpackFiles(files().bytes(join(root, savesFolderName, save.file)) ?? new Uint8Array());
-    } catch (error) {
-        throw new Error(`${save.file} cannot be read as a save (${error instanceof Error ? error.message : String(error)}): it is broken, or was not made by rpg. Nothing changed; load another save.`);
-    }
-}
-
-/** The game's files with their bytes as the disk has them now, by their path inside a save. */
-function gameFileBytes(root: string): Record<string, Uint8Array>
-{
-    return Object.fromEntries(gameFiles(root).map((path) => [relative(root, path).split(sep).join("/"), files().bytes(path) ?? new Uint8Array()]));
-}
-
-/**
- * The files a save holds (SAV-2), as the disk has them, not as a session last saw them: every file of the campaign but those of the AI hosts, the exports, and those
- * under a name with a dot at its top, as .saves, .git, .obsidian.
- */
-function gameFiles(root: string): string[]
-{
-    return files().entries(root).filter((entry) => isGameName(entry.name)).flatMap((entry) => {
-        const path = join(root, entry.name);
-        return entry.isFolder ? filesIn(path, () => true) : [path];
-    });
-}
-
 /** Whether a path is one of the game's files: in the campaign, not the host's nor under a name with a dot at its top (SAV-2). */
 export function isGameFile(root: string, path: string): boolean
 {
     return isInside(root, path) && isGameName(relative(root, path).split(sep)[0]);
-}
-
-/** Whether a name at the top of a campaign is the game's: not the host's, in any case, as Windows reads them, and not starting with a dot. */
-function isGameName(name: string): boolean
-{
-    return !name.startsWith(".") && !hostNames.has(name.toLowerCase()) && name.toLowerCase() !== exportsFolderName;
-}
-
-function joinBytes(first: Uint8Array | undefined, second: Uint8Array): Uint8Array
-{
-    const joined = new Uint8Array((first?.length ?? 0) + second.length);
-    joined.set(first ?? new Uint8Array(), 0);
-    joined.set(second, first?.length ?? 0);
-    return joined;
 }
 
 /** What loading may do under each mode of saves (D-55); reset, back to the start, in every mode (D-359). */
@@ -356,6 +299,63 @@ export function loadRefusal(mode: SaveMode, saves: Save[], chosen: Save, dead: b
     }
 
     return undefined;
+}
+
+/** "before load 003.zip", or "before load 003 (2).zip" when that one is there: a copy before a load never takes the place of another. */
+function freeCopyName(root: string, save: Save): string
+{
+    const taken = new Set(files().entries(join(root, savesFolderName)).map((entry) => entry.name.toLowerCase()));
+    const base = `before load ${String(save.number).padStart(3, "0")}`;
+
+    for (let count = 1;; count++) {
+        const name = count === 1 ? `${base}.zip` : `${base} (${count}).zip`;
+
+        if (!taken.has(name.toLowerCase())) {
+            return name;
+        }
+    }
+}
+
+/** The files a save holds, by their path inside it; refused, with what to do, when the zip cannot be read. */
+function readSave(root: string, save: Save): Record<string, Uint8Array>
+{
+    try {
+        return unpackFiles(files().bytes(join(root, savesFolderName, save.file)) ?? new Uint8Array());
+    } catch (error) {
+        throw new Error(`${save.file} cannot be read as a save (${error instanceof Error ? error.message : String(error)}): it is broken, or was not made by rpg. Nothing changed; load another save.`);
+    }
+}
+
+/** The game's files with their bytes as the disk has them now, by their path inside a save. */
+function gameFileBytes(root: string): Record<string, Uint8Array>
+{
+    return Object.fromEntries(gameFiles(root).map((path) => [relative(root, path).split(sep).join("/"), files().bytes(path) ?? new Uint8Array()]));
+}
+
+/**
+ * The files a save holds (SAV-2), as the disk has them, not as a session last saw them: every file of the campaign but those of the AI hosts, the exports, and those
+ * under a name with a dot at its top, as .saves, .git, .obsidian.
+ */
+function gameFiles(root: string): string[]
+{
+    return files().entries(root).filter((entry) => isGameName(entry.name)).flatMap((entry) => {
+        const path = join(root, entry.name);
+        return entry.isFolder ? filesIn(path, () => true) : [path];
+    });
+}
+
+/** Whether a name at the top of a campaign is the game's: not the host's, in any case, as Windows reads them, and not starting with a dot. */
+function isGameName(name: string): boolean
+{
+    return !name.startsWith(".") && !hostNames.has(name.toLowerCase()) && name.toLowerCase() !== exportsFolderName;
+}
+
+function joinBytes(first: Uint8Array | undefined, second: Uint8Array): Uint8Array
+{
+    const joined = new Uint8Array((first?.length ?? 0) + second.length);
+    joined.set(first ?? new Uint8Array(), 0);
+    joined.set(second, first?.length ?? 0);
+    return joined;
 }
 
 /** The place the player character is in, the nearest that holds it, which a save keeps for its picture, as in a video game (D-359); undefined in none. */

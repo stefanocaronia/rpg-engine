@@ -104,30 +104,47 @@ export async function libraryAdditions(root: string, context: Context, given: st
 export function libraryRemovals(root: string, context: Context, given: string[], computer: boolean): string[]
 {
     const held = readListSetting(root, "library");
-    const entries = given.map((entry) => resolve(context.folder, unquoted(entry)));
+    const entries = checkLibraryRemovals(root, context, given, computer);
     const index = context.bookIndex;
 
     if (!computer || index === undefined) {
         return entries.map((entry) => held.find((other) => samePath(other, entry)) ?? entry);
     }
 
-    const folders = libraryFolders(index);
-    const unknown = entries.find((entry) => ![...folders, ...held].some((other) => samePath(other, entry)));
-
-    if (unknown !== undefined) {
-        throw new Error(`${unknown} is not in this computer's library, so nothing changed. It holds: ${folders.length > 0 ? folders.join("; ") : "nothing"}.`);
-    }
-
-    const remaining = folders.filter((other) => !entries.some((entry) => samePath(other, entry)));
+    const remaining = libraryFolders(index).filter((other) => !entries.some((entry) => samePath(other, entry)));
     saveLibraryFolders(index, remaining);
     dropUnlisted(index, remaining);
     return held.filter((other) => entries.some((entry) => samePath(other, entry)));
 }
 
-/** The campaign's library as it is used: the entries it turns on that are in this computer's library, which the player allowed (LIB-1). */
-function campaignLibrary(root: string, context: Context): string[]
+/**
+ * The entries to turn off as full paths, before anything is written (LIB-1): refused for one the campaign does not hold, or with `computer` for one neither the
+ * campaign nor this computer's library holds.
+ */
+export function checkLibraryRemovals(root: string, context: Context, given: string[], computer: boolean): string[]
 {
-    return readListSetting(root, "library").filter((entry) => computerSpelling(context, entry) !== undefined);
+    const held = readListSetting(root, "library");
+    const entries = given.map((entry) => resolve(context.folder, unquoted(entry)));
+    const index = context.bookIndex;
+
+    if (computer && index !== undefined) {
+        const folders = libraryFolders(index);
+        const unknown = entries.find((entry) => ![...folders, ...held].some((other) => samePath(other, entry)));
+
+        if (unknown !== undefined) {
+            throw new Error(`${unknown} is not in this computer's library, so nothing changed. It holds: ${folders.length > 0 ? folders.join("; ") : "nothing"}.`);
+        }
+
+        return entries;
+    }
+
+    const missing = entries.find((entry) => !held.some((other) => samePath(other, entry)));
+
+    if (missing !== undefined) {
+        throw new Error(`"library" does not hold "${missing}", so nothing changed. It holds: ${held.length > 0 ? held.join("; ") : "nothing"}.`);
+    }
+
+    return entries;
 }
 
 /**
@@ -363,6 +380,54 @@ export function libraryLines(answer: LibraryAnswer | undefined, text: string): s
     return [`From the player's books${language}:`, ...excerpts, others, recognized, libraryRule(answer.unit), reading].filter((line) => line !== "");
 }
 
+/** The game system as its words are searched by: where its words are, its language, and the words a foe's hits are heard in, which name no rule. */
+export interface SearchedSystem
+{
+    folder: string;
+    version?: { folder: string; };
+    language: string;
+    combat?: { inWords: string[]; };
+}
+
+/**
+ * The system's words that a search names, from the system's language into another or back (LIB-6, RUL-8): "grapple" gives Afferrato, the system's Italian, for
+ * an Italian book; "afferrato" gives Grappled, for the system. Only words of four letters or more find one; none in the system's own language, and none of the
+ * words a foe's hits are heard in. Each says whether its words are the whole search, as afferrato is, or only part of it, as tiro of tiro per colpire.
+ */
+export function systemWordsNamed(system: SearchedSystem, language: string, text: string, intoSystem: boolean): { named: string; whole: boolean; }[]
+{
+    if (language.split("-")[0] === system.language.split("-")[0]) {
+        return [];
+    }
+
+    try {
+        const words = layeredSystemWords(systemContentFolders(system), language);
+        const heard = (system.combat?.inWords ?? []).map(comparableText);
+        // Not the names, which are of fields by their ids, as cha or str-save.
+        const pairs = Object.entries({ ...words?.groups, ...words?.words }).filter(([own]) => !heard.includes(comparableText(own)));
+        const found = pairs.map(([own, translated]) => (intoSystem ? [translated, own] : [own, translated])).filter(([searched]) => /\p{L}{4}/u.test(searched) && hasAllWords(text, searched));
+        // Grappled and grappled, a name and a word of the same, are one.
+        return found
+            .filter(([, named], at) => found.findIndex(([, other]) => comparableText(other) === comparableText(named)) === at)
+            .slice(0, mostTranslations)
+            .map(([searched, named]) => ({ named, whole: hasAllWords(searched, text) }));
+    } catch {
+        return [];
+    }
+}
+
+/** A path as given, without the quotes of one copied from the file manager. */
+export function unquoted(entry: string): string
+{
+    return entry.trim().replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1").trim();
+}
+
+/** The campaign's library as it is used: the entries it turns on that are in this computer's library, which the player allowed (LIB-1). */
+function campaignLibrary(root: string, context: Context): string[]
+{
+    return readListSetting(root, "library").filter((entry) => computerSpelling(context, entry) !== undefined);
+}
+
 /**
  * The precedence of the books, and how their words may be used (LIB-7, D-491 (7), (9)): the sheets' numbers the system's, a variant through config, the books
  * data quoted in the chat, the campaign's files the master's own words and numbers in the system's units.
@@ -427,42 +492,6 @@ function translationsOf(system: SearchedSystem, languages: string[], text: strin
     return [...new Set(languages.flatMap((language) => systemWordsNamed(system, language, text, false).map((one) => one.named)))].slice(0, mostTranslations);
 }
 
-/** The game system as its words are searched by: where its words are, its language, and the words a foe's hits are heard in, which name no rule. */
-export interface SearchedSystem
-{
-    folder: string;
-    version?: { folder: string; };
-    language: string;
-    combat?: { inWords: string[]; };
-}
-
-/**
- * The system's words that a search names, from the system's language into another or back (LIB-6, RUL-8): "grapple" gives Afferrato, the system's Italian, for
- * an Italian book; "afferrato" gives Grappled, for the system. Only words of four letters or more find one; none in the system's own language, and none of the
- * words a foe's hits are heard in. Each says whether its words are the whole search, as afferrato is, or only part of it, as tiro of tiro per colpire.
- */
-export function systemWordsNamed(system: SearchedSystem, language: string, text: string, intoSystem: boolean): { named: string; whole: boolean; }[]
-{
-    if (language.split("-")[0] === system.language.split("-")[0]) {
-        return [];
-    }
-
-    try {
-        const words = layeredSystemWords(systemContentFolders(system), language);
-        const heard = (system.combat?.inWords ?? []).map(comparableText);
-        // Not the names, which are of fields by their ids, as cha or str-save.
-        const pairs = Object.entries({ ...words?.groups, ...words?.words }).filter(([own]) => !heard.includes(comparableText(own)));
-        const found = pairs.map(([own, translated]) => (intoSystem ? [translated, own] : [own, translated])).filter(([searched]) => /\p{L}{4}/u.test(searched) && hasAllWords(text, searched));
-        // Grappled and grappled, a name and a word of the same, are one.
-        return found
-            .filter(([, named], at) => found.findIndex(([, other]) => comparableText(other) === comparableText(named)) === at)
-            .slice(0, mostTranslations)
-            .map(([searched, named]) => ({ named, whole: hasAllWords(searched, text) }));
-    } catch {
-        return [];
-    }
-}
-
 /** How a part of a book is cited: "Book, PDF p. 194", or "Book, part 3" for a document without pages. */
 function citeOf(book: SearchedBook & { pdf?: boolean; }, part: number): string
 {
@@ -519,12 +548,6 @@ function libraryPath(context: Context, given: string): string
     }
 
     return resolve(context.folder, entry);
-}
-
-/** A path as given, without the quotes of one copied from the file manager. */
-export function unquoted(entry: string): string
-{
-    return entry.trim().replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1").trim();
 }
 
 /**

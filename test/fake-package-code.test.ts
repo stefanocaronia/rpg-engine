@@ -33,7 +33,7 @@ describe("a game system's code, as a package's (D-514)", () => {
         expect(await ok("fake-fading", "Tamsin")).toBe("Tamsin is not Down.");
         await ok("change", "Tamsin", "grit", "--to=0");
         expect(await ok("fake-fading", "Tamsin")).toBe("Tamsin is Down: fading 0/3.");
-        const { commands, sources, problems } = await packageCommands(folder, context, []);
+        const { commands, sources, problems } = await packageCommands(folder, context);
         expect(commands.map((command) => [command.name, command.forPlayer])).toEqual([["fake-fading", true]]);
         expect(sources["fake-fading"]).toMatch(/^@rpgengine\/system-fake@1\.0\.0#/);
         expect(problems).toEqual([]);

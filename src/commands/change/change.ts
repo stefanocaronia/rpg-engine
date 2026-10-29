@@ -7,7 +7,7 @@ import type { CounterChange as SystemCounterChange } from "../../core/package-ap
 import { defineCommand } from "../../core/registry.ts";
 import { comparableText, valueNamed, withArticle } from "../../core/text.ts";
 import { canSpend, changeCounter, type Counter, type CounterChange, counterLimit, formatCounter, isSafeCounter, readCounter, readCounterText } from "../../counters/index.ts";
-import { DiceError, parseNotation, rollDice } from "../../dice/index.ts";
+import { diceProblem, rollDice } from "../../dice/index.ts";
 import { addCoins, type Coin, formatAmount, formatTotal, isSafePurse, namesCoins, payCoins, type Purse, readAmount, readSignedAmount, totalOf } from "../../money/index.ts";
 import {
     baseChain,
@@ -44,6 +44,7 @@ import { checkEffectsReadable, saveEffects } from "../shared/effects.ts";
 import { fireEvents, nowDueNote } from "../shared/events.ts";
 import { coinExamples, poolExample, restExample } from "../shared/examples.ts";
 import { experienceOf, newLevelNotes } from "../shared/experience.ts";
+import { wholeNumber } from "../shared/inputs.ts";
 import { screenNote, screenUp, sealHiddenRoll } from "../shared/master-rolls.ts";
 import { campaignCoins } from "../shared/money.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "../shared/notes.ts";
@@ -66,8 +67,7 @@ interface CounterHolder
 {
     page: Page;
     kind: "page" | "copy";
-    /** Writes fields as the page names them; undefined removes one, and the page reads it from its base again (INH-9). */
-    /** Returns the page as written, or undefined for a copy. */
+    /** Writes fields as the page names them, undefined removing one so that the page reads it from its base again (INH-9): the page as written, undefined for a copy. */
     write(fields: Record<string, number | string | undefined>): Page | undefined;
     visibility: LogEntry["visibility"];
 }
@@ -85,9 +85,6 @@ interface Step
     /** Whether a base's value is the one the change leads to (INH-9). */
     same(value: unknown): boolean;
 }
-
-// Whole numbers arrive as text from a command line and as numbers through MCP; other text, such as coins, stays text.
-const wholeNumber = z.preprocess((value) => (typeof value === "string" && /^[+-]?\d+$/.test(value.trim()) ? Number(value) : value), z.number().int());
 
 export const change = defineCommand({
     name: "change",
@@ -215,7 +212,7 @@ function changeField(
     const untyped = Number.isFinite(by) && by < 0 ? untypedDamageNote(world, system, holder.page, field) : "";
     const told = untyped === "" ? outcome : { ...outcome, reminders: [...outcome.reminders, untyped] };
     // What a shield, as temporary hit points, would have taken first is no loss past the dying value: never an instant death the master undoes (review of 17 October).
-    const shield = Object.entries(system?.shields ?? {}).find(([, shielded]) => comparableText(shielded) === comparableText(field))?.[0];
+    const shield = shieldOf(system, field);
     const shielded = shield === undefined ? 0 : Math.max(readCounter(valueNamed(fields, shield))?.value ?? 0, 0);
     const lost = Number.isFinite(by) && by < 0 ? Math.max(-by - shielded, 0) : 0;
     return { ...told, ...counterChangeOf({ holder, field, fields }, told, lost), problems: world.problems };
@@ -300,18 +297,10 @@ function rolledText(rolled: string, hidden: HiddenDice | undefined): string
     return hidden === undefined ? `Rolled ${rolled}.` : `Hidden roll ${hidden.id}, only for the master: ${rolled}${screen}\nIts fingerprint, only if the player asks for it: ${hidden.fingerprint}`;
 }
 
-/** What keeps a text from reading as dice, such as 2d6+3, as roll says it; a text of no dice, as coins or a field's name, is no roll either. Undefined when it reads. */
-function diceProblem(text: string): string | undefined
+/** The counter that shields a counter, losing first, as temporary hit points (DAT-14); undefined when none does. */
+function shieldOf(system: GameSystem | undefined, field: string): string | undefined
 {
-    try {
-        return parseNotation(text).some((term) => term.kind === "dice") ? undefined : `${text} holds no dice.`;
-    } catch (error) {
-        if (error instanceof DiceError) {
-            return error.message;
-        }
-
-        throw error;
-    }
+    return Object.entries(system?.shields ?? {}).find(([, shielded]) => comparableText(shielded) === comparableText(field))?.[0];
 }
 
 /** The damage a page takes of the type given (DMG-1): only with by, negative, on the counter the system's damage takes from. */
@@ -353,7 +342,7 @@ function damageSteps(
     const { holder, fields, field, coins } = target;
     const page = holder.page.name;
     const withNote = (outcome: StepOutcome, notes: string[]): StepOutcome => ({ ...outcome, note: [...notes, outcome.note].filter((part) => part !== "").join("; ") });
-    const shield = Object.entries(system?.shields ?? {}).find(([, shielded]) => comparableText(shielded) === comparableText(field))?.[0];
+    const shield = shieldOf(system, field);
     const shieldField = shield === undefined ? undefined : Object.keys(fields).find((name) => comparableText(name) === comparableText(shield));
     const absorbed = shieldField === undefined ? 0 : Math.min(Math.max(readCounter(fields[shieldField])?.value ?? 0, 0), damage.amount);
     const onCounter = (current: World, currentHolder: CounterHolder, amount: number): StepOutcome =>
@@ -817,10 +806,11 @@ function counterStep(
 
     const before = limits.min === undefined ? read : { ...read, min: limits.min };
     const counterChange = readChange(input, before, page, field, coins);
+    // How to change a maximum the game system works out, said when a value goes past it.
+    const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}; to change it for a while, as a drain, give an effect that sets ${limits.hint.raise}`;
 
     // A maximum the game system works out is given only as it works it out (FOR-7).
     if ("to" in counterChange && limits.max !== undefined && counterChange.to.max !== undefined && counterChange.to.max !== limits.max) {
-        const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}; to change it for a while, as a drain, give an effect that sets ${limits.hint.raise}`;
         throw new Error(
             `The maximum of ${field} on ${page} is worked out by the game system: ${limits.hint?.made ?? limits.max}. Give the current value alone, such as to ${Math.min(counterChange.to.value, limits.max)}${raise}. Nothing changed.`,
         );
@@ -831,7 +821,6 @@ function counterStep(
 
     // Above a maximum the game system works out, a value reads as the maximum (FOR-6): what change says it wrote would not be what is read.
     if ("to" in counterChange && limits.max !== undefined && after.value > limits.max) {
-        const raise = limits.hint?.raise === undefined ? "" : `; to raise the maximum, write ${limits.hint.raise}; to change it for a while, as a drain, give an effect that sets ${limits.hint.raise}`;
         throw new Error(`${field} on ${page} goes no higher than its maximum, which the game system works out: ${limits.hint?.made ?? limits.max}. Give to ${limits.max} or less${raise}. Nothing changed.`);
     }
 

@@ -82,16 +82,6 @@ export function valuesChanged(world: World, before: Page, after: Page, effect: E
     return [...own, ...others.map((field) => `${field} ${read(was, field)} → ${read(is, field)}`)];
 }
 
-/** "+2", "Dueling, Defense", "none": a value as an effect's output says it, with its sign when the system declares a modifier or a bonus (FOR-8). */
-function valueText(world: World, field: string, value: unknown): string
-{
-    if (value === undefined || value === null) {
-        return "none";
-    }
-
-    return typeof value === "number" ? signedText(world, field, value) : Array.isArray(value) ? value.map(String).join(", ") : String(value);
-}
-
 /** The effect with a new value for one of its fields, as change writes it (EFF-7). */
 export function withValue(effect: Effect, field: string, value: string): Effect
 {
@@ -103,4 +93,14 @@ export function withEffects(page: Page, effects: Effect[]): Page
 {
     const fields = Object.fromEntries(Object.entries(page.fields).filter(([field]) => comparableText(field) !== "effects"));
     return { ...page, fields: effects.length === 0 ? fields : { ...fields, effects: effects.map(formatEffect) } };
+}
+
+/** "+2", "Dueling, Defense", "none": a value as an effect's output says it, with its sign when the system declares a modifier or a bonus (FOR-8). */
+function valueText(world: World, field: string, value: unknown): string
+{
+    if (value === undefined || value === null) {
+        return "none";
+    }
+
+    return typeof value === "number" ? signedText(world, field, value) : Array.isArray(value) ? value.map(String).join(", ") : String(value);
 }

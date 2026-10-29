@@ -60,6 +60,25 @@ export function readAdventureZip(bytes: Uint8Array, label: string): AdventureFil
     return adventureOf(label, named);
 }
 
+/** The adventure a folder of this computer holds (ADV-1); it throws, saying why, when it is refused. */
+export function readAdventureFolder(folder: string): AdventureFiles
+{
+    const found = filesIn(folder, () => true).map((path): [string, Uint8Array] => [relative(folder, path).split(sep).join("/"), files().bytes(path) ?? new Uint8Array()]);
+    return adventureOf(folder, found);
+}
+
+/** The .zip of an adventure, its manifest first and its files in order of path: the same adventure gives the same bytes (ADV-7). */
+export function packAdventure(manifest: AdventureManifest, held: Record<string, Uint8Array>): Uint8Array
+{
+    const ordered: Record<string, Uint8Array> = { [manifestFileName]: new TextEncoder().encode(writeManifest(manifest)) };
+
+    for (const path of Object.keys(held).sort()) {
+        ordered[path] = held[path];
+    }
+
+    return zipSync(ordered, { level: 6, mtime: fixedTime });
+}
+
 /**
  * A file's name in a .zip as it was written: one without the zip's UTF-8 mark reads byte by byte, so its UTF-8 is read again, as macOS writes it; one in an old
  * code page, as Windows' own tar writes it, is refused with what to do.
@@ -79,25 +98,6 @@ function utf8Name(label: string, name: string): string
     }
 
     return name.normalize("NFC");
-}
-
-/** The adventure a folder of this computer holds (ADV-1); it throws, saying why, when it is refused. */
-export function readAdventureFolder(folder: string): AdventureFiles
-{
-    const found = filesIn(folder, () => true).map((path): [string, Uint8Array] => [relative(folder, path).split(sep).join("/"), files().bytes(path) ?? new Uint8Array()]);
-    return adventureOf(folder, found);
-}
-
-/** The .zip of an adventure, its manifest first and its files in order of path: the same adventure gives the same bytes (ADV-7). */
-export function packAdventure(manifest: AdventureManifest, held: Record<string, Uint8Array>): Uint8Array
-{
-    const ordered: Record<string, Uint8Array> = { [manifestFileName]: new TextEncoder().encode(writeManifest(manifest)) };
-
-    for (const path of Object.keys(held).sort()) {
-        ordered[path] = held[path];
-    }
-
-    return zipSync(ordered, { level: 6, mtime: fixedTime });
 }
 
 /** The adventure from a package's files: its paths checked, the one folder at its top that holds it all taken away, and what it may hold kept. */

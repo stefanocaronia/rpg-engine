@@ -195,6 +195,70 @@ export const roll = defineCommand({
     },
 });
 
+/** The dice a game system rolls a number of its sheet with, for an example: that field's, else its first; 2d6 without them (D-280, D-514). */
+export function sheetDiceOf(system: GameSystem | undefined, field?: string): string
+{
+    const dice = Object.entries(system?.sheetDice ?? {});
+    const own = field === undefined ? undefined : dice.find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
+    return own ?? dice[0]?.[1] ?? "2d6";
+}
+
+/**
+ * The page of who rolls, a character or a copy in the open scene, with its world; undefined when who names neither, as a free label does. Without names to
+ * read, a name two pages share is a label too: the roll needs no sheet.
+ */
+export function rollerOf(root: string, context: Context, who: string | undefined, readsSheet: boolean): { world: World; page: Page; } | undefined
+{
+    if (who === undefined) {
+        return undefined;
+    }
+
+    const world = campaignWorld(root, context);
+    const named = pagesWithName(world, who);
+    const page = readsSheet ? findPage(world, who) : named.length === 1 ? named[0] : undefined;
+
+    if (page !== undefined) {
+        return { world, page };
+    }
+
+    const { scene } = readOpenScene(root);
+    const copy = scene === undefined ? undefined : sameName(Object.keys(scene.copies), who);
+    return scene === undefined || copy === undefined ? undefined : { world, page: copyPage(copy, scene.copies[copy]) };
+}
+
+/** Whether a notation names a field, such as athletics in 1d20+athletics (DAT-8). */
+export function hasNames(notation: string): boolean
+{
+    return [...notation.matchAll(namePattern)].some((match) => !diePattern.test(notation.slice((match.index ?? 0) + match[1].length + match[2].length)));
+}
+
+/** The notation with each name of a field as 0, to tell whether it is dice before a sheet is read: 1d20+athletics as 1d20+0. */
+export function namesAsZero(notation: string): string
+{
+    return notation.replace(namePattern, (whole: string, sign: string, space: string, name: string, offset: number) => (diePattern.test(notation.slice(offset + sign.length + space.length)) ? whole : whole.replace(name, "0")));
+}
+
+/** The notation with each name of a field replaced by its value on the sheet of who rolls, effects and formulas included, and the values taken (DAT-8). */
+export function withSheetValues(notation: string, roller: { world: World; page: Page; } | undefined, who: string | undefined, system: GameSystem | undefined): { notation: string; taken: Record<string, number>; }
+{
+    const taken: Record<string, number> = {};
+    const fields = roller === undefined ? undefined : effectiveFields(roller.world, roller.page);
+    const replaced = notation.replace(namePattern, (whole: string, sign: string, space: string, name: string, offset: number) => {
+        if (diePattern.test(notation.slice(offset + sign.length + space.length))) {
+            return whole;
+        }
+
+        // "sleight of hand": a name of several words, which a notation cannot hold.
+        const words = /^\s+[A-Za-z]/.test(notation.slice(offset + whole.length));
+        checkNotScore(roller, system, fields, name);
+        const value = sheetValue(roller, fields, name, who, words, system);
+        taken[name] = value;
+        const negative = (sign === "-") !== (value < 0);
+        return `${negative ? "-" : sign === "" ? "" : "+"}${Math.abs(value)}`;
+    });
+    return { notation: replaced, taken };
+}
+
 /** A roll with what to say when the player asks whether a roll was real, once in a chat, as the core's rule left the instructions for it (D-530). */
 function withRealNote(context: Context, output: Extract<RollOutput, { kind: "roll"; }>): RollOutput
 {
@@ -406,14 +470,6 @@ function declaredRolls(world: World): string | undefined
     return Object.keys(world.system?.fields ?? {}).find((name) => declaredKind(world, name) === "rolls");
 }
 
-/** The dice a game system rolls a number of its sheet with, for an example: that field's, else its first; 2d6 without them (D-280, D-514). */
-export function sheetDiceOf(system: GameSystem | undefined, field?: string): string
-{
-    const dice = Object.entries(system?.sheetDice ?? {});
-    const own = field === undefined ? undefined : dice.find(([listed]) => comparableText(listed) === comparableText(field))?.[1];
-    return own ?? dice[0]?.[1] ?? "2d6";
-}
-
 /** " Elara keeps 3, 4 in portent: give from Elara.": the characters whose field holds the number use asked for, when the page asked does not (KEP-3). */
 function otherKeepers(world: World, kept: KeptField, value: number): string
 {
@@ -457,62 +513,6 @@ function takeKept(kept: KeptField & { value: number; }): string
     left.splice(left.indexOf(kept.value), 1);
     writePage(kept.world, kept.page.name, undefined, left.length === 0 ? { unset: [kept.field] } : { set: { [kept.field]: left } });
     return `${kept.value} from ${kept.page.name}'s ${kept.field} took the place of the die; ${left.length === 0 ? "none is left" : `left: ${left.join(", ")}`}.`;
-}
-
-/**
- * The page of who rolls, a character or a copy in the open scene, with its world; undefined when who names neither, as a free label does. Without names to
- * read, a name two pages share is a label too: the roll needs no sheet.
- */
-export function rollerOf(root: string, context: Context, who: string | undefined, readsSheet: boolean): { world: World; page: Page; } | undefined
-{
-    if (who === undefined) {
-        return undefined;
-    }
-
-    const world = campaignWorld(root, context);
-    const named = pagesWithName(world, who);
-    const page = readsSheet ? findPage(world, who) : named.length === 1 ? named[0] : undefined;
-
-    if (page !== undefined) {
-        return { world, page };
-    }
-
-    const { scene } = readOpenScene(root);
-    const copy = scene === undefined ? undefined : sameName(Object.keys(scene.copies), who);
-    return scene === undefined || copy === undefined ? undefined : { world, page: copyPage(copy, scene.copies[copy]) };
-}
-
-/** Whether a notation names a field, such as athletics in 1d20+athletics (DAT-8). */
-export function hasNames(notation: string): boolean
-{
-    return [...notation.matchAll(namePattern)].some((match) => !diePattern.test(notation.slice((match.index ?? 0) + match[1].length + match[2].length)));
-}
-
-/** The notation with each name of a field as 0, to tell whether it is dice before a sheet is read: 1d20+athletics as 1d20+0. */
-export function namesAsZero(notation: string): string
-{
-    return notation.replace(namePattern, (whole: string, sign: string, space: string, name: string, offset: number) => (diePattern.test(notation.slice(offset + sign.length + space.length)) ? whole : whole.replace(name, "0")));
-}
-
-/** The notation with each name of a field replaced by its value on the sheet of who rolls, effects and formulas included, and the values taken (DAT-8). */
-export function withSheetValues(notation: string, roller: { world: World; page: Page; } | undefined, who: string | undefined, system: GameSystem | undefined): { notation: string; taken: Record<string, number>; }
-{
-    const taken: Record<string, number> = {};
-    const fields = roller === undefined ? undefined : effectiveFields(roller.world, roller.page);
-    const replaced = notation.replace(namePattern, (whole: string, sign: string, space: string, name: string, offset: number) => {
-        if (diePattern.test(notation.slice(offset + sign.length + space.length))) {
-            return whole;
-        }
-
-        // "sleight of hand": a name of several words, which a notation cannot hold.
-        const words = /^\s+[A-Za-z]/.test(notation.slice(offset + whole.length));
-        checkNotScore(roller, system, fields, name);
-        const value = sheetValue(roller, fields, name, who, words, system);
-        taken[name] = value;
-        const negative = (sign === "-") !== (value < 0);
-        return `${negative ? "-" : sign === "" ? "" : "+"}${Math.abs(value)}`;
-    });
-    return { notation: replaced, taken };
 }
 
 /** Refuses a score the system shows with a modifier beside it, such as str with str-mod (DAT-2): a roll adds the modifier, and 1d20+str would add the score. */

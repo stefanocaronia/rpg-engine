@@ -89,6 +89,15 @@ export function writeEffortFiles(root: string, platform: string, cleared = false
     });
 }
 
+/**
+ * Whether the campaign has the character agent as a Claude Code agent (D-490): looked at as the MCP server starts, before it writes its host files, it says whether
+ * the chat found the agent, as Claude Code reads its agents only when a chat starts.
+ */
+export function hasCharacterAgent(root: string): boolean
+{
+    return files().fresh(characterAgentPath(root)) !== undefined;
+}
+
 function hostFiles(root: string, instructions: HostInstructions, platform: string): (() => HostFile | undefined)[]
 {
     return [
@@ -124,15 +133,6 @@ function agentsFile(root: string, startLines: string): HostFile | undefined
     const lines = text.replace(/\r\n/g, "\n");
     const updated = markedBlock.test(lines) ? lines.replace(markedBlock, () => block) : `${block}\n\n${lines}`;
     return updated === lines ? undefined : { path, text: text.includes("\r\n") ? updated.replace(/\n/g, "\r\n") : updated };
-}
-
-/**
- * Whether the campaign has the character agent as a Claude Code agent (D-490): looked at as the MCP server starts, before it writes its host files, it says whether
- * the chat found the agent, as Claude Code reads its agents only when a chat starts.
- */
-export function hasCharacterAgent(root: string): boolean
-{
-    return files().fresh(characterAgentPath(root)) !== undefined;
 }
 
 function characterAgentPath(root: string): string

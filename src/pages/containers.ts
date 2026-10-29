@@ -172,6 +172,30 @@ export class MoveStopped extends Error
     }
 }
 
+/** Why a container cannot hold a page (CON-1), with the way out: where the page goes instead. */
+export function holdRefusal(holder: { name: string; type?: PageType; }, held: { name: string; type?: PageType; }): string
+{
+    if (held.type === "creature") {
+        return `${held.name} is a creature, a kind: its copies enter a scene with scene, creatures; one in particular is a character with creature [[${held.name}]].`;
+    }
+
+    if (held.type !== "place" && held.type !== "character" && held.type !== "item") {
+        return `${held.name} is ${withArticle(held.type ?? "free page")}, which is nowhere: only places, characters and items are inside something.`;
+    }
+
+    if (containerFieldOf(holder.type) === undefined) {
+        const where = held.type === "item" ? "a place, a character or an item" : held.type === "character" ? "a place or an item" : "a place";
+        return `${holder.name} is ${withArticle(holder.type ?? "free page")}, which holds nothing: ${held.name} goes into ${where}.`;
+    }
+
+    if (held.type === "place") {
+        const inside = holder.type === "item" ? ` For a world inside a thing, such as a lamp's, write a place with a link to ${holder.name}.` : "";
+        return `${holder.name} is ${withArticle(holder.type ?? "free page")}: a place goes only into a place.${inside}`;
+    }
+
+    return `${holder.name} is a character, who carries only items: to be with them, ${held.name} goes where ${holder.name} is.`;
+}
+
 /** A frontmatter with stacks set in a container's list, each written once in the place of its first entry (STK-3). */
 function withStacks(frontmatter: string | undefined, field: string, stacks: StackCount[], path: string): string
 {
@@ -198,30 +222,6 @@ function finishingCalls(edits: MovePlan["edits"]): string[]
         ...edit.add.map((entry) => `write ${edit.holder.name}, add ${edit.field}=${entry}`),
         ...Object.entries(edit.set ?? {}).map(([field, value]) => `change ${edit.holder.name}, ${field}, to "${value}"`),
     ]);
-}
-
-/** Why a container cannot hold a page (CON-1), with the way out: where the page goes instead. */
-export function holdRefusal(holder: { name: string; type?: PageType; }, held: { name: string; type?: PageType; }): string
-{
-    if (held.type === "creature") {
-        return `${held.name} is a creature, a kind: its copies enter a scene with scene, creatures; one in particular is a character with creature [[${held.name}]].`;
-    }
-
-    if (held.type !== "place" && held.type !== "character" && held.type !== "item") {
-        return `${held.name} is ${withArticle(held.type ?? "free page")}, which is nowhere: only places, characters and items are inside something.`;
-    }
-
-    if (containerFieldOf(holder.type) === undefined) {
-        const where = held.type === "item" ? "a place, a character or an item" : held.type === "character" ? "a place or an item" : "a place";
-        return `${holder.name} is ${withArticle(holder.type ?? "free page")}, which holds nothing: ${held.name} goes into ${where}.`;
-    }
-
-    if (held.type === "place") {
-        const inside = holder.type === "item" ? ` For a world inside a thing, such as a lamp's, write a place with a link to ${holder.name}.` : "";
-        return `${holder.name} is ${withArticle(holder.type ?? "free page")}: a place goes only into a place.${inside}`;
-    }
-
-    return `${holder.name} is a character, who carries only items: to be with them, ${held.name} goes where ${holder.name} is.`;
 }
 
 /** A page goes only into a container that can hold it (CON-1), never into itself or into what it holds (CON-3); the pages of the game system go nowhere (SYS-6). */

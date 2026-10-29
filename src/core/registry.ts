@@ -36,6 +36,19 @@ export function defineCommand<Schema extends z.ZodObject, Result>(command: Comma
     return { ...command, run: (input, context) => withFiles(context.files ?? new FileStore(context.systemFolders), () => command.run(input, context)) };
 }
 
+/**
+ * What keeps a field of a command's input from being given on the command line: one named no-x, read as turning x off, or json, read as answering in JSON
+ * (review of 25 and 28 October); undefined for any other. A positional is never an option, so json is its name freely.
+ */
+export function commandLineFieldProblem(command: string, name: string, positional: boolean): string | undefined
+{
+    if (name.startsWith("no-")) {
+        return `${command} has a field named ${name}, and none may start with no-, which the command line reads as turning ${name.slice(3)} off: rename it.`;
+    }
+
+    return name === "json" && !positional ? `${command} has a field named json, which the command line reads as answering in JSON: rename it.` : undefined;
+}
+
 /** Whether a field of a command's input is a flag, true or false, as --hidden. */
 export function isBoolean(field: z.ZodType): boolean
 {

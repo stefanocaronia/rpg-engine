@@ -146,6 +146,24 @@ export const save = defineCommand({
     },
 });
 
+/** What the master hears of what the player did with the saves on the dashboard, at the head of their next call (D-359). */
+export function playerSaveNews(result: SaveResult): string
+{
+    switch (result.action) {
+        case "make":
+            return `The player saved on the dashboard: ${saveText(result.save)}.`;
+        case "load":
+            return `The player went back on the dashboard to save ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game, `
+                + `the later saves too. ${newChatText}`;
+        case "reset":
+            return `The player started the campaign over on the dashboard. ${resetText(result.to, result.save)}, what happened since gone from the game, every later save too. ${newChatText}`;
+        case "new chat":
+            return `The player opened a new chat after going back to save ${result.save}, and confirmed it on the dashboard: the game goes on in it, from that save.`;
+        default:
+            return "";
+    }
+}
+
 /** The save asked for, by its number or last. */
 function chosenSave(saves: Save[], asked: string | undefined): Save
 {
@@ -179,24 +197,6 @@ function checkParameters(input: { action: (typeof actions)[number]; label?: stri
 
     if (input.to !== undefined && input.action !== "reset") {
         throw new Error(`save ${input.action} does not take to: only reset does.`);
-    }
-}
-
-/** What the master hears of what the player did with the saves on the dashboard, at the head of their next call (D-359). */
-export function playerSaveNews(result: SaveResult): string
-{
-    switch (result.action) {
-        case "make":
-            return `The player saved on the dashboard: ${saveText(result.save)}.`;
-        case "load":
-            return `The player went back on the dashboard to save ${saveText(result.save)}: the campaign's files are as they were then, and what happened since is gone from the game, `
-                + `the later saves too. ${newChatText}`;
-        case "reset":
-            return `The player started the campaign over on the dashboard. ${resetText(result.to, result.save)}, what happened since gone from the game, every later save too. ${newChatText}`;
-        case "new chat":
-            return `The player opened a new chat after going back to save ${result.save}, and confirmed it on the dashboard: the game goes on in it, from that save.`;
-        default:
-            return "";
     }
 }
 

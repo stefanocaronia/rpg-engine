@@ -526,6 +526,26 @@ export function readPage(root: string, fullPath: string): Page
     return page;
 }
 
+/** The page whose file in a folder's world/ is named `name`, with the type its folder gives, found by the file's name alone without reading the pages: enough to say that a page is there. */
+export function pageFileNamed(root: string, name: string): { name: string; type?: PageType; } | undefined
+{
+    const worldPath = join(root, worldFolderName);
+    const wanted = comparableText(name.trim());
+    const file = files().files(worldPath, (candidate) => /\.md$/i.test(candidate) && comparableText(candidate.slice(0, -3)) === wanted)[0];
+    return file === undefined ? undefined : { name: basename(file).slice(0, -3), type: typeOfFolder(relative(worldPath, file).split(sep)[0]) };
+}
+
+/** The pages of the system's bonus lists a page names (FOR-5, D-449): an attuned ring, a feat; of a list given only while in another, only those in it too, as a ring worn (BND-4). */
+export function bonusPages(world: World, fields: Record<string, unknown>): Page[]
+{
+    return (world.system?.bonusLists ?? []).flatMap((list) => {
+        const named = linksIn(valueNamed(fields, list));
+        const whileIn = world.system?.bonusWhile?.[list];
+        const held = whileIn === undefined ? undefined : linksIn(valueNamed(fields, whileIn)).map(comparableText);
+        return named.filter((name) => held === undefined || held.includes(comparableText(name))).flatMap((name) => findPage(world, name) ?? []);
+    });
+}
+
 /** The page that the text of a file in `root` writes. */
 function pageOf(root: string, fullPath: string, text: string): Page
 {
@@ -539,15 +559,6 @@ function pageOf(root: string, fullPath: string, text: string): Page
         fields: readFields(file.frontmatter, path),
         body: file.body,
     };
-}
-
-/** The page whose file in a folder's world/ is named `name`, with the type its folder gives, found by the file's name alone without reading the pages: enough to say that a page is there. */
-export function pageFileNamed(root: string, name: string): { name: string; type?: PageType; } | undefined
-{
-    const worldPath = join(root, worldFolderName);
-    const wanted = comparableText(name.trim());
-    const file = files().files(worldPath, (candidate) => /\.md$/i.test(candidate) && comparableText(candidate.slice(0, -3)) === wanted)[0];
-    return file === undefined ? undefined : { name: basename(file).slice(0, -3), type: typeOfFolder(relative(worldPath, file).split(sep)[0]) };
 }
 
 /**
@@ -641,15 +652,4 @@ function textExcerpt(page: Page, text: string): string | undefined
 function shorten(text: string): string
 {
     return text.length > 120 ? `${text.slice(0, 119)}…` : text;
-}
-
-/** The pages of the system's bonus lists a page names (FOR-5, D-449): an attuned ring, a feat; of a list given only while in another, only those in it too, as a ring worn (BND-4). */
-export function bonusPages(world: World, fields: Record<string, unknown>): Page[]
-{
-    return (world.system?.bonusLists ?? []).flatMap((list) => {
-        const named = linksIn(valueNamed(fields, list));
-        const whileIn = world.system?.bonusWhile?.[list];
-        const held = whileIn === undefined ? undefined : linksIn(valueNamed(fields, whileIn)).map(comparableText);
-        return named.filter((name) => held === undefined || held.includes(comparableText(name))).flatMap((name) => findPage(world, name) ?? []);
-    });
 }

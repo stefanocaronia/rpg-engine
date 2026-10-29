@@ -22,24 +22,10 @@ import { type Acts, newActs } from "../player-acts.ts";
 import { builtPage, packagePageFile, pageFile, pageHtml, pageModulesOf, pagePolicy, pageWords, securityHeaders, send, sendFile, sendImage, sendJson, sendPacked, sendThemeFile, themeAddress, themeNow, vendorModule } from "./files.ts";
 import { act, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
 import { answerAsked, type Asked, closeCard, listenForChanges, pagePlayer, pageSeen, rollNamesOf, type ShownCard, spendShown } from "./player.ts";
+import { campaignPorts } from "./ports.ts";
 import { addPackage, catalogNow, changeLibrary, changePackage, changeSaves, changeSetting, engineNow, exportCampaign, exportedFile, libraryNow, type PackageAction, type PackagePhase, packagesNow, runForPlayer } from "./writes.ts";
 
-/**
- * The ports the dashboard tries in turn, taking the first that is free: the same link from one chat to the next (D-272). Windows may keep ranges of ports
- * from boot to boot (netsh int ipv4 show excludedportrange): then the next range, and at last any free port, whose link status gives all the same (D-338).
- */
-export const dashboardPorts = [...[4747, 5747, 6747, 7747, 8747].flatMap((first) => Array.from({ length: 10 }, (_, index) => first + index)), 0];
-
-/**
- * The ports for a campaign's dashboard: its own in each range first, worked out from its folder, then the others (D-353). Its link stays the same from one
- * chat to the next, as long as no other program holds that port, so that the player can keep it, and a page left open comes back by itself.
- */
-export function campaignPorts(root: string): number[]
-{
-    const offset = [...root.replaceAll("\\", "/").toLowerCase()].reduce((sum, letter) => (sum * 31 + letter.charCodeAt(0)) % 100003, 0) % 10;
-    const own = [4747, 5747, 6747, 7747, 8747].map((first) => first + offset);
-    return [...own, ...dashboardPorts.filter((port) => !own.includes(port))];
-}
+export { campaignPorts, dashboardPorts } from "./ports.ts";
 
 /** A dashboard that is running: its link, and how to stop it. */
 export interface Dashboard
@@ -51,7 +37,7 @@ export interface Dashboard
      * What the player did on the page since it was last taken, for the master's next call: the saves, in order (D-359), then each setting as it is now against
      * how it was (D-341); and what gives it back when that call never answers.
      */
-    news(): { lines: string[]; restore(): void; };
+    news(told?: Set<string>): { lines: string[]; restore(): void; };
     close(): Promise<void>;
 }
 
@@ -284,7 +270,7 @@ function serve(server: Server, served: Served): Dashboard
     return {
         url: `http://127.0.0.1:${served.port}`,
         player: pagePlayer(served),
-        news: () => pageNews(served),
+        news: (told) => pageNews(served, told),
         close: () =>
             new Promise((done) => {
                 stopListening();

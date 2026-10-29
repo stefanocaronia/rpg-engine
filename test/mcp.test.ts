@@ -245,12 +245,12 @@ describe("what the player changed on the dashboard (D-341)", () => {
                 }),
         };
 
-        const taken = () => {
+        const taken = (told?: Set<string>) => {
             const lines = news.splice(0);
 
-            // A part the news brings, as the mentor's, counts as told in the chat.
+            // A part the news brings, as the mentor's, counts as told in the call that takes it.
             if (lines.length > 0) {
-                served.told?.add("told in the stopped call");
+                told?.add("told in the stopped call");
             }
 
             return { lines, restore: () => news.unshift(...lines) };
@@ -262,17 +262,22 @@ describe("what the player changed on the dashboard (D-341)", () => {
         const plain = new Client({ name: "plain", version: "1.0.0" });
         await plain.connect(clientTransport);
         await plain.callTool({ name: "status", arguments: {} });
-        news.push("The player set difficulty to hard on the dashboard. Play by it from now on.");
         const stop = new AbortController();
         const asking = plain.callTool({ name: "ask", arguments: { question: "Scavalcare il muro?", options: ["Atletica 1d20+5", "Acrobazia 1d20+3"], who: "Bruna" } }, undefined, {
             signal: stop.signal,
         });
         await asked;
+        // A call beside it, meanwhile, tells the chat a note of its own the first time.
+        await plain.callTool({ name: "roll", arguments: { notation: "1d6", why: "the wind" } });
+        expect(served.told?.has("roll-real")).toBe(true);
+        // What the player changes now goes to the call that waits, the next to end.
+        news.push("The player set difficulty to hard on the dashboard. Play by it from now on.");
         stop.abort();
         await expect(asking).rejects.toThrow();
         await vi.waitFor(() => expect(news).toHaveLength(1));
-        // What the stopped call told the chat is told again: its answer never went (D-97).
+        // What the stopped call told the chat is told again: its answer never went (D-97); what the call beside it told stays told.
         expect(served.told?.has("told in the stopped call")).toBe(false);
+        expect(served.told?.has("roll-real")).toBe(true);
         const after = ((await plain.callTool({ name: "status", arguments: {} })).content as { text: string; }[])[0].text;
         expect(after).toMatch(/^The player set difficulty to hard on the dashboard\. Play by it from now on\.\n\n\S/);
         await plain.close();

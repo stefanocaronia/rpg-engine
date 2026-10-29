@@ -8,6 +8,7 @@ import {
     introductionText,
     isPartyMember,
     isPlayerCharacter,
+    type Link,
     links,
     locate,
     type Page,
@@ -45,30 +46,6 @@ export function playerCharacter(world: World): Page | undefined
 {
     const players = playerCharacters(world);
     return players.find((page) => page.fields.status !== "dead") ?? players[0];
-}
-
-/**
- * The player character in the foreground (VIEW-12), whose place, map and squares the view shows: the one named; else, of the living, the one whose turn it is in
- * the open scene, then one in the open scene, then the first; else the first. Undefined before there is one.
- */
-function foregroundCharacter(root: string, world: World, wanted?: string): Page | undefined
-{
-    const players = playerCharacters(world);
-
-    if (wanted !== undefined && wanted.trim() !== "") {
-        const page = pagesWithNameOrAlias(world, parsePageReference(wanted).name).find(isPlayerCharacter);
-
-        if (page === undefined) {
-            throw new Error(`${wanted.trim()} is not a player character: give one of ${players.map((player) => player.name).join(", ") || "them, once there is one"}.`);
-        }
-
-        return page;
-    }
-
-    const living = players.filter((page) => page.fields.status !== "dead");
-    const { scene } = readOpenScene(root);
-    const named = (page: Page, name: string | undefined): boolean => name !== undefined && pagesWithNameOrAlias(world, parsePageReference(name).name)[0] === page;
-    return living.find((page) => named(page, scene?.turn)) ?? living.find((page) => (scene?.with ?? []).some((link) => named(page, link))) ?? living[0] ?? players[0];
 }
 
 /**
@@ -246,6 +223,67 @@ export function writesKnownText(knowledge: Knowledge, page: Page): boolean
     return said(introductionText(page.body)) || partsOf(page).some((part) => isShown(knowledge, page, part) && said(partContent(page.body, part.name)?.content));
 }
 
+/** The links of a character's knows (REV-1), each with its page and the secret it names, as knownLink finds them. */
+export function knownLinks(world: World, character: Page): KnownLink[]
+{
+    return textsIn(character.fields.knows).flatMap(links).map((link) => knownLink(world, link));
+}
+
+/** A link of knows with its page and secret (REV-1), found as knownLinks finds them. */
+export interface KnownLink
+{
+    name: string;
+    page?: Page;
+    secret?: string;
+}
+
+/** One link as knows means it: its page, by a name or an alias (D-417), and the secret it names; of two pages by one name, the one that writes the secret. */
+export function knownLink(world: World, link: Link): KnownLink
+{
+    const pages = pagesWithNameOrAlias(world, parsePageReference(link.page).name);
+    const wanted = link.section === undefined || link.section === "" ? undefined : comparableText(link.section);
+
+    for (const page of wanted === undefined ? [] : pages) {
+        const secret = secretNames(page.body).find((name) => comparableText(name) === wanted);
+
+        if (secret !== undefined) {
+            return { name: page.name, page, secret };
+        }
+    }
+
+    return { name: pages[0]?.name ?? link.page, ...(pages[0] === undefined ? {} : { page: pages[0] }), ...(link.section === undefined ? {} : { secret: link.section }) };
+}
+
+/** The texts of a field, one or a list, without what is not text. */
+export function textList(value: unknown): string[]
+{
+    return (Array.isArray(value) ? value : [value]).filter((item): item is string => typeof item === "string");
+}
+
+/**
+ * The player character in the foreground (VIEW-12), whose place, map and squares the view shows: the one named; else, of the living, the one whose turn it is in
+ * the open scene, then one in the open scene, then the first; else the first. Undefined before there is one.
+ */
+function foregroundCharacter(root: string, world: World, wanted?: string): Page | undefined
+{
+    const players = playerCharacters(world);
+
+    if (wanted !== undefined && wanted.trim() !== "") {
+        const page = pagesWithNameOrAlias(world, parsePageReference(wanted).name).find(isPlayerCharacter);
+
+        if (page === undefined) {
+            throw new Error(`${wanted.trim()} is not a player character: give one of ${players.map((player) => player.name).join(", ") || "them, once there is one"}.`);
+        }
+
+        return page;
+    }
+
+    const living = players.filter((page) => page.fields.status !== "dead");
+    const { scene } = readOpenScene(root);
+    const named = (page: Page, name: string | undefined): boolean => name !== undefined && pagesWithNameOrAlias(world, parsePageReference(name).name)[0] === page;
+    return living.find((page) => named(page, scene?.turn)) ?? living.find((page) => (scene?.with ?? []).some((link) => named(page, link))) ?? living[0] ?? players[0];
+}
+
 /** A text as the character may read it (VIEW-3): a link to a page it does not know, or to none, written as its words, so that no name tells the page exists. */
 function inKnownWords(world: World, knowledge: Knowledge, text: string): string
 {
@@ -267,28 +305,6 @@ function partsOf(page: Page): { name: string; text: string; holder: Page; }[]
 function isSecretText(text: string): boolean
 {
     return /^[ \t]{0,3}>[ \t]*\[!secret\]/i.test(text);
-}
-
-/**
- * The links of a character's knows (REV-1), each with its page, found by a name or an old one among its aliases (D-417), and the secret it names, as that page
- * writes it: of two pages by one name, the one that writes the secret.
- */
-function knownLinks(world: World, character: Page): { name: string; page?: Page; secret?: string; }[]
-{
-    return textsIn(character.fields.knows).flatMap(links).map((link) => {
-        const pages = pagesWithNameOrAlias(world, parsePageReference(link.page).name);
-        const wanted = link.section === undefined || link.section === "" ? undefined : comparableText(link.section);
-
-        for (const page of wanted === undefined ? [] : pages) {
-            const secret = secretNames(page.body).find((name) => comparableText(name) === wanted);
-
-            if (secret !== undefined) {
-                return { name: page.name, page, secret };
-            }
-        }
-
-        return { name: pages[0]?.name ?? link.page, ...(pages[0] === undefined ? {} : { page: pages[0] }), ...(link.section === undefined ? {} : { secret: link.section }) };
-    });
 }
 
 /** The names of the player characters a test holds for, when more than one is played and not all of them pass it. */
@@ -351,10 +367,4 @@ interface LogRead
 {
     log: LogEntry[];
     scene: Scene | undefined;
-}
-
-/** The texts of a field, one or a list, without what is not text. */
-export function textList(value: unknown): string[]
-{
-    return (Array.isArray(value) ? value : [value]).filter((item): item is string => typeof item === "string");
 }

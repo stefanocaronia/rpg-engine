@@ -14,7 +14,6 @@ import {
     namesakes,
     type Page,
     pageNamed,
-    pagesWithName,
     parsePageReference,
     readSection,
     secretNames,
@@ -32,7 +31,7 @@ import { holdsItems, isFallen, lootAdvice } from "./shared/loot.ts";
 import { skippedPagesNote } from "./shared/notes.ts";
 import { firstInChat } from "./shared/parts.ts";
 import { featureSource, progressionOf } from "./shared/progression.ts";
-import { closedScenes, copyLink, copyPage, openSceneLog, readOpenScene } from "./shared/scene.ts";
+import { closedScenes, copyLink, copyPage, openSceneLog, readOpenScene, scenePlace } from "./shared/scene.ts";
 import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./shared/sheet.ts";
 import { signedText, type WorkedField, workedFields, workedLine, workedParts } from "./shared/worked-out.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./shared/world.ts";
@@ -121,7 +120,7 @@ export const show = defineCommand({
             alsoCopy: !isCopy && copy !== undefined,
             isIn: chain.map((holder) => holder.name),
             alsoIn: alsoIn.map((holder) => holder.name),
-            around: page.type === "place" || page.type === "character" || isCopy ? surroundingsText(surroundings(world, isCopy ? scenePlace(world, scene.place) : page)) : "",
+            around: page.type === "place" || page.type === "character" || isCopy ? surroundingsText(surroundings(world, isCopy ? scenePlace(world, scene) : page)) : "",
             sheet,
             featureHint: sheet.length === 0 || group !== undefined ? undefined : featureHint(world, page),
             onSheet: sheetFieldNames(world, system, page),
@@ -249,12 +248,6 @@ function repeatsRead(world: World, worked: WorkedField): boolean
 function nameWithSystem(page: Page): string
 {
     return page.system === undefined ? page.name : `${page.name} (${page.system})`;
-}
-
-/** The place of the open scene, where its copies are (ENV-2); undefined when it has none, or none that exists. */
-function scenePlace(world: World, place: string | undefined): Page | undefined
-{
-    return place === undefined ? undefined : pagesWithName(world, parsePageReference(place).name)[0];
 }
 
 /** "ac 15 (13 without)": the values the page's effects give, each with the one it reads without them (EFF-10). */

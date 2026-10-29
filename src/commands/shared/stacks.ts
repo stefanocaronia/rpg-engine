@@ -125,25 +125,6 @@ export function writeStacks(root: string, context: Context, world: World, steps:
     return { world: unequipped.world, notes: [changed.map(stackStepText).join("; ") + ".", ...unequipped.notes] };
 }
 
-/**
- * Writes a plan with stack steps in it, and their lines in the log (STK-12): stopped halfway, the lines of the stacks already written are still logged, then the stop is
- * said (STK-9).
- */
-function applyLogged(root: string, context: Context, world: World, plan: MovePlan, steps: StackStep[], why?: string, asked: Record<string, unknown> = {}): World
-{
-    try {
-        const after = applyMove(world, plan);
-        logStackSteps(root, context, world, steps, why, asked);
-        return after;
-    } catch (error) {
-        if (error instanceof MoveStopped) {
-            logStackSteps(root, context, world, steps.filter((step) => error.written.includes(step.container.path)), why, asked);
-        }
-
-        throw error;
-    }
-}
-
 /** One line in the log for each stack that changed (STK-12): public when its container concerns the player, as a counter's (CNT-10); `asked` is how, as spend 1. */
 export function logStackSteps(root: string, context: Context, world: World, steps: StackStep[], why: string | undefined, asked: Record<string, unknown> = {}): void
 {
@@ -271,6 +252,25 @@ export function changeStack(
         thresholds: [],
         reminders: unequipped,
     };
+}
+
+/**
+ * Writes a plan with stack steps in it, and their lines in the log (STK-12): stopped halfway, the lines of the stacks already written are still logged, then the stop is
+ * said (STK-9).
+ */
+function applyLogged(root: string, context: Context, world: World, plan: MovePlan, steps: StackStep[], why?: string, asked: Record<string, unknown> = {}): World
+{
+    try {
+        const after = applyMove(world, plan);
+        logStackSteps(root, context, world, steps, why, asked);
+        return after;
+    } catch (error) {
+        if (error instanceof MoveStopped) {
+            logStackSteps(root, context, world, steps.filter((step) => error.written.includes(step.container.path)), why, asked);
+        }
+
+        throw error;
+    }
 }
 
 /** A number of pieces as change takes it: a whole number, above 0 to spend, from 0 up to set; by may be below 0. */

@@ -38,6 +38,40 @@ export function checkWorld(world: World): Problem[]
 
 const checked = new WeakMap<World, Problem[]>();
 
+/**
+ * A number without a maximum named as goods in the plural, as torches: 7 or crossbow-bolts: 20: what a stack counts, written as a field nothing spends (STK-13); `names` are
+ * the fields to look at, all of them when left out. A name in the singular, as lock: 15, is some other number.
+ */
+export function goodsFieldProblems(world: World, page: Page, names?: string[]): Problem[]
+{
+    const field = containerFieldOf(page.type);
+
+    if (field === undefined) {
+        return [];
+    }
+
+    return Object.entries(page.fields).filter(([name]) => names === undefined || names.some((wanted) => comparableText(wanted) === comparableText(name))).flatMap(([name, value]): Problem[] => {
+        const count = typeof value === "number" ? value : typeof value === "string" && /^\s*\d+\s*$/.test(value) ? Number(value) : undefined;
+
+        if (count === undefined || !Number.isSafeInteger(count) || !/s$/i.test(name) || isStandardField(page.type, name) || declaredKind(world, name) !== undefined) {
+            return [];
+        }
+
+        const kind = goodsNamed(world, name);
+        return kind === undefined ? [] : [{
+            path: page.path,
+            message: `${page.name} counts ${name}: ${count} as a number, which no command spends: goods are a stack of ${kind.name} in ${field}.`,
+            fix: `write ${page.name}, unset ${name}, add ${field}="[[${kind.name}]] ${count}"`,
+        }];
+    });
+}
+
+/** What a character has equipped and does not hold (CON-12), as write says it after a change of its inventory or of what it has equipped. */
+export function equippedNotes(world: World, character: Page): string[]
+{
+    return equippedProblems(world, groupBy(world.pages, (page) => [page.name]), character).map((problem) => `${problem.message} Fix: ${problem.fix}.`);
+}
+
 function worldProblems(world: World): Problem[]
 {
     // Built once, so that the checks cost as much as reading the pages, however many there are.
@@ -409,40 +443,6 @@ function stackProblems(world: World, holder: Page): Problem[]
         })),
         ...goodsFieldProblems(world, holder),
     ];
-}
-
-/**
- * A number without a maximum named as goods in the plural, as torches: 7 or crossbow-bolts: 20: what a stack counts, written as a field nothing spends (STK-13); `names` are
- * the fields to look at, all of them when left out. A name in the singular, as lock: 15, is some other number.
- */
-export function goodsFieldProblems(world: World, page: Page, names?: string[]): Problem[]
-{
-    const field = containerFieldOf(page.type);
-
-    if (field === undefined) {
-        return [];
-    }
-
-    return Object.entries(page.fields).filter(([name]) => names === undefined || names.some((wanted) => comparableText(wanted) === comparableText(name))).flatMap(([name, value]): Problem[] => {
-        const count = typeof value === "number" ? value : typeof value === "string" && /^\s*\d+\s*$/.test(value) ? Number(value) : undefined;
-
-        if (count === undefined || !Number.isSafeInteger(count) || !/s$/i.test(name) || isStandardField(page.type, name) || declaredKind(world, name) !== undefined) {
-            return [];
-        }
-
-        const kind = goodsNamed(world, name);
-        return kind === undefined ? [] : [{
-            path: page.path,
-            message: `${page.name} counts ${name}: ${count} as a number, which no command spends: goods are a stack of ${kind.name} in ${field}.`,
-            fix: `write ${page.name}, unset ${name}, add ${field}="[[${kind.name}]] ${count}"`,
-        }];
-    });
-}
-
-/** What a character has equipped and does not hold (CON-12), as write says it after a change of its inventory or of what it has equipped. */
-export function equippedNotes(world: World, character: Page): string[]
-{
-    return equippedProblems(world, groupBy(world.pages, (page) => [page.name]), character).map((problem) => `${problem.message} Fix: ${problem.fix}.`);
 }
 
 /** A road's stop that is a page but not a place of the campaign (ROA-4, ROA-7): its stretches lead nowhere. A stop that does not exist is a broken link, said above. */

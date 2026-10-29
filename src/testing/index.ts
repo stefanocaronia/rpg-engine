@@ -191,16 +191,24 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
             rmSync(base, { recursive: true, force: true });
         },
     };
-    await campaign.ok("init", "--name", "Test", "--language", options.language ?? "en", "--system", options.system, "--difficulty", "normal", "--lethality", "dice");
 
-    if (options.play !== false) {
-        inPlay(folder);
+    try {
+        await campaign.ok("init", "--name", "Test", "--language", options.language ?? "en", "--system", options.system, "--difficulty", "normal", "--lethality", "dice");
+
+        if (options.play !== false) {
+            inPlay(folder);
+        }
+
+        const extensions = Object.fromEntries(linked.filter((one) => !one.system).map((one) => [one.name, one.version]));
+        const added = { ...options.settings, ...(linked.length === 0 ? {} : { extensions }) };
+        const written = readFileSync(join(folder, "campaign.yaml"), "utf8");
+        writeFileSync(join(folder, "campaign.yaml"), Object.keys(added).length === 0 ? written : `${written}${stringify(added)}`);
+    } catch (error) {
+        // A campaign that could not be made leaves nothing behind, its links taken away first.
+        await campaign.close();
+        throw error;
     }
 
-    const extensions = Object.fromEntries(linked.filter((one) => !one.system).map((one) => [one.name, one.version]));
-    const added = { ...options.settings, ...(linked.length === 0 ? {} : { extensions }) };
-    const written = readFileSync(join(folder, "campaign.yaml"), "utf8");
-    writeFileSync(join(folder, "campaign.yaml"), Object.keys(added).length === 0 ? written : `${written}${stringify(added)}`);
     return campaign;
 }
 
@@ -270,7 +278,13 @@ async function testDashboard(context: Context): Promise<TestDashboard>
                 let text = "";
                 response.setEncoding("utf8");
                 response.on("data", (chunk: string) => (text += chunk));
-                response.on("end", () => done({ status: response.statusCode ?? 0, body: text.trim() === "" ? {} : JSON.parse(text) as unknown }));
+                response.on("end", () => {
+                    try {
+                        done({ status: response.statusCode ?? 0, body: text.trim() === "" ? {} : JSON.parse(text) as unknown });
+                    } catch {
+                        fail(new Error(`${method} ${path} answered ${response.statusCode ?? 0} with no JSON: ${text.trim()}`));
+                    }
+                });
             });
             sent.on("error", fail);
             sent.end(body === undefined ? undefined : JSON.stringify(body));

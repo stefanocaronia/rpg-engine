@@ -53,7 +53,7 @@ import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, readableSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
 import { readCalendar, readCalendarStart } from "../time/index.ts";
-import { libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./shared/library.ts";
+import { checkLibraryRemovals, libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./shared/library.ts";
 import { campaignMode, campaignNote } from "./shared/mode.ts";
 import { campaignCoins, coinsShown } from "./shared/money.ts";
 import { askedBy, heldSystemSettings, isFixedSetting, isLeading, offeredValues, offerRefusal, playedEngineSetting, unofferedLines, valuePart } from "./shared/offers.ts";
@@ -112,21 +112,23 @@ export const config = defineCommand({
         computer: z.boolean().optional().describe("with library and remove: off this computer too, out of every campaign, its books' text deleted"),
     }),
 
-    run(input, context)
+    run(given, context)
     {
-        if (input.computer !== undefined && (input.setting?.trim() !== "library" || input.remove === undefined)) {
+        const input = { ...given, setting: given.setting?.trim() };
+
+        if (input.computer !== undefined && (input.setting !== "library" || input.remove === undefined)) {
             throw new Error("computer goes only with setting library and remove: it takes those folders off this computer. Nothing changed.");
         }
 
         // What the library holds is checked, and an addition allowed by the player, before it is written (LIB-1).
-        if (input.setting?.trim() === "library" && (input.add !== undefined || input.remove !== undefined)) {
+        if (input.setting === "library" && (input.add !== undefined || input.remove !== undefined)) {
             return changeLibrary(input, context);
         }
 
         const result = configure(input, context);
 
         // A system installed in this chat, as in the setup, brings its code once the campaign plays it (D-513 (1)).
-        return input.setting?.trim() === "system" && input.value !== undefined ? loadNewSystemCode(context).then(() => result) : result;
+        return input.setting === "system" && input.value !== undefined ? loadNewSystemCode(context).then(() => result) : result;
     },
 
     format(result)
@@ -153,6 +155,159 @@ interface ConfigResult
     part?: string;
 }
 
+/** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
+export interface PlayerSetting
+{
+    name: string;
+    about: string;
+    value?: string;
+    items?: string[];
+    /** Its values, each with what it means to the player, and in the setup the words that answer its question, as a little for hints (D-370). */
+    choices?: { value: string; means?: string; label?: string; }[];
+    /** In the setup, the value the game suggests, never chosen for the player (D-370). */
+    suggested?: string;
+    /** In the setup, the question its card asks in place of its name, as how well the player knows the game (D-347). */
+    question?: string;
+    /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
+    note?: { text: string; fix?: true; };
+    /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
+    most?: number;
+}
+
+/**
+ * The setup's questions as the dashboard asks them (D-370), each with its value or items, if answered, and its values with what each means: the player's
+ * settings of the setup, how companions come, the preparation of a world not written, those the game system adds, then the lines and veils.
+ */
+export function setupQuestions(root: string, context: Context, writtenWorld: boolean): PlayerSetting[]
+{
+    const own = playerSettings(root, context);
+
+    const named = (name: string): PlayerSetting[] => {
+        const setting = own.find((one) => one.name === name) ?? setupSettingNamed(root, name);
+        return setting === undefined ? [] : [setting];
+    };
+
+    const held = heldSystemSettings(root, context);
+    const system = held.map((setting) => setting.name);
+    const settings = readSettings(root);
+    const difficulty = settings.difficulty;
+    // The value a system's setting suggests (DAT-17).
+    const systemSuggests = Object.fromEntries(held.flatMap((setting) => setting.values.filter((value) => value.suggested === true).map((value) => [setting.name, value.value])));
+    const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }), ...systemSuggests };
+    // The system's settings others depend on right after the mentor, before what they change (DAT-16, DAT-17).
+    const leading = held.filter(isLeading).map((setting) => setting.name);
+    const order = setupOrder.filter((name) => name !== "preparation" || !writtenWorld);
+    const others = system.filter((name) => !leading.includes(name));
+    return [...order.slice(0, 1), ...leading, ...order.slice(1), ...others, "lines", "veils"].flatMap(named).map((question) => {
+        const suggestion = suggested[question.name];
+        // A suggestion the game does not offer is none (DAT-16).
+        const offered = suggestion !== undefined && (question.choices === undefined || question.choices.some((choice) => choice.value === suggestion));
+        return { ...(question.name === "mentor" ? mentorQuestion(question) : unsetUnanswered(question, settings)), ...(offered ? { suggested: suggestion } : {}) };
+    });
+}
+
+/** A setting only the setup lets the dashboard change (D-370): how companions come, the preparation, the name; undefined for any other. */
+export function setupSettingNamed(root: string, name: string): PlayerSetting | undefined
+{
+    const key = Object.keys(setupWords).find((one) => comparableText(one) === comparableText(name));
+
+    if (key === undefined) {
+        return undefined;
+    }
+
+    const words = setupWords[key];
+    const value = (readSettings(root) as Record<string, unknown>)[key];
+    return {
+        name: key,
+        about: words.about,
+        ...(typeof value === "string" ? { value } : {}),
+        ...(words.values === undefined ? {} : { choices: words.values.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) })) }),
+    };
+}
+
+/** The player's settings as the dashboard shows them (D-341): with what this computer lacks, as pictures without Codex, asked again. */
+export function shownPlayerSettings(root: string, context: Context): PlayerSetting[]
+{
+    return playerSettings(root, context).map((setting) => (setting.name === "pictures" ? { ...setting, ...picturesReadyNote(context) } : setting));
+}
+
+/** The player's settings with their values, then those the game system adds (D-341). */
+export function playerSettings(root: string, context: Context): PlayerSetting[]
+{
+    const settings = readSettings(root);
+    const own = heldSystemSettings(root, context).map((setting): PlayerSetting => {
+        const value = playedSettingValue(root, context, setting);
+        const choices = setting.values.map((one) => ({ value: one.value, ...(one.player === undefined ? {} : { means: one.player }) }));
+        return { name: setting.name, about: setting.about ?? "a setting of the game system", ...(value === undefined ? {} : { value }), choices };
+    });
+    return [
+        ...playerSettingNames.map((name): PlayerSetting => {
+            const words: PlayerWords = playerWords[name];
+            const value = settings[name] ?? words.unset;
+            const choices = words.values?.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) }));
+            return {
+                name,
+                about: words.about,
+                ...(Array.isArray(value) ? { items: value.map(String) } : value === undefined || value === null ? {} : { value: String(value) }),
+                ...(choices === undefined ? {} : { choices }),
+                ...(words.most === undefined ? {} : { most: words.most }),
+            };
+        }).flatMap((setting) => offeredSetting(root, context, setting)),
+        ...own,
+    ];
+}
+
+/** One of the player's settings by its name, in any case, as the dashboard changes them (D-341); undefined for a setting of the master's or none. */
+export function playerSettingNamed(root: string, context: Context, name: string): PlayerSetting | undefined
+{
+    return playerSettings(root, context).find((setting) => comparableText(setting.name) === comparableText(name));
+}
+
+/**
+ * What the master hears, at the head of their next call, of a setting the player changed on the dashboard (D-341): how it is now against how it was before the
+ * player's first change since their last call, a value with what it means to the master; nothing for one that came back as it was.
+ */
+export function playerChangeNews(root: string, context: Context, before: PlayerSetting, after: PlayerSetting): string[]
+{
+    if (before.items !== undefined || after.items !== undefined) {
+        const added = (after.items ?? []).filter((item) => !(before.items ?? []).includes(item));
+        const removed = (before.items ?? []).filter((item) => !(after.items ?? []).includes(item));
+        return [
+            ...(added.length === 0 ? [] : [`The player added ${quotedItems(added)} to ${after.name} on the dashboard: ${addedText(after)}.`]),
+            ...(removed.length === 0 ? [] : [`The player took ${quotedItems(removed)} off ${after.name} on the dashboard${takenOffText(after.name)}.`]),
+        ];
+    }
+
+    if (after.value === before.value) {
+        return [];
+    }
+
+    // The master's effort is no rule of play: it changes how the next chat thinks, never this one (D-462).
+    if (after.name === "effort") {
+        return [`The player set how much you think to ${after.value ?? "their app's own"} on the dashboard: it applies from their next chat; nothing to do now.`];
+    }
+
+    // How the master writes comes with its parts as they are now, on a line of their own: the same for each of them the player changed (D-395).
+    const style = styleSettingNames.includes(after.name) ? stylePart(root, context) : "";
+
+    if (after.value === undefined) {
+        const cleared = wordsOf(after.name)?.cleared;
+        return cleared === undefined ? [] : [`The player took ${after.name} away on the dashboard: ${cleared}. Play by it from now on.`, ...(style === "" ? [] : [style])];
+    }
+
+    const meaning = settingMeaning(after.name, after.value, countedByGame(campaignSystem(root, context))) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
+    const value = after.most === undefined ? after.value : `"${after.value}"`;
+    const author = after.name === "prose" && readSettings(root).author !== undefined ? " An author is written: theirs takes its place until the player takes it away." : "";
+    // The mentor's new part comes with it, once in the chat (D-347); in play, a value of the system's with its own part (DAT-18).
+    const own = systemSetting(root, context, after.name) === undefined || campaignMode(root, campaignWorld(root, context)) !== "play" ? undefined : valuePart(root, context, after.name, after.value);
+    const part = after.name === "mentor" ? mentorPart(root, context, after.value) : (own ?? "");
+    return [
+        `The player set ${after.name} to ${value} on the dashboard${meaning === undefined ? "" : `: ${meaning}`}. Play by it from now on.${author}${part === "" ? "" : `\n\n${part}`}`,
+        ...unofferedLines(root, context),
+        ...(style === "" ? [] : [style]),
+    ];
+}
+
 /**
  * The library changed (LIB-1, LIB-3): additions as full paths, added to this computer first, from the chat with the player's yes; removals by any spelling of
  * their path, off this computer too with computer; then the new books read apart.
@@ -160,6 +315,12 @@ interface ConfigResult
 async function changeLibrary(input: ConfigInput, context: Context): Promise<ConfigResult>
 {
     const root = requireCampaign(context.folder);
+
+    // A removal refused writes nothing: checked before an addition reaches this computer's library.
+    if (input.remove !== undefined) {
+        checkLibraryRemovals(root, context, input.remove, input.computer === true);
+    }
+
     const add = input.add === undefined ? undefined : await libraryAdditions(root, context, input.add);
     const remove = input.remove === undefined ? undefined : libraryRemovals(root, context, input.remove, input.computer === true);
     // Taken off the computer only: the campaign did not use it.
@@ -306,6 +467,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
 
 // The settings of free words the player may leave unset again, with the value none, and all those of how the master writes (D-395).
 const freeSettingNames: SettingName[] = ["author", "style", "calendar"];
+
 const styleSettingNames = ["prose", "story", "author", "style"];
 
 /** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
@@ -330,25 +492,6 @@ export const playerSettingNames = [
     "veils",
     "language",
 ] as const;
-
-/** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
-export interface PlayerSetting
-{
-    name: string;
-    about: string;
-    value?: string;
-    items?: string[];
-    /** Its values, each with what it means to the player, and in the setup the words that answer its question, as a little for hints (D-370). */
-    choices?: { value: string; means?: string; label?: string; }[];
-    /** In the setup, the value the game suggests, never chosen for the player (D-370). */
-    suggested?: string;
-    /** In the setup, the question its card asks in place of its name, as how well the player knows the game (D-347). */
-    question?: string;
-    /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
-    note?: { text: string; fix?: true; };
-    /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
-    most?: number;
-}
 
 // What each of the player's settings is, and what its values mean to the player, in their words rather than the master's.
 const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
@@ -504,40 +647,9 @@ const mentorAnswers: Record<string, string> = { tutorial: "never played it", hin
 
 // The values the game suggests in the setup, as the design has them by default (D-370): never chosen for the player.
 const suggestedValues: Record<string, string> = { saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", preparation: "on the fly" };
+
 // The lethality the difficulty suggests (D-141).
 const suggestedLethality: Record<string, string> = { story: "narrative", easy: "epic" };
-
-/**
- * The setup's questions as the dashboard asks them (D-370), each with its value or items, if answered, and its values with what each means: the player's
- * settings of the setup, how companions come, the preparation of a world not written, those the game system adds, then the lines and veils.
- */
-export function setupQuestions(root: string, context: Context, writtenWorld: boolean): PlayerSetting[]
-{
-    const own = playerSettings(root, context);
-
-    const named = (name: string): PlayerSetting[] => {
-        const setting = own.find((one) => one.name === name) ?? setupSettingNamed(root, name);
-        return setting === undefined ? [] : [setting];
-    };
-
-    const held = heldSystemSettings(root, context);
-    const system = held.map((setting) => setting.name);
-    const settings = readSettings(root);
-    const difficulty = settings.difficulty;
-    // The value a system's setting suggests (DAT-17).
-    const systemSuggests = Object.fromEntries(held.flatMap((setting) => setting.values.filter((value) => value.suggested === true).map((value) => [setting.name, value.value])));
-    const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }), ...systemSuggests };
-    // The system's settings others depend on right after the mentor, before what they change (DAT-16, DAT-17).
-    const leading = held.filter(isLeading).map((setting) => setting.name);
-    const order = setupOrder.filter((name) => name !== "preparation" || !writtenWorld);
-    const others = system.filter((name) => !leading.includes(name));
-    return [...order.slice(0, 1), ...leading, ...order.slice(1), ...others, "lines", "veils"].flatMap(named).map((question) => {
-        const suggestion = suggested[question.name];
-        // A suggestion the game does not offer is none (DAT-16).
-        const offered = suggestion !== undefined && (question.choices === undefined || question.choices.some((choice) => choice.value === suggestion));
-        return { ...(question.name === "mentor" ? mentorQuestion(question) : unsetUnanswered(question, settings)), ...(offered ? { suggested: suggestion } : {}) };
-    });
-}
 
 /** A question whose value is only the one shown while it is unset, as master-rolls behind the screen (D-287): still unanswered in the setup. */
 function unsetUnanswered(question: PlayerSetting, settings: CampaignSettings): PlayerSetting
@@ -552,57 +664,6 @@ function mentorQuestion(question: PlayerSetting): PlayerSetting
     const order = Object.keys(mentorAnswers);
     const choices = (question.choices ?? []).map((choice) => ({ ...choice, label: mentorAnswers[choice.value] })).sort((one, other) => order.indexOf(one.value) - order.indexOf(other.value));
     return { ...question, question: "How well do you know this game?", about: "the master teaches it as much as you need", choices };
-}
-
-/** A setting only the setup lets the dashboard change (D-370): how companions come, the preparation, the name; undefined for any other. */
-export function setupSettingNamed(root: string, name: string): PlayerSetting | undefined
-{
-    const key = Object.keys(setupWords).find((one) => comparableText(one) === comparableText(name));
-
-    if (key === undefined) {
-        return undefined;
-    }
-
-    const words = setupWords[key];
-    const value = (readSettings(root) as Record<string, unknown>)[key];
-    return {
-        name: key,
-        about: words.about,
-        ...(typeof value === "string" ? { value } : {}),
-        ...(words.values === undefined ? {} : { choices: words.values.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) })) }),
-    };
-}
-
-/** The player's settings as the dashboard shows them (D-341): with what this computer lacks, as pictures without Codex, asked again. */
-export function shownPlayerSettings(root: string, context: Context): PlayerSetting[]
-{
-    return playerSettings(root, context).map((setting) => (setting.name === "pictures" ? { ...setting, ...picturesReadyNote(context) } : setting));
-}
-
-/** The player's settings with their values, then those the game system adds (D-341). */
-export function playerSettings(root: string, context: Context): PlayerSetting[]
-{
-    const settings = readSettings(root);
-    const own = heldSystemSettings(root, context).map((setting): PlayerSetting => {
-        const value = playedSettingValue(root, context, setting);
-        const choices = setting.values.map((one) => ({ value: one.value, ...(one.player === undefined ? {} : { means: one.player }) }));
-        return { name: setting.name, about: setting.about ?? "a setting of the game system", ...(value === undefined ? {} : { value }), choices };
-    });
-    return [
-        ...playerSettingNames.map((name): PlayerSetting => {
-            const words: PlayerWords = playerWords[name];
-            const value = settings[name] ?? words.unset;
-            const choices = words.values?.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) }));
-            return {
-                name,
-                about: words.about,
-                ...(Array.isArray(value) ? { items: value.map(String) } : value === undefined || value === null ? {} : { value: String(value) }),
-                ...(choices === undefined ? {} : { choices }),
-                ...(words.most === undefined ? {} : { most: words.most }),
-            };
-        }).flatMap((setting) => offeredSetting(root, context, setting)),
-        ...own,
-    ];
 }
 
 /** A player's setting as the game offers it (DAT-16): none where it plays one value alone; only the values it offers, and no value written that it does not. */
@@ -640,57 +701,6 @@ function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
 function notReadyText(said: { why: string; fix?: string; }): string
 {
     return said.fix ?? `${said.why}.`;
-}
-
-/** One of the player's settings by its name, in any case, as the dashboard changes them (D-341); undefined for a setting of the master's or none. */
-export function playerSettingNamed(root: string, context: Context, name: string): PlayerSetting | undefined
-{
-    return playerSettings(root, context).find((setting) => comparableText(setting.name) === comparableText(name));
-}
-
-/**
- * What the master hears, at the head of their next call, of a setting the player changed on the dashboard (D-341): how it is now against how it was before the
- * player's first change since their last call, a value with what it means to the master; nothing for one that came back as it was.
- */
-export function playerChangeNews(root: string, context: Context, before: PlayerSetting, after: PlayerSetting): string[]
-{
-    if (before.items !== undefined || after.items !== undefined) {
-        const added = (after.items ?? []).filter((item) => !(before.items ?? []).includes(item));
-        const removed = (before.items ?? []).filter((item) => !(after.items ?? []).includes(item));
-        return [
-            ...(added.length === 0 ? [] : [`The player added ${quotedItems(added)} to ${after.name} on the dashboard: ${addedText(after)}.`]),
-            ...(removed.length === 0 ? [] : [`The player took ${quotedItems(removed)} off ${after.name} on the dashboard${takenOffText(after.name)}.`]),
-        ];
-    }
-
-    if (after.value === before.value) {
-        return [];
-    }
-
-    // The master's effort is no rule of play: it changes how the next chat thinks, never this one (D-462).
-    if (after.name === "effort") {
-        return [`The player set how much you think to ${after.value ?? "their app's own"} on the dashboard: it applies from their next chat; nothing to do now.`];
-    }
-
-    // How the master writes comes with its parts as they are now, on a line of their own: the same for each of them the player changed (D-395).
-    const style = styleSettingNames.includes(after.name) ? stylePart(root, context) : "";
-
-    if (after.value === undefined) {
-        const cleared = wordsOf(after.name)?.cleared;
-        return cleared === undefined ? [] : [`The player took ${after.name} away on the dashboard: ${cleared}. Play by it from now on.`, ...(style === "" ? [] : [style])];
-    }
-
-    const meaning = settingMeaning(after.name, after.value, countedByGame(campaignSystem(root, context))) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
-    const value = after.most === undefined ? after.value : `"${after.value}"`;
-    const author = after.name === "prose" && readSettings(root).author !== undefined ? " An author is written: theirs takes its place until the player takes it away." : "";
-    // The mentor's new part comes with it, once in the chat (D-347); in play, a value of the system's with its own part (DAT-18).
-    const own = systemSetting(root, context, after.name) === undefined || campaignMode(root, campaignWorld(root, context)) !== "play" ? undefined : valuePart(root, context, after.name, after.value);
-    const part = after.name === "mentor" ? mentorPart(root, context, after.value) : (own ?? "");
-    return [
-        `The player set ${after.name} to ${value} on the dashboard${meaning === undefined ? "" : `: ${meaning}`}. Play by it from now on.${author}${part === "" ? "" : `\n\n${part}`}`,
-        ...unofferedLines(root, context),
-        ...(style === "" ? [] : [style]),
-    ];
 }
 
 /** What an item the player added to a list means to the master: what the list holds, or what to do, as for learned. */

@@ -64,24 +64,6 @@ export function packageFoldersIn(folders: string[]): string[]
 }
 
 /**
- * The packages the player installed in a folder of npm's, as the package.json beside it lists them; undefined where there is none, as for the engine's own
- * systems or a test's folder.
- */
-function chosenPackages(folder: string): Set<string> | undefined
-{
-    if (basename(folder) !== "node_modules") {
-        return undefined;
-    }
-
-    try {
-        const read = JSON.parse(readFileSync(join(folder, "..", "package.json"), "utf8")) as { dependencies?: Record<string, unknown>; };
-        return read.dependencies === undefined ? undefined : new Set(Object.keys(read.dependencies));
-    } catch {
-        return undefined;
-    }
-}
-
-/**
  * A path by the folders it really is in, through any link on the way, as Node resolves a module; one not there yet by the real path of the folder it would be
  * in, as /var is /private/var on macOS.
  */
@@ -118,6 +100,24 @@ export function installedFromFolder(folder: string): boolean
         return typeof spec === "string" && /^(file|link):/.test(spec);
     } catch {
         return false;
+    }
+}
+
+/**
+ * The packages the player installed in a folder of npm's, as the package.json beside it lists them; undefined where there is none, as for the engine's own
+ * systems or a test's folder.
+ */
+function chosenPackages(folder: string): Set<string> | undefined
+{
+    if (basename(folder) !== "node_modules") {
+        return undefined;
+    }
+
+    try {
+        const read = JSON.parse(readFileSync(join(folder, "..", "package.json"), "utf8")) as { dependencies?: Record<string, unknown>; };
+        return read.dependencies === undefined ? undefined : new Set(Object.keys(read.dependencies));
+    } catch {
+        return undefined;
     }
 }
 

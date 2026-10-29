@@ -82,6 +82,7 @@ import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, held
 import { experienceOf, leastNotes, newLevelNotes } from "../shared/experience.ts";
 import { gridNotes } from "../shared/grids.ts";
 import { questPictureNote } from "../shared/images.ts";
+import { fieldValues } from "../shared/inputs.ts";
 import { checkLimits } from "../shared/limits.ts";
 import { campaignCoins } from "../shared/money.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "../shared/notes.ts";
@@ -129,9 +130,6 @@ interface WriteResult
 
 // How the output names each way of writing text.
 const textChanges = { replace: "wrote", append: "added to", remove: "removed" };
-
-// Fields arrive as field=value strings from a command line, or as an object through MCP.
-const fieldValues = z.union([z.array(z.string()), z.record(z.string(), z.unknown())]);
 
 export const write = defineCommand({
     name: "write",
@@ -370,8 +368,8 @@ export const write = defineCommand({
 });
 
 /**
- * Sets fields on a page for a package's code, as write --set does (D-511, D-514): the same checks, a number on a counter keeping its maximum, a field the
- * system works out left out, the maxima worked out again. In the log, counter-changed for a counter, public when the page concerns the player, and
+ * Sets fields on a page for a package's code, as write --set does (D-511, D-514): the same checks; a counter the page holds changes only with game.change, and
+ * one the system declares that the page lacks yet is written, with its counter-changed line; a field the system works out left out, the maxima worked out again. In the log, counter-changed for a counter, public when the page concerns the player, and
  * page-updated for the other fields; nothing for a value that stays. It throws what write refuses, with how to fix it, and writes nothing.
  */
 export function writePackageFields(root: string, context: Context, world: World, page: Page, values: Record<string, number | string>, why: string): void
@@ -632,7 +630,7 @@ function checkUses(world: World, system: GameSystem | undefined, page: Page, set
         return;
     }
 
-    const asked = new Set((system?.sheet ?? []).flatMap((group) => group.entries.filter((entry) => !entry.optional).map((entry) => comparableText(entry.field))));
+    const asked = askedFields(system);
 
     for (const field of Object.keys(set ?? {}).filter((name) => isUse(world, name) && !asked.has(comparableText(name)))) {
         const counted = Object.keys(world.system?.formulas?.counters ?? {}).some((name) => comparableText(name) === comparableText(field));
@@ -860,7 +858,7 @@ function followersOfWrite(now: World, before: Page | undefined, after: Page): { 
         return { pages: [], why: "" };
     }
 
-    const changed = [...new Set([...Object.keys(before?.fields ?? {}), ...Object.keys(after.fields)])].filter((field) => JSON.stringify(before?.fields[field]) !== JSON.stringify(after.fields[field]));
+    const changed = before === undefined ? [] : changedNames(before, after);
 
     if (before === undefined || changed.some((field) => comparableText(field) === baseFieldOf(after.type))) {
         return { pages: derivedPages(now, after), why: `since they derive from ${after.name}` };
@@ -1067,6 +1065,12 @@ function givenFields(set: Record<string, unknown> | undefined, baseField: string
         .map(([field, value]) => `${field}=${Array.isArray(value) ? `[${value.map(String).join(", ")}]` : String(value)}`);
 }
 
+/** The fields the system's sheet asks of every character, its optional ones left out, as names are compared. */
+function askedFields(system: GameSystem | undefined): Set<string>
+{
+    return new Set((system?.sheet ?? []).flatMap((group) => group.entries.filter((entry) => !entry.optional).map((entry) => comparableText(entry.field))));
+}
+
 /** Whether pages of this type can be bases: creatures and items (INH-1). */
 function isBaseType(type: PageType | undefined): boolean
 {
@@ -1120,8 +1124,6 @@ function changedNames(before: Page, after: Page): string[]
 {
     return [...new Set([...Object.keys(before.fields), ...Object.keys(after.fields)])].filter((field) => JSON.stringify(before.fields[field]) !== JSON.stringify(after.fields[field]));
 }
-
-/** The value a page reads for a field, written in any case. */
 
 /** A value as the outputs show it: a list as its items, anything else as written. */
 function valueText(value: unknown): string
@@ -1452,7 +1454,7 @@ function workedLimitsChange(system: GameSystem | undefined, before: World, exist
         return [{ key, before: counter.max, value: formatCounter({ value, max: limit }), reads: formatCounter({ value: Math.min(value, limit), max: limit }), max: limit, lost: max === undefined }];
     });
     // Only a use that the lists give, such as rages from the classes, never one the sheet asks to write, as hp: it stays at any maximum.
-    const asked = new Set((system?.sheet ?? []).flatMap((group) => group.entries.filter((entry) => !entry.optional).map((entry) => comparableText(entry.field))));
+    const asked = askedFields(system);
 
     // A maximum from a class's row, with no formula, has no sources: the lists give it.
     const givenByLists = (field: string): boolean => {

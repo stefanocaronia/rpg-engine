@@ -146,16 +146,16 @@ export function checklistLine(mode: Mode, root: string, context: Context, world:
     return `${missing.charAt(0).toUpperCase()}${missing.slice(1)}. When ${blocked === undefined ? "" : "none is left and "}the player confirms: ${modeCall(next)}.${name}${page}`;
 }
 
-/** The call that enters a mode, as outputs give it: mode, to "session zero". */
-function modeCall(mode: Mode): string
-{
-    return `mode, to ${mode.includes(" ") ? `"${mode}"` : mode}`;
-}
-
 /** The part of the instructions of a mode, the core's with the system's (MOD-5): the file setup, session-zero or play. */
 export function modePart(mode: Mode, system: GameSystem | undefined): string | undefined
 {
     return partText(mode.replace(" ", "-"), system);
+}
+
+/** The call that enters a mode, as outputs give it: mode, to "session zero". */
+function modeCall(mode: Mode): string
+{
+    return `mode, to ${mode.includes(" ") ? `"${mode}"` : mode}`;
 }
 
 /** The mode state.yaml writes; undefined when it writes none, or cannot be read, which status and validate say elsewhere: the other commands go on. */

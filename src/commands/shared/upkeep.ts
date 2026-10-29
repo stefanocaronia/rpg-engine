@@ -48,6 +48,61 @@ export function dailyUpkeep(root: string, context: Context, system: GameSystem |
 }
 
 /**
+ * What an effect named after something that burns asks (UPK-3), as Torch: the kind it spends, its own or its fuel, such as Oil for a lantern, and how long it lasts;
+ * refused when the holder carries none. Undefined for any other effect.
+ */
+export function burning(system: GameSystem | undefined, world: World, holder: Page, name: string): { kind: Page; lasts: string; } | undefined
+{
+    const entry = burningEntry(system, world, holder, name);
+
+    if (entry === undefined) {
+        return undefined;
+    }
+
+    const [burns, { lasts, spends }] = entry;
+    const kind = kindNamed(world, holder, spends ?? burns);
+
+    if (kind === undefined || heldStacksOfKind(world, holder, kind).length === 0) {
+        throw new Error(`${holder.name} carries no ${spends ?? burns}, in what it holds, to light ${burns}. If the story gives some, add it to what ${holder.name} carries first. Nothing changed.`);
+    }
+
+    return { kind, lasts };
+}
+
+/** For an effect named after something that burns (UPK-3), what it spends, by the holder's name for it, as Torcia, and how many of it the holder still carries. */
+export function fuelLeft(system: GameSystem | undefined, world: World, holder: Page, name: string): { fuel: string; left: number; } | undefined
+{
+    if (Object.keys(system?.burning ?? {}).length === 0) {
+        return undefined;
+    }
+
+    // Only to show: a name two pages share, which a command would refuse, burns nothing here.
+    try {
+        const entry = burningEntry(system, world, holder, name);
+        const kind = entry === undefined ? undefined : kindNamed(world, holder, entry[1].spends ?? entry[0]);
+        return kind === undefined ? undefined : { fuel: kind.name, left: heldStacksOfKind(world, holder, kind).reduce((total, held) => total + held.stack.count, 0) };
+    } catch {
+        return undefined;
+    }
+}
+
+/** Spends one of what burns from what the holder carries (UPK-3), with its line in the log; the line that says it. */
+export function burnOne(root: string, context: Context, holderName: string, kind: Page): string
+{
+    const world = campaignWorld(root, context);
+    const holder = world.pages.find((page) => page.name === holderName);
+    const held = holder === undefined ? [] : heldStacksOfKind(world, holder, kind);
+
+    if (held.length === 0) {
+        return "";
+    }
+
+    const { container, stack } = held[0];
+    const step = { container, kind: stack.kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
+    return writeStacks(root, context, world, [step], "lit").notes.join(" ");
+}
+
+/**
  * The days' lines with those alike said once, the last of them, which holds the counts as they are now, and how many days said it: a long advance is a few
  * lines for each member, never one a day; each day's writes and log lines stay as they were.
  */
@@ -206,61 +261,6 @@ function raise(root: string, context: Context, world: World, name: string, field
     writePage(world, page.name, undefined, { set: { [field]: value } });
     appendLogEntry(root, newDatedLogEntry(root, context, "counter-changed", "public", { page: page.name, field, before: String(read.value), after: String(after), why: "days without food", upkeep: true }));
     return `${read.value} → ${after}`;
-}
-
-/**
- * What an effect named after something that burns asks (UPK-3), as Torch: the kind it spends, its own or its fuel, such as Oil for a lantern, and how long it lasts;
- * refused when the holder carries none. Undefined for any other effect.
- */
-export function burning(system: GameSystem | undefined, world: World, holder: Page, name: string): { kind: Page; lasts: string; } | undefined
-{
-    const entry = burningEntry(system, world, holder, name);
-
-    if (entry === undefined) {
-        return undefined;
-    }
-
-    const [burns, { lasts, spends }] = entry;
-    const kind = kindNamed(world, holder, spends ?? burns);
-
-    if (kind === undefined || heldStacksOfKind(world, holder, kind).length === 0) {
-        throw new Error(`${holder.name} carries no ${spends ?? burns}, in what it holds, to light ${burns}. If the story gives some, add it to what ${holder.name} carries first. Nothing changed.`);
-    }
-
-    return { kind, lasts };
-}
-
-/** For an effect named after something that burns (UPK-3), what it spends, by the holder's name for it, as Torcia, and how many of it the holder still carries. */
-export function fuelLeft(system: GameSystem | undefined, world: World, holder: Page, name: string): { fuel: string; left: number; } | undefined
-{
-    if (Object.keys(system?.burning ?? {}).length === 0) {
-        return undefined;
-    }
-
-    // Only to show: a name two pages share, which a command would refuse, burns nothing here.
-    try {
-        const entry = burningEntry(system, world, holder, name);
-        const kind = entry === undefined ? undefined : kindNamed(world, holder, entry[1].spends ?? entry[0]);
-        return kind === undefined ? undefined : { fuel: kind.name, left: heldStacksOfKind(world, holder, kind).reduce((total, held) => total + held.stack.count, 0) };
-    } catch {
-        return undefined;
-    }
-}
-
-/** Spends one of what burns from what the holder carries (UPK-3), with its line in the log; the line that says it. */
-export function burnOne(root: string, context: Context, holderName: string, kind: Page): string
-{
-    const world = campaignWorld(root, context);
-    const holder = world.pages.find((page) => page.name === holderName);
-    const held = holder === undefined ? [] : heldStacksOfKind(world, holder, kind);
-
-    if (held.length === 0) {
-        return "";
-    }
-
-    const { container, stack } = held[0];
-    const step = { container, kind: stack.kind, before: stack.count, after: stack.count - 1, ...(stack.label === undefined ? {} : { label: stack.label }) };
-    return writeStacks(root, context, world, [step], "lit").notes.join(" ");
 }
 
 /** The system's entry of what burns that an effect is named after (UPK-3): by its name, or by a kind of the campaign that derives from it, as Torcia from Torch. */

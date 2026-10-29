@@ -96,15 +96,6 @@ export function playersApart(world: World, journeyMovers: string[]): string | un
     return living.every((page) => party.includes(page)) ? undefined : living.map((page) => `${page.name}, in ${placeOf(world, page)?.name ?? "the open"}`).join("; ");
 }
 
-/** The living player characters that are somewhere, in a place or on the journey, and the first of them, else the first living, else the first. */
-function leadingPlayers(world: World, journeyMovers: string[]): { lead: Page | undefined; living: Page[]; }
-{
-    const players = playerCharacters(world);
-    const somewhere = (page: Page): boolean => locate(world, page).chain.length > 0 || journeyMovers.some((name) => comparableText(name) === comparableText(page.name));
-    const living = players.filter((page) => page.fields.status !== "dead" && somewhere(page));
-    return { lead: living[0] ?? players.find((page) => page.fields.status !== "dead") ?? players[0], living };
-}
-
 /**
  * What moves for the travellers (TRV-6): the vehicle they are all in, the outermost item that holds them below a place, or themselves. When only some are in a
  * vehicle, or in different ones, each vehicle goes with those on foot, at their pace. Refused when they are in different places, or beside a boat that goes only by water.
@@ -136,31 +127,6 @@ export function moversOf(world: World, system: GameSystem | undefined, traveller
     }
 
     return { movers: movers.filter((page, index) => movers.indexOf(page) === index) };
-}
-
-/**
- * The vehicle a page is in (TRV-6): the outermost of the items that hold it, when what holds that is a place or nothing; none in what a character carries.
- * Refused when that item is no vehicle of the game, as a barrel with a thief in it.
- */
-function vehicleOf(world: World, system: GameSystem | undefined, page: Page): Page | undefined
-{
-    const chain = locate(world, page).chain;
-    const items = chain.findIndex((holder) => holder.type !== "item");
-    const inner = items === -1 ? chain : chain.slice(0, items);
-    const above = chain[inner.length];
-    const outer = inner.at(-1);
-
-    if (outer === undefined || (above !== undefined && above.type !== "place")) {
-        return undefined;
-    }
-
-    if (!isVehicle(world, system, outer)) {
-        const declared = system?.travel?.vehicles[0];
-        const remedy = declared === undefined ? "declare what is a vehicle with travel.vehicles in campaign.yaml" : `give ${outer.name} ${declared.field} ${declared.value}, or derive it from an item that has it`;
-        throw new Error(`${page.name} is in ${outer.name}, which is no vehicle of this game: move them out, leave them out of who, or ${remedy}. Nothing changed.`);
-    }
-
-    return outer;
 }
 
 /** The stop a journey starts from or ends at (ROA-5): the nearest page of the chain of `page`, itself first, that is a stop of a road. */
@@ -387,6 +353,55 @@ export function passageProblems(world: World, system: GameSystem | undefined): P
     });
 }
 
+/** Whether a vehicle travels only the kinds of road that are travelled in it, as a boat (TRV-2): some kind names it; a cart, which none names, goes at the pace. */
+export function isVehicleOnly(world: World, system: GameSystem | undefined, vehicle: Page): boolean
+{
+    return (system?.travel?.kinds ?? []).some((kind) => carries(world, vehicle, kind));
+}
+
+/** What the terrain of a road or a region does to a pace (TRV-3, TRV-12): the factor the system gives the value of the terrain entry of its environment, 1 for any other. */
+export function terrainFactor(world: World, system: GameSystem | undefined, road: Page): number
+{
+    const terrain = environmentAt(world, road).find(({ entry }) => comparableText(entry.name) === "terrain")?.entry.value;
+    const factors = system?.travel?.terrain ?? {};
+    const value = terrain === undefined ? undefined : sameName(Object.keys(factors), terrain);
+    return value === undefined ? 1 : factors[value];
+}
+
+/** The living player characters that are somewhere, in a place or on the journey, and the first of them, else the first living, else the first. */
+function leadingPlayers(world: World, journeyMovers: string[]): { lead: Page | undefined; living: Page[]; }
+{
+    const players = playerCharacters(world);
+    const somewhere = (page: Page): boolean => locate(world, page).chain.length > 0 || journeyMovers.some((name) => comparableText(name) === comparableText(page.name));
+    const living = players.filter((page) => page.fields.status !== "dead" && somewhere(page));
+    return { lead: living[0] ?? players.find((page) => page.fields.status !== "dead") ?? players[0], living };
+}
+
+/**
+ * The vehicle a page is in (TRV-6): the outermost of the items that hold it, when what holds that is a place or nothing; none in what a character carries.
+ * Refused when that item is no vehicle of the game, as a barrel with a thief in it.
+ */
+function vehicleOf(world: World, system: GameSystem | undefined, page: Page): Page | undefined
+{
+    const chain = locate(world, page).chain;
+    const items = chain.findIndex((holder) => holder.type !== "item");
+    const inner = items === -1 ? chain : chain.slice(0, items);
+    const above = chain[inner.length];
+    const outer = inner.at(-1);
+
+    if (outer === undefined || (above !== undefined && above.type !== "place")) {
+        return undefined;
+    }
+
+    if (!isVehicle(world, system, outer)) {
+        const declared = system?.travel?.vehicles[0];
+        const remedy = declared === undefined ? "declare what is a vehicle with travel.vehicles in campaign.yaml" : `give ${outer.name} ${declared.field} ${declared.value}, or derive it from an item that has it`;
+        throw new Error(`${page.name} is in ${outer.name}, which is no vehicle of this game: move them out, leave them out of who, or ${remedy}. Nothing changed.`);
+    }
+
+    return outer;
+}
+
 /** The nearest place of a page's chain, itself first. */
 function placeOf(world: World, page: Page): Page | undefined
 {
@@ -421,12 +436,6 @@ function readRoads(world: World): Roads
     return { stretches, pages, stops };
 }
 
-/** Whether a vehicle travels only the kinds of road that are travelled in it, as a boat (TRV-2): some kind names it; a cart, which none names, goes at the pace. */
-export function isVehicleOnly(world: World, system: GameSystem | undefined, vehicle: Page): boolean
-{
-    return (system?.travel?.kinds ?? []).some((kind) => carries(world, vehicle, kind));
-}
-
 /** Whether an item is a vehicle of the game (TRV-6): it has a field at a value travel.vehicles declares, or is what a kind of road is travelled in. */
 function isVehicle(world: World, system: GameSystem | undefined, item: Page): boolean
 {
@@ -453,15 +462,6 @@ function vehicleSpeed(world: World, vehicle: Page, kind: TravelKind): number | u
     const fields = effectiveFields(world, vehicle);
     const field = kind.vehicle === undefined ? undefined : sameName(Object.keys(fields), kind.vehicle.speed);
     return field === undefined ? undefined : readSpeed(fields[field]);
-}
-
-/** What the terrain of a road or a region does to a pace (TRV-3, TRV-12): the factor the system gives the value of the terrain entry of its environment, 1 for any other. */
-export function terrainFactor(world: World, system: GameSystem | undefined, road: Page): number
-{
-    const terrain = environmentAt(world, road).find(({ entry }) => comparableText(entry.name) === "terrain")?.entry.value;
-    const factors = system?.travel?.terrain ?? {};
-    const value = terrain === undefined ? undefined : sameName(Object.keys(factors), terrain);
-    return value === undefined ? 1 : factors[value];
 }
 
 /** "Fiume Nero, a river travelled in a waterborne vehicle, such as one that derives from [[Keelboat]]": a road and what it needs. */

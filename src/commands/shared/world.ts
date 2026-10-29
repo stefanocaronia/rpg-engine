@@ -49,13 +49,6 @@ export function campaignWorld(root: string, context: Context): World
     });
 }
 
-/** The rigor as the game plays it (DAT-16): with the values of the system's settings as campaign.yaml writes them, as the world reads before its players. */
-function rigorPlayed(root: string, system: GameSystem | undefined): string | undefined
-{
-    const value = engineSettingValue(system, (setting) => systemSettingValue(root, setting), "rigor", readTextSetting(root, "rigor"));
-    return typeof value === "string" ? value : undefined;
-}
-
 /**
  * The game system's words in the campaign's language (D-403): its own, else those translated on the fly on this computer (D-406); with the names of the
  * fields the campaign's extensions add, from their words, layered as their additions are (CAM-2, D-505).
@@ -100,43 +93,11 @@ export function campaignSystem(root: string, context: Context): GameSystem | und
     return systemOf(root, context).system;
 }
 
-/**
- * The game system campaign.yaml names, with what its extensions and then the campaign add to it (CAM-2), and the layers left out with why (CAM-3), as its
- * settings have it (DAT-10), read once until campaign.yaml changes: a call asks for it many times.
- */
-function systemOf(root: string, context: Context): { system?: GameSystem; refused: { from: string; problem: string; }[]; }
-{
-    // campaign.yaml, and the extensions' packages, whose parts and additions it gives.
-    return files().remember(`system ${resolve(root)}`, extensionSources(root, context), () => {
-        const name = readTextSetting(root, "system");
-        const found = name === undefined ? { refused: [] } : findCampaignSystem(context.systemFolders, name, systemLayers(root, context, readCampaignData(root)), readTextSetting(root, rulesetSetting));
-        // And the parts of the instructions of its extensions over its own (D-121).
-        const played = found.system === undefined ? undefined : withSettings(found.system, (setting) => readTextSetting(root, setting));
-        return played === undefined ? found : { ...found, system: { ...played, parts: layeredParts(played.parts, campaignExtensions(root, context).extensions) } };
-    });
-}
-
 /** What the campaign's extensions add to its game system, in the order campaign.yaml lists them, then the campaign's own additions, which win (CAM-2). */
 export function systemLayers(root: string, context: Context, campaign: CampaignData): SystemLayer[]
 {
     const extensions = campaignExtensions(root, context).extensions.map((extension) => ({ from: extensionLayer(extension.name), data: extension.adds }));
     return [...extensions, { from: campaignFileName, data: campaign }];
-}
-
-/** The name of an extension's layer of additions, as messages give it. */
-function extensionLayer(name: string): string
-{
-    return `the extension ${name}`;
-}
-
-/** The names an extension's words give the fields it adds; none when its words do not read, which validate names. */
-function extensionFieldWords(extension: Extension, language: string): Record<string, string>
-{
-    try {
-        return extensionWords(extension.folder, language)?.fields ?? {};
-    } catch {
-        return {};
-    }
 }
 
 /** A setting the campaign's game system adds to the setup (DAT-10), by its name in any case; undefined when the system has none by that name. */
@@ -161,13 +122,6 @@ export function playersOfTheGame(root: string, context: Context): string[]
     return playerCharacters(campaignWorld(root, context)).map((page) => page.name);
 }
 
-/** The value campaign.yaml gives a setting of the system, when it is one the system has (DAT-10). */
-function systemSettingValue(root: string, setting: SystemSetting): string | undefined
-{
-    const written = readTextSetting(root, setting.name);
-    return setting.values.find((value) => written !== undefined && comparableText(value.value) === comparableText(written))?.value;
-}
-
 /** "xp is not kept with advancement milestones": said when a field the campaign's settings leave out is written or changed (DAT-10); undefined for any other. */
 export function leftOutNote(root: string, context: Context, field: string): string | undefined
 {
@@ -189,16 +143,6 @@ export function systemSettingProblems(root: string, context: Context): Problem[]
             fix: `ask the player, then config, setting ${setting.name}, with ${setting.values.map((value) => `value ${value.value}`).join(" or ")}`,
         }];
     });
-}
-
-/** A setting as campaign.yaml writes it, of any kind; undefined when the file does not read, which validate reports on its own. */
-function rawSetting(root: string, name: string): unknown
-{
-    try {
-        return readOneSetting(root, name);
-    } catch {
-        return undefined;
-    }
 }
 
 /** "xp or milestones": the values of a setting of the system. */
@@ -249,19 +193,6 @@ export function systemProblems(root: string, context: Context): Problem[]
     }];
 }
 
-/** How a campaign gets the system it names that is not installed: one of ours with package install (D-513), else another of those installed, asked of the player. */
-function missingSystemFix(name: string, context: Context): string
-{
-    const ours = ourSystems.find((one) => comparableText(one.name) === comparableText(name.trim()));
-
-    if (ours !== undefined) {
-        return `install it, one of RPG Engine's own, with package install ${ours.name}; until then, play on without its pages`;
-    }
-
-    const [first] = readableSystems(context.systemFolders);
-    return first === undefined ? "install the game system" : `ask the player which game you play, then config, setting system, value ${first.name}`;
-}
-
 /** The name of an installed game system, as it is installed; refused, with those that are, when none has it (D-167). */
 export function installedSystemName(name: string, context: Context, how: "init" | "config"): string
 {
@@ -280,13 +211,6 @@ export function installedSystemName(name: string, context: Context, how: "init" 
     }
 
     return system.name;
-}
-
-/** "Installed: 5e (the fifth edition, from the SRD 5.1)." */
-function installedText(context: Context): string
-{
-    const systems = readableSystems(context.systemFolders);
-    return systems.length === 0 ? "No system is installed." : `Installed: ${systems.map((system) => `${system.name} (${system.title})`).join(", ")}.`;
 }
 
 /** " The campaign's system, Quinta edizione, is not installed, so none of its pages can be found: validate says how to fix it.": for a name not found (SYS-1). Empty otherwise. */
@@ -401,4 +325,80 @@ export function countedByGame(system: GameSystem | undefined): CountedByGame
 {
     const burning = Object.keys(system?.burning ?? {})[0];
     return { upkeep: system?.upkeep !== undefined, ...(burning === undefined ? {} : { burning }) };
+}
+
+/** The rigor as the game plays it (DAT-16): with the values of the system's settings as campaign.yaml writes them, as the world reads before its players. */
+function rigorPlayed(root: string, system: GameSystem | undefined): string | undefined
+{
+    const value = engineSettingValue(system, (setting) => systemSettingValue(root, setting), "rigor", readTextSetting(root, "rigor"));
+    return typeof value === "string" ? value : undefined;
+}
+
+/**
+ * The game system campaign.yaml names, with what its extensions and then the campaign add to it (CAM-2), and the layers left out with why (CAM-3), as its
+ * settings have it (DAT-10), read once until campaign.yaml changes: a call asks for it many times.
+ */
+function systemOf(root: string, context: Context): { system?: GameSystem; refused: { from: string; problem: string; }[]; }
+{
+    // campaign.yaml, and the extensions' packages, whose parts and additions it gives.
+    return files().remember(`system ${resolve(root)}`, extensionSources(root, context), () => {
+        const name = readTextSetting(root, "system");
+        const found = name === undefined ? { refused: [] } : findCampaignSystem(context.systemFolders, name, systemLayers(root, context, readCampaignData(root)), readTextSetting(root, rulesetSetting));
+        // And the parts of the instructions of its extensions over its own (D-121).
+        const played = found.system === undefined ? undefined : withSettings(found.system, (setting) => readTextSetting(root, setting));
+        return played === undefined ? found : { ...found, system: { ...played, parts: layeredParts(played.parts, campaignExtensions(root, context).extensions) } };
+    });
+}
+
+/** The name of an extension's layer of additions, as messages give it. */
+function extensionLayer(name: string): string
+{
+    return `the extension ${name}`;
+}
+
+/** The names an extension's words give the fields it adds; none when its words do not read, which validate names. */
+function extensionFieldWords(extension: Extension, language: string): Record<string, string>
+{
+    try {
+        return extensionWords(extension.folder, language)?.fields ?? {};
+    } catch {
+        return {};
+    }
+}
+
+/** The value campaign.yaml gives a setting of the system, when it is one the system has (DAT-10). */
+function systemSettingValue(root: string, setting: SystemSetting): string | undefined
+{
+    const written = readTextSetting(root, setting.name);
+    return setting.values.find((value) => written !== undefined && comparableText(value.value) === comparableText(written))?.value;
+}
+
+/** A setting as campaign.yaml writes it, of any kind; undefined when the file does not read, which validate reports on its own. */
+function rawSetting(root: string, name: string): unknown
+{
+    try {
+        return readOneSetting(root, name);
+    } catch {
+        return undefined;
+    }
+}
+
+/** How a campaign gets the system it names that is not installed: one of ours with package install (D-513), else another of those installed, asked of the player. */
+function missingSystemFix(name: string, context: Context): string
+{
+    const ours = ourSystems.find((one) => comparableText(one.name) === comparableText(name.trim()));
+
+    if (ours !== undefined) {
+        return `install it, one of RPG Engine's own, with package install ${ours.name}; until then, play on without its pages`;
+    }
+
+    const [first] = readableSystems(context.systemFolders);
+    return first === undefined ? "install the game system" : `ask the player which game you play, then config, setting system, value ${first.name}`;
+}
+
+/** "Installed: 5e (the fifth edition, from the SRD 5.1)." */
+function installedText(context: Context): string
+{
+    const systems = readableSystems(context.systemFolders);
+    return systems.length === 0 ? "No system is installed." : `Installed: ${systems.map((system) => `${system.name} (${system.title})`).join(", ")}.`;
 }

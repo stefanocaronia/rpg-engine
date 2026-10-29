@@ -245,12 +245,6 @@ export function sheetData(world: World, system: GameSystem | undefined, page: Pa
     });
 }
 
-/** A group's icon, as the data of the sheet carries it: none when the system gives none. */
-function iconOf(group: SheetGroup): Pick<SheetGroupData, "icon">
-{
-    return group.icon === undefined ? {} : { icon: group.icon };
-}
-
 /**
  * The icon on the token of one of the party (D-414): the system's for the first item of its field that has one, by its name or by a page it derives from, as a
  * class of the campaign built on the system's; none when the system gives none.
@@ -461,24 +455,6 @@ export function checkListValues(system: GameSystem | undefined, lists: Record<st
     }
 }
 
-/** Text with commas outside links and parentheses, as "simple weapons, martial weapons": several names that a list holds apart. */
-function isCommaText(value: unknown): boolean
-{
-    return typeof value === "string" && value.replace(/\[\[[^\]]*\]\]/g, "").replace(/\([^)]*\)/g, "").includes(",");
-}
-
-/** A field the system declares as a list, such as classes. */
-function isListField(system: GameSystem, field: string): boolean
-{
-    return Object.entries(system.fields).some(([name, kind]) => kind === "list" && comparableText(name) === comparableText(field));
-}
-
-/** A list the system declares without the names it takes, which are checked by name, as weapon-proficiencies (SYS-8). */
-function isOpenList(system: GameSystem, field: string): boolean
-{
-    return allowedValues(system, field, false) === undefined && Object.entries(system.fields).some(([name, kind]) => kind === "list" && comparableText(name) === comparableText(field));
-}
-
 /**
  * The lists written on the campaign's pages with names the game system does not take, or as text with commas, which reads as one name (SYS-8), such as one
  * written by hand.
@@ -500,6 +476,99 @@ export function listValueProblems(world: World, system: GameSystem | undefined):
             return wrong.length === 0 ? [] : [{ path: page.path, message: `On ${page.name}: ${wrongText(system, field, wrong, sheet)}`, fix: `write ${page.name}, remove ${field}=${wrong[0]}, then add the right name` }];
         });
     });
+}
+
+/** A character's load when it is over its limit, as status says it under the rigor «rules» or «simulation» (LOAD-3): "load 230 / 210 lb, over the limit"; undefined otherwise. */
+export function overLoad(world: World, system: GameSystem | undefined, page: Page): string | undefined
+{
+    if (system?.load === undefined || !hasSheet(world, page)) {
+        return undefined;
+    }
+
+    const fields = effectiveFields(world, page);
+    const load = carriedIn(fields) ?? carriedWeight(world, system.load, page);
+    const limit = formulaValue(world, fields, system.load.limit);
+    const value = loadValue(world, system, page, fields);
+    return limit === undefined || load <= limit || value === undefined ? undefined : `load ${value.text}, over the limit`;
+}
+
+/** For an item created without a weight, its own or its base's, when the system counts loads: the AI estimates one (LOAD-1). */
+export function weightlessNote(system: GameSystem | undefined, world: World, page: Page): string[]
+{
+    if (system?.load === undefined || page.type !== "item" || valueNamed(inheritedFields(world, page), system.load.field) !== undefined) {
+        return [];
+    }
+
+    const unit = weightUnit(world, system.load.field) ?? "lb";
+    return [`${page.name} has no ${system.load.field}, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set ${system.load.field}="2 ${unit}".`];
+}
+
+/**
+ * A field's value as a counter, with the limits the field writes or the system works out (FOR-6): 18/24, or momentum 4 from -6; undefined for a number that is
+ * no counter, such as str 14, and for any other value.
+ */
+export function counterOf(world: World, fields: Record<string, unknown>, field: string, value: unknown): Counter | undefined
+{
+    const kind = declaredKind(world, field);
+    const read = readCounter(value);
+    const limits = counterLimits(world, fields, field);
+    // A field the system declares as anything else is never one, as a challenge rating of 1/4.
+    const counted = kind === "counter" || (kind === undefined && (read?.max !== undefined || limits.min !== undefined || limits.max !== undefined));
+    return read === undefined || !counted ? undefined : { ...limits, ...read };
+}
+
+/** The experience between the points of the character's level and those of the next, for the field that counts it (PRO-6); none at the last level. */
+export function experienceProgress(world: World, fields: Record<string, unknown>, field: string): Progress | undefined
+{
+    if (comparableText(field) !== comparableText(world.system?.progression?.experience?.field ?? "")) {
+        return undefined;
+    }
+
+    const experience = experienceOf(world, fields);
+    return experience?.next === undefined ? undefined : { value: experience.points, from: experience.least ?? 0, to: experience.next.points };
+}
+
+/** What the points of the field that counts the experience say of the levels (PRO-6); none for another field, or at the last level. */
+export function experienceNeed(world: World, fields: Record<string, unknown>, field: string): LevelNeed | undefined
+{
+    const experience = comparableText(field) === comparableText(world.system?.progression?.experience?.field ?? "") ? experienceOf(world, fields) : undefined;
+    return experience === undefined ? undefined : levelNeed(experience);
+}
+
+/**
+ * What the master is told as a roll of the player character recalls what they know, as History, by the fields the system declares (sheet-knowledge): its
+ * outcome said as knowledge, never as an episode of their past the player did not tell (Elena's tests of 28 October, where a high roll brought one).
+ */
+export function knowledgeNote(system: GameSystem | undefined, fields: string[]): string | undefined
+{
+    const knowledge = new Set((system?.sheetKnowledge ?? []).map(comparableText));
+    return fields.some((field) => knowledge.has(comparableText(field)))
+        ? "What it reveals is what the world shows or their trade knows, said as knowledge: an episode of their past the player has not told is a question to them."
+        : undefined;
+}
+
+/** A group's icon, as the data of the sheet carries it: none when the system gives none. */
+function iconOf(group: SheetGroup): Pick<SheetGroupData, "icon">
+{
+    return group.icon === undefined ? {} : { icon: group.icon };
+}
+
+/** Text with commas outside links and parentheses, as "simple weapons, martial weapons": several names that a list holds apart. */
+function isCommaText(value: unknown): boolean
+{
+    return typeof value === "string" && value.replace(/\[\[[^\]]*\]\]/g, "").replace(/\([^)]*\)/g, "").includes(",");
+}
+
+/** A field the system declares as a list, such as classes. */
+function isListField(system: GameSystem, field: string): boolean
+{
+    return Object.entries(system.fields).some(([name, kind]) => kind === "list" && comparableText(name) === comparableText(field));
+}
+
+/** A list the system declares without the names it takes, which are checked by name, as weapon-proficiencies (SYS-8). */
+function isOpenList(system: GameSystem, field: string): boolean
+{
+    return allowedValues(system, field, false) === undefined && Object.entries(system.fields).some(([name, kind]) => kind === "list" && comparableText(name) === comparableText(field));
 }
 
 /** How many marks each computed field earns (D-217, DAT-2): one for each list of the system's marks that it reads with its item, where that item changes it. */
@@ -610,31 +679,6 @@ function carriedRows(world: World, holder: Page, marks: { equipped: Page[]; bond
     });
 }
 
-/** A character's load when it is over its limit, as status says it under the rigor «rules» or «simulation» (LOAD-3): "load 230 / 210 lb, over the limit"; undefined otherwise. */
-export function overLoad(world: World, system: GameSystem | undefined, page: Page): string | undefined
-{
-    if (system?.load === undefined || !hasSheet(world, page)) {
-        return undefined;
-    }
-
-    const fields = effectiveFields(world, page);
-    const load = carriedIn(fields) ?? carriedWeight(world, system.load, page);
-    const limit = formulaValue(world, fields, system.load.limit);
-    const value = loadValue(world, system, page, fields);
-    return limit === undefined || load <= limit || value === undefined ? undefined : `load ${value.text}, over the limit`;
-}
-
-/** For an item created without a weight, its own or its base's, when the system counts loads: the AI estimates one (LOAD-1). */
-export function weightlessNote(system: GameSystem | undefined, world: World, page: Page): string[]
-{
-    if (system?.load === undefined || page.type !== "item" || valueNamed(inheritedFields(world, page), system.load.field) !== undefined) {
-        return [];
-    }
-
-    const unit = weightUnit(world, system.load.field) ?? "lb";
-    return [`${page.name} has no ${system.load.field}, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set ${system.load.field}="2 ${unit}".`];
-}
-
 /** What a character carries weighs, against its limit, as the sheet shows it (D-432, LOAD-2): "23 / 210 lb", in the system's unit; none when the system counts no load. */
 function loadValue(world: World, system: GameSystem, page: Page, fields: Record<string, unknown>): SheetValue | undefined
 {
@@ -712,20 +756,6 @@ function entryFields(entries: SheetEntry[]): string[]
     return entries.flatMap((entry) => (entry.beside === undefined ? [entry.field] : [entry.field, entry.beside]));
 }
 
-/**
- * A field's value as a counter, with the limits the field writes or the system works out (FOR-6): 18/24, or momentum 4 from -6; undefined for a number that is
- * no counter, such as str 14, and for any other value.
- */
-export function counterOf(world: World, fields: Record<string, unknown>, field: string, value: unknown): Counter | undefined
-{
-    const kind = declaredKind(world, field);
-    const read = readCounter(value);
-    const limits = counterLimits(world, fields, field);
-    // A field the system declares as anything else is never one, as a challenge rating of 1/4.
-    const counted = kind === "counter" || (kind === undefined && (read?.max !== undefined || limits.min !== undefined || limits.max !== undefined));
-    return read === undefined || !counted ? undefined : { ...limits, ...read };
-}
-
 /** A value of the sheet as data, without marks or what is beside it: its kind, its text, a counter with its limits and the names of a list. */
 function sheetValue(world: World, fields: Record<string, unknown>, field: string, value: unknown): SheetValue
 {
@@ -733,24 +763,6 @@ function sheetValue(world: World, fields: Record<string, unknown>, field: string
     const counter = counterOf(world, fields, field, value);
     const items = Array.isArray(value) ? value.map((item) => linkText(String(item).trim())) : undefined;
     return { field, ...(kind === undefined ? {} : { kind }), text: valueText(world, field, value), ...(counter === undefined ? {} : { counter }), ...(items === undefined ? {} : { items }), marks: 0 };
-}
-
-/** The experience between the points of the character's level and those of the next, for the field that counts it (PRO-6); none at the last level. */
-export function experienceProgress(world: World, fields: Record<string, unknown>, field: string): Progress | undefined
-{
-    if (comparableText(field) !== comparableText(world.system?.progression?.experience?.field ?? "")) {
-        return undefined;
-    }
-
-    const experience = experienceOf(world, fields);
-    return experience?.next === undefined ? undefined : { value: experience.points, from: experience.least ?? 0, to: experience.next.points };
-}
-
-/** What the points of the field that counts the experience say of the levels (PRO-6); none for another field, or at the last level. */
-export function experienceNeed(world: World, fields: Record<string, unknown>, field: string): LevelNeed | undefined
-{
-    const experience = comparableText(field) === comparableText(world.system?.progression?.experience?.field ?? "") ? experienceOf(world, fields) : undefined;
-    return experience === undefined ? undefined : levelNeed(experience);
 }
 
 /**
@@ -892,16 +904,4 @@ function wrongText(system: GameSystem, field: string, wrong: string[], onSheet: 
     const list = wrong.some((name) => /[,;]/.test(name)) ? " A list is written [a, b]." : "";
     const names = wrong.map((name) => `"${name}"`).join(", ");
     return `${names} ${wrong.length === 1 ? "is not one of the names" : "are not names"} ${field} takes in the system ${system.name}: ${allowed.join(", ")}.${list}${own}`;
-}
-
-/**
- * What the master is told as a roll of the player character recalls what they know, as History, by the fields the system declares (sheet-knowledge): its
- * outcome said as knowledge, never as an episode of their past the player did not tell (Elena's tests of 28 October, where a high roll brought one).
- */
-export function knowledgeNote(system: GameSystem | undefined, fields: string[]): string | undefined
-{
-    const knowledge = new Set((system?.sheetKnowledge ?? []).map(comparableText));
-    return fields.some((field) => knowledge.has(comparableText(field)))
-        ? "What it reveals is what the world shows or their trade knows, said as knowledge: an episode of their past the player has not told is a question to them."
-        : undefined;
 }

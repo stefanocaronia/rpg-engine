@@ -247,14 +247,6 @@ export function linkedStoryNotes(world: World, pages: Page[], skipped: string[],
     });
 }
 
-/** What the master may write of the stories linked to a page: an event's status, date or by; a quest's status, when its story has ended. */
-function storyAdvice(linked: Page[]): string
-{
-    const events = linked.some((page) => page.type !== "quest") ? "If an event no longer goes as planned, write it: its status, date or by." : "";
-    const quests = linked.some((page) => page.type === "quest") ? "If the story of a quest has ended, set its status." : "";
-    return [events, quests].filter((advice) => advice !== "").join(" ");
-}
-
 /** The clocks of the planned events not due yet, with who carries them (EVT-8, D-135): "La marcia della Confraternita 2/4 (Fratello Odo)". */
 export function clocksToMove(world: World, now: GameDate | undefined, facts = worldFacts(world)): string[]
 {
@@ -318,6 +310,14 @@ export function eventProblems(world: World): Problem[]
             ...problem(dead.length === 0 ? undefined : `${page.name} is planned, but ${makers} dead.`, "cancel it, give it to someone else with by, or write what happens instead"),
         ];
     });
+}
+
+/** What the master may write of the stories linked to a page: an event's status, date or by; a quest's status, when its story has ended. */
+function storyAdvice(linked: Page[]): string
+{
+    const events = linked.some((page) => page.type !== "quest") ? "If an event no longer goes as planned, write it: its status, date or by." : "";
+    const quests = linked.some((page) => page.type === "quest") ? "If the story of a quest has ended, set its status." : "";
+    return [events, quests].filter((advice) => advice !== "").join(" ");
 }
 
 /** What sets an event off now: its full clock, or the first of its conditions that holds; undefined when nothing does (EVT-2, EVT-3). */

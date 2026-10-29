@@ -51,36 +51,6 @@ export interface CountedByGame
     burning?: string;
 }
 
-/** A rigor's meaning with what the game counts itself said (review of 17 October): a game that counts no food is never promised it. */
-function rigorMeaning(rigor: string, counted: CountedByGame | undefined): string | undefined
-{
-    const meaning = (rigorMeanings as Record<string, string>)[rigor];
-    const burns = counted?.burning === undefined ? "" : `an effect named after what burns, such as ${counted.burning}, spends it as it is lit`;
-
-    if (meaning === undefined || rigor === "simulation" || counted === undefined) {
-        return meaning;
-    }
-
-    if (rigor === "smooth") {
-        return burns === "" ? meaning : `${meaning}; a light you put on as an effect, as a ${counted.burning}, still spends one`;
-    }
-
-    const food = counted.upkeep ? "advance spends the day's food outside a settlement; water, lifestyle and wages are yours to charge" : "";
-    const counts = [food, burns].filter((part) => part !== "").join("; ");
-    return counts === "" ? meaning : meaning.replace("charge with change what is used up; ", `charge with change what is used up; ${counts}; `);
-}
-
-/** How much the master teaches the game, out of the story (D-347): the story alone, a hint now and then, or each rule as it first comes up. */
-export const mentorWays = ["off", "hints", "tutorial"] as const;
-
-/** What each way of the mentor means to the master, which config gives for the chosen one, and the player's change of it on the dashboard (D-347). */
-const mentorMeanings: Record<(typeof mentorWays)[number], string> = {
-    off: "the story alone: no tips or explanations of yours, only your answers to what the player asks between brackets",
-    hints: "a tip of a sentence or two, in brackets, before a choice that matters and when a rule slips by, as the mentor's part of your instructions says; no lessons",
-    tutorial: "each mechanic explained the first time it comes up, the whole sum of a roll shown, a debrief after fights and at the end of a session, "
-        + "as the mentor's part of your instructions says",
-};
-
 /**
  * What the chosen difficulty, rigor or mentor means, as status and config give it, the rigor with what the game counts itself; undefined for another setting
  * or a value it does not take.
@@ -96,187 +66,9 @@ export function settingMeaning(name: string, value: unknown, counted?: CountedBy
     return typeof value === "string" && own !== undefined && Object.hasOwn(own, value) ? own[value] : undefined;
 }
 
-/** Who rolls the player character's dice (D-241): rpg, or the player with their own, telling the values; the master's are always rolled by rpg. */
-export const diceWays = ["digital", "physical"] as const;
-
-/** Whether the master's rolls for anyone outside the party are hidden (D-287): behind the screen, unset too, or in view; the party's are always shown. */
-export const masterRollWays = ["behind the screen", "in view"] as const;
-
-/**
- * Who voices the characters (D-490), where the AI app has subagents: a character as a subagent of its own at key moments, the master chooses (auto); the master
- * always; always for the companions and the main characters; always for everyone.
- */
-export const voiceWays = ["master", "auto", "important", "always"] as const;
-
-export { unitSystems };
-
-/** Which pictures the engine has made, where it can (D-308, D-388, D-420): none, only those the player asks for, or one for each new place, quest and one met. */
-export const pictureWays = ["none", "on request", "new elements"] as const;
-
-/** How much the master thinks before each answer, written for each AI app in the campaign's folder (D-462). */
-export const efforts = ["low", "medium", "high"] as const;
-
-/** How the companions come (D-76, D-221): none, made in session zero with the player or by the master, or met in play. */
-export const companionWays = ["none", "made with the player", "made by the master", "met in play"] as const;
-
-/** How far ahead a world without a written campaign is made (D-80): as it is needed, or all at the start. */
-export const preparations = ["on the fly", "all at the start"] as const;
-
-/** How the master writes (D-395): plain, the core's own, literary, pulp or wry; the tone stays in the premise, and an author takes its place. */
-export const proseWays = ["plain", "literary", "pulp", "wry"] as const;
-
-/** How the master builds what they invent (D-395): situations, the core's own, arcs, episodes or a mystery; a written adventure keeps its own. */
-export const storyWays = ["situations", "arcs", "episodes", "mystery"] as const;
-
-/** The settings with a closed list of values, each with them: those a game system may offer only some of (DAT-16). */
-export const closedSettings: Partial<Record<SettingName, readonly string[]>> = {
-    difficulty: difficulties,
-    lethality: lethalities,
-    saves: saveModes,
-    rigor: rigors,
-    mentor: mentorWays,
-    dice: diceWays,
-    "master-rolls": masterRollWays,
-    voices: voiceWays,
-    units: unitSystems,
-    pictures: pictureWays,
-    effort: efforts,
-    companions: companionWays,
-    preparation: preparations,
-    prose: proseWays,
-    story: storyWays,
-};
-
-/** The longest text the player's own words of how the master writes may be, by setting (D-395). */
-export const styleTextLengths = { author: 80, style: 300 } as const;
-
-/** What each way of writing and of building the story means to the master, which config gives for the chosen one (D-395). */
-const styleMeanings: Record<string, Record<string, string>> = {
-    prose: {
-        plain: "short sentences, one concrete detail a thing, as your instructions write",
-        literary: "more room at the high points, images and subtext, as the prose part of your instructions says",
-        pulp: "tense action, strong colours, every message ending on a threat or a hook, as the prose part of your instructions says",
-        wry: "a narrator with a half smile at the world, never at the character, as the prose part of your instructions says",
-    },
-    story: {
-        situations: "a world of factions, threats with their clocks and places with secrets, no main plot, as your instructions write",
-        arcs: "a central threat that advances by stages, the party's own arcs woven in, as the story part of your instructions says",
-        episodes: "a story that closes each session, with a thread that comes back, as the story part of your instructions says",
-        mystery: "every story an investigation, its truth written first in the secrets, as the story part of your instructions says",
-    },
-};
-
-/** An item of a list setting. Written by hand without quotes, "Poisoned: la benda…" is YAML for a pair: it is read as the text it was meant to be (D-179). */
-const listItem = z.preprocess((item) => pairText(item) ?? item, z.string().min(1));
-
-/** A list setting; an empty item written by hand, as - "", holds nothing and is left out, so that it never stops the game. */
-const listSetting = z.preprocess((items) => (Array.isArray(items) ? items.filter((item) => item !== null && String(item).trim() !== "") : items), z.array(listItem)).nullish();
-
-/** The player's own words in a setting, on one line: a line break in them would be read as a heading of the instructions they go into (D-395). */
-function oneLine(most: number)
-{
-    return z.preprocess((value) => (typeof value === "string" ? value.replace(/\s+/g, " ").trim() : value), z.string().min(1).max(most));
-}
-
-/** The settings of a campaign, kept in campaign.yaml. Other keys are kept: systems and extensions will add their own. */
-export const settingsSchema = z.object({
-    name: z.string().min(1).describe("name of the campaign"),
-    language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "use a language code such as it, en or pt-BR").optional().describe("language of the game, as a code such as it or en"),
-    system: z.string().min(1).optional().describe("game system of the campaign: one of those installed"),
-    mentor: z.enum(mentorWays).optional().describe(
-        "how much the master teaches the game, out of the story: off, hints or tutorial; asked as how well the player knows the game: never played (tutorial), a little (hints), well (off)",
-    ),
-    premise: z.string().min(1).optional().describe(
-        "without a written campaign: the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words",
-    ),
-    preparation: z.enum(preparations).optional().describe("without a written campaign: on the fly (the master makes the world just before it is needed) or all at the start"),
-    prose: z.enum(proseWays).optional().describe("how the master writes, as the player chose it: plain, literary, pulp or wry; the tone stays in the premise; an author takes its place"),
-    story: z.enum(storyWays).optional().describe("how the master builds what they invent: situations, arcs, episodes or mystery; a written adventure keeps its own"),
-    author: oneLine(styleTextLengths.author).optional().describe("an author the master writes like, as the player named them: their way, never their sentences, names or places"),
-    style: oneLine(styleTextLengths.style).optional().describe("the player's own wishes for how the master writes, in a few words, such as third person, past tense"),
-    difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
-    lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
-    saves: z.enum(saveModes).optional().describe(
-        "when the game may go back: permadeath (never, but to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks)",
-    ),
-    rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
-    dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
-    "master-rolls": z.enum(masterRollWays).optional().describe(
-        "the master's rolls for foes and anyone else outside the party: behind the screen (roll hides them, the master telling only the outcome) or in view (roll shows them); "
-            + "the party's rolls are always shown; unset, behind the screen",
-    ),
-    units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
-    voices: z.enum(voiceWays).optional().describe(
-        "who voices the characters, where the AI app has subagents, from the master to the characters: master (the master, always), auto (at key moments, as the master chooses, "
-            + "a character answers as a subagent of its own, knowing only what it knows), important (always a subagent for the companions and the characters with kind main), "
-            + "always (always a subagent, for everyone); unset, auto",
-    ),
-    companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
-    // Checked by the time module against the calendar (TIM-8).
-    "calendar-start": z.string().min(1).optional().describe("when the story starts: day 1 to count only the days, or the day of the world's calendar that is day 1, such as 14 April 1491"),
-    // new places and new places and quests, as campaigns wrote it before quests and then those met had pictures, are read as the value that took their place (D-388, D-420).
-    pictures: z.preprocess((value) => (value === "new places" || value === "new places and quests" ? "new elements" : value), z.enum(pictureWays)).optional().describe(
-        "the pictures of places, quests and those met the engine has made on this computer, which spend the player's plan, Codex's or Claude's: none, on request (those the player asks for) "
-            + "or new elements (one for each new place and quest, and for each character and kind of creature the character meets)",
-    ),
-    effort: z.enum(efforts).optional().describe(
-        "how much the master thinks before each answer, the player's to choose: low, medium or high, written where Claude Code and Codex read it in the campaign's folder; "
-            + "unset, each app keeps its own",
-    ),
-    lines: listSetting.describe("what never appears in the game"),
-    veils: listSetting.describe("what happens only off screen, without details"),
-    table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
-    precedents: listSetting.describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
-    learned: listSetting.describe("the game's mechanics the master has explained, by their names in the system's language: explained again only when the player gets one wrong"),
-    library: listSetting.describe("the player's library (D-491): folders of their books, or books, by full path, which rules searches after the game system"),
-    // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
-    coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
-    // Checked by the time module (TIM-8): a mistake there never stops the game, whose date stays day N.
-    calendar: z.unknown().optional().describe("the months of the campaign's own calendar, in place of the real ones and an extension's: months: [{name: January, days: 31, season: winter}, ...]"),
-    // What the campaign adds to its game system (CAM-1): checked by the systems module when it reads the system with them, so that a mistake there never hides the
-    // other settings.
-    fields: z.unknown().optional().describe("fields the campaign adds to its game system, by name with their kind, such as omens: rolls"),
-    tables: z.unknown().optional().describe("tables the campaign adds to its game system, by name, such as bulwark-dice-by-level: {3: 4, 7: 5, 15: 6}"),
-    computed: z.unknown().optional().describe("formulas the campaign adds to its game system or puts in place of its own, as a house rule, by field"),
-    counters: z.unknown().optional().describe("counters the campaign adds to its game system or changes: their limits and what comes back with a rest, by name"),
-    recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as rest: {set: {bulwark-dice: max}}"),
-    "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as omens?"),
-    travel: z.unknown().optional().describe("what the campaign adds to how its game system travels, by key: paces, hours, terrain and kinds of road, such as kinds: {canal: {}}"),
-    values: z.unknown().optional().describe("names the campaign adds to the closed lists of its game system, by field, such as languages: [Lingua dei Guadi]"),
-    "condition-icons": z.unknown().optional().describe("the drawings of effects on the dashboard by their names, over the game system's: the d of an SVG path on a grid of 24, such as Benedizione: M12 3v18"),
-    // Checked against the campaign's extensions when it is written (D-502): one written wrongly by hand leaves the extension's place.
-    widgets: z.unknown().optional().describe("where the dashboard shows the extensions' widgets, by extension.widget: top, side, scene, sheet, world, journal or off, such as weather.today: side"),
-}).loose();
-
 export type CampaignSettings = z.infer<typeof settingsSchema>;
+
 export type SettingName = keyof typeof settingsSchema.shape;
-
-/** The settings that the config command shows and changes. */
-export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
-
-/** The settings that hold a list, changed one item at a time; none of them is ever missing in play. */
-export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "learned", "library", "status-line"];
-
-/** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
-export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values", "condition-icons"];
-
-/** The settings that hold entries by name: what the campaign adds to its game system, and where the dashboard shows the extensions' widgets (D-502). */
-export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets"];
-
-/**
- * What only the setup asks (D-241, MOD-3, D-347, D-287): how much the master teaches the game, whether the master's rolls are shown, how the companions come,
- * when the story starts, and the lines and veils, which "none" answers too.
- */
-export const setupSettingNames: SettingName[] = ["mentor", "master-rolls", "companions", "calendar-start", "lines", "veils"];
-
-/** What the setup asks only of a campaign without a written world (D-79, D-80, MOD-3). */
-const premiseSettingNames: SettingName[] = ["premise", "preparation"];
-
-// Settings that only some games have, or that only the setup asks: never asked for in play when missing.
-// The pictures: status asks for them once, only where they can be made (D-308).
-// How the master writes: the core's own until the player chooses (D-395).
-const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
-const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voices", "calendar", "calendar-start", ...entrySettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
 
 export function readSettings(root: string): CampaignSettings
 {
@@ -565,6 +357,216 @@ export function checkSettingName(name: string): SettingName
 
     return name as SettingName;
 }
+
+/** A rigor's meaning with what the game counts itself said (review of 17 October): a game that counts no food is never promised it. */
+function rigorMeaning(rigor: string, counted: CountedByGame | undefined): string | undefined
+{
+    const meaning = (rigorMeanings as Record<string, string>)[rigor];
+    const burns = counted?.burning === undefined ? "" : `an effect named after what burns, such as ${counted.burning}, spends it as it is lit`;
+
+    if (meaning === undefined || rigor === "simulation" || counted === undefined) {
+        return meaning;
+    }
+
+    if (rigor === "smooth") {
+        return burns === "" ? meaning : `${meaning}; a light you put on as an effect, as a ${counted.burning}, still spends one`;
+    }
+
+    const food = counted.upkeep ? "advance spends the day's food outside a settlement; water, lifestyle and wages are yours to charge" : "";
+    const counts = [food, burns].filter((part) => part !== "").join("; ");
+    return counts === "" ? meaning : meaning.replace("charge with change what is used up; ", `charge with change what is used up; ${counts}; `);
+}
+
+/** How much the master teaches the game, out of the story (D-347): the story alone, a hint now and then, or each rule as it first comes up. */
+export const mentorWays = ["off", "hints", "tutorial"] as const;
+
+/** What each way of the mentor means to the master, which config gives for the chosen one, and the player's change of it on the dashboard (D-347). */
+const mentorMeanings: Record<(typeof mentorWays)[number], string> = {
+    off: "the story alone: no tips or explanations of yours, only your answers to what the player asks between brackets",
+    hints: "a tip of a sentence or two, in brackets, before a choice that matters and when a rule slips by, as the mentor's part of your instructions says; no lessons",
+    tutorial: "each mechanic explained the first time it comes up, the whole sum of a roll shown, a debrief after fights and at the end of a session, "
+        + "as the mentor's part of your instructions says",
+};
+
+/** Who rolls the player character's dice (D-241): rpg, or the player with their own, telling the values; the master's are always rolled by rpg. */
+export const diceWays = ["digital", "physical"] as const;
+
+/** Whether the master's rolls for anyone outside the party are hidden (D-287): behind the screen, unset too, or in view; the party's are always shown. */
+export const masterRollWays = ["behind the screen", "in view"] as const;
+
+/**
+ * Who voices the characters (D-490), where the AI app has subagents: a character as a subagent of its own at key moments, the master chooses (auto); the master
+ * always; always for the companions and the main characters; always for everyone.
+ */
+export const voiceWays = ["master", "auto", "important", "always"] as const;
+
+export { unitSystems };
+
+/** Which pictures the engine has made, where it can (D-308, D-388, D-420): none, only those the player asks for, or one for each new place, quest and one met. */
+export const pictureWays = ["none", "on request", "new elements"] as const;
+
+/** How much the master thinks before each answer, written for each AI app in the campaign's folder (D-462). */
+export const efforts = ["low", "medium", "high"] as const;
+
+/** How the companions come (D-76, D-221): none, made in session zero with the player or by the master, or met in play. */
+export const companionWays = ["none", "made with the player", "made by the master", "met in play"] as const;
+
+/** How far ahead a world without a written campaign is made (D-80): as it is needed, or all at the start. */
+export const preparations = ["on the fly", "all at the start"] as const;
+
+/** How the master writes (D-395): plain, the core's own, literary, pulp or wry; the tone stays in the premise, and an author takes its place. */
+export const proseWays = ["plain", "literary", "pulp", "wry"] as const;
+
+/** How the master builds what they invent (D-395): situations, the core's own, arcs, episodes or a mystery; a written adventure keeps its own. */
+export const storyWays = ["situations", "arcs", "episodes", "mystery"] as const;
+
+/** The settings with a closed list of values, each with them: those a game system may offer only some of (DAT-16). */
+export const closedSettings: Partial<Record<SettingName, readonly string[]>> = {
+    difficulty: difficulties,
+    lethality: lethalities,
+    saves: saveModes,
+    rigor: rigors,
+    mentor: mentorWays,
+    dice: diceWays,
+    "master-rolls": masterRollWays,
+    voices: voiceWays,
+    units: unitSystems,
+    pictures: pictureWays,
+    effort: efforts,
+    companions: companionWays,
+    preparation: preparations,
+    prose: proseWays,
+    story: storyWays,
+};
+
+/** The longest text the player's own words of how the master writes may be, by setting (D-395). */
+export const styleTextLengths = { author: 80, style: 300 } as const;
+
+/** What each way of writing and of building the story means to the master, which config gives for the chosen one (D-395). */
+const styleMeanings: Record<string, Record<string, string>> = {
+    prose: {
+        plain: "short sentences, one concrete detail a thing, as your instructions write",
+        literary: "more room at the high points, images and subtext, as the prose part of your instructions says",
+        pulp: "tense action, strong colours, every message ending on a threat or a hook, as the prose part of your instructions says",
+        wry: "a narrator with a half smile at the world, never at the character, as the prose part of your instructions says",
+    },
+    story: {
+        situations: "a world of factions, threats with their clocks and places with secrets, no main plot, as your instructions write",
+        arcs: "a central threat that advances by stages, the party's own arcs woven in, as the story part of your instructions says",
+        episodes: "a story that closes each session, with a thread that comes back, as the story part of your instructions says",
+        mystery: "every story an investigation, its truth written first in the secrets, as the story part of your instructions says",
+    },
+};
+
+/** An item of a list setting. Written by hand without quotes, "Poisoned: la benda…" is YAML for a pair: it is read as the text it was meant to be (D-179). */
+const listItem = z.preprocess((item) => pairText(item) ?? item, z.string().min(1));
+
+/** A list setting; an empty item written by hand, as - "", holds nothing and is left out, so that it never stops the game. */
+const listSetting = z.preprocess((items) => (Array.isArray(items) ? items.filter((item) => item !== null && String(item).trim() !== "") : items), z.array(listItem)).nullish();
+
+/** The player's own words in a setting, on one line: a line break in them would be read as a heading of the instructions they go into (D-395). */
+function oneLine(most: number)
+{
+    return z.preprocess((value) => (typeof value === "string" ? value.replace(/\s+/g, " ").trim() : value), z.string().min(1).max(most));
+}
+
+/** The settings of a campaign, kept in campaign.yaml. Other keys are kept: systems and extensions will add their own. */
+export const settingsSchema = z.object({
+    name: z.string().min(1).describe("name of the campaign"),
+    language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, "use a language code such as it, en or pt-BR").optional().describe("language of the game, as a code such as it or en"),
+    system: z.string().min(1).optional().describe("game system of the campaign: one of those installed"),
+    mentor: z.enum(mentorWays).optional().describe(
+        "how much the master teaches the game, out of the story: off, hints or tutorial; asked as how well the player knows the game: never played (tutorial), a little (hints), well (off)",
+    ),
+    premise: z.string().min(1).optional().describe(
+        "without a written campaign: the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words",
+    ),
+    preparation: z.enum(preparations).optional().describe("without a written campaign: on the fly (the master makes the world just before it is needed) or all at the start"),
+    prose: z.enum(proseWays).optional().describe("how the master writes, as the player chose it: plain, literary, pulp or wry; the tone stays in the premise; an author takes its place"),
+    story: z.enum(storyWays).optional().describe("how the master builds what they invent: situations, arcs, episodes or mystery; a written adventure keeps its own"),
+    author: oneLine(styleTextLengths.author).optional().describe("an author the master writes like, as the player named them: their way, never their sentences, names or places"),
+    style: oneLine(styleTextLengths.style).optional().describe("the player's own wishes for how the master writes, in a few words, such as third person, past tense"),
+    difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
+    lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
+    saves: z.enum(saveModes).optional().describe(
+        "when the game may go back: permadeath (never, but to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks)",
+    ),
+    rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
+    dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
+    "master-rolls": z.enum(masterRollWays).optional().describe(
+        "the master's rolls for foes and anyone else outside the party: behind the screen (roll hides them, the master telling only the outcome) or in view (roll shows them); "
+            + "the party's rolls are always shown; unset, behind the screen",
+    ),
+    units: z.enum(unitSystems).optional().describe("the units of measure of the story: metric or imperial"),
+    voices: z.enum(voiceWays).optional().describe(
+        "who voices the characters, where the AI app has subagents, from the master to the characters: master (the master, always), auto (at key moments, as the master chooses, "
+            + "a character answers as a subagent of its own, knowing only what it knows), important (always a subagent for the companions and the characters with kind main), "
+            + "always (always a subagent, for everyone); unset, auto",
+    ),
+    companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
+    // Checked by the time module against the calendar (TIM-8).
+    "calendar-start": z.string().min(1).optional().describe("when the story starts: day 1 to count only the days, or the day of the world's calendar that is day 1, such as 14 April 1491"),
+    // new places and new places and quests, as campaigns wrote it before quests and then those met had pictures, are read as the value that took their place (D-388, D-420).
+    pictures: z.preprocess((value) => (value === "new places" || value === "new places and quests" ? "new elements" : value), z.enum(pictureWays)).optional().describe(
+        "the pictures of places, quests and those met the engine has made on this computer, which spend the player's plan, Codex's or Claude's: none, on request (those the player asks for) "
+            + "or new elements (one for each new place and quest, and for each character and kind of creature the character meets)",
+    ),
+    effort: z.enum(efforts).optional().describe(
+        "how much the master thinks before each answer, the player's to choose: low, medium or high, written where Claude Code and Codex read it in the campaign's folder; "
+            + "unset, each app keeps its own",
+    ),
+    lines: listSetting.describe("what never appears in the game"),
+    veils: listSetting.describe("what happens only off screen, without details"),
+    table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
+    precedents: listSetting.describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
+    learned: listSetting.describe("the game's mechanics the master has explained, by their names in the system's language: explained again only when the player gets one wrong"),
+    library: listSetting.describe("the player's library (D-491): folders of their books, or books, by full path, which rules searches after the game system"),
+    // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
+    coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
+    // Checked by the time module (TIM-8): a mistake there never stops the game, whose date stays day N.
+    calendar: z.unknown().optional().describe("the months of the campaign's own calendar, in place of the real ones and an extension's: months: [{name: January, days: 31, season: winter}, ...]"),
+    // What the campaign adds to its game system (CAM-1): checked by the systems module when it reads the system with them, so that a mistake there never hides the
+    // other settings.
+    fields: z.unknown().optional().describe("fields the campaign adds to its game system, by name with their kind, such as omens: rolls"),
+    tables: z.unknown().optional().describe("tables the campaign adds to its game system, by name, such as bulwark-dice-by-level: {3: 4, 7: 5, 15: 6}"),
+    computed: z.unknown().optional().describe("formulas the campaign adds to its game system or puts in place of its own, as a house rule, by field"),
+    counters: z.unknown().optional().describe("counters the campaign adds to its game system or changes: their limits and what comes back with a rest, by name"),
+    recipes: z.unknown().optional().describe("what the campaign adds to the rests of its game system, by recipe, such as rest: {set: {bulwark-dice: max}}"),
+    "status-line": z.unknown().optional().describe("fields the campaign adds to the line of the player character and the companions, such as omens?"),
+    travel: z.unknown().optional().describe("what the campaign adds to how its game system travels, by key: paces, hours, terrain and kinds of road, such as kinds: {canal: {}}"),
+    values: z.unknown().optional().describe("names the campaign adds to the closed lists of its game system, by field, such as languages: [Lingua dei Guadi]"),
+    "condition-icons": z.unknown().optional().describe("the drawings of effects on the dashboard by their names, over the game system's: the d of an SVG path on a grid of 24, such as Benedizione: M12 3v18"),
+    // Checked against the campaign's extensions when it is written (D-502): one written wrongly by hand leaves the extension's place.
+    widgets: z.unknown().optional().describe("where the dashboard shows the extensions' widgets, by extension.widget: top, side, scene, sheet, world, journal or off, such as weather.today: side"),
+}).loose();
+
+/** The settings that the config command shows and changes. */
+export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
+
+/** The settings that hold a list, changed one item at a time; none of them is ever missing in play. */
+export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "learned", "library", "status-line"];
+
+/** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
+export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values", "condition-icons"];
+
+/** The settings that hold entries by name: what the campaign adds to its game system, and where the dashboard shows the extensions' widgets (D-502). */
+export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets"];
+
+/**
+ * What only the setup asks (D-241, MOD-3, D-347, D-287): how much the master teaches the game, whether the master's rolls are shown, how the companions come,
+ * when the story starts, and the lines and veils, which "none" answers too.
+ */
+export const setupSettingNames: SettingName[] = ["mentor", "master-rolls", "companions", "calendar-start", "lines", "veils"];
+
+/** What the setup asks only of a campaign without a written world (D-79, D-80, MOD-3). */
+const premiseSettingNames: SettingName[] = ["premise", "preparation"];
+
+// Settings that only some games have, or that only the setup asks: never asked for in play when missing.
+// The pictures: status asks for them once, only where they can be made (D-308).
+// How the master writes: the core's own until the player chooses (D-395).
+const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
+
+const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voices", "calendar", "calendar-start", ...entrySettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
 
 /** The YAML list of a list setting, edited in place so that its comments stay; created when missing. */
 function listNode(document: Document, setting: SettingName): YAMLSeq

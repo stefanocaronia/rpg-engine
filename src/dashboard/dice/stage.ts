@@ -13,7 +13,7 @@ import { coinOf, type DiceLook, diceLook, type Finish, texturePath } from "./set
 import type { Tray } from "./throw.ts";
 
 // A die that does not count, as the lower of two d20 with advantage, goes out, whatever its set: its colour gone and darker, its body to a third of its
-// light, its ink to some half, still read; never lighter, which on a dark die would look picked (D-348, D-414).
+// light, its ink to some half, still read; never lighter, which on a dark die would look picked (D-348, D-538).
 const dimmedBody = 0.35;
 // How much of the window's foot the plate of the result covers, in pixels, until the plate of a throw is measured: from the window's edge to the plate's
 // top, on a wide screen and on a phone, where it comes out of the bar of the sections.

@@ -8,6 +8,7 @@ import { environmentAt, locate, mapKey, mapOf, type Page, pageNamed, parsePageRe
 import type { GameSystem } from "../../systems/index.ts";
 import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../../time/index.ts";
 import { aroundLead, passedLines, passTime, type TimePassed } from "../shared/advance.ts";
+import { textList, textsOf } from "../shared/inputs.ts";
 import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, ridersOf, sameMovers, saveJourney, travelledSinceRest } from "../shared/journey.ts";
 import { movePages } from "../shared/moves.ts";
 import { timePassedLines } from "../shared/packages/code.ts";
@@ -42,9 +43,6 @@ import { readOpenScene } from "../shared/scene.ts";
 import { presentDate } from "../shared/time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "../shared/world.ts";
 import { acrossHint, crossedRoads, openLegs } from "./open.ts";
-
-// A list, or one text, as an MCP client may send it.
-const textList = z.union([z.string(), z.array(z.string())]);
 
 /** Where a stopped journey is: on a road, at a point in the open, or at a place. */
 type Spot = { on: OnRoad; } | { at: Position; } | { place: string; };
@@ -530,7 +528,6 @@ function aroundLines(world: World, roads: Roads, from: Position, point: Position
     ].filter((line) => line !== "");
 }
 
-/** The travellers (TRV-6): the characters named, or the party where the player character is; in the open, those of its journey. */
 /** "Corrado stays in Roccalba: …": who travels leaves out the player character where they start, which who may not have meant (playtest 05). */
 function stayingNote(world: World, travellers: Page[]): string
 {
@@ -548,9 +545,10 @@ function stayingNote(world: World, travellers: Page[]): string
     return `${staying.map((pc) => pc.name).join(" and ")} ${staying.length === 1 ? "stays" : "stay"} in ${start.name}: who replaces the party; to go together, leave who out, or name the party too.`;
 }
 
+/** The travellers (TRV-6): the characters named, or the party where the player character is; in the open, those of its journey. */
 function travellersOf(world: World, who: string | string[] | undefined, journey: Journey | undefined): Page[]
 {
-    const names = (typeof who === "string" ? [who] : (who ?? [])).filter((name) => name.trim() !== "");
+    const names = textsOf(who);
 
     if (names.length === 0) {
         const party = travellingParty(world, partyLead(world, journey?.movers ?? [], "Give who, the characters who travel."), journey?.movers ?? []);

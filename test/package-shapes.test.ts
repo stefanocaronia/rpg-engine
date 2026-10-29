@@ -60,6 +60,17 @@ describe("a package's command written wrongly", () => {
         expect(await packageTools()).toEqual(["bbb"]);
     });
 
+    it.each([["json", "json"], ["no-x", "no-x"]])("with a field named %s, which the command line reads as something else, is named by validate", async (_, field) => {
+        extension("aaa", `export default ({ z }) => ({ commands: [{ name: "aaa", description: "Odd.", input: z.object({ "${field}": z.string().optional() }), run: () => "a" }] });`);
+        expect((await rpg("validate")).output).toContain(`its command aaa has a field named ${field}`);
+        expect(await packageTools()).toEqual([]);
+    });
+
+    it("with json as a positional is no option, and runs", async () => {
+        extension("aaa", 'export default ({ z }) => ({ commands: [{ name: "aaa", description: "Fine.", positionals: ["json"], input: z.object({ json: z.string() }), run: (input) => `got ${input.json}` }] });');
+        expect((await rpg("aaa", "text")).output).toBe("got text");
+    });
+
     it("without a description says to give one", async () => {
         extension("aaa", 'export default ({ z }) => ({ commands: [{ name: "aaa", input: z.object({}), run: () => "a" }] });');
         expect((await rpg("validate")).output).toContain("its command aaa has no description: give it one, written for an AI");

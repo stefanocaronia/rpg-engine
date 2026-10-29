@@ -387,6 +387,16 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
         expect((await rpg("package", "uninstall", "skies")).output).toBe("skies is not on this computer: no package is. Nothing changed.");
     });
 
+    it("uninstalls a system without a scope that does not read, by its name or npm:, from its folder; never a path", async () => {
+        const broken = join(modules, "badsys");
+        mkdirSync(broken, { recursive: true });
+        writeFileSync(join(broken, "package.json"), JSON.stringify({ name: "badsys", version: "1.0.0", "rpg-engine": { kind: "system" } }));
+        writeFileSync(join(broken, "system.yaml"), "title: [broken\n");
+        expect((await rpg("package", "uninstall", "npm:../badsys")).output).toContain("is not on this computer");
+        expect((await rpg("package", "uninstall", "npm:badsys")).exitCode).toBe(0);
+        expect(existsSync(broken)).toBe(false);
+    });
+
     it("removes one from the campaign, keeping it on this computer and what it kept in the campaign", async () => {
         await rpg("package", "install", "skies");
         await rpg("advance", "--to", "day 1, 18:00");
@@ -457,6 +467,12 @@ describe("the packages on the dashboard's page (D-475)", () => {
         expect(dashboard.news().lines.join("\n")).toContain("The player, on the dashboard, added skies: Installed skies");
         expect((await send("POST", "/api/package", { action: "remove", name: "skies" })).status).toBe(202);
         expect(JSON.parse((await send("GET", "/api/packages")).body).installed).toMatchObject([{ name: "skies", used: false }]);
+        // A path is no package's name, even one that climbs to npm's own folder, which holds npm's package.json (D-510).
+        writeFileSync(join(modules, "..", "package.json"), "{}");
+
+        for (const name of ["..", "../", "./..", "@x/../.."]) {
+            expect(JSON.parse((await send("POST", "/api/package", { action: "update", name })).body).error).toContain("is not installed on this computer");
+        }
     });
 
     it("adds someone else's package only with the player's yes in a window of their computer, never the host's form nor the page's click (D-478, D-485)", async () => {

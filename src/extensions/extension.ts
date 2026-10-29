@@ -120,8 +120,9 @@ export function installedExtensions(folders: string[]): { package: string; folde
 /** The installed extension of this package, as npm or campaign.yaml names it, or by its name alone (weather); undefined when none is. It throws when it does not read. */
 export function findExtension(folders: string[], wanted: string): Extension | undefined
 {
-    const named = (candidate: string): boolean => candidate === wanted.trim() || comparableText(shortName(candidate)) === comparableText(wanted.trim());
-    const found = installedExtensions(folders).find((candidate) => named(candidate.package));
+    // A package's whole name first: another's skies is never taken for @rpgengine/skies, nor the other way.
+    const installed = installedExtensions(folders);
+    const found = installed.find((candidate) => candidate.package === wanted.trim()) ?? installed.find((candidate) => comparableText(shortName(candidate.package)) === comparableText(wanted.trim()));
     return found === undefined ? undefined : readExtension(found.folder);
 }
 

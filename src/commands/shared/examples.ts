@@ -23,25 +23,6 @@ export function campaignExamples(root: string | undefined, context: Context): Ex
     return systemExamples(system, words, campaignCoins(root, context).coins ?? []);
 }
 
-/** The examples a game system gives, with the labels of its words and the campaign's coins. */
-function systemExamples(system: GameSystem, words: SystemWords | undefined, coins: Coin[]): Examples
-{
-    const [check, otherCheck] = rolledFields(system);
-    const checkText = (field: string): string => `${checkLabel(field, words)} ${system.sheetDice[field]}+${field}`;
-    const uses = Object.keys(system.turnUses).slice(0, 3);
-    return {
-        counter: system.damage?.counter ?? system.combat?.track ?? neutralExamples.counter,
-        roll: check === undefined ? neutralExamples.roll : `${system.sheetDice[check]}+${check}`,
-        check: check === undefined ? neutralExamples.check : checkText(check),
-        otherCheck: otherCheck === undefined ? neutralExamples.otherCheck : checkText(otherCheck),
-        ...coinExamples(coins),
-        uses: uses.length === 0 ? neutralExamples.uses : uses.join(", "),
-        rest: restExample(system),
-        pool: poolExample(system).field,
-        bonus: bonusExample(system),
-    };
-}
-
 /** A coin and a smaller one of a campaign for an example, as gp and sp, never a rare one; neutral names without them. */
 export function coinExamples(coins: Coin[] | undefined): { coin: string; smallCoin: string; }
 {
@@ -63,6 +44,25 @@ export function poolExample(system: GameSystem | undefined): { recipe: string; f
     const pool = recipe === undefined ? undefined : Object.keys(recipe.spend)[0];
     const field = pool?.endsWith("*") === true ? Object.keys(system?.fields ?? {}).find((name) => name.startsWith(pool.slice(0, -1))) : pool;
     return recipe === undefined || field === undefined ? { recipe: "breather", field: neutralExamples.pool } : { recipe: recipe.name, field };
+}
+
+/** The examples a game system gives, with the labels of its words and the campaign's coins. */
+function systemExamples(system: GameSystem, words: SystemWords | undefined, coins: Coin[]): Examples
+{
+    const [check, otherCheck] = rolledFields(system);
+    const checkText = (field: string): string => `${checkLabel(field, words)} ${system.sheetDice[field]}+${field}`;
+    const uses = Object.keys(system.turnUses).slice(0, 3);
+    return {
+        counter: system.damage?.counter ?? system.combat?.track ?? neutralExamples.counter,
+        roll: check === undefined ? neutralExamples.roll : `${system.sheetDice[check]}+${check}`,
+        check: check === undefined ? neutralExamples.check : checkText(check),
+        otherCheck: otherCheck === undefined ? neutralExamples.otherCheck : checkText(otherCheck),
+        ...coinExamples(coins),
+        uses: uses.length === 0 ? neutralExamples.uses : uses.join(", "),
+        rest: restExample(system),
+        pool: poolExample(system).field,
+        bonus: bonusExample(system),
+    };
 }
 
 /** The fields an effect adds to in a game system, those it declares bonuses. */

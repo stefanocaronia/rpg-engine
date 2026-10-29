@@ -22,11 +22,6 @@ export function textSize(text: string): number
     return Math.max(wordCount(text) + letters, Math.ceil(text.length / 6));
 }
 
-function comparable(text: string): string
-{
-    return text.normalize("NFC").toLowerCase().replace(/[‘’]/g, "'");
-}
-
 /** The first sentence of a text, up to its first ". ", as the help and the commands' reference give a command's description. */
 export function firstSentence(text: string): string
 {
@@ -72,4 +67,9 @@ export function valueNamed(record: Record<string, unknown>, name: string): unkno
 export function linkTargetName(target: string): string
 {
     return (target.replace(/\\$/, "").split("/").at(-1) ?? "").replace(/\.md$/i, "").trim();
+}
+
+function comparable(text: string): string
+{
+    return text.normalize("NFC").toLowerCase().replace(/[‘’]/g, "'");
 }

@@ -31,6 +31,13 @@ export function weightUnit(world: World, field: string): string | undefined
     return typeof written === "string" ? /(\p{L}[\p{L}.]*)\s*$/u.exec(written)?.[1] : undefined;
 }
 
+/** How many pieces one of a kind holds, by the field the system declares for its bundle: 1 for a kind not sold by the bundle (STK-2). */
+export function bundleOf(field: string | undefined, kind: Page): number
+{
+    const pieces = field === undefined ? Number.NaN : Number(valueNamed(kind.fields, field));
+    return Number.isSafeInteger(pieces) && pieces > 1 ? pieces : 1;
+}
+
 /**
  * The weight a holder carries (LOAD-1): each stack by its pieces, at its kind's weight over its bundle; each item at its own weight or its base's, and what it
  * holds, unless the system's weightless field is true on it, as on a Bag of Holding.
@@ -92,13 +99,6 @@ function coinsWeight(fields: Record<string, unknown>, perUnit: number | undefine
     // Thousands written with commas, as 1,000 gp.
     const coins = typeof money === "string" ? [...money.matchAll(/(\d{1,3}(?:,\d{3})+|\d+)\s*\p{L}+/gu)].reduce((total, match) => total + Number(match[1].replace(/,/g, "")), 0) : 0;
     return perUnit === undefined ? 0 : coins / perUnit;
-}
-
-/** How many pieces one of a kind holds, by the field the system declares for its bundle: 1 for a kind not sold by the bundle (STK-2). */
-export function bundleOf(field: string | undefined, kind: Page): number
-{
-    const pieces = field === undefined ? Number.NaN : Number(valueNamed(kind.fields, field));
-    return Number.isSafeInteger(pieces) && pieces > 1 ? pieces : 1;
 }
 
 /** Whether a field is true, as YAML reads it or as text written by hand. */

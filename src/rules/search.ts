@@ -63,12 +63,6 @@ export function isTitled(section: RuleSection, text: string): boolean
     return true;
 }
 
-/** The titles a text gives, as in "Combat › Grappling" (› > or / between them), without the stop that may end one. */
-function titlesIn(text: string): string[]
-{
-    return text.split(/\s*[›>/]\s*/).map((title) => title.trim().replace(/[.:]$/, "")).filter((title) => title !== "");
-}
-
 /** Whether a text holds every word of a search, as search compares words: what finds a precedent. */
 export function hasAllWords(text: string, search: string): boolean
 {
@@ -80,31 +74,6 @@ export function hasAllWords(text: string, search: string): boolean
 export function searchWords(text: string): string[]
 {
     return comparableText(text).match(/[\p{L}\p{N}]+/gu) ?? [];
-}
-
-/** The words of a section's title, of the titles above it and of its own text, each once: cut once for each section, which never changes (D-194). */
-function wordsOf(section: RuleSection): { title: string[]; above: string[]; text: string[]; }
-{
-    let words = wordsBySection.get(section);
-
-    if (words === undefined) {
-        const distinct = (text: string): string[] => [...new Set(searchWords(text))];
-        words = { title: distinct(section.path.at(-1) ?? ""), above: distinct(section.path.slice(0, -1).join(" ")), text: distinct(section.ownText) };
-        wordsBySection.set(section, words);
-    }
-
-    return words;
-}
-
-const wordsBySection = new WeakMap<RuleSection, { title: string[]; above: string[]; text: string[]; }>();
-
-// A form of a word may change this many of its last letters, and must keep at least the first four (all of a shorter word).
-const formLetters = 3;
-const stemLetters = 4;
-
-function hasForm(words: string[], searched: string): boolean
-{
-    return words.some((word) => sameWord(searched, word));
 }
 
 /**
@@ -127,6 +96,38 @@ export function sameWord(searched: string, word: string): boolean
     const doubledInWord = common > 0 && word[common] === word[common - 1] ? 1 : 0;
     const doubledInSearched = common > 0 && searched[common] === searched[common - 1] ? 1 : 0;
     return word.length - common <= formLetters + doubledInWord && common >= Math.max(Math.min(searched.length, stemLetters), searched.length - formLetters - doubledInSearched);
+}
+
+/** The titles a text gives, as in "Combat › Grappling" (› > or / between them), without the stop that may end one. */
+function titlesIn(text: string): string[]
+{
+    return text.split(/\s*[›>/]\s*/).map((title) => title.trim().replace(/[.:]$/, "")).filter((title) => title !== "");
+}
+
+/** The words of a section's title, of the titles above it and of its own text, each once: cut once for each section, which never changes (D-194). */
+function wordsOf(section: RuleSection): { title: string[]; above: string[]; text: string[]; }
+{
+    let words = wordsBySection.get(section);
+
+    if (words === undefined) {
+        const distinct = (text: string): string[] => [...new Set(searchWords(text))];
+        words = { title: distinct(section.path.at(-1) ?? ""), above: distinct(section.path.slice(0, -1).join(" ")), text: distinct(section.ownText) };
+        wordsBySection.set(section, words);
+    }
+
+    return words;
+}
+
+const wordsBySection = new WeakMap<RuleSection, { title: string[]; above: string[]; text: string[]; }>();
+
+// A form of a word may change this many of its last letters, and must keep at least the first four (all of a shorter word).
+const formLetters = 3;
+
+const stemLetters = 4;
+
+function hasForm(words: string[], searched: string): boolean
+{
+    return words.some((word) => sameWord(searched, word));
 }
 
 /** How much of a search a section holds: the weight of each word it has, and again for each word in its title (half for the titles above it). */

@@ -82,6 +82,43 @@ export function writePage(world: World, name: string, type: PageType | undefined
     return { page: readPage(world.root, fullPath), created: existing === undefined, changed: true, mode, retyped };
 }
 
+/** Checks the fields of a change on a page of a type: names a field can have, no list inside a list, and each field given once. Items may be added to a list and removed from it together. */
+export function checkFieldChange(type: PageType | undefined, change: FieldChange): void
+{
+    for (const name of [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {})]) {
+        if (!isFieldName(name)) {
+            throw new Error(`"${name}" cannot be a field name: start with a letter, and use only letters, digits, - and _.`);
+        }
+    }
+
+    for (const [name, value] of [...Object.entries(change.set ?? {}), ...Object.entries(change.add ?? {})]) {
+        if (holdsNestedList(value)) {
+            throw new Error(`"${name}" would hold a list inside a list, which a field cannot hold. Give a list of links or text, such as ["[[A]]", "[[B]]"].`);
+        }
+    }
+
+    const set = Object.keys(change.set ?? {});
+    const unset = change.unset ?? [];
+
+    // Removing a field in two spellings removes both, as written: only giving a value twice is unclear.
+    for (const names of [set, Object.keys(change.add ?? {}), Object.keys(change.remove ?? {})]) {
+        const [repeated] = repeatedFieldNames(type, names);
+
+        if (repeated !== undefined) {
+            throw new Error(`The field ${repeated} is given twice: give each field once.`);
+        }
+    }
+
+    // A list changed item by item counts once, however many items are added and removed; so does a field removed in several spellings.
+    const lists = new Map([...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})].map((name) => [fieldKey(type, name), name]));
+    const removed = new Map(unset.map((name) => [fieldKey(type, name), name]));
+    const [twice] = repeatedFieldNames(type, [...set, ...removed.values(), ...lists.values()]);
+
+    if (twice !== undefined) {
+        throw new Error(`The field ${twice} is given in two ways (set, unset, or add and remove): give it in one.`);
+    }
+}
+
 /**
  * A page changes type only when it still fits where it is and what it holds still fits in it (CON-1, D-159); a creature that pages derive from keeps its type,
  * or they would derive from nothing (INH-2).
@@ -249,43 +286,6 @@ function checkUnset(world: World, existing: Page | undefined, requested: string[
             throw new Error(`${existing?.name ?? "A new page"} has no field "${name}" to remove.${from}`);
         }
     });
-}
-
-/** Checks the fields of a change on a page of a type: names a field can have, no list inside a list, and each field given once. Items may be added to a list and removed from it together. */
-export function checkFieldChange(type: PageType | undefined, change: FieldChange): void
-{
-    for (const name of [...Object.keys(change.set ?? {}), ...Object.keys(change.add ?? {})]) {
-        if (!isFieldName(name)) {
-            throw new Error(`"${name}" cannot be a field name: start with a letter, and use only letters, digits, - and _.`);
-        }
-    }
-
-    for (const [name, value] of [...Object.entries(change.set ?? {}), ...Object.entries(change.add ?? {})]) {
-        if (holdsNestedList(value)) {
-            throw new Error(`"${name}" would hold a list inside a list, which a field cannot hold. Give a list of links or text, such as ["[[A]]", "[[B]]"].`);
-        }
-    }
-
-    const set = Object.keys(change.set ?? {});
-    const unset = change.unset ?? [];
-
-    // Removing a field in two spellings removes both, as written: only giving a value twice is unclear.
-    for (const names of [set, Object.keys(change.add ?? {}), Object.keys(change.remove ?? {})]) {
-        const [repeated] = repeatedFieldNames(type, names);
-
-        if (repeated !== undefined) {
-            throw new Error(`The field ${repeated} is given twice: give each field once.`);
-        }
-    }
-
-    // A list changed item by item counts once, however many items are added and removed; so does a field removed in several spellings.
-    const lists = new Map([...Object.keys(change.add ?? {}), ...Object.keys(change.remove ?? {})].map((name) => [fieldKey(type, name), name]));
-    const removed = new Map(unset.map((name) => [fieldKey(type, name), name]));
-    const [twice] = repeatedFieldNames(type, [...set, ...removed.values(), ...lists.values()]);
-
-    if (twice !== undefined) {
-        throw new Error(`The field ${twice} is given in two ways (set, unset, or add and remove): give it in one.`);
-    }
 }
 
 /** The names that give the same field more than once. */

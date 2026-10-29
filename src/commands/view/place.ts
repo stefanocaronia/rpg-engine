@@ -184,6 +184,109 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
     };
 }
 
+/** The open scene as the player sees it; none when no scene is open, or it cannot be read. */
+export function shownScene(sight: PlaceSight): ShownScene | undefined
+{
+    const { scene } = readOpenScene(sight.root);
+
+    if (scene === undefined) {
+        return undefined;
+    }
+
+    const place = knownPage(sight, scene.place);
+    const characters = scene.with.map((link) => {
+        const name = parsePageReference(link).name;
+        const page = knownPage(sight, link);
+        const hostile = hostileMark(scene, name);
+        const written = pagesWithName(sight.world, name)[0];
+        const state = written === undefined ? {} : strangerState(sight, scene, written);
+        const image = strangerPicture(sight, name);
+        return page === undefined
+            ? { name: seenName(scene, name), role: "other" as const, stranger: true as const, ...(image === undefined ? {} : { image }), ...hostile, ...state }
+            : { ...person(sight, page), ...hostile, ...stateOf(sight, page) };
+    });
+    const creatures = [...new Set(Object.values(scene.copies).map((copy) => copy.creature))].map((creature) => {
+        const count = Object.values(scene.copies).filter((copy) => copy.creature === creature).length;
+        const page = knownPage(sight, creature);
+        // A kind the character does not know by the letter its copies have in the scene, as creature B, with more kinds (D-331).
+        const first = Object.keys(scene.copies).find((copy) => scene.copies[copy].creature === creature);
+        const name = first === undefined ? "creature" : strangerName(scene, first).replace(/\s*\d+$/, "");
+        // A kind is hostile when one of its copies is.
+        const hostile = Object.keys(scene.copies).some((copy) => scene.copies[copy].creature === creature && hostileMark(scene, copy).hostile === true) ? { hostile: true as const } : {};
+        // A kind of one copy shows its state; of more, each shows its own on the map and in Combat.
+        const state = count === 1 && first !== undefined ? stateOf(sight, copyPage(first, scene.copies[first])) : {};
+        const image = strangerPicture(sight, creature);
+        return page === undefined
+            ? { name, role: "other" as const, stranger: true as const, ...(image === undefined ? {} : { image }), count, ...hostile, ...state }
+            : { ...person(sight, page), count, ...hostile, ...state };
+    });
+    const turnName = (name: string): string => shownTurn(sight, scene, name);
+    // What who acts has used of the turn, as marks beside them, for the party alone: a foe's are the master's to tell (TRN-4, D-453).
+    const acting = scene.turn;
+    const ours = acting !== undefined && sight.party.some((page) => comparableText(page.name) === comparableText(acting));
+    const marks = ours ? turnMarks(campaignSystem(sight.root, sight.context), scene, acting) : [];
+    return {
+        title: scene.title,
+        type: scene.type,
+        ...(scene.opened === undefined ? {} : { since: scene.opened }),
+        ...(scene.now === undefined ? {} : { now: scene.now }),
+        ...(place === undefined ? {} : { place: place.name }),
+        who: [...characters, ...creatures],
+        ...(scene.order === undefined ? {} : { order: scene.order.map(turnName) }),
+        ...(scene.turn === undefined ? {} : { turn: turnName(scene.turn) }),
+        // The round only where the game has rounds (D-314 (3)): Ironsworn has none.
+        ...(scene.round === undefined || campaignSystem(sight.root, sight.context)?.roundSeconds === undefined ? {} : { round: scene.round }),
+        ...(marks.length === 0 ? {} : { marks }),
+        ...(scene.type === "combat" ? { fighters: fightersOf(sight, scene) } : {}),
+    };
+}
+
+/**
+ * Who is in the open scene, by the words the page gives them (D-416): a character by name when the character knows them, else by what it sees of them, else
+ * someone; a copy by its name when it knows its creature, else by what it sees of its kind and its number, else creature 1. Without the one left out, as whose view
+ * a character agent's is (VIEW-10).
+ */
+export function sceneNames(sight: PlaceSight, leftOut?: Page): string[]
+{
+    const { scene } = readOpenScene(sight.root);
+    const characters = scene === undefined ? [] : scene.with.map((link) => parsePageReference(link).name).filter((name) => leftOut === undefined || pagesWithName(sight.world, name)[0] !== leftOut);
+    const names = scene === undefined ? [] : [...characters, ...Object.keys(scene.copies)];
+    return scene === undefined ? [] : names.map((name) => shownTurn(sight, scene, name));
+}
+
+/** Whether someone of the party is down (D-516): at the value of the counter the system names, as hp 0, or below it; never the dead. */
+export function isDown(world: World, system: GameSystem | undefined, page: Page): boolean
+{
+    const down = system?.down;
+    const value = readCounter(pageCounters(world, page)[down?.field ?? ""])?.value;
+    return down !== undefined && page.fields.status !== "dead" && value !== undefined && value <= down.value;
+}
+
+/** An effect on someone of the party as the player sees it: an end at someone's turn names them as the character knows them (VIEW-4), as creature 2. */
+export function seenEffect(sight: PlaceSight, effect: Effect): SeenEffect
+{
+    const end = effect.end;
+    const system = campaignSystem(sight.root, sight.context);
+
+    if (end === undefined || !("turn" in end)) {
+        return effectParts(sight.world, system, effect, sight.words);
+    }
+
+    const scene = readOpenScene(sight.root).scene ?? { copies: {} };
+    return effectParts(sight.world, system, { ...effect, end: { ...end, turn: shownTurn(sight, scene, end.turn) } }, sight.words);
+}
+
+/** The picture of one the character does not know, as strangerPicture gives it, for the scene and for the rolls (D-420, D-421). */
+export function strangerImage(root: string, context: Context, world: World, name: string | undefined): { file: string; version: number; } | undefined
+{
+    // A roll keeps a renamed page by its old name, among its aliases (D-417).
+    const page = name === undefined ? undefined : pagesWithNameOrAlias(world, parsePageReference(name).name)[0];
+    const file = page === undefined || page.system !== undefined ? undefined : imageFile(root, context, ownImage(page));
+    // By a name of its bytes: the file's own is the page's, which the character does not know.
+    const hidden = file === undefined ? undefined : hiddenImageName(file);
+    return file === undefined || hidden === undefined ? undefined : { file: hidden, version: Math.trunc(files().modified(file) ?? 0) };
+}
+
 /**
  * A place's map as the player sees it (GRD-6): who stands where, the party and the characters the character knows by name, the others of the open scene as
  * someone, its copies as the scene names them; a character it does not know outside the scene is not shown, as in VIEW-6.
@@ -284,76 +387,6 @@ function reachOf(sight: PlaceSight, rules: GridRules, measures: Measures, scene:
     return left <= 0 ? [] : reachable(grid, self.square, left + 1e-9, rules).filter((one) => one.cost > 0).map((one) => squareName(one.square));
 }
 
-/** The open scene as the player sees it; none when no scene is open, or it cannot be read. */
-export function shownScene(sight: PlaceSight): ShownScene | undefined
-{
-    const { scene } = readOpenScene(sight.root);
-
-    if (scene === undefined) {
-        return undefined;
-    }
-
-    const place = knownPage(sight, scene.place);
-    const characters = scene.with.map((link) => {
-        const name = parsePageReference(link).name;
-        const page = knownPage(sight, link);
-        const hostile = hostileMark(scene, name);
-        const written = pagesWithName(sight.world, name)[0];
-        const state = written === undefined ? {} : strangerState(sight, scene, written);
-        const image = strangerPicture(sight, name);
-        return page === undefined
-            ? { name: seenName(scene, name), role: "other" as const, stranger: true as const, ...(image === undefined ? {} : { image }), ...hostile, ...state }
-            : { ...person(sight, page), ...hostile, ...stateOf(sight, page) };
-    });
-    const creatures = [...new Set(Object.values(scene.copies).map((copy) => copy.creature))].map((creature) => {
-        const count = Object.values(scene.copies).filter((copy) => copy.creature === creature).length;
-        const page = knownPage(sight, creature);
-        // A kind the character does not know by the letter its copies have in the scene, as creature B, with more kinds (D-331).
-        const first = Object.keys(scene.copies).find((copy) => scene.copies[copy].creature === creature);
-        const name = first === undefined ? "creature" : strangerName(scene, first).replace(/\s*\d+$/, "");
-        // A kind is hostile when one of its copies is.
-        const hostile = Object.keys(scene.copies).some((copy) => scene.copies[copy].creature === creature && hostileMark(scene, copy).hostile === true) ? { hostile: true as const } : {};
-        // A kind of one copy shows its state; of more, each shows its own on the map and in Combat.
-        const state = count === 1 && first !== undefined ? stateOf(sight, copyPage(first, scene.copies[first])) : {};
-        const image = strangerPicture(sight, creature);
-        return page === undefined
-            ? { name, role: "other" as const, stranger: true as const, ...(image === undefined ? {} : { image }), count, ...hostile, ...state }
-            : { ...person(sight, page), count, ...hostile, ...state };
-    });
-    const turnName = (name: string): string => shownTurn(sight, scene, name);
-    // What who acts has used of the turn, as marks beside them, for the party alone: a foe's are the master's to tell (TRN-4, D-453).
-    const acting = scene.turn;
-    const ours = acting !== undefined && sight.party.some((page) => comparableText(page.name) === comparableText(acting));
-    const marks = ours ? turnMarks(campaignSystem(sight.root, sight.context), scene, acting) : [];
-    return {
-        title: scene.title,
-        type: scene.type,
-        ...(scene.opened === undefined ? {} : { since: scene.opened }),
-        ...(scene.now === undefined ? {} : { now: scene.now }),
-        ...(place === undefined ? {} : { place: place.name }),
-        who: [...characters, ...creatures],
-        ...(scene.order === undefined ? {} : { order: scene.order.map(turnName) }),
-        ...(scene.turn === undefined ? {} : { turn: turnName(scene.turn) }),
-        // The round only where the game has rounds (D-314 (3)): Ironsworn has none.
-        ...(scene.round === undefined || campaignSystem(sight.root, sight.context)?.roundSeconds === undefined ? {} : { round: scene.round }),
-        ...(marks.length === 0 ? {} : { marks }),
-        ...(scene.type === "combat" ? { fighters: fightersOf(sight, scene) } : {}),
-    };
-}
-
-/**
- * Who is in the open scene, by the words the page gives them (D-416): a character by name when the character knows them, else by what it sees of them, else
- * someone; a copy by its name when it knows its creature, else by what it sees of its kind and its number, else creature 1. Without the one left out, as whose view
- * a character agent's is (VIEW-10).
- */
-export function sceneNames(sight: PlaceSight, leftOut?: Page): string[]
-{
-    const { scene } = readOpenScene(sight.root);
-    const characters = scene === undefined ? [] : scene.with.map((link) => parsePageReference(link).name).filter((name) => leftOut === undefined || pagesWithName(sight.world, name)[0] !== leftOut);
-    const names = scene === undefined ? [] : [...characters, ...Object.keys(scene.copies)];
-    return scene === undefined ? [] : names.map((name) => shownTurn(sight, scene, name));
-}
-
 /** Everyone in a fight, in the order of the turns when there is one, else the characters then the copies; those the view cannot name are left out. */
 function fightersOf(sight: PlaceSight, scene: Scene): Fighter[]
 {
@@ -400,28 +433,6 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
         ...(keeps.length === 0 ? {} : { keeps }),
         ...(down ? { down: true as const } : {}),
     };
-}
-
-/** Whether someone of the party is down (D-516): at the value of the counter the system names, as hp 0, or below it; never the dead. */
-export function isDown(world: World, system: GameSystem | undefined, page: Page): boolean
-{
-    const down = system?.down;
-    const value = readCounter(pageCounters(world, page)[down?.field ?? ""])?.value;
-    return down !== undefined && page.fields.status !== "dead" && value !== undefined && value <= down.value;
-}
-
-/** An effect on someone of the party as the player sees it: an end at someone's turn names them as the character knows them (VIEW-4), as creature 2. */
-export function seenEffect(sight: PlaceSight, effect: Effect): SeenEffect
-{
-    const end = effect.end;
-    const system = campaignSystem(sight.root, sight.context);
-
-    if (end === undefined || !("turn" in end)) {
-        return effectParts(sight.world, system, effect, sight.words);
-    }
-
-    const scene = readOpenScene(sight.root).scene ?? { copies: {} };
-    return effectParts(sight.world, system, { ...effect, end: { ...end, turn: shownTurn(sight, scene, end.turn) } }, sight.words);
 }
 
 /**
@@ -544,17 +555,6 @@ function picture(sight: PlaceSight, page: Page): { file: string; version: number
 function strangerPicture(sight: PlaceSight, name: string | undefined): { file: string; version: number; } | undefined
 {
     return strangerImage(sight.root, sight.context, sight.world, name);
-}
-
-/** The picture of one the character does not know, as strangerPicture gives it, for the scene and for the rolls (D-420, D-421). */
-export function strangerImage(root: string, context: Context, world: World, name: string | undefined): { file: string; version: number; } | undefined
-{
-    // A roll keeps a renamed page by its old name, among its aliases (D-417).
-    const page = name === undefined ? undefined : pagesWithNameOrAlias(world, parsePageReference(name).name)[0];
-    const file = page === undefined || page.system !== undefined ? undefined : imageFile(root, context, ownImage(page));
-    // By a name of its bytes: the file's own is the page's, which the character does not know.
-    const hidden = file === undefined ? undefined : hiddenImageName(file);
-    return file === undefined || hidden === undefined ? undefined : { file: hidden, version: Math.trunc(files().modified(file) ?? 0) };
 }
 
 /** The page the character knows by a link or a name, of the campaign or of the system. */

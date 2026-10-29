@@ -7,6 +7,7 @@ import { builtIn, closedSquare, firstOpenSquare, type Grid, mapBlock, readGrid, 
 import { squareKinds } from "../../map/index.ts";
 import { environmentAt, links, locate, type MovePlan, type Page, pagesWithName, parsePageReference, type World, writePage } from "../../pages/index.ts";
 import type { Scene } from "../../scene/index.ts";
+import { scenePlace } from "./scene.ts";
 
 /** Someone or something on a place's map (GRD-3): the entry of `at` as written, the page or the copy of the open scene it names, and its square. */
 export interface Standing
@@ -120,7 +121,7 @@ export function offMapNote(world: World, place: Page | undefined, scene: Scene, 
 /** Takes copies of the open scene off the map of its place (GRD-3), as they leave, or the scene closes or goes elsewhere. */
 export function clearCopies(world: World, scene: Scene, names: string[]): void
 {
-    const place = scene.place === undefined ? undefined : pagesWithName(world, parsePageReference(scene.place).name)[0];
+    const place = scenePlace(world, scene);
     const gone = new Set(names.map(comparableText));
     const leaving = place === undefined ? [] : standing(world, place, scene).filter((one) => one.copy !== undefined && gone.has(comparableText(one.copy))).map((one) => one.entry);
 
@@ -130,26 +131,13 @@ export function clearCopies(world: World, scene: Scene, names: string[]): void
     }
 }
 
-/**
- * The square a page enters a place's map by (GRD-3): the open one that leads to where it comes from, the nearest of its containers first; none when no such
- * square leads there, or it comes from inside the place itself, as up from its cellar, or put down by one who is there.
- */
-function doorFrom(world: World, grid: Grid, page: Page, place: Page): Square | undefined
-{
-    const holders = locate(world, page).chain;
-    const inside = holders.findIndex((holder) => holder.path === place.path);
-    const chain = (inside === -1 ? holders : holders.slice(0, inside)).map((holder) => comparableText(holder.name));
-    const exits = grid.exits.filter((exit) => chain.includes(comparableText(exit.to)) && closedSquare(grid, exit.square) === undefined);
-    return exits.sort((first, second) => chain.indexOf(comparableText(first.to)) - chain.indexOf(comparableText(second.to)))[0]?.square;
-}
-
 /** What is wrong with the places' maps and with who stands where on them (GRD-2, GRD-3), for validate. */
 export function gridProblems(world: World, scene: Scene | undefined): Problem[]
 {
-    const scenePlace = scene?.place === undefined ? undefined : pagesWithName(world, parsePageReference(scene.place).name)[0];
+    const placeOfScene = scenePlace(world, scene);
     return world.pages.filter((page) => page.type === "place" && page.system === undefined).flatMap((place): Problem[] => {
         const map = placeGrid(place);
-        const placed = standing(world, place, scenePlace === place ? scene : undefined);
+        const placed = standing(world, place, placeOfScene === place ? scene : undefined);
 
         if (map === undefined) {
             return placed.length === 0 ? [] : [{ path: place.path, message: `${place.name} says who stands where, at, but has no map.`, fix: `write its map in a map block (GRD-1), or unset at` }];
@@ -167,6 +155,19 @@ export function gridProblems(world: World, scene: Scene | undefined): Problem[]
             ...twiceOn(place, placed),
         ];
     });
+}
+
+/**
+ * The square a page enters a place's map by (GRD-3): the open one that leads to where it comes from, the nearest of its containers first; none when no such
+ * square leads there, or it comes from inside the place itself, as up from its cellar, or put down by one who is there.
+ */
+function doorFrom(world: World, grid: Grid, page: Page, place: Page): Square | undefined
+{
+    const holders = locate(world, page).chain;
+    const inside = holders.findIndex((holder) => holder.path === place.path);
+    const chain = (inside === -1 ? holders : holders.slice(0, inside)).map((holder) => comparableText(holder.name));
+    const exits = grid.exits.filter((exit) => chain.includes(comparableText(exit.to)) && closedSquare(grid, exit.square) === undefined);
+    return exits.sort((first, second) => chain.indexOf(comparableText(first.to)) - chain.indexOf(comparableText(second.to)))[0]?.square;
 }
 
 /** Whether a symbol every map has keeps its own name and drawing, the legend saying nothing of it. */

@@ -14,7 +14,7 @@ import { packageCommands } from "../commands/shared/packages/code.ts";
 import { newChatText, wentBackTo } from "../commands/shared/saves.ts";
 import { campaignWorld } from "../commands/shared/world.ts";
 import { systemConfirm } from "../confirm/index.ts";
-import { type Context, defaultContext, packagesFolder, type Player } from "../core/context.ts";
+import { type Context, defaultContext, packagesFolder, type Player, playerWait } from "../core/context.ts";
 import { downloadBytes } from "../core/download.ts";
 import { type Examples, neutralExamples, withExamples } from "../core/examples.ts";
 import type { Command } from "../core/registry.ts";
@@ -31,9 +31,6 @@ import { type Dashboard, startDashboard } from "./dashboard/index.ts";
 
 type AnyCommand = Command<any, any>;
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
-
-// How long the player may take to click: as long as a host waits for a tool call that keeps reporting progress.
-const playerWait = 30 * 60 * 1000;
 
 // While the player decides, the call reports progress this often, so that a host does not take it for a call that hangs.
 const progressEvery = 20 * 1000;
@@ -190,6 +187,16 @@ export function dashboardOpener(context: Context, session: SessionStore, ports?:
     };
 }
 
+/** What a host reads of each of the core's tools in the campaign of this context's folder: its description, then its parameters', with the examples of its system (D-518). */
+export function toolDescriptions(context: Context): Record<string, string>
+{
+    const examples = examplesFor(context, new FileStore(context.systemFolders));
+    return Object.fromEntries(commands.map((command) => {
+        const fields = Object.values(shownInput(command, examples).properties ?? {}).map((field) => field.description ?? "");
+        return [command.name, [withExamples(command.description, examples), ...fields].join("\n")];
+    }));
+}
+
 /**
  * Reads the campaign of the server's folder, if there is one, before the first call needs it; a campaign that does not read waits for that call to say why.
  * Its start lines in AGENTS.md follow the engine, as after an update (D-97).
@@ -225,14 +232,13 @@ function extensionTools(server: McpServer, context: Context, handler: (command: 
 {
     // Each tool with the package and version that give it: another one in its place is registered anew.
     const registered = new Map<string, { tool: RegisteredTool; source: string; }>();
-    const taken = commands.map((command) => command.name);
     let running = Promise.resolve();
 
     const sync = async (): Promise<void> => {
         const store = context.files ?? new FileStore(context.systemFolders);
         const own = await withFiles(store, async () => {
             const root = findCampaign(context.folder);
-            return root === undefined ? { commands: [], sources: {} as Record<string, string> } : await packageCommands(root, context, taken);
+            return root === undefined ? { commands: [], sources: {} as Record<string, string> } : await packageCommands(root, context);
         });
 
         for (const command of own.commands) {
@@ -275,16 +281,6 @@ function toolConfig(command: AnyCommand, examples: Examples)
     const annotations = command.readOnly ? { readOnlyHint: true } : undefined;
     const meta = command.alwaysLoad ? { "anthropic/alwaysLoad": true } : undefined;
     return { description: withExamples(command.description, examples), inputSchema: shownSchema(command, examples), annotations, _meta: meta };
-}
-
-/** What a host reads of each of the core's tools in the campaign of this context's folder: its description, then its parameters', with the examples of its system (D-518). */
-export function toolDescriptions(context: Context): Record<string, string>
-{
-    const examples = examplesFor(context, new FileStore(context.systemFolders));
-    return Object.fromEntries(commands.map((command) => {
-        const fields = Object.values(shownInput(command, examples).properties ?? {}).map((field) => field.description ?? "");
-        return [command.name, [withExamples(command.description, examples), ...fields].join("\n")];
-    }));
 }
 
 /** The examples for the campaign of the server's folder, read through a store; neutral where it has none, or where it does not read. */
@@ -390,7 +386,9 @@ async function runTool(
     let news: { lines: string[]; restore(): void; } | undefined;
     let changedOutside: string[] = [];
     let installed: string[] = [];
-    // What the chat was told before the call: an answer that never goes tells nothing, so its parts are told again (D-97).
+    // The call tells its parts on a copy of what the chat was told, given back at its end: an answer that never goes tells nothing, so its parts are told again
+    // (D-97), and what a call beside it told stays told.
+    const before = new Set(context.told);
     const told = new Set(context.told);
     const chat = context.chat;
     const offered = chat?.dashboardOffered;
@@ -415,7 +413,7 @@ async function runTool(
         const back = chatAfterLoad(context, command.name, input);
 
         if (back.refused !== undefined) {
-            news = context.news?.();
+            news = context.news?.(told);
             return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), back.refused].join("\n\n") }], isError: true };
         }
 
@@ -429,12 +427,12 @@ async function runTool(
         // What changed outside the chat comes before the command runs on it, its events fired (OUT-3).
         changedOutside = outside.take();
         // The call's own context, with its cancel, as the user stopping it (ASK-9).
-        const text = command.format(await command.run(checked, { ...context, signal: extra.signal }));
+        const text = command.format(await command.run(checked, { ...context, told, signal: extra.signal }));
         // What the player changed on the dashboard comes first, once, what they changed while the call waited included (D-341).
-        news = context.news?.();
+        news = context.news?.(told);
         return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }] };
     } catch (error) {
-        news ??= context.news?.();
+        news ??= context.news?.(told);
         return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, error instanceof Error ? error.message : String(error)].join("\n\n") }], isError: true };
     } finally {
         clearInterval(keepAlive);
@@ -444,12 +442,14 @@ async function runTool(
             news?.restore();
             installer.giveBack(installed);
             outside.giveBack(changedOutside);
-            context.told?.clear();
-            told.forEach((name) => context.told?.add(name));
 
             if (chat !== undefined) {
                 chat.dashboardOffered = offered;
             }
+        }
+
+        if (!extra.signal.aborted) {
+            keepTold(context.told, before, told);
         }
 
         if (chat !== undefined) {
@@ -628,4 +628,11 @@ function reportProgress(extra: ToolExtra, saying: () => string): ReturnType<type
     return setInterval(() => {
         void extra.sendNotification({ method: "notifications/progress", params: { progressToken, progress: ++progress, message: saying() } }).catch(() => undefined);
     }, progressEvery);
+}
+
+/** What a call told, and what it took back as no longer so, brought into what the chat was told: never what another call beside it changed. */
+function keepTold(chat: Set<string> | undefined, before: Set<string>, after: Set<string>): void
+{
+    after.forEach((name) => (before.has(name) ? undefined : chat?.add(name)));
+    before.forEach((name) => (after.has(name) ? undefined : chat?.delete(name)));
 }

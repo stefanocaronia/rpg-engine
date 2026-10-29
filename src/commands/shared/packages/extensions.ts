@@ -123,21 +123,6 @@ export function campaignPageModules(root: string, context: Context, system: Game
     return [...systems, ...extensions];
 }
 
-/** A package's words in the campaign's language, when it is written in another; none when they are not there or do not read, which validate says. */
-function wordsIn(language: string | undefined, own: string, read: () => Record<string, string> | undefined): { words?: Record<string, string>; }
-{
-    if (language === undefined || language.split("-")[0] === own.split("-")[0]) {
-        return {};
-    }
-
-    try {
-        const words = read();
-        return words === undefined || Object.keys(words).length === 0 ? {} : { words };
-    } catch {
-        return {};
-    }
-}
-
 /** The address the dashboard serves a package's page module at: by the package's name and version, its folder's files beside it. */
 export function pageAddress(name: string, version: string, file: string): string
 {
@@ -171,6 +156,21 @@ export function extensionsLine(root: string, context: Context): string
 {
     const { extensions } = campaignExtensions(root, context);
     return extensions.length === 0 ? "" : `Extensions: ${extensions.map((extension) => `${extension.name} (${extension.about})`).join("; ")}.`;
+}
+
+/** A package's words in the campaign's language, when it is written in another; none when they are not there or do not read, which validate says. */
+function wordsIn(language: string | undefined, own: string, read: () => Record<string, string> | undefined): { words?: Record<string, string>; }
+{
+    if (language === undefined || language.split("-")[0] === own.split("-")[0]) {
+        return {};
+    }
+
+    try {
+        const words = read();
+        return words === undefined || Object.keys(words).length === 0 ? {} : { words };
+    } catch {
+        return {};
+    }
 }
 
 /** The fields of the core an extension declares among its fields or counters, which no extension may declare (D-505). */

@@ -5,14 +5,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { findCampaign, readTextSetting } from "../../campaign/index.ts";
 import { campaignSystem } from "../../commands/shared/world.ts";
-import type { CardAsked, Picked, Player, Rows, Said, SpendAsked, Spending } from "../../core/context.ts";
+import { type CardAsked, type Picked, type Player, playerWait, type Rows, type Said, type SpendAsked, type Spending } from "../../core/context.ts";
 import { withFiles } from "../../core/store.ts";
 import { rollName } from "../../systems/index.ts";
 import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
 import type { Served } from "./index.ts";
-
-// How long the page waits for the player's click: as long as a host waits for a call that keeps reporting progress, as ask does with a form.
-const playerWait = 30 * 60 * 1000;
 
 /** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */
 export interface Asked
@@ -196,7 +193,6 @@ export async function answerAsked(request: IncomingMessage, response: ServerResp
     }
 }
 
-/** Whether a page is seen now, as it says when it comes in sight or goes out of it (D-455): a question on pages no one sees goes to the chat. */
 /** The player closed a package's card that its call left (D-507): it is gone on every page and every device, and after a reload. */
 export async function closeCard(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
@@ -215,6 +211,7 @@ export async function closeCard(request: IncomingMessage, response: ServerRespon
     sendJson(response, 202, {});
 }
 
+/** Whether a page is seen now, as it says when it comes in sight or goes out of it (D-455): a question on pages no one sees goes to the chat. */
 export async function pageSeen(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
     const parsed = z.object({ page: z.string().min(1).max(64), seen: z.boolean() }).strict().safeParse(await readBody(request));

@@ -19,7 +19,7 @@ export const validate = defineCommand({
     {
         const root = requireCampaign(context.folder);
         // And what keeps an extension's code from being used, which only loading it tells (D-441).
-        return { problems: [...campaignProblems(root, campaignWorld(root, context), context), ...await packageCodeProblems(root, context, []), ...stateCheckProblems(root, context)] };
+        return { problems: [...campaignProblems(root, campaignWorld(root, context), context), ...await packageCodeProblems(root, context), ...stateCheckProblems(root, context)] };
     },
 
     format(result)

@@ -1,13 +1,16 @@
 // The player's yes to the code of a package not ours, an extension's or a game system's (D-478, D-510, D-511): kept on this computer beside the packages npm
 // installed, never in a campaign, for the package, its version and the fingerprint of its files; any other version, or a file changed since, has no yes.
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { installedFromFolder } from "./files.ts";
 import { files } from "./store.ts";
 
 /** The file of the yeses, beside the folder of the packages npm installed. */
 const consentsFile = "consents.json";
+
+// An npm package's name, as a dependency is listed: never a path.
+const npmName = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
 
 /** The npm scope of the packages RPG Engine publishes, verified: their code runs without a yes (D-441). */
 export const ourScope = "@rpgengine/";
@@ -34,12 +37,13 @@ export function packageCodeMayRun(folder: string): boolean
 type Consents = Record<string, { version: string; fingerprint: string; }>;
 
 /**
- * The fingerprint of a package's files as installed: every file but those npm or git keep beside them, by its path and its bytes. Worked out again only when
- * a file's size or time changed: it is asked at each load of the package's code.
+ * The fingerprint of a package's files as installed, and of its dependencies' as npm resolved them: every file but those npm or git keep beside them, by its
+ * path and its bytes, so that a dependency another install changed asks the yes again. Worked out again only when a file's size or time changed: it is asked
+ * at each load of the package's code.
  */
 export function packageFingerprint(folder: string): string
 {
-    const paths = packageFiles(folder);
+    const paths = withDependencies(folder).flatMap(packageFiles);
     const signature = paths.map((path) => {
         const stat = statSync(path);
         return `${path}|${stat.size}|${stat.mtimeMs}`;
@@ -107,6 +111,52 @@ function readConsents(file: string): Consents
         return typeof read === "object" && read !== null && !Array.isArray(read) ? (read as Consents) : {};
     } catch {
         return {};
+    }
+}
+
+/** A package's folder and those of its dependencies, and theirs in turn, each found as Node finds it: in a node_modules here or in a folder above. */
+function withDependencies(folder: string): string[]
+{
+    const found = [folder];
+
+    for (let at = 0; at < found.length; at++) {
+        for (const name of dependencyNames(found[at])) {
+            const dependency = dependencyFolder(found[at], name);
+
+            if (dependency !== undefined && !found.includes(dependency)) {
+                found.push(dependency);
+            }
+        }
+    }
+
+    return found;
+}
+
+/** The names of a package's dependencies, as its package.json lists them to run; none that is not an npm name. */
+function dependencyNames(folder: string): string[]
+{
+    try {
+        const manifest = JSON.parse(readFileSync(join(folder, "package.json"), "utf8")) as { dependencies?: unknown; optionalDependencies?: unknown; };
+        const listed = [manifest.dependencies, manifest.optionalDependencies].flatMap((list) => (typeof list === "object" && list !== null ? Object.keys(list) : []));
+        return listed.filter((name) => npmName.test(name)).sort();
+    } catch {
+        return [];
+    }
+}
+
+/** Where Node finds a dependency of a package: the nearest node_modules that holds it, from the package's own folder up; undefined when none does. */
+function dependencyFolder(from: string, name: string): string | undefined
+{
+    for (let folder = from;; folder = dirname(folder)) {
+        const candidate = join(folder, "node_modules", ...name.split("/"));
+
+        if (existsSync(join(candidate, "package.json"))) {
+            return candidate;
+        }
+
+        if (dirname(folder) === folder) {
+            return undefined;
+        }
     }
 }
 

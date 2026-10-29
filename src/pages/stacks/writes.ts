@@ -80,6 +80,40 @@ export function checkStacks(world: World, holder: Page, field: string, before: u
     }
 }
 
+/**
+ * What a count beside a link to no page means (STK-10): a name of a kind, as Arrows (20), in its units; else the system's kinds go by their English names, and a word
+ * of the campaign's language is their label, as [[Torch|torcia]] 3; only what the system lacks becomes a kind of the campaign. Said by write and validate.
+ */
+export function missingKindMessage(world: World, holder: Page, field: string, read: { page: string; count: number; }): string
+{
+    const named = goodsNamed(world, read.page);
+
+    if (named !== undefined) {
+        const bundle = bundleOf(world.system?.load?.bundle, named);
+        const pieces = read.count * bundle;
+        const unit = bundle > 1 ? `counted in pieces, ${bundle} for each bought` : "counted in the units the system sells it in";
+        return `There is no page named ${read.page}, but it is a name of ${named.name}, ${unit}: write ${holder.name}, add ${field}="[[${named.name}]] ${pieces}".`;
+    }
+
+    const campaignKind = `Only what the system lacks becomes a kind of the campaign, written first: write "${read.page}", type item.`;
+    const near = goodsLike(world, read.page);
+
+    if (near.length > 0) {
+        return `There is no page named ${read.page}, so [[${read.page}]] ${read.count} counts nothing. The system has ${near.map((page) => page.name).join(", ")}: if it is one of them, `
+            + `write ${holder.name}, add ${field}="[[${near[0].name}]] ${read.count}". ${campaignKind}`;
+    }
+
+    return `There is no page named ${read.page}, so [[${read.page}]] ${read.count} counts nothing. The system's kinds go by their English names, as find shows them: write the one it has `
+        + `with your word as its label, such as write ${holder.name}, add ${field}="[[Torch|${read.page.toLowerCase()}]] ${read.count}". ${campaignKind}`;
+}
+
+/** Whether a name leads to a kind, counted as a stack of 1 when its link stands alone (STK-1). */
+export function isKindNamed(world: World, name: string): boolean
+{
+    const page = entryPage(world, name);
+    return page !== undefined && isKind(world, page);
+}
+
 /** A count beside a link counts only a kind (STK-1, STK-10): never a page with a story of its own, nor one that is not there, which the message tells how to find or make. */
 function checkCounted(world: World, holder: Page, field: string, read: { page: string; count: number; }, page: Page | undefined): void
 {
@@ -110,33 +144,6 @@ function checkCountedText(world: World, holder: Page, field: string, entry: stri
     }
 }
 
-/**
- * What a count beside a link to no page means (STK-10): a name of a kind, as Arrows (20), in its units; else the system's kinds go by their English names, and a word
- * of the campaign's language is their label, as [[Torch|torcia]] 3; only what the system lacks becomes a kind of the campaign. Said by write and validate.
- */
-export function missingKindMessage(world: World, holder: Page, field: string, read: { page: string; count: number; }): string
-{
-    const named = goodsNamed(world, read.page);
-
-    if (named !== undefined) {
-        const bundle = bundleOf(world.system?.load?.bundle, named);
-        const pieces = read.count * bundle;
-        const unit = bundle > 1 ? `counted in pieces, ${bundle} for each bought` : "counted in the units the system sells it in";
-        return `There is no page named ${read.page}, but it is a name of ${named.name}, ${unit}: write ${holder.name}, add ${field}="[[${named.name}]] ${pieces}".`;
-    }
-
-    const campaignKind = `Only what the system lacks becomes a kind of the campaign, written first: write "${read.page}", type item.`;
-    const near = goodsLike(world, read.page);
-
-    if (near.length > 0) {
-        return `There is no page named ${read.page}, so [[${read.page}]] ${read.count} counts nothing. The system has ${near.map((page) => page.name).join(", ")}: if it is one of them, `
-            + `write ${holder.name}, add ${field}="[[${near[0].name}]] ${read.count}". ${campaignKind}`;
-    }
-
-    return `There is no page named ${read.page}, so [[${read.page}]] ${read.count} counts nothing. The system's kinds go by their English names, as find shows them: write the one it has `
-        + `with your word as its label, such as write ${holder.name}, add ${field}="[[Torch|${read.page.toLowerCase()}]] ${read.count}". ${campaignKind}`;
-}
-
 /** The system's goods whose names hold a word, the shortest first, as Arrows for Arrow: for a refusal to name them, which saves a find (STK-10). */
 function goodsLike(world: World, word: string): Page[]
 {
@@ -153,11 +160,4 @@ function kindOfEntry(world: World): (entry: string) => string[]
         const counted = page !== undefined && (isKind(world, page) || (read.shape === "stack" && notKindReason(world, page) === undefined));
         return counted && page !== undefined ? [page.name] : [];
     };
-}
-
-/** Whether a name leads to a kind, counted as a stack of 1 when its link stands alone (STK-1). */
-export function isKindNamed(world: World, name: string): boolean
-{
-    const page = entryPage(world, name);
-    return page !== undefined && isKind(world, page);
 }

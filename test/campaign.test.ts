@@ -40,6 +40,16 @@ afterEach(() => removeFolder(folder));
 const bell = { type: "command", command: "rpg --listen", asyncRewake: true, timeout: 86_400 };
 
 describe("rpg init", () => {
+    it("refuses an empty name, with how to give one, and writes nothing", async () => {
+        for (const name of ["", "   "]) {
+            const ran = await runCommandLine(["init", "--name", name], context);
+            expect(ran.exitCode).toBe(1);
+            expect(ran.output).toContain("give the campaign a name, or leave name out for the folder's");
+        }
+
+        expect(existsSync(join(folder, "campaign.yaml"))).toBe(false);
+    });
+
     // Windows has no mode to take away; there a folder such as System Volume Information is one.
     it.skipIf(process.platform === "win32")("creates a campaign beside a folder that cannot be read, which it passes over", async () => {
         const locked = join(folder, "chiusa");

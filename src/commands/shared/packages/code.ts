@@ -11,7 +11,7 @@ import { type Formula, parseFormula } from "../../../core/formula.ts";
 import { appendLogEntry } from "../../../core/log.ts";
 import type { Asked, Asking, ButtonWords, Game, GameMoment, GamePage, GameView, PackageCode, PackageCommand, PackageEntry, Rolled, RollFor, WidgetText, WidgetValue } from "../../../core/package-api.ts";
 import type { Problem } from "../../../core/problem.ts";
-import { type Command, defineCommand } from "../../../core/registry.ts";
+import { type Command, commandLineFieldProblem, defineCommand } from "../../../core/registry.ts";
 import { files } from "../../../core/store.ts";
 import { sameName, sameWord, valueNamed } from "../../../core/text.ts";
 import { getVersion } from "../../../core/version.ts";
@@ -68,8 +68,9 @@ export function packageLabel(code: CodePackage): string
  * The commands of the campaign's packages whose code may run (D-63, D-428, D-441), as commands of rpg-engine: each runs with the game of D-436 and gives the
  * master its text; by name, the package and version that give it, so that a server knows when another takes its place.
  */
-export async function packageCommands(root: string, context: Context, taken: string[]): Promise<{ commands: Command[]; sources: Record<string, string>; problems: Problem[]; }>
+export async function packageCommands(root: string, context: Context): Promise<{ commands: Command[]; sources: Record<string, string>; problems: Problem[]; }>
 {
+    const taken = await engineCommandNames();
     const commands: Command[] = [];
     const sources: Record<string, string> = {};
     const problems: Problem[] = [];
@@ -96,8 +97,9 @@ export async function packageCommands(root: string, context: Context, taken: str
 }
 
 /** The names of a package's commands, its code loaded and checked as the campaign would use it; it throws what keeps it from being used. */
-export async function packageCommandNames(code: CodePackage, context: Context, taken: string[]): Promise<string[]>
+export async function packageCommandNames(code: CodePackage, context: Context): Promise<string[]>
 {
+    const taken = await engineCommandNames();
     const names: string[] = [];
 
     for (const command of (await packageCode(code, context))?.commands ?? []) {
@@ -114,9 +116,9 @@ export function packagesInstalled(): void
 }
 
 /** What keeps the code of the campaign's packages from being used, for validate and status: it loads them. */
-export async function packageCodeProblems(root: string, context: Context, taken: string[]): Promise<Problem[]>
+export async function packageCodeProblems(root: string, context: Context): Promise<Problem[]>
 {
-    return (await packageCommands(root, context, taken)).problems;
+    return (await packageCommands(root, context)).problems;
 }
 
 /**
@@ -213,7 +215,7 @@ export async function loadCampaignCode(context: Context): Promise<void>
         const root = findCampaign(context.folder);
 
         if (root !== undefined) {
-            await packageCommands(root, context, []);
+            await packageCommands(root, context);
         }
     } catch {
         // A campaign that does not read loads nothing: the command says why.
@@ -248,10 +250,6 @@ export async function loadNewSystemCode(context: Context): Promise<void>
     }
 }
 
-/** The most a package says in one call, after the engine's writes or as time passes, in lines and in characters; what is more is cut, with a line. */
-const mostLines = 5;
-const mostCharacters = 600;
-
 /** A package's lines for the master, cut at the most it may say in one call, with a line that says so. */
 export function cappedLines(code: CodePackage, lines: string[]): string[]
 {
@@ -268,12 +266,6 @@ export function cappedLines(code: CodePackage, lines: string[]): string[]
     }
 
     return kept;
-}
-
-/** A package that is an extension. */
-function isExtension(code: CodePackage): code is Extension
-{
-    return code.kind === "extension";
 }
 
 /**
@@ -432,6 +424,34 @@ export function firstLine(error: unknown): string
     return (error instanceof Error ? error.message : String(error)).split("\n")[0].replace(/[:.]$/, "");
 }
 
+/**
+ * A system's code as the engine loaded it, or why it is not there: not loaded, loaded at another version than the one installed now, refused or broken; undefined
+ * when it brings none.
+ */
+/** Whether a package's code is refused, as another's without the player's yes, one made for another API or with commands refused: said once, not at each call. */
+export function codeRefused(code: CodePackage, context: Context): boolean
+{
+    const loaded = context.systemCode?.[code.name];
+    return isExtension(code) ? refused.has(codeKey(code)) : loaded !== undefined && "refused" in loaded;
+}
+
+/** The names of rpg-engine's own commands, which no package's command may take; read when needed, as the list of commands holds this module. */
+async function engineCommandNames(): Promise<string[]>
+{
+    return (await import("../../index.ts")).commands.map((command) => command.name);
+}
+
+/** The most a package says in one call, after the engine's writes or as time passes, in lines and in characters; what is more is cut, with a line. */
+const mostLines = 5;
+
+const mostCharacters = 600;
+
+/** A package that is an extension. */
+function isExtension(code: CodePackage): code is Extension
+{
+    return code.kind === "extension";
+}
+
 function systemCodePackage(system: GameSystem): CodePackage
 {
     const own = systemPackage(system.folder);
@@ -558,14 +578,25 @@ function checkCommandShape(command: PackageCommand): void
     if (typeof given.run !== "function") {
         throw new Error(`its command ${name} has no run: give it run(input, game), which gives its answer as text`);
     }
+
+    // A field the command line would read as something else is refused at once, never lost when the command runs.
+    const positionals = Array.isArray(given.positionals) ? given.positionals : [];
+    const problem = Object.keys(given.input.shape).map((field) => commandLineFieldProblem(`its command ${name}`, field, positionals.includes(field))).find((found) => found !== undefined);
+
+    if (problem !== undefined) {
+        throw new Error(problem.replace(/: rename it\.$/, ": rename it"));
+    }
 }
 
 // The code of each extension, by its file and version, loaded once for the process: an import is never undone, a new version is another. What each gave,
 // once loaded, is kept apart too, for the hooks the commands call at once.
 const loaded = new Map<string, Promise<PackageCode | undefined>>();
+
 const ready = new Map<string, PackageCode>();
+
 // Why the code of a package at a version and its installs is left out, as its commands are refused: its hooks are not called.
 const refused = new Map<string, string>();
+
 let installs = 0;
 
 /** An extension's code, when it may run (D-441): its module's default export, given the kit; where the engine runs from its source, as in the tests, from its own. */
@@ -594,17 +625,6 @@ function extensionCode(extension: Extension): Promise<PackageCode | undefined>
 function codeKey(code: CodePackage): string
 {
     return `${code.package}@${code.version}#${installs}`;
-}
-
-/**
- * A system's code as the engine loaded it, or why it is not there: not loaded, loaded at another version than the one installed now, refused or broken; undefined
- * when it brings none.
- */
-/** Whether a package's code is refused, as another's without the player's yes, one made for another API or with commands refused: said once, not at each call. */
-export function codeRefused(code: CodePackage, context: Context): boolean
-{
-    const loaded = context.systemCode?.[code.name];
-    return isExtension(code) ? refused.has(codeKey(code)) : loaded !== undefined && "refused" in loaded;
 }
 
 function systemCode(code: CodePackage, context: Context): PackageCode | string | undefined

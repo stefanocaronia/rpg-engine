@@ -19,6 +19,12 @@ export interface ClosedScene
 
 const closedSceneSchema = z.looseObject({ title: z.string(), type: z.string(), summary: z.string() });
 
+/** The place where the open scene is, where its copies are (ENV-2); none when there is no scene, or it is in no place that exists. */
+export function scenePlace(world: World, scene: Scene | undefined): Page | undefined
+{
+    return scene?.place === undefined ? undefined : pagesWithName(world, parsePageReference(scene.place).name)[0];
+}
+
 /** The open scene, or the problem that keeps state.yaml from giving it; neither when no scene is open. */
 export function readOpenScene(root: string): { scene?: Scene; problem?: Problem; }
 {
@@ -159,15 +165,6 @@ export function checkNotSystemPage(world: World, open: { scene?: Scene; }, page:
     throw new Error(page.type === "creature" ? `${kindMessage(page)} Nothing changed.` : readOnlyMessage(page, [], world));
 }
 
-/** The copies in the scene that read from a page, directly or through a variant, with their counters: "Annegato 1 (hp 22/22)". */
-function copiesReadingFrom(world: World, scene: Scene, page: Page): string[]
-{
-    return Object.entries(scene.copies).filter(([name, copy]) => baseChain(world, copyPage(name, copy)).includes(page)).map(([name, copy]) => {
-        const counters = countersText(copyCounters(world, copy));
-        return counters === "" ? name : `${name} (${counters})`;
-    });
-}
-
 /**
  * "in the files Ettore is in Mulino abbandonato: if they are in Ossario, move, page Ettore, to Ossario; if they left the scene, scene leave Ettore": the living members
  * of the party in a scene whom the files put elsewhere, as a hand-made change may leave them (CON-8). Empty when there are none, or the scene is a travel one.
@@ -287,6 +284,15 @@ export function sceneProblems(root: string, world: World): Problem[]
         fix: "close the scene, which removes the copy, or rename the page",
     }));
     return [...missing, ...clashes];
+}
+
+/** The copies in the scene that read from a page, directly or through a variant, with their counters: "Annegato 1 (hp 22/22)". */
+function copiesReadingFrom(world: World, scene: Scene, page: Page): string[]
+{
+    return Object.entries(scene.copies).filter(([name, copy]) => baseChain(world, copyPage(name, copy)).includes(page)).map(([name, copy]) => {
+        const counters = countersText(copyCounters(world, copy));
+        return counters === "" ? name : `${name} (${counters})`;
+    });
 }
 
 /** One line of the log as the open scene's log gives it, or nothing for a line it leaves out, such as a turn passing, a save, or one written by hand without what it needs. */

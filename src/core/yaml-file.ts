@@ -27,8 +27,8 @@ export function writeYamlFile(path: string, document: Document): void
 function documentOf(path: string, text: string, holds: string): Document
 {
     const document = parseDocument(text);
-    // Only the first line of the parser's message: the rest quotes the file.
-    const invalid = (message: string): Error => new Error(`${basename(path)} is not valid YAML; fix it by hand: ${message.split("\n")[0]}`);
+    // Only the first line of the parser's message, without the colon that leads to the rest, which quotes the file.
+    const invalid = (message: string): Error => new Error(`${basename(path)} is not valid YAML; fix it by hand: ${message.split("\n")[0].replace(/:\s*$/, "")}`);
 
     if (document.errors.length > 0) {
         throw invalid(document.errors[0].message);

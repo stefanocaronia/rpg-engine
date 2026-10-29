@@ -22,28 +22,6 @@ export function declaredKind(world: World, field: string): FieldKind | undefined
     return fields === undefined ? undefined : kindsOf(fields).get(comparableText(field));
 }
 
-/** The kinds a system declares, by the name as it is compared, the first written winning: built once for each system, as every field read asks (D-194). */
-function kindsOf(fields: Record<string, FieldKind>): Map<string, FieldKind>
-{
-    let kinds = kindsByFields.get(fields);
-
-    if (kinds === undefined) {
-        kinds = new Map();
-
-        for (const [name, kind] of Object.entries(fields)) {
-            if (!kinds.has(comparableText(name))) {
-                kinds.set(comparableText(name), kind);
-            }
-        }
-
-        kindsByFields.set(fields, kinds);
-    }
-
-    return kinds;
-}
-
-const kindsByFields = new WeakMap<Record<string, FieldKind>, Map<string, FieldKind>>();
-
 /** Whether the game system declares a field as something never counted: a number, text or a list, such as cr 1/4 or cost 15 gp (SYS-8). */
 export function isDeclaredUncounted(world: World, field: string): boolean
 {
@@ -143,3 +121,25 @@ export function kindMessage(page: Page): string
     return `${page.name} is ${systemLabel(page)}, a kind and read-only: one in a fight is a copy, brought in with scene, creatures ${page.name}=1; `
         + `one with a name of its own is a character with creature=[[${page.name}]].`;
 }
+
+/** The kinds a system declares, by the name as it is compared, the first written winning: built once for each system, as every field read asks (D-194). */
+function kindsOf(fields: Record<string, FieldKind>): Map<string, FieldKind>
+{
+    let kinds = kindsByFields.get(fields);
+
+    if (kinds === undefined) {
+        kinds = new Map();
+
+        for (const [name, kind] of Object.entries(fields)) {
+            if (!kinds.has(comparableText(name))) {
+                kinds.set(comparableText(name), kind);
+            }
+        }
+
+        kindsByFields.set(fields, kinds);
+    }
+
+    return kinds;
+}
+
+const kindsByFields = new WeakMap<Record<string, FieldKind>, Map<string, FieldKind>>();

@@ -14,6 +14,8 @@ const saveFilePattern = /^(\d{3,}) - (.+)\.zip$/;
 const notInFileNames = /[\\/:*?"<>|\u0000-\u0008\u000e-\u001f]/g;
 // The longest label a file name takes, in characters, never cutting one in two.
 const longestLabel = 120;
+// The most a save unpacks to: a campaign's pages and pictures, never the memory of the computer.
+const largestSave = 1024 * 1024 * 1024;
 
 /** A zip of files, given by their paths inside it with forward slashes, such as world/characters/Kira.md. */
 export function packFiles(files: Record<string, Uint8Array>): Uint8Array
@@ -21,10 +23,22 @@ export function packFiles(files: Record<string, Uint8Array>): Uint8Array
     return zipSync(files, { level: 6 });
 }
 
-/** The files a zip holds, by their paths inside it; folders are left out. */
-export function unpackFiles(zip: Uint8Array): Record<string, Uint8Array>
+/** The files a zip holds, by their paths inside it; folders are left out. It throws before unpacking a zip that would weigh more than `most` bytes. */
+export function unpackFiles(zip: Uint8Array, most = largestSave): Record<string, Uint8Array>
 {
-    return Object.fromEntries(Object.entries(unzipSync(zip)).filter(([path]) => !path.endsWith("/")));
+    let declared = 0;
+    const read = unzipSync(zip, {
+        filter: (file) => {
+            declared += file.originalSize;
+
+            if (declared > most) {
+                throw new Error(`it unpacks to more than ${Math.round(most / 1024 / 1024)} MB, more than a save may`);
+            }
+
+            return true;
+        },
+    });
+    return Object.fromEntries(Object.entries(read).filter(([path]) => !path.endsWith("/")));
 }
 
 /** The file name of a save: its number, then the game date and the label it has, such as "003 - day 2, 06.10 - Scontro all'ossario.zip". */

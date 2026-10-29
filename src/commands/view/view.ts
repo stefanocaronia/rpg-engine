@@ -540,6 +540,24 @@ export const view = defineCommand({
     },
 });
 
+/**
+ * A save as the dashboard shows it (D-359): its number and label, the words that name it and the game date, when it was made in real time, the place the party
+ * was in with its kind and picture, the point of a reset it is, and whether the player may go back to it, never to such a point, which is a reset's (D-361).
+ */
+export interface ShownSave
+{
+    number: number;
+    label: string;
+    name?: string;
+    date?: string;
+    at?: string;
+    place?: string;
+    kind?: string;
+    picture?: { file: string; version: number; };
+    point?: ResetPoint;
+    load: boolean;
+}
+
 /** A page as the one whose view it is knows it (VIEW-3): its text, and the whole sheet when it is theirs or of their party. */
 function shownPage(root: string, context: Context, world: World, knowledge: Knowledge, page: Page, party: boolean): Extract<ViewResult, { kind: "page"; }>
 {
@@ -1105,24 +1123,6 @@ function valueCoins(value: SheetValue, coins: Coin[] | undefined, system: GameSy
 function settingText(setting: PlayerSetting): string
 {
     return setting.items === undefined ? (setting.value ?? "(not chosen)") : setting.items.length === 0 ? "(none)" : setting.items.join(", ");
-}
-
-/**
- * A save as the dashboard shows it (D-359): its number and label, the words that name it and the game date, when it was made in real time, the place the party
- * was in with its kind and picture, the point of a reset it is, and whether the player may go back to it, never to such a point, which is a reset's (D-361).
- */
-export interface ShownSave
-{
-    number: number;
-    label: string;
-    name?: string;
-    date?: string;
-    at?: string;
-    place?: string;
-    kind?: string;
-    picture?: { file: string; version: number; };
-    point?: ResetPoint;
-    load: boolean;
 }
 
 /** The saves, newest first, each with whether the mode lets the player go back to it; whether they may make one, and the points they may start over from (D-359). */

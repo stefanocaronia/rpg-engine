@@ -139,6 +139,12 @@ export function mapText(map: ShownMap): string
     ].filter((block) => block !== "").join("\n");
 }
 
+/** A place's kind as the page writes it (POS-7), such as village; undefined when it has none, or an empty one (D-107). */
+export function placeKind(page: Page): string | undefined
+{
+    return typeof page.fields.kind === "string" && page.fields.kind.trim() !== "" ? page.fields.kind.trim() : undefined;
+}
+
 /** A place as the map shows it; none for one neither drawn nor held by a place that is. Its distance from the party only on the party's map. */
 function mapPlace(sight: PlaceSight, roads: Roads, page: Page, known: (page: Page) => boolean, party: { at: Point; map: string; } | undefined): MapPlace | undefined
 {
@@ -391,10 +397,4 @@ function fromText(from: NonNullable<MapPlace["from"]>, unit: ShownMap["unit"]): 
 function km(metres: number): number
 {
     return Math.round(metres / 10) / 100;
-}
-
-/** A place's kind as the page writes it (POS-7), such as village; undefined when it has none, or an empty one (D-107). */
-export function placeKind(page: Page): string | undefined
-{
-    return typeof page.fields.kind === "string" && page.fields.kind.trim() !== "" ? page.fields.kind.trim() : undefined;
 }

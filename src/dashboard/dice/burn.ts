@@ -1,4 +1,4 @@
-// A die that does not count burns away (D-358): going out in a blink (D-414), it stays a moment where it fell, then consumed as paper by a fire, holes opening through it with a glowing,
+// A die that does not count burns away (D-358): going out in a blink (D-538), it stays a moment where it fell, then consumed as paper by a fire, holes opening through it with a glowing,
 // charred edge, until nothing is left; with reduced motion it fades instead. A die that shows its lowest face cracks, dark lines spreading from a point, no
 // fire (D-363, D-382). Its materials, body and ink, burn or crack together, by its own shape.
 import * as THREE from "three";

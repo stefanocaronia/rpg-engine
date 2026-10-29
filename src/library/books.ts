@@ -220,6 +220,36 @@ const loaded = new Map<string, { stamp: string; index: BookIndex | undefined; }>
 // Readers that stopped on a book before it is skipped: a book too big or broken for them.
 const mostReaders = 2;
 
+/** Moves a file written whole into its place; again for a moment while another process reads the old one, which Windows refuses. */
+export function replaceFile(written: string, file: string): void
+{
+    for (let attempt = 1;; attempt++) {
+        try {
+            renameSync(written, file);
+            return;
+        } catch (error) {
+            if (attempt >= 20 || !["EPERM", "EBUSY", "EACCES"].includes((error as NodeJS.ErrnoException).code ?? "")) {
+                throw error;
+            }
+
+            Atomics.wait(pause, 0, 0, 10);
+        }
+    }
+}
+
+/** A path as the same file, however it is written: in any case on Windows, where a path is the same in any case. */
+export function pathKey(path: string): string
+{
+    return process.platform === "win32" ? resolve(path).toLowerCase() : resolve(path);
+}
+
+/** Whether a path is the entry or lies inside it. */
+export function isWithin(entry: string, path: string): boolean
+{
+    const inside = relative(pathKey(entry), pathKey(path));
+    return inside === "" || (inside.split(sep)[0] !== ".." && !isAbsolute(inside));
+}
+
 /** The documents of the entries, each once however its path is written, in order of path; the entries that are not there, and those with too many. */
 function libraryFiles(entries: string[], scope: LibraryScope): { found: FoundFile[]; missing: string[]; crowded: string[]; }
 {
@@ -410,23 +440,6 @@ function writeIndex(folder: string, index: BookIndex): void
     replaceFile(`${file}.part`, file);
 }
 
-/** Moves a file written whole into its place; again for a moment while another process reads the old one, which Windows refuses. */
-export function replaceFile(written: string, file: string): void
-{
-    for (let attempt = 1;; attempt++) {
-        try {
-            renameSync(written, file);
-            return;
-        } catch (error) {
-            if (attempt >= 20 || !["EPERM", "EBUSY", "EACCES"].includes((error as NodeJS.ErrnoException).code ?? "")) {
-                throw error;
-            }
-
-            Atomics.wait(pause, 0, 0, 10);
-        }
-    }
-}
-
 const pause = new Int32Array(new SharedArrayBuffer(4));
 
 /**
@@ -448,19 +461,6 @@ function dropGone(folder: string): void
 function indexFile(folder: string, path: string): string
 {
     return join(folder, `${createHash("sha1").update(pathKey(path)).digest("hex").slice(0, 16)}.json`);
-}
-
-/** A path as the same file, however it is written: in any case on Windows, where a path is the same in any case. */
-export function pathKey(path: string): string
-{
-    return process.platform === "win32" ? resolve(path).toLowerCase() : resolve(path);
-}
-
-/** Whether a path is the entry or lies inside it. */
-export function isWithin(entry: string, path: string): boolean
-{
-    const inside = relative(pathKey(entry), pathKey(path));
-    return inside === "" || (inside.split(sep)[0] !== ".." && !isAbsolute(inside));
 }
 
 function lockFile(folder: string): string

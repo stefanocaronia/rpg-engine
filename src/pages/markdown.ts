@@ -191,124 +191,10 @@ const rememberedLinks = rememberedByText((text: string): Link[] => {
     return lineViews(text.split("\n")).flatMap((view) => [...view.prose.matchAll(linkPattern)].filter((match) => !isAttachment(match[1])).map((match) => linkOf(match[1], match[2])));
 }, 20_000);
 
-/** Whether a link's target is a file of another kind, as ![[map.png]]: an attachment, not a page, which may have a dot in its name, as Lettera n.7 (LNK-1). */
-function isAttachment(target: string): boolean
-{
-    const extension = /\.([a-z0-9]+)$/i.exec(target.trim())?.[1]?.toLowerCase();
-    return extension !== undefined && attachmentExtensions.has(extension);
-}
-
 /** Removes the blank lines at the start and the white space at the end. */
 export function trimBlankLines(text: string): string
 {
     return text.replace(/^(?:[ \t]*\n)+/, "").trimEnd();
-}
-
-/** The new text of a range: added to the old one, or in its place, keeping the secret blocks that the new text does not write again. */
-function newContent(lines: string[], range: Range, newText: string, mode: TextMode): string
-{
-    if (mode === "append") {
-        return joinBlocks(lines.slice(range.start, range.end).join("\n"), newText);
-    }
-
-    const rewritten = secretNames(newText).map(comparableText);
-    const kept = secretsWithin(lines, range).filter((secret) => !rewritten.includes(comparableText(secret.title)));
-    return joinBlocks(newText, ...kept.map((secret) => lines.slice(secret.start, secret.end).join("\n")));
-}
-
-/** Removes a section with its own text; one with subsections or secrets is refused, so that nothing ends up elsewhere or is lost. */
-function removeSection(lines: string[], title: string, own: Range): string
-{
-    if (findSection(lines, title, "whole")?.end !== own.end) {
-        throw new Error(`"${title}" has subsections: remove them first, then the section.`);
-    }
-
-    const [secret] = secretsWithin(lines, { start: own.start + 1, end: own.end });
-
-    if (secret !== undefined) {
-        throw new Error(`"${title}" holds the secret "${secret.title}": remove or move it first, then the section.`);
-    }
-
-    return joinBlocks(lines.slice(0, own.start).join("\n"), lines.slice(own.end).join("\n"));
-}
-
-/** Text as the quoted lines of a secret block. */
-function quoteLines(text: string): string[]
-{
-    return trimBlankLines(text).split("\n").map((line) => (line === "" ? ">" : `> ${line}`));
-}
-
-function joinBlocks(...blocks: string[]): string
-{
-    return blocks.map(trimBlankLines).filter((block) => block !== "").join("\n\n");
-}
-
-/** The lines of a section: the whole of it, or only its own text, up to its first subsection. */
-function findSection(lines: string[], title: string, scope: "whole" | "own"): Range | undefined
-{
-    const headings = headingsOf(lines);
-    const index = headings.findIndex((heading) => comparableText(heading.title) === comparableText(title.trim()));
-
-    if (index === -1) {
-        return undefined;
-    }
-
-    const heading = headings[index];
-    const next = headings.slice(index + 1).find((other) => scope === "own" || other.level <= heading.level);
-    return { start: heading.line, end: next?.line ?? lines.length };
-}
-
-function secretsWithin(lines: string[], range: Range): (Range & { title: string; })[]
-{
-    return secretsOf(lines).filter((secret) => secret.start >= range.start && secret.start < range.end);
-}
-
-function findSecret(lines: string[], title: string): Range | undefined
-{
-    return secretsOf(lines).find((secret) => comparableText(secret.title) === comparableText(title.trim()));
-}
-
-function topHeadingLevel(lines: string[]): number
-{
-    const levels = headingsOf(lines).map((heading) => heading.level);
-    return levels.length > 0 ? Math.min(...levels) : 2;
-}
-
-function headingsOf(lines: string[]): Heading[]
-{
-    const views = lineViews(lines);
-    const headings: Heading[] = [];
-
-    lines.forEach((line, index) => {
-        const match = isProse(views[index]) ? headingPattern.exec(line) : null;
-
-        if (match) {
-            headings.push({ line: index, level: match[1].length, title: match[2].trim() });
-        }
-    });
-    return headings;
-}
-
-/** The secret blocks: a `> [!secret] Name` line and the quoted lines after it. */
-function secretsOf(lines: string[]): (Range & { title: string; })[]
-{
-    const views = lineViews(lines);
-    const secrets: (Range & { title: string; })[] = [];
-
-    lines.forEach((line, index) => {
-        const match = isProse(views[index]) ? secretPattern.exec(line) : null;
-
-        if (match) {
-            let end = index + 1;
-
-            while (end < lines.length && quotePattern.test(lines[end]) && !secretPattern.test(lines[end])) {
-                end++;
-            }
-
-            secrets.push({ start: index, end, title: match[1] });
-        }
-    });
-    return secrets;
 }
 
 /** A text without its comments, as Obsidian shows it in reading view: what lies between %% marks, also across lines, and HTML comments; code stays as it is (LNK-2). */
@@ -418,6 +304,120 @@ export function everyGoalTicked(text: string): boolean
     const views = lineViews(lines);
     const marks = lines.flatMap((line, index) => (isProse(views[index]) ? (goalPattern.exec(line)?.slice(1) ?? []) : []));
     return marks.length > 0 && marks.every((mark) => mark !== " ");
+}
+
+/** Whether a link's target is a file of another kind, as ![[map.png]]: an attachment, not a page, which may have a dot in its name, as Lettera n.7 (LNK-1). */
+function isAttachment(target: string): boolean
+{
+    const extension = /\.([a-z0-9]+)$/i.exec(target.trim())?.[1]?.toLowerCase();
+    return extension !== undefined && attachmentExtensions.has(extension);
+}
+
+/** The new text of a range: added to the old one, or in its place, keeping the secret blocks that the new text does not write again. */
+function newContent(lines: string[], range: Range, newText: string, mode: TextMode): string
+{
+    if (mode === "append") {
+        return joinBlocks(lines.slice(range.start, range.end).join("\n"), newText);
+    }
+
+    const rewritten = secretNames(newText).map(comparableText);
+    const kept = secretsWithin(lines, range).filter((secret) => !rewritten.includes(comparableText(secret.title)));
+    return joinBlocks(newText, ...kept.map((secret) => lines.slice(secret.start, secret.end).join("\n")));
+}
+
+/** Removes a section with its own text; one with subsections or secrets is refused, so that nothing ends up elsewhere or is lost. */
+function removeSection(lines: string[], title: string, own: Range): string
+{
+    if (findSection(lines, title, "whole")?.end !== own.end) {
+        throw new Error(`"${title}" has subsections: remove them first, then the section.`);
+    }
+
+    const [secret] = secretsWithin(lines, { start: own.start + 1, end: own.end });
+
+    if (secret !== undefined) {
+        throw new Error(`"${title}" holds the secret "${secret.title}": remove or move it first, then the section.`);
+    }
+
+    return joinBlocks(lines.slice(0, own.start).join("\n"), lines.slice(own.end).join("\n"));
+}
+
+/** Text as the quoted lines of a secret block. */
+function quoteLines(text: string): string[]
+{
+    return trimBlankLines(text).split("\n").map((line) => (line === "" ? ">" : `> ${line}`));
+}
+
+function joinBlocks(...blocks: string[]): string
+{
+    return blocks.map(trimBlankLines).filter((block) => block !== "").join("\n\n");
+}
+
+/** The lines of a section: the whole of it, or only its own text, up to its first subsection. */
+function findSection(lines: string[], title: string, scope: "whole" | "own"): Range | undefined
+{
+    const headings = headingsOf(lines);
+    const index = headings.findIndex((heading) => comparableText(heading.title) === comparableText(title.trim()));
+
+    if (index === -1) {
+        return undefined;
+    }
+
+    const heading = headings[index];
+    const next = headings.slice(index + 1).find((other) => scope === "own" || other.level <= heading.level);
+    return { start: heading.line, end: next?.line ?? lines.length };
+}
+
+function secretsWithin(lines: string[], range: Range): (Range & { title: string; })[]
+{
+    return secretsOf(lines).filter((secret) => secret.start >= range.start && secret.start < range.end);
+}
+
+function findSecret(lines: string[], title: string): Range | undefined
+{
+    return secretsOf(lines).find((secret) => comparableText(secret.title) === comparableText(title.trim()));
+}
+
+function topHeadingLevel(lines: string[]): number
+{
+    const levels = headingsOf(lines).map((heading) => heading.level);
+    return levels.length > 0 ? Math.min(...levels) : 2;
+}
+
+function headingsOf(lines: string[]): Heading[]
+{
+    const views = lineViews(lines);
+    const headings: Heading[] = [];
+
+    lines.forEach((line, index) => {
+        const match = isProse(views[index]) ? headingPattern.exec(line) : null;
+
+        if (match) {
+            headings.push({ line: index, level: match[1].length, title: match[2].trim() });
+        }
+    });
+    return headings;
+}
+
+/** The secret blocks: a `> [!secret] Name` line and the quoted lines after it. */
+function secretsOf(lines: string[]): (Range & { title: string; })[]
+{
+    const views = lineViews(lines);
+    const secrets: (Range & { title: string; })[] = [];
+
+    lines.forEach((line, index) => {
+        const match = isProse(views[index]) ? secretPattern.exec(line) : null;
+
+        if (match) {
+            let end = index + 1;
+
+            while (end < lines.length && quotePattern.test(lines[end]) && !secretPattern.test(lines[end])) {
+                end++;
+            }
+
+            secrets.push({ start: index, end, title: match[1] });
+        }
+    });
+    return secrets;
 }
 
 /**

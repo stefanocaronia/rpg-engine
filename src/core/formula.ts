@@ -207,63 +207,6 @@ export function diceFields(roll: RollFormula): string[]
 // 1d8, d6, 2d6: dice as a roll writes them.
 const dicePattern = /^(\d*)d(\d+)$/i;
 
-/** What dice roll on average, as 4.5 for 1d8. */
-function diceAverage(dice: string): number
-{
-    const [, count, faces] = dicePattern.exec(dice) ?? [];
-    return (count === "" || count === undefined ? 1 : Number(count)) * (Number(faces) + 1) / 2;
-}
-
-/** The dice a roll formula begins with, and how much of its text they take: 1d8, or dice(…) with dice, numbers and fields (D-235); undefined for none. */
-function openingDice(text: string): { choices: DiceChoice[]; length: number; } | undefined
-{
-    const written = /^\s*(\d*d\d+)\b/i.exec(text);
-
-    if (written !== null) {
-        return { choices: [{ dice: written[1] }], length: written[0].length };
-    }
-
-    const call = /^\s*dice\s*\(([^()]*)\)/i.exec(text);
-
-    if (call === null && /^\s*dice\s*\(/i.test(text)) {
-        throw new Error(`"${text}" is not a formula: dice() holds only dice, numbers and fields, between commas, such as dice(1d6, martial-arts).`);
-    }
-
-    if (call === null) {
-        return undefined;
-    }
-
-    const choices = call[1].split(",").map((part): DiceChoice => {
-        const choice = part.trim();
-        namePattern.lastIndex = 0;
-        const name = namePattern.exec(choice);
-
-        if (dicePattern.test(choice)) {
-            return { dice: choice };
-        }
-
-        if (/^\d+$/.test(choice)) {
-            return { number: Number(choice) };
-        }
-
-        if (name !== null && name[0] === choice) {
-            return { field: choice };
-        }
-
-        throw new Error(`"${text}" is not a formula: dice, a number or a field that holds dice was expected in dice() at "${choice}", such as dice(1d6, martial-arts).`);
-    });
-    return { choices, length: call[0].length };
-}
-
-function tryFormula(text: string): Formula | undefined
-{
-    try {
-        return parseFormula(text);
-    } catch {
-        return undefined;
-    }
-}
-
 /** A formula given as a number or as text, as system.yaml writes it. */
 export function formulaOf(value: number | string): Formula
 {
@@ -400,6 +343,63 @@ export function numberOf(value: unknown): number | undefined
     // A unit is a short word, as ft, m, km or lb: "3 bludgeoning" is no measure. A note in brackets may follow a unit, as 40 ft (hover).
     const match = /^\s*([+-]?\d+(?:\.\d+)?)\s*(?:\/\s*\d+\s*|\p{L}{1,3}\.?\s*(?:\([^()]*\)\s*)?)?$/u.exec(value);
     return match === null ? undefined : Number(match[1]);
+}
+
+/** What dice roll on average, as 4.5 for 1d8. */
+function diceAverage(dice: string): number
+{
+    const [, count, faces] = dicePattern.exec(dice) ?? [];
+    return (count === "" || count === undefined ? 1 : Number(count)) * (Number(faces) + 1) / 2;
+}
+
+/** The dice a roll formula begins with, and how much of its text they take: 1d8, or dice(…) with dice, numbers and fields (D-235); undefined for none. */
+function openingDice(text: string): { choices: DiceChoice[]; length: number; } | undefined
+{
+    const written = /^\s*(\d*d\d+)\b/i.exec(text);
+
+    if (written !== null) {
+        return { choices: [{ dice: written[1] }], length: written[0].length };
+    }
+
+    const call = /^\s*dice\s*\(([^()]*)\)/i.exec(text);
+
+    if (call === null && /^\s*dice\s*\(/i.test(text)) {
+        throw new Error(`"${text}" is not a formula: dice() holds only dice, numbers and fields, between commas, such as dice(1d6, martial-arts).`);
+    }
+
+    if (call === null) {
+        return undefined;
+    }
+
+    const choices = call[1].split(",").map((part): DiceChoice => {
+        const choice = part.trim();
+        namePattern.lastIndex = 0;
+        const name = namePattern.exec(choice);
+
+        if (dicePattern.test(choice)) {
+            return { dice: choice };
+        }
+
+        if (/^\d+$/.test(choice)) {
+            return { number: Number(choice) };
+        }
+
+        if (name !== null && name[0] === choice) {
+            return { field: choice };
+        }
+
+        throw new Error(`"${text}" is not a formula: dice, a number or a field that holds dice was expected in dice() at "${choice}", such as dice(1d6, martial-arts).`);
+    });
+    return { choices, length: call[0].length };
+}
+
+function tryFormula(text: string): Formula | undefined
+{
+    try {
+        return parseFormula(text);
+    } catch {
+        return undefined;
+    }
 }
 
 function evaluate(formula: Formula, scope: FormulaScope, reads: FormulaRead[]): number | undefined

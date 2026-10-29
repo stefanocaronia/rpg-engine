@@ -25,6 +25,12 @@ describe("the laws of the saves module, on files and names made at random", () =
         );
     });
 
+    it("SAV-2: a zip that would unpack to more than a save may is refused before it is unpacked", () => {
+        const zip = packFiles({ "world/a.md": new Uint8Array(600), "world/b.md": new Uint8Array(600) });
+        expect(() => unpackFiles(zip, 1000)).toThrow("it unpacks to more than 0 MB, more than a save may");
+        expect(Object.keys(unpackFiles(zip, 2000))).toEqual(["world/a.md", "world/b.md"]);
+    });
+
     it("SAV-4: a save's name keeps its number and what names it, without what a file name cannot hold", () => {
         fc.assert(
             fc.property(fc.integer({ min: 1, max: 5000 }), fc.array(fc.option(fc.string({ maxLength: 30 }), { nil: undefined }), { maxLength: 3 }), (number, parts) => {

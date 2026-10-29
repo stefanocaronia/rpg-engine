@@ -147,53 +147,6 @@ export function carriedIn(fields: Record<string, unknown>): number | undefined
     return typeof value === "number" ? value : undefined;
 }
 
-function effectValuesOver(world: World, page: Page): Record<string, unknown>
-{
-    const fields = { ...inheritedFields(world, page) };
-    const read = readEffects(Object.entries(page.fields).find(([field]) => comparableText(field) === "effects")?.[1]);
-
-    // What the pages of the system's bonus lists give, as a Ring of Protection one is attuned to or a feat, adds up as effects do (FOR-5, D-449); an at-least
-    // field rises to theirs, as Gauntlets of Ogre Power's str 19, and stays when higher.
-    for (const page of bonusPages(world, fields)) {
-        for (const [field, value] of Object.entries(inheritedFields(world, page))) {
-            const kind = declaredKind(world, field);
-            const amount = kind === "bonus" || kind === "at-least" ? numberOf(value) : undefined;
-            const key = keyOf(fields, field) ?? field;
-            const current = numberOf(fields[key]);
-            fields[key] = amount === undefined ? fields[key] : kind === "bonus" ? (current ?? 0) + amount : Math.max(current ?? amount, amount);
-        }
-    }
-
-    for (const effect of "effects" in read ? read.effects : []) {
-        for (const [field, value] of effect.values) {
-            const key = keyOf(fields, field) ?? field;
-            const kind = declaredKind(world, field);
-            fields[key] = kind === "bonus"
-                ? (numberOf(fields[key]) ?? 0) + (numberOf(effectValue(value)) ?? 0)
-                : kind === "factor"
-                ? (factorOf(fields[key]) ?? 1) * (factorOf(value) ?? 1)
-                : effectValue(value);
-        }
-    }
-
-    // What a character carries weighs, for the formulas that read it as load, as a speed; under a key no list of fields shows (FOR-2, LOAD-1).
-    if (page.type === "character" && world.system?.load !== undefined) {
-        (fields as Record<string | symbol, unknown>)[carriedKey] = carriedWeight(world, world.system.load, page);
-    }
-
-    return fields;
-}
-
-/** A value of an effect as a page would hold it: a number, a link, a counter as text; text as it is when it does not read. */
-function effectValue(value: string): unknown
-{
-    try {
-        return readFieldValue(value);
-    } catch {
-        return value;
-    }
-}
-
 /** Whether a counter of the system comes back with a rest (DAT-9): who keeps the sheet has it full until it spends it. */
 export function isUse(world: World, field: string): boolean
 {
@@ -233,172 +186,11 @@ export function formulaValue(world: World, fields: Record<string, unknown>, form
     return workOut(formula, formulaScope(world, fields)).value;
 }
 
-/** What the lists of a page give as computed fields: what its classes give (PRO-2, PRO-3), then what the formulas of its items' pages work out (PRO-5). */
-function givenFields(world: World, scope: ReturnType<typeof formulaScope>, explained = false): WorkedField[]
-{
-    return [...progressionFields(world, scope), ...itemFields(world, scope, explained)];
-}
-
-/**
- * The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features. A column named
- * as a counter of the system is not one: it is that counter's maximum (DAT-9).
- */
-function progressionFields(world: World, scope: ReturnType<typeof formulaScope>): WorkedField[]
-{
-    const progression = scope.progression();
-
-    if (progression === undefined) {
-        return [];
-    }
-
-    const values = progression.values.filter((value) => !isSystemCounter(world, value.field)).map((value) => ({
-        field: value.field,
-        value: value.value,
-        reads: value.from.map((from): FormulaRead => ({ list: progression.lists[0], item: from.name, value: from.level })),
-    }));
-    const features = progression.features.length + progression.written.length === 0 ? [] : [{
-        field: progression.featuresField,
-        value: [...progression.features.map((feature) => feature.name), ...progression.written].join(", "),
-        reads: progression.from.map((from): FormulaRead => ({ list: from.list, item: from.name, value: from.level ?? 1 })),
-    }];
-    return [...values, ...features];
-}
-
-/** The fields the formulas of the items' pages give, one value for each item, for every list the system names (PRO-5). */
-function itemFields(world: World, scope: ReturnType<typeof formulaScope>, explained: boolean): WorkedField[]
-{
-    return Object.values(world.system?.itemFormulas ?? {}).flat().flatMap((field) => {
-        const worked = scope.each(field, explained);
-        // A bonus an item gives as nothing, as the speed a heavy armor takes from who has its Strength, says nothing (FOR-8).
-        return worked === undefined || (worked.value === 0 && declaredKind(world, field) === "bonus") ? [] : [worked];
-    });
-}
-
 /** The list whose items' pages give a field as a formula, as classes for spell-save-dc (PRO-5); undefined when none does. */
 export function itemList(world: World, field: string): string | undefined
 {
     return Object.entries(world.system?.itemFormulas ?? {}).find(([, names]) => names.some((name) => comparableText(name) === comparableText(field.trim())))?.[0];
 }
-
-/**
- * A formula that each item of its list gives on its page, such as a class's spell-save-dc or a weapon's attack, worked out on who lists them for each item that
- * gives one (PRO-5): a number, or a roll as text, for one; "Cleric 13, Wizard 12" for several. Undefined when none gives it.
- */
-function eachItem(world: World, field: string, items: ItemValue[]): WorkedField | undefined
-{
-    if (items.length === 0) {
-        return undefined;
-    }
-
-    const [first] = items;
-    return items.length === 1
-        ? { field, value: first.value, reads: first.reads }
-        : { field, value: items.map((item) => `${item.name} ${signedText(world, field, item.value)}`).join(", "), reads: items.flatMap((item) => item.reads) };
-}
-
-/** What an item of a list gives a field (PRO-5), with what it came from. */
-interface ItemValue
-{
-    name: string;
-    value: number | string;
-    reads: FormulaRead[];
-}
-
-/**
- * What a field gives for each item of its list whose page gives it (PRO-5): a number, or a roll as text, as "1d8+3 slashing". The formula reads first the
- * item's own fields, as a magic weapon's bonus, then those of who lists it.
- */
-function itemValues(world: World, scope: ReturnType<typeof formulaScope>, field: string, explained: boolean): ItemValue[]
-{
-    const list = itemList(world, field);
-
-    if (list === undefined) {
-        return [];
-    }
-
-    return listItems(scope.field(list)).flatMap((item) => {
-        const page = scope.page(item.name);
-        const given = itemFormula(page, field);
-
-        if (page === undefined || given === undefined) {
-            return [];
-        }
-
-        const own = itemScope(world, scope, page, list);
-        const worked = given.formula === undefined ? undefined : workOut(given.formula, own);
-        // The dice it takes, as the Martial Arts die of a monk when it is larger (D-235); none of its choices with a value, no value.
-        const dice = given.dice === undefined ? undefined : chosenDice(given.dice, own);
-
-        if ((given.formula !== undefined && worked?.value === undefined) || (given.dice !== undefined && dice === undefined)) {
-            return [];
-        }
-
-        const reads = worked === undefined || given.formula === undefined ? [] : explained ? contributingReads(given.formula, own, worked) : worked.reads;
-        return [{ name: item.name, value: rollValue(given, dice, worked?.value), reads: [...(dice?.reads ?? []), ...reads] }];
-    });
-}
-
-/**
- * "1d8+3 slashing": a roll's dice, the number its formula works out, unless 0, and its words; the number alone for a plain formula. Dice that are a number, as an
- * unarmed strike's 1, add to it: "4 bludgeoning" (D-235).
- */
-function rollValue(given: RollFormula, dice: { dice?: string; number?: number; } | undefined, value: number | undefined): number | string
-{
-    const rolled = dice?.dice;
-    const total = dice?.number === undefined ? value : (value ?? 0) + dice.number;
-
-    if (rolled === undefined && given.words === undefined && total !== undefined) {
-        return total;
-    }
-
-    const number = total === undefined || (total === 0 && rolled !== undefined) ? "" : rolled === undefined ? String(total) : total > 0 ? `+${total}` : String(total);
-    return `${rolled ?? ""}${number}${given.words === undefined ? "" : ` ${given.words}`}`;
-}
-
-/**
- * The scope of an item's formula: the item's own fields first, as a magic weapon's bonus, written 1 or +1, then those of who lists it (PRO-5). The formulas
- * the item gives for its list are worked out on who lists it: a monk's Unarmored Defense reads the armor-class-bonus of the shield it has equipped.
- */
-function itemScope(world: World, scope: FormulaScope, page: Record<string, unknown>, list: string): FormulaScope
-{
-    const given = world.system?.itemFormulas?.[list] ?? [];
-    return {
-        ...scope,
-        field: (name) => {
-            const key = keyOf(page, name);
-
-            if (key === undefined || isEmptyField(page[key]) || given.some((field) => comparableText(field) === comparableText(name))) {
-                return scope.field(name);
-            }
-
-            return numberOf(page[key]) ?? page[key];
-        },
-    };
-}
-
-/** The formula an item's page gives in a field, read once for each text; undefined when it gives none, or one that does not read, which validate reports (PRO-5). */
-function itemFormula(fields: Record<string, unknown> | undefined, field: string): RollFormula | undefined
-{
-    const text = fields === undefined ? undefined : fields[keyOf(fields, field) ?? ""];
-
-    if (typeof text !== "string" && typeof text !== "number") {
-        return undefined;
-    }
-
-    const key = String(text);
-
-    if (!itemFormulas.has(key)) {
-        try {
-            itemFormulas.set(key, parseRollFormula(key));
-        } catch {
-            itemFormulas.set(key, undefined);
-        }
-    }
-
-    return itemFormulas.get(key);
-}
-
-const itemFormulas = new Map<string, RollFormula | undefined>();
 
 /**
  * Each item of a list with what the formulas of its page give, field by field, in the order of the list, for a sheet that shows them item by item, as the
@@ -415,34 +207,6 @@ export function itemLines(world: World, fields: Record<string, unknown>, list: s
     });
 }
 
-/** A field the classes give, as a computed field that cannot be written, with the lists it comes from (PRO-2, FOR-7); undefined for any other field. */
-function progressedField(world: World, scope: ReturnType<typeof formulaScope>, field: string): { name: string; value: number | string; from: string[]; } | undefined
-{
-    const found = givenFields(world, scope).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
-    const list = found === undefined ? undefined : itemList(world, found.field);
-
-    // The features are written too, beside those the rows give (PRO-3).
-    if (found === undefined || comparableText(found.field) === comparableText(scope.progression()?.featuresField ?? "")) {
-        return undefined;
-    }
-
-    // A formula of the items' pages comes from what it reads, as the bonus an item gives, and from its list (PRO-5); the rows, from the lists alone.
-    if (list !== undefined) {
-        const read = listItems(scope.field(list)).flatMap((item) => {
-            const page = scope.page(item.name);
-            const given = itemFormula(page, found.field);
-            // What the item holds itself, as a weapon's bonus, comes from it, not from who lists it.
-            // Only the dice a field gives count, as a monk's martial-arts: one no one has is no source.
-            const dice = (given === undefined ? [] : diceFields(given)).filter((name) => scope.field(name) !== undefined).flatMap((name) => writtenSources(world, { kind: "field", name }, scope));
-            const formula = given?.formula === undefined ? [] : writtenSources(world, given.formula, scope);
-            return [...formula, ...dice].filter((name) => page === undefined || keyOf(page, name) === undefined);
-        });
-        return { name: found.field, value: found.value, from: [...new Set([...read, list])] };
-    }
-
-    return { name: found.field, value: found.value, from: scope.progression()?.lists ?? [] };
-}
-
 /** The minimum and maximum the game system works out for a counter with these fields, where they have a whole value (FOR-6). */
 export function counterLimits(world: World, fields: Record<string, unknown>, field: string): { min?: number; max?: number; }
 {
@@ -453,22 +217,6 @@ export function counterLimits(world: World, fields: Record<string, unknown>, fie
     }
 
     return limitsIn(formulaScope(world, fields), limits, field);
-}
-
-/** The limits of a counter worked out in a scope, where they have a whole value (FOR-6); without a max formula, the column of a class's row (DAT-9). */
-function limitsIn(scope: ReturnType<typeof formulaScope>, limits: { min?: Formula; max?: Formula; }, field: string): { min?: number; max?: number; }
-{
-    const whole = (worked: WorkedOut | undefined): number | undefined => (worked?.value !== undefined && Number.isSafeInteger(worked.value) ? worked.value : undefined);
-    const min = whole(limits.min === undefined ? undefined : workOut(limits.min, scope));
-    const row = limits.max === undefined ? numberOf(progressionValue(scope.progression(), field)) : undefined;
-    const max = limits.max === undefined ? (row !== undefined && Number.isSafeInteger(row) ? row : undefined) : whole(workOut(limits.max, scope));
-    return { ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max: atLeastZero(max) }) };
-}
-
-/** A maximum worked out below 0, as 1 + cha-mod with Charisma 7, is 0: a counter is never written with a maximum below 0 (FOR-6). */
-function atLeastZero(max: number): number
-{
-    return Math.max(0, max);
 }
 
 /**
@@ -526,43 +274,6 @@ export function maximumHint(world: World, fields: Record<string, unknown>, field
     return { made: `${worked.value}${parts === "" ? "" : `, from ${parts}`}`, ...(raise === undefined ? {} : { raise }) };
 }
 
-/**
- * The written fields a formula comes from, through the computed fields it reads that have a value: what can be changed, as wis for passive-perception, and
- * level where the page writes it, having no classes (FOR-7).
- */
-function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof formulaScope>, seen = new Set<string>()): string[]
-{
-    const formulas = world.system?.formulas;
-    const index = formulas === undefined ? undefined : formulaIndex(formulas);
-    const sources = fieldsRead(formula).flatMap((name) => {
-        const entry = index?.computed.get(comparableText(name));
-
-        // What the classes give comes from the lists that name them (PRO-3); what the items' pages give, from their list, as armor-class from equipped (PRO-5).
-        // Whether the classes or the items give it, without asking where they come from, which may read this field again.
-        if (entry === undefined && givenFields(world, scope).some((worked) => comparableText(worked.field) === comparableText(name))) {
-            const list = itemList(world, name);
-            return list === undefined ? (scope.progression()?.lists ?? [name]) : [list];
-        }
-
-        // What the engine gives a formula, as the campaign's rigor or a character's load, is no field anyone writes (FOR-2).
-        if (["rigor", "effects", "load", "load-limit"].includes(comparableText(name))) {
-            return [];
-        }
-
-        if (entry === undefined || scope.computed(name)?.value === undefined) {
-            return [name];
-        }
-
-        if (seen.has(comparableText(name))) {
-            return [];
-        }
-
-        seen.add(comparableText(name));
-        return writtenSources(world, entry[1], scope, seen);
-    });
-    return sources.filter((name, position) => sources.findIndex((other) => comparableText(other) === comparableText(name)) === position);
-}
-
 /** Why a computed field is not written or changed, and what to change instead: the fields it comes from, or an effect on a bonus among them (FOR-7). */
 export function computedMessage(world: World, computed: { name: string; value: number | string; from: string[]; direct?: string[]; }, page: string): string
 {
@@ -581,15 +292,6 @@ export function aloneNote(world: World, field: string, bonuses: string[]): strin
     const shared = bonuses.filter((bonus) => readers(bonus) > 1);
     const one = shared.length === 1;
     return shared.length === 0 ? "" : `; ${shared.join(" and ")} also ${one ? "changes" : "change"} the other fields that read ${one ? "it" : "them"}, so for ${field} alone add the number to its roll`;
-}
-
-/**
- * The bonus fields among those a computed field comes from, which an effect on the page gives to change it, as bonus-ac for ac (FOR-5); not those the items of a
- * list give, as a shield's armor-class-bonus, which change on the item (PRO-5).
- */
-export function effectBonuses(world: World, from: string[]): string[]
-{
-    return from.filter((field) => declaredKind(world, field) === "bonus" && itemList(world, field) === undefined);
 }
 
 /** The bonus fields an effect gives to change a computed field that its formula reads itself, as bonus-skills for insight, not bonus-proficiency through proficiency. */
@@ -758,6 +460,304 @@ export function workedOutProblems(world: World): Problem[]
     });
     checkedWorlds.set(world, problems);
     return problems;
+}
+
+function effectValuesOver(world: World, page: Page): Record<string, unknown>
+{
+    const fields = { ...inheritedFields(world, page) };
+    const read = readEffects(Object.entries(page.fields).find(([field]) => comparableText(field) === "effects")?.[1]);
+
+    // What the pages of the system's bonus lists give, as a Ring of Protection one is attuned to or a feat, adds up as effects do (FOR-5, D-449); an at-least
+    // field rises to theirs, as Gauntlets of Ogre Power's str 19, and stays when higher.
+    for (const page of bonusPages(world, fields)) {
+        for (const [field, value] of Object.entries(inheritedFields(world, page))) {
+            const kind = declaredKind(world, field);
+            const amount = kind === "bonus" || kind === "at-least" ? numberOf(value) : undefined;
+            const key = keyOf(fields, field) ?? field;
+            const current = numberOf(fields[key]);
+            fields[key] = amount === undefined ? fields[key] : kind === "bonus" ? (current ?? 0) + amount : Math.max(current ?? amount, amount);
+        }
+    }
+
+    for (const effect of "effects" in read ? read.effects : []) {
+        for (const [field, value] of effect.values) {
+            const key = keyOf(fields, field) ?? field;
+            const kind = declaredKind(world, field);
+            fields[key] = kind === "bonus"
+                ? (numberOf(fields[key]) ?? 0) + (numberOf(effectValue(value)) ?? 0)
+                : kind === "factor"
+                ? (factorOf(fields[key]) ?? 1) * (factorOf(value) ?? 1)
+                : effectValue(value);
+        }
+    }
+
+    // What a character carries weighs, for the formulas that read it as load, as a speed; under a key no list of fields shows (FOR-2, LOAD-1).
+    if (page.type === "character" && world.system?.load !== undefined) {
+        (fields as Record<string | symbol, unknown>)[carriedKey] = carriedWeight(world, world.system.load, page);
+    }
+
+    return fields;
+}
+
+/** A value of an effect as a page would hold it: a number, a link, a counter as text; text as it is when it does not read. */
+function effectValue(value: string): unknown
+{
+    try {
+        return readFieldValue(value);
+    } catch {
+        return value;
+    }
+}
+
+/** What the lists of a page give as computed fields: what its classes give (PRO-2, PRO-3), then what the formulas of its items' pages work out (PRO-5). */
+function givenFields(world: World, scope: ReturnType<typeof formulaScope>, explained = false): WorkedField[]
+{
+    return [...progressionFields(world, scope), ...itemFields(world, scope, explained)];
+}
+
+/**
+ * The fields the classes give as computed fields, each with the items it comes from (PRO-2, FOR-8): the values of their rows, then the features. A column named
+ * as a counter of the system is not one: it is that counter's maximum (DAT-9).
+ */
+function progressionFields(world: World, scope: ReturnType<typeof formulaScope>): WorkedField[]
+{
+    const progression = scope.progression();
+
+    if (progression === undefined) {
+        return [];
+    }
+
+    const values = progression.values.filter((value) => !isSystemCounter(world, value.field)).map((value) => ({
+        field: value.field,
+        value: value.value,
+        reads: value.from.map((from): FormulaRead => ({ list: progression.lists[0], item: from.name, value: from.level })),
+    }));
+    const features = progression.features.length + progression.written.length === 0 ? [] : [{
+        field: progression.featuresField,
+        value: [...progression.features.map((feature) => feature.name), ...progression.written].join(", "),
+        reads: progression.from.map((from): FormulaRead => ({ list: from.list, item: from.name, value: from.level ?? 1 })),
+    }];
+    return [...values, ...features];
+}
+
+/** The fields the formulas of the items' pages give, one value for each item, for every list the system names (PRO-5). */
+function itemFields(world: World, scope: ReturnType<typeof formulaScope>, explained: boolean): WorkedField[]
+{
+    return Object.values(world.system?.itemFormulas ?? {}).flat().flatMap((field) => {
+        const worked = scope.each(field, explained);
+        // A bonus an item gives as nothing, as the speed a heavy armor takes from who has its Strength, says nothing (FOR-8).
+        return worked === undefined || (worked.value === 0 && declaredKind(world, field) === "bonus") ? [] : [worked];
+    });
+}
+
+/**
+ * A formula that each item of its list gives on its page, such as a class's spell-save-dc or a weapon's attack, worked out on who lists them for each item that
+ * gives one (PRO-5): a number, or a roll as text, for one; "Cleric 13, Wizard 12" for several. Undefined when none gives it.
+ */
+function eachItem(world: World, field: string, items: ItemValue[]): WorkedField | undefined
+{
+    if (items.length === 0) {
+        return undefined;
+    }
+
+    const [first] = items;
+    return items.length === 1
+        ? { field, value: first.value, reads: first.reads }
+        : { field, value: items.map((item) => `${item.name} ${signedText(world, field, item.value)}`).join(", "), reads: items.flatMap((item) => item.reads) };
+}
+
+/** What an item of a list gives a field (PRO-5), with what it came from. */
+interface ItemValue
+{
+    name: string;
+    value: number | string;
+    reads: FormulaRead[];
+}
+
+/**
+ * What a field gives for each item of its list whose page gives it (PRO-5): a number, or a roll as text, as "1d8+3 slashing". The formula reads first the
+ * item's own fields, as a magic weapon's bonus, then those of who lists it.
+ */
+function itemValues(world: World, scope: ReturnType<typeof formulaScope>, field: string, explained: boolean): ItemValue[]
+{
+    const list = itemList(world, field);
+
+    if (list === undefined) {
+        return [];
+    }
+
+    return listItems(scope.field(list)).flatMap((item) => {
+        const page = scope.page(item.name);
+        const given = itemFormula(page, field);
+
+        if (page === undefined || given === undefined) {
+            return [];
+        }
+
+        const own = itemScope(world, scope, page, list);
+        const worked = given.formula === undefined ? undefined : workOut(given.formula, own);
+        // The dice it takes, as the Martial Arts die of a monk when it is larger (D-235); none of its choices with a value, no value.
+        const dice = given.dice === undefined ? undefined : chosenDice(given.dice, own);
+
+        if ((given.formula !== undefined && worked?.value === undefined) || (given.dice !== undefined && dice === undefined)) {
+            return [];
+        }
+
+        const reads = worked === undefined || given.formula === undefined ? [] : explained ? contributingReads(given.formula, own, worked) : worked.reads;
+        return [{ name: item.name, value: rollValue(given, dice, worked?.value), reads: [...(dice?.reads ?? []), ...reads] }];
+    });
+}
+
+/**
+ * "1d8+3 slashing": a roll's dice, the number its formula works out, unless 0, and its words; the number alone for a plain formula. Dice that are a number, as an
+ * unarmed strike's 1, add to it: "4 bludgeoning" (D-235).
+ */
+function rollValue(given: RollFormula, dice: { dice?: string; number?: number; } | undefined, value: number | undefined): number | string
+{
+    const rolled = dice?.dice;
+    const total = dice?.number === undefined ? value : (value ?? 0) + dice.number;
+
+    if (rolled === undefined && given.words === undefined && total !== undefined) {
+        return total;
+    }
+
+    const number = total === undefined || (total === 0 && rolled !== undefined) ? "" : rolled === undefined ? String(total) : total > 0 ? `+${total}` : String(total);
+    return `${rolled ?? ""}${number}${given.words === undefined ? "" : ` ${given.words}`}`;
+}
+
+/**
+ * The scope of an item's formula: the item's own fields first, as a magic weapon's bonus, written 1 or +1, then those of who lists it (PRO-5). The formulas
+ * the item gives for its list are worked out on who lists it: a monk's Unarmored Defense reads the armor-class-bonus of the shield it has equipped.
+ */
+function itemScope(world: World, scope: FormulaScope, page: Record<string, unknown>, list: string): FormulaScope
+{
+    const given = world.system?.itemFormulas?.[list] ?? [];
+    return {
+        ...scope,
+        field: (name) => {
+            const key = keyOf(page, name);
+
+            if (key === undefined || isEmptyField(page[key]) || given.some((field) => comparableText(field) === comparableText(name))) {
+                return scope.field(name);
+            }
+
+            return numberOf(page[key]) ?? page[key];
+        },
+    };
+}
+
+/** The formula an item's page gives in a field, read once for each text; undefined when it gives none, or one that does not read, which validate reports (PRO-5). */
+function itemFormula(fields: Record<string, unknown> | undefined, field: string): RollFormula | undefined
+{
+    const text = fields === undefined ? undefined : fields[keyOf(fields, field) ?? ""];
+
+    if (typeof text !== "string" && typeof text !== "number") {
+        return undefined;
+    }
+
+    const key = String(text);
+
+    if (!itemFormulas.has(key)) {
+        try {
+            itemFormulas.set(key, parseRollFormula(key));
+        } catch {
+            itemFormulas.set(key, undefined);
+        }
+    }
+
+    return itemFormulas.get(key);
+}
+
+const itemFormulas = new Map<string, RollFormula | undefined>();
+
+/** A field the classes give, as a computed field that cannot be written, with the lists it comes from (PRO-2, FOR-7); undefined for any other field. */
+function progressedField(world: World, scope: ReturnType<typeof formulaScope>, field: string): { name: string; value: number | string; from: string[]; } | undefined
+{
+    const found = givenFields(world, scope).find((worked) => comparableText(worked.field) === comparableText(field.trim()));
+    const list = found === undefined ? undefined : itemList(world, found.field);
+
+    // The features are written too, beside those the rows give (PRO-3).
+    if (found === undefined || comparableText(found.field) === comparableText(scope.progression()?.featuresField ?? "")) {
+        return undefined;
+    }
+
+    // A formula of the items' pages comes from what it reads, as the bonus an item gives, and from its list (PRO-5); the rows, from the lists alone.
+    if (list !== undefined) {
+        const read = listItems(scope.field(list)).flatMap((item) => {
+            const page = scope.page(item.name);
+            const given = itemFormula(page, found.field);
+            // What the item holds itself, as a weapon's bonus, comes from it, not from who lists it.
+            // Only the dice a field gives count, as a monk's martial-arts: one no one has is no source.
+            const dice = (given === undefined ? [] : diceFields(given)).filter((name) => scope.field(name) !== undefined).flatMap((name) => writtenSources(world, { kind: "field", name }, scope));
+            const formula = given?.formula === undefined ? [] : writtenSources(world, given.formula, scope);
+            return [...formula, ...dice].filter((name) => page === undefined || keyOf(page, name) === undefined);
+        });
+        return { name: found.field, value: found.value, from: [...new Set([...read, list])] };
+    }
+
+    return { name: found.field, value: found.value, from: scope.progression()?.lists ?? [] };
+}
+
+/** The limits of a counter worked out in a scope, where they have a whole value (FOR-6); without a max formula, the column of a class's row (DAT-9). */
+function limitsIn(scope: ReturnType<typeof formulaScope>, limits: { min?: Formula; max?: Formula; }, field: string): { min?: number; max?: number; }
+{
+    const whole = (worked: WorkedOut | undefined): number | undefined => (worked?.value !== undefined && Number.isSafeInteger(worked.value) ? worked.value : undefined);
+    const min = whole(limits.min === undefined ? undefined : workOut(limits.min, scope));
+    const row = limits.max === undefined ? numberOf(progressionValue(scope.progression(), field)) : undefined;
+    const max = limits.max === undefined ? (row !== undefined && Number.isSafeInteger(row) ? row : undefined) : whole(workOut(limits.max, scope));
+    return { ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max: atLeastZero(max) }) };
+}
+
+/** A maximum worked out below 0, as 1 + cha-mod with Charisma 7, is 0: a counter is never written with a maximum below 0 (FOR-6). */
+function atLeastZero(max: number): number
+{
+    return Math.max(0, max);
+}
+
+/**
+ * The written fields a formula comes from, through the computed fields it reads that have a value: what can be changed, as wis for passive-perception, and
+ * level where the page writes it, having no classes (FOR-7).
+ */
+function writtenSources(world: World, formula: Formula, scope: ReturnType<typeof formulaScope>, seen = new Set<string>()): string[]
+{
+    const formulas = world.system?.formulas;
+    const index = formulas === undefined ? undefined : formulaIndex(formulas);
+    const sources = fieldsRead(formula).flatMap((name) => {
+        const entry = index?.computed.get(comparableText(name));
+
+        // What the classes give comes from the lists that name them (PRO-3); what the items' pages give, from their list, as armor-class from equipped (PRO-5).
+        // Whether the classes or the items give it, without asking where they come from, which may read this field again.
+        if (entry === undefined && givenFields(world, scope).some((worked) => comparableText(worked.field) === comparableText(name))) {
+            const list = itemList(world, name);
+            return list === undefined ? (scope.progression()?.lists ?? [name]) : [list];
+        }
+
+        // What the engine gives a formula, as the campaign's rigor or a character's load, is no field anyone writes (FOR-2).
+        if (["rigor", "effects", "load", "load-limit"].includes(comparableText(name))) {
+            return [];
+        }
+
+        if (entry === undefined || scope.computed(name)?.value === undefined) {
+            return [name];
+        }
+
+        if (seen.has(comparableText(name))) {
+            return [];
+        }
+
+        seen.add(comparableText(name));
+        return writtenSources(world, entry[1], scope, seen);
+    });
+    return sources.filter((name, position) => sources.findIndex((other) => comparableText(other) === comparableText(name)) === position);
+}
+
+/**
+ * The bonus fields among those a computed field comes from, which an effect on the page gives to change it, as bonus-ac for ac (FOR-5); not those the items of a
+ * list give, as a shield's armor-class-bonus, which change on the item (PRO-5).
+ */
+function effectBonuses(world: World, from: string[]): string[]
+{
+    return from.filter((field) => declaredKind(world, field) === "bonus" && itemList(world, field) === undefined);
 }
 
 const checkedWorlds = new WeakMap<World, Problem[]>();

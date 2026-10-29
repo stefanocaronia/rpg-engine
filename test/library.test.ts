@@ -480,6 +480,17 @@ describe("the library in config and rules (LIB-1, LIB-3, LIB-7)", () => {
         expect(asked).toHaveLength(1);
     });
 
+    it("writes nothing when a removal is refused, even with an addition beside it, and takes the setting's name with a space after it", async () => {
+        allow("yes");
+        const missing = makeTempFolder();
+        const output = (await rpg("config", "library", "--add", shelf, "--remove", missing)).output;
+        expect(output).toContain(`"library" does not hold "${missing}", so nothing changed`);
+        expect(asked).toEqual([]);
+        expect(libraryFolders(home)).toEqual([]);
+        await ok("config", "library ", "--add", shelf);
+        expect(libraryFolders(home)).toEqual([shelf]);
+    });
+
     it("takes a path as a full one, without the quotes a copied path has; a relative one only in the player's terminal", async () => {
         allow("yes");
         expect((await rpg("config", "library", "--add", "..")).output).toContain(".. is no full path: give the whole path");

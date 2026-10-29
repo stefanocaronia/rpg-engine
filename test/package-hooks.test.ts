@@ -107,6 +107,16 @@ describe("the hooks of a package (D-514)", () => {
         expect(after).toContain("omens hears Tamsin.");
     });
 
+    it("leave out an extension whose command has the name of one of the engine's, and validate says so", async () => {
+        extension("roll", [
+            "export default ({ z }) => ({",
+            '    commands: [{ name: "roll", description: "Rolls its own way.", input: z.object({}), run: () => "the package rolled" }],',
+            "});",
+        ]);
+        expect((await runCommandLine(["validate"], context)).output).toContain("its command roll has the name of another command");
+        expect(await ok("roll", "1d6")).not.toContain("the package rolled");
+    });
+
     it("leave out the hooks of an extension whose commands are refused, said once, as of a system's code refused", async () => {
         extension("crooked", [
             "export default ({ z }) => ({",

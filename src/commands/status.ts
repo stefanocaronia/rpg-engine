@@ -69,7 +69,7 @@ export const status = defineCommand({
     async run(input, context)
     {
         const root = requireCampaign(context.folder);
-        const codeProblems = await packageCodeProblems(root, context, []);
+        const codeProblems = await packageCodeProblems(root, context);
         const settings = readSettings(root);
 
         // An engine's setting as the game plays it, none where it plays one value alone, which is no choice to show (DAT-16).

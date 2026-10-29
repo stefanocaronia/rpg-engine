@@ -8,7 +8,7 @@ import { systemConfirm } from "../confirm/index.ts";
 import { type Context, defaultContext, packagesFolder } from "../core/context.ts";
 import { downloadBytes } from "../core/download.ts";
 import { withExamples } from "../core/examples.ts";
-import { baseType, type Command, isBoolean, isList } from "../core/registry.ts";
+import { baseType, type Command, commandLineFieldProblem, isBoolean, isList } from "../core/registry.ts";
 import { FileStore, withFiles } from "../core/store.ts";
 import { firstSentence } from "../core/text.ts";
 import { getVersion } from "../core/version.ts";
@@ -110,9 +110,11 @@ function readArguments(command: AnyCommand, args: string[]): { input: Record<str
     const options: Record<string, { type: "string" | "boolean"; multiple?: boolean; }> = { json: { type: "boolean" } };
 
     for (const [name, field] of inputFields(command)) {
-        // --no-x turns x off: a field named no-x would be lost, as an extension's might be (review of 25 October).
-        if (name.startsWith("no-")) {
-            throw new Error(`${command.name} has a field named ${name}, and none may start with no-, which the command line reads as turning ${name.slice(3)} off: rename it.`);
+        // A field the command line reads as something else would be lost, as an extension's might be.
+        const problem = commandLineFieldProblem(command.name, name, positionals.includes(name));
+
+        if (problem !== undefined) {
+            throw new Error(problem);
         }
 
         if (!positionals.includes(name)) {
@@ -189,7 +191,7 @@ async function campaignCommands(context: Context): Promise<AnyCommand[]>
     try {
         return await withFiles(context.files ?? new FileStore(context.systemFolders), async () => {
             const root = findCampaign(context.folder);
-            return root === undefined ? [] : (await packageCommands(root, context, commands.map((command) => command.name))).commands;
+            return root === undefined ? [] : (await packageCommands(root, context)).commands;
         });
     } catch {
         return [];

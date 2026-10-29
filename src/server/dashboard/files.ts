@@ -169,15 +169,13 @@ export function sendFile(file: string | undefined, path: string, request: Incomi
  */
 export function packagePageFile(path: string, served: Served): string | undefined
 {
-    let parts: string[];
+    const parts = path.split("/").map(decoded);
 
-    try {
-        parts = path.split("/").map((part) => decodeURIComponent(part));
-    } catch {
+    if (parts.some((part) => part === undefined)) {
         return undefined;
     }
 
-    const [name, version, ...rest] = parts;
+    const [name, version, ...rest] = parts as string[];
     const root = findCampaign(served.context.folder);
     const module = root === undefined ? undefined : withFiles(served.session, () => pageModulesOf(root, served).find((one) => one.package === name && one.version === version));
 
@@ -228,13 +226,8 @@ export async function sendThemeFile(name: string, query: URLSearchParams, reques
     const root = findCampaign(served.context.folder);
     await served.session.ready();
     const folder = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context))?.theme?.folder;
-    let file: string | undefined;
-
-    try {
-        file = folder === undefined ? undefined : themeFile(folder, decodeURIComponent(name));
-    } catch {
-        file = undefined;
-    }
+    const given = decoded(name);
+    const file = folder === undefined || given === undefined ? undefined : themeFile(folder, given);
 
     const type = file === undefined ? undefined : themeTypes[extname(file).toLowerCase()];
 
@@ -384,6 +377,16 @@ export function send(response: ServerResponse, status: number, type: string, bod
     response.writeHead(status, { ...securityHeaders, "Content-Security-Policy": policy, "Content-Type": type, "Cache-Control": "no-store" }).end(body);
 }
 
+/** A part of an address as written, without its percent signs; undefined when they do not decode. */
+export function decoded(part: string): string | undefined
+{
+    try {
+        return decodeURIComponent(part);
+    } catch {
+        return undefined;
+    }
+}
+
 /** Bytes with a tag of what they hold, read again at each load: the same bytes come back as not modified, as three.js and the dice after the first load. */
 function sendTagged(request: IncomingMessage, response: ServerResponse, bytes: Uint8Array, headers: Record<string, string>): void
 {
@@ -396,14 +399,4 @@ function sendTagged(request: IncomingMessage, response: ServerResponse, bytes: U
     }
 
     response.writeHead(200, all).end(request.method === "HEAD" ? undefined : bytes);
-}
-
-/** A part of an address as written, without its percent signs; undefined when they do not decode. */
-function decoded(part: string): string | undefined
-{
-    try {
-        return decodeURIComponent(part);
-    } catch {
-        return undefined;
-    }
 }

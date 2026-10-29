@@ -87,26 +87,6 @@ export function changedFields(fields: Record<string, unknown>, change: FieldChan
     return (document.toJS() ?? {}) as Record<string, unknown>;
 }
 
-function applyChange(document: Document, change: FieldChange): void
-{
-    for (const [name, value] of Object.entries(change.set ?? {})) {
-        // As a node, so that items can be added to or removed from it in the same change.
-        document.set(name, document.createNode(value, nodeOptions));
-    }
-
-    for (const name of change.unset ?? []) {
-        document.delete(name);
-    }
-
-    for (const [name, values] of Object.entries(change.add ?? {})) {
-        addToList(document, name, values);
-    }
-
-    for (const [name, values] of Object.entries(change.remove ?? {})) {
-        removeFromList(document, name, values);
-    }
-}
-
 /** Fields written as YAML, to show them. */
 export function formatFields(fields: Record<string, unknown>): string
 {
@@ -152,6 +132,40 @@ export function linkListItems(text: string): string[] | undefined
 {
     const value = text.trim();
     return linkList.test(value) ? [...value.matchAll(linkItem)].map((match) => match[0]) : undefined;
+}
+
+/** Whether a value holds a list inside a list, which a field cannot hold. */
+export function holdsNestedList(value: unknown): boolean
+{
+    if (Array.isArray(value)) {
+        return value.some((item) => Array.isArray(item) || holdsNestedList(item));
+    }
+
+    if (value !== null && typeof value === "object") {
+        return Object.values(value).some(holdsNestedList);
+    }
+
+    return false;
+}
+
+function applyChange(document: Document, change: FieldChange): void
+{
+    for (const [name, value] of Object.entries(change.set ?? {})) {
+        // As a node, so that items can be added to or removed from it in the same change.
+        document.set(name, document.createNode(value, nodeOptions));
+    }
+
+    for (const name of change.unset ?? []) {
+        document.delete(name);
+    }
+
+    for (const [name, values] of Object.entries(change.add ?? {})) {
+        addToList(document, name, values);
+    }
+
+    for (const [name, values] of Object.entries(change.remove ?? {})) {
+        removeFromList(document, name, values);
+    }
 }
 
 function addToList(document: Document, name: string, values: unknown[]): void
@@ -229,20 +243,6 @@ function sameLink(first: unknown, second: unknown): boolean
     const [one] = links(first);
     const [other] = links(second);
     return one !== undefined && other !== undefined && comparableText(one.page) === comparableText(other.page) && comparableText(one.section ?? "") === comparableText(other.section ?? "");
-}
-
-/** Whether a value holds a list inside a list, which a field cannot hold. */
-export function holdsNestedList(value: unknown): boolean
-{
-    if (Array.isArray(value)) {
-        return value.some((item) => Array.isArray(item) || holdsNestedList(item));
-    }
-
-    if (value !== null && typeof value === "object") {
-        return Object.values(value).some(holdsNestedList);
-    }
-
-    return false;
 }
 
 function parseFrontmatter(frontmatter: string, path: string): Document

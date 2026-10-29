@@ -10,18 +10,14 @@ import { type Surrounding, surroundings, surroundingsChange } from "./shared/env
 import { moveFacts } from "./shared/grid-moves.ts";
 import { atEntries, atEntry, clearCopies, offMapNote, placeGrid, type Standing, standing } from "./shared/grids.ts";
 import { picturesNote } from "./shared/images.ts";
+import { textList, textsOf, wholeNumber } from "./shared/inputs.ts";
 import { movePages } from "./shared/moves.ts";
 import { shortList, skippedPagesNote } from "./shared/notes.ts";
 import { measuresOf, roadsOf, sameSpot, stopOf } from "./shared/roads.ts";
-import { copyName, readOpenScene, updateScene } from "./shared/scene.ts";
+import { copyName, readOpenScene, scenePlace, updateScene } from "./shared/scene.ts";
 import { heldStack, type StackMove, stackMoveSteps, writeStacks } from "./shared/stacks.ts";
 import { newDatedLogEntry } from "./shared/time.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./shared/world.ts";
-
-// A list, or one text, as an MCP client may send it.
-const textList = z.union([z.string(), z.array(z.string())]);
-// A whole number, as text from a command line or as a number through MCP.
-const wholeNumber = z.preprocess((value) => (typeof value === "string" && /^[+-]?\d+$/.test(value.trim()) ? Number(value) : value), z.number().int());
 
 /** What move did, as its output tells it (CON-8, ENV-5). */
 interface MoveResult
@@ -63,7 +59,7 @@ export const move = defineCommand({
         const root = requireCampaign(context.folder);
         const world = campaignWorld(root, context);
         const { scene } = readOpenScene(root);
-        const names = (typeof input.page === "string" ? [input.page] : input.page).filter((name) => name.trim() !== "");
+        const names = textsOf(input.page);
 
         if (names.length === 0) {
             throw new Error("Give what moves, such as page Ettore.");
@@ -335,12 +331,6 @@ function groundNote(grid: Grid, square: Square): string | undefined
     const feature = featureAt(grid, square);
     const marks = [feature?.difficult ? "difficult ground" : "", feature?.hidden ? "hidden: the player does not know it is there" : ""].filter((mark) => mark !== "");
     return feature === undefined || marks.length === 0 ? undefined : `${squareName(square)} is ${feature.name}, ${marks.join(", ")}.`;
-}
-
-/** The place where the open scene is; none when there is no scene, or it is in no place. */
-function scenePlace(world: World, scene: Scene | undefined): Page | undefined
-{
-    return scene?.place === undefined ? undefined : pagesWithName(world, parsePageReference(scene.place).name)[0];
 }
 
 /**

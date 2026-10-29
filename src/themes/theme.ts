@@ -212,22 +212,6 @@ export function themeFile(folder: string, name: string): string | undefined
     }
 }
 
-/** Whether each part of a file's name is written as the disk has it, capitals too: Windows finds Images/Corner.SVG, Linux does not. */
-function writtenAsIs(folder: string, name: string): boolean
-{
-    let at = folder;
-
-    for (const part of name.split(/[\\/]/).filter((one) => one !== "" && one !== ".")) {
-        if (!readdirSync(at).includes(part)) {
-            return false;
-        }
-
-        at = join(at, part);
-    }
-
-    return true;
-}
-
 /** An ornament drawn in one colour, turned for a page that reads right to left: the theme gives one drawing for both modes and both directions. */
 export function drawnOrnament(svg: string, ink: string, mirrored: boolean): string
 {
@@ -250,14 +234,37 @@ export function drawnOrnament(svg: string, ink: string, mirrored: boolean): stri
     return `${coloured.slice(0, start)}<g transform="translate(${across} 0) scale(-1 1)">${coloured.slice(start, end)}</g>${coloured.slice(end)}`;
 }
 
+/** Whether each part of a file's name is written as the disk has it, capitals too: Windows finds Images/Corner.SVG, Linux does not. */
+function writtenAsIs(folder: string, name: string): boolean
+{
+    let at = folder;
+
+    for (const part of name.split(/[\\/]/).filter((one) => one !== "" && one !== ".")) {
+        if (!readdirSync(at).includes(part)) {
+            return false;
+        }
+
+        at = join(at, part);
+    }
+
+    return true;
+}
+
 const fontFiles = [".woff2", ".woff", ".ttf", ".otf"];
+
 const pictureFiles = [".svg", ".png", ".webp", ".jpg", ".jpeg"];
+
 const licenseFiles = [".txt", ".md"];
+
 // What a theme's file may weigh at most: a face, a picture.
 const mostBytes = 1_000_000;
+
 const colour = z.string().regex(/^#[0-9a-fA-F]{6}$/, { error: "write it as #rrggbb" }).transform((value) => value.toLowerCase());
+
 const fileName = z.string().min(1);
+
 const texture = z.object({ picture: fileName, fit: z.enum(["tile", "cover"]).optional() }).strict();
+
 const modeSchema = z.object({
     ...Object.fromEntries(requiredColours.map((name) => [name, colour])) as Record<(typeof requiredColours)[number], typeof colour>,
     ...Object.fromEntries(optionalColours.map((name) => [name, colour.optional()])) as Record<(typeof optionalColours)[number], z.ZodOptional<typeof colour>>,
@@ -267,6 +274,7 @@ const modeSchema = z.object({
     "page-texture": texture.optional(),
     "bar-texture": texture.optional(),
 }).strict();
+
 const themeSchema = z.object({
     name: z.string().min(1),
     fonts: z.array(

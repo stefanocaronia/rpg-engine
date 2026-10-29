@@ -84,6 +84,15 @@ describe("rpg reveal (REV-1–REV-3)", () => {
         expect(await ok("reveal", "Bianco#Tracce")).toBe("Nothing new to record. Not secrets, nothing to record: Bianco#Tracce (whoever knows Bianco knows it).");
     });
 
+    it("REV-2 (D-417): what knows names by an alias is known already, a secret too: nothing written, nothing logged", async () => {
+        await ok("write", "Rosa", "--text", "Una ragazza.\n\n> [!secret] Rabbia\n> Odia il padre.");
+        writeFileSync(join(folder, "world", "characters", "Ennio.md"), '---\nrole: pc\nknows: ["[[la figlia]]", "[[la figlia#Rabbia]]"]\n---\n');
+        const lines = readLogFile(folder).length;
+        expect(await ok("reveal", "Rosa", "Rosa#Rabbia")).toBe("Nothing new to record. Already known: Ennio: Rosa, Rosa#Rabbia.");
+        expect(page("characters/Ennio.md")).toBe('---\nrole: pc\nknows: ["[[la figlia]]", "[[la figlia#Rabbia]]"]\n---\n');
+        expect(readLogFile(folder)).toHaveLength(lines);
+    });
+
     it("REV-2: refuses what does not exist, with the secrets there are and how to name one, and writes nothing", async () => {
         expect(await refused("reveal", "Nessuno")).toBe("There is no page named Nessuno: look for it with find. Nothing recorded.");
         expect(await refused("reveal", "Coppa#Antidoto")).toBe(

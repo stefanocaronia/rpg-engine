@@ -311,7 +311,11 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             // In the setup the page sets how companions come and the name too, which the master hears.
             expect((await post("/api/config", { setting: "companions", value: "met in play" })).status).toBe(202);
             expect((await post("/api/config", { setting: "name", value: "La valle delle miniere" })).status).toBe(202);
-            expect((await post("/api/setup", { leave: "rigor" })).status).toBe(202);
+            expect((await post("/api/setup", { leave: "Rigor" })).status).toBe(202);
+            // Only a question of the setup is left to the master.
+            const odd = await post("/api/setup", { leave: "the whole game" });
+            expect(odd.status).toBe(400);
+            expect(JSON.parse(odd.body).error).toMatch(/^the whole game is no question of the setup: leave one of .*rigor/);
             // A choice left to the master stays so on the page until the master makes it.
             expect(JSON.parse((await get("/api/view?setup=true")).body).left).toEqual(["rigor"]);
             expect((await post("/api/setup", { ready: true })).status).toBe(202);
@@ -1165,6 +1169,12 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/answer", { asked: asked.id, choice: 2 })).status).toBe(202);
         await asking;
         page.close();
+        // While a call of the master's runs, as a long advance, going back waits for its end.
+        served.chat = { calls: 1 };
+        const working = await send("POST", "/api/saves", { action: "load", save: 1 });
+        expect(working.status).toBe(409);
+        expect(JSON.parse(working.body)).toEqual({ error: "The master is working on the game now: go back once they have answered." });
+        served.chat = undefined;
         // Anything else sent changes nothing.
         expect((await send("POST", "/api/saves", { action: "load", save: "last" })).status).toBe(400);
         expect((await send("POST", "/api/saves", { action: "reset" })).status).toBe(400);

@@ -59,7 +59,7 @@ export function systemChecks(folder: string): SystemChecks
         ...(system.attribution === undefined ? {} : { attribution: system.attribution }),
         unread: [...world.problems, ...checkWorld(world).map((problem) => `${problem.path === undefined ? "" : `${problem.path}: `}${problem.message}`)],
         names: namesTwice(world.pages.map((page) => page.name)),
-        unquoted: world.pages.filter((page) => /^[\w-]+: [+-]\d/m.test(readFileSync(join(system.folder, page.path), "utf8"))).map((page) => page.name),
+        unquoted: world.pages.filter((page) => /^[\w-]+: [+-]\d/m.test(frontmatterOf(readFileSync(join(system.folder, page.path), "utf8")))).map((page) => page.name),
         bases: world.pages.filter((page) => {
             const base = page.fields.creature ?? page.fields.item;
             return base !== undefined && !world.pages.some((other) => other.name === String(base).replace(/^\[\[|\]\]$/g, ""));
@@ -192,14 +192,22 @@ function undeclaredFields(system: GameSystem, pages: Pages): string[]
     return pages.flatMap((page) => Object.keys(page.fields).filter((field) => !isStandardField(page.type, field) && !declared.has(comparableText(field))).map((field) => `${page.name}: ${field}`));
 }
 
+/** A page's frontmatter, between its two lines of ---; "" for a page without one. */
+function frontmatterOf(text: string): string
+{
+    return /^---\r?\n([\s\S]*?)\r?\n---/.exec(text)?.[1] ?? "";
+}
+
 /** The pictures its pages link that its images folder lacks, and those it has that no page links. */
 function pictureProblems(folder: string, pages: Pages): string[]
 {
     const linked = new Set(pages.map((page) => imageFileName(page.fields.image)).filter((name) => name !== undefined));
+    // A page finds its picture whatever its case, as findImage does.
+    const linkedNames = new Set([...linked].map((name) => name.toLowerCase()));
     const missing = [...linked].filter((name) => withFiles(new FileStore(), () => findImage([folder], name)) === undefined);
     const images = join(folder, imagesFolderName);
     const files = existsSync(images) ? readdirSync(images, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name) : [];
-    return [...missing.map((name) => `${name}: linked, not in images/`), ...files.filter((name) => !linked.has(name)).map((name) => `${name}: in images/, linked by no page`)];
+    return [...missing.map((name) => `${name}: linked, not in images/`), ...files.filter((name) => !linkedNames.has(name.toLowerCase())).map((name) => `${name}: in images/, linked by no page`)];
 }
 
 /** Whether a text reads as a formula, which may begin with dice and end with words, as a weapon's damage (PRO-5). */

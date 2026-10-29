@@ -26,26 +26,6 @@ export function environmentAt(world: World, page: Page): { entry: EnvironmentEnt
     return found;
 }
 
-/**
- * The entries a place's environment holds, read line by line, so that nothing else falls with a line that does not read (ENV-1): such a line is left out,
- * one without a value counts as missing (INH-6), and of a name written twice the last line with a value holds (INH-5). validate reports them.
- */
-function readableEntries(value: unknown): EnvironmentEntry[]
-{
-    const items = Array.isArray(value) ? value : isEmptyField(value) ? [] : [value];
-    let entries: EnvironmentEntry[] = [];
-
-    for (const item of items) {
-        const read = readItem(item);
-
-        if ("entry" in read) {
-            entries = [...entries.filter((entry) => !sameName(entry.name, read.entry.name)), read.entry];
-        }
-    }
-
-    return entries;
-}
-
 /** The places whose environment holds at a page, nearest first: the page itself when it is a place, then the places of its chain (ENV-2). */
 export function placesAround(world: World, page: Page): Page[]
 {
@@ -125,6 +105,26 @@ export function changedEnvironment(current: unknown, add: unknown[], remove: unk
     }
 
     return entries.map(formatEnvironmentEntry);
+}
+
+/**
+ * The entries a place's environment holds, read line by line, so that nothing else falls with a line that does not read (ENV-1): such a line is left out,
+ * one without a value counts as missing (INH-6), and of a name written twice the last line with a value holds (INH-5). validate reports them.
+ */
+function readableEntries(value: unknown): EnvironmentEntry[]
+{
+    const items = Array.isArray(value) ? value : isEmptyField(value) ? [] : [value];
+    let entries: EnvironmentEntry[] = [];
+
+    for (const item of items) {
+        const read = readItem(item);
+
+        if ("entry" in read) {
+            entries = [...entries.filter((entry) => !sameName(entry.name, read.entry.name)), read.entry];
+        }
+    }
+
+    return entries;
 }
 
 /** The entry an item of the field writes: a line, or the map of one key that YAML makes of a line without quotes. */

@@ -80,38 +80,6 @@ export function inheritedByBase(world: World, page: Page): Inherited[]
     });
 }
 
-/**
- * Whether the part at `index` is a heading with no text of its own whose subsections are none of them `kept`, as when the page writes them all itself: it has nothing
- * left to show (INH-13, D-169), such as the Actions of a creature whose one action the page rewrote.
- */
-function emptyHeading(parts: { name: string; text: string; }[], index: number, kept: Set<{ name: string; text: string; }>): boolean
-{
-    const level = headingLevel(parts[index].text);
-
-    if (level === undefined || parts[index].text.split("\n").slice(1).some((line) => line.trim() !== "")) {
-        return false;
-    }
-
-    for (const next of parts.slice(index + 1)) {
-        // A secret has no level: it belongs to the section it is in.
-        if ((headingLevel(next.text) ?? Number.POSITIVE_INFINITY) <= level) {
-            break;
-        }
-
-        if (kept.has(next)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/** The level of the heading a part starts with, 2 for "## Actions"; undefined for a secret. */
-function headingLevel(text: string): number | undefined
-{
-    return /^(#{1,6})[ \t]/.exec(text)?.[1].length;
-}
-
 /** Whether a page writes a field with the very value it would read from its bases, and in no other case: that is no difference, and the page does not keep it (INH-9, D-125). */
 export function sameAsBase(world: World, page: Page, field: string): boolean
 {
@@ -332,6 +300,38 @@ export function newBaseProblem(world: World, page: { name: string; type?: PageTy
     const names = [...chain.map((linked) => linked.name), ...(page.type === field && next !== undefined ? [next] : [])];
     const back = names.findIndex((linked) => comparableText(linked) === comparableText(page.name));
     return back === -1 ? undefined : `${page.name} cannot derive from ${target.name}: the chain would come back to it (${[page.name, ...names.slice(0, back), page.name].join(" › ")}).`;
+}
+
+/**
+ * Whether the part at `index` is a heading with no text of its own whose subsections are none of them `kept`, as when the page writes them all itself: it has nothing
+ * left to show (INH-13, D-169), such as the Actions of a creature whose one action the page rewrote.
+ */
+function emptyHeading(parts: { name: string; text: string; }[], index: number, kept: Set<{ name: string; text: string; }>): boolean
+{
+    const level = headingLevel(parts[index].text);
+
+    if (level === undefined || parts[index].text.split("\n").slice(1).some((line) => line.trim() !== "")) {
+        return false;
+    }
+
+    for (const next of parts.slice(index + 1)) {
+        // A secret has no level: it belongs to the section it is in.
+        if ((headingLevel(next.text) ?? Number.POSITIVE_INFINITY) <= level) {
+            break;
+        }
+
+        if (kept.has(next)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/** The level of the heading a part starts with, 2 for "## Actions"; undefined for a secret. */
+function headingLevel(text: string): number | undefined
+{
+    return /^(#{1,6})[ \t]/.exec(text)?.[1].length;
 }
 
 /** The pages deriving from a page for which nothing nearer holds what `holds` looks for: neither they nor a base between them and the page. */

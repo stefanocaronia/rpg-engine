@@ -22,7 +22,7 @@ import { getVersion, isNewerVersion } from "../../core/version.ts";
 import { extensionWords, findExtension } from "../../extensions/index.ts";
 import { samePath } from "../../library/index.ts";
 import { readableSystems } from "../../systems/index.ts";
-import { mostSaid, readBody, readBytes, securityHeaders, send, sendJson } from "./files.ts";
+import { decoded, mostSaid, readBody, readBytes, securityHeaders, send, sendJson } from "./files.ts";
 import type { Served } from "./index.ts";
 
 /** What the player does with a package on the page (D-475), or with the library (D-491 (13)). */
@@ -58,7 +58,7 @@ export async function runForPlayer(request: IncomingMessage, response: ServerRes
         const context: Context = { ...served.context, actor: "player" };
         const { text, readOnly } = await withFiles(served.session, async () => {
             const root = requireCampaign(context.folder);
-            const command = (await packageCommands(root, context, [])).commands.find((one) => one.name === parsed.data.command && one.forPlayer === true);
+            const command = (await packageCommands(root, context)).commands.find((one) => one.name === parsed.data.command && one.forPlayer === true);
 
             if (command === undefined) {
                 throw new Error(`No package of the campaign gives ${parsed.data.command} to the player: a page runs only the commands its package marks player.`);
@@ -169,9 +169,15 @@ export async function changeSaves(request: IncomingMessage, response: ServerResp
         return;
     }
 
-    // Going back while the master waits for the player's answer would answer it in the game started over (D-361).
+    // Going back while the master waits for the player's answer would answer it in the game started over (D-361); while a call of theirs runs, it would write
+    // in the game loaded.
     if ((parsed.data.action === "load" || parsed.data.action === "reset") && served.asked !== undefined) {
         sendJson(response, 409, { error: "The master is asking you something: answer it first, then go back." });
+        return;
+    }
+
+    if ((parsed.data.action === "load" || parsed.data.action === "reset") && (served.context.chat?.calls ?? 0) > 0) {
+        sendJson(response, 409, { error: "The master is working on the game now: go back once they have answered." });
         return;
     }
 
@@ -585,9 +591,5 @@ function kindOf(result: string): string
 /** A file's name as the page sends it, encoded for a header; as it is when it does not decode. */
 function fileName(header: string): string
 {
-    try {
-        return decodeURIComponent(header);
-    } catch {
-        return header;
-    }
+    return decoded(header) ?? header;
 }

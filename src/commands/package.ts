@@ -13,7 +13,7 @@ import { comparableText } from "../core/text.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { dropConsent, type Extension, findExtension, installedExtensions, readExtension, recordConsent, shortName } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
-import { isLocalSpec, issuesPage, isTarball, isVerified, verifiedScope } from "../packages/index.ts";
+import { isLocalSpec, isPackageName, issuesPage, isTarball, isVerified, verifiedScope } from "../packages/index.ts";
 import { findSystem, readableSystems, systemFolders, systemHasCode, systemInFolder } from "../systems/index.ts";
 import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./shared/adventures.ts";
 import { campaignExamples } from "./shared/examples.ts";
@@ -236,6 +236,88 @@ export const packageCommand = defineCommand({
     },
 });
 
+/**
+ * Installs the game system the campaign in this context's folder plays, when it is one of ours that is not on this computer, as package install does, from
+ * npm's cache when the registry does not answer, then loads its code (SYS-10, D-514 (3)); once for each system, as `tried` keeps them. The line that says
+ * so to the master, or why it could not; undefined when there is no campaign or nothing to install, and for a system not ours, which asks the player's yes.
+ */
+export async function installCampaignSystem(context: Context, tried: Set<string>): Promise<string | undefined>
+{
+    const packages = context.packages;
+    return packages === undefined ? undefined : await withFiles(context.files ?? new FileStore(context.systemFolders), async () => {
+        const root = findCampaign(context.folder);
+        const name = root === undefined ? undefined : readTextSetting(root, "system");
+        const ours = name === undefined ? undefined : ourSystems.find((one) => comparableText(one.name) === comparableText(name.trim()));
+
+        // Each system is looked for once: one here stays, as package uninstall keeps the one the campaign plays.
+        if (root === undefined || ours === undefined || tried.has(ours.name)) {
+            return undefined;
+        }
+
+        tried.add(ours.name);
+
+        if (isSystemHere(context, ours.name)) {
+            return undefined;
+        }
+
+        let result: PackageResult;
+
+        try {
+            // As package install, which loads the code of the system the campaign plays.
+            result = await installed(root, context, ours.package);
+        } catch (error) {
+            // npm's why, without what package install adds for the master, and without its period: the master tells the player, and the player chooses (D-514 (3)).
+            const why = (error instanceof Error ? error.message : String(error)).replace(/^\S+ could not be installed: /, "").replace(/\s*Nothing changed[^.]*\.$/, "").replace(/\.$/, "");
+            return `The campaign's game system, ${ours.name}, is not on this computer, and could not be installed: ${why}. Tell the player off-game, in brackets and in a table's words, `
+                + `that this computer lacks the ${ours.name} rules and could not download them: once it is online, you install them with package install ${ours.name}, no yes needed. `
+                + "Until then you play without its pages and the sheet's worked-out numbers, or wait, as the player chooses.";
+        }
+
+        const version = result.kind === "system-installed" && result.system.version !== undefined ? ` ${result.system.version}` : "";
+        return `The campaign's game system, ${ours.name}, was not on this computer: RPG Engine installed it, ${ours.package}${version}, one of its own. Its pages and rules are there from now.`
+            + namesNote(root, context, ours.name);
+    });
+}
+
+/** Whether a package is on this computer, by its name as package takes it: an extension, a game system or a language npm installed (D-510). */
+export function isInstalledPackage(context: Context, name: string): boolean
+{
+    const asked = name.startsWith("npm:") ? name.slice(4) : name.startsWith("@") ? name : `${verifiedScope}${name}`;
+    // An npm name only, never a path that climbs to npm's own folder (D-510).
+    return [asked, name].some((one) => isPackageName(one) && installedExtensionFolder(context, one) !== undefined);
+}
+
+/** What the master hears of an adventure installed (D-483 (5)): what it is in a few lines, then what to read and where it starts, never its text. */
+export function adventureText(result: AdventureInstalled): string
+{
+    const { manifest } = result;
+    const by = manifest.author === undefined ? "" : ` by ${manifest.author}`;
+    const rights = manifest.license ?? "all rights reserved";
+    const counts = Object.entries(result.counts).map(([kind, count]) => `${count} ${kind}`).join(", ");
+    const levels = manifest.levels === undefined ? undefined : manifest.levels.from === manifest.levels.to ? `level ${manifest.levels.from}` : `levels ${manifest.levels.from}-${manifest.levels.to}`;
+    const start = result.start === undefined
+        ? ""
+        : result.start.placed
+        ? ` It starts in [[${result.start.name}]].`
+        : ` It starts in [[${result.start.name}]], in no place of the world yet: write it into the place that holds it, or give it a position, and a road from where it is reached.`;
+    const read = manifest.opening === undefined ? "Read its places and quests" : `Show [[${manifest.opening}]] and the pages it says to read first`;
+    return [
+        `${result.already ? "The campaign already has" : "Installed"} the adventure ${manifest.title} ${manifest.version}${by} (${rights}): ${manifest.about.replace(/\.$/, "")}. ${counts}.`,
+        levels === undefined ? "" : `It is written for ${levels}: adapt it to the party's.`,
+        manifest.content.length === 0 ? "" : `Its content: ${manifest.content.join(", ")}; keep to the player's lines and veils.`,
+        result.firstDate === undefined
+            ? ""
+            : result.shift === 0
+            ? `Its first date: [[${result.firstDate.page}]], on ${result.firstDate.date}.`
+            : `Its dates moved ${result.shift} days: the first, [[${result.firstDate.page}]], on ${result.firstDate.date}.`,
+        result.textDates === 0 ? "" : result.textDates === 1 ? "1 date in its text stays as written: count it from today." : `${result.textDates} dates in its text stay as written: count them from today.`,
+        result.shadows.length === 0 ? "" : `Its pages take the place of the game system's: ${result.shadows.join(", ")}.`,
+        result.covers.length === 0 ? "" : `Its rules take the place of the game system's: ${result.covers.join(", ")}.`,
+        result.ignored.length === 0 ? "" : `Left out, no part of an adventure: ${result.ignored.join(", ")}.`,
+        `${read} before you narrate.${start} Bring a hook into the story: the adventure begins when the player takes it.`,
+    ].filter((line) => line !== "").join(" ");
+}
+
 /** The packages on this computer, and those the campaign lists and does not find there: at once, without npm (D-442). */
 function listed(root: string, context: Context): PackageResult
 {
@@ -373,13 +455,19 @@ async function installed(root: string, context: Context, name: string): Promise<
     }
 
     // By its whole name: another's skies is not ours, nor ours another's.
-    const extension = usable(context, described.name, true);
+    const installed = installedAs(context, described.name);
+    const extension = "extension" in installed ? installed.extension : undefined;
 
     // What npm installed is not what the player said yes to, or no extension: it goes off this computer again, and never runs.
     if (extension === undefined || extension.version !== described.version) {
         await packages.uninstall(described.name);
         (context.extensionFolders ?? []).forEach((folder) => files().refresh(folder));
-        throw new Error(`npm installed ${described.name}, but not as the extension ${described.version} the player said yes to: RPG Engine cannot use it, and took it off this computer again. Nothing changed in the campaign.`);
+        const why = extension !== undefined
+            ? `it is the version ${extension.version}, not the ${described.version} the player said yes to`
+            : "unread" in installed
+            ? `its extension does not read: ${installed.unread}`
+            : "no extension of that name is where npm put it";
+        throw new Error(`npm installed ${described.name}, but ${why}: RPG Engine cannot use it, and took it off this computer again. Nothing changed in the campaign.`);
     }
 
     // The player's yes holds for this version and these files, on this computer: its code runs on the server and in the page (D-478, D-510).
@@ -406,7 +494,7 @@ async function installed(root: string, context: Context, name: string): Promise<
 
     // Its code is checked before the campaign lists it: a package that would not work is never added.
     const commands = runsCode(extension)
-        ? await packageCommandNames(extension, context, []).catch((error: unknown) => {
+        ? await packageCommandNames(extension, context).catch((error: unknown) => {
             throw new Error(`The code of ${extension.package} cannot be used: ${error instanceof Error ? error.message : String(error)}. Nothing changed in the campaign.`);
         })
         : [];
@@ -618,49 +706,6 @@ function languagesHere(context: Context): InstalledLanguage[]
 }
 
 /**
- * Installs the game system the campaign in this context's folder plays, when it is one of ours that is not on this computer, as package install does, from
- * npm's cache when the registry does not answer, then loads its code (SYS-10, D-514 (3)); once for each system, as `tried` keeps them. The line that says
- * so to the master, or why it could not; undefined when there is no campaign or nothing to install, and for a system not ours, which asks the player's yes.
- */
-export async function installCampaignSystem(context: Context, tried: Set<string>): Promise<string | undefined>
-{
-    const packages = context.packages;
-    return packages === undefined ? undefined : await withFiles(context.files ?? new FileStore(context.systemFolders), async () => {
-        const root = findCampaign(context.folder);
-        const name = root === undefined ? undefined : readTextSetting(root, "system");
-        const ours = name === undefined ? undefined : ourSystems.find((one) => comparableText(one.name) === comparableText(name.trim()));
-
-        // Each system is looked for once: one here stays, as package uninstall keeps the one the campaign plays.
-        if (root === undefined || ours === undefined || tried.has(ours.name)) {
-            return undefined;
-        }
-
-        tried.add(ours.name);
-
-        if (isSystemHere(context, ours.name)) {
-            return undefined;
-        }
-
-        let result: PackageResult;
-
-        try {
-            // As package install, which loads the code of the system the campaign plays.
-            result = await installed(root, context, ours.package);
-        } catch (error) {
-            // npm's why, without what package install adds for the master, and without its period: the master tells the player, and the player chooses (D-514 (3)).
-            const why = (error instanceof Error ? error.message : String(error)).replace(/^\S+ could not be installed: /, "").replace(/\s*Nothing changed[^.]*\.$/, "").replace(/\.$/, "");
-            return `The campaign's game system, ${ours.name}, is not on this computer, and could not be installed: ${why}. Tell the player off-game, in brackets and in a table's words, `
-                + `that this computer lacks the ${ours.name} rules and could not download them: once it is online, you install them with package install ${ours.name}, no yes needed. `
-                + "Until then you play without its pages and the sheet's worked-out numbers, or wait, as the player chooses.";
-        }
-
-        const version = result.kind === "system-installed" && result.system.version !== undefined ? ` ${result.system.version}` : "";
-        return `The campaign's game system, ${ours.name}, was not on this computer: RPG Engine installed it, ${ours.package}${version}, one of its own. Its pages and rules are there from now.`
-            + namesNote(root, context, ours.name);
-    });
-}
-
-/**
  * The names of a system just installed in the chat, which the host's list of tools may not have yet (D-518): its counter, its rest and its coins, those that
  * are not the neutral ones; nothing when it names none of them.
  */
@@ -689,13 +734,6 @@ function isSystemHere(context: Context, name: string): boolean
     } catch {
         return true;
     }
-}
-
-/** Whether a package is on this computer, by its name as package takes it: an extension, a game system or a language npm installed (D-510). */
-export function isInstalledPackage(context: Context, name: string): boolean
-{
-    const asked = name.startsWith("npm:") ? name.slice(4) : name.startsWith("@") ? name : `${verifiedScope}${name}`;
-    return [asked, name].some((one) => installedExtensionFolder(context, one) !== undefined);
 }
 
 /** The folder npm installed a package in, among the extensions' folders; undefined when it is not there. */
@@ -770,13 +808,28 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
 }
 
 /** The installed extension of this package, when it reads; undefined when it is missing or broken. */
-function usable(context: Context, name: string, whole = false): Extension | undefined
+function usable(context: Context, name: string): Extension | undefined
 {
     try {
-        const found = whole ? installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name) : undefined;
-        return whole ? (found === undefined ? undefined : readExtension(found.folder)) : findExtension(context.extensionFolders ?? [], name);
+        return findExtension(context.extensionFolders ?? [], name);
     } catch {
         return undefined;
+    }
+}
+
+/** The extension npm installed by this whole name, or why it is none: not there under that name, or not read, with what is wrong. */
+function installedAs(context: Context, name: string): { extension: Extension; } | { unread: string; } | { missing: true; }
+{
+    const found = installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name);
+
+    if (found === undefined) {
+        return { missing: true };
+    }
+
+    try {
+        return { extension: readExtension(found.folder) };
+    } catch (error) {
+        return { unread: error instanceof Error ? error.message : String(error) };
     }
 }
 
@@ -855,15 +908,17 @@ async function uninstalled(root: string, context: Context, name: string): Promis
         ? installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name || comparableText(shortName(one.package)) === comparableText(name))
         : { package: other };
 
-    // A package that reads as nothing, as a system whose system.yaml is broken, is still npm's to take away by its folder.
-    if (found === undefined && packages !== undefined && (context.extensionFolders ?? []).some((folder) => name.startsWith("@") && files().entries(join(folder, ...name.split("/"))).length > 0)) {
-        const why = await packages.uninstall(name);
+    // A package that reads as nothing, as a system whose system.yaml is broken, is still npm's to take away by its folder, under its npm name.
+    const npmName = name.startsWith("npm:") ? name.slice(4) : name;
+
+    if (found === undefined && packages !== undefined && isPackageName(npmName) && (context.extensionFolders ?? []).some((folder) => files().entries(join(folder, ...npmName.split("/"))).length > 0)) {
+        const why = await packages.uninstall(npmName);
 
         if (why !== undefined) {
-            throw new Error(`${name} could not be taken off this computer: ${why}. Nothing changed.`);
+            throw new Error(`${npmName} could not be taken off this computer: ${why}. Nothing changed.`);
         }
 
-        return { kind: "uninstalled", name, wasUsed: false, extension: false };
+        return { kind: "uninstalled", name: npmName, wasUsed: false, extension: false };
     }
 
     if (found === undefined) {
@@ -904,37 +959,6 @@ async function adventureInstalled(root: string, context: Context, spec: string):
 {
     const adventure = await readAdventureSpec(spec, context);
     return { kind: "adventure-installed", ...installAdventure(root, context, adventure, spec) };
-}
-
-/** What the master hears of an adventure installed (D-483 (5)): what it is in a few lines, then what to read and where it starts, never its text. */
-export function adventureText(result: AdventureInstalled): string
-{
-    const { manifest } = result;
-    const by = manifest.author === undefined ? "" : ` by ${manifest.author}`;
-    const rights = manifest.license ?? "all rights reserved";
-    const counts = Object.entries(result.counts).map(([kind, count]) => `${count} ${kind}`).join(", ");
-    const levels = manifest.levels === undefined ? undefined : manifest.levels.from === manifest.levels.to ? `level ${manifest.levels.from}` : `levels ${manifest.levels.from}-${manifest.levels.to}`;
-    const start = result.start === undefined
-        ? ""
-        : result.start.placed
-        ? ` It starts in [[${result.start.name}]].`
-        : ` It starts in [[${result.start.name}]], in no place of the world yet: write it into the place that holds it, or give it a position, and a road from where it is reached.`;
-    const read = manifest.opening === undefined ? "Read its places and quests" : `Show [[${manifest.opening}]] and the pages it says to read first`;
-    return [
-        `${result.already ? "The campaign already has" : "Installed"} the adventure ${manifest.title} ${manifest.version}${by} (${rights}): ${manifest.about.replace(/\.$/, "")}. ${counts}.`,
-        levels === undefined ? "" : `It is written for ${levels}: adapt it to the party's.`,
-        manifest.content.length === 0 ? "" : `Its content: ${manifest.content.join(", ")}; keep to the player's lines and veils.`,
-        result.firstDate === undefined
-            ? ""
-            : result.shift === 0
-            ? `Its first date: [[${result.firstDate.page}]], on ${result.firstDate.date}.`
-            : `Its dates moved ${result.shift} days: the first, [[${result.firstDate.page}]], on ${result.firstDate.date}.`,
-        result.textDates === 0 ? "" : result.textDates === 1 ? "1 date in its text stays as written: count it from today." : `${result.textDates} dates in its text stay as written: count them from today.`,
-        result.shadows.length === 0 ? "" : `Its pages take the place of the game system's: ${result.shadows.join(", ")}.`,
-        result.covers.length === 0 ? "" : `Its rules take the place of the game system's: ${result.covers.join(", ")}.`,
-        result.ignored.length === 0 ? "" : `Left out, no part of an adventure: ${result.ignored.join(", ")}.`,
-        `${read} before you narrate.${start} Bring a hook into the story: the adventure begins when the player takes it.`,
-    ].filter((line) => line !== "").join(" ");
 }
 
 /** What the master hears of an export (ADV-7): the file, what it came from and what stayed out. */

@@ -1,7 +1,8 @@
 // The test kit of a package's repository (D-506, D-514): a campaign on a game system whose folder it is given, beside the engine's, as the 5e's repository,
 // the lockpicking's and the weather's run theirs; its code loaded from there, its versions of the rules read, its own widgets, the core's ask, the tools' descriptions, and the
 // checks of a system's folder.
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
@@ -57,6 +58,32 @@ describe("testCampaign with the folders of game systems", () => {
         expect(await campaign.ok("config", "system")).toMatch(/^system: marsh, the fake system of the core's tests, the version of its rules still to ask\n/);
         await expect(testCampaign({ system: "fake", systems: [join(fake, "world")] })).rejects.toThrow(/world has no system\.yaml: give the folder of a game system\.$/);
     });
+
+    it("leaves no folder behind when init refuses, and refuses a page's answer that is no JSON", async () => {
+        // A temporary folder of this test's own, where the kit makes its campaigns, as no other test file makes theirs there.
+        const own = makeTempFolder();
+        const kept = { TEMP: process.env.TEMP, TMP: process.env.TMP, TMPDIR: process.env.TMPDIR };
+        Object.assign(process.env, { TEMP: own, TMP: own, TMPDIR: own });
+
+        try {
+            expect(tmpdir()).toBe(own);
+            await expect(testCampaign({ system: "no-such-system", systems: [fake] })).rejects.toThrow(/init .* failed/);
+            expect(readdirSync(own)).toEqual([]);
+        } finally {
+            for (const [name, value] of Object.entries(kept)) {
+                if (value === undefined) {
+                    delete process.env[name];
+                } else {
+                    process.env[name] = value;
+                }
+            }
+        }
+
+        expect(existsSync(join(fake, "system.yaml"))).toBe(true);
+        campaign = await testCampaign({ system: "fake", systems: [fake] });
+        const dashboard = await campaign.dashboard();
+        await expect(dashboard.get("/nothing")).rejects.toThrow(/^GET \/nothing answered 404 with no JSON/);
+    });
 });
 
 describe("testCampaign for a game system's own tests", () => {
@@ -87,5 +114,13 @@ describe("testCampaign for a game system's own tests", () => {
         const checks = systemChecks(fake);
         expect(checks).toMatchObject({ name: "fake", unread: [], names: [], declarations: [], values: [], undeclared: [], pictures: [], theme: [] });
         expect(checks.pages).toBeGreaterThan(20);
+    });
+
+    it("finds a picture linked in another case, and reads only the frontmatter for numbers without quotes", () => {
+        const copy = join(makeTempFolder(), "fake");
+        cpSync(fake, copy, { recursive: true });
+        const hound = join(copy, "world", "creatures", "Bog Hound.md");
+        writeFileSync(hound, `${readFileSync(hound, "utf8").replace('image: "[[hound.svg]]"', 'image: "[[Hound.svg]]"')}\nBite: +2 to hit, as the text says it.\n`);
+        expect(systemChecks(copy)).toMatchObject({ pictures: [], unquoted: [] });
     });
 });

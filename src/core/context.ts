@@ -4,6 +4,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FileStore } from "./store.ts";
 
+/** How long the player may take to click, on the page or in the host's form: as long as a host waits for a call that keeps reporting progress. */
+export const playerWait = 30 * 60 * 1000;
+
 /** What a command needs from the outside world: tests replace it to get repeatable results. */
 export interface Context
 {
@@ -61,9 +64,9 @@ export interface Context
     dashboard?: string;
     /**
      * What the player changed on the dashboard since the master's last call, taken for the head of the next call's answer, and given back when that answer
-     * never goes, as for a call the user stopped (D-341).
+     * never goes, as for a call the user stopped (D-341); the parts it tells count as told in `told`, the call's own.
      */
-    news?: () => { lines: string[]; restore(): void; };
+    news?: (told?: Set<string>) => { lines: string[]; restore(): void; };
     /** What makes pictures from words on this computer (D-308), as Codex with the player's login; missing where none can, as in tests. */
     pictures?: PictureMaker;
     /** What writes text from a brief on this computer, outside the chat, as Codex or Claude Code with the player's login (D-406); missing where none can. */

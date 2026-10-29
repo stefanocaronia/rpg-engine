@@ -5,7 +5,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText, valueNamed } from "../core/text.ts";
 import { readCounter } from "../counters/index.ts";
-import { DiceError, mostCoins, parseNotation, rollDice, tossCoins } from "../dice/index.ts";
+import { diceProblem, mostCoins, rollDice, tossCoins } from "../dice/index.ts";
 import { closedSquare, readSquare } from "../grid/index.ts";
 import { findPage, loadWorld, locate, type Page, playerCharacters, type World } from "../pages/index.ts";
 import { rollName } from "../systems/index.ts";
@@ -14,6 +14,7 @@ import { hasNames, namesAsZero, rollerOf, sheetDiceOf, withSheetValues } from ".
 import { type RestDice, restDice, spendDice } from "./shared/dice-pool.ts";
 import { effectiveFields } from "./shared/effect-layer.ts";
 import { placeGrid } from "./shared/grids.ts";
+import { textList } from "./shared/inputs.ts";
 import { allSaid, packagesAsking, packagesRolled } from "./shared/packages/hooks.ts";
 import { recipeNamed } from "./shared/recipes.ts";
 import { knowledgeNote } from "./shared/sheet.ts";
@@ -50,9 +51,6 @@ const buttonWords: Record<string, { roll: string; change: string; choice: string
     uk: { roll: "Кидок", change: "Передумати", choice: "Вибір", square: "Переміщення", rest: "Відпочинок", done: "Готово", toss: "Кинути монету", tosses: "Кинути {count} монети" },
     zh: { roll: "掷骰", change: "我改主意了", choice: "选择", square: "移动", rest: "休息", done: "完成", toss: "抛硬币", tosses: "抛{count}枚硬币" },
 };
-
-// A list, or one text, as an MCP client may send it.
-const textList = z.union([z.string(), z.array(z.string())]);
 
 /** One button: a check with its dice and the field of the sheet it rolls, when it names one; or an answer. */
 interface Option
@@ -246,6 +244,12 @@ export function tonesOf(given: unknown[] | undefined, faces: number[]): { tones?
         : { tones: given.map((tone) => (tone === "good" || tone === "bad" ? tone : null)) };
 }
 
+/** Whether a text is the dice of a check, as 1d20+5 or 1d20+athletics (ASK-2, ASK-12). */
+export function isCheckDice(text: string): boolean
+{
+    return diceProblem(namesAsZero(text)) === undefined;
+}
+
 /**
  * A label with its dice in the middle written as a check, for a refusal: words after the dice go before them, as Danni radianti 1d8; what is in brackets,
  * as (CD 13), goes in the question (D-518). A label without dice gets an example.
@@ -261,12 +265,6 @@ function diceAtTheEnd(label: string): string
     const [, name, dice, after] = found;
     const named = (...parts: string[]): string => parts.filter((part) => part !== "").join(" ");
     return after.startsWith("(") ? `${named(name, dice)}, and ${after} goes in the question` : named(name, after, dice);
-}
-
-/** Whether a text is the dice of a check, as 1d20+5 or 1d20+athletics (ASK-2, ASK-12). */
-export function isCheckDice(text: string): boolean
-{
-    return isDice(namesAsZero(text));
 }
 
 /** The words of the buttons in the campaign's language (ASK-7). */
@@ -703,7 +701,7 @@ function keptDice(term: string): string
  * away; one that never showed, a page not open or a form the host does not show, leaves the other to answer. Neither shown is absent: the master asks in words.
  * A form shows `shown` in place of the labels, when they are as many and each its own.
  */
-export async function chooseAnswer(context: Context, question: string, title: string, labels: string[], rows?: Rows, shown?: string[]): Promise<Answer>
+async function chooseAnswer(context: Context, question: string, title: string, labels: string[], rows?: Rows, shown?: string[]): Promise<Answer>
 {
     const formLabels = shown?.length === labels.length && new Set(shown).size === shown.length ? shown : labels;
     const { page, player } = context;
@@ -802,20 +800,6 @@ function sheetChecks(root: string, context: Context, checks: Option[], who: stri
         const fields = Object.keys(taken);
         return { ...check, notation: notation.replace(/\s+/g, ""), ...(fields.length === 1 ? { field: fields[0] } : {}) };
     });
-}
-
-/** Whether a text is dice to roll, such as 1d20+5 or 2d20kh1+3: a number alone is not. */
-function isDice(text: string): boolean
-{
-    try {
-        return parseNotation(text).some((term) => term.kind === "dice");
-    } catch (error) {
-        if (error instanceof DiceError) {
-            return false;
-        }
-
-        throw error;
-    }
 }
 
 /** The player's character the roll belongs to: the one named, or the only one there is (ASK-2). */

@@ -10,6 +10,7 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import { tonesOf } from "../src/commands/ask.ts";
 import { campaignPageModules } from "../src/commands/shared/packages/extensions.ts";
 import { campaignWidgets, widgetCard } from "../src/commands/shared/packages/widgets.ts";
+import { hasConsent, recordConsent } from "../src/core/consents.ts";
 import type { Context, Rows } from "../src/core/context.ts";
 import { readsApi } from "../src/core/package-declarations.ts";
 import { SessionStore } from "../src/core/session-store.ts";
@@ -66,6 +67,16 @@ describe("the installed extensions", () => {
         expect(findExtension(testExtensionFolders, "@rpgengine/omens")?.name).toBe("omens");
         expect(findExtension(testExtensionFolders, "SEASONS-of-the-test")?.needs).toEqual({ system: "fake" });
         expect(findExtension(testExtensionFolders, "weather-of-nowhere")).toBeUndefined();
+    });
+
+    it("are found by their whole name first: another's skies is never ours, which has the same name alone", () => {
+        const modules = join(makeTempFolder(), "node_modules");
+        cpSync(join(testExtensionFolders[0], "skies"), join(modules, "@rpgengine", "skies"), { recursive: true });
+        cpSync(join(testExtensionFolders[0], "skies"), join(modules, "skies"), { recursive: true });
+        const manifest = join(modules, "skies", "package.json");
+        writeFileSync(manifest, JSON.stringify({ ...JSON.parse(readFileSync(manifest, "utf8")), name: "skies" }));
+        expect(findExtension([modules], "skies")?.package).toBe("skies");
+        expect(findExtension([modules], "@rpgengine/skies")?.package).toBe("@rpgengine/skies");
     });
 });
 
@@ -697,6 +708,20 @@ describe("a package's code in the dashboard's page (D-510, D-511)", () => {
         writeFileSync(join(second, "A.js"), "a");
         writeFileSync(join(second, "b.js"), "b");
         expect(packageFingerprint(first)).toBe(packageFingerprint(second));
+
+        // The yes covers its dependencies as npm resolved them: one changed by another install asks it again; a name that is a path is no dependency.
+        const modules = join(root, "packages", "node_modules");
+        const tarot = join(modules, "@test", "tarot");
+        const helper = join(modules, "helper");
+        mkdirSync(tarot, { recursive: true });
+        mkdirSync(helper, { recursive: true });
+        writeFileSync(join(tarot, "package.json"), JSON.stringify({ name: "@test/tarot", version: "1.0.0", dependencies: { "helper": "^1.0.0", "../../..": "*" } }));
+        writeFileSync(join(helper, "package.json"), JSON.stringify({ name: "helper", version: "1.0.0" }));
+        writeFileSync(join(helper, "index.js"), "export const shuffle = () => 1;");
+        recordConsent(tarot, "@test/tarot", "1.0.0");
+        expect(hasConsent(tarot, "@test/tarot", "1.0.0")).toBe(true);
+        writeFileSync(join(helper, "index.js"), "export const shuffle = () => 2;");
+        expect(hasConsent(tarot, "@test/tarot", "1.0.0")).toBe(false);
     });
 
     it("read a game system's page module too, as its package.json declares it, listed before the extensions' (D-511)", async () => {

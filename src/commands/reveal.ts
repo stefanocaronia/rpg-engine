@@ -6,13 +6,12 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { baseChain, isEmptyField, isPartyMember, isPlayerCharacter, links, locate, type Page, pageNamed, parsePageReference, playerCharacters, secretNames, shownPart, systemLabel, withPage, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import { textList, textsOf } from "./shared/inputs.ts";
+import { type KnownLink, knownLink, knownLinks } from "./shared/knowledge.ts";
 import { placedPosition } from "./shared/positions.ts";
 import { copyName, readOpenScene } from "./shared/scene.ts";
 import { newDatedLogEntry } from "./shared/time.ts";
 import { campaignWorld } from "./shared/world.ts";
-
-// A list, or one text, as an MCP client may send it.
-const textList = z.union([z.string(), z.array(z.string())]);
 
 /** Something that can be learned, as knows records it: a page, or one of its secrets where it is written (REV-1, REV-2); or a section everyone can read. */
 type Learnable = { kind: "known"; link: string; shown: string; asked?: string; } | { kind: "public"; shown: string; page: string; };
@@ -43,14 +42,14 @@ export const reveal = defineCommand({
         const root = requireCampaign(context.folder);
         let world = campaignWorld(root, context);
         const { scene } = readOpenScene(root);
-        const asked = listOf(input.page);
+        const asked = textsOf(input.page);
 
         if (asked.length === 0) {
             throw new Error("Give what they learn, such as page Coppa#Veleno, or a whole page such as Varro.");
         }
 
         // An empty to, as an MCP client may send it, is left out.
-        const to = input.to === undefined ? [] : listOf(input.to);
+        const to = textsOf(input.to);
         const learners = to.length === 0 ? [playerCharacter(world)] : [...new Set(to.map((name) => learnerOf(world, scene, name)))];
         const found = asked.map((item) => learnableOf(root, world, item));
         const known = found.filter((item) => item.kind === "known").filter((item, index, all) => all.findIndex((other) => sameLink(other.link, item.link)) === index);
@@ -59,7 +58,7 @@ export const reveal = defineCommand({
         const lines: { learner: Page; links: string[]; }[] = [];
 
         for (const learner of learners) {
-            const already = known.filter((item) => knowsLink(learner, item.link));
+            const already = known.filter((item) => knowsLink(world, learner, item.link));
             const learned = known.filter((item) => !already.includes(item));
 
             if (already.length > 0) {
@@ -109,7 +108,7 @@ export const reveal = defineCommand({
 function logLearned(root: string, context: Context, world: World, lines: { learner: Page; links: string[]; }[]): void
 {
     const players = playerCharacters(world);
-    const playerKnows = (link: string): boolean => players.some((player) => knowsLink(player, link));
+    const playerKnows = (link: string): boolean => players.some((player) => knowsLink(world, player, link));
 
     for (const { learner, links: learned } of lines) {
         const visible = isPlayerCharacter(learner) || (isPartyMember(learner) && learned.every(playerKnows));
@@ -267,11 +266,17 @@ function listHint(name: string, field: "page" | "to"): string | undefined
     return name.includes(",") ? `for more than one, give a list, such as ${field} [${name.split(",").map((part) => part.trim()).join(", ")}].` : undefined;
 }
 
-/** Whether a character's knows holds a link, however written. */
-function knowsLink(learner: Page, link: string): boolean
+/** Whether a character's knows holds a link, however written: by the page it names, under an alias too (D-417), and its secret. */
+function knowsLink(world: World, learner: Page, link: string): boolean
 {
-    const knows = learner.fields.knows;
-    return (Array.isArray(knows) ? knows : []).some((entry) => typeof entry === "string" && sameLink(entry, link));
+    const [wanted] = links(link).map((one) => knownLink(world, one));
+
+    if (wanted === undefined) {
+        return false;
+    }
+
+    const samePage = (known: KnownLink): boolean => (known.page === undefined || wanted.page === undefined ? comparableText(known.name) === comparableText(wanted.name) : known.page.path === wanted.page.path);
+    return knownLinks(world, learner).some((known) => samePage(known) && comparableText(known.secret ?? "") === comparableText(wanted.secret ?? ""));
 }
 
 /** Whether two texts are the same link: [[coppa#veleno]] and [[Coppa#Veleno]]. */
@@ -279,9 +284,4 @@ function sameLink(first: string, second: string): boolean
 {
     const key = (text: string): string => links(text).map((link) => comparableText(`${link.page}#${link.section ?? ""}`)).join("|");
     return key(first) !== "" && key(first) === key(second);
-}
-
-function listOf(value: string | string[]): string[]
-{
-    return (typeof value === "string" ? [value] : value).filter((item) => item.trim() !== "");
 }

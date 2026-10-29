@@ -48,21 +48,6 @@ export function saveEffects(root: string, context: Context, world: World, holder
     return page;
 }
 
-/** The counters a page writes above their written maximum and above the maximum it reads with these effects, brought down to it, no lower than the written one (FOR-6). */
-function currentsAsRead(world: World, page: Page, effects: Effect[]): Record<string, string>
-{
-    const read = effectiveFields(world, withEffects(page, effects));
-    return Object.fromEntries(
-        Object.entries(page.fields).flatMap(([field, value]): [string, string][] => {
-            const written = readCounter(value);
-            const now = isDeclaredUncounted(world, field) ? undefined : readCounter(read[field]);
-            // Only what is above the written maximum, which only an effect allows, as Aid's: a form that lowers the maximum leaves the page's own (FOR-6).
-            const excess = written?.max !== undefined && now?.max !== undefined && written.value > written.max && written.value > now.max;
-            return written?.max === undefined || now?.max === undefined || !excess ? [] : [[field, String(formatCounter({ value: Math.max(now.max, written.max), max: written.max }))]];
-        }),
-    );
-}
-
 /** An effects field that does not read is never written over: what was written by hand would be lost (EFF-12). */
 export function checkEffectsReadable(page: Page): void
 {
@@ -267,6 +252,21 @@ export function effectProblems(world: World, scene: Scene | undefined, now: Game
             return computedValueProblems(world, page, path, effect, endIt);
         });
     });
+}
+
+/** The counters a page writes above their written maximum and above the maximum it reads with these effects, brought down to it, no lower than the written one (FOR-6). */
+function currentsAsRead(world: World, page: Page, effects: Effect[]): Record<string, string>
+{
+    const read = effectiveFields(world, withEffects(page, effects));
+    return Object.fromEntries(
+        Object.entries(page.fields).flatMap(([field, value]): [string, string][] => {
+            const written = readCounter(value);
+            const now = isDeclaredUncounted(world, field) ? undefined : readCounter(read[field]);
+            // Only what is above the written maximum, which only an effect allows, as Aid's: a form that lowers the maximum leaves the page's own (FOR-6).
+            const excess = written?.max !== undefined && now?.max !== undefined && written.value > written.max && written.value > now.max;
+            return written?.max === undefined || now?.max === undefined || !excess ? [] : [[field, String(formatCounter({ value: Math.max(now.max, written.max), max: written.max }))]];
+        }),
+    );
 }
 
 /** A value an effect gives to a field the game system works out, as ac written before the system did: it does not count (FOR-7). */

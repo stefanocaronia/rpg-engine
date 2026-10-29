@@ -154,6 +154,62 @@ export function extensionWordsProblems(root: string, context: Context): Problem[
     });
 }
 
+/**
+ * Where campaign.yaml would put the widgets it names, checked before it is written: each a widget of the campaign's extensions, each place one of those the
+ * dashboard has. It throws what is wrong, and how to write it.
+ */
+export function checkWidgetSpots(root: string, context: Context, entries: Record<string, unknown>): void
+{
+    const spots = campaignWidgetNames(root, context);
+    const known = Object.keys(spots);
+
+    for (const [name, value] of Object.entries(entries)) {
+        const own = Object.entries(spots).find(([one]) => comparableText(one) === comparableText(name))?.[1];
+
+        if (own === undefined) {
+            const names = known.length === 0 ? "the campaign's packages have none" : `the campaign's are ${known.join(", ")}`;
+            throw new Error(`There is no widget ${name}: ${names}. Write one as ${known[0] ?? "weather.today"}: side. Nothing changed.`);
+        }
+
+        // A widget made for each of the party shows only there, or nowhere, as its hook needs who (D-514); another may come there too (D-516).
+        const place = typeof value === "string" ? value : value !== null && typeof value === "object" && "place" in value ? value.place : undefined;
+
+        if (own.place === "person" && place !== "person" && place !== "off") {
+            throw new Error(`${name} stands on each of the party: write ${name}: off, or ${name}: person. Nothing changed.`);
+        }
+
+        if (own.place === "card") {
+            throw new Error(`${name} shows only in the card its package asks a roll in, so it has no place to choose: take ${name} out of widgets. Nothing changed.`);
+        }
+
+        if (!spotSchema.safeParse(value).success) {
+            // Of a place written as its parts, what is wrong with them, as an order that is no whole number.
+            const issue = value !== null && typeof value === "object" ? spotObject.safeParse(value).error?.issues[0] : undefined;
+            const why = issue === undefined ? "" : ` Here ${[...issue.path, ""].join(" ")}${issue.message}.`;
+            throw new Error(`${name} takes ${widgetSpots.join(", ")}, or {place, page, order}, such as ${name}: side.${why} Nothing changed.`);
+        }
+    }
+}
+
+/**
+ * What one widget of a package shows now, for the card of a question (D-507): read as the dashboard reads it, in the campaign's language; nothing when its
+ * hook is not there, fails, gives what no part draws, or is late.
+ */
+export async function widgetCard(root: string, context: Context, extension: CodePackage, name: string, key: string, who?: string): Promise<ShownContent | undefined>
+{
+    return await widgetFor(root, context, extension, name, { key, ...(who === undefined ? {} : { who }) });
+}
+
+/**
+ * What one widget of a package shows for a card of its page code, for the character the card shows (D-514): the package by its npm name, the widget declared
+ * by it; nothing when either is not the campaign's, or as for a card of a question.
+ */
+export async function packageWidget(root: string, context: Context, packageName: string, name: string, who: string | undefined): Promise<ShownContent | undefined>
+{
+    const owner = campaignPackages(root, context).find((one) => one.package === packageName);
+    return owner === undefined || !owner.widgets.some((widget) => widget.name === name) ? undefined : await widgetFor(root, context, owner, name, who === undefined ? {} : { who });
+}
+
 /** A widget with what its hook shows now, or why it shows nothing: its code, a hook it lacks, a hook that failed or was late, what it gave. */
 async function widgetNow(
     root: string,
@@ -254,43 +310,6 @@ function campaignWidgetNames(root: string, context: Context): Record<string, Wid
     return Object.fromEntries(campaignPackages(root, context).flatMap((extension) => extension.widgets.map((widget) => [`${extension.name}.${widget.name}`, ownSpot(widget)])));
 }
 
-/**
- * Where campaign.yaml would put the widgets it names, checked before it is written: each a widget of the campaign's extensions, each place one of those the
- * dashboard has. It throws what is wrong, and how to write it.
- */
-export function checkWidgetSpots(root: string, context: Context, entries: Record<string, unknown>): void
-{
-    const spots = campaignWidgetNames(root, context);
-    const known = Object.keys(spots);
-
-    for (const [name, value] of Object.entries(entries)) {
-        const own = Object.entries(spots).find(([one]) => comparableText(one) === comparableText(name))?.[1];
-
-        if (own === undefined) {
-            const names = known.length === 0 ? "the campaign's packages have none" : `the campaign's are ${known.join(", ")}`;
-            throw new Error(`There is no widget ${name}: ${names}. Write one as ${known[0] ?? "weather.today"}: side. Nothing changed.`);
-        }
-
-        // A widget made for each of the party shows only there, or nowhere, as its hook needs who (D-514); another may come there too (D-516).
-        const place = typeof value === "string" ? value : value !== null && typeof value === "object" && "place" in value ? value.place : undefined;
-
-        if (own.place === "person" && place !== "person" && place !== "off") {
-            throw new Error(`${name} stands on each of the party: write ${name}: off, or ${name}: person. Nothing changed.`);
-        }
-
-        if (own.place === "card") {
-            throw new Error(`${name} shows only in the card its package asks a roll in, so it has no place to choose: take ${name} out of widgets. Nothing changed.`);
-        }
-
-        if (!spotSchema.safeParse(value).success) {
-            // Of a place written as its parts, what is wrong with them, as an order that is no whole number.
-            const issue = value !== null && typeof value === "object" ? spotObject.safeParse(value).error?.issues[0] : undefined;
-            const why = issue === undefined ? "" : ` Here ${[...issue.path, ""].join(" ")}${issue.message}.`;
-            throw new Error(`${name} takes ${widgetSpots.join(", ")}, or {place, page, order}, such as ${name}: side.${why} Nothing changed.`);
-        }
-    }
-}
-
 // The places campaign.yaml may give a widget.
 const spotPlaces = [...widgetPlaces.filter((place) => place !== "card"), "off"] as const;
 
@@ -373,18 +392,23 @@ function wordsOf(extension: CodePackage, language: string | undefined): { read?:
 
 // What a widget may give: short words, few parts, numbers that are numbers.
 const text = (most: number) => z.string().max(most);
+
 const valueSchema = z.union([
     z.number(),
     text(80),
     z.object({ number: z.number(), unit: text(12).optional() }).strict(),
     z.object({ from: z.number(), to: z.number(), unit: text(12).optional() }).strict(),
 ]);
+
 const textSchema = z.union([
     text(160),
     z.object({ text: text(240), values: z.record(z.string().regex(/^\w+$/), valueSchema).refine((values) => Object.keys(values).length <= 8, "at most 8 values") }).strict(),
 ]);
+
 const iconName = z.string().regex(/^[a-z][a-z0-9-]*$/);
+
 const toneSchema = z.enum(["good", "bad"]);
+
 const partSchema = z.union([
     z.object({ lead: textSchema, icon: iconName.optional(), value: valueSchema.optional(), tone: toneSchema.optional(), figure: iconName.optional() }).strict(),
     z.object({ who: text(80), does: textSchema.optional() }).strict(),
@@ -410,6 +434,7 @@ const partSchema = z.union([
     z.object({ table: z.object({ head: z.array(textSchema).min(1).max(6), rows: z.array(z.array(valueSchema).max(6)).max(24) }).strict() }).strict(),
     z.object({ image: z.string().regex(/^[\w .-]+\.(png|jpe?g|webp|svg)$/i), alt: textSchema }).strict(),
 ]);
+
 const widgetSchema = z.object({
     // JSON for the page code alone, its size held by the most a widget gives.
     data: z.json().optional(),
@@ -532,25 +557,6 @@ function shownTrack<Shown extends Track>(track: Shown): Shown
     const value = fit(track.value) ?? 0;
     const [held, marked, coming] = [fit(track.held), fit(track.marked), fit(track.coming)];
     return { ...track, value, ...(held === undefined ? {} : { held }), ...(marked === undefined ? {} : { marked }), ...(coming === undefined ? {} : { coming }) };
-}
-
-/**
- * What one widget of a package shows now, for the card of a question (D-507): read as the dashboard reads it, in the campaign's language; nothing when its
- * hook is not there, fails, gives what no part draws, or is late.
- */
-export async function widgetCard(root: string, context: Context, extension: CodePackage, name: string, key: string, who?: string): Promise<ShownContent | undefined>
-{
-    return await widgetFor(root, context, extension, name, { key, ...(who === undefined ? {} : { who }) });
-}
-
-/**
- * What one widget of a package shows for a card of its page code, for the character the card shows (D-514): the package by its npm name, the widget declared
- * by it; nothing when either is not the campaign's, or as for a card of a question.
- */
-export async function packageWidget(root: string, context: Context, packageName: string, name: string, who: string | undefined): Promise<ShownContent | undefined>
-{
-    const owner = campaignPackages(root, context).find((one) => one.package === packageName);
-    return owner === undefined || !owner.widgets.some((widget) => widget.name === name) ? undefined : await widgetFor(root, context, owner, name, who === undefined ? {} : { who });
 }
 
 /** What a widget shows for a card: for a question, by its key, the attempt; for a card of the page code, by who it shows. */
