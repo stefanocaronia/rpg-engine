@@ -18,6 +18,7 @@ export interface ClosedScene
 }
 
 const closedSceneSchema = z.looseObject({ title: z.string(), type: z.string(), summary: z.string() });
+const loggedCopiesSchema = z.record(z.string(), z.looseObject({ creature: z.string() }));
 
 /** The place where the open scene is, where its copies are (ENV-2); none when there is no scene, or it is in no place that exists. */
 export function scenePlace(world: World, scene: Scene | undefined): Page | undefined
@@ -247,6 +248,31 @@ export function closedScenes(root: string): ClosedScene[]
         const parsed = closedSceneSchema.safeParse(entry.data);
         return parsed.success ? [parsed.data] : [];
     }).reverse();
+}
+
+/**
+ * The copies of the last scene that closed, at their last numbers as its hidden log lines keep them: those that left during it and those its close removed; with
+ * the name of the place it was in, when it had one.
+ */
+export function lastClosedCopies(root: string): { copies: Record<string, SceneCopy>; place?: string; }
+{
+    let copies: Record<string, SceneCopy> = {};
+    let closed: { copies: Record<string, SceneCopy>; place?: string; } = { copies: {} };
+
+    for (const entry of readLog(root)) {
+        if (entry.type === "scene-opened") {
+            copies = {};
+        } else if (entry.type === "scene-closed") {
+            const place = typeof entry.data.place === "string" && entry.data.place.trim() !== "" ? parsePageReference(entry.data.place).name : undefined;
+            closed = { copies, ...(place === undefined ? {} : { place }) };
+            copies = {};
+        } else if (entry.type === "scene-changed") {
+            const logged = loggedCopiesSchema.safeParse(entry.data.copies);
+            copies = logged.success ? { ...copies, ...logged.data } : copies;
+        }
+    }
+
+    return closed;
 }
 
 /** The problems of the open scene: a scene that cannot be read, links to pages that do not exist, copies named like pages. A state.yaml that cannot be read at all is reported with the game date. */

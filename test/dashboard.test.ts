@@ -16,6 +16,7 @@ import type { Asked, JournalFact, SheetGroup, SheetValue, ShownRoll, View } from
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
 import { arrangedGroups, columnsByHeight, endedQuests, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
+import { setSystemWords } from "../src/dashboard/text.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/server/dashboard/index.ts";
 import { dashboardOpener } from "../src/server/mcp.ts";
@@ -727,21 +728,33 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(fits({ kind: "none" })).toEqual({ kind: "none" });
     });
 
-    it("labels a field by its words, in capitals the short ones that name a field, and leaves out a last word a group shares", () => {
-        const fields = new Set(["str", "dex", "wis", "hp", "max-prepared"]);
-        expect(fieldLabel("hit-dice-d8", fields)).toBe("hit dice d8");
-        expect(fieldLabel("str-save", fields)).toBe("STR save");
-        expect(fieldLabel("spell-save-dc", fields)).toBe("spell save DC");
-        expect(fieldLabel("max-prepared", fields)).toBe("max prepared");
-        expect(fieldLabel("momentum", fields)).toBe("momentum");
-        expect(fieldLabel("sleight-of-hand", fields)).toBe("sleight of hand");
-        expect(groupLabels(["str-save", "dex-save"], fields)).toEqual(new Map([["str-save", "STR"], ["dex-save", "DEX"]]));
-        expect(groupLabels(["slots-1", "slots-2"], fields)).toEqual(new Map([["slots-1", "slots 1"], ["slots-2", "slots 2"]]));
-        expect(shownText("-1 (+2) · hit-dice 3")).toBe("−1 (+2) · hit-dice 3");
-        expect(initials("Ettore di Valle")).toBe("ED");
-        expect(phraseLabel("sleight of hand")).toBe("Sleight of hand");
-        expect(phraseLabel("STR save")).toBe("STR save");
-        expect([itemLabel("wis", fields), itemLabel("light hammer", fields), itemLabel("Common", fields)]).toEqual(["WIS", "Light hammer", "Common"]);
+    it("labels a field by its words, in capitals the short names, and leaves out a last word a group shares", () => {
+        // A word of three letters is short for a name only when the system names it in full, as its words do for str; age is a word.
+        setSystemWords({ groups: {}, fields: {}, words: {}, names: { str: "Strength", dex: "Dexterity", wis: "Wisdom", "str-save": "Strength saving throw" } });
+        const fields = new Set(["str", "dex", "wis", "ac", "hp", "age", "max-prepared"]);
+
+        try {
+            expect(fieldLabel("hit-dice-d8", fields)).toBe("hit dice d8");
+            expect(fieldLabel("str-save", fields)).toBe("STR save");
+            expect(fieldLabel("spell-save-dc", fields)).toBe("spell save DC");
+            expect([fieldLabel("ac", fields), fieldLabel("hp", fields), fieldLabel("temp-hp", fields)]).toEqual(["AC", "HP", "temp HP"]);
+            expect([fieldLabel("age", fields), phraseLabel(fieldLabel("age", fields)), itemLabel("age", fields)]).toEqual(["age", "Age", "Age"]);
+            expect(fieldLabel("max-prepared", fields)).toBe("max prepared");
+            expect(fieldLabel("momentum", fields)).toBe("momentum");
+            expect(fieldLabel("sleight-of-hand", fields)).toBe("sleight of hand");
+            expect(groupLabels(["str-save", "dex-save"], fields)).toEqual(new Map([["str-save", "STR"], ["dex-save", "DEX"]]));
+            expect(groupLabels(["slots-1", "slots-2"], fields)).toEqual(new Map([["slots-1", "slots 1"], ["slots-2", "slots 2"]]));
+            expect(shownText("-1 (+2) · hit-dice 3")).toBe("−1 (+2) · hit-dice 3");
+            expect(initials("Ettore di Valle")).toBe("ED");
+            expect(phraseLabel("sleight of hand")).toBe("Sleight of hand");
+            expect(phraseLabel("STR save")).toBe("STR save");
+            expect([itemLabel("wis", fields), itemLabel("light hammer", fields), itemLabel("Common", fields)]).toEqual(["WIS", "Light hammer", "Common"]);
+        } finally {
+            setSystemWords(undefined);
+        }
+
+        // Without the system's names, a field of three letters is a word, as a game whose fields are words has them.
+        expect([fieldLabel("str-save", fields), fieldLabel("ac", fields)]).toEqual(["str save", "AC"]);
     });
 
     it("reads the dice of a notation, by their sides, with how many of each", () => {

@@ -134,7 +134,7 @@ describe("the page's words (D-394)", () => {
     });
 
     it("writes a game system's words where it has them, as they are, and in capitals only the short names of fields it lacks (D-403)", () => {
-        setSystemWords({ groups: {}, fields: { wis: "SAG" }, words: { insight: "Intuizione", advancement: "Avanzamento", "until long rest": "fino al riposo lungo" } });
+        setSystemWords({ groups: {}, fields: { wis: "SAG" }, words: { insight: "Intuizione", advancement: "Avanzamento", "until long rest": "fino al riposo lungo" }, names: { cha: "Carisma" } });
         expect([itemLabel("insight"), itemLabel("wis", new Set(["wis"])), itemLabel("cha", new Set(["cha"])), itemLabel("light hammer")]).toEqual(["Intuizione", "SAG", "CHA", "Light hammer"]);
         expect([settingLabel("advancement"), effectEndLabel({ occasion: "long rest" })]).toEqual(["Avanzamento", "fino al riposo lungo"]);
         setSystemWords(undefined);

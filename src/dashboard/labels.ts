@@ -4,7 +4,7 @@ import { isolated, numberText, systemWord, t, timeText } from "./text.ts";
 // The dice the page has a picture of: the d% as 100, the coin as 2.
 const drawnDice = [2, 4, 6, 8, 10, 12, 20, 100];
 
-/** A field's name as a label: its words apart, in capitals the short ones that name a field, such as str or ac, and those of two letters without a vowel, such as hp. */
+/** A field's name as a label: its words apart, in capitals the short names, as ac, hp, or str which the system names Strength; age stays a word. */
 export function fieldLabel(field: string, fields: ReadonlySet<string> = new Set()): string
 {
     return systemWord("fields", field) ?? words(field).map((word) => (isShortName(word, fields) ? word.toUpperCase() : word)).join(" ");
@@ -67,7 +67,7 @@ export function drawnDiceOf(notation: string): { sides: number[]; count?: number
     return count <= 2 ? { sides: Array.from({ length: count }, () => sides), ...(oneOfTwo ? { faded: true as const } : {}) } : { sides: [sides], count };
 }
 
-/** An item of a list as the page shows it: the short name of a field in capitals, as WIS; any other with its first letter a capital, as Light hammer. */
+/** An item of a list as the page shows it: a short name in capitals, as WIS; any other with its first letter a capital, as Light hammer. */
 export function itemLabel(item: string, fields: ReadonlySet<string> = new Set()): string
 {
     const word = item.trim();
@@ -179,9 +179,13 @@ function words(field: string): string[]
     return field.split("-").filter((word) => word !== "");
 }
 
+/**
+ * Whether a word of a field's name is short for a name, so in capitals: a field of two letters, as ac, two letters without a vowel, as hp, or one of three the
+ * system names in full, as str for Strength; a word of three it does not, as age, is a word.
+ */
 function isShortName(word: string, fields: ReadonlySet<string>): boolean
 {
-    return (/^[a-z]{2,3}$/.test(word) && fields.has(word)) || /^[b-df-hj-np-tv-z]{2}$/.test(word);
+    return (/^[a-z]{2}$/.test(word) && fields.has(word)) || /^[b-df-hj-np-tv-z]{2}$/.test(word) || (/^[a-z]{3}$/.test(word) && systemWord("names", word) !== undefined);
 }
 
 /** Dice written one way: of two dice dropping the lowest as keeping the highest, k as kh, 1d100 as 1d%, and the numbers added summed, as 1d20+2+1 is 1d20+3. */

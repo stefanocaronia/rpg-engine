@@ -92,7 +92,7 @@ describe("the dashboard's sections (D-532)", () => {
         await run("instructions");
         expect(await run("status")).toContain("Write nothing to the player until your message is ready");
         const guide = await run("instructions", "--part", "dashboard");
-        expect(guide).toMatch(/^How the player uses their dashboard, to answer in a few words[^\n]*\n- Party: their character's sheet/);
+        expect(guide).toMatch(/^How the player uses their dashboard, to answer in a few words[^\n]*\n- Before play, while the campaign is in its setup[^\n]*\n- Party: their character's sheet/);
         expect(guide).not.toContain("# Game master");
         // What the chat was told stays told: the opening does not come again.
         expect(await run("status")).not.toContain("Write nothing to the player until your message is ready");

@@ -371,8 +371,11 @@ always-in: {equipped: [Unarmed Strike]}
 groups: {Abilities: Caratteristiche}
 fields: {str: FOR, ac: CA}
 words: {Cleric: Chierico, long rest: riposo lungo}
+names: {str: Forza}
 headline: "{classes} di livello {level}"
 ```
+
+`names` gives the full name of a short field, as a roll says it ("Forza"). A word of three letters in a field's name shows in capitals only when `names` has it (`str` → STR, while `age` stays a word); one of two letters that is a field, or two consonants, always does (AC, HP).
 
 **Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `session` (how a session opens in play), `adventure` (how to build one, when none is open or planned), `dashboard-guide` (how the player uses the dashboard, which `instructions` gives when they ask), `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book. A part named after a setting of the system and a value, such as `outcomes-rolled`, follows `play` while the campaign plays that value, and comes with the player's change of it; in it `{die}`, or any setting of the system in braces, reads as its value.
 

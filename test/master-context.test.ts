@@ -250,4 +250,40 @@ describe("the loot of the fallen (D-530, Elena's tests of 27 October)", () => {
         await ok("scene", "open", "--title", "Il guado", "--type", "social", "--with", "Bruna", "--with", "Mira");
         expect(await ok("scene", "close", "--summary", "Parlano.")).not.toContain("Fallen here");
     });
+
+    it("after the fight, show of the creature names its copies that fell in the last scene closed, gone with it, until another scene closes (Elena's loot2)", async () => {
+        await playing();
+        await ok("write", "Lupo", "--type", "creature", "--set", "grit=4/4");
+        const note = "Fallen in the last scene, copies of Lupo that ended with it: Lupo 1, Lupo 3. What they carried, as this page says, lies where they fell: "
+            + "tell what the party sees, and let the player say what is taken, and by whom.";
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Bruna", "--creatures", "Lupo=4");
+        await ok("change", "Lupo 1", "grit", "--to", "0");
+        await ok("change", "Lupo 3", "grit", "--to", "0");
+        await ok("scene", "leave", "--who", "Lupo 3", "--who", "Lupo 4");
+        expect(await ok("show", "Lupo")).not.toContain("Fallen in the last scene");
+        await ok("scene", "close", "--summary", "I lupi cadono.");
+        const shown = await ok("show", "Lupo");
+        expect(shown).toContain(note);
+        expect(shown).toContain("grit: 4/4");
+        await ok("scene", "open", "--title", "Il guado", "--type", "social", "--with", "Bruna");
+        expect(await ok("show", "Lupo")).toContain(note);
+        await ok("scene", "close", "--summary", "Passano il guado.");
+        expect(await ok("show", "Lupo")).not.toContain("Fallen in the last scene");
+    });
+
+    it("names the fallen copies only while a player character is where the scene was, not in another fight elsewhere (Elena's loot3)", async () => {
+        await playing();
+        await ok("write", "Lupo", "--type", "creature", "--set", "grit=4/4");
+        await ok("write", "Radura", "--type", "place");
+        await ok("write", "Bosco", "--type", "place");
+        await ok("move", "Bruna", "--to", "Radura");
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Bruna", "--creatures", "Lupo=2");
+        await ok("change", "Lupo 1", "grit", "--to", "0");
+        await ok("scene", "close", "--summary", "Un lupo cade, l'altro fugge.");
+        expect(await ok("show", "Lupo")).toContain("Fallen in the last scene, copies of Lupo that ended with it: Lupo 1.");
+        await ok("move", "Bruna", "--to", "Bosco");
+        expect(await ok("show", "Lupo")).not.toContain("Fallen in the last scene");
+        await ok("move", "Bruna", "--to", "Radura");
+        expect(await ok("show", "Lupo")).toContain("Fallen in the last scene");
+    });
 });

@@ -15,6 +15,7 @@ import {
     type Page,
     pageNamed,
     parsePageReference,
+    playerCharacters,
     readSection,
     secretNames,
     sectionTitles,
@@ -31,7 +32,7 @@ import { holdsItems, isFallen, lootAdvice } from "./shared/loot.ts";
 import { skippedPagesNote } from "./shared/notes.ts";
 import { firstInChat } from "./shared/parts.ts";
 import { featureSource, progressionOf } from "./shared/progression.ts";
-import { closedScenes, copyLink, copyPage, openSceneLog, readOpenScene, scenePlace } from "./shared/scene.ts";
+import { closedScenes, copyLink, copyPage, lastClosedCopies, openSceneLog, readOpenScene, scenePlace } from "./shared/scene.ts";
 import { sheetFieldNames, sheetGroup, sheetGroupNames, sheetLines } from "./shared/sheet.ts";
 import { signedText, type WorkedField, workedFields, workedLine, workedParts } from "./shared/worked-out.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./shared/world.ts";
@@ -144,7 +145,7 @@ export const show = defineCommand({
             text: group === undefined ? (part?.text ?? page.body) : "",
             linkedFrom: isCopy ? [] : backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
             problems: world.problems,
-            loot: reference.section === undefined ? lootNote(world, system, page, chain) : undefined,
+            loot: reference.section === undefined ? (lootNote(world, system, page, chain) ?? fallenCopiesNote(root, world, system, page)) : undefined,
             // What the character knows is view's, once in a chat (D-530): show holds what they have not found out.
             knows: firstInChat(context, "show-knows") ? knowsNote : undefined,
         };
@@ -224,6 +225,31 @@ function lootNote(world: World, system: GameSystem | undefined, page: Page, chai
     }
 
     return isFallen(world, system, page) || holdsItems(world, page) ? `What is on or in ${page.name} is there to be found: ${lootAdvice}` : undefined;
+}
+
+/**
+ * The copies of a creature that fell in the last scene closed, gone with it, so that its page, which the master reads for what they carried, says so (D-530):
+ * while a player character is where that scene was, not in a fight elsewhere with another of its kind (Elena's loot3).
+ */
+function fallenCopiesNote(root: string, world: World, system: GameSystem | undefined, page: Page): string | undefined
+{
+    const last = lastClosedCopies(root);
+
+    if (page.type !== "creature" || !isThere(world, last.place)) {
+        return undefined;
+    }
+
+    const fallen = Object.entries(last.copies)
+        .filter(([name, copy]) => sameName([parsePageReference(copy.creature).name], page.name) !== undefined && isFallen(world, system, copyPage(name, copy)))
+        .map(([name]) => name);
+    return fallen.length === 0 ? undefined : `Fallen in the last scene, copies of ${page.name} that ended with it: ${fallen.join(", ")}. What they carried, as this page says, lies where they fell: ${lootAdvice}`;
+}
+
+/** Whether a player character is in the place named, or the place is not known: a scene in no place, or player characters in none. */
+function isThere(world: World, place: string | undefined): boolean
+{
+    const placesOfPlayers = playerCharacters(world).map((pc) => [pc, ...locate(world, pc).chain].find((holder) => holder.type === "place")).filter((found) => found !== undefined);
+    return place === undefined || placesOfPlayers.length === 0 || placesOfPlayers.some((found) => sameName([found.name], place) !== undefined);
 }
 
 /** The fields with a list longer than `listedItems` cut to its first ones and how to see them all, as knows of a well-travelled character (D-468). */
