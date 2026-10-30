@@ -178,5 +178,7 @@ export declare function Track(props: { track: Track; place?: "start" | "center" 
 export declare function Text(props: { text: WidgetText; }): JSX.Element;
 /** A value written in the dashboard's language, set apart right to left. */
 export declare function Value(props: { value: WidgetValue; }): JSX.Element;
+/** The pictures of the dashboard's states, paths on a grid of 24: the skull of the dead, one fallen, one kept from acting, a condition with no picture of its own. */
+export declare const statusIcons: { dead: string; fallen: string; inactive: string; condition: string; };
 /** The buttons of a question in a card of a roll: a roll in gold with its dice, a choice that loses something with a red edge; the one pressed marked. */
 export declare function Choices(props: { buttons: CardButton[]; sent?: number; onChoose(button: number): void; }): JSX.Element;

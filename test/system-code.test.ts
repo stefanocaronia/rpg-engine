@@ -79,22 +79,22 @@ describe("the code of a game system (D-448)", () => {
             return folder;
         };
 
-        system("newer", 7, "shiny: a key of a newer engine\n");
+        system("newer", 8, "shiny: a key of a newer engine\n");
         system("older", 1);
         system("unsaid", undefined);
         const now = system("now", 5);
         const loaded = await loadSystemCode([systems]);
         expect(loaded.newer).toEqual({
             refused:
-                "is made for the API 7, and this rpg-engine reads the API 5 to 6 for a game system: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat",
+                "is made for the API 8, and this rpg-engine reads the API 5 to 7 for a game system: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat",
             version: "1.0.0",
         });
-        expect(loaded.older).toEqual({ refused: "is made for the API 1, and this rpg-engine reads the API 5 to 6 for a game system: install a newer version of it", version: "1.0.0" });
+        expect(loaded.older).toEqual({ refused: "is made for the API 1, and this rpg-engine reads the API 5 to 7 for a game system: install a newer version of it", version: "1.0.0" });
         expect(loaded.unsaid).toHaveProperty("refused", expect.stringContaining("no API, as its package.json does not name one in rpg-engine.api"));
         expect(loaded.now).toHaveProperty("code");
         expect(systemApiProblem(now)).toBeUndefined();
         // Its system.yaml with a key this engine does not know says to update it, beside what zod says.
-        expect(() => findSystem([systems], "newer")).toThrow(/unknown key "shiny"\. Besides, it is made for the API 7, .*: rpg-engine must be updated first: .*, then open a new chat\.$/);
+        expect(() => findSystem([systems], "newer")).toThrow(/unknown key "shiny"\. Besides, it is made for the API 8, .*: rpg-engine must be updated first: .*, then open a new chat\.$/);
         // A folder without a package.json is data alone, read whatever API: free.
         expect(systemApiProblem(findSystem(testSystemFolders, "free")?.folder ?? "")).toBeUndefined();
     });

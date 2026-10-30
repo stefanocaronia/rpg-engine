@@ -7,7 +7,7 @@ const wards: PackageEntry = ({ z }) => ({
         {
             name: "wards",
             description: "Read a page's ward, the party and the scene. Read-only.",
-            input: z.object({ page: z.string(), field: z.string().optional(), formula: z.string().optional(), effect: z.string().optional() }),
+            input: z.object({ page: z.string(), field: z.string().optional(), formula: z.string().optional(), effect: z.string().optional(), carries: z.string().optional() }),
             readOnly: true,
             positionals: ["page"],
             run: (input, game) => JSON.stringify(readOf(game, input)),
@@ -78,7 +78,7 @@ const wards: PackageEntry = ({ z }) => ({
 export default wards;
 
 /** What the game gives of a page, the party and the scene. */
-function readOf(game: GameView, input: { page: string; field?: string; formula?: string; effect?: string; }): unknown
+function readOf(game: GameView, input: { page: string; field?: string; formula?: string; effect?: string; carries?: string; }): unknown
 {
     const page = game.page(input.page);
     return {
@@ -89,6 +89,7 @@ function readOf(game: GameView, input: { page: string; field?: string; formula?:
             ...(input.field === undefined ? {} : { value: page.value(input.field) ?? null, counter: page.counter(input.field) ?? null }),
             ...(input.formula === undefined ? {} : { formula: page.formula(input.formula) ?? null }),
             ...(input.effect === undefined ? {} : { has: page.has(input.effect) }),
+            ...(input.carries === undefined ? {} : { carries: page.carries(input.carries) }),
         },
         members: game.party()?.members ?? null,
         scene: game.scene() ?? null,

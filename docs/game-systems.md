@@ -19,7 +19,7 @@ systems/<name>/
   build/, test/      scripts and tests, not shipped
 ```
 
-The engine brings `free` alone, in its `systems/` folder; any other is installed as a package with `package install`: ours by its name alone, `package install 5e`, from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 6}}`. A campaign names it in `campaign.yaml` (`system: 5e`); one of ours that this computer lacks, the MCP server installs as it starts in the campaign, and says so at its first call, while `validate` and `status` give the way when it cannot. A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the code of the systems it started with; one installed while it runs has its code loaded then.
+The engine brings `free` alone, in its `systems/` folder; any other is installed as a package with `package install`: ours by its name alone, `package install 5e`, from npm, or from a folder of this computer, `package install ./my-system`, whose `package.json` needs no more than `{"name": "my-system", "version": "1.0.0", "rpg-engine": {"kind": "system", "api": 7}}`. A campaign names it in `campaign.yaml` (`system: 5e`); one of ours that this computer lacks, the MCP server installs as it starts in the campaign, and says so at its first call, while `validate` and `status` give the way when it cannot. A `system.yaml` with an unknown key or a formula that does not read is refused, with the key at fault. A running MCP server keeps the code of the systems it started with; one installed while it runs has its code loaded then.
 
 The schema of `system.yaml` is part of the package API (section 6), which goes up with every addition a package may use: a new key comes with a new API number, and a system that uses it says that number, so that an older engine asks to be updated instead of refusing an unknown key. A folder without a `package.json` is data alone: it is read as made for the engine that reads it, and brings no code.
 
@@ -396,7 +396,7 @@ An extension adds the same keys but `status-line` and `travel`, in its `extensio
 Where data is not enough, a system brings code, as the 5e does for its dying point, its death saves and its hit dice on the dashboard. Its `package.json` says so, as an extension's does, with the API it is made for:
 
 ```json
-{ "name": "@rpgengine/system-5e", "version": "1.0.0", "type": "module", "main": "dist/index.js", "rpg-engine": { "kind": "system", "api": 6, "page": "dist/page.js" } }
+{ "name": "@rpgengine/system-5e", "version": "1.0.0", "type": "module", "main": "dist/index.js", "rpg-engine": { "kind": "system", "api": 7, "page": "dist/page.js" } }
 ```
 
 A system's code has the contract of an extension's, `PackageEntry`, described in [extensions.md](extensions.md#3-code): its `commands`, `timePassed`, the hooks of its `widgets`, and its page module. `system.yaml` declares `icons`, `widgets` and `figures` with the keys and limits of an `extension.yaml`. The engine calls the hooks after its own writes for the system first, then for the extensions, each optional, each giving lines for the command's output:

@@ -144,7 +144,7 @@ describe("the hooks of a package (D-514)", () => {
 describe("what a package's code loads and declares (D-514, D-515)", () => {
     it("refuses code that gives null, with a clear line, and says to update the engine, with no fix of its own, for one made for a newer API", async () => {
         extension("hollow", ["export default () => null;"]);
-        extension("tomorrow", ["export default () => ({});"], 7);
+        extension("tomorrow", ["export default () => ({});"], 8);
         const problems = await ok("validate");
         expect(problems).toMatch(/The code of the extension @rpgengine\/hollow cannot be used: [^\n]*hollow[^\n]*index\.ts's default export gave null, not its code: give an object, such as \{ commands: \[\] \}\./);
         expect(problems).not.toContain("file://");
@@ -166,7 +166,7 @@ describe("what a package's code loads and declares (D-514, D-515)", () => {
         const system = join(makeTempFolder(), "future");
         mkdirSync(join(system, "page"), { recursive: true });
         writeFileSync(join(system, "page", "page.js"), "export default {};\n");
-        writeFileSync(join(system, "package.json"), JSON.stringify({ name: "@test/system-future", version: "2.0.0", "rpg-engine": { kind: "system", api: 7, page: "page/page.js" } }));
+        writeFileSync(join(system, "package.json"), JSON.stringify({ name: "@test/system-future", version: "2.0.0", "rpg-engine": { kind: "system", api: 8, page: "page/page.js" } }));
         expect(campaignPageModules(folder, context, { folder: system, language: "en", figures: {} } as unknown as GameSystem)).toEqual([]);
     });
 });

@@ -19,7 +19,7 @@ import { readCounter } from "../../../counters/index.ts";
 import { rollDice } from "../../../dice/index.ts";
 import { withEffect } from "../../../effects/index.ts";
 import { type CodePackage, type Extension, type ExtensionWords, wordIn } from "../../../extensions/index.ts";
-import { concernsPlayer, environmentAt, isInParty, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithNameOrAlias, playerCharacters, type World } from "../../../pages/index.ts";
+import { carriesNamed, concernsPlayer, environmentAt, isInParty, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithNameOrAlias, playerCharacters, type World } from "../../../pages/index.ts";
 import { type GameSystem, givenCode, loadSystemCode, systemHasCode, systemPackage, systemPageModule } from "../../../systems/index.ts";
 import { formatGameDate, type GameDate } from "../../../time/index.ts";
 import { askedRoll, type AskResult, type Button, isCheckDice, type Told, tonesOf } from "../../ask.ts";
@@ -118,7 +118,7 @@ export function packagesInstalled(): void
 /** What keeps the code of the campaign's packages from being used, for validate and status: it loads them. */
 export async function packageCodeProblems(root: string, context: Context): Promise<Problem[]>
 {
-    return (await packageCommands(root, context)).problems;
+    return [...(await packageCommands(root, context)).problems, ...packageStateProblems(root, context)];
 }
 
 /**
@@ -329,7 +329,7 @@ export function gameOf(root: string, context: Context, code: CodePackage, option
                 const { who, question, check, notation } = wanted;
                 const told = toldOf(root, context, code, wanted, who);
                 asked.card = told.card ?? asked.card;
-                return askedOf(await askedRoll(root, context, askedQuestion(packageText(root, code, question), check, notation), [{ label: check.trim(), notation }], who, told));
+                return askedOf(await askedRoll(root, context, askedQuestion(packageText(root, code, question), check, notation), [{ label: packageText(root, code, check.trim()), notation }], who, told));
             })();
         },
         state: {
@@ -389,7 +389,7 @@ export function gameViewOf(root: string, context: Context, code: CodePackage): G
         setting: (name) => readTextSetting(root, name),
         // A name in the campaign's language is the system's by its words, Prono its Prone (D-403).
         sameName: (one, other) => sameWord(one, other, campaignSystemWords(root, context)),
-        state: { read: () => parse(files().text(statePath(root, code)) ?? "null") as unknown },
+        state: { read: () => readPackageState(root, code) },
     };
 }
 
@@ -674,6 +674,34 @@ function statePath(root: string, code: CodePackage): string
     return join(root, extensionsFolderName, code.name, "state.yaml");
 }
 
+/** A package's state as its code reads it; it throws, naming the file and how to fix it, when the file does not read. */
+function readPackageState(root: string, code: CodePackage): unknown
+{
+    const read = parsedState(root, code);
+
+    if (read.problem !== undefined) {
+        throw new Error(`${read.problem.path} does not read: ${read.problem.message} Fix: ${read.problem.fix}.`);
+    }
+
+    return read.value;
+}
+
+/** The packages' state files that do not read, which only their code reads, for validate. */
+function packageStateProblems(root: string, context: Context): Problem[]
+{
+    return campaignPackages(root, context).flatMap((code) => parsedState(root, code).problem ?? []);
+}
+
+function parsedState(root: string, code: CodePackage): { value: unknown; problem?: undefined; } | { problem: Required<Problem>; }
+{
+    try {
+        return { value: parse(files().text(statePath(root, code)) ?? "null") as unknown };
+    } catch (error) {
+        const fix = `correct it by hand, or delete it for the ${packageLabel(code)} to start its state again`;
+        return { problem: { path: `${extensionsFolderName}/${code.name}/state.yaml`, message: `${firstLine(error)}.`, fix } };
+    }
+}
+
 /**
  * A page as a package reads it (D-505): in the party or not, the player's or not, its fields as show gives them, effects and what the system works out included;
  * an effect it has by the system's name or its word in the campaign's language (D-403).
@@ -691,6 +719,7 @@ function gamePage(world: World, page: Page, words: Record<string, string> | unde
             return counter === undefined ? undefined : { value: counter.value, ...(counter.max === undefined ? {} : { max: counter.max }) };
         },
         has: (effect) => effectsOf(page).some((one) => sameWord(effect, one.name, words)),
+        carries: (thing) => carriesNamed(world, page, thing, (one, other) => sameWord(one, other, words)),
         formula: (text) => {
             let formula: Formula;
 

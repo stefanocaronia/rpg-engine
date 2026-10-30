@@ -4,7 +4,7 @@ import { baseChain, inheritedFields } from "../inheritance.ts";
 import { containerFieldOf } from "../standard-fields.ts";
 import { alwaysInList, isDeclaredUncounted } from "../system-pages.ts";
 import { heldNames, isCountedItem, type Page, pageNamed, pagesWithName, systemPageNamed, textsIn, validHoldersOf, type World } from "../world.ts";
-import { readEntry } from "./entry.ts";
+import { countedText, readEntry } from "./entry.ts";
 
 // A counter with a maximum, as uses: 10/10: what a thing of its own spends, which a stack cannot keep (STK-1).
 const usesPattern = /^\s*-?\d+\s*\/\s*\d+\s*$/;
@@ -141,6 +141,18 @@ export function carriesKind(world: World, character: Page, kind: Page): boolean
 }
 
 /**
+ * Whether a holder carries a thing by a name, in its own list or inside what it carries: an item, a copy by its base, a stack by its kind, or text as on a paper
+ * sheet, its count aside; the names compared by same.
+ */
+export function carriesNamed(world: World, holder: Page, name: string, same: (one: string, other: string) => boolean): boolean
+{
+    return [holder, ...itemsWithin(world, holder)].some((container) => {
+        const field = containerFieldOf(container.type);
+        return (field === undefined ? [] : textsIn(container.fields[field])).some((entry) => entryNames(world, entry).some((one) => same(one, name)));
+    });
+}
+
+/**
  * The kind a name means for a holder (STK-4): a kind by its name or alias, or the label of an entry of the holder or of the items it holds, as torce for [[Torch|torce]] 7;
  * undefined when it means none.
  */
@@ -181,6 +193,20 @@ export function pageNamedQuietly(world: World, name: string): Page | undefined
     } catch {
         return undefined;
     }
+}
+
+/** The names an entry of a container goes by: its page's, its bases' and its label; text by itself, its count aside. */
+function entryNames(world: World, entry: string): string[]
+{
+    const read = readEntry(entry);
+
+    if (read.shape === "text") {
+        return [countedText(entry)?.name ?? entry.trim()];
+    }
+
+    const page = entryPage(world, read.page);
+    const label = "label" in read && read.label !== undefined ? [read.label] : [];
+    return [...(page === undefined ? [read.page] : [page, ...baseChain(world, page)].map((one) => one.name)), ...label];
 }
 
 /** The items a container holds as pages, those whose first container it is (CON-3). */

@@ -9,6 +9,7 @@ import { PeopleContext } from "./packages/people.ts";
 import { Drawn, Text } from "./packages/widgets.tsx";
 import { sideOf, Token } from "./party.tsx";
 
+export { statusIcons } from "./icons.tsx";
 export { Choices } from "./packages/ask-card.tsx";
 export { cardPages } from "./packages/page-code.tsx";
 export { Text, Track, Value, Who } from "./packages/widgets.tsx";

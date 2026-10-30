@@ -153,6 +153,8 @@ export interface GamePage
     counter(field: string): { value: number; max?: number; } | undefined;
     /** Whether an effect is on it, such as a condition. */
     has(effect: string): boolean;
+    /** Whether it carries a thing by this name, in its inventory or inside what it carries, a copy of it by its base too, the names compared as sameName does. */
+    carries(thing: string): boolean;
     /** A formula of the game system worked out on it, as has(skills, stealth) * proficiency; undefined when it has no value. It throws when it does not read. */
     formula(text: string): number | undefined;
 }

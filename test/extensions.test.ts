@@ -100,6 +100,16 @@ describe("a campaign's extensions", () => {
         expect(readFileSync(join(folder, "extensions", "omens", "state.yaml"), "utf8")).toBe("# The state of the extension @rpgengine/omens, kept by its code.\nlast: a white stag\nwhy: asked\n");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "extension", visibility: "hidden", data: { extension: "omens", text: "omen: a white stag" } });
         expect((await rpg("omens-last")).output).toBe("The last omen: a white stag.");
+        // A state written wrong by hand: the file named and how to fix it, which validate says too.
+        const statePath = join(folder, "extensions", "omens", "state.yaml");
+        const kept = readFileSync(statePath, "utf8");
+        writeFileSync(statePath, "last: [a white stag\n");
+        const broken = await rpg("omens-last");
+        expect(broken.exitCode).toBe(1);
+        expect(broken.output).toContain("extensions/omens/state.yaml does not read: ");
+        expect(broken.output).toContain("Fix: correct it by hand, or delete it for the extension omens to start its state again.");
+        expect((await rpg("validate")).output).toMatch(/- extensions\/omens\/state\.yaml: .+ Fix: correct it by hand, or delete it for the extension omens to start its state again\./);
+        writeFileSync(statePath, kept);
         expect((await rpg("--help")).output).toMatch(/\nThe campaign's extensions:\n  omens\s+Read an omen now, for a question\.\n  omens-last\s+The last omen read\./);
 
         const refused = await rpg("omens");
@@ -407,6 +417,16 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(unread.exitCode).toBe(1);
         expect(unread.output).toContain("The formula 1 + does not read:");
 
+        // What one carries: in a bag too, a copy by its base, a stack by its kind, text as on a paper sheet, names as the engine compares them.
+        await rpg("write", "Coltello", "--type", "item");
+        await rpg("write", "Coltello di Kira", "--type", "item", "--set", "item=[[Coltello]]");
+        await rpg("write", "Zaino", "--type", "item", "--add", "contains=[[Coltello di Kira]]");
+        await rpg("write", "Kira", "--add", "inventory=[[Zaino]]", "--add", "inventory=corda x2");
+        expect((await read("Kira", "--carries", "coltello")).page.carries).toBe(true);
+        expect((await read("Kira", "--carries", "Corda")).page.carries).toBe(true);
+        expect((await read("Kira", "--carries", "Lanterna")).page.carries).toBe(false);
+        expect((await read("Bram", "--carries", "Coltello")).page.carries).toBe(false);
+
         await rpg("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Kira", "--with", "Bram");
         expect((await read("Kira")).scene).toEqual({ title: "Agguato" });
         await rpg("scene", "order", "--order", "Kira", "--order", "Bram");
@@ -559,19 +579,19 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(readLogFile(folder)).toHaveLength(lines);
     });
 
-    it("read packages made for the API 1 to 6, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
-        expect([0, 1, 2, 3, 4, 5, 6, 7, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, true, false, false, false]);
+    it("read packages made for the API 1 to 7, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
+        expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, true, true, false, false, false]);
         // A game system's first API is 5, the one contract (D-514).
-        expect([1, 4, 5, 6, 7].map((api) => readsApi(api, "system"))).toEqual([false, false, true, true, false]);
+        expect([1, 4, 5, 6, 7, 8].map((api) => readsApi(api, "system"))).toEqual([false, false, true, true, true, false]);
         expect(findExtension(testExtensionFolders, "omens")?.adds).toEqual({});
         expect(findExtension(testExtensionFolders, "skies")?.name).toBe("skies");
         expect(findExtension(testExtensionFolders, "wards")?.adds.counters).toEqual({ "ward-charges": { max: "wit-bonus + 1" }, nerve: { min: -6, max: 8 } });
 
         const newer = join(folder, "newer");
         cpSync(join(testExtensionFolders[0], "wards"), newer, { recursive: true });
-        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 7 } }));
+        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 8 } }));
         expect(() => readExtension(newer)).toThrow(
-            "The extension @rpgengine/wards cannot be used, because it is made for the API 7, and this rpg-engine reads the API 1 to 6 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
+            "The extension @rpgengine/wards cannot be used, because it is made for the API 8, and this rpg-engine reads the API 1 to 7 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
         );
     });
 });

@@ -120,7 +120,7 @@ describe("the kit of rpg-engine/page (D-510)", () => {
         const page = readFileSync("src/page.ts", "utf8");
         // Its functions, and the values it passes on from the core, as the pages a card stands in.
         const passed = [...page.matchAll(/^export \{ ([^}]+) \} from/gm)].flatMap((match) => match[1].split(", ").filter((name) => !name.startsWith("type ")));
-        const declared = [...page.matchAll(/^export declare function (\w+)/gm)].map((match) => match[1]).concat(passed).sort();
+        const declared = [...page.matchAll(/^export declare (?:function|const) (\w+)/gm)].map((match) => match[1]).concat(passed).sort();
         const kit = readFileSync("src/dashboard/kit.tsx", "utf8");
         const given = [...kit.matchAll(/^export function (\w+)/gm)].map((match) => match[1]).concat(...[...kit.matchAll(/^export \{ ([^}]+) \}/gm)].map((match) => match[1].split(", "))).sort();
         expect(given).toEqual(declared);
