@@ -457,7 +457,7 @@ export const view = defineCommand({
             kind: "overview",
             campaign: settings.name,
             ...(settings.language === undefined ? {} : { language: settings.language }),
-            ...(words === undefined ? {} : { words }),
+            ...(words === undefined ? {} : { words: withPageTitles(words, world) }),
             ...(system === undefined || Object.keys(system.sheetVerbs).length === 0 ? {} : { verbs: system.sheetVerbs }),
             ...(system === undefined ? {} : { system: { name: system.name, title: system.title, ...(system.attribution === undefined ? {} : { attribution: system.attribution }) } }),
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
@@ -593,6 +593,13 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
         ...(unaware.length === 0 ? {} : { unaware }),
         ...(story === undefined ? {} : { story }),
     };
+}
+
+/** The system's words for the page, with the names its translation gives its pages, as Palla di fuoco for Fireball, where its words do not name them (D-542). */
+function withPageTitles(words: SystemWords, world: World): SystemWords
+{
+    const titles = Object.fromEntries((world.system?.pages ?? []).flatMap((page) => (page.title === undefined ? [] : [[page.name, page.title]])));
+    return Object.keys(titles).length === 0 ? words : { ...words, words: { ...titles, ...words.words } };
 }
 
 /** "Known to Bruna alone: Ettore plays as not knowing it, though all at the screen may read it.": who knows a page, and how the others are played (VIEW-12). */

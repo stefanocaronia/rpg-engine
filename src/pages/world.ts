@@ -1,5 +1,6 @@
 import { basename, join, relative, resolve, sep } from "node:path";
 import type { FieldKind } from "../core/field-kind.ts";
+import { translationFolder } from "../core/files.ts";
 import type { Formula, SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
@@ -35,6 +36,10 @@ export interface Page
     body: string;
     /** The game system the page comes from, such as 5e: read-only, and nowhere (SYS-2). Undefined for the campaign's own pages. */
     system?: string;
+    /** A system page's name in the campaign's language, from the system's translation (D-542), as Palla di fuoco for Fireball; links still use its name. */
+    title?: string;
+    /** A system page's text in the campaign's language, for who reads it (D-542); `body` stays the system's, which the sheet's features are read from. */
+    translated?: string;
 }
 
 /** Every page of a campaign, read from its world folder, and the pages of its game system. */
@@ -136,7 +141,8 @@ export function loadWorld(
         return frozen({ root, ...campaign, language, missingSystem, noSystem, ...(rigor === undefined ? {} : { rigor }) });
     }
 
-    const systemPages = system.version === undefined ? packagePages(system.folder, system.name) : versionPages(packagePages(system.folder, system.name), packagePages(system.version.folder, system.name));
+    const read = (folder: string): { pages: Page[]; problems: string[]; } => translatedPages(packagePages(folder, system.name), folder, system.name, language);
+    const systemPages = system.version === undefined ? read(system.folder) : versionPages(read(system.folder), read(system.version.folder));
     const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, bonusWhile } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
@@ -574,6 +580,37 @@ function packagePages(folder: string, system: string): { pages: Page[]; problems
 }
 
 const packages = new Map<string, { pages: Page[]; problems: string[]; }>();
+
+/**
+ * A system's pages with their text and their name in the campaign's language beside their own, where the system has a translation of them in it, by the same
+ * path under translations/<language> (D-542); their fields and text stay, which the engine reads. Read once in a process, as the pages are.
+ */
+function translatedPages(read: { pages: Page[]; problems: string[]; }, folder: string, system: string, language: string | undefined): { pages: Page[]; problems: string[]; }
+{
+    const translations = translationFolder(folder, language);
+
+    if (translations === undefined) {
+        return read;
+    }
+
+    const key = `${translations}|${system}`;
+    const known = translated.get(key) ?? withTranslations(read, readPages(translations, system));
+    translated.set(key, known);
+    return known;
+}
+
+const translated = new Map<string, { pages: Page[]; problems: string[]; }>();
+
+function withTranslations(read: { pages: Page[]; problems: string[]; }, translations: { pages: Page[]; problems: string[]; }): { pages: Page[]; problems: string[]; }
+{
+    const byPath = new Map(translations.pages.map((page) => [page.path, page]));
+    const pages = read.pages.map((page) => {
+        const other = byPath.get(page.path);
+        const title = typeof other?.fields.name === "string" && other.fields.name.trim() !== "" ? other.fields.name.trim() : undefined;
+        return other === undefined ? page : frozen({ ...page, translated: other.body, ...(title === undefined ? {} : { title }) });
+    });
+    return { pages, problems: [...read.problems, ...translations.problems] };
+}
 
 /** A system's pages with those of the version of its rules over them (VER-3): a page of the version takes the place of a common one with its name. */
 function versionPages(common: { pages: Page[]; problems: string[]; }, version: { pages: Page[]; problems: string[]; }): { pages: Page[]; problems: string[]; }

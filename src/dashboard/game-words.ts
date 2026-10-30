@@ -2,7 +2,7 @@
 // the facts of the story, dice in words, where someone is. The chat has its own English words for the same data.
 import type { CalendarDay, DiceCondition, EffectEnd, JournalFact, Member, NotationPart, SheetValue } from "./data.ts";
 import { fieldLabel, phraseLabel } from "./labels.ts";
-import { isolated, listText, systemWord, t } from "./text.ts";
+import { isolated, listText, systemWord, systemWordAnyCase, t } from "./text.ts";
 
 /** A game date in the page's language: day 3, 06:00, or day 3; any other text as it is. */
 export function gameDateLabel(date: string): string
@@ -116,10 +116,10 @@ export function burnsLabel(name: string, burns: { fuel: string; left: number; })
     return burns.fuel === name ? t("{count} left", { count: burns.left }) : t("{fuel}: {count} left", { fuel: effectName(burns.fuel), count: burns.left });
 }
 
-/** An effect's name in the page's language: a condition of the system in its words, as Unconscious in Italian; any other as written. */
+/** An effect's name in the page's language: a condition of the system in its words, as Unconscious in Italian, whatever its capitals; any other as written. */
 export function effectName(name: string): string
 {
-    return systemWord("words", name) ?? name;
+    return systemWordAnyCase("words", name) ?? name;
 }
 
 /** Where a place is from the party, in the page's language: 12 km north-east, Here; the length as `length` writes it in the player's units. */
@@ -208,7 +208,7 @@ export function factLabel(fact: JournalFact): string
             case "effect":
                 return t("{who}: {effect}", { who: subjectLabel(fact.who), effect: effectLabel(fact) });
             case "effect-ended":
-                return t("{who}: {effect} ended", { who: subjectLabel(fact.who), effect: fact.effect });
+                return t("{who}: {effect} ended", { who: subjectLabel(fact.who), effect: effectName(fact.effect) });
             case "back":
                 return t("Back to save {save}: what came after it is gone", { save: fact.save });
             case "quest":

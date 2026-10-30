@@ -233,7 +233,7 @@ function Group({ member, group, fields, version, onRoll, first }: { member: stri
     // A card with the number the master asks stays open while it is asked.
     const lit = values.some((value) => answersOf(value) !== undefined);
     return (
-        <Card name={group.name} title={systemWord("groups", group.name)} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain} held={lit} first={first}>
+        <Card name={group.name} title={systemWord("groups", group.name) ?? systemWord("words", group.name)} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain} held={lit} first={first}>
             {layout === "table" && values.length > 0 && (
                 <div class="rows" onKeyDown={onKeyDown}>
                     {values.map((value) => <Row key={value.field} {...line(value)} />)}

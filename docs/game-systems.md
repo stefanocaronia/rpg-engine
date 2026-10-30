@@ -13,6 +13,7 @@ systems/<name>/
   images/            the pictures its pages link in `image`
   instructions/*.md  what it adds to the master's instructions (section 4)
   words/<code>.yaml  its words in other languages (section 4)
+  translations/<code>/  its pages' text and rules in another language (section 4)
   versions/<name>/   a version of its rules, in the same shape, over the rest (versions, in section 2)
   theme/             its theme of the dashboard: theme.yaml, fonts, pictures and icons (theme, in section 2)
   package.json       when it is a package: its npm name, version, the API it is made for, its code (section 6)
@@ -376,6 +377,8 @@ headline: "{classes} di livello {level}"
 ```
 
 `names` gives the full name of a short field, as a roll says it ("Forza"). A word of three letters in a field's name shows in capitals only when `names` has it (`str` → STR, while `age` stays a word); one of two letters that is a field, or two consonants, always does (AC, HP).
+
+**Translations.** `translations/<code>/` holds the system's text in a language, in the shape of its folder: `world/<folder>/<Name>.md`, by the English page's file name, with only `name` in its frontmatter, the page's name in that language, and the page's text; and `rules/<chapter>.md`, a chapter in that language by its English file's name. In a campaign that plays in that language, the master and the dashboard read that text and that chapter in place of the English ones, a page's name there beside its own, and the rules are searched by the system's words in it too, so `rules grappled` finds Afferrato. The engine still works out the sheet from the English page, its fields and its sections (a class's features, a race's traits), and finds and links it by its English name; what a page inherits from a base reads in the language when every section of the base reaches it, as a companion's from its creature. A version's folder can have its own `translations/`.
 
 **Instructions.** `instructions/<part>.md` adds to the core's part of that name, or replaces it with `replace: true`. Parts: `setup`, `session-zero`, `play`, `combat` and any scene type, `new-day`, `quest-ends`, `session` (how a session opens in play), `adventure` (how to build one, when none is open or planned), `dashboard-guide` (how the player uses the dashboard, which `instructions` gives when they ask), `mentor-hints`, `mentor-tutorial`, `level-up`, and `import`, what the importer's helper reads, such as how the system's creatures stand in for the people of a book. A part named after a setting of the system and a value, such as `outcomes-rolled`, follows `play` while the campaign plays that value, and comes with the player's change of it; in it `{die}`, or any setting of the system in braces, reads as its value.
 

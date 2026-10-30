@@ -136,8 +136,8 @@ export function knowsPage(knowledge: Knowledge, page: Page): boolean
 export function knownText(world: World, knowledge: Knowledge, page: Page): string
 {
     const parts = [
-        ...partsOf(page),
-        ...inheritedByBase(world, page).flatMap((group) => group.parts.map((part) => ({ ...part, holder: group.base }))),
+        ...readableParts(page),
+        ...inheritedByBase(world, page).flatMap((group) => readableInherited(group).map((part) => ({ ...part, holder: group.base }))),
     ].filter((part) => isShown(knowledge, page, part));
     return inKnownWords(world, knowledge, withoutComments([knownIntroduction(world, knowledge, page), ...parts.map((part) => part.text)].filter((text) => text !== "").join("\n\n")));
 }
@@ -155,7 +155,8 @@ export function knownSecretsApart(world: World, knowledge: Knowledge, page: Page
 /** A page's introduction as the character knows it (VIEW-3): its own, else that of its nearest base it knows; without comments. */
 export function knownIntroduction(world: World, knowledge: Knowledge, page: Page): string
 {
-    const introduction = introductionText(page.body) || (baseChain(world, page).filter((base) => knowsPage(knowledge, base)).map((base) => introductionText(base.body)).find((text) => text !== "") ?? "");
+    const introduction = introductionText(page.translated ?? page.body)
+        || (baseChain(world, page).filter((base) => knowsPage(knowledge, base)).map((base) => introductionText(base.translated ?? base.body)).find((text) => text !== "") ?? "");
     return inKnownWords(world, knowledge, withoutComments(introduction));
 }
 
@@ -300,6 +301,21 @@ function isShown(knowledge: Knowledge, page: Page, part: { name: string; text: s
 function partsOf(page: Page): { name: string; text: string; holder: Page; }[]
 {
     return textParts(page.body).map((part) => ({ ...part, holder: page }));
+}
+
+/** A page's sections as the player reads them: a system's page in the campaign's language where it has it (D-542). */
+function readableParts(page: Page): { name: string; text: string; holder: Page; }[]
+{
+    return textParts(page.translated ?? page.body).map((part) => ({ ...part, holder: page }));
+}
+
+/**
+ * The sections a page inherits from a base as the player reads them: in the campaign's language when the base has it and every section of it reaches the page
+ * (D-542), as the stat block of a wolf for a companion; else as the base writes them, since a section the page has of its own hides one by its English name.
+ */
+function readableInherited(group: { base: Page; parts: { name: string; text: string; }[]; }): { name: string; text: string; }[]
+{
+    return group.base.translated !== undefined && group.parts.length === textParts(group.base.body).length ? textParts(group.base.translated) : group.parts;
 }
 
 function isSecretText(text: string): boolean

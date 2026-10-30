@@ -135,6 +135,14 @@ export function systemWord(kind: "groups" | "fields" | "words" | "names", englis
     return Object.hasOwn(words, english) ? words[english] : undefined;
 }
 
+/** A word of the game system whatever its capitals, as an effect written by hand: prone as Prone. */
+export function systemWordAnyCase(kind: "groups" | "fields" | "words" | "names", english: string): string | undefined
+{
+    const words = system[kind] ?? {};
+    const key = Object.hasOwn(words, english) ? english : Object.keys(words).find((word) => word.toLowerCase() === english.toLowerCase());
+    return key === undefined ? undefined : words[key];
+}
+
 /**
  * A phrase of the page in its language, or a text of the game system in its words, each {name} filled from values; the English where it has none. In a
  * language written from right to left each value is isolated, so that a name, a number or a notation keeps its own order: +2, 1d20+5.

@@ -8,8 +8,8 @@ import { findPage, type Page, pageFileNamed, pageNamed as pageWithName, sectionT
 import { bookTitles, findRules, hasAllWords, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
 import { type GameSystem, systemContentFolders } from "../systems/index.ts";
 import { libraryAnswer, libraryLines, systemWordsNamed } from "./shared/library.ts";
-import { disagreementAdvice, houseRules, precedentRule, systemRuleBook } from "./shared/rules.ts";
-import { campaignSystem, campaignWorld, foreignLanguage } from "./shared/world.ts";
+import { disagreementAdvice, hasTranslatedRules, houseRules, precedentRule, systemRuleBook } from "./shared/rules.ts";
+import { campaignSystem, campaignSystemWords, campaignWorld, foreignLanguage } from "./shared/world.ts";
 
 // About how many words an answer shows: a section of the system has about 80 words in the middle (D-178).
 const answerWords = 800;
@@ -56,13 +56,16 @@ export const rules = defineCommand({
         // Read one by one, as the system is (SYS-1): a mistake elsewhere in campaign.yaml does not stop the rules.
         const precedents = readListSetting(root, "precedents");
         const house = readRuleBook(join(root, houseRulesFolderName), houseRules);
-        const book = system === undefined ? [] : systemRuleBook(system);
+        const campaignLanguage = readTextSetting(root, "language");
+        // In the campaign's language where the system has its rules in it (D-542).
+        const translated = system !== undefined && hasTranslatedRules(system, campaignLanguage);
+        const book = system === undefined ? [] : systemRuleBook(system, campaignLanguage);
         const text = input.text?.trim() ?? "";
         const common = {
             text,
             system: system?.name,
             missingSystem: named !== undefined && system === undefined ? named : undefined,
-            language: system === undefined ? undefined : foreignLanguage(system.language, readTextSetting(root, "language")),
+            language: system === undefined || translated ? undefined : foreignLanguage(system.language, campaignLanguage),
             houseRules: bookTitles(house),
             chapters: chaptersOf(book),
         };
@@ -77,16 +80,16 @@ export const rules = defineCommand({
         // Or the sections of pages it names, as a class's features: Cleric › Domain Spells, or Domain Spells alone (RUL-6).
         const pageSections = page === undefined ? sectionsNamed(root, context, text) : [];
         const budget = page === undefined && pageSections.length === 0 ? answerWords : answerWordsBesidePage;
-        // Searched in the campaign's language, the system is searched by its own names too, as its words in that language give them (RUL-8): afferrato, Grappled.
-        const campaignLanguage = readTextSetting(root, "language");
-        const ownNames = system === undefined || campaignLanguage === undefined || /[›>/]/.test(text) ? [] : systemWordsNamed(system, campaignLanguage, text, true).filter((one) => !hasAllWords(text, one.named));
+        // Searched in the campaign's language, the system is searched by its own names too, as its words in that language give them (RUL-8): afferrato, Grappled;
+        // its rules in that language, by the campaign's words for the system's: grappled, Afferrato (D-542).
+        const ownNames = system === undefined || campaignLanguage === undefined || /[›>/]/.test(text) ? [] : systemWordsNamed(system, campaignLanguage, text, !translated).filter((one) => !hasAllWords(text, one.named));
         const systemNames = ownNames.map((one) => one.named);
         // A name answers for the system only when its words are the whole search: tiro per colpire is no question about Archery, Tiro.
         const answering = ownNames.filter((one) => one.whole).map((one) => one.named);
         const found = findRules([...house, ...book], [text, ...systemNames].join(" "));
         const houseAnswer = answerOf(found.filter((finding) => finding.section.source === houseRules), budget);
         const systemAnswer = answerOf(found.filter((finding) => finding.section.source !== houseRules), budget - houseAnswer.used);
-        const shownTitles = [...houseAnswer.shown, ...systemAnswer.shown].map((shown) => shown.path.at(-1) ?? "");
+        const shownTitles = withEnglishTitles([...houseAnswer.shown, ...systemAnswer.shown].map((shown) => shown.path.at(-1) ?? ""), translated ? campaignSystemWords(root, context) : undefined);
         // Then the player's books, fewer of them when the rules have answered: a section shown holds every word searched, or a name the system gave them (LIB-6, LIB-7).
         const answered = [...houseAnswer.shown, ...systemAnswer.shown].some((shown) => [text, ...answering].some((searched) => hasAllWords(`${shown.path.join(" ")} ${shown.text}`, searched)));
         const library = libraryAnswer(root, context, system, text, answered);
@@ -139,6 +142,13 @@ function isAboutAny(precedent: string, text: string, titles: string[]): boolean
 {
     const rule = precedentRule(precedent);
     return rule !== undefined && (hasAllWords(text, rule) || titles.some((title) => comparableText(rule) === comparableText(title)));
+}
+
+/** The titles of the sections shown with the system's names of those in the campaign's language, so that "Poisoned: …" goes with Avvelenato too (D-542). */
+function withEnglishTitles(titles: string[], words: Record<string, string> | undefined): string[]
+{
+    const english = Object.entries(words ?? {}).filter(([, own]) => titles.some((title) => comparableText(title) === comparableText(own))).map(([name]) => name);
+    return [...titles, ...english];
 }
 
 /**

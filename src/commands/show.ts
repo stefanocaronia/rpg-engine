@@ -112,6 +112,7 @@ export const show = defineCommand({
             type: page.type,
             path: page.path,
             system: page.system,
+            title: page.title,
             hides: page.system === undefined && !isCopy && systemPageNamed(world, page.name) !== undefined ? world.system?.name : undefined,
             // Acolyte (background) beside the creature Acolyte: the name alone leads here (SYS-2).
             namesakes: isCopy || reference.section !== undefined ? [] : namesakes(world, page).map((other) => `${other.name}, ${other.system === undefined ? withArticle(other.type ?? "page") : systemLabel(other)}`),
@@ -142,7 +143,8 @@ export const show = defineCommand({
                     parts: group.parts.filter((piece) => piece.text.split("\n").slice(1).some((line) => line.trim() !== "")).map((piece) => piece.name),
                 }))
                 : [],
-            text: group === undefined ? (part?.text ?? page.body) : "",
+            // A system's page in the campaign's language where it has it, whole (D-542); a section as the system writes it.
+            text: group === undefined ? (part?.text ?? page.translated ?? page.body) : "",
             linkedFrom: isCopy ? [] : backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
             problems: world.problems,
             loot: reference.section === undefined ? (lootNote(world, system, page, chain) ?? fallenCopiesNote(root, world, system, page)) : undefined,
@@ -176,6 +178,7 @@ export const show = defineCommand({
 
         const header = [
             title,
+            result.title === undefined ? "" : `Named in the campaign's language: ${result.title}.`,
             result.hides === undefined ? "" : `This page hides the system ${result.hides}'s ${result.page}: links to that name lead here.`,
             result.namesakes.length === 0 ? "" : `There is also ${result.namesakes.join("; ")}: show it by that name.`,
             result.alsoCopy ? `${result.page} is also a copy in the open scene: change and write refuse both until the scene closes, which removes the copy, or the page is renamed.` : "",

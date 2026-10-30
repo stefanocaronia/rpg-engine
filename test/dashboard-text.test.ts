@@ -4,7 +4,7 @@ import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { effectEndLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
+import { effectEndLabel, effectName, factLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { itemLabel, settingLabel, shownText } from "../src/dashboard/labels.ts";
 import { arrowStep, browserLanguage, pageDirection, pageLanguageOf, pageTranslation, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
 import { lengthText } from "../src/dashboard/world/map.ts";
@@ -137,6 +137,16 @@ describe("the page's words (D-394)", () => {
         setSystemWords({ groups: {}, fields: { wis: "SAG" }, words: { insight: "Intuizione", advancement: "Avanzamento", "until long rest": "fino al riposo lungo" }, names: { cha: "Carisma" } });
         expect([itemLabel("insight"), itemLabel("wis", new Set(["wis"])), itemLabel("cha", new Set(["cha"])), itemLabel("light hammer")]).toEqual(["Intuizione", "SAG", "CHA", "Light hammer"]);
         expect([settingLabel("advancement"), effectEndLabel({ occasion: "long rest" })]).toEqual(["Avanzamento", "fino al riposo lungo"]);
+        setSystemWords(undefined);
+    });
+
+    it("writes an effect in the system's words whatever its capitals, when it is put on and when it ends", () => {
+        setSystemWords({ groups: {}, fields: {}, words: { Unconscious: "Privo di sensi", Prone: "Prono" } });
+        expect([effectName("Unconscious"), effectName("prone"), effectName("Benedizione")]).toEqual(["Privo di sensi", "Prono", "Benedizione"]);
+        expect([factLabel({ kind: "effect", who: "Ettore", name: "Unconscious", text: "Unconscious" }), factLabel({ kind: "effect-ended", who: "Ettore", effect: "Unconscious" })]).toEqual([
+            "Ettore: Privo di sensi",
+            "Ettore: Privo di sensi ended",
+        ]);
         setSystemWords(undefined);
     });
 });

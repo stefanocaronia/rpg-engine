@@ -45,6 +45,14 @@ export function fileOrder(first: string, second: string): number
     return depth(first) - depth(second) || (one < other ? -1 : one > other ? 1 : first < second ? -1 : first > second ? 1 : 0);
 }
 
+/** Where a game system keeps its text in a language, translations/it, by the language's code or its base one (D-542); undefined when it has none. */
+export function translationFolder(folder: string, language: string | undefined): string | undefined
+{
+    const code = language?.trim().toLowerCase();
+    const codes = code === undefined || code === "" ? [] : [...new Set([code, code.split("-")[0]])];
+    return codes.map((one) => join(folder, "translations", one)).find((path) => existsSync(path) && statSync(path).isDirectory());
+}
+
 /**
  * The folders of the packages in these folders of npm's, in their scopes' folders too (@rpgengine/weather), links to folders included, as npm links a package
  * installed from a folder (D-441); never followed further.

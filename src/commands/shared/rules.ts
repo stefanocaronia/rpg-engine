@@ -1,9 +1,10 @@
 // A rule by its title, as rules finds it (D-179, DAT-3, DAT-6): a house rule of the campaign first, else the game system's, with the table's precedents on it.
 import { join } from "node:path";
-import { houseRulesFolderName, readListSetting } from "../../campaign/index.ts";
+import { houseRulesFolderName, readListSetting, readTextSetting } from "../../campaign/index.ts";
+import { translationFolder } from "../../core/files.ts";
 import { comparableText } from "../../core/text.ts";
 import { isTitled, readRuleBook, type RuleSection } from "../../rules/index.ts";
-import { type GameSystem, systemContentFolders } from "../../systems/index.ts";
+import { type GameSystem, layeredSystemWords, systemContentFolders } from "../../systems/index.ts";
 
 /** The source of the campaign's own rules, in the campaign's rules folder. */
 export const houseRules = "house rules";
@@ -19,12 +20,17 @@ export interface TitledRule
     precedents: string[];
 }
 
-/** The rule with this title: a house rule first, else the game system's; undefined when neither has a section so titled. */
+/**
+ * The rule with this title: a house rule first, else the game system's, in the campaign's language where the system has its rules in it, by the title's word
+ * there, Prono for Prone (D-542); undefined when neither has a section so titled.
+ */
 export function ruleTitled(root: string, system: GameSystem, title: string): TitledRule | undefined
 {
     const titled = (section: RuleSection): boolean => isTitled(section, title);
+    const language = readTextSetting(root, "language");
+    const own = ownWord(system, language, title);
     const house = readRuleBook(join(root, houseRulesFolderName), houseRules).find(titled);
-    const section = house ?? systemRuleBook(system).find(titled);
+    const section = house ?? systemRuleBook(system, language).find((one) => titled(one) || (own !== undefined && isTitled(one, own))) ?? systemRuleBook(system).find(titled);
 
     if (section === undefined) {
         return undefined;
@@ -34,11 +40,40 @@ export function ruleTitled(root: string, system: GameSystem, title: string): Tit
     return { source: section.source, text: section.text, precedents };
 }
 
-/** The rules of a game system, its own with those of the version of its rules (VER-3): a chapter of the version takes the place of a common one of its file. */
-export function systemRuleBook(system: GameSystem): RuleSection[]
+/**
+ * The rules of a game system, its own with those of the version of its rules (VER-3): a chapter of the version takes the place of a common one of its file.
+ * In a language the system has its rules in, a chapter translated takes the place of its English one (D-542).
+ */
+export function systemRuleBook(system: GameSystem, language?: string): RuleSection[]
 {
-    const [own, version] = systemContentFolders(system).map((folder) => readRuleBook(join(folder, "rules"), system.name));
+    const [own, version] = systemContentFolders(system).map((folder) => translatedBook(readRuleBook(join(folder, "rules"), system.name), translationFolder(folder, language), system.name));
     return version === undefined ? own : [...own.filter((section) => !version.some((other) => other.file === section.file)), ...version];
+}
+
+/** Whether a game system has its rules in a language, in one of its folders (D-542). */
+export function hasTranslatedRules(system: GameSystem, language: string | undefined): boolean
+{
+    return systemContentFolders(system).some((folder) => {
+        const translations = translationFolder(folder, language);
+        return translations !== undefined && readRuleBook(join(translations, "rules"), system.name).length > 0;
+    });
+}
+
+/** A word of the system in a language, by its English, as Prono for Prone; none without it, or when its words do not read, which validate says. */
+function ownWord(system: GameSystem, language: string | undefined, english: string): string | undefined
+{
+    try {
+        return language === undefined ? undefined : layeredSystemWords(systemContentFolders(system), language)?.words[english];
+    } catch {
+        return undefined;
+    }
+}
+
+function translatedBook(book: RuleSection[], translations: string | undefined, system: string): RuleSection[]
+{
+    const translated = translations === undefined ? [] : readRuleBook(join(translations, "rules"), system);
+    const files = new Set(translated.map((section) => section.file));
+    return files.size === 0 ? book : [...book.filter((section) => !files.has(section.file)), ...translated].sort((first, second) => (first.file < second.file ? -1 : first.file > second.file ? 1 : 0));
 }
 
 /** "Poisoned is a condition of the system 5e, by a house rule:" and the text, then the precedents on it, with what to do when they disagree with the book. */
