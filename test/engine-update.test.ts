@@ -42,7 +42,7 @@ describe("the engine on the Packages page", () => {
         expect(updated).toEqual(["99.0.0"]);
         // The chat still runs the version it started with: the one on disk is said apart, and is no update to make again.
         expect(await dashboard.get("/api/engine")).toEqual({ version: getVersion(), installed: "99.0.0", latest: "99.0.0", update: false, install: "global" });
-        expect((await dashboard.post("/api/engine", { action: "update" })).body).toEqual({ error: "rpg-engine 99.0.0 is installed already: it comes with a new chat." });
+        expect((await dashboard.post("/api/engine", { action: "update" })).body).toEqual({ error: "rpg-engine 99.0.0 is installed already: it comes with a new chat.", code: "engine-installed", values: { version: "99.0.0" } });
         expect((await dashboard.post("/api/engine", { action: "remove" })).status).toBe(400);
     });
 
@@ -61,13 +61,17 @@ describe("the engine on the Packages page", () => {
         expect(await dashboard.get("/api/engine")).toMatchObject({ install: "link", folder: "F:/dev/rpg-engine" });
         expect(await dashboard.post("/api/engine", { action: "update" })).toEqual({
             status: 400,
-            body: { error: "rpg-engine here is a link to the folder F:/dev/rpg-engine, made by npm link for its development: update it there, with git pull and npm run build. Nothing changed." },
+            body: {
+                error: "rpg-engine here is a link to the folder F:/dev/rpg-engine, made by npm link for its development: update it there, with git pull and npm run build. Nothing changed.",
+                code: "engine-link",
+                values: { name: "F:/dev/rpg-engine" },
+            },
         });
 
         campaign.context = { ...campaign.context, engine: fakeEngine(getVersion(), { how: "global" }, updated) };
         dashboard = await campaign.dashboard();
         expect(await dashboard.get("/api/engine")).toMatchObject({ update: false });
-        expect((await dashboard.post("/api/engine", { action: "update" })).body).toEqual({ error: `rpg-engine ${getVersion()} is npm's latest: there is nothing to update.` });
+        expect((await dashboard.post("/api/engine", { action: "update" })).body).toEqual({ error: `rpg-engine ${getVersion()} is npm's latest: there is nothing to update.`, code: "engine-latest", values: { version: getVersion() } });
         expect(updated).toEqual([]);
     });
 });

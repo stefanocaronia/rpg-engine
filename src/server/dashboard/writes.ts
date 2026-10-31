@@ -6,7 +6,7 @@ import { z } from "zod";
 import { readAdventureZip } from "../../adventures/index.ts";
 import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNames } from "../../campaign/index.ts";
 import { config, playerSettingNamed, playerSettings, setupSettingNamed } from "../../commands/config.ts";
-import { adventureText, isInstalledPackage, packageCommand, YesRefused } from "../../commands/package.ts";
+import { adventureText, isInstalledPackage, packageCommand } from "../../commands/package.ts";
 import { playerSaveNews, save } from "../../commands/save.ts";
 import { installAdventure } from "../../commands/shared/adventures.ts";
 import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "../../commands/shared/library.ts";
@@ -16,6 +16,7 @@ import { packageCommands } from "../../commands/shared/packages/code.ts";
 import { exportsFolderName, resetPoints } from "../../commands/shared/saves.ts";
 import { campaignSystem, campaignWorld } from "../../commands/shared/world.ts";
 import { type Context, packagesFolder } from "../../core/context.ts";
+import { Refusal, refusalBody } from "../../core/refusal.ts";
 import { files, withFiles } from "../../core/store.ts";
 import { comparableText } from "../../core/text.ts";
 import { getVersion, isNewerVersion } from "../../core/version.ts";
@@ -252,7 +253,7 @@ export async function changePackage(request: IncomingMessage, response: ServerRe
 
     // The page updates or takes away only what this computer has: it never brings a package new to it, nor its window, by these (D-510).
     if (!isInstalledPackage(served.context, name)) {
-        sendJson(response, 400, { error: `${name} is not installed on this computer: add a package from the Packages page, where you choose it.` });
+        sendJson(response, 400, { error: `${name} is not installed on this computer: add a package from the Packages page, where you choose it.`, code: "not-here", values: { name } });
         return;
     }
 
@@ -280,12 +281,16 @@ export async function addPackage(request: IncomingMessage, response: ServerRespo
     }
 
     if (!json && bytes === undefined) {
-        sendJson(response, 413, { error: `The file is more than ${largestUpload / 1024 / 1024} MB: no package is that big.` });
+        sendJson(response, 413, { error: `The file is more than ${largestUpload / 1024 / 1024} MB: no package is that big.`, code: "file-big", values: { size: String(largestUpload / 1024 / 1024) } });
         return;
     }
 
     if (bytes !== undefined && !/\.(zip|tgz|tar\.gz)$/i.test(file)) {
-        sendJson(response, 400, { error: `${file} is neither a .zip nor a .tgz: an adventure comes as a .zip, an extension, a game system or a language as a .tgz.` });
+        sendJson(response, 400, {
+            error: `${file} is neither a .zip nor a .tgz: an adventure comes as a .zip, an extension, a game system or a language as a .tgz.`,
+            code: "file-kind",
+            values: { name: file },
+        });
         return;
     }
 
@@ -406,27 +411,33 @@ export async function engineNow(request: IncomingMessage, response: ServerRespon
         const latest = await updater.latest();
 
         if ("failed" in latest) {
-            throw new Error(`${latest.failed}: update it once this computer is online. Nothing changed.`);
+            throw new Refusal(`${latest.failed}: update it once this computer is online. Nothing changed.`, "engine-offline", { why: latest.failed });
         }
 
         if (!isNewerVersion(latest.version, onDisk)) {
-            throw new Error(onDisk === version ? `rpg-engine ${version} is npm's latest: there is nothing to update.` : `rpg-engine ${onDisk} is installed already: it comes with a new chat.`);
+            throw onDisk === version
+                ? new Refusal(`rpg-engine ${version} is npm's latest: there is nothing to update.`, "engine-latest", { version })
+                : new Refusal(`rpg-engine ${onDisk} is installed already: it comes with a new chat.`, "engine-installed", { version: onDisk });
         }
 
         const installed = await updater.installed();
 
         if (installed.how !== "global") {
-            throw new Error(
-                installed.how === "link"
-                    ? `rpg-engine here is a link to the folder ${installed.folder}, made by npm link for its development: update it there, with git pull and npm run build. Nothing changed.`
-                    : `rpg-engine runs from ${installed.folder}, not from npm's global folder: update it the way it was installed. Nothing changed.`,
-            );
+            throw installed.how === "link"
+                ? new Refusal(
+                    `rpg-engine here is a link to the folder ${installed.folder}, made by npm link for its development: update it there, with git pull and npm run build. Nothing changed.`,
+                    "engine-link",
+                    { name: installed.folder },
+                )
+                : new Refusal(`rpg-engine runs from ${installed.folder}, not from npm's global folder: update it the way it was installed. Nothing changed.`, "engine-elsewhere", {
+                    name: installed.folder,
+                });
         }
 
         const why = await updater.update(latest.version);
 
         if (why !== undefined) {
-            throw new Error(`rpg-engine could not be updated: ${why}. Nothing changed.`);
+            throw new Refusal(`rpg-engine could not be updated: ${why}. Nothing changed.`, "engine-failed", { why });
         }
 
         // The chat goes on with the server it started, and so does this page: the new engine comes with a new chat, or the app opened again.
@@ -475,7 +486,7 @@ export async function exportCampaign(request: IncomingMessage, response: ServerR
         const result = await withFiles(served.session, () => packageCommand.run(packageCommand.input.parse({ action: "export", ...parsed.data }), { ...served.context, actor: "player" }));
         sendJson(response, 200, result.kind === "exported" ? { file: basename(result.file), pages: result.pages } : {});
     } catch (error) {
-        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+        sendJson(response, 400, refusalBody(error));
     }
 }
 
@@ -531,7 +542,7 @@ async function packageWork(
 ): Promise<void>
 {
     if (served.packageWork !== undefined) {
-        sendJson(response, 409, { error: `${served.packageWork.name} is still being worked on: wait for it, then try again.`, code: "busy" });
+        sendJson(response, 409, { error: `${served.packageWork.name} is still being worked on: wait for it, then try again.`, code: "busy", values: { name: served.packageWork.name } });
         return;
     }
 
@@ -575,7 +586,7 @@ async function packageWork(
 
         sendJson(response, 202, { kind: done.kind, ...done.answer });
     } catch (error) {
-        sendJson(response, 400, { error: error instanceof Error ? error.message : String(error), ...(error instanceof YesRefused ? { code: error.code } : {}) });
+        sendJson(response, 400, refusalBody(error));
     } finally {
         served.packageWork = undefined;
         served.notify();

@@ -7,6 +7,7 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import { readSettings, readView } from "../src/dashboard/api.ts";
 import { effectEndLabel, effectName, factLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { itemLabel, settingLabel, shownText } from "../src/dashboard/labels.ts";
+import { refusalText } from "../src/dashboard/refusals.ts";
 import { arrowStep, browserLanguage, pageDirection, pageLanguageOf, pageTranslation, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
 import { lengthText } from "../src/dashboard/world/map.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./i18n/phrases.ts";
@@ -82,6 +83,15 @@ describe("the page's words (D-394)", () => {
         await slow;
         expect(t("Your turn")).toBe("Tocca a te");
         expect(t("A phrase no language has, {name}", { name: "Ada" })).toBe("A phrase no language has, Ada");
+    });
+
+    it("says the engine's refusals by their codes in the language set, and the engine's words for a code it does not know (T-162)", async () => {
+        await setLanguage("it", (language) => Promise.resolve(phrasesOf(language)));
+        const other = { error: "lockpicking is installed on this computer, but it is for the game system 5e…", code: "other-system", values: { name: "lockpicking", system: "5e", plays: "free" } };
+        expect(refusalText(other, "")).toBe("lockpicking è per 5e, e questa campagna gioca free: non lo usa.");
+        expect(refusalText({ ...other, values: { ...other.values, plays: "" } }, "")).toBe("lockpicking è per 5e, e questa campagna non ha ancora un sistema di gioco.");
+        expect(refusalText({ error: "Something new.", code: "tomorrow's", values: {} }, "")).toBe("Something new.");
+        expect(refusalText({ code: "constructor" }, "Non è arrivato al gioco.")).toBe("Non è arrivato al gioco.");
     });
 
     it("writes the engine's data in the language set: game dates, ends, where a place is with the language's numbers, the levels, dice in words (D-403)", async () => {

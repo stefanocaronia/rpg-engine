@@ -2,6 +2,7 @@ import { unzipSync, zipSync } from "fflate";
 import { relative, sep } from "node:path";
 import { archivePathParts, refuseTwice } from "../core/archive-paths.ts";
 import { filesIn } from "../core/files.ts";
+import { Refusal } from "../core/refusal.ts";
 import { files } from "../core/store.ts";
 import { type AdventureManifest, manifestFileName, readManifest, writeManifest } from "./manifest.ts";
 
@@ -53,7 +54,7 @@ export function readAdventureZip(bytes: Uint8Array, label: string): AdventureFil
             },
         });
     } catch (error) {
-        throw new Error(`${label} is not a .zip that reads: ${error instanceof Error ? error.message : String(error)}. Nothing changed.`);
+        throw new Refusal(`${label} is not a .zip that reads: ${error instanceof Error ? error.message : String(error)}. Nothing changed.`, "archive-unread", { name: label });
     }
 
     const named = Object.entries(read).filter(([name]) => !/[\\/]$/.test(name)).map(([name, data]): [string, Uint8Array] => [utf8Name(label, name), data]);
@@ -94,7 +95,11 @@ function utf8Name(label: string, name: string): string
     }
 
     if (/[\u0080-\u009f]/.test(name)) {
-        throw new Error(`${label} names a file with accents not written in UTF-8 (${name}): make the zip again with 7-Zip, or Compress-Archive in PowerShell. Nothing changed.`);
+        throw new Refusal(
+            `${label} names a file with accents not written in UTF-8 (${name}): make the zip again with 7-Zip, or Compress-Archive in PowerShell. Nothing changed.`,
+            "archive-accents",
+            { name: label },
+        );
     }
 
     return name.normalize("NFC");
@@ -112,7 +117,11 @@ function adventureOf(label: string, entries: [string, Uint8Array][]): AdventureF
     const manifest = inner.find(([parts]) => parts.length === 1 && parts[0].toLowerCase() === manifestFileName);
 
     if (manifest === undefined) {
-        throw new Error(`${label} has no ${manifestFileName} at its top: it is not an adventure. A document or a folder of notes is imported by the master, who writes its pages. Nothing changed.`);
+        throw new Refusal(
+            `${label} has no ${manifestFileName} at its top: it is not an adventure. A document or a folder of notes is imported by the master, who writes its pages. Nothing changed.`,
+            "not-adventure",
+            { name: label },
+        );
     }
 
     const held: Record<string, Uint8Array> = {};
@@ -136,9 +145,11 @@ function adventureOf(label: string, entries: [string, Uint8Array][]): AdventureF
         }
 
         if (!allowed[folder].test(path)) {
-            throw new Error(
+            throw new Refusal(
                 `${label} holds ${path}, and ${folder}/ holds only ${folder === "images" ? "pictures in .png, .jpg, .webp or .svg" : "markdown files"}: it is refused whole. `
                     + "Take it out, or convert it, and give it again.",
+                "adventure-file",
+                { name: label, file: path },
             );
         }
 

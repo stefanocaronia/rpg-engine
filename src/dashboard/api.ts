@@ -1,5 +1,6 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
 import type { ActsShown, AskedNow, PlayerSetting, ResetPoint, ShownModule, ShownTheme, ShownWidget, View, WorldMap } from "./data.ts";
+import { refusalText, type Refused } from "./refusals.ts";
 import { t } from "./text.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */
@@ -283,13 +284,13 @@ export async function updateEngine(): Promise<EngineOutcome>
 {
     try {
         const response = await fetch("/api/engine", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update" }) });
-        const body = await response.json().catch(() => ({})) as { version?: string; restart?: "chat" | "app"; error?: string; code?: "busy"; };
+        const body = await response.json().catch(() => ({})) as Refused & { version?: string; restart?: "chat" | "app"; };
 
         if (response.status === 202 && body.version !== undefined) {
             return { done: true, version: body.version, restart: body.restart === "app" ? "app" : "chat" };
         }
 
-        return { done: false, error: body.error ?? t("It did not reach the game: try again."), ...(body.code === "busy" ? { code: body.code } : {}) };
+        return { done: false, error: refusalText(body, t("It did not reach the game: try again.")), ...(body.code === "busy" ? { code: body.code } : {}) };
     } catch {
         return { done: false, error: t("It did not reach the game: try again.") };
     }
@@ -409,13 +410,14 @@ async function packageWork(send: () => Promise<Response>): Promise<PackageOutcom
 {
     try {
         const response = await send();
-        const body = await response.json().catch(() => ({})) as { kind?: PackageKind; error?: string; code?: "declined" | "no-window" | "busy"; };
+        const body = await response.json().catch(() => ({})) as Refused & { kind?: PackageKind; };
 
         if (response.status === 202) {
             return { done: true, ...(body.kind === undefined ? {} : { kind: body.kind }) };
         }
 
-        return { done: false, error: body.error ?? t("It did not reach the game: try again."), ...(body.code === undefined ? {} : { code: body.code }) };
+        const code = body.code === "declined" || body.code === "no-window" || body.code === "busy" ? body.code : undefined;
+        return { done: false, error: refusalText(body, t("It did not reach the game: try again.")), ...(code === undefined ? {} : { code }) };
     } catch {
         return { done: false, error: t("It did not reach the game: try again.") };
     }
@@ -465,8 +467,8 @@ export async function exportCampaign(credits: { author?: string; license?: strin
 {
     try {
         const response = await fetch("/api/export", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(credits) });
-        const body = await response.json().catch(() => ({})) as { file?: string; error?: string; };
-        return body.file === undefined ? { error: body.error ?? t("It did not reach the game: try again.") } : { download: `/api/export?file=${encodeURIComponent(body.file)}`, file: body.file };
+        const body = await response.json().catch(() => ({})) as Refused & { file?: string; };
+        return body.file === undefined ? { error: refusalText(body, t("It did not reach the game: try again.")) } : { download: `/api/export?file=${encodeURIComponent(body.file)}`, file: body.file };
     } catch {
         return { error: t("It did not reach the game: try again.") };
     }

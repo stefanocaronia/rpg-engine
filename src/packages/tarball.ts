@@ -1,9 +1,10 @@
 // A package's .tgz as npm pack makes it (D-452): a gzipped tar with its files under package/. Read with Node alone and checked whole before anything is
 // written: a path that would leave the folder or that Windows reads otherwise, a link, a device, a duplicate or an archive cut short refuse it.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { archivePathParts, insideFolder, refuseTwice } from "../core/archive-paths.ts";
+import { Refusal } from "../core/refusal.ts";
 
 // The most an archive may unpack to: a package is never this big, a malicious archive could be.
 const largest = 512 * 1024 * 1024;
@@ -55,7 +56,10 @@ function entries(archive: string): Entry[]
         tar = gunzipSync(readFileSync(archive), { maxOutputLength: largest });
     } catch (error) {
         const big = error instanceof RangeError || (error instanceof Error && /larger than|maxOutputLength/i.test(error.message));
-        throw new Error(big ? `${archive} unpacks to more than ${largest / 1024 / 1024} MB, more than a package may.` : `${archive} is not a package's .tgz that reads: ${error instanceof Error ? error.message : String(error)}`);
+        const name = basename(archive);
+        throw big
+            ? new Refusal(`${archive} unpacks to more than ${largest / 1024 / 1024} MB, more than a package may.`, "archive-big", { name, size: String(largest / 1024 / 1024) })
+            : new Refusal(`${archive} is not a package's .tgz that reads: ${error instanceof Error ? error.message : String(error)}`, "archive-unread", { name });
     }
 
     const found: Entry[] = [];
@@ -72,7 +76,7 @@ function entries(archive: string): Entry[]
         const size = /^[0-7]*$/.test(sizeField) ? Number.parseInt(sizeField || "0", 8) : Number.NaN;
 
         if (!Number.isSafeInteger(size) || at + block + size > tar.length) {
-            throw new Error(`${archive} is cut short, or is not a .tgz npm pack made: it is refused whole.`);
+            throw new Refusal(`${archive} is cut short, or is not a .tgz npm pack made: it is refused whole.`, "archive-unread", { name: basename(archive) });
         }
 
         const type = String.fromCharCode(header[156] || 48);
@@ -93,7 +97,7 @@ function entries(archive: string): Entry[]
         }
 
         if (type !== "0" && type !== "5") {
-            throw new Error(`${archive} holds ${name}, which is not a plain file or folder (a link or a device): it is refused whole.`);
+            throw new Refusal(`${archive} holds ${name}, which is not a plain file or folder (a link or a device): it is refused whole.`, "archive-link", { name: basename(archive), entry: name });
         }
 
         found.push({ path: packagePath(archive, name), directory: type === "5", data });

@@ -479,6 +479,18 @@ describe("the packages on the dashboard's page (D-475)", () => {
         }
     });
 
+    it("sends each refusal with its code and values beside the engine's words, for the page to say in its language (T-162)", async () => {
+        const refused = async (path: string, body: unknown): Promise<unknown> => JSON.parse((await send("POST", path, body)).body);
+        expect(await refused("/api/add", { source: "@test/nowhere" })).toEqual({ error: "npm has no package @test/nowhere. Nothing changed.", code: "not-found", values: { name: "@test/nowhere" } });
+        expect(await refused("/api/package", { action: "update", name: "ghost" })).toMatchObject({ code: "not-here", values: { name: "ghost" } });
+        npm.describe = (spec) => Promise.resolve({ name: spec, version: "5.0.0", kind: "extension", api: 8 });
+        expect(await refused("/api/add", { source: "omens" })).toMatchObject({
+            error: expect.stringContaining("is made for the API 8"),
+            code: "engine-too-old",
+            values: { name: "@rpgengine/omens", version: "5.0.0" },
+        });
+    });
+
     it("adds someone else's package only with the player's yes in a window of their computer, never the host's form nor the page's click (D-478, D-485)", async () => {
         const refused = await send("POST", "/api/add", { source: "@test/rumors" });
         expect(refused.status).toBe(400);

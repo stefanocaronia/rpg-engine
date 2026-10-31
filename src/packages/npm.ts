@@ -5,6 +5,7 @@ import { isAbsolute, join, resolve } from "node:path";
 import { ourScope } from "../core/consents.ts";
 import type { PackageInfo, PackageManager } from "../core/context.ts";
 import { packageApi, readsApi } from "../core/package-declarations.ts";
+import { Refusal } from "../core/refusal.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { isTarball, tarballText, unpackTarball } from "./tarball.ts";
 
@@ -493,7 +494,7 @@ async function json(url: string): Promise<unknown>
 function checkedSpec(spec: string): string
 {
     if (!npmSpec.test(spec)) {
-        throw new Error(`"${spec}" is not the name of an npm package, with its version if wanted, such as @rpgengine/weather or @rpgengine/weather@0.1.0.`);
+        throw new Refusal(`"${spec}" is not the name of an npm package, with its version if wanted, such as @rpgengine/weather or @rpgengine/weather@0.1.0.`, "not-a-name", { name: spec });
     }
 
     return spec;
@@ -505,7 +506,7 @@ function quotedFolder(folder: string): string
     const path = resolve(folder);
 
     if (/["%$`!&]/.test(path)) {
-        throw new Error(`The folder ${path} has characters npm cannot be given safely ("%$\`!&): move it to another path.`);
+        throw new Refusal(`The folder ${path} has characters npm cannot be given safely ("%$\`!&): move it to another path.`, "folder-characters", { name: path });
     }
 
     return `"${path}"`;

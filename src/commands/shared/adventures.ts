@@ -6,6 +6,7 @@ import { type AdventureFiles, adventureFolderName, type AdventureManifest, adven
 import { houseRulesFolderName, readSettings } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { appendLogEntry, type LogEntry, readLog } from "../../core/log.ts";
+import { Refusal } from "../../core/refusal.ts";
 import { files } from "../../core/store.ts";
 import { comparableText, linkTargetName } from "../../core/text.ts";
 import { isNewerVersion } from "../../core/version.ts";
@@ -75,8 +76,10 @@ const documentPattern = /\.(pdf|docx?|odt|rtf|txt|md|epub)$/i;
 export function isAdventureSpec(spec: string): boolean
 {
     if (documentPattern.test(spec)) {
-        throw new Error(
+        throw new Refusal(
             `${spec} is a document, not a package: make an adventure from it with import; package install takes only what has adventure.yaml. Nothing changed.`,
+            "document",
+            { name: spec },
         );
     }
 
@@ -102,7 +105,7 @@ export async function readAdventureSpec(spec: string, context: Context): Promise
         const bytes = files().bytes(path);
 
         if (bytes === undefined) {
-            throw new Error(`There is no file ${path}: give the path of the adventure's .zip. Nothing changed.`);
+            throw new Refusal(`There is no file ${path}: give the path of the adventure's .zip. Nothing changed.`, "not-on-computer", { name: path });
         }
 
         return readAdventureZip(bytes, basename(path));
@@ -125,7 +128,10 @@ export function installAdventure(root: string, context: Context, adventure: Adve
 
     if (there !== undefined) {
         if (there.version !== manifest.version) {
-            throw new Error(`The campaign has ${manifest.title} ${there.version}: a played adventure is not updated. Nothing changed.`);
+            throw new Refusal(`The campaign has ${manifest.title} ${there.version}: a played adventure is not updated. Nothing changed.`, "adventure-played", {
+                name: manifest.title,
+                version: there.version,
+            });
         }
 
         return { ...describe(root, context, adventure, there.shift, [], []), already: true };
@@ -134,7 +140,9 @@ export function installAdventure(root: string, context: Context, adventure: Adve
     const stopped = installMark(root);
 
     if (stopped !== undefined && comparableText(stopped.title) !== comparableText(manifest.title)) {
-        throw new Error(`The install of ${stopped.title} stopped halfway: finish it first with package install ${stopped.from}. Nothing changed.`);
+        throw new Refusal(`The install of ${stopped.title} stopped halfway: finish it first with package install ${stopped.from}. Nothing changed.`, "adventure-halfway", {
+            name: stopped.title,
+        });
     }
 
     checkNeeds(root, context, manifest);
@@ -144,9 +152,11 @@ export function installAdventure(root: string, context: Context, adventure: Adve
     if (plan.problems.length > 0) {
         const listed = plan.problems.slice(0, 10).join("; ");
         const more = plan.problems.length > 10 ? `; and ${plan.problems.length - 10} more` : "";
-        throw new Error(
+        throw new Refusal(
             `${manifest.title} cannot be installed: ${listed}${more}. Rename the adventure's pages in its folder, or the campaign's with rename if the player has not met them, `
                 + "and install it again. Nothing changed.",
+            "adventure-names",
+            { name: manifest.title, names: `${listed}${more}` },
         );
     }
 
@@ -168,7 +178,11 @@ export function removeAdventure(root: string, context: Context, adventure: Insta
     const touching = storyTouching(root, adventure);
 
     if (touching !== undefined) {
-        throw new Error(`${adventure.title} is part of the story now: the log names its pages${touching.date === undefined ? "" : ` on ${touching.date}`}. It stays; nothing changed.`);
+        throw new Refusal(
+            `${adventure.title} is part of the story now: the log names its pages${touching.date === undefined ? "" : ` on ${touching.date}`}. It stays; nothing changed.`,
+            "adventure-in-story",
+            { name: adventure.title },
+        );
     }
 
     // A file already gone, by hand or by a remove that stopped, is no reason to stop.
@@ -292,7 +306,11 @@ function checkNeeds(root: string, context: Context, manifest: AdventureManifest)
     const settings = readSettings(root);
 
     if (manifest.needs.system !== undefined && comparableText(manifest.needs.system) !== comparableText(settings.system ?? "")) {
-        throw new Error(`${manifest.title} is for the game system ${manifest.needs.system}, and the campaign plays ${settings.system ?? "none yet"}: it cannot be installed here. Nothing changed.`);
+        throw new Refusal(
+            `${manifest.title} is for the game system ${manifest.needs.system}, and the campaign plays ${settings.system ?? "none yet"}: it cannot be installed here. Nothing changed.`,
+            "other-system",
+            { name: manifest.title, system: manifest.needs.system, plays: settings.system ?? "" },
+        );
     }
 
     const listed = listedExtensions(root);
@@ -301,11 +319,18 @@ function checkNeeds(root: string, context: Context, manifest: AdventureManifest)
         const found = Object.keys(listed).find((one) => one === name || comparableText(shortName(one)) === comparableText(shortName(name)));
 
         if (found === undefined) {
-            throw new Error(`${manifest.title} needs the extension ${name}: install it with package install ${shortName(name)} first. Nothing changed.`);
+            throw new Refusal(`${manifest.title} needs the extension ${name}: install it with package install ${shortName(name)} first. Nothing changed.`, "adventure-needs", {
+                name: manifest.title,
+                needs: shortName(name),
+            });
         }
 
         if (isNewerVersion(lowest, listed[found])) {
-            throw new Error(`${manifest.title} needs ${name} ${lowest} or later, and the campaign has ${listed[found]}: install the newer with package install ${shortName(name)}. Nothing changed.`);
+            throw new Refusal(
+                `${manifest.title} needs ${name} ${lowest} or later, and the campaign has ${listed[found]}: install the newer with package install ${shortName(name)}. Nothing changed.`,
+                "adventure-needs-newer",
+                { name: manifest.title, needs: shortName(name), version: lowest, has: listed[found] },
+            );
         }
     }
 
@@ -452,7 +477,10 @@ function startingFiles(root: string, context: Context): { held: Record<string, U
     const played = readLog(root).some((entry) => entry.type === "scene-opened") || campaignMode(root, campaignWorld(root, context)) === "play";
 
     if (played) {
-        throw new Error("The campaign has been played, and has no save of its start: what it is now goes on as a save of the whole game, not as an adventure. Nothing was written.");
+        throw new Refusal(
+            "The campaign has been played, and has no save of its start: what it is now goes on as a save of the whole game, not as an adventure. Nothing was written.",
+            "export-played",
+        );
     }
 
     const held: Record<string, Uint8Array> = {};

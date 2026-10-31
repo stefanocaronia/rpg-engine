@@ -6,7 +6,8 @@ import { type Context, engineSystemsFolder, type PackageInfo } from "../core/con
 import { type Examples, neutralExamples } from "../core/examples.ts";
 import { installedFromFolder } from "../core/files.ts";
 import { appendLogEntry } from "../core/log.ts";
-import { apiProblem, ourSystems, readsApi } from "../core/package-declarations.ts";
+import { apiProblem, ourSystems, packageApi, readsApi } from "../core/package-declarations.ts";
+import { Refusal } from "../core/refusal.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files, FileStore, isInside, withFiles } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
@@ -41,14 +42,11 @@ type Installed =
     | { name: string; package: string; broken: string; issues?: string; };
 
 /** The player's yes to a package not ours, not given (D-478): they said no or closed the question, or no window could be shown here. */
-export class YesRefused extends Error
+export class YesRefused extends Refusal
 {
-    readonly code: "declined" | "no-window";
-
-    constructor(message: string, code: "declined" | "no-window")
+    constructor(message: string, code: "declined" | "no-window", values: Record<string, string> = {})
     {
-        super(message);
-        this.code = code;
+        super(message, code, values);
     }
 }
 
@@ -400,7 +398,12 @@ async function installed(root: string, context: Context, name: string): Promise<
     const [asked, described] = second !== undefined && other !== undefined && !("failed" in other && other.missing === true) ? [second, other] : [first, tried];
 
     if ("failed" in described) {
-        throw new Error(`${described.failed}. Nothing changed${asked === name ? "" : `: ${name} alone means ${asked}, one of RPG Engine's; another's is named with its scope, or as npm:${name} without one`}.`);
+        const message = `${described.failed}. Nothing changed${asked === name ? "" : `: ${name} alone means ${asked}, one of RPG Engine's; another's is named with its scope, or as npm:${name} without one`}.`;
+        throw isLocalSpec(asked)
+            ? new Refusal(message, "not-on-computer", { name })
+            : described.missing === true
+            ? new Refusal(message, "not-found", { name })
+            : new Refusal(message, "npm-failed", { name, why: described.failed });
     }
 
     // npm is given the version described, which the player's yes was for: by its name alone, npm would keep the exact version it saved before.
@@ -415,17 +418,21 @@ async function installed(root: string, context: Context, name: string): Promise<
     }
 
     if (described.kind !== "extension") {
-        throw new Error(
-            described.kind === undefined
-                ? `${described.name} is not a package for RPG Engine: its package.json does not say "rpg-engine": {"kind": "extension"}, or {"kind": "system"} for a game system. Nothing changed.`
-                : `${described.name} is a package of kind ${described.kind}: for now extensions, game systems and adventures are installed this way. Nothing changed.`,
-        );
+        throw described.kind === undefined
+            ? new Refusal(
+                `${described.name} is not a package for RPG Engine: its package.json does not say "rpg-engine": {"kind": "extension"}, or {"kind": "system"} for a game system. Nothing changed.`,
+                "not-ours",
+                { name: described.name },
+            )
+            : new Refusal(`${described.name} is a package of kind ${described.kind}: for now extensions, game systems and adventures are installed this way. Nothing changed.`, "other-kind", {
+                name: described.name,
+            });
     }
 
     const unread = apiProblem(described.api, "extension");
 
     if (unread !== undefined) {
-        throw new Error(`${described.name} ${described.version} cannot be used, because ${unread}. Nothing changed.`);
+        throw apiRefusal(described, unread);
     }
 
     const local = isLocalSpec(spec);
@@ -446,7 +453,7 @@ async function installed(root: string, context: Context, name: string): Promise<
         const why = await packages.install(spec);
 
         if (why !== undefined) {
-            throw new Error(`${described.name} could not be installed: ${why}. Nothing changed in the campaign.`);
+            throw new Refusal(`${described.name} could not be installed: ${why}. Nothing changed in the campaign.`, "install-failed", { name: described.name, why });
         }
 
         // npm wrote there: what the call read of those folders is read again, and the code anew.
@@ -467,7 +474,10 @@ async function installed(root: string, context: Context, name: string): Promise<
             : "unread" in installed
             ? `its extension does not read: ${installed.unread}`
             : "no extension of that name is where npm put it";
-        throw new Error(`npm installed ${described.name}, but ${why}: RPG Engine cannot use it, and took it off this computer again. Nothing changed in the campaign.`);
+        throw new Refusal(`npm installed ${described.name}, but ${why}: RPG Engine cannot use it, and took it off this computer again. Nothing changed in the campaign.`, "taken-off", {
+            name: described.name,
+            why,
+        });
     }
 
     // The player's yes holds for this version and these files, on this computer: its code runs on the server and in the page (D-478, D-510).
@@ -478,24 +488,36 @@ async function installed(root: string, context: Context, name: string): Promise<
     const system = readTextSetting(root, "system");
 
     if (extension.needs.system !== undefined && comparableText(extension.needs.system) !== comparableText(system ?? "")) {
-        throw new Error(`${extension.name} is installed on this computer, but it is for the game system ${extension.needs.system}, and the campaign plays ${system ?? "none"}: the campaign does not use it.`);
+        throw new Refusal(
+            `${extension.name} is installed on this computer, but it is for the game system ${extension.needs.system}, and the campaign plays ${system ?? "none"}: the campaign does not use it.`,
+            "other-system",
+            { name: extension.name, system: extension.needs.system, plays: system ?? "" },
+        );
     }
 
     // Its state, widgets and pictures go by its name, which the system's would share (D-514).
     if (comparableText(extension.name) === comparableText(system ?? "")) {
-        throw new Error(`${extension.name} is installed on this computer, but it has the name of the game system the campaign plays: the campaign does not use it. Nothing changed in the campaign.`);
+        throw new Refusal(
+            `${extension.name} is installed on this computer, but it has the name of the game system the campaign plays: the campaign does not use it. Nothing changed in the campaign.`,
+            "system-name",
+            { name: extension.name },
+        );
     }
 
     const others = Object.keys(listedExtensions(root)).filter((other) => other !== extension.package && shortName(other) === extension.name);
 
     if (others.length > 0) {
-        throw new Error(`The campaign uses ${others[0]}, with the same name, ${extension.name}: take it away with package remove ${others[0]} first. Nothing changed in the campaign.`);
+        throw new Refusal(`The campaign uses ${others[0]}, with the same name, ${extension.name}: take it away with package remove ${others[0]} first. Nothing changed in the campaign.`, "same-name", {
+            name: extension.name,
+            other: others[0],
+        });
     }
 
     // Its code is checked before the campaign lists it: a package that would not work is never added.
     const commands = runsCode(extension)
         ? await packageCommandNames(extension, context).catch((error: unknown) => {
-            throw new Error(`The code of ${extension.package} cannot be used: ${error instanceof Error ? error.message : String(error)}. Nothing changed in the campaign.`);
+            const why = error instanceof Error ? error.message : String(error);
+            throw new Refusal(`The code of ${extension.package} cannot be used: ${why}. Nothing changed in the campaign.`, "code-broken", { name: extension.package, why });
         })
         : [];
     const listedBefore = listedExtensions(root);
@@ -533,13 +555,17 @@ async function systemInstalled(root: string, context: Context, spec: string, nam
     const unread = apiProblem(described.api, "system");
 
     if (unread !== undefined) {
-        throw new Error(`${described.name} ${described.version} cannot be used, because ${unread}. Nothing changed.`);
+        throw apiRefusal(described, unread);
     }
 
     const taken = systemsHere(root, context).find((one) => comparableText(one.name) === comparableText(named) && one.package !== described.name);
 
     if (taken !== undefined) {
-        throw new Error(`There is already a game system named ${taken.name} on this computer${taken.package === undefined ? ", the engine's own" : `, from ${taken.package}`}: ${described.name} would take its name. Nothing changed.`);
+        throw new Refusal(
+            `There is already a game system named ${taken.name} on this computer${taken.package === undefined ? ", the engine's own" : `, from ${taken.package}`}: ${described.name} would take its name. Nothing changed.`,
+            "system-taken",
+            { name: described.name, system: taken.name },
+        );
     }
 
     if (!isVerified(described.name, local)) {
@@ -549,7 +575,7 @@ async function systemInstalled(root: string, context: Context, spec: string, nam
     const why = await (context.packages as NonNullable<Context["packages"]>).install(spec);
 
     if (why !== undefined) {
-        throw new Error(`${described.name} could not be installed: ${why}. Nothing changed.`);
+        throw new Refusal(`${described.name} could not be installed: ${why}. Nothing changed.`, "install-failed", { name: described.name, why });
     }
 
     [...context.systemFolders, ...(context.extensionFolders ?? [])].forEach((folder) => files().refresh(folder));
@@ -563,7 +589,9 @@ async function systemInstalled(root: string, context: Context, spec: string, nam
     const system = systemsHere(root, context).find((one) => one.package === described.name);
 
     if (system === undefined) {
-        throw new Error(`${described.name} was installed, but ${unreadSystemWhy(installed, described.name)}. Uninstall it with package uninstall ${described.name}.`);
+        throw new Refusal(`${described.name} was installed, but ${unreadSystemWhy(installed, described.name)}. Uninstall it with package uninstall ${described.name}.`, "system-unread", {
+            name: described.name,
+        });
     }
 
     appendLogEntry(root, newDatedLogEntry(root, context, "package-installed", "public", { package: described.name, version: described.version, verified: system.verified, kind: "system" }));
@@ -657,7 +685,9 @@ function packageOf(folder: string): { name: string; version: string; } | undefin
 async function languageInstalled(root: string, context: Context, spec: string, described: PackageInfo): Promise<PackageResult>
 {
     if (described.code === true || described.dependencies === true) {
-        throw new Error(`${described.name} says it is a language, and brings code or needs other packages: a language package is texts only. Nothing changed.`);
+        throw new Refusal(`${described.name} says it is a language, and brings code or needs other packages: a language package is texts only. Nothing changed.`, "language-code", {
+            name: described.name,
+        });
     }
 
     const before = installedLanguages(context.extensionFolders ?? []);
@@ -665,7 +695,7 @@ async function languageInstalled(root: string, context: Context, spec: string, d
     const why = await packages.install(spec);
 
     if (why !== undefined) {
-        throw new Error(`${described.name} could not be installed: ${why}. Nothing changed.`);
+        throw new Refusal(`${described.name} could not be installed: ${why}. Nothing changed.`, "install-failed", { name: described.name, why });
     }
 
     (context.extensionFolders ?? []).forEach((folder) => files().refresh(folder));
@@ -687,7 +717,9 @@ async function languageInstalled(root: string, context: Context, spec: string, d
         const earlier = before.find((one) => one.package === described.name);
         const back = earlier === undefined || isLocalSpec(spec) ? undefined : await packages.install(`${earlier.package}@${earlier.version}`).then((why) => (why === undefined ? earlier.version : undefined));
         (context.extensionFolders ?? []).forEach((one) => files().refresh(one));
-        throw new Error(`${described.name} cannot be used: ${checked.problems.join("; ")}. ${back === undefined ? "It was taken off this computer." : `Version ${back} stays.`}`);
+        const why = checked.problems.join("; ");
+        const message = `${described.name} cannot be used: ${why}. ${back === undefined ? "It was taken off this computer." : `Version ${back} stays.`}`;
+        throw back === undefined ? new Refusal(message, "language-refused", { name: described.name, why }) : new Refusal(message, "language-kept", { name: described.name, why, version: back });
     }
 
     // One language, one package: the one before for the same code goes (D-485 (3)).
@@ -771,7 +803,7 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
 {
     // A no in a window holds for the package npm describes, however it was written, until the server starts again (D-510).
     if (context.declined?.has(pack) === true) {
-        throw new YesRefused(`The player said no to ${pack} in this session: it is not asked again until the game's server starts again. Nothing changed.`, "declined");
+        throw new YesRefused(`The player said no to ${pack} in this session: it is not asked again until the game's server starts again. Nothing changed.`, "declined", { name: pack });
     }
 
     // Said in plain words, the fixed text before the name its author chose; and where the request comes from (D-510). The package's own words cut short, so
@@ -792,12 +824,12 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
     }
 
     if (answer === 1 || (typeof answer === "object" && answer !== null)) {
-        throw new YesRefused(`The player did not want ${name}. Nothing changed.`, "declined");
+        throw new YesRefused(`The player did not want ${name}. Nothing changed.`, "declined", { name });
     }
 
     // Closed without an answer is no yes, never a reason to ask again some other way.
     if (answer === undefined) {
-        throw new YesRefused(`The player closed the question without a yes to ${name}. Nothing changed: ask again only if they bring it up.`, "declined");
+        throw new YesRefused(`The player closed the question without a yes to ${name}. Nothing changed: ask again only if they bring it up.`, "declined", { name });
     }
 
     const window = context.confirm === undefined ? "none" : await context.confirm.ask(title, question, context.signal);
@@ -808,7 +840,7 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
 
     if (window === "no") {
         context.declined?.add(pack);
-        throw new YesRefused(`The player did not want ${name}. Nothing changed.`, "declined");
+        throw new YesRefused(`The player did not want ${name}. Nothing changed.`, "declined", { name });
     }
 
     throw new YesRefused(
@@ -816,6 +848,16 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
             + `on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.`,
         "no-window",
     );
+}
+
+/** A package made for an API this engine does not read: one newer than the engine, which an update of the engine reads, or one older, which a newer version of it fixes. */
+function apiRefusal(described: PackageInfo, unread: string): Refusal
+{
+    const newer = described.api !== undefined && described.api > packageApi;
+    return new Refusal(`${described.name} ${described.version} cannot be used, because ${unread}. Nothing changed.`, newer ? "engine-too-old" : "package-too-old", {
+        name: described.name,
+        version: described.version,
+    });
 }
 
 /** The installed extension of this package, when it reads; undefined when it is missing or broken. */
@@ -895,7 +937,7 @@ function removed(root: string, context: Context, name: string): PackageResult
 
     if (found === undefined) {
         const names = Object.keys(listed).map(shortName);
-        throw new Error(`The campaign does not use ${name}${names.length === 0 ? ": it uses no package" : `; it uses ${names.join(", ")}`}. Nothing changed.`);
+        throw new Refusal(`The campaign does not use ${name}${names.length === 0 ? ": it uses no package" : `; it uses ${names.join(", ")}`}. Nothing changed.`, "not-used", { name });
     }
 
     const rest = Object.fromEntries(Object.entries(listed).filter(([candidate]) => candidate !== found));
@@ -911,7 +953,7 @@ async function uninstalled(root: string, context: Context, name: string): Promis
     const system = systemsHere(root, context).find((one) => one.package !== undefined && (one.package === name || comparableText(one.name) === comparableText(name)));
 
     if (system?.used === true) {
-        throw new Error(`The campaign plays ${system.name}: it stays on this computer. Nothing changed.`);
+        throw new Refusal(`The campaign plays ${system.name}: it stays on this computer. Nothing changed.`, "system-played", { name: system.name });
     }
 
     const other = system?.package ?? languagesHere(context).find((one) => one.package === name || comparableText(one.code) === comparableText(name))?.package;
@@ -926,7 +968,7 @@ async function uninstalled(root: string, context: Context, name: string): Promis
         const why = await packages.uninstall(npmName);
 
         if (why !== undefined) {
-            throw new Error(`${npmName} could not be taken off this computer: ${why}. Nothing changed.`);
+            throw new Refusal(`${npmName} could not be taken off this computer: ${why}. Nothing changed.`, "uninstall-failed", { name: npmName, why });
         }
 
         return { kind: "uninstalled", name: npmName, wasUsed: false, extension: false };
@@ -934,7 +976,7 @@ async function uninstalled(root: string, context: Context, name: string): Promis
 
     if (found === undefined) {
         const here = installedExtensions(context.extensionFolders ?? []).map((one) => shortName(one.package));
-        throw new Error(`${name} is not on this computer${here.length === 0 ? ": no package is" : `; these are: ${here.join(", ")}`}. Nothing changed.`);
+        throw new Refusal(`${name} is not on this computer${here.length === 0 ? ": no package is" : `; these are: ${here.join(", ")}`}. Nothing changed.`, "not-here", { name });
     }
 
     if (packages === undefined) {
@@ -945,7 +987,7 @@ async function uninstalled(root: string, context: Context, name: string): Promis
     const why = await packages.uninstall(found.package);
 
     if (why !== undefined) {
-        throw new Error(`${found.package} could not be uninstalled: ${why}. Nothing changed.`);
+        throw new Refusal(`${found.package} could not be uninstalled: ${why}. Nothing changed.`, "uninstall-failed", { name: found.package, why });
     }
 
     // Off this computer, its yes goes with it: installed again, it is asked again.

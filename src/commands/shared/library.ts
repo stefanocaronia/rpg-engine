@@ -3,6 +3,7 @@
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { campaignFileName, findCampaign, readListSetting, readTextSetting } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
+import { Refusal } from "../../core/refusal.ts";
 import { comparableText } from "../../core/text.ts";
 import { documentAt, documentKinds } from "../../documents/index.ts";
 import { dropUnlisted, foldersIn, isWithin, type LibraryBook, libraryFolders, libraryReader, type LibraryScope, type LibraryState, libraryState, mostBooks, samePath, saveLibraryFolders } from "../../library/index.ts";
@@ -59,22 +60,31 @@ export async function libraryAdditions(root: string, context: Context, given: st
         const found = documentAt(entry);
 
         if (found === undefined) {
-            throw new Error(`There is no ${entry}: give the full path of a folder of the player's books, or of a book. Nothing changed.`);
+            throw new Refusal(`There is no ${entry}: give the full path of a folder of the player's books, or of a book. Nothing changed.`, "not-on-computer", { name: entry });
         }
 
         if (found === "file" && !documentKinds.some((kind) => entry.toLowerCase().endsWith(kind))) {
-            throw new Error(`${basename(entry)} is no book the engine reads: give a ${documentKinds.join(", ")} file, or a folder of them. Nothing changed.`);
+            throw new Refusal(`${basename(entry)} is no book the engine reads: give a ${documentKinds.join(", ")} file, or a folder of them. Nothing changed.`, "not-a-book", {
+                name: basename(entry),
+                kinds: documentKinds.join(", "),
+            });
         }
 
         // A book is looked for from its folder: a file is no folder to hold a campaign.yaml, and Linux says so.
         const campaign = findCampaign(found === "file" ? dirname(entry) : entry);
 
         if (campaign !== undefined) {
-            throw new Error(`${entry} is inside the campaign in ${campaign}: the library is the player's own books, outside every campaign. Nothing changed.`);
+            throw new Refusal(`${entry} is inside the campaign in ${campaign}: the library is the player's own books, outside every campaign. Nothing changed.`, "books-in-campaign", {
+                name: entry,
+            });
         }
 
         if (found === "folder" && context.bookIndex !== undefined && libraryState(context.bookIndex, [entry], libraryScope).crowded.length > 0) {
-            throw new Error(`${entry} holds more than ${mostBooks} documents, and a shelf of a game's books has from 5 to 50: give the folder inside it with this game's books${insideOf(context, entry)}. Nothing changed.`);
+            throw new Refusal(
+                `${entry} holds more than ${mostBooks} documents, and a shelf of a game's books has from 5 to 50: give the folder inside it with this game's books${insideOf(context, entry)}. Nothing changed.`,
+                "books-crowded",
+                { name: entry, count: String(mostBooks) },
+            );
         }
     }
 
@@ -544,7 +554,9 @@ function libraryPath(context: Context, given: string): string
     const entry = unquoted(given);
 
     if (!isAbsolute(entry) && context.terminal !== true) {
-        throw new Error(`${entry} is no full path: give the whole path of a folder of the player's books, or of a book, from its drive or its root. Nothing changed.`);
+        throw new Refusal(`${entry} is no full path: give the whole path of a folder of the player's books, or of a book, from its drive or its root. Nothing changed.`, "not-full-path", {
+            name: entry,
+        });
     }
 
     return resolve(context.folder, entry);
