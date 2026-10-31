@@ -16,7 +16,14 @@ export interface LoadedDice
 /** Loads the dice's shapes and values, and the meshes of the edges given at once, the others when first asked. */
 export async function loadDice(edges: string): Promise<LoadedDice>
 {
-    const read = (file: string): Promise<unknown> => fetch(`/assets/dice/${file}`).then(async (response) => await response.json() as unknown);
+    const read = (file: string): Promise<unknown> =>
+        fetch(`/assets/dice/${file}`).then(async (response) => {
+            if (!response.ok) {
+                throw new Error(`/assets/dice/${file} did not come (${response.status}).`);
+            }
+
+            return await response.json() as unknown;
+        });
     const [dice, coin] = await Promise.all([read("dice.json"), read("coin.json")]);
     const data = { ...(dice as Record<string, DieModel>), [coinKind]: coin as DieModel };
     const meshes = new Map<string, Promise<Map<string, Object3D>>>();

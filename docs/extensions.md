@@ -32,7 +32,7 @@ calendar:
     - {name: Thaw, days: 90, season: spring}
 ```
 
-`about` is the line `status` gives the master. `needs` names the game system it is made for, when it is made for one. `calendar` gives its months in place of the core's real ones; the campaign's own `calendar` takes theirs. An unknown key is refused by name.
+`about` is the line `status` gives the master. `needs` names the game system it is made for, when it is made for one; its `package.json` says it too, as `"rpg-engine": {"kind": "extension", "api": 7, "system": "5e"}`, so that the dashboard's catalog tells a campaign of another system before anything is downloaded. `calendar` gives its months in place of the core's real ones; the campaign's own `calendar` takes theirs. An unknown key is refused by name.
 
 What it adds to the game system, as `campaign.yaml` adds it (see [game-systems.md](game-systems.md#5-what-a-campaign-adds)): `fields`, `tables`, `computed`, `counters`, `recipes`, `values` and `condition-icons`, the drawings of effects by their names.
 

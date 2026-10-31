@@ -15,25 +15,13 @@ export function pictureAddress(picture: { file: string; version: number; }): str
 export async function readView(page?: string, rolls?: number, focus?: string): Promise<View>
 {
     const query = new URLSearchParams({ ...(page === undefined ? {} : { page }), ...(rolls === undefined ? {} : { rolls: String(rolls) }), ...(focus === undefined ? {} : { focus }) });
-    const response = await fetch(query.size === 0 ? "/api/view" : `/api/view?${query}`);
-    const body = await response.json() as View | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
-
-    return body;
+    return await readJson<View>(query.size === 0 ? "/api/view" : `/api/view?${query}`);
 }
 
 /** The world map as the player character knows it (VIEW-7). */
 export async function readMap(): Promise<WorldMap>
 {
-    const response = await fetch("/api/view?map=true");
-    const body = await response.json() as View | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
+    const body = await readJson<View>("/api/view?map=true");
 
     if (body.kind !== "map") {
         throw new Error(t("There is no player character yet: the map starts with one."));
@@ -45,12 +33,7 @@ export async function readMap(): Promise<WorldMap>
 /** The player's settings, with their values and what each means (D-341). */
 export async function readSettings(): Promise<PlayerSetting[]>
 {
-    const response = await fetch("/api/view?settings=true");
-    const body = await response.json() as View | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
+    const body = await readJson<View>("/api/view?settings=true");
 
     return body.kind === "settings" ? body.settings : [];
 }
@@ -61,12 +44,7 @@ export type SetupView = Extract<View, { kind: "setup"; }>;
 /** The campaign's setup: its mode and name, what the next mode needs, and the setup's questions (D-370). */
 export async function readSetup(): Promise<SetupView>
 {
-    const response = await fetch("/api/view?setup=true");
-    const body = await response.json() as View | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
+    const body = await readJson<View>("/api/view?setup=true");
 
     if (body.kind !== "setup") {
         throw new Error(t("The game gave no setup: reload the page."));
@@ -92,12 +70,7 @@ export type JournalView = Extract<View, { kind: "journal"; }>;
 /** The quests the character knows and the story by scenes (D-367); none before there is a player character. */
 export async function readJournal(): Promise<JournalView | undefined>
 {
-    const response = await fetch("/api/view?journal=true");
-    const body = await response.json() as View | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
+    const body = await readJson<View>("/api/view?journal=true");
 
     return body.kind === "journal" ? body : undefined;
 }
@@ -108,12 +81,7 @@ export type WorldView = Extract<View, { kind: "world"; }>;
 /** What the character knows, its documents and the calendar; none before there is a player character, or from a server older than the page. */
 export async function readWorld(): Promise<WorldView | undefined>
 {
-    const response = await fetch("/api/view?world=true");
-    const body = await response.json() as View | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
+    const body = await readJson<View>("/api/view?world=true");
 
     return body.kind === "world" ? body : undefined;
 }
@@ -194,12 +162,7 @@ export async function readStory(who: string): Promise<string | undefined>
 /** The campaign's saves, newest first, and what the mode lets the player do with them (D-359). */
 export async function readSaves(): Promise<SavesView>
 {
-    const response = await fetch("/api/view?saves=true");
-    const body = await response.json() as View | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
+    const body = await readJson<View>("/api/view?saves=true");
 
     if (body.kind !== "saves") {
         throw new Error(t("The game gave no saves: reload the page."));
@@ -298,11 +261,12 @@ export interface EngineView
 export async function readEngine(): Promise<EngineView | undefined>
 {
     const response = await fetch("/api/engine");
-    const body = await response.json() as EngineView | { error: string; };
 
     if (response.status === 400) {
         return undefined;
     }
+
+    const body = await response.json() as EngineView | { error: string; };
 
     if ("error" in body) {
         throw new Error(body.error);
@@ -346,27 +310,13 @@ export interface PackagesView
 /** The packages here, at once: without npm. */
 export async function readPackages(): Promise<PackagesView>
 {
-    const response = await fetch("/api/packages");
-    const body = await response.json() as PackagesView | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
-
-    return body;
+    return await readJson<PackagesView>("/api/packages");
 }
 
 /** The widgets of the campaign's extensions (D-502), each where it stands and with what it shows now. */
 export async function readWidgets(): Promise<ShownWidget[]>
 {
-    const response = await fetch("/api/widgets");
-    const body = await response.json() as { widgets: ShownWidget[]; } | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
-
-    return body.widgets;
+    return (await readJson<{ widgets: ShownWidget[]; }>("/api/widgets")).widgets;
 }
 
 /** What a package's widget shows for a card or a page of its page code, for who (D-514): nothing when the package or the widget is not the campaign's. */
@@ -386,27 +336,13 @@ export async function readWidgetData(owner: string, widget: string, who: string 
 /** The theme of the campaign's game system (D-528): its CSS, icons and name; nothing when it names none, or refused when it does not pass its checks. */
 export async function readGameTheme(): Promise<ShownTheme>
 {
-    const response = await fetch("/api/theme");
-    const body = await response.json() as ShownTheme | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
-
-    return body;
+    return await readJson<ShownTheme>("/api/theme");
 }
 
 /** The page modules of the campaign's system and extensions whose code runs (D-510, D-511), the system's first. */
 export async function readModules(): Promise<ShownModule[]>
 {
-    const response = await fetch("/api/modules");
-    const body = await response.json() as { modules: ShownModule[]; } | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
-
-    return body.modules;
+    return (await readJson<{ modules: ShownModule[]; }>("/api/modules")).modules;
 }
 
 /** The kinds of packages. */
@@ -429,6 +365,8 @@ export interface CatalogEntry
     length?: string;
     language?: string;
     stars?: number;
+    /** The game system an extension is made for (D-548). */
+    system?: string;
     /** Its latest version, when that one needs a newer RPG Engine: `version` is then the newest this one reads (D-515 (2)). */
     newer?: { version: string; engine?: string; };
 }
@@ -443,14 +381,7 @@ export interface Catalog
 /** The catalog (D-486), as the server keeps it for ten minutes; `fresh` asks npm and GitHub again. */
 export async function readCatalog(fresh: boolean): Promise<Catalog>
 {
-    const response = await fetch(fresh ? "/api/catalog?fresh=true" : "/api/catalog");
-    const body = await response.json() as Catalog | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
-
-    return body;
+    return await readJson<Catalog>(fresh ? "/api/catalog?fresh=true" : "/api/catalog");
 }
 
 /** What a package's work came to: done, with the kind the engine recognized in what was added; or the engine's words, and why the yes was not given. */
@@ -517,14 +448,7 @@ export interface LibraryView
 /** This computer's library, with what this campaign uses, at once. */
 export async function readLibrary(): Promise<LibraryView>
 {
-    const response = await fetch("/api/library");
-    const body = await response.json() as LibraryView | { error: string; };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
-
-    return body;
+    return await readJson<LibraryView>("/api/library");
 }
 
 /**
@@ -679,4 +603,25 @@ export async function runCommand(command: string, input: Record<string, unknown>
     }
 
     return body.text ?? "";
+}
+
+/**
+ * What the server answers at an address, as JSON: it throws what the server says went wrong, or, when the game cannot be reached or answers no JSON, says so
+ * in the page's words rather than the browser's.
+ */
+async function readJson<T>(address: string): Promise<T>
+{
+    let body: unknown;
+
+    try {
+        body = await (await fetch(address)).json();
+    } catch {
+        throw new Error(t("It did not reach the game: try again."));
+    }
+
+    if (typeof body === "object" && body !== null && "error" in body && typeof body.error === "string") {
+        throw new Error(body.error);
+    }
+
+    return body as T;
 }

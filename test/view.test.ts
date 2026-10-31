@@ -399,6 +399,18 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect((await rpg("scene", "hostile", "--who", "Kira")).output).toContain("Al guado is a social scene: hostile and calm mark who fights in a combat scene.");
     });
 
+    it("numbers two strangers seen alike as copies are, and marks whose turn it is among the fighters", async () => {
+        await ok("write", "Sgherro", "--type", "character", "--text", "Un sicario.");
+        await ok("write", "Bravo", "--type", "character", "--text", "Un altro sicario.");
+        await ok("scene", "open", "--title", "Agguato", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Sgherro", "--with", "Bravo", "--seen", "Sgherro=uomo incappucciato", "--seen", "Bravo=uomo incappucciato");
+        await ok("scene", "order", "--order", "Sgherro", "--order", "Kira", "--order", "Bravo");
+        await ok("scene", "next");
+        await ok("scene", "next");
+        const fighters = JSON.parse(await ok("view", "--json")).openScene.fighters as { name: string; acting?: true; }[];
+        expect(fighters.map((one) => [one.name, one.acting === true])).toEqual([["uomo incappucciato 1", false], ["Kira", false], ["uomo incappucciato 2", true]]);
+        expect(JSON.parse(await ok("view", "--json")).openScene.turn).toBe("uomo incappucciato 2");
+    });
+
     it("calls who the character does not know by what it sees of them, as the master said, until it learns their name (D-416)", async () => {
         await ok("write", "Brunilde", "--type", "character", "--text", "Una donna del bosco.");
         await ok(
@@ -474,7 +486,7 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         const overview = JSON.parse(await ok("view", "--json"));
         const fighters = overview.openScene.fighters;
         expect(fighters.map((fighter: { name: string; }) => fighter.name)).toEqual(["creature 1", "Kira", "creature 2", "Bran"]);
-        expect(fighters[0]).toEqual({ name: "creature 1", role: "other", stranger: true, health: "reeling", wound: "low", effects: [] });
+        expect(fighters[0]).toEqual({ name: "creature 1", role: "other", stranger: true, acting: true, health: "reeling", wound: "low", effects: [] });
         // Of a foe only the conditions anyone sees, by name; a stunned one does not act. The party's effects as their line gives them, with the end, at the turn
         // of a creature the character does not know by its number (VIEW-4).
         expect(fighters[2]).toMatchObject({ health: "steady", effects: [{ name: "Asleep", text: "Asleep" }], inactive: true });

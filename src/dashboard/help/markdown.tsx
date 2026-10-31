@@ -1,6 +1,7 @@
 // The guide's blocks (blocks.ts, D-413) drawn as the page's own elements, never as HTML; in a line bold, italic, code and links, to a page of the web or
 // to a heading by its anchor. A game's pages have their own, markdown.tsx, which shows links as names.
 import type { ComponentChildren } from "preact";
+import { sectionAddress } from "../address.ts";
 import type { Block } from "./blocks.ts";
 
 /** Blocks drawn as the page's elements: headings one level under the card's, each with the anchor given by its place among them; a link to an anchor calls go. */
@@ -120,7 +121,7 @@ function LinkView({ label, target, go }: { label: string; target: string; go: (a
     if (target.startsWith("#")) {
         return (
             <a
-                href={target}
+                href={sectionAddress("help", target.slice(1))}
                 onClick={(event) => {
                     event.preventDefault();
                     go(target.slice(1));

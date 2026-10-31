@@ -7,7 +7,7 @@ import { CardHead } from "../card.tsx";
 import type { PackageCode, ShownModule, ShownWidget, WidgetPage, WidgetPart, WidgetSpot, WidgetText, WidgetTrack, WidgetValue } from "../data.ts";
 import { iconPath } from "../icons.tsx";
 import { sideOf, Token } from "../party.tsx";
-import { isolated, numberText, pageDirection, t } from "../text.ts";
+import { isolated, numberText, pageDirection, pageLocale, t } from "../text.ts";
 import type { TrackChange } from "./card.ts";
 import { type CardPage, cardsIn, codeOfModule, ExtensionRoot, type FigurePart, type FigurePlace, figureSize, type LoadedModule, ModulesContext, type PageCard, pagePropsOf, usePageModule, useWidgetData } from "./page-code.tsx";
 import { PeopleContext } from "./people.ts";
@@ -129,7 +129,7 @@ export function widgetSaid(widget: ShownWidget): string
 /** A widget's text as one string, its values written in the page's language: for a tip or a name. */
 export function textOf(text: WidgetText): string
 {
-    return typeof text === "string" ? text : text.text.replace(/\{(\w+)\}/g, (whole, name: string) => (name in text.values ? isolated(valueOf(text.values[name])) : whole));
+    return typeof text === "string" ? text : text.text.replace(/\{(\w+)\}/g, (whole, name: string) => (Object.hasOwn(text.values, name) ? isolated(valueOf(text.values[name])) : whole));
 }
 
 /** The widgets of a place, of a page for a card in one, in their order; one turned off is in none. */
@@ -515,7 +515,7 @@ export function Text({ text }: { text: WidgetText; })
 
     const pieces: ComponentChildren[] = text.text.split(/(\{\w+\})/).filter((piece) => piece !== "").map((piece, index) => {
         const name = /^\{(\w+)\}$/.exec(piece)?.[1];
-        return name !== undefined && name in text.values ? <Value key={index} value={text.values[name]} /> : piece;
+        return name !== undefined && Object.hasOwn(text.values, name) ? <Value key={index} value={text.values[name]} /> : piece;
     });
     return <>{pieces}</>;
 }
@@ -546,7 +546,7 @@ function valueOf(value: WidgetValue): string
 /** Two numbers as a range, as the page's language writes it: 10–15, −5 – 0. */
 function rangeText(from: number, to: number): string
 {
-    const format = new Intl.NumberFormat(document.documentElement.lang || "en", { numberingSystem: "latn", useGrouping: false, maximumFractionDigits: 2 });
+    const format = new Intl.NumberFormat(pageLocale(), { numberingSystem: "latn", useGrouping: false, maximumFractionDigits: 2 });
     return typeof format.formatRange === "function" ? format.formatRange(from, to) : `${numberText(from)}–${numberText(to)}`;
 }
 

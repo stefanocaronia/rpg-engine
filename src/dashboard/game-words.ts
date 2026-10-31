@@ -1,8 +1,8 @@
 // What the engine gives as data, written in the page's language (D-403): game dates, the ends of effects, where places are, what the points say of the levels,
 // the facts of the story, dice in words, where someone is. The chat has its own English words for the same data.
 import type { CalendarDay, DiceCondition, EffectEnd, JournalFact, Member, NotationPart, SheetValue } from "./data.ts";
-import { fieldLabel, phraseLabel } from "./labels.ts";
-import { isolated, listText, systemWord, systemWordAnyCase, t } from "./text.ts";
+import { fieldLabel, phraseLabel, strangerLabel } from "./labels.ts";
+import { isolated, listText, pageLocale, systemWord, systemWordAnyCase, t } from "./text.ts";
 
 /** A game date in the page's language: day 3, 06:00, or day 3; any other text as it is. */
 export function gameDateLabel(date: string): string
@@ -46,7 +46,7 @@ export function calendarMonthLabel(month: string, year?: number): string
     }
 
     const options: Intl.DateTimeFormatOptions = { month: "long", timeZone: "UTC", ...(year === undefined ? {} : { year: "numeric" }) };
-    return new Intl.DateTimeFormat(document.documentElement.lang || "en", options).format(at);
+    return new Intl.DateTimeFormat(pageLocale(), options).format(at);
 }
 
 // The core's real months (TIM-8), which the page's language names on its own, as it bends them: 1 мая, 1. května.
@@ -62,7 +62,7 @@ function realDayLabel(date: CalendarDay, month: number): string
     }
 
     const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", timeZone: "UTC", ...(date.year === undefined ? {} : { year: "numeric" }) };
-    return new Intl.DateTimeFormat(document.documentElement.lang || "en", options).format(at);
+    return new Intl.DateTimeFormat(pageLocale(), options).format(at);
 }
 
 // A date within a phrase is put in it by its day and hour, which each language bends as the phrase needs: до дня 3, jusqu'au jour 3.
@@ -96,7 +96,9 @@ export function effectEndLabel(end: EffectEnd): string
     }
 
     if ("round" in end) {
-        return t("until {name}'s turn in round {round}", { name: nameLabel(end.turn), round: end.round });
+        // A copy the character does not know by name, as creature B2, as the scene names it: Creatura B2.
+        const turn = /^creature \S+$/.test(end.turn) ? strangerLabel(end.turn) : nameLabel(end.turn);
+        return t("until {name}'s turn in round {round}", { name: turn, round: end.round });
     }
 
     return "scene" in end ? t("until the scene ends") : systemWord("words", `until ${end.occasion}`) ?? t("until {occasion}", { occasion: systemWord("words", end.occasion) ?? end.occasion });
@@ -177,7 +179,8 @@ export function memberPlaceLabel(place: NonNullable<Member["place"]>): string
 /** A region's terrain in the page's language, as the game system says it: difficult terrain. */
 export function terrainLabel(terrain: string): string
 {
-    return systemWord("words", `${terrain} terrain`) ?? t("{terrain} terrain", { terrain: systemWord("words", terrain) ?? terrain });
+    // The page's own word for difficult ground, where the game has none, as free play.
+    return systemWord("words", `${terrain} terrain`) ?? t("{terrain} terrain", { terrain: systemWord("words", terrain) ?? (terrain === "difficult" ? t("difficult") : terrain) });
 }
 
 /** A name of the story as the character knows it, in the page's language: someone, a creature, somewhere for those it does not know. */
@@ -190,32 +193,29 @@ export function nameLabel(name: string): string
 /** A fact of the story in the page's language, as a sentence: Ettore: PF 14 → 12. */
 export function factLabel(fact: JournalFact): string
 {
-    const told = ((): string => {
-        switch (fact.kind) {
-            case "counter":
-                // A stack goes by the name its entry gives it (STK-12), never a field's word.
-                return t("{who}: {field} {before} → {after}", { who: subjectLabel(fact.who), field: fact.stack === true ? fact.field : fieldLabel(fact.field), before: fact.before, after: fact.after });
-            case "time":
-                return fact.from === undefined
-                    ? storyStartLabel(fact.to)
-                    : t("Time passes: {from} → {to}", { from: gameDateLabel(fact.from), to: gameDateLabel(fact.to) });
-            case "moved":
-                return fact.to === undefined
-                    ? t("{who} to the open", { who: listText(fact.who.map((name, index) => (index === 0 ? subjectLabel(name) : nameLabel(name)))) })
-                    : t("{who} to {place}", { who: listText(fact.who.map((name, index) => (index === 0 ? subjectLabel(name) : nameLabel(name)))), place: nameLabel(fact.to) });
-            case "learned":
-                return t("{who} learned: {what}", { who: fact.who, what: listText(fact.what.map((link) => link.replace("#", " › "))) });
-            case "effect":
-                return t("{who}: {effect}", { who: subjectLabel(fact.who), effect: effectLabel(fact) });
-            case "effect-ended":
-                return t("{who}: {effect} ended", { who: subjectLabel(fact.who), effect: effectName(fact.effect) });
-            case "back":
-                return t("Back to save {save}: what came after it is gone", { save: fact.save });
-            case "quest":
-                return fact.status === "open" ? t("Quest taken: {quest}", { quest: fact.quest }) : fact.status === "done" ? t("Quest completed: {quest}", { quest: fact.quest }) : t("Quest failed: {quest}", { quest: fact.quest });
-        }
-    })();
-    return told;
+    switch (fact.kind) {
+        case "counter":
+            // A stack goes by the name its entry gives it (STK-12), never a field's word.
+            return t("{who}: {field} {before} → {after}", { who: subjectLabel(fact.who), field: fact.stack === true ? fact.field : fieldLabel(fact.field), before: fact.before, after: fact.after });
+        case "time":
+            return fact.from === undefined
+                ? storyStartLabel(fact.to)
+                : t("Time passes: {from} → {to}", { from: gameDateLabel(fact.from), to: gameDateLabel(fact.to) });
+        case "moved":
+            return fact.to === undefined
+                ? t("{who} to the open", { who: listText(fact.who.map((name, index) => (index === 0 ? subjectLabel(name) : nameLabel(name)))) })
+                : t("{who} to {place}", { who: listText(fact.who.map((name, index) => (index === 0 ? subjectLabel(name) : nameLabel(name)))), place: nameLabel(fact.to) });
+        case "learned":
+            return t("{who} learned: {what}", { who: fact.who, what: listText(fact.what.map((link) => link.replace("#", " › "))) });
+        case "effect":
+            return t("{who}: {effect}", { who: subjectLabel(fact.who), effect: effectLabel(fact) });
+        case "effect-ended":
+            return t("{who}: {effect} ended", { who: subjectLabel(fact.who), effect: effectName(fact.effect) });
+        case "back":
+            return t("Back to save {save}: what came after it is gone", { save: fact.save });
+        case "quest":
+            return fact.status === "open" ? t("Quest taken: {quest}", { quest: fact.quest }) : fact.status === "done" ? t("Quest completed: {quest}", { quest: fact.quest }) : t("Quest failed: {quest}", { quest: fact.quest });
+    }
 }
 
 /** When the story starts: on day 1, 18:00. */

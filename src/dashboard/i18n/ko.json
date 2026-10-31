@@ -330,6 +330,7 @@
   "Follow {quest}": "{quest} 따라가기",
   "For {name}": "{name}에게",
   "for a new campaign: this one stays in {system}": "새 캠페인용: 현재 캠페인은 {system}을(를) 계속 사용해요",
+  "for {system}: this campaign plays {campaign}": "{system}용: 이 캠페인은 {campaign}(으)로 플레이합니다",
   "Ford": "여울",
   "Forest": "숲",
   "free": "가능",

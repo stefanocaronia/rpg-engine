@@ -330,6 +330,7 @@
   "Follow {quest}": "Følg {quest}",
   "For {name}": "Til {name}",
   "for a new campaign: this one stays in {system}": "til en ny kampagne: denne bliver i {system}",
+  "for {system}: this campaign plays {campaign}": "til {system}: denne kampagne spiller {campaign}",
   "Ford": "Vadested",
   "Forest": "Skov",
   "free": "fri",

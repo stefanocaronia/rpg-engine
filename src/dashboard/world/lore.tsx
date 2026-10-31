@@ -22,12 +22,14 @@ const wide = "(min-width: 900px)";
  * place on the world map, or of the nearest that holds it. With more than one player character (`players`), a chip for each among the kinds shows what that
  * one knows (D-480 (7)).
  */
-export function LoreTab({ world, version, open, onMap, players = [] }: {
+export function LoreTab({ world, version, open, onMap, players = [], kinds = new Map() }: {
     world: WorldView;
     version: number;
     open?: string | undefined;
     onMap: (places: string[]) => string | undefined;
     players?: Member[];
+    /** What a region or a way of the map is, by its name, as the map's list says it: Region · Hills (D-548). */
+    kinds?: ReadonlyMap<string, string>;
 })
 {
     const [search, setSearch] = useState("");
@@ -89,13 +91,14 @@ export function LoreTab({ world, version, open, onMap, players = [] }: {
                                         class="browse-row"
                                         href={sectionAddress("world", "lore", one.name)}
                                         aria-current={one.name === entry?.name ? "true" : undefined}
+                                        aria-labelledby={`lore-name-${part.group}-${index}`}
                                         aria-describedby={`lore-${part.group}-${index}`}
                                         data-name={one.name}
                                     >
                                         <LoreThumb entry={one} />
                                         <span class="browse-words">
-                                            <span class="browse-name">{one.name}</span>
-                                            <span class="browse-meta" id={`lore-${part.group}-${index}`}>{entryMeta(one)}</span>
+                                            <span class="browse-name" id={`lore-name-${part.group}-${index}`}>{one.name}</span>
+                                            <span class="browse-meta" id={`lore-${part.group}-${index}`}>{entryMeta(one, kinds)}</span>
                                         </span>
                                     </a>
                                 </li>
@@ -111,6 +114,7 @@ export function LoreTab({ world, version, open, onMap, players = [] }: {
                     version={version}
                     link={link}
                     several={each.length > 0}
+                    kinds={kinds}
                     onMap={entry.type === "place" ? onMap([entry.name, ...entry.within ?? []]) : undefined}
                     focus={asked !== undefined}
                 />
@@ -158,6 +162,7 @@ export function DocumentsTab({ world, open, players = [] }: { world: WorldView; 
                                         class="browse-row"
                                         href={sectionAddress("world", "documents", one.name)}
                                         aria-current={one.name === document?.name ? "true" : undefined}
+                                        aria-labelledby={`documents-name-${part.key}-${index}`}
                                         aria-describedby={`documents-${part.key}-${index}`}
                                         data-name={one.name}
                                     >
@@ -165,7 +170,7 @@ export function DocumentsTab({ world, open, players = [] }: { world: WorldView; 
                                             <DocumentGlyph look={documentLook(one.document)} />
                                         </span>
                                         <span class="browse-words">
-                                            <span class="browse-name">{one.name}</span>
+                                            <span class="browse-name" id={`documents-name-${part.key}-${index}`}>{one.name}</span>
                                             <span class="browse-meta" id={`documents-${part.key}-${index}`}>{[documentLabel(one.document), plainLine(one.text)].filter((part) => part !== undefined).join(" · ")}</span>
                                         </span>
                                     </a>
@@ -206,7 +211,8 @@ function documentLabel(document: string): string
         inscription: t("Inscription"),
     };
     const word = document.trim();
-    return labels[word.toLowerCase()] ?? capitalized(word);
+    // A kind the page has no word for, as a tome or a poster, by the look it shares: a tome is a page, a poster a notice.
+    return labels[word.toLowerCase()] ?? labels[documentLook(word)] ?? capitalized(word);
 }
 
 /**
@@ -247,7 +253,15 @@ function Browse({ open, explicit, back, backLabel, children }: { open?: string |
 }
 
 /** A page the character knows, read whole as it knows it: its picture, what it is and where, its text with its links, and where it leads on the page. */
-function LoreReader({ entry, version, link, onMap, focus, several }: { entry: KnownEntry; version: number; link: LinkTo; onMap?: string | undefined; focus: boolean; several: boolean; })
+function LoreReader({ entry, version, link, onMap, focus, several, kinds }: {
+    entry: KnownEntry;
+    version: number;
+    link: LinkTo;
+    onMap?: string | undefined;
+    focus: boolean;
+    several: boolean;
+    kinds: ReadonlyMap<string, string>;
+})
 {
     const [text, setText] = useState<string>();
     // Who knows each secret, when not all the player characters do: said after its title, the one place the page names them (D-480 (7)).
@@ -280,7 +294,7 @@ function LoreReader({ entry, version, link, onMap, focus, several }: { entry: Kn
             <header class="reader-head">
                 {person && <Token member={{ name: entry.name, image: entry.picture, role: entry.companion ? "companion" : "other" }} large {...(entry.companion ? { side: "ally" as const } : {})} />}
                 <div>
-                    <p class="eyebrow">{entryKind(entry)}</p>
+                    <p class="eyebrow">{entryKind(entry, kinds)}</p>
                     <h3 id="reader-title" tabIndex={-1} ref={title}>{entry.name}</h3>
                     {entry.within !== undefined && (
                         <p class="reader-where">
@@ -480,22 +494,22 @@ function linksOf(world: WorldView): LinkTo
 }
 
 /** What a page is, in the reader's eyebrow: a companion, a person, the kind of a place, a faction… */
-function entryKind(entry: KnownEntry): string
+function entryKind(entry: KnownEntry, kinds: ReadonlyMap<string, string>): string
 {
     if (entry.companion) {
         return t("Companion");
     }
 
-    const kinds: Record<string, string> = { character: t("Person"), faction: t("Faction"), creature: t("Creature"), item: t("Item"), event: t("Event"), topic: t("Topic") };
-    return entry.type === "place" ? placeKindLabel(entry.kind) ?? t("Place") : kinds[entry.type] ?? capitalized(entry.type);
+    const types: Record<string, string> = { character: t("Person"), faction: t("Faction"), creature: t("Creature"), item: t("Item"), event: t("Event"), topic: t("Topic") };
+    return entry.type === "place" ? kinds.get(entry.name) ?? placeKindLabel(entry.kind) ?? t("Place") : types[entry.type] ?? capitalized(entry.type);
 }
 
 /** A row's line under the name: what the page is, then the opening of its text, or for a place where it is. */
-function entryMeta(entry: KnownEntry): string
+function entryMeta(entry: KnownEntry, kinds: ReadonlyMap<string, string>): string
 {
     const opening = plainLine(entry.summary);
     const where = entry.within?.[0];
-    return [entryKind(entry), opening ?? where].filter((part) => part !== undefined && part !== "").join(" · ");
+    return [entryKind(entry, kinds), opening ?? where].filter((part) => part !== undefined && part !== "").join(" · ");
 }
 
 /** A group of the list in the page's language. */

@@ -26,6 +26,7 @@ export function Notes({ version }: { version: number; })
             (read) => {
                 setNotes((before) => before ?? read.notes);
                 setPending(new Set(read.pending));
+                setProblem(undefined);
             },
             (error: unknown) => setProblem(error instanceof Error ? error.message : String(error)),
         );
@@ -186,10 +187,11 @@ function NoteCard({ note, pending, focus, onWritten, onPending, onRemoved }: {
 
     const unshare = async (): Promise<void> => {
         const problem = await sendNote({ unshare: note.id });
-        setSaid(problem);
-        onPending(false);
+        // Taken back only when the game heard it: until then the master may still read it.
+        setSaid(problem === undefined ? undefined : t("It did not reach the game: try again."));
 
         if (problem === undefined) {
+            onPending(false);
             setShared(undefined);
         }
     };

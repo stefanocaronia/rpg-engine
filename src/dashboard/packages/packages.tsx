@@ -41,7 +41,7 @@ import { PageHead } from "../pages.tsx";
 import { Confirm } from "../saves.tsx";
 import { Command } from "../settings.tsx";
 import { PageTabs } from "../tabs.tsx";
-import { arrowStep, foldedText, isolated, pageDirection, t } from "../text.ts";
+import { arrowStep, foldedText, isolated, pageDirection, pageLocale, t } from "../text.ts";
 import { OwnPageLinks } from "./package-page.tsx";
 
 /** What happened to the player's last change, said where it was made: a row, a card, or the field. */
@@ -887,8 +887,8 @@ function AddField({ state, onAdd, onFile }: { state: RowState; onAdd(source: str
     }, [state.said]);
 
     const submit = (): void => {
-        // An address copied without its scheme, as github.com/someone/an-adventure, is taken as https.
-        const given = source.trim().replace(/^(?=[\w-]+(?:\.[\w-]+)+\/)/, "https://");
+        // A path copied with its quotes, as the file manager copies it, without them; an address copied without its scheme, as github.com/someone/an-adventure, as https.
+        const given = source.trim().replace(/^"(.*)"$/, "$1").replace(/^(?=[\w-]+(?:\.[\w-]+)+\/)/, "https://");
 
         if (state.busy) {
             return;
@@ -1107,6 +1107,8 @@ function CatalogRow(
 {
     const here = hereState(entry, view);
     const asksYes = !entry.verified && entry.code;
+    // An extension made for another game system than the campaign's says so in the place of Add: it would be refused once downloaded (D-548).
+    const elsewhere = entry.kind === "extension" && entry.system !== undefined && view.system !== null && foldedText(entry.system) !== foldedText(view.system.name);
     const facts = [
         entry.author !== undefined && !entry.verified && !entry.code ? t("by {author}", { author: entry.author }) : "",
         entry.levels === undefined ? "" : levelsText(entry.levels),
@@ -1164,6 +1166,13 @@ function CatalogRow(
                     <span class="package-here">
                         <Icon name="check" />
                         {entry.kind === "adventure" || entry.kind === "extension" ? t("In the campaign") : t("On this computer")}
+                    </span>
+                )
+                : elsewhere && here === "none"
+                ? (
+                    <span class="package-here">
+                        <Icon name="lock" />
+                        {t("for {system}: this campaign plays {campaign}", { system: entry.system ?? "", campaign: view.system?.name ?? "" })}
                     </span>
                 )
                 : entry.kind === "system" && here === "none"
@@ -1990,7 +1999,7 @@ function failure(at: string, action: PackageWork["action"], name: string, outcom
     }
 
     if (outcome.code === "no-window") {
-        const command = action === "library" ? `rpg config library --add "${name}"` : `rpg package install ${name}`;
+        const command = action === "library" ? `rpg config library --add "${name}"` : `rpg package install ${/\s/.test(name) ? `"${name}"` : name}`;
         return { at, problem: true, text: t("No window for your yes opens on this computer: add it from your terminal, in the campaign's folder."), command };
     }
 
@@ -2081,5 +2090,5 @@ function entryTitle(entry: CatalogEntry): string
 /** The language this page is written in. */
 function pageLanguage(): string
 {
-    return document.documentElement.lang || "en";
+    return pageLocale();
 }

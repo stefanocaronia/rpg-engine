@@ -306,6 +306,21 @@
         color: var(--accent);
     }
 
+    .status-count {
+        position: absolute;
+        inset-block-end: -3px;
+        inset-inline-end: -3px;
+        min-width: 14px;
+        padding: 0 3px;
+        border-radius: 7px;
+        background: var(--accent);
+        color: var(--paper);
+        font-size: 0.65rem;
+        font-weight: 700;
+        line-height: 14px;
+        text-align: center;
+    }
+
     .status-icon svg {
         width: 18px;
         height: 18px;

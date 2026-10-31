@@ -330,6 +330,7 @@
   "Follow {quest}": "{quest} követése",
   "For {name}": "{name} számára",
   "for a new campaign: this one stays in {system}": "új kampányhoz: ez a kampány marad a(z) {system} rendszernél",
+  "for {system}: this campaign plays {campaign}": "{system} rendszerhez: ez a kampány {campaign} rendszerrel játszik",
   "Ford": "Gázló",
   "Forest": "Erdő",
   "free": "szabad",

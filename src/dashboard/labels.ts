@@ -1,5 +1,5 @@
 // Labels from the names of the fields, in English (D-273): "hit-dice-d8" reads "hit dice d8", "str-save" "STR save"; names in the campaign's language come later.
-import { isolated, numberText, systemWord, t, timeText } from "./text.ts";
+import { isolated, numberText, pageLocale, systemWord, t, timeText } from "./text.ts";
 
 // The dice the page has a picture of: the d% as 100, the coin as 2.
 const drawnDice = [2, 4, 6, 8, 10, 12, 20, 100];
@@ -207,8 +207,9 @@ export function realTimeLabel(at: string, now = new Date()): { short: string; fu
         return undefined;
     }
 
-    const language = document.documentElement.lang || undefined;
-    const time = new Intl.DateTimeFormat(undefined, { timeStyle: "short" }).format(date);
+    const language = pageLocale();
+    // The hour in the page's language too, as its date: ieri, 15:45 in Italian, whatever the browser's.
+    const time = new Intl.DateTimeFormat(language, { timeStyle: "short" }).format(date);
     const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
     const daysAgo = date.toDateString() === now.toDateString() ? 0 : date.toDateString() === yesterday.toDateString() ? -1 : undefined;
     const day = daysAgo === undefined

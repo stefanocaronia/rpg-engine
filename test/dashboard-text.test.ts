@@ -4,6 +4,7 @@ import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
+import { readSettings, readView } from "../src/dashboard/api.ts";
 import { effectEndLabel, effectName, factLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { itemLabel, settingLabel, shownText } from "../src/dashboard/labels.ts";
 import { arrowStep, browserLanguage, pageDirection, pageLanguageOf, pageTranslation, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
@@ -115,8 +116,13 @@ describe("the page's words (D-394)", () => {
         await setLanguage("he", read);
         expect(pageDirection()).toBe("rtl");
         expect([arrowStep("ArrowLeft"), arrowStep("ArrowRight"), arrowStep("ArrowDown"), arrowStep("ArrowDown", true)]).toEqual([1, -1, 1, 0]);
+        // One translated on the fly, written with its region, as Persian of Iran.
+        await setLanguage("fa-IR", () => Promise.resolve({}), () => Promise.resolve({ phrases: { "Your turn": "نوبت شما" }, translating: false, can: true, missing: 0 }));
+        expect(pageDirection()).toBe("rtl");
         await setLanguage("it", read);
         expect([pageDirection(), t("{points} to level {level}", { points: 1200, level: 4 })]).toEqual(["ltr", "mancano 1200 al livello 4"]);
+        // An effect that ends at the turn of a copy the character does not know by name, as the scene names it.
+        expect(effectEndLabel({ round: 3, turn: "creature B2" })).toBe("fino al turno di Creatura B2 nel round 3");
         expect([arrowStep("ArrowLeft"), arrowStep("ArrowRight")]).toEqual([-1, 1]);
         await setLanguage("en");
     });
@@ -148,5 +154,13 @@ describe("the page's words (D-394)", () => {
             "Ettore: Privo di sensi ended",
         ]);
         setSystemWords(undefined);
+    });
+
+    it("says the game could not be reached in the page's words, never the browser's, and what the server said went wrong as it said it", async () => {
+        vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")));
+        await expect(readView()).rejects.toThrow("It did not reach the game: try again.");
+        vi.stubGlobal("fetch", () => Promise.resolve(new Response(JSON.stringify({ error: "No campaign here." }))));
+        await expect(readSettings()).rejects.toThrow("No campaign here.");
+        vi.unstubAllGlobals();
     });
 });

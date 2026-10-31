@@ -118,19 +118,6 @@
         font-size: 0.85rem;
     }
 
-    .about-fine {
-        padding-top: 14px;
-        border-top: 1px solid var(--rule);
-        color: var(--muted);
-        font-size: 0.8rem;
-        line-height: 1.45;
-    }
-
-    .about-fine p {
-        max-width: 90ch;
-        margin: 0 0 8px;
-    }
-
     /* On a phone the robot over the words, the links under them the whole width. */
     @media (max-width: 600px) {
         .about-hero {

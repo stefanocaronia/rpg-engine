@@ -97,7 +97,11 @@ let loading: Promise<void> | undefined;
 /** Loads the physics, once: a throw needs it. */
 export function loadPhysics(): Promise<void>
 {
-    const loaded: Promise<void> = loading ?? RAPIER.init();
+    // One that failed is tried again the next time.
+    const loaded: Promise<void> = loading ?? RAPIER.init().catch((error: unknown) => {
+        loading = undefined;
+        throw error;
+    });
     loading = loaded;
     return loaded;
 }

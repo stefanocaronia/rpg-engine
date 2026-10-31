@@ -2,11 +2,11 @@
 // not in the list can be written whole, as pt-PT. A choice is saved at once, as the other settings'.
 import { useEffect, useId, useMemo, useState } from "preact/hooks";
 import { languageName, languageOf, languages, matches } from "./languages.ts";
-import { pageTranslation, t } from "./text.ts";
+import { pageLocale, pageTranslation, t } from "./text.ts";
 
 export function LanguageChoice({ value, labelledBy, describedBy, onPick }: { value?: string; labelledBy: string; describedBy: string; onPick(code: string): void; })
 {
-    const pageLanguage = document.documentElement.lang || "en";
+    const pageLanguage = pageLocale();
     const all = useMemo(() => languages(pageLanguage), [pageLanguage]);
     const chosen = value === undefined ? undefined : languageOf(value, pageLanguage);
     // What the player writes to look for one; undefined while the list is closed.
@@ -118,7 +118,7 @@ export function LanguageChoice({ value, labelledBy, describedBy, onPick }: { val
 /** What the chosen language means for the page: the master plays in it, and the page is in it too, or stays in English until it is translated. */
 export function languageLine(code: string): string
 {
-    const pageLanguage = document.documentElement.lang || "en";
+    const pageLanguage = pageLocale();
     const language = languageOf(code, pageLanguage);
     const name = languageName(code, pageLanguage) ?? code;
     const flying = pageTranslation();

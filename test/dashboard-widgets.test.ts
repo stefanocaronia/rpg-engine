@@ -3,7 +3,8 @@ import type { ComponentChildren, VNode } from "preact";
 import { describe, expect, it } from "vitest";
 
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': loaded by their address, with their functions' types.
-const { Track } = await import(new URL("../src/dashboard/packages/widgets.tsx", import.meta.url).href) as {
+const { Track, textOf } = await import(new URL("../src/dashboard/packages/widgets.tsx", import.meta.url).href) as {
+    textOf: (text: string | { text: string; values: Record<string, unknown>; }) => string;
     Track: (
         props: { track: { label: string; value: number; max: number; look?: "pips" | "bar" | "steps"; held?: number; marked?: number; coming?: number; tone?: "good" | "bad"; }; place?: "start" | "center" | "end"; },
     ) => ComponentChildren;
@@ -27,6 +28,12 @@ describe("a widget's count", () => {
 
     it("draws past twelve steps or ten pips as a bar", () => {
         expect(heard(Track({ track: { label: "Pins", value: 3, max: 14, look: "steps" } })).inView).toEqual(["Pins", "3/14"]);
+    });
+});
+
+describe("a widget's words", () => {
+    it("leaves a name its values do not give as written, a name of every object's own included, rather than breaking the page", () => {
+        expect([textOf({ text: "Wind {constructor}", values: {} }), textOf({ text: "{toString} and {valueOf}", values: {} })]).toEqual(["Wind {constructor}", "{toString} and {valueOf}"]);
     });
 });
 

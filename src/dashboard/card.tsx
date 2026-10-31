@@ -56,7 +56,7 @@ export function CardHeader(
                 <path d={icon} />
             </svg>
             {title}
-            {!open && preview !== undefined && <span class="preview" aria-hidden="true">{preview}</span>}
+            {!open && preview !== undefined && <span class="preview" dir="auto" aria-hidden="true">{preview}</span>}
             {note !== undefined && <span class="card-head-note">{note}</span>}
             {!fixed && (
                 <span class="chevron-tip tip-left" aria-hidden="true" data-tip={open ? t("Close") : t("Open")}>

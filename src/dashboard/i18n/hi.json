@@ -330,6 +330,7 @@
   "Follow {quest}": "{quest} को फ़ॉलो करें",
   "For {name}": "{name} के लिए",
   "for a new campaign: this one stays in {system}": "नए कैंपेन के लिए: यह वाला {system} में ही रहेगा",
+  "for {system}: this campaign plays {campaign}": "{system} के लिए: यह अभियान {campaign} खेलता है",
   "Ford": "उथला घाट",
   "Forest": "जंगल",
   "free": "उपलब्ध",

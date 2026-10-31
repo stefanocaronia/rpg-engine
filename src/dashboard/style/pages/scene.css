@@ -1147,6 +1147,18 @@
         height: 22px;
     }
 
+    .turn-notice-round,
+    .turn-notice-go {
+        white-space: nowrap;
+    }
+
+    /* On a phone the notice says whose turn alone: the round is on the Scene. */
+    @media (max-width: 600px) {
+        .turn-notice-round {
+            display: none;
+        }
+    }
+
     .turn-notice-go {
         margin-inline-start: auto;
         padding: 4px 12px;

@@ -3,7 +3,7 @@
 import type { ShownImport } from "./data.ts";
 import { Icon } from "./icons.tsx";
 import { languageName } from "./languages.ts";
-import { pageTranslation, t } from "./text.ts";
+import { pageLocale, pageTranslation, t } from "./text.ts";
 
 /**
  * A message of the page: a problem, the game away from the page, or a word to know; one that stays while it changes, as an import's, has its own key, and a
@@ -66,7 +66,7 @@ export function importNotices(importing: ShownImport | undefined): Notice[]
 export function gameNotices(problems: number | undefined): Notice[]
 {
     const translation = pageTranslation();
-    const language = translation === undefined ? "" : languageName(translation.language, document.documentElement.lang || "en") ?? translation.language;
+    const language = translation === undefined ? "" : languageName(translation.language, pageLocale()) ?? translation.language;
     return [
         ...(problems === undefined || problems === 0
             ? []

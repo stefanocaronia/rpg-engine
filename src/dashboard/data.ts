@@ -58,7 +58,6 @@ export interface SheetGroup
     items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; bonds?: string[]; image?: { file: string; version: number; }; }[];
 }
 
-/** What the player does with an item of the sheet, said as their sentence to the master (D-495): the engine's verbs. */
 /** One of the engine's verbs, attack, use, equip and unequip, or one the system declares (D-514). */
 export type ActVerb = string;
 
@@ -170,6 +169,8 @@ export interface Fighter
     /** In a fight, marked by the master as attacking the party (D-415): its token glows red. */
     hostile?: true;
     stranger?: true;
+    /** Whose turn it is, which the turn's name alone cannot tell between two strangers seen alike. */
+    acting?: true;
     /** A foe's counter in the system's words, or anyone's as numbers. */
     health?: string;
     /** How hard a foe heard in words is hit: low in the lower half of the system's words, down at the last. */

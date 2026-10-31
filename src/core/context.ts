@@ -101,6 +101,8 @@ export interface PackageInfo
     kind?: string;
     /** The version of the extensions' API it is made for (D-441). */
     api?: number;
+    /** The game system an extension is made for, as its package.json says beside its kind, so that a catalog tells it before it is installed (D-548). */
+    system?: string;
     description?: string;
     /** Who wrote it, as npm gives it. */
     author?: string;

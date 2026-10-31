@@ -107,18 +107,11 @@ export function About({ product, system }: { product: string; system?: { name: s
                     </div>
                 </div>
             </details>
-            <footer class="about-fine">
-                <p>
-                    {"© 2026 "}
-                    <a href={footLinks.author} target="_blank" rel="noreferrer">Stefano Caronia</a>
-                    {` · ${product}`}
-                </p>
-            </footer>
         </section>
     );
 }
 
-/** The MIT licence's text, where it is read: the repository is private. */
+/** The MIT licence's text, where it is read. */
 const mitLicence = "https://opensource.org/license/mit";
 
 /** A credit's text with its addresses as links, the full stop after one left out of it. */

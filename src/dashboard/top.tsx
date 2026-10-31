@@ -13,7 +13,7 @@ import { Master } from "./master.tsx";
 import { type NavPage, ownKey } from "./packages/page-code.tsx";
 import { Drawn, WidgetChips } from "./packages/widgets.tsx";
 import { usePrefChange } from "./prefs.ts";
-import { t } from "./text.ts";
+import { listText, t } from "./text.ts";
 import { pickTheme, shownTheme } from "./theme.ts";
 
 /** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live; the master's mood and moment. */
@@ -73,8 +73,9 @@ export function Top(top: TopOf)
             <header ref={header} class={compact ? "top compact" : "top"}>
                 <MasterHome top={top} poke={poke} onHome={home} />
                 <div class="titles">
-                    <h1>
-                        <a class="title-home" href={sectionAddress("party")} onClick={home}>{title}</a>
+                    {/* The way of the name on the element that cuts it, so that a Latin name in Arabic loses its end, not its start. */}
+                    <h1 dir="auto">
+                        <a class="title-home" dir="auto" href={sectionAddress("party")} onClick={home}>{title}</a>
                     </h1>
                     {top.campaign !== undefined && (
                         <p class="product">
@@ -82,6 +83,8 @@ export function Top(top: TopOf)
                             {top.system && <span class="system-chip">{top.system}</span>}
                         </p>
                     )}
+                    {/* On a phone, where the chips leave no room, the game's time under the title in the product's place (D-276). */}
+                    {top.campaign !== undefined && top.now !== undefined && <p class="product-time">{gameDateLabel(top.now)}</p>}
                 </div>
                 <StatusChips now={top.now} calendar={top.calendar} live={top.live} />
                 <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} turnName={top.turnName} ownPages={top.ownPages ?? []} ownShown={top.ownShown} />
@@ -121,18 +124,20 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown }: 
                 {tabs.map((tab) => {
                     const gone = awayTabs.includes(tab);
                     const kinds = [tab.key === "scene" && turns ? (turn ? "your-turn" : "in-turns") : "", tab.own ? "own-tab" : "", gone ? "away" : ""];
+                    // The scene's whole name for a screen reader in a turn: Scene, your turn.
+                    const named = tab.key === "scene" && turn ? `${tab.label}, ${turnName === undefined ? t("your turn") : t("It's {name}'s turn", { name: turnName })}` : undefined;
                     return (
                         <a
                             key={tab.key}
                             href={tab.href}
                             class={kinds.filter((kind) => kind !== "").join(" ") || undefined}
+                            aria-label={named}
                             aria-current={tab.current ? "page" : undefined}
                             aria-hidden={gone ? true : undefined}
                             tabIndex={gone ? -1 : undefined}
                         >
                             <span class="section-mark">{tab.icon}</span>
                             <span class="section-name" dir="auto">{tab.label}</span>
-                            {tab.key === "scene" && turn && <span class="visually-hidden">{`, ${turnName === undefined ? t("your turn") : t("It's {name}'s turn", { name: turnName })}`}</span>}
                         </a>
                     );
                 })}
@@ -201,7 +206,7 @@ function PackagesMenu({ pages, current, ownShown, kinds, gone }: { pages: NavPag
     const [open, setOpen] = useState(false);
     const holder = useRef<HTMLDivElement>(null);
     const shown = current === "packages" || pages.some((page) => ownKey(page) === ownShown);
-    const label = t("Menu: {pages}", { pages: listOf([...pages.map((page) => page.title), sectionLabel("packages")]) });
+    const label = t("Menu: {pages}", { pages: listText([...pages.map((page) => page.title), sectionLabel("packages")]) });
     useClosing(holder, open, setOpen);
     return (
         <div ref={holder} class={`packages-menu ${kinds}`} aria-hidden={gone ? true : undefined}>
@@ -357,7 +362,7 @@ function Menu({ current, awayTabs, awayPages, ownMenu, ownShown }: {
         return null;
     }
 
-    const names = listOf([...awayTabs.map((tab) => tab.label), ...awayPages.map(sectionLabel)]);
+    const names = listText([...awayTabs.map((tab) => tab.label), ...awayPages.map(sectionLabel)]);
     return (
         <div class="menu" ref={holder}>
             <button
@@ -556,10 +561,4 @@ function useWrapped(row: RefObject<HTMLElement>): void
             added.disconnect();
         };
     }, []);
-}
-
-/** Names as a list in the page's language: Rules, Saves and Settings; ルール、セーブ、設定. */
-function listOf(names: string[]): string
-{
-    return new Intl.ListFormat(document.documentElement.lang || "en", { type: "conjunction" }).format(names);
 }

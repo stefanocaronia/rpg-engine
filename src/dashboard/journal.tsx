@@ -236,7 +236,7 @@ function TrackedQuest({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow(): 
             </span>
             <button type="button" class="tracked-what" aria-expanded={open} aria-controls={id} onClick={toggle}>
                 <span class="followed-name">{quest.name}</span>
-                {!open && next !== undefined && <span class="followed-next">{plainText(next.text)}</span>}
+                {!open && next !== undefined && <span class="followed-next" dir="auto">{plainText(next.text)}</span>}
             </button>
             <span class="tracked-time">
                 {quest.clock !== undefined && <ClockTip clock={quest.clock} />}
@@ -275,7 +275,7 @@ function FollowedStrip({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow():
             <QuestFace quest={quest} small />
             <a class="followed-what" href={sectionAddress("journal")}>
                 <span class="followed-name">{quest.name}</span>
-                {next !== undefined && <span class="followed-next">{plainText(next.text)}</span>}
+                {next !== undefined && <span class="followed-next" dir="auto">{plainText(next.text)}</span>}
             </a>
             {quest.clock !== undefined && <ClockFace clock={quest.clock} small />}
             {quest.deadline !== undefined && <Deadline deadline={quest.deadline} />}
@@ -507,10 +507,10 @@ function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
             </li>
             {chapters.map((chapter, index) =>
                 chapter.title === undefined
-                    ? <Between key={index} chapter={chapter} />
+                    ? <Between key={chapterKey(chapters, index)} chapter={chapter} />
                     : (
                         <li
-                            key={index}
+                            key={chapterKey(chapters, index)}
                             class={["chapter", chapter.open ? "now" : "", chapter.picture === undefined && placeKinds[chapter.kind ?? ""] === undefined ? "bare" : ""].join(" ").trim()}
                             data-number={chapter.number}
                             tabIndex={-1}
@@ -759,4 +759,11 @@ function plainText(text: string): string
 function tabName(tab: string): string
 {
     return tab === "quests" ? t("Quests") : tab === "story" ? t("Story") : tab === "companions" ? t("Companions") : t("Notes");
+}
+
+/** A chapter's key as the story grows, newest first: its number; a stretch between scenes by the chapter after it, so that what is open stays with it. */
+function chapterKey(chapters: { number?: number; }[], index: number): string
+{
+    const number = chapters[index].number;
+    return number !== undefined ? String(number) : `between ${chapters.slice(0, index).findLast((chapter) => chapter.number !== undefined)?.number ?? "now"}`;
 }

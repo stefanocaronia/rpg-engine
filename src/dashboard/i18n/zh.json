@@ -330,6 +330,7 @@
   "Follow {quest}": "追踪{quest}",
   "For {name}": "给{name}",
   "for a new campaign: this one stays in {system}": "用于新战役：当前战役仍使用 {system}",
+  "for {system}: this campaign plays {campaign}": "适用于 {system}：本战役使用 {campaign}",
   "Ford": "浅滩",
   "Forest": "森林",
   "free": "可用",

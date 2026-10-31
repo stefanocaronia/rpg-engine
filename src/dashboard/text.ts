@@ -149,7 +149,7 @@ export function systemWordAnyCase(kind: "groups" | "fields" | "words" | "names",
  */
 export function t(phrase: string, values: Record<string, string | number> = {}): string
 {
-    const own = phrases[phrase] ?? systemWord("words", phrase);
+    const own = (Object.hasOwn(phrases, phrase) ? phrases[phrase] : undefined) ?? systemWord("words", phrase);
 
     if (own === undefined) {
         askFirst(phrase);
@@ -192,7 +192,13 @@ export function capitalized(text: string): string
 /** Which way the page's language is written: right to left for Arabic and Hebrew, left to right for the others. */
 export function pageDirection(): "rtl" | "ltr"
 {
-    return rightToLeft.includes(current) ? "rtl" : "ltr";
+    return rightToLeft.includes(current.split("-")[0]) ? "rtl" : "ltr";
+}
+
+/** The language the page writes in now, for Intl's dates, lists and numbers: English while a language translated on the fly has no phrases yet. */
+export function pageLocale(): string
+{
+    return current;
 }
 
 /** A phrase of the page with things put in its {names}, such as links: its pieces in order, the words as strings; for a sentence whose order each language keeps. */

@@ -13,7 +13,7 @@ import { FixedColumns } from "./columns.tsx";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownScene } from "./data.ts";
 import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
-import { fieldLabel, groupLabels, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
+import { fieldLabel, groupLabels, itemLabel, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "./layout.ts";
 import { knowersOf, Markdown, plainLine } from "./markdown.tsx";
 import { MoodFace, moodLabel } from "./mood.tsx";
@@ -233,7 +233,16 @@ function Group({ member, group, fields, version, onRoll, first }: { member: stri
     // A card with the number the master asks stays open while it is asked.
     const lit = values.some((value) => answersOf(value) !== undefined);
     return (
-        <Card name={group.name} title={systemWord("groups", group.name) ?? systemWord("words", group.name)} icon={group.icon ?? cardIcons.plain} layout={layout} preview={preview(group, label)} onReach={explain} held={lit} first={first}>
+        <Card
+            name={group.name}
+            title={systemWord("groups", group.name) ?? systemWord("words", group.name)}
+            icon={group.icon ?? cardIcons.plain}
+            layout={layout}
+            preview={preview(group, label, fields)}
+            onReach={explain}
+            held={lit}
+            first={first}
+        >
             {layout === "table" && values.length > 0 && (
                 <div class="rows" onKeyDown={onKeyDown}>
                     {values.map((value) => <Row key={value.field} {...line(value)} />)}
@@ -444,7 +453,10 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
     const labels = groupLabels(columns, fields);
     const depths = items.map((item) => item.depth ?? 0);
     const holds = (index: number): boolean => (depths[index + 1] ?? 0) > depths[index];
-    const key = (index: number): string => `${depths[index]} ${items[index].inside ?? ""} ${items[index].item}`;
+    // Two of the same thing in one place, as two ropes, are two lines: each its key by how many came before it.
+    const bases = items.map((item, index) => `${depths[index]} ${item.inside ?? ""} ${item.item}`);
+    const keys = bases.map((base, index) => `${base} ${bases.slice(0, index).filter((other) => other === base).length}`);
+    const key = (index: number): string => keys[index];
     const toggle = (index: number): void => setClosed((before) => (before.has(key(index)) ? new Set([...before].filter((one) => one !== key(index))) : new Set([...before, key(index)])));
     const shown = shownLines(depths, (index) => closed.has(key(index)));
     // When something is equipped or holds other things, every name has its picture, golden on what is equipped; a container's chevron stands where the
@@ -573,13 +585,33 @@ function sheetFields(member: Member, sheet: SheetGroup[]): ReadonlySet<string>
     return new Set([...member.counters, ...sheet.flatMap((group) => group.values)].map((value) => value.field));
 }
 
-/** What a closed group says of itself: its first values, or its items. */
-function preview(group: SheetGroup, label: (field: string) => string): string
+/** What a closed group says of itself: its first values, or its items, in the words its open card writes them. */
+function preview(group: SheetGroup, label: (field: string) => string, fields: ReadonlySet<string>): string
 {
     if (group.items !== undefined) {
         // The group's own values first, as the money above the things carried: their text alone, as the card is narrow.
-        return [...group.values.map((value) => shownText(value.text, value.kind)), ...group.items.map((item) => itemName(item.item))].join(" · ");
+        return [...group.values.map((value) => valueWords(value, fields)), ...group.items.map((item) => itemName(item.item))].join(" · ");
     }
 
-    return group.values.slice(0, 4).map((value) => `${label(value.field)} ${shownText(besideLabel(value) ?? value.text)}`).join(" · ");
+    // A value named as the card is, as Features in Features, by its words alone.
+    const title = (systemWord("groups", group.name) ?? group.name).toLocaleLowerCase();
+    return group.values.slice(0, 4).map((value) => {
+        const name = label(value.field);
+        const words = valueWords(value, fields);
+        return name.toLocaleLowerCase() === title ? words : `${name} ${words}`;
+    }).join(" · ");
+}
+
+/** A value in a line of words, as its card writes it: a list's items by their names, money by its coins, any other its text. */
+function valueWords(value: SheetValue, fields: ReadonlySet<string>): string
+{
+    if (widgetOf(value) === "list") {
+        return listText((value.items ?? []).map((item) => itemLabel(item, fields)));
+    }
+
+    if (value.coins !== undefined && value.coins.length > 0) {
+        return value.coins.map(({ coin, count }) => `${count} ${shownText(coin)}`).join(" ");
+    }
+
+    return shownText(besideLabel(value) ?? value.text, value.kind);
 }

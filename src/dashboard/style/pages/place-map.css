@@ -69,6 +69,24 @@
         max-width: none;
     }
 
+    /* On a phone, squares of 32 px at least, of the 40 the map is drawn in: the map scrolls aside rather than shrinking past reading (D-547). */
+    @media (max-width: 600px) {
+        /* The card keeps the column's width, whatever the map's: the map alone scrolls. */
+        .lm {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .lm-frame {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .lm-frame:not(.panned) .lm-svg {
+            min-width: calc(var(--map-width) * 0.8px);
+        }
+    }
+
     .lm.lm-full {
         position: fixed;
         inset: 0;
@@ -572,6 +590,12 @@
         flex: 1;
         font-family: var(--serif);
         font-size: 1.1rem;
+    }
+
+    /* The player's own sentence, not the story's voice: the page's letters. */
+    .act-sheet .map-sheet-head h2 {
+        font-family: inherit;
+        font-size: 1.25rem;
     }
 
     .map-sheet-body {

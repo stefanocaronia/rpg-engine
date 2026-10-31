@@ -1,12 +1,13 @@
 // Someone's state (D-419): on their token a small pip at the lower right, the mark that counts most (dead, at 0, kept from acting, then the last condition put
 // on), a second coin behind it when there are more, all of them in its tooltip; in Combat's order each mark as an icon. The conditions' drawings are the game
 // system's (`condition-icons`); one it does not draw, or a system without them, has a plain mark. The player chooses when the pips show (Settings).
-import type { Member, SeenEffect, ShownScene, ShownWidget, Tone, WidgetText, WidgetValue } from "./data.ts";
+import type { Member, SeenEffect, ShownScene, ShownWidget, Tone } from "./data.ts";
 import { effectLabel } from "./game-words.ts";
 import { statusIcons } from "./icons.tsx";
+import { textOf } from "./packages/widgets.tsx";
 import { saysState } from "./person-panel.tsx";
 import { conditionsPref, useChoice } from "./prefs.ts";
-import { numberText, t } from "./text.ts";
+import { listText, t } from "./text.ts";
 
 /** What a token's pip reads of someone: what is on them, whether they act, are at 0 or dead. */
 export interface TokenStatus
@@ -49,7 +50,8 @@ export function personState(widgets: ShownWidget[], name: string): PersonState |
     const icon = shown.shows.icon ?? shown.widget.icon;
     const tone = shown.shows.parts?.find((part) => "lead" in part && part.tone !== undefined);
     return {
-        word: wordOf(shown.shows.chip),
+        // As its chip says it, units and all (D-514).
+        word: textOf(shown.shows.chip),
         ...(icon === undefined ? {} : { icon }),
         ...(tone !== undefined && "lead" in tone && tone.tone !== undefined ? { tone: tone.tone } : {}),
         ...(shown.shows.dead === true ? { dead: true as const } : {}),
@@ -140,7 +142,7 @@ export function StatusPip({ status }: { status: TokenStatus | undefined; })
  */
 export function StatusIcons({ status, said = [] }: { status: TokenStatus; said?: StatusMark["tone"][]; })
 {
-    const marks = statusMarks(status, true);
+    const marks = gatheredMarks(statusMarks(status, true));
     return marks.length === 0 ? null : (
         <span class="status-icons">
             {marks.map((mark, index) => {
@@ -156,11 +158,28 @@ export function StatusIcons({ status, said = [] }: { status: TokenStatus; said?:
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d={mark.icon} class={mark.filled ? "filled" : undefined} />
                         </svg>
+                        {mark.count !== undefined && <span class="status-count" aria-hidden="true">{mark.count}</span>}
                     </span>
                 );
             })}
         </span>
     );
+}
+
+/**
+ * The marks with the effects that have no drawing of their own gathered into one, its number beside it and their names in its tooltip: two alike sparks
+ * tell nothing apart (Torch, Bless as ✦ 2); a condition or an effect with its own drawing stays alone.
+ */
+function gatheredMarks(marks: StatusMark[]): (StatusMark & { count?: number; })[]
+{
+    const plain = marks.filter((mark) => mark.kind !== "state" && mark.icon === statusIcons.condition);
+
+    if (plain.length < 2) {
+        return marks;
+    }
+
+    const gathered = { ...plain[0], label: listText(plain.map((mark) => mark.label)), count: plain.length };
+    return [...marks.filter((mark) => !plain.includes(mark)), gathered];
 }
 
 /** Someone's effects but the one the word of their state already says, as a widget's Down beside the condition Down (D-514). */
@@ -174,18 +193,6 @@ export function besideWord<Effect extends SeenEffect>(effects: Effect[], person:
 function toneState(tone: Tone | undefined): "stable" | "dying" | "down"
 {
     return tone === "good" ? "stable" : tone === "bad" ? "dying" : "down";
-}
-
-/** A widget's words as one string, its values as they are: a mark's tooltip and name. */
-function wordOf(text: WidgetText): string
-{
-    return typeof text === "string" ? text : text.text.replace(/\{(\w+)\}/g, (whole, name: string) => (name in text.values ? valueWord(text.values[name]) : whole));
-}
-
-/** A value of a widget's words in a word: a number as the page writes it. */
-function valueWord(value: WidgetValue): string
-{
-    return typeof value === "number" ? numberText(value) : typeof value === "string" ? value : "number" in value ? numberText(value.number) : `${numberText(value.from)}–${numberText(value.to)}`;
 }
 
 /** The words of someone's state for a screen reader, as a token's name says them. */

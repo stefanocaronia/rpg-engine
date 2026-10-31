@@ -40,7 +40,7 @@ import { SetupView, useSetup } from "./setup.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet.tsx";
 import { gameStyleChanged, takeSystemStyle } from "./system-style.ts";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
-import { browserLanguage, pageDirection, setLanguage, setSystemWords, t } from "./text.ts";
+import { browserLanguage, pageDirection, pageLocale, setLanguage, setSystemWords, t } from "./text.ts";
 import { restoreTheme } from "./theme.ts";
 import { SetupCorner, Top } from "./top.tsx";
 import { hasTurns, TurnsCard, turnWords } from "./turns.tsx";
@@ -239,7 +239,18 @@ function App()
             const page = member === undefined ? undefined : await readView(member.name);
             // The page's words in the campaign's language (D-394), its file read once; its dates and screen readers follow the language too.
             const language = (overview.kind === "overview" || overview.kind === "none" ? overview.language : undefined) ?? browserLanguage();
+
+            // A reading a newer one overtook sets no language: the newer one's stays, with its words.
+            if (number !== reading.current) {
+                return;
+            }
+
             await setLanguage(language);
+
+            if (number !== reading.current) {
+                return;
+            }
+
             setSystemWords(overview.kind === "overview" ? overview.words : undefined);
             setSystemVerbs(overview.kind === "overview" ? overview.verbs : undefined);
 
@@ -733,7 +744,7 @@ function App()
     const notices: Notice[] = [
         ...(shown.problem === undefined ? [] : [{ kind: "problem" as const, text: shown.problem }]),
         ...(!live && shown.readAt !== undefined
-            ? [{ kind: "away" as const, text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }) }]
+            ? [{ kind: "away" as const, text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString(pageLocale(), { hour: "2-digit", minute: "2-digit" }) }) }]
             : []),
         ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: t("There is no player character yet: the sheet comes when the master writes one.") }] : []),
         ...gameNotices(shown.problems),
@@ -846,7 +857,11 @@ function App()
                                             {live && yourTurn && address.section !== "scene" && shown.asked === undefined && shown.pack === undefined && (
                                                 <a class="turn-notice" href={sectionAddress("scene")}>
                                                     <Icon name="combat" />
-                                                    <span>{[turnWords(turnName), shown.openScene?.round === undefined ? "" : t("Round {round}", { round: shown.openScene.round })].filter((part) => part !== "").join(" · ")}</span>
+                                                    <span>
+                                                        {turnWords(turnName)}
+                                                        {/* The round whole, never broken from its number. */}
+                                                        {shown.openScene?.round !== undefined && <span class="turn-notice-round">{` · ${t("Round {round}", { round: shown.openScene.round })}`}</span>}
+                                                    </span>
                                                     <span class="turn-notice-go">{t("Go to the scene")}</span>
                                                 </a>
                                             )}

@@ -347,7 +347,7 @@ export function hexesOf(view: MapView, width: number, height: number, lifted: Li
         for (let row = firstRow; row <= lastRow; row++) {
             const centre = hexCentre(column, row, across);
             const lit = lifted.circles.some((circle) => Math.hypot(centre.x - circle.x, centre.y - circle.y) <= Math.max(circle.r, radius))
-                || lifted.lines.some((line) => line.some((point, index) => index > 0 && toSegment(centre, line[index - 1], point) <= Math.max(lineReach, radius * 0.9)));
+                || nearSegment(segmentGrid(lifted), centre, Math.max(lineReach, radius * 0.9));
             const region = smallestFirst.find((candidate) => Math.hypot(centre.x - candidate.x, centre.y - candidate.y) <= candidate.radius);
             hexes.push({ ...centre, lit, ...(region === undefined ? {} : { region: region.name }), ...(region?.biome === undefined ? {} : { biome: region.biome }), tone: toneOf(column, row) });
         }
@@ -799,6 +799,60 @@ function lengthOf(points: MapPoint[]): number
 }
 
 /** How far a point is from a segment, in km. */
+// The segments of the known ways in square cells, built once for each lifting: a hex looks only at the cells near it, however many ways the world has.
+const segmentCell = 10;
+const segmentGrids = new WeakMap<Lifted, Map<string, [MapPoint, MapPoint][]>>();
+
+function segmentGrid(lifted: Lifted): Map<string, [MapPoint, MapPoint][]>
+{
+    const known = segmentGrids.get(lifted);
+
+    if (known !== undefined) {
+        return known;
+    }
+
+    const grid = new Map<string, [MapPoint, MapPoint][]>();
+
+    for (const line of lifted.lines) {
+        for (let index = 1; index < line.length; index++) {
+            const [from, to] = [line[index - 1], line[index]];
+
+            for (let column = Math.floor(Math.min(from.x, to.x) / segmentCell); column <= Math.floor(Math.max(from.x, to.x) / segmentCell); column++) {
+                for (let row = Math.floor(Math.min(from.y, to.y) / segmentCell); row <= Math.floor(Math.max(from.y, to.y) / segmentCell); row++) {
+                    const key = `${column} ${row}`;
+                    const cell = grid.get(key);
+
+                    if (cell === undefined) {
+                        grid.set(key, [[from, to]]);
+                    } else {
+                        cell.push([from, to]);
+                    }
+                }
+            }
+        }
+    }
+
+    segmentGrids.set(lifted, grid);
+    return grid;
+}
+
+/** Whether a segment of the grid passes within `reach` of a point: the same answer as looking at every segment. */
+function nearSegment(grid: Map<string, [MapPoint, MapPoint][]>, point: MapPoint, reach: number): boolean
+{
+    const [firstColumn, lastColumn] = [Math.floor((point.x - reach) / segmentCell), Math.floor((point.x + reach) / segmentCell)];
+    const [firstRow, lastRow] = [Math.floor((point.y - reach) / segmentCell), Math.floor((point.y + reach) / segmentCell)];
+
+    for (let column = firstColumn; column <= lastColumn; column++) {
+        for (let row = firstRow; row <= lastRow; row++) {
+            if ((grid.get(`${column} ${row}`) ?? []).some(([from, to]) => toSegment(point, from, to) <= reach)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 function toSegment(point: MapPoint, from: MapPoint, to: MapPoint): number
 {
     const [dx, dy] = [to.x - from.x, to.y - from.y];

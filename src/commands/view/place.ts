@@ -99,6 +99,8 @@ export interface Fighter
     /** In a fight, marked by the master as attacking the party (D-415). */
     hostile?: true;
     stranger?: true;
+    /** Whose turn it is: the one of two strangers seen alike, as two hooded men, whom the turn's name alone cannot tell. */
+    acting?: true;
     health?: string;
     /** How hard a foe heard in words is hit: low in the lower half of the system's words, down at the last. */
     wound?: "low" | "down";
@@ -393,7 +395,7 @@ function fightersOf(sight: PlaceSight, scene: Scene): Fighter[]
     const names = scene.order ?? [...scene.with.map((link) => parsePageReference(link).name), ...Object.keys(scene.copies)];
     return names.flatMap((name) => {
         const fighter = fighterOf(sight, scene, name);
-        return fighter === undefined ? [] : [fighter];
+        return fighter === undefined ? [] : [scene.turn !== undefined && comparableText(name) === comparableText(scene.turn) ? { ...fighter, acting: true as const } : fighter];
     });
 }
 
@@ -605,7 +607,15 @@ function strangerName(scene: Pick<Scene, "copies" | "gone" | "seen">, copy: stri
 /** What the character sees of a character it does not know by name, as the master said (D-416); someone when the master said nothing. */
 function seenName(scene: Pick<Scene, "seen"> | undefined, name: string): string
 {
-    return (scene === undefined ? undefined : seenOf(scene, name)) ?? "someone";
+    const said = scene === undefined ? undefined : seenOf(scene, name);
+
+    if (scene === undefined || said === undefined) {
+        return "someone";
+    }
+
+    // Two seen alike are numbered as copies are, in the order the master named them, so that the player and the master tell them apart: uomo incappucciato 2.
+    const alike = Object.entries(scene.seen ?? {}).filter(([, words]) => comparableText(words) === comparableText(said)).map(([key]) => comparableText(key));
+    return alike.length < 2 ? said : `${said} ${alike.indexOf(comparableText(parsePageReference(name).name)) + 1}`;
 }
 
 /** What the master said the character sees of a character or a kind of creature, by its name. */

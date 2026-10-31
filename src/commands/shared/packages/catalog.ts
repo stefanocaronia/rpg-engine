@@ -34,6 +34,8 @@ export interface CatalogEntry
     update: boolean;
     /** Its latest version, when it needs a newer rpg-engine than this one, which version offers the newest it reads (D-515 (2)): with the first engine that reads it. */
     newer?: { version: string; engine?: string; };
+    /** The game system an extension is made for, as its package.json says (D-548). */
+    system?: string;
     /** An adventure's levels, length and language, as its adventure.yaml says. */
     levels?: string;
     length?: string;
@@ -126,6 +128,7 @@ function npmEntry(found: PackageInfo, installed: string | undefined): CatalogEnt
         ...(installed === undefined ? {} : { installed }),
         update: installed !== undefined && isNewerVersion(found.version, installed),
         ...(found.newer === undefined ? {} : { newer: found.newer }),
+        ...(found.kind === "extension" && found.system !== undefined ? { system: found.system } : {}),
     };
 }
 

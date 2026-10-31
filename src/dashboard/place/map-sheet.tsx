@@ -5,7 +5,7 @@ import type { ShownGrid } from "../data.ts";
 import { Icon } from "../icons.tsx";
 import { t } from "../text.ts";
 import { PlaceMap } from "./map-view.tsx";
-import { isStandable, squareOf } from "./map.ts";
+import { isStandable, squareName, squareOf } from "./map.ts";
 
 export function MapSheet({ map, place, question, onPick, onClose }: { map: ShownGrid; place: string; question: string; onPick(square: string): void; onClose(): void; })
 {
@@ -30,8 +30,9 @@ export function MapSheet({ map, place, question, onPick, onClose }: { map: Shown
     const send = (event: Event): void => {
         event.preventDefault();
 
-        if (chosen !== undefined && standable) {
-            onPick(chosen);
+        // As the map names it, A1 for a01 or A0001, which the master reads and the engine takes.
+        if (square !== undefined && standable) {
+            onPick(squareName(square));
         }
     };
 

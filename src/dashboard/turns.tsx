@@ -48,7 +48,7 @@ export function turnWords(name: string | undefined): string
 export function TurnBand({ scene, several = false, motion }: { scene: TurnScene; several?: boolean; motion?: "in" | "out"; })
 {
     const fighters = scene.fighters;
-    const acting = fighters.findIndex((fighter) => fighter.name === scene.turn);
+    const acting = actingIndex(fighters, scene.turn);
     const next = acting < 0 || fighters.length < 2 ? undefined : fighters[(acting + 1) % fighters.length];
     const mine = acting >= 0 && fighters[acting].role === "pc";
     const kinds = ["turn-band", mine ? "mine" : acting < 0 ? "" : fighters[acting].role, motion === undefined ? "" : `band-${motion}`];
@@ -195,7 +195,7 @@ export function TurnsCard({ scene, party, several = false, beside = false }: { s
     const list = useRef<HTMLOListElement>(null);
     const [open, toggle] = useOpen("Turns");
     const fighters = scene?.fighters ?? [];
-    const acting = fighters.findIndex((fighter) => fighter.name === scene?.turn);
+    const acting = actingIndex(fighters, scene?.turn);
 
     // As the turn passes, the list that scrolls brings whoever acts into its sight, the page left where it is.
     useEffect(() => {
@@ -361,4 +361,11 @@ function fighterStatus(fighter: Fighter, widgets: ShownWidget[]): TokenStatus
 function shownName(fighter: Fighter): string
 {
     return fighter.stranger ? strangerLabel(fighter.name) : fighter.name;
+}
+
+/** Where in the order who acts stands: the one the view marks, then by name, as from a server older than the page. */
+function actingIndex(fighters: Fighter[], turn: string | undefined): number
+{
+    const marked = fighters.findIndex((fighter) => fighter.acting === true);
+    return marked >= 0 ? marked : fighters.findIndex((fighter) => fighter.name === turn);
 }

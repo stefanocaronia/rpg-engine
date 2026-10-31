@@ -330,6 +330,7 @@
   "Follow {quest}": "{quest}を追跡",
   "For {name}": "{name}へ",
   "for a new campaign: this one stays in {system}": "新しいキャンペーン用：このキャンペーンは{system}のままです",
+  "for {system}: this campaign plays {campaign}": "{system} 用：このキャンペーンは {campaign} で遊んでいます",
   "Ford": "浅瀬",
   "Forest": "森",
   "free": "未使用",

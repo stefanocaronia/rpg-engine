@@ -448,7 +448,7 @@ interface Manifest
     exports?: unknown;
     bin?: unknown;
     dependencies?: Record<string, unknown>;
-    "rpg-engine"?: { kind?: unknown; api?: unknown; };
+    "rpg-engine"?: { kind?: unknown; api?: unknown; system?: unknown; };
 }
 
 function infoOf(read: Manifest): PackageInfo
@@ -459,6 +459,7 @@ function infoOf(read: Manifest): PackageInfo
         version: read.version ?? "",
         ...(typeof marker?.kind === "string" ? { kind: marker.kind } : {}),
         ...(typeof marker?.api === "number" ? { api: marker.api } : {}),
+        ...(typeof marker?.system === "string" ? { system: marker.system } : {}),
         ...(read.description === undefined ? {} : { description: read.description }),
         ...(authorOf(read) === undefined ? {} : { author: authorOf(read) }),
         // What runs: a main, exports or a command; a package of texts alone has none.

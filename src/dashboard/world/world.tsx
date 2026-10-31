@@ -101,11 +101,18 @@ export function WorldView({ version, lead, players, tab, item }: { version: numb
     const chosen = shown.find((one) => one === tab) ?? "map";
     const names: Record<string, string> = { map: t("Map"), lore: t("Lore"), documents: t("Documents"), calendar: t("Calendar") };
 
-    // A page of the lore that is a spot on the map leads there; a place on the map to all the character knows of it.
+    // A page of the lore that is on the map, a place, a region or a way, leads there; a place on the map to all the character knows of it.
     const onMap = (places: string[]): string | undefined => {
-        const spot = places.find((place) => map?.places.some((one) => one.name === place && one.x !== undefined && one.radius === undefined));
+        const spot = places.find((place) => map?.places.some((one) => one.name === place && one.x !== undefined) || map?.roads.some((road) => road.name === place));
         return spot === undefined ? undefined : sectionAddress("world", "map", spot);
     };
+
+    // What a region or a way is, by its name, as the map's list says it, for the lore (D-548).
+    const kinds = useMemo(() =>
+        new Map<string, string>([
+            ...(map?.places ?? []).filter((one) => one.radius !== undefined).map((one): [string, string] => [one.name, [t("Region"), biomeLabel(one.biome)].filter((part) => part !== undefined).join(" · ")]),
+            ...(map?.roads ?? []).map((road): [string, string] => [road.name, wayLabel(road.kind)]),
+        ]), [map]);
 
     const readMore = (place: string): string | undefined => world?.known.some((entry) => entry.name === place) ? sectionAddress("world", "lore", place) : undefined;
     return (
@@ -115,7 +122,7 @@ export function WorldView({ version, lead, players, tab, item }: { version: numb
             <div class="world-panel" id="world-panel" {...(shown.length > 1 ? { role: "tabpanel", "aria-labelledby": `world-tab-${chosen}` } : {})}>
                 {chosen === "map" && <MapTab map={map} problem={problem} lead={lead} place={item} readMore={readMore} />}
                 {chosen !== "map" && world === undefined && <p class="browse-none">{worldProblem ?? t("Reading…")}</p>}
-                {chosen === "lore" && world && <LoreTab world={world} version={version} open={item} onMap={onMap} {...(players === undefined ? {} : { players })} />}
+                {chosen === "lore" && world && <LoreTab world={world} version={version} open={item} onMap={onMap} kinds={kinds} {...(players === undefined ? {} : { players })} />}
                 {chosen === "documents" && world && <DocumentsTab world={world} open={item} {...(players === undefined ? {} : { players })} />}
                 {chosen === "calendar" && world && <CalendarTab calendar={world.calendar} />}
             </div>
@@ -248,16 +255,18 @@ function MapCard(
         return () => observer.disconnect();
     }, []);
 
-    // The first view: all the character knows; on a phone, the land around the party.
+    // The first view: all the character knows; on a phone, the land around the party; with a place already chosen, as from the Lore's Show on the map, that place.
     useEffect(() => {
         if (size !== undefined && view === undefined) {
-            setView(startView(map, lifted, size));
+            const spot = shownPoint(map, layout, focus.name);
+            const start = startView(map, lifted, size);
+            setView(spot === undefined ? start : roomFor(spot, start, size, size.width < 600));
         }
     }, [size]);
 
     // A place chosen: the map brings it where the card leaves room, right of it on a wide screen, above it on a phone.
     useEffect(() => {
-        const spot = layout.spots.find((one) => one.name === focus.name);
+        const spot = shownPoint(map, layout, focus.name);
 
         if (spot !== undefined && size !== undefined && view !== undefined) {
             setView(roomFor(spot, view, size, narrow));
@@ -568,14 +577,14 @@ function Drawing(
             {/* The map this one lies under or mirrors, as a ghost under its ways: it shares its coordinates (D-320). */}
             {ghost !== undefined && (
                 <g class="ghost">
-                    {ghost.ways.map((way) => <WayDrawing key={way.name} way={way} look={wayLook(way.kind)} screen={screen} weight={weight} />)}
+                    {ghost.ways.map((way, index) => <WayDrawing key={`${way.name} ${index}`} way={way} look={wayLook(way.kind)} screen={screen} weight={weight} />)}
                     {ghost.spots.map((spot) => <PlaceSymbol key={spot.name} spot={spot} x={X(spot.x)} y={Y(spot.y)} chosen={false} />)}
                 </g>
             )}
-            {drawn.map((way) => <WayDrawing key={way.name} way={way} look={wayLook(way.kind)} screen={screen} weight={weight} />)}
+            {drawn.map((way, index) => <WayDrawing key={`${way.name} ${index}`} way={way} look={wayLook(way.kind)} screen={screen} weight={weight} />)}
             {drawn.map((way, index) =>
                 wayNames[index] === undefined ? null : (
-                    <text key={way.name} class={`way-label ${wayLook(way.kind)}`} dy={wayLook(way.kind) === "river" ? -16 : -6}>
+                    <text key={`${way.name} ${index}`} class={`way-label ${wayLook(way.kind)}`} dy={wayLook(way.kind) === "river" ? -16 : -6}>
                         <textPath href={`#world-way-name-${index}`} startOffset="50%" text-anchor="middle">{way.name}</textPath>
                     </text>
                 )
@@ -710,9 +719,15 @@ function PlaceCard(
 
     // Its text, read when the card opens: the first lines as the character knows them.
     useEffect(() => {
+        // Only this place's: an answer for the one opened before, which came late, is left.
+        let live = true;
         setText(undefined);
-        readView(place.name).then((page) => setText(page.kind === "page" ? plainLine(page.text) : undefined), () => setText(undefined));
+        readView(place.name).then((page) => live && setText(page.kind === "page" ? plainLine(page.text) : undefined), () => live && setText(undefined));
         closer.current?.focus({ preventScroll: true });
+
+        return () => {
+            live = false;
+        };
     }, [place.name]);
 
     const eyebrow = [placeKindLabel(place.kind) ?? t("Place"), region?.name, here || place.from?.direction === undefined ? undefined : t("{distance} from you", { distance: fromLabel(place.from, (km) => lengthText(km, map.unit)) })].filter((
@@ -901,12 +916,12 @@ function PlacesList({ map, layout, onChoose }: { map: WorldMap; layout: MapLayou
             {(layout.regions.length > 0 || map.roads.length > 0) && <h4 class="eyebrow pc-sub">{t("Regions and ways")}</h4>}
             <ul class="places">
                 {layout.regions.map((region) => <RegionRow key={region.name} region={region} unit={map.unit} />)}
-                {map.roads.map((road) => (
+                {waysListed(map.roads).map((road) => (
                     <li key={road.name}>
                         <span class="place-row static">
                             <span class="pr-name">{road.name}</span>
                             <span class="pr-kind">{wayLabel(road.kind)}</span>
-                            <span class="pr-far num">{lengthText(road.points.slice(1).reduce((sum, point) => sum + point.km, 0), map.unit)}</span>
+                            <span class="pr-far num">{lengthText(road.km, map.unit)}</span>
                         </span>
                     </li>
                 ))}
@@ -1003,4 +1018,25 @@ function wayLabel(kind: string): string
 {
     const labels: Record<string, string> = { river: t("River"), road: t("Road"), path: t("Path"), portal: t("Portal"), other: t("Other way") };
     return labels[kind] ?? `${kind[0]?.toUpperCase() ?? ""}${kind.slice(1)}`;
+}
+
+/** The ways of a map as its list names them: each once, with its length on the map, its pieces together; a portal, which has none, left out. */
+function waysListed(roads: WorldMap["roads"]): { name: string; kind: string; km: number; }[]
+{
+    const listed = new Map<string, { name: string; kind: string; km: number; }>();
+
+    for (const road of roads.filter((one) => one.kind !== "portal")) {
+        const km = road.points.slice(1).reduce((sum, point) => sum + point.km, 0);
+        const before = listed.get(road.name);
+        listed.set(road.name, { name: road.name, kind: road.kind, km: (before?.km ?? 0) + km });
+    }
+
+    return [...listed.values()];
+}
+
+/** Where the map brings a name chosen: a place, the middle of a region, or the middle of a way; none for a name it does not draw. */
+function shownPoint(map: WorldMap, layout: MapLayout, name: string | undefined): MapPoint | undefined
+{
+    const points = map.roads.find((road) => road.name === name)?.points;
+    return layout.spots.find((one) => one.name === name) ?? layout.regions.find((one) => one.name === name) ?? points?.[Math.floor((points?.length ?? 0) / 2)];
 }

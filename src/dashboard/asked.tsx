@@ -366,8 +366,11 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
         setProblem(undefined);
 
         try {
-            // A click that comes too late counts for nothing: the page reads what the master asks now.
-            await answer(asked.id, given);
+            // A click that comes too late counts for nothing: the page reads what the master asks now. One the game refuses can be given again.
+            if (!await answer(asked.id, given)) {
+                setSent(undefined);
+                setProblem(t("The answer did not reach the game: try again."));
+            }
         } catch {
             setSent(undefined);
             setProblem(t("The answer did not reach the game: try again."));
@@ -455,7 +458,7 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
                 {/* On the player's turn in a fight, the banner says so: the turn's own notice gives way to it (D-315). With more player characters, whom it asks. */}
                 {yourTurn ? <p class="eyebrow asked-turn">{turnWords(who?.name ?? turnName)}</p> : who !== undefined && <p class="eyebrow asked-turn">{t("For {name}", { name: who.name })}</p>}
                 <h2 class="asked-title">{asked.title}</h2>
-                <p id={`asked-${asked.id}`} class="asked-question" role="alert">
+                <p id={`asked-${asked.id}`} class="asked-question" dir="auto" role="alert">
                     {who !== undefined && <span class="visually-hidden">{`${who.name}: `}</span>}
                     {asked.question}
                 </p>

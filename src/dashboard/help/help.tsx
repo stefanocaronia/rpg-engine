@@ -1,7 +1,8 @@
 // Help (D-409, D-413): the complete guide, in the page's language, as its markdown file has it (guide/<code>.md): what it is, an index of chips, and each of
 // its parts a card that folds, the first two open. Its anchors are the English guide's, so that a link finds its heading in every language. At its end, how to
 // tell us what went wrong: the page's own words, so that the guide's translations stay as they are.
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { readAddress, sectionAddress } from "../address.ts";
 import { CardHead, CardHeader } from "../card.tsx";
 import { Icon, type IconName, iconPath, isIconName } from "../icons.tsx";
 import { PageHead } from "../pages.tsx";
@@ -37,8 +38,22 @@ export function Help()
         if (index >= 0) {
             setOpen((before) => new Set([...before, index]));
             setSought(anchor);
+            // The chapter in the address, so that it can be sent or opened again: #/help/2-play.
+            history.replaceState(null, "", sectionAddress("help", anchor));
         }
     };
+
+    // A chapter the address names, once the guide is read.
+    const arrived = useRef(false);
+
+    useEffect(() => {
+        const wanted = readAddress(location.hash).tab;
+
+        if (!arrived.current && wanted !== undefined && parts.length > 0) {
+            arrived.current = true;
+            go(wanted);
+        }
+    }, [parts]);
 
     useEffect(() => {
         if (sought === undefined) {

@@ -9,12 +9,12 @@ import { CardHead } from "../card.tsx";
 import type { ShownGrid } from "../data.ts";
 import { Glass, GlassDefs } from "../glass.tsx";
 import { iconPath } from "../icons.tsx";
-import { strangerLabel } from "../labels.ts";
+import { shownText, strangerLabel } from "../labels.ts";
 import { WidgetsContext } from "../packages/widgets.tsx";
 import { type Side, sideIcons, sideOf } from "../party.tsx";
 import { conditionsPref, tokenSymbolsPref, useChoice, usePref } from "../prefs.ts";
 import { type PersonState, personState, statusMarks, statusWords } from "../status.tsx";
-import { t } from "../text.ts";
+import { pageDirection, t } from "../text.ts";
 import { columnName, exitSide, floorLoops, groundKinds, isSolid, isStandable, isWalled, kindAt, nextTo, piecesOf, type Square, squareName, squareOf, symbolAt, tracedLoop } from "./map.ts";
 
 // How wide a square is drawn, in pixels.
@@ -97,6 +97,20 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
             : Array.from({ length: (self.side ?? 1) ** 2 }, (_, index) => ({ column: self.at.column + (index % (self.side ?? 1)), row: self.at.row + Math.floor(index / (self.side ?? 1)) }))),
     ];
     const letters = Math.max(11, 11 / scale);
+    const frame = useRef<HTMLDivElement>(null);
+
+    // On a phone the map keeps squares a finger can read and scrolls aside (D-547): it opens with the player's character in the middle.
+    useEffect(() => {
+        const box = frame.current;
+
+        if (box === null || self === undefined || box.scrollWidth <= box.clientWidth) {
+            return;
+        }
+
+        const [x] = middle(self);
+        const shown = box.scrollWidth / width;
+        box.scrollLeft = Math.max(0, x * shown - box.clientWidth / 2) * (pageDirection() === "rtl" ? -1 : 1);
+    }, [map.columns, map.rows, self?.at.column, self?.at.row]);
     const drawn = (
         <>
             <path class="lm-floor-fill" d={floor} fill-rule="evenodd" />
@@ -127,7 +141,7 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
     return (
         <section class="lm" aria-labelledby="lm-title">
             <CardHead icon={iconPath("world")} title={<h3 id="lm-title">{t("Map")}</h3>} note={place} />
-            <div class={picking === undefined && choosing === undefined ? "lm-frame" : "lm-frame panned"}>
+            <div ref={frame} class={picking === undefined && choosing === undefined ? "lm-frame" : "lm-frame panned"} style={{ "--map-width": String(width) }}>
                 {/* To choose a square or someone, each at least 44 px wide, the map scrolls rather than shrinks (D-325 (6)). */}
                 <svg
                     ref={svg}
@@ -252,7 +266,7 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
                             {selfName !== undefined && one === self
                                 ? <span class="lm-where-far">{t("from here")}</span>
                                 : one.distance !== undefined
-                                ? <span class="lm-where-far">{one.distance}</span>
+                                ? <span class="lm-where-far">{shownText(one.distance)}</span>
                                 : self !== undefined && one !== self && (nextTo(one.at, self.at) || one.square === self.square) && (
                                     <span class="lm-where-far">{selfName === undefined ? t("next to you") : t("next to {name}", { name: selfName })}</span>
                                 )}
@@ -298,7 +312,7 @@ function MapKey({ map, reach, self }: { map: ShownGrid; reach: boolean; self?: s
             {map.exits.map((exit) => (
                 <li key={exit.square} class="lm-key-exit">
                     <span class="lm-key-square">{exit.square}</span>
-                    <span>{`→ ${exit.to ?? t("somewhere")}`}</span>
+                    <span>{`${pageDirection() === "rtl" ? "←" : "→"} ${exit.to ?? t("somewhere")}`}</span>
                 </li>
             ))}
         </ul>

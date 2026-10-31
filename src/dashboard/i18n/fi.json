@@ -330,6 +330,7 @@
   "Follow {quest}": "Seuraa tehtävää {quest}",
   "For {name}": "Hahmolle {name}",
   "for a new campaign: this one stays in {system}": "uutta kampanjaa varten: tämä pysyy järjestelmässä {system}",
+  "for {system}: this campaign plays {campaign}": "järjestelmälle {system}: tämä kampanja pelaa {campaign}",
   "Ford": "Kahlaamo",
   "Forest": "Metsä",
   "free": "vapaa",

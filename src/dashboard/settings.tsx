@@ -40,8 +40,13 @@ export function SettingsView({ version, several = false }: { version: number; se
     const read = (): void => {
         const reading = ++reads.current;
         void readSettings().then(
-            (read) => reading === reads.current && setSettings(read),
-            (error: unknown) => setProblem(error instanceof Error ? error.message : String(error)),
+            (read) => {
+                if (reading === reads.current) {
+                    setSettings(read);
+                    setProblem(undefined);
+                }
+            },
+            (error: unknown) => reading === reads.current && setProblem(error instanceof Error ? error.message : String(error)),
         );
     };
 
@@ -498,10 +503,11 @@ function gameStyleRows(): PageRow[]
 
     if (!style.shows) {
         const means = t("This game's style does not pass the page's check of legibility: the page keeps its own.");
-        return [{ name, about: t("the colours, faces and pictures of the game system"), options: [{ value: "page", label: t("The page's"), means }], value: "page", pick: () => undefined }];
+        return [{ key: "game-style", name, about: t("the colours, faces and pictures of the game system"), options: [{ value: "page", label: t("The page's"), means }], value: "page", pick: () => undefined }];
     }
 
     return [{
+        key: "game-style",
         name,
         about: style.name === undefined ? t("the colours, faces and pictures of the game system") : t("the colours, faces and pictures of {name}, from the game system", { name: style.name }),
         options: [{ value: "game", label: t("The game's") }, { value: "page", label: t("The page's") }],
@@ -522,6 +528,8 @@ function idOf(name: string): string
 /** A row of the page's own settings: its name, what it is, its values, the one chosen; a row with many values has them under its name. */
 interface PageRow
 {
+    /** Its id in the page, the same in every language. */
+    key: string;
     name: string;
     about: string;
     options: Option[];
@@ -544,6 +552,7 @@ function PageSettings()
     const [conditions, setConditions] = useChoice(conditionsPref);
     const rows: PageRow[] = [
         {
+            key: "theme",
             name: t("Theme"),
             about: t("the page's look"),
             options: [{ value: "light", label: t("Light") }, { value: "dark", label: t("Dark") }],
@@ -552,6 +561,7 @@ function PageSettings()
         },
         ...gameStyleRows(),
         {
+            key: "token-symbols",
             name: t("Token symbols"),
             about: t("a mark on each token: you, your companions, your foes"),
             options: [{ value: "on", label: t("On") }, { value: "off", label: t("Off") }],
@@ -559,14 +569,16 @@ function PageSettings()
             pick: (value) => setSymbols(value === "on"),
         },
         {
+            key: "conditions",
             name: t("Conditions on tokens"),
             about: t("a mark on each token: what is on them, who is down"),
             options: [{ value: "always", label: t("Always") }, { value: "hover", label: t("On hover") }, { value: "never", label: t("Never") }],
             value: conditions,
             pick: setConditions,
         },
-        { name: t("Dice sound"), about: t("the dice as they roll"), options: [{ value: "on", label: t("On") }, { value: "off", label: t("Off") }], value: sound ? "on" : "off", pick: (value) => setSound(value === "on") },
+        { key: "dice-sound", name: t("Dice sound"), about: t("the dice as they roll"), options: [{ value: "on", label: t("On") }, { value: "off", label: t("Off") }], value: sound ? "on" : "off", pick: (value) => setSound(value === "on") },
         {
+            key: "dice-set",
             name: t("Dice set"),
             about: t("what your dice are made of"),
             options: diceSets.map((set) => ({ value: set.value, label: diceSetLabel(set.value) ?? set.label, picture: <SetSwatch value={set.value} /> })),
@@ -576,6 +588,7 @@ function PageSettings()
         },
         // Beside the dice, the coins: of the dice's material, the initial choice, which follows the set chosen, or of a metal (D-526 (1)).
         {
+            key: "coins",
             name: t("Coins"),
             about: t("what your coins are made of"),
             options: [
@@ -588,6 +601,7 @@ function PageSettings()
         },
         // Under them, their design, heads and tails side by side, of the material chosen (D-526 (2)).
         {
+            key: "coin-design",
             name: t("Coin design"),
             about: t("the pictures on your coins, heads first"),
             options: coinDesigns.map((one) => ({ value: one.value, label: coinDesignLabel(one.value) ?? one.label, picture: <CoinPair design={one.value} /> })),
@@ -596,6 +610,7 @@ function PageSettings()
             under: true,
         },
         {
+            key: "dice-edges",
             name: t("Dice edges"),
             about: t("how the dice's edges are cut"),
             options: [{ value: "rounded", label: t("Rounded") }, { value: "sharp", label: t("Sharp") }],
@@ -603,6 +618,7 @@ function PageSettings()
             pick: setEdges,
         },
         {
+            key: "checks",
             name: t("Checks"),
             about: t("what the master asks you to roll"),
             options: [
@@ -618,10 +634,10 @@ function PageSettings()
             <h3>{t("This page")}</h3>
             <p class="setting-about">{t("Kept in this browser alone.")}</p>
             {rows.map((row) => {
-                const id = `page-${idOf(row.name)}`;
+                const id = `page-${row.key}`;
                 const chosen = row.options.find((option) => option.value === row.value);
                 return (
-                    <div key={row.name} class={row.under === true ? "setting under" : "setting"}>
+                    <div key={row.key} class={row.under === true ? "setting under" : "setting"}>
                         <div class="setting-what">
                             <span class="setting-name" id={id}>{row.name}</span>
                             <span class="setting-about" id={`${id}-about`}>{row.about}</span>

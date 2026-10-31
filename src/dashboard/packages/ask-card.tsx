@@ -279,8 +279,9 @@ export function Choices({ buttons, sent, describedBy, onChoose }: { buttons: Car
                     >
                         {button.dice !== undefined && <NotationIcons notation={button.dice} />}
                         <span class="asked-check-name">{button.name}</span>
-                        {button.note !== undefined && <span class="ask-note">{button.note}</span>}
-                        {button.dice !== undefined && <span class="visually-hidden">{button.dice}</span>}
+                        {/* Words apart for a screen reader too: Reroll, you have 2, 1d6. */}
+                        {button.note !== undefined && <span class="ask-note">{` ${button.note}`}</span>}
+                        {button.dice !== undefined && <span class="visually-hidden">{` ${button.dice}`}</span>}
                     </button>
                 );
             })}

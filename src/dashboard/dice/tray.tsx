@@ -171,7 +171,11 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
     /** The dice and their stage, loaded once; undefined when the browser cannot draw them, and then the plate comes alone. */
     const loadRoller = (): Promise<Roller | undefined> => {
         const surface = canvas.current;
-        roller.current ??= surface === null ? Promise.resolve(undefined) : import("./roller.ts").then((module) => module.makeRoller(surface)).catch(() => undefined);
+        // A load that failed, as the game away for a moment, is tried again at the next throw.
+        roller.current ??= surface === null ? Promise.resolve(undefined) : import("./roller.ts").then((module) => module.makeRoller(surface)).catch(() => {
+            roller.current = undefined;
+            return undefined;
+        });
         return roller.current;
     };
 

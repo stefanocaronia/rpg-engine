@@ -196,10 +196,10 @@ export function NotationIcons({ notation }: { notation: string; })
     );
 }
 
-/** A picture's drawing, for a card's header. */
+/** A picture's drawing, for a card's header: the game system theme's own where it draws one, as Icon does. */
 export function iconPath(name: IconName): string
 {
-    return iconPaths[name];
+    return themedIcon(name) ?? iconPaths[name];
 }
 
 /** Whether a name, as a text names it, is one of the page's pictures. */

@@ -1,5 +1,6 @@
 // The World map as the page works it out (D-318): what is a point and what an area, the ways of a place, the hexes, the labels, the scale; the page's
 // symbols and biomes are the engine's (POS-7).
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { MapPoint, WorldMap } from "../src/dashboard/data.ts";
 import { biomes as pageBiomes, placeKinds as pageKinds } from "../src/dashboard/map-symbols.ts";
@@ -204,5 +205,25 @@ describe("the maps on the page (D-320)", () => {
         expect(main.roads[0].points).toHaveLength(1);
         expect(main.ghost).toBeUndefined();
         expect(waysOf(worlds, "Guado")).toEqual([{ road: "Pozzo", kind: "portal", to: "Città", km: 0.5, map: "Sottosuolo" }]);
+    });
+
+    it("lights the same hexes near the known ways however many segments they have, found by their cells rather than one by one", () => {
+        const point = fc.record({ x: fc.double({ min: -200, max: 200, noNaN: true }), y: fc.double({ min: -200, max: 200, noNaN: true }) });
+
+        const toSegment = (at: { x: number; y: number; }, from: { x: number; y: number; }, to: { x: number; y: number; }): number => {
+            const [dx, dy] = [to.x - from.x, to.y - from.y];
+            const share = Math.max(0, Math.min(1, ((at.x - from.x) * dx + (at.y - from.y) * dy) / (dx * dx + dy * dy || 1)));
+            return Math.hypot(at.x - from.x - share * dx, at.y - from.y - share * dy);
+        };
+
+        fc.assert(
+            fc.property(fc.array(fc.array(point, { minLength: 2, maxLength: 8 }), { maxLength: 6 }), fc.double({ min: 0.5, max: 20, noNaN: true }), (lines, scale) => {
+                const lifted = { circles: [], lines: lines.map((line) => line.map((one) => ({ ...one, km: 0 }))) };
+                const { across, hexes } = hexesOf({ x: 0, y: 0, s: scale }, 800, 600, lifted, []);
+                const reach = Math.max(3.4, (across / Math.sqrt(3)) * 0.9);
+                return hexes.every((hex) => hex.lit === lines.some((line) => line.some((one, index) => index > 0 && toSegment(hex, line[index - 1], one) <= reach)));
+            }),
+            { numRuns: 60 },
+        );
     });
 });

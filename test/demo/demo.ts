@@ -454,7 +454,7 @@ const caveMap = [
 ];
 
 /**
- * Ettore, hurt and with a blessing, and Lupa, a wolf at his side, at the inn, under the rigor simulation; in free play a cleric of his own words, with the
+ * Ettore, hurt and with a blessing, and Lupa, a wolf at his side, at the inn, in the 5e under the rigor simulation; in free play a cleric of his own words, with the
  * coins of the campaign. In the 5e a cleric of the third level, whose chain mail and pack make him encumbered, a night at the camp eats a ration, and the
  * torch he lit on the road still burns; attuned to two of three things.
  */
@@ -470,7 +470,11 @@ async function makeDemo(context: Context, folder: string, system: DemoSystem): P
 
     await rpg("init", "--name", "Guadoscuro", "--language", "it", "--system", system, "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
-    await rpg("config", "rigor", "simulation");
+
+    // Free play has one rigor, smooth: the simulation is the 5e's.
+    if (system === "5e") {
+        await rpg("config", "rigor", "simulation");
+    }
 
     // Free play gives no coins: the campaign does (MON-1).
     if (system === "free") {

@@ -7,7 +7,7 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState } from "preact
 import { readWidgetData, runCommand } from "../api.ts";
 import type { FigureSize, PackageCode, RestDice, ShownModule, Tone, WidgetText, WidgetTrack, WidgetValue } from "../data.ts";
 import { fieldLabel } from "../labels.ts";
-import { isolated, numberText, pageDirection } from "../text.ts";
+import { isolated, numberText, pageDirection, pageLocale } from "../text.ts";
 import { shownTheme } from "../theme.ts";
 import { PeopleContext } from "./people.ts";
 
@@ -277,7 +277,7 @@ export function pagePropsOf(owner: PackageCode): PageProps
     return {
         words: (text, values) => filled(owner.words?.[text] ?? text, values),
         number: numberText,
-        language: document.documentElement.lang || "en",
+        language: pageLocale(),
         dir: pageDirection(),
         theme: shownTheme(),
         reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -447,9 +447,18 @@ let sheetLoading: Promise<CSSStyleSheet> | undefined;
 
 function loadPageSheet(): Promise<CSSStyleSheet>
 {
-    sheetLoading ??= fetch("/style.css").then((response) => response.text()).then((text) => new CSSStyleSheet().replace(text)).then((sheet) => {
+    // One that did not come is asked again by the next drawing, never kept as failed.
+    sheetLoading ??= fetch("/style.css").then(async (response) => {
+        if (!response.ok) {
+            throw new Error(`/style.css did not come (${response.status}).`);
+        }
+
+        const sheet = await new CSSStyleSheet().replace(await response.text());
         pageSheet = sheet;
         return sheet;
+    }).catch((error: unknown) => {
+        sheetLoading = undefined;
+        throw error;
     });
     return sheetLoading;
 }

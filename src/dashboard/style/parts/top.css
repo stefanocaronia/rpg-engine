@@ -161,6 +161,8 @@
     .top > .status-chips {
         grid-area: chips;
         margin: 0;
+        /* Clear of the theme's corner, whose button is wider than its triangle. */
+        margin-inline-end: 40px;
     }
 
     .top > .nav-row {
@@ -432,6 +434,14 @@
         letter-spacing: var(--title-spacing, 0.04em);
         font-variant: small-caps;
         text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .product-time {
+        display: none;
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.8rem;
         white-space: nowrap;
     }
 
@@ -718,6 +728,14 @@
         .titles h1 {
             font-size: 1.6rem;
             letter-spacing: var(--title-spacing, 0.01em);
+        }
+
+        .top:not(.compact) .product {
+            display: none;
+        }
+
+        .top:not(.compact) .product-time {
+            display: block;
         }
 
         .top {

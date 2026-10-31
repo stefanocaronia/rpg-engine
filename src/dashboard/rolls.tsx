@@ -13,7 +13,7 @@ import { cardIcons, Icon } from "./icons.tsx";
 import { notationModifier, strangerLabel } from "./labels.ts";
 import { rollWindow } from "./layout.ts";
 import { Token, type Tokened } from "./party.tsx";
-import { capitalized, t } from "./text.ts";
+import { capitalized, pageLocale, t } from "./text.ts";
 
 // Where the browser remembers when the player last cleared the list of a campaign; how many older rolls each Load more shows.
 const clearedKey = "rpg-engine.rolls-cleared";
@@ -177,7 +177,7 @@ function RollRow({ roll, name, token, coins, fresh, greeted, several }: {
                 <span class="visually-hidden">{`${marked ? t("New.") + " " : ""}${free ? t("Your free roll, not logged:") : player ? (several ? t("The players' roll:") : t("Your roll:")) : t("The master's roll:")} `}</span>
                 {name}
             </span>
-            {roll.check && <span class="roll-check">{roll.check}</span>}
+            {roll.check && <span class="roll-check" dir="auto">{roll.check}</span>}
             {/* A toss's coins as pictures where the total stands, their words on the line of the dice, which has the row's width. */}
             {roll.toss !== undefined
                 ? <CoinFaces toss={roll.toss} className="roll-total roll-coins" {...(coins === undefined ? {} : { look: coins })} />
@@ -328,7 +328,7 @@ function useMoreBelow(scroller: HTMLElement | null): boolean
 function rolledWhen(roll: ShownRoll): string
 {
     const real = new Date(roll.at);
-    const time = Number.isNaN(real.getTime()) ? undefined : t("rolled at {time}", { time: real.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) });
+    const time = Number.isNaN(real.getTime()) ? undefined : t("rolled at {time}", { time: real.toLocaleTimeString(pageLocale(), { hour: "2-digit", minute: "2-digit" }) });
     return [roll.date === undefined ? undefined : t("{date} in the game", { date: gameDateLabel(roll.date) }), time].filter((part) => part !== undefined).join(" · ");
 }
 

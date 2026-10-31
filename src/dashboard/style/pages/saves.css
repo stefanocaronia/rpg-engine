@@ -222,10 +222,13 @@
             min-height: 84px;
         }
 
+        /* Within the picture, wrapping rather than over the save's title. */
         .save-badge {
             top: 6px;
             inset-inline-start: 6px;
-            font-size: 0.65rem;
+            inset-inline-end: 6px;
+            white-space: normal;
+            font-size: 0.72rem;
         }
 
         .save-what {

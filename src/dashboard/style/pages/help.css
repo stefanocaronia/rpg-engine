@@ -191,4 +191,11 @@
     .guide blockquote p {
         margin-bottom: 4px;
     }
+
+    /* On a phone the folded cards are the index. */
+    @media (max-width: 600px) {
+        .help-index {
+            display: none;
+        }
+    }
 }
