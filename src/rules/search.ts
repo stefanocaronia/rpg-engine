@@ -38,11 +38,19 @@ export function findRules(sections: RuleSection[], text: string): RuleFinding[]
     return [...named, ...scored.map(({ entry, score }) => ({ section: entry.section, titled: false, score }))];
 }
 
-/** Whether a section is the one a text names: its title, or titles of its path ending with its own, as in "Combat › Grappling". */
+/**
+ * Whether a section is the one a text names: its title, or titles of its path ending with its own, as in "Combat › Grappling"; a translated section by the
+ * path it has in its book's own language too (D-542).
+ */
 export function isTitled(section: RuleSection, text: string): boolean
 {
+    return pathTitled(section.path, text) || (section.alias !== undefined && pathTitled(section.alias, text));
+}
+
+function pathTitled(sectionPath: string[], text: string): boolean
+{
     const titles = titlesIn(text).map(comparableText);
-    const path = section.path.map(comparableText);
+    const path = sectionPath.map(comparableText);
 
     if (titles.length === 0 || titles.at(-1) !== path.at(-1)) {
         return false;

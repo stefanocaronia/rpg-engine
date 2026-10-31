@@ -46,7 +46,8 @@ export function ruleTitled(root: string, system: GameSystem, title: string): Tit
  */
 export function systemRuleBook(system: GameSystem, language?: string): RuleSection[]
 {
-    const [own, version] = systemContentFolders(system).map((folder) => translatedBook(readRuleBook(join(folder, "rules"), system.name), translationFolder(folder, language), system.name));
+    const words = language === undefined ? undefined : systemWordsIn(system, language);
+    const [own, version] = systemContentFolders(system).map((folder) => translatedBook(readRuleBook(join(folder, "rules"), system.name), translationFolder(folder, language), system.name, words));
     return version === undefined ? own : [...own.filter((section) => !version.some((other) => other.file === section.file)), ...version];
 }
 
@@ -62,18 +63,47 @@ export function hasTranslatedRules(system: GameSystem, language: string | undefi
 /** A word of the system in a language, by its English, as Prono for Prone; none without it, or when its words do not read, which validate says. */
 function ownWord(system: GameSystem, language: string | undefined, english: string): string | undefined
 {
+    return language === undefined ? undefined : systemWordsIn(system, language)?.[english];
+}
+
+/** The system's words in a language, by their English; none when it has none, or they do not read, which validate says. */
+function systemWordsIn(system: GameSystem, language: string): Record<string, string> | undefined
+{
     try {
-        return language === undefined ? undefined : layeredSystemWords(systemContentFolders(system), language)?.words[english];
+        return layeredSystemWords(systemContentFolders(system), language)?.words;
     } catch {
         return undefined;
     }
 }
 
-function translatedBook(book: RuleSection[], translations: string | undefined, system: string): RuleSection[]
+/**
+ * A book with its chapters in a language in place of its own; a chapter whose sections match its own one by one, at the same levels and with the titles the
+ * system's words give, gives each the path it has there, so that the system's own titles, as its outputs name them, still find it (D-542).
+ */
+function translatedBook(book: RuleSection[], translations: string | undefined, system: string, words: Record<string, string> | undefined): RuleSection[]
 {
     const translated = translations === undefined ? [] : readRuleBook(join(translations, "rules"), system);
-    const files = new Set(translated.map((section) => section.file));
-    return files.size === 0 ? book : [...book.filter((section) => !files.has(section.file)), ...translated].sort((first, second) => (first.file < second.file ? -1 : first.file > second.file ? 1 : 0));
+    const files = [...new Set(translated.map((section) => section.file))];
+
+    if (files.length === 0) {
+        return book;
+    }
+
+    const aliased = files.flatMap((file) => {
+        const own = book.filter((section) => section.file === file);
+        const other = translated.filter((section) => section.file === file);
+        return isParallel(own, other, words) ? other.map((section, index) => ({ ...section, alias: own[index].path })) : other;
+    });
+    return [...book.filter((section) => !files.includes(section.file)), ...aliased].sort((first, second) => (first.file < second.file ? -1 : first.file > second.file ? 1 : 0));
+}
+
+/** Whether a chapter's translation has its sections in the same order: as many, at the same levels, none named otherwise than the system's words name it. */
+function isParallel(own: RuleSection[], other: RuleSection[], words: Record<string, string> | undefined): boolean
+{
+    return own.length === other.length && own.every((section, index) => {
+        const word = words?.[section.path.at(-1) ?? ""];
+        return section.level === other[index].level && (word === undefined || comparableText(word) === comparableText(other[index].path.at(-1) ?? ""));
+    });
 }
 
 /** "Poisoned is a condition of the system 5e, by a house rule:" and the text, then the precedents on it, with what to do when they disagree with the book. */

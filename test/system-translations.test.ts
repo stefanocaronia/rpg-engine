@@ -15,6 +15,8 @@ beforeEach(() => {
     cpSync(join(testSystemFolders[1], "fake"), join(systems, "fake"), { recursive: true });
     translate(systems, "world/topics/Scout.md", "---\nname: Esploratore\n---\n\n**L'esploratore** cammina avanti e torna a dire cosa c'è.\n");
     translate(systems, "world/creatures/Bog Hound.md", "---\nname: Segugio di palude\n---\n\nUn lungo cane delle paludi, grigio come le canne.\n\n## Morso\n\nDue dadi e tre, a chi gli sta accanto.\n");
+    writeFileSync(join(systems, "fake", "rules", "Endings.md"), "# Endings\n\n## Last Breath\n\nOne roll more, then the dark.\n\n## Sudden End\n\nA blow twice the grit ends it.\n");
+    translate(systems, "rules/Endings.md", "# Finali\n\n## Ultimo respiro\n\nUn tiro ancora, poi il buio.\n\n## Fine improvvisa\n\nUn colpo pari al doppio della tempra la chiude.\n");
     translate(systems, "rules/Basics.md", "# Basi\n\n## Cadere\n\nA 0 di tempra si cade.\n\n## Bloccato\n\nChi è bloccato non può muoversi finché non si libera.\n");
     folder = makeTempFolder();
     context = { ...testContext(folder), systemFolders: [systems, ...testSystemFolders] };
@@ -42,6 +44,7 @@ describe("a system's text in the campaign's language (D-542)", () => {
         expect(shown).toContain("**L'esploratore** cammina avanti");
         expect(shown).not.toContain("walks ahead");
         expect(shown).toContain("stamina-die: d4");
+        expect(await ok("find", "Scout")).toContain("Scout «Esploratore» (topic, system fake)");
         // A page the system has not translated stays as it is.
         expect(await ok("show", "Warden")).not.toContain("Named in the campaign's language");
     });
@@ -64,6 +67,9 @@ describe("a system's text in the campaign's language (D-542)", () => {
         const falling = await ok("rules", "Falling");
         expect(falling).toContain("A 0 di tempra si cade.");
         expect(falling).not.toContain("At 0 grit one falls.");
+        // A chapter translated section by section is found by the system's own titles too, as its outputs name them.
+        expect(await ok("rules", "Sudden End")).toContain("Un colpo pari al doppio della tempra la chiude.");
+        expect(await ok("rules", "Endings › Last Breath")).toContain("Un tiro ancora, poi il buio.");
         // No note that the rules are in English.
         expect(await ok("rules")).not.toContain(", in English");
         await ok("write", "Ettore", "--type", "character", "--set", "role=pc");

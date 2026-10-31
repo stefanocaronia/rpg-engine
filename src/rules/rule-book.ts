@@ -22,6 +22,8 @@ export interface RuleSection
     ownText: string;
     /** The titles of its parts, one level below. */
     parts: string[];
+    /** Its path in the book it is translated from, by which it is found too, as Death Saving Throws for Tiri salvezza contro morte (D-542). */
+    alias?: string[];
 }
 
 /** The sections of the markdown files in a folder and its folders, file by file in order of path; none when there is no such folder. */

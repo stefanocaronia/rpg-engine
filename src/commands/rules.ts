@@ -5,7 +5,7 @@ import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { comparableText } from "../core/text.ts";
 import { findPage, type Page, pageFileNamed, pageNamed as pageWithName, sectionTitles } from "../pages/index.ts";
-import { bookTitles, findRules, hasAllWords, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
+import { bookTitles, findRules, hasAllWords, isTitled, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
 import { type GameSystem, systemContentFolders } from "../systems/index.ts";
 import { libraryAnswer, libraryLines, systemWordsNamed } from "./shared/library.ts";
 import { disagreementAdvice, hasTranslatedRules, houseRules, precedentRule, systemRuleBook } from "./shared/rules.ts";
@@ -86,7 +86,9 @@ export const rules = defineCommand({
         const systemNames = ownNames.map((one) => one.named);
         // A name answers for the system only when its words are the whole search: tiro per colpire is no question about Archery, Tiro.
         const answering = ownNames.filter((one) => one.whole).map((one) => one.named);
-        const found = findRules([...house, ...book], [text, ...systemNames].join(" "));
+        // A text that is a section's title reads that section, by its own title or the one it has in the system's language (D-542).
+        const titled = [...house, ...book].some((section) => isTitled(section, text));
+        const found = findRules([...house, ...book], titled ? text : [text, ...systemNames].join(" "));
         const houseAnswer = answerOf(found.filter((finding) => finding.section.source === houseRules), budget);
         const systemAnswer = answerOf(found.filter((finding) => finding.section.source !== houseRules), budget - houseAnswer.used);
         const shownTitles = withEnglishTitles([...houseAnswer.shown, ...systemAnswer.shown].map((shown) => shown.path.at(-1) ?? ""), translated ? campaignSystemWords(root, context) : undefined);

@@ -29,7 +29,7 @@ export const find = defineCommand({
         // The game system's pages are found by name only, and listed only for a text: there may be hundreds (SYS-3).
         const withText = (input.text?.trim() ?? "") !== "";
         const system = searchSystemPages(world, input);
-        const listed = withText ? system.slice(0, listedSystemPages).map(({ page, excerpt }) => ({ page: page.name, type: page.type, excerpt })) : [];
+        const listed = withText ? system.slice(0, listedSystemPages).map(({ page, excerpt }) => ({ page: page.name, title: page.title, type: page.type, excerpt })) : [];
         const byName = system.slice(listed.length).filter((match) => match.excerpt === undefined).length;
         const systemFound = { system: world.system?.name, systemMatches: listed, systemMore: system.length - listed.length, systemMoreByName: byName, withText, type: input.type };
         return { matches, ...systemFound, language: foreignSystemLanguage(world), searchHint: systemSearchHint(world).trim(), problems: world.problems };
@@ -38,7 +38,10 @@ export const find = defineCommand({
     format(result)
     {
         const lines = result.matches.map((match) => `${match.page} (${match.type ?? "free page"})${match.excerpt === undefined ? "" : `: ${match.excerpt}`}`);
-        const system = result.systemMatches.map((match) => `${match.page} (${match.type ?? "page"}, system ${result.system ?? ""})${match.excerpt === undefined ? "" : `: ${match.excerpt}`}`);
+        // A page's name in the campaign's language beside it, where the system has it (D-542): Hooded Lantern «Lanterna schermabile».
+        const system = result.systemMatches.map((match) =>
+            `${match.page}${match.title === undefined ? "" : ` «${match.title}»`} (${match.type ?? "page"}, system ${result.system ?? ""})${match.excerpt === undefined ? "" : `: ${match.excerpt}`}`
+        );
         const found = [...lines, ...system];
         const note = systemNote(result, lines.length > 0);
         // A name said in play and never written is no page: the player who remembers it is right (D-266).
