@@ -14,7 +14,7 @@ import { isNewerVersion } from "../core/version.ts";
 import { dropConsent, type Extension, findExtension, installedExtensions, readExtension, recordConsent, shortName } from "../extensions/index.ts";
 import { installedLanguages, languagePackProblems, readLanguagePack } from "../languages/index.ts";
 import { isLocalSpec, isPackageName, issuesPage, isTarball, isVerified, verifiedScope } from "../packages/index.ts";
-import { findSystem, readableSystems, systemFolders, systemHasCode, systemInFolder } from "../systems/index.ts";
+import { findSystem, readableSystems, systemFolders, systemHasCode, systemInFolder, systemWords } from "../systems/index.ts";
 import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "./shared/adventures.ts";
 import { campaignExamples } from "./shared/examples.ts";
 import { campaignMode } from "./shared/mode.ts";
@@ -597,6 +597,7 @@ function codeText(loaded: { runs: true; } | { why: string; } | undefined): strin
 function systemsHere(root: string, context: Context): InstalledSystem[]
 {
     const plays = readTextSetting(root, "system") ?? "";
+    const language = readTextSetting(root, "language");
     const folders = systemFolders(context.systemFolders);
     return readableSystems(context.systemFolders).map((system): InstalledSystem => {
         const manifest = packageOf(folders.find((one) => one.name === system.name)?.folder ?? system.folder);
@@ -605,7 +606,7 @@ function systemsHere(root: string, context: Context): InstalledSystem[]
         const linked = installedFromFolder(system.folder);
         return {
             name: system.name,
-            title: system.title,
+            title: language === undefined ? system.title : titleIn(system.folder, system.title, language),
             ...(manifest === undefined ? {} : { version: manifest.version }),
             ...(manifest === undefined || shipped ? {} : { package: manifest.name }),
             verified: shipped || (manifest !== undefined && isVerified(manifest.name, linked)),
@@ -615,6 +616,16 @@ function systemsHere(root: string, context: Context): InstalledSystem[]
             ...issuesOf(shipped ? join(engineSystemsFolder, "..") : system.folder),
         };
     });
+}
+
+/** A system's title in the campaign's language, as its own words give it; as it is where they do not, or do not read. */
+function titleIn(folder: string, title: string, language: string): string
+{
+    try {
+        return systemWords(folder, language)?.words[title] ?? title;
+    } catch {
+        return title;
+    }
 }
 
 /** Where the package in this folder takes reports of its problems, as its package.json says; nothing when it says none or has none that reads. */

@@ -474,7 +474,7 @@ export function Figure({ owner, name, part }: { owner: Owner; name: string; part
         <ExtensionRoot
             widget={owner.widget}
             loaded={owner.loaded}
-            kind={`ext-figure at-${owner.place}`}
+            kind={`ext-figure at-${owner.place}${size.height <= 40 ? " small" : ""}`}
             size={size}
             draw={(module) => {
                 const Drawing = module.figures?.[name];

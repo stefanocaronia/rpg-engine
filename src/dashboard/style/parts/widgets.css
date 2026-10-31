@@ -113,6 +113,15 @@
         justify-self: center;
     }
 
+    /* A figure no taller than an icon takes the icon's place, beside the words. */
+    .widget-lead.figured:has(> .ext-figure.small) {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .widget-lead.figured > .ext-figure.small {
+        grid-column: auto;
+    }
+
     .widget-lead-icon {
         width: 40px;
         height: 40px;

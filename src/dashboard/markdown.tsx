@@ -28,11 +28,15 @@ export function knowersOf(knownBy: { secret: string; who: string[]; }[] | undefi
     return knownBy === undefined || knownBy.length === 0 ? undefined : (title) => knownBy.find((one) => foldedText(one.secret.trim()) === foldedText(title))?.who;
 }
 
-/** The first line of a page's text that is not a heading nor in a fenced block, as plain words: what a closed card shows of it. */
+/**
+ * The first line of a page's text that is not a heading nor in a fenced block, as plain words: what a closed card shows of it. A line that opens a list with
+ * its colon goes on with the next.
+ */
 export function plainLine(text: string): string | undefined
 {
     let fenced = false;
-    const line = text.split("\n").find((candidate) => {
+    const lines = text.split("\n");
+    const at = lines.findIndex((candidate) => {
         if (fenced ? fenceEnd.test(candidate) : fenceStart.test(candidate)) {
             fenced = !fenced;
             return false;
@@ -41,14 +45,17 @@ export function plainLine(text: string): string | undefined
         return !fenced && candidate.trim() !== "" && !/^\s*#/.test(candidate);
     });
 
-    if (line === undefined) {
+    if (at < 0) {
         return undefined;
     }
 
+    const line = lines[at];
     // A quote's words, a secret's with its word, as the text reads them.
     const quoted = quoteLine.exec(line)?.[1];
     const words = quoted === undefined ? line.replace(/^\s*[-*]\s+/, "") : quoted.replace(secretStart, (_, title: string) => (title.trim() === "" ? t("You found out") : t("You found out: {what}", { what: title.trim() })));
-    return linkWords(words).replace(/[*_]/g, "").trim();
+    const plain = linkWords(words).replace(/[*_]/g, "").trim();
+    const next = plain.endsWith(":") ? plainLine(lines.slice(at + 1).join("\n")) : undefined;
+    return next === undefined ? plain : `${plain} ${next}`;
 }
 
 // A fenced block opens on a line of its own, with its language, and closes on a line of its own; one left open runs to the text's end.

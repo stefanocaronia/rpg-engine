@@ -98,7 +98,9 @@ export function LoreTab({ world, version, open, onMap, players = [], kinds = new
                                         <LoreThumb entry={one} />
                                         <span class="browse-words">
                                             <span class="browse-name" id={`lore-name-${part.group}-${index}`}>{one.name}</span>
-                                            <span class="browse-meta" id={`lore-${part.group}-${index}`}>{entryMeta(one, kinds)}</span>
+                                            <span class="browse-meta" id={`lore-${part.group}-${index}`}>
+                                                <MetaLine kind={entryKind(one, kinds)} text={plainLine(one.summary) ?? one.within?.[0]} />
+                                            </span>
                                         </span>
                                     </a>
                                 </li>
@@ -171,7 +173,9 @@ export function DocumentsTab({ world, open, players = [] }: { world: WorldView; 
                                         </span>
                                         <span class="browse-words">
                                             <span class="browse-name" id={`documents-name-${part.key}-${index}`}>{one.name}</span>
-                                            <span class="browse-meta" id={`documents-${part.key}-${index}`}>{[documentLabel(one.document), plainLine(one.text)].filter((part) => part !== undefined).join(" · ")}</span>
+                                            <span class="browse-meta" id={`documents-${part.key}-${index}`}>
+                                                <MetaLine kind={documentLabel(one.document)} text={plainLine(one.text)} />
+                                            </span>
                                         </span>
                                     </a>
                                 </li>
@@ -504,12 +508,11 @@ function entryKind(entry: KnownEntry, kinds: ReadonlyMap<string, string>): strin
     return entry.type === "place" ? kinds.get(entry.name) ?? placeKindLabel(entry.kind) ?? t("Place") : types[entry.type] ?? capitalized(entry.type);
 }
 
-/** A row's line under the name: what the page is, then the opening of its text, or for a place where it is. */
-function entryMeta(entry: KnownEntry, kinds: ReadonlyMap<string, string>): string
+/** A row's meta: what it is in the page's language, then its own words isolated in their direction, as Italian words in an Arabic page. */
+function MetaLine({ kind, text }: { kind: string | undefined; text: string | undefined; })
 {
-    const opening = plainLine(entry.summary);
-    const where = entry.within?.[0];
-    return [entryKind(entry, kinds), opening ?? where].filter((part) => part !== undefined && part !== "").join(" · ");
+    const words = text === undefined || text === "" ? undefined : <bdi>{text}</bdi>;
+    return kind === undefined ? (words ?? null) : <>{kind}{words && <>{" · "}{words}</>}</>;
 }
 
 /** A group of the list in the page's language. */

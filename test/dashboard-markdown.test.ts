@@ -62,6 +62,11 @@ describe("a page's text on the dashboard (D-275)", () => {
         expect(plainLine("```map\nA B\n```\nUn villaggio sul fiume.")).toBe("Un villaggio sul fiume.");
     });
 
+    it("goes on past a line that opens a list with its colon, as a closed card shows it", () => {
+        expect(plainLine("Si cerca:\n\n- un uomo col cappuccio\n- a cavallo")).toBe("Si cerca: un uomo col cappuccio");
+        expect(plainLine("Ricompensa:")).toBe("Ricompensa:");
+    });
+
     it("leaves out a heading with nothing under it, and keeps the one over its sections", () => {
         expect(shown("## Vuota\n## Piena\ntesto")).toBe("<h4>Piena</h4><p>testo</p>");
         expect(shown("## Storia\n### Infanzia\ntesto\n### Vuota")).toBe("<h4>Storia</h4><h5>Infanzia</h5><p>testo</p>");

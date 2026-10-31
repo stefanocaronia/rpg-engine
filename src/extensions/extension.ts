@@ -157,9 +157,13 @@ export function readExtension(folder: string): Extension
 
     const { title, about, language, attribution, needs, calendar, icons, widgets, figures } = declared.data;
 
-    // Its page code is a file of its own, by real paths, links included (D-510).
+    // Its page code is a file of its own, by real paths, links included (D-510); its code too, as the player's yes covers only its own files (T-63).
     if (marker.page !== undefined && !isInside(realPath(folder), realPath(resolve(folder, marker.page)))) {
         throw new Error(`${owner} cannot be used, because its page, ${marker.page}, is not inside its package: name a file of its own, such as dist/page.js.`);
+    }
+
+    if (manifest.data.main !== undefined && !isInside(realPath(folder), realPath(resolve(folder, manifest.data.main)))) {
+        throw new Error(`${owner} cannot be used, because its code, ${manifest.data.main}, is not inside its package: name a file of its own as its main, such as dist/index.js.`);
     }
 
     const adds: SystemAdditions = Object.fromEntries(systemAdditionNames.flatMap((key) => (declared.data[key] === undefined ? [] : [[key, declared.data[key]]])));

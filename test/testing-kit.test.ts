@@ -102,6 +102,22 @@ describe("testCampaign for a game system's own tests", () => {
         expect(shown).toEqual([["Left", "Right"]]);
     });
 
+    it("tells the start of a turn with a die the test gives as without it (T-144)", async () => {
+        campaign = await testCampaign({ system: "fake", systems: [fake] });
+        await campaign.ok("write", "Kira", "--type", "character", "--set", "role=pc");
+        await campaign.ok("write", "Bran", "--type", "character", "--set", "role=companion");
+        await campaign.ok("scene", "open", "--title", "The ford", "--type", "combat", "--with", "Kira", "--with", "Bran");
+        await campaign.ok("scene", "order", "--order", "Kira", "--order", "Bran");
+        await campaign.ok("effect", "add", "Bran", "On fire");
+        const context = campaign.context;
+        campaign.context = { ...context, random: () => 4 };
+        const given = await campaign.ok("scene", "next");
+        campaign.context = context;
+        await campaign.ok("scene", "next");
+        expect(given).toContain("Start of Bran's turn: On fire.");
+        expect(given.split("\n").slice(1)).toEqual((await campaign.ok("scene", "next")).split("\n").slice(1));
+    });
+
     it("gives the core's tools as a host reads them in the campaign, with the examples of its system (D-518)", async () => {
         campaign = await testCampaign({ system: "fake", systems: [fake] });
         const tools = campaign.descriptions();

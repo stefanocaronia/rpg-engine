@@ -17,7 +17,7 @@ import { SessionStore } from "../src/core/session-store.ts";
 import { findExtension, installedExtensions, packageFingerprint, readExtension } from "../src/extensions/index.ts";
 import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { createMcpServer } from "../src/server/mcp.ts";
-import { type GameSystem, systemPageModule } from "../src/systems/index.ts";
+import { type GameSystem, loadSystemCode, systemPageModule } from "../src/systems/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testExtensionFolders } from "./support.ts";
 
 let folder: string;
@@ -709,6 +709,19 @@ describe("a package's code in the dashboard's page (D-510, D-511)", () => {
         mkdirSync(system);
         writeFileSync(join(system, "package.json"), JSON.stringify({ name: "@test/system-trial", version: "0.3.0", "rpg-engine": { kind: "system", page: "../elsewhere/page.js" } }));
         expect(systemPageModule(system)).toBeUndefined();
+        // Its code too: the player's yes covers only its own files (T-63).
+        writeFileSync(manifest, readFileSync(manifest, "utf8").replace('"../../elsewhere/page.js"', '"page/page.js"').replace('"dist/index.js"', '"../other/index.js"'));
+        expect(() => readExtension(join(root, "packs", "charms"))).toThrow(
+            "The extension @rpgengine/charms cannot be used, because its code, ../other/index.js, is not inside its package: name a file of its own as its main, such as dist/index.js.",
+        );
+        const systems = join(root, "systems");
+        mkdirSync(join(systems, "trial"), { recursive: true });
+        writeFileSync(join(systems, "trial", "system.yaml"), "title: a trial system\nlanguage: en\n");
+        writeFileSync(join(systems, "trial", "package.json"), JSON.stringify({ name: "@test/system-trial", version: "0.3.0", main: "../../outside.js", "rpg-engine": { kind: "system", api: 7 } }));
+        expect((await loadSystemCode([systems])).trial).toEqual({
+            refused: "has its code, ../../outside.js, outside its package: name a file of its own as its main, such as dist/index.js",
+            version: "0.3.0",
+        });
 
         await campaign("free", {});
         const page = await served();

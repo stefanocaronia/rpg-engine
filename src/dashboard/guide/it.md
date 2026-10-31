@@ -93,7 +93,7 @@ Il master chiede solo ciò che manca, poche domande alla volta; il passo **Impos
 | **Rigore** | Quanto cibo, luce e viaggi seguono le regole | scorrevole, regole, simulazione |
 | **Dadi** | Chi tira i tuoi dadi | digitali, fisici |
 | **Unità di misura** | Distanze e pesi | metrico, imperiale |
-| **Voci dei personaggi** | Chi dà voce ai personaggi che incontri, dal master ai personaggi: sempre il master; nei momenti chiave il personaggio stesso, che sa solo ciò che sa, quando il master lo sceglie; oppure sempre il personaggio, per i principali o per tutti, più lento e costoso, dove la tua app di AI lo permette | il master, a volte, i principali, tutti |
+| **Voci dei personaggi** | Chi dà voce ai personaggi che incontri, dal master ai personaggi: sempre il master; nei momenti chiave il personaggio stesso, che sa solo ciò che sa, quando il master lo sceglie; oppure sempre il personaggio, per i principali o per tutti, più lento e costoso, dove la tua app di IA lo permette | il master, a volte, i principali, tutti |
 | **Compagni** | Chi viaggia con te | nessuno, creati con te, fatti dal master, incontrati in gioco |
 | **Immagini** | Immagini di luoghi, missioni e di chi incontri | niente, su richiesta, luoghi, missioni e chi incontri ([3.11](#311-pictures)) |
 | **Linee** e **Veli** | Cosa non compare mai, e cosa succede solo fuori scena | elenchi |
@@ -123,7 +123,7 @@ Fuori dalla storia, scrivi tra parentesi quadre: *[Come funziona la lotta?]* Il 
 
 Tu dici cosa tenti; il master dice cosa succede. Il master non decide mai per il tuo personaggio, e non parla mai del motore. Puoi chiedergli come si usa la dashboard.
 
-**Agire dalla dashboard**: clicca un nome della tua scheda, come un'arma, un incantesimo o una cosa che porti, poi su chi; oppure clicca una persona per parlarle. La dashboard scrive la tua frase, *Attacco Brigante incappucciato 1 con Mazza.*, che puoi cambiare prima di **Di' al master**. Il master la sente come detta in chat, e la decide come ogni altra. Dove la tua app di AI non la sente da sola, **Copia** te la prepara da incollare in chat.
+**Agire dalla dashboard**: clicca un nome della tua scheda, come un'arma, un incantesimo o una cosa che porti, poi su chi; oppure clicca una persona per parlarle. La dashboard scrive la tua frase, *Attacco Brigante incappucciato 1 con Mazza.*, che puoi cambiare prima di **Di' al master**. Il master la sente come detta in chat, e la decide come ogni altra. Dove la tua app di IA non la sente da sola, **Copia** te la prepara da incollare in chat.
 
 ### 3.2 I tiri
 

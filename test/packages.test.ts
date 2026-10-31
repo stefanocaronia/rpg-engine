@@ -336,6 +336,10 @@ describe("rpg package list, available, remove and uninstall (D-442)", () => {
         expect(listed.installed.map((one) => [one.name, one.issues])).toEqual([["omens", "https://example.org/omens/bugs"], ["skies", ours]]);
         expect(listed.systems.find((one) => one.name === "free")).toMatchObject({ issues: ours });
         expect(listed.languages).toMatchObject([{ code: "de", issues: "https://github.com/someone/lingua-de/issues" }]);
+        // A system's title in the campaign's language, as its own words give it.
+        await rpg("config", "language", "it");
+        const italian = JSON.parse((await rpg("package", "list", "--json")).output) as { systems: Record<string, unknown>[]; };
+        expect(italian.systems.find((one) => one.name === "free")).toMatchObject({ title: "gioco libero, senza un sistema di gioco" });
     });
 
     it("reads where a package.json sends its problems: bugs first, a GitHub repository however written, never a link but over https", () => {

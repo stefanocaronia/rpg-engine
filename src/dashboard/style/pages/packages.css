@@ -133,6 +133,10 @@
         border-top: 1px solid var(--rule);
     }
 
+    .package-note + .package-add {
+        margin-top: 14px;
+    }
+
     /* The catalog: its heading and search, the chips of the kinds, the rows, then the others on asking. */
     .package-catalog-head {
         display: flex;
@@ -692,6 +696,7 @@
         .package-tile {
             width: 32px;
             height: 32px;
+            align-self: start;
         }
 
         .package-tile svg.icon {

@@ -674,6 +674,53 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(status.output).toMatch(/^Offer the player their dashboard in your first answer, with its link: http:\/\/localhost:4747\. /);
         expect((await runCommandLine(["status"], dashboarded)).output).toContain("Dashboard: http://localhost:4747, the player's sheet, their settings and the dice of the checks you ask, live.");
     });
+
+    it("turns down every hostile body on every write, changing nothing and staying up (T-63)", { timeout: 60_000 }, async () => {
+        // A connection of its own each: one cut short by a body too long is never used again.
+        const send = (path: string, body: string): Promise<{ status: number; body: string; }> =>
+            new Promise((done, fail) => {
+                const headers = { origin: `http://127.0.0.1:${port}`, "content-type": "application/json" };
+                request({ host: "127.0.0.1", port, path, method: "POST", headers, agent: false }, (response) => {
+                    let text = "";
+                    response.setEncoding("utf8");
+                    response.on("data", (chunk: string) => (text += chunk));
+                    response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+                }).on("error", fail).end(body);
+            });
+        const writes = ["act", "add", "answer", "bell", "card", "config", "engine", "export", "library", "notes", "package", "run", "saves", "seen", "setup", "story", "theme", "widget"];
+        const hostile = [
+            "",
+            "not json",
+            "null",
+            "[]",
+            '"text"',
+            "12",
+            '{"__proto__": {"polluted": true}}',
+            '{"constructor": {"prototype": {"polluted": true}}}',
+            `${"[".repeat(5000)}${"]".repeat(5000)}`,
+            JSON.stringify({ text: "x".repeat(200_000) }),
+        ];
+        const before = { log: readFileSync(join(folder, "log.jsonl"), "utf8"), settings: readFileSync(join(folder, "campaign.yaml"), "utf8") };
+
+        const wrong: string[] = [];
+
+        for (const write of writes) {
+            for (const body of hostile) {
+                const answered = await send(`/api/${write}`, body);
+
+                if (answered.status < 400 || answered.status >= 500) {
+                    wrong.push(`${write} ${answered.status} ${body.slice(0, 30)}`);
+                }
+            }
+        }
+
+        expect(wrong).toEqual([]);
+
+        expect((Object.prototype as Record<string, unknown>).polluted).toBeUndefined();
+        expect(readFileSync(join(folder, "log.jsonl"), "utf8")).toBe(before.log);
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(before.settings);
+        expect((await get("/api/view")).status).toBe(200);
+    });
 });
 
 describe("the session's notices (D-193, D-272)", () => {

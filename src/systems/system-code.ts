@@ -113,6 +113,12 @@ export async function loadSystemCode(folders: string[]): Promise<Record<string, 
             continue;
         }
 
+        // Its code is a file of its own, as the player's yes covers only its own files (T-63).
+        if (!isInside(realPath(own), realPath(resolve(own, main)))) {
+            loaded[name] = { refused: `has its code, ${main}, outside its package: name a file of its own as its main, such as dist/index.js`, version };
+            continue;
+        }
+
         // Another's code runs only after the player's yes, for this version and these files (D-478, D-511).
         if (!packageCodeMayRun(own)) {
             loaded[name] = { refused: `is not ours, and the player has not said yes to it as it is installed: install it again with package install, for their yes`, version };
