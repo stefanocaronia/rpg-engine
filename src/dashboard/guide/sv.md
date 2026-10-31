@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -242,7 +242,7 @@ Ett spelsystem är ett paket. Spelledaren installerar ett från npm, en mapp ell
 
 ## 6. Tillägg <!-- icon: plus -->
 
-Inte än. Ett tillägg kommer att lägga till något i en kampanj ovanpå dess spelsystem: en värld, ett äventyr, en funktion som vädret, husregler att dela.
+Ett tillägg lägger till något i en kampanj, ovanpå dess spelsystem: en funktion som vädret, som ändras vid varje gryning, eller att dyrka upp ett lås med tärningar. Lägg till ett under Packages › Add, från listan eller med namnet på npm, en mapp eller en fil. Ett tillägg som inte kommer från oss innehåller kod. Det läggs bara till om du säger ja, i ett fönster på din dator. Ett tillägg som är gjort för ett annat spelsystem säger vilket, och läggs inte till. Under Packages › Installed uppdaterar du ett tillägg eller tar bort det. Spelledaren kan också lägga till ett, när du ber om det.
 
 ---
 
@@ -274,10 +274,10 @@ Varje kommando som spelledaren använder kan också köras i kampanjmappen: `rpg
 
 ## 9. Kommer senare <!-- icon: hourglass -->
 
-- **Du som spelledare**, medan AI:n spelar gruppen.
-- **Författarläge**: skriv ett äventyr med AI:n, exportera det och dela det.
-- **Flera spelare på samma dator**, var och en med sin egen rollperson, som turas om i samma chatt.
-- **Tillägg**: inställningar, äventyr, funktioner och hemregler.
+- **Du som spelledare**, med AI:n som spelar gruppen.
+- **Författarläge**: skriv ett äventyr tillsammans med AI:n, exportera det och dela det.
+- **Flera spelare vid samma dator**, var och en med sin egen rollperson, som turas om i samma chatt.
+- **Fler tillägg**: världar, funktioner och egna regler att dela.
 - **Andra spel**: fler spelsystem, och dina egna.
 
 ---

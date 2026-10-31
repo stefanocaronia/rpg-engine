@@ -35,7 +35,7 @@ import {
 import { CardHead, useMedia } from "../card.tsx";
 import { gameDateLabel, sinceDateLabel } from "../game-words.ts";
 import { Icon, type IconName, iconPath } from "../icons.tsx";
-import { phraseLabel, systemTitleLabel } from "../labels.ts";
+import { phraseLabel, systemNameLabel, systemTitleLabel } from "../labels.ts";
 import { languageName } from "../languages.ts";
 import { PageHead } from "../pages.tsx";
 import { Confirm } from "../saves.tsx";
@@ -1116,7 +1116,7 @@ function CatalogRow(
         entry.language === undefined ? "" : languageName(entry.language, pageLanguage()) ?? entry.language,
         entry.stars === undefined || entry.stars === 0 ? "" : `★ ${entry.stars}`,
         asksYes ? t("has code: asks your yes") : "",
-        entry.kind === "system" && here === "none" && view.system !== null ? t("for a new campaign: this one stays in {system}", { system: view.system.name }) : "",
+        entry.kind === "system" && here === "none" && view.system !== null ? t("for a new campaign: this one stays in {system}", { system: systemNameLabel(view.system.name) }) : "",
     ].filter((fact) => fact !== "");
     const version = entry.update && entry.installed !== undefined && entry.version !== undefined
         ? (
@@ -1172,7 +1172,7 @@ function CatalogRow(
                 ? (
                     <span class="package-here">
                         <Icon name="lock" />
-                        {t("for {system}: this campaign plays {campaign}", { system: entry.system ?? "", campaign: view.system?.name ?? "" })}
+                        {t("for {system}: this campaign plays {campaign}", { system: entry.system ?? "", campaign: view.system === null ? "" : systemNameLabel(view.system.name) })}
                     </span>
                 )
                 : entry.kind === "system" && here === "none"

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
 Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
@@ -242,7 +242,7 @@ A játékrendszer egy csomag: a mesélő npm-ről, mappából vagy fájlból tel
 
 ## 6. Bővítmények <!-- icon: plus -->
 
-Még nem. Egy bővítmény a játékrendszeren felül ad hozzá valamit a kampányhoz: egy világot, egy kalandot, egy olyan funkciót, mint az időjárás, megosztható házszabályokat.
+A bővítmény valami újat ad egy kampányhoz a játékrendszer mellé: például az időjárást, amely minden hajnalban változik, vagy a zárfeltörést kockákkal. Bővítményt a Packages › Add menüpontban adhatsz hozzá: a listából, az npm-en a nevével, egy mappából vagy egy fájlból. Ha egy bővítmény nem tőlünk származik, kódot hoz magával, ezért csak a te igened után kerül be, a számítógéped egyik ablakában. Ha egy bővítményt másik játékrendszerhez készítettek, jelzi, melyikhez, és nem lehet hozzáadni. A Packages › Installed menüpontban frissítheted vagy eltávolíthatod a bővítményeket. A mesélő is hozzáadhat egyet, ha kéred.
 
 ---
 
@@ -272,13 +272,13 @@ A mesélő minden parancsa futtatható a kampánymappában is: az `rpg --help` f
 
 ---
 
-## 9. Hamarosan <!-- icon: hourglass -->
+## 9. Később érkezik <!-- icon: hourglass -->
 
-- **Te mint mesélő**, az MI pedig a csapatot játssza.
-- **Szerzői mód**: írj kalandot az MI-vel, aztán exportáld és oszd meg.
+- **Te lehetsz a mesélő**, az MI pedig a csapatot játssza.
+- **Szerzői mód**: írj kalandot az MI-vel, majd exportáld és told meg másokkal.
 - **Több játékos ugyanazon a számítógépen**, mindenki a saját karakterével, felváltva ugyanabban a csevegésben.
-- **Bővítmények**: beállítások, kalandok, funkciók és házi szabályok.
-- **Más játékok**: további játékrendszerek, és a saját tiéd.
+- **További bővítmények**: megosztható világok, funkciók és házszabályok.
+- **Más játékok**: további játékrendszerek, és a saját játékod.
 
 ---
 

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -242,7 +242,7 @@ Un sistema di gioco è un pacchetto: il master ne installa uno da npm, da una ca
 
 ## 6. Estensioni <!-- icon: plus -->
 
-Non ancora. Un'estensione aggiungerà qualcosa a una campagna oltre al suo sistema di gioco: un mondo, un'avventura, una funzione come il meteo, regole della casa da condividere.
+Un'estensione aggiunge qualcosa a una campagna oltre al suo sistema di gioco: una funzione come il meteo, che cambia a ogni alba, o lo scasso di una serratura coi dadi. Se ne aggiunge una in Pacchetti › Aggiungi, dall'elenco o col suo nome su npm, una cartella o un file; una che non è nostra porta codice, e arriva solo col tuo sì, in una finestra del tuo computer. Una fatta per un altro sistema di gioco dice quale, e non si aggiunge. In Pacchetti › Installati la aggiorni o la togli; può aggiungerne una anche il master, quando glielo chiedi.
 
 ---
 
@@ -277,7 +277,7 @@ Ogni comando che usa il master si può lanciare anche nella cartella della campa
 - **Tu come master**, con l'IA che gioca il gruppo.
 - **Modalità autore**: scrivi un'avventura con l'IA, poi la esporti e la condividi.
 - **Più giocatori sullo stesso computer**, ognuno con il suo personaggio, a turno nella stessa chat.
-- **Estensioni**: ambientazioni, avventure, funzioni e regole della casa.
+- **Altre estensioni**: mondi, funzioni e regole della casa da condividere.
 - **Altri giochi**: altri sistemi di gioco, e il tuo.
 
 ---

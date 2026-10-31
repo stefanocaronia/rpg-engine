@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -242,7 +242,7 @@ Ein Spielsystem ist ein Paket: Die Spielleitung installiert eines aus npm, aus e
 
 ## 6. Erweiterungen <!-- icon: plus -->
 
-Noch nicht. Eine Erweiterung wird einer Kampagne etwas zusätzlich zu ihrem Spielsystem hinzufügen: eine Welt, ein Abenteuer, eine Funktion wie das Wetter, Hausregeln zum Teilen.
+Eine Erweiterung ergänzt eine Kampagne um etwas, das über das Spielsystem hinausgeht: zum Beispiel das Wetter, das sich bei jedem Morgengrauen ändert, oder Schlösserknacken mit Würfeln. Füge eine unter Pakete › Hinzufügen hinzu. Du wählst sie aus der Liste oder gibst ihren Namen auf npm an, einen Ordner oder eine Datei. Eine Erweiterung, die nicht von uns stammt, bringt Code mit. Sie kommt nur mit deinem Ja, in einem Fenster deines Computers. Ist eine Erweiterung für ein anderes Spielsystem gemacht, sagt sie dir, für welches. Dann wird sie nicht hinzugefügt. Unter Pakete › Installiert aktualisierst du eine Erweiterung oder entfernst sie. Die Spielleitung kann auch eine hinzufügen, wenn du sie darum bittest.
 
 ---
 
@@ -272,12 +272,12 @@ Jeden Befehl, den die Spielleitung nutzt, kannst du auch im Kampagnenordner ausf
 
 ---
 
-## 9. Kommt später <!-- icon: hourglass -->
+## 9. Das kommt später <!-- icon: hourglass -->
 
 - **Du als Spielleitung**, während die KI die Gruppe spielt.
 - **Autorenmodus**: Schreibe mit der KI ein Abenteuer, exportiere es und teile es.
-- **Mehrere Spielende am selben Computer**, jeweils mit eigenem Charakter, abwechselnd im selben Chat.
-- **Erweiterungen**: Einstellungen, Abenteuer, Funktionen und Hausregeln.
+- **Mehrere Spielende am selben Computer**, jeweils mit eigenem Charakter, die sich im selben Chat abwechseln.
+- **Mehr Erweiterungen**: Welten, Funktionen und Hausregeln zum Teilen.
 - **Andere Spiele**: mehr Spielsysteme und deine eigenen.
 
 ---

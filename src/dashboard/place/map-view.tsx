@@ -109,7 +109,8 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
 
         const [x] = middle(self);
         const shown = box.scrollWidth / width;
-        box.scrollLeft = Math.max(0, x * shown - box.clientWidth / 2) * (pageDirection() === "rtl" ? -1 : 1);
+        // The frame keeps its squares left to right in every language, so its scroll does too.
+        box.scrollLeft = Math.max(0, x * shown - box.clientWidth / 2);
     }, [map.columns, map.rows, self?.at.column, self?.at.row]);
     const drawn = (
         <>

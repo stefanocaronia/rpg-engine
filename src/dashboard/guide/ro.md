@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -240,9 +240,9 @@ Un sistem de joc este un pachet: maestrul de joc instalează unul din npm, dintr
 
 ---
 
-## 6. Extensii <!-- icon: plus -->
+## 6. Extensiile <!-- icon: plus -->
 
-Încă nu. O extensie va adăuga ceva unei campanii, peste sistemul ei de joc: o lume, o aventură, o funcție precum vremea, reguli de casă de împărțit.
+O extensie adaugă ceva unei campanii, peste sistemul ei de joc: o funcție precum vremea, care se schimbă la fiecare răsărit, sau forțarea unei încuietori cu zaruri. Adaugi o extensie din Packages › Add, alegând din listă sau după numele de pe npm, un folder ori un fișier. Una care nu este a noastră aduce cod și vine doar cu acordul tău, într-o fereastră a computerului. Dacă o extensie este făcută pentru alt sistem de joc, îți spune care, și nu este adăugată. În Packages › Installed poți actualiza o extensie sau o poți scoate. Maestrul de joc poate adăuga și el una, când îi ceri.
 
 ---
 
@@ -272,13 +272,13 @@ Fiecare comandă folosită de maestrul de joc poate fi rulată și în folderul 
 
 ---
 
-## 9. Vine mai târziu <!-- icon: hourglass -->
+## 9. Ce urmează <!-- icon: hourglass -->
 
-- **Tu ca maestru de joc**, cu AI-ul în rolul grupului.
+- **Tu ca maestru de joc**, cu AI-ul jucând grupul.
 - **Modul autor**: scrie o aventură cu AI-ul, apoi exportă-o și împarte-o cu alții.
-- **Mai mulți jucători pe același calculator**, fiecare cu propriul personaj, pe rând în același chat.
-- **Extensii**: setări, aventuri, trăsături și reguli ale casei.
-- **Alte jocuri**: mai multe sisteme de joc și ale tale.
+- **Mai mulți jucători pe același computer**, fiecare cu personajul lui, pe rând în același chat.
+- **Mai multe extensii**: lumi, funcții și reguli ale casei de împărțit cu alții.
+- **Alte jocuri**: mai multe sisteme de joc, și ale tale.
 
 ---
 

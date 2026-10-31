@@ -158,12 +158,12 @@ function MapTab(
         }
     };
 
-    // A place the address names, on its own map, its card open.
+    // A place, a region or a way the address names, on its own map: a place with its card open, a region or a way marked.
     useEffect(() => {
-        const spot = place === undefined ? undefined : map?.places.find((one) => one.name === place && one.x !== undefined);
+        const there = map === undefined || place === undefined ? undefined : mapHolding(map, place);
 
-        if (map !== undefined && spot !== undefined) {
-            goTo(mapNameOf(map, spot), spot.name);
+        if (there !== undefined && place !== undefined) {
+            goTo(there, place);
             // The map in sight, wherever the page was scrolled to in the lore.
             requestAnimationFrame(() => document.querySelector(".map-card")?.scrollIntoView({ block: "start" }));
         }
@@ -187,7 +187,7 @@ function MapTab(
     return (
         <div class="world-map">
             <MapCard key={part.name} map={drawn} full={map} part={part} layout={layout} lead={lead} chosen={chosen} focus={focus} onChoose={choose} onGo={goTo} readMore={readMore} />
-            <PlacesList map={drawn} layout={layout} onChoose={choose} />
+            <PlacesList map={drawn} full={map} layout={layout} onChoose={choose} />
         </div>
     );
 }
@@ -566,7 +566,7 @@ function Drawing(
             {[...edges].map(([region, segments]) => (
                 <path
                     key={region}
-                    class={`region-edge ${biomeLook(layout.regions.find((one) => one.name === region)?.biome)}`}
+                    class={`region-edge ${biomeLook(layout.regions.find((one) => one.name === region)?.biome)}${region === chosen ? " selected" : ""}`}
                     d={segments.map(([from, to]) => `M${X(from.x).toFixed(1)} ${Y(from.y).toFixed(1)}L${X(to.x).toFixed(1)} ${Y(to.y).toFixed(1)}`).join("")}
                     filter="url(#map-ink)"
                 />
@@ -574,6 +574,8 @@ function Drawing(
             <rect class="map-grain" width={width} height={height} filter="url(#map-grain)" />
             {/* Where the party has been: a band under the ways, as a highlighter would mark it. */}
             {trails.map((run, index) => <path key={index} class="trail" d={line(run)} />)}
+            {/* A way chosen, as from the Lore's Show on the map: a band of gold under it. */}
+            {drawn.filter((way) => way.name === chosen).map((way, index) => <path key={index} class="chosen-way" d={line(way.course)} />)}
             {/* The map this one lies under or mirrors, as a ghost under its ways: it shares its coordinates (D-320). */}
             {ghost !== undefined && (
                 <g class="ghost">
@@ -889,7 +891,7 @@ function Key({ map, layout, narrow, trail, passages }: { map: WorldMap; layout: 
 }
 
 /** The map's twin: every place the character knows, nearest the party first, with how far and which way; then the regions and the ways. */
-function PlacesList({ map, layout, onChoose }: { map: WorldMap; layout: MapLayout; onChoose: (name: string) => void; })
+function PlacesList({ map, full, layout, onChoose }: { map: WorldMap; full: WorldMap; layout: MapLayout; onChoose: (name: string) => void; })
 {
     const choose = (name: string): void => {
         onChoose(name);
@@ -916,7 +918,7 @@ function PlacesList({ map, layout, onChoose }: { map: WorldMap; layout: MapLayou
             {(layout.regions.length > 0 || map.roads.length > 0) && <h4 class="eyebrow pc-sub">{t("Regions and ways")}</h4>}
             <ul class="places">
                 {layout.regions.map((region) => <RegionRow key={region.name} region={region} unit={map.unit} />)}
-                {waysListed(map.roads).map((road) => (
+                {waysListed(map.roads, full.roads).map((road) => (
                     <li key={road.name}>
                         <span class="place-row static">
                             <span class="pr-name">{road.name}</span>
@@ -1020,18 +1022,26 @@ function wayLabel(kind: string): string
     return labels[kind] ?? `${kind[0]?.toUpperCase() ?? ""}${kind.slice(1)}`;
 }
 
-/** The ways of a map as its list names them: each once, with its length on the map, its pieces together; a portal, which has none, left out. */
-function waysListed(roads: WorldMap["roads"]): { name: string; kind: string; km: number; }[]
+/**
+ * The ways of a map as its list names them: each once, with its whole length, on this map and the others it leads to, its pieces together; a portal, which
+ * has none, left out.
+ */
+function waysListed(roads: WorldMap["roads"], whole: WorldMap["roads"]): { name: string; kind: string; km: number; }[]
 {
-    const listed = new Map<string, { name: string; kind: string; km: number; }>();
+    const names = [...new Set(roads.filter((road) => road.kind !== "portal").map((road) => road.name))];
+    return names.map((name) => {
+        const pieces = whole.filter((road) => road.name === name);
+        const km = pieces.reduce((sum, road) => sum + road.points.slice(1).reduce((length, point) => length + point.km, 0), 0);
+        return { name, kind: pieces[0]?.kind ?? "other", km };
+    });
+}
 
-    for (const road of roads.filter((one) => one.kind !== "portal")) {
-        const km = road.points.slice(1).reduce((sum, point) => sum + point.km, 0);
-        const before = listed.get(road.name);
-        listed.set(road.name, { name: road.name, kind: road.kind, km: (before?.km ?? 0) + km });
-    }
-
-    return [...listed.values()];
+/** The map that draws a name: a place's or a region's own, the middle of a way's; none for a name it does not draw. */
+function mapHolding(map: WorldMap, name: string): string | undefined
+{
+    const points = map.roads.find((road) => road.name === name)?.points;
+    const point = map.places.find((one) => one.name === name && one.x !== undefined) ?? points?.[Math.floor(points.length / 2)];
+    return point === undefined ? undefined : mapNameOf(map, point);
 }
 
 /** Where the map brings a name chosen: a place, the middle of a region, or the middle of a way; none for a name it does not draw. */

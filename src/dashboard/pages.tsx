@@ -5,7 +5,7 @@ import { sectionLabel } from "./address.ts";
 import { CardHeader } from "./card.tsx";
 import { footLinks } from "./footer.tsx";
 import { Icon, iconPath } from "./icons.tsx";
-import { systemTitleLabel } from "./labels.ts";
+import { systemNameLabel, systemTitleLabel } from "./labels.ts";
 import { t } from "./text.ts";
 
 /** A page's head, out of Party and Scene: its section's icon and its title, both in the accent (D-409). */
@@ -55,7 +55,7 @@ export function About({ product, system }: { product: string; system?: { name: s
                 <details class="group about-card about-system" open>
                     <CardHeader icon={iconPath("dice")} title={<h3>{t("Game system")}</h3>} open onToggle={() => undefined} fixed />
                     <p>
-                        <span class="system-chip">{system.name}</span>
+                        <span class="system-chip">{systemNameLabel(system.name)}</span>
                         {systemTitleLabel(system.title)}
                     </p>
                 </details>
@@ -89,7 +89,7 @@ export function About({ product, system }: { product: string; system?: { name: s
                     <div class="about-licence">
                         <Icon name="dice" />
                         <div>
-                            <h4>{`${t("Credits")} · ${system.name}`}</h4>
+                            <h4>{`${t("Credits")} · ${systemNameLabel(system.name)}`}</h4>
                             <p class="about-credits">{withLinks(system.attribution)}</p>
                         </div>
                     </div>

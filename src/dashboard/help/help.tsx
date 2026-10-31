@@ -7,7 +7,7 @@ import { CardHead, CardHeader } from "../card.tsx";
 import { Icon, type IconName, iconPath, isIconName } from "../icons.tsx";
 import { PageHead } from "../pages.tsx";
 import { pageLanguageOf, t } from "../text.ts";
-import { anchorOf, type Block, markdownBlocks, plainText } from "./blocks.ts";
+import { anchorOf, type Block, markdownBlocks, previewOf } from "./blocks.ts";
 import { Blocks, Inline } from "./markdown.tsx";
 
 /** A part of the guide: its heading, with its icon, and its blocks. */
@@ -100,7 +100,7 @@ export function Help()
                         <CardHeader
                             icon={iconPath(iconOf(part.heading))}
                             title={<h3>{part.heading.text}</h3>}
-                            preview={plainText(part.blocks.find((block) => block.kind === "paragraph")?.text ?? "")}
+                            preview={previewOf(part.blocks)}
                             open={open.has(index)}
                             onToggle={(event) => toggle(index, event)}
                         />

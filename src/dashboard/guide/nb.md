@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den komplette veiledningen
 
 **RPG Engine** lar deg spille et rollespill rundt bordet med en **AI som spilleder**. Du snakker med spillederen i en **chat**. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**. Ved siden av chatten har du en side åpen i nettleseren, **dashbordet**, med karakterarket, terningene, kartene og dagboken din.
@@ -242,7 +242,7 @@ Et spillsystem er en pakke: spilleder installerer en fra npm, en mappe eller en 
 
 ## 6. Utvidelser <!-- icon: plus -->
 
-Ikke ennå. En utvidelse vil legge til noe i en kampanje oppå spillsystemet: en verden, et eventyr, en funksjon som været, husregler å dele.
+En utvidelse legger til noe i en kampanje, oppå spillsystemet: en funksjon som været, som endrer seg hver daggry, eller å dirke opp en lås med terninger. Du legger til en under Packages › Add, fra listen eller med navnet på npm, en mappe eller en fil. En utvidelse som ikke er vår, har med kode, og kommer bare med ditt ja, i et vindu på datamaskinen din. En utvidelse laget for et annet spillsystem sier hvilket, og blir ikke lagt til. Under Packages › Installed oppdaterer du en utvidelse eller fjerner den. Spilleder kan også legge til en, når du ber om det.
 
 ---
 
@@ -274,10 +274,10 @@ Hver kommando spilleder bruker, kan også kjøres i kampanjemappen: `rpg --help`
 
 ## 9. Kommer senere <!-- icon: hourglass -->
 
-- **Du som spilleder**, mens AI-en spiller gruppen.
-- **Forfattermodus**: skriv et eventyr sammen med AI-en, og eksporter og del det.
-- **Flere spillere på samme datamaskin**, hver med sin egen karakter, som bytter på i den samme chatten.
-- **Utvidelser**: innstillinger, eventyr, funksjoner og husregler.
+- **Du som spilleder**, med AI-en som spiller gruppen.
+- **Forfattermodus**: skriv et eventyr sammen med AI-en, eksporter det og del det.
+- **Flere spillere på samme datamaskin**, hver med sin egen karakter, som bytter på å skrive i den samme chatten.
+- **Flere utvidelser**: verdener, funksjoner og husregler å dele.
 - **Andre spill**: flere spillsystemer, og dine egne.
 
 ---

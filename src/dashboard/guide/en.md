@@ -241,7 +241,7 @@ A game system is a package: the master installs one from npm, a folder or a file
 
 ## 6. Extensions <!-- icon: plus -->
 
-Not yet. An extension will add something to a campaign on top of its game system: a world, an adventure, a feature such as the weather, house rules to share.
+An extension adds something to a campaign on top of its game system: a feature such as the weather, which changes at each dawn, or picking a lock with dice. Add one in Packages › Add, from the list or by its name on npm, a folder or a file; one that is not ours brings code, and comes only with your yes, in a window of your computer. One made for another game system says which, and is not added. In Packages › Installed you update one or take it out; the master can add one too, when you ask.
 
 ---
 
@@ -276,7 +276,7 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 - **You as the game master**, with the AI playing the party.
 - **Author mode**: write an adventure with the AI, then export it and share it.
 - **Several players on the same computer**, each with their own character, taking turns in the same chat.
-- **Extensions**: settings, adventures, features and house rules.
+- **More extensions**: worlds, features and house rules to share.
 - **Other games**: more game systems, and your own.
 
 ---

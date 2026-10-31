@@ -71,6 +71,14 @@ export function anchorOf(heading: string): string
     return heading.trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, "").replace(/\s/g, "-");
 }
 
+/** A part's preview: the plain words of its first paragraph or list item, and of the next when it ends in a colon. */
+export function previewOf(blocks: Block[]): string
+{
+    const texts = blocks.flatMap((block) => (block.kind === "paragraph" ? [block.text] : block.kind === "list" ? block.items : [])).map((text) => plainText(text).trim());
+    const [first = "", next] = texts;
+    return first.endsWith(":") && next !== undefined ? `${first} ${next}` : first;
+}
+
 /** A line's text without its marks, as a card's preview says it. */
 export function plainText(text: string): string
 {

@@ -208,6 +208,7 @@ function documentLabel(document: string): string
         notice: t("Notice"),
         page: t("Page"),
         book: t("Book"),
+        tome: t("Book"),
         diary: t("Diary"),
         journal: t("Diary"),
         map: t("Map"),
@@ -215,7 +216,7 @@ function documentLabel(document: string): string
         inscription: t("Inscription"),
     };
     const word = document.trim();
-    // A kind the page has no word for, as a tome or a poster, by the look it shares: a tome is a page, a poster a notice.
+    // A kind the page has no word for, as a poster, by the look it shares: a poster is a notice.
     return labels[word.toLowerCase()] ?? labels[documentLook(word)] ?? capitalized(word);
 }
 

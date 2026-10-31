@@ -1,7 +1,7 @@
 // The page's foot, under a line across the whole page as the head's: our copyright, the code on GitHub and the package on npm, a heart to support the project,
 // and the game system with the credit its source asks for (PLAN, phase 2).
 import { Icon } from "./icons.tsx";
-import { systemTitleLabel } from "./labels.ts";
+import { systemNameLabel, systemTitleLabel } from "./labels.ts";
 import { t } from "./text.ts";
 
 /** Where the project lives, and how to support it. */
@@ -36,7 +36,7 @@ export function PageFoot({ product, system }: { product: string; system?: { name
             </p>
             {system && (
                 <p class="foot-system">
-                    <span>{`${system.name} · ${systemTitleLabel(system.title)}`}</span>
+                    <span>{`${systemNameLabel(system.name)} · ${systemTitleLabel(system.title)}`}</span>
                     {system.attribution && (
                         <details>
                             <summary>{t("Credits")}</summary>

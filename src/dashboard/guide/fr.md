@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
@@ -242,7 +242,7 @@ Un système de jeu est un paquet : le MJ en installe un depuis npm, un dossier o
 
 ## 6. Extensions <!-- icon: plus -->
 
-Pas encore. Une extension ajoutera quelque chose à une campagne, en plus de son système de jeu : un monde, une aventure, une fonction comme la météo, des règles maison à partager.
+Une extension ajoute quelque chose à une campagne, en plus de son système de jeu : une fonctionnalité comme la météo, qui change à chaque aube, ou le crochetage d'une serrure avec des dés. Ajoute-en une dans Packages › Add, depuis la liste ou grâce à son nom sur npm, à un dossier ou à un fichier. Une extension qui n'est pas la nôtre apporte du code, et ne s'installe qu'avec ton accord, dans une fenêtre de ton ordinateur. Une extension conçue pour un autre système de jeu l'indique, et n'est pas ajoutée. Dans Packages › Installed, tu peux mettre à jour une extension ou la retirer. Le MJ peut aussi en ajouter une, quand tu le demandes.
 
 ---
 
@@ -272,13 +272,13 @@ Chaque commande qu'utilise le MJ peut aussi être lancée dans le dossier de la 
 
 ---
 
-## 9. Prochainement <!-- icon: hourglass -->
+## 9. Bientôt disponible <!-- icon: hourglass -->
 
 - **Toi en MJ**, avec l'IA qui joue le groupe.
 - **Mode auteur** : écris une aventure avec l'IA, puis exporte-la et partage-la.
-- **Plusieurs joueurs sur le même ordinateur**, chacun avec son personnage, à tour de rôle dans le même chat.
-- **Extensions** : réglages, aventures, fonctionnalités et règles maison.
-- **D'autres jeux** : plus de systèmes de jeu, et les tiens.
+- **Plusieurs joueurs sur le même ordinateur**, chacun avec son personnage, qui jouent à tour de rôle dans le même chat.
+- **Plus d'extensions** : des mondes, des fonctionnalités et des règles maison à partager.
+- **D'autres jeux** : davantage de systèmes de jeu, et les tiens.
 
 ---
 

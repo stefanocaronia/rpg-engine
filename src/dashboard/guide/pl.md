@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -242,7 +242,7 @@ System gry to pakiet: Mistrz Gry instaluje go z npm, z folderu lub z pliku, a pa
 
 ## 6. Rozszerzenia <!-- icon: plus -->
 
-Jeszcze nie. Rozszerzenie doda coś do kampanii na wierzchu jej systemu gry: świat, przygodę, funkcję taką jak pogoda, zasady domowe do udostępniania.
+Rozszerzenie dodaje do kampanii coś ekstra, ponad system gry: na przykład pogodę, która zmienia się z każdym świtem, albo otwieranie zamków za pomocą kości. Dodasz je w Packages › Add: z listy albo przez nazwę w npm, folder lub plik. Rozszerzenie spoza naszej oferty zawiera kod, więc działa tylko za Twoją zgodą, w oknie na Twoim komputerze. Rozszerzenie stworzone dla innego systemu gry informuje o tym i nie zostanie dodane. W Packages › Installed aktualizujesz rozszerzenia lub je usuwasz. Mistrz Gry też może dodać rozszerzenie, gdy o to poprosisz.
 
 ---
 
@@ -272,13 +272,13 @@ Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze 
 
 ---
 
-## 9. Wkrótce <!-- icon: hourglass -->
+## 9. Plany na przyszłość <!-- icon: hourglass -->
 
 - **Ty jako Mistrz Gry**, a AI gra drużyną.
-- **Tryb autora**: napisz przygodę z AI, a potem wyeksportuj ją i udostępnij.
-- **Kilku graczy na jednym komputerze**, każdy z własną postacią, na zmianę w tym samym czacie.
-- **Rozszerzenia**: ustawienia, przygody, funkcje i zasady domowe.
-- **Inne gry**: więcej systemów gry i własne.
+- **Tryb autora**: piszesz przygodę z AI, a potem ją eksportujesz i udostępniasz.
+- **Kilka osób na jednym komputerze**, każda z własną postacią, na zmianę w tym samym czacie.
+- **Więcej rozszerzeń**: światy, funkcje i zasady domowe do udostępniania.
+- **Inne gry**: kolejne systemy gier i własne.
 
 ---
 

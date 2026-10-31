@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -242,7 +242,7 @@ Leikjakerfi er pakki: sögumaður setur hann upp úr npm, möppu eða skrá, og 
 
 ## 6. Viðbætur <!-- icon: plus -->
 
-Ekki enn. Viðbót mun bæta einhverju við herferð ofan á leikjakerfið hennar: heimi, ævintýri, eiginleika eins og veðri, húsreglum til að deila.
+Viðbót bætir einhverju við herferð ofan á leikjakerfið hennar: eiginleika eins og veðrið, sem breytist við hverja dögun, eða það að opna lás með teningum. Þú bætir viðbót við í Packages › Add, annaðhvort af listanum eða með nafni hennar á npm, úr möppu eða úr skrá. Viðbót frá öðrum en okkur inniheldur kóða og bætist aðeins við með þínu samþykki, í glugga í tölvunni þinni. Ef viðbót er gerð fyrir annað leikjakerfi, segir hún til um það og er ekki bætt við. Í Packages › Installed uppfærir þú viðbót eða fjarlægir hana. Sögumaðurinn getur líka bætt við viðbót ef þú biður um það.
 
 ---
 
@@ -272,13 +272,13 @@ Sérhverja skipun sem sögumaðurinn notar er líka hægt að keyra í herferða
 
 ---
 
-## 9. Væntanlegt síðar <!-- icon: hourglass -->
+## 9. Væntanlegt <!-- icon: hourglass -->
 
 - **Þú sem sögumaður**, með gervigreindina í hlutverki hópsins.
-- **Höfundarhamur**: skrifaðu ævintýri með gervigreindinni, fluttu það svo út og deildu því.
-- **Margir spilarar á sömu tölvu**, hver með sína persónu, til skiptis í sama spjalli.
-- **Viðbætur**: stillingar, ævintýri, eiginleikar og húsreglur.
-- **Aðrir leikir**: fleiri leikjakerfi og þín eigin.
+- **Höfundahamur**: skrifaðu ævintýri með gervigreindinni, fluttu það síðan út og deildu því.
+- **Margir spilarar í sömu tölvu**, hver með sína persónu, sem skiptast á í sama spjalli.
+- **Fleiri viðbætur**: heimar, eiginleikar og húsreglur til að deila.
+- **Aðrir leikir**: fleiri leikjakerfi, og þín eigin.
 
 ---
 

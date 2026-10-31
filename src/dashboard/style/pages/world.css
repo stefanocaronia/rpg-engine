@@ -270,6 +270,13 @@
         stroke: #2f5b80;
     }
 
+    /* A region chosen, as from the Lore's Show on the map: its ink in gold. */
+    .region-edge.selected {
+        stroke: var(--gold);
+        stroke-width: 3.5;
+        stroke-opacity: 1;
+    }
+
     /* The paper aged at its edges. */
     .map-age {
         pointer-events: none;
@@ -343,6 +350,15 @@
         stroke: var(--m-trail);
         stroke-opacity: 0.32;
         stroke-width: 9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .chosen-way {
+        fill: none;
+        stroke: var(--gold);
+        stroke-opacity: 0.6;
+        stroke-width: 10;
         stroke-linecap: round;
         stroke-linejoin: round;
     }

@@ -103,15 +103,7 @@ export type NoteChange = { id: string; title: string; text: string; } | { remove
 /** The player's notes, the last written first (D-371), and those shared that the master has not heard yet, which may be taken back (D-381). */
 export async function readNotes(): Promise<{ notes: Note[]; pending: string[]; }>
 {
-    const response = await fetch("/api/notes");
-    const body = await response.json().catch(() => ({ error: t("The notes did not come ({status}): reload the page.", { status: response.status }) })) as { notes: Note[]; pending?: string[]; } | {
-        error: string;
-    };
-
-    if ("error" in body) {
-        throw new Error(body.error);
-    }
-
+    const body = await readJson<{ notes: Note[]; pending?: string[]; }>("/api/notes");
     return { notes: body.notes, pending: body.pending ?? [] };
 }
 

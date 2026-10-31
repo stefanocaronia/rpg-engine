@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { anchorOf, markdownBlocks, plainText } from "../src/dashboard/help/blocks.ts";
+import { anchorOf, markdownBlocks, plainText, previewOf } from "../src/dashboard/help/blocks.ts";
 import { shippedLanguages } from "../src/dashboard/text.ts";
 import { englishGuide, guideIn, guideParts, guideShape, marksOf, partMarks } from "./i18n/guide.ts";
 
@@ -47,6 +47,12 @@ describe("the guide's markdown (D-413)", () => {
         expect(anchorOf("2.4 Connect your AI")).toBe("24-connect-your-ai");
         expect(anchorOf("8. For the curious: the campaign folder")).toBe("8-for-the-curious-the-campaign-folder");
         expect(plainText("Install **Node.js** from [nodejs.org](https://nodejs.org), then `rpg --version`.")).toBe("Install Node.js from nodejs.org, then rpg --version.");
+    });
+
+    it("previews a part by its first words, going on past a colon, and from a list when it starts with one", () => {
+        expect(previewOf(markdownBlocks("Say it in your own words:\n\n- *I open the door.*\n- I wait."))).toBe("Say it in your own words: I open the door.");
+        expect(previewOf(markdownBlocks("- Maps drawn by hand.\n- More voices."))).toBe("Maps drawn by hand.");
+        expect(previewOf(markdownBlocks("| a |\n|---|\n| b |"))).toBe("");
     });
 });
 

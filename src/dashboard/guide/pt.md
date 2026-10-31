@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -242,7 +242,7 @@ Um sistema de jogo é um pacote: o mestre instala um a partir do npm, de uma pas
 
 ## 6. Extensões <!-- icon: plus -->
 
-Ainda não. Uma extensão vai acrescentar algo a uma campanha além do sistema de jogo: um mundo, uma aventura, um recurso como o clima, regras da casa para compartilhar.
+Uma extensão acrescenta algo a uma campanha, além do sistema de jogo: um recurso como o clima, que muda a cada amanhecer, ou arrombar uma fechadura com dados. Para adicionar uma, vá em Packages › Add. Você pode escolher na lista ou informar o nome no npm, uma pasta ou um arquivo. Uma extensão que não é nossa traz código e só entra com o seu sim, em uma janela do seu computador. Uma extensão feita para outro sistema de jogo avisa qual é e não é adicionada. Em Packages › Installed, você atualiza ou remove uma extensão. O mestre também pode adicionar uma, quando você pedir.
 
 ---
 
@@ -274,10 +274,10 @@ Todo comando que o mestre usa também pode ser executado na pasta da campanha: `
 
 ## 9. Em breve <!-- icon: hourglass -->
 
-- **Você como mestre**, com a IA jogando o grupo.
+- **Você como mestre**, com a IA jogando como o grupo.
 - **Modo autor**: escreva uma aventura com a IA, depois exporte e compartilhe.
-- **Vários jogadores no mesmo computador**, cada um com seu personagem, alternando a vez no mesmo chat.
-- **Extensões**: configurações, aventuras, recursos e regras da casa.
+- **Vários jogadores no mesmo computador**, cada um com seu próprio personagem, alternando as vezes no mesmo chat.
+- **Mais extensões**: mundos, recursos e regras da casa para compartilhar.
 - **Outros jogos**: mais sistemas de jogo, e os seus próprios.
 
 ---

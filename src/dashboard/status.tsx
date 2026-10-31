@@ -7,7 +7,7 @@ import { statusIcons } from "./icons.tsx";
 import { textOf } from "./packages/widgets.tsx";
 import { saysState } from "./person-panel.tsx";
 import { conditionsPref, useChoice } from "./prefs.ts";
-import { listText, t } from "./text.ts";
+import { t } from "./text.ts";
 
 /** What a token's pip reads of someone: what is on them, whether they act, are at 0 or dead. */
 export interface TokenStatus
@@ -167,8 +167,8 @@ export function StatusIcons({ status, said = [] }: { status: TokenStatus; said?:
 }
 
 /**
- * The marks with the effects that have no drawing of their own gathered into one, its number beside it and their names in its tooltip: two alike sparks
- * tell nothing apart (Torch, Bless as ✦ 2); a condition or an effect with its own drawing stays alone.
+ * The marks with the effects that have no drawing of their own gathered into one, its number beside it and their names in its tooltip, a line each, with its
+ * own end: two alike sparks tell nothing apart (Torch, Bless as ✦ 2); a condition or an effect with its own drawing stays alone.
  */
 function gatheredMarks(marks: StatusMark[]): (StatusMark & { count?: number; })[]
 {
@@ -178,7 +178,7 @@ function gatheredMarks(marks: StatusMark[]): (StatusMark & { count?: number; })[
         return marks;
     }
 
-    const gathered = { ...plain[0], label: listText(plain.map((mark) => mark.label)), count: plain.length };
+    const gathered = { ...plain[0], label: plain.map((mark) => mark.label).join("\n"), count: plain.length };
     return [...marks.filter((mark) => !plain.includes(mark)), gathered];
 }
 

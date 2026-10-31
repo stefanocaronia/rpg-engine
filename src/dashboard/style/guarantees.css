@@ -146,7 +146,8 @@
         outline-offset: 1px !important;
     }
 
-    /* A control without words says its name when hovered, after a moment, or reached by the keyboard; never at a touch, where it would stay lit. */
+    /* A control without words says its name when hovered, after a moment, or reached by the keyboard; never at a touch, where it would stay lit. A name of
+       several things, as a gathered spark's, has a line for each. */
     [data-tip]::before {
         content: attr(data-tip) !important;
         position: absolute !important;
@@ -160,7 +161,7 @@
         font: 400 0.8rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif !important;
         letter-spacing: 0 !important;
         text-transform: none !important;
-        white-space: nowrap !important;
+        white-space: pre !important;
         opacity: 0 !important;
         translate: -50% 4px !important;
         pointer-events: none !important;

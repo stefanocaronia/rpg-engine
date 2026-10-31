@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
@@ -242,7 +242,7 @@ Oyun sistemi bir pakettir. Oyun yöneticisi onu npm'den, bir klasörden ya da bi
 
 ## 6. Eklentiler <!-- icon: plus -->
 
-Henüz değil. Bir eklenti, oyun sisteminin üstüne kampanyaya bir şey ekleyecek: bir dünya, bir macera, hava durumu gibi bir özellik, paylaşılacak ev kuralları.
+Eklenti, bir kampanyaya oyun sisteminin üstüne yeni bir şey katar. Örneğin her şafakta değişen hava durumu ya da zarlarla kilit açma gibi bir özellik olabilir. Eklentiyi Paketler › Ekle bölümünden eklersin. Listeden seçebilir, npm üzerindeki adını yazabilir, bir klasör ya da dosya gösterebilirsin. Bizim yapmadığımız bir eklenti kod getirir. Bu yüzden yalnızca senin onayınla, bilgisayarında açılan bir pencerede eklenir. Başka bir oyun sistemi için yapılmış eklenti hangi sistem için olduğunu söyler ve eklenmez. Paketler › Yüklü bölümünde bir eklentiyi güncelleyebilir ya da kaldırabilirsin. İstersen oyun yöneticisi de bir eklenti ekleyebilir.
 
 ---
 
@@ -272,13 +272,13 @@ Oyun yöneticisinin kullandığı her komut kampanya klasöründe de çalıştı
 
 ---
 
-## 9. Daha sonra gelecekler <!-- icon: hourglass -->
+## 9. Yakında <!-- icon: hourglass -->
 
-- **Oyun yöneticisi olarak sen**, grubu ise yapay zekâ oynar.
-- **Yazar modu**: yapay zekâyla bir macera yaz, sonra dışa aktar ve paylaş.
-- **Aynı bilgisayarda birkaç oyuncu**: her biri kendi karakteriyle, aynı sohbette sırayla oynar.
-- **Eklentiler**: ayarlar, maceralar, özellikler ve ev kuralları.
-- **Başka oyunlar**: daha fazla oyun sistemi ve kendi sistemin.
+- **Oyun yöneticisi sen olursun**, grubu yapay zekâ oynar.
+- **Yazar modu**: Yapay zekâyla bir macera yaz, sonra dışa aktar ve paylaş.
+- **Aynı bilgisayarda birden fazla oyuncu**: Her oyuncunun kendi karakteri olur ve hepsi aynı sohbette sırayla oynar.
+- **Daha fazla eklenti**: Paylaşabileceğin dünyalar, özellikler ve ev kuralları.
+- **Başka oyunlar**: Daha fazla oyun sistemi ve kendi oyun sistemin.
 
 ---
 

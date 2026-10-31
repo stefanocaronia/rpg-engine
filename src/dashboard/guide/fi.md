@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -242,7 +242,7 @@ Pelijärjestelmä on paketti: pelinjohtaja asentaa sen npm:stä, kansiosta tai t
 
 ## 6. Laajennukset <!-- icon: plus -->
 
-Ei vielä. Laajennus lisää kampanjaan jotakin pelijärjestelmän päälle: maailman, seikkailun, ominaisuuden kuten sään tai jaettavia kotisääntöjä.
+Laajennus lisää kampanjaan jotakin pelijärjestelmän päälle: esimerkiksi sään, joka muuttuu joka aamunkoitteessa, tai lukon tiputtelun nopilla. Lisää laajennus kohdassa Packages › Add: valitse se listasta tai anna sen nimi npm:ssä, kansio tai tiedosto. Laajennus, joka ei ole meidän tekemämme, tuo mukanaan koodia. Se tulee mukaan vain sinun suostumuksellasi, tietokoneesi ikkunassa. Jos laajennus on tehty toiselle pelijärjestelmälle, se kertoo sen, eikä sitä lisätä. Kohdassa Packages › Installed voit päivittää laajennuksen tai poistaa sen. Pelinjohtaja voi myös lisätä laajennuksen, kun pyydät.
 
 ---
 
@@ -276,9 +276,9 @@ Kaikki pelinjohtajan käyttämät komennot voi ajaa myös kampanjakansiossa: `rp
 
 - **Sinä pelinjohtajana**, ja tekoäly pelaa seuruetta.
 - **Tekijätila**: kirjoita seikkailu tekoälyn kanssa, vie se ja jaa se.
-- **Useita pelaajia samalla tietokoneella**, jokaisella oma hahmo, vuorotellen samassa chatissa.
-- **Laajennukset**: asetuksia, seikkailuja, ominaisuuksia ja kotisääntöjä.
-- **Muut pelit**: lisää pelijärjestelmiä ja omat järjestelmäsi.
+- **Useita pelaajia samalla tietokoneella**, jokaisella oma hahmo, vuorotellen samassa keskustelussa.
+- **Lisää laajennuksia**: maailmoja, ominaisuuksia ja kotisääntöjä jaettavaksi.
+- **Muita pelejä**: lisää pelijärjestelmiä ja omia pelejä.
 
 ---
 

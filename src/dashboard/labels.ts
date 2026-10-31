@@ -215,7 +215,7 @@ export function realTimeLabel(at: string, now = new Date()): { short: string; fu
     const day = daysAgo === undefined
         ? new Intl.DateTimeFormat(language, { month: "short", day: "numeric", ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }) }).format(date)
         : new Intl.RelativeTimeFormat(language, { numeric: "auto" }).format(daysAgo, "day");
-    return { short: `${day}, ${time}`, full: new Intl.DateTimeFormat(language, { dateStyle: "full", timeStyle: "short" }).format(date) };
+    return { short: t("{day}, {time}", { day, time }), full: new Intl.DateTimeFormat(language, { dateStyle: "full", timeStyle: "short" }).format(date) };
 }
 
 /** The name the page writes for someone the character does not know (D-331): Creature B2 for "creature B2", Someone for "someone", in the page's language. */

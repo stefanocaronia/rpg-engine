@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -242,7 +242,7 @@ Un sistema de juego es un paquete: el máster instala uno desde npm, una carpeta
 
 ## 6. Extensiones <!-- icon: plus -->
 
-Todavía no. Una extensión añadirá algo a una campaña además de su sistema de juego: un mundo, una aventura, una función como el clima, reglas de la casa para compartir.
+Una extensión añade algo a una campaña, además de su sistema de juego: una función como el clima, que cambia en cada amanecer, o forzar una cerradura con dados. Añade una en Paquetes › Añadir, desde la lista o por su nombre en npm, una carpeta o un archivo. Una extensión que no es nuestra trae código y solo se añade con tu sí, en una ventana de tu equipo. Si una extensión está hecha para otro sistema de juego, lo indica y no se añade. En Paquetes › Instalados puedes actualizar una extensión o quitarla. El máster también puede añadir una, cuando se lo pidas.
 
 ---
 
@@ -275,10 +275,10 @@ Todos los comandos que usa el máster se pueden ejecutar también en la carpeta 
 ## 9. Próximamente <!-- icon: hourglass -->
 
 - **Tú como máster**, con la IA jugando el grupo.
-- **Modo autor**: escribe una aventura con la IA, luego expórtala y compártela.
-- **Varias personas en el mismo equipo**, cada una con su propio personaje, por turnos en el mismo chat.
-- **Extensiones**: ajustes, aventuras, funciones y reglas de la casa.
-- **Otros juegos**: más sistemas de juego, y los tuyos.
+- **Modo autor**: escribe una aventura con la IA, y luego expórtala y compártela.
+- **Varias personas jugando en el mismo equipo**, cada una con su propio personaje, por turnos en el mismo chat.
+- **Más extensiones**: mundos, funciones y reglas de la casa para compartir.
+- **Otros juegos**: más sistemas de juego, y los tuyos propios.
 
 ---
 

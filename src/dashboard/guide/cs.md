@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -242,7 +242,7 @@ Herní systém je balíček: Pán jeskyně nainstaluje jeden z npm, ze složky n
 
 ## 6. Rozšíření <!-- icon: plus -->
 
-Zatím ne. Rozšíření přidá ke kampani něco navíc nad její herní systém: svět, dobrodružství, funkci, třeba počasí, nebo vlastní pravidla ke sdílení.
+Rozšíření přidá do kampaně něco navíc k jejímu hernímu systému: například počasí, které se mění každý úsvit, nebo páčení zámků kostkami. Přidáš ho v Packages › Add, buď ze seznamu, nebo podle názvu na npm, ze složky či ze souboru. Rozšíření, které nepochází od nás, obsahuje kód. Přidá se proto až s tvým souhlasem v okně tvého počítače. Rozšíření vytvořené pro jiný herní systém to oznámí a nepřidá se. V Packages › Installed rozšíření aktualizuješ nebo odebereš. Pán jeskyně může rozšíření přidat také, když o to požádáš.
 
 ---
 
@@ -272,13 +272,13 @@ Každý příkaz, který Pán jeskyně používá, lze spustit i ve složce kamp
 
 ---
 
-## 9. Připravujeme <!-- icon: hourglass -->
+## 9. Co přijde později <!-- icon: hourglass -->
 
-- **Ty jako Pán jeskyně**, zatímco AI hraje družinu.
-- **Režim autora**: napiš dobrodružství s AI, pak ho exportuj a sdílej.
+- **Ty jako Pán jeskyně**, zatímco družinu bude hrát AI.
+- **Režim autora**: napiš s AI dobrodružství, pak ho exportuj a sdílej.
 - **Více hráčů na jednom počítači**, každý s vlastní postavou, střídající se ve stejném chatu.
-- **Rozšíření**: nastavení, dobrodružství, vlastnosti a vlastní pravidla.
-- **Jiné hry**: další herní systémy i tvé vlastní.
+- **Další rozšíření**: světy, funkce a domácí pravidla ke sdílení.
+- **Další hry**: více herních systémů i tvoje vlastní.
 
 ---
 

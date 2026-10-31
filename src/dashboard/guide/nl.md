@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 8c9f41da 17577253 f699a840 241f6611 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -242,7 +242,7 @@ Een spelsysteem is een pakket: de spelleider installeert er een uit npm, een map
 
 ## 6. Extensies <!-- icon: plus -->
 
-Nog niet. Een extensie voegt iets toe aan een campagne, bovenop het spelsysteem: een wereld, een avontuur, een functie zoals het weer, huisregels om te delen.
+Een extensie voegt iets toe aan een campagne, bovenop het spelsysteem: een functie zoals het weer, dat bij elke dageraad verandert, of een slot openbreken met dobbelstenen. Voeg een extensie toe via Packages › Add, uit de lijst of met de naam op npm, een map of een bestand. Een extensie van een ander bevat code en komt er alleen met jouw ja, in een venster van je computer. Een extensie die voor een ander spelsysteem is gemaakt, geeft aan voor welk systeem, en wordt niet toegevoegd. Via Packages › Installed werk je een extensie bij of haal je die weg. De spelleider kan ook een extensie toevoegen, als jij erom vraagt.
 
 ---
 
@@ -272,13 +272,13 @@ Elke opdracht die de spelleider gebruikt, kun je ook in de campagnemap uitvoeren
 
 ---
 
-## 9. Komt later <!-- icon: hourglass -->
+## 9. Binnenkort <!-- icon: hourglass -->
 
-- **Jij als spelleider**, met de AI als de groep.
+- **Jij als spelleider**, met de AI die de groep speelt.
 - **Auteursmodus**: schrijf een avontuur met de AI, exporteer het en deel het.
-- **Meerdere spelers op dezelfde computer**, elk met een eigen personage, om de beurt in dezelfde chat.
-- **Extensies**: instellingen, avonturen, functies en huisregels.
-- **Andere spellen**: meer spelsystemen, en je eigen.
+- **Meerdere spelers op dezelfde computer**, elk met een eigen personage, die om de beurt in dezelfde chat spelen.
+- **Meer extensies**: werelden, functies en huisregels om te delen.
+- **Andere spellen**: meer spelsystemen, en je eigen systeem.
 
 ---
 
