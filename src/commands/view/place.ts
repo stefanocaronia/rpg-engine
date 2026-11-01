@@ -7,7 +7,7 @@ import { readCounter } from "../../counters/index.ts";
 import type { Effect, EffectEnd } from "../../effects/index.ts";
 import { type Grid, reachable, type Square, squareName, squaresApart, withoutMapBlock } from "../../grid/index.ts";
 import { hiddenImageName } from "../../images/index.ts";
-import { environmentAt, isPlayerCharacter, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, placesAround, type World } from "../../pages/index.ts";
+import { environmentAt, isPlayerCharacter, links, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, placesAround, type World } from "../../pages/index.ts";
 import type { Scene } from "../../scene/index.ts";
 import type { GameSystem, GridRules } from "../../systems/index.ts";
 import { effectsOf } from "../shared/effect-layer.ts";
@@ -15,7 +15,7 @@ import { conditionMark, effectParts, keptEffects, type SeenEffect, systemNamed }
 import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "../shared/grid-moves.ts";
 import { placeGrid, placeLook, type Standing, standing } from "../shared/grids.ts";
 import { imageFile, ownImage, shownImage } from "../shared/images.ts";
-import { type Knowledge, knownSecretsApart, knownText, knowsPage } from "../shared/knowledge.ts";
+import { inKnownWords, type Knowledge, knownSecretsApart, knownText, knowsPage, readsLink } from "../shared/knowledge.ts";
 import { pageCounters } from "../shared/page-counters.ts";
 import { type Measures, measuresOf } from "../shared/roads.ts";
 import { copyPage, readOpenScene } from "../shared/scene.ts";
@@ -157,7 +157,8 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
     const known = (holder: Page): string | undefined => (knowsPage(knowledge, holder) ? holder.name : undefined);
     const placed = (holder: Page): { place?: string; } => (known(holder) === undefined ? {} : { place: holder.name });
     const around = [
-        ...environmentAt(world, place).map(({ entry, place: holder }) => ({ name: entry.name, value: entry.value, ...placed(holder) })),
+        ...environmentAt(world, place).filter(({ entry }) => !pointsToUnread(sight, entry.value))
+            .map(({ entry, place: holder }) => ({ name: entry.name, value: inKnownWords(world, knowledge, entry.value), ...placed(holder) })),
         ...placesAround(world, place).flatMap((holder) => effectsOf(holder).map((effect) => ({ effect: effect.name, ...(effect.end === undefined ? {} : { end: effect.end }), ...placed(holder) }))),
     ];
     const present = world.pages.filter((page) =>
@@ -532,6 +533,13 @@ function partyRole(sight: PlaceSight, page: Page): "pc" | "companion" | "other"
 function partyFirst(sight: PlaceSight): Page[]
 {
     return [...sight.party.filter((page) => page === sight.knowledge.pc), ...sight.party.filter((page) => page !== sight.knowledge.pc)];
+}
+
+/** Whether an entry of the environment is only a link to a section or secret the character cannot read, as the master's encounter table: it tells the player nothing. */
+function pointsToUnread(sight: PlaceSight, value: string): boolean
+{
+    const pointed = links(value);
+    return /^\[\[[^\]]*\]\]$/.test(value.trim()) && pointed.length === 1 && pointed[0].section !== undefined && !readsLink(sight.world, sight.knowledge, pointed[0]);
 }
 
 /** Someone the character knows, with their picture and their role. */

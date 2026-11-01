@@ -143,6 +143,26 @@ export function knownText(world: World, knowledge: Knowledge, page: Page): strin
     return inKnownWords(world, knowledge, withoutComments([knownIntroduction(world, knowledge, page), ...parts.map((part) => part.text)].filter((text) => text !== "").join("\n\n")));
 }
 
+/**
+ * A text as the character may read it (VIEW-3): a link to a page it does not know, or to none, written as its words, so that no name tells the page exists; a link
+ * to a secret it has not discovered too, so that the secret's name tells nothing, and to a section that tells it nothing but its title, as one over a secret; a
+ * secret written so that the engine does not read it as one, left out.
+ */
+export function inKnownWords(world: World, knowledge: Knowledge, text: string): string
+{
+    return withLinksAsWords(withoutUnreadSecrets(text), (link) => readsLink(world, knowledge, link));
+}
+
+/** Whether the character may read where a link points (VIEW-3): a page it knows, and of it a secret it discovered or a section that tells it more than its title. */
+export function readsLink(world: World, knowledge: Knowledge, link: Link): boolean
+{
+    const known = [...pagesWithNameOrAlias(world, link.page), systemPageNamed(world, link.page)].filter((page): page is Page => page !== undefined && knowsPage(knowledge, page));
+    const wanted = comparableText(link.section ?? "");
+    const secrets = wanted === "" ? [] : known.flatMap((page) => secretNames(page.body).filter((name) => comparableText(name) === wanted).map((name) => secretKey(page.name, name)));
+    const empty = wanted !== "" && secrets.length === 0 && known.length > 0 && known.every((page) => saysNothing(world, knowledge, page, link.section ?? ""));
+    return known.length > 0 && !empty && (secrets.length === 0 || secrets.some((key) => knowledge.secrets.has(key)));
+}
+
 /** The secrets a page's text shows (VIEW-3) that only some of the player characters discovered, when more than one is played, each by its name and with who (VIEW-12). */
 export function knownSecretsApart(world: World, knowledge: Knowledge, page: Page): { secret: string; who: string[]; }[]
 {
@@ -197,25 +217,8 @@ export function playerStory(page: Page): string
  */
 export function knownPart(world: World, knowledge: Knowledge, page: Page, name: string): string | undefined
 {
-    const wanted = comparableText(name.trim());
-
-    for (const holder of [page, ...baseChain(world, page)]) {
-        const part = partsOf(holder).find((candidate) => comparableText(candidate.name) === wanted);
-
-        if (part === undefined) {
-            continue;
-        }
-
-        if (!isShown(knowledge, page, part)) {
-            return undefined;
-        }
-
-        const whole = isSecretText(part.text) ? part.text : (readSection(holder.body, part.name) ?? part.text);
-        const kept = isSecretText(part.text) ? [part] : partsOf({ ...holder, body: whole }).map((inner) => ({ ...inner, holder })).filter((inner) => isShown(knowledge, page, inner));
-        return inKnownWords(world, knowledge, withoutComments(kept.map((inner) => inner.text).join("\n\n")));
-    }
-
-    return undefined;
+    const kept = knownParts(world, knowledge, page, name);
+    return kept === undefined ? undefined : inKnownWords(world, knowledge, withoutComments(kept.map((inner) => inner.text).join("\n\n")));
 }
 
 /** Whether a page's own text, not its bases', tells the character something: its introduction, or a section or secret of it the character may read (VIEW-3). */
@@ -286,18 +289,36 @@ function foregroundCharacter(root: string, world: World, wanted?: string): Page 
     return living.find((page) => named(page, scene?.turn)) ?? living.find((page) => (scene?.with ?? []).some((link) => named(page, link))) ?? living[0] ?? players[0];
 }
 
-/**
- * A text as the character may read it (VIEW-3): a link to a page it does not know, or to none, written as its words, so that no name tells the page exists; a link
- * to a secret it has not discovered too, so that the secret's name tells nothing; a secret written so that the engine does not read it as one, left out.
- */
-function inKnownWords(world: World, knowledge: Knowledge, text: string): string
+/** The parts of a page's section or secret by this name that the character may read, as knownPart gives them; undefined when it knows none. */
+function knownParts(world: World, knowledge: Knowledge, page: Page, name: string): { name: string; text: string; holder: Page; }[] | undefined
 {
-    return withLinksAsWords(withoutUnreadSecrets(text), (link) => {
-        const known = [...pagesWithNameOrAlias(world, link.page), systemPageNamed(world, link.page)].filter((page): page is Page => page !== undefined && knowsPage(knowledge, page));
-        const wanted = comparableText(link.section ?? "");
-        const secrets = wanted === "" ? [] : known.flatMap((page) => secretNames(page.body).filter((name) => comparableText(name) === wanted).map((name) => secretKey(page.name, name)));
-        return known.length > 0 && (secrets.length === 0 || secrets.some((key) => knowledge.secrets.has(key)));
-    });
+    const wanted = comparableText(name.trim());
+
+    for (const holder of [page, ...baseChain(world, page)]) {
+        const part = partsOf(holder).find((candidate) => comparableText(candidate.name) === wanted);
+
+        if (part === undefined) {
+            continue;
+        }
+
+        if (!isShown(knowledge, page, part)) {
+            return undefined;
+        }
+
+        const whole = isSecretText(part.text) ? part.text : (readSection(holder.body, part.name) ?? part.text);
+        return isSecretText(part.text) ? [part] : partsOf({ ...holder, body: whole }).map((inner) => ({ ...inner, holder })).filter((inner) => isShown(knowledge, page, inner));
+    }
+
+    return undefined;
+}
+
+/** Whether a section the character may read tells it nothing but its title, as a heading over secrets it has not discovered (VIEW-3). */
+function saysNothing(world: World, knowledge: Knowledge, page: Page, section: string): boolean
+{
+    const kept = knownParts(world, knowledge, page, section);
+    // A section's text begins with its heading; a secret's with its mark, which names it.
+    const said = (part: { text: string; }): boolean => withoutComments(isSecretText(part.text) ? part.text : part.text.split("\n").slice(1).join("\n")).trim() !== "";
+    return kept !== undefined && !kept.some(said);
 }
 
 /** Whether a part shows to the player character: a secret it discovered, or a section of the page or of a base it knows (D-254). */

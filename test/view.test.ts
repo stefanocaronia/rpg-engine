@@ -236,12 +236,13 @@ describe("the player's view, after a review", () => {
         expect(await ok("view", "Mulino")).toBe("Mulino (place)\n\nUna ruota.\n\n> [!note] Nota\n> Detto a tutti.");
     });
 
-    it("VIEW-3: writes a link to a secret not discovered as its words, so that its name tells nothing", async () => {
-        await ok("write", "Locanda", "--type", "place", "--text", "Si parla di [[Varro#Paura|una paura]] e di [[Varro#Passato]].");
+    it("VIEW-3: writes a link to a secret not discovered, or to a section that tells nothing but its title, as its words, so that its name tells nothing", async () => {
+        await ok("write", "Varro#Sogni", "--text", "> [!secret]\n> Sogna il mare.");
+        await ok("write", "Locanda", "--type", "place", "--text", "Si parla di [[Varro#Paura|una paura]], di [[Varro#Passato]] e di [[Varro#Sogni|sogni]].");
         await ok("reveal", "Varro", "Locanda", "--to", "Kira");
-        expect(await ok("view", "Locanda")).toBe("Locanda (place)\n\nSi parla di una paura e di [[Varro#Passato]].");
+        expect(await ok("view", "Locanda")).toBe("Locanda (place)\n\nSi parla di una paura, di [[Varro#Passato]] e di sogni.");
         await ok("reveal", "Varro#Paura", "--to", "Kira");
-        expect(await ok("view", "Locanda")).toBe("Locanda (place)\n\nSi parla di [[Varro#Paura|una paura]] e di [[Varro#Passato]].");
+        expect(await ok("view", "Locanda")).toBe("Locanda (place)\n\nSi parla di [[Varro#Paura|una paura]], di [[Varro#Passato]] e di sogni.");
     });
 
     it("VIEW-2: of two pages with one name, gives the one the character knows, and tells nothing of the other", async () => {
@@ -388,6 +389,30 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         await ok("write", "Kira", "--add", "knows=[[Varro]]");
         place = JSON.parse(await ok("view", "--json")).place;
         expect(place.here.map((person: { name: string; }) => person.name)).toEqual(["Kira", "Bran", "Varro"]);
+    });
+
+    it("VIEW-3: leaves out an entry of the environment that is only a link the character cannot read, and writes such a link among other words as its words", async () => {
+        await ok("write", "Guado#Patto col barone", "--secret", "--text", "Il villaggio paga il barone.");
+        await ok("write", "Guado#Incontri", "--text", "> [!secret]\n> Un orso nei lecci.");
+        await ok(
+            "write",
+            "Guado",
+            "--add",
+            "environment=patto: [[Guado#Patto col barone]]",
+            "--add",
+            "environment=incontri: [[Guado#Incontri]]",
+            "--add",
+            "environment=voci: si parla di [[Guado#Patto col barone|un patto]]",
+            "--add",
+            "environment=fiume: [[Varro#Passato]]",
+        );
+        const around = async (): Promise<string[]> => JSON.parse(await ok("view", "--json")).place.around.map((entry: { name: string; value: string; }) => `${entry.name}: ${entry.value}`);
+        expect(await around()).toEqual(["voci: si parla di un patto"]);
+        await ok("reveal", "Varro", "Guado#Patto col barone", "--to", "Kira");
+        // A secret without a name is never known (VIEW-3): the encounters stay out, until their section tells something more.
+        expect(await around()).toEqual(["patto: [[Guado#Patto col barone]]", "voci: si parla di [[Guado#Patto col barone|un patto]]", "fiume: [[Varro#Passato]]"]);
+        await ok("write", "Guado#Incontri", "--append", "--text", "Di notte, lupi.");
+        expect(await around()).toContain("incontri: [[Guado#Incontri]]");
     });
 
     it("marks who attacks the party only when the master says so, and only in a fight; who stops or leaves is calm again (D-415)", async () => {
