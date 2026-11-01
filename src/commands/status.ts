@@ -262,7 +262,11 @@ export const status = defineCommand({
         ];
         // The opening's line last, after the session's parts, where the master reads it just before writing (T-64).
         const opening = result.opening ? "Write nothing to the player until your message is ready: your first words are the opening itself." : "";
-        return [state.filter((line) => line !== "").join("\n"), ...result.sessionParts, opening].filter((block) => block !== "").join("\n\n");
+        // At a session's opening with no planned event on a clock, the threats to set in motion, read before the opening's line (T-168).
+        const threats = result.sessionParts.length > 0 && result.clocks.length === 0
+            ? "No threat is in motion yet: before you open, write two or three, each a planned event with a clock and who makes it happen (by), the adventure's foe among them."
+            : "";
+        return [state.filter((line) => line !== "").join("\n"), ...result.sessionParts, threats, opening].filter((block) => block !== "").join("\n\n");
     },
 });
 

@@ -100,6 +100,17 @@ describe("the dashboard's sections (D-532)", () => {
     });
 });
 
+describe("the threats at a session's opening (T-168)", () => {
+    const threats = "No threat is in motion yet: before you open, write two or three, each a planned event with a clock and who makes it happen (by), the adventure's foe among them.";
+
+    it("are asked at the opening while no planned event has a clock, before the opening's line; not once one has", async () => {
+        const opened = await chat()("status");
+        expect(opened).toContain(`${threats}\n\nWrite nothing to the player until your message is ready`);
+        await ok("write", "La marcia", "--type", "event", "--set", "clock=0/4", "--set", "date=day 9, 06:00", "--set", "by=[[Bruna]]");
+        expect(await chat()("status")).not.toContain(threats);
+    });
+});
+
 describe("the notes of the outputs (D-532)", () => {
     const peak = "After a peak, give a quiet scene the player can fill: a meal, rain, a talk. Judge a challenge by what it cost, not by whether it was won: "
         + "after two that cost nothing, let the next rise, within what the difficulty allows.";

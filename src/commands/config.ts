@@ -451,7 +451,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
             ...Object.fromEntries(listed.map((name) => [name, offeredShown(root, context, name, shownValue(root, context, settings, name))])),
             ...Object.fromEntries(system.map((setting) => [setting.name, systemShownValue(root, context, setting)])),
         },
-        note: campaignNote(root, context),
+        note: campaignNote(root, context, true),
         replaced,
         part,
     };
@@ -744,7 +744,7 @@ function systemSettingResult(
         if (setting.name === rulesetSetting && before !== undefined && comparableText(before) !== comparableText(value.value)) {
             return {
                 settings: { [setting.name]: systemShownValue(root, context, setting) },
-                note: campaignNote(root, context),
+                note: campaignNote(root, context, true),
                 replaced: [`From now on the campaign plays the rules ${value.value}, in place of ${before}: the pages already written stay as they are.`, ...unofferedLines(root, context)],
             };
         }
@@ -753,13 +753,13 @@ function systemSettingResult(
         const part = context.actor === "player" || campaignMode(root, campaignWorld(root, context)) !== "play" ? undefined : valuePart(root, context, setting.name, value.value);
         return {
             settings: { [setting.name]: systemShownValue(root, context, setting) },
-            note: campaignNote(root, context),
+            note: campaignNote(root, context, true),
             replaced: unofferedLines(root, context),
             ...(part === undefined ? {} : { part }),
         };
     }
 
-    return { settings: { [setting.name]: systemShownValue(root, context, setting) }, note: campaignNote(root, context), replaced: [] };
+    return { settings: { [setting.name]: systemShownValue(root, context, setting) }, note: campaignNote(root, context, true), replaced: [] };
 }
 
 /** An engine's setting as config shows it where the game offers only some of its values (DAT-16): the one it plays alone, or missing with those it offers. */

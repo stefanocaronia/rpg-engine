@@ -442,7 +442,9 @@ export function checkListValues(system: GameSystem | undefined, lists: Record<st
         }
 
         if (system !== undefined && isOpenList(system, field) && isCommaText(value)) {
-            throw new Error(`${field} is a list in the system ${system.name}: write its names apart, as ${field}=[${String(value)}]. Nothing changed.`);
+            // A name with a link quoted, so that it never reads as a list inside the list (T-167).
+            const names = String(value).split(",").map((name) => (name.includes("[[") ? JSON.stringify(name.trim()) : name.trim())).join(", ");
+            throw new Error(`${field} is a list in the system ${system.name}: write its names apart, as ${field}=[${names}]. Nothing changed.`);
         }
 
         const wrong = wrongValues(system, field, value, onSheet);

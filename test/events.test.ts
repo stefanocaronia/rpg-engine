@@ -314,6 +314,11 @@ describe("firing, case by case (EVT-1, EVT-4, EVT-5)", () => {
         // Any field: text written as a list reads as one, as the command line reads it (Code tab game of 17 October).
         write.run(write.input.parse({ page: "Diario", set: { tags: "[antico, cifrato]", note: "[[Varro]] lo scrisse" } }), context);
         expect(readFileSync(join(folder, "world", "items", "Diario.md"), "utf8")).toContain('tags:\n  - antico\n  - cifrato\nnote: "[[Varro]] lo scrisse"');
+        // And links separated by commas in any field, such as a list of the game system (T-167).
+        write.run(write.input.parse({ page: "Diario", set: { readers: "[[Varro]], [[Ennio]]" } }), context);
+        expect(readFileSync(join(folder, "world", "items", "Diario.md"), "utf8")).toContain('readers:\n  - "[[Varro]]"\n  - "[[Ennio]]"');
+        write.run(write.input.parse({ page: "Diario", set: { oaths: "[[Varro]], [[Ennio]]" } }), context);
+        expect(readFileSync(join(folder, "world", "items", "Diario.md"), "utf8")).toContain('oaths:\n  - "[[Varro]]"\n  - "[[Ennio]]"');
     });
 });
 

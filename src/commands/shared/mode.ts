@@ -1,6 +1,21 @@
 // The mode of the campaign, the main state of the game (D-77): setup, session zero or play, each opened by the checklist of the one before (D-221, D-241; MOD-1–MOD-7).
 import { basename } from "node:path";
-import { companionWays, difficulties, masterRollWays, missingSettings, readSettings, readStateValues, type SettingName, unansweredSettings, unitSystems } from "../../campaign/index.ts";
+import {
+    companionWays,
+    diceWays,
+    difficulties,
+    lethalities,
+    masterRollWays,
+    missingSettings,
+    preparations,
+    readSettings,
+    readStateValues,
+    rigors,
+    saveModes,
+    type SettingName,
+    unansweredSettings,
+    unitSystems,
+} from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { readLog } from "../../core/log.ts";
 import type { Problem } from "../../core/problem.ts";
@@ -44,6 +59,16 @@ const settingLabels: Partial<Record<SettingName, string>> = {
     veils: 'veils ("none" is an answer)',
 };
 
+// The same settings by their values alone, as config's results give them in the setup: status gives their meanings (T-168).
+const valueLabels: Partial<Record<SettingName, string>> = {
+    preparation: `preparation (${preparations.join(", ")})`,
+    difficulty: `difficulty (${difficulties.join(", ")})`,
+    lethality: `lethality (${lethalities.join(", ")})`,
+    saves: `saves (${saveModes.join(", ")})`,
+    rigor: `rigor (${rigors.join(", ")})`,
+    dice: `dice (${diceWays.join(", ")})`,
+};
+
 /**
  * The mode the campaign is in: the one state.yaml keeps; for a campaign made before modes, or one whose mode is written wrongly, play once it has had a scene,
  * session zero once it has a player character, setup before (MOD-1).
@@ -78,13 +103,13 @@ export function modeProblems(root: string): Problem[]
 }
 
 /** The first checklist the campaign must complete before entering `mode`: the setup's, then session zero's; undefined when nothing stops it (MOD-2). */
-export function blockingMode(mode: Mode, root: string, context: Context, world: World): Blocked | undefined
+export function blockingMode(mode: Mode, root: string, context: Context, world: World, brief = false): Blocked | undefined
 {
     if (mode === "setup") {
         return undefined;
     }
 
-    const setup = setupMissing(root, context, world);
+    const setup = setupMissing(root, context, world, brief);
 
     if (setup.length > 0) {
         return { mode: "setup", missing: setup };
@@ -102,23 +127,26 @@ export function missingText(blocked: Blocked): string
         : `still to make with the player: ${blocked.missing.join("; ")}`;
 }
 
-/** What the campaign still needs, as init, config and status say it: before play, the checklist and the call that moves on; in play, the settings still missing (MOD-7). */
-export function campaignNote(root: string, context: Context): string
+/**
+ * What the campaign still needs, as init, config and status say it: before play, the checklist and the call that moves on; in play, the settings still missing (MOD-7).
+ * Brief, as config says it, the setup's settings by their values alone: status gives what they mean (T-168).
+ */
+export function campaignNote(root: string, context: Context, brief = false): string
 {
     const world = campaignWorld(root, context);
-    return checklistLine(campaignMode(root, world), root, context, world)
+    return checklistLine(campaignMode(root, world), root, context, world, brief)
         ?? missingSettingsNote(missingWithSystems(root, missingSettings(readSettings(root)), context).map((name) => offeredLabel(root, context, name as SettingName) ?? name));
 }
 
 /** Before play, what the next mode still needs and the call that enters it once the player confirms (MOD-7); undefined in play. */
-export function checklistLine(mode: Mode, root: string, context: Context, world: World): string | undefined
+export function checklistLine(mode: Mode, root: string, context: Context, world: World, brief = false): string | undefined
 {
     if (mode === "play") {
         return undefined;
     }
 
     const next = mode === "setup" ? "session zero" : "play";
-    const blocked = blockingMode(next, root, context, world);
+    const blocked = blockingMode(next, root, context, world, brief);
     const missing = blocked === undefined ? "nothing is missing" : missingText(blocked);
     const settings = readSettings(root);
     const unnamed = mode === "setup" && settings.premise !== undefined && comparableText(settings.name) === comparableText(basename(root));
@@ -154,10 +182,11 @@ function writtenMode(root: string): unknown
 }
 
 /** What the setup still has to agree with the player, each setting with the values it takes, the system's own too (MOD-3). */
-function setupMissing(root: string, context: Context, world: World): string[]
+function setupMissing(root: string, context: Context, world: World, brief: boolean): string[]
 {
     const unanswered = unansweredSettings(readSettings(root), world.pages.length > 0);
-    return missingWithSystems(root, unanswered, context).map((name) => offeredLabel(root, context, name as SettingName) ?? settingLabels[name as SettingName] ?? name);
+    const label = (name: SettingName): string | undefined => (brief ? valueLabels[name] : undefined) ?? settingLabels[name];
+    return missingWithSystems(root, unanswered, context).map((name) => offeredLabel(root, context, name as SettingName) ?? label(name as SettingName) ?? name);
 }
 
 /** What session zero still has to make (MOD-4): a living player character, the companions the setup said are made in it, and the sheets they keep, whole. */

@@ -41,6 +41,7 @@ import {
     isPlayerCharacter,
     isStandardField,
     keepersOf,
+    linkListItems,
     linksIn,
     listFieldNames,
     misspelledFieldProblem,
@@ -1514,7 +1515,8 @@ function listFromText(name: string, value: unknown): unknown
         return value;
     }
 
-    const writtenAsList = /^\[(?!\[).*\]$/s.test(value.trim());
+    // Links separated by commas are a list, as on the command line, for a list of the game system too, such as spells (T-167).
+    const writtenAsList = /^\[(?!\[).*\]$/s.test(value.trim()) || linkListItems(value) !== undefined;
     return writtenAsList || listFieldNames.some((field) => comparableText(field) === comparableText(name)) ? readFieldValue(value) : value;
 }
 

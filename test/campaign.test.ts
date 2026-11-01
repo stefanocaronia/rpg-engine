@@ -13,6 +13,13 @@ const asked =
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
     + "companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
+// The same, as config's results give them: the settings with a meaning in status by their values alone (T-168).
+const askedBrief =
+    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly, all at the start), "
+    + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation), dice (digital, physical), "
+    + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
+    + "companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
+    + 'lines ("none" is an answer), veils ("none" is an answer)';
 const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
 const playLine = "To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.";
 
@@ -225,7 +232,7 @@ describe("rpg config", () => {
             "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: free, fake)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
                 + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncompanions: (missing)\ncalendar-start: (missing)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
-                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: free, fake), language (a code, such as it), ${asked}; ${onward}`,
+                + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: free, fake), language (a code, such as it), ${askedBrief}; ${onward}`,
         );
     });
 
@@ -275,7 +282,7 @@ describe("rpg config", () => {
 
     it("changes a setting, keeps the rest of the file and logs the change", async () => {
         const result = await runCommandLine(["config", "language", "it"], context);
-        expect(result.output).toBe(`language: it\n\nStill to agree with the player: system (installed: free, fake), ${asked}; ${onward}`);
+        expect(result.output).toBe(`language: it\n\nStill to agree with the player: system (installed: free, fake), ${askedBrief}; ${onward}`);
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toBe(`# Campaign settings: change them with the config command.\nname: Guadoscuro\nlanguage: it\n`);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "master", visibility: "public", data: { setting: "language", value: "it" } });
     });
@@ -330,7 +337,7 @@ describe("rpg config", () => {
         const lethality = (await runCommandLine(["config", "lethality", "epic"], context)).output;
         expect(shown(lethality)).toBe("lethality: epic");
         expect(lethality).toContain(
-            "difficulty (how hard the world plays: story, easy, normal, hard, brutal), saves (when the game may go back: permadeath, never but to the start; checkpoint, to the last end of a scene once the player character dies; free, to any save), rigor (how closely travel, fatigue, food and the like follow the rules: smooth, glossed over; rules, as written; simulation, beyond them)",
+            "difficulty (story, easy, normal, hard, brutal), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation)",
         );
         expect((await runCommandLine(["config", "table", "--add", "rolls shown as they fall"], context)).output).toContain("table: rolls shown as they fall");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("table:\n  - rolls shown as they fall\n");
