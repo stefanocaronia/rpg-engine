@@ -235,7 +235,7 @@ Ask the master: *[House rule: a natural 1 on an attack means you drop your weapo
 
 ### 5.4 Adding or importing your own game system
 
-A game system is a package: the master installs one from npm, a folder or a file, and one that is not ours only with your yes, in a window of your computer. Making one is a developer's work, described in RPG Engine's documents on GitHub. Turning a book of yours into a game system is not here yet ([Coming later](#9-coming-later)).
+A game system is a package: the master installs one from npm, a folder or a file, and one that is not ours only with your yes, in a form of your agent or a window of your computer. Making one is a developer's work, described in RPG Engine's documents on GitHub. Turning a book of yours into a game system is not here yet ([Coming later](#9-coming-later)).
 
 ---
 
@@ -265,7 +265,7 @@ One language per campaign, the master's, which the dashboard follows. The dashbo
 
 You never need to open it, and it holds the secrets of your campaign. It has `campaign.yaml` (your settings), `state.yaml` (where the game stands), `world/` (one markdown page for each character, place, quest and the rest), `rules/` (your house rules), `images/`, `log.jsonl` (every change), `.saves/`, `.player/` (your notes), and the small files that tell AI agents where RPG Engine is. The pages use Obsidian's format. If you change a page by hand, the master hears of it at its next answer.
 
-RPG Engine stays in this folder: it reads and writes the game only here, and never touches your other files; the folders of your manuals it only reads. Outside it, it keeps only data folders of its own (the dashboard's translations, the text it read of your manuals, and Codex or Claude Code if you let it install them) and temporary folders while a picture is drawn. Anything else your agent wants to do on your computer, it asks you first.
+RPG Engine stays in this folder: it reads and writes the game only here, and never touches your other files; the folders of your manuals it only reads. Outside it, it keeps only data folders of its own (the dashboard's translations, the text it read of your manuals, and Codex or Claude Code if you let it install them) and temporary folders while a picture is drawn. Anything else your agent wants to do on your computer, it asks you first. A game system or an extension is code, as any npm package is: one that is not ours runs on your computer with your permissions, and RPG Engine installs it only with your yes, in a form of your agent or a window of your computer. Say yes only to packages whose authors you trust.
 
 Every command the master uses can be run in the campaign folder too: `rpg --help` lists them. Many print the campaign's secrets.
 

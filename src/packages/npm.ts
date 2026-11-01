@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { ourScope } from "../core/consents.ts";
@@ -370,7 +370,8 @@ async function installCopy(folder: string, spec: string, expected: string | unde
             unpackTarball(spec, staged);
         } else {
             // What npm or git keep beside a package's own files is no part of it.
-            cpSync(resolve(spec), staged, { recursive: true, filter: (path) => !/[\\/](node_modules|\.git)([\\/]|$)/.test(path.slice(resolve(spec).length)) });
+            // A link would bring in what it points to, which is not what was asked about.
+            cpSync(resolve(spec), staged, { recursive: true, filter: (path) => !/[\\/](node_modules|\.git)([\\/]|$)/.test(path.slice(resolve(spec).length)) && plainEntry(path, spec) });
         }
     } catch (error) {
         rmSync(staged, { recursive: true, force: true });
@@ -537,4 +538,18 @@ function stopTree(pid: number | undefined): void
     } else {
         process.kill(pid, "SIGKILL");
     }
+}
+
+/** True for a plain file or folder of the package folder `spec`; it throws for a link, which refuses the package whole, as a link in a .tgz does. */
+function plainEntry(path: string, spec: string): boolean
+{
+    if (lstatSync(path).isSymbolicLink() && resolve(path) === resolve(spec)) {
+        throw new Refusal(`${spec} is a link to another folder: give the folder it points to.`, "archive-link", { name: spec, entry: path });
+    }
+
+    if (lstatSync(path).isSymbolicLink()) {
+        throw new Refusal(`${spec} holds ${path}, which is a link to somewhere else: the package is refused whole. Replace the link with what it points to.`, "archive-link", { name: spec, entry: path });
+    }
+
+    return true;
 }

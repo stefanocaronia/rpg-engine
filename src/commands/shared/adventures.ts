@@ -247,7 +247,7 @@ export function exportAdventure(root: string, context: Context, credits: { autho
         ...(start === undefined ? {} : { start }),
         ...(opening === undefined ? {} : { opening: basename(opening.path, ".md") }),
     };
-    const file = join(root, exportsFolderName, `${settings.name.replace(/[\\/:*?"<>|]/g, "").trim()}.adventure.zip`);
+    const file = join(root, exportsFolderName, `${settings.name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim()}.adventure.zip`);
     files().writeBytes(file, packAdventure(manifest, kept));
     const adventures = adventuresOfLog(log).map((adventure) => adventure.title);
     return {

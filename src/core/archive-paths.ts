@@ -3,7 +3,7 @@
 import { resolve, sep } from "node:path";
 
 // Names Windows keeps for its devices, whatever their extension.
-const reserved = /^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i;
+const reserved = /^(con|prn|aux|nul|com[\d¹²³]|lpt[\d¹²³])(\..*)?$/i;
 // What a file name on Windows cannot hold.
 const unwritable = /[<>:"|?*\u0000-\u001f]/;
 

@@ -24,6 +24,7 @@ import {
     textsIn,
     withLinksAsWords,
     withoutComments,
+    withoutUnreadSecrets,
     type World,
 } from "../../pages/index.ts";
 import type { Scene } from "../../scene/index.ts";
@@ -285,10 +286,18 @@ function foregroundCharacter(root: string, world: World, wanted?: string): Page 
     return living.find((page) => named(page, scene?.turn)) ?? living.find((page) => (scene?.with ?? []).some((link) => named(page, link))) ?? living[0] ?? players[0];
 }
 
-/** A text as the character may read it (VIEW-3): a link to a page it does not know, or to none, written as its words, so that no name tells the page exists. */
+/**
+ * A text as the character may read it (VIEW-3): a link to a page it does not know, or to none, written as its words, so that no name tells the page exists; a link
+ * to a secret it has not discovered too, so that the secret's name tells nothing; a secret written so that the engine does not read it as one, left out.
+ */
 function inKnownWords(world: World, knowledge: Knowledge, text: string): string
 {
-    return withLinksAsWords(text, (link) => [...pagesWithNameOrAlias(world, link.page), systemPageNamed(world, link.page)].some((page) => page !== undefined && knowsPage(knowledge, page)));
+    return withLinksAsWords(withoutUnreadSecrets(text), (link) => {
+        const known = [...pagesWithNameOrAlias(world, link.page), systemPageNamed(world, link.page)].filter((page): page is Page => page !== undefined && knowsPage(knowledge, page));
+        const wanted = comparableText(link.section ?? "");
+        const secrets = wanted === "" ? [] : known.flatMap((page) => secretNames(page.body).filter((name) => comparableText(name) === wanted).map((name) => secretKey(page.name, name)));
+        return known.length > 0 && (secrets.length === 0 || secrets.some((key) => knowledge.secrets.has(key)));
+    });
 }
 
 /** Whether a part shows to the player character: a secret it discovered, or a section of the page or of a base it knows (D-254). */

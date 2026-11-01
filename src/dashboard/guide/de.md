@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -218,25 +218,25 @@ Wenn die Spielleitung dir eine Frage stellt, bleibt ihr Banner oben stehen, in w
 
 ### 5.1 Was ein Spielsystem ist
 
-Die Daten eines Spiels: sein Charakterbogen, seine Zahlen, seine Kreaturen, Gegenstände, Zauber und Regeltexte. Jede Kampagne spielt ein System. RPG Engine berechnet den Charakterbogen und was verbraucht wird und zurückkommt. Wie eine Fähigkeit funktioniert, liest die Spielleitung in den Regeln nach und entscheidet, wie an einem Spieltisch.
+Die Daten eines Spiels: sein Charakterbogen, seine Zahlen, seine Kreaturen, Gegenstände, Zauber und Regeltexte. Jede Kampagne spielt ein System. RPG Engine berechnet den Charakterbogen und was verbraucht wird und wieder zurückkommt. Wie eine Fähigkeit funktioniert, liest die Spielleitung in den Regeln und entscheidet es, wie an einem echten Spieltisch.
 
 ### 5.2 Fünfte Edition
 
-Die Völker, Klassen, Unterklassen, ein Hintergrund und ein Talent des SRD 5.1; die 319 Zauber, die Waffen, Rüstungen, magischen Gegenstände und Monster; die Regelkapitel, welche die Spielleitung nach ihrem genauen Wortlaut liest; der vollständige, berechnete Charakterbogen.
+Die Völker, Klassen, Unterklassen, ein Hintergrund und ein Talent aus dem SRD 5.1; die 319 Zauber, die Waffen, Rüstungen, magischen Gegenstände und Monster; die Regelkapitel, die die Spielleitung nach ihrem genauen Wortlaut liest; der vollständige, berechnete Charakterbogen.
 
-Es ist ein eigenes Paket: Die Spielleitung bietet es an, wenn du eine Kampagne einrichtest, und installiert es. Eine Kampagne, die es spielt, installiert es von selbst, wenn sie zum ersten Mal auf einem Computer ohne das Paket geöffnet wird, und die Spielleitung sagt dir Bescheid.
+Es ist ein eigenes Paket: Die Spielleitung bietet es dir an, wenn du eine Kampagne einrichtest, und installiert es. Eine Kampagne, die dieses System spielt, installiert es von selbst, wenn sie zum ersten Mal auf einem Computer geöffnet wird, auf dem es fehlt. Die Spielleitung sagt dir dann Bescheid.
 
-Du kannst auch Inhalte spielen, die im SRD fehlen, aus einem Buch, das du besitzt: Die Spielleitung schreibt sie als Seiten deiner Kampagne, und RPG Engine behandelt sie wie eigene. RPG Engine liefert nur offene Inhalte mit; was deine Spielleitung kennt, ist nicht begrenzt.
+Du kannst auch Inhalte spielen, die im SRD fehlen, aus einem Buch, das du besitzt: Die Spielleitung schreibt sie als Seiten deiner Kampagne, und RPG Engine behandelt sie wie eigene. RPG Engine liefert nur offene Inhalte mit; was deine Spielleitung weiß, ist nicht begrenzt.
 
-Deine eigenen Regelbücher können deine Bibliothek sein: Sag der Spielleitung, wo sie liegen, *[Meine Regelbücher liegen in D:\Books\5e.]*, oder füge ihren Ordner unter Pakete › Bibliothek hinzu und sag einmalig Ja in dem Fenster, das dein Computer zeigt. RPG Engine liest sie auf diesem Computer. Jede Kampagne nutzt die Ordner, die du dort einschaltest, und die Spielleitung durchsucht sie, wenn sie eine Regel entscheidet, nach dem SRD und nennt dabei Buch und Seite. Am besten lesen sich Texte oder PDFs, deren Text sich markieren lässt. Ein gescanntes PDF wird anhand der Bilder seiner Seiten gelesen, nur unter Windows, in ein paar Minuten und mit einigen Fehlern. RPG Engine verändert deine Regelbücher nie, schickt ihren Text nie irgendwohin und kopiert ihn nie in eine Kampagne.
+Deine eigenen Regelbücher können deine Bibliothek sein: Sag der Spielleitung, wo sie liegen, *[Meine Regelbücher liegen in D:\Books\5e.]*, oder füge ihren Ordner unter Pakete › Bibliothek hinzu und sag einmal ja in dem Fenster, das dein Computer zeigt. RPG Engine liest sie auf diesem Computer. Jede Kampagne nutzt die Ordner, die du dort einschaltest. Die Spielleitung durchsucht sie, wenn sie eine Regel entscheidet, nach dem SRD und nennt dabei Buch und Seite. Am besten lassen sie sich als Text lesen oder als PDFs, deren Text sich markieren lässt. Ein gescanntes PDF wird anhand der Bilder seiner Seiten gelesen, nur unter Windows, in einigen Minuten und mit ein paar Fehlern. RPG Engine verändert deine Regelbücher nie, schickt ihren Text nie irgendwohin und kopiert ihn nie in eine Kampagne.
 
 ### 5.3 Hausregeln und eigene Ergänzungen
 
-Frag die Spielleitung: *[Hausregel: Bei einer natürlichen 1 auf einen Angriff lässt du deine Waffe fallen.]* Sie hält sie als Absprache des Tisches fest oder schreibt eine Seite oder einen Wert des Charakterbogens, wenn das nötig ist. Bereits ausgeschriebene Hausregeln können als Textdateien in den Ordner `rules` der Kampagne gelegt werden.
+Frag die Spielleitung: *[Hausregel: Eine natürliche 1 bei einem Angriff bedeutet, dass du deine Waffe fallen lässt.]* Sie hält sie als Absprache der Runde fest oder schreibt eine Seite oder eine Zahl des Charakterbogens, wenn das nötig ist. Hausregeln, die schon ausgeschrieben sind, können als Textdateien im Ordner `rules` der Kampagne liegen.
 
 ### 5.4 Ein eigenes Spielsystem hinzufügen oder importieren
 
-Ein Spielsystem ist ein Paket: Die Spielleitung installiert eines aus npm, aus einem Ordner oder aus einer Datei, und eines, das nicht von uns ist, nur mit deinem Ja in einem Fenster deines Computers. Eines zu erstellen ist Arbeit für Entwickler und steht in den Dokumenten von RPG Engine auf GitHub. Ein eigenes Buch in ein Spielsystem zu verwandeln, gibt es noch nicht ([Später geplant](#9-coming-later)).
+Ein Spielsystem ist ein Paket: Die Spielleitung installiert eines aus npm, aus einem Ordner oder aus einer Datei. Eines, das nicht von uns stammt, installiert sie nur mit deinem Ja, in einem Formular deines Agenten oder in einem Fenster deines Computers. Ein Paket zu erstellen ist Arbeit für Entwickler und steht in den Dokumenten von RPG Engine auf GitHub. Ein eigenes Buch in ein Spielsystem zu verwandeln, geht noch nicht ([Kommt später](#9-coming-later)).
 
 ---
 
@@ -264,11 +264,11 @@ Eine Sprache pro Kampagne, die der Spielleitung, der das Dashboard folgt. Das Da
 
 ## 8. Für Neugierige: der Kampagnenordner <!-- icon: list -->
 
-Du musst ihn nie öffnen, und er enthält die Geheimnisse deiner Kampagne. Er enthält `campaign.yaml` (deine Einstellungen), `state.yaml` (wo das Spiel steht), `world/` (eine Markdown-Seite für jeden Charakter, jeden Ort, jede Quest und alles Übrige), `rules/` (deine Hausregeln), `images/`, `log.jsonl` (jede Änderung), `.saves/`, `.player/` (deine Notizen) und die kleinen Dateien, die KI-Agenten sagen, wo RPG Engine liegt. Die Seiten nutzen das Format von Obsidian. Wenn du eine Seite von Hand änderst, erfährt die Spielleitung davon bei ihrer nächsten Antwort.
+Du musst ihn nie öffnen, und er enthält die Geheimnisse deiner Kampagne. Er enthält `campaign.yaml` (deine Einstellungen), `state.yaml` (der Stand des Spiels), `world/` (eine Markdown-Seite für jeden Charakter, jeden Ort, jede Quest und alles Weitere), `rules/` (deine Hausregeln), `images/`, `log.jsonl` (jede Änderung), `.saves/`, `.player/` (deine Notizen) und die kleinen Dateien, die KI-Agenten sagen, wo RPG Engine liegt. Die Seiten verwenden das Format von Obsidian. Wenn du eine Seite von Hand änderst, erfährt die Spielleitung bei ihrer nächsten Antwort davon.
 
-RPG Engine bleibt in diesem Ordner: Es liest und schreibt das Spiel nur hier und berührt nie deine anderen Dateien. Die Ordner deiner Regelbücher liest es nur. Außerhalb davon hält es nur eigene Datenordner (die Übersetzungen des Dashboards, den Text, den es aus deinen Regelbüchern gelesen hat, und Codex oder Claude Code, wenn du sie installieren lässt) und temporäre Ordner, während ein Bild gezeichnet wird. Alles andere, was dein Agent auf deinem Computer tun will, fragt er vorher bei dir an.
+RPG Engine bleibt in diesem Ordner: Es liest und schreibt das Spiel nur hier und berührt nie deine anderen Dateien. Die Ordner deiner Regelbücher liest es nur. Außerhalb davon legt es nur eigene Datenordner an (die Übersetzungen des Dashboards, den Text, den es aus deinen Regelbüchern gelesen hat, und Codex oder Claude Code, falls du die Installation erlaubst) sowie temporäre Ordner, während ein Bild gezeichnet wird. Alles andere, was dein Agent auf deinem Computer tun will, fragt er vorher bei dir an. Ein Spielsystem oder eine Erweiterung ist Code, wie jedes npm-Paket: Eines, das nicht von uns stammt, läuft mit deinen Berechtigungen auf deinem Computer, und RPG Engine installiert es nur mit deinem Ja, in einem Formular deines Agenten oder in einem Fenster deines Computers. Sag nur zu Paketen ja, deren Autorinnen und Autoren du vertraust.
 
-Jeden Befehl, den die Spielleitung nutzt, kannst du auch im Kampagnenordner ausführen: `rpg --help` listet sie auf. Viele geben die Geheimnisse der Kampagne aus.
+Jeden Befehl, den die Spielleitung benutzt, kannst du auch im Kampagnenordner ausführen: `rpg --help` listet sie auf. Viele geben die Geheimnisse der Kampagne aus.
 
 ---
 

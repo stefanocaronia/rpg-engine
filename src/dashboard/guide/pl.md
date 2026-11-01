@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -218,25 +218,25 @@ Gdy Mistrz Gry o coś pyta, jego baner zostaje na górze, w jakiejkolwiek sekcji
 
 ### 5.1 Czym jest system gry
 
-To dane jednej gry: jej karta postaci, liczby, stworzenia, przedmioty, zaklęcia i tekst zasad. Każda kampania korzysta z jednego systemu. RPG Engine oblicza kartę postaci oraz to, co się zużywa i odnawia. Jak działa dana zdolność, Mistrz Gry czyta w zasadach i rozstrzyga, tak jak przy stole.
+To dane jednej gry: jej karta postaci, liczby, stworzenia, przedmioty, zaklęcia i tekst zasad. Każda kampania korzysta z jednego systemu. RPG Engine liczy kartę postaci oraz to, co się zużywa i wraca. Jak działa dana zdolność, Mistrz Gry sprawdza w zasadach i rozstrzyga, tak jak przy stole.
 
 ### 5.2 Piąta edycja
 
-Rasy, klasy, podklasy, pochodzenie i atut z SRD 5.1; 319 zaklęć, broń, pancerze, przedmioty magiczne i potwory; rozdziały z zasadami, które Mistrz Gry czyta w dokładnym brzmieniu; pełna, wyliczona karta postaci.
+Rasy, klasy, podklasy, pochodzenie i atut z SRD 5.1; 319 zaklęć, broń, pancerze, magiczne przedmioty i potwory; rozdziały zasad, które Mistrz Gry czyta w ich dokładnym brzmieniu; pełna, wyliczona karta postaci.
 
-To osobny pakiet: Mistrz Gry proponuje go przy zakładaniu kampanii i instaluje. Kampania, która z niego korzysta, instaluje go sama przy pierwszym otwarciu na komputerze, na którym go nie ma, a Mistrz Gry daje Ci o tym znać.
+To osobny pakiet: Mistrz Gry proponuje go przy tworzeniu kampanii i instaluje. Kampania, która z niego korzysta, sama go instaluje przy pierwszym otwarciu na komputerze, na którym go nie ma. Mistrz Gry informuje o tym.
 
-Możesz też grać treściami, których brakuje w SRD, z posiadanego podręcznika: Mistrz Gry zapisuje je jako strony Twojej kampanii, a RPG Engine traktuje je jak własne. RPG Engine dostarcza wyłącznie treści otwarte, ale wiedza Mistrza Gry nie jest niczym ograniczona.
+Można też grać treściami, których brakuje w SRD, z posiadanego podręcznika. Mistrz Gry zapisuje je jako strony kampanii, a RPG Engine traktuje je jak własne. RPG Engine zawiera tylko otwarte treści, ale wiedza Mistrza Gry nie ma takiego ograniczenia.
 
-Własne podręczniki mogą stać się Twoją biblioteką: powiedz Mistrzowi Gry, gdzie są, *[Moje podręczniki są w D:\Books\5e.]*, albo dodaj ich folder w Packages › Library i raz zgódź się w oknie, które pokaże komputer. RPG Engine czyta je na tym komputerze. Każda kampania korzysta z folderów, które tam włączysz, a Mistrz Gry przeszukuje je przy rozstrzyganiu zasad, po SRD, podając książkę i stronę. Najlepiej czytają się jako tekst albo jako pliki PDF z tekstem, który można zaznaczyć. Zeskanowany PDF jest odczytywany z obrazów stron, tylko w systemie Windows, w kilka minut i z kilkoma błędami. RPG Engine nigdy nie zmienia Twoich podręczników, nigdzie nie wysyła ich tekstu i nigdy nie kopiuje go do kampanii.
+Własne podręczniki mogą stać się biblioteką. Powiedz Mistrzowi Gry, gdzie są: *[Moje podręczniki są w D:\Books\5e.]* Albo dodaj ich folder w Packages › Library i raz powiedz „tak" w oknie, które pokaże komputer. RPG Engine czyta je na tym komputerze. Każda kampania używa folderów, które tam włączysz. Mistrz Gry przeszukuje je, gdy rozstrzyga zasadę, po SRD, i podaje książkę oraz stronę. Najlepiej czyta się tekst albo pliki PDF z zaznaczalnym tekstem. Zeskanowany PDF jest odczytywany z obrazów stron, tylko w systemie Windows, w kilka minut i z kilkoma błędami. RPG Engine nigdy nie zmienia Twoich podręczników, nigdzie nie wysyła ich tekstu i nigdy nie kopiuje go do kampanii.
 
 ### 5.3 Zasady domowe i własne dodatki
 
-Poproś Mistrza Gry: *[Zasada domowa: naturalna 1 w ataku oznacza upuszczenie broni.]* Mistrz Gry zapisuje ją jako umowę przy stole albo tworzy stronę lub wartość na karcie postaci, jeśli jest potrzebna. Gotowe zasady domowe można umieścić jako pliki tekstowe w folderze `rules` kampanii.
+Poproś Mistrza Gry: *[Zasada domowa: naturalna 1 w ataku oznacza upuszczenie broni.]* Mistrz Gry zapisuje ją jako ustalenie stołu albo tworzy stronę lub liczbę na karcie postaci, jeśli jest potrzebna. Gotowe zasady domowe można umieścić jako pliki tekstowe w folderze `rules` kampanii.
 
-### 5.4 Dodawanie lub importowanie własnego systemu gry
+### 5.4 Dodawanie lub import własnego systemu gry
 
-System gry to pakiet: Mistrz Gry instaluje go z npm, z folderu lub z pliku, a pakiet spoza naszej oferty tylko po Twojej zgodzie, w oknie na komputerze. Stworzenie takiego pakietu to praca dla programisty, opisana w dokumentach RPG Engine na GitHubie. Zamiana Twojego podręcznika w system gry jeszcze nie jest dostępna ([Plany na przyszłość](#9-coming-later)).
+System gry to pakiet. Mistrz Gry instaluje go z npm, z folderu lub z pliku. Pakiet, który nie jest nasz, tylko za Twoim „tak", w formularzu Twojego agenta lub w oknie komputera. Tworzenie pakietu to praca programisty, opisana w dokumentach RPG Engine na GitHubie. Zamiana własnego podręcznika w system gry jeszcze nie jest dostępna ([Wkrótce](#9-coming-later)).
 
 ---
 
@@ -264,11 +264,11 @@ Jeden język na kampanię, język Mistrza Gry, za którym podąża dashboard. Da
 
 ## 8. Dla ciekawskich: folder kampanii <!-- icon: list -->
 
-Nigdy nie trzeba go otwierać, a zawiera sekrety kampanii. Znajdują się w nim: `campaign.yaml` (ustawienia), `state.yaml` (stan gry), `world/` (jedna strona markdown dla każdej postaci, miejsca, zadania i reszty), `rules/` (zasady domowe), `images/`, `log.jsonl` (każda zmiana), `.saves/`, `.player/` (notatki) oraz małe pliki, które mówią agentom AI, gdzie jest RPG Engine. Strony używają formatu Obsidiana. Jeśli zmienisz stronę ręcznie, Mistrz Gry dowie się o tym przy następnej odpowiedzi.
+Nie musisz go nigdy otwierać, a zawiera sekrety Twojej kampanii. Znajdziesz w nim `campaign.yaml` (Twoje ustawienia), `state.yaml` (stan gry), `world/` (jedna strona markdown dla każdej postaci, miejsca, zadania i reszty), `rules/` (Twoje zasady domowe), `images/`, `log.jsonl` (każda zmiana), `.saves/`, `.player/` (Twoje notatki) oraz małe pliki, które mówią agentom AI, gdzie jest RPG Engine. Strony mają format Obsidiana. Jeśli zmienisz stronę ręcznie, Mistrz Gry dowie się o tym przy najbliższej odpowiedzi.
 
-RPG Engine pozostaje w tym folderze: czyta i zapisuje grę tylko tutaj i nigdy nie dotyka innych plików. Foldery z podręcznikami tylko czyta. Poza kampanią trzyma wyłącznie własne foldery z danymi (tłumaczenia dashboardu, tekst odczytany z podręczników oraz Codex lub Claude Code, jeśli pozwolisz je zainstalować) i foldery tymczasowe na czas rysowania obrazu. O wszystko inne, co agent chce zrobić na komputerze, najpierw pyta.
+RPG Engine działa tylko w tym folderze: czyta i zapisuje grę wyłącznie tu i nigdy nie rusza Twoich innych plików. Foldery z podręcznikami tylko czyta. Poza nim trzyma jedynie własne foldery danych (tłumaczenia dashboardu, tekst odczytany z Twoich podręczników oraz Codex lub Claude Code, jeśli pozwolisz je zainstalować) i foldery tymczasowe na czas rysowania obrazu. Wszystko inne, czego agent chce na Twoim komputerze, robi dopiero po pytaniu. System gry lub rozszerzenie to kod, jak każdy pakiet npm: pakiet, który nie jest nasz, działa na Twoim komputerze z Twoimi uprawnieniami, a RPG Engine instaluje go tylko za Twoim „tak", w formularzu Twojego agenta lub w oknie komputera. Odpowiadaj „tak" tylko na pakiety, których autorom ufasz.
 
-Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze kampanii: `rpg --help` wyświetla ich listę. Wiele z nich wypisuje sekrety kampanii.
+Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze kampanii: `rpg --help` pokazuje ich listę. Wiele z nich wypisuje sekrety kampanii.
 
 ---
 

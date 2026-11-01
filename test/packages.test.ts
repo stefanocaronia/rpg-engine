@@ -178,7 +178,7 @@ describe("rpg package install", () => {
         const refused = await rpg("package", "install", "@test/rumors");
         expect(refused.exitCode).toBe(1);
         expect(refused.output).toBe(
-            "Not verified by RPG Engine: @test/rumors 2.0.0, asked from the command line. Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you. Install it only if you trust who made it. Only the player can say yes to it, in the host's form or "
+            "Not verified by RPG Engine: @test/rumors 2.0.0, from npm, asked from the command line. Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you. RPG Engine takes no responsibility for it: install it only if you trust who made it. Only the player can say yes to it, in the host's form or "
                 + "in a window of their computer, and neither can be shown here (no desktop, as over SSH; on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.",
         );
 
@@ -202,7 +202,7 @@ describe("rpg package install", () => {
         context = { ...context, terminal: true, confirm: windowAnswering("no", asked) };
         expect((await rpg("package", "install", "@test/rumors")).output).toBe("The player did not want @test/rumors 2.0.0. Nothing changed.");
         expect(asked).toEqual([
-            "A package not ours: Install @test/rumors 2.0.0? Not verified by RPG Engine: @test/rumors 2.0.0, asked from the command line. Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you. Install it only if you trust who made it.",
+            "A package not ours: Install @test/rumors 2.0.0? Not verified by RPG Engine: @test/rumors 2.0.0, from npm, asked from the command line. Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you. RPG Engine takes no responsibility for it: install it only if you trust who made it.",
         ]);
         context = { ...context, confirm: windowAnswering("yes", asked) };
         expect((await rpg("package", "install", "@test/rumors")).exitCode).toBe(0);
@@ -230,7 +230,7 @@ describe("rpg package install", () => {
         npm.describe = () => Promise.resolve({ name: "secret-notes", version: "1.0.0", kind: "extension", api: 1, author: "Ada" });
         expect((await rpg("package", "install", "secret-notes-1.0.0.tgz")).output).toBe(
             "Not verified by RPG Engine: secret-notes-1.0.0.tgz (secret-notes 1.0.0, by Ada), a file of this computer, asked from the command line. Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you. "
-                + "RPG Engine takes no responsibility for it. Only the player can say yes to it, in the host's form or in a window of their computer, and neither can be shown here "
+                + "RPG Engine takes no responsibility for it: install it only if you trust who made it. Only the player can say yes to it, in the host's form or in a window of their computer, and neither can be shown here "
                 + "(no desktop, as over SSH; on Linux zenity or kdialog shows it): install it where one can be. Nothing changed.",
         );
         expect(npm.installed).toEqual([]);
@@ -241,7 +241,7 @@ describe("rpg package install", () => {
         context = { ...context, terminal: true };
         npm.describe = () => Promise.resolve({ name: "@rpgengine/skies", version: skiesVersion, kind: "extension", api: 1 });
         expect((await rpg("package", "install", "./skies.tgz")).output).toContain(
-            `RPG Engine takes no responsibility for it. It takes the place of @rpgengine/skies ${skiesVersion} from npm, in every campaign on this computer.`,
+            `RPG Engine takes no responsibility for it: install it only if you trust who made it. It takes the place of @rpgengine/skies ${skiesVersion} from npm, in every campaign on this computer.`,
         );
     });
 

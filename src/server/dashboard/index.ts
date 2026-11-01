@@ -306,16 +306,20 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     const own = [`http://localhost:${served.port}`, `http://127.0.0.1:${served.port}`];
     const origin = request.headers.origin;
 
-    // A request another site makes the browser send, as an image's, which carries no origin, says so in Sec-Fetch-Site: never ours, nor the hook's, which sends none.
-    const crossSite = request.headers["sec-fetch-site"] === "cross-site";
+    // An address that does not read, as //, is no page of the dashboard's.
+    const url = URL.parse(request.url ?? "/", own[0]) ?? new URL("/404", own[0]);
+    const path = url.pathname;
 
-    if (!own.includes(`http://${request.headers.host ?? ""}`) || (origin !== undefined && !own.includes(origin)) || crossSite) {
+    // A request another site makes the browser send, as an image's, which carries no origin, says so in Sec-Fetch-Site: never ours, nor the hook's, which sends none.
+    // Another program's page on this computer, at another port, is the same site: it may only open the page itself, as a link does, never the API, the bell or a frame.
+    const site = request.headers["sec-fetch-site"];
+    const visit = request.headers["sec-fetch-mode"] === "navigate" && request.headers["sec-fetch-dest"] === "document" && path === "/";
+    const foreign = site === "cross-site" || (site === "same-site" && !visit);
+
+    if (!own.includes(`http://${request.headers.host ?? ""}`) || (origin !== undefined && !own.includes(origin)) || foreign) {
         send(response, 403, "text/plain; charset=utf-8", `The dashboard answers only its own page, at http://localhost:${served.port}.`);
         return;
     }
-
-    const url = new URL(request.url ?? "/", own[0]);
-    const path = url.pathname;
 
     // The page answers the master's question with a click, and changes the player's settings: what it sends, and only from itself (D-279, D-341).
     if (request.method === "POST" && path === "/api/run" && origin !== undefined) {

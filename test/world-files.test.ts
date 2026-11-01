@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { linkSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
@@ -128,6 +128,35 @@ describe("names and options", () => {
     it("refuses names with line breaks or too long, with a reason", async () => {
         expect((await rpg("write", "Va\nrro", "--type", "character")).output).toContain("cannot be a page name");
         expect((await rpg("write", "x".repeat(121), "--type", "character")).output).toContain("at most 120 characters");
+    });
+
+    it("refuses a campaign whose folders it writes in are links that lead outside, and a file that is one, and writes nothing there", async () => {
+        const outside = makeTempFolder();
+
+        try {
+            mkdirSync(join(folder, "world", "places"), { recursive: true });
+            rmSync(join(folder, "world", "places"), { recursive: true });
+            symlinkSync(outside, join(folder, "world", "places"), "junction");
+            expect((await rpg("write", "Torre", "--type", "place")).output).toContain("is a link to somewhere else");
+            expect(readdirSync(outside)).toEqual([]);
+
+            rmSync(join(folder, "world", "places"));
+            writeFileSync(join(outside, "run.sh"), "");
+            rmSync(join(folder, "log.jsonl"), { force: true });
+            linkSync(join(outside, "run.sh"), join(folder, "log.jsonl"));
+            expect((await rpg("write", "Torre", "--type", "place")).output).toContain("log.jsonl is a link to a file somewhere else");
+            expect(readFileSync(join(outside, "run.sh"), "utf8")).toBe("");
+
+            // A page that is a hard link to a file outside, written over.
+            rmSync(join(folder, "log.jsonl"));
+            writeFileSync(join(outside, "bashrc"), "fuori");
+            rmSync(join(folder, "world", "places", "Torre.md"), { force: true });
+            linkSync(join(outside, "bashrc"), join(folder, "world", "places", "Torre.md"));
+            expect((await rpg("write", "Torre", "--text", "Riscritta.")).output).toContain("Torre.md is a link to a file somewhere else");
+            expect(readFileSync(join(outside, "bashrc"), "utf8")).toBe("fuori");
+        } finally {
+            removeFolder(outside);
+        }
     });
 
     it("shows the usage when an argument is missing, and refuses an option given twice", async () => {

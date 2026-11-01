@@ -552,7 +552,7 @@ function chatPieceText(state: ImportState, piece: NonNullable<ImportResult["piec
         `Importing ${state.title} here in the chat, piece ${piece.number} of ${state.pieces}: write its pages with write, and add what it adds to the pages you `
         + `wrote before, which find shows. A picture marked [picture: name] is the file "${piece.pictures}${sep}name": give it to its page with image. ${then}`,
         piece.instructions,
-        piece.text,
+        `Piece ${piece.number} of "${state.title}", the document's own text:\n${piece.text}`,
     ].filter((part) => part !== "").join("\n\n");
 }
 

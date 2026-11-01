@@ -229,6 +229,19 @@ describe("the player's view, after a review", () => {
         expect(await ok("view", "Varro#Botola")).toBe("Kira knows nothing of Varro called Botola.");
         writeFileSync(join(folder, "world", "places", "Mulino.md"), "---\n---\nUna ruota.\n\n    > [!secret] Troppo dentro\n    > Non letto.\n");
         expect(await ok("validate")).toContain('Mulino marks a secret that is read as public text: "> [!secret] Troppo dentro".');
+        // Read as public text, still hidden from the player: in doubt, the secret stays the master's.
+        await ok("reveal", "Mulino", "--to", "Kira");
+        expect(await ok("view", "Mulino")).toBe("Mulino (place)\n\nUna ruota.");
+        writeFileSync(join(folder, "world", "places", "Mulino.md"), "---\n---\nUna ruota.\n\n> [!note] Nota\n> > [!secret] Annidato\n> > Non letto.\n> Detto a tutti.\n");
+        expect(await ok("view", "Mulino")).toBe("Mulino (place)\n\nUna ruota.\n\n> [!note] Nota\n> Detto a tutti.");
+    });
+
+    it("VIEW-3: writes a link to a secret not discovered as its words, so that its name tells nothing", async () => {
+        await ok("write", "Locanda", "--type", "place", "--text", "Si parla di [[Varro#Paura|una paura]] e di [[Varro#Passato]].");
+        await ok("reveal", "Varro", "Locanda", "--to", "Kira");
+        expect(await ok("view", "Locanda")).toBe("Locanda (place)\n\nSi parla di una paura e di [[Varro#Passato]].");
+        await ok("reveal", "Varro#Paura", "--to", "Kira");
+        expect(await ok("view", "Locanda")).toBe("Locanda (place)\n\nSi parla di [[Varro#Paura|una paura]] e di [[Varro#Passato]].");
     });
 
     it("VIEW-2: of two pages with one name, gives the one the character knows, and tells nothing of the other", async () => {

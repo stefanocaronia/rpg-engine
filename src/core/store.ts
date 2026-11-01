@@ -1,7 +1,7 @@
 // The files as a command sees them (D-137, D-194): each read at most once in a call, kept as its text and as what it reads as, frozen; what the command writes
 // updates what is kept. A command runs inside its store, and the modules reach it with files(): the MCP server will keep one for a whole session.
 import { AsyncLocalStorage } from "node:async_hooks";
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileOrder, filesIn } from "./files.ts";
 import { frozen } from "./frozen.ts";
@@ -102,6 +102,19 @@ export class FileStore
             : [];
     }
 
+    /** Whether `path` is a link as it is now: a symbolic link or a junction, or a file with another name elsewhere, a hard link. */
+    isLink(path: string): boolean
+    {
+        const stats = lstatSync(path, { throwIfNoEntry: false });
+        return stats !== undefined && (stats.isSymbolicLink() || (stats.isFile() && stats.nlink > 1));
+    }
+
+    /** The links right inside `folder`, as they are now, by name, which entries leaves out; none when there is no such folder. */
+    links(folder: string): string[]
+    {
+        return existsSync(folder) && statSync(folder).isDirectory() ? readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isSymbolicLink()).map((entry) => entry.name) : [];
+    }
+
     /** A file's bytes as they are now, as a save holds them; undefined when there is no file. */
     bytes(path: string): Uint8Array | undefined
     {
@@ -144,6 +157,7 @@ export class FileStore
     /** Writes a file, with the folders it needs. */
     write(path: string, text: string): void
     {
+        refuseLinked(path);
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, text, "utf8");
         this.changed(path, { text }, true);
@@ -153,6 +167,7 @@ export class FileStore
     /** Writes a file's bytes as they are, with the folders it needs, as a save gives them back: what the store kept of it is read again. */
     writeBytes(path: string, bytes: Uint8Array): void
     {
+        refuseLinked(path);
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, bytes);
         this.changed(path, undefined, true);
@@ -162,6 +177,7 @@ export class FileStore
     /** Adds text at the end of a file, as the log grows. */
     append(path: string, text: string): void
     {
+        refuseLinked(path);
         const before = this.kept.get(resolve(path));
         appendFileSync(path, text, "utf8");
         // A file never read stays to be read: what is kept of it would be only its end.
@@ -338,5 +354,15 @@ function markWritten(): void
 
     if (call !== undefined) {
         call.wrote = true;
+    }
+}
+
+/** Throws for a file that is a link, a symbolic one or a hard link: what is written there would land in a file somewhere else. */
+function refuseLinked(path: string): void
+{
+    const stats = lstatSync(path, { throwIfNoEntry: false });
+
+    if (stats !== undefined && (stats.isSymbolicLink() || (stats.isFile() && stats.nlink > 1))) {
+        throw new Error(`${path} is a link to a file somewhere else, and what is written there would land in that file: replace it with a copy of its own. Nothing was written to it.`);
     }
 }

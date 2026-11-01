@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -218,25 +218,25 @@ Když se tě Pán jeskyně na něco zeptá, jeho nápis zůstane nahoře, ať js
 
 ### 5.1 Co je herní systém
 
-Data jedné hry: její deník postavy, čísla, tvorové, předměty, kouzla a text pravidel. Každá kampaň hraje jeden systém. RPG Engine spočítá deník postavy i to, co se utratí a vrací; jak funguje schopnost, přečte Pán jeskyně v pravidlech a rozhodne, jako u stolu.
+Data jedné hry: její deník postavy, čísla, tvorové, předměty, kouzla a text pravidel. Každá kampaň hraje jeden systém. RPG Engine počítá deník postavy i to, co se utratí a co se vrátí. Jak funguje nějaká schopnost, to Pán jeskyně přečte v pravidlech a rozhodne, stejně jako u stolu.
 
 ### 5.2 Pátá edice
 
-Rasy, povolání, podpovolání, zázemí a vlastnost z SRD 5.1; 319 kouzel, zbraně, zbroje, magické předměty a příšery; kapitoly pravidel, které Pán jeskyně čte podle přesného znění; úplný deník postavy, spočítaný.
+Rasy, povolání, podpovolání, zázemí a vlastnost (feat) ze SRD 5.1; 319 kouzel, zbraně, zbroje, magické předměty a příšery; kapitoly pravidel, které Pán jeskyně čte přesně podle textu; úplný deník postavy, vypočtený.
 
-Je to samostatný balíček: Pán jeskyně ho nabídne při zakládání kampaně a nainstaluje ho. Kampaň, která ho hraje, si ho nainstaluje sama, když se poprvé otevře na počítači bez něj, a Pán jeskyně ti to oznámí.
+Je to samostatný balíček: Pán jeskyně ho nabídne, když nastavuješ kampaň, a nainstaluje ho. Kampaň, která ho hraje, si ho nainstaluje sama při prvním otevření na počítači, kde ještě není. Pán jeskyně ti to řekne.
 
-Můžeš hrát i obsah, který SRD nemá, z knihy, kterou vlastníš: Pán jeskyně ho zapíše jako stránky tvé kampaně a RPG Engine s ním zachází jako s vlastním. RPG Engine dodává jen otevřený obsah; co zná Pán jeskyně, omezené není.
+Můžeš hrát i obsah, který v SRD chybí, z knihy, kterou vlastníš: Pán jeskyně ho zapíše jako stránky tvé kampaně a RPG Engine s nimi zachází jako s vlastními. RPG Engine obsahuje jen otevřený obsah; znalosti Pána jeskyně nejsou omezené.
 
-Tvé vlastní příručky mohou být tvou knihovnou: řekni Pánu jeskyně, kde jsou, *[Mé příručky jsou v D:\Books\5e.]*, nebo přidej jejich složku v Packages › Library a jednou řekni ano v okně, které ukáže počítač. RPG Engine je čte na tomto počítači; každá kampaň používá složky, které tam zapneš, a Pán jeskyně v nich hledá, když rozhoduje pravidlo, po SRD, s uvedením knihy a stránky. Nejlépe se čtou jako text nebo jako PDF s vybratelným textem; skenované PDF se čte z obrázků stránek, jen ve Windows, několik minut a s drobnými chybami. RPG Engine tvé příručky nikdy nemění, nikdy nikam neposílá jejich text a nikdy ho nekopíruje do kampaně.
+Tvé vlastní příručky mohou tvořit tvou knihovnu: řekni Pánu jeskyně, kde jsou, *[Moje příručky jsou v D:\Books\5e.]*, nebo přidej jejich složku v Packages › Library a jednou potvrď ano v okně, které ukáže počítač. RPG Engine je čte na tomto počítači. Každá kampaň používá složky, které tam zapneš. Pán jeskyně v nich hledá, když rozhoduje o pravidlu, až po SRD, a uvádí knihu i stranu. Nejlépe se čtou jako text nebo jako PDF s textem, který jde označit. Naskenované PDF se čte z obrázků stránek, jen na Windows, několik minut a s několika chybami. RPG Engine tvé příručky nikdy nemění, jejich text nikam neposílá a nikdy ho nekopíruje do kampaně.
 
 ### 5.3 Domácí pravidla a vlastní doplňky
 
-Zeptej se Pána jeskyně: *[Domácí pravidlo: přirozená 1 při útoku znamená, že upustíš zbraň.]* Pán jeskyně si ji zapamatuje jako dohodu stolu, nebo napíše stránku či číslo deníku postavy, když je potřeba. Již sepsaná domácí pravidla mohou být jako textové soubory ve složce `rules` kampaně.
+Požádej Pána jeskyně: *[Domácí pravidlo: přirozená 1 při útoku znamená, že upustíš zbraň.]* Zapíše si ho jako dohodu stolu, nebo napíše stránku či číslo do deníku postavy, když je třeba. Už napsaná domácí pravidla můžeš vložit jako textové soubory do složky `rules` v kampani.
 
 ### 5.4 Přidání nebo import vlastního herního systému
 
-Herní systém je balíček: Pán jeskyně nainstaluje jeden z npm, ze složky nebo ze souboru, a ten, který není náš, jen s tvým ano v okně tvého počítače. Vytvořit ho je práce pro vývojáře, popsaná v dokumentech RPG Engine na GitHubu. Proměnit tvou knihu v herní systém tu zatím není ([Připravujeme](#9-coming-later)).
+Herní systém je balíček: Pán jeskyně ho nainstaluje z npm, ze složky nebo ze souboru. Balíček, který není od nás, nainstaluje jen s tvým ano, ve formuláři svého agenta nebo v okně počítače. Vytvořit ho je práce pro vývojáře, popsaná v dokumentech RPG Engine na GitHubu. Proměnit tvou knihu v herní systém tu zatím nejde ([Připravujeme](#9-coming-later)).
 
 ---
 
@@ -264,11 +264,11 @@ Jeden jazyk na kampaň, ten Pána jeskyně, kterým se řídí i dashboard. Dash
 
 ## 8. Pro zvědavé: složka kampaně <!-- icon: list -->
 
-Nikdy ji nemusíš otevírat a jsou v ní tajemství tvé kampaně. Obsahuje `campaign.yaml` (tvá nastavení), `state.yaml` (stav hry), `world/` (jedna stránka markdown pro každou postavu, místo, úkol a další), `rules/` (tvá vlastní pravidla), `images/`, `log.jsonl` (každá změna), `.saves/`, `.player/` (tvé poznámky) a drobné soubory, které AI agentům říkají, kde RPG Engine najdou. Stránky používají formát Obsidianu. Když stránku upravíš ručně, Pán jeskyně se to dozví při své další odpovědi.
+Nikdy ji nemusíš otevírat a obsahuje tajemství tvé kampaně. Najdeš v ní `campaign.yaml` (tvá nastavení), `state.yaml` (jak hra stojí), `world/` (jedna stránka markdown pro každou postavu, místo, úkol a další), `rules/` (tvá domácí pravidla), `images/`, `log.jsonl` (každá změna), `.saves/`, `.player/` (tvé poznámky) a malé soubory, které AI agentům říkají, kde RPG Engine je. Stránky používají formát Obsidianu. Když stránku změníš ručně, Pán jeskyně se to dozví při své další odpovědi.
 
-RPG Engine zůstává v této složce: hru čte a zapisuje jen tady a nikdy se nedotkne tvých dalších souborů. Složky s tvými příručkami jen čte. Mimo ni si ukládá jen vlastní datové složky (překlady dashboardu, text přečtený z tvých příruček a Codex nebo Claude Code, pokud mu dovolíš je nainstalovat) a dočasné složky, zatímco se kreslí obrázek. Cokoli dalšího chce tvůj agent na počítači udělat, nejdřív se zeptá.
+RPG Engine zůstává v této složce: hru čte a zapisuje jen tady a nikdy nesahá na tvé další soubory. Složky s tvými příručkami jen čte. Mimo ni si uchovává jen vlastní datové složky (překlady dashboardu, text přečtený z tvých příruček a Codex či Claude Code, pokud mu dovolíš je nainstalovat) a dočasné složky, dokud se kreslí obrázek. Cokoli jiného chce tvůj agent na počítači udělat, nejdřív se zeptá tebe. Herní systém nebo rozšíření je kód, stejně jako každý balíček npm: ten, který není od nás, běží na tvém počítači s tvými oprávněními a RPG Engine ho nainstaluje jen s tvým ano, ve formuláři tvého agenta nebo v okně počítače. Souhlas dávej jen balíčkům, jejichž autorům věříš.
 
-Každý příkaz, který Pán jeskyně používá, lze spustit i ve složce kampaně: `rpg --help` je vypíše. Mnohé z nich vypisují tajemství kampaně.
+Každý příkaz, který Pán jeskyně používá, jde spustit i ve složce kampaně: `rpg --help` je vypíše. Mnohé vypisují tajemství kampaně.
 
 ---
 

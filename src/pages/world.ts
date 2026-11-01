@@ -1,4 +1,5 @@
 import { basename, join, relative, resolve, sep } from "node:path";
+import { isReservedName } from "../core/archive-paths.ts";
 import type { FieldKind } from "../core/field-kind.ts";
 import { translationFolder } from "../core/files.ts";
 import type { Formula, SystemFormulas } from "../core/formula.ts";
@@ -510,6 +511,10 @@ export function checkPageName(name: string): void
 {
     if (name === "" || name.length > longestName || name.trim() !== name || name.endsWith(".") || forbiddenCharacters.test(name)) {
         throw new Error(`"${name}" cannot be a page name. Names become file names and links: at most ${longestName} characters, without \\ / : * ? " < > | # ^ [ ], line breaks, spaces at the ends or a final dot.`);
+    }
+
+    if (isReservedName(name)) {
+        throw new Error(`"${name}" cannot be a page name: Windows keeps it for a device, as CON, NUL or COM1. Give it another name, as "${name} (place)".`);
     }
 
     // A name that ends as a file does, as Bruna.md or Mappa.png, makes a page no link reaches (LNK-1).

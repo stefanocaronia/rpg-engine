@@ -48,7 +48,7 @@ describe("packages at their edges, in npm's real layout", () => {
         // The window shows up to 1000 characters: the warning is never cut, however long what the author wrote.
         expect(asked[0].length).toBeLessThanOrEqual(1000);
         expect(asked[0]).toContain("its secrets included");
-        expect(asked[0]).toMatch(/RPG Engine takes no responsibility for it\.$/);
+        expect(asked[0]).toMatch(/RPG Engine takes no responsibility for it: install it only if you trust who made it.$/);
     });
 
     it("gives the host's form the author's words without marks that turn text around, nor new lines", async () => {

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -214,29 +214,29 @@ Kun pelinjohtaja kysyy sinulta jotain, sen palkki pysyy ylhäällä, missä osio
 
 ---
 
-## 5. Pelijärjestelmät ja talosäännöt <!-- icon: dice -->
+## 5. Pelijärjestelmät ja kotisäännöt <!-- icon: dice -->
 
 ### 5.1 Mikä pelijärjestelmä on
 
-Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntötekstit. Jokainen kampanja pelaa yhtä järjestelmää. RPG Engine laskee hahmolomakkeen sekä sen, mikä kuluu ja mikä palautuu. Pelinjohtaja lukee säännöistä, miten kyky toimii, ja päättää, kuten pelipöydässä.
+Yhden pelin tiedot: sen hahmolomake, luvut, olennot, esineet, loitsut ja sääntötekstit. Jokainen kampanja pelaa yhtä järjestelmää. RPG Engine laskee hahmolomakkeen sekä sen, mitä kuluu ja mitä palautuu. Pelinjohtaja lukee säännöistä, miten kyvyt toimivat, ja päättää asiasta, kuten pöydän ääressä.
 
-### 5.2 Viides painos
+### 5.2 Viides editio
 
-SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja erikoistaito; 319 loitsua, aseet, haarniskat, taikaesineet ja hirviöt; sääntöluvut, jotka pelinjohtaja lukee tarkalta sanamuodolta; täysi hahmolomake laskettuna valmiiksi.
+SRD 5.1:n rodut, hahmoluokat, alaluokat, tausta ja urateko, 319 loitsua, aseet, haarniskat, taikaesineet ja hirviöt sekä sääntöluvut, jotka pelinjohtaja lukee tarkalta sanamuodolta. Mukana on myös täysi, laskettu hahmolomake.
 
-Se on oma pakettinsa: pelinjohtaja tarjoaa sitä, kun luot kampanjaa, ja asentaa sen. Kampanja, joka pelaa sitä, asentaa paketin itse, kun se avataan ensimmäistä kertaa tietokoneella, jolla pakettia ei ole. Pelinjohtaja kertoo siitä sinulle.
+Tämä on oma pakettinsa: pelinjohtaja tarjoaa sitä, kun perustat kampanjan, ja asentaa sen. Jos kampanja pelaa tätä järjestelmää, paketti asentuu itsestään, kun kampanja avataan ensimmäistä kertaa tietokoneella, jolla sitä ei vielä ole. Pelinjohtaja kertoo siitä sinulle.
 
-Voit pelata myös sisältöä, jota SRD:stä puuttuu, omistamastasi kirjasta: pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee ne ominaan. RPG Engine toimittaa vain avointa sisältöä, mutta pelinjohtajan tiedot eivät rajoitu siihen.
+Voit pelata myös sisältöä, jota SRD:ssä ei ole, omasta kirjastasi. Pelinjohtaja kirjoittaa sen kampanjasi sivuiksi, ja RPG Engine käsittelee ne ominaan. RPG Engine toimittaa vain avointa sisältöä, mutta pelinjohtajan tietämys ei rajoitu siihen.
 
-Omat sääntökirjasi voivat olla kirjastosi: kerro pelinjohtajalle, missä ne ovat, *[Sääntökirjani ovat kansiossa D:\Books\5e.]*, tai lisää niiden kansio kohdassa Packages › Library ja vastaa kerran myöntävästi tietokoneesi näyttämään ikkunaan. RPG Engine lukee ne tällä tietokoneella. Jokainen kampanja käyttää kansioita, jotka olet siellä ottanut käyttöön. Pelinjohtaja hakee niistä, kun hän ratkaisee sääntöä, SRD:n jälkeen, ja mainitsee kirjan ja sivun. Ne luetaan parhaiten tekstinä tai PDF-tiedostoina, joiden teksti on valittavissa. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, muutamassa minuutissa ja muutamin virhein. RPG Engine ei koskaan muuta sääntökirjojasi, ei koskaan lähetä niiden tekstiä minnekään eikä koskaan kopioi sitä kampanjaan.
+Omat sääntökirjasi voivat olla kirjastosi. Kerro pelinjohtajalle, missä ne ovat: *[Sääntökirjani ovat kansiossa D:\Books\5e.]* Voit myös lisätä niiden kansion kohdassa Packages › Library ja vastata kyllä tietokoneesi näyttämään ikkunaan, kerran. RPG Engine lukee kirjat tällä tietokoneella. Jokainen kampanja käyttää kansioita, jotka olet ottanut siellä käyttöön. Pelinjohtaja hakee niistä, kun ratkaisee sääntöä SRD:n jälkeen, ja mainitsee kirjan ja sivun. Kirjat luetaan parhaiten tekstinä tai PDF-tiedostoina, joiden tekstin voi valita. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, muutamassa minuutissa ja muutamin virhein. RPG Engine ei koskaan muuta kirjojasi, ei lähetä niiden tekstiä minnekään eikä kopioi sitä kampanjaan.
 
-### 5.3 Talosäännöt ja omat lisäykset
+### 5.3 Kotisäännöt ja omat lisäykset
 
-Pyydä pelinjohtajaa: *[Talosääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Pelinjohtaja pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, kun sellainen tarvitaan. Valmiiksi kirjoitetut talosäännöt voivat olla tekstitiedostoina kampanjan `rules`-kansiossa.
+Pyydä pelinjohtajaa: *[Kotisääntö: luonnollinen 1 hyökkäyksessä tarkoittaa, että pudotat aseesi.]* Pelinjohtaja pitää sen pöydän sopimuksena tai kirjoittaa sivun tai hahmolomakkeen luvun, jos sellainen tarvitaan. Valmiiksi kirjoitetut kotisäännöt voi lisätä tekstitiedostoina kampanjan `rules`-kansioon.
 
-### 5.4 Oman pelijärjestelmän lisääminen tai tuominen
+### 5.4 Oman pelijärjestelmän lisääminen tai tuonti
 
-Pelijärjestelmä on paketti: pelinjohtaja asentaa sen npm:stä, kansiosta tai tiedostosta. Jos paketti ei ole meidän, asennus vaatii sinun myöntävän vastauksesi tietokoneesi ikkunassa. Paketin tekeminen on kehittäjän työtä, ja se kuvataan RPG Enginen dokumenteissa GitHubissa. Oman kirjasi muuttaminen pelijärjestelmäksi ei ole vielä mahdollista ([Tulossa myöhemmin](#9-coming-later)).
+Pelijärjestelmä on paketti. Pelinjohtaja asentaa sen npm:stä, kansiosta tai tiedostosta. Jos paketti ei ole meidän, asennus tehdään vain sinun luvallasi agenttisi lomakkeessa tai tietokoneesi ikkunassa. Paketin tekeminen on kehittäjän työtä, ja se on kuvattu RPG Enginen dokumenteissa GitHubissa. Omasta kirjastasi pelijärjestelmän tekemistä ei vielä ole ([Tulossa myöhemmin](#9-coming-later)).
 
 ---
 
@@ -264,11 +264,11 @@ Yksi kieli kampanjaa kohden, pelinjohtajan kieli, jota kojelauta seuraa. Kojelau
 
 ## 8. Uteliaille: kampanjakansio <!-- icon: list -->
 
-Sinun ei koskaan tarvitse avata sitä, ja siinä ovat kampanjasi salaisuudet. Siinä on `campaign.yaml` (asetuksesi), `state.yaml` (pelin tilanne), `world/` (yksi markdown-sivu jokaista hahmoa, paikkaa, tehtävää ja muuta kohden), `rules/` (kotisääntösi), `images/`, `log.jsonl` (jokainen muutos), `.saves/`, `.player/` (muistiinpanosi) sekä pienet tiedostot, jotka kertovat tekoälyagenteille, missä RPG Engine on. Sivut käyttävät Obsidianin muotoa. Jos muutat sivua käsin, pelinjohtaja saa siitä tiedon seuraavalla vastauksellaan.
+Sinun ei koskaan tarvitse avata sitä, ja siinä on kampanjasi salaisuudet. Siinä on `campaign.yaml` (asetuksesi), `state.yaml` (pelin tilanne), `world/` (yksi markdown-sivu jokaista hahmoa, paikkaa, tehtävää ja muuta kohden), `rules/` (kotisääntösi), `images/`, `log.jsonl` (jokainen muutos), `.saves/`, `.player/` (muistiinpanosi) sekä pienet tiedostot, jotka kertovat tekoälyagenteille, missä RPG Engine on. Sivut käyttävät Obsidianin muotoa. Jos muutat sivua käsin, pelinjohtaja huomaa sen seuraavassa vastauksessaan.
 
-RPG Engine pysyy tässä kansiossa: se lukee ja kirjoittaa peliä vain täällä eikä koske muihin tiedostoihisi. Sääntökirjojesi kansioita se vain lukee. Sen ulkopuolelle se jättää vain omia tietokansioitaan (kojelaudan käännökset, sääntökirjoistasi luetun tekstin sekä Codexin tai Claude Coden, jos annat asentaa ne) ja väliaikaisia kansioita kuvan piirtämisen ajaksi. Kaikesta muusta, mitä agenttisi haluaa tehdä tietokoneellasi, se kysyy sinulta ensin.
+RPG Engine pysyy tässä kansiossa: se lukee ja kirjoittaa peliä vain täällä eikä koske muihin tiedostoihisi. Kirjojesi kansioita se vain lukee. Sen ulkopuolella se säilyttää vain omia datakansioitaan (dashboardin käännökset, kirjoistasi lukemansa teksti sekä Codex tai Claude Code, jos annat asentaa ne) ja väliaikaisia kansioita kuvan piirtämisen ajan. Jos agenttisi haluaa tehdä tietokoneellasi jotain muuta, se kysyy ensin sinulta. Pelijärjestelmä tai laajennus on koodia, kuten jokainen npm-paketti: paketti, joka ei ole meidän, toimii tietokoneellasi sinun oikeuksillasi, ja RPG Engine asentaa sen vain sinun luvallasi agenttisi lomakkeessa tai tietokoneesi ikkunassa. Vastaa kyllä vain paketeille, joiden tekijöihin luotat.
 
-Kaikki pelinjohtajan käyttämät komennot voi ajaa myös kampanjakansiossa: `rpg --help` luettelee ne. Monet tulostavat kampanjan salaisuuksia.
+Jokaisen komennon, jota pelinjohtaja käyttää, voi ajaa myös kampanjakansiossa: `rpg --help` listaa ne. Moni niistä tulostaa kampanjan salaisuuksia.
 
 ---
 

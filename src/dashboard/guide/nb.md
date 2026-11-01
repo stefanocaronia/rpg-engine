@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den komplette veiledningen
 
 **RPG Engine** lar deg spille et rollespill rundt bordet med en **AI som spilleder**. Du snakker med spillederen i en **chat**. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**. Ved siden av chatten har du en side åpen i nettleseren, **dashbordet**, med karakterarket, terningene, kartene og dagboken din.
@@ -218,25 +218,25 @@ Når spilleder spør deg om noe, blir banneretværende øverst, uansett hvilken 
 
 ### 5.1 Hva et spillsystem er
 
-Dataene til ett spill: karakterarket, tallene, skapningene, gjenstandene, trylleformlene og regelteksten. Hver kampanje spiller ett system. RPG Engine regner ut karakterarket og det som brukes opp og kommer tilbake. Hvordan en egenskap virker, leser spilleder i reglene og avgjør, slik det gjøres ved et bord.
+Dataene til ett spill: karakterarket, tallene, skapningene, gjenstandene, trylleformlene og regelteksten. Hvert oppdrag i en kampanje bruker ett system. Nei, la oss si det riktig: Hver kampanje spiller ett system. RPG Engine regner ut karakterarket og det som brukes opp og kommer tilbake. Hvordan en egenskap virker, leser spilleder i reglene og avgjør, som ved et bord.
 
 ### 5.2 Femte utgave
 
-Rasene, klassene, underklassene, en bakgrunn og en egenskap (feat) fra SRD 5.1. Dessuten de 319 trylleformlene, våpnene, rustningene, de magiske gjenstandene og monstrene, og regelkapitlene, som spilleder leser etter nøyaktig ordlyd. Til slutt hele karakterarket, utregnet.
+Rasene, klassene, underklassene, en bakgrunn og en egenskap (feat) fra SRD 5.1. Dessuten de 319 trylleformlene, våpnene, rustningene, magiske gjenstandene og monstrene, og regelkapitlene, som spilleder leser etter den nøyaktige teksten. Hele karakterarket, utregnet.
 
-Det er en egen pakke: spilleder tilbyr den når du setter opp en kampanje, og installerer den. En kampanje som spiller den, installerer den av seg selv første gang den åpnes på en datamaskin uten den, og spilleder sier fra til deg.
+Det er en egen pakke: spilleder tilbyr den når du setter opp en kampanje, og installerer den. En kampanje som spiller den, installerer den av seg selv første gang den åpnes på en datamaskin uten pakken, og spilleder sier fra til deg.
 
-Du kan også spille innhold som SRD-en mangler, fra en bok du eier: Spilleder skriver det som sider i kampanjen din, og RPG Engine behandler dem som sine egne. RPG Engine leveres bare med åpent innhold. Det spilleder kan, er ikke begrenset.
+Du kan også spille innhold som SRD-en mangler, fra en bok du eier: spilleder skriver det som sider i kampanjen din, og RPG Engine behandler dem som sine egne. RPG Engine leveres bare med åpent innhold. Det spilleder kan, er ikke begrenset.
 
-Dine egne regelbøker kan være biblioteket ditt. Fortell spilleder hvor de er: *[Regelbøkene mine ligger i D:\Books\5e.]* Du kan også legge til mappen deres i Packages › Library og si ja i vinduet datamaskinen viser, én gang. RPG Engine leser dem på denne datamaskinen. Hver kampanje bruker mappene du slår på der, og spilleder søker i dem når en regel skal avgjøres, etter SRD-en, og oppgir bok og side. De leses best som tekst, eller som PDF-er der teksten kan markeres. En skannet PDF leses fra bildene av sidene, bare på Windows, på noen minutter og med noen feil. RPG Engine endrer aldri regelbøkene dine, sender aldri teksten deres noe sted og kopierer den aldri inn i en kampanje.
+Dine egne regelbøker kan bli biblioteket ditt. Fortell spilleder hvor de er: *[Regelbøkene mine ligger i D:\Books\5e.]* Du kan også legge til mappen i Packages › Library og si ja i vinduet som datamaskinen din viser, én gang. RPG Engine leser dem på denne datamaskinen. Hver kampanje bruker mappene du slår på der, og spilleder søker i dem når en regel skal avgjøres, etter SRD-en, og oppgir boken og siden. De leses best som tekst, eller som PDF-er der teksten kan markeres. En skannet PDF leses fra bildene av sidene, bare på Windows, på noen minutter og med noen feil. RPG Engine endrer aldri regelbøkene dine, sender aldri teksten deres noe sted og kopierer den aldri inn i en kampanje.
 
-### 5.3 Husregler og egne tillegg
+### 5.3 Husregler og dine egne tillegg
 
-Spør spilleder: *[Husregel: en naturlig 1 på et angrep betyr at du mister våpenet.]* Spilleder beholder den som en avtale ved bordet, eller skriver en side eller et tall på karakterarket når det trengs. Husregler som allerede er skrevet ut, kan legges som tekstfiler i kampanjens `rules`-mappe.
+Spør spilleder: *[Husregel: en naturlig 1 på et angrep betyr at du mister våpenet.]* Spilleder tar vare på den som en avtale ved bordet, eller skriver en side eller et tall på karakterarket når det trengs. Husregler som allerede er skrevet ut, kan legges som tekstfiler i kampanjens `rules`-mappe.
 
 ### 5.4 Legge til eller importere ditt eget spillsystem
 
-Et spillsystem er en pakke: spilleder installerer en fra npm, en mappe eller en fil, og en som ikke er vår, bare med ditt ja, i et vindu på datamaskinen din. Å lage en er arbeid for en utvikler, og er beskrevet i RPG Engines dokumenter på GitHub. Å gjøre en bok du eier om til et spillsystem er ikke på plass ennå ([Kommer senere](#9-coming-later)).
+Et spillsystem er en pakke: spilleder installerer en fra npm, en mappe eller en fil. En pakke som ikke er vår, installeres bare med ditt ja, i et skjema fra agenten din eller i et vindu på datamaskinen din. Å lage en pakke er arbeid for en utvikler, og er beskrevet i RPG Engines dokumenter på GitHub. Å gjøre en bok du eier om til et spillsystem finnes ikke ennå ([Kommer senere](#9-coming-later)).
 
 ---
 
@@ -264,11 +264,11 @@ Ett språk per kampanje, spillederens, som dashbordet følger. Dashbordet levere
 
 ## 8. For de nysgjerrige: kampanjemappen <!-- icon: list -->
 
-Du trenger aldri å åpne den, og den inneholder hemmelighetene i kampanjen din. Den har `campaign.yaml` (innstillingene dine), `state.yaml` (hvor spillet står), `world/` (én markdown-side for hver karakter, hvert sted, hvert oppdrag og alt annet), `rules/` (husreglene dine), `images/`, `log.jsonl` (hver endring), `.saves/`, `.player/` (notatene dine) og de små filene som forteller AI-agenter hvor RPG Engine er. Sidene bruker Obsidians format. Hvis du endrer en side for hånd, får spilleder vite det ved neste svar.
+Du trenger aldri å åpne den, og den inneholder hemmelighetene i kampanjen din. Den har `campaign.yaml` (innstillingene dine), `state.yaml` (hvor spillet står), `world/` (én markdown-side for hver karakter, hvert sted, hvert oppdrag og resten), `rules/` (husreglene dine), `images/`, `log.jsonl` (hver endring), `.saves/`, `.player/` (notatene dine) og de små filene som forteller AI-agenter hvor RPG Engine er. Sidene bruker Obsidians format. Hvis du endrer en side for hånd, får spilleder vite det ved neste svar.
 
-RPG Engine holder seg i denne mappen: det leser og skriver spillet bare her, og rører aldri de andre filene dine. Mappene med regelbøkene dine leser det bare. Utenfor mappen har det bare egne datamapper (dashbordets oversettelser, teksten det har lest fra regelbøkene dine, og Codex eller Claude Code hvis du lar det installere dem) og midlertidige mapper mens et bilde tegnes. Alt annet agenten din vil gjøre på datamaskinen din, spør den deg om først.
+RPG Engine holder seg i denne mappen: det leser og skriver spillet bare her, og rører aldri de andre filene dine. Mappene med regelbøkene dine leser det bare. Utenfor mappen har det bare egne datamapper (oversettelsene til dashbordet, teksten det har lest fra regelbøkene dine, og Codex eller Claude Code hvis du lar det installere dem) og midlertidige mapper mens et bilde tegnes. Alt annet agenten din vil gjøre på datamaskinen din, spør den deg om først. Et spillsystem eller en utvidelse er kode, slik enhver npm-pakke er det: en pakke som ikke er vår, kjører på datamaskinen din med dine tillatelser, og RPG Engine installerer den bare med ditt ja, i et skjema fra agenten din eller i et vindu på datamaskinen din. Si bare ja til pakker der du stoler på utviklerne.
 
-Hver kommando spilleder bruker, kan også kjøres i kampanjemappen: `rpg --help` lister dem. Mange skriver ut hemmelighetene i kampanjen.
+Hver kommando spilleder bruker, kan også kjøres i kampanjemappen: `rpg --help` viser dem. Mange skriver ut hemmelighetene i kampanjen.
 
 ---
 

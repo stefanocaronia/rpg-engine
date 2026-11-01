@@ -602,6 +602,16 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect((await get("/api/view")).headers["content-security-policy"]).toBe("default-src 'self'");
     });
 
+    it("lets another program's page on this computer, at another port, only open the page, as a link does: not the API, the bell or a frame", async () => {
+        const sameSite = { "sec-fetch-site": "same-site" };
+        const link = { ...sameSite, "sec-fetch-mode": "navigate", "sec-fetch-dest": "document" };
+        expect((await get("/api/view", { "sec-fetch-site": "cross-site" })).status).toBe(403);
+        expect((await get("/api/bell", { ...sameSite, "sec-fetch-mode": "no-cors", "sec-fetch-dest": "image" })).status).toBe(403);
+        expect((await get("/", { ...sameSite, "sec-fetch-mode": "navigate", "sec-fetch-dest": "iframe" })).status).toBe(403);
+        expect((await get("/api/view", link)).status).toBe(403);
+        expect((await get("/", link)).status).toBe(200);
+    });
+
     it("tells the page when a file of the campaign changes, by whoever, once for changes that come together", async () => {
         // The first call finds the campaign, and the session watches it.
         await get("/api/view");

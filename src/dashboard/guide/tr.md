@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
@@ -216,27 +216,27 @@ Oyun yöneticisi sana bir şey sorduğunda, afişi hangi bölümde olursan ol en
 
 ## 5. Oyun sistemleri ve ev kuralları <!-- icon: dice -->
 
-### 5.1 Oyun sistemi nedir
+### 5.1 Oyun sistemi nedir?
 
-Bir oyunun verileridir: karakter kağıdı, sayıları, yaratıkları, eşyaları, büyüleri ve kural metni. Her maceranın tek bir sistemi vardır. RPG Engine karakter kağıdını ve neyin harcanıp neyin geri geldiğini hesaplar. Bir özelliğin nasıl işlediğini ise oyun yöneticisi kurallardan okur ve bir masada olduğu gibi karar verir.
+Bir oyunun verileridir: karakter kağıdı, sayılar, yaratıklar, eşyalar, büyüler ve kural metinleri. Her kampanya tek bir sistemle oynanır. RPG Engine karakter kağıdını ve harcanan ile geri kazanılan şeyleri hesaplar. Bir özelliğin nasıl işlediğini ise oyun yöneticisi kurallardan okur ve bir masadaki gibi karara bağlar.
 
 ### 5.2 Beşinci sürüm
 
-SRD 5.1'in ırkları, sınıfları, alt sınıfları, bir geçmişi ve bir yeteneği; 319 büyü, silahlar, zırhlar, büyülü eşyalar ve canavarlar; oyun yöneticisinin tam metniyle okuduğu kural bölümleri; baştan sona hesaplanmış karakter kağıdı.
+SRD 5.1'in ırkları, sınıfları, alt sınıfları, bir geçmişi ve bir yeteneği (feat); 319 büyü, silahlar, zırhlar, sihirli eşyalar ve canavarlar; oyun yöneticisinin tam metinlerinden okuduğu kural bölümleri; hesaplanmış, eksiksiz karakter kağıdı.
 
-Bu ayrı bir pakettir: bir macera kurarken oyun yöneticisi onu önerir ve kurar. Bu sistemi oynayan bir macera, paketin olmadığı bir bilgisayarda ilk kez açıldığında paketi kendiliğinden kurar ve oyun yöneticisi sana haber verir.
+Bu, başlı başına bir pakettir. Kampanya kurarken oyun yöneticisi onu önerir ve kurar. Bu sistemi oynayan bir kampanya, paketin olmadığı bir bilgisayarda ilk kez açıldığında paketi kendiliğinden kurar. Oyun yöneticisi de sana haber verir.
 
-SRD'de olmayan içeriği de, sahip olduğun bir kitaptan oynayabilirsin. Oyun yöneticisi onu maceranın sayfaları olarak yazar, RPG Engine de onları kendi sayfaları gibi işler. RPG Engine yalnızca açık içerikle gelir. Oyun yöneticisinin bildikleri ise sınırlı değildir.
+SRD'de olmayan içerikleri de oynayabilirsin. Sahip olduğun bir kitaptan alabilirsin. Oyun yöneticisi bunu kampanyanın sayfaları olarak yazar, RPG Engine de onları kendi sayfaları gibi kullanır. RPG Engine yalnızca açık içerik sunar. Oyun yöneticisinin bildikleri ise bununla sınırlı değildir.
 
-Kendi kılavuzların kitaplığın olabilir. Oyun yöneticisine nerede olduklarını söyle, *[Kılavuzlarım D:\Books\5e içinde.]*, ya da klasörlerini Paketler › Kitaplık bölümünden ekle. Sonra bilgisayarının gösterdiği pencerede bir kez evet de. RPG Engine onları bu bilgisayarda okur. Her macera, orada açtığın klasörleri kullanır. Oyun yöneticisi bir kurala karar verirken SRD'den sonra bu klasörlerde arar ve kitabı ile sayfayı belirtir. En iyi metin olarak okunurlar. Metni seçilebilen PDF'ler de iyi okunur. Taranmış bir PDF ise sayfalarının görüntülerinden okunur. Bu yalnızca Windows'ta olur, birkaç dakika sürer ve birkaç hata çıkar. RPG Engine kılavuzlarını asla değiştirmez, metinlerini hiçbir yere göndermez ve bir maceraya kopyalamaz.
+Kendi kılavuzların kütüphanen olabilir. Oyun yöneticisine nerede olduklarını söyle: *[Kılavuzlarım D:\Books\5e klasöründe.]* Ya da klasörlerini Packages › Library bölümünden ekle ve bilgisayarının gösterdiği pencerede bir kez evet de. RPG Engine onları bu bilgisayarda okur. Her kampanya, orada açtığın klasörleri kullanır. Oyun yöneticisi bir kurala karar verirken SRD'den sonra bu klasörlerde arar ve kitabı ile sayfayı belirtir. En iyi metin olarak okunurlar. Metni seçilebilen PDF'ler de iyi okunur. Taranmış bir PDF ise sayfaların görüntülerinden okunur. Bu yalnızca Windows'ta olur, birkaç dakika sürer ve birkaç hata çıkabilir. RPG Engine kılavuzlarını asla değiştirmez, metinlerini hiçbir yere göndermez ve hiçbir kampanyaya kopyalamaz.
 
 ### 5.3 Ev kuralları ve kendi eklemelerin
 
-Oyun yöneticisine söyle: *[Ev kuralı: saldırıda doğal 1 atarsan silahını düşürürsün.]* Oyun yöneticisi bunu masanın bir anlaşması olarak tutar. Gerekirse bir sayfa ya da karakter kağıdında bir sayı yazar. Önceden yazılmış ev kuralları, maceranın `rules` klasörüne metin dosyaları olarak konabilir.
+Oyun yöneticisine sor: *[Ev kuralı: saldırıda doğal 1 gelirse silahını düşürürsün.]* Oyun yöneticisi bunu masanın bir anlaşması olarak tutar. Gerekirse bir sayfa ya da karakter kağıdında bir sayı yazar. Önceden yazılmış ev kuralları, kampanyanın `rules` klasörüne metin dosyaları olarak konabilir.
 
-### 5.4 Kendi oyun sistemini eklemek ya da içe aktarmak
+### 5.4 Kendi oyun sistemini eklemek veya içe aktarmak
 
-Oyun sistemi bir pakettir. Oyun yöneticisi onu npm'den, bir klasörden ya da bir dosyadan kurar. Bizim olmayan bir paketi ise yalnızca sen evet dersen kurar, bilgisayarının bir penceresinde. Paket hazırlamak bir geliştiricinin işidir ve RPG Engine'in GitHub'daki belgelerinde anlatılır. Kendi kitabını bir oyun sistemine çevirmek henüz yok ([Daha sonra gelecekler](#9-coming-later)).
+Oyun sistemi bir pakettir. Oyun yöneticisi onu npm'den, bir klasörden ya da bir dosyadan kurar. Bizim olmayan bir paketi ise yalnızca senin evetinle kurar. Bu onayı, ajanının bir formunda ya da bilgisayarının bir penceresinde verirsin. Paket hazırlamak bir geliştiricinin işidir ve RPG Engine'in GitHub'daki belgelerinde anlatılır. Kendi kitabını oyun sistemine dönüştürmek henüz yok ([Sonra gelecekler](#9-coming-later)).
 
 ---
 
@@ -262,13 +262,13 @@ Kampanya başına tek dil vardır: oyun yöneticisinin dili; panel onu izler. Pa
 
 ---
 
-## 8. Meraklısına: kampanya klasörü <!-- icon: list -->
+## 8. Merak edenler için: kampanya klasörü <!-- icon: list -->
 
-Onu hiç açman gerekmez. Kampanyanın sırlarını da içerir. İçinde şunlar var: `campaign.yaml` (ayarların), `state.yaml` (oyunun geldiği yer), `world/` (her karakter, yer, görev ve diğerleri için birer markdown sayfası), `rules/` (ev kuralların), `images/`, `log.jsonl` (her değişiklik), `.saves/`, `.player/` (notların) ve yapay zekâ ajanlarına RPG Engine'in nerede olduğunu söyleyen küçük dosyalar. Sayfalar Obsidian'ın biçimini kullanır. Bir sayfayı elle değiştirirsen oyun yöneticisi bunu bir sonraki cevabında öğrenir.
+Onu açman gerekmez. Kampanyanın sırlarını da içerir. İçinde şunlar var: `campaign.yaml` (ayarların), `state.yaml` (oyunun geldiği yer), `world/` (her karakter, yer, görev ve diğerleri için birer markdown sayfası), `rules/` (ev kuralların), `images/`, `log.jsonl` (her değişiklik), `.saves/`, `.player/` (notların) ve yapay zekâ ajanlarına RPG Engine'in nerede olduğunu söyleyen küçük dosyalar. Sayfalar Obsidian biçimini kullanır. Bir sayfayı elle değiştirirsen oyun yöneticisi bunu bir sonraki cevabında öğrenir.
 
-RPG Engine bu klasörün içinde kalır: oyunu yalnızca burada okur ve yazar, diğer dosyalarına asla dokunmaz. Kılavuzlarının klasörlerini ise yalnızca okur. Bunun dışında yalnızca kendi veri klasörlerini tutar (dashboard'un çevirileri, kılavuzlarından okuduğu metin ve izin verirsen kurduğu Codex ya da Claude Code) ve bir görsel çizilirken geçici klasörler kullanır. Ajanın bilgisayarında başka bir şey yapmak isterse önce sana sorar.
+RPG Engine bu klasörde kalır. Oyunu yalnızca burada okur ve yazar, diğer dosyalarına hiç dokunmaz. Kılavuzlarının klasörlerini ise yalnızca okur. Bunun dışında yalnızca kendi veri klasörlerini tutar (panonun çevirileri, kılavuzlarından okuduğu metin, izin verirsen kurduğu Codex veya Claude Code) ve bir resim çizilirken geçici klasörler kullanır. Ajanının bilgisayarında yapmak istediği başka her şey için önce sana sorar. Bir oyun sistemi ya da eklenti koddur, her npm paketi gibi. Bizim olmayan bir paket bilgisayarında senin izinlerinle çalışır. RPG Engine onu yalnızca senin evetinle kurar. Bu onayı ajanının bir formunda ya da bilgisayarının bir penceresinde verirsin. Yalnızca yazarlarına güvendiğin paketlere evet de.
 
-Oyun yöneticisinin kullandığı her komut kampanya klasöründe de çalıştırılabilir: `rpg --help` hepsini listeler. Birçoğu kampanyanın sırlarını yazdırır.
+Oyun yöneticisinin kullandığı her komut kampanya klasöründe de çalıştırılabilir: `rpg --help` hepsini listeler. Çoğu, kampanyanın sırlarını yazdırır.
 
 ---
 

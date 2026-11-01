@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -218,25 +218,25 @@ Als de spelleider je iets vraagt, blijft de banner bovenaan staan, in welk onder
 
 ### 5.1 Wat een spelsysteem is
 
-De gegevens van één spel: het karakterblad, de cijfers, de wezens, voorwerpen, spreuken en regelteksten. Elke campagne speelt één systeem. RPG Engine berekent het karakterblad en wat er wordt uitgegeven en terugkomt. Hoe een eigenschap werkt, leest de spelleider in de regels en beslist die, zoals aan een echte tafel.
+De gegevens van één spel: het karakterblad, de getallen, de wezens, voorwerpen, spreuken en regelteksten. Elke campagne speelt één systeem. RPG Engine rekent het karakterblad door en houdt bij wat er wordt uitgegeven en wat terugkomt. Hoe een eigenschap werkt, leest de spelleider in de regels en beslist de spelleider zelf, zoals aan een echte speltafel.
 
 ### 5.2 Vijfde editie
 
-De rassen, klassen, subklassen, een achtergrond en een feat van de SRD 5.1; de 319 spreuken, de wapens, wapenrustingen, magische voorwerpen en monsters; de hoofdstukken met regels, die de spelleider op de exacte tekst leest; het volledige karakterblad, uitgerekend.
+De rassen, klassen, subklassen, een achtergrond en een talent uit de SRD 5.1; de 319 spreuken, de wapens, pantsers, magische voorwerpen en monsters; de hoofdstukken met regels, die de spelleider op de exacte tekst leest; het volledige karakterblad, doorgerekend.
 
-Het is een pakket op zich: de spelleider biedt het aan als je een campagne opzet en installeert het. Een campagne die dit systeem speelt, installeert het zelf de eerste keer dat de campagne opent op een computer zonder het pakket. De spelleider zegt dat dan tegen je.
+Het is een pakket op zich: de spelleider biedt het aan als je een campagne opzet en installeert het. Een campagne die dit systeem speelt, installeert het vanzelf de eerste keer dat de campagne opent op een computer waar het nog niet op staat. De spelleider vertelt je dat dan.
 
-Je kunt ook inhoud spelen die de SRD niet heeft, uit een boek dat je bezit: de spelleider schrijft die uit als pagina's van je campagne en RPG Engine behandelt ze als eigen inhoud. RPG Engine levert alleen open inhoud mee; wat jouw spelleider weet, is niet beperkt.
+Je kunt ook inhoud spelen die niet in de SRD staat, uit een boek dat je bezit: de spelleider schrijft het uit als pagina's van je campagne, en RPG Engine behandelt ze als zijn eigen pagina's. RPG Engine levert alleen open inhoud mee. Wat jouw spelleider weet, kent die grens niet.
 
-Je eigen handboeken kunnen je bibliotheek zijn. Vertel de spelleider waar ze staan, *[Mijn handboeken staan in D:\Books\5e.]*, of voeg hun map toe via Packages › Library en zeg één keer ja in het venster dat je computer toont. RPG Engine leest ze op deze computer. Elke campagne gebruikt de mappen die je daar aanzet. De spelleider zoekt erin als die een regel beslist, na de SRD, en noemt het boek en de pagina. Ze lezen het best als tekst of als pdf's waarvan je de tekst kunt selecteren. Een gescande pdf wordt gelezen aan de hand van afbeeldingen van de pagina's, alleen op Windows, in een paar minuten en met een paar fouten. RPG Engine verandert je handboeken nooit, stuurt de tekst nergens heen en kopieert die nooit naar een campagne.
+Je eigen handboeken kunnen je bibliotheek vormen: vertel de spelleider waar ze staan, *[Mijn handboeken staan in D:\Books\5e.]*, of voeg hun map toe via Pakketten › Bibliotheek, en zeg één keer ja in het venster dat je computer toont. RPG Engine leest ze op deze computer. Elke campagne gebruikt de mappen die je daar aanzet. De spelleider zoekt erin als een regel beslist moet worden, na de SRD, en noemt daarbij het boek en de pagina. Ze lezen het best als tekst, of als pdf's waarvan je de tekst kunt selecteren. Een gescande pdf wordt gelezen vanaf de afbeeldingen van de pagina's, alleen op Windows, in een paar minuten en met een paar fouten. RPG Engine verandert je handboeken nooit, stuurt de tekst nergens naartoe en kopieert die nooit naar een campagne.
 
-### 5.3 Huisregels en je eigen aanvullingen
+### 5.3 Huisregels en je eigen toevoegingen
 
-Vraag het aan de spelleider: *[Huisregel: bij een natuurlijke 1 op een aanval laat je je wapen vallen.]* De spelleider bewaart die als afspraak van de tafel, of schrijft een pagina of een getal van het karakterblad uit als dat nodig is. Huisregels die al uitgeschreven zijn, kunnen als tekstbestanden in de map `rules` van de campagne.
+Vraag het de spelleider: *[Huisregel: bij een natuurlijke 1 op een aanval laat je je wapen vallen.]* De spelleider bewaart het als afspraak van de tafel, of schrijft een pagina of een getal op het karakterblad als dat nodig is. Huisregels die al uitgeschreven zijn, kunnen als tekstbestanden in de map `rules` van de campagne.
 
 ### 5.4 Je eigen spelsysteem toevoegen of importeren
 
-Een spelsysteem is een pakket: de spelleider installeert er een uit npm, een map of een bestand. Eén dat niet van ons is, installeert de spelleider alleen met jouw ja, in een venster van je computer. Een spelsysteem maken is werk voor een ontwikkelaar en staat beschreven in de documenten van RPG Engine op GitHub. Een boek van jezelf omzetten in een spelsysteem kan nog niet ([Binnenkort](#9-coming-later)).
+Een spelsysteem is een pakket: de spelleider installeert er een vanuit npm, een map of een bestand. Een pakket dat niet van ons is, installeert de spelleider alleen met jouw ja, in een formulier van je agent of een venster van je computer. Een pakket maken is werk voor een ontwikkelaar en staat beschreven in de documenten van RPG Engine op GitHub. Een boek van jezelf omzetten naar een spelsysteem kan nog niet ([Komt later](#9-coming-later)).
 
 ---
 
@@ -262,13 +262,13 @@ Eén taal per campagne: die van de spelleider, die het dashboard volgt. Het dash
 
 ---
 
-## 8. Voor wie nieuwsgierig is: de campagnemap <!-- icon: list -->
+## 8. Voor de nieuwsgierigen: de campagnemap <!-- icon: list -->
 
-Je hoeft hem nooit te openen, en hij bevat de geheimen van je campagne. Hij bevat `campaign.yaml` (je instellingen), `state.yaml` (waar het spel staat), `world/` (voor elk personage, elke plaats, elke missie en de rest één markdownpagina), `rules/` (je huisregels), `images/`, `log.jsonl` (elke wijziging), `.saves/`, `.player/` (je notities) en de kleine bestanden die AI-agents vertellen waar RPG Engine staat. De pagina's gebruiken het formaat van Obsidian. Als je een pagina met de hand aanpast, hoort de spelleider dat bij het volgende antwoord.
+Je hoeft de map nooit te openen, en er staan de geheimen van je campagne in. Er staan `campaign.yaml` (je instellingen), `state.yaml` (waar het spel nu staat), `world/` (één markdownpagina voor elk personage, elke plaats, elke missie en de rest), `rules/` (je huisregels), `images/`, `log.jsonl` (elke wijziging), `.saves/`, `.player/` (je notities) en de kleine bestanden die AI-agents vertellen waar RPG Engine staat. De pagina's gebruiken het formaat van Obsidian. Als je een pagina met de hand aanpast, hoort de spelleider dat bij het volgende antwoord.
 
-RPG Engine blijft in deze map: het leest en schrijft het spel alleen hier en raakt je andere bestanden nooit aan. De mappen met je handboeken leest het alleen. Buiten de campagnemap bewaart het alleen eigen gegevensmappen (de vertalingen van het dashboard, de tekst die het uit je handboeken las, en Codex of Claude Code als je toestaat dat het die installeert) en tijdelijke mappen terwijl er een afbeelding wordt getekend. Wil je agent iets anders op je computer doen, dan vraagt die het je eerst.
+RPG Engine blijft in deze map: het leest en schrijft het spel alleen hier en raakt je andere bestanden nooit aan. De mappen met je handboeken leest het alleen. Buiten deze map bewaart het alleen eigen gegevensmappen (de vertalingen van het dashboard, de tekst die het uit je handboeken las, en Codex of Claude Code als je het die laat installeren) en tijdelijke mappen terwijl er een afbeelding wordt getekend. Wil je agent iets anders doen op je computer, dan vraagt die het eerst aan jou. Een spelsysteem of een extensie is code, zoals elk npm-pakket: een pakket dat niet van ons is, draait op je computer met jouw rechten, en RPG Engine installeert het alleen met jouw ja, in een formulier van je agent of een venster van je computer. Zeg alleen ja tegen pakketten van makers die je vertrouwt.
 
-Elke opdracht die de spelleider gebruikt, kun je ook in de campagnemap uitvoeren: `rpg --help` toont ze allemaal. Veel ervan tonen de geheimen van de campagne.
+Elk commando dat de spelleider gebruikt, kun je ook in de campagnemap uitvoeren: `rpg --help` toont de lijst. Veel commando's tonen de geheimen van de campagne.
 
 ---
 

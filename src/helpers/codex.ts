@@ -156,7 +156,7 @@ function read(folder: string, brief: string, _writable: string[], signal?: Abort
 {
     const last = join(folder, ".last.txt");
     // The folder is the working one, never in the line: the shell would read a title's $(…) or %…% (Matteo's review, D-489).
-    const line = `${codex} exec --ephemeral --skip-git-repo-check -s workspace-write -o .last.txt --ignore-user-config --ignore-rules -`;
+    const line = `${codex} exec --ephemeral --skip-git-repo-check -s workspace-write -c shell_environment_policy.inherit=core -o .last.txt --ignore-user-config --ignore-rules -`;
 
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "pipe"] });

@@ -94,6 +94,8 @@ describe("rpg write", () => {
             [["write", "Varro", "--unset", "role"], `Varro has no field "role" to remove.`],
             [["write", "Nessuno", "--set", "role=npc"], "There is no page named Nessuno. To create it, give its type: character, place, faction, quest, item, event, topic, creature."],
             [["write", "Va/rro", "--type", "character"], `"Va/rro" cannot be a page name.`],
+            [["write", "Nul.txt", "--type", "item"], `"Nul.txt" cannot be a page name: Windows keeps it for a device`],
+            [["write", "COM¹", "--type", "item"], `"COM¹" cannot be a page name: Windows keeps it for a device`],
             [["write", "Bruna.md", "--type", "character"], `"Bruna.md" cannot be a page name: a link to it would not reach it. Give the name without its file ending, as "Bruna".`],
             [["write", "Varro"], "Nothing to write on Varro: give fields to set, add or remove, or text."],
             [["write", "Varro", "--set", "role"], `Write a field as field=value, not "role". To remove a field, use unset.`],

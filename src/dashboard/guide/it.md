@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -236,7 +236,7 @@ Chiedi al master: *[Regola della casa: un 1 naturale in attacco ti fa cadere l'a
 
 ### 5.4 Aggiungere o importare un sistema tuo
 
-Un sistema di gioco è un pacchetto: il master ne installa uno da npm, da una cartella o da un file, e uno che non è nostro solo col tuo sì, in una finestra del tuo computer. Farne uno è lavoro da sviluppatori, descritto nei documenti di RPG Engine su GitHub. Trasformare un tuo libro in un sistema di gioco non c'è ancora ([In arrivo](#9-coming-later)).
+Un sistema di gioco è un pacchetto: il master ne installa uno da npm, da una cartella o da un file, e uno che non è nostro solo col tuo sì, in un modulo del tuo agente o in una finestra del tuo computer. Farne uno è lavoro da sviluppatori, descritto nei documenti di RPG Engine su GitHub. Trasformare un tuo libro in un sistema di gioco non c'è ancora ([In arrivo](#9-coming-later)).
 
 ---
 
@@ -266,7 +266,7 @@ Una lingua per campagna, quella del master, che la dashboard segue. La dashboard
 
 Non devi mai aprirla, e contiene i segreti della tua campagna. Ha `campaign.yaml` (le tue impostazioni), `state.yaml` (a che punto è il gioco), `world/` (una pagina markdown per ogni personaggio, luogo, missione e il resto), `rules/` (le tue regole della casa), `images/`, `log.jsonl` (ogni cambiamento), `.saves/`, `.player/` (le tue note) e i piccoli file che dicono agli agenti IA dov'è RPG Engine. Le pagine usano il formato di Obsidian. Se cambi una pagina a mano, il master lo sente alla sua risposta successiva.
 
-RPG Engine resta in questa cartella: legge e scrive il gioco solo qui, e non tocca mai gli altri tuoi file; le cartelle dei tuoi manuali le legge soltanto. Fuori, tiene solo cartelle di dati sue (le traduzioni della dashboard, il testo che ha letto dei tuoi manuali, e Codex o Claude Code se gli permetti di installarli) e cartelle temporanee mentre disegna un'immagine. Qualsiasi altra cosa il tuo agente voglia fare sul tuo computer, te la chiede prima.
+RPG Engine resta in questa cartella: legge e scrive il gioco solo qui, e non tocca mai gli altri tuoi file; le cartelle dei tuoi manuali le legge soltanto. Fuori, tiene solo cartelle di dati sue (le traduzioni della dashboard, il testo che ha letto dei tuoi manuali, e Codex o Claude Code se gli permetti di installarli) e cartelle temporanee mentre disegna un'immagine. Qualsiasi altra cosa il tuo agente voglia fare sul tuo computer, te la chiede prima. Un sistema di gioco o un'estensione è codice, come ogni pacchetto npm: uno che non è nostro gira sul tuo computer con i tuoi permessi, e RPG Engine lo installa solo col tuo sì, in un modulo del tuo agente o in una finestra del tuo computer. Di' sì solo ai pacchetti di autori di cui ti fidi.
 
 Ogni comando che usa il master si può lanciare anche nella cartella della campagna: `rpg --help` li elenca. Molti stampano i segreti della campagna.
 

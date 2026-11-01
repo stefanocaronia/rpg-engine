@@ -218,6 +218,34 @@ export function unreadSecretLines(text: string): number[]
     return lines.flatMap((line, index) => (isProse(views[index]) && /\[!secret\]/i.test(line) && !secretPattern.test(line) ? [index + 1] : []));
 }
 
+/** A text without the secrets the engine does not read as ones (unreadSecretLines), each with the rest of its quoted block: in doubt, hidden from the player. */
+export function withoutUnreadSecrets(text: string): string
+{
+    const unread = new Set(unreadSecretLines(text));
+
+    if (unread.size === 0) {
+        return text;
+    }
+
+    // The secret's block goes on while its lines are quoted as deep as its first, as > > for one inside a callout; one in a line of prose is that line alone.
+    let level = 0;
+    return text.split("\n").filter((line, index) => {
+        const quotes = (/^\s*((?:>\s*)*)/.exec(line)?.[1].match(/>/g) ?? []).length;
+
+        if (unread.has(index + 1)) {
+            level = quotes;
+            return false;
+        }
+
+        if (level > 0 && quotes >= level) {
+            return false;
+        }
+
+        level = 0;
+        return true;
+    }).join("\n");
+}
+
 /** The goals a text lists as checkboxes, outside code blocks, each with whether it is ticked; and the text without them, for a quest's card (VIEW-8). */
 export function goalsIn(text: string): { goals: { text: string; done: boolean; }[]; rest: string; }
 {

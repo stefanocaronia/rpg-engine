@@ -43,6 +43,7 @@ export {
     withLinksAsWords,
     withoutComments,
     withoutFencedBlocks,
+    withoutUnreadSecrets,
 } from "./markdown.ts";
 export { changedFields, type FieldChange, formatFields, linkListItems, readFields, readFieldValue, splitPageFile } from "./page-file.ts";
 export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";

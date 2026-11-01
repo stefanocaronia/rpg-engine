@@ -813,8 +813,8 @@ async function playerYes(context: Context, name: string, pack: string, local: bo
     const from = context.actor === "player" ? "the dashboard" : context.host === undefined ? "the command line" : "the chat";
     const can = "Its code runs on this computer with your permissions, and in the dashboard, where it can see the whole campaign, its secrets included, and press buttons and speak to the master for you.";
     const warning = local
-        ? `Not verified by RPG Engine: ${name}${holds}, ${isTarball(name) ? "a file" : "a folder"} of this computer, asked from ${from}. ${can} RPG Engine takes no responsibility for it.${replaces}`
-        : `Not verified by RPG Engine: ${name}, asked from ${from}. ${can} Install it only if you trust who made it.`;
+        ? `Not verified by RPG Engine: ${name}${holds}, ${isTarball(name) ? "a file" : "a folder"} of this computer, asked from ${from}. ${can} RPG Engine takes no responsibility for it: install it only if you trust who made it.${replaces}`
+        : `Not verified by RPG Engine: ${name}, from npm, asked from ${from}. ${can} RPG Engine takes no responsibility for it: install it only if you trust who made it.`;
     const question = `Install ${name}? ${warning}`;
     const title = "A package not ours";
     const answer = context.player === undefined ? "unavailable" : await context.player.choose(question, title, ["Install it, at my risk", "Do not install it"], context.signal);

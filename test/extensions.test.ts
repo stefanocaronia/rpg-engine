@@ -804,7 +804,7 @@ describe("a package's code in the dashboard's page (D-510, D-511)", () => {
             );
             expect(asked).toEqual([]);
             expect((await page.call("/api/add", { source: "npm:@test/rumors" })).status).toBe(400);
-            expect(asked).toEqual([expect.stringMatching(/^Install @test\/rumors 2\.0\.0\? Not verified by RPG Engine: @test\/rumors 2\.0\.0, asked from the dashboard\./)]);
+            expect(asked).toEqual([expect.stringMatching(/^Install @test\/rumors 2\.0\.0\? Not verified by RPG Engine: @test\/rumors 2\.0\.0, from npm, asked from the dashboard\./)]);
 
             // However the page writes it, the package npm describes was said no to: no window again.
             for (const source of ["npm:@test/rumors", "@test/rumors", "npm:@test/rumors@2.0.0", "@test/rumors@latest", " npm:@test/rumors@2"]) {

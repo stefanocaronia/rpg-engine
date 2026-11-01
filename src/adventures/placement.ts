@@ -9,6 +9,11 @@ export function adventureFolderName(title: string): string
         throw new Error(`The title ${title} gives no name a folder can have: give the adventure another title. Nothing changed.`);
     }
 
+    // As a page's name, so that the paths of its pages stay within what Windows writes.
+    if (name.length > 120) {
+        throw new Error(`The title ${title.slice(0, 40)}… is longer than 120 characters, too long for a folder's name: give the adventure a shorter title, as the title of its adventure.yaml. Nothing changed.`);
+    }
+
     return name;
 }
 

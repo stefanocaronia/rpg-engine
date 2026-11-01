@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
 Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
@@ -218,25 +218,25 @@ Ha a mesélő kérdez tőled valamit, a kérdése szalagként a képernyő tetej
 
 ### 5.1 Mi az a játékrendszer
 
-Egy játék adatai: a karakterlapja, a számai, a lényei, a tárgyai, a varázslatai és a szabályszövege. Minden kampány egy rendszert játszik. Az RPG Engine kiszámolja a karakterlapot, és azt, hogy mi fogy el és mi tér vissza. Hogy egy képesség hogyan működik, azt a mesélő a szabályokból olvassa ki és dönti el, ahogy egy asztalnál is.
+Egy játék adatai: a karakterlapja, a számai, a lényei, a tárgyai, a varázslatai és a szabályszövege. Minden kampány egy rendszert játszik. Az RPG Engine kiszámolja a karakterlapot, valamint azt, hogy mi fogy el és mi tér vissza. Azt, hogy egy képesség hogyan működik, a mesélő elolvassa a szabályokban, és eldönti, ahogy egy asztalnál is.
 
-### 5.2 Ötödik kiadás
+### 5.2 Az ötödik kiadás
 
-Az SRD 5.1 fajai, kasztjai, alkasztjai, egy háttere és egy tulajdonsága (feat); a 319 varázslat, a fegyverek, páncélok, mágikus tárgyak és szörnyek; a szabályfejezetek, amelyeket a mesélő pontos szövegük szerint olvas; a teljes, kiszámolt karakterlap.
+Az SRD 5.1 fajai, kasztjai, alkasztjai, egy háttér és egy tulajdonság (feat); a 319 varázslat, a fegyverek, páncélok, varázstárgyak és szörnyek; a szabályfejezetek, amelyeket a mesélő pontos szövegükkel olvas; a teljes, kiszámolt karakterlap.
 
-Ez önálló csomag: a mesélő felajánlja, amikor kampányt állítasz be, és telepíti. Az a kampány, amely ezt játssza, magától telepíti, amikor először nyílik meg olyan számítógépen, ahol még nincs meg, és a mesélő szól erről.
+Ez egy külön csomag: a mesélő felajánlja, amikor kampányt állítasz be, és telepíti is. Az a kampány, amely ezt játssza, magától telepíti a csomagot, amikor először nyílik meg egy olyan számítógépen, ahol még nincs meg. A mesélő szól neked erről.
 
-Olyan tartalommal is játszhatsz, amely nincs az SRD-ben, egy saját könyvedből: a mesélő a kampányod oldalaiként írja le, és az RPG Engine a sajátjaként kezeli. Az RPG Engine csak nyílt tartalmat szállít; azt viszont nem korlátozza, amit a mesélőd ismer.
+Olyan tartalommal is játszhatsz, ami az SRD-ben nincs benne, egy saját könyvedből: a mesélő a kampányod oldalaiként megírja, az RPG Engine pedig a sajátjaként kezeli. Az RPG Engine csak nyílt tartalmat szállít; azt viszont, amit a mesélőd ismer, semmi sem korlátozza.
 
-A saját kézikönyveid lehetnek a könyvtárad: told meg a mesélőnek, hol vannak, *[A kézikönyveim a D:\Books\5e mappában vannak.]*, vagy add hozzá a mappájukat a Packages › Library részen, és mondj igent a számítógéped ablakában, egyszer. Az RPG Engine ezen a számítógépen olvassa őket; minden kampány azokat a mappákat használja, amelyeket ott bekapcsolsz, és a mesélő ezekben keres, amikor egy szabályról dönt, az SRD után, megadva a könyvet és az oldalt. Szövegként olvashatók a legjobban, vagy olyan PDF-ként, amelyben a szöveg kijelölhető. A beszkennelt PDF-et az oldalak képeiből olvassa, csak Windowson, pár perc alatt és néhány hibával. Az RPG Engine sosem módosítja a kézikönyveidet, a szövegüket sosem küldi el sehová, és sosem másolja be egy kampányba.
+A saját kézikönyveid lehetnek a könyvtárad: told meg a mesélőnek, hol vannak, *[A kézikönyveim itt vannak: D:\Books\5e.]*, vagy add hozzá a mappájukat a Packages › Library részen, és mondj igent a számítógéped ablakában, egyetlen alkalommal. Az RPG Engine ezen a számítógépen olvassa őket. Minden kampány azokat a mappákat használja, amelyeket ott bekapcsolsz. A mesélő az SRD után ezekben keres, amikor szabályról dönt, és megnevezi a könyvet és az oldalt. Szövegként olvashatók a legjobban, vagy olyan PDF-ként, amelyben a szöveg kijelölhető. A beolvasott PDF-et az oldalak képeiből olvassa ki, csak Windowson, néhány perc alatt és néhány hibával. Az RPG Engine soha nem módosítja a kézikönyveidet, soha nem küldi el sehová a szövegüket, és soha nem másolja be őket egy kampányba.
 
 ### 5.3 Házi szabályok és saját kiegészítések
 
-Kérd a mesélőt: *[Házi szabály: ha természetes 1-est dobsz támadásra, elejted a fegyvered.]* A mesélő az asztal megállapodásaként tartja számon, vagy ír hozzá egy oldalt, esetleg egy számot a karakterlapra, ha kell. A már leírt házi szabályok szövegfájlként a kampány `rules` mappájába kerülhetnek.
+Kérdezd meg a mesélőt: *[Házi szabály: a természetes 1-es támadásdobásnál elejted a fegyvered.]* A mesélő az asztal megállapodásaként megjegyzi, vagy ha kell, ír hozzá egy oldalt, vagy módosít egy számot a karakterlapon. A már leírt házi szabályok szöveges fájlként a kampány `rules` mappájába kerülhetnek.
 
 ### 5.4 Saját játékrendszer hozzáadása vagy importálása
 
-A játékrendszer egy csomag: a mesélő npm-ről, mappából vagy fájlból telepíti, és ha nem tőlünk származik, csak a te igened után, a számítógéped ablakában. Elkészíteni fejlesztő munkája, az RPG Engine GitHubon található dokumentumai leírják. Egy saját könyv játékrendszerré alakítása még nem érhető el ([Hamarosan](#9-coming-later)).
+A játékrendszer egy csomag: a mesélő telepít egyet npm-ből, mappából vagy fájlból. Olyat, amely nem tőlünk való, csak a te igened után telepít, az ügynököd egy űrlapján vagy a számítógéped egy ablakában. Elkészíteni egyet fejlesztői munka, az RPG Engine dokumentumai írják le a GitHubon. Egy könyvedből játékrendszert csinálni még nem lehet ([Hamarosan](#9-coming-later)).
 
 ---
 
@@ -264,11 +264,11 @@ Kampányonként egy nyelv van, a mesélőé, és az irányítópult ezt követi.
 
 ## 8. Kíváncsiaknak: a kampánymappa <!-- icon: list -->
 
-Soha nem kell megnyitnod, és a kampányod titkait őrzi. Ebben van a `campaign.yaml` (a beállításaid), a `state.yaml` (hol tart a játék), a `world/` (minden karakterhez, helyszínhez, küldetéshez és a többihez egy markdown oldal), a `rules/` (a házi szabályaid), az `images/`, a `log.jsonl` (minden változás), a `.saves/`, a `.player/` (a jegyzeteid), valamint a kis fájlok, amelyek megmondják az MI-ügynököknek, hol van az RPG Engine. Az oldalak az Obsidian formátumát használják. Ha kézzel módosítasz egy oldalt, a mesélő a következő válaszánál értesül róla.
+Soha nem kell megnyitnod, és a kampányod titkait őrzi. Ezek vannak benne: `campaign.yaml` (a beállításaid), `state.yaml` (hol tart a játék), `world/` (egy markdown oldal minden karakterhez, helyszínhez, küldetéshez és a többihez), `rules/` (a házi szabályaid), `images/`, `log.jsonl` (minden változás), `.saves/`, `.player/` (a jegyzeteid), valamint a kis fájlok, amelyek megmondják az AI-ügynököknek, hol van az RPG Engine. Az oldalak Obsidian formátumúak. Ha kézzel módosítasz egy oldalt, a mesélő a következő válaszánál értesül róla.
 
-Az RPG Engine ebben a mappában marad: a játékot csak itt olvassa és írja, a többi fájlodhoz pedig soha nem nyúl. A kézikönyveid mappáit csak olvassa. Rajta kívül csak saját adatmappákat tart (a vezérlőpult fordításait, a kézikönyveidből beolvasott szöveget, valamint a Codexet és a ClaudeOde-ot, ha engeded telepíteni), és ideiglenes mappákat, amíg egy kép készül. Bármi mást akar az ügynököd a számítógépeden csinálni, azt előbb megkérdezi tőled.
+Az RPG Engine ebben a mappában marad: a játékot csak itt olvassa és írja, és soha nem nyúl a többi fájlodhoz; a kézikönyveid mappáit csak olvassa. Rajta kívül csak saját adatmappákat tart (a dashboard fordításait, a kézikönyveidből beolvasott szöveget, valamint a Codexet és a Claude Code-ot, ha engeded telepíteni), továbbá ideiglenes mappákat, amíg egy kép készül. Bármi mást akar az ügynököd tenni a számítógépeden, előbb megkérdez. A játékrendszer vagy a bővítmény kód, mint minden npm-csomag: amelyik nem tőlünk való, az a te jogosultságaiddal fut a számítógépeden, és az RPG Engine csak a te igened után telepíti, az ügynököd egy űrlapján vagy a számítógéped egy ablakában. Csak olyan csomagokra mondj igent, amelyek szerzőiben megbízol.
 
-A mesélő minden parancsa futtatható a kampánymappában is: az `rpg --help` felsorolja őket. Sok közülük kiírja a kampány titkait.
+A mesélő által használt minden parancs a kampánymappában is futtatható: az `rpg --help` felsorolja őket. Sok közülük kiírja a kampány titkait.
 
 ---
 

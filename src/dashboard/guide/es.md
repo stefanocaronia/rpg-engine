@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -218,25 +218,25 @@ Cuando el máster te pregunta algo, su aviso se queda arriba, estés en la secci
 
 ### 5.1 Qué es un sistema de juego
 
-Los datos de un juego: su ficha, sus números, sus criaturas, objetos, conjuros y el texto de sus reglas. Cada campaña juega con un solo sistema. RPG Engine calcula la ficha y lo que se gasta y se recupera; cómo funciona una característica, lo lee el máster en las reglas y lo decide, como en una mesa.
+Los datos de un juego: su ficha, sus números, sus criaturas, objetos, hechizos y texto de reglas. Cada campaña juega un solo sistema. RPG Engine calcula la ficha y lo que se gasta y se recupera. Cómo funciona una característica lo lee el máster en las reglas y lo decide, como en una mesa.
 
 ### 5.2 Quinta edición
 
-Las razas, clases, subclases, un trasfondo y una dote del SRD 5.1; los 319 conjuros, las armas, armaduras, objetos mágicos y monstruos; los capítulos de reglas, que el máster lee por su texto exacto; la ficha completa, calculada.
+Las razas, clases, subclases, un trasfondo y una dote del SRD 5.1; los 319 hechizos, las armas, armaduras, objetos mágicos y monstruos; los capítulos de reglas, que el máster lee por su texto exacto; la ficha completa, ya calculada.
 
-Es un paquete propio: el máster lo ofrece cuando preparas una campaña y lo instala. Una campaña que lo usa lo instala sola la primera vez que se abre en un equipo que no lo tiene, y el máster te lo avisa.
+Es un paquete aparte: el máster te lo ofrece cuando preparas una campaña y lo instala. Una campaña que lo juega lo instala sola la primera vez que se abre en un equipo que no lo tiene, y el máster te avisa.
 
-También puedes jugar contenido que el SRD no incluye, de un libro que tengas: el máster lo escribe como páginas de tu campaña, y RPG Engine las trata como propias. RPG Engine incluye solo contenido abierto; lo que sabe tu máster no tiene ese límite.
+También puedes jugar contenido que el SRD no incluye, de un libro que tengas: el máster lo escribe como páginas de tu campaña y RPG Engine las trata como propias. RPG Engine solo incluye contenido abierto; lo que tu máster conoce no tiene límite.
 
-Tus propios manuales pueden ser tu biblioteca: dile al máster dónde están, *[Mis manuales están en D:\Books\5e.]*, o añade su carpeta en Paquetes › Biblioteca, y di que sí en la ventana que muestra tu equipo, una sola vez. RPG Engine los lee en este equipo; cada campaña usa las carpetas que actives ahí, y el máster las consulta cuando decide una regla, después del SRD, citando el libro y la página. Se leen mejor como texto, o como PDF cuyo texto se pueda seleccionar; un PDF escaneado se lee a partir de las imágenes de sus páginas, solo en Windows, en unos minutos y con algunos errores. RPG Engine nunca modifica tus manuales, nunca envía su texto a ningún sitio y nunca lo copia en una campaña.
+Tus propios manuales pueden ser tu biblioteca. Dile al máster dónde están, *[Mis manuales están en D:\Books\5e.]*, o añade su carpeta en Packages › Library, y di que sí en la ventana que te muestre tu equipo, una sola vez. RPG Engine los lee en este equipo. Cada campaña usa las carpetas que actives ahí, y el máster las consulta cuando decide una regla, después del SRD, citando el libro y la página. Se leen mejor como texto, o como PDF cuyo texto se pueda seleccionar. Un PDF escaneado se lee a partir de las imágenes de sus páginas, solo en Windows, en unos minutos y con algunos errores. RPG Engine nunca modifica tus manuales, nunca envía su texto a ningún sitio y nunca lo copia en una campaña.
 
 ### 5.3 Reglas de la casa y tus propios añadidos
 
-Pídeselo al máster: *[Regla de la casa: un 1 natural en un ataque significa que sueltas el arma.]* El máster lo guarda como un acuerdo de la mesa, o escribe una página o un número de la ficha cuando hace falta. Las reglas de la casa que ya tengas escritas pueden ir como archivos de texto en la carpeta `rules` de la campaña.
+Pídeselo al máster: *[Regla de la casa: un 1 natural en un ataque significa que sueltas el arma.]* El máster la guarda como un acuerdo de la mesa, o escribe una página o un número de la ficha cuando hace falta. Las reglas de la casa que ya tengas escritas pueden ir como archivos de texto en la carpeta `rules` de la campaña.
 
 ### 5.4 Añadir o importar tu propio sistema de juego
 
-Un sistema de juego es un paquete: el máster instala uno desde npm, una carpeta o un archivo, y uno que no es nuestro solo con tu sí, en una ventana de tu equipo. Crear uno es trabajo de desarrollo, y se describe en los documentos de RPG Engine en GitHub. Convertir un libro tuyo en un sistema de juego todavía no es posible ([Próximamente](#9-coming-later)).
+Un sistema de juego es un paquete. El máster instala uno desde npm, una carpeta o un archivo, y uno que no es nuestro solo con tu sí, en un formulario de tu agente o en una ventana de tu equipo. Crear uno es trabajo de desarrolladores y se describe en los documentos de RPG Engine en GitHub. Convertir un libro tuyo en un sistema de juego todavía no es posible ([Próximamente](#9-coming-later)).
 
 ---
 
@@ -262,13 +262,13 @@ Un idioma por campaña, el del máster, que el panel sigue. El panel incluye 26 
 
 ---
 
-## 8. Para curiosos: la carpeta de la campaña <!-- icon: list -->
+## 8. Para los curiosos: la carpeta de la campaña <!-- icon: list -->
 
-Nunca necesitas abrirla, y contiene los secretos de tu campaña. Tiene `campaign.yaml` (tus ajustes), `state.yaml` (cómo va la partida), `world/` (una página markdown por cada personaje, lugar, misión y el resto), `rules/` (tus reglas de la casa), `images/`, `log.jsonl` (cada cambio), `.saves/`, `.player/` (tus notas) y los archivos pequeños que indican a los agentes de IA dónde está RPG Engine. Las páginas usan el formato de Obsidian. Si cambias una página a mano, el máster lo sabrá en su siguiente respuesta.
+Nunca necesitas abrirla, y guarda los secretos de tu campaña. Contiene `campaign.yaml` (tus ajustes), `state.yaml` (en qué punto está el juego), `world/` (una página markdown por cada personaje, lugar, misión y demás), `rules/` (tus reglas de la casa), `images/`, `log.jsonl` (cada cambio), `.saves/`, `.player/` (tus notas) y los pequeños archivos que indican a los agentes de IA dónde está RPG Engine. Las páginas usan el formato de Obsidian. Si cambias una página a mano, el máster se entera en su siguiente respuesta.
 
-RPG Engine se queda en esta carpeta: solo lee y escribe la partida aquí y nunca toca tus otros archivos. Las carpetas de tus manuales solo las lee. Fuera de ella, solo conserva carpetas de datos propias (las traducciones del dashboard, el texto que leyó de tus manuales, y Codex o Claude Code si dejas que los instale) y carpetas temporales mientras se dibuja una imagen. Cualquier otra cosa que tu agente quiera hacer en tu equipo, te la pregunta antes.
+RPG Engine se queda en esta carpeta: solo lee y escribe el juego aquí y nunca toca tus otros archivos. Las carpetas de tus manuales solo las lee. Fuera de ella, guarda únicamente carpetas de datos propias (las traducciones del dashboard, el texto que leyó de tus manuales, y Codex o Claude Code si dejas que los instale) y carpetas temporales mientras se dibuja una imagen. Para cualquier otra cosa que tu agente quiera hacer en tu equipo, te pregunta antes. Un sistema de juego o una extensión es código, como cualquier paquete de npm: uno que no es nuestro se ejecuta en tu equipo con tus permisos, y RPG Engine lo instala solo con tu sí, en un formulario de tu agente o en una ventana de tu equipo. Di que sí solo a paquetes cuyos autores te inspiren confianza.
 
-Todos los comandos que usa el máster se pueden ejecutar también en la carpeta de la campaña: `rpg --help` los enumera. Muchos muestran los secretos de la campaña.
+Cada comando que usa el máster también se puede ejecutar en la carpeta de la campaña: `rpg --help` los enumera. Muchos muestran los secretos de la campaña.
 
 ---
 

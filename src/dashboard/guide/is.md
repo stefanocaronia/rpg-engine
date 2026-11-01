@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 7da791ae 423af5fa 17577253 f699a840 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -218,25 +218,25 @@ Síða á þinni eigin tölvu, sem opnast aðeins í vafra þeirrar tölvu og er
 
 ### 5.1 Hvað leikjakerfi er
 
-Gögn eins leiks: persónublaðið, tölurnar, verurnar, hlutirnir, galdrarnir og reglutextinn. Hver herferð spilar eitt kerfi. RPG Engine reiknar út persónublaðið og það sem er eytt og kemur aftur. Hvernig eiginleiki virkar les sögumaður í reglunum og ákveður, eins og við borðið.
+Gögn eins leiks: persónublaðið, tölurnar, skepnurnar, hlutirnir, galdrarnir og reglutextinn. Hver herferð spilar eitt kerfi. RPG Engine reiknar út persónublaðið og það sem er eytt og það sem kemur aftur. Sögumaður les í reglunum hvernig eiginleiki virkar og ákveður það, eins og við borðið.
 
 ### 5.2 Fimmta útgáfa
 
-Kynþættir, flokkar og undirflokkar, bakgrunnur og hæfileiki úr SRD 5.1; 319 galdrar, vopn, brynjur, töfragripir og skrímsli; reglukaflarnir, sem sögumaður les eftir nákvæmum texta þeirra; allt persónublaðið, útreiknað.
+Kynþættir, flokkar, undirflokkar, bakgrunnur og eiginleiki (feat) úr SRD 5.1; galdrarnir 319, vopnin, herklæðin, töfragripirnir og skrímslin; reglukaflarnir, sem sögumaður les eftir nákvæmum texta þeirra; fullt persónublað, útreiknað.
 
-Þetta er sérstakur pakki: sögumaður býður hann þegar þú setur upp herferð og setur hann upp. Herferð sem spilar hann setur hann upp sjálf í fyrsta sinn sem hún opnast á tölvu sem hefur hann ekki, og sögumaður lætur þig vita.
+Þetta er sérstakur pakki: sögumaður býður hann þegar þú setur upp herferð og setur hann upp. Herferð sem spilar hann setur hann upp sjálf í fyrsta sinn sem hún er opnuð í tölvu sem hefur hann ekki, og sögumaður segir þér frá því.
 
 Þú getur líka spilað efni sem SRD vantar, úr bók sem þú átt: sögumaður skrifar það sem síður í herferðinni þinni og RPG Engine meðhöndlar það eins og sitt eigið. RPG Engine fylgir aðeins opið efni; þekking sögumanns er ekki takmörkuð.
 
-Þínar eigin handbækur geta orðið safnið þitt: segðu sögumanni hvar þær eru, *[Handbækurnar mínar eru í D:\Books\5e.]*, eða bættu möppunni þeirra við í Packages › Library og segðu já í glugganum sem tölvan sýnir, einu sinni. RPG Engine les þær á þessari tölvu. Hver herferð notar möppurnar sem þú kveikir á þar, og sögumaður leitar í þeim þegar hann ákveður reglu, á eftir SRD, og vísar í bókina og blaðsíðuna. Þær lesast best sem texti eða sem PDF-skrár þar sem hægt er að velja textann. Skönnuð PDF-skrá er lesin út frá myndum blaðsíðnanna, aðeins á Windows, á nokkrum mínútum og með nokkrum villum. RPG Engine breytir aldrei handbókunum þínum, sendir aldrei texta þeirra neitt og afritar hann aldrei inn í herferð.
+Þínar eigin reglubækur geta verið safnið þitt: segðu sögumanni hvar þær eru, *[Reglubækurnar mínar eru í D:\Books\5e.]*, eða bættu möppunni þeirra við í Packages › Library og segðu já í glugganum sem tölvan sýnir, einu sinni. RPG Engine les þær á þessari tölvu; hver herferð notar þær möppur sem þú kveikir á þar, og sögumaður leitar í þeim þegar hann ákveður reglu, á eftir SRD, og vísar í bókina og blaðsíðuna. Þær lesast best sem texti eða sem PDF-skjöl þar sem hægt er að velja textann; skönnuð PDF-skrá er lesin úr myndum síðnanna, aðeins í Windows, á nokkrum mínútum og með nokkrum villum. RPG Engine breytir aldrei reglubókunum þínum, sendir texta þeirra aldrei neitt og afritar hann aldrei í herferð.
 
 ### 5.3 Húsreglur og þínar eigin viðbætur
 
-Spurðu sögumann: *[Húsregla: náttúrulegur 1 í árás þýðir að þú missir vopnið.]* Sögumaður geymir hana sem samkomulag borðsins, eða skrifar síðu eða tölu á persónublaðið þegar þarf. Húsreglur sem þegar eru skrifaðar út geta farið sem textaskrár í `rules` möppu herferðarinnar.
+Biddu sögumann: *[Húsregla: náttúrulegur 1 í árás þýðir að þú missir vopnið.]* Sögumaður geymir það sem samkomulag borðsins, eða skrifar síðu eða tölu á persónublaðið þegar þess þarf. Húsreglur sem þegar eru skrifaðar má setja sem textaskrár í `rules` möppu herferðarinnar.
 
 ### 5.4 Að bæta við eða flytja inn eigið leikjakerfi
 
-Leikjakerfi er pakki: sögumaður setur hann upp úr npm, möppu eða skrá, og pakka sem er ekki frá okkur aðeins með þínu samþykki, í glugga á tölvunni þinni. Að búa til slíkan pakka er verk forritara og er lýst í skjölum RPG Engine á GitHub. Að breyta bók frá þér í leikjakerfi er ekki komið enn ([Væntanlegt síðar](#9-coming-later)).
+Leikjakerfi er pakki: sögumaður setur hann upp úr npm, möppu eða skrá, og pakka sem er ekki frá okkur aðeins með þínu já, í eyðublaði umboðsmannsins þíns eða glugga tölvunnar. Að búa til slíkan pakka er verk forritara og er lýst í skjölum RPG Engine á GitHub. Að breyta bók eftir þig í leikjakerfi er ekki komið enn ([Væntanlegt síðar](#9-coming-later)).
 
 ---
 
@@ -264,11 +264,11 @@ Eitt tungumál fyrir hverja herferð, tungumál sögumannsins, sem mælaborðið
 
 ## 8. Fyrir forvitna: herferðarmappan <!-- icon: list -->
 
-Þú þarft aldrei að opna hana og hún geymir leyndarmál herferðarinnar þinnar. Í henni eru `campaign.yaml` (stillingarnar þínar), `state.yaml` (hvernig leikurinn stendur), `world/` (ein markdown-síða fyrir hverja persónu, hvern stað, hvert verkefni og allt annað), `rules/` (húsreglurnar þínar), `images/`, `log.jsonl` (sérhver breyting), `.saves/`, `.player/` (minnisblöðin þín) og litlu skrárnar sem segja gervigreindarfulltrúum hvar RPG Engine er. Síðurnar nota snið Obsidian. Ef þú breytir síðu með höndunum frétt sögumaðurinn af því í næsta svari sínu.
+Þú þarft aldrei að opna hana, og hún geymir leyndarmál herferðarinnar þinnar. Í henni eru `campaign.yaml` (stillingarnar þínar), `state.yaml` (staða leiksins), `world/` (ein markdown-síða fyrir hverja persónu, stað, verkefni og annað), `rules/` (húsreglurnar þínar), `images/`, `log.jsonl` (hver breyting), `.saves/`, `.player/` (minnisblöðin þín) og litlu skrárnar sem segja gervigreindarumboðsmönnum hvar RPG Engine er. Síðurnar nota snið Obsidian. Ef þú breytir síðu í höndunum fréttir sögumaður af því í næsta svari sínu.
 
-RPG Engine heldur sig í þessari möppu: það les og skrifar leikinn aðeins þar og snertir aldrei aðrar skrár þínar. Möppur handbókanna þinna les það aðeins. Utan hennar geymir það aðeins eigin gagnamöppur (þýðingar stjórnborðsins, textann sem það las úr handbókunum þínum, og Codex eða Claude Code ef þú leyfir því að setja þau upp) og tímabundnar möppur meðan mynd er teiknuð. Allt annað sem fulltrúinn vill gera á tölvunni þinni spyr hann þig um fyrst.
+RPG Engine heldur sig í þessari möppu: það les og skrifar leikinn aðeins þar og snertir aldrei aðrar skrár þínar; möppur reglubókanna þinna les það aðeins. Utan hennar geymir það aðeins eigin gagnamöppur (þýðingar stjórnborðsins, textann sem það las úr reglubókunum þínum, og Codex eða Claude Code ef þú leyfir því að setja þau upp) og tímabundnar möppur meðan mynd er teiknuð. Allt annað sem umboðsmaðurinn þinn vill gera í tölvunni þinni spyr hann þig um fyrst. Leikjakerfi eða viðbót er kóði, eins og allir npm-pakkar: pakki sem er ekki frá okkur keyrir á tölvunni þinni með þínum réttindum, og RPG Engine setur hann aðeins upp með þínu já, í eyðublaði umboðsmannsins þíns eða glugga tölvunnar. Segðu aðeins já við pökkum þar sem þú treystir höfundunum.
 
-Sérhverja skipun sem sögumaðurinn notar er líka hægt að keyra í herferðarmöppunni: `rpg --help` listar þær. Margar prenta leyndarmál herferðarinnar.
+Sérhver skipun sem sögumaður notar má líka keyra í herferðarmöppunni: `rpg --help` sýnir þær allar. Margar þeirra prenta leyndarmál herferðarinnar.
 
 ---
 
