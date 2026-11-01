@@ -7,15 +7,16 @@ import { fileURLToPath } from "node:url";
 import { runCommandLine } from "../../src/cli/command-line.ts";
 import { picturesNotes, playerSettingNames } from "../../src/commands/config.ts";
 import type { PlayerSetting } from "../../src/dashboard/data.ts";
+import { masterScreenLine } from "../../src/server/mcp.ts";
 import { makeTempFolder, testContext } from "../support.ts";
 
 /** The page's folder, where its code and its translations (i18n/) are. */
 export const pageFolder = fileURLToPath(new URL("../../src/dashboard/", import.meta.url));
 
-/** Every phrase the page needs translated: its code's, and its settings'. */
+/** Every phrase the page needs translated: its code's, its settings', and the line the server closes each tool's answer with (T-176). */
 export async function pagePhrases(): Promise<Set<string>>
 {
-    return new Set([...codePhrases(), ...await settingPhrases()]);
+    return new Set([...codePhrases(), ...await settingPhrases(), masterScreenLine]);
 }
 
 /** Every phrase the page's code gives t() or tParts() as a string of its own. */

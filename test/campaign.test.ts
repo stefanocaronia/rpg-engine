@@ -145,10 +145,10 @@ describe("rpg init", () => {
             // The doorbell of the player's sentences on the dashboard (D-495).
             hooks: { Stop: [{ hooks: [bell] }] },
         });
-        // Codex: the rpg server, waiting for the player's click, and its memories off; nothing for Gemini CLI, no longer set up (D-493).
+        // Codex: the rpg server, waiting for the player's click, its memories off and the master's reasoning hidden; nothing for Gemini CLI, no longer set up (D-493).
         const rpg = context.platform === "win32" ? { command: "cmd", args: ["/c", "rpg", "mcp"] } : { command: "rpg", args: ["mcp"] };
         expect(readFileSync(join(folder, "nuova", ".codex", "config.toml"), "utf8")).toBe(
-            `[mcp_servers.rpg]\ncommand = "${rpg.command}"\nargs = [${
+            `hide_agent_reasoning = true\n\n[mcp_servers.rpg]\ncommand = "${rpg.command}"\nargs = [${
                 rpg.args.map((arg) => `"${arg}"`).join(", ")
             }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME"]\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
         );
@@ -159,7 +159,9 @@ describe("rpg init", () => {
         mkdirSync(join(folder, "mia", ".codex"), { recursive: true });
         writeFileSync(join(folder, "mia", ".codex", "config.toml"), 'model = "gpt-5"\n\n[mcp_servers.rpg]\ncommand = "rpg-dev"\n');
         await runCommandLine(["init", "mia"], context);
-        expect(readFileSync(join(folder, "mia", ".codex", "config.toml"), "utf8")).toBe('model = "gpt-5"\n\n[mcp_servers.rpg]\ncommand = "rpg-dev"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n');
+        expect(readFileSync(join(folder, "mia", ".codex", "config.toml"), "utf8")).toBe(
+            'hide_agent_reasoning = true\nmodel = "gpt-5"\n\n[mcp_servers.rpg]\ncommand = "rpg-dev"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n',
+        );
 
         // Gemini CLI's settings of an older campaign stay as they are, broken ones too (D-493).
         mkdirSync(join(folder, "vecchia", ".gemini"), { recursive: true });
@@ -171,7 +173,13 @@ describe("rpg init", () => {
         mkdirSync(join(folder, "scelta", ".codex"), { recursive: true });
         writeFileSync(join(folder, "scelta", ".codex", "config.toml"), "[memories]\nuse_memories = true\n");
         await runCommandLine(["init", "scelta"], context);
-        expect(readFileSync(join(folder, "scelta", ".codex", "config.toml"), "utf8")).toMatch(/^\[memories\]\nuse_memories = true\n\n\[mcp_servers\.rpg\]\n/);
+        expect(readFileSync(join(folder, "scelta", ".codex", "config.toml"), "utf8")).toMatch(/^hide_agent_reasoning = true\n\n\[memories\]\nuse_memories = true\n\n\[mcp_servers\.rpg\]\n/);
+
+        // The player's own choice to see the master's reasoning stays (T-176).
+        mkdirSync(join(folder, "vista", ".codex"), { recursive: true });
+        writeFileSync(join(folder, "vista", ".codex", "config.toml"), "hide_agent_reasoning = false\n");
+        await runCommandLine(["init", "vista"], context);
+        expect(readFileSync(join(folder, "vista", ".codex", "config.toml"), "utf8")).toMatch(/^hide_agent_reasoning = false\n\n\[mcp_servers\.rpg\]/);
     });
 
     it("keeps what the folder had: its own AGENTS.md after the start lines, CLAUDE.md after the import, Claude Code's other settings and the player's choices", async () => {
@@ -246,7 +254,7 @@ describe("rpg config", () => {
         expect(set.output).toContain("effort: low\nWritten for Claude Code and Codex: it applies from the next chat");
         expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8"))).toMatchObject({ effortLevel: "low", autoMemoryEnabled: false, hooks: { Stop: [{ hooks: [bell] }] } });
         // A key of Codex's top, before its first table, in place of the player's: under a table it would be ignored.
-        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model_reasoning_effort = "low"\nmodel = "gpt-5"\n\n\[mcp_servers\.rpg\]\ncommand = "rpg"\n/);
+        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model_reasoning_effort = "low"\nhide_agent_reasoning = true\nmodel = "gpt-5"\n\n\[mcp_servers\.rpg\]\ncommand = "rpg"\n/);
         expect(existsSync(join(folder, ".gemini"))).toBe(false);
         // The player's own change on the dashboard, and the same written twice stays one key.
         await runCommandLine(["config", "effort", "high"], { ...context, actor: "player" });
@@ -257,7 +265,7 @@ describe("rpg config", () => {
         expect((await runCommandLine(["config", "effort", "app"], { ...context, terminal: true })).output).toContain("Taken away for Claude Code and Codex");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("effort");
         expect(JSON.parse(readFileSync(join(folder, ".claude", "settings.json"), "utf8")).effortLevel).toBeUndefined();
-        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model = "gpt-5"\n\n\[mcp_servers\.rpg\]/);
+        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^hide_agent_reasoning = true\nmodel = "gpt-5"\n\n\[mcp_servers\.rpg\]/);
     });
 
     it("puts the effort first in a Codex file with a byte order mark, a quoted key, an array of brackets and a commented table (review of 17 October)", async () => {
@@ -265,7 +273,7 @@ describe("rpg config", () => {
         writeFileSync(join(folder, ".codex", "config.toml"), '﻿"model_reasoning_effort" = "xhigh"\nnotify = [\n  ["a", "b"],\n]\n\n[mcp_servers.rpg] # mine\ncommand = "rpg"\n');
         await runCommandLine(["config", "effort", "low"], { ...context, terminal: true });
         expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toBe(
-            'model_reasoning_effort = "low"\nnotify = [\n  ["a", "b"],\n]\n\n[mcp_servers.rpg] # mine\ncommand = "rpg"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n',
+            'model_reasoning_effort = "low"\nhide_agent_reasoning = true\nnotify = [\n  ["a", "b"],\n]\n\n[mcp_servers.rpg] # mine\ncommand = "rpg"\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n',
         );
     });
 
@@ -275,7 +283,7 @@ describe("rpg config", () => {
         writeFileSync(join(folder, ".codex", "config.toml"), '[profiles."deep think"]\nmodel_reasoning_effort = "low"\n');
         writeFileSync(join(folder, ".claude", "settings.json"), "{ broken");
         const set = await runCommandLine(["config", "effort", "high"], { ...context, terminal: true });
-        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model_reasoning_effort = "high"\n\n\[profiles\."deep think"\]\nmodel_reasoning_effort = "low"\n/);
+        expect(readFileSync(join(folder, ".codex", "config.toml"), "utf8")).toMatch(/^model_reasoning_effort = "high"\nhide_agent_reasoning = true\n\n\[profiles\."deep think"\]\nmodel_reasoning_effort = "low"\n/);
         expect(set.output).toContain("settings.json is not valid JSON, so Claude Code cannot be set up for the game in it. Fix it or remove it by hand, then try again.");
         expect(set.output).not.toContain("Written for Claude Code and Codex");
     });

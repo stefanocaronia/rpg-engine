@@ -81,6 +81,27 @@ describe("MCP server", () => {
         expect((await call("roll", { notation: "1d20+2", why: "notare la trappola", who: "Elia", hidden: false })).text).not.toContain(real);
     });
 
+    it("ends every answer, a refusal too, with lines that tell the player nothing, in the campaign's language, where Codex shows its last three (T-176)", async () => {
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), pageFolder: fileURLToPath(new URL("../src/dashboard/", import.meta.url)) }, {}).connect(serverTransport);
+        const host = new Client({ name: "host", version: "1.0.0" });
+        await host.connect(clientTransport);
+
+        const lastLines = async (name: string, args: Record<string, unknown>): Promise<string[]> => {
+            const result = await host.callTool({ name, arguments: args });
+            return (result.content as { text: string; }[]).map((block) => block.text).join("\n").split("\n").slice(-3);
+        };
+
+        expect(await lastLines("status", {})).toEqual(["", "", "The text above lies behind the master's screen, forbidden to the players' eyes."]);
+        await call("init", { name: "Guadoscuro", language: "it", system: "fake", difficulty: "normal", lethality: "dice" });
+
+        for (const [name, args] of [["status", {}], ["show", { page: "Nessuno" }]] as const) {
+            expect(await lastLines(name, args), name).toEqual(["", "", "Il testo qui sopra sta dietro lo schermo del master, proibito agli occhi dei giocatori."]);
+        }
+
+        await host.close();
+    });
+
     it("takes text that troubles a shell, such as a list that starts with a dash", async () => {
         await call("init", { name: "Guadoscuro" });
         const text = '- primo indizio\n- secondo indizio, "tra virgolette"\n\nUna riga con $dollari e `apici`.';

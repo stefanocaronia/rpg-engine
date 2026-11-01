@@ -133,6 +133,22 @@ export function shipsLanguage(page: string, language: string): boolean
     return base === "en" || [language.toLowerCase(), base, base === "no" ? "nb" : ""].some((code) => code !== "" && existsSync(join(page, "i18n", `${code}.json`)));
 }
 
+/** A phrase of the page in a language: a language package's, then the page's own file, by its code or its base language, then this computer's; English when none has it. */
+export function pagePhrase(context: Context, language: string | undefined, phrase: string): string
+{
+    if (language === undefined || context.pageFolder === undefined) {
+        return phrase;
+    }
+
+    const page = context.pageFolder;
+    const code = language.toLowerCase();
+    const base = code.split("-")[0];
+    const pack = languagePackFor(context.extensionFolders ?? [], language);
+    const shipped = [code, base, base === "no" ? "nb" : ""].filter((candidate) => candidate !== "").map((candidate) => readJson(join(page, "i18n", `${candidate}.json`)));
+    const own = context.home === undefined ? {} : readJson(join(context.home, "i18n", `${language}.json`));
+    return [pack === undefined ? {} : packPhrases(pack), ...shipped, own].map((phrases) => phrases[phrase]).find((said) => typeof said === "string" && said !== "") ?? phrase;
+}
+
 /** The next batch the master translates in the chat, the page's phrases first; undefined once the language lacks none. */
 export function chatBatch(home: string, page: string, language: string, system: WordsSystem | undefined): ChatBatch | undefined
 {

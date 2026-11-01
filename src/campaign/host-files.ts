@@ -223,15 +223,17 @@ const bellHook = { type: "command", command: "rpg --listen", asyncRewake: true, 
 
 /**
  * Codex's settings for the campaign, read when the player trusts the folder: the rpg server, its tools approved and its calls waiting for the player's click
- * as long as the server does (D-412), with Codex's own home, where its queue takes the player's sentences (D-495), and its memories off; a table already
- * written is the player's, and stays. The effort the player chose (D-462) is a key
- * of the top, before the first table, where Codex reads it; under a table it would belong to that table, and be ignored.
+ * as long as the server does (D-412), with Codex's own home, where its queue takes the player's sentences (D-495), its memories and the master's reasoning
+ * off; a table already written is the player's, and stays. The effort the player chose (D-462) is a key of the top, before the first table, where Codex
+ * reads it; under a table it would belong to that table, and be ignored.
  */
 function codexConfigFile(root: string, platform: string, effort = chosenEffort(root) as Effort | undefined): HostFile | undefined
 {
     const path = join(root, ".codex", "config.toml");
     const before = files().fresh(path) ?? "";
-    const text = effort === undefined ? before : withTopKey(before, "model_reasoning_effort", effort === "app" ? undefined : effort);
+    // The master's reasoning stays out of the player's sight (T-176); a value of the player's own stays.
+    const hidden = /^\s*"?hide_agent_reasoning"?\s*=/m.test(before) ? before : withTopKey(before, "hide_agent_reasoning", "true");
+    const text = effort === undefined ? hidden : withTopKey(hidden, "model_reasoning_effort", effort === "app" ? undefined : JSON.stringify(effort));
     const server = rpgServer(platform);
     const tables: [string, string][] = [
         ["mcp_servers.rpg", `command = ${JSON.stringify(server.command)}\nargs = [${server.args.map((arg) => JSON.stringify(arg)).join(", ")}]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME"]`],
@@ -244,7 +246,7 @@ function codexConfigFile(root: string, platform: string, effort = chosenEffort(r
 }
 
 /**
- * A TOML text with a key of its top set to a value, before the first table, in place of the one there, quoted or not; without a value, the key taken away.
+ * A TOML text with a key of its top set to a value written as TOML, before the first table, in place of the one there, quoted or not; without a value, the key taken away.
  * As it is when nothing changes.
  */
 function withTopKey(text: string, key: string, value: string | undefined): string
@@ -256,7 +258,7 @@ function withTopKey(text: string, key: string, value: string | undefined): strin
     const keyLine = new RegExp(`^\\s*"?${key}"?\\s*=`);
     const top = (firstTable === -1 ? lines : lines.slice(0, firstTable)).filter((line) => !keyLine.test(line));
     const rest = firstTable === -1 ? [] : lines.slice(firstTable);
-    const head = [...(value === undefined ? [] : [`${key} = ${JSON.stringify(value)}`]), ...top].join("\n").trimEnd();
+    const head = [...(value === undefined ? [] : [`${key} = ${value}`]), ...top].join("\n").trimEnd();
     const joined = [head, rest.join("\n")].filter((part) => part.trim() !== "").join("\n\n");
     return joined.trimEnd() === plain.trimEnd() ? text : joined;
 }

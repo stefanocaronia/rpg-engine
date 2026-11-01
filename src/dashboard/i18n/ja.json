@@ -946,6 +946,7 @@
   "The story starts on day {day}": "物語は{day}日目から始まります",
   "The story starts on day {day}, {time}": "物語は{day}日目の{time}から始まります",
   "The story starts with the first scene.": "ストーリーは最初のシーンから始まります。",
+  "The text above lies behind the master's screen, forbidden to the players' eyes.": "上の文章はGMスクリーンの裏側にあり、プレイヤーには見せられません。",
   "The title of the note {title}": "メモ「{title}」のタイトル",
   "the top bar": "上部バー",
   "the units of the story": "物語で使う単位",

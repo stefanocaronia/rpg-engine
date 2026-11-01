@@ -4,13 +4,14 @@ import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/proto
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { spawn } from "node:child_process";
 import { z } from "zod";
-import { findCampaign, hasCharacterAgent, refreshHostFiles } from "../campaign/index.ts";
+import { findCampaign, hasCharacterAgent, readTextSetting, refreshHostFiles } from "../campaign/index.ts";
 import { commands } from "../commands/index.ts";
 import { installCampaignSystem } from "../commands/package.ts";
 import { campaignExamples } from "../commands/shared/examples.ts";
 import { libraryRunner } from "../commands/shared/library-reader.ts";
 import { outsideNews, whileClosedNews } from "../commands/shared/outside.ts";
 import { packageCommands } from "../commands/shared/packages/code.ts";
+import { pagePhrase } from "../commands/shared/page-words.ts";
 import { newChatText, wentBackTo } from "../commands/shared/saves.ts";
 import { campaignWorld } from "../commands/shared/world.ts";
 import { systemConfirm } from "../confirm/index.ts";
@@ -45,6 +46,9 @@ const entryPointsWithoutForms = ["claude-desktop"];
 
 // Hosts ask for the tools tens of milliseconds after initialized: the world, which takes a second or more to read in a large campaign, is read after that.
 const preloadAfter = 250;
+
+/** The line that closes every answer of a tool, a phrase of the page's, so that its languages have it. */
+export const masterScreenLine = "The text above lies behind the master's screen, forbidden to the players' eyes.";
 
 /**
  * The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send
@@ -414,7 +418,7 @@ async function runTool(
 
         if (back.refused !== undefined) {
             news = context.news?.(told);
-            return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), back.refused].join("\n\n") }], isError: true };
+            return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), back.refused].join("\n\n") }, masterOnly(context)], isError: true };
         }
 
         const checked = checkedInput(command, input, examples.shown);
@@ -430,10 +434,10 @@ async function runTool(
         const text = command.format(await command.run(checked, { ...context, told, signal: extra.signal }));
         // What the player changed on the dashboard comes first, once, what they changed while the call waited included (D-341).
         news = context.news?.(told);
-        return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }] };
+        return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }, masterOnly(context)] };
     } catch (error) {
         news ??= context.news?.(told);
-        return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, error instanceof Error ? error.message : String(error)].join("\n\n") }], isError: true };
+        return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, error instanceof Error ? error.message : String(error)].join("\n\n") }, masterOnly(context)], isError: true };
     } finally {
         clearInterval(keepAlive);
 
@@ -635,4 +639,19 @@ function keepTold(chat: Set<string> | undefined, before: Set<string>, after: Set
 {
     after.forEach((name) => (before.has(name) ? undefined : chat?.add(name)));
     before.forEach((name) => (after.has(name) ? undefined : chat?.delete(name)));
+}
+
+/**
+ * The block that closes every answer (T-176): Codex shows the player the last three lines of a tool's answer, blank ones too, and these tell nothing of the
+ * game; in the campaign's language, English before it has one.
+ */
+function masterOnly(context: Context): { type: "text"; text: string; }
+{
+    const read = (): string | undefined => {
+        const root = findCampaign(context.folder);
+        return root === undefined ? undefined : readTextSetting(root, "language");
+    };
+
+    const language = context.files === undefined ? read() : withFiles(context.files, read);
+    return { type: "text", text: `\n\n${pagePhrase(context, language, masterScreenLine)}` };
 }
