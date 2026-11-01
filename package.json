@@ -73,24 +73,24 @@
   "homepage": "https://github.com/stefanocaronia/rpg-engine#readme",
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@types/node": "^22.20.4",
+    "@types/node": "^26.6.6",
     "@types/three": "^0.186.0",
     "@typescript-eslint/parser": "^8.71.0",
     "betasim": "git+https://github.com/stefanocaronia/betasim.git",
-    "dprint": "^0.58.0",
+    "dprint": "^0.64.3",
     "eslint": "^10.11.0",
     "fast-check": "^4.10.2",
-    "playwright-core": "~1.63.0",
-    "typescript": "^6.0.3",
+    "playwright-core": "~1.64.1",
+    "typescript": "^7.0.2",
     "vitest": "^5.0.3"
   },
   "dependencies": {
-    "@dimforge/rapier3d-compat": "^0.20.0",
+    "@dimforge/rapier3d-compat": "^0.21.0",
     "@modelcontextprotocol/sdk": "^1.32.0",
     "fflate": "^0.8.2",
-    "preact": "^10.29.8",
+    "preact": "^11.1.0",
     "three": "^0.186.1",
-    "unpdf": "1.8.1",
+    "unpdf": "2.0.0",
     "yaml": "^2.9.1",
     "zod": "^4.6.5"
   }
