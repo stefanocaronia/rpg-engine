@@ -51,7 +51,7 @@ const preloadAfter = 250;
 export const masterScreenLine = "The text above lies behind the master's screen, forbidden to the players' eyes.";
 
 /**
- * The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line. Its instructions send
+ * The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line, closed by a line for the player's eyes (T-176). Its instructions send
  * the host to instructions, then status. The commands that ask the player appear for a host that shows forms, through which they ask (D-148), and wherever the
  * dashboard runs, whose page asks first (D-279).
  */
