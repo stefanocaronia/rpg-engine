@@ -127,3 +127,13 @@ describe("the notes of the outputs (D-532)", () => {
         expect(await run("advance", "--by", "1d")).not.toContain(meaning);
     });
 });
+
+describe("the settings' values in config's output (T-64)", () => {
+    it("come with a setting asked alone that takes one of some values, which the description no longer lists", async () => {
+        expect(await ok("config", "lethality")).toContain(
+            "lethality: dice\nlethality: what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide).",
+        );
+        expect(await ok("config", "lines")).not.toContain("what never appears");
+        expect(await ok("config", "--help")).not.toContain("narrative (the character never dies)");
+    });
+});

@@ -30,6 +30,7 @@ import {
     requireCampaign,
     rigors,
     saveModes,
+    settingDescription,
     settingMeaning,
     type SettingName,
     settingNames,
@@ -72,33 +73,17 @@ const counterShape = 'bulwark-dice: {max: "4 * has(features, Bulwark)"}';
 export const config = defineCommand({
     name: "config",
     description: "Show or change the campaign settings. "
-        + "Without a setting it shows them all and which are missing; with a setting and a value it changes that one. "
-        + "Use it at the start of a campaign, to learn what to ask the player, and whenever the player changes a setting. "
-        + "system: one of the installed game systems, listed while it is missing; fixed once there is a player character. difficulty, how hard the world plays: story, easy, normal, hard, brutal. "
-        + "lethality, what a fall means: narrative (the character never dies), epic (only when it matters), dice (the dice decide). "
-        + "saves, when the game may go back: permadeath (never, only to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies), free (to any save, and saves when the player asks). "
-        + "rigor, how closely travel, fatigue, food and the like follow the rules: smooth (you gloss over them), rules (as written), simulation (beyond them). "
-        + "dice, who rolls the player character's dice: digital (rpg) or physical (the player, who tells you the values). units: metric or imperial. "
-        + "master-rolls, your rolls for foes and NPCs: behind the screen (roll hides them, unset too: tell only the outcome) or in view; the party's are always shown. "
-        + "voices, who voices the characters where your app has subagents: master (you, always), auto (a subagent at key moments, as you choose), "
-        + "important (always a subagent for the companions and the characters with kind main), always (always a subagent); unset, auto. "
-        + "companions: none, made with the player or made by the master in session zero, or met in play. "
-        + "Without a written world: premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words) and preparation (on the fly or all at the start). "
-        + "lines (what never appears in the game) and veils (what happens only off screen) change with add and remove, or value none when the player wants none; when the player signals stop, add that content to lines. "
-        + "mentor, how much you teach the game, out of the story: off (the story alone, answering what the player asks between brackets), "
-        + "hints (a tip before choices that matter and when a rule slips by), tutorial (each mechanic explained the first time, a roll's whole sum, a debrief after fights). "
-        + "learned: the mechanics you explained, by their names in the system's language. "
-        + "How you write and build what you invent, as the player asks: prose (plain, literary, pulp, wry), story (situations, arcs, episodes, mystery), author (one whose way of writing you take), "
-        + "style (the player's own words on how you write); none takes away an author or a style. "
-        + "table: what you promise the player about how you play, in the words you said. "
-        + "precedents: each ruling you made without the text, the name of the rule in the system's language first, then what you said, such as 'Poisoned: …'. "
-        + "library: the player's own books, folders or files by their full path, which rules searches after the system: added once to this computer, with the player's yes "
-        + "in a window of their computer, then turned on in each campaign with add and off with remove; remove with computer takes one off this computer; "
-        + "text, or PDFs whose text can be selected, read best: a scan is read from its pictures, on Windows only, slowly. "
-        + 'coins, for a game with money whose system does not give them: each coin with its value in the smallest coin, other names after a slash, "rare" for a coin never given as change; totals count in the first. '
-        + "widgets: where the dashboard shows the extensions' widgets, which the player arranges in its Settings, such as value 'weather.today: side' (top, side, scene, sheet, world, journal or off); remove gives one back its extension's place. "
-        + "The game system may add settings of its own: config lists them with what each value means; ruleset, the version of its rules, is the player's: change it only when they ask. "
-        + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: the value gives entries by name, written as in system.yaml, "
+        + "Without a setting it shows them all and which are missing; with a setting alone, that one with what it is and its values; with a value it changes it. "
+        + "Use it in the setup, for each setting status says is missing, and whenever the player changes one. "
+        + "system is fixed once there is a player character. lines and veils change with add and remove, or value none when the player wants none. "
+        + "effort and ruleset are the player's: change them only when they ask. "
+        + "library: the player's own books, folders or files by their full path, added once to this computer with the player's yes in a window of their computer, "
+        + "then turned on in each campaign with add and off with remove; remove with computer takes one off this computer. "
+        + "precedents: each ruling you made without the text, the rule's name in the system's language first, such as 'Poisoned: …'. learned: the mechanics you explained, by name. "
+        + "table: what you promised the player about how you play, in the words you said. "
+        + 'coins, when the system gives none: each coin with its value in the smallest coin, other names after a slash, "rare" for one never given as change. '
+        + "widgets: where the dashboard shows an extension's widget, such as value 'weather.today: side'; remove gives it back its place. "
+        + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: entries by name, written as in system.yaml, "
         + "each replacing the system's one of that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the player character's line. "
         + "A formula with commas goes in quotes; a use's max reads what gives it, so that only who has it has it. "
         + `Example: setting language, value it; or setting lines, add "spiders"; or setting counters, value '${counterExample}'.`,
@@ -438,6 +423,13 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     // New months may leave the day the story starts on without its month (TIM-8): said at once, not at the next date.
     if (input.setting?.trim() === "calendar" && input.value !== undefined) {
         replaced = [...replaced, ...campaignCalendar(root, context).problems.map((problem) => `${problem.message.replace(/\.$/, "")}: ${problem.fix ?? "fix it"}.`)];
+    }
+
+    // A setting asked alone comes with what it is and its values, which the description leaves to it (T-64).
+    const about = input.setting !== undefined && input.value === undefined && !listChange ? settingDescription(checkSettingName(input.setting)) : undefined;
+
+    if (about !== undefined) {
+        replaced = [...replaced, `${checkSettingName(input.setting ?? "")}: ${about}.`];
     }
 
     const settings = readSettings(root);

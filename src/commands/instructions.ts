@@ -47,7 +47,7 @@ export const instructions = defineCommand({
             // The dashboard, where the MCP server serves one, so that the master can tell the player how to use it (D-404).
             context.dashboard === undefined ? "" : dashboardInstructions(context.dashboard),
             // The opening of an evening, said to the player while the master read the game, reached them (playtest 15).
-            "Now read where the game stands, writing nothing: your first words to the player are the opening itself.",
+            "Now read where the game stands, writing nothing.",
         ];
         return { text: parts.filter((part) => part !== "").join("\n\n") };
     },

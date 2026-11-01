@@ -36,6 +36,7 @@ export {
     readTextSetting,
     rigors,
     saveModes,
+    settingDescription,
     settingMeaning,
     type SettingName,
     settingNames,

@@ -41,7 +41,7 @@ interface MoveResult
 
 export const move = defineCommand({
     name: "move",
-    description: "Move characters, items or places into a place, a character's inventory or an item: whenever someone or something goes somewhere, before you narrate it. "
+    description: "Move characters, items or places into a place, a character's inventory or an item. "
         + "Each ends up only there, wherever it was before, and conditions such as party in [[Ossario]] fire. Time does not pass: advance does that. "
         + "Pieces of a stack go with from and count. Example: page [Ettore, Lena], to Ossario; or page Torch, from Ettore, to Lena, count 3.",
     group: "game",

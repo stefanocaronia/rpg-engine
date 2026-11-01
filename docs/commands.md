@@ -120,7 +120,7 @@ Read-only: no. Positional parameters: `page`, `to`.
 
 ### move
 
-Move characters, items or places into a place, a character's inventory or an item: whenever someone or something goes somewhere, before you narrate it.
+Move characters, items or places into a place, a character's inventory or an item.
 
 Read-only: no. Positional parameters: `page`.
 
@@ -303,7 +303,7 @@ Read-only: no. Positional parameters: `page`, `text`.
 
 ### advance
 
-Let time pass in the story, whenever it does, before you narrate it: by a duration or to a later game date.
+Let time pass in the story: by a duration or to a later game date.
 
 Read-only: no.
 

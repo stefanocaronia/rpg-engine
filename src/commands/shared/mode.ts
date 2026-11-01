@@ -1,21 +1,6 @@
 // The mode of the campaign, the main state of the game (D-77): setup, session zero or play, each opened by the checklist of the one before (D-221, D-241; MOD-1–MOD-7).
 import { basename } from "node:path";
-import {
-    companionWays,
-    diceWays,
-    difficulties,
-    lethalities,
-    masterRollWays,
-    missingSettings,
-    preparations,
-    readSettings,
-    readStateValues,
-    rigors,
-    saveModes,
-    type SettingName,
-    unansweredSettings,
-    unitSystems,
-} from "../../campaign/index.ts";
+import { companionWays, difficulties, masterRollWays, missingSettings, readSettings, readStateValues, type SettingName, unansweredSettings, unitSystems } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { readLog } from "../../core/log.ts";
 import type { Problem } from "../../core/problem.ts";
@@ -45,12 +30,12 @@ const settingLabels: Partial<Record<SettingName, string>> = {
     language: "language (a code, such as it)",
     mentor: "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off)",
     premise: "premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words)",
-    preparation: `preparation (${preparations.join(", ")})`,
-    difficulty: `difficulty (${difficulties.join(", ")})`,
-    lethality: `lethality (${lethalities.join(", ")})`,
-    saves: `saves (${saveModes.join(", ")})`,
-    rigor: `rigor (${rigors.join(", ")})`,
-    dice: `dice (${diceWays.join(", ")})`,
+    preparation: "preparation (on the fly: the world made just before it is needed; all at the start)",
+    difficulty: `difficulty (how hard the world plays: ${difficulties.join(", ")})`,
+    lethality: "lethality (what a fall means: narrative, the character never dies; epic, only when it matters; dice, the dice decide)",
+    saves: "saves (when the game may go back: permadeath, never but to the start; checkpoint, to the last end of a scene once the player character dies; free, to any save)",
+    rigor: "rigor (how closely travel, fatigue, food and the like follow the rules: smooth, glossed over; rules, as written; simulation, beyond them)",
+    dice: "dice (who rolls the player character's dice: digital, rpg; physical, the player, who tells you the values)",
     "master-rolls": `master-rolls (your rolls for foes and NPCs: ${masterRollWays.join(", ")}; suggest behind the screen)`,
     units: `units (${unitSystems.join(", ")})`,
     companions: `companions (${companionWays.join(", ")})`,

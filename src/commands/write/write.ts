@@ -271,7 +271,7 @@ export const write = defineCommand({
         const result = { page: page.name, type: page.type, path: page.path, created, changed, ...writtenNames(world, existing, fields, page), section, mode, was };
         // Said when the character joins the party, here or by being created in it; then status says it until the sheet is whole (DAT-2).
         const joined = changed && (created || existing?.fields.role !== page.fields.role);
-        const sheet = joined ? joiningNotes(system, now, page) : [];
+        const sheet = joined ? joiningNotes(system, now, page, context) : [];
         const gained = changed && existing !== undefined ? progressionNotes(context, system, world, now, existing, page, Object.keys(fields.set ?? {})) : [];
         const thresholds = changed && isPartyMember(page) ? writtenThresholdNotes(root, system, world, now, existing, page, fields.set ?? {}) : [];
         // Points that reach a level the classes have not, or fall short of the level's (PRO-6); a field the settings leave out (DAT-10).

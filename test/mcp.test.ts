@@ -202,7 +202,7 @@ describe("what the player changed on the dashboard (D-341)", () => {
         const plain = new Client({ name: "plain", version: "1.0.0" });
         await plain.connect(clientTransport);
         const status = async (): Promise<string> => ((await plain.callTool({ name: "status", arguments: {} })).content as { text: string; }[])[0].text;
-        expect(await status()).toContain("Offer the player their dashboard in your first answer");
+        expect(await status()).toContain("Offer the player their dashboard's link in your first answer");
         const next = await status();
         expect(next).not.toContain("Offer the player their dashboard");
         expect(next).toContain("Dashboard: http://localhost:4747");

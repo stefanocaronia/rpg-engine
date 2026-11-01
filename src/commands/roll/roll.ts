@@ -56,14 +56,8 @@ export const roll = defineCommand({
     name: "roll",
     description: "Roll dice and log the roll. "
         + "Give why and, if it belongs to someone, who; for a roll the player sees, check names it for them, while why stays yours. "
-        + "When the player rolls physical dice, pass their faces as values. Make it hidden when the player must not see the result; "
-        + "left out, a roll for a foe or anyone outside the party is hidden or shown as the master-rolls setting says. "
-        + "keep stores the dice rolled for later, as a power of foresight does, rolled by the player for the player character, by you for a companion; "
-        + "use takes one of those instead of the die and logs which roll it replaced. "
-        + "Instead of a notation, table rolls on a random table of a page and gives its row, for you to tell; oracle answers a yes/no question with its odds; "
-        + "toss tosses one to three coins, each heads or tails, in any game. "
-        + "On the player's dashboard a shown roll goes in its list of rolls; tray true throws it in the dice tray too, landing on its faces, false keeps it in the list alone; "
-        + "left out, coins fly and dice do not. "
+        + "With physical dice, pass the player's faces as values. hidden when the player must not see the result; left out, master-rolls decides for who is outside the party. "
+        + "Instead of a notation: table, oracle or toss, in any game; keep stores dice for later, use spends one. "
         + 'Example: notation {{roll}}, why "notice the trap", who Lena; table "Colli di Vallerana#Incontri", why "a night on the hills"; oracle likely, why "is the ferryman awake?"; '
         + 'toss 2, why "does the rope hold?", who Lena.',
     group: "game",

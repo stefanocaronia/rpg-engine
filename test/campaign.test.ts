@@ -8,8 +8,8 @@ import { makeTempFolder, readLogFile, removeFolder, testContext } from "./suppor
 
 // The settings the setup asks of a new campaign without a written world, after the system and the language (MOD-3), and the call that moves on (MOD-7).
 const asked =
-    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly, all at the start), "
-    + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation), dice (digital, physical), "
+    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly: the world made just before it is needed; all at the start), "
+    + "difficulty (how hard the world plays: story, easy, normal, hard, brutal), lethality (what a fall means: narrative, the character never dies; epic, only when it matters; dice, the dice decide), saves (when the game may go back: permadeath, never but to the start; checkpoint, to the last end of a scene once the player character dies; free, to any save), rigor (how closely travel, fatigue, food and the like follow the rules: smooth, glossed over; rules, as written; simulation, beyond them), dice (who rolls the player character's dice: digital, rpg; physical, the player, who tells you the values), "
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
     + "companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
@@ -329,7 +329,9 @@ describe("rpg config", () => {
         expect(refused.output).toContain('"deadly" is not a valid difficulty');
         const lethality = (await runCommandLine(["config", "lethality", "epic"], context)).output;
         expect(shown(lethality)).toBe("lethality: epic");
-        expect(lethality).toContain("difficulty (story, easy, normal, hard, brutal), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation)");
+        expect(lethality).toContain(
+            "difficulty (how hard the world plays: story, easy, normal, hard, brutal), saves (when the game may go back: permadeath, never but to the start; checkpoint, to the last end of a scene once the player character dies; free, to any save), rigor (how closely travel, fatigue, food and the like follow the rules: smooth, glossed over; rules, as written; simulation, beyond them)",
+        );
         expect((await runCommandLine(["config", "table", "--add", "rolls shown as they fall"], context)).output).toContain("table: rolls shown as they fall");
         expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("table:\n  - rolls shown as they fall\n");
     });

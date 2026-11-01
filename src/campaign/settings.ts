@@ -26,15 +26,15 @@ export const rigors = ["smooth", "rules", "simulation"] as const;
 const difficultyMeanings: Record<(typeof difficulties)[number], string> = {
     story: "fights low, yet each asks one choice that counts; the plain approach wins at a small cost, the risk falling on goals and allies; foes naive, ignoring the place, quick to flee; "
         + "clues obvious, four or more; resources plentiful; random encounters rare; threat clocks slow: one of them a step every other day; you may soften your own rolls; take-backs granted whenever asked",
-    easy: "fights low to moderate; the plain approach wins at a cost; foes with simple tactics, using the plainest feature of the place; three clues or more; resources generous; "
+    easy: "fights low to moderate; the plain approach wins at a cost; foes with simple tactics, using the plainest feature of the place; clues plain; resources generous; "
         + "random encounters rare; threat clocks slow: one of them a step every other day; small take-backs granted gladly",
-    normal: "fights moderate to high; two to four between full rests, with a reason not to rest; the plain approach wins at a real cost, a good choice cheaply; "
-        + "foes with sensible tactics, using the place, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); random encounters normal; "
+    normal: "fights moderate to high; two to four between full rests; the plain approach wins at a real cost, a good choice cheaply; "
+        + "foes with sensible tactics, using the place, normal morale; resources standard (treasure, supplies, prices); random encounters normal; "
         + "threat clocks at their pace: one of them a step each day; a take-back now and then, when little hangs on it",
-    hard: "fights high and beyond; the plain approach may lose, a good choice wins at a cost; foes smart (focus, control), taking the place first, tenacious; three subtle clues; "
+    hard: "fights high and beyond; the plain approach may lose, a good choice wins at a cost; foes smart (focus, control), taking the place first, tenacious; clues subtle; "
         + "resources scarce; random encounters frequent; threat clocks fast: each of them a step each day; take-backs rare",
     brutal: "fights far beyond high; the plain approach loses, only good choices win; foes optimized (prepared ground, retreats, ambushes, finishing the fallen), fanatical; "
-        + "three subtle clues; resources very scarce; random encounters frequent; threat clocks fast: each of them a step each day; rests at their harshest; no take-backs",
+        + "clues subtle; resources very scarce; random encounters frequent; threat clocks fast: each of them a step each day; rests at their harshest; no take-backs",
 };
 
 /** What each rigor means in play (D-42, D-263): what the master counts, which status and config give for the chosen one. */
@@ -64,6 +64,15 @@ export function settingMeaning(name: string, value: unknown, counted?: CountedBy
     const meanings: Record<string, Record<string, string> | undefined> = { difficulty: difficultyMeanings, rigor: rigorMeanings, mentor: mentorMeanings, ...styleMeanings };
     const own = Object.hasOwn(meanings, name) ? meanings[name] : undefined;
     return typeof value === "string" && own !== undefined && Object.hasOwn(own, value) ? own[value] : undefined;
+}
+
+/** What a setting of the engine that takes one of some values is, and those values, as config gives it for that setting alone; undefined for any other. */
+export function settingDescription(name: string): string | undefined
+{
+    const shape: Record<string, z.ZodType | undefined> = settingsSchema.shape;
+    const field = Object.hasOwn(shape, name) ? shape[name] : undefined;
+    const inner = field instanceof z.ZodOptional ? field.unwrap() : field;
+    return inner instanceof z.ZodEnum ? field?.description : undefined;
 }
 
 export type CampaignSettings = z.infer<typeof settingsSchema>;

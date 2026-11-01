@@ -671,8 +671,8 @@ describe("the dashboard's server (D-270, D-272)", () => {
 
         const dashboarded = { ...context, dashboard: "http://localhost:4747", chat: { calls: 0 } };
         const status = await runCommandLine(["status"], dashboarded);
-        expect(status.output).toMatch(/^Offer the player their dashboard in your first answer, with its link: http:\/\/localhost:4747\. /);
-        expect((await runCommandLine(["status"], dashboarded)).output).toContain("Dashboard: http://localhost:4747, the player's sheet, their settings and the dice of the checks you ask, live.");
+        expect(status.output).toMatch(/^Offer the player their dashboard's link in your first answer: http:\/\/localhost:4747\.\n/);
+        expect((await runCommandLine(["status"], dashboarded)).output).toContain("Dashboard: http://localhost:4747.");
     });
 
     it("turns down every hostile body on every write, changing nothing and staying up (T-63)", { timeout: 60_000 }, async () => {
@@ -751,7 +751,7 @@ describe("the session's notices (D-193, D-272)", () => {
             await runCommandLine(["init", "--name", "Nuova", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], served);
             await opener.open();
             expect(served.dashboard).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
-            expect((await runCommandLine(["status"], served)).output).toContain(`Offer the player their dashboard in your first answer, with its link: ${served.dashboard}.`);
+            expect((await runCommandLine(["status"], served)).output).toContain(`Offer the player their dashboard's link in your first answer: ${served.dashboard}.`);
         } finally {
             await opener.close();
             session.close();

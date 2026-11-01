@@ -1,4 +1,5 @@
 // The character sheet of the game system (D-204, D-207, DAT-2): its groups as show gives them, the fields a character still lacks, and the names a list takes (SYS-8).
+import type { Context } from "../../core/context.ts";
 import { type Formula, listItemNames, numberOf } from "../../core/formula.ts";
 import type { Problem } from "../../core/problem.ts";
 import { comparableText, valueNamed } from "../../core/text.ts";
@@ -27,6 +28,7 @@ import { fieldName } from "../../progression/index.ts";
 import type { GameSystem, SheetEntry, SheetGroup, SystemWords } from "../../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { experienceOf, experienceText, type LevelNeed, levelNeed } from "./experience.ts";
+import { firstInChat } from "./parts.ts";
 import { givenItems, progressionOf } from "./progression.ts";
 import { carriedIn, counterLimits, formulaValue, hasSheet, isUse, itemLines, itemList, signedText, workedFields, workedLine, workedMaximum, workedParts } from "./worked-out.ts";
 
@@ -86,9 +88,9 @@ export function missingSheetFields(system: GameSystem | undefined, world: World,
 
 /**
  * What write says once when a character joins the party (DAT-2): the fields its sheet still lacks, then the system's notes on the groups of the sheet, such as
- * that the personality is the player's (D-206).
+ * that the personality is the player's (D-206); the notes once in a chat, the first character's to join (T-64).
  */
-export function joiningNotes(system: GameSystem | undefined, world: World, page: Page): string[]
+export function joiningNotes(system: GameSystem | undefined, world: World, page: Page, context: Context): string[]
 {
     if (system === undefined || !hasSheet(world, page)) {
         return [];
@@ -96,7 +98,8 @@ export function joiningNotes(system: GameSystem | undefined, world: World, page:
 
     const missing = missingSheetFields(system, world, page);
     const lacks = missing.length === 0 ? [] : [`${page.name}'s sheet of the system ${system.name} still lacks, by these names: ${missing.join(", ")}.`];
-    return [...lacks, ...system.sheet.flatMap((group) => (group.note === undefined ? [] : [`${group.name}: ${group.note}`]))];
+    const notes = context.told === undefined || firstInChat(context, "sheet-notes") ? system.sheet.flatMap((group) => (group.note === undefined ? [] : [`${group.name}: ${group.note}`])) : [];
+    return [...lacks, ...notes];
 }
 
 /** A value of a character's sheet as data, which the dashboard draws (D-272), with the text the chat gives it. */

@@ -146,14 +146,12 @@ interface Saved
 export const scene = defineCommand({
     name: "scene",
     description: "Open, run and close a scene of the story. "
-        + "open starts one with a title, a type, a place, who is in it and creatures as numbered copies, such as Annegato 1: a copy holds only what changes, the rest is read from the creature. "
-        + "Whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
-        + "add brings in more characters or creatures; leave takes out who goes (fled, fallen, gone); order sets who takes turns, after rolling for it if the game does; next passes the turn; "
-        + "use marks what one uses of a turn, such as who Ettore, uses attack: the engine counts the uses of a turn the game declares and refuses one too many; "
-        + "now gives the line the player's dashboard shows: give it at open too, and change it as the scene turns. "
-        + "In a fight, hostile marks who attacks the party, the moment they show it, and calm takes the mark off one who surrenders, flees or parleys: the player's dashboard shows it. "
-        + "seen, at open or add, gives what the character sees of those it does not know by name; the player's dashboard calls them so until the character learns the name. "
-        + "close ends the scene with a summary: the player may read the title and summary. Change a copy's counters with change, as for a page. "
+        + "Creatures come as numbered copies, such as Annegato 1: a copy holds only what changes, the rest is read from the creature. "
+        + "At open, whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
+        + "order sets who takes turns, after rolling for it if the game does; next passes the turn; use marks what one uses of a turn: the engine counts the uses the game declares and refuses one too many. "
+        + "now is the line the player's dashboard shows: give it at open too, and change it as the scene turns. "
+        + "hostile marks who attacks the party, calm takes the mark off; seen gives what the character sees of those it does not know by name; the player's dashboard shows both. "
+        + "close ends the scene with a summary the player may read. Change a copy's counters with change, as for a page. "
         + 'Example: action open, title "Scontro all\'ossario", type combat, creatures {"Annegato": 2}.',
     group: "game",
     positionals: ["action"],

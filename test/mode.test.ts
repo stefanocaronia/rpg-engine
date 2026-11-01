@@ -100,7 +100,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
         await setUp(["rigor", "veils"]);
         const before = [file("state.yaml"), file("log.jsonl")];
         expect(await refused("mode", "session zero")).toBe(
-            'The campaign cannot enter session zero yet: still to agree with the player: rigor (smooth, rules, simulation), veils ("none" is an answer); set each with config. Then call mode again. Nothing changed.',
+            'The campaign cannot enter session zero yet: still to agree with the player: rigor (how closely travel, fatigue, food and the like follow the rules: smooth, glossed over; rules, as written; simulation, beyond them), veils ("none" is an answer); set each with config. Then call mode again. Nothing changed.',
         );
         expect([file("state.yaml"), file("log.jsonl")]).toEqual(before);
 
@@ -122,7 +122,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
         await ok("init", "--name", "Vuota", "--system", "fake");
         const status = await ok("status");
         expect(status).toContain(
-            "premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly, all at the start)",
+            "premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly: the world made just before it is needed; all at the start)",
         );
         expect(status).toContain("harshness (gentle or bitter); set each with config.");
         await ok("write", "Guado", "--type", "place");
@@ -211,11 +211,11 @@ describe("the mode (MOD-1–MOD-7)", () => {
         await setUp(["dice"]);
         expect(await ok("status")).toContain(
             "Ferro · it · bare, a test system of its fields alone · difficulty normal · lethality dice · saves checkpoint · rigor smooth · units metric · mode setup\n"
-                + "Difficulty normal: fights moderate to high; two to four between full rests, with a reason not to rest; the plain approach wins at a real cost, a good choice cheaply; "
-                + "foes with sensible tactics, using the place, normal morale; three clues to every conclusion; resources standard (treasure, supplies, prices); random encounters normal; "
+                + "Difficulty normal: fights moderate to high; two to four between full rests; the plain approach wins at a real cost, a good choice cheaply; "
+                + "foes with sensible tactics, using the place, normal morale; resources standard (treasure, supplies, prices); random encounters normal; "
                 + "threat clocks at their pace: one of them a step each day; a take-back now and then, when little hangs on it.\n"
                 + "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them.\n"
-                + 'Still to agree with the player: dice (digital, physical); set each with config. When none is left and the player confirms: mode, to "session zero".',
+                + 'Still to agree with the player: dice (who rolls the player character\'s dice: digital, rpg; physical, the player, who tells you the values); set each with config. When none is left and the player confirms: mode, to "session zero".',
         );
         await ok("config", "dice", "physical");
         await ok("write", "Kira", "--type", "character", "--set", "role=pc");

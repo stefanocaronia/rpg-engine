@@ -43,7 +43,7 @@ const listedItems = 8;
 export const show = defineCommand({
     name: "show",
     description: "Show a page of the world, or one of its sections or secrets, with what it inherits from the pages it derives from. "
-        + "It also says where the thing is and which pages link to it. Use it before describing anything that already exists, so that what you say matches what is written. "
+        + "It also says where the thing is and which pages link to it. "
         + "The player character and the companions show their sheet in groups, such as Abilities; Page#Group shows one group with how each number is made. "
         + 'Example: page "Old lighthouse#Cellar".',
     group: "game",

@@ -149,7 +149,7 @@ describe("the rules that left the instructions for the outputs (D-530)", () => {
         expect(masterInstructions()).toContain("An agreement on how the game is played, such as how characters are made, goes in the table setting, in the words you said.");
         // The precedents: rules says it when no text holds; the hidden roll: roll's own description.
         expect(await ok("rules", "zzzz")).toContain("If you rule without the text, tell the player it is your call, and add it to the precedents");
-        expect(await ok("roll", "--help")).toContain("Make it hidden when the player must not see the result; left out, a roll for a foe or anyone outside the party is hidden or shown as the master-rolls setting says.");
+        expect(await ok("roll", "--help")).toContain("hidden when the player must not see the result; left out, master-rolls decides for who is outside the party.");
     });
 
     it("show says once in a chat that what the character knows is view's", async () => {

@@ -100,7 +100,7 @@ export const fightGuidance = "As the fight starts, give the place two or three t
     + "- When the player uses what they found out, such as a scout's word, a legend or a foe's tell, let it change the fight plainly: the ambush falls on empty ground, the wounds stop closing.\n"
     + "- A lone foe against a party falls fast: give it help, ground that shields it, or a change as it is hurt, such as calling the guards or taking to the air.\n"
     + "- When the party may lose, keep a way to lose short of death, such as retreat, surrender, capture or a deal; foes take it when their motives allow, and the loss moves the story on.\n\n"
-    + "Tell the turns in order, as story, each roll the player sees in brackets where it falls, the order of turns too once the threat is in sight; "
+    + "Tell the turns in order, as story; once the threat is in sight, their order in brackets; "
     + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. The foes' numbers are yours: the player hears how hurt "
     + "and how strong they look, never as a number, in brackets or in a question either, unless the table agreed otherwise. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
     + "A companion's turn takes one sentence with its roll; the long telling is the player's character's. When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.\n\n"
@@ -148,7 +148,7 @@ export function inPlay(folder: string): void
 }
 
 /** The last line of the instructions, before the master's first words of an evening. */
-export const openingLine = "Now read where the game stands, writing nothing: your first words to the player are the opening itself.";
+export const openingLine = "Now read where the game stands, writing nothing.";
 
 /**
  * Puts a campaign in another game system by hand, as the tests of one system do on a campaign made with another: config refuses it once there is a player

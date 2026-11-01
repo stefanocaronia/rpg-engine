@@ -14,7 +14,7 @@ import { campaignWorld } from "./shared/world.ts";
 
 export const advance = defineCommand({
     name: "advance",
-    description: "Let time pass in the story, whenever it does, before you narrate it: by a duration or to a later game date. "
+    description: "Let time pass in the story: by a duration or to a later game date. "
         + "At the first scene, set the date the game starts on with to, at the scene's hour. Time never goes back. "
         + "It stops at the first planned event that comes due and says how to play it; on a new day, it lists the events' clocks to move. "
         + 'Example: by 8h, why "a night at the inn".',

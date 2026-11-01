@@ -7,6 +7,7 @@ import { files } from "../../core/store.ts";
 import { findImage, imageFileName } from "../../images/index.ts";
 import { baseChain, isPartyMember, ownField, type Page, type World } from "../../pages/index.ts";
 import { systemContentFolders } from "../../systems/index.ts";
+import { firstInChat } from "./parts.ts";
 import { campaignSystem } from "./world.ts";
 
 /**
@@ -18,7 +19,8 @@ export function picturesNote(root: string, context: Context, world: World, place
     const setting = readSettings(root).pictures;
 
     if (setting === undefined) {
-        const ready = context.pictures?.ready();
+        // Asked once in a chat, not at every status and scene (T-64).
+        const ready = context.told === undefined || firstInChat(context, "pictures-ask") ? context.pictures?.ready() : undefined;
         return ready?.ready === true
             ? `Pictures: this computer can make the pictures of places, quests and those met with the player's ${
                 ready.maker === "Claude" ? "Claude Code" : "Codex"

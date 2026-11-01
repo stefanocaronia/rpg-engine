@@ -16,7 +16,7 @@ export const mode = defineCommand({
     name: "mode",
     description: "Move the campaign to another mode: setup (the settings, out of the game), session zero (the player character and the companions, made in play) or play. "
         + "It refuses while that mode's checklist is incomplete, saying what is missing; otherwise it gives the new mode's instructions. "
-        + "Call it when status says nothing is missing and the player confirms; back to session zero to make a new player character. "
+        + "Back to session zero to make a new player character. "
         + 'Example: to "session zero".',
     group: "game",
     positionals: ["to"],

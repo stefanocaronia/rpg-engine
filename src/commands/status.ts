@@ -223,8 +223,7 @@ export const status = defineCommand({
         const companion = (member: Member): string => `${member.name}${member.with === undefined ? whereabouts(member) : `, with ${member.with}`}${memberCounters(member)}`;
         const state = [
             result.offerDashboard && result.dashboard !== undefined
-                ? `Offer the player their dashboard in your first answer, with its link: ${result.dashboard}. Their sheet, their settings and the dice of the checks you ask `
-                    + "follow the game there, live; the link stays the same, and a page they keep open comes back by itself next time."
+                ? `Offer the player their dashboard's link in your first answer: ${result.dashboard}.`
                 : "",
             result.campaign.join(" · "),
             ...result.meanings,
@@ -241,7 +240,7 @@ export const status = defineCommand({
             ...(result.players.length === 0 ? [`No player character yet.${sheetNote(result.sheet)}`] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             ...result.around.map((one) => `Around ${one.who.join(" and ")}: ${one.text}`),
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
-            result.dashboard === undefined || result.offerDashboard ? "" : `Dashboard: ${result.dashboard}, the player's sheet, their settings and the dice of the checks you ask, live.`,
+            result.dashboard === undefined || result.offerDashboard ? "" : `Dashboard: ${result.dashboard}.`,
             result.pictures ?? "",
             result.importing,
             result.translation ?? "",
@@ -259,10 +258,11 @@ export const status = defineCommand({
             result.clocks.length === 0 ? "" : `Clocks: ${result.clocks.join(" · ")}`,
             result.halfLoaded === undefined ? "" : `The load of save ${result.halfLoaded} stopped halfway: call save load to finish it, before anything else.`,
             ...result.contradictions,
-            result.opening ? "Write nothing to the player until your message is ready: your first words are the opening itself." : "",
             result.problems === 0 ? "" : `${result.problems} ${result.problems === 1 ? "problem" : "problems"} in the campaign: validate lists them, with how to fix each.`,
         ];
-        return [state.filter((line) => line !== "").join("\n"), ...result.sessionParts].join("\n\n");
+        // The opening's line last, after the session's parts, where the master reads it just before writing (T-64).
+        const opening = result.opening ? "Write nothing to the player until your message is ready: your first words are the opening itself." : "";
+        return [state.filter((line) => line !== "").join("\n"), ...result.sessionParts, opening].filter((block) => block !== "").join("\n\n");
     },
 });
 

@@ -81,7 +81,7 @@ export const ask = defineCommand({
         + "For a roll: the question says what is at stake either way, in about 100 characters (apps may cut it); give the checks that fit, each with its dice, "
         + "naming the sheet's numbers by their fields as roll does: the engine works them out, and only then the player's sheet lights that row; the player may also change their mind. "
         + "In a fight, each roll the player's character makes is its own ask, in the order the game's rules give them. "
-        + "For a choice the rules or the story force (a reaction, a fork): give the answers. Never to offer actions, which are the player's to say, and never for hidden rolls. "
+        + "For a choice the rules or the story force (a reaction, a fork): give the answers; never to offer actions, which are the player's to say. "
         + "square, without options, once the player says their character moves on the map of its place but not to which square: the engine moves them to the square the player touches and gives you the way. "
         + "recipe, without options, when change with a rest's recipe says so: the player spends their character's dice one at a time, and you get what they gave. "
         + "toss, without options, for one to three coins the player tosses, as roll's toss: the engine tosses them at the click, logs them as the player's roll, and gives you the faces. "
