@@ -10,9 +10,9 @@ export type { CardPage, FigureSize };
  * The version of the API a package is made for, which its package.json names as rpg-engine.api: the contract its code is given and what its extension.yaml or
  * system.yaml may declare. It goes up with every addition an older engine would refuse or misread, and the engine reads a range (D-515, D-549): 2 added the widgets, 3 an extension's
  * additions to the game system and asking the player, 4 the code in the dashboard's page, 5 one contract for every kind of package, 6 the fields of
- * knowledge of a game system (sheet-knowledge), 7 what a page carries and the pictures of the dashboard's states.
+ * knowledge of a game system (sheet-knowledge), 7 what a page carries and the pictures of the dashboard's states, 8 where a game system's oracle says yes.
  */
-export const packageApi = 7;
+export const packageApi = 8;
 
 /**
  * Our game systems (D-513): the name a campaign gives each, which package install takes alone, its package, and what it is; the setup offers them even when

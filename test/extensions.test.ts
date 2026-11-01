@@ -427,8 +427,12 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect((await read("Kira", "--carries", "Lanterna")).page.carries).toBe(false);
         expect((await read("Bram", "--carries", "Coltello")).page.carries).toBe(false);
 
-        await rpg("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Kira", "--with", "Bram");
+        await rpg("write", "Lupo", "--type", "creature", "--set", "nerve=5/8");
+        await rpg("scene", "open", "--title", "Agguato", "--type", "combat", "--with", "Kira", "--with", "Bram", "--creatures", "Lupo=2");
         expect((await read("Kira")).scene).toEqual({ title: "Agguato" });
+        // A copy in the open scene by its name, with what it changed over its creature.
+        expect((await rpg("change", "Lupo 2", "nerve", "--to", "2")).exitCode).toBe(0);
+        expect([(await read("Lupo 1", "--field", "nerve")).page.counter, (await read("Lupo 2", "--field", "nerve")).page.counter]).toEqual([{ value: 5, max: 8 }, { value: 2, max: 8 }]);
         await rpg("scene", "order", "--order", "Kira", "--order", "Bram");
         expect((await read("Kira")).scene).toEqual({ title: "Agguato", round: 1, turn: "Kira" });
     });
@@ -579,19 +583,19 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(readLogFile(folder)).toHaveLength(lines);
     });
 
-    it("read packages made for the API 1 to 7, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
-        expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, true, true, false, false, false]);
+    it("read packages made for the API 1 to 8, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
+        expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, true, true, true, false, false, false]);
         // A game system's first API is 5, the one contract (D-514).
-        expect([1, 4, 5, 6, 7, 8].map((api) => readsApi(api, "system"))).toEqual([false, false, true, true, true, false]);
+        expect([1, 4, 5, 6, 7, 8, 9].map((api) => readsApi(api, "system"))).toEqual([false, false, true, true, true, true, false]);
         expect(findExtension(testExtensionFolders, "omens")?.adds).toEqual({});
         expect(findExtension(testExtensionFolders, "skies")?.name).toBe("skies");
         expect(findExtension(testExtensionFolders, "wards")?.adds.counters).toEqual({ "ward-charges": { max: "wit-bonus + 1" }, nerve: { min: -6, max: 8 } });
 
         const newer = join(folder, "newer");
         cpSync(join(testExtensionFolders[0], "wards"), newer, { recursive: true });
-        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 8 } }));
+        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 9 } }));
         expect(() => readExtension(newer)).toThrow(
-            "The extension @rpgengine/wards cannot be used, because it is made for the API 8, and this rpg-engine reads the API 1 to 7 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
+            "The extension @rpgengine/wards cannot be used, because it is made for the API 9, and this rpg-engine reads the API 1 to 8 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
         );
     });
 });

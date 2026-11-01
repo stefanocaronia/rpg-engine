@@ -148,6 +148,15 @@ describe("roll --oracle", () => {
         expect(logged()[0]).toEqual(expect.objectContaining({ visibility: "public", data: expect.objectContaining({ notation: "d100", total: 75, oracle: "likely", odds: 75, answer: "yes" }) }));
     });
 
+    it("says yes above 100 less the odds where the game system reads the d100 high, the faces of the player's die too (T-146)", async () => {
+        writeFileSync(join(folder, "campaign.yaml"), "name: Test\nmaster-rolls: in view\nsystem: fake\n");
+        expect((await roll(faces(26), "--oracle", "likely", "--why", "is the ferryman awake?")).output).toBe("id1 is the ferryman awake?: Likely (75%): [d100 = 26] Yes.");
+        expect((await roll(faces(25), "--oracle", "likely", "--why", "is he armed?")).output).toBe("id2 is he armed?: Likely (75%): [d100 = 25] No.");
+        expect((await roll(context, "--oracle", "small chance", "--why", "a boat?", "--values", "99")).output).toBe("id3 a boat?: Small chance (10%): [d100 = 99] Yes, and more: something beyond what was asked. (physical dice)");
+        expect(oracleResult(90, 11, "high")).toEqual({ yes: true, extreme: true });
+        expect(oracleResult(90, 10, "high")).toEqual({ yes: false, extreme: false });
+    });
+
     it("makes the answer extreme on a double, 100 as 00", async () => {
         expect((await roll(faces(44), "--oracle", "50/50", "--why", "a guard?")).output).toBe("id1 a guard?: 50/50 (50%): [d100 = 44] Yes, and more: something beyond what was asked.");
         expect((await roll(faces(33), "--oracle", "small-chance", "--why", "a boat?")).output).toBe("id2 a boat?: Small chance (10%): [d100 = 33] No, and worse.");

@@ -85,6 +85,17 @@ describe("the names a game gives its rolls (D-399)", () => {
         system(near, "nostro", "title: one of our own\nlanguage: en\nroll-names:\n  1d20+5: with five\n");
         expect(() => installedSystems([near])).toThrow("write it as dice with the highest or the lowest kept or dropped");
     });
+
+    it("reads where its oracle's d100 says yes, low as the engine's own when it says nothing, and refuses another word", () => {
+        system(near, "nostro", "title: one of our own\nlanguage: en\noracle: {yes: low}\n");
+        expect(installedSystems([near])[0].oracleYes).toBe("low");
+        system(near, "nostro", "title: one of our own\nlanguage: en\n");
+        expect(installedSystems([near])[0].oracleYes).toBeUndefined();
+        system(near, "nostro", "title: one of our own\nlanguage: en\noracle: {yes: up}\n");
+        expect(() => installedSystems([near])).toThrow('oracle.yes: Invalid option: expected one of "low"|"high"');
+        system(near, "nostro", "title: one of our own\nlanguage: en\noracle: high\n");
+        expect(() => installedSystems([near])).toThrow("write it as where the oracle's d100 says yes");
+    });
 });
 
 describe("what a fight follows on the dashboard (D-314)", () => {

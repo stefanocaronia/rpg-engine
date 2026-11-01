@@ -20,6 +20,7 @@ import { rollDice } from "../../../dice/index.ts";
 import { withEffect } from "../../../effects/index.ts";
 import { type CodePackage, type Extension, type ExtensionWords, wordIn } from "../../../extensions/index.ts";
 import { carriesNamed, concernsPlayer, environmentAt, isInParty, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithNameOrAlias, playerCharacters, type World } from "../../../pages/index.ts";
+import type { Scene } from "../../../scene/index.ts";
 import { type GameSystem, givenCode, loadSystemCode, systemHasCode, systemPackage, systemPageModule } from "../../../systems/index.ts";
 import { formatGameDate, type GameDate } from "../../../time/index.ts";
 import { askedRoll, type AskResult, type Button, isCheckDice, type Told, tonesOf } from "../../ask.ts";
@@ -29,7 +30,7 @@ import { effectiveFields, effectsOf } from "../effect-layer.ts";
 import { checkEffectsReadable, saveEffects } from "../effects.ts";
 import { behindTheScreen, sealHiddenRoll } from "../master-rolls.ts";
 import { keepingConditionNote } from "../reminders.ts";
-import { readOpenScene } from "../scene.ts";
+import { copyName, copyPage, readOpenScene } from "../scene.ts";
 import { calendarDayOf, newDatedLogEntry, presentDate } from "../time.ts";
 import { formulaValue } from "../worked-out.ts";
 import { campaignSystem, campaignSystemWords, campaignWorld } from "../world.ts";
@@ -374,7 +375,8 @@ export function gameViewOf(root: string, context: Context, code: CodePackage): G
         },
         page: (name) => {
             const world = campaignWorld(root, context);
-            const found = pagesWithNameOrAlias(world, name);
+            const copy = sceneCopyOf(world, readOpenScene(root).scene, name);
+            const found = copy === undefined ? pagesWithNameOrAlias(world, name) : [copy];
             return found.length === 1 ? gamePage(world, found[0], campaignSystemWords(root, context)) : undefined;
         },
         scene: () => {
@@ -732,6 +734,17 @@ function gamePage(world: World, page: Page, words: Record<string, string> | unde
             return formulaValue(world, fields, formula);
         },
     };
+}
+
+/** The copy in the open scene a name gives, as a page that derives from its creature (INH-14); undefined for none, and for a copy a page shares its name with. */
+function sceneCopyOf(world: World, scene: Scene | undefined, name: string): Page | undefined
+{
+    try {
+        const copy = copyName(world, scene, name);
+        return scene === undefined || copy === undefined ? undefined : copyPage(copy, scene.copies[copy]);
+    } catch {
+        return undefined;
+    }
 }
 
 /** A field's value as the API gives it: a number, text, or a list as text; undefined for anything else, as a map. */

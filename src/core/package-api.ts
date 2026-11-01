@@ -127,7 +127,7 @@ export interface GameView
      * environment, such as biome: desert; and its living members, in the order of the pages (D-505).
      */
     party(): { places: string[]; environment: Record<string, string>; members: { name: string; pc: boolean; }[]; } | undefined;
-    /** A page by its name or alias (D-505); undefined when no page, or more than one, has it. */
+    /** A page by its name or alias (D-505), or a copy in the open scene by its name, as a foe's; undefined when no page, or more than one, has it. */
     page(name: string): GamePage | undefined;
     /** The open scene: its title, when it opened, and in a fight its round and whose turn it is (D-505); undefined when none is open. */
     scene(): { title: string; opened?: string; round?: number; turn?: string; } | undefined;

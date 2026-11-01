@@ -193,6 +193,8 @@ at-most:
   might: 9 + bonus-might-max
   knacks: 3
 immune: immune-to
+# Its oracle says yes on a high d100, as Ironsworn's.
+oracle: {yes: high}
 damage: {counter: grit, halves: tough-against, ignores: immune-against, doubles: weak-against, rules: Harm}
 keeping: {counter: grit, conditions: [Asleep, Pinned, Down], rules: Holding}
 combat: {track: grit, in-words: [steady, shaken, reeling, down], inactive: [Asleep, Down]}

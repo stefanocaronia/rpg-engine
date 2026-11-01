@@ -6,7 +6,7 @@ import { appendLogEntry, readLog } from "../../core/log.ts";
 import { defineCommand } from "../../core/registry.ts";
 import { comparableText, sameName, valueNamed } from "../../core/text.ts";
 import { readCounter } from "../../counters/index.ts";
-import { askOracle, DiceError, type DiceRoll, type FaceSource, rollDice, sha256, type ThrownDie, tossCoins } from "../../dice/index.ts";
+import { askOracle, DiceError, type DiceRoll, type FaceSource, type OracleYes, rollDice, sha256, type ThrownDie, tossCoins } from "../../dice/index.ts";
 import { declaredKind, findPage, isPlayerCharacter, type Page, pagesWithName, type World, writePage } from "../../pages/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
 import { effectiveFields, effectsOf } from "../shared/effect-layer.ts";
@@ -294,7 +294,7 @@ function answerRoll(
 
     const physical = input.values !== undefined;
     const source = input.values ? { values: input.values } : { random: context.random };
-    const answer = input.table !== undefined ? tableAnswer(root, context, input.table, source) : input.toss !== undefined ? tossAnswer(input.toss, source) : oracleAnswer(input.oracle ?? "", source);
+    const answer = input.table !== undefined ? tableAnswer(root, context, input.table, source) : input.toss !== undefined ? tossAnswer(input.toss, source) : oracleAnswer(input.oracle ?? "", source, campaignSystem(root, context)?.oracleYes);
     // A table or the oracle is the master's own roll, behind the screen as master-rolls says, but for a party member's (D-287); a secret's table is never shown.
     const masters = input.who === undefined || !ofTheParty(root, context, input.who);
     const screened = answer.secret || (input.hidden === undefined && !physical && masters && screenUp(root));
@@ -327,11 +327,11 @@ function tableAnswer(root: string, context: Context, table: string, source: Face
     return { secret: rolled.secret, notation: rolled.die, total: rolled.result, text: rolled.text, dice: rolled.roll.dice, data: { table: rolled.table, row: rolled.row.label } };
 }
 
-/** The oracle's answer, with its odds and the answer for the log. */
-function oracleAnswer(odds: string, source: FaceSource): Answer
+/** The oracle's answer, read where the game system says a d100 says yes, with its odds and the answer for the log. */
+function oracleAnswer(odds: string, source: FaceSource, yesOn?: OracleYes): Answer
 {
     try {
-        const asked = askOracle(odds, source);
+        const asked = askOracle(odds, source, yesOn);
         return { secret: false, notation: "d100", total: asked.roll.total, text: asked.text, dice: asked.roll.dice, data: { oracle: asked.odds, odds: asked.chance, answer: `${asked.extreme ? "extreme " : ""}${asked.yes ? "yes" : "no"}` } };
     } catch (error) {
         throw error instanceof DiceError ? new Error(`${error.message} Nothing rolled.`) : error;

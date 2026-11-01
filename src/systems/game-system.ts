@@ -337,6 +337,8 @@ export interface GameSystem
     burning: Record<string, { lasts: string; spends?: string; }>;
     /** The list of a page that names the conditions it does not take, as condition-immunities (EFF-17). */
     immune?: string;
+    /** Where the oracle's d100 says yes, high in Ironsworn; low when the system says nothing. */
+    oracleYes?: "low" | "high";
     /** By name, what one may do in a turn (TRN-1), as an action, a bonus action and a reaction. */
     turnUses: Record<string, TurnUse>;
     /** By field of a sheet, the most it holds (LIM-1): a number written, or the items of a list. */
@@ -776,6 +778,7 @@ const systemSchema = z.object({
             + "such as attuned: {most: 3, needs: attunement, while: equipped, rules: Attunement}",
     }).optional(),
     immune: z.string().min(1).optional(),
+    oracle: z.object({ yes: z.enum(["low", "high"]) }, { error: "write it as where the oracle's d100 says yes, low up to the odds or high above 100 less them, such as {yes: high}" }).strict().optional(),
     "turn-uses": z.record(
         z.string().min(1).refine((name) => !/ (by|for) /i.test(` ${name} `), "a use's name takes no word by or for, which the engine reads in what it keeps"),
         z.object({
@@ -1166,6 +1169,7 @@ function readSystem(folder: string, name: string, layers: SystemLayer[] = [], ru
         ...(data.upkeep === undefined ? {} : { upkeep: data.upkeep }),
         burning: data.burning ?? {},
         ...(data.immune === undefined ? {} : { immune: data.immune }),
+        ...(data.oracle === undefined ? {} : { oracleYes: data.oracle.yes }),
         turnUses: Object.fromEntries(
             Object.entries(data["turn-uses"] ?? {}).map(([use, rule]) => [use, {
                 ...(rule.most === undefined ? {} : { most: formulaAt(String(rule.most), `turn-uses.${use}.most`, name, path) }),

@@ -208,6 +208,14 @@ roll-names: {2d20kh1: {en: with advantage, it: con vantaggio}}
 
 What the game calls a roll, written on the dashboard's buttons.
 
+### oracle
+
+```yaml
+oracle: {yes: high}
+```
+
+Where the d100 of `roll --oracle` says yes: `low`, up to the odds, as when the system says nothing; `high`, above 100 less the odds, as in Ironsworn, where likely says yes from 26. The player's own d100 is read the same way. Since API 8.
+
 ### rewards, thresholds, recipes
 
 ```yaml
