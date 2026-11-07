@@ -6,7 +6,9 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { join, resolve } from "node:path";
 import { notYetRead, oneAnswer } from "./one-answer.mjs";
 
-const [out, folder, profile, model] = process.argv.slice(2);
+const [out, folder, profile, model, withPage] = process.argv.slice(2);
+// With the dashboard open the page gets each question first, as a player looking at it would answer there: the form waits for the page to show it.
+const pageFirst = withPage === "page" ? 15_000 : 0;
 const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith("CLAUDE")));
 // A form refused faster than a person could read it is taken for one never shown, and the server stops showing forms (tooFastForPerson in src/server/mcp.ts).
 const personReads = 1600;
@@ -21,7 +23,7 @@ try {
     }
 
     // The page may have asked the player first: then its answer, by index, as the form lists the same choices in the same order with other words.
-    const answer = await oneAnswer({ folder, question: form.message, side: "form", ask: () => ({ index: labels.indexOf(press(form, labels)) }) });
+    const answer = await oneAnswer({ folder, question: form.message, side: "form", ask: () => ({ index: labels.indexOf(press(form, labels)) }), yieldFor: pageFirst });
     const choice = labels[answer.index ?? -1];
     const from = answer.from === undefined ? "" : ` (the player's answer on the ${answer.from})`;
 

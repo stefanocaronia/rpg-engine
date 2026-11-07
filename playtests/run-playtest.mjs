@@ -258,7 +258,7 @@ function masterArgs(folder)
 {
     const isolation = "--setting-sources project,local --strict-mcp-config --mcp-config .mcp.json --permission-mode dontAsk --allowedTools mcp__rpg Agent(rpg-character) WebSearch WebFetch";
     const path = (file) => `"${resolve(file).replaceAll("\\", "/")}"`;
-    const command = ["node", path(join(repo, "playtests", "answer-form.mjs")), path(out), path(folder), path(options.profile), options["player-model"]].join(" ");
+    const command = ["node", path(join(repo, "playtests", "answer-form.mjs")), path(out), path(folder), path(options.profile), options["player-model"], ...(options.dashboard ? ["page"] : [])].join(" ");
     const hooks = { hooks: { Elicitation: [{ matcher: "rpg", hooks: [{ type: "command", command, timeout: 300 }] }] } };
     // The master's effort, when the run asks for one; left out, Claude Code's own.
     const effort = options["master-effort"] === undefined ? {} : { effortLevel: options["master-effort"] };

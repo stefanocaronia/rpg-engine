@@ -98,10 +98,10 @@ Read-only: no. Positional parameters: `page`.
 
 - `page` (`string`, required): name of the page, or of a copy in the open scene; Page#Name writes one section or one secret
 - `type` (`"character" | "place" | "faction" | "quest" | "item" | "event" | "topic" | "creature"`, optional): type of a new page, or the new type of one that exists: character, place (a room, a house, a ship, a region), faction, quest, item (a thing, even one with someone inside, such as a cart; one with words or a drawing to read again, such as a letter, a notice or a map, has document=letter, notice, map…), event, topic, creature
-- `set` (`string[] | object`, optional): fields to set: field=value, repeatable, or an object such as {"role": "npc"}. A link is [[Page]], links are [[A]], [[B]], a list is [a, b]
+- `set` (`string[] | object | string`, optional): fields to set: field=value, repeatable, or an object such as {"role": "npc"}. A link is [[Page]], links are [[A]], [[B]], a list is [a, b]
 - `unset` (`string[]`, optional): fields to remove, repeatable
-- `add` (`string[] | object`, optional): items to add to list fields: field=value, repeatable, such as factions=[[Barcaioli]], or an object
-- `remove` (`string[] | object`, optional): items to remove from list fields: field=value, repeatable, or an object
+- `add` (`string[] | object | string`, optional): items to add to list fields: field=value, repeatable, such as factions=[[Barcaioli]], or an object
+- `remove` (`string[] | object | string`, optional): items to remove from list fields: field=value, repeatable, or an object
 - `text` (`string`, optional): text of the introduction, the part before the first heading; or of the section or secret given
 - `section` (`string`, optional): section or secret to write; a missing one is added at the end of the page, as a secret if secret is given; empty text removes it
 - `append` (`boolean`, optional): add the text at the end instead of replacing
@@ -279,7 +279,7 @@ Read-only: no. Positional parameters: `action`, `page`, `name`.
 - `for` (`string`, optional): add: how long it lasts: 10m, 1h, 1d 6h; in a scene with turns, rounds from the current turn, such as 1 round; scene, until it ends; or an occasion of the game system its recipe brings, such as night's rest. Left out, until it is ended: so for one that ends with something in the story, such as breathing clean air; end it then
 - `until` (`string`, optional): add, in a scene with turns: whose next turn ends it when it starts, such as Ennio, instead of for
 - `by` (`string`, optional): add: who keeps it alive, if someone must (concentration), such as [[Lena]]; end: take away every effect they keep, on everyone
-- `set` (`string[] | object`, optional): add: the values it gives while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-armor=2. What must outlive it, such as hit points it adds, change on the page instead
+- `set` (`string[] | object | string`, optional): add: the values it gives while it lasts, field=value, repeatable, such as speed=20; for a field the game system declares a bonus, what it adds, such as bonus-armor=2. What must outlive it, such as hit points it adds, change on the page instead
 - `why` (`string`, optional): what caused it, or ended it
 
 ### mood

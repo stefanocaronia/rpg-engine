@@ -117,6 +117,14 @@ describe("MCP server", () => {
         expect(await call("write", { page: "Lena", set: { knows: [["[[Pietro]]"], ["[[Rosa]]"]] } })).toEqual({ text: expect.stringContaining("would hold a list inside a list"), isError: true });
     });
 
+    it("takes fields sent as one field=value, or as an object in JSON text, as a master sent them in a playtest", async () => {
+        await call("init", { name: "Guadoscuro" });
+        expect((await call("write", { page: "Lena", type: "character", set: "role=companion" })).isError).toBe(false);
+        expect((await call("write", { page: "Lena", set: '{"motto": "calma", "speed": 30}' })).isError).toBe(false);
+        expect(JSON.parse((await runCommandLine(["show", "Lena", "--json"], testContext(folder))).output).fields).toMatchObject({ role: "companion", motto: "calma", speed: 30 });
+        expect((await call("write", { page: "Lena", set: "{not json" })).text).toContain("field=value");
+    });
+
     it("refuses a parameter a tool does not have, instead of leaving it out", async () => {
         await call("init", { name: "Guadoscuro" });
         await call("write", { page: "Lena", type: "character" });

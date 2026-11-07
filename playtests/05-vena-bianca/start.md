@@ -14,7 +14,7 @@ rpg init $campaign --name "La miniera di Vena Bianca" --system 5e --language it 
 Copy-Item -Recurse -Force playtests\05-vena-bianca\world\* $campaign\world
 Push-Location $campaign
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
-rpg config companions "made by the master"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
+rpg config companions "made by the master"; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
 rpg config calendar-start "day 1"; rpg config pictures none
 rpg mode "session zero"; rpg mode play
 rpg advance --to "day 1, 20:00" --why "La sera all'Osteria della Lanterna"

@@ -19,7 +19,7 @@ rpg init $campaign --name "L'uomo che volle farsi re" --system 5e --language it 
 New-Item -ItemType Directory "$run\libri"; Copy-Item <the PDF> "$run\libri\l-uomo-che-volle-farsi-re.pdf"
 Push-Location $campaign
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
-rpg config companions none; rpg config lines none; rpg config veils none; rpg config advancement milestones; rpg config mentor off
+rpg config companions none; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement milestones; rpg config mentor off
 rpg config pictures none
 rpg validate; rpg status
 Pop-Location

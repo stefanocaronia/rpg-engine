@@ -14,9 +14,10 @@ const pollEvery = 200;
 
 /**
  * The player's answer to `question`, asked once for both sides: `side` is "page" or "form", `ask()` asks the player and gives { index } for a choice,
- * { words } or { square } for what only the page takes. Gives the answer, with `from` set to the side that asked when it was the other.
+ * { words } or { square } for what only the page takes. Gives the answer, with `from` set to the side that asked when it was the other. `yieldFor`
+ * milliseconds leave the question to the other side first, as the form does to an open page, which the run would otherwise never click.
  */
-export async function oneAnswer({ folder, question, side, ask })
+export async function oneAnswer({ folder, question, side, ask, yieldFor = 0 })
 {
     const base = join(folder, "answers");
     mkdirSync(base, { recursive: true });
@@ -36,6 +37,7 @@ export async function oneAnswer({ folder, question, side, ask })
             continue;
         }
 
+        await claimedWithin(`${entry}.claim`, yieldFor);
         const answer = claim(`${entry}.claim`) ? await asked(entry, ask) : (await waited(entry, side)) ?? (await asked(entry, ask));
         writeFileSync(taken, "taken");
         return answer;
@@ -86,6 +88,16 @@ function claim(file)
         return true;
     } catch {
         return false;
+    }
+}
+
+/** Waits up to `wait` milliseconds for the other side to claim the question. */
+async function claimedWithin(file, wait)
+{
+    const until = Date.now() + wait;
+
+    while (Date.now() < until && !existsSync(file)) {
+        await new Promise((resolve) => setTimeout(resolve, pollEvery));
     }
 }
 

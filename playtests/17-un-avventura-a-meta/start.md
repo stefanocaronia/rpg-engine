@@ -20,7 +20,7 @@ Copy-Item -Recurse -Force playtests\17-un-avventura-a-meta\world\* $campaign\wor
 Copy-Item -Recurse playtests\17-un-avventura-a-meta\adventure "$run\il-pozzo-che-sussurra"
 Push-Location $campaign
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
-rpg config companions "made by the master"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
+rpg config companions "made by the master"; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
 rpg config calendar-start "day 1"; rpg config pictures none
 rpg mode "session zero"; rpg mode play
 rpg advance --to "day 6, 20:00" --why "La cena all'osteria, dopo i goblin del pianoro"
