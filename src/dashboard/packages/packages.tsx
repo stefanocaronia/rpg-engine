@@ -140,11 +140,11 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
     const [asking, setAsking] = useState<Asking>();
     const reads = useRef(0);
     const catalogReads = useRef(0);
-    const before = useRef<PackageWork>();
+    const before = useRef<PackageWork | undefined>(undefined);
     const mine = useRef(0);
     // The rows here before the last addition: those not among them are new.
-    const known = useRef<Set<string>>();
-    const seeing = useRef<PackageKind>();
+    const known = useRef<Set<string> | undefined>(undefined);
+    const seeing = useRef<PackageKind | undefined>(undefined);
     const shownTab: PackagesTab = tab === "add" || tab === "library" ? tab : "installed";
     const [library, setLibrary] = useState<LibraryView>();
     const [libraryProblem, setLibraryProblem] = useState<string>();
@@ -773,7 +773,7 @@ function LibraryField({ state, onAdd }: { state: RowState; onAdd(path: string): 
 {
     const [path, setPath] = useState("");
     const [empty, setEmpty] = useState(false);
-    const sent = useRef<string>();
+    const sent = useRef<string | undefined>(undefined);
 
     useEffect(() => {
         if (state.said?.problem === false && sent.current === path) {
@@ -877,7 +877,7 @@ function AddField({ state, onAdd, onFile }: { state: RowState; onAdd(source: str
     const [source, setSource] = useState("");
     const [empty, setEmpty] = useState(false);
     const picker = useRef<HTMLInputElement>(null);
-    const sent = useRef<string>();
+    const sent = useRef<string | undefined>(undefined);
 
     // Added: the field is ready for the next one.
     useEffect(() => {

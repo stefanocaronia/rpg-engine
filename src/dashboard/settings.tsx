@@ -115,7 +115,7 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
 {
     // The value just picked shows at once, until the setting is read again.
     const [picked, setPicked] = useState<string>();
-    const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; }>();
+    const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; } | undefined>(undefined);
     const said = useSaid();
     const value = picked ?? setting.value;
     const id = `setting-${idOf(setting.name)}`;
@@ -265,7 +265,7 @@ function choiceLabel(setting: string, choice: { value: string; means?: string; }
 function useSaid(): { now?: { problem: boolean; text: string; }; show(problem: string | undefined): void; }
 {
     const [now, setNow] = useState<{ problem: boolean; text: string; }>();
-    const timer = useRef<ReturnType<typeof setTimeout>>();
+    const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     useEffect(() => () => clearTimeout(timer.current), []);
 

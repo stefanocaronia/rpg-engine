@@ -62,8 +62,8 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
     const travel = useRef({ from: window.scrollY, last: window.scrollY });
     // Its height before it folded or opened, which it grows or shrinks from; folded down the page, the room it kept open, its height and margin, so that the
     // page under it neither moves nor changes its length.
-    const before = useRef<number>();
-    const kept = useRef<{ height: number; margin: number; }>();
+    const before = useRef<number | undefined>(undefined);
+    const kept = useRef<{ height: number; margin: number; } | undefined>(undefined);
     const moving = useRef(false);
     const [sent, setSent] = useState<number | "words" | "square">();
     const [byHand, setByHand] = usePref(byHandPref);

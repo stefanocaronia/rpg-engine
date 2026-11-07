@@ -255,7 +255,7 @@ function OwnPageLinks({ pages, ownShown, onPick }: { pages: NavPage[]; ownShown?
  * Whether the top is drawn together, down the page: two marks in its room, one this far down and one near the very top, tell it, with no work while the page
  * scrolls. The top stays on top out of the page's flow, and its room keeps its whole height, so that drawing it together moves nothing under it.
  */
-function useCompact(room: RefObject<HTMLDivElement>, header: RefObject<HTMLElement>): boolean
+function useCompact(room: RefObject<HTMLDivElement | null>, header: RefObject<HTMLElement | null>): boolean
 {
     const [compact, setCompact] = useState(false);
 
@@ -304,7 +304,7 @@ function useCompact(room: RefObject<HTMLDivElement>, header: RefObject<HTMLEleme
 }
 
 /** How many sections fit in the row, and whether the saves, the settings and About fit after them; on a phone the sections are at the bottom, the rest in the menu. */
-function useFitting(row: RefObject<HTMLElement>, count: number, shape: string): { sections: number; pages: boolean; }
+function useFitting(row: RefObject<HTMLElement | null>, count: number, shape: string): { sections: number; pages: boolean; }
 {
     const [fitting, setFitting] = useState({ sections: count, pages: true });
 
@@ -407,7 +407,7 @@ function Menu({ current, awayTabs, awayPages, ownMenu, ownShown }: {
 }
 
 /** A touch outside an open menu, or Escape, closes it; Escape gives the focus back to its button. */
-function useClosing(holder: RefObject<HTMLDivElement>, open: boolean, setOpen: (open: boolean) => void): void
+function useClosing(holder: RefObject<HTMLDivElement | null>, open: boolean, setOpen: (open: boolean) => void): void
 {
     useEffect(() => {
         if (!open) {
@@ -532,7 +532,7 @@ function StatusChips({ now, calendar, live }: { now?: string; calendar?: Calenda
  * The chips a short row puts on its second line, which is never seen, marked so: unseen, still read by a screen reader. The row does not clip, so that a chip's
  * tooltip shows under it (D-502).
  */
-function useWrapped(row: RefObject<HTMLElement>): void
+function useWrapped(row: RefObject<HTMLElement | null>): void
 {
     useLayoutEffect(() => {
         const element = row.current;

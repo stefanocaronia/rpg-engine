@@ -239,7 +239,7 @@ function MapCard(
         return { ways: wayShapes({ ...full, places, roads }), spots: places.filter((place): place is Spot => place.x !== undefined && place.y !== undefined && place.radius === undefined) };
     }, [part, full]);
     const pointers = useRef(new Map<number, { x: number; y: number; }>());
-    const drag = useRef<{ view: MapView; x: number; y: number; spread: number; moved: boolean; }>();
+    const drag = useRef<{ view: MapView; x: number; y: number; spread: number; moved: boolean; } | undefined>(undefined);
     const narrow = size !== undefined && size.width < 600;
 
     // The map's size, as the window changes it.

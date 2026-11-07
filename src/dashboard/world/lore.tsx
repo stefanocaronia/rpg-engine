@@ -227,7 +227,7 @@ function documentLabel(document: string): string
 function Browse({ open, explicit, back, backLabel, children }: { open?: string | undefined; explicit: boolean; back: string; backLabel: string; children: ComponentChildren; })
 {
     const box = useRef<HTMLDivElement>(null);
-    const last = useRef<string>();
+    const last = useRef<string | undefined>(undefined);
 
     useEffect(() => {
         if (explicit) {

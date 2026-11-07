@@ -101,7 +101,7 @@ export function QuestEndings({ version, campaign, beside = false }: { version: n
 {
     const journal = useJournal(version);
     const [followed] = useFollowed(campaign, journal.read?.quests);
-    const before = useRef<{ campaign?: string; names: string[]; }>();
+    const before = useRef<{ campaign?: string; names: string[]; } | undefined>(undefined);
     const [endings, setEndings] = useState<Ending[]>([]);
     const [told, setTold] = useState("");
 

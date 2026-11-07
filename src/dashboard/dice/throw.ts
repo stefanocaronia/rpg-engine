@@ -127,7 +127,8 @@ export function throwDice(shapes: Shape[], tray: Tray, random: () => number = Ma
             const run = simulate(shapes, normals, tray, lying, start, from);
             frames = [...frames.slice(0, from), ...run.frames];
             motions = [...motions.slice(0, from), ...run.motions];
-            knocks = [...knocks.filter((knock) => knock.frame < from), ...run.knocks];
+            // The run taken again keeps quiet in its first frames, so the knocks the last run had there stay: the first on the floor, too.
+            knocks = [...knocks.filter((knock) => knock.frame < from + knockGap), ...run.knocks];
 
             if (!run.leaned) {
                 return { frames, knocks };

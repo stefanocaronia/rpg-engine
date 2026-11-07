@@ -47,9 +47,9 @@ export const builtPage = fileURLToPath(new URL("../../../dist/dashboard/", impor
 // beside it; three's loader of the dice's models imports two of its utilities beside it; the room the metal dice mirror is three's too; Rapier's module
 // moves the dice.
 const vendorModules: Record<string, [string, string]> = {
-    "preact.js": ["preact", "dist/preact.module.js"],
-    "hooks.js": ["preact", "hooks/dist/hooks.module.js"],
-    "jsx-runtime.js": ["preact", "jsx-runtime/dist/jsxRuntime.module.js"],
+    "preact.js": ["preact", "dist/preact.mjs"],
+    "hooks.js": ["preact", "hooks/dist/hooks.mjs"],
+    "jsx-runtime.js": ["preact", "jsx-runtime/dist/jsxRuntime.mjs"],
     "three.module.js": ["three", "build/three.module.js"],
     "three.core.js": ["three", "build/three.core.js"],
     "three/addons/loaders/GLTFLoader.js": ["three", "examples/jsm/loaders/GLTFLoader.js"],

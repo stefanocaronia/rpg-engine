@@ -112,11 +112,11 @@ function App()
     const [address, setAddress] = useState<Address>(() => readAddress(window.location.hash));
     const reading = useRef(0);
     // Whose sheet the Party section opened by itself, kept until the address changes.
-    const opened = useRef<string>();
+    const opened = useRef<string | undefined>(undefined);
     // Whose card the player chose at hand in a fight, with more than one player character (D-480 (7)): kept through that turn alone.
-    const handed = useRef<{ who: string; turn: string; }>();
+    const handed = useRef<{ who: string; turn: string; } | undefined>(undefined);
     // The rolls already read, from the first reading on: a check rolled after it is thrown on the page; the rolls new since come into the list as new.
-    const seen = useRef<Set<string>>();
+    const seen = useRef<Set<string> | undefined>(undefined);
     const [thrown, setThrown] = useState<ShownRoll>();
     // The roll whose dice are in the air: its line comes into the rolls only as they go (D-300).
     const [held, setHeld] = useState<string>();
@@ -125,13 +125,13 @@ function App()
     const rollsAsked = useRef(firstRolls);
     // The robot's face for a moment (D-305): the master's last moment once it is new, or a new roll's reaction, whichever came last.
     const [moment, setMoment] = useState<Moment>();
-    const toldMoment = useRef<string>();
+    const toldMoment = useRef<string | undefined>(undefined);
     // A number of the sheet rolled for fun, from its explanation (D-280): each a throw of its own, even of the same number.
     const [sheetThrow, setSheetThrow] = useState<SheetThrow>();
     // The question answered from the sheet or the tray, while the engine rolls it (D-330); the free rolls, in this browser alone.
     const [answering, setAnswering] = useState<string>();
     // The roll that answers a card, or a die of a rest, while its dice fly: what it changes of the sheet waits for them (D-461).
-    const holding = useRef<{ roll: ShownRoll; timer: number; }>();
+    const holding = useRef<{ roll: ShownRoll; timer: number; } | undefined>(undefined);
     const [free, setFree] = useState<PageRoll[]>([]);
     // On a wide screen the table stands beside the page, unless the player folded it; folded, or under that width, the turns and the followed quest go back to
     // the page.
@@ -163,13 +163,13 @@ function App()
     const widgetReading = useRef({ asked: 0, shown: 0 });
     const moduleReading = useRef({ asked: 0, shown: 0 });
     // The card of a package's question as last read, even while the dice that changed it fly; the attempts the player let go, with the question then (D-507).
-    const packNow = useRef<PackCard>();
+    const packNow = useRef<PackCard | undefined>(undefined);
     const packsGone = useRef(new Map<string, string | undefined>());
     // In the card of a rest's dice, how many dice were rolled as the player pressed one, until its roll lands.
-    const restSent = useRef<number>();
+    const restSent = useRef<number | undefined>(undefined);
     // The widgets as read while a card's dice fly, which show only once they land, as the rest of what the roll changed: a panel on the party never tells the
     // outcome of a death save before its die (D-461).
-    const widgetsHeld = useRef<ShownWidget[]>();
+    const widgetsHeld = useRef<ShownWidget[] | undefined>(undefined);
 
     // Reads view again for whom the address names, or the player character the master calls, and what the master asks; an answer that comes after a newer one
     // is left out.

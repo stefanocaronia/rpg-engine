@@ -90,7 +90,7 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
     const button = useRef<HTMLButtonElement>(null);
     const controls = useRef<HTMLDivElement>(null);
     const tray = useRef<HTMLDivElement>(null);
-    const roller = useRef<Promise<Roller | undefined>>();
+    const roller = useRef<Promise<Roller | undefined> | undefined>(undefined);
     // The number of the throw shown now: a newer throw ends an older one's animation and timers.
     const throwing = useRef(0);
     const skipping = useRef(false);

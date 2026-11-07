@@ -460,7 +460,7 @@ function Marks({ track, place, change }: { track: WidgetTrack; place?: "start" |
 /** A figure of an extension, given what it drew before once what it draws changes, for it to move from one to the other. */
 export function Figure({ owner, name, part }: { owner: Owner; name: string; part: FigurePart; })
 {
-    const looks = useRef<{ said: string; data?: unknown; before?: unknown; }>();
+    const looks = useRef<{ said: string; data?: unknown; before?: unknown; } | undefined>(undefined);
     const said = JSON.stringify([part, owner.data]);
 
     // The data it drew before, once what it draws changes: in a card of a roll that is once the dice land, as the card changes only then.

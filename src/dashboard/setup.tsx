@@ -127,7 +127,7 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onPro
 })
 {
     const [picked, setPicked] = useState<string>();
-    const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; }>();
+    const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; } | undefined>(undefined);
     const heading = useRef<HTMLHeadingElement>(null);
     const value = picked ?? question.value;
     const title = question.question === undefined ? settingLabel(question.name) : t(question.question);
