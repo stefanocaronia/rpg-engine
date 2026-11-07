@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { rememberedByText } from "./memo.ts";
 
 /** A name as it is compared: any case, accents written either way (NFC) and a curly apostrophe as a straight one (SYS-5), so that "Città" from any system matches "città". */
@@ -20,6 +21,12 @@ export function textSize(text: string): number
 {
     const letters = text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/gu)?.length ?? 0;
     return Math.max(wordCount(text) + letters, Math.ceil(text.length / 6));
+}
+
+/** A short print of a text, which changes when the text does: a translation keeps the print of the text it was made from. */
+export function textPrint(text: string): string
+{
+    return createHash("sha256").update(text, "utf8").digest("hex").slice(0, 16);
 }
 
 /** The first sentence of a text, up to its first ". ", as the help and the commands' reference give a command's description. */

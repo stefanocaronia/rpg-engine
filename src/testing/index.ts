@@ -262,7 +262,7 @@ function inPlay(folder: string): void
 /** The dashboard of a test campaign, with a page open on it that the server has heard from, so that questions go to the page. */
 async function testDashboard(context: Context): Promise<TestDashboard>
 {
-    const session = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+    const session = new SessionStore({ systemFolders: [...(context.systemFolders ?? []), ...(context.home === undefined ? [] : [join(context.home, "systems")])], watchFolder: () => ({ close: () => undefined }) });
     const dashboard = await startDashboard({ ...context, files: session }, session, { ports: [0], page: context.folder });
 
     if (dashboard === undefined) {

@@ -31,15 +31,19 @@ import { homeSystemWords } from "./page-words.ts";
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
 export function campaignWorld(root: string, context: Context): World
 {
-    // The same world until one of its pages or campaign.yaml changes: in a session, across calls (D-137). A game system does not change while the server runs.
-    const from = [join(root, worldFolderName), join(root, campaignFileName)].map((path) => resolve(path));
+    // The same world until one of its pages, campaign.yaml or the system's pages translated on this computer change: in a session, across calls (D-137). A
+    // game system does not change while the server runs.
+    const from = [join(root, worldFolderName), join(root, campaignFileName), ...(context.home === undefined ? [] : [join(context.home, "systems")])].map((path) => resolve(path));
     const dependsOn = (path: string): boolean => from.some((source) => source === path || isInside(source, path) || isInside(path, source));
     return files().remember(`world ${resolve(root)}`, dependsOn, () => {
         const named = readTextSetting(root, "system");
         const system = campaignSystem(root, context);
+        const language = readTextSetting(root, "language");
+        const own = system === undefined || language === undefined ? undefined : ownTranslationFolder(context, system.name, language);
         return loadWorld(root, {
             system,
-            language: readTextSetting(root, "language"),
+            language,
+            ...(own === undefined ? {} : { ownTranslations: own }),
             words: campaignSystemWords(root, context),
             missingSystem: system === undefined ? named : undefined,
             noSystem: named === undefined,
@@ -47,6 +51,14 @@ export function campaignWorld(root: string, context: Context): World
             rigor: rigorPlayed(root, system),
         });
     });
+}
+
+/** The folder of a game system's pages translated on this computer into a language (D-539), in the player's data folder; none without one. */
+export function ownTranslationFolder(context: Context, system: string, language: string): string | undefined
+{
+    const code = language.trim().toLowerCase();
+    // A language campaign.yaml writes by hand is a code, never a path out of the folder.
+    return context.home === undefined || !/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/.test(code) ? undefined : join(context.home, "systems", system, "translations", code);
 }
 
 /**

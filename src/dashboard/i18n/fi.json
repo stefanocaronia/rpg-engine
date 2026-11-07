@@ -965,6 +965,7 @@
   "This campaign, as an adventure": "Tämä kampanja seikkailuna",
   "This chat does not hear it by itself: copy it, then paste it in the chat.": "Chat ei kuule tätä itse: kopioi se ja liitä chattiin.",
   "this computer does not let it be read: check who may open it.": "tämä tietokone ei salli sen lukemista: tarkista, kenellä on oikeus avata se.",
+  "This computer is translating the game's rules into {language}: until then they stay in English.": "Tämä tietokone kääntää pelin säännöt kielelle {language}: siihen asti ne pysyvät englanniksi.",
   "This computer is translating the page into {language}: until then it stays in English.": "Tämä tietokone kääntää sivun kielelle {language}: siihen asti se pysyy englanniksi.",
   "This game's style does not pass the page's check of legibility: the page keeps its own.": "Tämän pelin tyyli ei läpäise sivun luettavuustarkistusta: sivu pitää oman tyylinsä.",
   "This page": "Tämä sivu",

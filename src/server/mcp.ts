@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { spawn } from "node:child_process";
+import { join } from "node:path";
 import { z } from "zod";
 import { findCampaign, hasCharacterAgent, readTextSetting, refreshHostFiles } from "../campaign/index.ts";
 import { commands } from "../commands/index.ts";
@@ -162,7 +163,8 @@ export async function startMcpServer(): Promise<void>
     };
     // The systems' code, loaded once for the session, as the engine's own: a system changed since needs the server started again (D-448).
     context.systemCode = await loadSystemCode(context.systemFolders);
-    const session = new SessionStore({ systemFolders: context.systemFolders });
+    // The game systems, and what this computer translated of them, written only through the session (D-539).
+    const session = new SessionStore({ systemFolders: [...context.systemFolders, ...(context.home === undefined ? [] : [join(context.home, "systems")])] });
     const served: Context = { ...context, files: session };
     server = createMcpServer(served, process.env, dashboardOpener(served, session).open);
     // The extensions' tools are there in the first list the host asks for.

@@ -965,6 +965,7 @@
   "This campaign, as an adventure": "이 캠페인을 어드벤처로",
   "This chat does not hear it by itself: copy it, then paste it in the chat.": "이 채팅은 스스로 듣지 못해요. 복사해서 채팅에 붙여넣어 주세요.",
   "this computer does not let it be read: check who may open it.": "이 컴퓨터에서 읽을 수 없어요. 파일을 열 수 있는 권한을 확인해 주세요.",
+  "This computer is translating the game's rules into {language}: until then they stay in English.": "이 컴퓨터에서 게임 규칙을 {language}(으)로 번역하고 있어요. 그때까지는 영어로 표시돼요.",
   "This computer is translating the page into {language}: until then it stays in English.": "이 컴퓨터에서 페이지를 {language}(으)로 번역하고 있어요. 그때까지는 영어로 표시돼요.",
   "This game's style does not pass the page's check of legibility: the page keeps its own.": "이 게임의 스타일이 페이지의 가독성 검사를 통과하지 못해 페이지는 자체 스타일을 유지합니다.",
   "This page": "이 페이지",

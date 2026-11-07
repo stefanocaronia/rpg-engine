@@ -62,11 +62,15 @@ export function importNotices(importing: ShownImport | undefined): Notice[]
     return [{ kind: importing.step === "stopped" ? "problem" : "info", text: texts[importing.step], key: "import", ...count }];
 }
 
-/** What the page has to say of the game: the campaign's files that do not read, which the master fixes; the page being translated, or out of reach (D-406). */
-export function gameNotices(problems: number | undefined): Notice[]
+/**
+ * What the page has to say of the game: the campaign's files that do not read, which the master fixes; the page being translated, or out of reach (D-406); the
+ * game system's pages being translated (D-539).
+ */
+export function gameNotices(problems: number | undefined, textsTranslating?: string): Notice[]
 {
     const translation = pageTranslation();
     const language = translation === undefined ? "" : languageName(translation.language, pageLocale()) ?? translation.language;
+    const textsLanguage = textsTranslating === undefined ? "" : languageName(textsTranslating, pageLocale()) ?? textsTranslating;
     return [
         ...(problems === undefined || problems === 0
             ? []
@@ -76,5 +80,8 @@ export function gameNotices(problems: number | undefined): Notice[]
             }]),
         ...(translation?.state === "translating" ? [{ kind: "info" as const, text: t("This computer is translating the page into {language}: until then it stays in English.", { language }) }] : []),
         ...(translation?.state === "unable" ? [{ kind: "info" as const, text: t("The page stays in English: Codex or Claude Code would translate it into {language} on this computer.", { language }) }] : []),
+        ...(textsTranslating !== undefined
+            ? [{ kind: "info" as const, text: t("This computer is translating the game's rules into {language}: until then they stay in English.", { language: textsLanguage }) }]
+            : []),
     ];
 }

@@ -965,6 +965,7 @@
   "This campaign, as an adventure": "このキャンペーンをアドベンチャーとして",
   "This chat does not hear it by itself: copy it, then paste it in the chat.": "このチャットは自動では聞き取れません。コピーして、チャットに貼り付けてください。",
   "this computer does not let it be read: check who may open it.": "このコンピューターでは読み取りが許可されていません。開けるユーザーを確認してください。",
+  "This computer is translating the game's rules into {language}: until then they stay in English.": "このコンピューターでゲームのルールを{language}に翻訳しています。完了するまでは英語のままです。",
   "This computer is translating the page into {language}: until then it stays in English.": "このコンピューターでページを{language}に翻訳しています。完了するまでは英語のままです。",
   "This game's style does not pass the page's check of legibility: the page keeps its own.": "このゲームのスタイルはページの読みやすさのチェックに通りません。ページは独自のスタイルのままです。",
   "This page": "このページ",

@@ -71,6 +71,8 @@ export interface Context
     pictures?: PictureMaker;
     /** What writes text from a brief on this computer, outside the chat, as Codex or Claude Code with the player's login (D-406); missing where none can. */
     writer?: TextWriter;
+    /** A game system's pages translated on this computer as a player first reads them, where the system has no translation of its own (D-539); missing elsewhere. */
+    texts?: SystemTexts;
     /** What reads the player's documents outside the chat (D-489 (1)): none where no helper is ready, and in tests. */
     reader?: DocumentReader;
     /** The OCR of the player's system, which reads pages of a PDF without readable text from their pictures (LIB-4): by page number, those it read; none where there is none. */
@@ -90,6 +92,15 @@ export interface Context
     pageFolder?: string;
     /** Codex and Claude Code on this computer, installed and signed in with the player's yes (D-424); missing outside the MCP server, as in tests. */
     helpers?: Helpers;
+}
+
+/** A game system's pages a player reads, translated into the campaign's language in the background where they lack it (D-539). */
+export interface SystemTexts
+{
+    /** Asks for these pages of a system in a language, with the system's words there as a glossary; those translated or on their way are left. */
+    want(language: string, system: { name: string; title: string; }, pages: { path: string; name: string; body: string; }[], glossary: Record<string, string>): void;
+    /** Whether pages are being translated into a language now. */
+    translating(language: string): boolean;
 }
 
 /** A package for rpg-engine as npm or its folder describes it (D-439): its name, version and kind, and what it is. */

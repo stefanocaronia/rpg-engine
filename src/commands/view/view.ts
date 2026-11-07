@@ -44,6 +44,7 @@ import { type Measures, measuresOf } from "../shared/roads.ts";
 import { campaignSaves, loadRefusal, loadRule, mayGoBack, type ResetPoint, resetPoints, resetSave, type SaveMode, saveMode, savesWhy, wentBackTo } from "../shared/saves.ts";
 import { readOpenScene } from "../shared/scene.ts";
 import { counterOf, experienceNeed, experienceProgress, sheetData, sheetGroup, type SheetGroupData, sheetHeadline, sheetText, type SheetValue, statBlock, tokenIcon } from "../shared/sheet.ts";
+import { translatingTexts, wantTexts } from "../shared/system-texts.ts";
 import { thoughtsIn, thoughtsRule, thoughtsShown } from "../shared/thoughts.ts";
 import { calendarDayOf, readPresent } from "../shared/time.ts";
 import { fuelLeft } from "../shared/upkeep.ts";
@@ -156,6 +157,8 @@ export type ViewResult =
         problems: number;
         /** An import under way, which the dashboard tells the player (D-491 (11)). */
         importing?: ShownImport;
+        /** The campaign's language, when this computer is translating the game system's pages into it, which the dashboard tells the player (D-539). */
+        textsTranslating?: string;
     }
     | {
         kind: "page";
@@ -380,6 +383,8 @@ export const view = defineCommand({
                 return { kind: "section", title: `${page.name}#${group?.name ?? reference.section}`, lines: group?.lines ?? [], text: part ?? "", ...(knownBy === undefined ? {} : { knownBy }) };
             }
 
+            // The system's pages it shows, in the campaign's language where the system has no translation (D-539).
+            wantTexts(root, context, world, [page]);
             return shownPage(root, context, world, knowledge, page, party);
         }
 
@@ -453,6 +458,9 @@ export const view = defineCommand({
         const settings = readSettings(root);
         const today = now === undefined ? undefined : calendarDayOf(root, context, now.day);
         const words = system === undefined || settings.language === undefined ? undefined : systemWordsOf(root, system, settings.language, context);
+        // The system's pages of the party's sheets, in the campaign's language where the system has no translation (D-539).
+        wantTexts(root, context, world, [...players, ...companions]);
+        const textsTranslating = translatingTexts(context, world);
         return {
             kind: "overview",
             campaign: settings.name,
@@ -476,6 +484,7 @@ export const view = defineCommand({
             rollsTotal: shownRolls.length,
             problems: campaignProblems(root, world, context).length,
             ...(importing === undefined ? {} : { importing }),
+            ...(textsTranslating === undefined ? {} : { textsTranslating }),
         };
     },
 

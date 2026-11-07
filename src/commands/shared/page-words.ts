@@ -305,13 +305,13 @@ function keptOf(answer: Record<string, unknown>, entries: { id: string; source: 
 const garbledMarks = /[√∫∞∑≈∂Ω¬ƒ†∆]|·ª|[ÃÂ][ -¿]/;
 
 /** Whether a translation is garbled: it has what a misread encoding leaves, and what it translates has not. */
-function isGarbled(text: string, source: string): boolean
+export function isGarbled(text: string, source: string): boolean
 {
     return garbledMarks.test(text) && !garbledMarks.test(source);
 }
 
 /** The JSON object in a writer's answer, whatever came around it; none when there is none. */
-function answerOf(text: string | undefined): Record<string, unknown>
+export function answerOf(text: string | undefined): Record<string, unknown>
 {
     try {
         return text === undefined ? {} : JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)) as Record<string, unknown>;

@@ -86,6 +86,7 @@ export {
     type SystemPages,
     textsIn,
     validHoldersOf,
+    versionTranslations,
     withPage,
     type World,
 } from "./world.ts";

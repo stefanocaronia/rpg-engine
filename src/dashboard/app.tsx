@@ -91,6 +91,8 @@ interface Shown
     problems?: number;
     /** An import under way (D-491 (11)). */
     importing?: ShownImport;
+    /** The campaign's language, when this computer is translating the game system's pages into it (D-539). */
+    textsTranslating?: string;
     problem?: string;
     /** What a roll from a card, or a die of a rest, changed, kept back while its dice are in the air (D-461, D-492). */
     pending?: Steady;
@@ -338,6 +340,7 @@ function App()
                         noCharacter: overview.kind === "none",
                         problems: overview.kind === "overview" ? overview.problems : undefined,
                         importing: overview.kind === "overview" || overview.kind === "none" ? overview.importing : undefined,
+                        textsTranslating: overview.kind === "overview" ? overview.textsTranslating : undefined,
                     }, holding.current !== undefined)
                 );
             }
@@ -747,7 +750,7 @@ function App()
             ? [{ kind: "away" as const, text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString(pageLocale(), { hour: "2-digit", minute: "2-digit" }) }) }]
             : []),
         ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: t("There is no player character yet: the sheet comes when the master writes one.") }] : []),
-        ...gameNotices(shown.problems),
+        ...gameNotices(shown.problems, shown.textsTranslating),
         // In the setup an import under way is with the page's other notices, in the column of its card (D-491 (11)).
         ...(inSetup ? importNotices(shown.importing) : []),
     ];

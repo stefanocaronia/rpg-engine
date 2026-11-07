@@ -10,8 +10,9 @@ import type { Catalog } from "../../commands/shared/packages/catalog.ts";
 import { loadCampaignCode } from "../../commands/shared/packages/code.ts";
 import { campaignWidgets, packageWidget } from "../../commands/shared/packages/widgets.ts";
 import { type PageTranslator, pageTranslator } from "../../commands/shared/page-words.ts";
+import { systemTexts } from "../../commands/shared/system-texts.ts";
 import { view } from "../../commands/view/view.ts";
-import type { Context, Player } from "../../core/context.ts";
+import type { Context, Player, SystemTexts } from "../../core/context.ts";
 import { type Command, isBoolean } from "../../core/registry.ts";
 import type { SessionStore } from "../../core/session-store.ts";
 import { withFiles } from "../../core/store.ts";
@@ -118,6 +119,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 shared: new Map<string, string>(),
                 notify: () => undefined,
                 words: pageTranslator(context, options.page ?? builtPage, () => served.notify()),
+                texts: systemTexts(context, () => served.notify()),
                 acts: newActs(),
                 queue: options.queue ?? codexQueue(),
             };
@@ -168,6 +170,8 @@ export interface Served
     notify(): void;
     /** The page in a language the package does not ship, translated on the fly (D-406). */
     words: PageTranslator;
+    /** The game system's pages in the campaign's language, translated as the page reads them (D-539): the page's alone, never the master's calls. */
+    texts: SystemTexts;
     /** The package the player is adding, updating or taking away on the page, while npm works (D-475): one at a time. */
     packageWork?: { name: string; action: PackageAction; phase: PackagePhase; };
     /** The packages the player said no to in a window of their computer, asked from the page: never asked again in this session (D-510). */
@@ -547,7 +551,7 @@ async function runCommand(name: string, parameters: URLSearchParams, response: S
 
     try {
         await served.session.ready();
-        const result = await command.run(parsed.data, served.context);
+        const result = await command.run(parsed.data, { ...served.context, texts: served.texts });
         keepProblems(served, result);
         sendJson(
             response,

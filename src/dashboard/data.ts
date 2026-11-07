@@ -473,6 +473,8 @@ export type View =
         problems?: number;
         /** An import under way, which the page tells (D-491 (11)). */
         importing?: ShownImport;
+        /** The campaign's language, when this computer is translating the game system's pages into it (D-539). */
+        textsTranslating?: string;
     }
     | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; actions?: Partial<Record<string, ActVerb[]>>; text: string; story?: string; knownBy?: { secret: string; who: string[]; }[]; }
     | { kind: "section"; title: string; lines: string[]; text: string; }

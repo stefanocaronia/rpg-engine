@@ -6,7 +6,7 @@ import type { Formula, SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
-import { comparableText, valueNamed } from "../core/text.ts";
+import { comparableText, textPrint, valueNamed } from "../core/text.ts";
 import { linkedPages, links } from "./markdown.ts";
 import { readFields, splitPageFile } from "./page-file.ts";
 import { type PageType, pageTypes, typeOfFolder, worldFolderName } from "./page-types.ts";
@@ -132,18 +132,30 @@ export function createWorld(root: string): void
  */
 export function loadWorld(
     root: string,
-    options: { system?: SystemInfo & { folder: string; version?: { folder: string; }; }; language?: string; words?: Record<string, string>; missingSystem?: string; noSystem?: boolean; rigor?: string; } = {},
+    options: {
+        system?: SystemInfo & { folder: string; version?: { name: string; folder: string; }; };
+        language?: string;
+        words?: Record<string, string>;
+        missingSystem?: string;
+        noSystem?: boolean;
+        rigor?: string;
+        /** The folder of the system's pages translated on this computer into the campaign's language (D-539), where the system has no translation of its own. */
+        ownTranslations?: string;
+    } = {},
 ): World
 {
     const campaign = readPages(root);
-    const { system, language, words, missingSystem, noSystem, rigor } = options;
+    const { system, language, words, missingSystem, noSystem, rigor, ownTranslations } = options;
 
     if (system === undefined) {
         return frozen({ root, ...campaign, language, missingSystem, noSystem, ...(rigor === undefined ? {} : { rigor }) });
     }
 
-    const read = (folder: string): { pages: Page[]; problems: string[]; } => translatedPages(packagePages(folder, system.name), folder, system.name, language);
-    const systemPages = system.version === undefined ? read(system.folder) : versionPages(read(system.folder), read(system.version.folder));
+    const read = (folder: string, own: string | undefined): { pages: Page[]; problems: string[]; } => translatedPages(packagePages(folder, system.name), folder, system.name, language, own);
+    // A version's pages translated on this computer have a folder of their own, as their text is the version's (D-539).
+    const systemPages = system.version === undefined
+        ? read(system.folder, ownTranslations)
+        : versionPages(read(system.folder, ownTranslations), read(system.version.folder, ownTranslations === undefined ? undefined : join(ownTranslations, versionTranslations(system.version.name))));
     const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, bonusWhile } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
@@ -588,33 +600,43 @@ const packages = new Map<string, { pages: Page[]; problems: string[]; }>();
 
 /**
  * A system's pages with their text and their name in the campaign's language beside their own, where the system has a translation of them in it, by the same
- * path under translations/<language> (D-542); their fields and text stay, which the engine reads. Read once in a process, as the pages are.
+ * path under translations/<language> (D-542); their fields and text stay, which the engine reads. Read once in a process, as the pages are. Where the system
+ * has none, those translated on this computer (D-539), each while the text it was made from is the page's: read through the store, as they grow.
  */
-function translatedPages(read: { pages: Page[]; problems: string[]; }, folder: string, system: string, language: string | undefined): { pages: Page[]; problems: string[]; }
+function translatedPages(read: { pages: Page[]; problems: string[]; }, folder: string, system: string, language: string | undefined, own: string | undefined): { pages: Page[]; problems: string[]; }
 {
     const translations = translationFolder(folder, language);
 
     if (translations === undefined) {
-        return read;
+        return own === undefined ? read : withTranslations(read, readPages(own, system), true);
     }
 
     const key = `${translations}|${system}`;
-    const known = translated.get(key) ?? withTranslations(read, readPages(translations, system));
+    const known = translated.get(key) ?? withTranslations(read, readPages(translations, system), false);
     translated.set(key, known);
     return known;
 }
 
 const translated = new Map<string, { pages: Page[]; problems: string[]; }>();
 
-function withTranslations(read: { pages: Page[]; problems: string[]; }, translations: { pages: Page[]; problems: string[]; }): { pages: Page[]; problems: string[]; }
+function withTranslations(read: { pages: Page[]; problems: string[]; }, translations: { pages: Page[]; problems: string[]; }, printed: boolean): { pages: Page[]; problems: string[]; }
 {
     const byPath = new Map(translations.pages.map((page) => [page.path, page]));
     const pages = read.pages.map((page) => {
-        const other = byPath.get(page.path);
+        const found = byPath.get(page.path);
+        // A translation made on this computer from a text the system has since changed is no longer the page's.
+        const other = printed && found?.fields.source !== textPrint(page.body) ? undefined : found;
         const title = typeof other?.fields.name === "string" && other.fields.name.trim() !== "" ? other.fields.name.trim() : undefined;
         return other === undefined ? page : frozen({ ...page, translated: other.body, ...(title === undefined ? {} : { title }) });
     });
-    return { pages, problems: [...read.problems, ...translations.problems] };
+    // A file of this computer's that does not read is no problem of the campaign's: the page is translated again, over it.
+    return { pages, problems: printed ? read.problems : [...read.problems, ...translations.problems] };
+}
+
+/** Where a version's pages translated on this computer are, under the folder of the language's (D-539). */
+export function versionTranslations(version: string): string
+{
+    return join("versions", version);
 }
 
 /** A system's pages with those of the version of its rules over them (VER-3): a page of the version takes the place of a common one with its name. */

@@ -141,7 +141,7 @@ An extension's code and a game system's have one contract, [core/package-api.ts]
 | Languages | A language's translation made by hand, as a package: the dashboard's phrases, its Guide and a system's words, before the translation on the fly | [languages/](../src/languages/), [commands/shared/page-words.ts](../src/commands/shared/page-words.ts) |
 | Catalog | What npm has for every kind of package and the adventures GitHub has by topic, for the Packages page | [commands/shared/packages/catalog.ts](../src/commands/shared/packages/catalog.ts) |
 | Consent | The player's yes to a package not ours, or to a library folder new to the computer from the chat or the dashboard, in a window of their operating system | [confirm/](../src/confirm/) |
-| Translation | The dashboard's phrases and a system's words in the campaign's language | [commands/shared/page-words.ts](../src/commands/shared/page-words.ts), [commands/translate.ts](../src/commands/translate.ts) |
+| Translation | The dashboard's phrases and a system's words in the campaign's language; a system's pages where it has no translation in it, as the player reads them, in the player's data folder | [commands/shared/page-words.ts](../src/commands/shared/page-words.ts), [commands/shared/system-texts.ts](../src/commands/shared/system-texts.ts), [commands/translate.ts](../src/commands/translate.ts) |
 
 ### The dashboard
 
