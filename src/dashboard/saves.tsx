@@ -73,7 +73,7 @@ export function SavesView({ version, campaign, several = false }: { version: num
                 <NewChat
                     back={wentBackTitle(saves.wentBack, saves.saves)}
                     busy={busy}
-                    onConfirm={() => void send({ action: "new chat" }, `✓ ${t("The game goes on in the new chat: write «continua» there.")}`)}
+                    onConfirm={() => void send({ action: "new chat" }, `✓ ${t("The game goes on in the new chat: write «continue» there.")}`)}
                 />
             )}
             {saves?.make === true && <SaveNow busy={busy} onSave={(label) => void send({ action: "make", ...(label === "" ? {} : { label }) }, `✓ ${t("Saved.")}`)} />}

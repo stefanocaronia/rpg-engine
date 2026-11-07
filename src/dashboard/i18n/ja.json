@@ -885,7 +885,7 @@
   "The game goes back to how it was then. What happened after it is gone from the story, and so are the {count} saves after it.": "ゲームはそのときの状態に戻ります。それ以降に起きたことはストーリーから消え、その後の{count}件のセーブも消えます。",
   "The game goes back to how it was then. What happened after it is gone from the story, and so is the save after it.": "ゲームはそのときの状態に戻ります。それ以降に起きたことはストーリーから消え、その後のセーブも消えます。",
   "The game goes back to how it was then. What happened after it is gone from the story.": "ゲームはそのときの状態に戻ります。それ以降に起きたことはストーリーから消えます。",
-  "The game goes on in the new chat: write «continua» there.": "ゲームは新しいチャットで続きます。そこで「continua」と入力してください。",
+  "The game goes on in the new chat: write «continue» there.": "ゲームは新しいチャットで続きます。そこで「続けて」と入力してください。",
   "The game master": "GM",
   "The game master, {mood}": "GM（{mood}）",
   "The game master, away": "GM（不在）",

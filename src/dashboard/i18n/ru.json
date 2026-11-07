@@ -885,7 +885,7 @@
   "The game goes back to how it was then. What happened after it is gone from the story, and so are the {count} saves after it.": "Игра вернётся к тому моменту. Всё, что случилось после, исчезнет из истории, как и сохранения после него (их {count}).",
   "The game goes back to how it was then. What happened after it is gone from the story, and so is the save after it.": "Игра вернётся к тому моменту. Всё, что случилось после, исчезнет из истории, как и следующее за ним сохранение.",
   "The game goes back to how it was then. What happened after it is gone from the story.": "Игра вернётся к тому моменту. Всё, что случилось после, исчезнет из истории.",
-  "The game goes on in the new chat: write «continua» there.": "Игра продолжится в новом чате: напиши там «продолжай».",
+  "The game goes on in the new chat: write «continue» there.": "Игра продолжится в новом чате: напиши там «продолжай».",
   "The game master": "Мастер",
   "The game master, {mood}": "Мастер: {mood}",
   "The game master, away": "Мастер отсутствует",

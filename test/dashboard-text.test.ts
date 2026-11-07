@@ -64,6 +64,10 @@ describe("the page's words (D-394)", () => {
         expect(pageLanguageOf("it-CH")).toBe("it");
         expect(pageLanguageOf("no")).toBe("nb");
         expect(pageLanguageOf("tlh")).toBe("en");
+        // Traditional Chinese never falls to zh, which is simplified.
+        expect(pageLanguageOf("zh-CN")).toBe("zh");
+        expect(pageLanguageOf("zh-HK")).toBe("en");
+        expect(pageLanguageOf("zh-Hant-TW")).toBe("en");
 
         // Before the setup sets the campaign's language, the browser's, where it is shipped (D-500).
         try {

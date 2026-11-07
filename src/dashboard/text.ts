@@ -34,6 +34,8 @@ export const shippedLanguages = [
 
 // Codes the page reads as another it ships: Norwegian as Bokmål.
 const aliases: Record<string, string> = { no: "nb" };
+// Chinese in traditional characters, whose base zh is the simplified.
+const traditionalChinese = /^zh-(hant|tw|hk|mo)(-|$)/;
 
 // The languages written from right to left, shipped or translated on the fly: the page mirrors for them.
 const rightToLeft = ["ar", "he", "fa", "ur", "ps", "sd", "ug", "yi", "dv", "ckb"];
@@ -66,11 +68,14 @@ const lacked = new Set<string>();
 const asked = new Set<string>();
 let asking: ReturnType<typeof setTimeout> | undefined;
 
-/** The language the page writes in for a campaign's code: its own when shipped, else its base language's (pt-BR, pt), else English. */
+/**
+ * The language the page writes in for a campaign's code: its own when shipped, else its base language's when written in the same script (pt-BR, pt; never
+ * zh-HK, zh, which is simplified), else English.
+ */
 export function pageLanguageOf(code: string | undefined): string
 {
     const asked = (code ?? "en").toLowerCase();
-    const base = asked.split("-")[0];
+    const base = traditionalChinese.test(asked) ? "" : asked.split("-")[0];
     return [asked, base, aliases[base] ?? ""].find((one) => shippedLanguages.includes(one)) ?? "en";
 }
 
