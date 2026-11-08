@@ -17,7 +17,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parse, stringify } from "yaml";
+import { parse, parseDocument, stringify } from "yaml";
 import { fieldLabel } from "../../src/dashboard/labels.ts";
 import { shippedLanguages } from "../../src/dashboard/text.ts";
 import { englishGuide, guideFolder, guideIn, guideParts, guideShape, marksOf, partMarks, translationHead } from "./guide.ts";
@@ -96,11 +96,20 @@ await inTurn(jobs, async ({ target, language, batch }) => {
 
 for (const target of targets) {
     for (const language of target.languages.filter((one) => languages.includes(one))) {
-        const own = { ...target.read(language), ...done.get(`${target.name} ${language}`) };
+        const before = target.read(language);
+        const own = { ...before, ...done.get(`${target.name} ${language}`) };
         const written = Object.fromEntries(target.entries.flatMap((entry) => (entry.id in own ? [[entry.id, own[entry.id]]] : [])));
-        target.write(language, written);
         const left = target.entries.length - Object.keys(written).length;
-        console.log(`${target.name} ${language}: ${Object.keys(written).length} written${left > 0 ? `, ${left} still missing: run it again` : ""}`);
+        const missing = left > 0 ? `, ${left} still missing: run it again` : "";
+
+        // A file that would come out the same is left as it is.
+        if (sameEntries(before, written)) {
+            console.log(`${target.name} ${language}: up to date${missing}`);
+            continue;
+        }
+
+        target.write(language, written);
+        console.log(`${target.name} ${language}: ${Object.keys(written).length} written${missing}`);
     }
 }
 
@@ -166,7 +175,8 @@ function systemTargets(): Target[]
                 const label = new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
                 const head = `# The words of the ${name} system in ${label}, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the\n`
                     + "# words of words/it.yaml; with the terms of the official translation in this language, where one is.\n";
-                writeFileSync(file(language), head + stringify({ ...words, ...headline }, { lineWidth: 0 }));
+                // A file there already changes only where its words do: its comments and its order stay.
+                writeFileSync(file(language), existsSync(file(language)) ? changedWords(readFileSync(file(language), "utf8"), read(language), translations) : head + stringify({ ...words, ...headline }, { lineWidth: 0 }));
             },
             brief: (language, label) => [
                 `Translate the words a game system shows on the dashboard of a tabletop role-playing game into ${label} (${language}). The system is ${system.title ?? name}.`,
@@ -198,6 +208,22 @@ function wordEntries(words: Words): Record<string, string>
 }
 
 /** The section and the key of a word's id: ["fields", "str"], or ["headline", ""]. */
+/** Whether two files of translations hold the same entries, in any order. */
+function sameEntries(one: Record<string, string>, other: Record<string, string>): boolean
+{
+    return Object.keys(one).length === Object.keys(other).length && Object.entries(one).every(([id, text]) => other[id] === text);
+}
+
+/** A system's words file with its entries changed to these, the others gone, as its YAML document: its comments and its order kept. */
+function changedWords(text: string, before: Record<string, string>, after: Record<string, string>): string
+{
+    const document = parseDocument(text);
+    const path = (id: string): string[] => (splitId(id)[1] === "" ? [id] : splitId(id));
+    Object.keys(before).filter((id) => !(id in after)).forEach((id) => document.deleteIn(path(id)));
+    Object.entries(after).filter(([id, word]) => before[id] !== word).forEach(([id, word]) => document.setIn(path(id), word));
+    return document.toString({ lineWidth: 0 });
+}
+
 function splitId(id: string): [string, string]
 {
     const at = id.indexOf(": ");
