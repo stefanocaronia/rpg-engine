@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef c64748a2 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -38,7 +38,7 @@ Un juego llega como un sistema de juego, un paquete que el máster instala para 
 ### 2.1 Qué necesitas
 
 - Un equipo con Windows, macOS o Linux, y un navegador web.
-- **Node.js 22** o superior, desde [nodejs.org](https://nodejs.org). Incluye `npm`, que instala RPG Engine.
+- **Node.js 24** o superior, desde [nodejs.org](https://nodejs.org). Incluye `npm`, que instala RPG Engine.
 - Una **terminal**: en Windows, Terminal o PowerShell; en macOS, Terminal. Para abrir una en una carpeta, haz clic derecho en la carpeta y elige **Abrir en Terminal** (Windows) o **Servicios > Nueva Terminal en la carpeta** (macOS).
 - Un **agente de IA** para el máster ([2.4](#24-connect-your-ai)), con el **modelo más grande** que ofrezca: a un modelo pequeño es más fácil convencerlo de que revele secretos o se salte las reglas.
 

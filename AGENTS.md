@@ -120,7 +120,7 @@ Portraits: in the look of 1980s–90s TV anime, head and shoulders on a plain ba
 
 ## Conventions
 
-- TypeScript on Node ≥ 22; zod; yaml; the official MCP SDK; Preact with JSX for the dashboard; vitest; few dependencies.
+- TypeScript on Node ≥ 24; zod; yaml; the official MCP SDK; Preact with JSX for the dashboard; vitest; few dependencies.
 - Code, comments, commit messages, public docs, command names, file names and config keys in English; game content in the campaign language.
 - Secret parts of a page go in a `> [!secret]` block (Obsidian callout).
 - The core's tests run on the fake system of `test/systems/fake`, never published, and on `free`; a game's own tests live in its repo. Ironsworn, a test system for now, holds only its CC BY 4.0 parts (the SRD, asset cards and oracles; from Delve, moves, oracles, theme and domain cards), with its attribution.

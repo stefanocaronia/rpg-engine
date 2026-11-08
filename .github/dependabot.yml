@@ -9,7 +9,7 @@ updates:
       dependencies:
         patterns: ["*"]
         update-types: ["minor", "patch"]
-    # TypeScript's next major waits for typescript-eslint; Node's types stay those of the oldest Node we support.
+    # TypeScript's next major waits for typescript-eslint; Node's types stay those of the oldest Node we support, 24.
     ignore:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]

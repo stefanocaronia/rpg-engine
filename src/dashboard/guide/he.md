@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef c64748a2 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: המדריך המלא
 
 **RPG Engine** מאפשר לשחק משחק תפקידים שולחני עם **בינה מלאכותית בתפקיד המנחה**. מדברים עם המנחה ב**צ'אט**; RPG Engine עובד מאחורי הקלעים: הוא **זוכר את העולם**, **מטיל את הקוביות** ו**מנהל את החשבונות**. לצד הצ'אט משאירים בדפדפן דף פתוח, **הלוח** (dashboard), עם דף הדמות, הקוביות, המפות והיומן.
@@ -38,7 +38,7 @@
 ### 2.1 מה צריך
 
 - מחשב עם Windows, macOS או Linux, ודפדפן אינטרנט.
-- **Node.js 22** או חדש יותר, מהאתר [nodejs.org](https://nodejs.org). הוא מביא איתו את `npm`, שמתקין את RPG Engine.
+- **Node.js 24** או חדש יותר, מהאתר [nodejs.org](https://nodejs.org). הוא מביא איתו את `npm`, שמתקין את RPG Engine.
 - **טרמינל**: ב-Windows, Terminal או PowerShell; ב-macOS, Terminal. כדי לפתוח טרמינל בתוך תיקייה, לוחצים עליה לחיצה ימנית ובוחרים **Open in Terminal** (ב-Windows) או **Services > New Terminal at Folder** (ב-macOS).
 - **סוכן AI** שישמש כמנחה ([2.4](#24-connect-your-ai)), עם **המודל הגדול ביותר** שהוא מציע: קל יותר לשכנע מודל קטן לחשוף סודות או לעקוף את החוקים.
 

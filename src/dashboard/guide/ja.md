@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef c64748a2 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine：完全ガイド
 
 **RPG Engine**では、**AIをGM**にして、テーブルトークRPGを遊べます。GMとは**チャット**で会話します。RPG Engineは裏側で動き、**世界を記憶し**、**ダイスを振り**、**数値を管理**します。チャットの横にはブラウザーのページ、**ダッシュボード**を開いておきます。キャラクターシート、ダイス、マップ、ジャーナルが並びます。
@@ -38,7 +38,7 @@
 ### 2.1 必要なもの
 
 - Windows、macOS、Linuxのいずれかが動くパソコンと、ウェブブラウザ。
-- **Node.js 22** 以降。[nodejs.org](https://nodejs.org) から入手します。Node.jsには `npm` が付いていて、RPG Engineのインストールに使います。
+- **Node.js 24** 以降。[nodejs.org](https://nodejs.org) から入手します。Node.jsには `npm` が付いていて、RPG Engineのインストールに使います。
 - **ターミナル**：Windowsではターミナル（Terminal）またはPowerShell、macOSではターミナル。フォルダでターミナルを開くには、Windowsではフォルダを右クリックして **ターミナルで開く** を選びます。macOSでは **サービス > フォルダに新規ターミナル** を選びます。
 - GMになる **AIエージェント**（[2.4](#24-connect-your-ai)）。使うのは、そのAIエージェントが提供する **最大のモデル** です。小さなモデルは、口車に乗せられて秘密を明かしたり、ルールを曲げたりしやすくなります。
 

@@ -44,7 +44,7 @@
     "docs": "node --experimental-strip-types --input-type=module -e \"import { writeFileSync } from 'node:fs'; import { commands } from './src/commands/index.ts'; import { commandReference } from './src/core/command-reference.ts'; writeFileSync('docs/commands.md', commandReference(commands));\""
   },
   "engines": {
-    "node": ">=22.4"
+    "node": ">=24"
   },
   "keywords": [
     "rpg",
@@ -73,7 +73,7 @@
   "homepage": "https://github.com/stefanocaronia/rpg-engine#readme",
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@types/node": "^22.20.4",
+    "@types/node": "^24.19.2",
     "@types/three": "^0.187.0",
     "@typescript-eslint/parser": "^8.71.0",
     "betasim": "git+https://github.com/stefanocaronia/betasim.git",
@@ -90,7 +90,7 @@
     "fflate": "^0.8.2",
     "preact": "^11.2.0",
     "three": "^0.187.0",
-    "unpdf": "1.9.1",
+    "unpdf": "2.1.0",
     "yaml": "^2.9.1",
     "zod": "^4.6.5"
   }

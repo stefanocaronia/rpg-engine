@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef c64748a2 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: 전체 가이드
 
 **RPG Engine**은 **AI 게임 마스터**와 함께 테이블탑 롤플레잉 게임을 즐길 수 있게 해 줘요. **채팅**으로 GM과 대화해요. RPG Engine은 뒤에서 **세계를 기억하고**, **주사위를 굴리고**, **계산을 맡아요**. 채팅 옆에는 브라우저에 페이지를 하나 열어 두어요. 바로 **대시보드**예요. 캐릭터 시트, 주사위, 지도, 일지가 있어요.
@@ -38,7 +38,7 @@
 ### 2.1 준비물
 
 - Windows, macOS, Linux 중 하나가 설치된 컴퓨터와 웹 브라우저.
-- [nodejs.org](https://nodejs.org)에서 받을 수 있는 **Node.js 22** 이상. 설치하면 `npm`도 함께 설치돼요. `npm`으로 RPG Engine을 설치해요.
+- [nodejs.org](https://nodejs.org)에서 받을 수 있는 **Node.js 24** 이상. 설치하면 `npm`도 함께 설치돼요. `npm`으로 RPG Engine을 설치해요.
 - **터미널**: Windows에서는 터미널이나 PowerShell, macOS에서는 터미널이에요. 폴더에서 터미널을 열려면 폴더를 마우스 오른쪽 버튼으로 클릭하고 **터미널에서 열기**(Windows) 또는 **서비스 > 폴더에서 새로운 터미널**(macOS)을 선택해요.
 - GM을 맡을 **AI 에이전트** ([2.4](#24-connect-your-ai)). 에이전트가 제공하는 **가장 큰 모델**을 쓰세요. 작은 모델은 설득에 넘어가 비밀을 알려 주거나 규칙을 어기기 쉬워요.
 

@@ -37,7 +37,7 @@ A game comes as a game system, a package the master installs for your campaign: 
 ### 2.1 What you need
 
 - A computer with Windows, macOS or Linux, and a web browser.
-- **Node.js 22** or newer, from [nodejs.org](https://nodejs.org). It brings `npm`, which installs RPG Engine.
+- **Node.js 24** or newer, from [nodejs.org](https://nodejs.org). It brings `npm`, which installs RPG Engine.
 - A **terminal**: on Windows, Terminal or PowerShell; on macOS, Terminal. To open one in a folder, right-click the folder and choose **Open in Terminal** (Windows) or **Services > New Terminal at Folder** (macOS).
 - An **AI agent** for the master ([2.4](#24-connect-your-ai)), with the **largest model** it offers: a small model is easier to talk into revealing secrets or bending the rules.
 

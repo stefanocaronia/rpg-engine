@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef c64748a2 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine：完整指南
 
 **RPG Engine** 让你和一位 **AI 主持人**一起玩桌面角色扮演游戏。你在**聊天**里和主持人交谈；RPG Engine 在幕后工作：它**记住世界**，**掷骰子**，**记账**。聊天旁边，你在浏览器里开着一个页面，也就是**仪表盘**，上面有你的角色卡、骰子、地图和日志。
@@ -38,7 +38,7 @@
 ### 2.1 你需要什么
 
 - 一台装有 Windows、macOS 或 Linux 的电脑，以及一个网页浏览器。
-- **Node.js 22** 或更新版本，从 [nodejs.org](https://nodejs.org) 下载。它自带 `npm`，用来安装 RPG Engine。
+- **Node.js 24** 或更新版本，从 [nodejs.org](https://nodejs.org) 下载。它自带 `npm`，用来安装 RPG Engine。
 - 一个**终端**：在 Windows 上是“终端”或 PowerShell；在 macOS 上是“终端”。要在某个文件夹里打开终端，右键点击该文件夹，选择**在终端中打开**（Windows）或**服务 > 新建位于文件夹位置的终端**（macOS）。
 - 一个给主持人用的 **AI 智能体**（[2.4](#24-connect-your-ai)），并选用它提供的**最大模型**：小模型更容易被说动，泄露秘密或打破规则。
 

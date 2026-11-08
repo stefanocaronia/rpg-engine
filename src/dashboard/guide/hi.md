@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef c64748a2 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: पूरी गाइड
 
 **RPG Engine** आपको **AI को अपना गेम मास्टर** बनाकर टेबलटॉप रोल-प्लेइंग गेम खेलने देता है। आप गेम मास्टर से **चैट** में बात करते हैं। RPG Engine पर्दे के पीछे काम करता है: वह **दुनिया को याद रखता है**, **पासे रोल करता है** और **हिसाब-किताब रखता है**। चैट के साथ आप ब्राउज़र में एक पेज खुला रखते हैं, यानी **डैशबोर्ड**, जिसमें आपकी कैरेक्टर शीट, पासे, नक्शे और आपकी डायरी होती है।
@@ -38,7 +38,7 @@
 ### 2.1 आपको क्या चाहिए
 
 - Windows, macOS या Linux वाला कंप्यूटर, और एक वेब ब्राउज़र।
-- **Node.js 22** या उससे नया संस्करण, [nodejs.org](https://nodejs.org) से। इसके साथ `npm` आता है, जो RPG Engine इंस्टॉल करता है।
+- **Node.js 24** या उससे नया संस्करण, [nodejs.org](https://nodejs.org) से। इसके साथ `npm` आता है, जो RPG Engine इंस्टॉल करता है।
 - एक **टर्मिनल**: Windows पर Terminal या PowerShell; macOS पर Terminal। किसी फ़ोल्डर में टर्मिनल खोलने के लिए फ़ोल्डर पर राइट-क्लिक करें और **Open in Terminal** (Windows) या **Services > New Terminal at Folder** (macOS) चुनें।
 - गेम मास्टर के लिए एक **AI एजेंट** ([2.4](#24-connect-your-ai)), जिसमें उपलब्ध **सबसे बड़ा मॉडल** हो: छोटे मॉडल से राज़ उगलवाना या नियम तुड़वाना आसान होता है।
 

@@ -159,7 +159,8 @@ async function readFolder(folder: string, options: ReadOptions): Promise<Documen
 async function readPdf(path: string, options: ReadOptions): Promise<DocumentText>
 {
     const { extractText, getDocumentProxy } = await import("unpdf");
-    const pdf = await getDocumentProxy(new Uint8Array(readFileSync(path))).catch((error: unknown) => {
+    // pdf.js says its warnings on the standard output, which is the MCP server's channel: errors only.
+    const pdf = await getDocumentProxy(new Uint8Array(readFileSync(path)), { verbosity: 0 }).catch((error: unknown) => {
         throw (error as Error | undefined)?.name === "PasswordException" ? new Error(`${basename(path)} asks for a password to open: the engine never opens a locked document.`) : error;
     });
     const { text } = await extractText(pdf, { mergePages: false });
@@ -220,7 +221,7 @@ async function pdfPictures(pdf: PdfProxy, parts: DocumentPart[]): Promise<Docume
         return images.filter((image) => Math.min(image.width, image.height) >= smallestSide);
     };
 
-    const keyOf = (data: Uint8ClampedArray): string => createHash("sha1").update(data).digest("hex");
+    const keyOf = (data: Uint8Array): string => createHash("sha1").update(data).digest("hex");
     const found: { page: number; key: string; }[] = [];
 
     for (let page = 1; page <= pdf.numPages; page++) {

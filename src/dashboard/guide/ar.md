@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef c64748a2 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: الدليل الكامل
 
 يتيح لك **RPG Engine** لعب لعبة أدوار على الطاولة مع **ذكاء اصطناعي في دور مدير اللعبة**. تتحدث مع مدير اللعبة في **محادثة**. أما RPG Engine فيعمل خلف الكواليس: **يتذكر العالم**، و**يرمي النرد**، و**يمسك الحسابات**. بجانب المحادثة تُبقي صفحة مفتوحة في المتصفح، هي **لوحة التحكم**، وفيها ورقة شخصيتك والنرد والخرائط وسجلك.
@@ -38,7 +38,7 @@
 ### 2.1 ما تحتاج إليه
 
 - حاسوب بنظام Windows أو macOS أو Linux، ومتصفح ويب.
-- **Node.js 22** أو أحدث، من [nodejs.org](https://nodejs.org). يأتي معه `npm`، وهو الذي يثبّت RPG Engine.
+- **Node.js 24** أو أحدث، من [nodejs.org](https://nodejs.org). يأتي معه `npm`، وهو الذي يثبّت RPG Engine.
 - **طرفية**: في Windows، Terminal أو PowerShell. وفي macOS، Terminal. لفتح طرفية داخل مجلد، انقر على المجلد بزر الفأرة الأيمن واختر **فتح في Terminal** (Windows) أو **الخدمات > محطة طرفية جديدة في المجلد** (macOS).
 - **وكيل ذكاء اصطناعي** يؤدي دور مدير اللعبة ([2.4](#24-connect-your-ai))، مع **أكبر نموذج** يقدمه. النموذج الصغير أسهل في الإقناع بكشف الأسرار أو بتجاوز القواعد.
 

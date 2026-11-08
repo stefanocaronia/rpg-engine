@@ -1,4 +1,4 @@
-<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef 4c5cd093 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
+<!-- Translated from en.md, part by part, by npm run translate: c38df721 53ff5eaa 9f1774ef c64748a2 019e9516 8e136927 95c609b6 423af5fa 17577253 4c3ea82e 2731ea0e 59c1a762. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -38,7 +38,7 @@ Ett spel kommer som ett spelsystem, ett paket som spelledaren installerar för d
 ### 2.1 Det här behöver du
 
 - En dator med Windows, macOS eller Linux, och en webbläsare.
-- **Node.js 22** eller nyare, från [nodejs.org](https://nodejs.org). Där ingår `npm`, som installerar RPG Engine.
+- **Node.js 24** eller nyare, från [nodejs.org](https://nodejs.org). Där ingår `npm`, som installerar RPG Engine.
 - En **terminal**: i Windows Terminal eller PowerShell, i macOS Terminal. Så öppnar du en i en mapp: högerklicka på mappen och välj **Öppna i Terminal** (Windows) eller **Tjänster > Ny terminal i mappen** (macOS).
 - En **AI-agent** till spelledaren ([2.4](#24-connect-your-ai)), med den **största modellen** den erbjuder: en liten modell går lättare att prata till rätta, så att den avslöjar hemligheter eller bryter mot reglerna.
 
