@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: पूरी गाइड
 
 **RPG Engine** आपको **AI को अपना गेम मास्टर** बनाकर टेबलटॉप रोल-प्लेइंग गेम खेलने देता है। आप गेम मास्टर से **चैट** में बात करते हैं। RPG Engine पर्दे के पीछे काम करता है: वह **दुनिया को याद रखता है**, **पासे रोल करता है** और **हिसाब-किताब रखता है**। चैट के साथ आप ब्राउज़र में एक पेज खुला रखते हैं, यानी **डैशबोर्ड**, जिसमें आपकी कैरेक्टर शीट, पासे, नक्शे और आपकी डायरी होती है।
@@ -9,7 +9,7 @@
 
 1. [nodejs.org](https://nodejs.org) से **Node.js** इंस्टॉल करें (LTS वर्शन)।
 2. एक **AI एजेंट** इंस्टॉल करें, यानी वह प्रोग्राम जिसमें गेम मास्टर चलता है, और साइन इन करें: जैसे Claude Code या Codex ([2.4](#24-connect-your-ai))।
-3. टर्मिनल में RPG Engine इंस्टॉल करें: `npm install -g rpg-engine`।
+3. Node.js इंस्टॉल होने के बाद एक नया टर्मिनल खोलें और उसमें RPG Engine इंस्टॉल करें: `npm install -g rpg-engine`।
 4. एक कैंपेन बनाएँ: `rpg init "The Salt Isles"`।
 5. नए फ़ोल्डर में जाएँ, `cd "The Salt Isles"`, और वहीं अपना एजेंट शुरू करें: Claude Code के लिए `claude`, Codex के लिए `codex`। जब वह पूछे कि क्या आप फ़ोल्डर पर भरोसा करते हैं, तो हाँ कहें ([2.4](#24-connect-your-ai)), फिर लिखें *नमस्ते! चलिए शुरू करते हैं।* गेम मास्टर आपके डैशबोर्ड के लिंक के साथ जवाब देता है।
 
@@ -39,7 +39,7 @@
 
 - Windows, macOS या Linux वाला कंप्यूटर, और एक वेब ब्राउज़र।
 - **Node.js 24** या उससे नया संस्करण, [nodejs.org](https://nodejs.org) से। इसके साथ `npm` आता है, जो RPG Engine इंस्टॉल करता है।
-- एक **टर्मिनल**: Windows पर Terminal या PowerShell; macOS पर Terminal। किसी फ़ोल्डर में टर्मिनल खोलने के लिए फ़ोल्डर पर राइट-क्लिक करें और **Open in Terminal** (Windows) या **Services > New Terminal at Folder** (macOS) चुनें।
+- एक **टर्मिनल**: Windows पर Terminal या PowerShell; macOS पर Terminal। किसी फ़ोल्डर में टर्मिनल खोलने के लिए फ़ोल्डर पर राइट-क्लिक करें और **Open in Terminal** (Windows) या **Services > New Terminal at Folder** (macOS) चुनें। अगर Windows कहे कि स्क्रिप्ट चलाना बंद है, तो एक बार `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` लिखें और हाँ कहें।
 - गेम मास्टर के लिए एक **AI एजेंट** ([2.4](#24-connect-your-ai)), जिसमें उपलब्ध **सबसे बड़ा मॉडल** हो: छोटे मॉडल से राज़ उगलवाना या नियम तुड़वाना आसान होता है।
 
 ### 2.2 इंस्टॉल करें
@@ -64,7 +64,7 @@ rpg init "The Salt Isles"
 
 ### 2.4 अपना AI जोड़ें
 
-गेम मास्टर एक **AI एजेंट** में चलता है: टर्मिनल या डेस्कटॉप पर चलने वाला ऐसा AI ऐप, जो आपके कंप्यूटर की फ़ाइलों के साथ काम कर सके, जैसे Claude Code या Codex। claude.ai या ChatGPT जैसी सादी चैट, या फ़ोन ऐप काफ़ी नहीं है: गेम मास्टर को आपके कंप्यूटर पर कैंपेन की फ़ाइलों तक पहुँचना होता है। हर एजेंट को अपना प्लान और लॉगिन चाहिए: Claude Code के लिए Claude का पेड प्लान, Codex के लिए ChatGPT लॉगिन। इसे आप एक बार इंस्टॉल करते हैं, उसके अपने पेज से: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli)।
+गेम मास्टर एक **AI एजेंट** में चलता है: टर्मिनल या डेस्कटॉप पर चलने वाला ऐसा AI ऐप, जो आपके कंप्यूटर की फ़ाइलों के साथ काम कर सके, जैसे Claude Code या Codex। claude.ai या ChatGPT जैसी सादी चैट, या फ़ोन ऐप काफ़ी नहीं है: गेम मास्टर को आपके कंप्यूटर पर कैंपेन की फ़ाइलों तक पहुँचना होता है। हर एजेंट को अपना प्लान और लॉगिन चाहिए: Claude Code के लिए Claude का पेड प्लान, Codex के लिए ChatGPT लॉगिन। इसे आप एक बार इंस्टॉल करते हैं, उसके अपने पेज से: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex)।
 
 - **Claude Code**: कैंपेन फ़ोल्डर में `claude` लिखें। जब वह पूछे कि क्या आप फ़ोल्डर पर भरोसा करते हैं, तो **Yes, I trust this folder** चुनें; ध्यान रहे, पहले से चुना हुआ जवाब *No, exit* होता है। कैंपेन में एक छोटा हुक भी है, `rpg --listen`, जिसे यह सवाल नहीं दिखाता: जब आप डैशबोर्ड से कुछ करते हैं, तो वह गेम मास्टर को तुरंत बता देता है।
 - **Codex**: कैंपेन फ़ोल्डर में `codex` लिखें, और जब वह पूछे कि क्या आप फ़ोल्डर पर भरोसा करते हैं, तो हाँ कहें। उसके डेस्कटॉप ऐप में सेटिंग्स में देखें कि गेम की चैट के लिए मेमोरी बंद हो।
@@ -310,6 +310,6 @@ RPG Engine इसी फ़ोल्डर में रहता है: वह
 
 **कोई चित्र नहीं दिखता।** सेटिंग्स > चित्र बताता है कि यह कंप्यूटर उन्हें बना सकता है या नहीं, और कैसे।
 
-**इंस्टॉल नहीं होता, या `rpg` शुरू नहीं होता।** `node --version` को 22 या उससे नया बताना चाहिए। Windows पर RPG Engine और अपने कैंपेन को ऐसे पाथ से बाहर रखें जिनमें `&` हो।
+**इंस्टॉल नहीं होता, या `rpg` शुरू नहीं होता।** `node --version` को 24 या उससे नया बताना चाहिए। अगर Windows कहे कि स्क्रिप्ट चलाना बंद है, तो [2.1](#21-what-you-need) देखें। Windows पर RPG Engine और अपने कैंपेन को ऐसे पाथ से बाहर रखें जिनमें `&` हो।
 
 **डैशबोर्ड का लिंक बदल गया।** किसी दूसरे प्रोग्राम ने आम पता ले लिया; गेम मास्टर आपको नया लिंक देता है।

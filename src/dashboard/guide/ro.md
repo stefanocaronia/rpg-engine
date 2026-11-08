@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -9,7 +9,7 @@ Ghidul este pentru jucători: nu e nevoie să știi să programezi.
 
 1. Instalează **Node.js** de pe [nodejs.org](https://nodejs.org) (versiunea LTS).
 2. Instalează un **agent IA**, programul în care rulează maestrul de joc, și autentifică-te: de exemplu Claude Code sau Codex ([2.4](#24-connect-your-ai)).
-3. Într-un terminal, instalează RPG Engine: `npm install -g rpg-engine`.
+3. Într-un terminal nou, deschis după instalarea Node.js, instalează RPG Engine: `npm install -g rpg-engine`.
 4. Creează o campanie: `rpg init "The Salt Isles"`.
 5. Intră în folderul nou, `cd "The Salt Isles"`, și pornește agentul acolo: `claude` pentru Claude Code, `codex` pentru Codex. Spune da când te întreabă dacă ai încredere în folder ([2.4](#24-connect-your-ai)), apoi scrie *Salut! Hai să începem.* Maestrul de joc răspunde cu linkul către dashboard.
 
@@ -39,7 +39,7 @@ Un joc vine sub forma unui sistem de joc, un pachet pe care maestrul de joc îl 
 
 - Un calculator cu Windows, macOS sau Linux și un browser web.
 - **Node.js 24** sau mai nou, de pe [nodejs.org](https://nodejs.org). Vine cu `npm`, care instalează RPG Engine.
-- Un **terminal**: pe Windows, Terminal sau PowerShell; pe macOS, Terminal. Ca să deschizi unul într-un dosar, dă clic dreapta pe dosar și alege **Open in Terminal** (Windows) sau **Services > New Terminal at Folder** (macOS).
+- Un **terminal**: pe Windows, Terminal sau PowerShell; pe macOS, Terminal. Ca să deschizi unul într-un dosar, dă clic dreapta pe dosar și alege **Open in Terminal** (Windows) sau **Services > New Terminal at Folder** (macOS). Dacă Windows răspunde că rularea scripturilor este dezactivată, scrie o singură dată `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` și răspunde da.
 - Un **agent AI** pentru maestrul de joc ([2.4](#24-connect-your-ai)), cu **cel mai mare model** pe care îl oferă: un model mic poate fi convins mai ușor să dezvăluie secrete sau să încalce regulile.
 
 ### 2.2 Instalare
@@ -64,7 +64,7 @@ Maestrul de joc nu poate crea o campanie în locul tău: înainte de `init`, nim
 
 ### 2.4 Conectarea AI-ului
 
-Maestrul de joc rulează într-un **agent AI**: o aplicație AI, în terminal sau pe desktop, care poate lucra cu fișierele de pe calculatorul tău, cum ar fi Claude Code sau Codex. Un chat obișnuit, precum claude.ai sau ChatGPT, sau o aplicație de telefon nu ajunge: maestrul de joc trebuie să poată accesa fișierele campaniei de pe calculatorul tău. Fiecare agent are nevoie de propriul abonament și de propria autentificare: Claude Code, un abonament Claude cu plată; Codex, o autentificare ChatGPT. Îl instalezi o singură dată, de pe pagina lui: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Maestrul de joc rulează într-un **agent AI**: o aplicație AI, în terminal sau pe desktop, care poate lucra cu fișierele de pe calculatorul tău, cum ar fi Claude Code sau Codex. Un chat obișnuit, precum claude.ai sau ChatGPT, sau o aplicație de telefon nu ajunge: maestrul de joc trebuie să poată accesa fișierele campaniei de pe calculatorul tău. Fiecare agent are nevoie de propriul abonament și de propria autentificare: Claude Code, un abonament Claude cu plată; Codex, o autentificare ChatGPT. Îl instalezi o singură dată, de pe pagina lui: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code**: în dosarul campaniei scrie `claude`. Când te întreabă dacă ai încredere în dosar, alege **Yes, I trust this folder**; atenție, răspunsul deja selectat este *No, exit*. Campania are și un mic hook, `rpg --listen`, pe care întrebarea nu-l arată: îi spune maestrului de joc pe loc când acționezi din dashboard.
 - **Codex**: în dosarul campaniei scrie `codex` și răspunde da când te întreabă dacă ai încredere în dosar. În aplicația lui desktop, verifică în setări că memoriile sunt oprite pentru chaturile jocului.
@@ -310,6 +310,6 @@ Fiecare comandă pe care o folosește maestrul de joc poate fi rulată și în f
 
 **Nu apare nicio imagine.** Setări > Imagini arată dacă acest calculator le poate face și cum.
 
-**Instalarea eșuează sau `rpg` nu pornește.** `node --version` trebuie să arate 22 sau mai nou. Pe Windows, ține RPG Engine și campaniile tale departe de căi care conțin `&`.
+**Instalarea eșuează sau `rpg` nu pornește.** `node --version` trebuie să arate 24 sau mai nou. Dacă Windows răspunde că rularea scripturilor este dezactivată, vezi [2.1](#21-what-you-need). Pe Windows, ține RPG Engine și campaniile tale departe de căi care conțin `&`.
 
 **Linkul dashboardului s-a schimbat.** Alt program a luat adresa obișnuită; maestrul îți dă noul link.

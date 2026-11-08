@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: o guia completo
 
 **RPG Engine** permite que você jogue um jogo de RPG de mesa com uma **IA como mestre**. Você conversa com o mestre em um **chat**; o RPG Engine trabalha nos bastidores: ele **lembra do mundo**, **rola os dados** e **faz as contas**. Ao lado do chat, você mantém aberta uma página no navegador, o **painel**, com sua ficha, os dados, os mapas e seu diário.
@@ -9,7 +9,7 @@ Este guia é para quem joga: você não precisa saber programar.
 
 1. Instale o **Node.js** em [nodejs.org](https://nodejs.org) (a versão LTS).
 2. Instale um **agente de IA**, o programa em que o mestre roda, e entre na sua conta: por exemplo, Claude Code ou Codex ([2.4](#24-connect-your-ai)).
-3. Em um terminal, instale o RPG Engine: `npm install -g rpg-engine`.
+3. Em um terminal novo, aberto depois de instalar o Node.js, instale o RPG Engine: `npm install -g rpg-engine`.
 4. Crie uma campanha: `rpg init "The Salt Isles"`.
 5. Entre na nova pasta, `cd "The Salt Isles"`, e inicie seu agente nela: `claude` para o Claude Code, `codex` para o Codex. Diga sim quando ele perguntar se você confia na pasta ([2.4](#24-connect-your-ai)) e escreva *Oi! Vamos começar.* O mestre responde com o link do seu painel.
 
@@ -39,7 +39,7 @@ Um jogo vem como um sistema de jogo, um pacote que o mestre instala para a sua c
 
 - Um computador com Windows, macOS ou Linux, e um navegador.
 - **Node.js 24** ou mais recente, de [nodejs.org](https://nodejs.org). Ele traz o `npm`, que instala o RPG Engine.
-- Um **terminal**: no Windows, Terminal ou PowerShell; no macOS, Terminal. Para abrir um terminal em uma pasta, clique com o botão direito na pasta e escolha **Abrir no Terminal** (Windows) ou **Serviços > Novo Terminal na Pasta** (macOS).
+- Um **terminal**: no Windows, Terminal ou PowerShell; no macOS, Terminal. Para abrir um terminal em uma pasta, clique com o botão direito na pasta e escolha **Abrir no Terminal** (Windows) ou **Serviços > Novo Terminal na Pasta** (macOS). Se o Windows responder que a execução de scripts está desabilitada, escreva uma vez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e responda sim.
 - Um **agente de IA** para o mestre ([2.4](#24-connect-your-ai)), com o **maior modelo** que ele oferecer: um modelo pequeno é mais fácil de convencer a revelar segredos ou a quebrar as regras.
 
 ### 2.2 Instalar
@@ -64,7 +64,7 @@ O mestre não pode criar uma campanha para você: antes do `init`, nada diz ao s
 
 ### 2.4 Conectar sua IA
 
-O mestre roda em um **agente de IA**: um app de IA, no terminal ou no desktop, que consegue trabalhar com os arquivos do seu computador, como o Claude Code ou o Codex. Um chat simples, como o claude.ai ou o ChatGPT, ou um app de celular, não basta: o mestre precisa acessar os arquivos da campanha no seu computador. Cada agente exige seu próprio plano e login: o Claude Code, um plano pago do Claude; o Codex, um login do ChatGPT. Você instala o agente uma vez, pela página dele: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+O mestre roda em um **agente de IA**: um app de IA, no terminal ou no desktop, que consegue trabalhar com os arquivos do seu computador, como o Claude Code ou o Codex. Um chat simples, como o claude.ai ou o ChatGPT, ou um app de celular, não basta: o mestre precisa acessar os arquivos da campanha no seu computador. Cada agente exige seu próprio plano e login: o Claude Code, um plano pago do Claude; o Codex, um login do ChatGPT. Você instala o agente uma vez, pela página dele: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code**: na pasta da campanha, escreva `claude`. Quando ele perguntar se você confia na pasta, escolha **Yes, I trust this folder**; atenção, a resposta já selecionada é *No, exit*. A campanha também tem um pequeno hook, `rpg --listen`, que a pergunta não mostra: ele avisa o mestre na hora quando você age pelo dashboard.
 - **Codex**: na pasta da campanha, escreva `codex` e diga sim quando ele perguntar se você confia na pasta. No app de desktop, confira nas configurações se as memórias estão desligadas para os chats do jogo.
@@ -310,6 +310,6 @@ Todo comando que o mestre usa também pode ser executado na pasta da campanha: `
 
 **Nenhuma imagem aparece.** Configurações > Imagens diz se este computador consegue gerá-las e como.
 
-**A instalação falha, ou o `rpg` não inicia.** `node --version` deve mostrar 22 ou mais recente. No Windows, mantenha o RPG Engine e suas campanhas fora de caminhos que contenham `&`.
+**A instalação falha, ou o `rpg` não inicia.** `node --version` deve mostrar 24 ou mais recente. Se o Windows responder que a execução de scripts está desabilitada, veja [2.1](#21-what-you-need). No Windows, mantenha o RPG Engine e suas campanhas fora de caminhos que contenham `&`.
 
 **O link do painel mudou.** Outro programa ocupou o endereço habitual; o mestre dá a você o novo link.

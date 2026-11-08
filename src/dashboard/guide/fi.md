@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -9,7 +9,7 @@ Tämä opas on pelaajille: ohjelmointitaitoja ei tarvita.
 
 1. Asenna **Node.js** osoitteesta [nodejs.org](https://nodejs.org) (LTS-versio).
 2. Asenna **tekoälyagentti**, ohjelma, jossa pelinjohtaja toimii, ja kirjaudu sisään: esimerkiksi Claude Code tai Codex ([2.4](#24-connect-your-ai)).
-3. Asenna RPG Engine päätteessä: `npm install -g rpg-engine`.
+3. Asenna RPG Engine uudessa päätteessä, joka on avattu Node.js:n asennuksen jälkeen: `npm install -g rpg-engine`.
 4. Luo kampanja: `rpg init "The Salt Isles"`.
 5. Siirry uuteen kansioon komennolla `cd "The Salt Isles"` ja käynnistä agentti siellä: `claude` Claude Codelle, `codex` Codexille. Vastaa myöntävästi, kun se kysyy, luotatko kansioon ([2.4](#24-connect-your-ai)), ja kirjoita sitten *Hei! Aloitetaan.* Pelinjohtaja vastaa antamalla kojelaudan linkin.
 
@@ -39,7 +39,7 @@ Peli tulee pelijärjestelmänä. Se on paketti, jonka pelinjohtaja asentaa kampa
 
 - Tietokone, jossa on Windows, macOS tai Linux, sekä verkkoselain.
 - **Node.js 24** tai uudempi, osoitteesta [nodejs.org](https://nodejs.org). Mukana tulee `npm`, joka asentaa RPG Enginen.
-- **Pääte**: Windowsissa Terminal tai PowerShell, macOS:ssä Terminal. Voit avata päätteen kansioon napsauttamalla kansiota hiiren kakkospainikkeella ja valitsemalla **Open in Terminal** (Windows) tai **Services > New Terminal at Folder** (macOS).
+- **Pääte**: Windowsissa Terminal tai PowerShell, macOS:ssä Terminal. Voit avata päätteen kansioon napsauttamalla kansiota hiiren kakkospainikkeella ja valitsemalla **Open in Terminal** (Windows) tai **Services > New Terminal at Folder** (macOS). Jos Windows ilmoittaa, että komentosarjojen suorittaminen on estetty, kirjoita kerran `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` ja vastaa myöntävästi.
 - Pelinjohtajalle **tekoälyagentti** ([2.4](#24-connect-your-ai)), jossa on tarjolla oleva **suurin malli**: pieni malli antaa helpommin puhua itsensä paljastamaan salaisuuksia tai taivuttamaan sääntöjä.
 
 ### 2.2 Asennus
@@ -64,7 +64,7 @@ Pelinjohtaja ei voi luoda kampanjaa puolestasi: ennen komentoa `init` mikään e
 
 ### 2.4 Tekoälyn yhdistäminen
 
-Pelinjohtaja toimii **tekoälyagentissa**. Se on tekoälysovellus, päätteessä tai työpöydällä, joka voi käsitellä tietokoneesi tiedostoja, kuten Claude Code tai Codex. Pelkkä chat, kuten claude.ai tai ChatGPT, tai puhelinsovellus ei riitä: pelinjohtajan täytyy päästä käsiksi kampanjan tiedostoihin tietokoneellasi. Jokainen agentti tarvitsee oman tilauksensa ja kirjautumisensa: Claude Code maksullisen Claude-tilauksen, Codex ChatGPT-kirjautumisen. Asennat sen kerran sen omalta sivulta: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Pelinjohtaja toimii **tekoälyagentissa**. Se on tekoälysovellus, päätteessä tai työpöydällä, joka voi käsitellä tietokoneesi tiedostoja, kuten Claude Code tai Codex. Pelkkä chat, kuten claude.ai tai ChatGPT, tai puhelinsovellus ei riitä: pelinjohtajan täytyy päästä käsiksi kampanjan tiedostoihin tietokoneellasi. Jokainen agentti tarvitsee oman tilauksensa ja kirjautumisensa: Claude Code maksullisen Claude-tilauksen, Codex ChatGPT-kirjautumisen. Asennat sen kerran sen omalta sivulta: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code**: kirjoita kampanjakansiossa `claude`. Kun se kysyy, luotatko kansioon, valitse **Yes, I trust this folder**. Varo: valmiiksi valittuna on vastaus *No, exit*. Kampanjassa on myös pieni koukku, `rpg --listen`, jota kysymys ei näytä: se kertoo pelinjohtajalle heti, kun toimit kojelaudalla.
 - **Codex**: kirjoita kampanjakansiossa `codex` ja vastaa myöntävästi, kun se kysyy, luotatko kansioon. Tarkista sen työpöytäsovelluksen asetuksista, että muistit on poistettu käytöstä pelin keskusteluissa.
@@ -310,6 +310,6 @@ Jokaisen komennon, jota pelinjohtaja käyttää, voi ajaa myös kampanjakansioss
 
 **Kuvia ei ilmesty.** Asetukset > Kuvat kertoo, voiko tämä tietokone tehdä niitä, ja miten.
 
-**Asennus epäonnistuu tai `rpg` ei käynnisty.** Komennon `node --version` pitää näyttää 22 tai uudempi. Pidä Windowsissa RPG Engine ja kampanjasi poissa poluista, joissa on `&`.
+**Asennus epäonnistuu tai `rpg` ei käynnisty.** Komennon `node --version` pitää näyttää 24 tai uudempi. Jos Windows ilmoittaa, että komentosarjojen suorittaminen on estetty, katso [2.1](#21-what-you-need). Pidä Windowsissa RPG Engine ja kampanjasi poissa poluista, joissa on `&`.
 
 **Kojelaudan linkki muuttui.** Toinen ohjelma otti tavallisen osoitteen. Pelinjohtaja antaa sinulle uuden linkin.

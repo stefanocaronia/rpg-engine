@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -9,7 +9,7 @@ Tento průvodce je pro hráče: programovat umět nemusíš.
 
 1. Nainstaluj **Node.js** z [nodejs.org](https://nodejs.org) (verze LTS).
 2. Nainstaluj **AI agenta**, program, ve kterém Pán jeskyně běží, a přihlas se: například Claude Code nebo Codex ([2.4](#24-connect-your-ai)).
-3. V terminálu nainstaluj RPG Engine: `npm install -g rpg-engine`.
+3. V novém terminálu, otevřeném až po instalaci Node.js, nainstaluj RPG Engine: `npm install -g rpg-engine`.
 4. Vytvoř kampaň: `rpg init "The Salt Isles"`.
 5. Přejdi do nové složky, `cd "The Salt Isles"`, a spusť tam svého agenta: `claude` pro Claude Code, `codex` pro Codex. Když se zeptá, jestli složce důvěřuješ, potvrď ([2.4](#24-connect-your-ai)). Pak napiš *Ahoj! Pojďme začít.* Pán jeskyně odpoví odkazem na tvůj dashboard.
 
@@ -39,7 +39,7 @@ Hra přichází jako herní systém, balíček, který Pán jeskyně nainstaluje
 
 - Počítač s Windows, macOS nebo Linuxem a webový prohlížeč.
 - **Node.js 24** nebo novější, z [nodejs.org](https://nodejs.org). Přináší `npm`, kterým se instaluje RPG Engine.
-- **Terminál**: ve Windows Terminál nebo PowerShell, v macOS Terminál. Terminál ve složce otevřeš tak, že na složku klikneš pravým tlačítkem a zvolíš **Otevřít v Terminálu** (Windows) nebo **Služby > Nový terminál ve složce** (macOS).
+- **Terminál**: ve Windows Terminál nebo PowerShell, v macOS Terminál. Terminál ve složce otevřeš tak, že na složku klikneš pravým tlačítkem a zvolíš **Otevřít v Terminálu** (Windows) nebo **Služby > Nový terminál ve složce** (macOS). Pokud Windows odpoví, že spouštění skriptů je zakázané, napiš jednou `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` a odpověz ano.
 - **AI agent** pro Pána jeskyně ([2.4](#24-connect-your-ai)) s **největším modelem**, který nabízí: malý model se snáze nechá přemluvit k prozrazení tajemství nebo k ohnutí pravidel.
 
 ### 2.2 Instalace
@@ -64,7 +64,7 @@ Pán jeskyně kampaň za tebe vytvořit nemůže: před příkazem `init` nic ne
 
 ### 2.4 Připojení AI
 
-Pán jeskyně běží v **AI agentovi**: je to AI aplikace, v terminálu nebo na ploše, která umí pracovat se soubory v tvém počítači, například Claude Code nebo Codex. Obyčejný chat jako claude.ai nebo ChatGPT, případně aplikace v telefonu, nestačí: Pán jeskyně se musí dostat k souborům kampaně v tvém počítači. Každý agent potřebuje vlastní tarif a přihlášení: Claude Code placený tarif Claude, Codex přihlášení do ChatGPT. Nainstaluješ ho jednou, z jeho vlastní stránky: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Pán jeskyně běží v **AI agentovi**: je to AI aplikace, v terminálu nebo na ploše, která umí pracovat se soubory v tvém počítači, například Claude Code nebo Codex. Obyčejný chat jako claude.ai nebo ChatGPT, případně aplikace v telefonu, nestačí: Pán jeskyně se musí dostat k souborům kampaně v tvém počítači. Každý agent potřebuje vlastní tarif a přihlášení: Claude Code placený tarif Claude, Codex přihlášení do ChatGPT. Nainstaluješ ho jednou, z jeho vlastní stránky: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code**: ve složce kampaně napiš `claude`. Když se zeptá, jestli složce důvěřuješ, zvol **Yes, I trust this folder**. Pozor, předvolená odpověď je *No, exit*. Kampaň má také malý hook, `rpg --listen`, který otázka neukazuje: okamžitě sdělí Pánu jeskyně, když něco uděláš na dashboardu.
 - **Codex**: ve složce kampaně napiš `codex` a na otázku, jestli složce důvěřuješ, odpověz ano. V jeho desktopové aplikaci zkontroluj v nastavení, že jsou paměti pro chaty hry vypnuté.
@@ -310,6 +310,6 @@ Každý příkaz, který Pán jeskyně používá, jde spustit i ve složce kamp
 
 **Neobjevují se žádné obrázky.** Nastavení > Obrázky říká, jestli je tento počítač umí vytvářet, a jak.
 
-**Instalace selže, nebo `rpg` nechce začít.** `node --version` musí hlásit 22 nebo novější. Ve Windows nech RPG Engine a své kampaně mimo cesty, které obsahují `&`.
+**Instalace selže, nebo `rpg` nechce začít.** `node --version` musí hlásit 24 nebo novější. Pokud Windows odpoví, že spouštění skriptů je zakázané, viz [2.1](#21-what-you-need). Ve Windows nech RPG Engine a své kampaně mimo cesty, které obsahují `&`.
 
 **Odkaz na dashboard se změnil.** Obvyklou adresu zabral jiný program. Nový odkaz ti dá Pán jeskyně.

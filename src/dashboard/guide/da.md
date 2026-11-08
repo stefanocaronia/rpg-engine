@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med **en AI som spilleder**. Du taler med spillederen i en **chat**. RPG Engine arbejder i baggrunden: det **husker verdenen**, **slår med terningerne** og **fører regnskabet**. Ved siden af chatten har du en side åben i din browser, **dashboardet**, med dit karakterark, terningerne, kortene og din dagbog.
@@ -9,7 +9,7 @@ Guiden er til spillere: du behøver ikke at kunne programmere.
 
 1. Installer **Node.js** fra [nodejs.org](https://nodejs.org) (LTS-versionen).
 2. Installer en **AI-agent**, det program som spillederen kører i, og log ind: for eksempel Claude Code eller Codex ([2.4](#24-connect-your-ai)).
-3. Installer RPG Engine i en terminal: `npm install -g rpg-engine`.
+3. Installer RPG Engine i en ny terminal, åbnet efter at Node.js er installeret: `npm install -g rpg-engine`.
 4. Opret en kampagne: `rpg init "The Salt Isles"`.
 5. Gå ind i den nye mappe med `cd "The Salt Isles"`, og start din agent dér: `claude` for Claude Code, `codex` for Codex. Svar ja, når den spørger, om du stoler på mappen ([2.4](#24-connect-your-ai)), og skriv så *Hej! Lad os begynde.* Spillederen svarer med linket til dit dashboard.
 
@@ -39,8 +39,8 @@ Et spil kommer som et spilsystem, en pakke som spillederen installerer til din k
 
 - En computer med Windows, macOS eller Linux og en webbrowser.
 - **Node.js 24** eller nyere fra [nodejs.org](https://nodejs.org). Den leverer `npm`, som installerer RPG Engine.
-- En **terminal**: på Windows Terminal eller PowerShell, på macOS Terminal. Du åbner en terminal i en mappe ved at højreklikke på mappen og vælge **Åbn i Terminal** (Windows) eller **Tjenester > Ny terminal ved mappe** (macOS).
-- En **AI-agent** til spilleder ([2.4](#24-connect-your-ai)) med den **største model**, den tilbyder: en lille model lader sig lettere overtale til at afsløre hemmeligheder eller bøje reglerne.
+- En **terminal**: på Windows Terminal eller PowerShell, på macOS Terminal. Du åbner en terminal i en mappe ved at højreklikke på mappen og vælge **Åbn i Terminal** (Windows) eller **Tjenester > Ny terminal ved mappe** (macOS). Hvis Windows svarer, at det er slået fra at køre scripts, skal du skrive `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` én gang og svare ja.
+- En **AI-agent** til spillederen ([2.4](#24-connect-your-ai)) med den **største model**, den tilbyder: en lille model lader sig lettere overtale til at afsløre hemmeligheder eller bøje reglerne.
 
 ### 2.2 Installer
 
@@ -64,7 +64,7 @@ Spilleder kan ikke oprette en kampagne for dig: før `init` fortæller intet din
 
 ### 2.4 Forbind din AI
 
-Spilleder kører i en **AI-agent**: en AI-app i terminalen eller på skrivebordet, som kan arbejde med filerne på din computer, for eksempel Claude Code eller Codex. En almindelig chat som claude.ai eller ChatGPT eller en app på telefonen rækker ikke: spilleder skal kunne nå kampagnens filer på din computer. Hver agent kræver sit eget abonnement og login: Claude Code et betalt Claude-abonnement, Codex et ChatGPT-login. Du installerer den én gang fra dens egen side: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Spillederen kører i en **AI-agent**: en AI-app i terminalen eller på skrivebordet, som kan arbejde med filerne på din computer, for eksempel Claude Code eller Codex. En almindelig chat som claude.ai eller ChatGPT eller en app på telefonen rækker ikke: spillederen skal kunne nå kampagnens filer på din computer. Hver agent kræver sit eget abonnement og login: Claude Code et betalt Claude-abonnement, Codex et ChatGPT-login. Du installerer den én gang fra dens egen side: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code**: skriv `claude` i kampagnemappen. Når den spørger, om du stoler på mappen, så vælg **Yes, I trust this folder**. Pas på: det svar, der er valgt på forhånd, er *No, exit*. Kampagnen har også en lille hook, `rpg --listen`, som spørgsmålet ikke viser: den fortæller straks spilleder, når du handler fra dashboardet.
 - **Codex**: skriv `codex` i kampagnemappen, og sig ja, når den spørger, om du stoler på mappen. I dens desktop-app skal du under indstillinger tjekke, at hukommelser er slået fra for spillets chats.
@@ -310,6 +310,6 @@ Alle kommandoer, spillederen bruger, kan også køres i kampagnemappen: `rpg --h
 
 **Der kommer ingen billeder.** Indstillinger > Billeder viser, om denne computer kan lave dem, og hvordan.
 
-**Installationen fejler, eller `rpg` vil ikke starte.** `node --version` skal vise 22 eller nyere. På Windows skal du holde RPG Engine og dine kampagner ude af stier, der indeholder `&`.
+**Installationen fejler, eller `rpg` vil ikke starte.** `node --version` skal vise 24 eller nyere. Hvis Windows svarer, at det er slået fra at køre scripts, så se [2.1](#21-what-you-need). På Windows skal du holde RPG Engine og dine kampagner ude af stier, der indeholder `&`.
 
 **Dashboardets link er ændret.** Et andet program tog den sædvanlige adresse. Spillederen giver dig det nye link.

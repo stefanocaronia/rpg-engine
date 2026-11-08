@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: 전체 가이드
 
 **RPG Engine**은 **AI 게임 마스터**와 함께 테이블탑 롤플레잉 게임을 즐길 수 있게 해 줘요. **채팅**으로 GM과 대화해요. RPG Engine은 뒤에서 **세계를 기억하고**, **주사위를 굴리고**, **계산을 맡아요**. 채팅 옆에는 브라우저에 페이지를 하나 열어 두어요. 바로 **대시보드**예요. 캐릭터 시트, 주사위, 지도, 일지가 있어요.
@@ -9,7 +9,7 @@
 
 1. [nodejs.org](https://nodejs.org)에서 **Node.js**를 설치해요(LTS 버전).
 2. GM이 실행될 프로그램인 **AI 에이전트**를 설치하고 로그인해요. 예를 들면 Claude Code나 Codex가 있어요([2.4](#24-connect-your-ai)).
-3. 터미널에서 RPG Engine을 설치해요: `npm install -g rpg-engine`.
+3. Node.js를 설치한 뒤 새로 연 터미널에서 RPG Engine을 설치해요: `npm install -g rpg-engine`.
 4. 캠페인을 만들어요: `rpg init "The Salt Isles"`.
 5. 새로 생긴 폴더로 이동해요: `cd "The Salt Isles"`. 그 안에서 에이전트를 시작해요. Claude Code는 `claude`, Codex는 `codex`예요. 폴더를 신뢰하는지 물으면 예를 선택해요([2.4](#24-connect-your-ai)). 그다음 *안녕하세요! 시작해 봐요.*라고 써요. GM이 대시보드 링크로 답해요.
 
@@ -39,8 +39,8 @@
 
 - Windows, macOS, Linux 중 하나가 설치된 컴퓨터와 웹 브라우저.
 - [nodejs.org](https://nodejs.org)에서 받을 수 있는 **Node.js 24** 이상. 설치하면 `npm`도 함께 설치돼요. `npm`으로 RPG Engine을 설치해요.
-- **터미널**: Windows에서는 터미널이나 PowerShell, macOS에서는 터미널이에요. 폴더에서 터미널을 열려면 폴더를 마우스 오른쪽 버튼으로 클릭하고 **터미널에서 열기**(Windows) 또는 **서비스 > 폴더에서 새로운 터미널**(macOS)을 선택해요.
-- GM을 맡을 **AI 에이전트** ([2.4](#24-connect-your-ai)). 에이전트가 제공하는 **가장 큰 모델**을 쓰세요. 작은 모델은 설득에 넘어가 비밀을 알려 주거나 규칙을 어기기 쉬워요.
+- **터미널**: Windows에서는 터미널이나 PowerShell, macOS에서는 터미널이에요. 폴더에서 터미널을 열려면 폴더를 마우스 오른쪽 버튼으로 클릭하고 **터미널에서 열기**(Windows) 또는 **서비스 > 폴더에서 새로운 터미널**(macOS)을 선택해요. Windows에서 스크립트 실행이 비활성화되어 있다고 나오면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`를 한 번 입력하고 예라고 답해요.
+- GM을 맡을 **AI 에이전트**([2.4](#24-connect-your-ai)). 에이전트가 제공하는 **가장 큰 모델**을 쓰세요. 작은 모델은 설득에 넘어가 비밀을 알려 주거나 규칙을 어기기 쉬워요.
 
 ### 2.2 설치
 
@@ -64,7 +64,7 @@ GM은 캠페인을 대신 만들 수 없어요. `init`을 하기 전에는 에�
 
 ### 2.4 AI 연결하기
 
-GM은 **AI 에이전트** 안에서 움직여요. AI 에이전트는 터미널이나 데스크톱에서 쓰는 AI 앱으로, 컴퓨터의 파일을 다룰 수 있어요. Claude Code나 Codex가 그 예예요. claude.ai나 ChatGPT 같은 일반 채팅이나 휴대폰 앱으로는 부족해요. GM이 컴퓨터에 있는 캠페인 파일에 접근할 수 있어야 하기 때문이에요. 에이전트마다 요금제와 로그인이 따로 필요해요. Claude Code는 유료 Claude 요금제, Codex는 ChatGPT 로그인이 필요해요. 설치는 각 에이전트의 페이지에서 한 번만 하면 돼요. [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli)
+GM은 **AI 에이전트** 안에서 움직여요. AI 에이전트는 터미널이나 데스크톱에서 쓰는 AI 앱으로, 컴퓨터의 파일을 다룰 수 있어요. Claude Code나 Codex가 그 예예요. claude.ai나 ChatGPT 같은 일반 채팅이나 휴대폰 앱으로는 부족해요. GM이 컴퓨터에 있는 캠페인 파일에 접근할 수 있어야 하기 때문이에요. 에이전트마다 요금제와 로그인이 따로 필요해요. Claude Code는 유료 Claude 요금제, Codex는 ChatGPT 로그인이 필요해요. 설치는 각 에이전트의 페이지에서 한 번만 하면 돼요. [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code**: 캠페인 폴더에서 `claude`를 입력해요. 폴더를 신뢰하는지 물으면 **Yes, I trust this folder**를 선택하세요. 주의하세요. 처음 선택돼 있는 답은 *No, exit*이에요. 캠페인에는 작은 훅 `rpg --listen`도 들어 있어요. 이 질문에는 나오지 않지만, 대시보드에서 행동하면 GM에게 바로 알려 주는 역할을 해요.
 - **Codex**: 캠페인 폴더에서 `codex`를 입력하고, 폴더를 신뢰하는지 물으면 승인해요. 데스크톱 앱에서는 설정에서 게임 채팅의 메모리가 꺼져 있는지 확인하세요.
@@ -310,6 +310,6 @@ GM이 쓰는 명령은 모두 캠페인 폴더에서 직접 실행할 수도 있
 
 **이미지가 나타나지 않아요.** 설정 > 이미지에서 이 컴퓨터가 이미지를 만들 수 있는지, 어떻게 하면 되는지 확인할 수 있어요.
 
-**설치가 실패하거나 `rpg`가 시작되지 않아요.** `node --version`이 22 이상이어야 해요. Windows에서는 RPG Engine과 캠페인을 `&`가 들어간 경로에 두지 마세요.
+**설치가 실패하거나 `rpg`가 시작되지 않아요.** `node --version`이 24 이상이어야 해요. Windows에서 스크립트 실행이 비활성화되어 있다고 나오면 [2.1](#21-what-you-need)을 보세요. Windows에서는 RPG Engine과 캠페인을 `&`가 들어간 경로에 두지 마세요.
 
 **대시보드 링크가 바뀌었어요.** 다른 프로그램이 기존 주소를 사용 중이에요. GM이 새 링크를 알려 줘요.

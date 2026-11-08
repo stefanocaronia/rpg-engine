@@ -8,7 +8,7 @@ This guide is for players: you do not need to know how to program.
 
 1. Install **Node.js** from [nodejs.org](https://nodejs.org) (the LTS version).
 2. Install an **AI agent**, the program the master runs in, and sign in: for example Claude Code or Codex ([2.4](#24-connect-your-ai)).
-3. In a terminal, install RPG Engine: `npm install -g rpg-engine`.
+3. In a new terminal, opened after Node.js is installed, install RPG Engine: `npm install -g rpg-engine`.
 4. Create a campaign: `rpg init "The Salt Isles"`.
 5. Go into the new folder, `cd "The Salt Isles"`, and start your agent there: `claude` for Claude Code, `codex` for Codex. Say yes when it asks whether you trust the folder ([2.4](#24-connect-your-ai)), then write *Hi! Let's start.* The master answers with the link to your dashboard.
 
@@ -38,7 +38,7 @@ A game comes as a game system, a package the master installs for your campaign: 
 
 - A computer with Windows, macOS or Linux, and a web browser.
 - **Node.js 24** or newer, from [nodejs.org](https://nodejs.org). It brings `npm`, which installs RPG Engine.
-- A **terminal**: on Windows, Terminal or PowerShell; on macOS, Terminal. To open one in a folder, right-click the folder and choose **Open in Terminal** (Windows) or **Services > New Terminal at Folder** (macOS).
+- A **terminal**: on Windows, Terminal or PowerShell; on macOS, Terminal. To open one in a folder, right-click the folder and choose **Open in Terminal** (Windows) or **Services > New Terminal at Folder** (macOS). If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` and answer yes.
 - An **AI agent** for the master ([2.4](#24-connect-your-ai)), with the **largest model** it offers: a small model is easier to talk into revealing secrets or bending the rules.
 
 ### 2.2 Install
@@ -63,7 +63,7 @@ The master cannot create a campaign for you: before `init`, nothing tells your a
 
 ### 2.4 Connect your AI
 
-The master runs in an **AI agent**: an AI app, in the terminal or on the desktop, that can work with the files on your computer, such as Claude Code or Codex. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer. Each agent needs its own plan and login: Claude Code a paid Claude plan, Codex a ChatGPT login. You install it once, from its own page: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+The master runs in an **AI agent**: an AI app, in the terminal or on the desktop, that can work with the files on your computer, such as Claude Code or Codex. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer. Each agent needs its own plan and login: Claude Code a paid Claude plan, Codex a ChatGPT login. You install it once, from its own page: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code**: in the campaign folder write `claude`. When it asks whether you trust the folder, choose **Yes, I trust this folder**; careful, the answer already selected is *No, exit*. The campaign also has a small hook, `rpg --listen`, which the question does not show: it tells the master at once when you act from the dashboard.
 - **Codex**: in the campaign folder write `codex`, and say yes when it asks whether you trust the folder. In its desktop app, check in the settings that memories are off for the game's chats.
@@ -309,6 +309,6 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 
 **No pictures appear.** Settings > Pictures says whether this computer can make them, and how.
 
-**Installing fails, or `rpg` will not start.** `node --version` must say 22 or newer. On Windows, keep RPG Engine and your campaigns out of paths that contain `&`.
+**Installing fails, or `rpg` will not start.** `node --version` must say 24 or newer. If Windows answers that running scripts is disabled, see [2.1](#21-what-you-need). On Windows, keep RPG Engine and your campaigns out of paths that contain `&`.
 
 **The dashboard link changed.** Another program took the usual address; the master gives you the new link.

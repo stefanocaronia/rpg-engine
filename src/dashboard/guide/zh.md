@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine：完整指南
 
 **RPG Engine** 让你和一位 **AI 主持人**一起玩桌面角色扮演游戏。你在**聊天**里和主持人交谈；RPG Engine 在幕后工作：它**记住世界**，**掷骰子**，**记账**。聊天旁边，你在浏览器里开着一个页面，也就是**仪表盘**，上面有你的角色卡、骰子、地图和日志。
@@ -9,7 +9,7 @@
 
 1. 从 [nodejs.org](https://nodejs.org) 安装 **Node.js**（LTS 版本）。
 2. 安装一个 **AI 智能体**，也就是主持人运行所在的程序，并登录：例如 Claude Code 或 Codex（[2.4](#24-connect-your-ai)）。
-3. 在终端里安装 RPG Engine：`npm install -g rpg-engine`。
+3. 安装好 Node.js 后，打开一个新的终端，在里面安装 RPG Engine：`npm install -g rpg-engine`。
 4. 创建战役：`rpg init "The Salt Isles"`。
 5. 进入新文件夹：`cd "The Salt Isles"`，然后在那里启动你的智能体：Claude Code 用 `claude`，Codex 用 `codex`。它问你是否信任这个文件夹时，选择“是”（[2.4](#24-connect-your-ai)），然后写下 *你好！我们开始吧。* 主持人会回复你仪表盘的链接。
 
@@ -39,7 +39,7 @@
 
 - 一台装有 Windows、macOS 或 Linux 的电脑，以及一个网页浏览器。
 - **Node.js 24** 或更新版本，从 [nodejs.org](https://nodejs.org) 下载。它自带 `npm`，用来安装 RPG Engine。
-- 一个**终端**：在 Windows 上是“终端”或 PowerShell；在 macOS 上是“终端”。要在某个文件夹里打开终端，右键点击该文件夹，选择**在终端中打开**（Windows）或**服务 > 新建位于文件夹位置的终端**（macOS）。
+- 一个**终端**：在 Windows 上是“终端”或 PowerShell；在 macOS 上是“终端”。要在某个文件夹里打开终端，右键点击该文件夹，选择**在终端中打开**（Windows）或**服务 > 新建位于文件夹位置的终端**（macOS）。如果 Windows 提示已禁止运行脚本，请输入一次 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`，并回答“是”。
 - 一个给主持人用的 **AI 智能体**（[2.4](#24-connect-your-ai)），并选用它提供的**最大模型**：小模型更容易被说动，泄露秘密或打破规则。
 
 ### 2.2 安装
@@ -64,7 +64,7 @@ rpg init "The Salt Isles"
 
 ### 2.4 连接你的 AI
 
-主持人运行在一个 **AI 智能体**里：这是一个在终端或桌面上运行的 AI 应用，能处理你电脑上的文件，比如 Claude Code 或 Codex。像 claude.ai 或 ChatGPT 这样的普通聊天，或者手机应用，都不够用：主持人需要读取你电脑上的战役文件。每个智能体都需要自己的套餐和登录：Claude Code 需要付费的 Claude 套餐，Codex 需要 ChatGPT 登录。你只需安装一次，从它自己的页面安装：[Claude Code](https://code.claude.com/docs/en/setup)，[Codex](https://learn.chatgpt.com/docs/codex/cli)。
+主持人运行在一个 **AI 智能体**里：这是一个在终端或桌面上运行的 AI 应用，能处理你电脑上的文件，比如 Claude Code 或 Codex。像 claude.ai 或 ChatGPT 这样的普通聊天，或者手机应用，都不够用：主持人需要读取你电脑上的战役文件。每个智能体都需要自己的套餐和登录：Claude Code 需要付费的 Claude 套餐，Codex 需要 ChatGPT 登录。你只需安装一次，从它自己的页面安装：[Claude Code](https://code.claude.com/docs/en/setup)，[Codex](https://developers.openai.com/codex)。
 
 - **Claude Code**：在战役文件夹里输入 `claude`。当它询问是否信任这个文件夹时，选择 **Yes, I trust this folder**。注意，默认选中的答案是 *No, exit*。战役里还有一个小钩子 `rpg --listen`，这个询问不会显示它：当你在仪表盘上操作时，它会立刻通知主持人。
 - **Codex**：在战役文件夹里输入 `codex`，当它询问是否信任这个文件夹时，回答“是”。如果用它的桌面应用，请在设置里确认游戏的聊天已关闭记忆。
@@ -310,6 +310,6 @@ RPG Engine 只在这个文件夹内活动：它只在这里读写游戏，绝不
 
 **没有图片出现。** 设置 > 图片会告诉你这台电脑能否生成图片，以及怎么做。
 
-**安装失败，或 `rpg` 无法启动。** `node --version` 必须显示 22 或更新版本。在 Windows 上，请让 RPG Engine 和你的战役远离含有 `&` 的路径。
+**安装失败，或 `rpg` 无法启动。** `node --version` 必须显示 24 或更新版本。如果 Windows 提示已禁止运行脚本，见 [2.1](#21-what-you-need)。在 Windows 上，请让 RPG Engine 和你的战役远离含有 `&` 的路径。
 
 **仪表盘链接变了。** 另一个程序占用了常用地址；主持人会给你新的链接。

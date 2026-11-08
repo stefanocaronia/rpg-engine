@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -9,7 +9,7 @@ Dieser Leitfaden richtet sich an Spielende: Du musst nicht programmieren können
 
 1. Installiere **Node.js** von [nodejs.org](https://nodejs.org) (die LTS-Version).
 2. Installiere einen **KI-Agenten**, das Programm, in dem die Spielleitung läuft, und melde dich an: zum Beispiel Claude Code oder Codex ([2.4](#24-connect-your-ai)).
-3. Installiere RPG Engine in einem Terminal: `npm install -g rpg-engine`.
+3. Installiere RPG Engine in einem neuen Terminal, das du nach der Installation von Node.js geöffnet hast: `npm install -g rpg-engine`.
 4. Lege eine Kampagne an: `rpg init "The Salt Isles"`.
 5. Wechsle in den neuen Ordner mit `cd "The Salt Isles"` und starte dort deinen Agenten: `claude` für Claude Code, `codex` für Codex. Bestätige mit Ja, wenn er fragt, ob du dem Ordner vertraust ([2.4](#24-connect-your-ai)), und schreibe dann *Hallo! Lass uns anfangen.* Die Spielleitung antwortet mit dem Link zu deinem Dashboard.
 
@@ -39,7 +39,7 @@ Ein Spiel kommt als Spielsystem, ein Paket, das die Spielleitung für deine Kamp
 
 - Einen Computer mit Windows, macOS oder Linux und einen Webbrowser.
 - **Node.js 24** oder neuer, von [nodejs.org](https://nodejs.org). Es bringt `npm` mit, womit du RPG Engine installierst.
-- Ein **Terminal**: unter Windows Terminal oder PowerShell, unter macOS Terminal. Um eines in einem Ordner zu öffnen, klickst du den Ordner mit der rechten Maustaste an und wählst **Im Terminal öffnen** (Windows) oder **Dienste > Neues Terminal beim Ordner** (macOS).
+- Ein **Terminal**: unter Windows Terminal oder PowerShell, unter macOS Terminal. Um eines in einem Ordner zu öffnen, klickst du den Ordner mit der rechten Maustaste an und wählst **Im Terminal öffnen** (Windows) oder **Dienste > Neues Terminal beim Ordner** (macOS). Wenn Windows meldet, dass das Ausführen von Skripten deaktiviert ist, schreibe einmal `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` und antworte mit Ja.
 - Einen **KI-Agenten** für die Spielleitung ([2.4](#24-connect-your-ai)), mit dem **größten Modell**, das er anbietet: Ein kleines Modell lässt sich leichter dazu bringen, Geheimnisse zu verraten oder die Regeln zu verbiegen.
 
 ### 2.2 Installieren
@@ -64,7 +64,7 @@ Die Spielleitung kann keine Kampagne für dich anlegen: Vor `init` sagt nichts d
 
 ### 2.4 Deine KI verbinden
 
-Die Spielleitung läuft in einem **KI-Agenten**: einer KI-App im Terminal oder auf dem Desktop, die mit den Dateien auf deinem Computer arbeiten kann, zum Beispiel Claude Code oder Codex. Ein einfacher Chat wie claude.ai oder ChatGPT oder eine Handy-App reicht nicht: Die Spielleitung muss die Dateien der Kampagne auf deinem Computer erreichen können. Jeder Agent braucht seinen eigenen Tarif und sein eigenes Login: Claude Code einen bezahlten Claude-Tarif, Codex ein ChatGPT-Login. Du installierst ihn einmal, über seine eigene Seite: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Die Spielleitung läuft in einem **KI-Agenten**: einer KI-App im Terminal oder auf dem Desktop, die mit den Dateien auf deinem Computer arbeiten kann, zum Beispiel Claude Code oder Codex. Ein einfacher Chat wie claude.ai oder ChatGPT oder eine Handy-App reicht nicht: Die Spielleitung muss die Dateien der Kampagne auf deinem Computer erreichen können. Jeder Agent braucht seinen eigenen Tarif und sein eigenes Login: Claude Code einen bezahlten Claude-Tarif, Codex ein ChatGPT-Login. Du installierst ihn einmal, über seine eigene Seite: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code**: Schreibe im Kampagnenordner `claude`. Wenn es fragt, ob du dem Ordner vertraust, wähle **Yes, I trust this folder**. Vorsicht: Die vorausgewählte Antwort ist *No, exit*. Die Kampagne hat außerdem einen kleinen Hook, `rpg --listen`, den die Frage nicht zeigt: Er sagt der Spielleitung sofort Bescheid, wenn du im Dashboard etwas tust.
 - **Codex**: Schreibe im Kampagnenordner `codex` und antworte mit Ja, wenn es fragt, ob du dem Ordner vertraust. Prüfe in der Desktop-App in den Einstellungen, dass die Erinnerungen für die Chats des Spiels ausgeschaltet sind.
@@ -310,6 +310,6 @@ Jeden Befehl, den die Spielleitung benutzt, kannst du auch im Kampagnenordner au
 
 **Es erscheinen keine Bilder.** Unter Einstellungen > Bilder steht, ob dieser Computer sie erzeugen kann, und wie.
 
-**Die Installation schlägt fehl, oder `rpg` startet nicht.** `node --version` muss 22 oder neuer anzeigen. Halte RPG Engine und deine Kampagnen unter Windows aus Pfaden heraus, die `&` enthalten.
+**Die Installation schlägt fehl, oder `rpg` startet nicht.** `node --version` muss 24 oder neuer anzeigen. Wenn Windows meldet, dass das Ausführen von Skripten deaktiviert ist, siehe [2.1](#21-what-you-need). Halte RPG Engine und deine Kampagnen unter Windows aus Pfaden heraus, die `&` enthalten.
 
 **Der Link zum Dashboard hat sich geändert.** Ein anderes Programm hat die übliche Adresse belegt. Die Spielleitung gibt dir den neuen Link.

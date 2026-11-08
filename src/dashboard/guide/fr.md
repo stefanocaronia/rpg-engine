@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b652e88a 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,2319c815,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,e1781acb,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,cc876cea,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,48cb207c,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,67dbbc85,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
@@ -9,7 +9,7 @@ Ce guide s'adresse aux joueurs et joueuses : tu n'as pas besoin de savoir progra
 
 1. Installe **Node.js** depuis [nodejs.org](https://nodejs.org) (la version LTS).
 2. Installe un **agent IA**, le programme dans lequel le MJ fonctionne, et connecte-toi : par exemple Claude Code ou Codex ([2.4](#24-connect-your-ai)).
-3. Dans un terminal, installe RPG Engine : `npm install -g rpg-engine`.
+3. Dans un nouveau terminal, ouvert après l'installation de Node.js, installe RPG Engine : `npm install -g rpg-engine`.
 4. Crée une campagne : `rpg init "The Salt Isles"`.
 5. Entre dans le nouveau dossier, `cd "The Salt Isles"`, et lance ton agent à cet endroit : `claude` pour Claude Code, `codex` pour Codex. Réponds oui quand il demande si tu fais confiance au dossier ([2.4](#24-connect-your-ai)), puis écris *Salut ! On commence.* Le MJ répond avec le lien vers ton tableau de bord.
 
@@ -39,7 +39,7 @@ Un jeu prend la forme d'un système de jeu, un paquet que le MJ installe pour ta
 
 - Un ordinateur sous Windows, macOS ou Linux, et un navigateur web.
 - **Node.js 24** ou plus récent, sur [nodejs.org](https://nodejs.org). Il apporte `npm`, qui installe RPG Engine.
-- Un **terminal** : sous Windows, Terminal ou PowerShell ; sous macOS, Terminal. Pour en ouvrir un dans un dossier, fais un clic droit sur le dossier et choisis **Ouvrir dans le Terminal** (Windows) ou **Services > Nouveau terminal au dossier** (macOS).
+- Un **terminal** : sous Windows, Terminal ou PowerShell ; sous macOS, Terminal. Pour en ouvrir un dans un dossier, fais un clic droit sur le dossier et choisis **Ouvrir dans le Terminal** (Windows) ou **Services > Nouveau terminal au dossier** (macOS). Si Windows répond que l'exécution de scripts est désactivée, écris une fois `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` et réponds oui.
 - Un **agent IA** pour le MJ ([2.4](#24-connect-your-ai)), avec le **plus grand modèle** qu'il propose : un petit modèle se laisse plus facilement convaincre de révéler des secrets ou de contourner les règles.
 
 ### 2.2 Installer
@@ -64,7 +64,7 @@ Le MJ ne peut pas créer une campagne à ta place : avant `init`, rien n'indique
 
 ### 2.4 Connecter ton IA
 
-Le MJ tourne dans un **agent IA** : une appli d'IA, dans le terminal ou sur le bureau, qui peut travailler avec les fichiers de ton ordinateur, comme Claude Code ou Codex. Un simple chat comme claude.ai ou ChatGPT, ou une appli de téléphone, ne suffit pas : le MJ doit pouvoir accéder aux fichiers de la campagne sur ton ordinateur. Chaque agent demande son propre abonnement et sa propre connexion : Claude Code un abonnement Claude payant, Codex une connexion ChatGPT. Tu l'installes une seule fois, depuis sa propre page : [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://learn.chatgpt.com/docs/codex/cli).
+Le MJ tourne dans un **agent IA** : une appli d'IA, dans le terminal ou sur le bureau, qui peut travailler avec les fichiers de ton ordinateur, comme Claude Code ou Codex. Un simple chat comme claude.ai ou ChatGPT, ou une appli de téléphone, ne suffit pas : le MJ doit pouvoir accéder aux fichiers de la campagne sur ton ordinateur. Chaque agent demande son propre abonnement et sa propre connexion : Claude Code un abonnement Claude payant, Codex une connexion ChatGPT. Tu l'installes une seule fois, depuis sa propre page : [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
 
 - **Claude Code** : dans le dossier de la campagne, écris `claude`. Quand il demande si tu fais confiance au dossier, choisis **Yes, I trust this folder** ; attention, la réponse déjà sélectionnée est *No, exit*. La campagne contient aussi un petit hook, `rpg --listen`, que la question ne montre pas : il prévient aussitôt le MJ quand tu agis depuis le dashboard.
 - **Codex** : dans le dossier de la campagne, écris `codex`, et réponds oui quand il demande si tu fais confiance au dossier. Dans son appli de bureau, vérifie dans les paramètres que les mémoires sont désactivées pour les chats du jeu.
@@ -310,6 +310,6 @@ Toutes les commandes que le MJ utilise peuvent aussi être lancées dans le doss
 
 **Aucune image n'apparaît.** Paramètres > Images indique si cet ordinateur peut en créer, et comment.
 
-**L'installation échoue, ou `rpg` ne démarre pas.** `node --version` doit afficher 22 ou plus. Sous Windows, garde RPG Engine et tes campagnes loin des chemins qui contiennent `&`.
+**L'installation échoue, ou `rpg` ne démarre pas.** `node --version` doit afficher 24 ou plus. Si Windows répond que l'exécution de scripts est désactivée, consulte [2.1](#21-what-you-need). Sous Windows, garde RPG Engine et tes campagnes loin des chemins qui contiennent `&`.
 
 **Le lien du tableau de bord a changé.** Un autre programme a pris l'adresse habituelle ; le MJ te donne le nouveau lien.
