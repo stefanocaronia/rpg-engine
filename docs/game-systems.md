@@ -100,7 +100,7 @@ load: {field: weight, limit: ["str * 15 * table(carry-by-size, size)", str * 15]
 length-unit: ft
 ```
 
-Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, a stack of a kind sold by the bundle by its pieces, how many the field `bundle` names holds, what items hold, unless an item has the field `weightless` names set to true, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules` or `simulation`; formulas read them as `load` and `load-limit`. `stages` lists what a load makes a character, the heaviest last, each with `when`, the formula that says so above 0, as `[{name: Encumbered, when: "has(rigor, simulation) * ceil(load - 5 * str)"}]`: the dashboard shows the heaviest reached, in the system's words. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
+Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, a stack of a kind sold by the bundle by its pieces, how many the field `bundle` names holds, what items hold, unless an item has the field `weightless` names set to true, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules` or `simulation`, or a custom one's item load at either; formulas read them as `load` and `load-limit`. `stages` lists what a load makes a character, the heaviest last, each with `when`, the formula that says so above 0, as `[{name: Encumbered, when: "has(rigor, simulation) * ceil(load - 5 * str)"}]`: the dashboard shows the heaviest reached, in the system's words. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
 
 ### travel
 
@@ -243,7 +243,7 @@ upkeep:
 burning: {Torch: {lasts: 1h}, Lamp: {lasts: 6h, spends: Oil}}
 ```
 
-Under the rigor rules, each midnight `advance` passes, a party member with a sheet outside a settlement (a place of kind city, town, village or inn, or one inside it) spends a piece of `daily`; without one it counts a day in `short`, and past the days `grace` gives raises `worsens` by one; `water` is said, never counted. In a settlement, a member pays from `money` a day of the `lifestyle` it keeps, at its `costs`; without one, or without the coins, the line says what to do. An effect named after something in `burning` spends one of it, or of what it `spends`, from what the holder carries, and lasts as long as it burns.
+Under the rigor rules or simulation (under a custom one, its item food), each midnight `advance` passes, a party member with a sheet outside a settlement (a place of kind city, town, village or inn, or one inside it) spends a piece of `daily`; without one it counts a day in `short`, and past the days `grace` gives raises `worsens` by one; `water` is said, never counted. In a settlement, a member pays from `money` a day of the `lifestyle` it keeps, at its `costs`; without one, or without the coins, the line says what to do. An effect named after something in `burning` spends one of it, or of what it `spends`, from what the holder carries, and lasts as long as it burns.
 
 ### bonds
 
@@ -364,7 +364,7 @@ always-in: {equipped: [Unarmed Strike]}
 - Names are ASCII letters, digits and single hyphens: `level-1` is a field; write `level - 1`.
 - A list item is a name with an optional number: `"[[Fighter]] 3"`, `Perception +3`.
 - A field reads as a number when it is one, a counter, `+2`, or a measure such as `25 ft` (a number and a word of up to three letters), even with a note in brackets after it, as `40 ft (hover)`.
-- Besides the fields, a formula reads `effects` as the names of the page's effects, one written in the campaign's language by its English name from `words` (`has(effects, Grappled)` finds `Afferrato`), `rigor` as the campaign's, and `load` and `load-limit` (see `load`).
+- Besides the fields, a formula reads `effects` as the names of the page's effects, one written in the campaign's language by its English name from `words` (`has(effects, Grappled)` finds `Afferrato`), `rigor` as the campaign's (under a custom rigor, the level of its item load), and `load` and `load-limit` (see `load`).
 - A formula has no value when a field it reads is missing; then the page's own value is read.
 - A page is read in layers: its bases (`creature`, `item`), the page, its effects, then what the system works out.
 

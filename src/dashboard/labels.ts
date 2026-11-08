@@ -159,6 +159,13 @@ export function nameHue(name: string): number
     return [...name].reduce((hash, character) => (hash * 31 + (character.codePointAt(0) ?? 0)) % 360, 7);
 }
 
+/** A rate of game time to real time as the engine writes it, 2h per 1d, as its two durations in the page's words; undefined for any other text. */
+export function rateParts(text: string): { game: string; real: string; } | undefined
+{
+    const [game, real, ...more] = text.trim().split(/\s+per\s+/i).map(durationText);
+    return game === undefined || real === undefined || more.length > 0 ? undefined : { game, real };
+}
+
 /** A duration as the engine writes it, 1h 30m or 30s, in the page's words: 1 ora 30 minuti; undefined for any other text. */
 function durationText(text: string): string | undefined
 {
@@ -253,6 +260,7 @@ export function settingLabel(name: string): string
         lethality: t("Lethality"),
         saves: t("Saves"),
         rigor: t("Rigor"),
+        "between-sessions": t("Between sessions"),
         ruleset: t("Ruleset"),
         mentor: t("Mentor"),
         learned: t("Learned"),
@@ -276,6 +284,33 @@ export function settingLabel(name: string): string
         system: t("Game system"),
     };
     return labels[name] ?? phraseLabel(systemWord("words", name) ?? fieldLabel(name));
+}
+
+/** The value custom of difficulty or rigor, each part at its own level (T-132): two phrases, as a language may give it the gender of the setting it qualifies. */
+export function customLabel(setting: string): string
+{
+    return setting === "rigor" ? t("Customized") : t("Custom");
+}
+
+/** A part of a custom difficulty or rigor, in the player's words, with what it is (T-132); undefined for one the page does not know. */
+export function leveledItemLabel(item: string): { name: string; about: string; } | undefined
+{
+    const labels: Record<string, { name: string; about: string; }> = {
+        fights: { name: t("Fights"), about: t("how much a fight costs you") },
+        foes: { name: t("Foes"), about: t("how cleverly and stubbornly they fight") },
+        clues: { name: t("Clues"), about: t("how plain they are, and how many") },
+        resources: { name: t("Resources"), about: t("treasure, supplies and prices") },
+        encounters: { name: t("Random encounters"), about: t("how often they happen on the way") },
+        clocks: { name: t("Threat clocks"), about: t("how fast the dangers left alone move on") },
+        "take-backs": { name: t("Take-backs"), about: t("when you may take back a choice or a roll") },
+        food: { name: t("Food and water"), about: t("what you eat and drink each day") },
+        light: { name: t("Light sources"), about: t("what lights your way, as long as it lasts") },
+        load: { name: t("Load"), about: t("what you carry, and how it slows you") },
+        fatigue: { name: t("Fatigue"), about: t("long marches and sleepless nights") },
+        travel: { name: t("Travel"), about: t("how long the way takes, and getting lost") },
+        supplies: { name: t("Ammunition and components"), about: t("what your weapons and powers use up") },
+    };
+    return labels[item];
 }
 
 /** A game system's name as the top of the page shows it, in its words when it gives one, as libero for free; else its name, as 5e (D-521). */
@@ -341,6 +376,9 @@ export function valueLabel(value: string): string
         always: t("Everyone"),
         "behind the screen": t("Behind the screen"),
         "in view": t("In view"),
+        stops: t("Stops"),
+        "1d per 7d": t("A day a week"),
+        "1d per 1d": t("Real time"),
     };
     return labels[value] ?? itemLabel(value);
 }

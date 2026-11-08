@@ -8,7 +8,7 @@ import type { PlayerSetting, ShownWidget, WidgetPage, WidgetSpot } from "./data.
 import { coinDesignPref, coinDesigns, coinLook, coinMetals, coinPref, diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "./dice/sets.ts";
 import { CoinFace } from "./faces.tsx";
 import { DieSwatch, Icon } from "./icons.tsx";
-import { phraseLabel, settingLabel, valueLabel } from "./labels.ts";
+import { customLabel, itemLabel, leveledItemLabel, phraseLabel, rateParts, settingLabel, valueLabel } from "./labels.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
 import { WidgetsContext } from "./packages/widgets.tsx";
 import { PageHead } from "./pages.tsx";
@@ -21,7 +21,7 @@ import { pickTheme, shownTheme } from "./theme.ts";
 // The groups of the campaign's settings, in order; a setting the game system adds goes with the dice, as whether the master's rolls are shown (D-287). How the
 // master plays holds who voices the characters (D-490) and how much the master thinks (D-462) too.
 const groups: { names: string[]; system?: true; }[] = [
-    { names: ["ruleset", "difficulty", "lethality", "saves", "rigor"] },
+    { names: ["ruleset", "difficulty", "lethality", "saves", "rigor", "between-sessions"] },
     { names: ["mentor", "learned"] },
     { names: ["prose", "story", "author", "style", "voices", "effort"] },
     { names: ["dice", "master-rolls", "units"], system: true },
@@ -67,7 +67,7 @@ export function SettingsView({ version, several = false }: { version: number; se
         return said;
     };
 
-    const known = new Set(groups.flatMap((group) => group.names));
+    const known = new Set([...groups.flatMap((group) => group.names), ...Object.values(customParts)]);
     return (
         <section class="settings" aria-labelledby="settings-title">
             <PageHead section="settings" id="settings-title" />
@@ -81,7 +81,16 @@ export function SettingsView({ version, several = false }: { version: number; se
                 return (
                     <section key={group.names[0]} class="settings-group">
                         <h3>{groupTitle(index)}</h3>
-                        {shown.map((setting) => <SettingRow key={setting.name} setting={setting} off={offBy(setting, settings)} several={several} onChange={change} />)}
+                        {shown.map((setting) => (
+                            <SettingRow
+                                key={setting.name}
+                                setting={setting}
+                                off={offBy(setting, settings)}
+                                several={several}
+                                parts={settings.find((one) => one.name === customParts[setting.name])}
+                                onChange={change}
+                            />
+                        ))}
                     </section>
                 );
             })}
@@ -111,33 +120,23 @@ function offBy(setting: PlayerSetting, settings: PlayerSetting[]): string | unde
  * One setting: its name and what it is, its values to choose from, a list's items to add and take off, the player's own words, or the language; what the chosen
  * value means; why it counts for nothing now, its values still to choose.
  */
-function SettingRow({ setting, off, several = false, onChange }: { setting: PlayerSetting; off?: string; several?: boolean; onChange(change: SettingChange): Promise<string | undefined>; })
+function SettingRow({ setting, off, several = false, parts, onChange }: {
+    setting: PlayerSetting;
+    off?: string;
+    several?: boolean;
+    parts?: PlayerSetting;
+    onChange(change: SettingChange): Promise<string | undefined>;
+})
 {
-    // The value just picked shows at once, until the setting is read again.
-    const [picked, setPicked] = useState<string>();
-    const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; } | undefined>(undefined);
     const said = useSaid();
-    const value = picked ?? setting.value;
     const id = `setting-${idOf(setting.name)}`;
     // The version of the rules changes the game's rules: it asks first (D-514 (2)).
     const [asking, setAsking] = useState<string>();
     const rules = setting.name === rulesetSetting;
-
-    useEffect(() => setPicked(undefined), [setting]);
-
-    // A choice the arrows left still resting goes when the section closes.
-    useEffect(() => () => {
-        if (resting.current !== undefined) {
-            clearTimeout(resting.current.timer);
-
-            // Never the rules without the player's yes.
-            if (!rules) {
-                void onChange({ setting: setting.name, value: resting.current.choice });
-            }
-        }
-    }, []);
-
     const row = useRef<HTMLDivElement>(null);
+    // A choice the arrows left still resting goes when the section closes; never the rules without the player's yes.
+    const { picked, setPicked, choose } = usePicked(setting, (choice) => send({ setting: setting.name, value: choice }), rules ? undefined : (choice) => void onChange({ setting: setting.name, value: choice }));
+    const value = picked ?? setting.value;
 
     // The focus on the value chosen, once the dialog that asked is gone.
     const focusChosen = (): void => {
@@ -166,39 +165,35 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
         focusChosen();
     };
 
-    // A click chooses at once; the arrows show each value and send the one they rest on, so that the game is changed once.
-    const choose = (choice: string, byKey: boolean): void => {
-        setPicked(choice);
-        clearTimeout(resting.current?.timer);
-        resting.current = undefined;
+    // A value written in the chat or by hand that the page does not offer, as a rate of its own: beside the others, chosen, and still there once another is.
+    const unoffered = setting.value !== undefined && setting.choices?.some((choice) => choice.value === setting.value) === false ? setting.value : undefined;
+    const [kept, setKept] = useState(unoffered);
+    const written = unoffered ?? kept;
 
-        if (!byKey) {
-            send({ setting: setting.name, value: choice });
-            return;
+    useEffect(() => {
+        if (unoffered !== undefined) {
+            setKept(unoffered);
         }
+    }, [unoffered]);
 
-        const timer = setTimeout(() => {
-            resting.current = undefined;
-            send({ setting: setting.name, value: choice });
-        }, 700);
-        resting.current = { choice, timer };
-    };
-
-    const chosen = setting.choices?.find((choice) => choice.value === value);
-    const unset = setting.most === undefined && (setting.choices === undefined ? setting.items === undefined && setting.value === undefined : chosen === undefined);
-    const described = [`${id}-about`, ...(chosen?.means === undefined ? [] : [`${id}-means`]), ...(off === undefined ? [] : [`${id}-off`])].join(" ");
+    const choices = setting.choices === undefined ? undefined : [...setting.choices, ...(written === undefined ? [] : [{ value: written }])];
+    const label = (choice: { value: string; means?: string; }): string => (choice.value === written ? writtenLabel(setting.name, choice.value) : choiceLabel(setting.name, choice));
+    const chosen = choices?.find((choice) => choice.value === value);
+    const means = chosen === undefined ? undefined : chosen.value === written ? writtenMeans(setting.name, chosen.value) : chosen.means === undefined ? undefined : meansText(setting.name, chosen.value, chosen.means, several);
+    const unset = setting.most === undefined && (choices === undefined ? setting.items === undefined && setting.value === undefined : chosen === undefined);
+    const described = [`${id}-about`, ...(means === undefined || rules ? [] : [`${id}-means`]), ...(off === undefined ? [] : [`${id}-off`])].join(" ");
     return (
         <div ref={row} class={off === undefined ? "setting" : "setting off"}>
             <div class="setting-what">
                 <span class="setting-name" id={id}>{settingLabel(setting.name)}</span>
                 <span class="setting-about" id={`${id}-about`}>{t(setting.about)}</span>
             </div>
-            {setting.choices !== undefined
+            {choices !== undefined
                 ? (
                     <Segmented
                         label={id}
                         described={described}
-                        options={setting.choices.map((choice) => ({ value: choice.value, label: choiceLabel(setting.name, choice) }))}
+                        options={choices.map((choice) => ({ value: choice.value, label: label(choice) }))}
                         value={value}
                         onPick={choose}
                     />
@@ -210,16 +205,17 @@ function SettingRow({ setting, off, several = false, onChange }: { setting: Play
                 : <ListSetting setting={setting} label={id} onChange={send} />}
             <div class="setting-after">
                 {off !== undefined && <p class="setting-off" id={`${id}-off`}>{off}</p>}
-                {chosen?.means !== undefined && !rules && (
+                {chosen !== undefined && means !== undefined && !rules && (
                     <p class="setting-means" id={`${id}-means`}>
-                        <strong>{valueLabel(chosen.value)}:</strong> {meansText(setting.name, chosen.value, chosen.means, several)}
+                        <strong>{label(chosen)}:</strong> {means}
                     </p>
                 )}
                 {setting.name === "language" && value !== undefined && <p class="setting-means">{languageLine(value)}</p>}
-                {unset && <p class="setting-unset">{setting.choices === undefined ? t("Not answered yet: add them here, or the master asks you.") : t("Not chosen yet: choose here, or the master asks you.")}</p>}
+                {unset && <p class="setting-unset">{choices === undefined ? t("Not answered yet: add them here, or the master asks you.") : t("Not chosen yet: choose here, or the master asks you.")}</p>}
                 {setting.note !== undefined && <SettingNote note={setting.note} />}
                 <p class={said.now?.problem ? "setting-said problem" : "setting-said"} role="status">{said.now?.text}</p>
             </div>
+            {value === customValue && parts?.entries !== undefined && <LeveledParts setting={parts} labelledBy={id} onChange={onChange} />}
             {asking !== undefined && (
                 <Confirm title={t("Play by {rules}?", { rules: choiceLabel(setting.name, setting.choices?.find((choice) => choice.value === asking) ?? { value: asking }, false) })} onClose={keep}>
                     <p>{t("The game follows these rules from the master's next move: the sheets are worked out with them, and the master reads them.")}</p>
@@ -253,12 +249,115 @@ const rulesetSetting = "ruleset";
  */
 function choiceLabel(setting: string, choice: { value: string; means?: string; }, capital = true): string
 {
+    if (choice.value === customValue && customParts[setting] !== undefined) {
+        return customLabel(setting);
+    }
+
     if (setting !== rulesetSetting || choice.means === undefined) {
         return valueLabel(choice.value);
     }
 
     const means = t(choice.means);
     return capital ? phraseLabel(means) : means;
+}
+
+/** A value the page does not offer, on its button: a rate of the time between sessions in words, 2 hours every 1 day (D-133); any other as written. */
+function writtenLabel(setting: string, value: string): string
+{
+    const rate = setting === "between-sessions" ? rateParts(value) : undefined;
+    return rate === undefined ? valueLabel(value) : t("{game} every {real}", rate);
+}
+
+/** What a value the page does not offer means: a rate of the time between sessions as the others say it, or that it reads as none (D-133); undefined for another setting's. */
+function writtenMeans(setting: string, value: string): string | undefined
+{
+    if (setting !== "between-sessions") {
+        return undefined;
+    }
+
+    const rate = rateParts(value);
+    return rate === undefined
+        ? t("written in the campaign, but it reads as no time: the story's time stops until you choose one here")
+        : t("{game} of the story for every {real} you are away: when you come back, at your first move the master lets it pass and tells what the world did meanwhile", rate);
+}
+
+// The value of difficulty and rigor whose parts each have a level of their own, and the setting that holds them, which shows under its row, never as one (T-132).
+const customValue = "custom";
+const customParts: Record<string, string> = { difficulty: "custom-difficulty", rigor: "custom-rigor" };
+
+/**
+ * A value chosen at once by a click, by the arrows once they rest on it, so that the game is changed once; the one picked shows until the setting is read
+ * again (`read`), and one the arrows left resting goes with `leave` when the row does.
+ */
+function usePicked(read: unknown, send: (choice: string) => void, leave?: (choice: string) => void)
+{
+    const [picked, setPicked] = useState<string>();
+    const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; } | undefined>(undefined);
+
+    useEffect(() => setPicked(undefined), [read]);
+
+    useEffect(() => () => {
+        if (resting.current !== undefined) {
+            clearTimeout(resting.current.timer);
+            leave?.(resting.current.choice);
+        }
+    }, []);
+
+    const choose = (choice: string, byKey: boolean): void => {
+        setPicked(choice);
+        clearTimeout(resting.current?.timer);
+        resting.current = undefined;
+
+        if (!byKey) {
+            send(choice);
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            resting.current = undefined;
+            send(choice);
+        }, 700);
+        resting.current = { choice, timer };
+    };
+
+    return { picked, setPicked, choose };
+}
+
+/** The parts of a custom difficulty or rigor under its row, each with its name, what it is and its levels, as the setting's own values (T-132). */
+function LeveledParts({ setting, labelledBy, onChange }: { setting: PlayerSetting; labelledBy: string; onChange(change: SettingChange): Promise<string | undefined>; })
+{
+    const id = `setting-${idOf(setting.name)}`;
+    return (
+        <div class="setting-parts" role="group" aria-labelledby={`${labelledBy} ${id}`}>
+            <span hidden id={id}>{t("part by part")}</span>
+            {(setting.entries ?? []).map((entry) => <LeveledPart key={entry.name} setting={setting} part={entry} onChange={onChange} />)}
+        </div>
+    );
+}
+
+function LeveledPart({ setting, part, onChange }: { setting: PlayerSetting; part: { name: string; value: string; }; onChange(change: SettingChange): Promise<string | undefined>; })
+{
+    const said = useSaid();
+    const id = `setting-${idOf(setting.name)}-${idOf(part.name)}`;
+    const label = leveledItemLabel(part.name);
+    const send = (level: string): Promise<string | undefined> => onChange({ setting: setting.name, value: `${part.name}: ${level}` });
+    const { picked, choose } = usePicked(setting, (level) => void send(level).then(said.show), (level) => void send(level));
+    return (
+        <div class="setting-part">
+            <div class="setting-what">
+                <span class="setting-name" id={id}>{label?.name ?? itemLabel(part.name)}</span>
+                <span class="setting-about" id={`${id}-about`}>{label?.about}</span>
+            </div>
+            <Segmented
+                label={id}
+                described={`${id}-about`}
+                options={(setting.choices ?? []).map((choice) => ({ value: choice.value, label: valueLabel(choice.value) }))}
+                value={picked ?? part.value}
+                onPick={choose}
+            />
+            <p class={said.now?.problem ? "setting-said problem" : "setting-said"} role="status">{said.now?.text}</p>
+        </div>
+    );
 }
 
 /** What a change said, in its row: saved for a few seconds, what went wrong until the next change. */

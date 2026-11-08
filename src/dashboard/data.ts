@@ -582,6 +582,8 @@ export interface PlayerSetting
     note?: { text: string; fix?: true; };
     /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
     most?: number;
+    /** The parts of a custom difficulty or rigor, each with its level, one of the choices (T-132). */
+    entries?: { name: string; value: string; }[];
 }
 
 /** A page the character knows, as World lists it (VIEW-11): its type, a place's kind and the places that hold it, the opening of its text, its picture. */

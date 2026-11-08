@@ -7,11 +7,9 @@ import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { readYamlFile, readYamlValues, writeYamlFile } from "../core/yaml-file.ts";
 import { campaignFileName } from "./find-campaign.ts";
+import { type CountedByGame, customLevel, difficulties, difficultyItems, levelMeaning, rigorItems, rigors } from "./levels.ts";
 
 const settingsHold = 'settings, such as "name: ..."';
-
-/** How hard the world plays (D-13, D-141). */
-export const difficulties = ["story", "easy", "normal", "hard", "brutal"] as const;
 
 /** What a fall means (D-13, D-141): the character never dies, dies only when it matters, or as the dice say. */
 export const lethalities = ["narrative", "epic", "dice"] as const;
@@ -19,49 +17,17 @@ export const lethalities = ["narrative", "epic", "dice"] as const;
 /** When the game may go back (D-55): never, to the last end of a scene once the player character dies, or to any save, which the player may also ask for. */
 export const saveModes = ["permadeath", "checkpoint", "free"] as const;
 
-/** How closely the rules are followed, apart from difficulty (D-42): the master glosses over them, as they are written, or beyond them. */
-export const rigors = ["smooth", "rules", "simulation"] as const;
-
-/** What each difficulty means in play, from the GDD's table, which status and config give for the chosen one (D-263); fights in the words of a budget of low, moderate and high (D-266). */
-const difficultyMeanings: Record<(typeof difficulties)[number], string> = {
-    story: "fights low, yet each asks one choice that counts; the plain approach wins at a small cost, the risk falling on goals and allies; foes naive, ignoring the place, quick to flee; "
-        + "clues obvious, four or more; resources plentiful; random encounters rare; threat clocks slow: one of them a step every other day; you may soften your own rolls; take-backs granted whenever asked",
-    easy: "fights low to moderate; the plain approach wins at a cost; foes with simple tactics, using the plainest feature of the place; clues plain; resources generous; "
-        + "random encounters rare; threat clocks slow: one of them a step every other day; small take-backs granted gladly",
-    normal: "fights moderate to high; two to four between full rests; the plain approach wins at a real cost, a good choice cheaply; "
-        + "foes with sensible tactics, using the place, normal morale; resources standard (treasure, supplies, prices); random encounters normal; "
-        + "threat clocks at their pace: one of them a step each day; a take-back now and then, when little hangs on it",
-    hard: "fights high and beyond; the plain approach may lose, a good choice wins at a cost; foes smart (focus, control), taking the place first, tenacious; clues subtle; "
-        + "resources scarce; random encounters frequent; threat clocks fast: each of them a step each day; take-backs rare",
-    brutal: "fights far beyond high; the plain approach loses, only good choices win; foes optimized (prepared ground, retreats, ambushes, finishing the fallen), fanatical; "
-        + "clues subtle; resources very scarce; random encounters frequent; threat clocks fast: each of them a step each day; rests at their harshest; no take-backs",
-};
-
-/** What each rigor means in play (D-42, D-263): what the master counts, which status and config give for the chosen one. */
-const rigorMeanings: Record<(typeof rigors)[number], string> = {
-    smooth: "you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them",
-    rules: "as written: charge with change what is used up; encumbrance, fatigue and the like as the rules say; warn before something runs out, and once it has, the rule applies",
-    simulation: "as rules, and beyond what is written: wear, spoilage, weather and the like",
-};
-
-/** What the game system counts itself (UPK-1, UPK-3): the day's food, and what burns as it is lit, by its first name; what a rigor's meaning adds of them. */
-export interface CountedByGame
-{
-    upkeep: boolean;
-    burning?: string;
-}
-
 /**
- * What the chosen difficulty, rigor or mentor means, as status and config give it, the rigor with what the game counts itself; undefined for another setting
- * or a value it does not take.
+ * What the chosen difficulty, rigor or mentor means, as status and config give it, the rigor with what the game counts itself, a custom one with the levels of
+ * its items as custom-difficulty or custom-rigor writes them (T-132); undefined for another setting or a value it does not take.
  */
-export function settingMeaning(name: string, value: unknown, counted?: CountedByGame): string | undefined
+export function settingMeaning(name: string, value: unknown, counted?: CountedByGame, custom?: unknown): string | undefined
 {
-    if (name === "rigor" && typeof value === "string") {
-        return rigorMeaning(value, counted);
+    if ((name === "difficulty" || name === "rigor") && typeof value === "string") {
+        return levelMeaning(name, value, counted, custom);
     }
 
-    const meanings: Record<string, Record<string, string> | undefined> = { difficulty: difficultyMeanings, rigor: rigorMeanings, mentor: mentorMeanings, ...styleMeanings };
+    const meanings: Record<string, Record<string, string> | undefined> = { mentor: mentorMeanings, ...styleMeanings };
     const own = Object.hasOwn(meanings, name) ? meanings[name] : undefined;
     return typeof value === "string" && own !== undefined && Object.hasOwn(own, value) ? own[value] : undefined;
 }
@@ -367,25 +333,6 @@ export function checkSettingName(name: string): SettingName
     return name as SettingName;
 }
 
-/** A rigor's meaning with what the game counts itself said (review of 17 October): a game that counts no food is never promised it. */
-function rigorMeaning(rigor: string, counted: CountedByGame | undefined): string | undefined
-{
-    const meaning = (rigorMeanings as Record<string, string>)[rigor];
-    const burns = counted?.burning === undefined ? "" : `an effect named after what burns, such as ${counted.burning}, spends it as it is lit`;
-
-    if (meaning === undefined || rigor === "simulation" || counted === undefined) {
-        return meaning;
-    }
-
-    if (rigor === "smooth") {
-        return burns === "" ? meaning : `${meaning}; a light you put on as an effect, as a ${counted.burning}, still spends one`;
-    }
-
-    const food = counted.upkeep ? "advance spends the day's food outside a settlement; water, lifestyle and wages are yours to charge" : "";
-    const counts = [food, burns].filter((part) => part !== "").join("; ");
-    return counts === "" ? meaning : meaning.replace("charge with change what is used up; ", `charge with change what is used up; ${counts}; `);
-}
-
 /** How much the master teaches the game, out of the story (D-347): the story alone, a hint now and then, or each rule as it first comes up. */
 export const mentorWays = ["off", "hints", "tutorial"] as const;
 
@@ -431,10 +378,10 @@ export const storyWays = ["situations", "arcs", "episodes", "mystery"] as const;
 
 /** The settings with a closed list of values, each with them: those a game system may offer only some of (DAT-16). */
 export const closedSettings: Partial<Record<SettingName, readonly string[]>> = {
-    difficulty: difficulties,
+    difficulty: [...difficulties, customLevel],
     lethality: lethalities,
     saves: saveModes,
-    rigor: rigors,
+    rigor: [...rigors, customLevel],
     mentor: mentorWays,
     dice: diceWays,
     "master-rolls": masterRollWays,
@@ -495,12 +442,22 @@ export const settingsSchema = z.object({
     story: z.enum(storyWays).optional().describe("how the master builds what they invent: situations, arcs, episodes or mystery; a written adventure keeps its own"),
     author: oneLine(styleTextLengths.author).optional().describe("an author the master writes like, as the player named them: their way, never their sentences, names or places"),
     style: oneLine(styleTextLengths.style).optional().describe("the player's own wishes for how the master writes, in a few words, such as third person, past tense"),
-    difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
+    difficulty: z.enum([...difficulties, customLevel]).optional().describe(`how hard the world plays: ${difficulties.join(", ")}, or custom, each item at its own level in custom-difficulty`),
     lethality: z.enum(lethalities).optional().describe("what a fall means: narrative (the character never dies), epic (only when it matters) or dice (the dice decide)"),
     saves: z.enum(saveModes).optional().describe(
         "when the game may go back: permadeath (never, but to the start, the campaign starting over), checkpoint (to the last end of a scene, once the player character dies) or free (to any save, and saves when the player asks)",
     ),
-    rigor: z.enum(rigors).optional().describe("how closely travel, fatigue, food and the like follow the rules: smooth (the master glosses over them), rules (as written) or simulation (beyond them)"),
+    rigor: z.enum([...rigors, customLevel]).optional().describe(
+        "how closely travel, fatigue, food and the like follow the rules: smooth (the master glosses over them), rules (as written), simulation (beyond them), "
+            + "or custom, each item at its own level in custom-rigor",
+    ),
+    // The levels of the items of a custom difficulty or rigor (T-132): read only while it is custom; an item not written takes the default.
+    "custom-difficulty": z.partialRecord(z.enum(difficultyItems), z.enum(difficulties)).optional().describe(
+        `the level of each item of the difficulty custom, by item: ${difficultyItems.join(", ")}, each ${difficulties.join(", ")}; an item not written plays normal`,
+    ),
+    "custom-rigor": z.partialRecord(z.enum(rigorItems), z.enum(rigors)).optional().describe(
+        `the level of each item of the rigor custom, by item: ${rigorItems.join(", ")}, each ${rigors.join(", ")}; an item not written plays smooth`,
+    ),
     dice: z.enum(diceWays).optional().describe("the player character's dice: digital (rpg rolls them) or physical (the player rolls their own and tells the values)"),
     "master-rolls": z.enum(masterRollWays).optional().describe(
         "the master's rolls for foes and anyone else outside the party: behind the screen (roll hides them, the master telling only the outcome) or in view (roll shows them); "
@@ -562,8 +519,8 @@ export const listSettingNames: SettingName[] = ["lines", "veils", "table", "prec
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
 export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values", "condition-icons"];
 
-/** The settings that hold entries by name: what the campaign adds to its game system, and where the dashboard shows the extensions' widgets (D-502). */
-export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets"];
+/** The settings that hold entries by name: what the campaign adds to its game system, where the dashboard shows the extensions' widgets (D-502), and the items of a custom difficulty or rigor (T-132). */
+export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets", "custom-difficulty", "custom-rigor"];
 
 /**
  * What only the setup asks (D-241, MOD-3, D-347, D-287): how much the master teaches the game, whether the master's rolls are shown, how the companions come,

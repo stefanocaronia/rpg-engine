@@ -1,6 +1,6 @@
 // The campaign's world and game system as the commands read them: the system with the layers over it, the settings it plays with, and the world built from both.
 import { join, resolve } from "node:path";
-import { campaignFileName, type CountedByGame, readCampaignData, readOneSetting, readTextSetting } from "../../campaign/index.ts";
+import { campaignFileName, type CountedByGame, customLevel, customLevels, customSettings, readCampaignData, readOneSetting, readTextSetting } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { ourSystems } from "../../core/package-declarations.ts";
 import type { Problem } from "../../core/problem.ts";
@@ -336,14 +336,17 @@ export function languageName(code: string): string
 export function countedByGame(system: GameSystem | undefined): CountedByGame
 {
     const burning = Object.keys(system?.burning ?? {})[0];
-    return { upkeep: system?.upkeep !== undefined, ...(burning === undefined ? {} : { burning }) };
+    return { upkeep: system?.upkeep !== undefined, lifestyle: system?.upkeep?.lifestyle !== undefined, ...(burning === undefined ? {} : { burning }) };
 }
 
-/** The rigor as the game plays it (DAT-16): with the values of the system's settings as campaign.yaml writes them, as the world reads before its players. */
+/**
+ * The rigor as the game plays it (DAT-16): with the values of the system's settings as campaign.yaml writes them, as the world reads before its players; a custom
+ * one as the level of its load, the item formulas read it for (T-132).
+ */
 function rigorPlayed(root: string, system: GameSystem | undefined): string | undefined
 {
     const value = engineSettingValue(system, (setting) => systemSettingValue(root, setting), "rigor", readTextSetting(root, "rigor"));
-    return typeof value === "string" ? value : undefined;
+    return value === customLevel ? customLevels("rigor", readOneSetting(root, customSettings.rigor)).load : typeof value === "string" ? value : undefined;
 }
 
 /**

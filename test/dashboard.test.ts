@@ -12,14 +12,15 @@ import type { Context, PicturesReady, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { readAddress, sectionAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
-import type { Asked, JournalFact, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
+import type { Asked, JournalFact, PlayerSetting, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/game-words.ts";
-import { checkOf, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, phraseLabel, shownText } from "../src/dashboard/labels.ts";
+import { checkOf, customLabel, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, leveledItemLabel, phraseLabel, shownText, valueLabel } from "../src/dashboard/labels.ts";
 import { arrangedGroups, columnsByHeight, endedQuests, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
-import { setSystemWords } from "../src/dashboard/text.ts";
+import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/server/dashboard/index.ts";
 import { dashboardOpener } from "../src/server/mcp.ts";
+import { pageFolder } from "./i18n/phrases.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
 const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
@@ -145,6 +146,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             "lethality",
             "saves",
             "rigor",
+            "between-sessions",
             "mentor",
             "learned",
             "prose",
@@ -199,6 +201,59 @@ describe("view as data (VIEW-1, D-272)", () => {
         const refused = await runCommandLine(["view", "--settings", "--map"], context);
         expect(refused.exitCode).not.toBe(0);
         expect(refused.output).toContain("Give settings alone");
+    });
+
+    it("gives the game time between sessions with the few ways the page offers, one that plays the same by their words, and another as written (D-133)", async () => {
+        const between = async () => (JSON.parse(await ok("view", "--settings", "--json")) as { settings: { name: string; }[]; }).settings.find((setting) => setting.name === "between-sessions");
+        expect(await between()).toEqual({
+            name: "between-sessions",
+            about: "whether the story's time runs while you are away, from one session to the next",
+            value: "stops",
+            choices: [
+                { value: "stops", means: "the world waits for you: the story picks up at the moment you left it" },
+                { value: "1d per 7d", means: expect.stringMatching(/^a day of the story for each week you are away: /) },
+                { value: "1d per 1d", means: expect.stringMatching(/^a day of the story for each day you are away: /) },
+            ],
+        });
+        await ok("config", "between-sessions", "2d per 14d");
+        expect(await between()).toMatchObject({ value: "1d per 7d" });
+        await ok("config", "between-sessions", "STOPS");
+        expect(await between()).toMatchObject({ value: "stops" });
+        await ok("config", "between-sessions", "2h per 1d");
+        expect(await between()).toMatchObject({ value: "2h per 1d" });
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("between-sessions: 2h per 1d\n");
+    });
+
+    it("gives the parts of a custom difficulty or rigor under it only while it is played, each at its level, and the page names them all, custom by its setting's gender (T-132)", async () => {
+        const settings = async () => (JSON.parse(await ok("view", "--settings", "--json")) as { settings: PlayerSetting[]; }).settings;
+        expect((await settings()).map((setting) => setting.name)).not.toContain("custom-rigor");
+        await ok("config", "rigor", "custom");
+        await ok("config", "difficulty", "custom");
+        const read = await settings();
+        const names = read.map((setting) => setting.name);
+        expect(names.slice(names.indexOf("difficulty"), names.indexOf("difficulty") + 2)).toEqual(["difficulty", "custom-difficulty"]);
+        expect(names.slice(names.indexOf("rigor"), names.indexOf("rigor") + 2)).toEqual(["rigor", "custom-rigor"]);
+        const rigor = read.find((setting) => setting.name === "custom-rigor");
+        expect(rigor).toMatchObject({ choices: [{ value: "smooth" }, { value: "rules" }, { value: "simulation" }] });
+        expect(rigor?.entries?.[0]).toEqual({ name: "food", value: "smooth" });
+        const parts = read.flatMap((setting) => setting.entries ?? []).map((entry) => entry.name);
+        expect(parts).toHaveLength(13);
+        const levels = read.flatMap((setting) => (setting.name.startsWith("custom-") ? setting.choices ?? [] : [])).map((choice) => choice.value);
+        const italian = (): Promise<Record<string, string>> => Promise.resolve(JSON.parse(readFileSync(join(pageFolder, "i18n", "it.json"), "utf8")) as Record<string, string>);
+
+        try {
+            // Each part in the player's words with what it is, never the engine's name; each level as the setting's own values say it.
+            expect(parts.filter((part) => leveledItemLabel(part) === undefined)).toEqual([]);
+            expect([customLabel("difficulty"), customLabel("rigor")]).toEqual(["Custom", "Customized"]);
+            await setLanguage("it", italian);
+            expect(levels.filter((level) => valueLabel(level) === itemLabel(level))).toEqual([]);
+            expect([customLabel("difficulty"), customLabel("rigor"), leveledItemLabel("take-backs")?.name, leveledItemLabel("light")?.name]).toEqual(["Personalizzata", "Personalizzato", "Ripensamenti", "Luce"]);
+        } finally {
+            await setLanguage("en");
+        }
+
+        await ok("config", "rigor", "rules");
+        expect((await settings()).map((setting) => setting.name)).not.toContain("custom-rigor");
     });
 
     it("works the same for a counter below 0: nerve from -6, with the maximum the scars leave", async () => {
@@ -1148,6 +1203,40 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/config", { setting: "lines", add: "   " })).status).toBe(400);
         expect(dashboard.news().lines).toEqual([]);
         expect(await ok("config", "difficulty")).toContain("difficulty: hard");
+    });
+
+    it("sets the game time between sessions from the page, and tells the master what it means for them; a rate that does not read changes nothing (D-133)", async () => {
+        expect((await send("POST", "/api/config", { setting: "between-sessions", value: "1d per 7d" })).status).toBe(202);
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("between-sessions: 1d per 7d\n");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", by: "player", data: { setting: "between-sessions", value: "1d per 7d" } });
+        expect(dashboard.news().lines).toEqual([
+            "The player set between-sessions to 1d per 7d on the dashboard: the game time runs 1d for each 7d of real time between sessions: after a pause, status says how much to let pass with "
+            + "advance before you open the new session, and the opening tells what the world did meanwhile. Play by it from now on.",
+        ]);
+        // A rate of its own, as written in the chat, is sent back as it is when the player chooses it again.
+        expect((await send("POST", "/api/config", { setting: "between-sessions", value: "2h per 1d" })).status).toBe(202);
+        expect(dashboard.news().lines[0]).toMatch(/^The player set between-sessions to 2h per 1d on the dashboard: the game time runs 2h for each 1d of real time/);
+        expect((await send("POST", "/api/config", { setting: "between-sessions", value: "stops" })).status).toBe(202);
+        expect(dashboard.news().lines).toEqual([
+            "The player set between-sessions to stops on the dashboard: no game time passes between sessions: the next one opens at the moment this one ends. Play by it from now on.",
+        ]);
+        const refused = await send("POST", "/api/config", { setting: "between-sessions", value: "a week" });
+        expect(refused.status).toBe(400);
+        expect(JSON.parse(refused.body).error).toContain('"a week" is no between-sessions');
+        expect(dashboard.news().lines).toEqual([]);
+    });
+
+    it("sets a part of a custom rigor from the page as the page sends it, and refuses one while the rigor is not custom, as no setting of the player's (T-132)", async () => {
+        expect((await send("POST", "/api/config", { setting: "custom-rigor", value: "food: rules" })).status).toBe(403);
+        expect((await send("POST", "/api/config", { setting: "rigor", value: "custom" })).status).toBe(202);
+        dashboard.news();
+        expect((await send("POST", "/api/config", { setting: "custom-rigor", value: "food: simulation" })).status).toBe(202);
+        const parts = (JSON.parse((await send("GET", "/api/view?settings=true")).body) as { settings: PlayerSetting[]; }).settings.find((setting) => setting.name === "custom-rigor")?.entries;
+        expect(parts?.slice(0, 2)).toEqual([{ name: "food", value: "simulation" }, { name: "light", value: "smooth" }]);
+        expect(dashboard.news().lines).toEqual([expect.stringMatching(/^The player set in the custom rigor on the dashboard food to simulation \(food and water as written, and beyond: .+\)\. Play by it from now on\.$/)]);
+        const refused = await send("POST", "/api/config", { setting: "custom-rigor", value: "food: brutal" });
+        expect(refused.status).toBe(400);
+        expect(JSON.parse(refused.body).error).toBe("food takes smooth, rules, simulation, not brutal. Nothing changed.");
     });
 
     it("tells the master of the problems the page shows the player, once for each new count, until they are fixed (playtest 05)", async () => {

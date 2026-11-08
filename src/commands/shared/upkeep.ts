@@ -10,7 +10,7 @@ import { baseChain, heldStacksOfKind, kindNamed, locate, type Page, type World, 
 import type { GameSystem, Lifestyle } from "../../systems/index.ts";
 import { effectiveFields } from "./effect-layer.ts";
 import { campaignCoins } from "./money.ts";
-import { playedEngineSetting } from "./offers.ts";
+import { playedRigor } from "./offers.ts";
 import { firstInChat } from "./parts.ts";
 import { partyPages } from "./recipes.ts";
 import { writeStacks } from "./stacks.ts";
@@ -25,8 +25,8 @@ const settlementKinds = ["city", "town", "village", "inn"];
 export function dailyUpkeep(root: string, context: Context, system: GameSystem | undefined, days: number): string[]
 {
     const upkeep = system?.upkeep;
-    // As the game plays it: one that fixes it to smooth counts nothing (DAT-16).
-    const rigor = playedEngineSetting(root, context, "rigor");
+    // As the game plays it: one that fixes it to smooth counts nothing (DAT-16); a custom one, by its food (T-132).
+    const rigor = playedRigor(root, context, "food");
 
     if (upkeep === undefined || days <= 0 || (rigor !== "rules" && rigor !== "simulation")) {
         return [];

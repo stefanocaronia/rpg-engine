@@ -2,6 +2,7 @@
 export { createCampaign } from "./create-campaign.ts";
 export { campaignFileName, findCampaign, houseRulesFolderName, requireCampaign } from "./find-campaign.ts";
 export { hasCharacterAgent, hostFileNames, refreshHostFiles, writeEffortFiles } from "./host-files.ts";
+export { type CountedByGame, customLevel, customLevels, customSettings, difficulties, difficultyItems, itemMeaning, leveled, type LeveledSetting, rigorItems, rigors, startingLevels } from "./levels.ts";
 export {
     type CampaignSettings,
     changeExtensions,
@@ -15,9 +16,7 @@ export {
     clearSetting,
     closedSettings,
     companionWays,
-    type CountedByGame,
     diceWays,
-    difficulties,
     efforts,
     entrySettingNames,
     lethalities,
@@ -34,7 +33,6 @@ export {
     readOneSetting,
     readSettings,
     readTextSetting,
-    rigors,
     saveModes,
     settingDescription,
     settingMeaning,

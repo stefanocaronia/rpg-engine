@@ -1,5 +1,5 @@
 // What the campaign's game system offers of the engine's settings (DAT-16), the settings of its own that a value asks (DAT-17), and the parts its values choose (DAT-18).
-import { readSettings, type SettingName, settingNames } from "../../campaign/index.ts";
+import { customLevel, customLevels, customSettings, readOneSetting, readSettings, type rigorItems, type SettingName, settingNames } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { sameWord } from "../../core/text.ts";
 import { engineOfferings, engineSettingValue, heldSettings, offeredEngineValues, playedValueOf, readableSystems, type SystemSetting } from "../../systems/index.ts";
@@ -23,6 +23,13 @@ export function offeredValues(root: string, context: Context, name: string): str
 export function playedEngineSetting(root: string, context: Context, name: string): unknown
 {
     return engineSettingValue(campaignSystem(root, context), played(root, context), name, (readSettings(root) as Record<string, unknown>)[name]);
+}
+
+/** The level the campaign plays an item of the rigor at (DAT-16, T-132): the rigor played, or the item's own when it is custom; undefined while it is to be asked. */
+export function playedRigor(root: string, context: Context, item: (typeof rigorItems)[number]): string | undefined
+{
+    const rigor = playedEngineSetting(root, context, "rigor");
+    return rigor === customLevel ? customLevels("rigor", readOneSetting(root, customSettings.rigor))[item] : typeof rigor === "string" ? rigor : undefined;
 }
 
 /** Whether the game plays an engine's setting with one value alone (DAT-16): no choice, never asked nor shown to the player. */

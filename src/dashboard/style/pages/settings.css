@@ -123,6 +123,37 @@
         font-weight: 400;
     }
 
+    /* A custom difficulty or rigor (T-132): its parts under its row, set in by a rule on the start side, each a smaller row with its levels. */
+    .setting-parts {
+        display: grid;
+        grid-column: 1 / -1;
+        margin-inline-start: 4px;
+        padding-inline-start: 14px;
+        border-inline-start: 2px solid var(--rule);
+    }
+
+    .setting-part {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 16px;
+        padding: 6px 0;
+    }
+
+    .setting-part .setting-name {
+        font-weight: 600;
+    }
+
+    .setting-part > .setting-said {
+        grid-column: 1 / -1;
+        margin: 4px 0 0;
+        font-size: 0.85rem;
+    }
+
+    .setting-part > .setting-said:empty {
+        margin: 0;
+    }
+
     /* What the player should know of a setting on this computer; in ink, with its edge, when it says how to have what is missing. */
     .setting-note {
         display: flex;
@@ -424,8 +455,24 @@
     }
 
     @media (max-width: 600px) {
-        .setting {
+        .setting,
+        .setting-part {
             grid-template-columns: minmax(0, 1fr);
+        }
+
+        .setting-part {
+            row-gap: 6px;
+        }
+
+        /* Five levels on one row at 360 in Italian and German: the parts set in less, their values closer. */
+        .setting-parts {
+            margin-inline-start: 0;
+            padding-inline-start: 8px;
+        }
+
+        .setting-parts .segmented button {
+            padding: 0 4px;
+            font-size: 0.8rem;
         }
 
         .language-choice {

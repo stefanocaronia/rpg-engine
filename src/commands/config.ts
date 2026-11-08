@@ -11,11 +11,17 @@ import {
     checkSettingName,
     clearSetting,
     companionWays,
+    customLevel,
+    customLevels,
+    customSettings,
     diceWays,
     difficulties,
     efforts,
     entrySettingNames,
+    itemMeaning,
     lethalities,
+    leveled,
+    type LeveledSetting,
     listSettingNames,
     mapSettingNames,
     masterRollWays,
@@ -24,6 +30,7 @@ import {
     preparations,
     proseWays,
     readCampaignData,
+    readOneSetting,
     readSettings,
     readTextSetting,
     refreshHostFiles,
@@ -35,6 +42,7 @@ import {
     type SettingName,
     settingNames,
     setupSettingNames,
+    startingLevels,
     storyWays,
     styleTextLengths,
     unitSystems,
@@ -53,7 +61,7 @@ import { hostInstructions } from "../instructions/index.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, readableSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
-import { readBetweenSessions, readCalendar, readCalendarStart } from "../time/index.ts";
+import { formatDuration, readBetweenSessions, readCalendar, readCalendarStart } from "../time/index.ts";
 import { checkLibraryRemovals, libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./shared/library.ts";
 import { campaignMode, campaignNote } from "./shared/mode.ts";
 import { campaignCoins, coinsShown } from "./shared/money.ts";
@@ -83,6 +91,8 @@ export const config = defineCommand({
         + "table: what you promised the player about how you play, in the words you said. "
         + 'coins, when the system gives none: each coin with its value in the smallest coin, other names after a slash, "rare" for one never given as change. '
         + "widgets: where the dashboard shows an extension's widget, such as value 'weather.today: side'; remove gives it back its place. "
+        + "difficulty and rigor custom: each item at its own level, which custom-difficulty and custom-rigor take by item, such as value 'food: rules, load: smooth'; "
+        + "custom starts from the level played until then, and remove gives an item the default. "
         + "fields, tables, computed, counters and recipes add to the game system what it lacks, or change it as a house rule: entries by name, written as in system.yaml, "
         + "each replacing the system's one of that name (a recipe adds to the system's); remove takes their names. status-line adds fields to the player character's line. "
         + "A formula with commas goes in quotes; a use's max reads what gives it, so that only who has it has it. "
@@ -157,6 +167,8 @@ export interface PlayerSetting
     note?: { text: string; fix?: true; };
     /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
     most?: number;
+    /** The items of a custom difficulty or rigor, each with its level, one of the choices (T-132). */
+    entries?: { name: string; value: string; }[];
 }
 
 /**
@@ -187,7 +199,8 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
         const suggestion = suggested[question.name];
         // A suggestion the game does not offer is none (DAT-16).
         const offered = suggestion !== undefined && (question.choices === undefined || question.choices.some((choice) => choice.value === suggestion));
-        return { ...(question.name === "mentor" ? mentorQuestion(question) : unsetUnanswered(question, settings)), ...(offered ? { suggested: suggestion } : {}) };
+        const asked = { ...question, ...(question.choices === undefined ? {} : { choices: question.choices.filter((choice) => choice.value !== customLevel) }) };
+        return { ...(question.name === "mentor" ? mentorQuestion(asked) : unsetUnanswered(asked, settings)), ...(offered ? { suggested: suggestion } : {}) };
     });
 }
 
@@ -226,17 +239,24 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
         return { name: setting.name, about: setting.about ?? "a setting of the game system", ...(value === undefined ? {} : { value }), choices };
     });
     return [
-        ...playerSettingNames.map((name): PlayerSetting => {
+        ...playerSettingNames.flatMap((name): PlayerSetting[] => {
             const words: PlayerWords = playerWords[name];
-            const value = settings[name] ?? words.unset;
+            const custom = customOf(name);
+
+            if (custom !== undefined) {
+                return customItems(root, context, custom, words);
+            }
+
+            const written = settings[name] ?? words.unset;
+            const value = name === "between-sessions" && typeof written === "string" ? shownBetweenSessions(written) : written;
             const choices = words.values?.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) }));
-            return {
+            return [{
                 name,
                 about: words.about,
                 ...(Array.isArray(value) ? { items: value.map(String) } : value === undefined || value === null ? {} : { value: String(value) }),
                 ...(choices === undefined ? {} : { choices }),
                 ...(words.most === undefined ? {} : { most: words.most }),
-            };
+            }];
         }).flatMap((setting) => offeredSetting(root, context, setting)),
         ...own,
     ];
@@ -254,6 +274,10 @@ export function playerSettingNamed(root: string, context: Context, name: string)
  */
 export function playerChangeNews(root: string, context: Context, before: PlayerSetting, after: PlayerSetting): string[]
 {
+    if (before.entries !== undefined || after.entries !== undefined) {
+        return customNews(root, context, before, after);
+    }
+
     if (before.items !== undefined || after.items !== undefined) {
         const added = (after.items ?? []).filter((item) => !(before.items ?? []).includes(item));
         const removed = (before.items ?? []).filter((item) => !(after.items ?? []).includes(item));
@@ -280,7 +304,9 @@ export function playerChangeNews(root: string, context: Context, before: PlayerS
         return cleared === undefined ? [] : [`The player took ${after.name} away on the dashboard: ${cleared}. Play by it from now on.`, ...(style === "" ? [] : [style])];
     }
 
-    const meaning = settingMeaning(after.name, after.value, countedByGame(campaignSystem(root, context))) ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
+    const meaning = settingMeaning(after.name, after.value, countedByGame(campaignSystem(root, context)), customWritten(root, after.name))
+        ?? (after.name === "between-sessions" ? betweenSessionsMeaning(after.value) : undefined)
+        ?? systemSetting(root, context, after.name)?.values.find((one) => one.value === after.value)?.means;
     const value = after.most === undefined ? after.value : `"${after.value}"`;
     const author = after.name === "prose" && readSettings(root).author !== undefined ? " An author is written: theirs takes its place until the player takes it away." : "";
     // The mentor's new part comes with it, once in the chat (D-347); in play, a value of the system's with its own part (DAT-18).
@@ -375,8 +401,25 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     const mapped = input.setting !== undefined && mapSettingNames.includes(checkSettingName(input.setting));
     let replaced: string[] = [];
 
-    // Where the dashboard shows the extensions' widgets, checked against them before it is written (D-502); the master hears nothing of it: it is the page's.
-    if (input.setting?.trim() === "widgets" && (input.value !== undefined || input.remove !== undefined)) {
+    // A custom difficulty or rigor starts from the preset played until then, each item not yet written at its level (T-132).
+    const leveledName = input.setting === "difficulty" || input.setting === "rigor" ? input.setting : undefined;
+    const startsCustom = leveledName !== undefined && input.value?.trim().toLowerCase() === customLevel;
+    const preset = leveledName === undefined ? undefined : (readSettings(root) as Record<string, unknown>)[leveledName];
+    const custom = customOf(input.setting ?? "");
+
+    // The items of a custom difficulty or rigor, each at a level it takes (T-132).
+    if (custom !== undefined && (input.value !== undefined || input.remove !== undefined)) {
+        const name = customSettings[custom];
+
+        if (changeMapSetting(root, name, { set: input.value === undefined ? undefined : customEntries(custom, input.value), remove: input.remove })) {
+            appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: name, value: input.value, remove: input.remove }));
+        }
+
+        // Kept for when it is chosen, but played only then.
+        if (playedEngineSetting(root, context, custom) !== customLevel) {
+            replaced = [...replaced, `${name} plays only while ${custom} is custom.`];
+        }
+    } else if (input.setting?.trim() === "widgets" && (input.value !== undefined || input.remove !== undefined)) {
         const set = input.value === undefined ? undefined : entriesOf("widgets", input.value);
         checkWidgetSpots(root, context, set ?? {});
 
@@ -407,6 +450,15 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
     }
 
+    if (startsCustom && leveledName !== undefined && readSettings(root)[leveledName] === customLevel) {
+        const written = readSettings(root)[customSettings[leveledName]] ?? {};
+        const unwritten = Object.entries(startingLevels(leveledName, preset)).filter(([item]) => !Object.hasOwn(written, item));
+
+        if (unwritten.length > 0) {
+            changeMapSetting(root, customSettings[leveledName], { set: Object.fromEntries(unwritten) });
+        }
+    }
+
     // The effort written where each app reads it in the campaign's folder (D-462).
     if (input.setting?.trim() === "effort" && input.value !== undefined) {
         const unwritten = writeEffortFiles(root, context.platform);
@@ -435,7 +487,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     const settings = readSettings(root);
     // Listed all together, what the campaign adds to its system only when it adds something.
     const added = (name: SettingName): boolean => (campaignDataNames as readonly string[]).includes(name);
-    const listed = input.setting === undefined ? shown.filter((name) => !(added(name) || name === "calendar" || name === "widgets") || settings[name] !== undefined) : shown;
+    const listed = input.setting === undefined ? shown.filter((name) => !(added(name) || name === "calendar" || name === "widgets" || customOf(name) !== undefined) || settings[name] !== undefined) : shown;
     const system = input.setting === undefined ? heldSystemSettings(root, context) : [];
     // The master's own change of the mentor brings its part, once in the chat; the player's comes with the news of the dashboard (D-347).
     const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
@@ -462,12 +514,18 @@ const freeSettingNames: SettingName[] = ["author", "style", "calendar"];
 
 const styleSettingNames = ["prose", "story", "author", "style"];
 
+// The game time between sessions the dashboard offers (D-133): stopped, a day of the game for each real week, or as real time.
+const betweenSessionsWays = ["stops", "1d per 7d", "1d per 1d"] as const;
+
 /** The settings the player changes on the dashboard (D-341): how the game plays for them; the master's own, as house rules, coins and precedents, stay in the chat. */
 export const playerSettingNames = [
     "difficulty",
+    "custom-difficulty",
     "lethality",
     "saves",
     "rigor",
+    "custom-rigor",
+    "between-sessions",
     "mentor",
     "learned",
     "prose",
@@ -489,15 +547,17 @@ export const playerSettingNames = [
 const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
     difficulty: {
         about: "how hard the world plays",
-        values: difficulties,
+        values: [...difficulties, customLevel],
         means: {
             story: "fights low, foes naive, clues obvious, resources plentiful",
             easy: "fights low to moderate, simple foes, resources generous",
             normal: "fights moderate to high, sensible foes, resources standard",
             hard: "fights high, smart and tenacious foes, resources scarce",
             brutal: "fights far beyond, optimized and fanatical foes, resources very scarce",
+            custom: "each part at its own level, chosen below",
         },
     },
+    "custom-difficulty": { about: "how hard each part of the world plays", values: difficulties },
     lethality: { about: "what a fall means", values: lethalities, means: { narrative: "your character never dies", epic: "your character dies only when it matters", dice: "the dice decide" } },
     saves: {
         about: "when the game may go back",
@@ -506,12 +566,25 @@ const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
     },
     rigor: {
         about: "how closely food, light, fatigue and the like follow the rules",
-        values: rigors,
+        values: [...rigors, customLevel],
         means: {
             smooth: "only when the story turns on them",
             rules: "as written: food and water each day, light as it burns, fatigue and encumbrance",
             simulation: "as written, and beyond: wear, spoilage, weather",
+            custom: "each part at its own level, chosen below",
         },
+    },
+    "custom-rigor": { about: "how closely each part follows the rules", values: rigors },
+    // The few rates the dashboard offers (D-133); one written in the chat or by hand shows as it is, beside them.
+    "between-sessions": {
+        about: "whether the story's time runs while you are away, from one session to the next",
+        values: betweenSessionsWays,
+        means: {
+            stops: "the world waits for you: the story picks up at the moment you left it",
+            "1d per 7d": "a day of the story for each week you are away: when you come back, at your first move the master lets it pass and tells what the world did meanwhile",
+            "1d per 1d": "a day of the story for each day you are away: when you come back, at your first move the master lets it pass and tells what the world did meanwhile",
+        },
+        unset: "stops",
     },
     mentor: {
         about: "how much the master teaches the game, out of the story",
@@ -789,7 +862,7 @@ function systemShownValue(root: string, context: Context, setting: SystemSetting
 /** A setting as config shows it: a list or entries by name, none when missing; the coins and the system as they read (MON-7, D-173); difficulty and rigor with what they mean (D-263). */
 function shownValue(root: string, context: Context, settings: CampaignSettings, name: SettingName): unknown
 {
-    const meaning = settingMeaning(name, settings[name], countedByGame(campaignSystem(root, context)));
+    const meaning = settingMeaning(name, settings[name], countedByGame(campaignSystem(root, context)), customWritten(root, name));
 
     if (meaning !== undefined) {
         return `${String(settings[name])}: ${meaning}`;
@@ -1029,6 +1102,105 @@ function checkAdditions(root: string, context: Context, setting: string, change:
     if (problem !== undefined) {
         throw new Error(`With this, the system ${system} would not read: ${problem} Nothing changed.`);
     }
+}
+
+/** The game time between sessions as the dashboard shows it (D-133): by the words of a way it offers that plays the same, as STOPS or 2d per 14d; any other as written. */
+function shownBetweenSessions(written: string): string
+{
+    const read = readBetweenSessions(written);
+
+    const same = (way: string): boolean => {
+        const offered = readBetweenSessions(way);
+        return read === "stops" || offered === "stops" ? read === offered : read !== undefined && offered !== undefined && read.game * offered.real === offered.game * read.real;
+    };
+
+    return betweenSessionsWays.find(same) ?? written;
+}
+
+/** What the game time between sessions means to the master (D-133): stopped, or a rate with what status asks of them after a pause; undefined for what does not read. */
+function betweenSessionsMeaning(value: string): string | undefined
+{
+    const read = readBetweenSessions(value);
+
+    if (read === "stops") {
+        return "no game time passes between sessions: the next one opens at the moment this one ends";
+    }
+
+    return read === undefined
+        ? undefined
+        : `the game time runs ${formatDuration(read.game)} for each ${formatDuration(read.real)} of real time between sessions: after a pause, status says how much to let pass with advance `
+            + "before you open the new session, and the opening tells what the world did meanwhile";
+}
+
+/** The difficulty or rigor whose items a setting holds: difficulty for custom-difficulty; undefined for any other (T-132). */
+function customOf(name: string): LeveledSetting | undefined
+{
+    return name.trim() === customSettings.difficulty ? "difficulty" : name.trim() === customSettings.rigor ? "rigor" : undefined;
+}
+
+/** The items of a custom difficulty or rigor as campaign.yaml writes them, for its meaning; undefined for another setting. */
+function customWritten(root: string, name: string): unknown
+{
+    return name === "difficulty" || name === "rigor" ? readOneSetting(root, customSettings[name]) : undefined;
+}
+
+/** The items of a custom difficulty or rigor as config takes them, food: rules, each checked and named as the engine names it (T-132). */
+function customEntries(setting: LeveledSetting, text: string): Record<string, string>
+{
+    const { items, levels } = leveled[setting];
+    // food: rules, load: smooth as the master says it, and as YAML writes it, {food: rules, load: smooth}.
+    const written = text.trim().startsWith("{") ? text : `{${text}}`;
+    const entries = Object.entries(entriesOf(customSettings[setting], written)).map(([item, level]) => {
+        const known = items.find((one) => comparableText(one) === comparableText(item));
+        const at = levels.find((one) => typeof level === "string" && comparableText(one) === comparableText(level));
+
+        if (known === undefined) {
+            throw new Error(`${item} is no item of the custom ${setting}: they are ${items.join(", ")}. Nothing changed.`);
+        }
+
+        if (at === undefined) {
+            throw new Error(
+                level === null
+                    ? `${known} needs its level, ${levels.join(", ")}: write it as ${known}: ${levels[1]}. Nothing changed.`
+                    : `${known} takes ${levels.join(", ")}, not ${String(level)}. Nothing changed.`,
+            );
+        }
+
+        return [known, at];
+    });
+    return Object.fromEntries(entries);
+}
+
+/** The items of a custom difficulty or rigor as the dashboard shows them, each with its level, only while the campaign plays it custom (T-132). */
+function customItems(root: string, context: Context, setting: LeveledSetting, words: PlayerWords): PlayerSetting[]
+{
+    if (playedEngineSetting(root, context, setting) !== customLevel) {
+        return [];
+    }
+
+    const levels = customLevels(setting, readOneSetting(root, customSettings[setting]));
+    return [{
+        name: customSettings[setting],
+        about: words.about,
+        entries: Object.entries(levels).map(([name, value]) => ({ name, value })),
+        choices: (words.values ?? []).map((value) => ({ value })),
+    }];
+}
+
+/** What the master hears of the items of a custom difficulty or rigor the player changed on the dashboard: those changed, then the whole as it plays now. */
+function customNews(root: string, context: Context, before: PlayerSetting, after: PlayerSetting): string[]
+{
+    const setting = customOf(after.name);
+    const changed = (after.entries ?? []).filter((entry) => before.entries?.find((one) => one.name === entry.name)?.value !== entry.value);
+
+    if (setting === undefined || changed.length === 0) {
+        return [];
+    }
+
+    // Each item changed with what it means now: the whole custom one is in status, and comes with the news when the player chose it.
+    const counted = countedByGame(campaignSystem(root, context));
+    const set = changed.map((entry) => `${entry.name} to ${entry.value} (${itemMeaning(setting, entry.name, entry.value, counted) ?? entry.value})`).join("; ");
+    return [`The player set in the custom ${setting} on the dashboard ${set}. Play by it from now on.`];
 }
 
 /** What a setting of the player's is to them and to the master, by its name; undefined for one of the game system. */

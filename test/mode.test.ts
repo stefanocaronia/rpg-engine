@@ -212,7 +212,7 @@ describe("the mode (MOD-1–MOD-7)", () => {
         expect(await ok("status")).toContain(
             "Ferro · it · bare, a test system of its fields alone · difficulty normal · lethality dice · saves checkpoint · rigor smooth · units metric · mode setup\n"
                 + "Difficulty normal: fights moderate to high; two to four between full rests; the plain approach wins at a real cost, a good choice cheaply; "
-                + "foes with sensible tactics, using the place, normal morale; resources standard (treasure, supplies, prices); random encounters normal; "
+                + "foes with sensible tactics, using the place, normal morale; clues three for each conclusion; resources standard (treasure, supplies, prices); random encounters normal; "
                 + "threat clocks at their pace: one of them a step each day; a take-back now and then, when little hangs on it.\n"
                 + "Rigor smooth: you gloss over food and water, light, encumbrance, fatigue and the like: count them only when the story turns on them.\n"
                 + 'Still to agree with the player: dice (who rolls the player character\'s dice: digital, rpg; physical, the player, who tells you the values); set each with config. When none is left and the player confirms: mode, to "session zero".',

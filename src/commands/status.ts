@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { z } from "zod";
-import { houseRulesFolderName, readSettings, requireCampaign, settingMeaning } from "../campaign/index.ts";
+import { customSettings, houseRulesFolderName, readOneSetting, readSettings, requireCampaign, settingMeaning } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isInParty, isPartyMember, isPlayerCharacter, locate, type Page, pagesWithName, parsePageReference, playerCharacters, type World } from "../pages/index.ts";
@@ -20,7 +20,7 @@ import { journeyText, readJourney } from "./shared/journey.ts";
 import { campaignMode, campaignNote } from "./shared/mode.ts";
 import { campaignCoins } from "./shared/money.ts";
 import { livingMood, masterMood } from "./shared/moods.ts";
-import { heldSystemSettings, isFixedSetting, playedEngineSetting } from "./shared/offers.ts";
+import { heldSystemSettings, isFixedSetting, playedEngineSetting, playedRigor } from "./shared/offers.ts";
 import { installableSystems } from "./shared/packages/catalog.ts";
 import { packageCodeProblems } from "./shared/packages/code.ts";
 import { extensionsLine } from "./shared/packages/extensions.ts";
@@ -78,7 +78,8 @@ export const status = defineCommand({
             return typeof value === "string" ? value : undefined;
         };
 
-        const rigor = playedEngineSetting(root, context, "rigor");
+        // The load is counted by its own level when the rigor is custom (T-132).
+        const rigor = playedRigor(root, context, "load");
         const world = campaignWorld(root, context);
         const characters = world.pages.filter((page) => page.type === "character");
         const players = playerCharacters(world);
@@ -149,7 +150,7 @@ export const status = defineCommand({
             // What the chosen difficulty and rigor mean in play, one line each (D-263).
             meanings: (["difficulty", "rigor"] as const).flatMap((name) => {
                 const value = played(name);
-                const meaning = settingMeaning(name, value, countedByGame(system));
+                const meaning = settingMeaning(name, value, countedByGame(system), readOneSetting(root, customSettings[name]));
                 return meaning === undefined ? [] : [`${name.charAt(0).toUpperCase()}${name.slice(1)} ${value}: ${meaning}.`];
             }),
             // Before play, what the next mode needs and how to enter it; in play, the settings still missing (MOD-7).
