@@ -71,7 +71,7 @@ describe("rpg init", () => {
     });
 
     it("creates the files and folders of a campaign", async () => {
-        const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro"], context);
+        const result = await runCommandLine(["init", "--name", "La nebbia di Guadoscuro", "--master"], context);
         expect(result.exitCode).toBe(0);
         expect(result.output).toContain(`Created the campaign "La nebbia di Guadoscuro" in ${folder}.`);
         expect(result.output).toContain(`Still to agree with the player: system (installed: free, fake), language (a code, such as it), ${asked}; ${onward}`);
@@ -88,14 +88,18 @@ describe("rpg init", () => {
     });
 
     it("names the campaign after its folder and takes the settings it is given", async () => {
-        const result = await runCommandLine(["init", "guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
+        const result = await runCommandLine(["init", "guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice", "--master"], context);
         // What the system adds to the setup is asked after (DAT-10).
         expect(result.output).toContain('veils ("none" is an answer), ruleset (first or second), harshness (gentle or bitter); set each with config.');
         expect(readFileSync(join(folder, "guadoscuro", "campaign.yaml"), "utf8")).toContain("name: guadoscuro\nlanguage: it\nsystem: fake\ndifficulty: normal\nlethality: dice\n");
     });
 
-    it("tells the player how to start playing, and the master what is still missing", async () => {
-        const result = await runCommandLine(["init", "--language", "it"], context);
+    it("tells the player how to start playing, and only a master who made it what is still missing (T-185)", async () => {
+        const player = makeTempFolder();
+        expect((await runCommandLine(["init", "--language", "it"], testContext(player))).output).toBe(`Created the campaign "${basename(player)}" in ${player}.
+${playLine}`);
+        removeFolder(player);
+        const result = await runCommandLine(["init", "--language", "it", "--master"], context);
         expect(result.output).toBe(
             `Created the campaign "${basename(folder)}" in ${folder}.\n${playLine}\n\nFor the master: Still to agree with the player: system (installed: free, fake), ${asked}; ${onward}`,
         );

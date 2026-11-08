@@ -74,7 +74,7 @@ describe("MCP server", () => {
         const line = await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(twin));
         removeFolder(twin);
         expect(created.text).toBe(line.output.replaceAll(twin, folder));
-        expect(created.text).toContain(`Created the campaign "Guadoscuro" in ${folder}.\n${playLine}\n\nFor the master: `);
+        expect(created.text).toBe(`Created the campaign "Guadoscuro" in ${folder}.\n${playLine}`);
         // The first roll of a chat says once what to answer when the player asks whether a roll was real (D-530); the command line has no chat.
         const real = "Asked whether a roll was real: for a shown one, its numbers and reason; for a hidden one, its fingerprint. Never claim physical dice you did not roll.";
         expect((await call("roll", { notation: "1d20+2", why: "notare la trappola", who: "Elia", hidden: false })).text).toBe(`id2 Elia, notare la trappola: 1d20+2 = 6 [4] + 2\n${real}`);

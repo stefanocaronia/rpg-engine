@@ -195,7 +195,7 @@ export const status = defineCommand({
             openQuests: openQuests(world, now),
             now: now === undefined ? undefined : datedText(root, context, now),
             // In play, the game time to let pass when the last move is an hour old or more and the time runs between sessions (D-133).
-            betweenSessions: mode === "play" && now !== undefined ? timeBetweenSessions(root, context) : undefined,
+            betweenSessions: mode === "play" && now !== undefined ? timeBetweenSessions(root, context, now) : undefined,
             dateProblem: present.problem === undefined ? undefined : problemText(present.problem),
             datedEvents: events.some(isDated),
             dueEvents: due.map(dueText),

@@ -16,6 +16,7 @@ Read-only: no. Positional parameters: `folder`.
 - `system` (`string`, optional): game system: one of those installed
 - `difficulty` (`"story" | "easy" | "normal" | "hard" | "brutal"`, optional): how hard the world plays: story, easy, normal, hard, brutal
 - `lethality` (`"narrative" | "epic" | "dice"`, optional): what a fall means: narrative, epic, dice
+- `master` (`boolean`, optional): true when you, the AI, create the campaign: the answer adds what is still to agree with the player
 
 ### config
 

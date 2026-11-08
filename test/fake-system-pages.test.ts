@@ -59,7 +59,7 @@ describe("SYS-1: the campaign's system is one of those installed", () => {
 
         try {
             const none = { ...testContext(other), systemFolders: [] };
-            expect((await runCommandLine(["init", "--name", "Nuda", "--language", "it"], none)).output).toContain(
+            expect((await runCommandLine(["init", "--name", "Nuda", "--language", "it", "--master"], none)).output).toContain(
                 "Still to agree with the player: system, mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (",
             );
             expect((await runCommandLine(["config", "system", "pf2e"], none)).output).toBe('"pf2e" is not an installed system. No system is installed. Nothing changed.');

@@ -58,11 +58,24 @@ export function readDuration(text: string): number | undefined
     return total > 0 ? total : undefined;
 }
 
-/** A rate of game time to real time, written as 1d per 7d: the minutes of each; undefined for anything else. */
-export function readTimeRate(text: string): { game: number; real: number; } | undefined
+/** A rate of game time to real time: the minutes of each. */
+export interface TimeRate
 {
-    const [game, real, ...more] = text.split(/\s+per\s+/i).map(readDuration);
+    game: number;
+    real: number;
+}
+
+/** A rate of game time to real time, written as 1d per 7d; undefined for anything else. */
+export function readTimeRate(text: string): TimeRate | undefined
+{
+    const [game, real, ...more] = text.trim().split(/\s+per\s+/i).map(readDuration);
     return game === undefined || real === undefined || more.length > 0 ? undefined : { game, real };
+}
+
+/** The game time between sessions as a setting writes it (D-133): stops, or a rate of game time to real time; undefined when it reads as neither. */
+export function readBetweenSessions(text: string): "stops" | TimeRate | undefined
+{
+    return text.trim().toLowerCase() === "stops" ? "stops" : readTimeRate(text);
 }
 
 /** A duration as it is written: 1d 6h, 45m; 0m for no time. */

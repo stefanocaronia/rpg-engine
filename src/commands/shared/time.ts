@@ -15,10 +15,12 @@ import {
     formatDuration,
     formatGameDate,
     type GameDate,
+    lastGameDay,
+    minutesBetween,
+    readBetweenSessions,
     readCalendar,
     readCalendarStart,
     readGameDate,
-    readTimeRate,
     realCalendar,
 } from "../../time/index.ts";
 import { campaignExtensions, extensionSources } from "./packages/extensions.ts";
@@ -88,22 +90,25 @@ export function timeProblems(root: string, context: Context): Problem[]
 
 /**
  * The game time to let pass before a new session (D-133): when at least an hour of real time has passed since the last move and the game time runs between
- * sessions, the real time gone, the game time it makes and how to let it pass; nothing when the game time stops between sessions, the default.
+ * sessions, the real time gone, the game time it makes and how to let it pass; nothing when the game time stops between sessions, the default. A move is the
+ * master's: a page changed by hand or the player's change on the dashboard between sessions is none.
  */
-export function timeBetweenSessions(root: string, context: Context): string | undefined
+export function timeBetweenSessions(root: string, context: Context, now: GameDate): string | undefined
 {
     const written = readTextSetting(root, betweenSessionsSetting);
-    const rate = written === undefined ? undefined : readTimeRate(written);
-    const last = readLog(root).at(-1);
+    const rate = written === undefined ? undefined : readBetweenSessions(written);
+    const last = readLog(root).findLast((entry) => entry.by !== "outside" && entry.by !== "player");
     const realMinutes = last === undefined ? 0 : Math.floor((context.now().getTime() - Date.parse(last.at)) / 60_000);
 
-    if (rate === undefined || !(realMinutes >= 60)) {
+    if (rate === undefined || rate === "stops" || !(realMinutes >= 60)) {
         return undefined;
     }
 
-    const gameMinutes = Math.floor((realMinutes * rate.game) / rate.real);
-    return gameMinutes < 1 ? undefined : `${formatDuration(realMinutes)} of real time since the last move, and between sessions the game time runs ${written}: if this is a new session, `
-        + `call advance by ${formatDuration(gameMinutes)} before you open it, and let the opening tell what the world did meanwhile.`;
+    // No further than the last day the game counts, which advance would refuse.
+    const gameMinutes = Math.min(Math.floor((realMinutes / rate.real) * rate.game), minutesBetween(now, { day: lastGameDay }));
+    return gameMinutes < 1 ? undefined : `${formatDuration(realMinutes)} of real time since the last move, and between sessions the game time runs `
+        + `${formatDuration(rate.game)} per ${formatDuration(rate.real)}: if this is a new session, call advance by ${formatDuration(gameMinutes)} before you open it, `
+        + "and let the opening tell what the world did meanwhile.";
 }
 
 /** The campaign's calendar (TIM-8): campaign.yaml's, else an extension's, else the core's real months; and its start. Read once until campaign.yaml changes. */
@@ -130,7 +135,7 @@ export function datedText(root: string, context: Context, date: GameDate): strin
 function betweenSessionsProblems(root: string): Problem[]
 {
     const written = readTextSetting(root, betweenSessionsSetting);
-    return written === undefined || written.trim().toLowerCase() === "stops" || readTimeRate(written) !== undefined
+    return written === undefined || readBetweenSessions(written) !== undefined
         ? []
         : [{
             path: campaignFileName,

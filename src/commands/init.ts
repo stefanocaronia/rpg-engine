@@ -12,7 +12,7 @@ export const init = defineCommand({
     name: "init",
     description: "Create a new campaign. "
         + "It writes the settings, the log, the world's folders, and the .mcp.json, AGENTS.md and CLAUDE.md through which an AI host finds these tools. "
-        + "Use it once, when the player starts a new campaign; then ask the player for the missing settings and set them with config. "
+        + "Use it once, when the player starts a new campaign, with master true when you, the AI, create it: the answer then says what is still to agree with the player, to set with config. "
         + 'Example: name "The Salt Isles", language en.',
     group: "campaign",
     positionals: ["folder"],
@@ -23,6 +23,7 @@ export const init = defineCommand({
         system: z.string().optional().describe("game system: one of those installed"),
         difficulty: z.enum(difficulties).optional().describe(`how hard the world plays: ${difficulties.join(", ")}`),
         lethality: z.enum(lethalities).optional().describe(`what a fall means: ${lethalities.join(", ")}`),
+        master: z.boolean().optional().describe("true when you, the AI, create the campaign: the answer adds what is still to agree with the player"),
     }),
 
     run(input, context)
@@ -34,10 +35,10 @@ export const init = defineCommand({
         const root = createCampaign(folder, settings, context.platform, hostInstructions());
         createWorld(root);
         appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
-        return { root, name: settings.name, note: campaignNote(root, context) };
+        return { root, name: settings.name, note: input.master === true ? campaignNote(root, context) : "" };
     },
 
-    // The player reads it first, who made the campaign in a terminal: what to do next; then what the master still agrees with them.
+    // The player reads it, who made the campaign in a terminal: what to do next. What the master still agrees with them only when the master made it (T-185).
     format(result)
     {
         return [

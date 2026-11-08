@@ -53,7 +53,7 @@ import { hostInstructions } from "../instructions/index.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, readableSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
-import { readCalendar, readCalendarStart, readTimeRate } from "../time/index.ts";
+import { readBetweenSessions, readCalendar, readCalendarStart } from "../time/index.ts";
 import { checkLibraryRemovals, libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./shared/library.ts";
 import { campaignMode, campaignNote } from "./shared/mode.ts";
 import { campaignCoins, coinsShown } from "./shared/money.ts";
@@ -847,8 +847,12 @@ function settingValue(root: string, setting: string, value: string, context: Con
     }
 
     // The game time between sessions (D-133): it stops, or runs at a rate of game time to real time.
-    if (setting === "between-sessions" && value.trim().toLowerCase() !== "stops" && readTimeRate(value) === undefined) {
-        throw new Error(`"${value}" is no between-sessions: give stops, or the game time that passes for a real time, such as 1d per 7d. Nothing changed.`);
+    if (setting === "between-sessions") {
+        if (readBetweenSessions(value) === undefined) {
+            throw new Error(`"${value}" is no between-sessions: give stops, or the game time that passes for a real time, such as 1d per 7d. Nothing changed.`);
+        }
+
+        return value.trim().replace(/\s+/g, " ");
     }
 
     return setting === "coins" ? newCoins(root, value, context) : setting === "system" ? installedSystemName(value, context, "config") : value;
