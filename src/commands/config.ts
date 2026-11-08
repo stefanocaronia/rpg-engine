@@ -8,6 +8,7 @@ import {
     changeMapSetting,
     changeOtherSetting,
     changeSetting,
+    characterWays,
     checkSettingName,
     clearSetting,
     companionWays,
@@ -20,6 +21,7 @@ import {
     entrySettingNames,
     itemMeaning,
     lastChoices,
+    lengths,
     lethalities,
     leveled,
     type LeveledSetting,
@@ -70,7 +72,7 @@ import { campaignCoins, coinsShown } from "./shared/money.ts";
 import { askedBy, heldSystemSettings, isFixedSetting, isLeading, offeredValues, offerRefusal, playedEngineSetting, unofferedLines, valuePart } from "./shared/offers.ts";
 import { loadNewSystemCode } from "./shared/packages/code.ts";
 import { checkWidgetSpots } from "./shared/packages/widgets.ts";
-import { mentorPart, stylePart } from "./shared/parts.ts";
+import { lengthPart, mentorPart, stylePart } from "./shared/parts.ts";
 import { readOpenScene } from "./shared/scene.ts";
 import { campaignCalendar, newDatedLogEntry } from "./shared/time.ts";
 import { campaignSystem, campaignWorld, countedByGame, installedSystemName, playedRules, playedSettingValue, playersOfTheGame, systemLayers, systemSetting, valuesText } from "./shared/world.ts";
@@ -177,7 +179,7 @@ export interface PlayerSetting
 
 /**
  * The setup's questions as the dashboard asks them (D-370), each with its value or items, if answered, and its values with what each means: the player's
- * settings of the setup, how companions come, the preparation of a world not written, those the game system adds, then the lines and veils.
+ * settings of the setup, how the character and the companions come, the preparation and length of a world not written, those the game system adds, then the lines and veils.
  */
 export function setupQuestions(root: string, context: Context, writtenWorld: boolean): PlayerSetting[]
 {
@@ -199,7 +201,7 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
     const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }), ...systemSuggests, ...last };
     // The system's settings others depend on right after the mentor, before what they change (DAT-16, DAT-17).
     const leading = held.filter(isLeading).map((setting) => setting.name);
-    const order = setupOrder.filter((name) => name !== "preparation" || !writtenWorld);
+    const order = setupOrder.filter((name) => !writtenWorld || !worldSettingNames.includes(name));
     const others = system.filter((name) => !leading.includes(name));
     return [...order.slice(0, 1), ...leading, ...order.slice(1), ...others, "lines", "veils"].flatMap(named).map((question) => {
         const suggestion = suggested[question.name];
@@ -211,7 +213,7 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
     });
 }
 
-/** A setting only the setup lets the dashboard change (D-370): how companions come, the preparation, the name; undefined for any other. */
+/** A setting only the setup lets the dashboard change (D-370): how the character and the companions come, the preparation, the length, the name; undefined for any other. */
 export function setupSettingNamed(root: string, name: string): PlayerSetting | undefined
 {
     const key = Object.keys(setupWords).find((one) => comparableText(one) === comparableText(name));
@@ -226,7 +228,13 @@ export function setupSettingNamed(root: string, name: string): PlayerSetting | u
         name: key,
         about: words.about,
         ...(typeof value === "string" ? { value } : {}),
-        ...(words.values === undefined ? {} : { choices: words.values.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) })) }),
+        ...(words.values === undefined ? {} : {
+            choices: words.values.map((one) => ({
+                value: one,
+                ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }),
+                ...(words.labels?.[one] === undefined ? {} : { label: words.labels[one] }),
+            })),
+        }),
     };
 }
 
@@ -506,11 +514,14 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     const changed = input.value !== undefined && context.actor !== "player" ? input.setting?.trim() : undefined;
     // And of how the master writes, the parts as they are now (D-395).
     const style = styleSettingNames.includes(changed ?? "") ? stylePart(root, context) : "";
+    // And of the length, past the setup, how to size the adventures now (D-558); entering play gives it otherwise.
+    const sized = changed === "length" && campaignMode(root, campaignWorld(root, context)) !== "setup";
+    const length = !sized ? "" : settings.length === "open" ? "The campaign is open now: the adventures take the size the story asks, one after another." : lengthPart(root, context);
     // An author or the player's words taken away: what holds now, as the dashboard's news says it.
     const cleared = changed !== undefined && input.value?.trim().toLowerCase() === "none" ? wordsOf(changed)?.cleared : undefined;
     const part = changed === "mentor"
         ? mentorPart(root, context, settings.mentor)
-        : [cleared === undefined ? "" : `${cleared.charAt(0).toUpperCase()}${cleared.slice(1)}.`, style].filter((text) => text !== "").join("\n\n");
+        : [cleared === undefined ? "" : `${cleared.charAt(0).toUpperCase()}${cleared.slice(1)}.`, style, length].filter((text) => text !== "").join("\n\n");
     return {
         settings: {
             ...Object.fromEntries(listed.map((name) => [name, offeredShown(root, context, name, shownValue(root, context, settings, name))])),
@@ -696,8 +707,9 @@ interface PlayerWords
     most?: number;
 }
 
-// What the setup asks besides the player's settings (D-370): how the companions come, how far ahead a world is made, the campaign's name.
-const setupWords: Record<string, { about: string; values?: readonly string[]; means?: Record<string, string>; }> = {
+// What the setup asks besides the player's settings (D-370): how the player character and the companions come, how far ahead a world is made and how long it
+// plays, the campaign's name.
+const setupWords: Record<string, { about: string; values?: readonly string[]; means?: Record<string, string>; labels?: Record<string, string>; }> = {
     companions: {
         about: "how companions come to your side",
         values: companionWays,
@@ -713,18 +725,40 @@ const setupWords: Record<string, { about: string; values?: readonly string[]; me
         values: preparations,
         means: { "on the fly": "just before it is needed, so the story can go anywhere", "all at the start": "all of it before the first scene" },
     },
+    length: {
+        about: "how long the story you play lasts; at its end you can always go on",
+        values: lengths,
+        means: {
+            "one evening": "one adventure that begins and ends in an evening",
+            "a few sessions": "an adventure of three to five evenings",
+            open: "a campaign with no set end, one adventure after another",
+        },
+    },
+    character: {
+        about: "how your character is made in session zero",
+        values: characterWays,
+        means: {
+            "made with the player": "you make it with the master, choice by choice",
+            "made by the master": "the master makes it from a few words of yours",
+            "the player's own": "you bring one you already have, as a sheet, a file or a description, at its level",
+        },
+        labels: { "made with the player": "With the master", "made by the master": "The master makes it", "the player's own": "I already have one" },
+    },
     name: { about: "the campaign's name" },
 };
 
 // The setup's questions, in the order the player meets them on the dashboard: how well they know the game, how it plays, how it is rolled, who comes along,
-// then the limits.
-const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "companions", "preparation"];
+// the world and how long it plays, then the limits.
+const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "character", "companions", "preparation", "length"];
 
 // The mentor as the setup asks it (D-347): how well the player knows the game, each answer a way of the mentor, from the newest player's.
 const mentorAnswers: Record<string, string> = { tutorial: "never played it", hints: "a little", off: "I know it" };
 
+// What the setup asks only of a world not written (D-80, D-558): a written one has its own.
+const worldSettingNames = ["preparation", "length"];
+
 // The values the game suggests in the setup, as the design has them by default (D-370): never chosen for the player.
-const suggestedValues: Record<string, string> = { saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", preparation: "on the fly" };
+const suggestedValues: Record<string, string> = { saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", character: "made with the player", preparation: "on the fly", length: "one evening" };
 
 // The lethality the difficulty suggests (D-141).
 const suggestedLethality: Record<string, string> = { story: "narrative", easy: "epic" };

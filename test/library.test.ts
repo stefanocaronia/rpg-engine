@@ -287,13 +287,19 @@ describe("the books and their index (LIB-2, LIB-3)", () => {
             return new Promise<never>(() => undefined);
         };
 
+        // Every index written within one tick of the file clock, as on a fast disk on Windows: two indexes of one size look the same.
+        const stopAt = (read?: Map<number, string>) => {
+            void readLibrary(home, () => [shelf], libraryScope, stopping(read));
+            readdirSync(home).forEach((name) => utimesSync(join(home, name), 1e9, 1e9));
+        };
+
         const skipped = () => libraryState(home, [shelf], libraryScope).skipped.length;
-        void readLibrary(home, () => [shelf], libraryScope, stopping(pages(1, 12)));
-        void readLibrary(home, () => [shelf], libraryScope, stopping(pages(13, 24)));
+        stopAt(pages(1, 12));
+        stopAt(pages(13, 24));
         expect(skipped()).toBe(0);
-        void readLibrary(home, () => [shelf], libraryScope, stopping());
+        stopAt();
         expect(skipped()).toBe(0);
-        void readLibrary(home, () => [shelf], libraryScope, stopping());
+        stopAt();
         expect(known).toEqual([0, 12, 24, 24]);
         expect(skipped()).toBe(1);
     });

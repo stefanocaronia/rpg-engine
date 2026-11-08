@@ -87,7 +87,7 @@ import { fieldValues } from "../shared/inputs.ts";
 import { checkLimits } from "../shared/limits.ts";
 import { campaignCoins } from "../shared/money.ts";
 import { followersNote, keepersNote, skippedPagesNote } from "../shared/notes.ts";
-import { adventurePart, partText, partyPart, situationPart } from "../shared/parts.ts";
+import { adventurePart, nextAdventureLead, partText, partyPart, situationPart } from "../shared/parts.ts";
 import { mapLookNotes, shortRoadNotes } from "../shared/positions.ts";
 import { givenItems, progressionOf } from "../shared/progression.ts";
 import { adventureUnderWay, logQuestChange, newQuestNotes, tickedQuestNotes } from "../shared/quests.ts";
@@ -291,7 +291,7 @@ export const write = defineCommand({
         // A quest that ends is a time to write a diary (DIA-2).
         const diary = changed && questEnds(existing, page) ? diaryDueLine(root, context, now) : "";
         // The last quest ended: the next adventure is to build (D-530 (8)).
-        const next = changed && questEnds(existing, page) && !adventureUnderWay(now) ? adventurePart("No quest is open or planned now: build the next adventure.", context, system) : "";
+        const next = changed && questEnds(existing, page) && !adventureUnderWay(now) ? adventurePart(nextAdventureLead(root), context, system) : "";
         const quest = changed
             ? [...questEndNotes(context, system, existing, page), ...(diary === "" ? [] : [diary]), ...(next === "" ? [] : [next]), ...tickedQuestNotes(existing, page), ...opened, ...(picture === undefined ? [] : [picture])]
             : [];

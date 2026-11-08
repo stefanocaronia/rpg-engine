@@ -5,7 +5,7 @@ import { defineCommand } from "../core/registry.ts";
 import { buttonsInstructions, dashboardInstructions, masterInstructions } from "../instructions/index.ts";
 import { campaignMode, modePart } from "./shared/mode.ts";
 import { valueParts } from "./shared/offers.ts";
-import { mentorPart, partText, partyPart, situationPart, stylePart } from "./shared/parts.ts";
+import { lengthPart, mentorPart, partText, partyPart, situationPart, stylePart } from "./shared/parts.ts";
 import { readOpenScene } from "./shared/scene.ts";
 import { voicesPart } from "./shared/voices.ts";
 import { campaignSystem, campaignWorld } from "./shared/world.ts";
@@ -42,6 +42,7 @@ export const instructions = defineCommand({
             partyText(context.folder, context),
             mentorText(context.folder, context),
             styleText(context.folder, context),
+            lengthText(context.folder, context),
             sceneText(context.folder, context),
             buttons ? buttonsInstructions(physicalDice(context.folder)) : "",
             // The dashboard, where the MCP server serves one, so that the master can tell the player how to use it (D-404).
@@ -132,6 +133,18 @@ function styleText(folder: string, context: Context): string
 
     try {
         return root === undefined || campaignMode(root, campaignWorld(root, context)) === "setup" ? "" : stylePart(root, context);
+    } catch {
+        return "";
+    }
+}
+
+/** How long the campaign plays (D-558), past the setup; none when open, unchosen, or outside a campaign. */
+function lengthText(folder: string, context: Context): string
+{
+    const root = findCampaign(folder);
+
+    try {
+        return root === undefined || campaignMode(root, campaignWorld(root, context)) === "setup" ? "" : lengthPart(root, context);
     } catch {
         return "";
     }

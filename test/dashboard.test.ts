@@ -309,8 +309,10 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             "dice",
             "master-rolls",
             "units",
+            "character",
             "companions",
             "preparation",
+            "length",
             "ruleset",
             "harshness",
             "lines",
@@ -325,9 +327,15 @@ describe("the setup as the dashboard shows it (D-370)", () => {
         expect(setup.questions[1]).toMatchObject({ value: "normal", choices: expect.arrayContaining([expect.objectContaining({ value: "hard" })]) });
         // The values the game suggests, never chosen for the player; the lethality as the difficulty has it.
         const suggested = Object.fromEntries(setup.questions.filter((question: { suggested?: string; }) => question.suggested !== undefined).map((question: { name: string; suggested: string; }) => [question.name, question.suggested]));
-        expect(suggested).toEqual({ lethality: "dice", saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", preparation: "on the fly" });
+        expect(suggested).toEqual({ lethality: "dice", saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", character: "made with the player", preparation: "on the fly", length: "one evening" });
         expect(setup.questions.find((question: { name: string; }) => question.name === "harshness")).toMatchObject({ about: "how hard the road is" });
-        expect(setup.questions[8]).toMatchObject({ name: "companions", about: "how companions come to your side", choices: expect.arrayContaining([{ value: "none", means: "you play alone" }]) });
+        // How the player character comes, each way in the player's words (D-557); how long a world not written plays (D-558).
+        expect(setup.questions[8]).toMatchObject({
+            name: "character",
+            choices: [expect.objectContaining({ label: "With the master" }), expect.objectContaining({ label: "The master makes it" }), expect.objectContaining({ value: "the player's own", label: "I already have one" })],
+        });
+        expect(setup.questions[11]).toMatchObject({ name: "length", choices: [expect.objectContaining({ value: "one evening" }), expect.objectContaining({ value: "a few sessions" }), expect.objectContaining({ value: "open" })] });
+        expect(setup.questions[9]).toMatchObject({ name: "companions", about: "how companions come to your side", choices: expect.arrayContaining([{ value: "none", means: "you play alone" }]) });
         expect(setup.missing).toContain("companions (none, made with the player, made by the master, met in play)");
         // Once the premise is set, a campaign named after its folder: status asks the master to propose a name.
         await run("config", "premise", "Fantasy cupo");

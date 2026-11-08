@@ -14,7 +14,7 @@ rpg init $campaign --name "L'ossario dei pastori" --system 5e --language it --di
 Copy-Item -Recurse -Force playtests\09-l-ossario-dei-pastori\world\* $campaign\world
 Push-Location $campaign
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
-rpg config companions "made by the master"; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
+rpg config companions "made by the master"; rpg config character "made with the player"; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
 rpg config calendar-start "day 1"; rpg config pictures none
 rpg mode "session zero"; rpg mode play
 rpg advance --to "day 4, 16:00" --why "Nell'ossario della cappella dei pastori"

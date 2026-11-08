@@ -316,11 +316,11 @@ export function missingSettings(settings: CampaignSettings): SettingName[]
 
 /**
  * The settings the setup still has to ask, in order (MOD-3): those every campaign needs, how the companions come, the lines and veils until answered, even
- * with none, and, for a campaign without a written world, its premise and preparation.
+ * with none, how the character comes until one exists, and, for a campaign without a written world, its premise, preparation and length.
  */
-export function unansweredSettings(settings: CampaignSettings, writtenWorld: boolean): SettingName[]
+export function unansweredSettings(settings: CampaignSettings, writtenWorld: boolean, characterMade = false): SettingName[]
 {
-    const asked = [...setupSettingNames, ...(writtenWorld ? [] : premiseSettingNames)];
+    const asked = [...setupSettingNames.filter((name) => !characterMade || name !== "character"), ...(writtenWorld ? [] : premiseSettingNames)];
     return settingNames.filter((name) => missingSettings(settings).includes(name) || (asked.includes(name) && (settings[name] === undefined || settings[name] === null)));
 }
 
@@ -370,6 +370,12 @@ export const companionWays = ["none", "made with the player", "made by the maste
 /** How far ahead a world without a written campaign is made (D-80): as it is needed, or all at the start. */
 export const preparations = ["on the fly", "all at the start"] as const;
 
+/** How long a campaign without a written world plays (D-558): one evening, a few sessions, or open, its adventures one after another. */
+export const lengths = ["one evening", "a few sessions", "open"] as const;
+
+/** How the player character comes (D-557): made with the player, made by the master, or the player's own, a character they already have. */
+export const characterWays = ["made with the player", "made by the master", "the player's own"] as const;
+
 /** How the master writes (D-395): plain, the core's own, literary, pulp or wry; the tone stays in the premise, and an author takes its place. */
 export const proseWays = ["plain", "literary", "pulp", "wry"] as const;
 
@@ -391,6 +397,8 @@ export const closedSettings: Partial<Record<SettingName, readonly string[]>> = {
     effort: efforts,
     companions: companionWays,
     preparation: preparations,
+    length: lengths,
+    character: characterWays,
     prose: proseWays,
     story: storyWays,
 };
@@ -438,6 +446,9 @@ export const settingsSchema = z.object({
         "without a written campaign: the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words",
     ),
     preparation: z.enum(preparations).optional().describe("without a written campaign: on the fly (the master makes the world just before it is needed) or all at the start"),
+    length: z.enum(lengths).optional().describe(
+        "without a written campaign: how long it plays, one evening, a few sessions or open; the master sizes each adventure to it, and at its end asks whether to go on",
+    ),
     prose: z.enum(proseWays).optional().describe("how the master writes, as the player chose it: plain, literary, pulp or wry; the tone stays in the premise; an author takes its place"),
     story: z.enum(storyWays).optional().describe("how the master builds what they invent: situations, arcs, episodes or mystery; a written adventure keeps its own"),
     author: oneLine(styleTextLengths.author).optional().describe("an author the master writes like, as the player named them: their way, never their sentences, names or places"),
@@ -468,6 +479,9 @@ export const settingsSchema = z.object({
         "who voices the characters, where the AI app has subagents, from the master to the characters: master (the master, always), auto (at key moments, as the master chooses, "
             + "a character answers as a subagent of its own, knowing only what it knows), important (always a subagent for the companions and the characters with kind main), "
             + "always (always a subagent, for everyone); unset, auto",
+    ),
+    character: z.enum(characterWays).optional().describe(
+        "how the player character comes in session zero: made with the player, made by the master from a few words of theirs, or the player's own, a character they bring, at the level it has",
     ),
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
     // Checked by the time module against the calendar (TIM-8).
@@ -523,13 +537,13 @@ export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "
 export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets", "custom-difficulty", "custom-rigor"];
 
 /**
- * What only the setup asks (D-241, MOD-3, D-347, D-287): how much the master teaches the game, whether the master's rolls are shown, how the companions come,
- * when the story starts, and the lines and veils, which "none" answers too.
+ * What only the setup asks (D-241, MOD-3, D-347, D-287, D-557): how much the master teaches the game, whether the master's rolls are shown, how the player
+ * character and the companions come, when the story starts, and the lines and veils, which "none" answers too.
  */
-export const setupSettingNames: SettingName[] = ["mentor", "master-rolls", "companions", "calendar-start", "lines", "veils"];
+export const setupSettingNames: SettingName[] = ["mentor", "master-rolls", "character", "companions", "calendar-start", "lines", "veils"];
 
-/** What the setup asks only of a campaign without a written world (D-79, D-80, MOD-3). */
-const premiseSettingNames: SettingName[] = ["premise", "preparation"];
+/** What the setup asks only of a campaign without a written world (D-79, D-80, D-558, MOD-3). */
+const premiseSettingNames: SettingName[] = ["premise", "preparation", "length"];
 
 // Settings that only some games have, or that only the setup asks: never asked for in play when missing.
 // The pictures: status asks for them once, only where they can be made (D-308).

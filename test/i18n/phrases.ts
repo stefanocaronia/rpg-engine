@@ -44,7 +44,7 @@ export async function settingPhrases(): Promise<Set<string>>
         return view.settings ?? view.questions ?? [];
     };
 
-    const own = new Set<string>([...playerSettingNames, "companions", "preparation", "name"]);
+    const own = new Set<string>([...playerSettingNames, "companions", "preparation", "length", "character", "name"]);
     const settings = [...await read("--settings"), ...await read("--setup")].filter((setting) => own.has(setting.name));
     const words = settings.flatMap((setting) => [setting.about, setting.question, ...(setting.choices ?? []).flatMap((choice) => [choice.means, choice.label])]);
     return new Set([...words, ...picturesNotes].filter((word) => word !== undefined));

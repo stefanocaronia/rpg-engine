@@ -24,7 +24,7 @@ rpg init $campaign --name "Il carro dei Brenta" --system 5e --language it --diff
 Copy-Item -Recurse -Force playtests\20-due-giocatori\world\* $campaign\world
 Push-Location $campaign
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
-rpg config companions none; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
+rpg config companions none; rpg config character "made with the player"; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
 rpg config calendar-start "day 1"; rpg config pictures none
 rpg mode "session zero"; rpg mode play
 rpg advance --to "day 1, 07:15" --why "Mira da Ottavia per il contratto e l'anticipo, Bruna alla fucina per il carro"

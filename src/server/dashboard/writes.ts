@@ -112,7 +112,7 @@ export async function changeSetting(request: IncomingMessage, response: ServerRe
         const change = parsed.data;
         const refused = withFiles(served.session, () => {
             const root = requireCampaign(served.context.folder);
-            // In the setup, how companions come, the preparation and the name are the player's too (D-370).
+            // In the setup, how the character and the companions come, the preparation, the length and the name are the player's too (D-370).
             const setup = campaignMode(root, campaignWorld(root, served.context)) === "setup";
 
             // Where the page shows the extensions' widgets is the page's own: the master hears nothing of it (D-502).

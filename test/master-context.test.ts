@@ -1,6 +1,9 @@
 // The master's context (D-530): the part adventure when an adventure is to build, how a session opens, and the rules that left the instructions for the
 // outputs of the calls they belong to, each once in a chat or when it applies, never lost.
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { unansweredSettings } from "../src/campaign/index.ts";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { corePart, masterInstructions } from "../src/instructions/index.ts";
@@ -66,6 +69,7 @@ async function readyForPlay(): Promise<void>
         ["dice", "digital"],
         ["master-rolls", "behind the screen"],
         ["units", "metric"],
+        ["character", "made with the player"],
         ["companions", "none"],
         ["calendar-start", "day 1"],
         ["lines", "none"],
@@ -112,6 +116,54 @@ describe("the part adventure (D-530 (8))", () => {
         expect(again).not.toContain(adventure);
         // A quest that does not end says nothing of it.
         expect(await run("write", "Il pozzo", "--text", "Asciutto.")).not.toContain("adventure");
+        // With a length that has an end, the epilogue and the player's word come before the next adventure (D-558).
+        await ok("config", "length", "one evening");
+        await run("write", "Il ponte", "--type", "quest", "--set", "status=open");
+        expect(await run("write", "Il ponte", "--set", "status=done")).toContain(
+            "No quest is open or planned now, and the campaign plays one evening: give this adventure its epilogue, then ask the player whether to go on;",
+        );
+    });
+
+    it("comes with the length of a campaign that has an end, which instructions give past the setup, entering play and its change give too (D-558)", async () => {
+        const evening = corePart("length-one-evening") ?? "";
+        expect(evening).toMatch(/^The campaign plays one evening: size each adventure for one session/);
+        expect(corePart("length-a-few-sessions")).toMatch(/^The campaign plays a few sessions/);
+        await readyForPlay();
+        await ok("config", "length", "one evening");
+        expect(await ok("mode", "play")).toContain(`${adventure}\n\n${evening}`);
+        expect(await ok("instructions")).toContain(evening);
+        await ok("config", "premise", "un guado");
+        expect(await ok("status")).toContain("Premise: un guado (length one evening)");
+        const few = await ok("config", "length", "a few sessions");
+        expect(few).toContain(corePart("length-a-few-sessions"));
+        expect(await ok("instructions")).not.toContain(evening);
+        // An open campaign has no part, as one whose length was never chosen.
+        const open = await ok("config", "length", "open");
+        expect(open).not.toContain("The campaign plays");
+        expect(open).toContain("The campaign is open now: the adventures take the size the story asks");
+        expect(await ok("instructions")).not.toContain("The campaign plays");
+        await ok("mode", "setup");
+        await ok("config", "length", "one evening");
+        expect(await ok("instructions")).not.toContain(evening);
+    });
+
+    it("gives the length once in a chat: entering play after instructions does not repeat it (D-558)", async () => {
+        const evening = corePart("length-one-evening") ?? "";
+        await readyForPlay();
+        await ok("config", "length", "one evening");
+        const run = chat();
+        expect(await run("instructions")).toContain(evening);
+        expect(await run("mode", "play")).not.toContain(evening);
+    });
+
+    it("asks how the character comes only until one exists: a campaign with its character enters play without it (D-557)", async () => {
+        expect(unansweredSettings({ name: "Ferro" }, true)).toContain("character");
+        expect(unansweredSettings({ name: "Ferro" }, true, true)).not.toContain("character");
+        await readyForPlay();
+        const settings = join(folder, "campaign.yaml");
+        writeFileSync(settings, readFileSync(settings, "utf8").replace(/^character: .*\n/m, ""));
+        await ok("mode", "setup");
+        await ok("mode", "session zero");
     });
 
     it("comes at the first status of a chat in play: with no quest, or, with the preparation on the fly, for the adventure under way", async () => {

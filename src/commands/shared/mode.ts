@@ -1,10 +1,12 @@
 // The mode of the campaign, the main state of the game (D-77): setup, session zero or play, each opened by the checklist of the one before (D-221, D-241; MOD-1–MOD-7).
 import { basename } from "node:path";
 import {
+    characterWays,
     companionWays,
     diceWays,
     difficulties,
     lastChoices,
+    lengths,
     lethalities,
     masterRollWays,
     missingSettings,
@@ -47,6 +49,7 @@ const settingLabels: Partial<Record<SettingName, string>> = {
     mentor: "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off)",
     premise: "premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words)",
     preparation: "preparation (on the fly: the world made just before it is needed; all at the start)",
+    length: "length (how long it plays: one evening; a few sessions; open, one adventure after another)",
     difficulty: `difficulty (how hard the world plays: ${difficulties.join(", ")})`,
     lethality: "lethality (what a fall means: narrative, the character never dies; epic, only when it matters; dice, the dice decide)",
     saves: "saves (when the game may go back: permadeath, never but to the start; checkpoint, to the last end of a scene once the player character dies; free, to any save)",
@@ -54,6 +57,7 @@ const settingLabels: Partial<Record<SettingName, string>> = {
     dice: "dice (who rolls the player character's dice: digital, rpg; physical, the player, who tells you the values)",
     "master-rolls": `master-rolls (your rolls for foes and NPCs: ${masterRollWays.join(", ")}; suggest behind the screen)`,
     units: `units (${unitSystems.join(", ")})`,
+    character: "character (made with the player; made by the master, from a few words; the player's own, one they bring)",
     companions: `companions (${companionWays.join(", ")})`,
     "calendar-start": "calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491)",
     lines: 'lines ("none" is an answer)',
@@ -63,6 +67,8 @@ const settingLabels: Partial<Record<SettingName, string>> = {
 // The same settings by their values alone, as config's results give them in the setup: status gives their meanings (T-168).
 const valueLabels: Partial<Record<SettingName, string>> = {
     preparation: `preparation (${preparations.join(", ")})`,
+    length: `length (${lengths.join(", ")})`,
+    character: `character (${characterWays.join(", ")})`,
     difficulty: `difficulty (${difficulties.join(", ")})`,
     lethality: `lethality (${lethalities.join(", ")})`,
     saves: `saves (${saveModes.join(", ")})`,
@@ -185,7 +191,7 @@ function writtenMode(root: string): unknown
 /** What the setup still has to agree with the player, each setting with the values it takes, the system's own too (MOD-3). */
 function setupMissing(root: string, context: Context, world: World, brief: boolean): string[]
 {
-    const unanswered = unansweredSettings(readSettings(root), world.pages.length > 0);
+    const unanswered = unansweredSettings(readSettings(root), world.pages.length > 0, playerCharacters(world).length > 0);
     const label = (name: SettingName): string | undefined => (brief ? valueLabels[name] : undefined) ?? settingLabels[name];
     // The player's choice in their last campaign, which the setup offers first (T-134), when the game offers it.
     const last = lastChoices(context.home);

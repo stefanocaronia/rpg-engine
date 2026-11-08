@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 /** The settings whose last choice a new campaign's setup suggests: how the player likes to play, never what belongs to one game, as how well they know it. */
-export const rememberedSettings: readonly string[] = ["difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "companions", "preparation"];
+export const rememberedSettings: readonly string[] = ["difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "companions", "preparation", "length"];
 
 const fileName = "last-choices.json";
 

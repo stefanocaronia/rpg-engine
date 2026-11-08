@@ -5,7 +5,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { blockingMode, campaignMode, missingText, type Mode, modePart, modes } from "./shared/mode.ts";
 import { valueParts } from "./shared/offers.ts";
-import { adventurePart, situationPart } from "./shared/parts.ts";
+import { adventurePart, lengthPart, situationPart } from "./shared/parts.ts";
 import { adventureUnderWay } from "./shared/quests.ts";
 import { campaignSaves, makeSave, type ResetPoint, savesWhy, saveText } from "./shared/saves.ts";
 import { newDatedLogEntry, readPresent } from "./shared/time.ts";
@@ -53,7 +53,15 @@ export const mode = defineCommand({
             changed: true,
             dateless: readPresent(root).date === undefined,
             // Play's part with Voices, as instructions gives it, for a campaign that reaches play in the chat that made it (playtest 01).
-            part: [modePart(input.to, system) ?? "", input.to === "play" ? valueParts(root, context) : "", input.to === "play" ? voicesPart(root, context) : "", session, adventure]
+            part: [
+                modePart(input.to, system) ?? "",
+                input.to === "play" ? valueParts(root, context) : "",
+                input.to === "play" ? voicesPart(root, context) : "",
+                session,
+                adventure,
+                // How long the campaign plays, for the adventure built now (D-558).
+                input.to === "play" ? lengthPart(root, context, true) : "",
+            ]
                 .filter((part) => part !== "")
                 .join("\n\n"),
             ...(start === undefined ? {} : { start }),

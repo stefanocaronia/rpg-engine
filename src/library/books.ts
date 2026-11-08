@@ -438,6 +438,8 @@ function writeIndex(folder: string, index: BookIndex): void
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(`${file}.part`, JSON.stringify(index));
     replaceFile(`${file}.part`, file);
+    // Two writes of one size within a tick of the file clock look the same: the index read before is no longer it.
+    loaded.delete(file);
 }
 
 const pause = new Int32Array(new SharedArrayBuffer(4));

@@ -303,15 +303,20 @@
         border-color: color-mix(in srgb, var(--gold) 60%, var(--rule));
     }
 
-    /* Each dot is drawn at 12 pixels in a target of 24; where the player is, a wider pill. */
+    /* Each dot is drawn at 12 pixels in a target of 24; where the player is, a wider pill. The dots wrap as words do, balanced: when one row is too narrow
+       for them, two even rows, never one dot alone. */
     .setup-dots {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0;
+        justify-self: stretch;
         margin: 0;
         padding: 0;
         list-style: none;
+        text-align: center;
+        text-wrap: balance;
+    }
+
+    .setup-dots > li {
+        display: inline-block;
+        vertical-align: top;
     }
 
     .setup-dots button {
@@ -368,8 +373,13 @@
     }
 
     @media (pointer: coarse) {
+        /* Touch targets as large as one row of questions allows, never under 24px; the list spans the column, so the share is of a known width. */
+        .setup-dots > li {
+            width: clamp(24px, calc(100% / var(--count, 12)), 30px);
+        }
+
         .setup-dots button {
-            width: 30px;
+            width: 100%;
             height: 30px;
         }
 

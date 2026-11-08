@@ -67,6 +67,7 @@ async function setUp(left: string[] = []): Promise<void>
         ["dice", "digital"],
         ["master-rolls", "behind the screen"],
         ["units", "metric"],
+        ["character", "made with the player"],
         ["companions", "none"],
         ["calendar-start", "day 1"],
         ["lines", "none"],
@@ -262,6 +263,8 @@ const answers: Record<string, string> = {
     veils: "veils: [torture]",
     premise: "premise: fantasy cupo",
     preparation: "preparation: on the fly",
+    length: "length: one evening",
+    character: "character: the player's own",
 };
 const campaigns = fc.record({
     // Mostly every answer, else all but one, so that the cases that decide come often.
@@ -293,9 +296,24 @@ describe("the laws of the mode, on campaigns made at random", () => {
                     page(root, "characters", "Bran", made.companion, "companion");
                     page(root, "places", "Guado", made.place ? "alive" : "none");
                     const written = made.player !== "none" || made.companion !== "none" || made.place;
-                    const setup = ["language", "mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "calendar-start", "lines", "veils", ...(written ? [] : ["premise", "preparation"])].every((setting) =>
-                        setting !== made.unanswered
-                    )
+                    const setup = [
+                        "language",
+                        "mentor",
+                        "difficulty",
+                        "lethality",
+                        "saves",
+                        "rigor",
+                        "dice",
+                        "master-rolls",
+                        "units",
+                        "calendar-start",
+                        ...(made.player === "none" ? ["character"] : []),
+                        "lines",
+                        "veils",
+                        ...(written ? [] : ["premise", "preparation", "length"]),
+                    ].every((
+                        setting,
+                    ) => setting !== made.unanswered)
                         && made.companions !== undefined;
                     const made0 = made.companions === "made with the player" || made.companions === "made by the master";
                     const zero = made.player === "alive" && (!made0 || made.companion === "alive");

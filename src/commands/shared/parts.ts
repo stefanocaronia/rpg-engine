@@ -64,6 +64,37 @@ export function mentorPart(root: string, context: Context, mentor: string | unde
     return part === "" || learned.length === 0 ? part : `${part}\n\nAlready explained: ${learned.join(", ")}.`;
 }
 
+/** What to do when the last quest ends (D-530 (8)): build the next adventure; with a length that has an end, first its epilogue and the player's word (D-558). */
+export function nextAdventureLead(root: string): string
+{
+    const length = readSettings(root).length;
+    return length === undefined || length === "open"
+        ? "No quest is open or planned now: build the next adventure."
+        : `No quest is open or planned now, and the campaign plays ${length}: give this adventure its epilogue, then ask the player whether to go on; if they do, build the next one, of the same length.`;
+}
+
+/**
+ * How long the campaign plays, when it has an end (D-558): how to size its adventures and close them; none for an open one or one not chosen. With once, not
+ * again in a chat that already has it.
+ */
+export function lengthPart(root: string, context: Context, once = false): string
+{
+    const length = readSettings(root).length;
+
+    if (length === undefined || length === "open") {
+        return "";
+    }
+
+    const name = `length-${length.replaceAll(" ", "-")}`;
+
+    if (once && context.told?.has(name)) {
+        return "";
+    }
+
+    context.told?.add(name);
+    return partText(name, campaignSystem(root, context)) ?? "";
+}
+
 /**
  * How the master writes, as the player chose it (D-395): the author's part in place of the prose's, the story's, and the player's own words, each with what
  * was written in it; none for the core's own ways. Every time it is asked, as a change of them must reach the chat.

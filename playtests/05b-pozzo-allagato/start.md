@@ -14,7 +14,7 @@ rpg init $campaign --name "La miniera di Vena Bianca" --system 5e --language it 
 Copy-Item -Recurse -Force playtests\05b-pozzo-allagato\world\* $campaign\world
 Push-Location $campaign
 rpg config saves checkpoint; rpg config rigor rules; rpg config dice digital; rpg config units metric
-rpg config companions "made by the master"; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
+rpg config companions "made by the master"; rpg config character "made with the player"; rpg config master-rolls "behind the screen"; rpg config lines none; rpg config veils none; rpg config advancement xp; rpg config mentor off
 rpg config calendar-start "day 1"; rpg config pictures none
 rpg mode "session zero"; rpg mode play
 rpg advance --to "day 2, 13:20" --why "Arrivo alla miniera di Vena Bianca"

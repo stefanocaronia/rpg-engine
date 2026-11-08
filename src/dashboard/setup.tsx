@@ -93,7 +93,7 @@ export function SetupView({ setup }: { setup: Setup; })
                 />
             )}
             {done && <Ready setup={setup} left={left} focus={moved} onGo={go} onProblem={setSaid} />}
-            <ol class="setup-dots" aria-label={t("Questions")}>
+            <ol class="setup-dots" aria-label={t("Questions")} style={{ "--count": String(questions.length) }}>
                 {questions.map((one, index) => (
                     <li key={one.name}>
                         <button

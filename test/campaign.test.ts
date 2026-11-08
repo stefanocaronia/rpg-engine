@@ -8,17 +8,17 @@ import { makeTempFolder, readLogFile, removeFolder, testContext } from "./suppor
 
 // The settings the setup asks of a new campaign without a written world, after the system and the language (MOD-3), and the call that moves on (MOD-7).
 const asked =
-    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly: the world made just before it is needed; all at the start), "
+    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly: the world made just before it is needed; all at the start), length (how long it plays: one evening; a few sessions; open, one adventure after another), "
     + "difficulty (how hard the world plays: story, easy, normal, hard, brutal), lethality (what a fall means: narrative, the character never dies; epic, only when it matters; dice, the dice decide), saves (when the game may go back: permadeath, never but to the start; checkpoint, to the last end of a scene once the player character dies; free, to any save), rigor (how closely travel, fatigue, food and the like follow the rules: smooth, glossed over; rules, as written; simulation, beyond them), dice (who rolls the player character's dice: digital, rpg; physical, the player, who tells you the values), "
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
-    + "companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
+    + "character (made with the player; made by the master, from a few words; the player's own, one they bring), companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
 // The same, as config's results give them: the settings with a meaning in status by their values alone (T-168).
 const askedBrief =
-    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly, all at the start), "
+    "mentor (ask how well the player knows the game: never played, tutorial; a little, hints; well, off), premise (the genre, the tone, a few elements of the world and what the player enjoys most in a game, such as fights, mysteries, talk or exploring, in the player's words), preparation (on the fly, all at the start), length (one evening, a few sessions, open), "
     + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation), dice (digital, physical), "
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
-    + "companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
+    + "character (made with the player, made by the master, the player's own), companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
 const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
 const playLine = "To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.";
@@ -241,9 +241,9 @@ describe("rpg config", () => {
     it("shows the settings and what is still missing", async () => {
         const result = await runCommandLine(["config"], context);
         expect(result.output).toBe(
-            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: free, fake)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\n"
+            "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: free, fake)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\nlength: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
-                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncompanions: (missing)\ncalendar-start: (missing)\nbetween-sessions: stops (unset: no game time passes between sessions)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
+                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncharacter: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\nbetween-sessions: stops (unset: no game time passes between sessions)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
                 + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: free, fake), language (a code, such as it), ${askedBrief}; ${onward}`,
         );
     });
@@ -363,7 +363,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, companions, calendar-start, between-sessions, pictures, effort, lines, veils, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
+            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, effort, lines, veils, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

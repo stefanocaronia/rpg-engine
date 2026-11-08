@@ -160,7 +160,7 @@ export const status = defineCommand({
                 ? undefined
                 : `Game systems to install, if the player wants one: ${installable.map((one) => `${one.name} (${one.title}${one.verified ? "" : ", not verified"})`).join(", ")}. `
                     + "Install the one chosen with package install and its name, then set it with config system: the campaign keeps it once it has a player character.",
-            premise: settings.premise === undefined ? undefined : `${settings.premise}${settings.preparation === undefined ? "" : ` (preparation ${settings.preparation})`}`,
+            premise: settings.premise === undefined ? undefined : `${settings.premise}${premiseWays(settings.preparation, settings.length)}`,
             // How the master writes, as the player chose it, under the eyes at every start (D-395).
             writing: [
                 named("prose", settings.author === undefined ? settings.prose : undefined),
@@ -290,6 +290,13 @@ function sessionParts(context: Context, system: GameSystem | undefined, world: W
         ? "The preparation is on the fly: before this session opens, build what it needs of the adventure under way."
         : undefined;
     return [situationPart("session", context, system), lead === undefined ? "" : adventurePart(lead, context, system)].filter((part) => part !== "");
+}
+
+/** How a premise's world is made and how long it plays, as " (preparation on the fly, length one evening)"; nothing when neither is chosen. */
+function premiseWays(preparation: string | undefined, length: string | undefined): string
+{
+    const ways = [named("preparation", preparation), named("length", length)].filter((way) => way !== undefined);
+    return ways.length === 0 ? "" : ` (${ways.join(", ")})`;
 }
 
 /** The lines of the contradictions, marked told in the chat. */

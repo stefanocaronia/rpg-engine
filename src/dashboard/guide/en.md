@@ -93,6 +93,7 @@ The master asks only what is still missing, a few questions at a time; the dashb
 | **Dice** | Who rolls your dice | digital, physical |
 | **Units** | Distances and weights | metric, imperial |
 | **Character voices** | Who speaks for the characters you meet, from the master to the characters: the master always; at key moments the character themselves, knowing only what they know, as the master chooses; or always the character, for the main ones or for everyone, slower and costlier, where your AI app can | the master, sometimes, main characters, everyone |
+| **Your character** | How your character is made in session zero | with the master, by the master, your own ([2.7](#27-session-zero-your-character)) |
 | **Companions** | Who travels with you | none, made with you, made by the master, met in play |
 | **Pictures** | Pictures of places, quests and those you meet | none, on request, new places, quests and those you meet ([3.11](#311-pictures)) |
 | **Lines** and **Veils** | What never appears, and what happens only off screen | lists |
@@ -100,13 +101,15 @@ The master asks only what is still missing, a few questions at a time; the dashb
 
 Fifth edition adds **advancement**: experience points or milestones.
 
-Without a written world, the master also asks a **premise** (genre, tone, a few elements and what you enjoy most in a game, such as fights, mysteries, talk or exploring, in your words) and the **preparation**: build the world on the fly, as you go, or all at the start.
+Without a written world, the master also asks a **premise** (genre, tone, a few elements and what you enjoy most in a game, such as fights, mysteries, talk or exploring, in your words) the **preparation**: build the world on the fly, as you go, or all at the start; and the **length**: one evening, a few sessions (three to five evenings), or open, one adventure after another. At the end of a story with a length you can always go on.
 
 **The master's style** is never asked, but you can change it in the chat or in **Settings**: the **prose** (plain, literary, pulp, wry), the **stories** it invents (situations, arcs, episodes, mystery), an author to **write like**, or anything else **in your words**.
 
 ### 2.7 Session zero: your character
 
-You make your character with the master, as at a table. Every choice is yours, unless you ask the master to make it: come with a full idea, a vague one, or nothing. The master tells you how ability scores are made before any die is rolled. Your story is never required; if you give one, the master writes it in your words. Then the master asks for a picture of your character ([3.7](#37-your-characters-story-and-picture)). RPG Engine works out the sheet: you never do the sums.
+You make your character with the master, as at a table. Every choice is yours, unless you ask the master to make it: come with a full idea, a vague one, or nothing; or ask the master to make it all from a few words. In a game with levels the master asks from which level you start: the first, unless you want another. The master tells you how ability scores are made before any die is rolled. Your story is never required; if you give one, the master writes it in your words. Then the master asks for a picture of your character ([3.7](#37-your-characters-story-and-picture)). RPG Engine works out the sheet: you never do the sums.
+
+Do you already have a character, from another game or another campaign? Choose **I already have one** in the setup and give it to the master: paste the sheet in the chat, or say where its file is on your computer (a PDF, a picture, a text). The master writes it as it is, at its level, checks it against the rules and the world, and agrees with you anything that does not fit.
 
 ---
 

@@ -134,7 +134,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 - **Right to left** (Arabic, Hebrew): logical properties only (`margin-inline`, `inset-inline-start`); the page mirrors by itself. Maps and dice stay left to right. Numbers, notations and names inside sentences are isolated (`isolated()`, `<bdi>`, `.num`); text from the game has `dir="auto"`. Chevrons and arrows that point a way turn; the arrow keys follow the reading (`arrowStep`).
 - **Widths**: a phone up to 600 px (one column, the sections in a bar at the bottom, cards closed), wide from 900 px (the table's column beside the page). Check 360 and 1280 px, both themes. At 360 nothing widens the page: grids are `minmax(0, 1fr)`, long names break (`overflow-wrap: anywhere`), a row that cannot fit scrolls by itself.
-- **Touch**: under `(pointer: coarse)` every control is at least `--target` (44 px).
+- **Touch**: under `(pointer: coarse)` every control is at least `--target` (44 px), but the setup's dots, a shortcut beside Back and Skip: 24 px at least, as many as fit one row.
 - **Keyboard**: everything is reached; a group (tabs, chips, radios, a grid of days) is one Tab stop with arrows inside; Esc closes; after a change the focus moves somewhere sensible, never to the page's body. The focus ring is the accent, 2 px, offset 2 px (−2 px inside a row that scrolls).
 - **Screen readers**: each part a landmark named by its heading; icons `aria-hidden` and the control named; what changes by itself in a polite `role="status"`, said once, short.
 - Text zoomed to 200% still fits; nothing depends on hover alone.
