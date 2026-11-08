@@ -32,7 +32,7 @@ import { measuresOf, roadsOf } from "./shared/roads.ts";
 import { interruptedLoad } from "./shared/saves.ts";
 import { type ClosedScene, closedScenes, copyCounters, copyPage, partyAwayText, readOpenScene } from "./shared/scene.ts";
 import { missingSheetFields, overLoad, type SheetSummary, sheetSummary } from "./shared/sheet.ts";
-import { datedText, problemText, readPresent } from "./shared/time.ts";
+import { datedText, problemText, readPresent, timeBetweenSessions } from "./shared/time.ts";
 import { campaignSystem, campaignWorld, countedByGame, playedSettingValue, systemInStatus } from "./shared/world.ts";
 import { translationOffer } from "./translate.ts";
 
@@ -194,6 +194,8 @@ export const status = defineCommand({
             sceneCounts: sceneCounts(closed),
             openQuests: openQuests(world, now),
             now: now === undefined ? undefined : datedText(root, context, now),
+            // In play, the game time to let pass when the last move is an hour old or more and the time runs between sessions (D-133).
+            betweenSessions: mode === "play" && now !== undefined ? timeBetweenSessions(root, context) : undefined,
             dateProblem: present.problem === undefined ? undefined : problemText(present.problem),
             datedEvents: events.some(isDated),
             dueEvents: due.map(dueText),
@@ -237,6 +239,7 @@ export const status = defineCommand({
             result.extensions,
             result.houseRules.length === 0 ? "" : `House rules (rules): ${result.houseRules.join(", ")}`,
             timeLine(result),
+            result.betweenSessions ?? "",
             ...(result.players.length === 0 ? [`No player character yet.${sheetNote(result.sheet)}`] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             ...result.around.map((one) => `Around ${one.who.join(" and ")}: ${one.text}`),
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),

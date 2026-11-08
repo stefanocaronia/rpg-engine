@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDuration, formatDuration, formatGameDate, minutesBetween, readDuration, readGameDate } from "../src/time/index.ts";
+import { addDuration, formatDuration, formatGameDate, minutesBetween, readDuration, readGameDate, readTimeRate } from "../src/time/index.ts";
 
 describe("game dates", () => {
     it("reads and writes a day with a time, or a day only", () => {
@@ -60,5 +60,13 @@ describe("time passing", () => {
         expect(minutesBetween({ day: 1, minute: 21 * 60 }, { day: 1, minute: 23 * 60 })).toBe(120);
         expect(minutesBetween({ day: 1, minute: 21 * 60 }, { day: 2 })).toBe(180);
         expect(minutesBetween({ day: 2 }, { day: 1, minute: 60 })).toBe(-1380);
+    });
+});
+
+describe("a rate of game time to real time (D-133)", () => {
+    it("reads the minutes of each side, and nothing else", () => {
+        expect(readTimeRate("1d per 7d")).toEqual({ game: 1440, real: 10080 });
+        expect(readTimeRate("2h PER 1d 12h")).toEqual({ game: 120, real: 2160 });
+        expect(["stops", "1d per", "per 7d", "1d per 7d per 1d", "a week"].map(readTimeRate)).toEqual([undefined, undefined, undefined, undefined, undefined]);
     });
 });

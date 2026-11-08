@@ -310,3 +310,43 @@ describe("pages and files written by hand", () => {
         expect(result.output).toContain("campaign.yaml is not valid YAML; fix it by hand: Unresolved alias");
     });
 });
+
+describe("the game time between sessions (D-133)", () => {
+    // A context like the test's, the real time some minutes after the last move.
+    const later = (minutes: number): Context => ({ ...context, now: () => new Date(Date.parse("2026-10-02T10:00:00Z") + minutes * 60_000) });
+    const statusLater = async (minutes: number): Promise<string> => (await runCommandLine(["status"], later(minutes))).output;
+
+    beforeEach(async () => {
+        await rpg("advance", "--to", "day 1, 18:00");
+    });
+
+    it("stops by default: status says nothing however long the player was away", async () => {
+        expect(await statusLater(10 * 24 * 60)).not.toContain("real time since the last move");
+    });
+
+    it("runs at the rate set: an hour or more after the last move, status says how much game time to let pass", async () => {
+        expect((await rpg("config", "between-sessions", "1d per 7d")).exitCode).toBe(0);
+        const lastMove = Date.parse(String(readLogFile(folder).at(-1)?.at));
+        const sinceLastMove = (minutes: number): number => minutes + (lastMove - Date.parse("2026-10-02T10:00:00Z")) / 60_000;
+        expect(await statusLater(sinceLastMove(3.5 * 24 * 60))).toContain(
+            "3d 12h of real time since the last move, and between sessions the game time runs 1d per 7d: if this is a new session, call advance by 12h before you open it, and let the opening tell what the world did meanwhile.",
+        );
+        expect(await statusLater(sinceLastMove(59))).not.toContain("real time since the last move");
+    });
+
+    it("reports a value that is neither stops nor a rate, and lets the time stop", async () => {
+        writeByHand("campaign.yaml", readFileSync(join(folder, "campaign.yaml"), "utf8") + "between-sessions: a week\n");
+        expect((await rpg("validate")).output).toContain('between-sessions: "a week" is neither stops nor a rate of game time to real time');
+        expect(await statusLater(10 * 24 * 60)).not.toContain("real time since the last move");
+    });
+});
+
+describe("config between-sessions (D-133)", () => {
+    it("takes stops or a rate, and refuses anything else", async () => {
+        expect((await rpg("config", "between-sessions", "2h per 1d")).exitCode).toBe(0);
+        const refused = await rpg("config", "between-sessions", "a week");
+        expect(refused.exitCode).toBe(1);
+        expect(refused.output).toContain('"a week" is no between-sessions: give stops, or the game time that passes for a real time, such as 1d per 7d. Nothing changed.');
+        expect((await rpg("config", "between-sessions", "stops")).exitCode).toBe(0);
+    });
+});

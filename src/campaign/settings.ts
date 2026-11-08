@@ -515,6 +515,10 @@ export const settingsSchema = z.object({
     companions: z.enum(companionWays).optional().describe("how the companions come: none, made with the player or made by the master in session zero, or met in play"),
     // Checked by the time module against the calendar (TIM-8).
     "calendar-start": z.string().min(1).optional().describe("when the story starts: day 1 to count only the days, or the day of the world's calendar that is day 1, such as 14 April 1491"),
+    // The rate is read by the time module, which status uses (D-133); written wrongly, the game time stops between sessions.
+    "between-sessions": z.string().min(1).optional().describe(
+        "whether the game time runs between sessions: stops (unset, the default) or the game time that passes for a real time, such as 1d per 7d",
+    ),
     // new places and new places and quests, as campaigns wrote it before quests and then those met had pictures, are read as the value that took their place (D-388, D-420).
     pictures: z.preprocess((value) => (value === "new places" || value === "new places and quests" ? "new elements" : value), z.enum(pictureWays)).optional().describe(
         "the pictures of places, quests and those met the engine has made on this computer, which spend the player's plan, Codex's or Claude's: none, on request (those the player asks for) "
@@ -575,7 +579,7 @@ const premiseSettingNames: SettingName[] = ["premise", "preparation"];
 // How the master writes: the core's own until the player chooses (D-395).
 const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
 
-const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voices", "calendar", "calendar-start", ...entrySettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
+const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voices", "calendar", "calendar-start", "between-sessions", ...entrySettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
 
 /** The YAML list of a list setting, edited in place so that its comments stay; created when missing. */
 function listNode(document: Document, setting: SettingName): YAMLSeq

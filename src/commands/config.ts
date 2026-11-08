@@ -53,7 +53,7 @@ import { hostInstructions } from "../instructions/index.ts";
 import { coinList, readAmount, readCoins } from "../money/index.ts";
 import { declaredKind } from "../pages/index.ts";
 import { campaignDataNames, findCampaignSystem, findSystem, readableSystems, rulesetSetting, systemFileName, systemPackage, type SystemSetting } from "../systems/index.ts";
-import { readCalendar, readCalendarStart } from "../time/index.ts";
+import { readCalendar, readCalendarStart, readTimeRate } from "../time/index.ts";
 import { checkLibraryRemovals, libraryAdditions, libraryRemovals, libraryShown, startLibraryReading } from "./shared/library.ts";
 import { campaignMode, campaignNote } from "./shared/mode.ts";
 import { campaignCoins, coinsShown } from "./shared/money.ts";
@@ -810,7 +810,7 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
     }
 
     // How the master writes, unset: the core's own ways, never missing (D-395).
-    // And the master's effort, unset: each app's own, the player's to choose (D-462); who voices the characters, unset: auto (D-490); the master's rolls, behind the screen (D-287).
+    // And the master's effort, unset: each app's own, the player's to choose (D-462); who voices the characters, unset: auto (D-490); the master's rolls, behind the screen (D-287); the game time between sessions, stopped (D-133).
     const own: Record<string, string> = {
         prose: "plain (as your instructions write)",
         story: "situations (as your instructions write)",
@@ -819,6 +819,7 @@ function shownValue(root: string, context: Context, settings: CampaignSettings, 
         effort: "(the app's own: the player's to choose)",
         voices: "auto (a subagent at key moments, as you choose, where the app has them)",
         "master-rolls": "behind the screen (unset: roll hides your rolls for foes and NPCs)",
+        "between-sessions": "stops (unset: no game time passes between sessions)",
     };
 
     if (settings[name] === undefined && Object.hasOwn(own, name)) {
@@ -843,6 +844,11 @@ function settingValue(root: string, setting: string, value: string, context: Con
 
     if (setting === "calendar-start") {
         return calendarStartValue(root, context, value);
+    }
+
+    // The game time between sessions (D-133): it stops, or runs at a rate of game time to real time.
+    if (setting === "between-sessions" && value.trim().toLowerCase() !== "stops" && readTimeRate(value) === undefined) {
+        throw new Error(`"${value}" is no between-sessions: give stops, or the game time that passes for a real time, such as 1d per 7d. Nothing changed.`);
     }
 
     return setting === "coins" ? newCoins(root, value, context) : setting === "system" ? installedSystemName(value, context, "config") : value;

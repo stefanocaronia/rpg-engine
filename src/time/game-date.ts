@@ -58,6 +58,13 @@ export function readDuration(text: string): number | undefined
     return total > 0 ? total : undefined;
 }
 
+/** A rate of game time to real time, written as 1d per 7d: the minutes of each; undefined for anything else. */
+export function readTimeRate(text: string): { game: number; real: number; } | undefined
+{
+    const [game, real, ...more] = text.split(/\s+per\s+/i).map(readDuration);
+    return game === undefined || real === undefined || more.length > 0 ? undefined : { game, real };
+}
+
 /** A duration as it is written: 1d 6h, 45m; 0m for no time. */
 export function formatDuration(minutes: number): string
 {

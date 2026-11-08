@@ -2,12 +2,29 @@
 import { resolve } from "node:path";
 import { campaignFileName, readOneSetting, readState, readTextSetting } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
-import { type LogEntry, newLogEntry } from "../../core/log.ts";
+import { type LogEntry, newLogEntry, readLog } from "../../core/log.ts";
 import type { Problem } from "../../core/problem.ts";
 import { files } from "../../core/store.ts";
 import { isEmptyField } from "../../pages/index.ts";
-import { type Calendar, type CalendarDay, calendarDay, type CalendarStart, formatCalendarDay, formatGameDate, type GameDate, readCalendar, readCalendarStart, readGameDate, realCalendar } from "../../time/index.ts";
+import {
+    type Calendar,
+    type CalendarDay,
+    calendarDay,
+    type CalendarStart,
+    formatCalendarDay,
+    formatDuration,
+    formatGameDate,
+    type GameDate,
+    readCalendar,
+    readCalendarStart,
+    readGameDate,
+    readTimeRate,
+    realCalendar,
+} from "../../time/index.ts";
 import { campaignExtensions, extensionSources } from "./packages/extensions.ts";
+
+// The setting of the game time between sessions (D-133).
+const betweenSessionsSetting = "between-sessions";
 
 /** The campaign's calendar and the day of it that is day 1, if the story starts on one (TIM-8); what does not read is a problem, never a stop. */
 export interface CampaignCalendar
@@ -66,7 +83,27 @@ export function newDatedLogEntry(root: string, context: Context, type: string, v
 export function timeProblems(root: string, context: Context): Problem[]
 {
     const { problem } = readPresent(root);
-    return [...(problem === undefined ? [] : [problem]), ...campaignCalendar(root, context).problems];
+    return [...(problem === undefined ? [] : [problem]), ...campaignCalendar(root, context).problems, ...betweenSessionsProblems(root)];
+}
+
+/**
+ * The game time to let pass before a new session (D-133): when at least an hour of real time has passed since the last move and the game time runs between
+ * sessions, the real time gone, the game time it makes and how to let it pass; nothing when the game time stops between sessions, the default.
+ */
+export function timeBetweenSessions(root: string, context: Context): string | undefined
+{
+    const written = readTextSetting(root, betweenSessionsSetting);
+    const rate = written === undefined ? undefined : readTimeRate(written);
+    const last = readLog(root).at(-1);
+    const realMinutes = last === undefined ? 0 : Math.floor((context.now().getTime() - Date.parse(last.at)) / 60_000);
+
+    if (rate === undefined || !(realMinutes >= 60)) {
+        return undefined;
+    }
+
+    const gameMinutes = Math.floor((realMinutes * rate.game) / rate.real);
+    return gameMinutes < 1 ? undefined : `${formatDuration(realMinutes)} of real time since the last move, and between sessions the game time runs ${written}: if this is a new session, `
+        + `call advance by ${formatDuration(gameMinutes)} before you open it, and let the opening tell what the world did meanwhile.`;
 }
 
 /** The campaign's calendar (TIM-8): campaign.yaml's, else an extension's, else the core's real months; and its start. Read once until campaign.yaml changes. */
@@ -87,6 +124,19 @@ export function datedText(root: string, context: Context, date: GameDate): strin
 {
     const day = calendarDayOf(root, context, date.day);
     return day === undefined ? formatGameDate(date) : `${formatGameDate(date)} (${formatCalendarDay(day)})`;
+}
+
+/** A between-sessions setting that does not read as stops or a rate: the game time stops between sessions until it is fixed. */
+function betweenSessionsProblems(root: string): Problem[]
+{
+    const written = readTextSetting(root, betweenSessionsSetting);
+    return written === undefined || written.trim().toLowerCase() === "stops" || readTimeRate(written) !== undefined
+        ? []
+        : [{
+            path: campaignFileName,
+            message: `between-sessions: "${written}" is neither stops nor a rate of game time to real time, so the game time stops between sessions.`,
+            fix: "set it with config between-sessions, such as 1d per 7d, or stops",
+        }];
 }
 
 function readCampaignCalendar(root: string, context: Context): CampaignCalendar
