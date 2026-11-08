@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { anchorOf, markdownBlocks, plainText, previewOf } from "../src/dashboard/help/blocks.ts";
 import { shippedLanguages } from "../src/dashboard/text.ts";
-import { englishGuide, guideIn, guideParts, guideShape, marksOf, partMarks } from "./i18n/guide.ts";
+import { englishGuide, guideIn, guideMarks, guideParts, guidePlan, guideShape, isUpToDate, markOf, marksOf, paragraphsOf, translationHead } from "./i18n/guide.ts";
 
 describe("the guide's markdown (D-413)", () => {
     it("reads headings with their icon, paragraphs, lists, tables, quotes and code, and leaves comments out", () => {
@@ -71,8 +71,8 @@ describe("the guide in every language (D-413)", () => {
         expect([...english.matchAll(/\]\(#([^)\s]+)\)/g)].map((match) => match[1]).filter((anchor) => !anchors.has(anchor))).toEqual([]);
     });
 
-    it("has every shipped language translated from the English as it is now, part by part, with its headings, links and code: npm run translate makes it", () => {
-        const stale = shippedLanguages.filter((language) => marksOf(guideIn(language) ?? "").join() !== partMarks(english).join());
+    it("has every shipped language translated from the English as it is now, with its headings, links and code: npm run translate makes it", () => {
+        const stale = shippedLanguages.filter((language) => !isUpToDate(guideIn(language) ?? "", english));
         expect(stale).toEqual([]);
         const unlike = shippedLanguages.filter((language) => guideShape(guideIn(language) ?? "") !== guideShape(english));
         expect(unlike).toEqual([]);
@@ -83,5 +83,48 @@ describe("the guide in every language (D-413)", () => {
         expect(parts[0]).toMatch(/^# /);
         expect(parts.slice(1).every((part) => part.startsWith("## "))).toBe(true);
         expect(parts.join("\n\n")).toBe(english.trim());
+    });
+});
+
+describe("the guide translated paragraph by paragraph (T-183)", () => {
+    const english = "# Guide\n\nThe lead.\n\n---\n\n## One\n\nFirst.\n\n```\nrpg init\n\nrpg play\n```\n\nThird.";
+    const translated = (marks: string[][]): string => `${translationHead(marks)}\n# Guida\n\nL'inizio.\n\n---\n\n## Uno\n\nPrimo.\n\n\`\`\`\nrpg init\n\nrpg play\n\`\`\`\n\nTerzo.\n`;
+
+    it("splits a part at its blank lines, a block of code whole", () => {
+        expect(paragraphsOf(guideParts(english)[1] ?? "")).toEqual(["## One", "First.", "```\nrpg init\n\nrpg play\n```", "Third."]);
+    });
+
+    it("reads its marks back, and an older guide's one for each part", () => {
+        expect(marksOf(translated(guideMarks(english)))).toEqual(guideMarks(english));
+        expect(marksOf("<!-- Translated from en.md, part by part, by npm run translate: aaaa bbbb. Change the English, then run it again. -->")).toEqual([["aaaa"], ["bbbb"]]);
+    });
+
+    it("is up to date with the marks of its paragraphs or of its whole parts", () => {
+        expect(isUpToDate(translated(guideMarks(english)), english)).toBe(true);
+        expect(isUpToDate(translated(guideParts(english).map((part) => [markOf(part)])), english)).toBe(true);
+        expect(isUpToDate(translated(guideMarks(english)), english.replace("Third.", "Third, changed."))).toBe(false);
+    });
+
+    it("keeps what did not change and asks again only the paragraph that did, with its part as translated now", () => {
+        const plan = guidePlan(english.replace("First.", "First, changed."), translated(guideMarks(english)));
+        expect(plan[0]).toEqual({ kept: "# Guida\n\nL'inizio.\n\n---" });
+        expect(plan[1]).toEqual({ paragraphs: ["## Uno", undefined, "```\nrpg init\n\nrpg play\n```", "Terzo."], context: guideParts(translated([]))[1] });
+    });
+
+    it("finds the paragraphs of an older guide, marked by its parts, while its English is the same", () => {
+        const older = translated(guideParts(english).map((part) => [markOf(part)]));
+        expect(guidePlan(english.replace("Third.", "Third, changed."), older)[1]).toEqual({ whole: true });
+        expect(guidePlan(english, older)[1]).toEqual({ kept: guideParts(older)[1] });
+    });
+
+    it("asks a part whole when it is new, though its rule or its code reads as another part's", () => {
+        expect(guidePlan(`${english}\n\n## Two\n\nNew.\n\n---`, translated(guideMarks(english)))[2]).toEqual({ whole: true });
+        expect(guidePlan(`${english}\n\n## Two\n\n\`\`\`\nrpg init\n\nrpg play\n\`\`\``, translated(guideMarks(english)))[2]).toEqual({ whole: true });
+    });
+
+    it("keeps a part as it is when another part shares one of its paragraphs", () => {
+        const twice = "# Guide\n\nSee below.\n\n## One\n\nSee below.\n\nFirst.";
+        const own = `${translationHead(guideMarks(twice))}\n# Guida\n\nVedi sotto.\n\n## Uno\n\nVedi più avanti.\n\nPrimo.\n`;
+        expect(guidePlan(twice, own)[0]).toEqual({ kept: "# Guida\n\nVedi sotto." });
     });
 });

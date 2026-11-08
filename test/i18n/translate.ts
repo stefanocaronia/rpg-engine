@@ -1,17 +1,17 @@
-// Completes the page's words in every language the package ships (D-394), the words of each game system that has them in Italian (D-403), and the guide
-// (D-413), translated from the English part by part where a language lacks a part or has one from an older English, kept only when it keeps the English's
-// headings, links and code (test/i18n/guide.ts). Each phrase of
-// the page, or word of a system, that a language's file lacks is translated by Claude Code (Sonnet at medium effort, with the developer's own login, without
-// tools, settings or a session kept), kept only when it keeps its {names}, and written to src/dashboard/i18n/<code>.json or systems/<name>/words/<code>.yaml;
-// what the page or the Italian list no longer has goes. The Italian, curated, shows what each phrase or word means; the glossary (test/i18n/glossary.json)
-// gives the language's voice and the game's terms each batch holds, as its players say them; a system's words follow its official translation where one is.
+// Completes the page's words in every language the package ships (D-394), the words of each game system or extension that has them in Italian (D-403,
+// D-502), and the guide (D-413), translated from the English where a language lacks a part or has one from an older English, only the paragraphs that
+// changed, kept only when they keep the English's headings, links and code (test/i18n/guide.ts). Each phrase of the page, or word of a package, that a
+// language's file lacks is translated by Claude Code (Sonnet at medium effort, with the developer's own login, without tools, settings or a session kept),
+// kept only when it keeps its {names}, and written to src/dashboard/i18n/<code>.json or <package>/words/<code>.yaml; what the page or the Italian list no
+// longer has goes. The Italian, curated, shows what each phrase or word means; the glossary (test/i18n/glossary.json) gives the language's voice and the
+// game's terms each batch holds, as its players say them; a system's words follow its official translation where one is.
 //   npm run translate                         every shipped language
 //   npm run translate -- --only fr,de
 //   npm run translate -- --only zh --again    translates again the phrases and words that hold a term of the glossary (never the curated Italian)
 //   npm run translate -- --again master,save  only those that hold these terms
-//   npm run translate -- --system ../rpg-engine-5e   the words of a game system in its own repository, in place of the engine's systems
+//   npm run translate -- --package ../rpg-engine-5e,../rpg-engine-weather   the words of packages in their own repositories, in place of the engine's systems
 // A translation that fails keeps the one the file had; to translate a language anew, delete its file. Not part of the tests: run it after adding or
-// changing phrases, the Italian words of a system or the glossary, then look at what it wrote.
+// changing phrases, the Italian words of a package or the glossary, then look at what it wrote.
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import { parse, parseDocument, stringify } from "yaml";
 import { fieldLabel } from "../../src/dashboard/labels.ts";
 import { shippedLanguages } from "../../src/dashboard/text.ts";
-import { englishGuide, guideFolder, guideIn, guideParts, guideShape, marksOf, partMarks, translationHead } from "./guide.ts";
+import { englishGuide, guideFolder, guideIn, guideParts, guidePlan, guideShape, isUpToDate, markOf, paragraphsOf, translationHead } from "./guide.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./phrases.ts";
 
 /** A game term of the glossary: what it means on the page, the other English forms it takes, and its word in each language by code. */
@@ -39,17 +39,19 @@ interface Entry
     italian?: string;
 }
 
-/** A file of translations in each language: the page's phrases, or a game system's words; how to read and write it, and what a request must say of it. */
+/** A file of translations in each language: the page's phrases, or a package's words; how to read and write it, and what a request must say of it. */
 interface Target
 {
     name: string;
     entries: Entry[];
-    /** How many entries go in one request: a system's words all at once, so that one concept has one term in every entry. */
+    /** How many entries go in one request: a package's words all at once, so that one concept has one term in every entry. */
     batch: number;
     languages: string[];
     read(language: string): Record<string, string>;
     write(language: string, translations: Record<string, string>): void;
     brief(language: string, name: string): string[];
+    /** The words a request shows beside a batch, to keep their terms: the file's own in the language, and the game system's an extension is made for. */
+    context?(language: string, batch: Entry[]): string[];
 }
 
 // How many phrases of the page go in one request, and how many requests run at once.
@@ -57,21 +59,26 @@ const batchSize = 130;
 const together = 6;
 const curated = "it";
 const systemsFolder = fileURLToPath(new URL("../../systems/", import.meta.url));
-const sections = ["groups", "fields", "words", "names"] as const;
+// The line before each paragraph of the guide asked and answered alone.
+const paragraphMark = "<!-- next paragraph -->";
 
 const glossary = JSON.parse(readFileSync(new URL("glossary.json", import.meta.url), "utf8")) as { voice: Record<string, string>; terms: Record<string, Term>; };
 const only = listAfter("--only");
 const again = process.argv.includes("--again") ? listAfter("--again") ?? Object.keys(glossary.terms) : [];
-// The folders of game systems in their own repositories whose words to translate, in place of the engine's.
-const givenSystems = listAfter("--system")?.map((folder) => resolve(folder));
+// The folders of packages in their own repositories, game systems or extensions, whose words to translate, in place of the engine's systems.
+const givenPackages = listAfter("--package")?.map((folder) => resolve(folder));
 const unknown = again.filter((term) => !(term in glossary.terms));
+
+if (process.argv.includes("--system")) {
+    throw new Error("--system is now --package, which takes the folders of game systems and extensions alike: npm run translate -- --package ../rpg-engine-5e.");
+}
 
 if (unknown.length > 0) {
     throw new Error(`No term ${unknown.join(", ")} in test/i18n/glossary.json: --again takes its terms, such as ${Object.keys(glossary.terms).slice(0, 3).join(",")}.`);
 }
 
 const languages = shippedLanguages.filter((language) => only === undefined || only.includes(language));
-const targets = [await pageTarget(), ...systemTargets()];
+const targets = [await pageTarget(), ...packageTargets()];
 const jobs = targets.flatMap((target) =>
     target.languages.filter((language) => languages.includes(language)).flatMap((language) => {
         const own = target.read(language);
@@ -144,77 +151,156 @@ async function pageTarget(): Promise<Target>
 }
 
 /**
- * The words of each game system that has them in Italian (D-403): a YAML file for each other shipped language beside words/it.yaml, its groups, fields, words
- * and headline in the Italian's order. The Italian, taken from the system's official translation, is the list of what to translate.
+ * The words of each package that has them in Italian (D-403, D-502): a YAML file for each other shipped language beside words/it.yaml, in the Italian's order.
+ * The Italian, taken from a game's official translation where it has one, is the list of what to translate.
  */
-function systemTargets(): Target[]
+function packageTargets(): Target[]
 {
-    const folders = givenSystems ?? readdirSync(systemsFolder).map((name) => join(systemsFolder, name));
-    return folders.filter((folder) => existsSync(join(folder, "words", `${curated}.yaml`))).map((folder) => {
-        const name = systemName(folder);
-        const file = (language: string): string => join(folder, "words", `${language}.yaml`);
-        const read = (language: string): Record<string, string> => (existsSync(file(language)) ? wordEntries(parse(readFileSync(file(language), "utf8")) as Words) : {});
-        const italian = read(curated);
-        const system = parse(readFileSync(join(folder, "system.yaml"), "utf8")) as { title?: string; "sheet-headline"?: string; };
-        const englishNames = read("en");
-
-        const english = (id: string): string => {
-            const [section, key] = splitId(id);
-            return section === "headline" ? system["sheet-headline"] ?? "" : section === "fields" ? fieldLabel(key) : section === "names" ? englishNames[id] ?? key : key;
-        };
-
-        return {
-            name: givenSystems === undefined ? `systems/${name}` : folder,
-            entries: Object.keys(italian).map((id) => ({ id, english: english(id), italian: italian[id] })),
-            batch: Math.max(1, Object.keys(italian).length),
-            languages: shippedLanguages.filter((language) => language !== curated && language !== "en"),
-            read,
-            write: (language, translations) => {
-                const words: Words = Object.fromEntries(sections.map((section) => [section, Object.fromEntries(Object.entries(translations).filter(([id]) => splitId(id)[0] === section).map(([id, word]) => [splitId(id)[1], word]))]));
-                const headline = translations.headline === undefined ? {} : { headline: translations.headline };
-                const label = new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
-                const head = `# The words of the ${name} system in ${label}, as the dashboard shows them (D-403): translated by npm run translate (test/i18n/translate.ts) from the\n`
-                    + "# words of words/it.yaml; with the terms of the official translation in this language, where one is.\n";
-                // A file there already changes only where its words do: its comments and its order stay.
-                writeFileSync(file(language), existsSync(file(language)) ? changedWords(readFileSync(file(language), "utf8"), read(language), translations) : head + stringify({ ...words, ...headline }, { lineWidth: 0 }));
-            },
-            brief: (language, label) => [
-                `Translate the words a game system shows on the dashboard of a tabletop role-playing game into ${label} (${language}). The system is ${system.title ?? name}.`,
-                `- Where the game has an official translation in ${label}, use its terms exactly, as its books write them; else the words its players use in ${label}.`,
-                "- Each entry has an id: group (a heading of the character sheet), field (the label of a value of the sheet, short; an ability score as the translation",
-                "  abbreviates it, as FOR for Strength in Italian), word (a name the game uses: races, classes, conditions, damage types, sizes, languages, armor and",
-                "  weapons a character is proficient in, the words of a setting), name (the whole name of a field whose label is short, as a roll tells it:",
-                "  Charisma for cha, Charisma saving throw for cha-save), headline (the line under a character's name, as Level 3 Cleric).",
-                "- One concept, one term in every entry: a skill, a condition, an armor or a rest is written the same as a field, as a word, alone or in a list,",
-                "  only its case following the entry's. An entry such as until long rest or difficult terrain is a whole phrase: bend the words as the language needs.",
-                "- Keep each word's case as given: a lowercase word stays lowercase, a capitalized name stays capitalized.",
-                "- Keep every {name} in braces exactly as it is; move it where the language wants it.",
-                "- The Italian beside an entry shows what it means.",
-            ],
-        };
-    });
+    const folders = givenPackages ?? readdirSync(systemsFolder).map((name) => join(systemsFolder, name));
+    return folders.filter((folder) => existsSync(join(folder, "words", `${curated}.yaml`))).map((folder) => wordsTarget(folder, existsSync(join(folder, "extension.yaml")) ? extensionWords(folder) : systemWords(folder)));
 }
 
-/** A system's words file as read: its sections, each from the English to the language's own, and its headline. */
-type Words = Partial<Record<(typeof sections)[number], Record<string, string>>> & { headline?: string; };
-
-/** A system's words as entries by id: "fields: str", "words: Cleric", "headline". */
-function wordEntries(words: Words): Record<string, string>
+/** What a package's words hold: their sections and their single entries, the English of an entry, and what a request says of them. */
+interface WordsKind
 {
+    kind: string;
+    title: string;
+    sections: string[];
+    singles: string[];
+    english(id: string, englishWords: Record<string, string>): string;
+    brief(language: string, label: string): string[];
+    /** The game system an extension is made for, by its name, whose words in the language a request shows. */
+    system?: string;
+}
+
+/** A game system's words: its groups, fields, words, names and headline. */
+function systemWords(folder: string): WordsKind
+{
+    const system = parse(readFileSync(join(folder, "system.yaml"), "utf8")) as { title?: string; "sheet-headline"?: string; };
     return {
-        ...Object.fromEntries(sections.flatMap((section) => Object.entries(words[section] ?? {}).map(([key, word]) => [`${section}: ${key}`, String(word)]))),
-        ...(words.headline === undefined ? {} : { headline: words.headline }),
+        kind: "system",
+        title: system.title ?? packageName(folder),
+        sections: ["groups", "fields", "words", "names"],
+        singles: ["headline"],
+        english: (id, englishWords) => {
+            const [section, key] = splitId(id);
+            return section === "headline" ? system["sheet-headline"] ?? "" : section === "fields" ? fieldLabel(key) : section === "names" ? englishWords[id] ?? key : key;
+        },
+        brief: (language, label) => [
+            `Translate the words a game system shows on the dashboard of a tabletop role-playing game into ${label} (${language}). The system is ${system.title ?? packageName(folder)}.`,
+            `- Where the game has an official translation in ${label}, use its terms exactly, as its books write them; else the words its players use in ${label}.`,
+            "- Each entry has an id: group (a heading of the character sheet), field (the label of a value of the sheet, short; an ability score as the translation",
+            "  abbreviates it, as FOR for Strength in Italian), word (a name the game uses: races, classes, conditions, damage types, sizes, languages, armor and",
+            "  weapons a character is proficient in, the words of a setting), name (the whole name of a field whose label is short, as a roll tells it:",
+            "  Charisma for cha, Charisma saving throw for cha-save), headline (the line under a character's name, as Level 3 Cleric).",
+            "- One concept, one term in every entry: a skill, a condition, an armor or a rest is written the same as a field, as a word, alone or in a list,",
+            "  only its case following the entry's. An entry such as until long rest or difficult terrain is a whole phrase: bend the words as the language needs.",
+            "- Keep each word's case as given: a lowercase word stays lowercase, a capitalized name stays capitalized.",
+            "- Keep every {name} in braces exactly as it is; move it where the language wants it.",
+            "- The Italian beside an entry shows what it means.",
+        ],
     };
 }
 
-/** The section and the key of a word's id: ["fields", "str"], or ["headline", ""]. */
+/** An extension's words: its title and about, the names of the fields it adds, and the texts its widgets and questions write. */
+function extensionWords(folder: string): WordsKind
+{
+    const extension = parse(readFileSync(join(folder, "extension.yaml"), "utf8")) as { title?: string; about?: string; needs?: { system?: string; }; };
+    const made = extension.needs?.system === undefined ? "" : `, made for the game system ${extension.needs.system}`;
+    return {
+        kind: "extension",
+        title: extension.title ?? packageName(folder),
+        system: extension.needs?.system,
+        sections: ["fields", "words"],
+        singles: ["title", "about"],
+        english: (id) => {
+            const [section, key] = splitId(id);
+            return section === "title" ? extension.title ?? "" : section === "about" ? extension.about ?? "" : section === "fields" ? fieldLabel(key) : key;
+        },
+        brief: (language, label) => [
+            `Translate the words an extension shows on the dashboard of a tabletop role-playing game into ${label} (${language}). The extension is ${extension.title ?? packageName(folder)}${made}.`,
+            "- Each entry has an id: title and about (its name and its line on the dashboard's page of packages), field (the name of a value it adds to the",
+            "  character sheet or to a page), word (a text its cards and questions write: a label, a button, a line of what happened).",
+            `- Write natural, concise ${label}, as a well-made game app would: buttons and labels short. The game's terms as its players say them in ${label}.`,
+            "- One concept, one term in every entry, and the term the extension's own words and its game system's already use in the language.",
+            `- The punctuation of ${label}: its own colon, comma and quotes. A question or a button addresses the player as the dashboard does, without marking gender.`,
+            "- Keep each word's case as given: a lowercase word stays lowercase, a capitalized name stays capitalized.",
+            "- Keep every {name} in braces exactly as it is; move it where the language wants it.",
+            "- The Italian beside an entry shows what it means.",
+        ],
+    };
+}
+
+/** A package's words as a target: read and written in its words folder, its file in a language changed only where its words do. */
+function wordsTarget(folder: string, kind: WordsKind): Target
+{
+    const name = packageName(folder);
+    const file = (language: string): string => join(folder, "words", `${language}.yaml`);
+    const read = (language: string): Record<string, string> => (existsSync(file(language)) ? wordEntries(parse(readFileSync(file(language), "utf8")) as Words, kind) : {});
+    const italian = read(curated);
+    const englishWords = read("en");
+    return {
+        name: givenPackages === undefined ? `systems/${name}` : folder,
+        entries: Object.keys(italian).map((id) => ({ id, english: kind.english(id, englishWords), italian: italian[id] })),
+        batch: Math.max(1, Object.keys(italian).length),
+        languages: shippedLanguages.filter((language) => language !== curated && language !== "en"),
+        read,
+        write: (language, translations) => {
+            const label = new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
+            const head = `# The words of the ${name} ${kind.kind} in ${label}, as the dashboard shows them: translated by npm run translate (test/i18n/translate.ts) from the\n`
+                + "# words of words/it.yaml; with the terms of the game's official translation in this language, where one is.\n";
+            // A file there already changes only where its words do: its comments and its order stay.
+            writeFileSync(file(language), existsSync(file(language)) ? changedWords(readFileSync(file(language), "utf8"), read(language), translations) : head + stringify(wordsOf(translations, kind), { lineWidth: 0 }));
+        },
+        brief: kind.brief,
+        context: (language, batch) => {
+            const label = new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
+            const own = Object.fromEntries(Object.entries(read(language)).filter(([id]) => !batch.some((entry) => entry.id === id)));
+            const system = kind.system === undefined ? {} : systemWordsIn(kind.system, language);
+            return [
+                ...(Object.keys(own).length === 0 ? [] : [`- Already in this file in ${label}, to keep their terms (not to translate again): ${JSON.stringify(own)}`]),
+                ...(Object.keys(system).length === 0 ? [] : [`- The words of the game system ${kind.system} in ${label}, whose terms to use: ${JSON.stringify(system)}`]),
+            ];
+        },
+    };
+}
+
+/** The words of a game system in a language, from its folder among the packages given or the engine's systems; none where it is not found. */
+function systemWordsIn(system: string, language: string): Record<string, string>
+{
+    const folders = [...givenPackages ?? [], ...readdirSync(systemsFolder).map((name) => join(systemsFolder, name))];
+    const folder = folders.find((one) => existsSync(join(one, "system.yaml")) && packageName(one) === system);
+    return folder === undefined ? {} : wordsTarget(folder, systemWords(folder)).read(language);
+}
+
+/** A package's words file as read: its single entries, and its sections, each from the English to the language's own. */
+type Words = Record<string, string | Record<string, string> | undefined>;
+
+/** A package's words as entries by id: "fields: str", "words: Cleric", "headline". */
+function wordEntries(words: Words, kind: WordsKind): Record<string, string>
+{
+    const section = (name: string): Record<string, string> => (typeof words[name] === "object" && words[name] !== null ? words[name] : {});
+    return {
+        ...Object.fromEntries(kind.singles.flatMap((single) => (typeof words[single] === "string" ? [[single, words[single]]] : []))),
+        ...Object.fromEntries(kind.sections.flatMap((name) => Object.entries(section(name)).map(([key, word]) => [`${name}: ${key}`, String(word)]))),
+    };
+}
+
+/** A package's words file from its entries by id, its single entries first, then its sections. */
+function wordsOf(translations: Record<string, string>, kind: WordsKind): Words
+{
+    const singles = Object.fromEntries(kind.singles.flatMap((single) => (translations[single] === undefined ? [] : [[single, translations[single]]])));
+    const sections = kind.sections.map((section) => [section, Object.fromEntries(Object.entries(translations).flatMap(([id, word]) => (splitId(id)[0] === section ? [[splitId(id)[1], word]] : [])))]);
+    return { ...singles, ...Object.fromEntries(sections) };
+}
+
 /** Whether two files of translations hold the same entries, in any order. */
 function sameEntries(one: Record<string, string>, other: Record<string, string>): boolean
 {
     return Object.keys(one).length === Object.keys(other).length && Object.entries(one).every(([id, text]) => other[id] === text);
 }
 
-/** A system's words file with its entries changed to these, the others gone, as its YAML document: its comments and its order kept. */
+/** A package's words file with its entries changed to these, the others gone, as its YAML document: its comments and its order kept. */
 function changedWords(text: string, before: Record<string, string>, after: Record<string, string>): string
 {
     const document = parseDocument(text);
@@ -224,14 +310,15 @@ function changedWords(text: string, before: Record<string, string>, after: Recor
     return document.toString({ lineWidth: 0 });
 }
 
+/** The section and the key of a word's id: ["fields", "str"], or ["headline", ""]. */
 function splitId(id: string): [string, string]
 {
     const at = id.indexOf(": ");
     return at < 0 ? [id, ""] : [id.slice(0, at), id.slice(at + 2)];
 }
 
-/** A system's name as a campaign gives it: its package's without its scope and its "system-" (@rpgengine/system-5e is 5e), else its folder's. */
-function systemName(folder: string): string
+/** A package's name as a campaign gives it: its npm name without its scope and its "system-" (@rpgengine/system-5e is 5e), else its folder's. */
+function packageName(folder: string): string
 {
     const manifest = join(folder, "package.json");
     const packageName = existsSync(manifest) ? (JSON.parse(readFileSync(manifest, "utf8")) as { name?: string; }).name : undefined;
@@ -263,50 +350,91 @@ function termLines(language: string, name: string, batch: Entry[]): string[]
 }
 
 /**
- * The guide in each language, part by part (D-413): the parts whose English changed, or that a language lacks, in one request for the language, with the
- * page's words they name and the game's terms; the others kept as they are, by the mark of their English. Written only when every part translated keeps
- * the English's headings, links and code.
+ * The guide in each language (D-413): the parts a language lacks, or whose English changed whole, in one request for the language; the paragraphs whose
+ * English changed in another, with their part in English and as translated now; with the page's words they name and the game's terms. The rest is kept as
+ * it is, by the marks of its English. Written only when what was translated keeps the English's headings, links and code.
  */
 async function translateGuides(): Promise<void>
 {
     const english = englishGuide();
     const parts = guideParts(english);
-    const marks = partMarks(english);
-    const jobs = languages.flatMap((language) => {
-        const own = guideIn(language) ?? "";
-        const ownMarks = marksOf(own);
-        const ownParts = guideParts(own);
-        const known = new Map(ownMarks.length === ownParts.length ? ownMarks.map((mark, index) => [mark, ownParts[index]]) : []);
-        const stale = marks.flatMap((mark, index) => (known.has(mark) ? [] : [index]));
-        return stale.length === 0 && ownMarks.join() === marks.join() ? [] : [{ language, known, stale }];
-    });
-    console.log(`guide: ${jobs.length === 0 ? "every language up to date" : `${jobs.length} languages to bring up to date`}`);
-    await inTurn(jobs, async ({ language, known, stale }) => {
-        const translated = stale.length === 0 ? [] : await translatedParts(language, stale.map((index) => parts[index] ?? ""));
+    const jobs = languages.map((language) => ({ language, own: guideIn(language) ?? "", plan: guidePlan(english, guideIn(language) ?? "") }));
+    const stale = jobs.filter((job) => !isUpToDate(job.own, english)).length;
+    console.log(`guide: ${stale === 0 ? "every language up to date" : `${stale} languages to bring up to date`}`);
+    await inTurn(jobs, async ({ language, own, plan }) => {
+        const wholes = parts.filter((_, index) => "whole" in (plan[index] ?? {}));
+        const pieces = parts.flatMap((part, index) => {
+            const planned = plan[index];
+            return planned !== undefined && "paragraphs" in planned ? [{ english: part, context: planned.context, paragraphs: planned.paragraphs }] : [];
+        });
+        const changed = pieces.flatMap((piece) => {
+            const part = (piece.english.split("\n")[0] ?? "").replace(/<!--.*?-->/g, "").trim();
+            return paragraphsOf(piece.english).flatMap((text, at) => (piece.paragraphs[at] === undefined ? [{ text, part }] : []));
+        });
+        const translated = wholes.length === 0 ? [] : await translatedParts(language, wholes);
+        const paragraphs = changed.length === 0 ? [] : await translatedParagraphs(language, pieces, changed);
 
-        if (translated === undefined) {
-            console.log(`guide ${language}: not kept, its headings, links or code are not the English's: run it again`);
+        if (translated === undefined || paragraphs === undefined) {
+            console.log(`guide ${language}: not kept, Claude gave no answer or one that loses the English's headings, links or code: run it again`);
             return;
         }
 
-        const text = marks.map((mark, index) => known.get(mark) ?? translated[stale.indexOf(index)] ?? "");
-        writeFileSync(join(guideFolder, `${language}.md`), `${translationHead(marks)}\n${text.join("\n\n")}\n`);
-        console.log(`guide ${language}: ${stale.length} of ${parts.length} parts translated`);
+        const text = parts.map((part, index) => {
+            const planned = plan[index] ?? { whole: true };
+            return "kept" in planned ? planned.kept : "whole" in planned ? translated[wholes.indexOf(part)] ?? "" : planned.paragraphs.map((paragraph) => paragraph ?? paragraphs.shift() ?? "").join("\n\n");
+        });
+        // A part's paragraphs are marked one by one when the translation's match them in number and shape, so that a change to one translates it alone.
+        const marks = parts.map((part, index) => (sameParagraphs(text[index] ?? "", part) ? paragraphsOf(part).map(markOf) : [markOf(part)]));
+        const written = `${translationHead(marks)}\n${text.join("\n\n")}\n`;
+
+        // A guide that would come out the same is left as it is.
+        if (written !== own) {
+            writeFileSync(join(guideFolder, `${language}.md`), written);
+            const done = wholes.length + changed.length === 0 ? "its marks written paragraph by paragraph" : `${wholes.length} of ${parts.length} parts and ${changed.length} paragraphs translated`;
+            console.log(`guide ${language}: ${done}`);
+        }
     });
+}
+
+/** Whether a translated part's paragraphs match the English part's one by one: as many, each with its headings, links and code. */
+function sameParagraphs(translation: string, english: string): boolean
+{
+    const own = paragraphsOf(translation);
+    const englishParagraphs = paragraphsOf(english);
+    return own.length === englishParagraphs.length && own.every((paragraph, index) => guideShape(paragraph) === guideShape(englishParagraphs[index] ?? ""));
+}
+
+/** Paragraphs of the English guide in a language, in their order; undefined when the answer has not as many, or one loses its headings, links or code. */
+async function translatedParagraphs(language: string, pieces: { english: string; context: string; }[], paragraphs: { text: string; part: string; }[]): Promise<string[] | undefined>
+{
+    const english = paragraphs.map((paragraph) => paragraph.text);
+    const tail = [
+        "Some paragraphs of these parts changed in English. Translate only the paragraphs listed under Paragraphs, in their order, so that they read well with the",
+        `translation around them; keep its words. Answer with the translated paragraphs alone, each after a line ${paragraphMark}.`,
+        "",
+        ...pieces.flatMap((piece) => ["Part, in English:", "", piece.english, "", "The same part, as translated now from an older English:", "", piece.context, ""]),
+        "Paragraphs:",
+        ...paragraphs.flatMap((paragraph) => [paragraphMark.replace(" -->", `, of the part ${paragraph.part} -->`), paragraph.text]),
+    ];
+    const answer = await claudeSays([...guideRules(language, english.join("\n\n")), ...tail].join("\n"), "You translate a user guide written in markdown. You reply with the translated markdown alone.");
+    const own = markdownOf(answer).split(/<!-- next paragraph[^>]*-->/).map((paragraph) => paragraph.trim()).filter((paragraph) => paragraph !== "");
+    return own.length === english.length && own.every((paragraph, index) => guideShape(paragraph) === guideShape(english[index] ?? "")) ? own : undefined;
 }
 
 /** Parts of the English guide in a language, in their order; undefined when the answer has not as many, or one loses its headings, links or code. */
 async function translatedParts(language: string, englishParts: string[]): Promise<string[] | undefined>
 {
-    const answer = markdownOf(await claudeSays(guideBrief(language, englishParts.join("\n\n")), "You translate a user guide written in markdown. You reply with the translated markdown alone."));
+    const english = englishParts.join("\n\n");
+    const brief = [...guideRules(language, english), "Answer with the translation alone, in markdown, from its first line to its end, its parts in the same order.", "", english];
+    const answer = markdownOf(await claudeSays(brief.join("\n"), "You translate a user guide written in markdown. You reply with the translated markdown alone."));
     // The lead comes first when it is asked, and is empty when it is not.
     const answered = guideParts(answer);
     const own = englishParts[0]?.startsWith("## ") === true ? answered.slice(1) : answered;
     return own.length === englishParts.length && own.every((part, index) => guideShape(part) === guideShape(englishParts[index] ?? "")) ? own : undefined;
 }
 
-/** What a request for the guide in a language says: how to translate it, the page's words and the game's terms it holds, then the English. */
-function guideBrief(language: string, english: string): string
+/** What a request for the guide in a language says first: how to translate it, and the page's words and the game's terms the English to translate holds. */
+function guideRules(language: string, english: string): string[]
 {
     const name = new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
     const phrases = readPhrases(language);
@@ -329,10 +457,7 @@ function guideBrief(language: string, english: string): string
         "- Where it speaks of the player or a character, prefer words that do not mark gender.",
         ...(pageWords.length === 0 ? [] : [`- The dashboard's own words, in bold or italic in the guide, exactly as the page shows them in ${name}:`, ...pageWords]),
         ...(terms.length === 0 ? [] : [`- The game's terms, as players of tabletop role-playing games say them in ${name}: use these words, the same everywhere.`, ...terms]),
-        "Answer with the translation alone, in markdown, from its first line to its end, its parts in the same order.",
-        "",
-        english,
-    ].join("\n");
+    ];
 }
 
 /** The markdown of Claude's answer, without a fence around the whole of it. */
@@ -374,6 +499,7 @@ function translated(target: Target, language: string, batch: Entry[]): Promise<R
             `- The game's terms, as players of tabletop role-playing games say them in ${name}: use these words, in the form each entry needs, the same in every entry.`,
             ...terms,
         ]),
+        ...target.context?.(language, batch) ?? [],
         "Answer with a JSON object alone, from each id exactly as given to its translation.",
         "",
         JSON.stringify(batch, null, 1),
