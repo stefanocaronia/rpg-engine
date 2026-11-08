@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { z } from "zod";
 import { packageFoldersIn } from "../core/files.ts";
+import { codeAndBase } from "../core/language.ts";
 import { files } from "../core/store.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
@@ -53,8 +54,7 @@ export function installedLanguages(folders: string[]): LanguagePack[]
 export function languagePackFor(folders: string[], code: string): LanguagePack | undefined
 {
     const packs = installedLanguages(folders);
-    const wanted = code.toLowerCase();
-    return packs.find((pack) => pack.code.toLowerCase() === wanted) ?? packs.find((pack) => pack.code.toLowerCase() === wanted.split("-")[0]);
+    return codeAndBase(code).map((wanted) => packs.find((pack) => pack.code.toLowerCase() === wanted)).find((pack) => pack !== undefined);
 }
 
 /** A language package from its folder; it throws, saying what is wrong, when it does not read. */

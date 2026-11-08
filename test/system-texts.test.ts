@@ -84,6 +84,8 @@ describe("a system's pages translated on this computer (D-539)", () => {
         await translated();
         expect(again.textsTranslating).toBeUndefined();
         expect(writer.asked.length).toBe(asked);
+        // The page names the system's pages in the language, though the system has no words in it.
+        expect((again as { words?: { words: Record<string, string>; }; }).words?.words.Scout).toBe("PL:Scout");
     });
 
     it("translates a page as the player opens it, and the system's words in the language go with it as a glossary", async () => {
@@ -154,7 +156,8 @@ describe("a system's pages translated on this computer (D-539)", () => {
         context.now = () => now;
         let failing = true;
         const healthy = writer;
-        context.writer = { ready: () => true, write: (brief) => (failing ? Promise.reject(new Error("offline")) : healthy.write(brief)) };
+        // As Codex and Claude Code do, a writer that fails answers nothing.
+        context.writer = { ready: () => true, write: (brief) => (failing ? Promise.resolve(undefined) : healthy.write(brief)) };
 
         for (const minutes of [0, 11, 22]) {
             now = new Date(now.getTime() + minutes * 60_000);
@@ -168,7 +171,7 @@ describe("a system's pages translated on this computer (D-539)", () => {
         writeFileSync(join(context.folder, "campaign.yaml"), readFileSync(join(context.folder, "campaign.yaml"), "utf8").replace("language: pl", "language: ../../escaped"));
         await runCommandLine(["view", "Scout"], context);
         await translated();
-        expect(existsSync(join(home, "..", "escaped"))).toBe(false);
+        expect(existsSync(join(home, "systems", "escaped"))).toBe(false);
     });
 
     it("leaves out of the campaign's problems a translated file of this computer that does not read, and translates the page again over it", async () => {

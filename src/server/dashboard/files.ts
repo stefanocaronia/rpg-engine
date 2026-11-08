@@ -301,7 +301,8 @@ export async function pageWords(request: IncomingMessage, response: ServerRespon
             return;
         }
 
-        served.words.ask(parsed.data.language.toLowerCase(), parsed.data.first);
+        // Through the session, which keeps the system's words translated on this computer (D-539).
+        withFiles(served.session, () => served.words.ask(parsed.data.language.toLowerCase(), parsed.data.first));
         sendJson(response, 202, {});
         return;
     }
@@ -318,7 +319,7 @@ export async function pageWords(request: IncomingMessage, response: ServerRespon
         const found = root === undefined ? undefined : campaignSystem(root, served.context);
         return found === undefined ? undefined : { name: found.name, folder: found.folder };
     });
-    sendJson(response, 200, served.words.read(language.toLowerCase(), system));
+    sendJson(response, 200, withFiles(served.session, () => served.words.read(language.toLowerCase(), system)));
 }
 
 /** A request's body as bytes, up to `most`; undefined when it is more. */

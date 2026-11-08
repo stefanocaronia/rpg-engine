@@ -5,6 +5,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { stringify } from "yaml";
 import type { Context } from "../../core/context.ts";
+import { codeAndBase } from "../../core/language.ts";
 import { files } from "../../core/store.ts";
 import { languagePackFor, packPhrases } from "../../languages/index.ts";
 import { layeredSystemWords, systemContentFolders, type SystemWords, systemWords } from "../../systems/index.ts";
@@ -129,8 +130,8 @@ const chatBatchSize = 160;
 /** Whether the built page in `page` ships a language: its own file, its base language's (pt-BR, pt), or English. */
 export function shipsLanguage(page: string, language: string): boolean
 {
-    const base = language.toLowerCase().split("-")[0];
-    return base === "en" || [language.toLowerCase(), base, base === "no" ? "nb" : ""].some((code) => code !== "" && existsSync(join(page, "i18n", `${code}.json`)));
+    const codes = codeAndBase(language);
+    return codes.at(-1) === "en" || [...codes, codes.at(-1) === "no" ? "nb" : ""].some((code) => code !== "" && existsSync(join(page, "i18n", `${code}.json`)));
 }
 
 /** A phrase of the page in a language: a language package's, then the page's own file, by its code or its base language, then this computer's; English when none has it. */
@@ -141,10 +142,9 @@ export function pagePhrase(context: Context, language: string | undefined, phras
     }
 
     const page = context.pageFolder;
-    const code = language.toLowerCase();
-    const base = code.split("-")[0];
+    const codes = codeAndBase(language);
     const pack = languagePackFor(context.extensionFolders ?? [], language);
-    const shipped = [code, base, base === "no" ? "nb" : ""].filter((candidate) => candidate !== "").map((candidate) => readJson(join(page, "i18n", `${candidate}.json`)));
+    const shipped = [...codes, codes.at(-1) === "no" ? "nb" : ""].filter((candidate) => candidate !== "").map((candidate) => readJson(join(page, "i18n", `${candidate}.json`)));
     const own = context.home === undefined ? {} : readJson(join(context.home, "i18n", `${language}.json`));
     return [pack === undefined ? {} : packPhrases(pack), ...shipped, own].map((phrases) => phrases[phrase]).find((said) => typeof said === "string" && said !== "") ?? phrase;
 }

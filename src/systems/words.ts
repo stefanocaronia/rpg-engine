@@ -3,6 +3,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
+import { codeAndBase } from "../core/language.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
 /** A system's words in one language: its groups by their names, its fields' labels by their ids, other words and texts by their English, and its headline. */
@@ -24,7 +25,7 @@ const wordsSchema = z.object({ groups: named.optional(), fields: named.optional(
 /** The words of the system in this folder for a language, or for its base language (pt for pt-BR); undefined when the system has none in it. */
 export function systemWords(folder: string, language: string): SystemWords | undefined
 {
-    const file = [language, language.split("-")[0]].map((code) => join(folder, "words", `${code.toLowerCase()}.yaml`)).find((path) => existsSync(path));
+    const file = codeAndBase(language).map((code) => join(folder, "words", `${code}.yaml`)).find((path) => existsSync(path));
 
     if (file === undefined) {
         return undefined;

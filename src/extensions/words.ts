@@ -2,6 +2,7 @@
 // the names of the fields it adds to the game system, and any word or phrase its widgets write, by the English as its code writes it. The core hands them on: a word the list lacks stays as written.
 import { join } from "node:path";
 import { z } from "zod";
+import { codeAndBase } from "../core/language.ts";
 import { files } from "../core/store.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
 
@@ -24,7 +25,7 @@ const wordsSchema = z.object({
 /** The words of the extension in this folder for a language, or for its base language (pt for pt-BR); undefined when it has none in it. It throws when they do not read. */
 export function extensionWords(folder: string, language: string): ExtensionWords | undefined
 {
-    const file = [language, language.split("-")[0]].map((code) => join(folder, "words", `${code.toLowerCase()}.yaml`)).find((path) => files().exists(path));
+    const file = codeAndBase(language).map((code) => join(folder, "words", `${code}.yaml`)).find((path) => files().exists(path));
 
     if (file === undefined) {
         return undefined;

@@ -458,6 +458,7 @@ export const view = defineCommand({
         const settings = readSettings(root);
         const today = now === undefined ? undefined : calendarDayOf(root, context, now.day);
         const words = system === undefined || settings.language === undefined ? undefined : systemWordsOf(root, system, settings.language, context);
+        const titled = withPageTitles(words, world);
         // The system's pages of the party's sheets, in the campaign's language where the system has no translation (D-539).
         wantTexts(root, context, world, [...players, ...companions]);
         const textsTranslating = translatingTexts(context, world);
@@ -465,7 +466,7 @@ export const view = defineCommand({
             kind: "overview",
             campaign: settings.name,
             ...(settings.language === undefined ? {} : { language: settings.language }),
-            ...(words === undefined ? {} : { words: withPageTitles(words, world) }),
+            ...(titled === undefined ? {} : { words: titled }),
             ...(system === undefined || Object.keys(system.sheetVerbs).length === 0 ? {} : { verbs: system.sheetVerbs }),
             ...(system === undefined ? {} : { system: { name: system.name, title: system.title, ...(system.attribution === undefined ? {} : { attribution: system.attribution }) } }),
             ...(now === undefined ? {} : { now: formatGameDate(now) }),
@@ -604,11 +605,14 @@ function shownPage(root: string, context: Context, world: World, knowledge: Know
     };
 }
 
-/** The system's words for the page, with the names its translation gives its pages, as Palla di fuoco for Fireball, where its words do not name them (D-542). */
-function withPageTitles(words: SystemWords, world: World): SystemWords
+/**
+ * The system's words for the page, with the names its translation gives its pages, as Palla di fuoco for Fireball, where its words do not name them (D-542):
+ * those translated on this computer too, where the system has no words in the language (D-539).
+ */
+function withPageTitles(words: SystemWords | undefined, world: World): SystemWords | undefined
 {
     const titles = Object.fromEntries((world.system?.pages ?? []).flatMap((page) => (page.title === undefined ? [] : [[page.name, page.title]])));
-    return Object.keys(titles).length === 0 ? words : { ...words, words: { ...titles, ...words.words } };
+    return Object.keys(titles).length === 0 ? words : { groups: {}, fields: {}, ...words, words: { ...titles, ...words?.words } };
 }
 
 /** "Known to Bruna alone: Ettore plays as not knowing it, though all at the screen may read it.": who knows a page, and how the others are played (VIEW-12). */

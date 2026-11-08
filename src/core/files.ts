@@ -1,6 +1,7 @@
 // The files of a folder and of the folders inside it, listed one folder at a time: listing a whole tree at once looks at every file again on Windows (D-194).
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { codeAndBase } from "./language.ts";
 
 /** The full paths of `folder` and of the folders inside it, however deep; none when there is no such folder. */
 export function foldersIn(folder: string): string[]
@@ -48,9 +49,7 @@ export function fileOrder(first: string, second: string): number
 /** Where a game system keeps its text in a language, translations/it, by the language's code or its base one (D-542); undefined when it has none. */
 export function translationFolder(folder: string, language: string | undefined): string | undefined
 {
-    const code = language?.trim().toLowerCase();
-    const codes = code === undefined || code === "" ? [] : [...new Set([code, code.split("-")[0]])];
-    return codes.map((one) => join(folder, "translations", one)).find((path) => existsSync(path) && statSync(path).isDirectory());
+    return codeAndBase(language ?? "").map((one) => join(folder, "translations", one)).find((path) => existsSync(path) && statSync(path).isDirectory());
 }
 
 /**

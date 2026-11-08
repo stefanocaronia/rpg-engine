@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { stringify } from "yaml";
 import type { Context, SystemTexts } from "../../core/context.ts";
 import { translationFolder } from "../../core/files.ts";
+import { codeAndBase } from "../../core/language.ts";
 import { files } from "../../core/store.ts";
 import { textPrint } from "../../core/text.ts";
 import { baseChain, findPage, linksIn, type Page, versionTranslations, type World } from "../../pages/index.ts";
@@ -31,7 +32,7 @@ export function wantTexts(root: string, context: Context, world: World, shown: P
     const language = world.language?.trim().toLowerCase();
     const system = world.system;
 
-    if (texts === undefined || system === undefined || language === undefined || language === "" || language.split("-")[0] === system.language.split("-")[0]) {
+    if (texts === undefined || system === undefined || language === undefined || codeAndBase(language).includes(system.language.toLowerCase())) {
         return;
     }
 
@@ -101,8 +102,15 @@ export function systemTexts(context: Context, notify: () => void): SystemTexts
             });
 
             try {
-                const answer = answerOf(await writer.write(textsBrief(language, batch)));
-                // A try counts once the writer answered: one that failed, as offline, leaves the pages to the next time.
+                const said = await writer.write(textsBrief(language, batch));
+
+                // A writer that failed, as offline, answers nothing: no try counts, and the pages wait for the next time.
+                if (said === undefined) {
+                    queue.clear();
+                    return false;
+                }
+
+                const answer = answerOf(said);
                 batch.forEach((one) => tries.set(one.file, (tries.get(one.file) ?? 0) + 1));
                 const kept = batch.flatMap((one, index) => {
                     const translation = keptTranslation(answer[`p${index + 1}`], one.page.body);

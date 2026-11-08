@@ -151,7 +151,8 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
     // The systems' code, as the MCP server loads it, for what the demo asks to follow as in a game (D-448).
     context.systemCode = await loadSystemCode(context.systemFolders);
 
-    const session = new SessionStore({ systemFolders: context.systemFolders });
+    // The game systems, and what this computer translated of them, as the MCP server keeps them (D-539).
+    const session = new SessionStore({ systemFolders: [...context.systemFolders, join(`${folder}-home`, "systems")] });
     const dashboard = await startDashboard({ ...context, files: session }, session, { ports });
 
     if (dashboard === undefined) {

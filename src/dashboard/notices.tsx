@@ -81,7 +81,7 @@ export function gameNotices(problems: number | undefined, textsTranslating?: str
         ...(translation?.state === "translating" ? [{ kind: "info" as const, text: t("This computer is translating the page into {language}: until then it stays in English.", { language }) }] : []),
         ...(translation?.state === "unable" ? [{ kind: "info" as const, text: t("The page stays in English: Codex or Claude Code would translate it into {language} on this computer.", { language }) }] : []),
         ...(textsTranslating !== undefined
-            ? [{ kind: "info" as const, text: t("This computer is translating the game's rules into {language}: until then they stay in English.", { language: textsLanguage }) }]
+            ? [{ kind: "info" as const, text: t("With your account, Codex or Claude Code is translating the game's rules into {language}: until then they stay in English.", { language: textsLanguage }) }]
             : []),
     ];
 }

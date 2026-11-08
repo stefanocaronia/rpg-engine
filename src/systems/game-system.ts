@@ -4,6 +4,7 @@ import { type FieldKind, fieldKinds } from "../core/field-kind.ts";
 import { type Formula, type FormulaData, formulaOf, readFormulas, type SystemFormulas } from "../core/formula.ts";
 import { frozen } from "../core/frozen.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
+import { codeAndBase } from "../core/language.ts";
 import { type ImperialUnits, lengthHelp, readLength, readSpeed, speedHelp } from "../core/length.ts";
 import { type DeclaredWidget, declaredWidgets, type FigureSize, packagePartsIssues, packagePartsShape } from "../core/package-declarations.ts";
 import type { ProgressionRule } from "../core/progression-rule.ts";
@@ -472,7 +473,7 @@ export function withSettings(system: GameSystem, valueOf: (setting: string) => s
 export function rollName(system: GameSystem, dice: string, language: string): string | undefined
 {
     const names = system.rollNames[plainRoll(dice)];
-    return names === undefined ? undefined : (names[language] ?? names[language.split("-")[0]] ?? names[system.language]);
+    return names === undefined ? undefined : ([language, ...codeAndBase(language).slice(1)].map((code) => names[code]).find((name) => name !== undefined) ?? names[system.language]);
 }
 
 /** The systems installed in these folders, nearest folder first: each folder in them with a system.yaml. A name found twice is the nearest one. */
