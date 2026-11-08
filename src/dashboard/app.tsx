@@ -7,11 +7,12 @@ import { type PlayerActs, PlayerActsContext } from "./acts/names.tsx";
 import { type ActReply, ActSheet } from "./acts/sheet.tsx";
 import { ActStrip } from "./acts/strip.tsx";
 import { type Address, readAddress, sectionAddress } from "./address.ts";
-import { answer, closeCard, readActs, readAsked, readGameTheme, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
+import { answer, closeCard, readActs, readAsked, readChoices, readGameTheme, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
 import { AskedDice } from "./asked-dice.tsx";
 import { AskedBanner } from "./asked.tsx";
 import { useMedia } from "./card.tsx";
-import type { ActsShown, Asked, AskedNow, CalendarDay, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownModule, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
+import { choicesOf, ChoicesPage, waits } from "./choices.tsx";
+import type { ActsShown, Asked, AskedNow, CalendarDay, ChoicesNow, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownModule, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
 import { flies } from "./dice/pool.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { PageFoot } from "./footer.tsx";
@@ -96,6 +97,8 @@ interface Shown
     problem?: string;
     /** What a roll from a card, or a die of a rest, changed, kept back while its dice are in the air (D-461, D-492). */
     pending?: Steady;
+    /** The choices the master prepared for the party, and whether the player rolls their own dice (D-556). */
+    choices?: ChoicesNow;
 }
 
 /** What a roll changes of the sheet and the fight, which the page shows only once its dice land. */
@@ -122,6 +125,8 @@ function App()
     const [thrown, setThrown] = useState<ShownRoll>();
     // The roll whose dice are in the air: its line comes into the rolls only as they go (D-300).
     const [held, setHeld] = useState<string>();
+    // The last roll whose dice landed: a roll thrown and not landed yet is in the air.
+    const [landed, setLanded] = useState<string>();
     const [fresh, setFresh] = useState<Set<string>>(new Set());
     // How many of the last rolls the page reads: more when the player asks for older ones (D-302).
     const rollsAsked = useRef(firstRolls);
@@ -211,7 +216,12 @@ function App()
         }, () => undefined);
 
         try {
-            const [first, askedNow, actsNow] = await Promise.all([readView(undefined, rollsAsked.current), readAsked().catch(() => undefined), readActs().catch(() => undefined)]);
+            const [first, askedNow, actsNow, choicesNow] = await Promise.all([
+                readView(undefined, rollsAsked.current),
+                readAsked().catch(() => undefined),
+                readActs().catch(() => undefined),
+                readChoices().catch(() => undefined),
+            ]);
             const asked = askedNow === undefined ? undefined : askedNow.asked ?? undefined;
             // With more than one player character, a question for one elsewhere puts them in the foreground: the place, the map and the squares are theirs (VIEW-12).
             const here = first.kind === "overview" && (first.place?.here ?? []).some((one) => one.name === asked?.who);
@@ -341,6 +351,7 @@ function App()
                         problems: overview.kind === "overview" ? overview.problems : undefined,
                         importing: overview.kind === "overview" || overview.kind === "none" ? overview.importing : undefined,
                         textsTranslating: overview.kind === "overview" ? overview.textsTranslating : undefined,
+                        choices: choicesNow ?? before.choices,
                     }, holding.current !== undefined)
                 );
             }
@@ -796,7 +807,8 @@ function App()
                                         mood={shown.masterMood}
                                         moment={moment}
                                         asleep={!live && shown.readAt !== undefined}
-                                        section={address.section}
+                                        section={address.section === "choices" ? "party" : address.section}
+                                        choices={(shown.choices?.sets ?? []).some(waits)}
                                         fight={fight}
                                         yourTurn={yourTurn}
                                         turnName={turnName}
@@ -872,7 +884,14 @@ function App()
                                             {/* A followed quest that ends is told here for a moment, beside the page over the quests' card when the table holds them. */}
                                             {!table && <QuestEndings version={shown.version} campaign={shown.campaign} />}
                                             {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
-                                            {address.section === "party" && <PartyStrip party={shown.party} chosen={shown.chosen} scene={shown.openScene} />}
+                                            {address.section === "party" && (
+                                                <PartyStrip
+                                                    party={shown.party}
+                                                    chosen={shown.chosen}
+                                                    scene={shown.openScene}
+                                                    waiting={new Map((shown.choices?.sets ?? []).filter(waits).map((set) => [set.who, set.title]))}
+                                                />
+                                            )}
                                             <div class="body">
                                                 <main>
                                                     {address.section === "about" && <About product={productName} system={shown.system} />}
@@ -905,6 +924,17 @@ function App()
                                                     {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} several={many} />}
                                                     {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
                                                     {address.section === "pkg" && <PackagePage name={address.tab} page={address.name} />}
+                                                    {address.section === "choices" && (
+                                                        <ChoicesPage
+                                                            who={address.tab}
+                                                            open={address.name}
+                                                            choices={shown.choices}
+                                                            member={shown.party.find((one) => one.name === address.tab)}
+                                                            version={shown.version}
+                                                            flying={thrown !== undefined && thrown.id !== landed ? thrown : undefined}
+                                                            onChanged={(choices) => setShown((before) => ({ ...before, choices }))}
+                                                        />
+                                                    )}
                                                     {address.section === "journal" && <JournalView version={shown.version} campaign={shown.campaign} tab={address.tab} item={address.name} />}
                                                     {address.section === "party" && member && (
                                                         // A companion's things are not the player's to act with: only the player character's sheet has its verbs (D-495).
@@ -921,6 +951,7 @@ function App()
                                                                 version={shown.version}
                                                                 onRoll={throwFromSheet}
                                                                 scene={shown.openScene}
+                                                                choices={choicesOf(shown.choices, member.name)}
                                                             />
                                                         </PlayerActsContext.Provider>
                                                     )}
@@ -967,7 +998,10 @@ function App()
                                     sheetThrow={sheetThrow}
                                     party={shown.party}
                                     {...(shown.campaign === undefined ? {} : { campaign: shown.campaign })}
-                                    onLanded={land}
+                                    onLanded={(roll) => {
+                                        land(roll);
+                                        setLanded(roll);
+                                    }}
                                     onShown={(id) => {
                                         setHeld((now) => (now === id ? undefined : now));
 

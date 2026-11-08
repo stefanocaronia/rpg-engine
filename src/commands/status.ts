@@ -8,13 +8,14 @@ import { bookTitles, readRuleBook } from "../rules/index.ts";
 import { type Scene, sceneTypes } from "../scene/index.ts";
 import { type GameSystem, rulesetSetting } from "../systems/index.ts";
 import type { GameDate } from "../time/index.ts";
+import { choicesNotes } from "./choices.ts";
 import { importLine } from "./import/import.ts";
 import { allStateChecks, type Contradiction, markStateChecksTold } from "./shared/checks.ts";
 import { effectiveFields, effectsOf } from "./shared/effect-layer.ts";
 import { effectShown, keptEffects } from "./shared/effects.ts";
 import { surroundings, surroundingsText } from "./shared/environment.ts";
 import { clocksToMove, dueAdvice, dueText, isDated, isDue, plannedEvents, plannedText, worldFacts } from "./shared/events.ts";
-import { experienceOf, levelDueNote } from "./shared/experience.ts";
+import { experienceOf, levelDueNote, levelWay } from "./shared/experience.ts";
 import { picturesNote } from "./shared/images.ts";
 import { journeyText, readJourney } from "./shared/journey.ts";
 import { campaignMode, campaignNote } from "./shared/mode.ts";
@@ -217,7 +218,9 @@ export const status = defineCommand({
                 return missing.length === 0 ? [] : [`${characterName(page)}'s sheet still lacks, by these names: ${missing.join(", ")}.`];
             }),
             // A level the points reach, until the classes rise (PRO-6).
-            levelsDue: characters.filter(isInParty).flatMap((page) => levelDueNote(characterName(page), experienceOf(world, effectiveFields(world, page)), page.fields.role === "companion") ?? []),
+            // The choices on the player's dashboard (D-556).
+            choices: choicesNotes(root, context, world, system),
+            levelsDue: characters.filter(isInParty).flatMap((page) => levelDueNote(characterName(page), experienceOf(world, effectiveFields(world, page)), page.fields.role === "companion", levelWay(root, context, page.name)) ?? []),
         };
     },
 
@@ -251,6 +254,7 @@ export const status = defineCommand({
             result.mood === "neutral" ? "" : `Your mood is ${result.mood}: let your voice follow it.`,
             ...result.incompleteSheets,
             ...result.levelsDue,
+            ...result.choices,
             namesLine("Also there", result.alsoThere, result.place === undefined ? "find" : `show ${result.place}`),
             result.scene === undefined ? "" : `Scene: ${result.scene}`,
             result.journey === undefined ? "" : `Journey: ${result.journey}`,

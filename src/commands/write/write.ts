@@ -80,7 +80,7 @@ import type { GameSystem } from "../../systems/index.ts";
 import { bondNotes, checkBonds } from "../shared/bonds.ts";
 import { effectiveFields, effectsField } from "../shared/effect-layer.ts";
 import { conditionNotes, consequencesNotes, eventFieldsProblem, fireEvents, heldNote, nowDueNote, plannedEventDateProblem } from "../shared/events.ts";
-import { experienceOf, leastNotes, newLevelNotes } from "../shared/experience.ts";
+import { experienceOf, leastNotes, levelWay, newLevelNotes, settleChoices } from "../shared/experience.ts";
 import { gridNotes } from "../shared/grids.ts";
 import { questPictureNote } from "../shared/images.ts";
 import { fieldValues } from "../shared/inputs.ts";
@@ -279,7 +279,12 @@ export const write = defineCommand({
         const [before, after] = [existing === undefined ? undefined : experienceOf(world, effectiveFields(world, existing)), experienceOf(now, effectiveFields(now, page))];
         const companion = page.fields.role === "companion";
         const levelUp = (): string => situationPart("level-up", context, system);
-        const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, levelUp), ...leastNotes(page.name, before, after)] : [];
+
+        if (changed && isPartyMember(page)) {
+            settleChoices(root, page.name, before, after);
+        }
+
+        const levels = changed && isPartyMember(page) ? [...newLevelNotes(page.name, before, after, companion, levelUp, levelWay(root, context, page.name)), ...leastNotes(page.name, before, after)] : [];
         const leftOut = changed ? changedFieldNames(fields).flatMap((field) => leftOutNote(root, context, field) ?? []) : [];
         const opened = newQuestNotes(existing, page);
         const picture = opened.length === 0 ? undefined : questPictureNote(root, context, now, page);

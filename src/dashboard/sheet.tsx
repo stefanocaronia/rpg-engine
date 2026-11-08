@@ -9,8 +9,9 @@ import { itemVerbs } from "./acts/acts.ts";
 import { ActName, usePlayerActs } from "./acts/names.tsx";
 import { readExplanations } from "./api.ts";
 import { CardHeader, useOpen } from "./card.tsx";
+import { ChoicesNotice } from "./choices.tsx";
 import { FixedColumns } from "./columns.tsx";
-import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownScene } from "./data.ts";
+import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownChoices, ShownScene } from "./data.ts";
 import { besideLabel, memberPlaceLabel } from "./game-words.ts";
 import { cardIcons, DieIcon, Icon } from "./icons.tsx";
 import { fieldLabel, groupLabels, itemLabel, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "./labels.ts";
@@ -34,7 +35,7 @@ const backstoryCard = "Backstory";
 export type FreeRoll = (roll: SheetRoll, label: string, who?: string) => void;
 
 export function MemberSheet(
-    { member, headline, sheet, cards, text, knownBy, story, version, onRoll, scene }: {
+    { member, headline, sheet, cards, text, knownBy, story, version, onRoll, scene, choices = [] }: {
         member: Member;
         headline?: string;
         sheet: SheetGroup[];
@@ -46,6 +47,8 @@ export function MemberSheet(
         version: number;
         onRoll: FreeRoll;
         scene?: ShownScene;
+        /** The sets of choices the master prepared for them, each a notice in the band (D-556). */
+        choices?: ShownChoices[];
     },
 )
 {
@@ -91,6 +94,7 @@ export function MemberSheet(
                         )}
                     </div>
                 </div>
+                {choices.map((set) => <ChoicesNotice key={set.id} set={set} />)}
                 {person.map((shown) => <PersonPanel key={shown.widget.id} shown={shown} />)}
                 <ValueLine values={member.counters.filter((value) => !shownApart.has(value.field))} fields={fields} boxes={boxes} />
                 <Effects effects={besideWord(member.effects, status.person)} />

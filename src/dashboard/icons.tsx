@@ -106,6 +106,10 @@ const iconPaths = {
     better: "M12 19.5V5 M6 11l6-6 6 6",
     worse: "M12 4.5V19 M6 13l6 6 6-6",
     even: "M8 19.5V4.5 M4 8.5l4-4 4 4 M16 4.5v15 M12 15.5l4 4 4-4",
+    // Choices that wait for the player, as a new level: two chevrons up; one alone on a token's pip (D-556). A page to read, as an option names one.
+    levelUp: "M6 12.5l6-6 6 6 M6 18.5l6-6 6 6",
+    up: "M6 15l6-6 6 6",
+    read: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 11h5 M9.5 14.5h5 M9.5 18h3",
 };
 
 /**

@@ -92,11 +92,11 @@ describe("the renown (PRO-6, D-205, D-234)", () => {
         expect(await ok("status")).not.toContain("has the renown");
     });
 
-    it("leaves a companion's choices to the master, and says the highest rank reached", async () => {
+    it("leaves a companion's choices to the master, one rank at a time up to the highest reached", async () => {
         await ok("write", "Lena", "--type", "character", "--set", "role=companion", "--set", "vocations=[[Scout]] 1", "--set", "renown=40");
         expect(await ok("show", "Lena")).toContain("renown 40 (level 3 due)");
         expect(await ok("status")).toContain(
-            "Lena has the renown for level 3: level up the companion: what the new level asks is yours to choose, as the story has shaped the companion, or the player's if they made it: "
+            "Lena has the renown for level 2, then up to level 3, one level at a time: level up the companion: what the new level asks is yours to choose, as the story has shaped the companion, or the player's if they made it: "
                 + 'read rules "Rising".',
         );
     });

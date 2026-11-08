@@ -2,6 +2,7 @@ import type { Command } from "../core/registry.ts";
 import { advance } from "./advance.ts";
 import { ask } from "./ask.ts";
 import { change } from "./change/change.ts";
+import { choices } from "./choices.ts";
 import { config } from "./config.ts";
 import { effect } from "./effect.ts";
 import { find } from "./find.ts";
@@ -52,6 +53,7 @@ export const commands: Command<any, any>[] = [
     rules,
     roll,
     ask,
+    choices,
     change,
     effect,
     mood,

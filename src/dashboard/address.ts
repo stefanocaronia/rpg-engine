@@ -12,7 +12,10 @@ export const menuPages = ["saves", "help", "settings", "packages", "about"] as c
 /** A package's own page, as #/pkg/<package>/<name>, reached from its row in Packages and by its address (D-511). */
 export const packagePages = "pkg" as const;
 
-export type Section = (typeof sections)[number] | (typeof menuPages)[number] | typeof packagePages;
+/** The choices the master prepared for one of the party, as #/choices/Bruna, with an option's page open, as #/choices/Bruna/Sonno (D-556): the Party's own. */
+export const choicesPage = "choices" as const;
+
+export type Section = (typeof sections)[number] | (typeof menuPages)[number] | typeof packagePages | typeof choicesPage;
 
 /** A place in the page: its section, for the sheet whom it shows, a page's tab, as #/packages/add, and what is open in the tab, as #/world/lore/Bertoldo. */
 export interface Address
@@ -27,7 +30,7 @@ export function readAddress(hash: string): Address
 {
     const [, written = "", ...rest] = hash.replace(/^#/, "").split("/");
     const first = written === "combat" ? "scene" : written;
-    const section = [...sections, ...menuPages, packagePages].find((candidate) => candidate === first) ?? "party";
+    const section = [...sections, ...menuPages, packagePages, choicesPage].find((candidate) => candidate === first) ?? "party";
     const sheet = first === "party" || first === "character";
     const known = section === first;
     const tab = sheet || !known ? "" : decoded(rest[0] ?? "");
@@ -39,6 +42,12 @@ export function readAddress(hash: string): Address
 export function sectionAddress(section: Section, tab?: string, name?: string): string
 {
     return [`#/${section}`, ...(tab === undefined ? [] : [encodeURIComponent(tab)]), ...(tab === undefined || name === undefined ? [] : [encodeURIComponent(name)])].join("/");
+}
+
+/** The address of someone's choices, as #/choices/Bruna, or of an option's page among them, as #/choices/Bruna/Sonno: whose they are in the tab's place. */
+export function choicesAddress(who: string, page?: string): string
+{
+    return sectionAddress(choicesPage, who, page);
 }
 
 /** A section's name as the page writes it, in its language: Scene. */
@@ -55,6 +64,7 @@ export function sectionLabel(section: Section): string
         packages: t("Packages"),
         about: t("About"),
         pkg: t("Packages"),
+        choices: t("Party"),
     };
     return labels[section];
 }

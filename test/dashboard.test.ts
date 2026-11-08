@@ -10,14 +10,15 @@ import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view/view.ts";
 import type { Context, PicturesReady, Player } from "../src/core/context.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
-import { readAddress, sectionAddress } from "../src/dashboard/address.ts";
+import { choicesAddress, readAddress, sectionAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
-import type { Asked, JournalFact, PlayerSetting, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
+import type { Asked, ChoicesNow, JournalFact, PlayerSetting, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/game-words.ts";
 import { checkOf, customLabel, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, leveledItemLabel, phraseLabel, shownText, valueLabel } from "../src/dashboard/labels.ts";
 import { arrangedGroups, columnsByHeight, endedQuests, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/layout.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
 import { unpackFiles } from "../src/saves/index.ts";
+import type { ShownChoices as ServerChoices } from "../src/server/dashboard/choices.ts";
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/server/dashboard/index.ts";
 import { dashboardOpener } from "../src/server/mcp.ts";
 import { pageFolder } from "./i18n/phrases.ts";
@@ -838,6 +839,9 @@ describe("the page's reading of a sheet (D-273)", () => {
         // A character agent's view is not the dashboard's: it never asks as (VIEW-10).
         const fits = (result: Exclude<ViewResult, { kind: "memory"; }>): View => result;
         expect(fits({ kind: "none" })).toEqual({ kind: "none" });
+        // And what the server gives of the choices waiting (D-556).
+        const choicesFit = (sets: ServerChoices[]): ChoicesNow => ({ sets, physical: false });
+        expect(choicesFit([])).toEqual({ sets: [], physical: false });
     });
 
     it("labels a field by its words, in capitals the short names, and leaves out a last word a group shares", () => {
@@ -940,6 +944,9 @@ describe("the page's reading of a sheet (D-273)", () => {
         // What is open in a tab: a page of the lore, a chapter of the story (D-276).
         expect(readAddress("#/world/lore/Locanda%20del%20Guado")).toEqual({ section: "world", tab: "lore", name: "Locanda del Guado" });
         expect(readAddress("#/journal/story/3")).toEqual({ section: "journal", tab: "story", name: "3" });
+        // Someone's choices, whose they are in the tab's place, and an option's page open among them (D-556).
+        expect(readAddress(choicesAddress("Bruna"))).toEqual({ section: "choices", tab: "Bruna" });
+        expect(readAddress(choicesAddress("Bruna", "Sacred Flame"))).toEqual({ section: "choices", tab: "Bruna", name: "Sacred Flame" });
         expect(sectionAddress("world", "lore", "Città/Nord")).toBe("#/world/lore/Citt%C3%A0%2FNord");
         expect(readAddress(sectionAddress("world", "lore", "Città/Nord"))).toEqual({ section: "world", tab: "lore", name: "Città/Nord" });
         expect(sectionAddress("world", undefined, "Guadoscuro")).toBe("#/world");

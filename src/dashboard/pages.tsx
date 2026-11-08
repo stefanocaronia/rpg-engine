@@ -9,7 +9,7 @@ import { systemNameLabel, systemTitleLabel } from "./labels.ts";
 import { t } from "./text.ts";
 
 /** A page's head, out of Party and Scene: its section's icon and its title, both in the accent (D-409). */
-export function PageHead({ section, id, title }: { section: Section; id: string; title?: string; })
+export function PageHead({ section, id, title }: { section: Exclude<Section, "choices">; id: string; title?: string; })
 {
     return (
         <div class="page-head">

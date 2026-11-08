@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { ActsShown, AskedNow, PlayerSetting, ResetPoint, ShownModule, ShownTheme, ShownWidget, View, WorldMap } from "./data.ts";
+import type { ActsShown, AskedNow, ChoicesNow, PlayerSetting, ResetPoint, ShownModule, ShownTheme, ShownWidget, View, WorldMap } from "./data.ts";
 import { refusalText, type Refused } from "./refusals.ts";
 import { t } from "./text.ts";
 
@@ -532,6 +532,33 @@ export async function answer(asked: string, reply: number | string | { square: s
     const body = typeof reply === "number" ? { asked, choice: reply } : typeof reply === "string" ? { asked, text: reply } : { asked, ...reply };
     const response = await fetch("/api/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     return response.status === 202;
+}
+
+/** The choices the master prepared for the player (D-556), and whether the player rolls their own dice. */
+export async function readChoices(): Promise<ChoicesNow>
+{
+    return await readJson<ChoicesNow>("/api/choices");
+}
+
+/** What the player does with a set of choices: the options picked for one, the option that rolls, with the faces of their own dice, or the confirm with their sentence. */
+export type ChoicesChange = { id: string; item: number; answer: string[]; } | { id: string; item: number; roll: string; faces?: number[]; } | { id: string; confirm: true; said: string; };
+
+// The player's choices reach the game one after another, in the order they were made.
+let choosing: Promise<unknown> = Promise.resolve();
+
+/** Sends a change of a set of choices, after those sent before: the choices as they are now, "changed" when the game turned it down, or undefined when the game is away. */
+export async function changeChoices(change: ChoicesChange): Promise<ChoicesNow | "changed" | undefined>
+{
+    const sent = choosing.then(async () => {
+        try {
+            const response = await fetch("/api/choices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(change) });
+            return response.ok ? await response.json() as ChoicesNow : response.status === 409 ? "changed" as const : undefined;
+        } catch {
+            return undefined;
+        }
+    });
+    choosing = sent;
+    return sent;
 }
 
 /** The sentences said on the page that the master has not heard yet, those heard lately, and whether this chat hears one at once (D-495). */

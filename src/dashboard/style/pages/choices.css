@@ -1,0 +1,681 @@
+/* The choices the master prepares for one of the party (D-556): their notice in the sheet's band, the mark on the party's token and on the Party's tab, and
+   their page, with each choice's options as cards and the page of one read beside them. */
+@layer pages {
+    /* The notice: one link beside the identity on a wide band, under it on a phone; the accent's tint, as a word to know, never the gold of the turn. */
+    .choices-notice {
+        display: flex;
+        flex: 1 1 260px;
+        align-self: center;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        min-height: 48px;
+        padding: 8px 12px;
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--rule));
+        border-radius: var(--radius-l);
+        background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+        color: var(--ink);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .choices-notice.confirmed {
+        border-color: color-mix(in srgb, var(--ally) 45%, var(--rule));
+        background: color-mix(in srgb, var(--ally) 10%, var(--panel));
+    }
+
+    .choices-notice > svg.icon {
+        flex: none;
+        width: 24px;
+        height: 24px;
+        color: var(--accent);
+    }
+
+    .choices-notice.confirmed > svg.icon {
+        color: var(--ally);
+    }
+
+    .choices-notice-words {
+        display: grid;
+        flex: 1;
+        min-width: 0;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    .choices-notice-words small {
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 400;
+    }
+
+    .choices-notice-go {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        color: var(--accent);
+        font-weight: 650;
+        white-space: nowrap;
+    }
+
+    .choices-notice-go svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* The mark on the token in the party's strip, at the end of its upper edge, and the dot on the Party's tab: the accent, their words in the link's name. */
+    .choices-pip {
+        position: absolute;
+        top: -3px;
+        inset-inline-end: -3px;
+        display: grid;
+        place-items: center;
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--panel);
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--paper);
+    }
+
+    .choices-pip svg.icon {
+        width: 12px;
+        height: 12px;
+        stroke-width: 3;
+    }
+
+    .section-mark:has(.choices-dot) {
+        position: relative;
+    }
+
+    .choices-dot {
+        position: absolute;
+        top: -2px;
+        inset-inline-end: -4px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 2px var(--paper);
+    }
+
+    /* The page: the way back to the sheet, then each set with its head, its steps, its choices and its end. */
+    .choices-page,
+    .choices {
+        display: grid;
+        gap: var(--gap);
+        min-width: 0;
+    }
+
+    .choices-page + .choices-page,
+    .choices + .choices {
+        margin-top: 24px;
+    }
+
+    .choices-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        justify-self: start;
+        padding-inline: 6px 12px;
+    }
+
+    .choices-back svg.icon {
+        width: 18px;
+        height: 18px;
+        scale: -1 1;
+    }
+
+    [dir="rtl"] .choices-back svg.icon {
+        scale: 1;
+    }
+
+    .choices-none {
+        margin: 0;
+        color: var(--muted);
+    }
+
+    .choices-none .button {
+        margin-inline-start: 4px;
+    }
+
+    .choices-head {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .choices-head .token {
+        --size: 64px;
+    }
+
+    .choices-head > div {
+        min-width: 0;
+    }
+
+    .choices-head .eyebrow {
+        margin: 0;
+    }
+
+    .choices-head h2 {
+        margin: 2px 0 4px;
+        font-size: 1.4rem;
+        overflow-wrap: anywhere;
+    }
+
+    .choices-lead {
+        max-width: 62ch;
+        margin: 0;
+        color: var(--muted);
+    }
+
+    /* The steps: what is done and what is not, each a way to its choice. */
+    .choices-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .choices-steps button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+        min-height: 32px;
+        padding-block: 2px;
+        padding-inline: 6px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .step-dot {
+        display: inline-grid;
+        flex: none;
+        place-items: center;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 4px;
+        border: 1.5px solid var(--muted);
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .step-dot svg.icon {
+        width: 14px;
+        height: 14px;
+        stroke-width: 3;
+    }
+
+    .choices-steps .done .step-dot {
+        border-color: var(--ally);
+        background: var(--ally);
+        color: var(--panel);
+    }
+
+    .choices-steps .now button {
+        border-color: var(--accent);
+    }
+
+    .choices-steps .now .step-dot {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    /* The choices, and the page of an option read beside them from 900 px, as a list and its reader. */
+    .choices-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--gap);
+        align-items: start;
+    }
+
+    @media (min-width: 900px) {
+        .choices-body.reading {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+        }
+
+        .choices-body.reading .choices-reader {
+            position: sticky;
+            top: calc(var(--gap) + var(--top-space) + var(--asked-space, 0px));
+            max-height: calc(100vh - var(--top-space) - var(--asked-space, 0px) - 2 * var(--gap));
+            overflow: auto;
+        }
+    }
+
+    .choices-items {
+        display: grid;
+        gap: var(--gap);
+        min-width: 0;
+    }
+
+    .choice-item {
+        display: grid;
+        gap: 12px;
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--card-edge, var(--rule));
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+        scroll-margin-top: calc(var(--top-space) + var(--asked-space, 0px) + var(--gap));
+    }
+
+    .choice-item-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 2px 10px;
+    }
+
+    .choice-item-head .eyebrow {
+        flex-basis: 100%;
+        margin: 0;
+    }
+
+    .choice-item-head h3 {
+        min-width: 0;
+        margin: 0;
+        font-size: 1.125rem;
+        overflow-wrap: anywhere;
+    }
+
+    .choice-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        min-height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .choice-state.done {
+        background: color-mix(in srgb, var(--ally) 16%, transparent);
+        color: var(--ally);
+    }
+
+    .choice-state.optional {
+        background: color-mix(in srgb, var(--muted) 14%, transparent);
+        color: var(--muted);
+    }
+
+    .choice-state svg.icon {
+        width: 13px;
+        height: 13px;
+        stroke-width: 3;
+    }
+
+    .choice-note {
+        margin: -2px 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .choices-problem {
+        margin: 0;
+        color: var(--low);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* The options: cards in a grid, one column on a phone and while a page is read beside them. */
+    .choice-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+        gap: 8px;
+    }
+
+    .choices-body.reading .choice-options {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .choice-card {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        min-width: 0;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+    }
+
+    .choice-pick {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 10px;
+        min-width: 0;
+        min-height: 100%;
+        padding-block: 12px;
+        padding-inline: 12px 4px;
+        border: 0;
+        border-radius: var(--radius-l);
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .choice-card.alone .choice-pick {
+        grid-column: 1 / -1;
+        padding-inline-end: 12px;
+    }
+
+    .choice-words {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .choice-words strong {
+        overflow-wrap: anywhere;
+    }
+
+    .choice-about {
+        display: -webkit-box;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 0.85rem;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    /* The mark: a ring for one among them, a square for several, filled in gold once chosen, as the setup's chosen card. */
+    .choice-mark {
+        display: grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        margin-top: 1px;
+        border: 2px solid var(--muted);
+        border-radius: 50%;
+        color: var(--on-gold);
+    }
+
+    .choice-mark.square {
+        border-radius: calc(var(--radius-xs) / 2);
+    }
+
+    .choice-mark svg.icon {
+        width: 14px;
+        height: 14px;
+        stroke-width: 3;
+        visibility: hidden;
+    }
+
+    .choice-card.chosen {
+        border-color: var(--gold);
+        box-shadow: inset 0 0 0 1px var(--gold);
+    }
+
+    .choice-card.chosen .choice-mark {
+        border-color: var(--gold);
+        background: var(--gold);
+    }
+
+    .choice-card.chosen .choice-mark svg.icon {
+        visibility: visible;
+    }
+
+    .choice-card.chosen .choice-about {
+        color: var(--ink);
+    }
+
+    .choice-card.closed {
+        border-style: dashed;
+        background: transparent;
+    }
+
+    .choice-card.closed .choice-pick {
+        color: var(--muted);
+        cursor: default;
+    }
+
+    .choice-pick[aria-disabled="true"] {
+        cursor: default;
+    }
+
+    /* The one read beside: a bar of the accent at its start, as the open row of a list; chosen is the gold edge and the filled mark. */
+    .choice-card:has(.choice-read[aria-current="true"])::before {
+        position: absolute;
+        inset-block: 10px;
+        inset-inline-start: -1px;
+        width: 4px;
+        border-start-end-radius: var(--radius-xs);
+        border-end-end-radius: var(--radius-xs);
+        background: var(--accent);
+        content: "";
+    }
+
+    .choices-body.reading .choice-about {
+        -webkit-line-clamp: 1;
+    }
+
+    .choice-read {
+        margin-block-start: 6px;
+        margin-inline-end: 6px;
+        color: var(--accent);
+    }
+
+    /* A roll: its dice drawn before its words; once rolled, its total large, as a roll's. */
+    .choice-card.choice-roll .choice-pick {
+        align-items: center;
+    }
+
+    .choice-dice {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .choice-dice .die-icons svg.die {
+        width: 22px;
+        height: 22px;
+    }
+
+    .choice-total {
+        align-self: center;
+        margin-inline-end: 10px;
+        color: var(--gold-ink);
+        font-family: var(--number-font, inherit);
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    /* The player's own dice: a number for each, then Write. */
+    .choice-hand {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        grid-column: 1 / -1;
+        padding-block: 0 12px;
+        padding-inline: 42px 12px;
+    }
+
+    .choice-hand label {
+        flex-basis: 100%;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .choice-hand input {
+        width: 64px;
+        height: 38px;
+        padding: 0 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .choice-hand input[aria-invalid="true"] {
+        border-color: var(--low);
+    }
+
+    .choice-hand .choices-problem {
+        flex-basis: 100%;
+    }
+
+    /* The chosen ones of a long list, over its search: each a chip to take off. */
+    .choice-chosen {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+    }
+
+    .choice-chosen .eyebrow {
+        margin: 0;
+    }
+
+    .choice-chosen ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .choice-chosen li.chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        min-height: 32px;
+        padding-inline: 10px 0;
+        border: 1px solid var(--gold);
+        border-radius: var(--radius-m);
+        background: var(--float);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .choice-chosen li.chip:not(:has(button)) {
+        padding-inline-end: 10px;
+    }
+
+    .choice-chosen .icon-button {
+        width: 32px;
+        height: 32px;
+    }
+
+    .choice-find .search {
+        width: 100%;
+    }
+
+    .choice-find .search input {
+        height: 40px;
+    }
+
+    /* The page of an option: what it is for, its title, the way to choose it, its text. */
+    .choices-reader .reader-head {
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .choice-picked {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 38px;
+        color: var(--gold-ink);
+        font-weight: 650;
+    }
+
+    .choice-picked svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* The end: what is still to choose, and the one main action. */
+    .choices-foot {
+        display: grid;
+        gap: 10px;
+        justify-items: start;
+        padding: 16px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: color-mix(in srgb, var(--gold) 6%, var(--panel));
+    }
+
+    .choices-foot p {
+        margin: 0;
+    }
+
+    .choices-missing {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .choices-missing .eyebrow {
+        margin-inline-end: 4px;
+    }
+
+    .choices-after {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .choices-done {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-weight: 600;
+    }
+
+    .choices-done svg.icon {
+        flex: none;
+        width: 20px;
+        height: 20px;
+        color: var(--ally);
+    }
+
+    @media (pointer: coarse) {
+        .choices-steps button,
+        .choice-chosen li.chip,
+        .choice-chosen .icon-button,
+        .choice-hand input {
+            min-height: var(--target);
+        }
+
+        .choice-chosen .icon-button {
+            width: var(--target);
+        }
+    }
+
+    /* On a phone the notice's words take the room; the chevron says where it leads. */
+    @media (max-width: 600px) {
+        .choices-notice-word {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
+    }
+}

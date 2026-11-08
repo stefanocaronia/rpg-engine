@@ -1,5 +1,7 @@
 // The experience points of a character (D-205, D-233, PRO-6): how many it lacks for the next level, the least its level needs, and the level they reach that its
 // classes have not.
+import { readChoices, writeChoices } from "../../campaign/index.ts";
+import type { Context } from "../../core/context.ts";
 import { listItems, numberOf } from "../../core/formula.ts";
 import type { Problem } from "../../core/problem.ts";
 import { comparableText, valueNamed } from "../../core/text.ts";
@@ -89,33 +91,80 @@ export function experienceText(experience: Experience): string | undefined
  * "Ennio has the xp for level 3: level up with the player, …": said while the points reach a level the classes have not (PRO-6); a companion's choices are the
  * master's (D-205, D-209). Undefined when they reach none.
  */
-export function levelDueNote(name: string, experience: Experience | undefined, companion: boolean): string | undefined
+export function levelDueNote(name: string, experience: Experience | undefined, companion: boolean, way?: LevelWay): string | undefined
 {
-    if (experience?.due === undefined) {
+    if (experience?.due === undefined || way === "waiting") {
         return undefined;
     }
 
+    // One level at a time, the next: its choices come before those of the level after (D-556).
+    const next = experience.level + 1;
+    const beyond = experience.due > next ? `, then up to level ${experience.due}, one level at a time` : "";
     const rules = experience.rules === undefined ? "" : `: read rules "${experience.rules}"`;
+
+    if (way === "choices" && !companion) {
+        const prepare = "prepare with choices, in one call, all that level asks the player to choose, before you write to the player: they choose on the dashboard when they like, "
+            + "so never wait for a rest or a quiet moment; then go on with the story";
+        return `${name} has the ${experience.field} for level ${next}${beyond}${rules === "" ? `: ${prepare}` : `${rules}, then ${prepare}`}.`;
+    }
+
     const how = companion
         ? "level up the companion: what the new level asks is yours to choose, as the story has shaped the companion, or the player's if they made it"
         : "level up with the player, out of the story, now or at the next rest as they prefer; they choose what the new level asks";
-    return `${name} has the ${experience.field} for level ${experience.due}: ${how}${rules}.`;
+    return `${name} has the ${experience.field} for level ${next}${beyond}: ${how}${rules}.`;
+}
+
+/** How a player character levels up now (D-556): with choices on the dashboard, waiting for a set of choices already prepared, or in the chat (undefined). */
+export type LevelWay = "choices" | "waiting" | undefined;
+
+/** How `name` levels up now: waiting while a set of choices of theirs waits on the dashboard, with choices where the player has one, else in the chat. */
+export function levelWay(root: string, context: Context, name: string): LevelWay
+{
+    if (readChoices(root).some((set) => comparableText(set.who) === comparableText(name))) {
+        return "waiting";
+    }
+
+    return context.dashboard === undefined ? undefined : "choices";
 }
 
 /**
  * The note of a change that brings the points to a new level, with what `levelUp` gives of the part on what a level gives, empty once told (PRO-6, D-97): none when
  * that level was already due, and then the part is not asked for.
  */
-export function newLevelNotes(name: string, before: Experience | undefined, after: Experience | undefined, companion: boolean, levelUp: () => string): string[]
+export function newLevelNotes(name: string, before: Experience | undefined, after: Experience | undefined, companion: boolean, levelUp: () => string, way?: LevelWay): string[]
 {
-    const note = levelDueNote(name, after, companion);
+    const note = levelDueNote(name, after, companion, way);
 
-    if (note === undefined || (before?.due !== undefined && before.due >= (after?.due ?? 0))) {
+    // Said when the points reach a level not due before, or when a level written leaves one more due (D-556).
+    const risen = before !== undefined && after !== undefined && after.level > before.level;
+
+    if (note === undefined || (before?.due !== undefined && before.due >= (after?.due ?? 0) && !risen)) {
         return [];
     }
 
     const part = levelUp();
-    return [part === "" ? note : `${note} ${part}`];
+    // With choices to prepare, the note comes last, after the part it reads: what the master does next (D-556).
+    return [
+        part === "" ? note : way === "choices" && !companion
+            ? `${part}
+${note}`
+            : `${note} ${part}`,
+    ];
+}
+
+/** Once a character's level rises, the master wrote it: its choices on the dashboard, confirmed or left, leave state.yaml (D-556). */
+export function settleChoices(root: string, name: string, before: Experience | undefined, after: Experience | undefined): void
+{
+    if (before === undefined || after === undefined || after.level <= before.level) {
+        return;
+    }
+
+    const sets = readChoices(root);
+    const kept = sets.filter((set) => comparableText(set.who) !== comparableText(name));
+
+    if (kept.length < sets.length) {
+        writeChoices(root, kept);
+    }
 }
 
 /** "Ennio is level 5: a character of that level has at least 6500 xp": said when a write leaves the points below what the level needs (PRO-6). */

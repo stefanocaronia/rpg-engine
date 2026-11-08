@@ -75,6 +75,13 @@ export function playerKnowledge(root: string, world: World, wanted?: string): Kn
     return { pc, pages: new Set(each.flatMap((one) => [...one.pages])), secrets: new Set(each.flatMap((one) => [...one.secrets])), each };
 }
 
+/** The knowledge with these pages known too, by each player character. */
+export function withPagesKnown(knowledge: Knowledge, pages: Page[]): Knowledge
+{
+    const add = (one: Knowledge): Knowledge => ({ ...one, pages: new Set([...one.pages, ...pages]) });
+    return pages.length === 0 ? knowledge : { ...add(knowledge), ...(knowledge.each === undefined ? {} : { each: knowledge.each.map(add) }) };
+}
+
 /** Who of the player characters knows a page, when more than one is played and only some of them do (VIEW-12); undefined otherwise. */
 export function pageKnownBy(knowledge: Knowledge, page: Page): string[] | undefined
 {

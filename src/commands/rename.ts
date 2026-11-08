@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { parseDocument } from "yaml";
 import { z } from "zod";
-import { requireCampaign } from "../campaign/index.ts";
+import { readChoices, requireCampaign, writeChoices } from "../campaign/index.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files } from "../core/store.ts";
@@ -107,8 +107,8 @@ function pageAtPath(world: World, given: string): Page | undefined
 }
 
 /**
- * The present follows the new name: its links, and the open scene's names, as its order, its turn and who is hostile (D-415, D-416). Refused, changing
- * nothing, when the links renamed would leave state.yaml unreadable.
+ * The present follows the new name: its links, whose the choices waiting are, and the open scene's names, as its order, its turn and who is hostile (D-415,
+ * D-416). Refused, changing nothing, when the links renamed would leave state.yaml unreadable.
  */
 function renameInState(root: string, from: string, to: string): void
 {
@@ -124,6 +124,13 @@ function renameInState(root: string, from: string, to: string): void
 
     if (count > 0) {
         files().write(path, renamed);
+    }
+
+    // Whose the choices on the dashboard are (D-556).
+    const sets = readChoices(root);
+
+    if (sets.some((set) => comparableText(set.who) === comparableText(from))) {
+        writeChoices(root, sets.map((set) => (comparableText(set.who) === comparableText(from) ? { ...set, who: to } : set)));
     }
 
     const { scene } = readOpenScene(root);

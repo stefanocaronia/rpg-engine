@@ -28,13 +28,29 @@ import {
 } from "../../pages/index.ts";
 import type { ActVerb, GameSystem, SheetVerb, SystemWords } from "../../systems/index.ts";
 import { type CalendarDay, formatGameDate } from "../../time/index.ts";
+import { offeredPages } from "../choices.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "../config.ts";
 import { importShown, type ShownImport } from "../import/import.ts";
 import { effectiveFields, effectsOf } from "../shared/effect-layer.ts";
 import { effectShown, type SeenEffect } from "../shared/effects.ts";
 import { shownImage } from "../shared/images.ts";
 import { readJourney } from "../shared/journey.ts";
-import { discoveredSecrets, type Knowledge, knowledgeOf, knownIntroduction, knownPart, knownSecretsApart, knownText, knowsPage, pageKnownBy, playerKnowledge, playerStory, scenesLivedBy, secretKnownBy } from "../shared/knowledge.ts";
+import {
+    discoveredSecrets,
+    type Knowledge,
+    knowledgeOf,
+    knownIntroduction,
+    knownPart,
+    knownSecretsApart,
+    knownText,
+    knowsPage,
+    pageKnownBy,
+    playerKnowledge,
+    playerStory,
+    scenesLivedBy,
+    secretKnownBy,
+    withPagesKnown,
+} from "../shared/knowledge.ts";
 import { blockingMode, campaignMode, type Mode, modes } from "../shared/mode.ts";
 import { campaignCoins } from "../shared/money.ts";
 import { lastMoment, livingMood, masterMood, type MoodMoment } from "../shared/moods.ts";
@@ -358,34 +374,36 @@ export const view = defineCommand({
             }
 
             const reference = parsePageReference(input.page);
-            const page = knownPage(world, knowledge, reference.name);
+            // The player reads the pages their choices waiting offer, to choose (VIEW-2); never a character agent.
+            const readable = input.as === undefined ? withPagesKnown(knowledge, offeredPages(root, world)) : knowledge;
+            const page = knownPage(world, readable, reference.name);
             const system = campaignSystem(root, context);
 
             if (page === undefined) {
-                return { kind: "unknown", text: `${knowerText(knowledge)} ${reference.name}.` };
+                return { kind: "unknown", text: `${knowerText(readable)} ${reference.name}.` };
             }
 
             // The sheet of the one whose view it is, and of the party when they are of it (VIEW-3, VIEW-10).
             const party = page === pc || (isPartyMember(pc) && isPartyMember(page));
 
             if (reference.section !== undefined && reference.section !== "") {
-                const part = knownPart(world, knowledge, page, reference.section);
+                const part = knownPart(world, readable, page, reference.section);
                 // A group of the sheet of the character or a companion, as show gives it (DAT-2).
                 const group = part === undefined && party ? sheetGroup(world, system, page, reference.section) : undefined;
 
                 if (part === undefined && group === undefined) {
-                    return { kind: "unknown", text: `${knowledge.each === undefined ? `${pc.name} knows nothing` : "No player character knows anything"} of ${page.name} called ${reference.section}.` };
+                    return { kind: "unknown", text: `${readable.each === undefined ? `${pc.name} knows nothing` : "No player character knows anything"} of ${page.name} called ${reference.section}.` };
                 }
 
                 // Who knows the secret, or the page, when not all the player characters do (VIEW-12).
                 const secret = secretNames(page.body).find((name) => comparableText(name) === comparableText(reference.section ?? ""));
-                const knownBy = part === undefined ? undefined : secret === undefined ? pageKnownBy(knowledge, page) : secretKnownBy(knowledge, page, secret);
+                const knownBy = part === undefined ? undefined : secret === undefined ? pageKnownBy(readable, page) : secretKnownBy(readable, page, secret);
                 return { kind: "section", title: `${page.name}#${group?.name ?? reference.section}`, lines: group?.lines ?? [], text: part ?? "", ...(knownBy === undefined ? {} : { knownBy }) };
             }
 
             // The system's pages it shows, in the campaign's language where the system has no translation (D-539).
             wantTexts(root, context, world, [page]);
-            return shownPage(root, context, world, knowledge, page, party);
+            return shownPage(root, context, world, readable, page, party);
         }
 
         const { coins } = campaignCoins(root, context);

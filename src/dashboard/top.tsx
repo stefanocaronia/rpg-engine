@@ -43,6 +43,8 @@ interface TopOf
     /** The packages' own pages, as tabs or in the packages' menu (D-512), and the one shown, as package/name. */
     ownPages?: NavPage[];
     ownShown?: string | undefined;
+    /** Choices wait for the player (D-556): a dot on the Party's tab. */
+    choices?: boolean;
 }
 
 // What the row of the sections leaves between a link and the next, between the sections and the pages after them, and for the menu's button.
@@ -87,7 +89,15 @@ export function Top(top: TopOf)
                     {top.campaign !== undefined && top.now !== undefined && <p class="product-time">{gameDateLabel(top.now)}</p>}
                 </div>
                 <StatusChips now={top.now} calendar={top.calendar} live={top.live} />
-                <Navigation current={top.section} fight={top.fight} yourTurn={top.yourTurn} turnName={top.turnName} ownPages={top.ownPages ?? []} ownShown={top.ownShown} />
+                <Navigation
+                    current={top.section}
+                    fight={top.fight}
+                    yourTurn={top.yourTurn}
+                    turnName={top.turnName}
+                    ownPages={top.ownPages ?? []}
+                    ownShown={top.ownShown}
+                    choices={top.choices}
+                />
                 {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
             <ThemeCorner />
@@ -100,13 +110,14 @@ export function Top(top: TopOf)
  * settings, the packages and About as icons at the row's end (D-333, D-409), the packages a menu of the packages' other pages when they have some: what does
  * not fit goes into the menu, those icons first, then the tabs from the last.
  */
-function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown }: {
+function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, choices }: {
     current: Section;
     fight?: boolean | undefined;
     yourTurn?: boolean | undefined;
     turnName?: string | undefined;
     ownPages: NavPage[];
     ownShown?: string | undefined;
+    choices?: boolean | undefined;
 })
 {
     // While the scene goes by turns the Scene's name is in gold; on the player's turn, from another section, it pulses (D-315, D-349, D-351, D-444).
@@ -125,7 +136,11 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown }: 
                     const gone = awayTabs.includes(tab);
                     const kinds = [tab.key === "scene" && turns ? (turn ? "your-turn" : "in-turns") : "", tab.own ? "own-tab" : "", gone ? "away" : ""];
                     // The scene's whole name for a screen reader in a turn: Scene, your turn.
-                    const named = tab.key === "scene" && turn ? `${tab.label}, ${turnName === undefined ? t("your turn") : t("It's {name}'s turn", { name: turnName })}` : undefined;
+                    const named = tab.key === "scene" && turn
+                        ? `${tab.label}, ${turnName === undefined ? t("your turn") : t("It's {name}'s turn", { name: turnName })}`
+                        : tab.key === "party" && choices === true
+                        ? t("Party, choices waiting")
+                        : undefined;
                     return (
                         <a
                             key={tab.key}
@@ -136,7 +151,10 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown }: 
                             aria-hidden={gone ? true : undefined}
                             tabIndex={gone ? -1 : undefined}
                         >
-                            <span class="section-mark">{tab.icon}</span>
+                            <span class="section-mark">
+                                {tab.icon}
+                                {tab.key === "party" && choices === true && <span class="choices-dot" aria-hidden="true" />}
+                            </span>
                             <span class="section-name" dir="auto">{tab.label}</span>
                         </a>
                     );

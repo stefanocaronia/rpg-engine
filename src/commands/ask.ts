@@ -53,7 +53,7 @@ const buttonWords: Record<string, { roll: string; change: string; choice: string
 };
 
 /** One button: a check with its dice and the field of the sheet it rolls, when it names one; or an answer. */
-interface Option
+export interface Option
 {
     label: string;
     notation?: string;
@@ -773,7 +773,8 @@ function readOptions(given: string | string[]): Option[]
     return options;
 }
 
-function readOption(text: string): Option
+/** A button's words, as a check with its dice at the end, or an answer: Atletica 1d20+5 is a check, Sì an answer. */
+export function readOption(text: string): Option
 {
     // The dice from the first word that is a die, so that 1d20+athletics - 1 and 1d20 + athletics are dice too; else the last word.
     const spaced = /^(.+?)\s+(\d*d(?:\d+|%|F)\S*(?:\s*[+-]\s*\S+)*)$/i.exec(text);

@@ -202,7 +202,7 @@ Every setting can change, in the chat or in **Settings**. A ruling the master ma
 
 A page on your own computer, open only in that computer's browser, live while the chat is open. When the chat closes, it shows *Not connected*; it comes back by itself with the next chat.
 
-- **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from and, when an arrow marks its die, what makes the roll better or worse. Beside it, the rolls.
+- **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from and, when an arrow marks its die, what makes the roll better or worse. When the master prepares choices for you, as at a new level, a notice on the sheet opens them: pick when you like, read the pages the options name, roll where an option rolls, then confirm; the story goes on meanwhile. Beside it, the rolls.
 - **Scene**: where you are, its picture and map, who is there, what is happening; in a fight, the turns and your character's card.
 - **Journal**: quests, the story, your companions' diaries, your notes.
 - **World**: the world map, what your character knows, the documents found and the calendar.

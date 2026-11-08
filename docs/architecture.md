@@ -16,7 +16,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | [src/server/mcp.ts](../src/server/mcp.ts) | The MCP server |
 | [src/server/bell-listener.ts](../src/server/bell-listener.ts) | `rpg --listen`, Claude Code's Stop hook that `init` writes: it waits at its chat's dashboard and wakes the chat when the player acts there |
 | [src/server/dashboard/](../src/server/dashboard/), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
-| [files.ts](../src/server/dashboard/files.ts), [player.ts](../src/server/dashboard/player.ts), [news.ts](../src/server/dashboard/news.ts), [writes.ts](../src/server/dashboard/writes.ts), [ports.ts](../src/server/dashboard/ports.ts) | The server's parts: the files it serves, the master's question on the page, the player's words and what the master hears of the page, what the page writes; its ports, which the doorbell reads without the server |
+| [files.ts](../src/server/dashboard/files.ts), [player.ts](../src/server/dashboard/player.ts), [news.ts](../src/server/dashboard/news.ts), [writes.ts](../src/server/dashboard/writes.ts), [choices.ts](../src/server/dashboard/choices.ts), [ports.ts](../src/server/dashboard/ports.ts) | The server's parts: the files it serves, the master's question on the page, the player's words and what the master hears of the page, what the page writes, the choices the master prepared for the player, such as a new level; its ports, which the doorbell reads without the server |
 | [src/testing/index.ts](../src/testing/index.ts), [src/testing/system-checks.ts](../src/testing/system-checks.ts) | `rpg-engine/testing`, the test kit for extensions and game systems: a campaign with its packages linked, its commands, log, widgets, the tools' descriptions and dashboard, and the checks of a system's folder; see [extensions.md](extensions.md#6-tests) |
 | [systems/](../systems/) | The one game system the engine brings, [free](../systems/free/); the others are packages of their own, as the [5e](https://github.com/stefanocaronia/rpg-engine-5e) |
 | [instructions/](../instructions/) | The game master's instructions |
@@ -25,7 +25,7 @@ Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" 
 | Module | Job |
 |---|---|
 | `pages` | Page files, frontmatter, sections and secrets, links, inheritance, containers, environment, checks |
-| `campaign` | Finding and creating a campaign; `campaign.yaml`; `state.yaml` |
+| `campaign` | Finding and creating a campaign; `campaign.yaml`; `state.yaml`, with the choices waiting for the player |
 | `systems` | The installed game systems and their `system.yaml` |
 | `extensions` | The installed extensions, their `extension.yaml` and their words |
 | `packages` | npm for every package, game systems and the engine included: install, update, a `.tgz` read |

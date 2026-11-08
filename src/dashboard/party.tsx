@@ -2,6 +2,7 @@
 // their effects; the dead go last.
 import { useContext } from "preact/hooks";
 import type { Member, ShownScene } from "./data.ts";
+import { Icon } from "./icons.tsx";
 import { fieldLabel, initials, nameHue } from "./labels.ts";
 import { stripCounter } from "./layout.ts";
 import { WidgetsContext } from "./packages/widgets.tsx";
@@ -17,7 +18,8 @@ export function sheetAddress(name: string): string
     return `#/party/${encodeURIComponent(name)}`;
 }
 
-export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?: string; scene?: ShownScene; })
+/** The party's strip; `waiting` the titles of the choices waiting for each, by name, a mark on their token and in their link's name (D-556). */
+export function PartyStrip({ party, chosen, scene, waiting = new Map() }: { party: Member[]; chosen?: string; scene?: ShownScene; waiting?: ReadonlyMap<string, string>; })
 {
     const widgets = useContext(WidgetsContext);
     const ordered = [...party.filter((member) => !member.dead), ...party.filter((member) => member.dead)];
@@ -28,7 +30,13 @@ export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?:
                 const status = memberStatus(member, scene, widgets);
                 const person = personShown(widgets, member.name)[0];
                 // One name for a screen reader, which the drawing inside would say twice.
-                const said = [member.name, counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`, ...statusWords(status)];
+                const choices = waiting.get(member.name);
+                const said = [
+                    member.name,
+                    counter === undefined ? "" : `${fieldLabel(counter.field)} ${counter.text}`,
+                    ...statusWords(status),
+                    choices === undefined ? "" : t("{title}: choices waiting", { title: choices }),
+                ];
                 return (
                     <a
                         key={member.name}
@@ -37,7 +45,7 @@ export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?:
                         aria-current={member.name === chosen ? "page" : undefined}
                         aria-label={said.filter((part) => part !== "").join(", ")}
                     >
-                        <MemberToken member={member} status={status} />
+                        <MemberToken member={member} status={status} choices={choices !== undefined} />
                         <span class="name">{member.name}</span>
                         {member.dead
                             ? <span class="dead-mark">{t("dead")}</span>
@@ -53,11 +61,17 @@ export function PartyStrip({ party, chosen, scene }: { party: Member[]; chosen?:
 }
 
 /** A party member's token with the pip of their state (D-419), in the strip and the sheet's band; never in the rolls. Their class in its tooltip (D-409). */
-export function MemberToken({ member, large, status }: { member: Member; large?: boolean; status: TokenStatus; })
+export function MemberToken({ member, large, status, choices }: { member: Member; large?: boolean; status: TokenStatus; choices?: boolean; })
 {
     return (
         <span class="token-holder" data-tip={member.headline === undefined ? undefined : `${member.name} · ${member.headline}`}>
             <Token member={member} large={large} side={sideOf(member.role)} status={status} dying={downTint(status)} />
+            {/* Choices that wait for them (D-556): a chevron up in the accent, its words in the name of the link the token is in. */}
+            {choices === true && (
+                <span class="choices-pip" aria-hidden="true">
+                    <Icon name="up" />
+                </span>
+            )}
         </span>
     );
 }

@@ -43,7 +43,7 @@ import { effectGiving, effectiveFields, effectsOf, withValue } from "../shared/e
 import { checkEffectsReadable, saveEffects } from "../shared/effects.ts";
 import { fireEvents, nowDueNote } from "../shared/events.ts";
 import { coinExamples, poolExample, restExample } from "../shared/examples.ts";
-import { experienceOf, newLevelNotes } from "../shared/experience.ts";
+import { experienceOf, levelWay, newLevelNotes, settleChoices } from "../shared/experience.ts";
 import { wholeNumber } from "../shared/inputs.ts";
 import { screenNote, screenUp, sealHiddenRoll } from "../shared/master-rolls.ts";
 import { campaignCoins } from "../shared/money.ts";
@@ -507,9 +507,13 @@ function applyStep(
     // Points that reach a new level are said with the rule to read (PRO-6).
     const companion = holder.page.fields.role === "companion";
     const levelUp = (): string => situationPart("level-up", context, system);
-    const levels = changed && party && after !== undefined
-        ? newLevelNotes(page, experienceOf(world, effectiveFields(world, holder.page)), experienceOf(updated, effectiveFields(updated, after)), companion, levelUp)
-        : [];
+    const [levelBefore, levelAfter] = [experienceOf(world, effectiveFields(world, holder.page)), after === undefined ? undefined : experienceOf(updated, effectiveFields(updated, after))];
+
+    if (changed && party) {
+        settleChoices(root, holder.page.name, levelBefore, levelAfter);
+    }
+
+    const levels = changed && party && after !== undefined ? newLevelNotes(page, levelBefore, levelAfter, companion, levelUp, levelWay(root, context, holder.page.name)) : [];
     // The player character's own counter, never a form's, falling to the system's down value: what lethality makes of it (D-530).
     const fall = changed && holder.kind === "page" && layer === undefined && isPlayerCharacter(holder.page) ? fallNotes(root, system, page, field, step) : [];
     const thresholds = [...(touched && party ? thresholdNotes(root, system, field, step, layer?.name) : []), ...fall, ...levels];

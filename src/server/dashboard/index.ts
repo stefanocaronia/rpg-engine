@@ -20,6 +20,7 @@ import { notationParts } from "../../dice/index.ts";
 import { helperCommand, queueInCodex } from "../../helpers/index.ts";
 import { loadSystemCode } from "../../systems/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
+import { choicesNews, choicesRequest } from "./choices.ts";
 import { builtPage, packagePageFile, pageFile, pageHtml, pageModulesOf, pagePolicy, pageWords, securityHeaders, send, sendFile, sendImage, sendJson, sendPacked, sendThemeFile, themeAddress, themeNow, vendorModule } from "./files.ts";
 import { act, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
 import { answerAsked, type Asked, closeCard, listenForChanges, pagePlayer, pageSeen, rollNamesOf, type ShownCard, spendShown } from "./player.ts";
@@ -274,7 +275,18 @@ function serve(server: Server, served: Served): Dashboard
     return {
         url: `http://127.0.0.1:${served.port}`,
         player: pagePlayer(served),
-        news: (told) => pageNews(served, told),
+        news: (told) => {
+            // The player's doings on the page, then the choices they confirmed (D-556).
+            const page = pageNews(served, told);
+            const confirmed = choicesNews(served, told);
+            return {
+                lines: [...page.lines, ...confirmed.lines],
+                restore: () => {
+                    page.restore();
+                    confirmed.restore();
+                },
+            };
+        },
         close: () =>
             new Promise((done) => {
                 stopListening();
@@ -333,6 +345,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (request.method === "POST" && path === "/api/answer" && origin !== undefined) {
         await answerAsked(request, response, served);
+        return;
+    }
+
+    if (path === "/api/choices" && (request.method === "GET" || (request.method === "POST" && origin !== undefined))) {
+        await choicesRequest(request, response, served);
         return;
     }
 

@@ -252,6 +252,17 @@ Read-only: no.
 - `recipe` (`string`, optional): the rest's recipe that change named
 - `toss` (`integer`, optional): how many coins the player tosses, 1 to 3, each heads or tails; the question says what is at stake
 
+### choices
+
+Prepare choices the player makes on their dashboard when they like, while the story goes on: all a moment asks them to choose, such as a new level.
+
+Read-only: no.
+
+- `title` (`string`, required): what the choices are for, in the player's language, such as the level they reach
+- `who` (`string`, optional): who chooses: the player's character, or a companion the player made; the only player character, if left out
+- `items` (`object[]`, optional): the choices in order, each {question, options, pick}: pick is how many the player picks, 1 if left out, or a range such as 0-2 when some are optional
+- `cancel` (`boolean`, optional): true to take away the set with this title and who
+
 ### change
 
 Change a counter, money or a stack of goods on a page: hit points, uses, a progress track, an event's clock, coins, torches.

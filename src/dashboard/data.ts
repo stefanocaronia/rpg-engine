@@ -368,6 +368,44 @@ export interface AskedNow
     card?: AskedCard;
 }
 
+/** An option of a choice waiting (D-556): the master's words, its label without dice, its dice when it is a roll, the page it names with that page's first sentence. */
+export interface ShownOption
+{
+    text: string;
+    label: string;
+    notation?: string;
+    page?: { name: string; opening: string; };
+}
+
+/** A choice of a set: its question, how many to pick, its options, the options picked so far, and the roll an option made. */
+export interface ShownChoice
+{
+    question: string;
+    least: number;
+    most: number;
+    options: ShownOption[];
+    answer: string[];
+    rolled?: string;
+}
+
+/** A set of choices the master prepared for one of the party, as a new level; confirmed, it waits for the master to write it. */
+export interface ShownChoices
+{
+    id: string;
+    title: string;
+    who: string;
+    made: string;
+    confirmed?: string;
+    items: ShownChoice[];
+}
+
+/** What /api/choices gives: the sets of choices, and whether the player rolls their own dice. */
+export interface ChoicesNow
+{
+    sets: ShownChoices[];
+    physical: boolean;
+}
+
 /** How a die, or a part of a card, turned out for the one who rolls. */
 export type Tone = "good" | "bad";
 
