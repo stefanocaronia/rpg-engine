@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -9,8 +9,8 @@ Dieser Leitfaden richtet sich an Spielende: Du musst nicht programmieren können
 
 1. Installiere **Node.js** von [nodejs.org](https://nodejs.org) (die LTS-Version).
 2. Installiere einen **KI-Agenten**, das Programm, in dem die Spielleitung läuft, und melde dich an: zum Beispiel Claude Code oder Codex ([2.4](#24-connect-your-ai)).
-3. Installiere RPG Engine in einem neuen Terminal, das du nach der Installation von Node.js geöffnet hast: `npm install -g rpg-engine`.
-4. Lege eine Kampagne an: `rpg init "The Salt Isles"`.
+3. Installiere RPG Engine in einem neuen Terminal, das du nach der Installation von Node.js geöffnet hast: `npm install -g rpg-engine`. Wenn Windows meldet, dass das Ausführen von Skripten deaktiviert ist, schreibe einmal `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, antworte mit Ja und versuche es noch einmal.
+4. Öffne das Terminal in dem Ordner, in dem du deine Spiele aufbewahrst (rechtsklicke ihn, **Im Terminal öffnen**), und lege eine Kampagne an, immer mit ihrem Namen: `rpg init "The Salt Isles"`. RPG Engine antwortet mit zwei Zeilen auf Englisch: Alles ist in Ordnung.
 5. Wechsle in den neuen Ordner mit `cd "The Salt Isles"` und starte dort deinen Agenten: `claude` für Claude Code, `codex` für Codex. Bestätige mit Ja, wenn er fragt, ob du dem Ordner vertraust ([2.4](#24-connect-your-ai)), und schreibe dann *Hallo! Lass uns anfangen.* Die Spielleitung antwortet mit dem Link zu deinem Dashboard.
 
 ## 1. Was RPG Engine ist <!-- icon: about -->
@@ -48,7 +48,7 @@ Ein Spiel kommt als Spielsystem, ein Paket, das die Spielleitung für deine Kamp
 npm install -g rpg-engine
 ```
 
-Mit `rpg --version` prüfst du, ob es geklappt hat. Du nutzt `rpg` einmal pro Kampagne, um sie anzulegen. Danach startet dein Agent RPG Engine von selbst.
+Mit `rpg --version` prüfst du, ob es geklappt hat. Wenn npm anbietet, sich selbst zu aktualisieren, kannst du das ignorieren. Du nutzt `rpg` einmal pro Kampagne, um sie anzulegen. Danach startet dein Agent RPG Engine von selbst. `rpg` allein öffnet nichts: Das Dashboard gibt dir die Spielleitung.
 
 ### 2.3 Eine Kampagne anlegen
 
@@ -58,7 +58,7 @@ Mit `rpg --version` prüfst du, ob es geklappt hat. Du nutzt `rpg` einmal pro Ka
 rpg init "The Salt Isles"
 ```
 
-Das erstellt den Ordner `The Salt Isles` mit einer neuen Kampagne darin. Wechsle mit `cd "The Salt Isles"` hinein. Merk dir, wo er liegt: Du kehrst jedes Mal dorthin zurück, wenn du spielst. Alles andere legst du später fest, im Chat oder im Dashboard. `rpg init --help` listet die Optionen auf, mit denen du schon jetzt einiges festlegen kannst, etwa `--language it` oder `--difficulty hard`.
+Das erstellt den Ordner `The Salt Isles` mit einer neuen Kampagne darin. Wechsle mit `cd "The Salt Isles"` hinein. Schreibe immer den Namen: Ohne Namen wird der Ordner, in dem du gerade bist, zur Kampagne, neben allem, was er schon enthält. Merk dir, wo er liegt: Du kehrst jedes Mal dorthin zurück, wenn du spielst. Alles andere legst du später fest, im Chat oder im Dashboard.
 
 Die Spielleitung kann keine Kampagne für dich anlegen: Vor `init` sagt nichts deinem Agenten, wo RPG Engine ist.
 
@@ -303,6 +303,8 @@ Jeden Befehl, den die Spielleitung benutzt, kannst du auch im Kampagnenordner au
 **Das Dashboard öffnet sich nicht.** Frag die Spielleitung: `[Wie lautet der Link zum Dashboard?]`. Es funktioniert nur, solange in dieser Kampagne ein Chat offen ist, nach der ersten Antwort der Spielleitung.
 
 **Die Spielleitung scheint das Spiel nicht zu kennen.** Dein Agent hat RPG Engine nicht geladen. Prüfe, ob du ihn im Kampagnenordner gestartet und dem Ordner vertraut hast. Schreib in Claude Code `/mcp` und verbinde `rpg` neu. In Codex muss `codex mcp list` im Kampagnenordner `rpg` anzeigen. Wenn `rpg --version` nicht gefunden wird, installiere RPG Engine neu ([2.2](#22-install)).
+
+**Windows findet `claude` nicht.** Der Installer weist in einem gelben Hinweis darauf hin und nennt den Ordner, in den er installiert hat. Füge diesen Ordner zum PATH hinzu (Systemeigenschaften > Umgebungsvariablen) und öffne dann ein neues Terminal.
 
 **Aktualisieren.** Führe `npm install -g rpg-engine` noch einmal aus und öffne dann einen neuen Chat: Eine laufende Spielleitung behält die Version, mit der sie gestartet ist.
 

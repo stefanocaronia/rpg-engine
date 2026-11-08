@@ -17,13 +17,21 @@ import { mostSaid, readBody, sendJson } from "./files.ts";
 import type { Served } from "./index.ts";
 import { deliverActs } from "./news.ts";
 
-/** An option as the page shows it: the master's words, its label without dice, its dice when it is a roll, the page it names with that page's first sentence. */
+/** An option as the page shows it: the master's words, its label without dice, its dice when it is a roll, the pages it names with their titles and first sentences. */
 export interface ShownOption
 {
     text: string;
     label: string;
     notation?: string;
-    page?: { name: string; opening: string; };
+    pages?: OptionPage[];
+}
+
+/** A page an option names: its name, its title in the campaign's language, its first sentence as the character may read it. */
+export interface OptionPage
+{
+    name: string;
+    title: string;
+    opening: string;
 }
 
 /** A set of choices as the page shows it. */
@@ -122,14 +130,16 @@ function shownChoices(root: string, served: Served): { sets: ShownChoices[]; phy
 function shownOption(world: World, knowledge: Knowledge | undefined, option: string): ShownOption
 {
     const parts = optionParts(option);
-    const page = parts.pages.length === 0 ? undefined : findPage(world, parts.pages[0]);
-    const introduction = page === undefined ? "" : knowledge === undefined ? withoutComments(introductionText(page.translated ?? page.body)) : knownIntroduction(world, knowledge, page);
-    const opening = firstSentence(linkWords(world, introduction).replace(/\s+/g, " ").trim());
+    const found = parts.pages.map((name) => findPage(world, name)).filter((page) => page !== undefined);
+    const pages = found.filter((page, index) => found.findIndex((other) => other.name === page.name) === index).map((page) => {
+        const introduction = knowledge === undefined ? withoutComments(introductionText(page.translated ?? page.body)) : knownIntroduction(world, knowledge, page);
+        return { name: page.name, title: page.title ?? page.name, opening: firstSentence(linkWords(world, introduction).replace(/\s+/g, " ").trim()) };
+    });
     return {
         text: option,
         label: linkWords(world, parts.label).trim(),
         ...(parts.notation === undefined ? {} : { notation: parts.notation }),
-        ...(page === undefined ? {} : { page: { name: page.name, opening } }),
+        ...(pages.length === 0 ? {} : { pages }),
     };
 }
 

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { choicesAddress } from "./address.ts";
 import { changeChoices, type ChoicesChange, readChoices, readView } from "./api.ts";
 import { useMedia } from "./card.tsx";
-import type { ChoicesNow, Member, ShownChoice, ShownChoices, ShownOption, ShownRoll } from "./data.ts";
+import type { ChoicesNow, Member, OptionPage, ShownChoice, ShownChoices, ShownOption, ShownRoll } from "./data.ts";
 import { Icon, NotationIcons } from "./icons.tsx";
 import { diceIn, shownNotation } from "./labels.ts";
 import { type LinkTo, Markdown } from "./markdown.tsx";
@@ -152,7 +152,7 @@ function ChoiceSet({ set, first, member, physical, open, besides, version, flyin
     // An option's page closed, the focus goes back to its Read, in sight on a phone.
     useEffect(() => {
         if (reading !== undefined) {
-            lastRead.current = reading.option.page?.name;
+            lastRead.current = reading.option.pages?.[0]?.name;
             return;
         }
 
@@ -164,7 +164,7 @@ function ChoiceSet({ set, first, member, physical, open, besides, version, flyin
         if (!besides) {
             link?.scrollIntoView({ block: "center" });
         }
-    }, [reading?.option.page?.name]);
+    }, [reading?.option.pages?.[0]?.name]);
 
     // A roll's total shows once its dice, seen in the air, have landed; or after a while, when they never fly.
     useEffect(() => {
@@ -258,6 +258,7 @@ function ChoiceSet({ set, first, member, physical, open, besides, version, flyin
                     set={set}
                     at={reading.item}
                     option={reading.option}
+                    page={reading.page}
                     version={version}
                     phone
                     link={link}
@@ -306,7 +307,7 @@ function ChoiceSet({ set, first, member, physical, open, besides, version, flyin
                             physical={physical}
                             closed={confirmed}
                             rolling={rolling?.item === index}
-                            reading={reading?.item === index ? reading.option.page?.name : undefined}
+                            reading={reading?.item === index ? reading.option.text : undefined}
                             problem={problem?.item === index ? problem.text : undefined}
                             onPick={(answer) => void send({ id: set.id, item: index, answer }, index)}
                             onRoll={(option, faces) => roll(index, option, faces)}
@@ -319,6 +320,7 @@ function ChoiceSet({ set, first, member, physical, open, besides, version, flyin
                         set={set}
                         at={reading.item}
                         option={reading.option}
+                        page={reading.page}
                         version={version}
                         link={link}
                         closed={confirmed || rolling !== undefined}
@@ -384,7 +386,7 @@ function ChoiceItem({ set, item, at, physical, closed, rolling, reading, problem
     const rolled = item.rolled !== undefined;
     const full = !single && item.answer.length >= item.most;
     const long = item.options.length >= longList;
-    const found = search.trim() === "" ? item.options : item.options.filter((option) => foldedText(`${option.label} ${option.page?.opening ?? ""}`).includes(foldedText(search.trim())));
+    const found = search.trim() === "" ? item.options : item.options.filter((option) => foldedText(`${option.label} ${(option.pages ?? []).map((page) => `${page.title} ${page.opening}`).join(" ")}`).includes(foldedText(search.trim())));
     const chosen = item.options.filter((option) => item.answer.includes(option.text));
     const shut = (option: ShownOption): boolean => closed || rolled || rolling || (full && !item.answer.includes(option.text));
     // The radio group's one stop: the option chosen, else the first that may be.
@@ -505,8 +507,8 @@ function ChoiceItem({ set, item, at, physical, closed, rolling, reading, problem
                             checked={checked}
                             closed={shut(option)}
                             tabIndex={single ? (index === stop ? 0 : -1) : undefined}
-                            read={reading !== undefined && option.page?.name === reading}
-                            href={option.page === undefined ? undefined : choicesAddress(set.who, option.page.name)}
+                            read={option.text === reading}
+                            href={option.pages === undefined ? undefined : choicesAddress(set.who, option.pages[0].name)}
                             total={rollsHere && checked && rolled && !rolling ? total : undefined}
                             about={rollsHere
                                 ? rolling && checked
@@ -561,7 +563,7 @@ function OptionCard({ id, option, role, checked, closed, tabIndex, read, href, t
     onChoose: () => void;
 })
 {
-    const opening = about ?? option.page?.opening;
+    const opening = about ?? option.pages?.[0].opening;
     const kinds = ["choice-card", checked ? "chosen" : "", closed && !checked ? "closed" : "", option.notation === undefined ? "" : "choice-roll", href === undefined ? "alone" : ""];
     return (
         <div class={kinds.filter((kind) => kind !== "").join(" ")}>
@@ -589,11 +591,11 @@ function OptionCard({ id, option, role, checked, closed, tabIndex, read, href, t
                 </span>
                 {total !== undefined && <span class="choice-total num" id={`${id}-total`}>{total}</span>}
             </button>
-            {href !== undefined && option.page !== undefined && (
+            {href !== undefined && option.pages !== undefined && (
                 <a
                     class="icon-button choice-read tip-left"
                     href={href}
-                    data-name={option.page.name}
+                    data-name={option.pages[0].name}
                     aria-label={t("Read {name}", { name: option.label })}
                     data-tip={t("Read {name}", { name: option.label })}
                     aria-current={read ? "true" : undefined}
@@ -655,11 +657,15 @@ function HandDice({ notation, id, onWrite }: { notation: string; id: string; onW
     );
 }
 
-/** The page an option names, read whole beside the choices or in their place: what it is for, its title, the way to choose it, its text. */
-function ChoiceReader({ set, at, option, version, phone, link, closed, onPick }: {
+/**
+ * A page an option names, read whole beside the choices or in their place: what it is for, its title, the way to choose it, the option's other pages, its
+ * text.
+ */
+function ChoiceReader({ set, at, option, page, version, phone, link, closed, onPick }: {
     set: ShownChoices;
     at: number;
     option: ShownOption;
+    page: OptionPage;
     version: number;
     phone?: boolean;
     link: LinkTo;
@@ -672,7 +678,9 @@ function ChoiceReader({ set, at, option, version, phone, link, closed, onPick }:
     const reads = useRef(0);
     const title = useRef<HTMLHeadingElement>(null);
     const item = set.items[at];
-    const name = option.page?.name ?? option.label;
+    const name = page.name;
+    const pages = option.pages ?? [];
+    const heading = page.name === pages[0]?.name ? option.label : page.title;
     const key = `${idOf(set)}-reader`;
 
     // Its whole text, read when it opens and again as the game changes, the last reading alone; its first sentence until then.
@@ -714,7 +722,7 @@ function ChoiceReader({ set, at, option, version, phone, link, closed, onPick }:
                         <bdi>{item.question}</bdi>
                         {count !== undefined && <span class="num">{` · ${count}`}</span>}
                     </p>
-                    <h3 id={`${key}-title`} tabIndex={-1} ref={title} dir="auto">{option.label}</h3>
+                    <h3 id={`${key}-title`} tabIndex={-1} ref={title} dir="auto">{heading}</h3>
                 </div>
                 {phone !== true && (
                     <a class="icon-button tip-left" href={choicesAddress(set.who)} aria-label={t("Close the page")} data-tip={t("Close the page")}>
@@ -742,10 +750,19 @@ function ChoiceReader({ set, at, option, version, phone, link, closed, onPick }:
                         </button>
                     )}
             </p>
+            {pages.length > 1 && (
+                <nav class="filter-chips choices-pages" aria-label={t("The pages this option names")}>
+                    {pages.map((one) => (
+                        <a key={one.name} href={choicesAddress(set.who, one.name)} aria-current={one.name === page.name ? "page" : undefined}>
+                            <bdi>{one.title}</bdi>
+                        </a>
+                    ))}
+                </nav>
+            )}
             <div class="reader-text">
-                {text === undefined && !problem && option.page !== undefined && option.page.opening !== "" && <p>{option.page.opening}</p>}
+                {text === undefined && !problem && page.opening !== "" && <p>{page.opening}</p>}
                 {text !== undefined && text.trim() !== "" && <Markdown text={text} link={link} />}
-                {text !== undefined && text.trim() === "" && option.page !== undefined && <p>{option.page.opening}</p>}
+                {text !== undefined && text.trim() === "" && <p>{page.opening}</p>}
                 {problem && <p class="choices-none">{t("This page could not be read now: try again in a moment.")}</p>}
             </div>
         </article>
@@ -779,18 +796,20 @@ function stateWords(item: ShownChoice): string
     return item.most > 1 ? t("{count} of {most}", { count: item.answer.length, most: item.most }) : t("To choose");
 }
 
-/** The option of a set whose page is open, by the page's name, with its choice; none when no option names it. */
-function openOption(set: ShownChoices, name: string): { item: number; option: ShownOption; } | undefined
+/** The option of a set whose page is open, by the page's name, with its choice and that page; none when no option names it. */
+function openOption(set: ShownChoices, name: string): { item: number; option: ShownOption; page: OptionPage; } | undefined
 {
     const named = (exact: boolean) =>
-        set.items.flatMap((item, index) => item.options.filter((option) => option.page !== undefined && (exact ? option.page.name === name : foldedText(option.page.name) === foldedText(name))).map((option) => ({ item: index, option })))[0];
+        set.items.flatMap((item, index) =>
+            item.options.flatMap((option) => (option.pages ?? []).filter((page) => (exact ? page.name === name : foldedText(page.name) === foldedText(name))).map((page) => ({ item: index, option, page })))
+        )[0];
     return named(true) ?? named(false);
 }
 
-/** Where a link of an option's page leads: to another option's page of the set; any other stays words. */
+/** Where a link of an option's page leads: to a page an option of the set names; any other stays words. */
 function optionLinks(set: ShownChoices): LinkTo
 {
-    const pages = new Map(set.items.flatMap((item) => item.options.flatMap((option) => (option.page === undefined ? [] : [[foldedText(option.page.name), option.page.name] as const]))));
+    const pages = new Map(set.items.flatMap((item) => item.options.flatMap((option) => (option.pages ?? []).map((page) => [foldedText(page.name), page.name] as const))));
 
     return (name) => {
         const page = pages.get(foldedText(name));

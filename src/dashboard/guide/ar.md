@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: الدليل الكامل
 
 يتيح لك **RPG Engine** لعب لعبة أدوار على الطاولة مع **ذكاء اصطناعي في دور مدير اللعبة**. تتحدث مع مدير اللعبة في **محادثة**. أما RPG Engine فيعمل خلف الكواليس: **يتذكر العالم**، و**يرمي النرد**، و**يمسك الحسابات**. بجانب المحادثة تُبقي صفحة مفتوحة في المتصفح، هي **لوحة التحكم**، وفيها ورقة شخصيتك والنرد والخرائط وسجلك.
@@ -9,8 +9,8 @@
 
 1. ثبّت **Node.js** من [nodejs.org](https://nodejs.org) (نسخة LTS).
 2. ثبّت **وكيل ذكاء اصطناعي**، وهو البرنامج الذي يعمل فيه مدير اللعبة، وسجّل الدخول: مثل Claude Code أو Codex ([2.4](#24-connect-your-ai)).
-3. في طرفية جديدة، فُتحت بعد تثبيت Node.js، ثبّت RPG Engine: `npm install -g rpg-engine`.
-4. أنشئ حملة: `rpg init "The Salt Isles"`.
+3. في طرفية جديدة، فُتحت بعد تثبيت Node.js، ثبّت RPG Engine: `npm install -g rpg-engine`. إذا ظهر في Windows أن تشغيل السكربتات معطّل، فاكتب مرة واحدة `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`، وأجب بنعم، ثم أعد المحاولة.
+4. افتح الطرفية في المجلد الذي تحفظ فيه ألعابك (انقر عليه بزر الفأرة الأيمن، **فتح في Terminal**)، وأنشئ حملة، واكتب اسمها دائمًا: `rpg init "The Salt Isles"`. يرد RPG Engine بسطرين بالإنجليزية: كل شيء على ما يرام.
 5. ادخل المجلد الجديد بالأمر `cd "The Salt Isles"`، ثم شغّل وكيلك فيه: `claude` لـ Claude Code، و`codex` لـ Codex. أجب بنعم عندما يسأل هل تثق بالمجلد ([2.4](#24-connect-your-ai))، ثم اكتب *مرحبًا! لنبدأ.* يرد مدير اللعبة برابط لوحة التحكم.
 
 ## 1. ما هو RPG Engine <!-- icon: about -->
@@ -48,7 +48,7 @@
 npm install -g rpg-engine
 ```
 
-الأمر `rpg --version` يتحقق من نجاح التثبيت. تستخدم `rpg` مرة واحدة لكل حملة، لإنشائها. بعد ذلك يشغّل وكيلك RPG Engine من تلقاء نفسه.
+الأمر `rpg --version` يتحقق من نجاح التثبيت. إذا عرض npm تحديث نفسه، فيمكنك تجاهل ذلك. تستخدم `rpg` مرة واحدة لكل حملة، لإنشائها. بعد ذلك يشغّل وكيلك RPG Engine من تلقاء نفسه. الأمر `rpg` وحده لا يفتح شيئًا: مدير اللعبة هو من يعطيك لوحة التحكم.
 
 ### 2.3 إنشاء حملة
 
@@ -58,7 +58,7 @@ npm install -g rpg-engine
 rpg init "The Salt Isles"
 ```
 
-ينشئ هذا المجلد `The Salt Isles` وفيه حملة جديدة. ادخل إليه بالأمر `cd "The Salt Isles"`. تذكّر مكانه، فستعود إليه في كل مرة تلعب فيها. أما كل شيء آخر فتختاره لاحقًا، في الدردشة أو في لوحة المتابعة. الأمر `rpg init --help` يعرض الخيارات التي يمكن تحديدها الآن، مثل `--language it` أو `--difficulty hard`.
+ينشئ هذا المجلد `The Salt Isles` وفيه حملة جديدة. ادخل إليه بالأمر `cd "The Salt Isles"`. اكتب الاسم دائمًا: بدونه يصبح المجلد الذي أنت فيه هو الحملة، إلى جانب كل ما فيه أصلًا. تذكّر مكانه، فستعود إليه في كل مرة تلعب فيها. أما كل شيء آخر فتختاره لاحقًا، في الدردشة أو في لوحة التحكم.
 
 لا يستطيع مدير اللعبة إنشاء الحملة عنك. قبل `init` لا يوجد ما يدل وكيلك على مكان RPG Engine.
 
@@ -303,6 +303,8 @@ rpg init "The Salt Isles"
 **لا تُفتح لوحة التحكم.** اسأل مدير اللعبة: `[ما رابط لوحة التحكم؟]`. لا تعمل إلا ما دامت محادثة مفتوحة في تلك الحملة، بعد أول جواب من مدير اللعبة.
 
 **يبدو أن مدير اللعبة لا يعرف اللعبة.** لم يحمّل وكيلك RPG Engine. تحقق من أنك شغّلته في مجلد الحملة وأنك وثقت به. في Claude Code، اكتب `/mcp` وأعد ربط `rpg`. في Codex، يجب أن يعرض الأمر `codex mcp list` في مجلد الحملة `rpg`. وإن لم يُعثر على `rpg --version`، ثبّت RPG Engine من جديد ([2.2](#22-install)).
+
+**لا يجد Windows الأمر `claude`.** يخبرك مثبّته بذلك في ملاحظة صفراء، مع المجلد الذي وُضع فيه: أضف ذلك المجلد إلى PATH (خصائص النظام > متغيرات البيئة)، ثم افتح طرفية جديدة.
 
 **التحديث.** شغّل `npm install -g rpg-engine` مرة أخرى، ثم افتح محادثة جديدة: مدير اللعبة العامل يحتفظ بالإصدار الذي بدأ به.
 

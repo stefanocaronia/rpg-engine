@@ -238,7 +238,7 @@
         outline-offset: 0 !important;
     }
 
-    .filter-chips button:focus-visible,
+    .filter-chips :is(button, a):focus-visible,
     .package-show:focus-visible,
     .package-row:focus-visible {
         outline: 2px solid var(--accent) !important;

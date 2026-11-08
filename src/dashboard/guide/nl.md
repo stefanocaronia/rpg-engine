@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -9,8 +9,8 @@ Deze handleiding is voor spelers: je hoeft niet te kunnen programmeren.
 
 1. Installeer **Node.js** vanaf [nodejs.org](https://nodejs.org) (de LTS-versie).
 2. Installeer een **AI-agent**, het programma waarin de spelleider draait, en log in: bijvoorbeeld Claude Code of Codex ([2.4](#24-connect-your-ai)).
-3. Installeer RPG Engine in een nieuwe terminal, geopend nadat Node.js is geïnstalleerd: `npm install -g rpg-engine`.
-4. Maak een campagne: `rpg init "The Salt Isles"`.
+3. Installeer RPG Engine in een nieuwe terminal, geopend nadat Node.js is geïnstalleerd: `npm install -g rpg-engine`. Als Windows antwoordt dat het uitvoeren van scripts is uitgeschakeld, schrijf dan eenmalig `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, antwoord ja en probeer het opnieuw.
+4. Open de terminal in de map waar je je spellen bewaart (klik er met de rechtermuisknop op en kies **Openen in Terminal**) en maak een campagne, altijd met een naam: `rpg init "The Salt Isles"`. RPG Engine antwoordt met twee regels in het Engels: alles is in orde.
 5. Ga naar de nieuwe map, `cd "The Salt Isles"`, en start daar je agent: `claude` voor Claude Code, `codex` voor Codex. Zeg ja als er wordt gevraagd of je de map vertrouwt ([2.4](#24-connect-your-ai)) en schrijf dan *Hoi! Laten we beginnen.* De spelleider antwoordt met de link naar je dashboard.
 
 ## 1. Wat RPG Engine is <!-- icon: about -->
@@ -48,7 +48,7 @@ Een spel komt als spelsysteem, een pakket dat de spelleider voor je campagne ins
 npm install -g rpg-engine
 ```
 
-Met `rpg --version` controleer je of het gelukt is. Je gebruikt `rpg` één keer per campagne, om die te maken. Daarna start je agent RPG Engine zelf.
+Met `rpg --version` controleer je of het gelukt is. Als npm aanbiedt om zichzelf bij te werken, kun je dat negeren. Je gebruikt `rpg` één keer per campagne, om die te maken. Daarna start je agent RPG Engine zelf. `rpg` alleen opent niets: de spelleider geeft je het dashboard.
 
 ### 2.3 Een campagne maken
 
@@ -58,7 +58,7 @@ Open een terminal in de map waar je je spellen bewaart ([2.1](#21-what-you-need)
 rpg init "The Salt Isles"
 ```
 
-Dit maakt de map `The Salt Isles` met een nieuwe campagne erin. Ga erheen met `cd "The Salt Isles"`. Onthoud waar de map staat: je keert er elke keer naar terug als je speelt. Al het andere kies je later, in de chat of op het dashboard. Met `rpg init --help` zie je de opties om er nu al een paar te kiezen, zoals `--language it` of `--difficulty hard`.
+Dit maakt de map `The Salt Isles` met een nieuwe campagne erin. Ga erheen met `cd "The Salt Isles"`. Schrijf altijd de naam erbij: zonder naam wordt de map waarin je staat de campagne, naast alles wat er al in zit. Onthoud waar de map staat: je keert er elke keer naar terug als je speelt. Al het andere kies je later, in de chat of op het dashboard.
 
 De spelleider kan geen campagne voor je maken: vóór `init` vertelt niets je agent waar RPG Engine staat.
 
@@ -303,6 +303,8 @@ Elk commando dat de spelleider gebruikt, kun je ook in de campagnemap uitvoeren:
 **Het dashboard gaat niet open.** Vraag het de spelleider: `[Wat is de link naar het dashboard?]`. Het werkt alleen zolang er een chat open is in die campagne, na het eerste antwoord van de spelleider.
 
 **De spelleider lijkt het spel niet te kennen.** Je agent heeft RPG Engine niet geladen. Controleer of je hem in de campagnemap hebt gestart en de map hebt vertrouwd. Schrijf in Claude Code `/mcp` en verbind `rpg` opnieuw. In Codex moet `codex mcp list` in de campagnemap `rpg` tonen. Wordt `rpg --version` niet gevonden, installeer RPG Engine dan opnieuw ([2.2](#22-install)).
+
+**Windows vindt `claude` niet.** Het installatieprogramma meldt dat in een gele notitie, met de map waar het in is gezet: voeg die map toe aan het PATH (Systeemeigenschappen > Omgevingsvariabelen) en open dan een nieuwe terminal.
 
 **Bijwerken.** Voer `npm install -g rpg-engine` opnieuw uit en open dan een nieuwe chat: een spelleider die al draait houdt de versie waarmee die begon.
 

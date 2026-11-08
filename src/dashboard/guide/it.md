@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -9,8 +9,8 @@ Questa guida è per chi gioca: non serve saper programmare.
 
 1. Installa **Node.js** da [nodejs.org](https://nodejs.org) (la versione LTS).
 2. Installa un **agente IA**, il programma in cui gira il master, ed entra col tuo account: per esempio Claude Code o Codex ([2.4](#24-connect-your-ai)).
-3. In un terminale nuovo, aperto dopo aver installato Node.js, installa RPG Engine: `npm install -g rpg-engine`.
-4. Crea una campagna: `rpg init "The Salt Isles"`.
+3. In un terminale nuovo, aperto dopo aver installato Node.js, installa RPG Engine: `npm install -g rpg-engine`. Se Windows risponde che l'esecuzione di script è disabilitata, scrivi una volta `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, rispondi di sì e riprova.
+4. Apri il terminale nella cartella dove tieni i tuoi giochi (clic destro sulla cartella, **Apri nel terminale**) e crea una campagna, sempre con il suo nome: `rpg init "The Salt Isles"`. RPG Engine risponde con due righe in inglese: va tutto bene.
 5. Entra nella cartella nuova, `cd "The Salt Isles"`, e avvia lì il tuo agente: `claude` per Claude Code, `codex` per Codex. Rispondi di sì quando chiede se ti fidi della cartella ([2.4](#24-connect-your-ai)), poi scrivi *Ciao! Cominciamo.* Il master risponde con il link alla tua dashboard.
 
 ## 1. Cos'è RPG Engine <!-- icon: about -->
@@ -48,7 +48,7 @@ Un gioco arriva come sistema di gioco, un pacchetto che il master installa per l
 npm install -g rpg-engine
 ```
 
-`rpg --version` controlla che abbia funzionato. Usi `rpg` una volta per campagna, per crearla; dopo, il tuo agente avvia RPG Engine da solo.
+`rpg --version` controlla che abbia funzionato. Se npm si offre di aggiornarsi da solo, puoi ignorarlo. Usi `rpg` una volta per campagna, per crearla; dopo, il tuo agente avvia RPG Engine da solo. `rpg` da solo non apre niente: la dashboard te la dà il master.
 
 ### 2.3 Creare una campagna
 
@@ -58,7 +58,7 @@ Apri un terminale nella cartella dove tieni i tuoi giochi (come, lo dice la [2.1
 rpg init "The Salt Isles"
 ```
 
-Crea la cartella `The Salt Isles` con dentro una campagna nuova; entraci con `cd "The Salt Isles"`. Ricorda dov'è: ci torni ogni volta che giochi. Tutto il resto lo scegli dopo, in chat o sulla dashboard; `rpg init --help` elenca le opzioni per sceglierne qualcosa subito, come `--language it` o `--difficulty hard`.
+Crea la cartella `The Salt Isles` con dentro una campagna nuova; entraci con `cd "The Salt Isles"`. Scrivi sempre il nome: senza, la cartella in cui ti trovi diventa la campagna, accanto a tutto ciò che contiene già. Ricorda dov'è: ci torni ogni volta che giochi. Tutto il resto lo scegli dopo, in chat o sulla dashboard.
 
 Il master non può creare una campagna per te: prima di `init`, niente dice al tuo agente dov'è RPG Engine.
 
@@ -303,6 +303,8 @@ Ogni comando che usa il master si può lanciare anche nella cartella della campa
 **La dashboard non si apre.** Chiedi al master: *[Qual è il link della dashboard?]* Funziona solo mentre una chat è aperta in quella campagna, dopo la prima risposta del master.
 
 **Il master non sembra conoscere il gioco.** Il tuo agente non ha caricato RPG Engine. Controlla di averlo avviato nella cartella della campagna e di esserti fidato. In Claude Code, scrivi `/mcp` e ricollega `rpg`. In Codex, `codex mcp list` nella cartella della campagna deve mostrare `rpg`. Se `rpg --version` non viene trovato, installa di nuovo RPG Engine ([2.2](#22-install)).
+
+**Windows non trova `claude`.** Il suo programma di installazione lo segnala in una nota gialla, con la cartella in cui è finito: aggiungi quella cartella al PATH (Proprietà del sistema > Variabili d'ambiente), poi apri un terminale nuovo.
 
 **Aggiornare.** Lancia di nuovo `npm install -g rpg-engine`, poi apri una chat nuova: un master già avviato tiene la versione con cui è partito.
 

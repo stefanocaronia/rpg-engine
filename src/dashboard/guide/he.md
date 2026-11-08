@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: המדריך המלא
 
 **RPG Engine** מאפשר לשחק משחק תפקידים שולחני עם **בינה מלאכותית בתפקיד המנחה**. מדברים עם המנחה ב**צ'אט**; RPG Engine עובד מאחורי הקלעים: הוא **זוכר את העולם**, **מטיל את הקוביות** ו**מנהל את החשבונות**. לצד הצ'אט משאירים בדפדפן דף פתוח, **הלוח** (dashboard), עם דף הדמות, הקוביות, המפות והיומן.
@@ -9,8 +9,8 @@
 
 1. להתקין את **Node.js** מהאתר [nodejs.org](https://nodejs.org) (גרסת LTS).
 2. להתקין **סוכן בינה מלאכותית**, התוכנה שבה המנחה פועל, ולהתחבר אליו: למשל Claude Code או Codex ([2.4](#24-connect-your-ai)).
-3. בטרמינל חדש, שנפתח אחרי שהותקן Node.js, להתקין את RPG Engine: `npm install -g rpg-engine`.
-4. ליצור קמפיין: `rpg init "The Salt Isles"`.
+3. בטרמינל חדש, שנפתח אחרי שהותקן Node.js, להתקין את RPG Engine: `npm install -g rpg-engine`. אם Windows משיבה שהרצת סקריפטים מושבתת, לכתוב פעם אחת `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, לענות yes ולנסות שוב.
+4. לפתוח את הטרמינל בתיקייה שבה שומרים את המשחקים (לחיצה ימנית עליה, **Open in Terminal**) וליצור קמפיין, תמיד עם שם: `rpg init "The Salt Isles"`. RPG Engine עונה בשתי שורות באנגלית: הכול תקין.
 5. להיכנס לתיקייה החדשה, `cd "The Salt Isles"`, ולהפעיל בה את הסוכן: `claude` עבור Claude Code, `codex` עבור Codex. לאשר כשהוא שואל אם סומכים על התיקייה ([2.4](#24-connect-your-ai)), ואז לכתוב *שלום! בוא נתחיל.* המנחה עונה עם הקישור ללוח.
 
 ## 1. מהו RPG Engine <!-- icon: about -->
@@ -48,7 +48,7 @@
 npm install -g rpg-engine
 ```
 
-הפקודה `rpg --version` בודקת שההתקנה הצליחה. משתמשים ב-`rpg` פעם אחת בכל קמפיין, כדי ליצור אותו. אחר כך הסוכן מפעיל את RPG Engine בעצמו.
+הפקודה `rpg --version` בודקת שההתקנה הצליחה. אם npm מציע להתעדכן, אפשר להתעלם מכך. משתמשים ב-`rpg` פעם אחת בכל קמפיין, כדי ליצור אותו. אחר כך הסוכן מפעיל את RPG Engine בעצמו. הפקודה `rpg` לבדה לא פותחת דבר: את הדשבורד נותן המנחה.
 
 ### 2.3 יצירת קמפיין
 
@@ -58,7 +58,7 @@ npm install -g rpg-engine
 rpg init "The Salt Isles"
 ```
 
-הפקודה יוצרת את התיקייה `The Salt Isles` עם קמפיין חדש בתוכה. נכנסים אליה עם `cd "The Salt Isles"`. כדאי לזכור איפה היא נמצאת: חוזרים אליה בכל פעם שמשחקים. את כל השאר בוחרים אחר כך, בצ'אט או בדשבורד. הפקודה `rpg init --help` מציגה את האפשרויות לבחירת כמה דברים כבר עכשיו, כמו `--language it` או `--difficulty hard`.
+הפקודה יוצרת את התיקייה `The Salt Isles` עם קמפיין חדש בתוכה. נכנסים אליה עם `cd "The Salt Isles"`. תמיד לכתוב את השם: בלי שם, התיקייה שבה נמצאים הופכת לקמפיין, לצד כל מה שכבר יש בה. כדאי לזכור איפה היא נמצאת: חוזרים אליה בכל פעם שמשחקים. את כל השאר בוחרים אחר כך, בצ'אט או בדשבורד.
 
 המנחה לא יכול ליצור קמפיין במקומך: לפני `init`, שום דבר לא מראה לסוכן איפה RPG Engine נמצא.
 
@@ -303,6 +303,8 @@ RPG Engine נשאר בתיקייה הזאת: הוא קורא וכותב את ה�
 **לוח הבקרה לא נפתח.** לשאול את המנחה: `[מה הקישור ללוח הבקרה?]`. הוא עובד רק כשצ'אט פתוח באותו קמפיין, אחרי התשובה הראשונה של המנחה.
 
 **נראה שהמנחה לא מכיר את המשחק.** הסוכן לא טען את RPG Engine. לבדוק שהפעלת אותו בתיקיית הקמפיין ואישרת אמון. ב-Claude Code, לכתוב `/mcp` ולחבר מחדש את `rpg`. ב-Codex, הפקודה `codex mcp list` בתיקיית הקמפיין חייבת להציג את `rpg`. אם `rpg --version` לא נמצא, להתקין את RPG Engine שוב ([2.2](#22-install)).
+
+**Windows לא מוצאת את `claude`.** תוכנית ההתקנה שלו אומרת זאת בהערה צהובה, עם התיקייה שאליה הותקן: להוסיף את התיקייה הזאת ל-PATH (System Properties > Environment Variables), ואז לפתוח טרמינל חדש.
 
 **עדכון.** להריץ שוב `npm install -g rpg-engine`, ואז לפתוח צ'אט חדש: מנחה שכבר רץ נשאר עם הגרסה שבה התחיל.
 

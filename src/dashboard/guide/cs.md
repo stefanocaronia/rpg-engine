@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -9,8 +9,8 @@ Tento průvodce je pro hráče: programovat umět nemusíš.
 
 1. Nainstaluj **Node.js** z [nodejs.org](https://nodejs.org) (verze LTS).
 2. Nainstaluj **AI agenta**, program, ve kterém Pán jeskyně běží, a přihlas se: například Claude Code nebo Codex ([2.4](#24-connect-your-ai)).
-3. V novém terminálu, otevřeném až po instalaci Node.js, nainstaluj RPG Engine: `npm install -g rpg-engine`.
-4. Vytvoř kampaň: `rpg init "The Salt Isles"`.
+3. V novém terminálu, otevřeném až po instalaci Node.js, nainstaluj RPG Engine: `npm install -g rpg-engine`. Pokud Windows odpoví, že spouštění skriptů je zakázané, napiš jednou `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, odpověz ano a zkus to znovu.
+4. Otevři terminál ve složce, kam ukládáš své hry (klikni na ni pravým tlačítkem a zvol **Otevřít v Terminálu**), a vytvoř kampaň, vždy i s jejím názvem: `rpg init "The Salt Isles"`. RPG Engine odpoví dvěma řádky v angličtině: vše je v pořádku.
 5. Přejdi do nové složky, `cd "The Salt Isles"`, a spusť tam svého agenta: `claude` pro Claude Code, `codex` pro Codex. Když se zeptá, jestli složce důvěřuješ, potvrď ([2.4](#24-connect-your-ai)). Pak napiš *Ahoj! Pojďme začít.* Pán jeskyně odpoví odkazem na tvůj dashboard.
 
 ## 1. O hře RPG Engine <!-- icon: about -->
@@ -48,7 +48,7 @@ Hra přichází jako herní systém, balíček, který Pán jeskyně nainstaluje
 npm install -g rpg-engine
 ```
 
-Příkaz `rpg --version` ověří, že instalace proběhla. Příkaz `rpg` použiješ jednou pro každou kampaň, když ji vytváříš. Potom už RPG Engine spouští tvůj agent sám.
+Příkaz `rpg --version` ověří, že instalace proběhla. Pokud ti npm nabídne, že se aktualizuje, můžeš to ignorovat. Příkaz `rpg` použiješ jednou pro každou kampaň, když ji vytváříš. Potom už RPG Engine spouští tvůj agent sám. Samotný `rpg` nic neotevře: dashboard ti dá Pán jeskyně.
 
 ### 2.3 Vytvoření kampaně
 
@@ -58,7 +58,7 @@ Otevři terminál ve složce, kam ukládáš své hry ([2.1](#21-what-you-need) 
 rpg init "The Salt Isles"
 ```
 
-Tím vznikne složka `The Salt Isles` s novou kampaní. Přejdi do ní příkazem `cd "The Salt Isles"`. Zapamatuj si, kde leží: vracíš se do ní při každé hře. Vše ostatní zvolíš později, v chatu nebo na dashboardu. Příkaz `rpg init --help` vypíše volby, kterými můžeš některé věci určit hned, například `--language it` nebo `--difficulty hard`.
+Tím vznikne složka `The Salt Isles` s novou kampaní. Přejdi do ní příkazem `cd "The Salt Isles"`. Název piš vždy: bez něj se kampaní stane složka, ve které právě jsi, vedle všeho, co už obsahuje. Zapamatuj si, kde leží: vracíš se do ní při každé hře. Vše ostatní zvolíš později, v chatu nebo na dashboardu.
 
 Pán jeskyně kampaň za tebe vytvořit nemůže: před příkazem `init` nic neříká tvému agentovi, kde RPG Engine najde.
 
@@ -303,6 +303,8 @@ Každý příkaz, který Pán jeskyně používá, jde spustit i ve složce kamp
 **Dashboard se neotevře.** Zeptej se Pána jeskyně: `[Jaký je odkaz na dashboard?]`. Funguje jen tehdy, když je v té kampani otevřený chat, po první odpovědi Pána jeskyně.
 
 **Pán jeskyně jako by hru neznal.** Tvůj agent nenačetl RPG Engine. Zkontroluj, že jsi ho spustil(a) ve složce kampaně a že jsi jí důvěřoval(a). V Claude Code napiš `/mcp` a znovu připoj `rpg`. V Codexu musí `codex mcp list` ve složce kampaně ukázat `rpg`. Pokud se `rpg --version` nenajde, nainstaluj RPG Engine znovu ([2.2](#22-install)).
+
+**Windows nenajde `claude`.** Instalátor to oznámí ve žluté poznámce a uvede složku, do které se nainstaloval: přidej tu složku do PATH (Vlastnosti systému > Proměnné prostředí) a pak otevři nový terminál.
 
 **Aktualizace.** Spusť znovu `npm install -g rpg-engine` a potom otevři nový chat: běžící Pán jeskyně si drží verzi, se kterou začal.
 

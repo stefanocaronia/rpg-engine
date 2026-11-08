@@ -46,7 +46,7 @@ async function prepare(items: unknown[], ...more: string[]): Promise<{ exitCode:
 
 const level = [
     { question: "Punti ferita", options: ["Tira 1d6", "Prendi la media: 4"] },
-    { question: "Oggetto", options: ["[[Lanterna]]", "Una corda"] },
+    { question: "Oggetto", options: ["[[Lanterna]]", "Una corda", "[[Re Nero|La lanterna del re]] e [[Lanterna]]"] },
     { question: "Talenti", options: ["Forza", "Grazia", "Arguzia"], pick: "0-2" },
 ];
 
@@ -195,8 +195,11 @@ describe("the choices on the dashboard", () => {
         const sets = shown.body.sets as { id: string; items: { options: unknown[]; }[]; }[];
         const id = sets[0].id;
         expect(sets[0].items[0].options).toEqual([{ text: "Tira 1d6", label: "Tira", notation: "1d6" }, { text: "Prendi la media: 4", label: "Prendi la media: 4" }]);
+        const lantern = { name: "Lanterna", title: "Lanterna", opening: "Una lanterna cieca, forgiata da il sovrano." };
         // The opening as the character may read it: a link to a page it does not know as its words (VIEW-3).
-        expect(sets[0].items[1].options[0]).toEqual({ text: "[[Lanterna]]", label: "Lanterna", page: { name: "Lanterna", opening: "Una lanterna cieca, forgiata da il sovrano." } });
+        expect(sets[0].items[1].options[0]).toEqual({ text: "[[Lanterna]]", label: "Lanterna", pages: [lantern] });
+        // Every page an option names, in its order, each once.
+        expect(sets[0].items[1].options[2]).toMatchObject({ label: "La lanterna del re e Lanterna", pages: [{ name: "Re Nero", title: "Re Nero", opening: "" }, lantern] });
         expect(shown.body.physical).toBe(false);
 
         expect((await send("POST", { id, item: 0, answer: ["Tira 1d6"] })).status).toBe(409);

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -9,8 +9,8 @@ Tämä opas on pelaajille: ohjelmointitaitoja ei tarvita.
 
 1. Asenna **Node.js** osoitteesta [nodejs.org](https://nodejs.org) (LTS-versio).
 2. Asenna **tekoälyagentti**, ohjelma, jossa pelinjohtaja toimii, ja kirjaudu sisään: esimerkiksi Claude Code tai Codex ([2.4](#24-connect-your-ai)).
-3. Asenna RPG Engine uudessa päätteessä, joka on avattu Node.js:n asennuksen jälkeen: `npm install -g rpg-engine`.
-4. Luo kampanja: `rpg init "The Salt Isles"`.
+3. Asenna RPG Engine uudessa päätteessä, joka on avattu Node.js:n asennuksen jälkeen: `npm install -g rpg-engine`. Jos Windows ilmoittaa, että komentosarjojen suorittaminen on estetty, kirjoita kerran `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, vastaa myöntävästi ja yritä uudelleen.
+4. Avaa pääte kansioon, jossa säilytät pelisi (napsauta kansiota hiiren kakkospainikkeella ja valitse **Open in Terminal**), ja luo kampanja aina nimen kanssa: `rpg init "The Salt Isles"`. RPG Engine vastaa kahdella englanninkielisellä rivillä: kaikki on kunnossa.
 5. Siirry uuteen kansioon komennolla `cd "The Salt Isles"` ja käynnistä agentti siellä: `claude` Claude Codelle, `codex` Codexille. Vastaa myöntävästi, kun se kysyy, luotatko kansioon ([2.4](#24-connect-your-ai)), ja kirjoita sitten *Hei! Aloitetaan.* Pelinjohtaja vastaa antamalla kojelaudan linkin.
 
 ## 1. Mikä RPG Engine on <!-- icon: about -->
@@ -48,7 +48,7 @@ Peli tulee pelijärjestelmänä. Se on paketti, jonka pelinjohtaja asentaa kampa
 npm install -g rpg-engine
 ```
 
-Komento `rpg --version` tarkistaa, että asennus onnistui. Käytät komentoa `rpg` kerran kampanjaa kohti, kampanjan luomiseen. Sen jälkeen agenttisi käynnistää RPG Enginen itse.
+Komento `rpg --version` tarkistaa, että asennus onnistui. Jos npm tarjoutuu päivittämään itsensä, voit ohittaa tarjouksen. Käytät komentoa `rpg` kerran kampanjaa kohti, kampanjan luomiseen. Sen jälkeen agenttisi käynnistää RPG Enginen itse. Pelkkä `rpg` ei avaa mitään: kojelaudan antaa pelinjohtaja.
 
 ### 2.3 Kampanjan luominen
 
@@ -58,7 +58,7 @@ Avaa pääte kansioon, jossa säilytät pelisi ([2.1](#21-what-you-need) kertoo,
 rpg init "The Salt Isles"
 ```
 
-Komento luo kansion `The Salt Isles`, jossa on uusi kampanja. Siirry siihen komennolla `cd "The Salt Isles"`. Muista, missä kansio on: palaat siihen aina, kun pelaat. Kaiken muun valitset myöhemmin, keskustelussa tai kojelaudalla. Komento `rpg init --help` luettelee valinnat, joita voit tehdä jo nyt, kuten `--language it` tai `--difficulty hard`.
+Komento luo kansion `The Salt Isles`, jossa on uusi kampanja. Siirry siihen komennolla `cd "The Salt Isles"`. Kirjoita nimi aina: ilman nimeä kansiosta, jossa olet, tulee kampanja sen jo sisältämien tiedostojen viereen. Muista, missä kansio on: palaat siihen aina, kun pelaat. Kaiken muun valitset myöhemmin, keskustelussa tai kojelaudalla.
 
 Pelinjohtaja ei voi luoda kampanjaa puolestasi: ennen komentoa `init` mikään ei kerro agentillesi, missä RPG Engine on.
 
@@ -303,6 +303,8 @@ Jokaisen komennon, jota pelinjohtaja käyttää, voi ajaa myös kampanjakansioss
 **Kojelauta ei aukea.** Kysy pelinjohtajalta: `[Mikä on kojelaudan linkki?]`. Se toimii vain, kun kyseisessä kampanjassa on keskustelu auki, pelinjohtajan ensimmäisen vastauksen jälkeen.
 
 **Pelinjohtaja ei tunnu tuntevan peliä.** Agenttisi ei ladannut RPG Engineä. Tarkista, että käynnistit sen kampanjakansiossa ja että luotit kansioon. Claude Codessa kirjoita `/mcp` ja yhdistä `rpg` uudelleen. Codexissa komennon `codex mcp list` kampanjakansiossa pitää näyttää `rpg`. Jos komentoa `rpg --version` ei löydy, asenna RPG Engine uudelleen ([2.2](#22-install)).
+
+**Windows ei löydä komentoa `claude`.** Asennusohjelma kertoo siitä keltaisessa huomautuksessa ja mainitsee kansion, johon asennus meni: lisää kansio PATH-ympäristömuuttujaan (Järjestelmän ominaisuudet > Ympäristömuuttujat) ja avaa sitten uusi pääte.
 
 **Päivittäminen.** Suorita `npm install -g rpg-engine` uudelleen ja avaa sitten uusi keskustelu: käynnissä oleva pelinjohtaja pitää sen version, jolla se käynnistyi.
 

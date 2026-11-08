@@ -291,7 +291,7 @@
         margin: 6px 0 4px;
     }
 
-    .filter-chips button {
+    .filter-chips :is(button, a) {
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -307,18 +307,18 @@
         cursor: pointer;
     }
 
-    .filter-chips button:hover {
+    .filter-chips :is(button, a):hover {
         background: color-mix(in srgb, var(--ink) 5%, transparent);
     }
 
-    .filter-chips button[aria-pressed="true"] {
+    .filter-chips :is(button[aria-pressed="true"], a[aria-current="page"]) {
         border-color: var(--accent);
         background: color-mix(in srgb, var(--accent) 14%, transparent);
     }
 
     /* A finger needs the room of a target, after the chip's own height. */
     @media (pointer: coarse) {
-        .filter-chips button {
+        .filter-chips :is(button, a) {
             min-height: var(--target);
         }
     }

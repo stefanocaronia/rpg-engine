@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: 전체 가이드
 
 **RPG Engine**은 **AI 게임 마스터**와 함께 테이블탑 롤플레잉 게임을 즐길 수 있게 해 줘요. **채팅**으로 GM과 대화해요. RPG Engine은 뒤에서 **세계를 기억하고**, **주사위를 굴리고**, **계산을 맡아요**. 채팅 옆에는 브라우저에 페이지를 하나 열어 두어요. 바로 **대시보드**예요. 캐릭터 시트, 주사위, 지도, 일지가 있어요.
@@ -8,9 +8,9 @@
 ## 빠른 시작 <!-- icon: send -->
 
 1. [nodejs.org](https://nodejs.org)에서 **Node.js**를 설치해요(LTS 버전).
-2. GM이 실행될 프로그램인 **AI 에이전트**를 설치하고 로그인해요. 예를 들면 Claude Code나 Codex가 있어요([2.4](#24-connect-your-ai)).
-3. Node.js를 설치한 뒤 새로 연 터미널에서 RPG Engine을 설치해요: `npm install -g rpg-engine`.
-4. 캠페인을 만들어요: `rpg init "The Salt Isles"`.
+2. GM이 실행되는 프로그램인 **AI 에이전트**를 설치하고 로그인해요. 예를 들면 Claude Code나 Codex가 있어요([2.4](#24-connect-your-ai)).
+3. Node.js를 설치한 뒤 새로 연 터미널에서 RPG Engine을 설치해요: `npm install -g rpg-engine`. Windows에서 스크립트 실행이 비활성화되어 있다고 나오면 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`를 한 번 입력하고, 예라고 답한 뒤 다시 시도해요.
+4. 게임을 모아 두는 폴더에서 터미널을 열고(폴더를 마우스 오른쪽 버튼으로 클릭하고 **터미널에서 열기** 선택) 캠페인을 만들어요. 반드시 이름을 함께 써요: `rpg init "The Salt Isles"`. RPG Engine이 영어로 두 줄을 보여 줘요. 모두 잘 됐다는 뜻이에요.
 5. 새로 생긴 폴더로 이동해요: `cd "The Salt Isles"`. 그 안에서 에이전트를 시작해요. Claude Code는 `claude`, Codex는 `codex`예요. 폴더를 신뢰하는지 물으면 예를 선택해요([2.4](#24-connect-your-ai)). 그다음 *안녕하세요! 시작해 봐요.*라고 써요. GM이 대시보드 링크로 답해요.
 
 ## 1. RPG Engine이란 <!-- icon: about -->
@@ -48,7 +48,7 @@
 npm install -g rpg-engine
 ```
 
-`rpg --version`을 입력하면 설치가 잘 됐는지 확인할 수 있어요. `rpg`는 캠페인을 만들 때 한 번만 써요. 그 뒤에는 에이전트가 알아서 RPG Engine을 시작해요.
+`rpg --version`을 입력하면 설치가 잘 됐는지 확인할 수 있어요. npm이 스스로 업데이트하겠냐고 물어도 무시해도 돼요. `rpg`는 캠페인을 만들 때 한 번만 써요. 그 뒤에는 에이전트가 알아서 RPG Engine을 시작해요. `rpg`만 입력하면 아무것도 열리지 않아요. 대시보드는 GM이 알려 줘요.
 
 ### 2.3 캠페인 만들기
 
@@ -58,7 +58,7 @@ npm install -g rpg-engine
 rpg init "The Salt Isles"
 ```
 
-그러면 `The Salt Isles` 폴더가 만들어지고, 그 안에 새 캠페인이 생겨요. `cd "The Salt Isles"`로 폴더 안으로 들어가세요. 폴더 위치를 기억해 두세요. 플레이할 때마다 이곳으로 돌아와야 해요. 나머지는 나중에 채팅이나 대시보드에서 정하면 돼요. 지금 몇 가지를 정하고 싶다면 `rpg init --help`로 옵션을 볼 수 있어요. 예를 들면 `--language it`나 `--difficulty hard` 같은 옵션이 있어요.
+그러면 `The Salt Isles` 폴더가 만들어지고, 그 안에 새 캠페인이 생겨요. `cd "The Salt Isles"`로 폴더 안으로 들어가세요. 이름은 꼭 써야 해요. 이름이 없으면 지금 있는 폴더가 캠페인이 되고, 그 폴더에 있던 파일도 그대로 함께 남아요. 폴더 위치를 기억해 두세요. 플레이할 때마다 이곳으로 돌아와야 해요. 나머지는 나중에 채팅이나 대시보드에서 정하면 돼요.
 
 GM은 캠페인을 대신 만들 수 없어요. `init`을 하기 전에는 에이전트가 RPG Engine이 어디 있는지 알 방법이 없기 때문이에요.
 
@@ -303,6 +303,8 @@ GM이 쓰는 명령은 모두 캠페인 폴더에서 직접 실행할 수도 있
 **대시보드가 열리지 않아요.** GM에게 물어보세요. `[대시보드 링크가 뭐예요?]` 해당 캠페인에서 채팅이 열려 있고 GM이 첫 답변을 한 뒤에만 열려요.
 
 **GM이 게임을 모르는 것 같아요.** 에이전트가 RPG Engine을 불러오지 못한 거예요. 캠페인 폴더에서 에이전트를 시작했는지, 폴더를 신뢰했는지 확인하세요. Claude Code에서는 `/mcp`를 입력하고 `rpg`를 다시 연결하세요. Codex에서는 캠페인 폴더에서 `codex mcp list`를 실행했을 때 `rpg`가 보여야 해요. `rpg --version`이 인식되지 않으면 RPG Engine을 다시 설치하세요([2.2](#22-install)).
+
+**Windows에서 `claude`를 찾지 못해요.** 설치 프로그램이 노란색 안내 문구로 알려 주고, 설치된 폴더도 함께 보여 줘요. 그 폴더를 PATH에 추가한 다음(시스템 속성 > 환경 변수) 새 터미널을 여세요.
 
 **업데이트.** `npm install -g rpg-engine`을 다시 실행하고 새 채팅을 여세요. 이미 실행 중인 GM은 시작했을 때의 버전을 그대로 유지해요.
 

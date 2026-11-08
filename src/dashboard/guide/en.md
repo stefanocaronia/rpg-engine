@@ -8,8 +8,8 @@ This guide is for players: you do not need to know how to program.
 
 1. Install **Node.js** from [nodejs.org](https://nodejs.org) (the LTS version).
 2. Install an **AI agent**, the program the master runs in, and sign in: for example Claude Code or Codex ([2.4](#24-connect-your-ai)).
-3. In a new terminal, opened after Node.js is installed, install RPG Engine: `npm install -g rpg-engine`.
-4. Create a campaign: `rpg init "The Salt Isles"`.
+3. In a new terminal, opened after Node.js is installed, install RPG Engine: `npm install -g rpg-engine`. If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer yes and try again.
+4. Open the terminal in the folder where you keep your games (right-click it, **Open in Terminal**) and create a campaign, always with its name: `rpg init "The Salt Isles"`. RPG Engine answers with two lines in English: all is well.
 5. Go into the new folder, `cd "The Salt Isles"`, and start your agent there: `claude` for Claude Code, `codex` for Codex. Say yes when it asks whether you trust the folder ([2.4](#24-connect-your-ai)), then write *Hi! Let's start.* The master answers with the link to your dashboard.
 
 ## 1. What RPG Engine is <!-- icon: about -->
@@ -47,7 +47,7 @@ A game comes as a game system, a package the master installs for your campaign: 
 npm install -g rpg-engine
 ```
 
-`rpg --version` checks that it worked. You use `rpg` once per campaign, to create it; after that your agent starts RPG Engine by itself.
+`rpg --version` checks that it worked. If npm offers to update itself, you can ignore it. You use `rpg` once per campaign, to create it; after that your agent starts RPG Engine by itself. `rpg` alone opens nothing: the master gives you the dashboard.
 
 ### 2.3 Create a campaign
 
@@ -57,7 +57,7 @@ Open a terminal in the folder where you keep your games ([2.1](#21-what-you-need
 rpg init "The Salt Isles"
 ```
 
-This makes the folder `The Salt Isles` with a new campaign in it; go into it with `cd "The Salt Isles"`. Remember where it is: you come back to it every time you play. You choose everything else later, in the chat or on the dashboard; `rpg init --help` lists the options to choose some now, such as `--language it` or `--difficulty hard`.
+This makes the folder `The Salt Isles` with a new campaign in it; go into it with `cd "The Salt Isles"`. Always write the name: without one, the folder you are in becomes the campaign, beside whatever it already holds. Remember where it is: you come back to it every time you play. You choose everything else later, in the chat or on the dashboard.
 
 The master cannot create a campaign for you: before `init`, nothing tells your agent where RPG Engine is.
 
@@ -302,6 +302,8 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 **The dashboard does not open.** Ask the master: `[What's the dashboard link?]`. It works only while a chat is open in that campaign, after the master's first answer.
 
 **The master does not seem to know the game.** Your agent did not load RPG Engine. Check that you started it in the campaign folder and trusted it. In Claude Code, write `/mcp` and reconnect `rpg`. In Codex, `codex mcp list` in the campaign folder must show `rpg`. If `rpg --version` is not found, install RPG Engine again ([2.2](#22-install)).
+
+**Windows does not find `claude`.** Its installer says so in a yellow note, with the folder it went into: add that folder to the PATH (System Properties > Environment Variables), then open a new terminal.
 
 **Updating.** Run `npm install -g rpg-engine` again, then open a new chat: a running master keeps the version it started with.
 

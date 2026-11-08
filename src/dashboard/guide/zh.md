@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,b493dc90 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,d69e75c5,b5544596,5c016bb1,3afa0abc,af2ce7c5,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,197704ab,de62cd09,f7bd4d35,56b73d9b,d9fbeec2,b8c831ca,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine：完整指南
 
 **RPG Engine** 让你和一位 **AI 主持人**一起玩桌面角色扮演游戏。你在**聊天**里和主持人交谈；RPG Engine 在幕后工作：它**记住世界**，**掷骰子**，**记账**。聊天旁边，你在浏览器里开着一个页面，也就是**仪表盘**，上面有你的角色卡、骰子、地图和日志。
@@ -9,8 +9,8 @@
 
 1. 从 [nodejs.org](https://nodejs.org) 安装 **Node.js**（LTS 版本）。
 2. 安装一个 **AI 智能体**，也就是主持人运行所在的程序，并登录：例如 Claude Code 或 Codex（[2.4](#24-connect-your-ai)）。
-3. 安装好 Node.js 后，打开一个新的终端，在里面安装 RPG Engine：`npm install -g rpg-engine`。
-4. 创建战役：`rpg init "The Salt Isles"`。
+3. 安装好 Node.js 后，打开一个新的终端，在里面安装 RPG Engine：`npm install -g rpg-engine`。如果 Windows 提示已禁止运行脚本，请输入一次 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`，回答“是”，然后再试一次。
+4. 在你存放游戏的文件夹里打开终端（右键点击该文件夹，选择**在终端中打开**），然后创建战役，一定要带上战役的名字：`rpg init "The Salt Isles"`。RPG Engine 会用英文回复两行：一切正常。
 5. 进入新文件夹：`cd "The Salt Isles"`，然后在那里启动你的智能体：Claude Code 用 `claude`，Codex 用 `codex`。它问你是否信任这个文件夹时，选择“是”（[2.4](#24-connect-your-ai)），然后写下 *你好！我们开始吧。* 主持人会回复你仪表盘的链接。
 
 ## 1. RPG Engine 是什么 <!-- icon: about -->
@@ -48,7 +48,7 @@
 npm install -g rpg-engine
 ```
 
-输入 `rpg --version` 可以检查是否安装成功。每个战役只需用一次 `rpg`，用来创建战役；之后由你的智能体自动启动 RPG Engine。
+输入 `rpg --version` 可以检查是否安装成功。如果 npm 提示可以更新自身，不用理会。每个战役只需用一次 `rpg`，用来创建战役；之后由你的智能体自动启动 RPG Engine。单独输入 `rpg` 不会打开任何东西：仪表盘由主持人给你。
 
 ### 2.3 创建战役
 
@@ -58,7 +58,7 @@ npm install -g rpg-engine
 rpg init "The Salt Isles"
 ```
 
-这会生成文件夹 `The Salt Isles`，里面是一个新战役。输入 `cd "The Salt Isles"` 进入这个文件夹。记住它在哪里：每次游玩都要回到这里。其余的一切，你之后在聊天或仪表盘里再选。`rpg init --help` 会列出可以现在就选的选项，比如 `--language it` 或 `--difficulty hard`。
+这会生成文件夹 `The Salt Isles`，里面是一个新战役。输入 `cd "The Salt Isles"` 进入这个文件夹。名字一定要写：不写的话，你当前所在的文件夹会变成战役，和里面原有的内容混在一起。记住它在哪里：每次游玩都要回到这里。其余的一切，你之后在聊天或仪表盘里再选。
 
 主持人无法替你创建战役：在 `init` 之前，你的智能体不知道 RPG Engine 在哪里。
 
@@ -303,6 +303,8 @@ RPG Engine 只在这个文件夹内活动：它只在这里读写游戏，绝不
 **仪表盘打不开。** 问主持人：`[仪表盘的链接是什么？]`。只有在该战役里有聊天开着、并且主持人已做出第一次回复之后，它才能用。
 
 **主持人似乎不懂这个游戏。** 你的智能体没有加载 RPG Engine。请检查你是否在战役文件夹里启动了它，并且选择了信任。在 Claude Code 里，输入 `/mcp` 并重新连接 `rpg`。在 Codex 里，在战役文件夹中运行 `codex mcp list`，必须能看到 `rpg`。如果提示找不到 `rpg --version`，请重新安装 RPG Engine（[2.2](#22-install)）。
+
+**Windows 找不到 `claude`。** 它的安装程序会用黄色提示告诉你这一点，并写明它安装到了哪个文件夹：把那个文件夹加入 PATH（系统属性 > 环境变量），然后打开一个新的终端。
 
 **更新。** 再运行一次 `npm install -g rpg-engine`，然后开启新聊天：正在运行的主持人会沿用它启动时的版本。
 

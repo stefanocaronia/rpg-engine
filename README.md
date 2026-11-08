@@ -59,6 +59,8 @@ cd "The Salt Isles"
 claude
 ```
 
+If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer yes and try again.
+
 With Codex write `codex`; with another agent, start it in that folder (the guide says how to connect it). When it asks whether you trust the folder, say yes; careful, in Claude Code the answer already selected is *No, exit*.
 
 Then write *Hi! Let's start.* The master answers with the link to your dashboard: open it beside the chat. It asks how you want to play, a few questions at a time, then you make your character together, and the story begins.

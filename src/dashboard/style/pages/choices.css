@@ -595,6 +595,16 @@
         justify-content: space-between;
     }
 
+    /* The other pages an option names, each a chip that opens it in the reader. */
+    .choices-pages {
+        margin: 0;
+        padding: 2px 16px 8px;
+    }
+
+    .choices-pages a {
+        text-decoration: none;
+    }
+
     .choice-picked {
         display: inline-flex;
         align-items: center;

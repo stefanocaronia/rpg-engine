@@ -368,13 +368,21 @@ export interface AskedNow
     card?: AskedCard;
 }
 
-/** An option of a choice waiting (D-556): the master's words, its label without dice, its dice when it is a roll, the page it names with that page's first sentence. */
+/** An option of a choice waiting (D-556): the master's words, its label without dice, its dice when it is a roll, the pages it names with their titles and first sentences. */
 export interface ShownOption
 {
     text: string;
     label: string;
     notation?: string;
-    page?: { name: string; opening: string; };
+    pages?: OptionPage[];
+}
+
+/** A page an option names: its name, its title in the campaign's language, its first sentence as the character may read it. */
+export interface OptionPage
+{
+    name: string;
+    title: string;
+    opening: string;
 }
 
 /** A choice of a set: its question, how many to pick, its options, the options picked so far, and the roll an option made. */

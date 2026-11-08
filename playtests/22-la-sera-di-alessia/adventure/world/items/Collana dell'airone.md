@@ -1,0 +1,1 @@
+Una collana d'argento della signora Morra: un airone in volo, grande come un palmo, con gli occhi di pietra azzurra, su una catena lunga. La signora la porta alle feste da trent'anni, e in tutta la valle la riconoscono.
