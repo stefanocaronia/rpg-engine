@@ -17,6 +17,9 @@ beforeEach(() => {
     translate(systems, "world/creatures/Bog Hound.md", "---\nname: Segugio di palude\n---\n\nUn lungo cane delle paludi, grigio come le canne.\n\n## Morso\n\nDue dadi e tre, a chi gli sta accanto.\n");
     writeFileSync(join(systems, "fake", "rules", "Endings.md"), "# Endings\n\n## Last Breath\n\nOne roll more, then the dark.\n\n## Sudden End\n\nA blow twice the grit ends it.\n");
     translate(systems, "rules/Endings.md", "# Finali\n\n## Ultimo respiro\n\nUn tiro ancora, poi il buio.\n\n## Fine improvvisa\n\nUn colpo pari al doppio della tempra la chiude.\n");
+    // A chapter whose translation adds a section: only its title still finds it.
+    writeFileSync(join(systems, "fake", "rules", "Growing.md"), "# Growing\n\nOne grows by deeds.\n\n## Renown\n\nRenown counts the deeds.\n");
+    translate(systems, "rules/Growing.md", "# Crescere\n\nSi cresce con le imprese.\n\n## Fama\n\nLa fama conta le imprese.\n\n## Esempio\n\nTre imprese, un livello.\n");
     translate(systems, "rules/Basics.md", "# Basi\n\n## Cadere\n\nA 0 di tempra si cade.\n\n## Bloccato\n\nChi è bloccato non può muoversi finché non si libera.\n");
     folder = makeTempFolder();
     context = { ...testContext(folder), systemFolders: [systems, ...testSystemFolders] };
@@ -70,6 +73,7 @@ describe("a system's text in the campaign's language (D-542)", () => {
         // A chapter translated section by section is found by the system's own titles too, as its outputs name them.
         expect(await ok("rules", "Sudden End")).toContain("Un colpo pari al doppio della tempra la chiude.");
         expect(await ok("rules", "Endings › Last Breath")).toContain("Un tiro ancora, poi il buio.");
+        expect(await ok("rules", "Growing")).toContain("Si cresce con le imprese.");
         // No note that the rules are in English.
         expect(await ok("rules")).not.toContain(", in English");
         await ok("write", "Ettore", "--type", "character", "--set", "role=pc");

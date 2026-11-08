@@ -92,7 +92,13 @@ function translatedBook(book: RuleSection[], translations: string | undefined, s
     const aliased = files.flatMap((file) => {
         const own = book.filter((section) => section.file === file);
         const other = translated.filter((section) => section.file === file);
-        return isParallel(own, other, words) ? other.map((section, index) => ({ ...section, alias: own[index].path })) : other;
+
+        if (isParallel(own, other, words)) {
+            return other.map((section, index) => ({ ...section, alias: own[index].path }));
+        }
+
+        // A chapter whose sections do not match still has its own title: the system's outputs name it so.
+        return other.map((section, index) => (index === 0 && own.length > 0 && section.level === own[0].level ? { ...section, alias: own[0].path } : section));
     });
     return [...book.filter((section) => !files.includes(section.file)), ...aliased].sort((first, second) => (first.file < second.file ? -1 : first.file > second.file ? 1 : 0));
 }
