@@ -105,11 +105,11 @@ const difficultyItemMeanings: Record<(typeof difficultyItems)[number], Record<(t
         brutal: "random encounters frequent",
     },
     clocks: {
-        story: "threat clocks slow: one of them a step every other day",
-        easy: "threat clocks slow: one of them a step every other day",
-        normal: "threat clocks at their pace: one of them a step each day",
-        hard: "threat clocks fast: each of them a step each day",
-        brutal: "threat clocks fast: each of them a step each day",
+        story: "threat clocks slow: a step only for what the characters do",
+        easy: "threat clocks slow: a step only for what the characters do",
+        normal: "threat clocks at their pace: a step at their event, or each day their holder acts undisturbed",
+        hard: "threat clocks fast: in doubt, a step",
+        brutal: "threat clocks fast: in doubt, a step",
     },
     "take-backs": {
         story: "you may soften your own rolls; take-backs granted whenever asked",
