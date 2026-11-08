@@ -1,6 +1,6 @@
 import { basename, resolve } from "node:path";
 import { z } from "zod";
-import { createCampaign, difficulties, lethalities } from "../campaign/index.ts";
+import { createCampaign, difficulties, lethalities, rememberChoice } from "../campaign/index.ts";
 import { appendLogEntry, newLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { hostInstructions } from "../instructions/index.ts";
@@ -35,6 +35,9 @@ export const init = defineCommand({
         const root = createCampaign(folder, settings, context.platform, hostInstructions());
         createWorld(root);
         appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
+        // What the next campaign's setup suggests (T-134).
+        rememberChoice(context.home, "difficulty", settings.difficulty);
+        rememberChoice(context.home, "lethality", settings.lethality);
         return { root, name: settings.name, note: input.master === true ? campaignNote(root, context) : "" };
     },
 

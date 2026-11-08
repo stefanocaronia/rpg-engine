@@ -576,6 +576,8 @@ export interface PlayerSetting
     choices?: { value: string; means?: string; label?: string; }[];
     /** In the setup, the value the game suggests, never chosen for the player (D-370). */
     suggested?: string;
+    /** In the setup, the player's choice in their last campaign on this computer, which is the one suggested (T-134). */
+    last?: string;
     /** In the setup, the question its card asks in place of its name, as how well the player knows the game (D-347). */
     question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */

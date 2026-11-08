@@ -19,6 +19,7 @@ import {
     efforts,
     entrySettingNames,
     itemMeaning,
+    lastChoices,
     lethalities,
     leveled,
     type LeveledSetting,
@@ -34,6 +35,7 @@ import {
     readSettings,
     readTextSetting,
     refreshHostFiles,
+    rememberChoice,
     requireCampaign,
     rigors,
     saveModes,
@@ -161,6 +163,8 @@ export interface PlayerSetting
     choices?: { value: string; means?: string; label?: string; }[];
     /** In the setup, the value the game suggests, never chosen for the player (D-370). */
     suggested?: string;
+    /** In the setup, the player's choice in their last campaign on this computer, which is the one suggested (T-134). */
+    last?: string;
     /** In the setup, the question its card asks in place of its name, as how well the player knows the game (D-347). */
     question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
@@ -190,7 +194,9 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
     const difficulty = settings.difficulty;
     // The value a system's setting suggests (DAT-17).
     const systemSuggests = Object.fromEntries(held.flatMap((setting) => setting.values.filter((value) => value.suggested === true).map((value) => [setting.name, value.value])));
-    const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }), ...systemSuggests };
+    // The player's last choices first: how they like to play, from their last campaign on this computer (T-134).
+    const last = lastChoices(context.home);
+    const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }), ...systemSuggests, ...last };
     // The system's settings others depend on right after the mentor, before what they change (DAT-16, DAT-17).
     const leading = held.filter(isLeading).map((setting) => setting.name);
     const order = setupOrder.filter((name) => name !== "preparation" || !writtenWorld);
@@ -200,7 +206,8 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
         // A suggestion the game does not offer is none (DAT-16).
         const offered = suggestion !== undefined && (question.choices === undefined || question.choices.some((choice) => choice.value === suggestion));
         const asked = { ...question, ...(question.choices === undefined ? {} : { choices: question.choices.filter((choice) => choice.value !== customLevel) }) };
-        return { ...(question.name === "mentor" ? mentorQuestion(asked) : unsetUnanswered(asked, settings)), ...(offered ? { suggested: suggestion } : {}) };
+        const lastOne = offered && last[question.name] === suggestion ? { last: suggestion } : {};
+        return { ...(question.name === "mentor" ? mentorQuestion(asked) : unsetUnanswered(asked, settings)), ...(offered ? { suggested: suggestion } : {}), ...lastOne };
     });
 }
 
@@ -448,6 +455,12 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         }
     } else if (input.setting !== undefined && input.value !== undefined && changeSetting(root, input.setting, settingValue(root, input.setting, input.value, context))) {
         appendLogEntry(root, newDatedLogEntry(root, context, "config-changed", "public", { setting: input.setting, value: input.value }));
+        // What the next campaign's setup suggests; a custom difficulty or rigor is this campaign's own (T-134).
+        const chosen = (readSettings(root) as Record<string, unknown>)[input.setting];
+
+        if (chosen !== customLevel) {
+            rememberChoice(context.home, input.setting, chosen);
+        }
     }
 
     if (startsCustom && leveledName !== undefined && readSettings(root)[leveledName] === customLevel) {

@@ -4,6 +4,7 @@ import {
     companionWays,
     diceWays,
     difficulties,
+    lastChoices,
     lethalities,
     masterRollWays,
     missingSettings,
@@ -23,7 +24,7 @@ import { comparableText } from "../../core/text.ts";
 import { isInParty, playerCharacters, type World } from "../../pages/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
 import { missingSettingsNote } from "./notes.ts";
-import { missingWithSystems, offeredLabel } from "./offers.ts";
+import { missingWithSystems, offeredLabel, offeredValues } from "./offers.ts";
 import { partText } from "./parts.ts";
 import { missingSheetFields } from "./sheet.ts";
 import { campaignSystem, campaignWorld } from "./world.ts";
@@ -186,7 +187,16 @@ function setupMissing(root: string, context: Context, world: World, brief: boole
 {
     const unanswered = unansweredSettings(readSettings(root), world.pages.length > 0);
     const label = (name: SettingName): string | undefined => (brief ? valueLabels[name] : undefined) ?? settingLabels[name];
-    return missingWithSystems(root, unanswered, context).map((name) => offeredLabel(root, context, name as SettingName) ?? label(name as SettingName) ?? name);
+    // The player's choice in their last campaign, which the setup offers first (T-134), when the game offers it.
+    const last = lastChoices(context.home);
+
+    const withLast = (name: string, text: string): string => {
+        const value = last[name];
+        const offered = offeredValues(root, context, name);
+        return value === undefined || (offered !== undefined && !offered.includes(value)) ? text : `${text}, in their last campaign ${value}: offer it first`;
+    };
+
+    return missingWithSystems(root, unanswered, context).map((name) => withLast(name, offeredLabel(root, context, name as SettingName) ?? label(name as SettingName) ?? name));
 }
 
 /** What session zero still has to make (MOD-4): a living player character, the companions the setup said are made in it, and the sheets they keep, whole. */

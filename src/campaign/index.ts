@@ -2,6 +2,7 @@
 export { createCampaign } from "./create-campaign.ts";
 export { campaignFileName, findCampaign, houseRulesFolderName, requireCampaign } from "./find-campaign.ts";
 export { hasCharacterAgent, hostFileNames, refreshHostFiles, writeEffortFiles } from "./host-files.ts";
+export { lastChoices, rememberChoice, rememberedSettings } from "./last-choices.ts";
 export { type CountedByGame, customLevel, customLevels, customSettings, difficulties, difficultyItems, itemMeaning, leveled, type LeveledSetting, rigorItems, rigors, startingLevels } from "./levels.ts";
 export {
     type CampaignSettings,

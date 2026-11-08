@@ -222,7 +222,7 @@ function Choices({ question, value, labelledBy, onPick }: { question: PlayerSett
                 >
                     <strong>
                         {choice.label === undefined ? valueLabel(choice.value) : phraseLabel(t(choice.label))}
-                        {choice.value === question.suggested && <span class="setup-suggested">{t("Suggested")}</span>}
+                        {choice.value === question.suggested && <span class="setup-suggested">{choice.value === question.last ? t("Like last time") : t("Suggested")}</span>}
                     </strong>
                     {choice.means !== undefined && <span>{phraseLabel(t(choice.means))}</span>}
                 </button>

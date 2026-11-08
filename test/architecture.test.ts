@@ -61,6 +61,8 @@ describe("architecture", () => {
             // A game system's theme of the dashboard, read in its package's folder (D-528).
             "themes/theme.ts",
             "campaign/create-campaign.ts",
+            // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
+            "campaign/last-choices.ts",
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).
             "helpers/claude.ts",
             "helpers/codex.ts",
