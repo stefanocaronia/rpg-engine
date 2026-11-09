@@ -2,14 +2,14 @@ import { join } from "node:path";
 import { files } from "../core/store.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { holdRefusal } from "./containers.ts";
+import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./file.ts";
 import { baseChain, baseFieldOf, baseValue, derivedPages, ownFieldChange, sameAsBase } from "./inheritance.ts";
 import { introductionText, partContent, readSection, repeatedNames, secretNames, sectionTitles, type TextMode, writeText } from "./markdown.ts";
-import { changeFields, type FieldChange, holdsNestedList, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
-import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./page-types.ts";
 import { isKind, notKindReason } from "./stacks/kinds.ts";
 import { checkStackEdits, checkStacks, isKindNamed } from "./stacks/writes.ts";
 import { canHold, checkStandardFields, containerFieldOf, containerFields, isFieldName, isStandardField, misspelledStandardField, newPageFields } from "./standard-fields.ts";
 import { alwaysInList, alwaysInMessage, heldSystemPageMessage, hidingMessage, readOnlyMessage, systemLabel } from "./system-pages.ts";
+import { type PageType, pageTypeNames, pageTypes, worldFolderName } from "./types.ts";
 import { checkPageName, findPage, heldNames, holdersOf, isCountedItem, linksIn, locate, type Page, readPage, validHoldersOf, withPage, type World } from "./world.ts";
 
 /** What to change on a page: its fields, and the text of its introduction, of one section or of one secret. */

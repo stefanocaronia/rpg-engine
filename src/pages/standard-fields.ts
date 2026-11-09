@@ -2,9 +2,9 @@ import { readLength } from "../core/length.ts";
 import { moods } from "../core/mood.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { mapHelp, readMapField } from "./maps.ts";
-import type { PageType } from "./page-types.ts";
 import { positionHelp, readPosition } from "./positions.ts";
 import { readStops } from "./roads.ts";
+import type { PageType } from "./types.ts";
 
 const linkPattern = /^\[\[[^\]]+\]\]$/;
 const fieldNamePattern = /^\p{L}[\p{L}\p{M}\p{N}_-]*$/u;

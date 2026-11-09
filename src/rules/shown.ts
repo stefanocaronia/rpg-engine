@@ -1,5 +1,5 @@
 import { wordCount } from "../core/text.ts";
-import type { RuleSection } from "./rule-book.ts";
+import type { RuleSection } from "./book.ts";
 import type { RuleFinding } from "./search.ts";
 
 /** A section as an answer shows it: whole, or, when it is too long, its own text with the titles of its parts. */

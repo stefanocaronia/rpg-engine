@@ -3,8 +3,8 @@
 import { dirname, join } from "node:path";
 import { files } from "../core/store.ts";
 import { comparableText, linkTargetName } from "../core/text.ts";
+import { changeFields, type FieldChange, joinPageFile, readFields, splitPageFile } from "./file.ts";
 import { inProse } from "./markdown.ts";
-import { changeFields, type FieldChange, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
 import { checkPageName, otherPagesWithAlias, type Page, pagesWithName, systemPageNamed, textsIn, type World } from "./world.ts";
 
 /** A page renamed: its new file, and the pages whose links now name it so. */

@@ -11,8 +11,8 @@ import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
 import { comparableText, sameName } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";
-import { systemApiProblem, systemHasCode } from "./system-code.ts";
-import { systemFolders } from "./system-folders.ts";
+import { systemApiProblem, systemHasCode } from "./code.ts";
+import { systemFolders } from "./folders.ts";
 
 /** The file that makes a folder a game system and says what it is. */
 export const systemFileName = "system.yaml";

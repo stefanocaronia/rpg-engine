@@ -9,7 +9,7 @@ import { realPath } from "../core/files.ts";
 import type { PackageCode, PackageEntry } from "../core/package-api.ts";
 import { apiProblem } from "../core/package-declarations.ts";
 import { isInside } from "../core/store.ts";
-import { systemFolders } from "./system-folders.ts";
+import { systemFolders } from "./folders.ts";
 
 /** A system's code as loaded: what it gives, or what kept it from loading; the version of its package, as it was loaded. */
 export type LoadedSystemCode = ({ code: PackageCode; } | { problem: string; } | { refused: string; }) & { version: string; };

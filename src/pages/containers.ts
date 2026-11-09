@@ -2,13 +2,13 @@
 import { join } from "node:path";
 import { files } from "../core/store.ts";
 import { comparableText, withArticle } from "../core/text.ts";
+import { changeFields, joinPageFile, readFields, splitPageFile } from "./file.ts";
 import { links } from "./markdown.ts";
-import { changeFields, joinPageFile, readFields, splitPageFile } from "./page-file.ts";
-import type { PageType } from "./page-types.ts";
 import { countOf, doubledKinds, entryOfKind, stackEntry, withStackCount } from "./stacks/entry.ts";
 import { notKindReason } from "./stacks/kinds.ts";
 import { canHold, containerFieldOf, isEmptyField } from "./standard-fields.ts";
 import { heldSystemPageMessage, systemLabel } from "./system-pages.ts";
+import type { PageType } from "./types.ts";
 import { linksIn, locate, type Page, readPage, withPage, type World } from "./world.ts";
 
 /** A stack to set in a container's list (STK-3): the kind's name, its new count, 0 to take it away, and its label. */

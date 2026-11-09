@@ -1,5 +1,5 @@
 import { comparableText } from "../core/text.ts";
-import type { RuleSection } from "./rule-book.ts";
+import type { RuleSection } from "./book.ts";
 
 /** A section that a search finds: named by the text, or holding its words, with how well. */
 export interface RuleFinding

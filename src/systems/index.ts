@@ -1,4 +1,6 @@
 // The game systems installed beside the engine (D-27, SYS-1): which they are and what each declares. Their pages are read by the pages module.
+export { givenCode, type LoadedSystemCode, loadSystemCode, systemApiProblem, systemHasCode, type SystemPackage, systemPackage, systemPageModule } from "./code.ts";
+export { type SystemFolder, systemFolders } from "./folders.ts";
 export {
     type ActVerb,
     type CampaignData,
@@ -37,6 +39,4 @@ export {
     type TurnUse,
     withSettings,
 } from "./game-system.ts";
-export { givenCode, type LoadedSystemCode, loadSystemCode, systemApiProblem, systemHasCode, type SystemPackage, systemPackage, systemPageModule } from "./system-code.ts";
-export { type SystemFolder, systemFolders } from "./system-folders.ts";
 export { layeredSystemWords, type SystemWords, systemWords } from "./words.ts";

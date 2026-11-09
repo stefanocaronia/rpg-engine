@@ -47,8 +47,8 @@ describe("architecture", () => {
             "core/store.ts",
             "core/version.ts",
             "instructions/index.ts",
-            "systems/system-code.ts",
-            "systems/system-folders.ts",
+            "systems/code.ts",
+            "systems/folders.ts",
             "extensions/extension.ts",
             // npm for every package, and a package's .tgz unpacked (D-452).
             "packages/npm.ts",

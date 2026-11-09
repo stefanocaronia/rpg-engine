@@ -1,7 +1,7 @@
 // The pages of the campaign's game system as commands meet them: read-only, in no place, and never hidden by a page of the campaign (SYS-4, SYS-6).
 import type { FieldKind } from "../core/field-kind.ts";
 import { comparableText, withArticle } from "../core/text.ts";
-import type { PageType } from "./page-types.ts";
+import type { PageType } from "./types.ts";
 import type { Page, World } from "./world.ts";
 
 /**

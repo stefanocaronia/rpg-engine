@@ -42,7 +42,7 @@ import { Confirm } from "../saves.tsx";
 import { Command } from "../settings.tsx";
 import { PageTabs } from "../tabs.tsx";
 import { arrowStep, foldedText, isolated, pageDirection, pageLocale, t } from "../text.ts";
-import { OwnPageLinks } from "./package-page.tsx";
+import { OwnPageLinks } from "./page.tsx";
 
 /** What happened to the player's last change, said where it was made: a row, a card, or the field. */
 interface Said

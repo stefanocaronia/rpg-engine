@@ -2,6 +2,7 @@
 export { checkWorld, equippedNotes, goodsFieldProblems } from "./check.ts";
 export { applyMove, type MovePlan, MoveStopped, planLeave, planMove, type StackCount } from "./containers.ts";
 export { changedEnvironment, environmentAt, type EnvironmentEntry, formatEnvironmentEntry, placesAround, readEnvironment } from "./environment.ts";
+export { changedFields, type FieldChange, formatFields, linkListItems, readFields, readFieldValue, splitPageFile } from "./file.ts";
 export {
     baseChain,
     baseFieldOf,
@@ -45,8 +46,6 @@ export {
     withoutFencedBlocks,
     withoutUnreadSecrets,
 } from "./markdown.ts";
-export { changedFields, type FieldChange, formatFields, linkListItems, readFields, readFieldValue, splitPageFile } from "./page-file.ts";
-export { type PageType, pageTypeNames, worldFolderName } from "./page-types.ts";
 export { formatPosition, type Position, readPosition } from "./positions.ts";
 export { applyRename, planRename, type Renamed, renamedLinks, type RenamePlan } from "./rename-page.ts";
 export { readStops, type Stops } from "./roads.ts";
@@ -54,6 +53,7 @@ export { countedText, entryOfKind, type EntryReading, readEntry, withStackCount 
 export { carriesKind, carriesNamed, entryKind, entryPage, goodsNamed, type HeldStack, heldStacks, heldStacksOfKind, isKind, kindNamed, ownStack, pageNamedQuietly, type Stack, stackName, stacksOf } from "./stacks/kinds.ts";
 export { canHold, containerFieldOf, isCoreField, isCounterField, isEmptyField, isStandardField, listFieldNames, misspelledFieldProblem, misspelledStandardField, newPageFields, standardValues } from "./standard-fields.ts";
 export { alwaysInList, declaredKind, hidingMessage, isDeclaredUncounted, kindMessage, readOnlyMessage, systemKnowsReason, systemLabel } from "./system-pages.ts";
+export { type PageType, pageTypeNames, worldFolderName } from "./types.ts";
 export {
     type Backlink,
     backlinks,
