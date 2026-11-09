@@ -1,65 +1,10 @@
 # Architecture
 
-rpg-engine is a set of commands over a campaign folder of markdown and YAML files, served as a command line (`rpg`) and as an MCP server (`rpg mcp`), with a dashboard for the player. This is a map of the code; the code says the rest. [AGENTS.md](../AGENTS.md) holds the development rules.
+rpg-engine is a set of commands over a campaign folder of markdown and YAML files, served as a command line (`rpg`) and as an MCP server (`rpg mcp`), with a dashboard for the player. This is how its parts work together; [structure.md](structure.md) says where they are and what each depends on, the code says the rest. [AGENTS.md](../AGENTS.md) holds the development rules.
 
 Comments and tests cite rule codes such as `INH-4` or `CON-1`: `grep -r "INH-4" src test` finds the code and the tests of a rule.
 
-## 1. Where things are
-
-| Path | What it holds |
-|---|---|
-| [src/core/](../src/core/) | Shared utilities: command registry, context, file store, log, YAML files, text comparison, formulas, problems, the mark of a process that works alone |
-| `src/<module>/` | One job each, behind its `index.ts` (table below) |
-| [src/commands/](../src/commands/) | The commands, a file each; a topic whose commands have helpers of their own is a folder with them, such as [view/](../src/commands/view/), and the helpers that join modules for several topics are in [campaign/](../src/commands/shared/) |
-| [src/cli/cli.ts](../src/cli/cli.ts), [src/cli/command-line.ts](../src/cli/command-line.ts) | The `rpg` binary |
-| [src/commands/shared/library-reader.ts](../src/commands/shared/library-reader.ts) | `rpg --read-library`, the process that reads the books of the computer's library apart, as `rules`, `config` and the dashboard start it |
-| [src/server/mcp.ts](../src/server/mcp.ts) | The MCP server |
-| [src/server/bell-listener.ts](../src/server/bell-listener.ts) | `rpg --listen`, Claude Code's Stop hook that `init` writes: it waits at its chat's dashboard and wakes the chat when the player acts there |
-| [src/server/dashboard/](../src/server/dashboard/), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
-| [files.ts](../src/server/dashboard/files.ts), [player.ts](../src/server/dashboard/player.ts), [news.ts](../src/server/dashboard/news.ts), [writes.ts](../src/server/dashboard/writes.ts), [choices.ts](../src/server/dashboard/choices.ts), [ports.ts](../src/server/dashboard/ports.ts) | The server's parts: the files it serves, the master's question on the page, the player's words and what the master hears of the page, what the page writes, the choices the master prepared for the player, such as a new level; its ports, which the doorbell reads without the server |
-| [src/testing/index.ts](../src/testing/index.ts), [src/testing/system-checks.ts](../src/testing/system-checks.ts) | `rpg-engine/testing`, the test kit for extensions and game systems: a campaign with its packages linked, its commands, log, widgets, the tools' descriptions and dashboard, and the checks of a system's folder; see [extensions.md](extensions.md#6-tests) |
-| [systems/](../systems/) | The one game system the engine brings, [free](../systems/free/); the others are packages of their own, as the [5e](https://github.com/stefanocaronia/rpg-engine-5e) |
-| [instructions/](../instructions/) | The game master's instructions |
-| [test/](../test/) | Tests, and the fake game system they play, [test/systems/fake](../test/systems/fake/) |
-
-| Module | Job |
-|---|---|
-| `pages` | Page files, frontmatter, sections and secrets, links, inheritance, containers, environment, checks |
-| `campaign` | Finding and creating a campaign; `campaign.yaml`; `state.yaml`, with the choices waiting for the player |
-| `systems` | The installed game systems and their `system.yaml` |
-| `extensions` | The installed extensions, their `extension.yaml` and their words |
-| `packages` | npm for every package, game systems and the engine included: install, update, a `.tgz` read |
-| `adventures` | Adventures as packages of content: their manifest, a `.zip` or folder checked whole, the `.zip` an export writes |
-| `languages` | Languages as packages: the dashboard's phrases, its Guide and a system's words, translated by hand |
-| `themes` | A game system's theme of the dashboard: read, checked, written as CSS |
-| `dice` | Dice notation, digital or physical faces, proofs for hidden rolls, random tables, the yes/no oracle |
-| `counters` | Counters such as `5/12` |
-| `money` | Coins and amounts, paying with change |
-| `effects` | Effect lines: name, keeper, values, end |
-| `scene` | The open scene: participants, numbered copies, turn order |
-| `time` | Game dates and durations; the calendar that shows a date as a day of a month |
-| `rules` | Rules as text: sections, word search |
-| `triggers` | Event conditions such as `party in [[Ossario]]` |
-| `instructions` | Reads `instructions/` from the package |
-| `progression` | Tables of levels: rows and features up to a level |
-| `images` | Picture formats and finding a picture file |
-| `helpers` | Codex and Claude Code as the player's own programs: found, installed, signed in, stopped; the pictures, the import's reader and the translations' writer they give |
-| `documents` | The player's documents as text and pictures: PDF, by OCR where it has no text, Word, OpenDocument, EPUB, HTML, RTF, text |
-| `importer` | The import's folder: a document in pieces, how far it is, the adventure the helper writes |
-| `library` | The player's books: their text indexed once in the local data folder, read apart one at a time |
-| `confirm` | A yes or no asked of the player in a window of their operating system |
-| `map` | The world map: roads, quickest way, compass, distances |
-| `grid` | The map of a place: squares, legend, reach, adjacency |
-| `saves` | Saves as zips |
-| `player-notes` | The player's notes, outside the game |
-
-No module names a game's concepts: hit points or conditions exist only as data in a system.
-
-## 2. Dependencies
-
-A module imports only its own files, `src/core/`, Node and packages: never another module, a command, the CLI or the server, from any of its folders. Commands are the glue. Only the store and a few readers of the package touch `node:fs`; everything else reads and writes through `files()`. [test/architecture.test.ts](../test/architecture.test.ts) enforces both.
-
-## 3. A command
+## 1. A command
 
 A command is defined once with `defineCommand` ([core/registry.ts](../src/core/registry.ts)): `name`, a `description` written for an AI, a zod `input`, flags (`readOnly`, `alwaysLoad`, `needsPlayer`, `slow`, `positionals`), `run(input, context)` and `format(result)`. [commands/index.ts](../src/commands/index.ts) lists them; the CLI ([cli/command-line.ts](../src/cli/command-line.ts)) and the MCP server ([server/mcp.ts](../src/server/mcp.ts)) are generated from that list, and the dashboard calls `view` through `/api/view`. The MCP server checks a tool's input itself, showing the host the same strict schema, and answers a wrong call with all the tool's parameters. Where a description names a game's thing it writes a placeholder, such as `{{counter}}` ([core/examples.ts](../src/core/examples.ts)): the MCP server fills it with the names of the campaign's system ([commands/shared/examples.ts](../src/commands/shared/examples.ts)) and again after a call that changes the system; the CLI and the reference use neutral names.
 
@@ -68,7 +13,7 @@ A command is defined once with `defineCommand` ([core/registry.ts](../src/core/r
 - **Log**: a command that changes the game appends lines to `log.jsonl` ([core/log.ts](../src/core/log.ts)), each `public` or `hidden`.
 - **Output**: an AI reads it. Errors say what went wrong and what to call next; a refused write says "Nothing changed". Everything is checked before the first write.
 
-## 4. Data on disk
+## 2. Data on disk
 
 ### A campaign
 
@@ -104,7 +49,7 @@ A game system is a folder that holds `system.yaml`, `world/` (pages, as in a cam
 
 An extension's code and a game system's have one contract, [core/package-api.ts](../src/core/package-api.ts), exported by [index.ts](../src/index.ts): `PackageEntry` gives `PackageCode`, with its commands, what it does as time passes, its widgets' hooks, and the hooks after the engine's writes, called at once, the system's first ([commands/shared/packages/hooks.ts](../src/commands/shared/packages/hooks.ts)); the kind decides only the role, one system for a campaign with its data in `system.yaml`. The game it reaches is `Game`, read by widgets as `GameView`. [core/package-declarations.ts](../src/core/package-declarations.ts) holds what both declare alike: the API number, read from `rpg-engine.api` in `package.json`, and the icons, widgets and figures of `extension.yaml` and `system.yaml`; the pages a card stands in and the room of a figure are the contract's, which [page.ts](../src/page.ts) passes on to the page code. [commands/shared/packages/code.ts](../src/commands/shared/packages/code.ts) gives the campaign's packages, the system first, their commands and their game. The contract and the schema of both files are the API, whose number goes up with every addition a package may use, a new key too; the engine reads a range of them.
 
-## 5. Mechanisms
+## 3. Mechanisms
 
 | Mechanism | What it does | Where |
 |---|---|---|
@@ -148,11 +93,11 @@ An extension's code and a game system's have one contract, [core/package-api.ts]
 
 The MCP server opens it on 127.0.0.1, at a port worked out from the campaign's folder. The server ([server/dashboard/index.ts](../src/server/dashboard/index.ts)) answers `/api/view` and the player's few actions (answers, notes, settings, saves, packages of ours, and what their character does, a sentence the master hears at the head of their next call: [server/player-acts.ts](../src/server/player-acts.ts), rung in by the hook or queued in Codex's thread), sends `/events` when files change (no data: the page reads `view` again), gives the extensions' widgets as their hooks show them (`/api/widgets`), and serves pictures by name only. The Packages page reads the engine itself at `/api/engine`: a GET gives `{version, installed?, latest?, update?, failed?, install, folder?, working?}`, `version` being the one this server runs, read as it started, `installed` the one npm put on disk since, which a new chat runs, `update` whether npm's latest is newer than that, and `install` being `global` (npm's global folder, which it updates), `link` (an `npm link` of `folder`, for development) or `other` (`folder`, any other way), `failed` why npm could not be asked; a POST `{action: "update"}`, from the page alone, installs npm's latest globally with npm and answers 202 `{kind: "engine-updated", version, restart}`, `restart` being `chat` (a new chat takes the new engine) or `app` (the app opened again), else 400 `{error}` with what to do, and 409 while another package's work goes on; where nothing updates it, as in the demo, a GET gives `{version}` alone. Until then the chat, its server and the page go on with the engine they started with. A catalog entry whose latest needs a newer engine has `newer: {version, engine?}`, the version offered being the newest this engine reads. The page ([dashboard/app.tsx](../src/dashboard/app.tsx)) writes its words with `t()` from [dashboard/i18n/](../src/dashboard/i18n/), and a refusal of the packages, the library or the engine's update by the `code` and `values` the server sends beside the engine's words ([core/refusal.ts](../src/core/refusal.ts), [dashboard/refusals.ts](../src/dashboard/refusals.ts)); Help's guide is [dashboard/guide/](../src/dashboard/guide/). It knows no game: a game's cards and panels, as the 5e's death saves and hit dice, are its packages' widgets and page modules, mounted where the page keeps a place ([dashboard/packages/page-code.tsx](../src/dashboard/packages/page-code.tsx), [dashboard/person-panel.tsx](../src/dashboard/person-panel.tsx), [dashboard/packages/ask-card.tsx](../src/dashboard/packages/ask-card.tsx)); a rest's dice with no card are the question's own buttons ([dashboard/asked-dice.tsx](../src/dashboard/asked-dice.tsx)).
 
-## 6. Tests
+## 4. Tests
 
 `npm test` runs vitest on `test/`; the 5e, Ironsworn and our extensions keep their tests in their own repos, and `npm run test:downstream` runs them against this engine, with the 5e beside the others whose tests play it. Commands are tested through `runCommandLine(args, testContext(folder))`; `*-laws.test.ts` check rules with fast-check on random worlds. The tests play [test/systems/fake](../test/systems/fake/), a game system of names and shapes of its own made for them, never published, and `free`; a test that needs a system without something makes one in a temporary folder (`madeSystem` in [test/support.ts](../test/support.ts)). [test/system-packages.test.ts](../test/system-packages.test.ts) checks every installed system with the kit's `systemChecks`, which a system's repository runs on itself.
 
-## 7. How to add things
+## 5. How to add things
 
 **A command.** Create `src/commands/<name>.ts`, or the file in its topic's folder, with `defineCommand`. In `run`: `requireCampaign`, `campaignWorld`, read with `effectiveFields`, check everything, write through the modules, log. Return a result; `format` tells the AI what happened and what next. Add it to [commands/index.ts](../src/commands/index.ts), test it through `runCommandLine`, run `npm run docs`.
 
