@@ -6,13 +6,13 @@
 // them as free dice (D-524 (1)).
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie, Tone } from "../data.ts";
-import { CoinFace, CoinFaces, type CoinSide, DiceFaces, tossWords } from "../faces.tsx";
-import type { PageRoll } from "../free-rolls.ts";
-import { DieIcon, Icon } from "../icons.tsx";
-import { notationModifier, shownText, signed } from "../labels.ts";
-import { Token } from "../party.tsx";
-import { soundPref, useChoice, usePref } from "../prefs.ts";
-import { trayCheck, useRequested } from "../requested.ts";
+import { CoinFace, CoinFaces, type CoinSide, DiceFaces, tossWords } from "../parts/faces.tsx";
+import { DieIcon, Icon } from "../parts/icons.tsx";
+import { notationModifier, shownText, signed } from "../parts/labels.ts";
+import type { PageRoll } from "../play/free-rolls.ts";
+import { trayCheck, useRequested } from "../play/requested.ts";
+import { Token } from "../sheet/party.tsx";
+import { soundPref, useChoice, usePref } from "../shell/prefs.ts";
 import { arrowStep, capitalized, t } from "../text.ts";
 import { coinsToThrow, diceToThrow, type RareFace, rareFace } from "./models.ts";
 import { diceText, dieName, doubled, droppedBy, type Keep, keptOf, keptTotal, mostCoins, notation, trayCoin, trayDice, withAdded, withDropped } from "./pool.ts";

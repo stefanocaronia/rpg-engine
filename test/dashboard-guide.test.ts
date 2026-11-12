@@ -65,7 +65,7 @@ describe("the guide in every language (D-413)", () => {
         const parts = headings.filter((heading) => heading.level === 2);
         expect(parts.length).toBeGreaterThan(5);
         // The page's pictures, by their names in icons.tsx, which the tests cannot import.
-        const icons = readFileSync(new URL("../src/dashboard/icons.tsx", import.meta.url), "utf8");
+        const icons = readFileSync(new URL("../src/dashboard/parts/icons.tsx", import.meta.url), "utf8");
         expect(parts.filter((part) => part.icon === undefined || !icons.includes(`\n    ${part.icon}: `)).map((part) => part.text)).toEqual([]);
         const anchors = new Set(headings.map((heading) => anchorOf(heading.text)));
         expect([...english.matchAll(/\]\(#([^)\s]+)\)/g)].map((match) => match[1]).filter((anchor) => !anchors.has(anchor))).toEqual([]);

@@ -1,6 +1,6 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
 import type { ActsShown, AskedNow, ChoicesNow, PlayerSetting, ResetPoint, ShownModule, ShownTheme, ShownWidget, View, WorldMap } from "./data.ts";
-import { refusalText, type Refused } from "./refusals.ts";
+import { refusalText, type Refused } from "./parts/refusals.ts";
 import { t } from "./text.ts";
 
 /** The saves as the Saves section shows them, with what the mode lets the player do (D-359). */

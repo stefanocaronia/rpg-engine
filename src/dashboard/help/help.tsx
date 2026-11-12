@@ -3,9 +3,9 @@
 // tell us what went wrong: the page's own words, so that the guide's translations stay as they are.
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { readAddress, sectionAddress } from "../address.ts";
-import { CardHead, CardHeader } from "../card.tsx";
-import { Icon, type IconName, iconPath, isIconName } from "../icons.tsx";
-import { PageHead } from "../pages.tsx";
+import { CardHead, CardHeader } from "../parts/card.tsx";
+import { Icon, type IconName, iconPath, isIconName } from "../parts/icons.tsx";
+import { PageHead } from "../shell/pages.tsx";
 import { pageLanguageOf, t } from "../text.ts";
 import { anchorOf, type Block, markdownBlocks, previewOf } from "./blocks.ts";
 import { Blocks, Inline } from "./markdown.tsx";

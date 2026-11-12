@@ -10,18 +10,18 @@ import { hiddenImageName } from "../../images/index.ts";
 import { environmentAt, isPlayerCharacter, links, locate, type Page, pagesWithName, pagesWithNameOrAlias, parsePageReference, placesAround, type World } from "../../pages/index.ts";
 import type { Scene } from "../../scene/index.ts";
 import type { GameSystem, GridRules } from "../../systems/index.ts";
-import { effectsOf } from "../shared/effect-layer.ts";
-import { conditionMark, effectParts, keptEffects, type SeenEffect, systemNamed } from "../shared/effects.ts";
-import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "../shared/grid-moves.ts";
-import { placeGrid, placeLook, type Standing, standing } from "../shared/grids.ts";
-import { imageFile, ownImage, shownImage } from "../shared/images.ts";
-import { inKnownWords, type Knowledge, knownSecretsApart, knownText, knowsPage, readsLink } from "../shared/knowledge.ts";
-import { pageCounters } from "../shared/page-counters.ts";
-import { type Measures, measuresOf } from "../shared/roads.ts";
-import { copyPage, readOpenScene } from "../shared/scene.ts";
-import { tokenIcon } from "../shared/sheet.ts";
-import { turnMarks } from "../shared/turn-uses.ts";
-import { campaignSystem } from "../shared/world.ts";
+import { imageFile, ownImage, shownImage } from "../shared/campaign/images.ts";
+import { campaignSystem } from "../shared/campaign/world.ts";
+import { inKnownWords, type Knowledge, knownSecretsApart, knownText, knowsPage, readsLink } from "../shared/characters/knowledge.ts";
+import { isTurnOf, movedThisTurn, sideOf, walkingSpeed } from "../shared/places/grid-moves.ts";
+import { placeGrid, placeLook, type Standing, standing } from "../shared/places/grids.ts";
+import { type Measures, measuresOf } from "../shared/places/roads.ts";
+import { conditionMark, effectParts, keptEffects, type SeenEffect, systemNamed } from "../shared/scene/effects.ts";
+import { copyPage, readOpenScene } from "../shared/scene/scene.ts";
+import { pageCounters } from "../shared/sheet/counters.ts";
+import { effectsOf } from "../shared/sheet/effect-layer.ts";
+import { tokenIcon } from "../shared/sheet/sheet.ts";
+import { turnMarks } from "../shared/sheet/turn-uses.ts";
 
 /** Someone at the place or in the scene as the player sees them: a name, or someone; their role and picture; for copies of a creature, how many. */
 export interface ShownPerson
@@ -630,4 +630,26 @@ function seenName(scene: Pick<Scene, "seen"> | undefined, name: string): string
 function seenOf(scene: Pick<Scene, "seen">, name: string): string | undefined
 {
     return Object.entries(scene.seen ?? {}).find(([key]) => comparableText(key) === comparableText(parsePageReference(name).name))?.[1];
+}
+
+/**
+ * "Scontro all'ossario (combat), at Ossario, with Ennio, Lena, uomo col coltello, brigante 1 and brigante 2": the open scene as the player sees it, with the words
+ * of the page (D-254, D-416): who the character does not know by what it sees of them, else someone, and two or more of them as others.
+ */
+export function sceneLine(sight: PlaceSight, named: (name: unknown) => string | undefined, self?: Page): string | undefined
+{
+    const { scene } = readOpenScene(sight.root);
+
+    if (scene === undefined) {
+        return undefined;
+    }
+
+    // A character agent's view leaves out the one whose view it is (VIEW-10).
+    const names = sceneNames(sight, self);
+    const strangers = names.filter((name) => name === "someone").length;
+    // Who is someone, counted where the first of them stands.
+    const present = names.flatMap((name, index) => (name !== "someone" ? [name] : names.indexOf("someone") === index ? [strangers === 1 ? "someone" : `${strangers} others`] : []));
+    const place = named(scene.place);
+    const listed = present.length <= 1 ? present.join("") : `${present.slice(0, -1).join(", ")} and ${present.at(-1)}`;
+    return `${scene.title} (${scene.type})${place === undefined ? "" : `, at ${place}`}${present.length === 0 ? "" : `, with ${listed}`}`;
 }

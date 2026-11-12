@@ -11,15 +11,15 @@ import { findPage, loadWorld, locate, type Page, playerCharacters, type World } 
 import { rollName } from "../systems/index.ts";
 import { placeOnMap } from "./move.ts";
 import { hasNames, namesAsZero, rollerOf, sheetDiceOf, withSheetValues } from "./roll/roll.ts";
-import { type RestDice, restDice, spendDice } from "./shared/dice-pool.ts";
-import { effectiveFields } from "./shared/effect-layer.ts";
-import { placeGrid } from "./shared/grids.ts";
+import { campaignSystem, campaignWorld, systemWordsOf } from "./shared/campaign/world.ts";
 import { textList } from "./shared/inputs.ts";
 import { allSaid, packagesAsking, packagesRolled } from "./shared/packages/hooks.ts";
-import { recipeNamed } from "./shared/recipes.ts";
-import { knowledgeNote } from "./shared/sheet.ts";
-import { newDatedLogEntry } from "./shared/time.ts";
-import { campaignSystem, campaignWorld, systemWordsOf } from "./shared/world.ts";
+import { placeGrid } from "./shared/places/grids.ts";
+import { effectiveFields } from "./shared/sheet/effect-layer.ts";
+import { knowledgeNote } from "./shared/sheet/sheet.ts";
+import { type RestDice, restDice, spendDice } from "./shared/time/dice-pool.ts";
+import { recipeNamed } from "./shared/time/recipes.ts";
+import { newDatedLogEntry } from "./shared/time/time.ts";
 
 // The words of the buttons, in the campaign's language, as the dashboard's languages (playtest 15); English for the others (ASK-7). A toss's for one coin and for
 // more (ASK-15).

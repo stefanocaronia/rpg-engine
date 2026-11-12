@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { change } from "../src/commands/change/change.ts";
-import { packageCommand } from "../src/commands/package.ts";
+import { packageCommand } from "../src/commands/package/package.ts";
 import { campaignPageModules } from "../src/commands/shared/packages/extensions.ts";
 import { packageWidget } from "../src/commands/shared/packages/widgets.ts";
 import type { Context } from "../src/core/context.ts";
@@ -178,7 +178,9 @@ describe("the game a package's code reaches (D-514)", () => {
             '    commands: [{ name: "setter", description: "Sets fields.", input: z.object({ page: z.string(), json: z.string() }), positionals: ["page", "json"],',
             '        run: ({ page, json }, game) => { game.set(page, JSON.parse(json), "a test"); return "set"; } },',
             '      { name: "setter-pin", description: "Pins someone.", input: z.object({ who: z.string() }), positionals: ["who"], run: ({ who }, game) => JSON.stringify(game.addEffect(who, "Pinned", "a test")) },',
-            '      { name: "setter-fell", description: "Fells someone.", input: z.object({ who: z.string() }), positionals: ["who"], run: ({ who }, game) => game.change(who, "grit", { to: 0 }, "a test") }],',
+            '      { name: "setter-fell", description: "Fells someone.", input: z.object({ who: z.string() }), positionals: ["who"], run: ({ who }, game) => game.change(who, "grit", { to: 0 }, "a test") },',
+            // Code written by hand may slip more than by, to or spend into the amount: a recipe here.
+            '      { name: "setter-rest", description: "Rests someone.", input: z.object({ who: z.string() }), positionals: ["who"], run: ({ who }, game) => game.change(who, "grit", { by: -1, recipe: "breather" }, "a test") }],',
             "});",
         ]);
     });
@@ -212,6 +214,15 @@ describe("the game a package's code reaches (D-514)", () => {
         const pinned = await runCommandLine(["setter-pin", "Tamsin"], context);
         expect(pinned.output).toContain("Tamsin's effects do not read:");
         expect(readFileSync(page, "utf8")).toContain("Cursed (might: 1) until a priest lifts it");
+    });
+
+    it("changes by, to or spend alone: a recipe slipped into the amount is never applied", async () => {
+        const before = readLogFile(folder).length;
+        const rested = await runCommandLine(["setter-rest", "Tamsin"], context);
+        expect(rested.exitCode, rested.output).toBe(0);
+        const written = readLogFile(folder).slice(before);
+        expect(written.filter((entry) => entry.type === "counter-changed").map((entry) => entry.data)).toEqual([expect.objectContaining({ page: "Tamsin", field: "grit", by: -1 })]);
+        expect(written.some((entry) => entry.type === "recipe-applied")).toBe(false);
     });
 
     it("gives a card of the page code the data of its widget for the character shown, and a read-only run from the page tells the master nothing", async () => {

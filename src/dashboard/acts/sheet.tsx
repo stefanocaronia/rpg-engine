@@ -3,8 +3,8 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { ActVerb, ShownPlace, ShownScene } from "../data.ts";
-import { Icon } from "../icons.tsx";
-import { PlaceMap } from "../place/map-view.tsx";
+import { Icon } from "../parts/icons.tsx";
+import { PlaceMap } from "../place/view.tsx";
 import { t } from "../text.ts";
 import { actPeople, actSentence, type ActStart, type ActTarget, actTitle, spokenBy, talkSentence, targetMode, verbLabel } from "./acts.ts";
 

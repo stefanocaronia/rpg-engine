@@ -5,8 +5,8 @@ import fc from "fast-check";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { knowledgeOf, knowsPage, playerKnowledge } from "../src/commands/shared/knowledge.ts";
-import { campaignWorld } from "../src/commands/shared/world.ts";
+import { campaignWorld } from "../src/commands/shared/campaign/world.ts";
+import { knowledgeOf, knowsPage, playerKnowledge } from "../src/commands/shared/characters/knowledge.ts";
 import type { Context } from "../src/core/context.ts";
 import { pageNamed } from "../src/pages/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
@@ -131,6 +131,20 @@ describe("the commands that must know which player character (VIEW-12)", () => {
         expect(await ok("status")).toMatch(/Also there[^\n]*Oste[^\n]*Varro|Also there[^\n]*Varro[^\n]*Oste/);
         await ok("write", "Bruna", "--set", "status=dead");
         expect(await ok("status")).not.toMatch(/Also there[^\n]*Varro/);
+    });
+
+    it("status names those around the second when the first is in no place, and a way to find the rest", async () => {
+        // Bruna comes first, and is in no place now; Ettore has four others around him.
+        await ok("write", "Torre", "--remove", "contains=[[Bruna]]");
+
+        for (const name of ["Aldo", "Bice", "Carlo", "Dario"]) {
+            await ok("write", name, "--type", "character", "--set", "role=npc");
+            await ok("write", "Locanda", "--add", `contains=[[${name}]]`);
+        }
+
+        const also = (await ok("status")).split("\n").find((line) => line.startsWith("Also there"));
+        expect(also).toMatch(/, and 1 more: find$/);
+        expect(also).not.toContain("undefined");
     });
 });
 

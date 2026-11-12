@@ -12,7 +12,7 @@ import { campaignPageModules } from "../src/commands/shared/packages/extensions.
 import { campaignWidgets, widgetCard } from "../src/commands/shared/packages/widgets.ts";
 import { hasConsent, recordConsent } from "../src/core/consents.ts";
 import type { Context, Rows } from "../src/core/context.ts";
-import { readsApi } from "../src/core/package-declarations.ts";
+import { readsApi } from "../src/core/packages/declarations.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { findExtension, installedExtensions, packageFingerprint, readExtension } from "../src/extensions/index.ts";
 import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";

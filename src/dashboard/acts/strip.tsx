@@ -1,7 +1,7 @@
 // The player's sentences after they go (D-495), in words and with a sign: said, with a button to take it back while it waits; called, the doorbell rang;
 // heard; or never heard, the chat gone, to say again there. A screen reader hears only the change of state.
 import { useEffect, useRef, useState } from "preact/hooks";
-import { Icon, type IconName } from "../icons.tsx";
+import { Icon, type IconName } from "../parts/icons.tsx";
 import { t } from "../text.ts";
 import type { SaidAct, SaidState } from "./acts.ts";
 

@@ -4,11 +4,11 @@
 // calendar start, the days of the story in the same rows, by their number.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "../address.ts";
-import { CardHead, useMedia } from "../card.tsx";
 import type { ShownCalendar } from "../data.ts";
-import { calendarDayLabel, calendarMonthLabel, gameDateLabel, seasonLabel } from "../game-words.ts";
-import { Icon, iconPath } from "../icons.tsx";
-import { Deadline } from "../journal.tsx";
+import { Deadline } from "../journal/journal.tsx";
+import { CardHead, useMedia } from "../parts/card.tsx";
+import { calendarDayLabel, calendarMonthLabel, gameDateLabel, seasonLabel } from "../parts/game-words.ts";
+import { Icon, iconPath } from "../parts/icons.tsx";
 import { arrowStep, capitalized, isolated, listText, t } from "../text.ts";
 import { calendarDateOf, type CalendarMonth, dayMarks, monthAt, monthOffsetOf, storyDays } from "./days.ts";
 

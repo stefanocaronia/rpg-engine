@@ -3,12 +3,12 @@ import { findCampaign, readSettings } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { defineCommand } from "../core/registry.ts";
 import { buttonsInstructions, dashboardInstructions, masterInstructions } from "../instructions/index.ts";
-import { campaignMode, modePart } from "./shared/mode.ts";
-import { valueParts } from "./shared/offers.ts";
-import { lengthPart, mentorPart, partText, partyPart, situationPart, stylePart } from "./shared/parts.ts";
-import { readOpenScene } from "./shared/scene.ts";
-import { voicesPart } from "./shared/voices.ts";
-import { campaignSystem, campaignWorld } from "./shared/world.ts";
+import { campaignMode, modePart } from "./shared/campaign/mode.ts";
+import { valueParts } from "./shared/campaign/offers.ts";
+import { lengthPart, mentorPart, partText, partyPart, situationPart, stylePart } from "./shared/campaign/parts.ts";
+import { campaignSystem, campaignWorld } from "./shared/campaign/world.ts";
+import { voicesPart } from "./shared/characters/voices.ts";
+import { readOpenScene } from "./shared/scene/scene.ts";
 
 // The parts instructions gives alone, when the master asks for them (D-532): how the player uses the dashboard.
 const onRequestParts = ["dashboard"] as const;

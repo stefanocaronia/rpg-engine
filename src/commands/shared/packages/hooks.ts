@@ -2,10 +2,10 @@
 // lists them, after the engine's own writes, each with its line in the log, given the game a package's code reaches. They are called at once: one that fails,
 // gives a promise, or whose code is not there, is a line for the master, and the change stands.
 import type { Context } from "../../../core/context.ts";
-import type { CounterChange, PackageCode, Rolled } from "../../../core/package-api.ts";
+import type { CounterChange, PackageCode, Rolled } from "../../../core/packages/api.ts";
 import type { CodePackage } from "../../../extensions/index.ts";
 import type { Told } from "../../ask.ts";
-import { campaignSystem } from "../world.ts";
+import { campaignSystem } from "../campaign/world.ts";
 import { campaignSystemPackage, cappedLines, codeRefused, firstLine, gameOf, gameViewOf, loadedCode, packageLabel, toldOf } from "./code.ts";
 import { campaignExtensions } from "./extensions.ts";
 

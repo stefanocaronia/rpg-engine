@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { playerChangeNews, playerSettingNamed, setupQuestions } from "../src/commands/config.ts";
+import { playerSettingNamed, setupQuestions } from "../src/commands/config/dashboard.ts";
+import { playerChangeNews } from "../src/commands/config/news.ts";
 import type { Context } from "../src/core/context.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 

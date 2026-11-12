@@ -18,7 +18,7 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse, parseDocument, stringify } from "yaml";
-import { fieldLabel } from "../../src/dashboard/labels.ts";
+import { fieldLabel } from "../../src/dashboard/parts/labels.ts";
 import { shippedLanguages } from "../../src/dashboard/text.ts";
 import { englishGuide, guideFolder, guideIn, guideParts, guidePlan, guideShape, isUpToDate, markOf, paragraphsOf, translationHead } from "./guide.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./phrases.ts";

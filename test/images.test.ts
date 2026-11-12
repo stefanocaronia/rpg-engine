@@ -53,6 +53,27 @@ describe("readImage", () => {
         expect(read(join(pictures, "none.png"))).toEqual({ problem: `There is no file at ${join(pictures, "none.png")}: give the full path of the picture.` });
     });
 
+    it("never reads a large file whole, and tells one that is no picture as such, not as too large", () => {
+        // A store that keeps how much of each file was asked for: undefined for a whole file.
+        const asked: (number | undefined)[] = [];
+        const store = new (class extends FileStore
+        {
+            override bytes(path: string, length?: number): Uint8Array | undefined
+            {
+                asked.push(length);
+                return super.bytes(path, length);
+            }
+        })();
+        const read = (path: string) => withFiles(store, () => readImage(path));
+        const film = new Uint8Array(6 * 1024 * 1024);
+        film.set(new TextEncoder().encode("\u001aEß£matroska"));
+        expect(read(picture("film.mkv", film))).toEqual({ problem: "film.mkv is not a PNG, JPEG, WebP or SVG picture: convert it to one of those, or give another file." });
+        const large = new Uint8Array(6 * 1024 * 1024);
+        large.set(png);
+        expect(read(picture("large.png", large))).toEqual({ problem: "large.png is 6 MB, and a picture can be 5 MB at most: make it smaller (512 pixels a side are enough)." });
+        expect(asked).toEqual([4096, 4096]);
+    });
+
     it("reads the file name of an image field's link", () => {
         expect(imageFileName("[[ettore.webp]]")).toBe("ettore.webp");
         expect(imageFileName("[[Lupo grigio.png|il lupo]]")).toBe("Lupo grigio.png");

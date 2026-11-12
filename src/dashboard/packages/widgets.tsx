@@ -3,10 +3,10 @@
 import { type ComponentChildren, createContext } from "preact";
 import { useContext, useEffect, useRef } from "preact/hooks";
 import { type Section, sectionAddress } from "../address.ts";
-import { CardHead } from "../card.tsx";
 import type { PackageCode, ShownModule, ShownWidget, WidgetPage, WidgetPart, WidgetSpot, WidgetText, WidgetTrack, WidgetValue } from "../data.ts";
-import { iconPath } from "../icons.tsx";
-import { sideOf, Token } from "../party.tsx";
+import { CardHead } from "../parts/card.tsx";
+import { iconPath } from "../parts/icons.tsx";
+import { sideOf, Token } from "../sheet/party.tsx";
 import { isolated, numberText, pageDirection, pageLocale, t } from "../text.ts";
 import type { TrackChange } from "./card.ts";
 import { type CardPage, cardsIn, codeOfModule, ExtensionRoot, type FigurePart, type FigurePlace, figureSize, type LoadedModule, ModulesContext, type PageCard, pagePropsOf, usePageModule, useWidgetData } from "./page-code.tsx";

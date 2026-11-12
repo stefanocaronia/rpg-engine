@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { findCampaign, readTextSetting } from "../../campaign/index.ts";
-import { campaignSystem } from "../../commands/shared/world.ts";
+import { campaignSystem } from "../../commands/shared/campaign/world.ts";
 import { type CardAsked, type Picked, type Player, playerWait, type Rows, type Said, type SpendAsked, type Spending } from "../../core/context.ts";
 import { withFiles } from "../../core/store.ts";
 import { rollName } from "../../systems/index.ts";

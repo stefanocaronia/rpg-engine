@@ -7,12 +7,12 @@ import { directionHelp, directionName, distanceBetween, pointAlong, pointFrom, r
 import { environmentAt, locate, mapKey, mapOf, type Page, pageNamed, parsePageReference, playerCharacters, type Position, type World } from "../../pages/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
 import { addDuration, formatGameDate, type GameDate, minutesBetween } from "../../time/index.ts";
-import { aroundLead, passedLines, passTime, type TimePassed } from "../shared/advance.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "../shared/campaign/world.ts";
 import { textList, textsOf } from "../shared/inputs.ts";
-import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, ridersOf, sameMovers, saveJourney, travelledSinceRest } from "../shared/journey.ts";
-import { movePages } from "../shared/moves.ts";
 import { timePassedLines } from "../shared/packages/code.ts";
-import { nearPlaces, pointText, positionOf, regionAt } from "../shared/positions.ts";
+import { type Journey, journeyPoint, journeyStart, moversMap, moversNamed, moversPosition, type OnRoad, readJourney, ridersOf, sameMovers, saveJourney, travelledSinceRest } from "../shared/places/journey.ts";
+import { movePages } from "../shared/places/moves.ts";
+import { nearPlaces, pointText, positionOf, regionAt } from "../shared/places/positions.ts";
 import {
     dayHours,
     durationText,
@@ -38,10 +38,10 @@ import {
     unknownOnRoad,
     wayFor,
     wayText,
-} from "../shared/roads.ts";
-import { readOpenScene } from "../shared/scene.ts";
-import { presentDate } from "../shared/time.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "../shared/world.ts";
+} from "../shared/places/roads.ts";
+import { readOpenScene } from "../shared/scene/scene.ts";
+import { aroundLead, passedLines, passTime, type TimePassed } from "../shared/time/advance.ts";
+import { presentDate } from "../shared/time/time.ts";
 import { acrossHint, crossedRoads, openLegs } from "./open.ts";
 
 /** Where a stopped journey is: on a road, at a point in the open, or at a place. */

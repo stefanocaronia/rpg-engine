@@ -6,9 +6,9 @@ import { Component, type ComponentChildren, type ComponentType, createContext, r
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { readWidgetData, runCommand } from "../api.ts";
 import type { FigureSize, PackageCode, RestDice, ShownModule, Tone, WidgetText, WidgetTrack, WidgetValue } from "../data.ts";
-import { fieldLabel } from "../labels.ts";
+import { fieldLabel } from "../parts/labels.ts";
+import { shownTheme } from "../shell/theme.ts";
 import { isolated, numberText, pageDirection, pageLocale } from "../text.ts";
-import { shownTheme } from "../theme.ts";
 import { PeopleContext } from "./people.ts";
 
 /** Where a figure is drawn: a chip in the top, a card beside the rolls, a card in a page, a roll's card, or the panel on someone of the party (D-516). */

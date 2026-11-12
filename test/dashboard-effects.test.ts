@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 type Node = { props: { class?: string; dir?: string; "data-tip"?: string; children?: unknown; }; };
 
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': loaded by their address, with their functions' types.
-const { Effects } = await import(new URL("../src/dashboard/widgets.tsx", import.meta.url).href) as {
+const { Effects } = await import(new URL("../src/dashboard/parts/widgets.tsx", import.meta.url).href) as {
     Effects: (props: { effects: { name: string; text: string; icon?: string; }[]; most?: number; }) => Node;
 };
 

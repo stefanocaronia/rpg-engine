@@ -5,8 +5,8 @@ import { campaignFileName, readOneSetting, readTextSetting } from "../../../camp
 import { packageCodeMayRun } from "../../../core/consents.ts";
 import type { Context } from "../../../core/context.ts";
 import type { InstructionPart } from "../../../core/instruction-parts.ts";
-import type { FigureSize } from "../../../core/package-api.ts";
-import { updateEngine } from "../../../core/package-declarations.ts";
+import type { FigureSize } from "../../../core/packages/api.ts";
+import { updateEngine } from "../../../core/packages/declarations.ts";
 import type { Problem } from "../../../core/problem.ts";
 import { files, isInside } from "../../../core/store.ts";
 import { comparableText } from "../../../core/text.ts";

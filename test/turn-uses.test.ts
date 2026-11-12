@@ -72,6 +72,8 @@ describe("the uses of a turn", () => {
     });
 
     it("asks for the order first and follows a rename (TRN-1, TRN-3)", async () => {
+        // What to give is told by the game's own uses, never another game's.
+        expect((await runCommandLine(["scene", "use", "--who", "Ettore"], context)).output).toBe("Give who and what they use of the turn, one of move, deed, parry.");
         await ok("scene", "close", "--summary", "Fine.");
         await ok("scene", "open", "--title", "Altra", "--type", "combat", "--with", "Ettore");
         expect((await runCommandLine(["scene", "use", "--who", "Ettore", "--uses", "parry"], context)).output).toBe(

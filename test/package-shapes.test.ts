@@ -2,9 +2,9 @@
 // no list of lines or never ends. Each says what is wrong, and leaves the others, and the time, as they are.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { createMcpServer } from "../src/server/mcp.ts";
@@ -114,4 +114,27 @@ describe("a package's timePassed written wrongly", () => {
         await new Promise((done) => setTimeout(done, 800));
         expect(JSON.stringify(readLogFile(folder))).not.toContain("LATE WRITE");
     }, 10_000);
+
+    it("gives up after ten minutes, and its code writes nothing after", async () => {
+        await rpg("advance", "--to", "day 1, 08:00");
+        extension(
+            "slow",
+            "export default () => ({ timePassed: async (_p, game) => { await new Promise((done) => setTimeout(done, 11 * 60 * 1000)); game.log('LATE WRITE', 'public'); game.state.write({ late: true }); return ['late line']; } });",
+        );
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+
+        try {
+            const running = rpg("advance", "--by", "2h");
+            // The package's code is loaded from the disk first: the clock moves once its wait and the cap are both set.
+            await vi.waitFor(() => expect(vi.getTimerCount()).toBeGreaterThanOrEqual(2), { timeout: 20_000, interval: 20 });
+            await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+            expect((await running).output).toContain("gave nothing for 10 minutes");
+            await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+        } finally {
+            vi.useRealTimers();
+        }
+
+        expect(JSON.stringify(readLogFile(folder))).not.toContain("LATE WRITE");
+        expect(existsSync(join(folder, "extensions", "slow", "state.yaml"))).toBe(false);
+    }, 30_000);
 });

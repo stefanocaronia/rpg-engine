@@ -5,12 +5,12 @@ import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "../address.ts";
 import { pictureAddress, readView, type WorldView } from "../api.ts";
-import { useMedia } from "../card.tsx";
 import type { KnownEntry, Member, ShownDocument } from "../data.ts";
-import { Icon } from "../icons.tsx";
-import { placeKindLabel, placeKinds } from "../map-symbols.ts";
-import { knowersOf, type LinkTo, Markdown, plainLine } from "../markdown.tsx";
-import { Token } from "../party.tsx";
+import { useMedia } from "../parts/card.tsx";
+import { Icon } from "../parts/icons.tsx";
+import { placeKindLabel, placeKinds } from "../parts/map-symbols.ts";
+import { knowersOf, type LinkTo, Markdown, plainLine } from "../parts/markdown.tsx";
+import { Token } from "../sheet/party.tsx";
 import { arrowStep, capitalized, foldedText, t } from "../text.ts";
 import { documentLook, foundLore, groupedLore, knownTo, type LoreGroup, loreGroupOf } from "./known.ts";
 

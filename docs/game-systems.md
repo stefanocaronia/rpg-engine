@@ -1,6 +1,6 @@
 # Game systems
 
-A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from the [5e](https://github.com/stefanocaronia/rpg-engine-5e), a package of its own, from [test/systems/fake](../test/systems/fake/), the fake system the engine's tests play, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers, the one system the engine brings. The code is in [src/systems/game-system.ts](../src/systems/game-system.ts).
+A game system is the data of one game: its fields, its character sheet, its formulas, its pages and its rules text. The engine knows no game; each campaign plays one system. Examples come from the [5e](https://github.com/stefanocaronia/rpg-engine-5e), a package of its own, from [test/systems/fake](../test/systems/fake/), the fake system the engine's tests play, and from [systems/free](../systems/free/), free play with a sheet of words and no numbers, the one system the engine brings. The code is in [src/systems/](../src/systems/): [read.ts](../src/systems/read.ts) reads a `system.yaml` against [schema.ts](../src/systems/schema.ts).
 
 ## 1. The folder
 

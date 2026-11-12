@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { requireCampaign } from "../campaign/index.ts";
 import { defineCommand } from "../core/registry.ts";
-import { stateCheckProblems } from "./shared/checks.ts";
+import { stateCheckProblems } from "./shared/campaign/checks.ts";
+import { campaignProblems } from "./shared/campaign/problems.ts";
+import { campaignWorld } from "./shared/campaign/world.ts";
 import { packageCodeProblems } from "./shared/packages/code.ts";
-import { campaignProblems } from "./shared/problems.ts";
-import { campaignWorld } from "./shared/world.ts";
 
 export const validate = defineCommand({
     name: "validate",

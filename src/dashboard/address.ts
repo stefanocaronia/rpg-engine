@@ -69,6 +69,14 @@ export function sectionLabel(section: Section): string
     return labels[section];
 }
 
+/** Writes the Scene's address over Combat's old one, without a step in the history. */
+export function redirectCombat(): void
+{
+    if (/^#\/combat(\/|$)/.test(window.location.hash)) {
+        history.replaceState(null, "", sectionAddress("scene"));
+    }
+}
+
 /** A part of an address as written, nothing when it is not well encoded. */
 function decoded(part: string): string
 {

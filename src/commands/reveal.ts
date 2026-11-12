@@ -6,12 +6,12 @@ import { defineCommand } from "../core/registry.ts";
 import { comparableText, withArticle } from "../core/text.ts";
 import { baseChain, isEmptyField, isPartyMember, isPlayerCharacter, links, locate, type Page, pageNamed, parsePageReference, playerCharacters, secretNames, shownPart, systemLabel, withPage, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
+import { campaignWorld } from "./shared/campaign/world.ts";
+import { type KnownLink, knownLink, knownLinks } from "./shared/characters/knowledge.ts";
 import { textList, textsOf } from "./shared/inputs.ts";
-import { type KnownLink, knownLink, knownLinks } from "./shared/knowledge.ts";
-import { placedPosition } from "./shared/positions.ts";
-import { copyName, readOpenScene } from "./shared/scene.ts";
-import { newDatedLogEntry } from "./shared/time.ts";
-import { campaignWorld } from "./shared/world.ts";
+import { placedPosition } from "./shared/places/positions.ts";
+import { copyName, readOpenScene } from "./shared/scene/scene.ts";
+import { newDatedLogEntry } from "./shared/time/time.ts";
 
 /** Something that can be learned, as knows records it: a page, or one of its secrets where it is written (REV-1, REV-2); or a section everyone can read. */
 type Learnable = { kind: "known"; link: string; shown: string; asked?: string; } | { kind: "public"; shown: string; page: string; };

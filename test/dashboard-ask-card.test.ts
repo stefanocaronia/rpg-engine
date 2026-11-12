@@ -128,10 +128,10 @@ describe("the kit of rpg-engine/page (D-510)", () => {
 
     it("lists the pages a card stands in as the core declares them to the packages, in the page code and in Settings (D-514)", () => {
         const list = (file: string, pattern: RegExp): string[] => (JSON.parse(`[${pattern.exec(readFileSync(file, "utf8"))?.[1] ?? ""}]`) as string[]).sort();
-        const declared = list("src/core/package-api.ts", /export const cardPages = \[([^\]]*)\]/);
+        const declared = list("src/core/packages/api.ts", /export const cardPages = \[([^\]]*)\]/);
         expect(declared).toEqual(["journal", "scene", "sheet", "world"]);
         expect(list("src/dashboard/packages/page-code.tsx", /export const cardPages = \[([^\]]*)\]/)).toEqual(declared);
-        expect(list("src/dashboard/settings.tsx", /const widgetPages: WidgetPage\[\] = \[([^\]]*)\]/)).toEqual(declared);
+        expect(list("src/dashboard/settings/settings.tsx", /const widgetPages: WidgetPage\[\] = \[([^\]]*)\]/)).toEqual(declared);
         const union = /export type WidgetPage = ([^;]+);/.exec(readFileSync("src/dashboard/data.ts", "utf8"))?.[1] ?? "";
         expect(union.split("|").map((page) => page.trim().replace(/"/g, "")).sort()).toEqual(declared);
     });

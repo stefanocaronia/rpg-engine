@@ -7,9 +7,9 @@ import { comparableText } from "../core/text.ts";
 import { findPage, type Page, pageFileNamed, pageNamed as pageWithName, sectionTitles } from "../pages/index.ts";
 import { bookTitles, findRules, hasAllWords, isTitled, readRuleBook, type RuleFinding, type RuleSection, shownRules } from "../rules/index.ts";
 import { type GameSystem, systemContentFolders } from "../systems/index.ts";
-import { libraryAnswer, libraryLines, systemWordsNamed } from "./shared/library.ts";
-import { disagreementAdvice, hasTranslatedRules, houseRules, precedentRule, systemRuleBook } from "./shared/rules.ts";
-import { campaignSystem, campaignSystemWords, campaignWorld, foreignLanguage } from "./shared/world.ts";
+import { libraryAnswer, libraryLines, systemWordsNamed } from "./shared/books/library.ts";
+import { disagreementAdvice, hasTranslatedRules, houseRules, precedentRule, systemRuleBook } from "./shared/books/rules.ts";
+import { campaignSystem, campaignSystemWords, campaignWorld, foreignLanguage } from "./shared/campaign/world.ts";
 
 // About how many words an answer shows: a section of the system has about 80 words in the middle (D-178).
 const answerWords = 800;

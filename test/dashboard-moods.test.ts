@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { moods as engineMoods } from "../src/core/mood.ts";
 import { moods, type ShownRoll, type ThrownDie } from "../src/dashboard/data.ts";
-import { moodFaces } from "../src/dashboard/mood-faces.ts";
-import { rollReach, rollReaction } from "../src/dashboard/reactions.ts";
+import { moodFaces } from "../src/dashboard/parts/mood-faces.ts";
+import { rollReach, rollReaction } from "../src/dashboard/play/reactions.ts";
 
 const d20 = (value: number, dropped?: boolean): ThrownDie => ({ sides: 20, value, ...(dropped === undefined ? {} : { dropped }) });
 

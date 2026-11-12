@@ -1,8 +1,16 @@
-// Damage of a type (D-449, DMG-1–DMG-3): what the lists of who takes it ignore, halve or double, before the counter loses it.
+// Damage of a type (D-449, DMG-1–DMG-3): what the lists of who takes it ignore, halve or double, then a shield first, then the counter.
+import type { Context } from "../../core/context.ts";
 import { comparableText, valueNamed } from "../../core/text.ts";
+import { readCounter } from "../../counters/index.ts";
+import type { Coin } from "../../money/index.ts";
 import { bonusPages, inheritedFields, type Page, textsIn, type World } from "../../pages/index.ts";
 import type { DamageRule, GameSystem } from "../../systems/index.ts";
-import { effectsOf } from "../shared/effect-layer.ts";
+import { keepingLossNote } from "../shared/scene/reminders.ts";
+import { readOpenScene } from "../shared/scene/scene.ts";
+import { effectsOf } from "../shared/sheet/effect-layer.ts";
+import { counterLimits } from "../shared/sheet/worked-out.ts";
+import { counterStep } from "./amounts.ts";
+import { applyStep, type CounterHolder, holderNamed, type StepOutcome } from "./holder.ts";
 
 /** What a page takes of an amount of damage of a type, and the note that says why when it is not the amount. */
 export interface DamageTaken
@@ -99,4 +107,98 @@ function namesWord(text: string, word: string): boolean
 {
     const words = (value: string): string => ` ${comparableText(value).replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `;
     return words(text).includes(words(word));
+}
+
+/** The damage a page takes of the type given (DMG-1): only with by, negative, on the counter the system's damage takes from. */
+export function typedDamage(system: GameSystem | undefined, fields: Record<string, unknown>, field: string, input: { by?: number | string; spend?: unknown; to?: unknown; damage?: string; }, page: string): DamageTaken
+{
+    const rule = system?.damage;
+
+    if (system === undefined || rule === undefined) {
+        throw new Error(`The game system ${system?.name ?? "of the campaign"} has no damage types: give by alone, such as by -12. Nothing changed.`);
+    }
+
+    if (comparableText(field) !== comparableText(rule.counter)) {
+        throw new Error(`A damage type goes with ${rule.counter}, not ${field}: change ${page} ${rule.counter} --by=-12 --damage fire. Nothing changed.`);
+    }
+
+    const by = typeof input.by === "number" ? input.by : Number(input.by);
+
+    if (input.spend !== undefined || input.to !== undefined || !Number.isSafeInteger(by) || by >= 0) {
+        throw new Error(`A damage type goes with by, negative, the damage before ${page}'s lists change it, such as by -12, damage fire. Nothing changed.`);
+    }
+
+    return damageTaken(system, rule, fields, -by, input.damage ?? "", page);
+}
+
+/**
+ * Damage of a type taken by its counter (DMG-1): the counter that shields it loses first, as temporary hit points (DAT-14), then the counter the rest; one
+ * outcome that says both, and why the damage is not the amount given.
+ */
+export function damageSteps(
+    root: string,
+    context: Context,
+    world: World,
+    target: { holder: CounterHolder; name: string; fields: Record<string, unknown>; field: string; limits: Parameters<typeof counterStep>[5]; coins: Coin[] | undefined; },
+    damage: DamageTaken,
+    why: string | undefined,
+    system: GameSystem | undefined,
+): { outcome: StepOutcome; lost: number; }
+{
+    const { holder, fields, field, coins } = target;
+    const page = holder.page.name;
+    const withNote = (outcome: StepOutcome, notes: string[]): StepOutcome => ({ ...outcome, note: [...notes, outcome.note].filter((part) => part !== "").join("; ") });
+    const shield = shieldOf(system, field);
+    const shieldField = shield === undefined ? undefined : Object.keys(fields).find((name) => comparableText(name) === comparableText(shield));
+    const absorbed = shieldField === undefined ? 0 : Math.min(Math.max(readCounter(fields[shieldField])?.value ?? 0, 0), damage.amount);
+    const onCounter = (current: World, currentHolder: CounterHolder, amount: number): StepOutcome =>
+        applyStep(root, context, current, currentHolder, field, counterStep({ by: -amount }, fields[field], page, field, coins, target.limits), why, system).outcome;
+
+    if (shieldField === undefined || absorbed === 0) {
+        return { outcome: withNote(onCounter(world, holder, damage.amount), [damage.note]), lost: damage.amount };
+    }
+
+    const shieldStep = counterStep({ by: -absorbed }, fields[shieldField], page, shieldField, coins, counterLimits(world, fields, shieldField));
+    const first = applyStep(root, context, world, holder, shieldField, shieldStep, why, system);
+
+    if (absorbed === damage.amount) {
+        return { outcome: withNote(first.outcome, [damage.note]), lost: 0 };
+    }
+
+    const outcome = onCounter(first.world, holderNamed(root, first.world, target.name), damage.amount - absorbed);
+    const shielded = `${shieldField} ${first.outcome.before} → ${first.outcome.after} first`;
+    // What someone keeps alive reads the whole damage, the shield's part too (EFF-14).
+    const keeping = keepingLossNote(world, readOpenScene(root).scene, system, page, field, damage.amount);
+    const merged = {
+        ...withNote(outcome, [damage.note, shielded]),
+        thresholds: [...first.outcome.thresholds, ...outcome.thresholds],
+        // The shield is spent, so the only reminder left is what someone keeps (DAT-14).
+        reminders: keeping === "" ? [] : [keeping],
+        due: [...first.outcome.due, ...outcome.due],
+        followers: [...new Set([...first.outcome.followers, ...outcome.followers])],
+        keepers: [...new Set([...first.outcome.keepers, ...outcome.keepers])],
+    };
+    return { outcome: merged, lost: damage.amount - absorbed };
+}
+
+/** "Ghoul 1 has damage-immunities poison: …": for damage given without a type to a page whose lists change some (DMG-1); empty otherwise. */
+export function untypedDamageNote(world: World, system: GameSystem | undefined, page: Page, field: string): string
+{
+    const rule = system?.damage;
+
+    if (rule === undefined || comparableText(field) !== comparableText(rule.counter)) {
+        return "";
+    }
+
+    const lists = Object.entries(damageLists(world, page, rule)).flatMap(([list, value]) => {
+        const items = textsIn(value);
+        return items.length === 0 ? [] : [`${list} ${items.join(", ")}`];
+    });
+    return lists.length === 0 ? "" : `${page.name} has ${lists.join("; ")}: if this damage has a type, give it with damage, as rolled.`;
+}
+
+/** The counter that shields a counter, losing first, as temporary hit points (DAT-14); undefined when none does. */
+export function shieldOf(system: GameSystem | undefined, field: string): string | undefined
+{
+    return Object.entries(system?.shields ?? {}).find(([, shielded]) => comparableText(shielded) === comparableText(field))?.[0];
 }

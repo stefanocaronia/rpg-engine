@@ -3,7 +3,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { MapPoint, WorldMap } from "../src/dashboard/data.ts";
-import { biomes as pageBiomes, placeKinds as pageKinds } from "../src/dashboard/map-symbols.ts";
+import { biomes as pageBiomes, placeKinds as pageKinds } from "../src/dashboard/parts/map-symbols.ts";
 import {
     fading,
     hexAcross,

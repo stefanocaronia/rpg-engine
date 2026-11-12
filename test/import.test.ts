@@ -195,6 +195,18 @@ describe("import of the player's document (D-489)", () => {
         expect((await rpg("status")).output).not.toContain("Import");
     });
 
+    it("keeps a title with $ marks whole where the instructions name it, for the helper and in the chat", async () => {
+        const reader = fakeReader();
+        context.reader = reader;
+        await rpg("import", book(), "--title", "Gold $& Glory $$");
+        expect(reader.briefs[0]).toContain('"Gold $& Glory $$, p. 36"');
+    });
+
+    it("keeps a title with $ marks whole in the piece the master reads in the chat", async () => {
+        context.reader = { ready: () => false, read: () => Promise.resolve({ failed: "never" }) };
+        expect((await rpg("import", book(), "--title", "Gold $& Glory $$")).output).toContain('"Gold $& Glory $$, p. 36"');
+    });
+
     it("refuses a document it cannot read", async () => {
         context.reader = fakeReader();
         const scan = join(makeTempFolder(), "scan.pdf");

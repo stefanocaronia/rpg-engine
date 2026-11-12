@@ -4,7 +4,7 @@ import { appendLogEntry, readLog } from "../../core/log.ts";
 import { comparableText } from "../../core/text.ts";
 import type { Recipe } from "../../systems/index.ts";
 import { addDuration, formatGameDate, minutesBetween, readDuration, readGameDate } from "../../time/index.ts";
-import { newDatedLogEntry, readPresent } from "../shared/time.ts";
+import { newDatedLogEntry, readPresent } from "../shared/time/time.ts";
 
 const appliedType = "recipe-applied";
 

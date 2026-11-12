@@ -4,9 +4,9 @@ import { type LogEntry, readLog } from "../../core/log.ts";
 import { comparableText } from "../../core/text.ts";
 import { goalsIn, links, type Page, textsIn, type World } from "../../pages/index.ts";
 import type { GameDate } from "../../time/index.ts";
-import type { SeenEffect } from "../shared/effects.ts";
-import { type Knowledge, knownSecretsApart, knownText } from "../shared/knowledge.ts";
-import { measuresText, questMeasures } from "../shared/quests.ts";
+import { measuresText, questMeasures } from "../shared/campaign/quests.ts";
+import { type Knowledge, knownSecretsApart, knownText } from "../shared/characters/knowledge.ts";
+import type { SeenEffect } from "../shared/scene/effects.ts";
 
 /** A quest as the journal shows it (VIEW-8). */
 export interface ShownQuest

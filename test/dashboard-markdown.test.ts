@@ -4,7 +4,7 @@ import type { ComponentChildren, VNode } from "preact";
 import { describe, expect, it } from "vitest";
 
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': this one is loaded by its address, with its functions' types.
-const { InlineText, Markdown, plainLine } = await import(new URL("../src/dashboard/markdown.tsx", import.meta.url).href) as {
+const { InlineText, Markdown, plainLine } = await import(new URL("../src/dashboard/parts/markdown.tsx", import.meta.url).href) as {
     InlineText: (props: { text: string; link?: (name: string) => string | undefined; }) => ComponentChildren;
     Markdown: (props: { text: string; link?: (name: string) => string | undefined; secretKnowers?: (title: string) => string[] | undefined; }) => ComponentChildren;
     plainLine: (text: string) => string | undefined;

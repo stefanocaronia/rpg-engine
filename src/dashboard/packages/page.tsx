@@ -3,7 +3,7 @@
 import { useContext, useEffect, useRef } from "preact/hooks";
 import { sectionAddress } from "../address.ts";
 import type { ShownModule } from "../data.ts";
-import { Icon } from "../icons.tsx";
+import { Icon } from "../parts/icons.tsx";
 import { codeOfModule, ExtensionRoot, ModulesContext, ownPageIn, pagePropsOf, usePageModule, useWidgetData } from "./page-code.tsx";
 import { Drawn, WidgetsContext } from "./widgets.tsx";
 

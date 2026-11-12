@@ -6,8 +6,8 @@ import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import { packageCodeMayRun } from "../core/consents.ts";
 import { realPath } from "../core/files.ts";
-import type { PackageCode, PackageEntry } from "../core/package-api.ts";
-import { apiProblem } from "../core/package-declarations.ts";
+import type { PackageCode, PackageEntry } from "../core/packages/api.ts";
+import { apiProblem } from "../core/packages/declarations.ts";
 import { isInside } from "../core/store.ts";
 import { systemFolders } from "./folders.ts";
 

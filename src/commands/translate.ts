@@ -3,9 +3,9 @@ import { readSettings, requireCampaign } from "../campaign/index.ts";
 import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
-import { type ChatBatch, chatBatch, keepChatAnswer, languageName, shipsLanguage, type WordsSystem } from "./shared/page-words.ts";
-import { newDatedLogEntry } from "./shared/time.ts";
-import { campaignSystem } from "./shared/world.ts";
+import { type ChatBatch, chatBatch, keepChatAnswer, languageName, shipsLanguage, type WordsSystem } from "./shared/books/words.ts";
+import { campaignSystem } from "./shared/campaign/world.ts";
+import { newDatedLogEntry } from "./shared/time/time.ts";
 
 type TranslateResult =
     | { kind: "batch"; language: string; system?: string; batch: ChatBatch; kept?: number; dropped?: string[]; }

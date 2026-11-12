@@ -211,7 +211,7 @@ describe("SYS-8: the fields the system declares", () => {
         expect(await ok("status")).toContain("PC: Ennio, in Ossario: grit 12/12 · money 10 gp\n");
         expect(await refused("change", "Bog Hound 1", "calling", "--by=-1")).toBe('calling is text in the system fake, never counted: write it instead, such as write "Bog Hound 1", set calling=<value>. Nothing changed.');
         expect(await refused("change", "Ennio", "wit", "--to", "4")).toBe(
-            'wit is a number in the system fake, never counted: for a while, such as a spell, effect, action add, page "Ennio", set wit=4; for good, write "Ennio", set wit=4. Nothing changed.',
+            'wit is a number in the system fake, never counted: for a while, effect, action add, page "Ennio", set wit=4; for good, write "Ennio", set wit=4. Nothing changed.',
         );
     });
 

@@ -26,4 +26,4 @@ export type {
     WidgetPart,
     WidgetText,
     WidgetValue,
-} from "./core/package-api.ts";
+} from "./core/packages/api.ts";

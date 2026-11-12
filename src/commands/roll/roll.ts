@@ -9,16 +9,18 @@ import { readCounter } from "../../counters/index.ts";
 import { askOracle, DiceError, type DiceRoll, type FaceSource, type OracleYes, rollDice, sha256, type ThrownDie, tossCoins } from "../../dice/index.ts";
 import { declaredKind, findPage, isPlayerCharacter, type Page, pagesWithName, type World, writePage } from "../../pages/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
-import { effectiveFields, effectsOf } from "../shared/effect-layer.ts";
-import { systemNamed } from "../shared/effects.ts";
-import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "../shared/master-rolls.ts";
+import { firstInChat } from "../shared/campaign/parts.ts";
+import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "../shared/campaign/world.ts";
 import { packagesRolled } from "../shared/packages/hooks.ts";
-import { firstInChat } from "../shared/parts.ts";
-import { copyPage, readOpenScene } from "../shared/scene.ts";
-import { knowledgeNote } from "../shared/sheet.ts";
-import { newDatedLogEntry } from "../shared/time.ts";
-import { itemList, signedText, workedFields } from "../shared/worked-out.ts";
-import { campaignSystem, campaignSystemWords, campaignWorld, missingSystemHint } from "../shared/world.ts";
+import { systemNamed } from "../shared/scene/effects.ts";
+import { behindTheScreen, namesNoOne, ofTheParty, screenNote, screenUp, sealHiddenRoll } from "../shared/scene/master-rolls.ts";
+import { copyPage, readOpenScene } from "../shared/scene/scene.ts";
+import { effectiveFields, effectsOf } from "../shared/sheet/effect-layer.ts";
+import { knowledgeNote } from "../shared/sheet/sheet.ts";
+import { itemList } from "../shared/sheet/system-fields.ts";
+import { workedFields } from "../shared/sheet/worked-out.ts";
+import { signedText } from "../shared/sheet/worked-text.ts";
+import { newDatedLogEntry } from "../shared/time/time.ts";
 import { rollPageTable } from "./tables.ts";
 
 // Faces arrive as "14,7" or "14 7" from a shell (PowerShell turns 14,7 into "14 7"), or as an array.

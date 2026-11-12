@@ -4,13 +4,13 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { connect } from "node:net";
 import { z } from "zod";
 import { findCampaign } from "../../campaign/index.ts";
-import type { PlayerSetting } from "../../commands/config.ts";
+import type { PlayerSetting } from "../../commands/config/dashboard.ts";
 import { importShown } from "../../commands/import/import.ts";
+import { systemTexts } from "../../commands/shared/books/system-texts.ts";
+import { type PageTranslator, pageTranslator } from "../../commands/shared/books/words.ts";
 import type { Catalog } from "../../commands/shared/packages/catalog.ts";
 import { loadCampaignCode } from "../../commands/shared/packages/code.ts";
 import { campaignWidgets, packageWidget } from "../../commands/shared/packages/widgets.ts";
-import { type PageTranslator, pageTranslator } from "../../commands/shared/page-words.ts";
-import { systemTexts } from "../../commands/shared/system-texts.ts";
 import { view } from "../../commands/view/view.ts";
 import type { Context, Player, SystemTexts } from "../../core/context.ts";
 import { type Command, isBoolean } from "../../core/registry.ts";

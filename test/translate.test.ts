@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { homeSystemWords } from "../src/commands/shared/page-words.ts";
+import { homeSystemWords } from "../src/commands/shared/books/words.ts";
 import type { Context } from "../src/core/context.ts";
 import { makeTempFolder, readLogFile, testContext, testSystemFolders } from "./support.ts";
 

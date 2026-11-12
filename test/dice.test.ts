@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultContext } from "../src/core/context.ts";
-import { notationLabel } from "../src/dashboard/game-words.ts";
+import { notationLabel } from "../src/dashboard/parts/game-words.ts";
 import { DiceError, notationParts, rollDice } from "../src/dice/index.ts";
 
 describe("dice notation", () => {

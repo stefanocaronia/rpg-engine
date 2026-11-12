@@ -1,25 +1,15 @@
 // The game systems installed beside the engine (D-27, SYS-1): which they are and what each declares. Their pages are read by the pages module.
+export { type CampaignData, campaignDataNames, type SystemLayer } from "./campaign-data.ts";
 export { givenCode, type LoadedSystemCode, loadSystemCode, systemApiProblem, systemHasCode, type SystemPackage, systemPackage, systemPageModule } from "./code.ts";
 export { type SystemFolder, systemFolders } from "./folders.ts";
 export {
     type ActVerb,
-    type CampaignData,
-    campaignDataNames,
     type CheckAtom,
     type CheckOperator,
     type DamageRule,
-    engineOfferings,
-    engineSettingValue,
-    findCampaignSystem,
-    findSystem,
     type GameSystem,
     type GridRules,
-    heldSettings,
-    installedSystems,
     type Lifestyle,
-    offeredEngineValues,
-    playedValueOf,
-    readableSystems,
     type Recipe,
     type Reward,
     rollName,
@@ -28,15 +18,13 @@ export {
     type SheetGroup,
     type SheetVerb,
     type SystemCheck,
-    systemContentFolders,
     systemFileName,
-    systemInFolder,
-    type SystemLayer,
     type SystemSetting,
     type Threshold,
     type Travel,
     type TravelKind,
     type TurnUse,
-    withSettings,
 } from "./game-system.ts";
+export { findCampaignSystem, findSystem, installedSystems, readableSystems, systemContentFolders, systemInFolder } from "./installed.ts";
+export { engineOfferings, engineSettingValue, heldSettings, offeredEngineValues, playedValueOf, withSettings } from "./settings.ts";
 export { layeredSystemWords, type SystemWords, systemWords } from "./words.ts";

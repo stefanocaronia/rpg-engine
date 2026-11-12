@@ -8,10 +8,10 @@ import { parseNotation } from "../dice/index.ts";
 import { findPage, isPartyMember, type Page, playerCharacters, type World } from "../pages/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { readOption } from "./ask.ts";
+import { situationPart } from "./shared/campaign/parts.ts";
+import { campaignWorld } from "./shared/campaign/world.ts";
 import { textList, textsOf } from "./shared/inputs.ts";
-import { situationPart } from "./shared/parts.ts";
-import { newDatedLogEntry } from "./shared/time.ts";
-import { campaignWorld } from "./shared/world.ts";
+import { newDatedLogEntry } from "./shared/time/time.ts";
 
 // How many choices a set holds, and how many options a choice: the whole list the rules allow, such as every spell a class may learn.
 const mostItems = 8;

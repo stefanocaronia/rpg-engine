@@ -1,8 +1,8 @@
 // The look of the dice the player rolls (D-279, D-348, D-352): the theme's, or one of the sets chosen in Settings, as sets of real dice, each a material, a
 // body and the ink of its numbers: resin, metal, wood, stone or crystal, the wood and the stone from CC0 pictures of ambientCG (assets/dice/textures). Kept in
 // this browser alone. The coins of the dice's material or of a metal, also chosen there (D-526).
-import { type Choice, readChoice } from "../prefs.ts";
-import { shownTheme } from "../theme.ts";
+import { type Choice, readChoice } from "../shell/prefs.ts";
+import { shownTheme } from "../shell/theme.ts";
 
 /** What a die is made of: how rough and how metallic it is, how much it mirrors the room, and the picture of its grain, if any. */
 export interface Finish

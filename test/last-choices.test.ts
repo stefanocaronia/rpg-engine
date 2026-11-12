@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { lastChoices } from "../src/campaign/index.ts";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { setupQuestions } from "../src/commands/config.ts";
+import { setupQuestions } from "../src/commands/config/dashboard.ts";
 import type { Context } from "../src/core/context.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
 

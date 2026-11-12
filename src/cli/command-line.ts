@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 import { findCampaign } from "../campaign/index.ts";
 import { commands } from "../commands/index.ts";
-import { libraryRunner } from "../commands/shared/library-reader.ts";
+import { libraryRunner } from "../commands/shared/books/library-reader.ts";
 import { loadCampaignCode, packageCommands } from "../commands/shared/packages/code.ts";
 import { systemConfirm } from "../confirm/index.ts";
 import { type Context, defaultContext, packagesFolder } from "../core/context.ts";

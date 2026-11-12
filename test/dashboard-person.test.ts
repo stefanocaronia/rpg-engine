@@ -7,13 +7,13 @@ type Widget = { id: string; place: string; order: number; own?: { place: string;
 type Status = { party?: boolean; down?: boolean; dead?: boolean; effects?: { name: string; text: string; condition?: true; }[]; person?: { word: string; icon?: string; tone?: string; dead?: true; }; };
 
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': loaded by their address, with their functions' types.
-const { personState, statusMarks, downTint } = await import(new URL("../src/dashboard/status.tsx", import.meta.url).href) as {
+const { personState, statusMarks, downTint } = await import(new URL("../src/dashboard/parts/status.tsx", import.meta.url).href) as {
     personState: (widgets: Widget[], name: string) => Status["person"];
     statusMarks: (status: Status, all?: boolean) => { icon: string; label: string; kind: string; tone?: string; }[];
     downTint: (status: Status) => string | undefined;
 };
 
-const { personShown, personBoxes, personFields } = await import(new URL("../src/dashboard/person-panel.tsx", import.meta.url).href) as {
+const { personShown, personBoxes, personFields } = await import(new URL("../src/dashboard/sheet/person-panel.tsx", import.meta.url).href) as {
     personShown: (widgets: Widget[], name: string) => { widget: Widget; shows: Shows; }[];
     personBoxes: (widgets: Widget[], name: string) => { widget: Widget; shows: Shows; }[];
     personFields: (shown: { widget: Widget; shows: Shows; }[]) => Set<string>;
@@ -21,11 +21,11 @@ const { personShown, personBoxes, personFields } = await import(new URL("../src/
 
 type Mark = { props: { "aria-hidden"?: string; "aria-label"?: string; }; };
 
-const { saidInRow } = await import(new URL("../src/dashboard/turns.tsx", import.meta.url).href) as {
+const { saidInRow } = await import(new URL("../src/dashboard/play/turns.tsx", import.meta.url).href) as {
     saidInRow: (fighter: { name: string; role: string; wound?: string; }, person: { widget: Widget; shows: Shows; }[], counted: boolean) => string[];
 };
 
-const { StatusIcons } = await import(new URL("../src/dashboard/status.tsx", import.meta.url).href) as {
+const { StatusIcons } = await import(new URL("../src/dashboard/parts/status.tsx", import.meta.url).href) as {
     StatusIcons: (props: { status: Status; said: string[]; }) => { props: { children: Mark[]; }; };
 };
 

@@ -1,8 +1,8 @@
 // A roll the master asks, as the page's sheet and tray answer it (D-330, ASK-12): the rows its checks name, the tray's dice that make one, every other roll free.
 import { describe, expect, it } from "vitest";
 import type { Asked } from "../src/dashboard/data.ts";
-import { sameDice, shownNotation } from "../src/dashboard/labels.ts";
-import { requestedOf, requestedRow, trayCheck } from "../src/dashboard/requested.ts";
+import { sameDice, shownNotation } from "../src/dashboard/parts/labels.ts";
+import { requestedOf, requestedRow, trayCheck } from "../src/dashboard/play/requested.ts";
 
 const asked: Asked = {
     id: "a1",

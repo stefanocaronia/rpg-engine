@@ -4,10 +4,10 @@
 // whole inside, the frame staying the page's (D-510). What the dice changed moves once they land; the card stays until the player closes it.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Asked, RestDice, ShownWidget, WidgetShows } from "../data.ts";
-import { Icon, NotationIcons } from "../icons.tsx";
-import { checkOf, fieldLabel } from "../labels.ts";
+import { Icon, NotationIcons } from "../parts/icons.tsx";
+import { checkOf, fieldLabel } from "../parts/labels.ts";
+import { turnWords } from "../play/turns.tsx";
 import { t } from "../text.ts";
-import { turnWords } from "../turns.tsx";
 import { cardLayout, type CardRoll, labelKey, type PackCard, type TrackChange, trackChanges } from "./card.ts";
 import { type CardButton, deepQuery, ExtensionRoot, figureSize, type PageModule, pagePropsOf, usePageModule } from "./page-code.tsx";
 import { Drawn, OwnerContext, Part, Text, textOf, Track, Who } from "./widgets.tsx";

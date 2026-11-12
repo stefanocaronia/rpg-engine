@@ -3,7 +3,7 @@
 import { join } from "node:path";
 import { readManifest } from "../../../adventures/index.ts";
 import type { Context, PackageInfo } from "../../../core/context.ts";
-import { ourSystems, readsApi } from "../../../core/package-declarations.ts";
+import { ourSystems, readsApi } from "../../../core/packages/declarations.ts";
 import { files } from "../../../core/store.ts";
 import { comparableText } from "../../../core/text.ts";
 import { isNewerVersion } from "../../../core/version.ts";
@@ -11,7 +11,7 @@ import { installedExtensions, readExtension, shortName } from "../../../extensio
 import { installedLanguages } from "../../../languages/index.ts";
 import { isVerified } from "../../../packages/index.ts";
 import { systemFolders } from "../../../systems/index.ts";
-import { installedAdventures } from "../adventures.ts";
+import { installedAdventures } from "../books/adventures.ts";
 
 /** The kinds of packages the catalog lists. */
 export type CatalogKind = "system" | "adventure" | "extension" | "language";

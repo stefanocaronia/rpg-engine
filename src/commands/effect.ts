@@ -10,17 +10,17 @@ import { concernsPlayer, declaredKind, environmentAt, isDeclaredUncounted, isKin
 import type { Scene } from "../scene/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { addDuration, formatGameDate, readDuration } from "../time/index.ts";
-import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./shared/effect-layer.ts";
-import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects, systemNamed } from "./shared/effects.ts";
+import { houseRules, ruleBlock, ruleTitled } from "./shared/books/rules.ts";
+import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./shared/campaign/world.ts";
 import { fieldValues } from "./shared/inputs.ts";
 import { allSaid, packagesEffectAdded } from "./shared/packages/hooks.ts";
-import { keepingConditionNote, secondKeptNote } from "./shared/reminders.ts";
-import { houseRules, ruleBlock, ruleTitled } from "./shared/rules.ts";
-import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./shared/scene.ts";
-import { newDatedLogEntry, presentDate } from "./shared/time.ts";
-import { burning, burnOne } from "./shared/upkeep.ts";
-import { aloneNote, computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./shared/worked-out.ts";
-import { campaignSystem, campaignWorld, missingSystemHint, occasionsOf } from "./shared/world.ts";
+import { checkEffectsReadable, type EffectHolder, endEffects, keptBy, saveEffects, systemNamed } from "./shared/scene/effects.ts";
+import { keepingConditionNote, secondKeptNote } from "./shared/scene/reminders.ts";
+import { checkNotSystemPage, pageOrCopy, readOpenScene } from "./shared/scene/scene.ts";
+import { effectGiving, effectiveFields, effectsOf, valuesChanged, withEffects } from "./shared/sheet/effect-layer.ts";
+import { aloneNote, computedField, counterLimits, directBonuses, itemSource, maximumSources } from "./shared/sheet/worked-out.ts";
+import { newDatedLogEntry, presentDate } from "./shared/time/time.ts";
+import { burning, burnOne } from "./shared/time/upkeep.ts";
 
 const actions = ["add", "end"] as const;
 

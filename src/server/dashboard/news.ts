@@ -3,9 +3,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { findCampaign, requireCampaign } from "../../campaign/index.ts";
-import { playerChangeNews, type PlayerSetting, playerSettings, setupQuestions, setupSettingNamed } from "../../commands/config.ts";
-import { playerStory } from "../../commands/shared/knowledge.ts";
-import { campaignWorld } from "../../commands/shared/world.ts";
+import { type PlayerSetting, playerSettings, setupQuestions, setupSettingNamed } from "../../commands/config/dashboard.ts";
+import { playerChangeNews } from "../../commands/config/news.ts";
+import { campaignWorld } from "../../commands/shared/campaign/world.ts";
+import { playerStory } from "../../commands/shared/characters/knowledge.ts";
 import { withFiles } from "../../core/store.ts";
 import { comparableText } from "../../core/text.ts";
 import { codexClient } from "../../helpers/index.ts";

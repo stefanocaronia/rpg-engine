@@ -6,8 +6,8 @@ import { type Examples, neutralExamples } from "../../core/examples.ts";
 import { comparableText } from "../../core/text.ts";
 import type { Coin } from "../../money/index.ts";
 import type { GameSystem, SystemWords } from "../../systems/index.ts";
-import { campaignCoins } from "./money.ts";
-import { campaignSystem, systemWordsOf } from "./world.ts";
+import { campaignCoins } from "./campaign/money.ts";
+import { campaignSystem, systemWordsOf } from "./campaign/world.ts";
 
 /** The examples for a campaign: its system's names, in its language where the system has words for them; neutral without a campaign or a system. */
 export function campaignExamples(root: string | undefined, context: Context): Examples

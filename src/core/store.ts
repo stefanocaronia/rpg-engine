@@ -1,7 +1,7 @@
 // The files as a command sees them (D-137, D-194): each read at most once in a call, kept as its text and as what it reads as, frozen; what the command writes
 // updates what is kept. A command runs inside its store, and the modules reach it with files(): the MCP server will keep one for a whole session.
 import { AsyncLocalStorage } from "node:async_hooks";
-import { appendFileSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileOrder, filesIn } from "./files.ts";
 import { frozen } from "./frozen.ts";
@@ -115,10 +115,14 @@ export class FileStore
         return existsSync(folder) && statSync(folder).isDirectory() ? readdirSync(folder, { withFileTypes: true }).filter((entry) => entry.isSymbolicLink()).map((entry) => entry.name) : [];
     }
 
-    /** A file's bytes as they are now, as a save holds them; undefined when there is no file. */
-    bytes(path: string): Uint8Array | undefined
+    /** A file's bytes as they are now, as a save holds them, or only its first `length`; undefined when there is no file. */
+    bytes(path: string, length?: number): Uint8Array | undefined
     {
-        return existsSync(path) ? new Uint8Array(readFileSync(path)) : undefined;
+        if (!existsSync(path)) {
+            return undefined;
+        }
+
+        return length === undefined ? new Uint8Array(readFileSync(path)) : firstBytes(path, length);
     }
 
     /** The text of a file as it is now, for a command about to write it: in a call, the text the call reads; a session checks the disk (D-193). */
@@ -345,6 +349,19 @@ function changedSince(path: string, time: number): boolean
 {
     const stats = statSync(path, { throwIfNoEntry: false });
     return stats === undefined || stats.mtimeMs >= time;
+}
+
+/** The first `length` bytes of a file, or all of a shorter one, read without the rest. */
+function firstBytes(path: string, length: number): Uint8Array
+{
+    const handle = openSync(path, "r");
+
+    try {
+        const bytes = new Uint8Array(length);
+        return bytes.subarray(0, readSync(handle, bytes, 0, length, 0));
+    } finally {
+        closeSync(handle);
+    }
 }
 
 /** Notes that the running call wrote a file, which a stop before its next write says (D-196). */

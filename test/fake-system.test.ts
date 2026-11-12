@@ -6,7 +6,7 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import { campaignPageModules } from "../src/commands/shared/packages/extensions.ts";
 import { campaignWidgets } from "../src/commands/shared/packages/widgets.ts";
 import type { Context } from "../src/core/context.ts";
-import { fieldLabel } from "../src/dashboard/labels.ts";
+import { fieldLabel } from "../src/dashboard/parts/labels.ts";
 import { setSystemWords, systemWord } from "../src/dashboard/text.ts";
 import { findSystem } from "../src/systems/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext, testSystemCode, testSystemFolders } from "./support.ts";

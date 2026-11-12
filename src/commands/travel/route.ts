@@ -5,10 +5,29 @@ import type { Start } from "../../map/index.ts";
 import { distanceBetween } from "../../map/index.ts";
 import { locate, mapKey, type Page, pageNamed, parsePageReference, type Position, type World } from "../../pages/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
-import { journeyStart, moversPosition, readJourney } from "../shared/journey.ts";
-import { pointText, positionOf } from "../shared/positions.ts";
-import { dayHours, durationText, type Going, goingText, lengthText, type Measures, measuresOf, moversOf, noWayText, paceOf, partyLead, roadsOf, sameSpot, stopOf, travellingParty, unknownOnRoad, wayFor, wayText } from "../shared/roads.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "../shared/world.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "../shared/campaign/world.ts";
+import { journeyStart, moversPosition, readJourney } from "../shared/places/journey.ts";
+import { pointText, positionOf } from "../shared/places/positions.ts";
+import {
+    dayHours,
+    durationText,
+    type Going,
+    goingText,
+    lengthText,
+    type Measures,
+    measuresOf,
+    moversOf,
+    noWayText,
+    paceOf,
+    partyLead,
+    roadsOf,
+    sameSpot,
+    stopOf,
+    travellingParty,
+    unknownOnRoad,
+    wayFor,
+    wayText,
+} from "../shared/places/roads.ts";
 import { acrossHint, openLegs } from "./open.ts";
 
 /** What route found, as its output tells it (TRV-5). */
@@ -40,7 +59,9 @@ export const route = defineCommand({
         const roads = roadsOf(world);
         const measures = measuresOf(root, system);
         const destination = placeNamed(world, input.to, "where to");
-        const travellers = input.from === undefined ? travellingParty(world, partyLead(world, readJourney(root)?.movers ?? [], "Give from, the place to start from."), readJourney(root)?.movers ?? []) : [];
+        // From where the party is, the journey under way counts; from a place given, none does.
+        const journey = input.from === undefined ? readJourney(root) : undefined;
+        const travellers = input.from === undefined ? travellingParty(world, partyLead(world, journey?.movers ?? [], "Give from, the place to start from."), journey?.movers ?? []) : [];
         const origin = input.from === undefined ? travellers[0] : placeNamed(world, input.from, "where from", true);
 
         if (origin === undefined) {
@@ -48,7 +69,6 @@ export const route = defineCommand({
         }
 
         const { movers, vehicle } = travellers.length === 0 ? { movers: [origin], vehicle: undefined } : moversOf(world, system, travellers);
-        const journey = input.from === undefined ? readJourney(root) : undefined;
         const onRoad = journey === undefined ? undefined : journeyStart(world, roads, journey, movers);
         const departure = stopOf(world, roads, origin);
         const arrival = stopOf(world, roads, destination);

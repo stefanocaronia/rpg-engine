@@ -3,7 +3,7 @@
 // of the same materials, or of the metal chosen (D-526 (1)).
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { shownTheme } from "../theme.ts";
+import { shownTheme } from "../shell/theme.ts";
 import { burnAway, crack } from "./burn.ts";
 import { celebrate, type Effect, embers, type Glow, lightInk, makePictures, type Pictures, type Showing } from "./celebration.ts";
 import { floorCrackMaterial } from "./floor-cracks.ts";

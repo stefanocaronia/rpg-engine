@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { scene } from "../src/commands/scene.ts";
+import { scene } from "../src/commands/scene/scene.ts";
 import type { LogEntry } from "../src/core/log.ts";
 import { copyNames, nextTurn } from "../src/scene/index.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";

@@ -5,10 +5,10 @@ import { appendLogEntry } from "../core/log.ts";
 import { type Mood, moods } from "../core/mood.ts";
 import { defineCommand } from "../core/registry.ts";
 import { isPartyMember, ownField, type Page, pageNamed, type World, writePage } from "../pages/index.ts";
-import { masterMood, masterMoodKey, moodChanged, moodMoment, pageMood } from "./shared/moods.ts";
-import { readOpenScene } from "./shared/scene.ts";
-import { newDatedLogEntry } from "./shared/time.ts";
-import { campaignWorld } from "./shared/world.ts";
+import { campaignWorld } from "./shared/campaign/world.ts";
+import { masterMood, masterMoodKey, moodChanged, moodMoment, pageMood } from "./shared/characters/moods.ts";
+import { readOpenScene } from "./shared/scene/scene.ts";
+import { newDatedLogEntry } from "./shared/time/time.ts";
 
 // What a character's new mood asks of the master, by their role.
 const moodAdvice = {

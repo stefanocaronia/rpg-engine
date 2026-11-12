@@ -1,9 +1,9 @@
 // The types of rpg-engine/page (D-510): what a package's page code gets from the dashboard to draw its figures inside the dashboard's own frame. In the
 // page, rpg-engine/page is the dashboard's kit, its components and its style sheet, given with the dashboard's own Preact.
 import type { ComponentChildren, ComponentType, JSX } from "preact";
-import type { CardPage, DieTone, FigureSize, Track, WidgetText, WidgetValue } from "./core/package-api.ts";
+import type { CardPage, DieTone, FigureSize, Track, WidgetText, WidgetValue } from "./core/packages/api.ts";
 
-export { type CardPage, cardPages, type DieTone, type FigureSize, type Track, type WidgetText, type WidgetValue } from "./core/package-api.ts";
+export { type CardPage, cardPages, type DieTone, type FigureSize, type Track, type WidgetText, type WidgetValue } from "./core/packages/api.ts";
 
 /** Where a figure is drawn: a chip in the top, a card beside the rolls, a card in a page, a roll's card, or the panel on someone of the party (D-516). */
 export type FigurePlace = "top" | "side" | "page" | "ask" | "person";

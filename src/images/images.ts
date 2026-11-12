@@ -19,26 +19,26 @@ export type ReadImage = { bytes: Uint8Array; extension: ImageExtension; } | { pr
 /** Reads the picture at `path`, by what its bytes are rather than by its extension: PNG, JPEG, WebP or SVG, up to largestImage. */
 export function readImage(path: string): ReadImage
 {
-    // Its size first, from the disk: a file of gigabytes is never read to be refused.
+    // Its size and its first bytes, from the disk: a file of gigabytes is never read whole to be refused.
     const size = files().size(path);
+    const head = size === undefined ? undefined : files().bytes(path, formatBytes);
 
-    if (size !== undefined && size > largestImage) {
-        return { problem: `${basename(path)} is ${megabytes(size)} MB, and a picture can be ${megabytes(largestImage)} MB at most: make it smaller (512 pixels a side are enough).` };
-    }
-
-    const bytes = size === undefined ? undefined : files().bytes(path);
-
-    if (bytes === undefined) {
+    if (head === undefined) {
         return { problem: `There is no file at ${path}: give the full path of the picture.` };
     }
 
-    const extension = imageExtensions.find((candidate) => isFormat[candidate](bytes));
+    const extension = imageExtensions.find((candidate) => isFormat[candidate](head));
 
     if (extension === undefined) {
         return { problem: `${basename(path)} is not a PNG, JPEG, WebP or SVG picture: convert it to one of those, or give another file.` };
     }
 
-    return { bytes, extension };
+    if (size !== undefined && size > largestImage) {
+        return { problem: `${basename(path)} is ${megabytes(size)} MB, and a picture can be ${megabytes(largestImage)} MB at most: make it smaller (512 pixels a side are enough).` };
+    }
+
+    const bytes = files().bytes(path);
+    return bytes === undefined ? { problem: `There is no file at ${path}: give the full path of the picture.` } : { bytes, extension };
 }
 
 /** The file named `name` in the images folder of the first of `folders` that has one, looked for in the folders inside it too; undefined when none has it. */
@@ -89,12 +89,15 @@ export function imageLink(fileName: string): string
     return `[[${fileName}]]`;
 }
 
+// How much of a file tells its format: an SVG's root element may come after a declaration and comments.
+const formatBytes = 4096;
+
 const isFormat: Record<ImageExtension, (bytes: Uint8Array) => boolean> = {
     png: (bytes) => startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     jpg: (bytes) => startsWith(bytes, [0xff, 0xd8, 0xff]),
     webp: (bytes) => ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 12) === "WEBP",
     // An SVG is text: its root element comes after an XML declaration, a doctype or comments, if any.
-    svg: (bytes) => /^(?:\uFEFF)?\s*(?:<\?xml[^>]*>\s*)?(?:(?:<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<svg[\s>]/i.test(new TextDecoder().decode(bytes.subarray(0, 4096))),
+    svg: (bytes) => /^(?:\uFEFF)?\s*(?:<\?xml[^>]*>\s*)?(?:(?:<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)\s*)*<svg[\s>]/i.test(new TextDecoder().decode(bytes.subarray(0, formatBytes))),
 };
 
 function startsWith(bytes: Uint8Array, prefix: number[]): boolean

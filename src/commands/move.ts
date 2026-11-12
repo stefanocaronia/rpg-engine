@@ -6,18 +6,18 @@ import { defineCommand } from "../core/registry.ts";
 import { closedSquare, featureAt, firstOpenSquare, type Grid, readSquare, type Square, squareName } from "../grid/index.ts";
 import { canHold, isInParty, kindNamed, locate, type Page, pageNamed, pagesWithName, pageTypeNames, parsePageReference, stackName, type World, writePage } from "../pages/index.ts";
 import type { Scene } from "../scene/index.ts";
-import { type Surrounding, surroundings, surroundingsChange } from "./shared/environment.ts";
-import { moveFacts } from "./shared/grid-moves.ts";
-import { atEntries, atEntry, clearCopies, offMapNote, placeGrid, type Standing, standing } from "./shared/grids.ts";
-import { picturesNote } from "./shared/images.ts";
+import { picturesNote } from "./shared/campaign/images.ts";
+import { campaignSystem, campaignWorld, missingSystemHint } from "./shared/campaign/world.ts";
 import { textList, textsOf, wholeNumber } from "./shared/inputs.ts";
-import { movePages } from "./shared/moves.ts";
 import { shortList, skippedPagesNote } from "./shared/notes.ts";
-import { measuresOf, roadsOf, sameSpot, stopOf } from "./shared/roads.ts";
-import { copyName, readOpenScene, scenePlace, updateScene } from "./shared/scene.ts";
-import { heldStack, type StackMove, stackMoveSteps, writeStacks } from "./shared/stacks.ts";
-import { newDatedLogEntry } from "./shared/time.ts";
-import { campaignSystem, campaignWorld, missingSystemHint } from "./shared/world.ts";
+import { type Surrounding, surroundings, surroundingsChange } from "./shared/places/environment.ts";
+import { moveFacts } from "./shared/places/grid-moves.ts";
+import { atEntries, atEntry, clearCopies, offMapNote, placeGrid, type Standing, standing } from "./shared/places/grids.ts";
+import { movePages } from "./shared/places/moves.ts";
+import { measuresOf, roadsOf, sameSpot, stopOf } from "./shared/places/roads.ts";
+import { copyName, readOpenScene, scenePlace, updateScene } from "./shared/scene/scene.ts";
+import { heldStack, type StackMove, stackMoveSteps, writeStacks } from "./shared/sheet/stacks.ts";
+import { newDatedLogEntry } from "./shared/time/time.ts";
 
 /** What move did, as its output tells it (CON-8, ENV-5). */
 interface MoveResult

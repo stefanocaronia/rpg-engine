@@ -68,7 +68,7 @@ describe("architecture", () => {
             "helpers/codex.ts",
             "helpers/programs.ts",
             // The page's words translated on the fly, in the player's data folder (D-406).
-            "commands/shared/page-words.ts",
+            "commands/shared/books/words.ts",
             "documents/read.ts",
             "importer/work.ts",
             "library/books.ts",

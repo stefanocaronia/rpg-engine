@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { ourScope } from "../core/consents.ts";
 import type { PackageInfo, PackageManager } from "../core/context.ts";
-import { packageApi, readsApi } from "../core/package-declarations.ts";
+import { packageApi, readsApi } from "../core/packages/declarations.ts";
 import { Refusal } from "../core/refusal.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { isTarball, tarballText, unpackTarball } from "./tarball.ts";

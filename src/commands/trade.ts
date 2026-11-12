@@ -25,15 +25,15 @@ import {
     stackName,
     type World,
 } from "../pages/index.ts";
+import { campaignCoins } from "./shared/campaign/money.ts";
+import { campaignWorld, missingSystemHint } from "./shared/campaign/world.ts";
 import { coinExamples } from "./shared/examples.ts";
-import { textList } from "./shared/inputs.ts";
-import { campaignCoins } from "./shared/money.ts";
-import { afterMoves, pagesPlan } from "./shared/moves.ts";
+import { textList, textsOf } from "./shared/inputs.ts";
 import { skippedPagesNote } from "./shared/notes.ts";
-import { copyName, readOpenScene } from "./shared/scene.ts";
-import { heldStack, logStackSteps, stackEdits, type StackMove, stackMoveSteps, type StackStep, stackStepText, unequipKinds } from "./shared/stacks.ts";
-import { newDatedLogEntry } from "./shared/time.ts";
-import { campaignWorld, missingSystemHint } from "./shared/world.ts";
+import { afterMoves, pagesPlan } from "./shared/places/moves.ts";
+import { copyName, readOpenScene } from "./shared/scene/scene.ts";
+import { heldStack, logStackSteps, stackEdits, type StackMove, stackMoveSteps, type StackStep, stackStepText, unequipKinds } from "./shared/sheet/stacks.ts";
+import { newDatedLogEntry } from "./shared/time/time.ts";
 
 /** What one side of a trade hands over: money, pieces of stacks, and items with a story of their own (STK-7). */
 interface Handed
@@ -149,7 +149,7 @@ function sideNamed(world: World, copy: string | undefined, name: string): Page
 /** The entries given, as a list or one text, each without quotes around it, as a model may send "\"2 gp\"". */
 function listOf(value: string | string[] | undefined): string[]
 {
-    return (value === undefined ? [] : typeof value === "string" ? [value] : value).map((entry) => entry.trim().replace(/^"(.*)"$/s, "$1").trim()).filter((entry) => entry !== "");
+    return textsOf(value).map((entry) => entry.trim().replace(/^"(.*)"$/s, "$1").trim()).filter((entry) => entry !== "");
 }
 
 /**

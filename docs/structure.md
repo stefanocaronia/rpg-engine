@@ -19,9 +19,9 @@ Where things are in the repository, what each module depends on, and where new c
 |---|---|
 | [src/core/](../src/core/) | Shared utilities: command registry, context, file store, log, YAML files, text comparison, formulas, problems, the mark of a process that works alone |
 | `src/<module>/` | One job each, behind its `index.ts` (table below) |
-| [src/commands/](../src/commands/) | The commands, a file each; a topic whose commands have helpers of their own is a folder with them, such as [view/](../src/commands/view/), and the helpers that join modules for several topics are in [shared/](../src/commands/shared/) |
+| [src/commands/](../src/commands/) | The commands, a file each; a topic whose commands have helpers of their own is a folder with them, such as [view/](../src/commands/view/), [scene/](../src/commands/scene/), [config/](../src/commands/config/) and [package/](../src/commands/package/), and the helpers that join modules for several topics are in [shared/](../src/commands/shared/), a folder for each topic: `campaign/`, `sheet/`, `scene/`, `time/`, `places/`, `characters/`, `books/`, `packages/` |
 | [src/cli/cli.ts](../src/cli/cli.ts), [src/cli/command-line.ts](../src/cli/command-line.ts) | The `rpg` binary |
-| [src/commands/shared/library-reader.ts](../src/commands/shared/library-reader.ts) | `rpg --read-library`, the process that reads the books of the computer's library apart, as `rules`, `config` and the dashboard start it |
+| [src/commands/shared/books/library-reader.ts](../src/commands/shared/books/library-reader.ts) | `rpg --read-library`, the process that reads the books of the computer's library apart, as `rules`, `config` and the dashboard start it |
 | [src/server/mcp.ts](../src/server/mcp.ts) | The MCP server |
 | [src/server/bell-listener.ts](../src/server/bell-listener.ts) | `rpg --listen`, Claude Code's Stop hook that `init` writes: it waits at its chat's dashboard and wakes the chat when the player acts there |
 | [src/server/dashboard/](../src/server/dashboard/), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
@@ -68,7 +68,7 @@ A module imports only its own files, `src/core/`, Node and packages: never anoth
 ## 4. Where new code goes
 
 - **A job of its own** that makes sense for a game very different from D&D: a module, `src/<module>/` with its `index.ts`, and its row above.
-- **Work that joins modules**: a command, `src/commands/<name>.ts`, or its topic's folder; a helper several topics use goes in [commands/shared/](../src/commands/shared/).
-- **A part of the page**: in [src/dashboard/](../src/dashboard/), in the folder of its area; its style in [style/](../src/dashboard/style/). The page is one app: its folders group its parts and need no `index.ts`.
+- **Work that joins modules**: a command, `src/commands/<name>.ts`, or its topic's folder; a helper several topics use goes in [commands/shared/](../src/commands/shared/), in the folder of its topic.
+- **A part of the page**: in [src/dashboard/](../src/dashboard/), in the folder of its area (`shell/` the frame, `parts/` what every section draws with, `play/` what happens at the table, `sheet/`, `journal/`, `settings/`, `world/`, `place/`, `packages/`, `acts/`, `dice/`, `help/`); its style in [style/](../src/dashboard/style/). The page is one app: its folders group its parts and need no `index.ts`.
 - **A game's concept**: not in `src/`, but data in a game system or an extension, their code only when data is not enough.
 - **Folders, not prefixes**: a file name never repeats its folder (`pages/file.ts`, not `pages/page-file.ts`); a module that grows splits into subfolders, each with its `index.ts`.

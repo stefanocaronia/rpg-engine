@@ -2,7 +2,7 @@ import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
-import { scene } from "../src/commands/scene.ts";
+import { scene } from "../src/commands/scene/scene.ts";
 import type { Context } from "../src/core/context.ts";
 import { fightGuidance, inPlay, makeTempFolder, playerStop, playerTurn, quietTurn, readLogFile, removeFolder, systemPageCount, testContext, travelGuidance } from "./support.ts";
 

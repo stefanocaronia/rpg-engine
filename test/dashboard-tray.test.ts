@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { coinPictures } from "../src/dashboard/dice/coin-pictures.ts";
 import { diceText, doubled, droppedBy, flies, keptOf, keptTotal, notation, trayCoin, trayThrows, withAdded, withDropped } from "../src/dashboard/dice/pool.ts";
 import { coinDesignPref, coinDesigns, coinLook, coinMetals, coinOf, coinPref, diceLook, diceSets, mastersDice, masterSet } from "../src/dashboard/dice/sets.ts";
-import { type PageRoll, readFree, withFree } from "../src/dashboard/free-rolls.ts";
-import { sameDice } from "../src/dashboard/labels.ts";
-import { readChoice } from "../src/dashboard/prefs.ts";
-import { requestedOf, trayCheck } from "../src/dashboard/requested.ts";
+import { sameDice } from "../src/dashboard/parts/labels.ts";
+import { type PageRoll, readFree, withFree } from "../src/dashboard/play/free-rolls.ts";
+import { requestedOf, trayCheck } from "../src/dashboard/play/requested.ts";
+import { readChoice } from "../src/dashboard/shell/prefs.ts";
 
 describe("which dice of a kind count in the tray (D-337)", () => {
     it("writes the highest or the lowest one alone kept, however many of a kind, the biggest first (D-397)", () => {

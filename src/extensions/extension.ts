@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { installedFromFolder, packageFoldersIn, realPath } from "../core/files.ts";
 import { type InstructionPart, readParts } from "../core/instruction-parts.ts";
-import { apiProblem, type DeclaredWidget, declaredWidgets, type FigureSize, packagePartsIssues, packagePartsShape } from "../core/package-declarations.ts";
+import { apiProblem, type DeclaredWidget, declaredWidgets, type FigureSize, packagePartsIssues, packagePartsShape } from "../core/packages/declarations.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText, wordCount } from "../core/text.ts";
 import { readYamlValues } from "../core/yaml-file.ts";

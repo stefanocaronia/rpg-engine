@@ -1,7 +1,7 @@
 // What the player does from the sheet, said as their own sentence to the master (D-493 (1), D-495): the name acts, the number rolls. The system says which
 // lists are actions and with which verbs, the engine's or its own with their words (D-514); the page writes the sentence, without articles, and never decides a rule.
 import type { ActsShown, ActVerb, SheetGroup, SheetVerb, ShownPerson, ShownPlace, ShownScene } from "../data.ts";
-import { strangerLabel } from "../labels.ts";
+import { strangerLabel } from "../parts/labels.ts";
 import { t } from "../text.ts";
 
 /** What the player does: one of the system's verbs with a thing of the sheet, or talking to someone. */

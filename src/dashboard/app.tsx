@@ -6,22 +6,13 @@ import { type ActStart, type SaidAct, saidStates, setSystemVerbs, type SheetActi
 import { type PlayerActs, PlayerActsContext } from "./acts/names.tsx";
 import { type ActReply, ActSheet } from "./acts/sheet.tsx";
 import { ActStrip } from "./acts/strip.tsx";
-import { type Address, readAddress, sectionAddress } from "./address.ts";
+import { type Address, readAddress, redirectCombat, sectionAddress } from "./address.ts";
 import { answer, closeCard, readActs, readAsked, readChoices, readGameTheme, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
-import { AskedDice } from "./asked-dice.tsx";
-import { AskedBanner } from "./asked.tsx";
-import { useMedia } from "./card.tsx";
-import { choicesOf, ChoicesPage, waits } from "./choices.tsx";
-import type { ActsShown, Asked, AskedNow, CalendarDay, ChoicesNow, Member, Moment, Mood, SheetCards, SheetGroup, ShownImport, ShownModule, ShownPlace, ShownRoll, ShownScene, ShownWidget } from "./data.ts";
+import type { ActsShown, Asked, AskedNow, Member, Moment, ShownModule, ShownPlace, ShownRoll, ShownWidget } from "./data.ts";
 import { flies } from "./dice/pool.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
-import { PageFoot } from "./footer.tsx";
-import { type PageRoll, readFree, withFree, writeFree } from "./free-rolls.ts";
 import { Help } from "./help/help.tsx";
-import { Icon } from "./icons.tsx";
-import { FollowedQuests, JournalView, QuestEndings } from "./journal.tsx";
-import { checkOf, systemNameLabel } from "./labels.ts";
-import { gameNotices, importNotices, type Notice, Notices } from "./notices.tsx";
+import { FollowedQuests, JournalView, QuestEndings } from "./journal/journal.tsx";
 import { AskCard } from "./packages/ask-card.tsx";
 import { inCard, nextPackCard, type PackCard } from "./packages/card.ts";
 import { PackagesPage } from "./packages/packages.tsx";
@@ -29,22 +20,32 @@ import { codeOfModule, ModulesContext, ownKey, preloadModules, systemPageStyle, 
 import { PackagePage } from "./packages/page.tsx";
 import { PeopleContext } from "./packages/people.ts";
 import { WidgetCards, WidgetsContext } from "./packages/widgets.tsx";
-import { About } from "./pages.tsx";
-import { PartyStrip, type Tokened } from "./party.tsx";
-import { rollReaction } from "./reactions.ts";
-import { requestedOf, RequestedRoll } from "./requested.ts";
-import { RollLog } from "./rolls.tsx";
-import { SavesView } from "./saves.tsx";
-import { SceneView } from "./scene.tsx";
-import { SettingsView } from "./settings.tsx";
-import { SetupView, useSetup } from "./setup.tsx";
-import { type FreeRoll, MemberSheet } from "./sheet.tsx";
-import { gameStyleChanged, takeSystemStyle } from "./system-style.ts";
-import { PlayTable, tableBeside, TableTab, useTableAway } from "./table.tsx";
+import { useMedia } from "./parts/card.tsx";
+import { Icon } from "./parts/icons.tsx";
+import { checkOf, systemNameLabel } from "./parts/labels.ts";
+import { AskedDice } from "./play/asked-dice.tsx";
+import { AskedBanner } from "./play/asked.tsx";
+import { choicesOf, ChoicesPage, waits } from "./play/choices.tsx";
+import { type PageRoll, readFree, withFree, writeFree } from "./play/free-rolls.ts";
+import { rollReaction } from "./play/reactions.ts";
+import { requestedOf, RequestedRoll } from "./play/requested.ts";
+import { RollLog } from "./play/rolls.tsx";
+import { SceneView } from "./play/scene.tsx";
+import { hasTurns, TurnsCard, turnWords } from "./play/turns.tsx";
+import { SavesView } from "./settings/saves.tsx";
+import { SettingsView } from "./settings/settings.tsx";
+import { SetupView, useSetup } from "./settings/setup.tsx";
+import { PartyStrip, type Tokened } from "./sheet/party.tsx";
+import { type FreeRoll, MemberSheet } from "./sheet/sheet.tsx";
+import { PageFoot } from "./shell/footer.tsx";
+import { gameNotices, importNotices, type Notice, Notices } from "./shell/notices.tsx";
+import { About } from "./shell/pages.tsx";
+import { calledOf, playerNamed, type Shown, turnKey, withHeld } from "./shell/shown.ts";
+import { gameStyleChanged, takeSystemStyle } from "./shell/system-style.ts";
+import { PlayTable, tableBeside, TableTab, useTableAway } from "./shell/table.tsx";
+import { restoreTheme } from "./shell/theme.ts";
+import { SetupCorner, Top } from "./shell/top.tsx";
 import { browserLanguage, pageDirection, pageLocale, setLanguage, setSystemWords, t } from "./text.ts";
-import { restoreTheme } from "./theme.ts";
-import { SetupCorner, Top } from "./top.tsx";
-import { hasTurns, TurnsCard, turnWords } from "./turns.tsx";
 import { WorldView } from "./world/world.tsx";
 
 /** The product's name, as the page writes it: here only (D-276). */
@@ -52,57 +53,6 @@ const productName = "RPG Engine";
 
 // How many of the last rolls the page reads at first, and how many more each time the player asks for older ones (D-302).
 const firstRolls = 20;
-
-/** What the page shows: the campaign, its system and its time, the party, whom the address names and their sheet, the rolls and what the master asks, as of when it was read. */
-interface Shown
-{
-    campaign?: string;
-    system?: { name: string; title: string; attribution?: string; };
-    now?: string;
-    calendar?: CalendarDay;
-    party: Member[];
-    /** With more than one player character, the one in the foreground, whose place the page shows (VIEW-12). */
-    foreground?: string;
-    chosen?: string;
-    /** The line under the chosen one's name, such as Level 3 Cleric. */
-    headline?: string;
-    sheet: SheetGroup[];
-    cards?: SheetCards;
-    text: string;
-    /** The text's secrets that only some of the player characters discovered, each with who (D-480 (7)). */
-    knownBy?: { secret: string; who: string[]; }[] | undefined;
-    /** The player character's opening text, when the player may write it (D-373). */
-    story?: string;
-    rolls: ShownRoll[];
-    /** How many public rolls the log has, past those read. */
-    rollsTotal: number;
-    /** The master's mood, on the robot (D-305). */
-    masterMood?: Mood;
-    /** Where the party is, and the open scene (VIEW-6). */
-    place?: ShownPlace;
-    openScene?: ShownScene;
-    asked?: Asked;
-    /** The card of a package's question, which stays through the questions of its attempt and after them, until closed (D-507). */
-    pack?: PackCard | undefined;
-    /** How many times it was read: what was explained is told again after each. */
-    version: number;
-    readAt?: Date;
-    noCharacter?: boolean;
-    /** How many problems the campaign's files have, which the master fixes (validate). */
-    problems?: number;
-    /** An import under way (D-491 (11)). */
-    importing?: ShownImport;
-    /** The campaign's language, when this computer is translating the game system's pages into it (D-539). */
-    textsTranslating?: string;
-    problem?: string;
-    /** What a roll from a card, or a die of a rest, changed, kept back while its dice are in the air (D-461, D-492). */
-    pending?: Steady;
-    /** The choices the master prepared for the party, and whether the player rolls their own dice (D-556). */
-    choices?: ChoicesNow;
-}
-
-/** What a roll changes of the sheet and the fight, which the page shows only once its dice land. */
-type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "knownBy" | "story" | "openScene" | "pack">;
 
 // How long at most what a roll from a card or a die of a rest changed waits for its dice, when they never land.
 const longestHold = 15_000;
@@ -1040,59 +990,6 @@ function App()
             </PeopleContext.Provider>
         </ModulesContext.Provider>
     );
-}
-
-/** The player character of the party by their name; undefined for anyone else, or none. */
-function playerNamed(party: Member[], name: string | undefined): Member | undefined
-{
-    return name === undefined ? undefined : party.find((member) => member.role === "pc" && member.name === name);
-}
-
-/**
- * Whose sheet the page reads when the address names no one (D-480 (7)): in the Party section the player character the master asks, then whose turn it is;
- * elsewhere whose turn it is first, for the card at hand in a fight; else the one in the foreground, else the first.
- */
-function calledOf(party: Member[], section: string, asked: Asked | undefined, scene: ShownScene | undefined, foreground: string | undefined): Member | undefined
-{
-    const asking = playerNamed(party, asked?.who);
-    const acting = hasTurns(scene) ? playerNamed(party, scene.turn) : undefined;
-    return (section === "party" ? asking ?? acting : acting ?? asking) ?? playerNamed(party, foreground) ?? party[0];
-}
-
-/** The turn of a scene that goes by them, as the round and who acts; empty outside turns. */
-function turnKey(scene: ShownScene | undefined): string
-{
-    return hasTurns(scene) ? `${scene.title} ${scene.since ?? ""} ${scene.round ?? ""} ${scene.turn ?? ""}` : "";
-}
-
-/** The page as read now; while a card's dice fly, with the sheet and the fight as they were, what the roll changed kept until they land (D-461). */
-function withHeld(before: Shown, next: Shown, hold: boolean): Shown
-{
-    if (!hold) {
-        return { ...next, pending: undefined };
-    }
-
-    const steady = (shown: Shown): Steady => ({
-        party: shown.party,
-        chosen: shown.chosen,
-        headline: shown.headline,
-        sheet: shown.sheet,
-        cards: shown.cards,
-        text: shown.text,
-        knownBy: shown.knownBy,
-        story: shown.story,
-        openScene: shown.openScene,
-        pack: shown.pack,
-    });
-    return { ...next, ...steady(before), pending: steady(next) };
-}
-
-/** Writes the Scene's address over Combat's old one, without a step in the history. */
-function redirectCombat(): void
-{
-    if (/^#\/combat(\/|$)/.test(window.location.hash)) {
-        history.replaceState(null, "", sectionAddress("scene"));
-    }
 }
 
 // The theme the player picked before, from the start (D-300).

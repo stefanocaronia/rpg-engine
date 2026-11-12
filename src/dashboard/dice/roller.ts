@@ -1,7 +1,7 @@
 // The dice thrown on the page (D-278): the models loaded once, the stage, and each throw: all the dice together, then again those rerolled or exploded, past
 // those that lie still; each shown turned by one of its symmetries so that it lands on its value, with its knocks. The tray loads it, with three.js and
 // Rapier, at its first throw.
-import { readChoice } from "../prefs.ts";
+import { readChoice } from "../shell/prefs.ts";
 import { loadDice } from "./load.ts";
 import { coinKind, combine, type DieModel, type DieThrow, landingTurn, symmetries } from "./models.ts";
 import { coinOf, diceEdgesPref, type DiceLook } from "./sets.ts";

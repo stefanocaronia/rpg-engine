@@ -6,12 +6,12 @@ import { readLog } from "../../core/log.ts";
 import { comparableText } from "../../core/text.ts";
 import { directionName, directionTo, distanceBetween, type Point } from "../../map/index.ts";
 import { environmentAt, locate, mapKey, mapOf, type Page, pagesWithName, parsePageReference, readStops, type World } from "../../pages/index.ts";
-import { shownImage } from "../shared/images.ts";
-import { moversMap, moversNamed, moversPosition, readJourney } from "../shared/journey.ts";
-import { knowsPage } from "../shared/knowledge.ts";
-import { placedPosition, positionOf, regionsOf } from "../shared/positions.ts";
-import { kindOf, type Measures, type Roads, roadsOf, travellingParty } from "../shared/roads.ts";
-import { campaignSystem } from "../shared/world.ts";
+import { shownImage } from "../shared/campaign/images.ts";
+import { campaignSystem } from "../shared/campaign/world.ts";
+import { knowsPage } from "../shared/characters/knowledge.ts";
+import { moversMap, moversNamed, moversPosition, readJourney } from "../shared/places/journey.ts";
+import { placedPosition, positionOf, regionsOf } from "../shared/places/positions.ts";
+import { kindOf, type Measures, type Roads, roadsOf, travellingParty } from "../shared/places/roads.ts";
 import type { PlaceSight } from "./place.ts";
 
 /** A point of a map, in km east and north of its centre; with the map it is on, by the place that holds it, none for the main map (POS-8). */

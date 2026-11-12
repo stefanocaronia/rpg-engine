@@ -33,11 +33,11 @@ import {
     runElsewhere,
     writeImportState,
 } from "../../importer/index.ts";
-import { installedAdventures } from "../shared/adventures.ts";
-import { campaignMode } from "../shared/mode.ts";
-import { situationPart } from "../shared/parts.ts";
-import { newDatedLogEntry } from "../shared/time.ts";
-import { campaignSystem, campaignWorld } from "../shared/world.ts";
+import { installedAdventures } from "../shared/books/adventures.ts";
+import { campaignMode } from "../shared/campaign/mode.ts";
+import { situationPart } from "../shared/campaign/parts.ts";
+import { campaignSystem, campaignWorld } from "../shared/campaign/world.ts";
+import { newDatedLogEntry } from "../shared/time/time.ts";
 import { isImportRunning, runImport, stopImport, writingState } from "./run.ts";
 
 interface ImportResult
@@ -147,55 +147,6 @@ export const importCommand = defineCommand({
     format: (result) => [recognizedText(result.recognized), helperText(result.helper), importText(result)].filter((part) => part !== "").join("\n\n"),
 });
 
-/** The import as the master reads it: how far it is, what to tell the player, and what comes next. */
-export function importText(result: ImportResult): string
-{
-    const { state } = result;
-    const pages = Object.entries(result.pages).map(([type, count]) => `${count} ${type}`).join(", ");
-
-    if (result.cancelled === true) {
-        return `The import of ${state.title} is dropped, with what it wrote.`;
-    }
-
-    if (result.piece !== undefined) {
-        return chatPieceText(state, result.piece);
-    }
-
-    if (state.failed !== undefined && !result.running) {
-        const said = state.failed.replace(/\.$/, "");
-        return `The import of ${state.title} stopped: ${said}.${/call import|cancel/i.test(said) ? "" : " Call import to try again from there."}`;
-    }
-
-    if (state.phase === "reading") {
-        const minutes = Math.max(1, (state.pieces - state.done) * 4);
-        return `Importing ${state.title}: piece ${Math.min(state.done + 1, state.pieces)} of ${state.pieces} being read${result.pictures === undefined ? "" : `, ${result.pictures} pictures found`}; `
-            + `about ${minutes} minutes more, by itself${
-                pages === "" ? "" : `; pages so far: ${pages}`
-            }. Tell the player, then end your turn and go on with them, the setup or the character: never wait for it in your turn; status says when it is ready.`;
-    }
-
-    if (state.phase === "choosing") {
-        const starts = result.starts.map((start) => `${start.number}. ${start.title}\n${start.text}`).join("\n\n");
-        return `${state.title} is read (${pages}). Ask the player whether they have read it; give each start its Back cover lines if not, its Reader line if so, `
-            + `and the character they would play. Then call import with the start they choose and the character they play.\n\n${starts}`;
-    }
-
-    if (state.phase === "writing") {
-        return `Setting ${state.title} at start ${state.start}: step ${Math.min(state.done + 1, state.steps?.length ?? 1)} of ${state.steps?.length ?? 1}, by itself; `
-            + "status says when it is ready.";
-    }
-
-    return `${state.title} is ready: ${pages}, in ${result.adventure}. Install it with package install "${result.adventure}" when the story reaches it, at the setup if it is the start. `
-        + "What its pages say of the world stays so: find before you invent, and invent only where they are silent."
-        + (result.invented === undefined ? "" : `\nTell the player what was invented to fill the gaps:\n${result.invented}`)
-        + followedText(state.followed)
-        + (state.dated === undefined
-            ? ""
-            : state.dated.set
-            ? `\nThe story starts on ${state.dated.date}, as the book's: calendar-start is set to it.`
-            : `\nThe book starts on ${state.dated.date}: ask the player whether the story should, then config calendar-start ${state.dated.date}.`);
-}
-
 /** An import under way as the dashboard tells it (D-491 (11)): what it is doing, and how far; while its document is opened, its pages read by the OCR. */
 export interface ShownImport
 {
@@ -272,6 +223,55 @@ export function importLine(root: string): string
     // After the MCP server started again, nothing runs it until import is called.
     const told = `Import of ${state.title}: ${state.phase}, ${state.done} of ${state.phase === "reading" ? state.pieces : (state.steps?.length ?? 1)} done`;
     return running ? `${told}.` : `${told}; call import to go on.`;
+}
+
+/** The import as the master reads it: how far it is, what to tell the player, and what comes next. */
+function importText(result: ImportResult): string
+{
+    const { state } = result;
+    const pages = Object.entries(result.pages).map(([type, count]) => `${count} ${type}`).join(", ");
+
+    if (result.cancelled === true) {
+        return `The import of ${state.title} is dropped, with what it wrote.`;
+    }
+
+    if (result.piece !== undefined) {
+        return chatPieceText(state, result.piece);
+    }
+
+    if (state.failed !== undefined && !result.running) {
+        const said = state.failed.replace(/\.$/, "");
+        return `The import of ${state.title} stopped: ${said}.${/call import|cancel/i.test(said) ? "" : " Call import to try again from there."}`;
+    }
+
+    if (state.phase === "reading") {
+        const minutes = Math.max(1, (state.pieces - state.done) * 4);
+        return `Importing ${state.title}: piece ${Math.min(state.done + 1, state.pieces)} of ${state.pieces} being read${result.pictures === undefined ? "" : `, ${result.pictures} pictures found`}; `
+            + `about ${minutes} minutes more, by itself${
+                pages === "" ? "" : `; pages so far: ${pages}`
+            }. Tell the player, then end your turn and go on with them, the setup or the character: never wait for it in your turn; status says when it is ready.`;
+    }
+
+    if (state.phase === "choosing") {
+        const starts = result.starts.map((start) => `${start.number}. ${start.title}\n${start.text}`).join("\n\n");
+        return `${state.title} is read (${pages}). Ask the player whether they have read it; give each start its Back cover lines if not, its Reader line if so, `
+            + `and the character they would play. Then call import with the start they choose and the character they play.\n\n${starts}`;
+    }
+
+    if (state.phase === "writing") {
+        return `Setting ${state.title} at start ${state.start}: step ${Math.min(state.done + 1, state.steps?.length ?? 1)} of ${state.steps?.length ?? 1}, by itself; `
+            + "status says when it is ready.";
+    }
+
+    return `${state.title} is ready: ${pages}, in ${result.adventure}. Install it with package install "${result.adventure}" when the story reaches it, at the setup if it is the start. `
+        + "What its pages say of the world stays so: find before you invent, and invent only where they are silent."
+        + (result.invented === undefined ? "" : `\nTell the player what was invented to fill the gaps:\n${result.invented}`)
+        + followedText(state.followed)
+        + (state.dated === undefined
+            ? ""
+            : state.dated.set
+            ? `\nThe story starts on ${state.dated.date}, as the book's: calendar-start is set to it.`
+            : `\nThe book starts on ${state.dated.date}: ask the player whether the story should, then config calendar-start ${state.dated.date}.`);
 }
 
 async function startImport(root: string, context: Context, document: string, title: string | undefined): Promise<ImportResult>
@@ -355,7 +355,8 @@ function nextPiece(root: string, context: Context, folder: string, state: Import
         dropDocumentText(folder);
     }
 
-    const instructions = situationPart("import", context, campaignSystem(root, context)).replaceAll("{title}", state.title).replaceAll("{language}", readSettings(root).language ?? "en");
+    // Filled by parts, never with replaceAll's own marks: a title with $& in it stays as it is.
+    const instructions = situationPart("import", context, campaignSystem(root, context)).split("{title}").join(state.title).split("{language}").join(readSettings(root).language ?? "en");
     return { ...resultOf(root, folder, next), piece: { number: done, text, instructions, pictures: join(folder, "document", "pictures") } };
 }
 

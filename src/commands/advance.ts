@@ -4,13 +4,13 @@ import type { Context } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { addDuration, formatDuration, formatGameDate, type GameDate, lastGameDay, minutesBetween, readDuration, readGameDate } from "../time/index.ts";
-import { calendarText, nextAfter, passedLines, passTime, type TimePassed, unreadNotes } from "./shared/advance.ts";
-import { newStateChecks } from "./shared/checks.ts";
-import { dueEvents, dueText, isDated, plannedEvents } from "./shared/events.ts";
+import { newStateChecks } from "./shared/campaign/checks.ts";
+import { firstInChat } from "./shared/campaign/parts.ts";
+import { campaignWorld } from "./shared/campaign/world.ts";
 import { timePassedLines } from "./shared/packages/code.ts";
-import { firstInChat } from "./shared/parts.ts";
-import { newDatedLogEntry, presentDate } from "./shared/time.ts";
-import { campaignWorld } from "./shared/world.ts";
+import { calendarText, nextAfter, passedLines, passTime, type TimePassed, unreadNotes } from "./shared/time/advance.ts";
+import { dueEvents, dueText, isDated, plannedEvents } from "./shared/time/events.ts";
+import { newDatedLogEntry, presentDate } from "./shared/time/time.ts";
 
 export const advance = defineCommand({
     name: "advance",

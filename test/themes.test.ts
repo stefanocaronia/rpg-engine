@@ -195,7 +195,7 @@ describe("a theme as the engine reads it", () => {
 
 describe("the icons a theme draws anew", () => {
     it("are icons the page has, by its own names", () => {
-        const page = readFileSync(fileURLToPath(new URL("../src/dashboard/icons.tsx", import.meta.url)), "utf8");
+        const page = readFileSync(fileURLToPath(new URL("../src/dashboard/parts/icons.tsx", import.meta.url)), "utf8");
         const paths = page.slice(page.indexOf("const iconPaths"));
         const names = [...paths.slice(0, paths.indexOf("\n};")).matchAll(/^ {4}([a-zA-Z]+):/gm)].map((match) => match[1]);
         expect(names.length).toBeGreaterThan(10);
