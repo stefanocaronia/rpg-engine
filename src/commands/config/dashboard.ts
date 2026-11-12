@@ -1,5 +1,5 @@
 // The player's settings and the setup's questions as the dashboard shows them (D-341, D-370)
-import { type CampaignSettings, customLevel, customLevels, customSettings, lastChoices, type LeveledSetting, readOneSetting, readSettings } from "../../campaign/index.ts";
+import { type CampaignSettings, customLevel, customLevels, customSettings, lastChoices, type LeveledSetting, listSettingNames, readOneSetting, readSettings, setupSettingNames } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { comparableText } from "../../core/text.ts";
 import { claudeSays, codexSays } from "../../helpers/index.ts";
@@ -26,7 +26,7 @@ export interface PlayerSetting
     question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
     note?: { text: string; fix?: true; };
-    /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
+    /** A setting of the player's own words, as the author the master writes like, the longest its text may be (D-395); for a list, each item's (D-563). */
     most?: number;
     /** The items of a custom difficulty or rigor, each with its level, one of the choices (T-132). */
     entries?: { name: string; value: string; }[];
@@ -117,7 +117,9 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
                 return customItems(root, context, custom, words);
             }
 
-            const written = settings[name] ?? words.unset;
+            // A list the setup never asks holds nothing yet, never unanswered (MOD-3).
+            const empty = listSettingNames.includes(name) && !setupSettingNames.includes(name) ? [] : undefined;
+            const written = settings[name] ?? words.unset ?? empty;
             const value = name === "between-sessions" && typeof written === "string" ? shownBetweenSessions(written) : written;
             const choices = words.values?.map((one) => ({ value: one, ...(words.means?.[one] === undefined ? {} : { means: words.means[one] }) }));
             return [{

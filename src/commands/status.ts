@@ -21,6 +21,7 @@ import { adventureUnderWay, isTickedOpenQuest, openQuestText } from "./shared/ca
 import { interruptedLoad } from "./shared/campaign/saves.ts";
 import { campaignSystem, campaignWorld, countedByGame, playedSettingValue, systemInStatus } from "./shared/campaign/world.ts";
 import { livingMood, masterMood } from "./shared/characters/moods.ts";
+import { quotedOrders } from "./shared/characters/orders.ts";
 import { installableSystems } from "./shared/packages/catalog.ts";
 import { packageCodeProblems } from "./shared/packages/code.ts";
 import { extensionsLine } from "./shared/packages/extensions.ts";
@@ -177,6 +178,8 @@ export const status = defineCommand({
             houseRules: bookTitles(readRuleBook(join(root, houseRulesFolderName), "house rules")),
             players: players.map(member),
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
+            // The player's standing orders to the companions, in play, for those who come later too (D-563).
+            orders: mode === "play" ? settings.orders ?? [] : [],
             dashboard: context.dashboard,
             // The chat's first status opens with the dashboard, for the master to offer it in their first answer (D-353).
             offerDashboard: offerDashboard(context),
@@ -247,6 +250,9 @@ export const status = defineCommand({
             ...(result.players.length === 0 ? [`No player character yet.${sheetNote(result.sheet)}`] : result.players.map((member) => `PC: ${member.name}${whereabouts(member)}${memberCounters(member)}`)),
             ...result.around.map((one) => `Around ${one.who.join(" and ")}: ${one.text}`),
             namesLine("Companions", result.companions.map(companion), "find text companion, type character", "; "),
+            result.orders.length === 0
+                ? ""
+                : `Standing orders, the player's to the companions (they follow them as their pages allow, and break one only in the open): ${quotedOrders(result.orders)}.`,
             result.dashboard === undefined || result.offerDashboard ? "" : `Dashboard: ${result.dashboard}.`,
             result.pictures ?? "",
             result.importing,

@@ -86,6 +86,24 @@ export function checkFieldWrite(
     checkEventFields(world, existing, type, fields);
 }
 
+/**
+ * The checks of write on the fields of the campaign's layer over a page of its game system (SYS-11): their names and values, the lists the system closes, and no copies of
+ * the page in the open scene (INH-10). A counter takes its new value here, as the system's page would be written: the layer is the master's work on the world, not play.
+ */
+export function checkLayerFieldWrite(world: World, system: GameSystem | undefined, open: ReturnType<typeof readOpenScene>, page: Page, fields: FieldChange): void
+{
+    checkFieldNames(page.type, fields);
+    checkFieldChange(page.type, fields);
+    checkValues(fields);
+    checkListValues(system, fields.set ?? {});
+    checkListValues(system, fields.add ?? {});
+    checkLists(world, page, fields);
+
+    if (changedFieldNames(fields).length > 0) {
+        checkNotCopied(world, open, page);
+    }
+}
+
 /** Effects change only with the effect command, which works out when they end and says what they change (EFF-6). */
 export function checkNoEffects(change: FieldChange, page: Page | undefined): void
 {

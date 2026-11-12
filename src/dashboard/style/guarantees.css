@@ -203,6 +203,25 @@
         translate: 0 50% !important;
     }
 
+    /* On a phone a hidden tip takes no room, as one wider than the window would widen the page with the text zoomed; shown, it wraps in the window. */
+    @media (max-width: 600px) {
+        [data-tip]:not(:focus-visible)::before {
+            display: none !important;
+        }
+
+        [data-tip]::before {
+            width: max-content !important;
+            max-width: calc(100vw - 32px) !important;
+            white-space: pre-line !important;
+        }
+    }
+
+    @media (max-width: 600px) and (hover: hover) {
+        [data-tip]:hover::before {
+            display: block !important;
+        }
+    }
+
     /* The title takes the focus for a screen reader to read it; no ring, as it is no control. */
     .reader-head h3:focus {
         outline: none !important;

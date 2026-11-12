@@ -12,7 +12,7 @@ import { comparableText, linkTargetName } from "../../../core/text.ts";
 import { isNewerVersion } from "../../../core/version.ts";
 import { shortName } from "../../../extensions/index.ts";
 import { findImage, imageFileName, largestImage } from "../../../images/index.ts";
-import { locate, type Page, pageNamed, pageNamedQuietly, readFields, splitPageFile, textsIn, type World, worldFolderName } from "../../../pages/index.ts";
+import { layersFolderName, locate, type Page, pageNamed, pageNamedQuietly, readFields, splitPageFile, textsIn, type World, worldFolderName } from "../../../pages/index.ts";
 import { readRuleBook, ruleSections } from "../../../rules/index.ts";
 import { unpackFiles } from "../../../saves/index.ts";
 import { formatGameDate, readGameDate } from "../../../time/index.ts";
@@ -61,7 +61,8 @@ export interface AdventureExported
     file: string;
     from: string;
     pages: number;
-    leftOut: { characters: string[]; adventures: string[]; };
+    /** The player characters, the adventures installed, and the pages of the game system the campaign's layers change (SYS-11), which an adventure does not carry. */
+    leftOut: { characters: string[]; adventures: string[]; layers: string[]; };
     opening?: string;
     /** The pages written from the player's documents (source:), when no license was given: the zip keeps them to the player. */
     sourced?: string[];
@@ -254,7 +255,11 @@ export function exportAdventure(root: string, context: Context, credits: { autho
         file,
         from,
         pages: Object.keys(kept).filter((path) => path.startsWith(`${worldFolderName}/`)).length,
-        leftOut: { characters: players.map((page) => basename(page.path, ".md")), adventures },
+        leftOut: {
+            characters: players.map((page) => basename(page.path, ".md")),
+            adventures,
+            layers: Object.keys(held).filter((path) => path.startsWith(`${layersFolderName}/`) && path.endsWith(".md")).map((path) => basename(path, ".md")),
+        },
         ...(sourced.length > 0 && credits.license === undefined ? { sourced } : {}),
         ...(opening === undefined ? {} : { opening: basename(opening.path, ".md") }),
     };

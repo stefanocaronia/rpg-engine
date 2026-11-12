@@ -1152,8 +1152,12 @@
         white-space: nowrap;
     }
 
-    /* On a phone the notice says whose turn alone: the round is on the Scene. */
+    /* On a phone the notice says whose turn alone: the round is on the Scene; Go to the scene goes under it when the row cannot hold both. */
     @media (max-width: 600px) {
+        .turn-notice {
+            flex-wrap: wrap;
+        }
+
         .turn-notice-round {
             display: none;
         }

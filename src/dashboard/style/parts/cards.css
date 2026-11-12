@@ -54,6 +54,15 @@
         white-space: nowrap;
     }
 
+    /* On a phone a title that does not fit, as one long word with the text zoomed, wraps and breaks rather than widen the page. */
+    @media (max-width: 600px) {
+        summary :is(h3, .rolls-title),
+        .table-card > summary h2 {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+    }
+
     /* A card of the table: no padding of its own, so its header runs to its edges, and its list touches the header's rule. */
     .table-card > summary {
         margin: 0;

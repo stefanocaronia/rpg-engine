@@ -197,5 +197,10 @@
         .help-index {
             display: none;
         }
+
+        /* An address in a line breaks where it must, with the text zoomed too; in a table and a block of code it stays whole, as they scroll. */
+        .guide :not(pre, td) > code {
+            overflow-wrap: anywhere;
+        }
     }
 }

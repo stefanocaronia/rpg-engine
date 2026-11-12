@@ -6,9 +6,10 @@ import { closeCard } from "../src/dashboard/api.ts";
 import type { Asked, AskedCard, WidgetShows, WidgetTrack } from "../src/dashboard/data.ts";
 import { cardLayout, inCard, nextPackCard, type PackCard, trackChanges } from "../src/dashboard/packages/card.ts";
 // The page's .tsx modules are typed by the page's own tsconfig: loaded by their address, with their functions' types.
-const { cardsIn, ownPageIn, navPagesOf } = await import(new URL("../src/dashboard/packages/page-code.tsx", import.meta.url).href) as {
+const { cardsIn, ownPageIn, ownPageMissing, navPagesOf } = await import(new URL("../src/dashboard/packages/page-code.tsx", import.meta.url).href) as {
     cardsIn: (loaded: object | Error | undefined, page: string) => [string, { page: string; order?: number; }][] | Error;
     ownPageIn: (loaded: object | Error | undefined, page: string) => object | Error | undefined;
+    ownPageMissing: (page: string | undefined, modulesRead: boolean, module: object | undefined, loaded: object | Error | undefined) => boolean;
     navPagesOf: (loaded: { module: { package: string; }; loaded: object | Error | undefined; }[]) => object[];
 };
 
@@ -169,6 +170,17 @@ describe("a package's page code that did not load (D-510 (5), D-511)", () => {
         expect(cardsIn(undefined, "sheet")).toEqual([]);
         expect(ownPageIn(loaded, "deck")).toBe(loaded.pages.deck);
         expect([ownPageIn(loaded, "other"), ownPageIn(undefined, "deck")]).toEqual([undefined, undefined]);
+    });
+
+    it("tells an address of a page no package has, once the modules are read, never while its module comes or when it broke", () => {
+        const module = { package: "charms" };
+        expect([ownPageMissing(undefined, false, undefined, undefined), ownPageMissing("deck", true, undefined, undefined), ownPageMissing("other", true, module, loaded)]).toEqual([true, true, true]);
+        expect([ownPageMissing("deck", false, undefined, undefined), ownPageMissing("deck", true, module, undefined), ownPageMissing("deck", true, module, loaded), ownPageMissing("deck", true, module, broken)]).toEqual([
+            false,
+            false,
+            false,
+            false,
+        ]);
     });
 });
 

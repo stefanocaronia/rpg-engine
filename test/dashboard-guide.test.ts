@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { anchorOf, markdownBlocks, plainText, previewOf } from "../src/dashboard/help/blocks.ts";
 import { shippedLanguages } from "../src/dashboard/text.ts";
-import { englishGuide, guideIn, guideMarks, guideParts, guidePlan, guideShape, isUpToDate, markOf, marksOf, paragraphsOf, translationHead } from "./i18n/guide.ts";
+import { englishGuide, guideIn, guideMarks, guideParts, guidePlan, guideShape, isUpToDate, markOf, marksOf, paragraphsOf, planNamesAgain, settingNames, translationHead, unlikeSettingNames } from "./i18n/guide.ts";
 
 describe("the guide's markdown (D-413)", () => {
     it("reads headings with their icon, paragraphs, lists, tables, quotes and code, and leaves comments out", () => {
@@ -76,6 +76,24 @@ describe("the guide in every language (D-413)", () => {
         expect(stale).toEqual([]);
         const unlike = shippedLanguages.filter((language) => guideShape(guideIn(language) ?? "") !== guideShape(english));
         expect(unlike).toEqual([]);
+    });
+
+    it("names each setting in bold as the page does in every language, bent only by its grammar (T-195): npm run translate asks again what does not", () => {
+        expect(settingNames()).toEqual(expect.arrayContaining(["Difficulty", "Premise", "Write like", "Standing orders", "The master's style"]));
+        const unlike = shippedLanguages.flatMap((language) => {
+            const phrases = JSON.parse(readFileSync(new URL(`../src/dashboard/i18n/${language}.json`, import.meta.url), "utf8")) as Record<string, string>;
+            return unlikeSettingNames(language, english, guideIn(language) ?? "", phrases).map((one) => `${language}: ${one.name} is ${one.page} on the page, not in [${one.guide.join(", ")}]`);
+        });
+        expect(unlike).toEqual([]);
+    });
+
+    it("tells a setting's name bent by grammar from another word, and asks again only the paragraph that names it otherwise", () => {
+        const english = "# Guide\n\n## One\n\nThe **premise** and the **length**.\n\nThe **Dice**.";
+        const own = `${translationHead(guideMarks(english))}\n# Guida\n\n## Uno\n\nLa **premisy** e la **pituus**.\n\nI **Dadi**.\n`;
+        const unlike = unlikeSettingNames("pl", english, own, { Premise: "Premisa", Length: "Długość", Dice: "Dadi" });
+        expect(unlike.map((one) => [one.name, one.part, one.paragraph])).toEqual([["Length", 1, 1]]);
+        expect(unlikeSettingNames("ar", english, own.replace("**Dadi**", "**الرفاق**"), { Dice: "رفاق", Premise: "premisy", Length: "pituus" })).toEqual([]);
+        expect(planNamesAgain(guidePlan(english, own), unlike)[1]).toEqual({ paragraphs: ["## Uno", undefined, "I **Dadi**."], context: guideParts(own)[1] });
     });
 
     it("reads a translation's parts as the English's: its lead, then each part with its heading", () => {

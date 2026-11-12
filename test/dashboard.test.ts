@@ -162,6 +162,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             "effort",
             "lines",
             "veils",
+            "orders",
             "language",
             "ruleset",
             "harshness",
@@ -1149,6 +1150,20 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
 
         throw new Error("Nothing was asked on the page.");
     }
+
+    it("shows the player's standing orders, adds and takes them off from the page, the master hearing what each means, and refuses one past the most (D-563)", async () => {
+        const orders = async () => (JSON.parse((await send("GET", "/api/view?settings=true")).body) as { settings: PlayerSetting[]; }).settings.find((one) => one.name === "orders");
+        expect(await orders()).toMatchObject({ items: [], most: 120 });
+        expect((await send("POST", "/api/config", { setting: "orders", add: "Lasciatene sempre uno vivo" })).status).toBe(202);
+        expect((await orders())?.items).toEqual(["Lasciatene sempre uno vivo"]);
+        expect(dashboard.news().lines).toEqual(['The player added "Lasciatene sempre uno vivo" to orders on the dashboard: the companions keep it from now on, as their pages allow.']);
+        expect((await send("POST", "/api/config", { setting: "orders", remove: "Lasciatene sempre uno vivo" })).status).toBe(202);
+        expect((await orders())?.items).toEqual([]);
+        expect(dashboard.news().lines).toEqual(['The player took "Lasciatene sempre uno vivo" off orders on the dashboard: the companions no longer keep it.']);
+        const long = await send("POST", "/api/config", { setting: "orders", add: "a".repeat(121) });
+        expect(long.status).toBe(400);
+        expect(long.body).toContain("at most 120 characters");
+    });
 
     it("changes the player's settings from the page as config does, logged as the player's, and gives the master each change once (D-341)", async () => {
         expect((await send("POST", "/api/config", { setting: "difficulty", value: "easy" })).status).toBe(202);

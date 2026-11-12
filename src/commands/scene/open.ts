@@ -9,6 +9,7 @@ import { metPictureNote, picturesNote } from "../shared/campaign/images.ts";
 import { campaignMode, checklistLine } from "../shared/campaign/mode.ts";
 import { situationPart } from "../shared/campaign/parts.ts";
 import { campaignSystem, missingSystemHint, systemPagesHint } from "../shared/campaign/world.ts";
+import { quotedOrders, standingOrders } from "../shared/characters/orders.ts";
 import { surroundings, surroundingsText } from "../shared/places/environment.ts";
 import { offMapNote } from "../shared/places/grids.ts";
 import { readJourney } from "../shared/places/journey.ts";
@@ -82,7 +83,7 @@ export function openNew(root: string, world: World, input: SceneInput, context: 
         around,
         part,
         moved: brought.moved,
-        notes: [...brought.notes, ...(picture === undefined ? [] : [picture]), ...(met === undefined ? [] : [met]), ...(offMap === undefined ? [] : [offMap])],
+        notes: [...brought.notes, ...(picture === undefined ? [] : [picture]), ...(met === undefined ? [] : [met]), ...(offMap === undefined ? [] : [offMap]), ...ordersNote(root, characters)],
     };
 }
 
@@ -105,7 +106,8 @@ export function addTo(root: string, world: World, input: SceneInput, context: Co
     const brought = bringParty(root, context, world, characters, place, current.type);
     const added = [...characters.map((page) => page.name), ...Object.keys(copies)];
     const changes: [string[], unknown][] = [[["with"], [...current.with, ...characters.map((page) => `[[${page.name}]]`)]], ...Object.entries(copies).map(([name, copy]): [string[], unknown] => [["copies", name], copy])];
-    const inScene = [...current.with.flatMap((link) => findPage(world, parsePageReference(link).name) ?? []), ...characters];
+    const there = current.with.flatMap((link) => findPage(world, parsePageReference(link).name) ?? []);
+    const inScene = [...there, ...characters];
     const seen = seenOf(world, input.seen, inScene, { ...current.copies, ...copies });
 
     if (seen !== undefined) {
@@ -131,8 +133,20 @@ export function addTo(root: string, world: World, input: SceneInput, context: Co
         ordered: current.order !== undefined,
         ...(seen === undefined ? {} : { seen }),
         moved: brought.moved,
-        notes: [...brought.notes, ...(met === undefined ? [] : [met]), ...(offMap === undefined ? [] : [offMap])],
+        notes: [...brought.notes, ...(met === undefined ? [] : [met]), ...(offMap === undefined ? [] : [offMap]), ...(there.some(isCompanion) ? [] : ordersNote(root, characters))],
     };
+}
+
+/** The player's standing orders, when a companion enters among those given (D-563); none without orders or a companion. */
+function ordersNote(root: string, entering: Page[]): string[]
+{
+    const orders = entering.some(isCompanion) ? standingOrders(root) : [];
+    return orders.length === 0 ? [] : [`Standing orders to the companions: ${quotedOrders(orders)}.`];
+}
+
+function isCompanion(page: Page): boolean
+{
+    return page.fields.role === "companion";
 }
 
 /**

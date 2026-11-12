@@ -394,6 +394,8 @@ headline: "{classes} di livello {level}"
 
 A campaign's pages work as a system's: a class in `world/topics/` counts in `sum(classes)`, a creature with `creature: "[[Elf]]"` is a new race, an item with `item: "[[Longsword]]"` a named sword. A campaign page cannot take a system page's name.
 
+A campaign changes a system page itself, for all of it, with a layer: `write Goblin, layer, set hp=12/12` writes `layers/<system>/world/creatures/Goblin.md`, at the page's own path, with only the fields and sections that differ; the world reads the page with the layer over it, still the system's, and what derives from it follows. `unset`, or an empty text, gives back the system's; a layer left empty goes. A layer changes neither the name, the type, the fields no page inherits, nor gives a kind uses; `validate` names a layer over no page, as after a change of version. An adventure exported does not carry the layers.
+
 `campaign.yaml` adds to `fields`, `tables`, `computed`, `counters`, `recipes`, `status-line`, `travel`, `values` and `condition-icons`, with `config`; an entry with a system's name replaces it, but the names in `values` join the system's list, as a language of the campaign's world:
 
 ```text

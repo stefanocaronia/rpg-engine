@@ -3,6 +3,7 @@ import { firstSentence, withArticle } from "../../core/text.ts";
 import { isPlayerCharacter, locate, type Page, pagesWithNameOrAlias, parsePageReference, playerCharacters, type World } from "../../pages/index.ts";
 import { formatGameDate } from "../../time/index.ts";
 import { discoveredSecrets, knownIntroduction, knowsPage, scenesLivedBy } from "../shared/characters/knowledge.ts";
+import { quotedOrders, standingOrders } from "../shared/characters/orders.ts";
 import { thoughtsIn, thoughtsRule, thoughtsShown } from "../shared/characters/thoughts.ts";
 import { readOpenScene } from "../shared/scene/scene.ts";
 import { sheetText } from "../shared/sheet/sheet.ts";
@@ -22,6 +23,10 @@ export function memoryOf(sight: PlaceSight): Extract<ViewResult, { kind: "memory
 {
     const { root, context, world, knowledge } = sight;
     const self = knowledge.pc;
+    // A lone player character's player is never away.
+    const away = isPlayerCharacter(self) && self.fields.status !== "dead" && playerCharacters(world).filter((one) => one.fields.status !== "dead").length > 1;
+    // The player's standing orders, for a living companion and a player character played as one (D-563).
+    const orders = (away || self.fields.role === "companion") && self.fields.status !== "dead" ? standingOrders(root) : [];
     const own = shownPage(root, context, world, knowledge, self, true);
     const now = readPresent(root).date;
     const { scene } = readOpenScene(root);
@@ -43,8 +48,8 @@ export function memoryOf(sight: PlaceSight): Extract<ViewResult, { kind: "memory
         discovered: discoveredSecrets(world, knowledge).map((secret) => `${secret.page}#${secret.name}: ${secret.text.replace(/\s*\n\s*/g, " ")}`),
         lived: scenesLivedBy(root, world, self).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.title}${one.summary === "" ? "" : `: ${one.summary}`}`),
         ...(self.fields.role === "companion" ? { thoughts: thoughtsIn(root, world, self).slice(-thoughtsShown).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.text}`) } : {}),
-        // A lone player character's player is never away.
-        ...(isPlayerCharacter(self) && self.fields.status !== "dead" && playerCharacters(world).filter((one) => one.fields.status !== "dead").length > 1 ? { away: awayRule } : {}),
+        ...(away ? { away: awayRule } : {}),
+        ...(orders.length === 0 ? {} : { orders }),
     };
 }
 
@@ -65,6 +70,10 @@ export function memoryText(result: Extract<ViewResult, { kind: "memory"; }>): st
         list("Lived", result.lived),
         result.thoughts === undefined ? "" : thoughtsText(result.thoughts),
         result.away ?? "",
+        // Last, where it is read just before the character speaks.
+        result.orders === undefined
+            ? ""
+            : `Your party's standing orders: ${quotedOrders(result.orders)}. Keep them; if your character would balk, say so in the open rather than break one silently.`,
     ].filter((block) => block !== "").join("\n\n");
 }
 

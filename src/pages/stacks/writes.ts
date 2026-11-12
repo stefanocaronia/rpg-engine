@@ -1,8 +1,8 @@
 // What write may do to the stacks of a container's list (STK-10): count only kinds, one stack of each, whose counts change only with change.
 import { comparableText } from "../../core/text.ts";
 import { bundleOf } from "../load.ts";
-import { containerFieldOf } from "../standard-fields.ts";
-import { type Page, pageNamed, searchSystemPages, textsIn, validHoldersOf, type World } from "../world.ts";
+import { canHold, containerFieldOf } from "../standard-fields.ts";
+import { type Page, pageNamed, pagesWithNameOrAlias, searchSystemPages, systemPageNamed, textsIn, validHoldersOf, type World } from "../world.ts";
 import type { PageChange } from "../write-page.ts";
 import { countedText, countOf, readEntry } from "./entry.ts";
 import { canCount, entryKind, entryPage, goodsNamed, isKind, notKindReason, stacksOf } from "./kinds.ts";
@@ -121,7 +121,37 @@ function entryProblem(world: World, holder: Page, field: string, entry: string):
         return `"${entry}" is no stack: a stack is a link and a count from 1 up, such as write ${holder.name}, add ${field}="[[${page.name}]] 3".`;
     }
 
+    if (read.shape === "link") {
+        return missingLinkProblem(world, holder, field, read.page);
+    }
+
     return read.shape === "stack" ? countedProblem(world, holder, field, read, page) : undefined;
+}
+
+/**
+ * A link alone to no page puts nothing in a container (STK-10, D-560): a name of a kind becomes its stack; in an inventory, a new thing gets its page first. Not judged
+ * while the campaign's system is missing or not chosen, whose pages it may name (D-167).
+ */
+function missingLinkProblem(world: World, holder: Page, field: string, name: string): string | undefined
+{
+    const exists = pagesWithNameOrAlias(world, name).length > 0 || systemPageNamed(world, name) !== undefined;
+
+    if (exists || world.noSystem === true || world.missingSystem !== undefined || comparableText(name) === comparableText(holder.name)) {
+        return undefined;
+    }
+
+    if (goodsNamed(world, name) !== undefined) {
+        return missingKindMessage(world, holder, field, { page: name, count: 1 });
+    }
+
+    // A place, or a cart, may list a character or a place still to write.
+    if (canHold(holder.type, "character")) {
+        return undefined;
+    }
+
+    // No guess at a near name: a wrong kind would be worse than a page to write.
+    return `There is no page named ${name}, so [[${name}]] would put nothing in ${holder.name}: what a container lists is a page. If the system has it by another name, find shows it: `
+        + `link that name. For a new thing, write its page first, such as write "${name}", type item; then write ${holder.name}, add ${field}="[[${name}]]".`;
 }
 
 /** A count beside a link counts only a kind (STK-1, STK-10): never a page with a story of its own, nor one that is not there, which the message tells how to find or make. */

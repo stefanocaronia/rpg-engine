@@ -264,6 +264,8 @@ function exportText(result: AdventureExported): string
     const out = [
         result.leftOut.characters.length === 0 ? "" : `the player characters (${result.leftOut.characters.join(", ")})`,
         result.leftOut.adventures.length === 0 ? "" : `the adventures it installed (${result.leftOut.adventures.join(", ")})`,
+        // An adventure plays the system as it ships (SYS-11).
+        result.leftOut.layers.length === 0 ? "" : `the campaign's layers over pages of the system (${result.leftOut.layers.join(", ")}), which play as the system writes them`,
     ].filter((part) => part !== "");
     return [
         `Wrote ${result.file}: ${result.pages} pages, from ${result.from}${out.length === 0 ? "" : `, without ${out.join(" and ")}`}.`,

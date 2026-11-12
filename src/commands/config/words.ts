@@ -8,6 +8,7 @@ import {
     efforts,
     lengths,
     lethalities,
+    listLimits,
     masterRollWays,
     mentorWays,
     pictureWays,
@@ -49,6 +50,7 @@ export const playerSettingNames = [
     "effort",
     "lines",
     "veils",
+    "orders",
     "language",
 ] as const;
 
@@ -173,12 +175,19 @@ export const playerWords: Record<(typeof playerSettingNames)[number], PlayerWord
     },
     lines: { about: "what never appears in the game" },
     veils: { about: "what happens only off screen, without details" },
+    // The standing orders, always before the master: their longest item, which the page's field keeps to (D-563).
+    orders: {
+        about: "the orders you give your companions, kept until you lift one",
+        added: "the companions keep it from now on, as their pages allow",
+        takenOff: "the companions no longer keep it",
+        most: listLimits.orders?.length,
+    },
     language: { about: "the language the master plays in, and the page's too when it is translated" },
 };
 
 /**
  * What a setting of the player's is to them, its values and what each means; what the master does when an item is added to a list or taken off it, or a text
- * cleared; the value shown while it is unset, the core's own; the longest text of the player's own words.
+ * cleared; the value shown while it is unset, the core's own; the longest text of the player's own words, or of each item of a list.
  */
 export interface PlayerWords
 {

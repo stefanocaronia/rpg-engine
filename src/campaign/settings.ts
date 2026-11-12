@@ -180,6 +180,8 @@ export function changeListSetting(root: string, name: string, change: { add?: st
         }
     }
 
+    checkListLimits(setting, change.add ?? [], held.length, list.items.length);
+
     // A list emptied stays, as []: it still answers the setup (MOD-3).
     if (JSON.stringify(list.toJSON()) === before) {
         return false;
@@ -501,6 +503,7 @@ export const settingsSchema = z.object({
     ),
     lines: listSetting.describe("what never appears in the game"),
     veils: listSetting.describe("what happens only off screen, without details"),
+    orders: listSetting.describe("the player's standing orders to the companions, in their words, kept until they lift one"),
     table: listSetting.describe("the table's agreements: what the master promised about how the game is played"),
     precedents: listSetting.describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
     learned: listSetting.describe("the game's mechanics the master has explained, by their names in the system's language: explained again only when the player gets one wrong"),
@@ -528,7 +531,10 @@ export const settingsSchema = z.object({
 export const settingNames = Object.keys(settingsSchema.shape) as SettingName[];
 
 /** The settings that hold a list, changed one item at a time; none of them is ever missing in play. */
-export const listSettingNames: SettingName[] = ["lines", "veils", "table", "precedents", "learned", "library", "status-line"];
+export const listSettingNames: SettingName[] = ["lines", "veils", "orders", "table", "precedents", "learned", "library", "status-line"];
+
+/** The most items a list setting takes, and the longest each may be, where it has a limit: the player's standing orders, always before the master (D-563). */
+export const listLimits: Partial<Record<SettingName, { items: number; length: number; }>> = { orders: { items: 6, length: 120 } };
 
 /** The settings that hold entries by name, what the campaign adds to its game system (CAM-1): given or removed one entry at a time. */
 export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "counters", "recipes", "travel", "values", "condition-icons"];
@@ -573,6 +579,29 @@ function listNode(document: Document, setting: SettingName): YAMLSeq
     }
 
     return node;
+}
+
+/**
+ * Refuses an item longer than its list takes, or a list grown past its most items (D-563); one written longer by hand still reads, and still loses items.
+ * Characters are counted as a reader counts them.
+ */
+function checkListLimits(setting: SettingName, added: string[], before: number, after: number): void
+{
+    const limits = listLimits[setting];
+
+    if (limits === undefined) {
+        return;
+    }
+
+    const long = added.map((item) => [...item.trim().normalize("NFC")].length).find((length) => length > limits.length);
+
+    if (long !== undefined) {
+        throw new Error(`"${setting}" takes items of at most ${limits.length} characters, and this one has ${long}: ask the player for a shorter one. Nothing changed.`);
+    }
+
+    if (after > limits.items && after > before) {
+        throw new Error(`"${setting}" holds at most ${limits.items} items, and has ${before}: remove one the player lifted first, or ask which to drop. Nothing changed.`);
+    }
 }
 
 /** Writes campaign.yaml, if the settings are still valid; long values stay on one line. */

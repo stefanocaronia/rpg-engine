@@ -59,6 +59,7 @@ import { changedFieldNames, checkClearedCounters, checkCounters, checkFieldWrite
 import { hereFields, hereOf, placeHere, positionToWrite, writeOrigin } from "./here.ts";
 import { baseNotesOrWeight, changedNames, droppedFromBaseNotes, followersOfWrite, keepersNotes, logCounterChanges, ownValuesNote, writtenNames } from "./inheritance.ts";
 import { asAmounts, listsWithoutComputed, moneyNotesOf, oneItemLists, readFields, readListItems, withoutComputed } from "./input.ts";
+import { writeCampaignLayer } from "./layer.ts";
 import { countedTextNotes, linkNotes, questEndNotes, questEnds, storyNotes, writtenThresholdNotes } from "./notes.ts";
 import { featureSectionNotes, firstItemNotes, givenListNotes, progressionNotes, workedLimitsChange } from "./progression.ts";
 
@@ -117,6 +118,7 @@ export const write = defineCommand({
         append: z.boolean().optional().describe("add the text at the end instead of replacing"),
         secret: z.boolean().optional().describe("with a section: create it, if missing, as a secret block > [!secret] Name"),
         here: z.boolean().optional().describe("a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it"),
+        layer: z.boolean().optional().describe("change a page of the game system for the whole campaign, in a layer that holds only what differs; unset or empty text gives back the system's"),
         why: z.string().optional().describe("what the change is for, kept in the master's log"),
     }),
 
@@ -161,6 +163,11 @@ export const write = defineCommand({
 
         const moneyNotes = [...computedNotes, ...moneyNotesOf(world, reference.name, fields.set, coins, coinsProblem)];
 
+        if (input.layer === true) {
+            const layered = writeCampaignLayer(root, context, world, open, { name: reference.name, type: input.type, text: input.text, section, append: input.append, secret: input.secret, why, copy }, fields, coins);
+            return { ...layered, created: false, add: [], remove: [], notes: [...layered.notes, ...moneyNotes], problems: world.problems };
+        }
+
         if (open.scene !== undefined && copy !== undefined) {
             checkNoEffects(fields, copyPage(copy, open.scene.copies[copy]));
             const written = writeCopy(root, world, context, open.scene, copy, { type: input.type, text: input.text, section, why }, fields, coins);
@@ -172,7 +179,7 @@ export const write = defineCommand({
         // The campaign only reads the pages of its game system, and never hides one with a page of its own (SYS-4, SYS-6).
         if (existing?.system !== undefined) {
             const given = givenFields(fields.set, baseFieldOf(input.type ?? existing.type));
-            throw new Error(input.type === undefined || alwaysInList(world, existing) !== undefined ? readOnlyMessage(existing, given, world) : hidingMessage(existing, input.type, given));
+            throw new Error(input.type === undefined || alwaysInList(world, existing) !== undefined ? readOnlyMessage(existing, given, world, true) : hidingMessage(existing, input.type, given));
         }
 
         checkNoEffects(fields, existing);
@@ -182,7 +189,7 @@ export const write = defineCommand({
             const unreadable = open.problem === undefined ? "" : " The open scene in state.yaml cannot be read, so a copy in it cannot be written: validate shows how to fix it.";
             const aliased = pageNamed(world, reference.name);
             // An alias of a page of the system leads to a page that is read-only (SYS-6).
-            const readOnly = aliased?.system === undefined ? "" : ` ${readOnlyMessage(aliased).replace(/ Nothing changed\.$/, "")}`;
+            const readOnly = aliased?.system === undefined ? "" : ` ${readOnlyMessage(aliased, [], undefined, true).replace(/ Nothing changed\.$/, "")}`;
             const alias = aliased === undefined ? "" : readOnly !== "" ? ` ${reference.name} is an alias of ${aliased.name}.${readOnly}` : ` ${reference.name} is an alias of ${aliased.name}: to change that page, write ${aliased.name}.`;
             throw new Error(`There is no page named ${reference.name}${copies}.${alias} To create it, give its type: ${pageTypeNames.join(", ")}.${unreadable}${missingSystemHint(world) || systemSearchHint(world)}`);
         }

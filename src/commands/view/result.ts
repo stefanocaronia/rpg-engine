@@ -103,6 +103,8 @@ export type ViewResult =
         thoughts?: string[];
         /** For a living player character played while their player is away (D-480 (4)), the prudence it is played with. */
         away?: string;
+        /** For a living companion, or a player character played while its player is away, the player's standing orders to the companions (D-563). */
+        orders?: string[];
     }
     /** The world map as the player character knows it (VIEW-7). */
     | ({ kind: "map"; } & ShownMap)

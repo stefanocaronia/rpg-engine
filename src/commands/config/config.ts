@@ -57,6 +57,7 @@ export const config = defineCommand({
         + "Without a setting it shows them all and which are missing; with a setting alone, that one with what it is and its values; with a value it changes it. "
         + "Use it in the setup, for each setting status says is missing, and whenever the player changes one. "
         + "system is fixed once there is a player character. lines and veils change with add and remove, or value none when the player wants none. "
+        + "orders: the player's standing orders to the companions, kept until they withdraw one. "
         + "effort and ruleset are the player's: change them only when they ask. "
         + "library: the player's own books, folders or files by their full path, added once to this computer with the player's yes in a window of their computer, "
         + "then turned on in each campaign with add and off with remove; remove with computer takes one off this computer. "
@@ -287,6 +288,11 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         replaced = [...replaced, ...campaignCalendar(root, context).problems.map((problem) => `${problem.message.replace(/\.$/, "")}: ${problem.fix ?? "fix it"}.`)];
     }
 
+    // A standing order kept, with what binds it, before the master plays by it (D-563).
+    if (input.setting?.trim() === "orders" && input.add !== undefined) {
+        replaced = [...replaced, ordersKept];
+    }
+
     // A setting asked alone comes with what it is and its values, which the description leaves to it (T-64).
     const about = input.setting !== undefined && input.value === undefined && !listChange ? settingDescription(checkSettingName(input.setting)) : undefined;
 
@@ -321,6 +327,8 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         part,
     };
 }
+
+const ordersKept = "Kept until the player lifts it; the lines and veils still come first. An order for this scene only stays in the scene; when unsure, ask in one bracket.";
 
 // The settings of free words the player may leave unset again, with the value none, and all those of how the master writes (D-395).
 const freeSettingNames: SettingName[] = ["author", "style", "calendar"];

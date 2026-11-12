@@ -8,7 +8,7 @@ import { translationFolder } from "../../../core/files.ts";
 import { codeAndBase } from "../../../core/language.ts";
 import { files } from "../../../core/store.ts";
 import { textPrint } from "../../../core/text.ts";
-import { baseChain, findPage, linksIn, type Page, versionTranslations, type World } from "../../../pages/index.ts";
+import { baseChain, findPage, linksIn, type Page, systemOriginal, versionTranslations, type World } from "../../../pages/index.ts";
 import { campaignSystem, ownTranslationFolder } from "../campaign/world.ts";
 import { answerOf, isGarbled, languageName } from "./words.ts";
 
@@ -45,7 +45,8 @@ export function wantTexts(root: string, context: Context, world: World, shown: P
     const wanted = new Map<string, { path: string; name: string; body: string; }>();
 
     const add = (page: Page | undefined): void => {
-        for (const one of page === undefined ? [] : [page, ...baseChain(world, page)]) {
+        // The system's own text, never the campaign's layer over it (SYS-11): the translation is of this computer, for every campaign.
+        for (const one of page === undefined ? [] : [page, ...baseChain(world, page)].map(systemOriginal)) {
             // A page of the version of the system's rules is the version's, with a translation of its own (VER-3).
             const version = found.version !== undefined && files().exists(join(found.version.folder, one.path)) ? found.version : undefined;
             const path = version === undefined ? one.path : join(versionTranslations(version.name), one.path);

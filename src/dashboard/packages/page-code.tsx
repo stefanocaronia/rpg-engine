@@ -239,6 +239,23 @@ export function ownPageIn(loaded: LoadedModule, page: string): OwnPage | Error |
     return loaded instanceof Error ? loaded : loaded?.pages?.[page];
 }
 
+/**
+ * Whether an address of a package's page names one no package has: no package or page in it, a package the modules read have not, or its module come
+ * without that page. Never while the modules are not read or its module comes; a module that broke has its page, which says why.
+ */
+export function ownPageMissing(page: string | undefined, modulesRead: boolean, module: ShownModule | undefined, loaded: LoadedModule): boolean
+{
+    if (page === undefined) {
+        return true;
+    }
+
+    if (module === undefined) {
+        return modulesRead;
+    }
+
+    return loaded !== undefined && ownPageIn(loaded, page) === undefined;
+}
+
 /** Starts loading these page modules, so that a card of a roll finds its own there when it comes. */
 export function preloadModules(owners: PackageCode[]): void
 {

@@ -628,7 +628,7 @@ export interface PlayerSetting
     question?: string;
     /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
     note?: { text: string; fix?: true; };
-    /** A setting of the player's own words, as the author the master writes like: the longest its text may be (D-395). */
+    /** A setting of the player's own words, as the author the master writes like, the longest its text may be (D-395); for a list, each item's (D-563). */
     most?: number;
     /** The parts of a custom difficulty or rigor, each with its level, one of the choices (T-132). */
     entries?: { name: string; value: string; }[];

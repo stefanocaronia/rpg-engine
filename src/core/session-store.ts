@@ -10,9 +10,9 @@ import { FileStore, isInside, readText, wroteInCall } from "./store.ts";
 /** Tells which names change in one folder, not in the folders inside it, and when it can no longer tell: Node's fs.watch, or a fake one in the tests. */
 export type WatchFolder = (folder: string, changed: (name: string | undefined) => void, failed: () => void) => { close(): void; };
 
-// The folders of a campaign below its own that hold what is kept: its pages, its house rules and its pictures. The campaign's folder holds its settings, state
-// and log.
-const watchedTrees = ["world", "rules", "images"];
+// The folders of a campaign below its own that hold what is kept: its pages, its layers over the system's (SYS-11), its house rules and its pictures. The
+// campaign's folder holds its settings, state and log.
+const watchedTrees = ["world", "layers", "rules", "images"];
 
 // More changes than this between two calls, and a watcher on Linux may have lost some without a word: inotify keeps 16384 by default, then drops the rest.
 const tooManyChanges = 10_000;

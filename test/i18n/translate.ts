@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import { parse, parseDocument, stringify } from "yaml";
 import { fieldLabel } from "../../src/dashboard/parts/labels.ts";
 import { shippedLanguages } from "../../src/dashboard/text.ts";
-import { englishGuide, guideFolder, guideIn, guideParts, guidePlan, guideShape, isUpToDate, markOf, paragraphsOf, translationHead } from "./guide.ts";
+import { englishGuide, guideFolder, guideIn, guideParts, guidePlan, guideShape, isUpToDate, markOf, paragraphsOf, planNamesAgain, translationHead, unlikeSettingNames } from "./guide.ts";
 import { pageFolder, pagePhrases, phraseNames } from "./phrases.ts";
 
 /** A game term of the glossary: what it means on the page, the other English forms it takes, and its word in each language by code. */
@@ -351,16 +351,27 @@ function termLines(language: string, name: string, batch: Entry[]): string[]
 
 /**
  * The guide in each language (D-413): the parts a language lacks, or whose English changed whole, in one request for the language; the paragraphs whose
- * English changed in another, with their part in English and as translated now; with the page's words they name and the game's terms. The rest is kept as
- * it is, by the marks of its English. Written only when what was translated keeps the English's headings, links and code.
+ * English changed in another, with their part in English and as translated now; with the page's words they name and the game's terms. A paragraph that
+ * names a setting in bold otherwise than the page is asked again too. The rest is kept as it is, by the marks of its English. Written only when what was translated keeps the English's headings, links and code.
  */
 async function translateGuides(): Promise<void>
 {
     const english = englishGuide();
     const parts = guideParts(english);
-    const jobs = languages.map((language) => ({ language, own: guideIn(language) ?? "", plan: guidePlan(english, guideIn(language) ?? "") }));
+    // A paragraph that names a setting otherwise than the page is asked again, with the page's words.
+    const jobs = languages.map((language) => {
+        const own = guideIn(language) ?? "";
+        const unlike = unlikeSettingNames(language, english, own, readPhrases(language));
+        return { language, own, unlike: unlike.length, plan: planNamesAgain(guidePlan(english, own), unlike) };
+    });
     const stale = jobs.filter((job) => !isUpToDate(job.own, english)).length;
+    const unlike = jobs.filter((job) => job.unlike > 0).map((job) => `${job.language} ${job.unlike}`);
     console.log(`guide: ${stale === 0 ? "every language up to date" : `${stale} languages to bring up to date`}`);
+
+    if (unlike.length > 0) {
+        console.log(`guide: settings named otherwise than the page, asked again: ${unlike.join(", ")}`);
+    }
+
     await inTurn(jobs, async ({ language, own, plan }) => {
         const wholes = parts.filter((_, index) => "whole" in (plan[index] ?? {}));
         const pieces = parts.flatMap((part, index) => {
@@ -409,8 +420,9 @@ async function translatedParagraphs(language: string, pieces: { english: string;
 {
     const english = paragraphs.map((paragraph) => paragraph.text);
     const tail = [
-        "Some paragraphs of these parts changed in English. Translate only the paragraphs listed under Paragraphs, in their order, so that they read well with the",
-        `translation around them; keep its words. Answer with the translated paragraphs alone, each after a line ${paragraphMark}.`,
+        "Some paragraphs of these parts changed in English, or name a setting otherwise than the page. Translate only the paragraphs listed under Paragraphs, in",
+        "their order, so that they read well with the translation around them; keep its words, but the dashboard's as given above. Answer with the translated",
+        `paragraphs alone, each after a line ${paragraphMark}.`,
         "",
         ...pieces.flatMap((piece) => ["Part, in English:", "", piece.english, "", "The same part, as translated now from an older English:", "", piece.context, ""]),
         "Paragraphs:",
@@ -438,8 +450,13 @@ function guideRules(language: string, english: string): string[]
 {
     const name = new Intl.DisplayNames(["en"], { type: "language" }).of(language) ?? language;
     const phrases = readPhrases(language);
+    // A setting the guide names in lowercase, the premise, is the page's Premise.
+    const anyCase = new Map(Object.entries(phrases).map(([phrase, own]) => [phrase.toLowerCase(), own]));
     const marked = new Set([...english.matchAll(/\*\*([^*]+)\*\*|\*([^*]+)\*/g)].map((match) => (match[1] ?? match[2] ?? "").replace(/[.:,]$/, "")));
-    const pageWords = [...marked].flatMap((words) => (phrases[words] === undefined ? [] : [`  - ${words}: ${phrases[words]}`]));
+    const pageWords = [...marked].flatMap((words) => {
+        const own = phrases[words] ?? anyCase.get(words.toLowerCase());
+        return own === undefined ? [] : [`  - ${words}: ${own}`];
+    });
     const terms = termLines(language, name, [{ id: "guide", english }]);
     return [
         `Translate this user guide of RPG Engine, or these parts of it, into ${name} (${language}). RPG Engine lets a player play a tabletop role-playing game`,
@@ -455,7 +472,11 @@ function guideRules(language: string, english: string): string[]
         `  English, as they show it (Yes, I trust this folder; No, exit). Menu items of Windows and macOS as those systems name them in ${name}.`,
         "- The Italian terms the guide gives as examples (Classe Armatura, tiro salvezza, vantaggio) stay as they are.",
         "- Where it speaks of the player or a character, prefer words that do not mark gender.",
-        ...(pageWords.length === 0 ? [] : [`- The dashboard's own words, in bold or italic in the guide, exactly as the page shows them in ${name}:`, ...pageWords]),
+        ...(pageWords.length === 0 ? [] : [
+            `- The dashboard's own words, in bold or italic in the guide, exactly as the page shows them in ${name}, so that the player finds them there: a setting's`,
+            "  name keeps the page's words, in bold, bent only as the grammar needs (a case, an ending, an article); rewrite the sentence around it rather than the name.",
+            ...pageWords,
+        ]),
         ...(terms.length === 0 ? [] : [`- The game's terms, as players of tabletop role-playing games say them in ${name}: use these words, the same everywhere.`, ...terms]),
     ];
 }

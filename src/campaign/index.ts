@@ -24,6 +24,7 @@ export {
     entrySettingNames,
     lengths,
     lethalities,
+    listLimits,
     listSettingNames,
     mapSettingNames,
     masterRollWays,

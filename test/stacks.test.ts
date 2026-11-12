@@ -124,6 +124,42 @@ describe("STK-2, STK-10: what write counts, and how", () => {
         expect(await ok("write", "Lena", "--add", "inventory=corda di canapa")).not.toContain("count inside a text");
     });
 
+    it("refuses a link alone to no page in an inventory, with the kind its name or alias means, or the page to write first (STK-10, D-560)", async () => {
+        expect(await refused("write", "Lena", "--add", "inventory=[[Reed Darts (10)]]")).toBe(
+            'There is no page named Reed Darts (10), but it is a name of Reed Darts, counted in pieces, 10 for each bought: write Lena, add inventory="[[Reed Darts]] 10". Nothing changed.',
+        );
+        expect(await refused("write", "Lena", "--add", "inventory=[[Balestra]], [[Reed Darts (10)]]")).toBe(
+            "There is no page named Balestra, so [[Balestra]] would put nothing in Lena: what a container lists is a page. If the system has it by another name, find shows it: link that name. "
+                + 'For a new thing, write its page first, such as write "Balestra", type item; '
+                + 'then write Lena, add inventory="[[Balestra]]". There is no page named Reed Darts (10), but it is a name of Reed Darts, counted in pieces, 10 for each bought: '
+                + 'write Lena, add inventory="[[Reed Darts]] 10". Nothing changed.',
+        );
+        expect(await refused("write", "Bruna", "--type", "character", "--add", "inventory=[[Balestra]]")).toContain("There is no page named Balestra");
+        expect(await refused("show", "Bruna")).toContain("There is no page named Bruna");
+        expect(file("characters/Lena.md")).not.toContain("Balestra");
+        // Its page first, then the link; a text entry stays free.
+        await ok("write", "Balestra", "--type", "item");
+        await ok("write", "Lena", "--add", "inventory=[[Balestra]]", "--add", "inventory=balestra rotta");
+        expect(await ok("validate")).toBe("No problems.");
+    });
+
+    it("lets a place list a page still to write, unless its name is a kind's, and leaves the links alone while the system is missing or not chosen (STK-10, D-167)", async () => {
+        await ok("write", "Mulino", "--add", "contains=[[Bruna]]", "--add", "contains=[[Cantina]]");
+        expect(await refused("write", "Mulino", "--add", "contains=[[Reed Darts (10)]]")).toContain("but it is a name of Reed Darts");
+        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: fake", "system: faux"));
+        await ok("write", "Lena", "--add", "inventory=[[Balestra]]");
+        writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: faux\n", ""));
+        await ok("write", "Lena", "--add", "inventory=[[Corda]]");
+        expect(file("characters/Lena.md")).toContain("[[Corda]]");
+    });
+
+    it("tells validate of a link alone that is a kind's name, never to write a page for it (STK-13)", async () => {
+        writeFileSync(join(folder, "world", "characters", "Lena.md"), '---\nrole: companion\ninventory: ["[[Reed Darts (10)]]"]\n---\n');
+        const problems = await ok("validate");
+        expect(problems).toContain("Lena lists [[Reed Darts (10)]] in inventory, which puts nothing there: There is no page named Reed Darts (10), but it is a name of Reed Darts");
+        expect(problems).not.toContain("create Reed Darts (10)");
+    });
+
     it("takes a whole stack away by its link, or by its own count, never by another", async () => {
         expect(await refused("write", "Ettore", "--remove", "inventory=[[Rushlight]] 3")).toBe(
             "Ettore has 7 Rushlight: remove takes the whole stack, by its link [[Rushlight]]; to take 3, change Ettore, Rushlight, spend 3. Nothing changed.",

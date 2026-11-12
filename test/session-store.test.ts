@@ -180,6 +180,20 @@ describe("the store of a session", () => {
         expect(await warm("rules", "veleno ragni")).toContain("Veleni (house rule)");
     });
 
+    it("sees the campaign's layers over the system's pages, its own writes and those by hand (SYS-11)", async () => {
+        await warm("write", "Zanna", "--type", "character", "--set", "role=npc", "--set", "creature=[[Bog Hound]]");
+        expect(await warm("show", "Zanna")).toContain("grit: 9/9");
+        byHand("layers/fake/world/creatures/Bog Hound.md", "---\ngrit: 15/15\n---\n", false);
+        tell(folder, "layers");
+        expect(await warm("show", "Zanna")).toContain("grit: 15/15");
+        await warm("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        expect(await warm("show", "Zanna")).toContain("grit: 12/12");
+        byHand("layers/fake/world/creatures/Bog Hound.md", "---\ngrit: 16/16\n---\n");
+        expect(await warm("show", "Zanna")).toContain("grit: 16/16");
+        byHand("layers/fake/world/creatures/Bog Hound.md", undefined);
+        expect(await warm("show", "Zanna")).toContain("grit: 9/9");
+    });
+
     it("checks everything when a watcher names nothing, and at instructions", async () => {
         await warm("status");
         byHand("world/characters/Ennio.md", ennio("4/12"), false);

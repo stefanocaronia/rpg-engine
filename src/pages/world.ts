@@ -8,6 +8,7 @@ import type { ProgressionRule } from "../core/progression-rule.ts";
 import { files } from "../core/store.ts";
 import { comparableText, textPrint, valueNamed } from "../core/text.ts";
 import { readFields, splitPageFile } from "./file.ts";
+import { layeredPages, type LayerMark } from "./layers.ts";
 import { linkedPages, links } from "./markdown.ts";
 import { readEntry } from "./stacks/entry.ts";
 import { canHold, containerFieldOf } from "./standard-fields.ts";
@@ -41,6 +42,8 @@ export interface Page
     title?: string;
     /** A system page's text in the campaign's language, for who reads it (D-542); `body` stays the system's, which the sheet's features are read from. */
     translated?: string;
+    /** For a system page the campaign changes with a layer, what the layer changed (SYS-11): the page stays the system's. */
+    layer?: LayerMark;
 }
 
 /** Every page of a campaign, read from its world folder, and the pages of its game system. */
@@ -63,6 +66,8 @@ export interface World
     noSystem?: boolean;
     /** The campaign's rigor, which formulas read as rigor (FOR-2, SPD-3). */
     rigor?: string;
+    /** The campaign's layers that lie over no page of its system, from the campaign folder, as after a change of the rules' version (SYS-11). */
+    strayLayers?: string[];
 }
 
 /** What a game system says of itself, as the world reads it (SYS-1, SYS-8). */
@@ -141,11 +146,13 @@ export function loadWorld(
         rigor?: string;
         /** The folder of the system's pages translated on this computer into the campaign's language (D-539), where the system has no translation of its own. */
         ownTranslations?: string;
+        /** The folder of the campaign's layers over the system's pages (SYS-11), as layers/5e; without it, or when it is not there, the system's pages as they are. */
+        layers?: string;
     } = {},
 ): World
 {
     const campaign = readPages(root);
-    const { system, language, words, missingSystem, noSystem, rigor, ownTranslations } = options;
+    const { system, language, words, missingSystem, noSystem, rigor, ownTranslations, layers } = options;
 
     if (system === undefined) {
         return frozen({ root, ...campaign, language, missingSystem, noSystem, ...(rigor === undefined ? {} : { rigor }) });
@@ -153,12 +160,16 @@ export function loadWorld(
 
     const read = (folder: string, own: string | undefined): { pages: Page[]; problems: string[]; } => translatedPages(packagePages(folder, system.name), folder, system.name, language, own);
     // A version's pages translated on this computer have a folder of their own, as their text is the version's (D-539).
-    const systemPages = system.version === undefined
+    const shipped = system.version === undefined
         ? read(system.folder, ownTranslations)
         : versionPages(read(system.folder, ownTranslations), read(system.version.folder, ownTranslations === undefined ? undefined : join(ownTranslations, versionTranslations(system.version.name))));
+    // The campaign's layers last, over the version and the translations, and never kept in the maps of a process: they are the campaign's.
+    const layered = layers === undefined || files().files(join(layers, worldFolderName), (file) => /\.md$/i.test(file)).length === 0 ? undefined : withLayers(root, shipped, layers, system.fields);
+    const systemPages = layered ?? { ...shipped, stray: [] };
     const { name, title, fields, formulas, progression, itemFormulas, alwaysIn, uses, statusLine, load, lengthUnit, bonusLists, bonusWhile } = system;
     const problems = [...campaign.problems, ...systemPages.problems];
     return frozen({
+        ...(systemPages.stray.length === 0 ? {} : { strayLayers: systemPages.stray }),
         root,
         pages: campaign.pages,
         problems,
@@ -645,6 +656,15 @@ function versionPages(common: { pages: Page[]; problems: string[]; }, version: {
     const names = new Set(version.pages.map((page) => comparableText(page.name)));
     const pages = [...common.pages.filter((page) => !names.has(comparableText(page.name))), ...version.pages].sort((first, second) => (first.path < second.path ? -1 : 1));
     return { pages, problems: [...common.problems, ...version.problems] };
+}
+
+/** A system's pages with the campaign's layers in `folder` over them (SYS-11); a layer that does not read is a problem, and the page stays the system's. */
+function withLayers(root: string, read: { pages: Page[]; problems: string[]; }, folder: string, declared: Record<string, FieldKind>): { pages: Page[]; problems: string[]; stray: string[]; }
+{
+    const prefix = relative(root, folder).split(sep).join("/");
+    const layers = readPages(folder);
+    const { pages, stray } = layeredPages(read.pages, layers.pages, prefix, declared);
+    return { pages, problems: [...read.problems, ...layers.problems.map((problem) => `A layer in ${prefix}: ${problem}`)], stray };
 }
 
 /** The pages of a folder's world/, each marked with the game system it comes from, if any; a file that cannot be read is a problem, and the others still work. */

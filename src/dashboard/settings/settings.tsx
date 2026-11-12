@@ -26,6 +26,7 @@ const groups: { names: string[]; system?: true; }[] = [
     { names: ["prose", "story", "author", "style", "voices", "effort"] },
     { names: ["dice", "master-rolls", "units"], system: true },
     { names: ["lines", "veils"] },
+    { names: ["orders"] },
     { names: ["pictures", "language"] },
 ];
 
@@ -200,7 +201,7 @@ function SettingRow({ setting, off, several = false, parts, onChange }: {
                 )
                 : setting.name === "language"
                 ? <LanguageChoice value={value} labelledBy={id} describedBy={`${id}-about`} onPick={(code) => choose(code, false)} />
-                : setting.most !== undefined
+                : setting.most !== undefined && setting.items === undefined
                 ? <TextSetting setting={setting} label={id} onChange={send} />
                 : <ListSetting setting={setting} label={id} onChange={send} />}
             <div class="setting-after">
@@ -429,7 +430,7 @@ function ListSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
                 <input
                     type="text"
                     value={item}
-                    maxLength={200}
+                    maxLength={setting.most ?? 200}
                     placeholder={exampleOf(setting.name) ?? t("Add…")}
                     aria-label={t("Add to {setting}", { setting: settingLabel(setting.name) })}
                     onInput={(event) => setItem(event.currentTarget.value)}
@@ -917,7 +918,7 @@ function Segmented({ label, described, options, value, onPick }: {
 /** A group of the campaign's settings by its place, in the page's language. */
 function groupTitle(index: number): string
 {
-    return [t("The game"), t("Learning the game"), t("The master's style"), t("Dice and measures"), t("Limits"), t("Pictures and language")][index] ?? "";
+    return [t("The game"), t("Learning the game"), t("The master's style"), t("Dice and measures"), t("Limits"), t("Your companions"), t("Pictures and language")][index] ?? "";
 }
 
 /** What a list's field suggests, as an example. */
@@ -926,6 +927,7 @@ function exampleOf(name: string): string | undefined
     const examples: Record<string, string> = {
         lines: t("Add, e.g. spiders"),
         veils: t("Add, e.g. torture"),
+        orders: t("Add, e.g. leave one alive"),
         learned: t("Add what you know, e.g. Initiative"),
         author: t("An author's name"),
         style: t("e.g. third person, past tense; more dialogue"),

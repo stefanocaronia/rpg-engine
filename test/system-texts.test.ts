@@ -192,4 +192,19 @@ describe("a system's pages translated on this computer (D-539)", () => {
         expect(existsSync(ownFile(join("world", "items", "Rushlight.md")))).toBe(false);
         expect(await ok("show", "Rushlight")).toContain("Named in the campaign's language: PL:Rushlight.");
     });
+
+    it("translates the system's own text under a campaign's layer, never the layer's, as the translation is the computer's (SYS-11)", async () => {
+        // A writer that translates the headings too, as a real one does.
+        writer = fakeWriter((page) => ({ name: `PL:${page.name}`, text: page.text.replace(/^(#+) (.*)$/gm, "$1 PL $2") }));
+        context = { ...context, writer };
+        context.texts = systemTexts(context, () => undefined);
+        await ok("view", "Scout");
+        await translated();
+        const made = readFileSync(ownFile("world/topics/Scout.md"), "utf8");
+        await ok("write", "Scout#Keen Eye", "--layer", "--text", "The fens' own scouts see in the dark.");
+        await ok("view", "Scout");
+        await translated();
+        expect(writer.asked).toEqual([["Scout"]]);
+        expect(readFileSync(ownFile("world/topics/Scout.md"), "utf8")).toBe(made);
+    });
 });

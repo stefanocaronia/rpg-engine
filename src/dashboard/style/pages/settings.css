@@ -480,6 +480,11 @@
             width: 100%;
         }
 
+        /* The field gives way to Add, with the text zoomed too: its own width would widen the page. */
+        .setting-list form input {
+            width: 0;
+        }
+
         /* On a phone the values share the row. */
         .segmented {
             display: flex;

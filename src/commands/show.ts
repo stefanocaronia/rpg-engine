@@ -114,6 +114,8 @@ export const show = defineCommand({
             path: page.path,
             system: page.system,
             title: page.title,
+            // What the campaign changed of a page of its system (SYS-11).
+            layer: page.layer === undefined ? undefined : layerLine(page),
             hides: page.system === undefined && !isCopy && systemPageNamed(world, page.name) !== undefined ? world.system?.name : undefined,
             // Acolyte (background) beside the creature Acolyte: the name alone leads here (SYS-2).
             namesakes: isCopy || reference.section !== undefined ? [] : namesakes(world, page).map((other) => `${other.name}, ${other.system === undefined ? withArticle(other.type ?? "page") : systemLabel(other)}`),
@@ -180,6 +182,7 @@ export const show = defineCommand({
         const header = [
             title,
             result.title === undefined ? "" : `Named in the campaign's language: ${result.title}.`,
+            result.layer ?? "",
             result.hides === undefined ? "" : `This page hides the system ${result.hides}'s ${result.page}: links to that name lead here.`,
             result.namesakes.length === 0 ? "" : `There is also ${result.namesakes.join("; ")}: show it by that name.`,
             result.alsoCopy ? `${result.page} is also a copy in the open scene: change and write refuse both until the scene closes, which removes the copy, or the page is renamed.` : "",
@@ -214,6 +217,25 @@ export const show = defineCommand({
         return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems), notes].filter((block) => block !== "").join("\n\n");
     },
 });
+
+/** "The campaign changes it with its layer layers/5e/…: hp; the section Bite.": what a layer changed on a page of the game system (SYS-11). */
+function layerLine(page: Page): string
+{
+    const layer = page.layer;
+
+    if (layer === undefined) {
+        return "";
+    }
+
+    const changed = [
+        layer.fields.join(", "),
+        layer.introduction ? "the introduction" : "",
+        layer.sections.length === 0 ? "" : `${layer.sections.length === 1 ? "the section" : "the sections"} ${layer.sections.join(", ")}`,
+    ].filter((part) => part !== "");
+    const ignored = layer.ignored.length === 0 ? "" : ` It also writes ${layer.ignored.join(", ")}, which a layer cannot change: validate says why.`;
+    const what = changed.length === 0 ? "nothing yet" : changed.join("; ");
+    return `The campaign changes it with its layer ${layer.path}: ${what}. write ${page.name} with layer and unset, or with empty text, gives back the system's.${ignored}`;
+}
 
 /** What show says once in a chat, as play's rule on what the character knows left the instructions for it (D-530). */
 const knowsNote = "When the player asks what their character knows, remembers or has seen, answer from view, never from show, which holds what they have not found out.";

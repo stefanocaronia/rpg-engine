@@ -1,7 +1,8 @@
 // Finds the installed systems, by folder and by name, read with a campaign's layers
+import { installedFromFolder, npmPackageName } from "../core/files.ts";
 import { comparableText } from "../core/text.ts";
 import { campaignDataNames, type SystemLayer } from "./campaign-data.ts";
-import { systemFolders } from "./folders.ts";
+import { type SystemFolder, systemFolders } from "./folders.ts";
 import type { GameSystem } from "./game-system.ts";
 import { readSystem } from "./read.ts";
 
@@ -12,7 +13,7 @@ export function installedSystems(folders: string[]): GameSystem[]
 
     for (const found of systemFolders(folders)) {
         if (!systems.some((system) => comparableText(system.name) === comparableText(found.name))) {
-            systems.push(readSystem(found.folder, found.name));
+            systems.push(readInstalled(found));
         }
     }
 
@@ -67,7 +68,7 @@ export function findCampaignSystem(folders: string[], name: string, layers: Syst
         }
     }
 
-    return { system: readSystem(found.folder, found.name, kept, ruleset), refused };
+    return { system: readInstalled(found, kept, ruleset), refused };
 }
 
 /**
@@ -77,7 +78,7 @@ export function findCampaignSystem(folders: string[], name: string, layers: Syst
 export function findSystem(folders: string[], name: string, ruleset?: string): GameSystem | undefined
 {
     const found = systemFolders(folders).find((candidate) => comparableText(candidate.name) === comparableText(name.trim()));
-    return found === undefined ? undefined : readSystem(found.folder, found.name, [], ruleset);
+    return found === undefined ? undefined : readInstalled(found, [], ruleset);
 }
 
 /** The game system in this folder by the name a campaign gives it, as installed, without a version of its rules; it throws when its system.yaml does not read. */
@@ -90,4 +91,18 @@ export function systemInFolder(folder: string, name: string): GameSystem
 export function systemContentFolders(system: { folder: string; version?: { folder: string; }; }): string[]
 {
     return system.version === undefined ? [system.folder] : [system.folder, system.version.folder];
+}
+
+/** An installed system read; one npm installed that does not read says how to get its files back, which are npm's and not the player's to fix. */
+function readInstalled(found: SystemFolder, layers: SystemLayer[] = [], ruleset?: string): GameSystem
+{
+    try {
+        return readSystem(found.folder, found.name, layers, ruleset);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const fromNpm = npmPackageName(found.folder);
+        throw fromNpm === undefined || installedFromFolder(found.folder)
+            ? error
+            : new Error(`${message.replace(/\.?$/, ".")} It came from npm: install it again with package install ${fromNpm}, which brings its files back.`);
+    }
 }

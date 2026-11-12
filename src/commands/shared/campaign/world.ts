@@ -8,7 +8,7 @@ import { files, isInside } from "../../../core/store.ts";
 import { comparableText } from "../../../core/text.ts";
 import { type Extension, extensionWords } from "../../../extensions/index.ts";
 import { languagePackFor, packSystemFolder } from "../../../languages/index.ts";
-import { loadWorld, type PageType, playerCharacters, searchSystemPages, type World, worldFolderName } from "../../../pages/index.ts";
+import { layerFolder, layersFolderName, loadWorld, type PageType, playerCharacters, searchSystemPages, type World, worldFolderName } from "../../../pages/index.ts";
 import {
     type CampaignData,
     engineSettingValue,
@@ -33,7 +33,7 @@ export function campaignWorld(root: string, context: Context): World
 {
     // The same world until one of its pages, campaign.yaml or the system's pages translated on this computer change, or a folder of the packages is read again
     // whole, as after npm installed the system in the chat: in a session, across calls (D-137).
-    const from = [join(root, worldFolderName), join(root, campaignFileName), ...(context.home === undefined ? [] : [join(context.home, "systems")])].map((path) => resolve(path));
+    const from = [join(root, worldFolderName), join(root, layersFolderName), join(root, campaignFileName), ...(context.home === undefined ? [] : [join(context.home, "systems")])].map((path) => resolve(path));
     const packages = [...context.systemFolders, ...(context.extensionFolders ?? [])].map((path) => resolve(path));
     const dependsOn = (path: string): boolean => from.some((source) => source === path || isInside(source, path) || isInside(path, source)) || packages.some((folder) => folder === path || isInside(path, folder));
     return files().remember(`world ${resolve(root)}`, dependsOn, () => {
@@ -45,6 +45,8 @@ export function campaignWorld(root: string, context: Context): World
             system,
             language,
             ...(own === undefined ? {} : { ownTranslations: own }),
+            // The campaign's layers over the pages of its system (SYS-11).
+            ...(system === undefined ? {} : { layers: layerFolder(root, system.name) }),
             words: campaignSystemWords(root, context),
             missingSystem: system === undefined ? named : undefined,
             noSystem: named === undefined,

@@ -110,6 +110,15 @@ export function installedFromFolder(folder: string): boolean
     }
 }
 
+/** The name npm installed a package by, as @scope/name from node_modules/@scope/name; undefined for a folder that is no package of npm's own folder. */
+export function npmPackageName(folder: string): string | undefined
+{
+    const parts = resolve(folder).split(sep);
+    const name = parts.slice(parts.lastIndexOf("node_modules") + 1);
+    const fits = parts.includes("node_modules") && (name.length === 1 || (name.length === 2 && name[0].startsWith("@")));
+    return fits ? name.join("/") : undefined;
+}
+
 /**
  * The packages the player installed in a folder of npm's, as the package.json beside it lists them; undefined where there is none, as for the engine's own
  * systems or a test's folder.

@@ -26,6 +26,7 @@ export {
     uniquePage,
     writtenFieldName,
 } from "./inheritance.ts";
+export { layeredPage, layeredPages, layerFolder, type LayerMark, layersFolderName, systemOriginal } from "./layers.ts";
 export { carriedWeight, type LoadRule, weightUnit } from "./load.ts";
 export { type MapField, mapKey, mapOf, mapProblems, type PlaceMap, readMapField, sameFrame } from "./maps.ts";
 export {
@@ -90,4 +91,5 @@ export {
     withPage,
     type World,
 } from "./world.ts";
+export { type LayerWrite, writeLayer } from "./write-layer.ts";
 export { checkFieldChange, type PageChange, writePage } from "./write-page.ts";

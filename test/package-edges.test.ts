@@ -1,7 +1,7 @@
 // Packages at their edges, as the review of 28 October tried them by hand, in npm's real layout, where a package.json beside node_modules lists what is
-// installed: a system that breaks once played, one without a scope that does not read, the yes's text with a long path and author, the host's form with
+// installed: a system that breaks once played, from npm or an author's folder, one without a scope that does not read, the yes's text with a long path and author, the host's form with
 // marks that turn text around, another's skies beside ours, a new version whose extension.yaml does not read, a package that says it is another.
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
@@ -21,11 +21,59 @@ describe("packages at their edges, in npm's real layout", () => {
             const ran = await runCommandLine([command], context);
             expect(ran.exitCode).toBe(1);
             expect(ran.output).toContain(`The game system later cannot be read, because ${file} is not valid: system.yaml is not valid YAML; fix it by hand:`);
+            // Its file is npm's, not the player's: the remedy that works is installing it again.
+            expect(ran.output).toContain("It came from npm: install it again with package install @test/system-later, which brings its files back.");
             expect(ran.output).not.toMatch(/:[.:]/);
         }
 
         expect((await runCommandLine(["package", "uninstall", "@test/system-later"], context)).output).toBe("@test/system-later is off this computer.");
         expect(existsSync(join(modules, "@test", "system-later"))).toBe(false);
+    });
+
+    it("reads the campaign again once the system that stopped reading is installed again, as its remedy says", async () => {
+        const later = systemFolder("@test/system-later", "title: a later system\nlanguage: en\n");
+        const { context, modules } = await campaign(() => ({ "@test/system-later": later }));
+        expect((await runCommandLine(["package", "install", "@test/system-later"], context)).exitCode).toBe(0);
+        expect((await runCommandLine(["config", "system", "later"], context)).exitCode).toBe(0);
+        writeFileSync(join(modules, "@test", "system-later", "system.yaml"), "title: [unclosed\n");
+        expect((await runCommandLine(["status"], context)).exitCode).toBe(1);
+
+        expect((await runCommandLine(["package", "install", "@test/system-later"], context)).exitCode).toBe(0);
+
+        for (const command of ["status", "config", "validate"]) {
+            expect((await runCommandLine([command], context)).exitCode).toBe(0);
+        }
+    });
+
+    it("tells only to fix by hand a system in an author's folder, not npm's, that stops reading", async () => {
+        const { context } = await campaign(() => ({}));
+        const authors = makeTempFolder();
+        mkdirSync(join(authors, "later"));
+        writeFileSync(join(authors, "later", "system.yaml"), "title: a later system\nlanguage: en\n");
+        const writing = { ...context, systemFolders: [...context.systemFolders, authors] };
+        expect((await runCommandLine(["config", "system", "later"], writing)).exitCode).toBe(0);
+        const file = join(authors, "later", "system.yaml");
+        writeFileSync(file, "title: [unclosed\n");
+
+        const ran = await runCommandLine(["status"], writing);
+        expect(ran.exitCode).toBe(1);
+        expect(ran.output).toContain(`The game system later cannot be read, because ${file} is not valid: system.yaml is not valid YAML; fix it by hand:`);
+        expect(ran.output).not.toContain("package install");
+    });
+
+    it("tells only to fix by hand a system npm links from an author's folder, as package install of a folder does", async () => {
+        const { context, modules } = await campaign(() => ({}));
+        const authors = systemFolder("@test/system-later", "title: a later system\nlanguage: en\n");
+        mkdirSync(join(modules, "@test"), { recursive: true });
+        symlinkSync(authors, join(modules, "@test", "system-later"), "junction");
+        writeFileSync(join(modules, "..", "package.json"), JSON.stringify({ dependencies: { "@test/system-later": `file:${authors}` } }));
+        expect((await runCommandLine(["config", "system", "later"], context)).exitCode).toBe(0);
+        writeFileSync(join(authors, "system.yaml"), "title: [unclosed\n");
+
+        const ran = await runCommandLine(["status"], context);
+        expect(ran.exitCode).toBe(1);
+        expect(ran.output).toContain("is not valid: system.yaml is not valid YAML; fix it by hand:");
+        expect(ran.output).not.toContain("package install");
     });
 
     it("says why a system without a scope does not read, and the remedy it gives works", async () => {

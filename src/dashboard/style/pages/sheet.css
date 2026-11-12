@@ -486,6 +486,12 @@
         .sheet-body {
             display: block;
         }
+
+        /* The name and what is said of them stay inside the band, with the text zoomed too. */
+        .identity .who {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
     }
 
     /* A thing in a list of bonds, as attuned: two rings after its name, in the accent. */

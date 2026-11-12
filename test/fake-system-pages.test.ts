@@ -145,11 +145,12 @@ describe("SYS-6: the system's pages are read-only, and in no place", () => {
     it("refuses to write one, with a page of the campaign that derives from it instead, and the fields given", async () => {
         expect(await refused("write", "Bog Hound", "--set", "grit=15/15")).toBe(
             'Bog Hound is a creature of the system fake: read-only. For a kind of your own, create a creature that derives from it, under a name in the campaign\'s language: write "<name>", type creature, '
-                + "set creature=[[Bog Hound]], grit=15/15; for one in particular, a character with creature=[[Bog Hound]]. Nothing changed.",
+                + "set creature=[[Bog Hound]], grit=15/15; for one in particular, a character with creature=[[Bog Hound]]. "
+                + 'To change Bog Hound itself for the whole campaign, write it with layer: write "Bog Hound", layer, set grit=15/15. Nothing changed.',
         );
         expect(await refused("write", "Lantern", "--set", "heft=2 kg")).toBe(
             'Lantern is an item of the system fake: read-only. For one that someone has, create an item that derives from it, under a name in the campaign\'s language: write "<name>", type item, '
-                + "set item=[[Lantern]], heft=2 kg, then move it to them. Nothing changed.",
+                + 'set item=[[Lantern]], heft=2 kg, then move it to them. To change Lantern itself for the whole campaign, write it with layer: write "Lantern", layer, set heft=2 kg. Nothing changed.',
         );
     });
 

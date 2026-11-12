@@ -24,10 +24,10 @@ Show or change the campaign settings.
 
 Read-only: no. Positional parameters: `setting`, `value`.
 
-- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, effort, lines, veils, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets, or one the game system adds
+- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, effort, lines, veils, orders, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets, or one the game system adds
 - `value` (`string`, optional): new value of the setting
-- `add` (`string[]`, optional): items to add to a list setting (lines, veils, table, precedents, learned, library, status-line), repeatable
-- `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, table, precedents, learned, library, status-line), repeatable
+- `add` (`string[]`, optional): items to add to a list setting (lines, veils, orders, table, precedents, learned, library, status-line), repeatable
+- `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, orders, table, precedents, learned, library, status-line), repeatable
 - `computer` (`boolean`, optional): with library and remove: off this computer too, out of every campaign, its books' text deleted
 
 ### translate
@@ -108,6 +108,7 @@ Read-only: no. Positional parameters: `page`.
 - `append` (`boolean`, optional): add the text at the end instead of replacing
 - `secret` (`boolean`, optional): with a section: create it, if missing, as a secret block > [!secret] Name
 - `here` (`boolean`, optional): a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it
+- `layer` (`boolean`, optional): change a page of the game system for the whole campaign, in a layer that holds only what differs; unset or empty text gives back the system's
 - `why` (`string`, optional): what the change is for, kept in the master's log
 
 ### rename

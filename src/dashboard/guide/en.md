@@ -145,6 +145,8 @@ The story runs in **scenes**: a fight, a conversation, exploring, travelling, a 
 
 In a fight the master tells every turn that is not yours, and stops where you can decide. The **Scene** shows on top whose turn it is and who comes next, and your character's card beside the map; the order of the turns, your party's hit points and how hurt the enemies look, in words, stay beside the page. If your character falls, the death saves appear large on the page.
 
+**Standing orders**: tell your companions something that should last, such as *From now on, always leave one alive*, and the master keeps it until you lift it. Your companions follow it as far as their character allows, and if one would not, they say so. You find your orders in **Settings**, where you can add and take them off.
+
 ### 3.4 Time, travel and the world that moves
 
 RPG Engine keeps the date. Between sessions the game time stops, unless you choose in **Settings** to let it run, such as a day of the game for each week away, or ask the master. Say you rest, *We take a long rest*, and once the master agrees the rest brings back what it should. In a short rest the master may ask on the dashboard how many hit dice you spend: roll them one at a time, see what each heals, and stop when you like. Say where you go, *We take the road north to Rocca*, and RPG Engine works out the way, the distance and the days, stopping when something happens on the way. Money is counted in the game's coins, change included.

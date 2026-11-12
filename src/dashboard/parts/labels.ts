@@ -276,6 +276,7 @@ export function settingLabel(name: string): string
         effort: t("Master's thinking"),
         lines: t("Lines"),
         veils: t("Veils"),
+        orders: t("Standing orders"),
         language: t("Language"),
         companions: t("Companions"),
         preparation: t("Preparation"),

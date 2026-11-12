@@ -18,7 +18,12 @@ export function systemKnowsReason(page: Page): string
 /** The kind the game system declares for a field, by its name in any case (SYS-8); undefined when it declares none. */
 export function declaredKind(world: World, field: string): FieldKind | undefined
 {
-    const fields = world.system?.fields;
+    return kindIn(world.system?.fields, field);
+}
+
+/** The kind that a system's declared fields give a field, by its name in any case (SYS-8); undefined when they give none. */
+export function kindIn(fields: Record<string, FieldKind> | undefined, field: string): FieldKind | undefined
+{
     return fields === undefined ? undefined : kindsOf(fields).get(comparableText(field));
 }
 
@@ -51,29 +56,37 @@ export function alwaysInMessage(page: Page, list: string): string
 
 /**
  * Why a page of the game system cannot be written, and what to write instead: a page of the campaign that derives from it (SYS-6, SYS-7); for one the system puts
- * in a list of every character, that it is there already (DAT-13).
+ * in a list of every character, that it is there already (DAT-13). `layer` names the campaign's layer too, for write alone (SYS-11): play spends nothing on it.
  */
-export function readOnlyMessage(page: Page, fields: string[] = [], world?: World): string
+export function readOnlyMessage(page: Page, fields: string[] = [], world?: World, layer = false): string
 {
     const list = world === undefined ? undefined : alwaysInList(world, page);
+    const layerWay = layer ? layerSentence(page, fields) : "";
 
     if (list !== undefined) {
-        return `${alwaysInMessage(page, list)} Nothing changed.`;
+        return `${alwaysInMessage(page, list)}${layerWay} Nothing changed.`;
     }
 
     if (page.type === "creature") {
         const set = [`creature=[[${page.name}]]`, ...fields].join(", ");
         return `${page.name} is ${systemLabel(page)}: read-only. For a kind of your own, create a creature that derives from it, under a name in the campaign's language: `
-            + `write "<name>", type creature, set ${set}; for one in particular, a character with creature=[[${page.name}]]. Nothing changed.`;
+            + `write "<name>", type creature, set ${set}; for one in particular, a character with creature=[[${page.name}]].${layerWay} Nothing changed.`;
     }
 
     if (page.type === "item") {
         const set = [`item=[[${page.name}]]`, ...fields].join(", ");
         return `${page.name} is ${systemLabel(page)}: read-only. For one that someone has, create an item that derives from it, under a name in the campaign's language: `
-            + `write "<name>", type item, set ${set}, then move it to them. Nothing changed.`;
+            + `write "<name>", type item, set ${set}, then move it to them.${layerWay} Nothing changed.`;
     }
 
-    return `${page.name} is ${systemLabel(page)}: read-only. Nothing changed.`;
+    return `${page.name} is ${systemLabel(page)}: read-only.${layerWay} Nothing changed.`;
+}
+
+/** " To change Goblin itself for the whole campaign, write it with layer…": the other way, a campaign's layer over the page (SYS-11). */
+function layerSentence(page: Page, fields: string[]): string
+{
+    const set = fields.length === 0 ? "" : `, set ${fields.join(", ")}`;
+    return ` To change ${page.name} itself for the whole campaign, write it with layer: write "${page.name}", layer${set}.`;
 }
 
 /**

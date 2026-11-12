@@ -4,7 +4,7 @@ import { useContext, useEffect, useRef } from "preact/hooks";
 import { sectionAddress } from "../address.ts";
 import type { ShownModule } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
-import { codeOfModule, ExtensionRoot, ModulesContext, ownPageIn, pagePropsOf, usePageModule, useWidgetData } from "./page-code.tsx";
+import { codeOfModule, ExtensionRoot, ModulesContext, ownPageIn, ownPageMissing, pagePropsOf, usePageModule, useWidgetData } from "./page-code.tsx";
 import { Drawn, WidgetsContext } from "./widgets.tsx";
 
 // Whether the player moved in the page since it loaded: a package's page opened then takes the focus to its title.
@@ -17,10 +17,10 @@ if (typeof window !== "undefined") {
 }
 
 /**
- * A package's page by its package and name, once its module came; the focus on its title as it opens. Nothing while its module comes or has no such page;
- * a module that did not load says so in the page, with its error and whose it is.
+ * A package's page by its package and name, once its module came; the focus on its title as it opens. Nothing while its module comes; a module that did not
+ * load says so in the page, with its error and whose it is. An address of a page no package has, once the modules are read, opens Packages in its place.
  */
-export function PackagePage({ name, page }: { name: string | undefined; page: string | undefined; })
+export function PackagePage({ name, page, modulesRead }: { name: string | undefined; page: string | undefined; modulesRead: boolean; })
 {
     const module = useContext(ModulesContext).find((one) => one.package === name);
     const owner = module === undefined ? undefined : codeOfModule(module);
@@ -29,6 +29,14 @@ export function PackagePage({ name, page }: { name: string | undefined; page: st
     const found = page === undefined ? undefined : ownPageIn(loaded, page);
     const own = found instanceof Error ? undefined : found;
     const data = useWidgetData(module?.package ?? "", own?.widget, undefined, useContext(WidgetsContext));
+    const missing = ownPageMissing(page, modulesRead, module, loaded);
+
+    // In place of the address, so that Back never returns to it.
+    useEffect(() => {
+        if (missing) {
+            window.location.replace(sectionAddress("packages"));
+        }
+    }, [missing]);
 
     // Opened from the page, as by a tab or a menu, the focus goes to its title; loaded by its address, the focus stays at the page's start, as any page's,
     // and its title has no ring.

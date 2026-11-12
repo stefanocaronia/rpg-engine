@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -104,7 +104,7 @@ Pátá edice přidává **postup**: zkušenostní body nebo milníky.
 
 Pokud nemáš napsaný svět, Pán jeskyně se zeptá také na **námět** (žánr, tón, několik prvků a to, co tě ve hře baví nejvíc, třeba boje, záhady, rozhovory nebo objevování, tvými slovy), na **přípravu**: vytvářet svět za pochodu, jak hra postupuje, nebo celý na začátku, a na **délku**: jeden večer, několik sezení (tři až pět večerů), nebo otevřená, jedno dobrodružství za druhým. Po skončení příběhu s danou délkou můžeš vždy pokračovat dál.
 
-Na **Styl Pána jeskyně** se Pán jeskyně nikdy neptá, ale můžeš ho změnit v chatu nebo v **Nastavení**: **próza** (prostá, literární, pulp, ironická), **příběhy**, které vymýšlí (situace, oblouky, epizody, záhada), autor, **podle něhož psát**, nebo cokoli jiného **tvými slovy**.
+Na **Styl Pána jeskyně** se Pán jeskyně nikdy neptá, ale můžeš ho změnit v chatu nebo v **Nastavení**: **Próza** (prostá, literární, pulp, ironická), **Příběhy**, které vymýšlí (situace, oblouky, epizody, záhada), autor, **Psát jako**, nebo cokoli jiného **Tvými slovy**.
 
 ### 2.7 Nulté sezení: tvoje postava
 
@@ -146,6 +146,8 @@ Příběh běží ve **scénách**: boj, rozhovor, zkoumání, cestování, odpo
 
 V boji Pán jeskyně vypráví každý tah, který není tvůj, a zastaví se tam, kde se můžeš rozhodnout. **Scéna** nahoře ukazuje, kdo je na tahu a kdo bude další, a vedle mapy kartu tvé postavy. Pořadí tahů, životy tvé družiny a slovní popis toho, jak jsou nepřátelé raněni, zůstávají na straně stránky. Pokud tvá postava padne, na stránce se velké zobrazí záchrany před smrtí.
 
+**Trvalé rozkazy**: řekni společníkům něco, co má platit dlouhodobě, třeba *Od teď vždycky jednoho nechte naživu*, a Pán jeskyně to drží, dokud to nezrušíš. Společníci se tím řídí, pokud jim to jejich povaha dovolí, a když se tak některý nezachová, řeknou to. Své rozkazy najdeš v **Nastavení**, kde je můžeš přidávat i odebírat.
+
 ### 3.4 Čas, cestování a svět, který se hýbe
 
 RPG Engine hlídá datum. Mezi sezeními herní čas stojí, pokud v **Nastavení** nezvolíš, že má běžet, například den ve hře za každý týden pryč, nebo o to nepožádáš Pána jeskyně. Řekni, že odpočíváš, *Dopřejeme si dlouhý odpočinek*, a jakmile Pán jeskyně souhlasí, odpočinek vrátí, co má. Při krátkém odpočinku se tě Pán jeskyně může na dashboardu zeptat, kolik kostek životů utratíš: hoď je po jedné, uvidíš, kolik každá vyléčí, a přestaň, kdy chceš. Řekni, kam jdeš, *Vydáme se po cestě na sever k Rocce*, a RPG Engine spočítá cestu, vzdálenost i dny. Zastaví se, když se cestou něco stane. Peníze se počítají v herních mincích, včetně drobných.
@@ -168,7 +170,7 @@ Na deníku postavy má karta **Popis** pole pro příběh tvé postavy: Pán jes
 
 ### 3.8 Uložené hry a návrat zpět
 
-RPG Engine ukládá celou kampaň na konci každé scény. O zbytku rozhoduje nastavení **uložených her**:
+RPG Engine ukládá celou kampaň na konci každé scény. O zbytku rozhoduje nastavení **Uložené hry**:
 
 | Uložené hry | Uložit, kdy chceš | Vrátit se |
 |---|---|---|

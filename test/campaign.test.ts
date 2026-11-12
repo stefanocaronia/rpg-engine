@@ -243,7 +243,7 @@ describe("rpg config", () => {
         expect(result.output).toBe(
             "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: free, fake)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\nlength: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
-                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncharacter: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\nbetween-sessions: stops (unset: no game time passes between sessions)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
+                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncharacter: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\nbetween-sessions: stops (unset: no game time passes between sessions)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\norders: (none)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
                 + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: free, fake), language (a code, such as it), ${askedBrief}; ${onward}`,
         );
     });
@@ -363,7 +363,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, effort, lines, veils, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
+            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, effort, lines, veils, orders, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

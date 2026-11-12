@@ -2,13 +2,14 @@
 // names and the table beside it, the turns of a fight, the followed quest and the rolls (D-279), read again whenever the server says something changed.
 import { render } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { type ActStart, type SaidAct, saidStates, setSystemVerbs, type SheetActions } from "./acts/acts.ts";
-import { type PlayerActs, PlayerActsContext } from "./acts/names.tsx";
-import { type ActReply, ActSheet } from "./acts/sheet.tsx";
+import { setSystemVerbs } from "./acts/acts.ts";
+import { PlayerActsContext } from "./acts/names.tsx";
+import { useActs } from "./acts/sending.ts";
+import { ActSheet } from "./acts/sheet.tsx";
 import { ActStrip } from "./acts/strip.tsx";
 import { type Address, readAddress, redirectCombat, sectionAddress } from "./address.ts";
-import { answer, closeCard, readActs, readAsked, readChoices, readGameTheme, readModules, readView, readWidgets, sayAct, sendSeen, withdrawAct } from "./api.ts";
-import type { ActsShown, Asked, AskedNow, Member, Moment, ShownModule, ShownPlace, ShownRoll, ShownWidget } from "./data.ts";
+import { answer, closeCard, readActs, readAsked, readChoices, readGameTheme, readModules, readView, readWidgets, sendSeen } from "./api.ts";
+import type { Asked, AskedNow, Member, Moment, ShownModule, ShownRoll, ShownWidget } from "./data.ts";
 import { flies } from "./dice/pool.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
 import { Help } from "./help/help.tsx";
@@ -56,8 +57,6 @@ const firstRolls = 20;
 
 // How long at most what a roll from a card or a die of a rest changed waits for its dice, when they never land.
 const longestHold = 15_000;
-// How long a sentence the master heard, or one copied for the chat, stays in the strip (D-495).
-const heardTime = 6000;
 
 function App()
 {
@@ -98,17 +97,12 @@ function App()
     // Whether the player has just opened or folded the table, which slides it in and gives the focus to what folds it, or to its tab; at the first reading it
     // is simply there.
     const [tableMoved, setTableMoved] = useState(false);
-    // The player's actions (D-495): the verbs of the player character's sheet, the sentences said or copied for the chat and how the server holds them,
-    // and the action the player is writing, with what started it, which has the focus back.
-    const [actions, setActions] = useState<SheetActions>();
-    const [acts, setActs] = useState<ActsShown>();
-    const [said, setSaid] = useState<SaidAct[]>([]);
-    const [actProblem, setActProblem] = useState<string>();
-    const [acting, setActing] = useState<{ start: ActStart; opener: HTMLElement | SVGElement; }>();
     // The widgets of the campaign's extensions (D-502), read beside the rest and shown as they come, so that a slow hook never holds the page back; kept as they
     // were when a reading of them fails, and an answer older than one shown left out.
     const [widgets, setWidgets] = useState<ShownWidget[]>([]);
     const [modules, setModules] = useState<ShownModule[]>([]);
+    // Whether the page modules were read once: before, a package's page cannot yet be told missing.
+    const [modulesRead, setModulesRead] = useState(false);
     // The game's style turned on or off, or changed: every icon it draws anew is drawn again (D-528).
     const [, setStyled] = useState(0);
 
@@ -163,6 +157,7 @@ function App()
             moduleReading.current.shown = modulesAsked;
             preloadModules(read.map(codeOfModule));
             setModules((before) => (JSON.stringify(before) === JSON.stringify(read) ? before : read));
+            setModulesRead(true);
         }, () => undefined);
 
         try {
@@ -541,26 +536,17 @@ function App()
     // The one in the foreground, whose place the page shows; and whose card is at hand in a fight, the one whose sheet was read.
     const lead = playerNamed(shown.party, shown.foreground) ?? players[0];
     const actor = member?.role === "pc" ? member : lead;
-    // Who acts from a sheet acts where they are: the place of one not in the foreground, read for them (VIEW-12).
-    const actsElsewhere = acting !== undefined && several && member?.role === "pc" && member.name !== shown.foreground ? member.name : undefined;
-    const [actPlace, setActPlace] = useState<{ who: string; place?: ShownPlace; }>();
-
-    useEffect(() => {
-        if (actsElsewhere === undefined) {
-            return;
-        }
-
-        let current = true;
-        void readView(undefined, 1, actsElsewhere).then((view) => {
-            if (current) {
-                setActPlace({ who: actsElsewhere, ...(view.kind === "overview" && view.place !== undefined ? { place: view.place } : {}) });
-            }
-        }, () => undefined);
-
-        return () => {
-            current = false;
-        };
-    }, [actsElsewhere, shown.version]);
+    // The player's sentences to the master (D-495); read() sets the acts and the verbs it reads, by setters that never change.
+    const { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, strip, actProblem, sendAct, closeAct, withdraw, copyFromStrip, dismissAct } = useActs({
+        read,
+        live,
+        asked: shown.asked,
+        foreground: shown.foreground,
+        version: shown.version,
+        players,
+        member,
+        several,
+    });
     // A number of a sheet thrown for fun, each a throw of its own (D-280).
     const throwFromSheet: FreeRoll = (roll, label, who) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label, ...(who === undefined ? {} : { who }) }));
 
@@ -603,92 +589,6 @@ function App()
     const turnName = several ? turnOf?.name : undefined;
     // The player character the master's question is for, named on it when there are more (D-480 (7)).
     const asker = several ? playerNamed(shown.party, shown.asked?.who) : undefined;
-
-    // The game gone, what the master had not heard is lost with the chat: the strip says so, even once the game is back (D-495).
-    useEffect(() => {
-        if (!live) {
-            setSaid((before) => before.map((one) => (acts?.heard.includes(one.id) === true ? one : { ...one, lost: true })));
-        }
-    }, [live]);
-
-    const strip = saidStates(said, acts, live);
-    const leaving = strip.filter((entry) => entry.state === "heard" || entry.state === "copied").map((entry) => entry.act.id).join();
-
-    // A sentence heard, or copied, goes from the strip after a while.
-    useEffect(() => {
-        if (leaving === "") {
-            return;
-        }
-
-        const timer = window.setTimeout(() => dismissAct(...leaving.split(",")), heardTime);
-        return () => window.clearTimeout(timer);
-    }, [leaving]);
-
-    const dismissAct = (...ids: string[]): void => {
-        setSaid((before) => before.filter((one) => !ids.includes(one.id)));
-        setActProblem(undefined);
-    };
-
-    // With a question of the master's open, the sentence answers it (ASK-10); else it rings the master, or, in a chat that hears nothing by itself, is copied.
-    const question = shown.asked !== undefined && shown.asked.spend === undefined && shown.asked.forced !== true ? shown.asked : undefined;
-    const reply: ActReply = question !== undefined ? "answer" : acts?.bell === true ? "tell" : "copy";
-
-    const sendAct = async (text: string): Promise<string | undefined> => {
-        setActProblem(undefined);
-
-        if (reply === "answer" && question !== undefined) {
-            const taken = await answer(question.id, text).catch(() => false);
-            void read();
-            return taken ? undefined : t("The answer did not reach the game: try again.");
-        }
-
-        if (reply === "copy") {
-            return await copyAct(text) ? undefined : t("Copy did not work: select the words and copy them yourself.");
-        }
-
-        const result = await sayAct(text);
-
-        if ("error" in result) {
-            return result.error;
-        }
-
-        setSaid((before) => [...before, { id: result.id, text }]);
-        setActs(result.shown);
-        return undefined;
-    };
-
-    const copyAct = async (text: string): Promise<boolean> => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setSaid((before) => [...before.filter((one) => one.copied !== true || one.text !== text), { id: `copied ${Date.now()}`, text, copied: true }]);
-            return true;
-        } catch {
-            return false;
-        }
-    };
-
-    const withdraw = async (id: string): Promise<void> => {
-        const result = await withdrawAct(id);
-
-        if (result === "heard") {
-            setActProblem(t("The master has already heard it."));
-            void read();
-        } else if (result === undefined) {
-            setActProblem(t("It did not reach the game: try again."));
-        } else {
-            setActs(result);
-            dismissAct(id);
-        }
-    };
-
-    // The sheet closed, the focus goes back to what started the action.
-    const closeAct = (): void => {
-        const opener = acting?.opener;
-        setActing(undefined);
-        requestAnimationFrame(() => opener?.isConnected === true && opener.focus());
-    };
-
-    const playerActs: PlayerActs | undefined = actions === undefined || players.length === 0 ? undefined : { actions, start: (start, opener) => setActing({ start, opener }) };
 
     // The tab's title: the campaign's name and the product's; a question that waits marks it, to be seen from another tab (D-455).
     useEffect(() => {
@@ -873,7 +773,7 @@ function App()
                                                     {address.section === "settings" && <SettingsView version={shown.version} several={many} />}
                                                     {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} several={many} />}
                                                     {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
-                                                    {address.section === "pkg" && <PackagePage name={address.tab} page={address.name} />}
+                                                    {address.section === "pkg" && <PackagePage name={address.tab} page={address.name} modulesRead={modulesRead} />}
                                                     {address.section === "choices" && (
                                                         <ChoicesPage
                                                             who={address.tab}
@@ -980,7 +880,7 @@ function App()
                                     entries={strip}
                                     problem={actProblem}
                                     onWithdraw={(id) => void withdraw(id)}
-                                    onCopy={(id, text) => void copyAct(text).then((done) => (done ? dismissAct(id) : setActProblem(t("Copy did not work: select the words and copy them yourself."))))}
+                                    onCopy={copyFromStrip}
                                     onDismiss={dismissAct}
                                 />
                             </div>

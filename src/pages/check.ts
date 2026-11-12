@@ -81,6 +81,7 @@ function worldProblems(world: World): Problem[]
         ...world.problems.map((message) => ({ message })),
         ...[...pagesByName.values()].filter((pages) => pages.length > 1).map(repeatedPageProblem),
         ...world.pages.flatMap((page) => hidingProblems(world, page)),
+        ...layerProblems(world),
         ...world.pages.flatMap((page) => [
             ...pageAlone.fields(page),
             ...linkProblems(world, pagesByName, page),
@@ -94,6 +95,25 @@ function worldProblems(world: World): Problem[]
             ...inheritanceProblems(world, page),
         ]),
     ];
+}
+
+/**
+ * The campaign's layers that do nothing (SYS-11): one over no page of the system, as after a change of the rules' version or of the page's name, and the fields
+ * written by hand in one that a layer cannot change, which the page reads from the system all the same.
+ */
+function layerProblems(world: World): Problem[]
+{
+    const stray = (world.strayLayers ?? []).map((path) => ({
+        path,
+        message: `This layer lies over no page of the system ${world.system?.name ?? ""}, which has no page at that path in the rules the campaign plays: it changes nothing.`,
+        fix: "move it to the path of the page it is for, as the system's world/ folder has it, or remove it if that page is no more",
+    }));
+    const ignored = (world.system?.pages ?? []).filter((page) => (page.layer?.ignored.length ?? 0) > 0).map((page) => ({
+        path: page.layer?.path,
+        message: `The layer over ${page.name} writes ${page.layer?.ignored.join(", ") ?? ""}, which a layer cannot change: the name, the type, a field no page inherits (INH-8), or uses on an item that is a kind (STK-1).`,
+        fix: `remove ${page.layer?.ignored.length === 1 ? "it" : "them"} from the layer by hand; for one thing of its own, write a page of the campaign that derives from ${page.name}`,
+    }));
+    return [...stray, ...ignored];
 }
 
 /** A check that reads the page alone, made once for each page: a page never changes, and a session keeps those whose files do not (D-194). */
@@ -192,7 +212,7 @@ function linkProblems(world: World, pagesByName: Map<string, Page[]>, page: Page
     const inText = links(page.body).map((link) => ({ link, field: undefined, entry: undefined, inList: false }));
 
     const stackOfAlias = (entry: string | undefined, field: string | undefined): boolean =>
-        entry !== undefined && field === containerFieldOf(page.type) && readEntry(entry).shape === "stack" && entryPage(world, links(entry)[0]?.page ?? "") === undefined
+        entry !== undefined && field === containerFieldOf(page.type) && ["stack", "link"].includes(readEntry(entry).shape) && entryPage(world, links(entry)[0]?.page ?? "") === undefined
         && goodsNamed(world, links(entry)[0]?.page ?? "") !== undefined;
 
     return [...inFields.filter((found) => !stackOfAlias(found.entry, found.field)), ...inText].flatMap((found) => {
@@ -415,6 +435,11 @@ function stackProblems(world: World, holder: Page): Problem[]
 
         if (read.shape === "stack" && page === undefined && goodsNamed(world, read.page) !== undefined) {
             return [{ path: holder.path, message: `${holder.name} counts [[${read.page}]] in ${field}, which counts nothing: ${missingKindMessage(world, holder, field, read)}`, fix: remove(entry) + ", then the stack above" }];
+        }
+
+        if (read.shape === "link" && page === undefined && goodsNamed(world, read.page) !== undefined) {
+            const message = missingKindMessage(world, holder, field, { page: read.page, count: 1 });
+            return [{ path: holder.path, message: `${holder.name} lists [[${read.page}]] in ${field}, which puts nothing there: ${message}`, fix: remove(entry) + ", then the stack above" }];
         }
 
         if (read.shape === "stack" && page !== undefined && !isKind(world, page)) {

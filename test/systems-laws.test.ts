@@ -1,8 +1,32 @@
 // The laws of the pages of a game system (MECCANICHE, SYS-n), checked on worlds generated at random (D-118).
 import fc from "fast-check";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { comparableText } from "../src/core/text.ts";
-import { baseChain, findPage, inheritedFields, locate, type Page, pageNamed, type PageType, planMove, uniquePage, validHoldersOf, type World, writePage } from "../src/pages/index.ts";
+import {
+    baseChain,
+    findPage,
+    firstTable,
+    inheritedFields,
+    isKind,
+    layeredPage,
+    layeredPages,
+    locate,
+    type Page,
+    pageNamed,
+    type PageType,
+    planMove,
+    readFields,
+    readSection,
+    splitPageFile,
+    systemPageNamed,
+    uniquePage,
+    validHoldersOf,
+    type World,
+    writeLayer,
+    writePage,
+} from "../src/pages/index.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
 const names = ["Wolf", "Goblin", "Lupo", "Torch", "Ombra"];
@@ -144,6 +168,124 @@ describe("the laws of the pages of a game system, on worlds made at random", () 
                 }
             }),
             runs,
+        );
+    });
+});
+
+// A layer of the campaign over a page of the system (SYS-11): a value for hp sometimes, uses sometimes, a section of its own sometimes.
+const layerShape = fc.record({
+    name: fc.constantFrom(...names),
+    hp: fc.option(fc.constantFrom("11/11", "12/12", "30/30"), { nil: undefined }),
+    uses: fc.option(fc.constantFrom("3/3"), { nil: undefined }),
+    section: fc.option(fc.constantFrom("Bite", "Howl", "Keen Eye"), { nil: undefined }),
+});
+const vocationBody = "**The Scout** walks ahead.\n\n| Rank | Knacks |\n|---|---|\n| 1st | Keen Eye |\n| 2nd | Quiet Step |\n\n## Keen Eye\n\nNotice with an edge.\n\n## Bite\n\nTwo dice.";
+
+/** A world with the campaign's layers over its system's pages, as loadWorld merges them, and the world as the system writes it. */
+function layeredWorlds(): fc.Arbitrary<{ plain: World; layered: World; }>
+{
+    return fc.tuple(worlds(), fc.uniqueArray(layerShape, { selector: (shape) => comparableText(shape.name), maxLength: 4 })).map(([plain, shapes]) => {
+        // An item of the system without uses is a kind, counted in stacks (STK-1).
+        const shipped = (plain.system?.pages ?? []).map((page) => ({ ...page, body: vocationBody, fields: page.type === "item" ? { weight: 1 } : page.fields }));
+        const layers = shapes.flatMap((shape): Page[] => {
+            const page = shipped.find((candidate) => comparableText(candidate.name) === comparableText(shape.name));
+            return page === undefined ? [] : [{
+                name: page.name,
+                type: page.type,
+                path: page.path,
+                fields: { ...(shape.hp === undefined ? {} : { hp: shape.hp }), ...(shape.uses === undefined ? {} : { uses: shape.uses }) },
+                body: shape.section === undefined ? "" : `## ${shape.section}\n\nThe campaign's ${shape.section}.`,
+            }];
+        });
+        const system = plain.system === undefined ? undefined : { ...plain.system, pages: shipped };
+        const merged = system === undefined ? undefined : { ...system, pages: layeredPages(shipped, layers, "layers/5e").pages };
+        return { plain: { ...plain, system }, layered: { ...plain, system: merged } };
+    });
+}
+
+describe("the laws of the campaign's layers over the pages of a game system, on worlds made at random (SYS-11)", () => {
+    it("SYS-11: without layers, every page of the system is the very one it was", () => {
+        fc.assert(
+            fc.property(worlds(), (world) => {
+                const pages = world.system?.pages ?? [];
+                const { pages: merged, stray } = layeredPages(pages, [], "layers/5e");
+                expect(stray).toEqual([]);
+                merged.forEach((page, index) => expect(page).toBe(pages[index]));
+            }),
+            runs,
+        );
+    });
+
+    it("SYS-11, SYS-7: what derives from a layered page reads the layer's values, and the page stays the system's, in no place", () => {
+        fc.assert(
+            fc.property(layeredWorlds(), ({ plain, layered }) => {
+                for (const page of layered.pages) {
+                    const holder = [page, ...baseChain(layered, page)].find((candidate) => Object.hasOwn(candidate.fields, "hp"));
+                    expect(inheritedFields(layered, page).hp).toBe(holder?.fields.hp);
+                    // The chain is the same, page by page, with the merged ones in it.
+                    expect(baseChain(layered, page).map((base) => base.path)).toEqual(baseChain(plain, page).map((base) => base.path));
+                }
+
+                for (const page of layered.system?.pages ?? []) {
+                    expect(page.system).toBe("5e");
+                    expect(locate(layered, page)).toEqual({ chain: [], alsoIn: [] });
+                    expect(systemPageNamed(layered, page.name)).toBe(page);
+                }
+            }),
+            runs,
+        );
+    });
+
+    it("SYS-11, STK-1: a kind stays a kind, and a layer never gives it uses", () => {
+        fc.assert(
+            fc.property(layeredWorlds(), ({ plain, layered }) => {
+                for (const page of plain.system?.pages ?? []) {
+                    const merged = systemPageNamed(layered, page.name);
+                    expect(merged !== undefined && isKind(layered, merged)).toBe(isKind(plain, page));
+                }
+            }),
+            runs,
+        );
+    });
+
+    it("SYS-11: a layer on one section keeps the table of the page, and its text replaces that section alone", () => {
+        fc.assert(
+            fc.property(layeredWorlds(), ({ plain, layered }) => {
+                for (const page of plain.system?.pages ?? []) {
+                    const merged = systemPageNamed(layered, page.name);
+                    expect(firstTable(merged?.body ?? "")).toEqual(firstTable(page.body));
+
+                    for (const section of merged?.layer?.sections ?? []) {
+                        expect(readSection(merged?.body ?? "", section)).toBe(`## ${section}\n\nThe campaign's ${section}.`);
+                    }
+                }
+            }),
+            runs,
+        );
+    });
+
+    it("SYS-11: a layer written holds only what differs from the system, and read back over it gives what was written; the rest of the root is untouched", () => {
+        fc.assert(
+            fc.property(fc.constantFrom("12/12", "11/11", "7/7"), fc.constantFrom("11/11", "7/7"), (wanted, shipped) => {
+                const folder = makeTempFolder();
+
+                try {
+                    const original: Page = { name: "Goblin", type: "creature", path: "world/creatures/Goblin.md", fields: { hp: shipped }, body: "", system: "5e" };
+                    const world: World = { root: folder, pages: [], problems: [], system: { name: "5e", title: "a test system", language: "en", fields: {}, pages: [original] } };
+                    const written = writeLayer(world, original, { set: { hp: wanted } });
+                    const file = join(folder, "layers", "5e", "world", "creatures", "Goblin.md");
+                    expect(existsSync(file)).toBe(wanted !== shipped);
+                    expect(written.changed).toBe(wanted !== shipped);
+                    expect(readdirSync(folder)).toEqual(wanted === shipped ? [] : ["layers"]);
+                    const layer = existsSync(file) ? splitPageFile(readFileSync(file, "utf8")) : { body: "" };
+                    const read = layeredPage(original, { fields: readFields(layer.frontmatter, "layer"), body: layer.body }, "layer");
+                    expect(read.fields.hp).toBe(wanted);
+                    expect(original.fields.hp).toBe(shipped);
+                } finally {
+                    removeFolder(folder);
+                }
+            }),
+            { numRuns: 30 },
         );
     });
 });

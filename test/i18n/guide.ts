@@ -137,6 +137,86 @@ export function guidePlan(english: string, translation: string): GuidePlan[]
     });
 }
 
+/** The names the page gives the campaign's settings and their groups, in English: read from the page's code, which the tests cannot import. */
+export function settingNames(): string[]
+{
+    const labels = readFileSync(join(pageFolder, "parts", "labels.ts"), "utf8");
+    const settings = readFileSync(join(pageFolder, "settings", "settings.tsx"), "utf8");
+    const body = (code: string, start: string): string => code.slice(code.indexOf(start), code.indexOf("\n}\n", code.indexOf(start)));
+    return [body(labels, "export function settingLabel("), body(settings, "function groupTitle(")].flatMap((code) => [...code.matchAll(/\bt\("([^"]+)"\)/g)].map((match) => match[1] ?? ""));
+}
+
+/** The words in bold in a text, without the colon or the stop after them. */
+export function boldWords(text: string): string[]
+{
+    return [...text.matchAll(/\*\*([^*]+)\*\*/g)].map((match) => (match[1] ?? "").replace(/[.:,：。]$/, "").trim());
+}
+
+/** A setting a translated guide names in bold otherwise than its page: its English name, the page's in the language, the guide's bold words there, and where. */
+export interface UnlikeName
+{
+    name: string;
+    page: string;
+    guide: string[];
+    part: number;
+    /** The paragraph of the part, when the translation's paragraphs match the English's; else the part as a whole. */
+    paragraph?: number;
+}
+
+/** Where a translated guide names a setting in bold otherwise than its page, paragraph by paragraph: the page is right, as the player looks for the name there. */
+export function unlikeSettingNames(language: string, english: string, translation: string, phrases: Record<string, string>): UnlikeName[]
+{
+    const names = new Map(settingNames().map((name) => [name.toLowerCase(), name]));
+    const own = guideParts(translation);
+    return guideParts(english).flatMap((part, index) => {
+        const englishParagraphs = paragraphsOf(part);
+        const ownParagraphs = paragraphsOf(own[index] ?? "");
+        const aligned = englishParagraphs.length === ownParagraphs.length;
+        const pairs = aligned ? englishParagraphs.map((paragraph, at) => [paragraph, ownParagraphs[at] ?? ""]) : [[part, own[index] ?? ""]];
+        return pairs.flatMap(([englishText = "", ownText = ""], at) =>
+            boldWords(englishText).flatMap((bold) => {
+                const name = names.get(bold.toLowerCase());
+                const page = name === undefined ? undefined : phrases[name];
+                const guide = boldWords(ownText);
+                return name === undefined || page === undefined || guide.some((words) => sameName(words, page, language))
+                    ? []
+                    : [{ name, page, guide, part: index, ...(aligned ? { paragraph: at } : {}) }];
+            })
+        );
+    });
+}
+
+/** A plan that asks again the paragraphs naming a setting otherwise than the page, with their part as translated now as context. */
+export function planNamesAgain(plan: GuidePlan[], unlike: UnlikeName[]): GuidePlan[]
+{
+    return plan.map((planned, part) => {
+        const again = new Set(unlike.flatMap((one) => (one.part === part && one.paragraph !== undefined ? [one.paragraph] : [])));
+
+        if (again.size === 0 || "whole" in planned) {
+            return planned;
+        }
+
+        const context = "kept" in planned ? planned.kept : planned.context;
+        const paragraphs = "kept" in planned ? paragraphsOf(planned.kept) : planned.paragraphs;
+        return { paragraphs: paragraphs.map((paragraph, at) => (again.has(at) ? undefined : paragraph)), context };
+    });
+}
+
+/** Whether the guide's words name what the page does: the same words, in any case, each bent as the language's grammar wants it (its ending, an article). */
+function sameName(guide: string, page: string, language: string): boolean
+{
+    // Accents aside: a Greek word's accent moves with its case.
+    const words = (text: string): string[] => text.toLocaleLowerCase(language).normalize("NFD").replace(/\p{Mn}/gu, "").split(/\s+/);
+    const article = { ar: /^ال/, he: /^ה/ }[language];
+    const bare = (word: string): string => (article === undefined ? word : word.replace(article, ""));
+    const own = words(guide);
+    const pageWords = words(page);
+    return own.length === pageWords.length && pageWords.every((word, index) => {
+        const ownWord = own[index] ?? "";
+        return [ownWord, bare(ownWord)].some((one) => one === word || one === bare(word) || (word.length > 4 && one.startsWith(word.slice(0, -2))));
+    });
+}
+
 /** What a translation keeps of the English as it is: its headings' levels and icons, the anchors it links to, and its blocks of code, commands and output. */
 export function guideShape(text: string): string
 {
