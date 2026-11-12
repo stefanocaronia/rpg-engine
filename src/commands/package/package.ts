@@ -18,7 +18,7 @@ import { removed, uninstalled } from "./uninstall.ts";
 export const packageCommand = defineCommand({
     name: "package",
     description: "The packages of the campaign: extensions such as weather, from npm, and adventures, as a .zip, a folder or a link with adventure.yaml. "
-        + "list says those on this computer and those the campaign uses; available, those npm has, and updates. install adds or updates one, on this computer and in the campaign, "
+        + "list says those on this computer and those the campaign uses; available, those npm has, and updates; RPG Engine itself is updated by the player on the dashboard's Packages page, never by you. install adds or updates one, on this computer and in the campaign, "
         + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked in the host's form, or in a window of their computer. "
         + "An adventure is installed when you bring its hook into the story, once the player wants it as the next. "
         + "remove takes one out of the campaign; uninstall takes it off this computer; export writes the campaign's world, as it was at its start, as an adventure. "

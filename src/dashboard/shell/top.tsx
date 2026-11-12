@@ -77,7 +77,7 @@ export function Top(top: TopOf)
                 <div class="titles">
                     {/* The way of the name on the element that cuts it, so that a Latin name in Arabic loses its end, not its start. */}
                     <h1 dir="auto">
-                        <a class="title-home" dir="auto" href={sectionAddress("party")} onClick={home}>{title}</a>
+                        <a class="title-home" dir="auto" href={sectionAddress("party")} title={title} onClick={home}>{title}</a>
                     </h1>
                     {top.campaign !== undefined && (
                         <p class="product">

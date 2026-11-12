@@ -49,9 +49,16 @@ describe("the last choices", () => {
         expect(asked("rigor")?.last).toBeUndefined();
     });
 
-    it("tell the master, in the setup, what the player chose in their last campaign", async () => {
-        await ok(first, "init", "--name", "Prima", "--language", "it", "--system", "fake", "--difficulty", "brutal");
-        expect(await ok(second, "init", "--name", "Seconda", "--language", "it", "--system", "fake", "--master")).toMatch(/difficulty \([^)]*\), in their last campaign brutal: offer it first/);
+    it("tell the master, once as the setup begins, what the player chose in their last campaign: never again at each config (T-168)", async () => {
+        await ok(first, "init", "--name", "Prima", "--language", "it", "--system", "fake", "--difficulty", "brutal", "--lethality", "epic");
+        const said = " In their last campaign the player chose difficulty brutal, lethality epic: offer those first.";
+        expect(await ok(second, "init", "--name", "Seconda", "--language", "it", "--system", "fake", "--master")).toContain(said);
+        expect(await ok(second, "status")).toContain(said);
+        const config = await ok(second, "config", "units", "metric");
+        expect(config).not.toContain("last campaign");
+        // Once chosen, a setting is no longer offered from the last campaign.
+        await ok(second, "config", "difficulty", "easy");
+        expect(await ok(second, "status")).toContain(" In their last campaign the player chose lethality epic: offer those first.");
     });
 
     it("never remember what belongs to one game: the mentor, a custom difficulty", async () => {

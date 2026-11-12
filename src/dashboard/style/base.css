@@ -21,7 +21,8 @@
         /* The texture stays with the window, the light above scrolls away with the page's top, as without a theme. */
         background-attachment: scroll, fixed, fixed, scroll;
         color: var(--ink);
-        font: 15px/1.4 var(--font);
+        /* 15px at the browser's own size, and larger with the reader's: what is set in rem and in em grows together. */
+        font: 0.9375rem/1.4 var(--font);
     }
 
     /* The serif is the story's voice alone: the campaign's name, and the master's question (D-282); the name in the game's titles' face, when it gives one. */

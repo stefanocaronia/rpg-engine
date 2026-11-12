@@ -7,7 +7,7 @@ import { ToolListChangedNotificationSchema } from "@modelcontextprotocol/sdk/typ
 import { cpSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, PackageInfo, PackageManager } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
@@ -161,7 +161,11 @@ describe("SYS-10: a campaign whose system is one of ours, not installed, opened 
     }
 
     /** A host on a server started in the campaign, with these packages and none of the systems' code loaded beyond the engine's. */
-    async function host(packages: PackageManager, beforeCall?: () => Promise<void>, session = false): Promise<{ client: Client; call(name: string, signal?: AbortSignal): Promise<string>; }>
+    async function host(
+        packages: PackageManager,
+        beforeCall?: () => Promise<void>,
+        session = false,
+    ): Promise<{ client: Client; call(name: string, signal?: AbortSignal, input?: Record<string, unknown>): Promise<string>; }>
     {
         // In a session, as the game's server keeps its files, the install waits for the world read first (D-194).
         context = { ...context, packages, systemCode: {}, ...(session ? { files: new SessionStore({ systemFolders: context.systemFolders }) } : {}) };
@@ -169,7 +173,8 @@ describe("SYS-10: a campaign whose system is one of ours, not installed, opened 
         await createMcpServer(context, {}, beforeCall).connect(serverTransport);
         const client = new Client({ name: "host", version: "1.0.0" });
         await client.connect(clientTransport);
-        const call = async (name: string, signal?: AbortSignal): Promise<string> => ((await client.callTool({ name, arguments: {} }, undefined, signal === undefined ? undefined : { signal })).content as { text: string; }[])[0].text;
+        const call = async (name: string, signal?: AbortSignal, input: Record<string, unknown> = {}): Promise<string> =>
+            ((await client.callTool({ name, arguments: input }, undefined, signal === undefined ? undefined : { signal })).content as { text: string; }[])[0].text;
         return { client, call };
     }
 
@@ -215,6 +220,51 @@ describe("SYS-10: a campaign whose system is one of ours, not installed, opened 
         expect(changed).toBe(1);
         expect(await call("status")).not.toContain("was not on this computer");
         expect(asked).toHaveLength(2);
+        // The world read before the install has its pages from now, in the same chat.
+        expect(await call("show", undefined, { page: "Bog Hound" })).toContain("Bog Hound");
+        expect(await call("show", undefined, { page: "Bog Hound" })).not.toContain("is not installed");
+        await client.close();
+    });
+
+    it("reports progress to a call that waits for the install, so that a host does not take it for one that hangs", async () => {
+        plays("5e");
+        const held = heldNpm();
+        const { client } = await host(held.npm);
+        await held.begun;
+        vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+
+        try {
+            const heard: string[] = [];
+            const answer = client.callTool({ name: "status", arguments: {} }, undefined, { onprogress: (progress) => heard.push(progress.message ?? "") });
+            await vi.advanceTimersByTimeAsync(20_000);
+            await vi.waitFor(() => expect(heard).toEqual(["installing the campaign's game system"]));
+            held.letGo();
+            await answer;
+            heard.length = 0;
+            // Once it is there, a call says nothing while it works.
+            const after = client.callTool({ name: "status", arguments: {} }, undefined, { onprogress: (progress) => heard.push(progress.message ?? "") });
+            await vi.advanceTimersByTimeAsync(20_000);
+            await after;
+            expect(heard).toEqual([]);
+        } finally {
+            vi.useRealTimers();
+            await client.close();
+        }
+    });
+
+    it("has its pages in the same chat when the master installs it by hand after the server could not", async () => {
+        plays("5e");
+        let online = false;
+        const npm = fakeNpm([{ name: "@rpgengine/system-5e", version: "1.0.0", kind: "system", api: 5, folder: fifthPackage() }]);
+        const describe = npm.describe;
+        npm.describe = (spec) => (online ? describe(spec) : Promise.resolve({ failed: "npm cannot reach its registry from this computer" }));
+        const { client, call } = await host(npm, undefined, true);
+        expect(await call("status")).toMatch(/^The campaign's game system, 5e, is not on this computer, and could not be installed/);
+        online = true;
+        expect(await call("package", undefined, { action: "install", name: "5e" })).toContain("Installed the game system 5e 1.0.0");
+        const shown = await call("show", undefined, { page: "Bog Hound" });
+        expect(shown).not.toContain("is not installed");
+        expect(shown).toContain("Bog Hound");
         await client.close();
     });
 

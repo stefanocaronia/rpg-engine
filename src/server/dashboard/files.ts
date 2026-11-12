@@ -72,8 +72,8 @@ const importMap = JSON.stringify({
 });
 
 // The page runs only its own files and the import map written in it, known by its hash; and the physics of the dice, which Rapier's module carries as
-// WebAssembly and compiles.
-export const pagePolicy = `default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`;
+// WebAssembly and compiles. No page frames it: a second guard behind the refusal of a frame's request (T-170).
+export const pagePolicy = `default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
 
 export const pageHtml = [
     "<!doctype html>",

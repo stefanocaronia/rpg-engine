@@ -163,7 +163,9 @@ export function checklistLine(mode: Mode, root: string, context: Context, world:
         ? " The player can make the setup's choices on the dashboard, one at a time: offer it, and meanwhile ask in the chat only the game system, the premise, the language and when the story starts. "
             + "Ask the rest only when they leave it to you, or once they say they are ready."
         : "";
-    return `${missing.charAt(0).toUpperCase()}${missing.slice(1)}. When ${blocked === undefined ? "" : "none is left and "}the player confirms: ${modeCall(next)}.${name}${page}`;
+    // The player's last choices once, with the whole checklist, as the setup begins: never with config's brief one (T-134, T-168).
+    const last = mode === "setup" && !brief ? lastChoicesNote(root, context, world) : "";
+    return `${missing.charAt(0).toUpperCase()}${missing.slice(1)}.${last} When ${blocked === undefined ? "" : "none is left and "}the player confirms: ${modeCall(next)}.${name}${page}`;
 }
 
 /** The part of the instructions of a mode, the core's with the system's (MOD-5): the file setup, session-zero or play. */
@@ -191,18 +193,29 @@ function writtenMode(root: string): unknown
 /** What the setup still has to agree with the player, each setting with the values it takes, the system's own too (MOD-3). */
 function setupMissing(root: string, context: Context, world: World, brief: boolean): string[]
 {
-    const unanswered = unansweredSettings(readSettings(root), world.pages.length > 0, playerCharacters(world).length > 0);
     const label = (name: SettingName): string | undefined => (brief ? valueLabels[name] : undefined) ?? settingLabels[name];
-    // The player's choice in their last campaign, which the setup offers first (T-134), when the game offers it.
-    const last = lastChoices(context.home);
+    return setupMissingNames(root, context, world).map((name) => offeredLabel(root, context, name as SettingName) ?? label(name as SettingName) ?? name);
+}
 
-    const withLast = (name: string, text: string): string => {
+/** The settings the setup still has to agree with the player, the system's own too (MOD-3). */
+function setupMissingNames(root: string, context: Context, world: World): string[]
+{
+    return missingWithSystems(root, unansweredSettings(readSettings(root), world.pages.length > 0, playerCharacters(world).length > 0), context);
+}
+
+/**
+ * " In their last campaign the player chose dice digital, units metric: offer those first.": the player's choices in their last campaign on this computer for
+ * the settings still missing, when the game offers them (T-134), said once with the whole checklist; empty when there are none.
+ */
+function lastChoicesNote(root: string, context: Context, world: World): string
+{
+    const last = lastChoices(context.home);
+    const chosen = setupMissingNames(root, context, world).flatMap((name) => {
         const value = last[name];
         const offered = offeredValues(root, context, name);
-        return value === undefined || (offered !== undefined && !offered.includes(value)) ? text : `${text}, in their last campaign ${value}: offer it first`;
-    };
-
-    return missingWithSystems(root, unanswered, context).map((name) => withLast(name, offeredLabel(root, context, name as SettingName) ?? label(name as SettingName) ?? name));
+        return value === undefined || (offered !== undefined && !offered.includes(value)) ? [] : [`${name} ${value}`];
+    });
+    return chosen.length === 0 ? "" : ` In their last campaign the player chose ${chosen.join(", ")}: offer those first.`;
 }
 
 /** What session zero still has to make (MOD-4): a living player character, the companions the setup said are made in it, and the sheets they keep, whole. */

@@ -675,6 +675,11 @@
         .choice-chosen .icon-button {
             width: var(--target);
         }
+
+        .choice-read {
+            width: var(--target);
+            height: var(--target);
+        }
     }
 
     /* On a phone the notice's words take the room; the chevron says where it leads. */

@@ -31,10 +31,11 @@ import { campaignExtensions, extensionSources, layeredParts } from "../packages/
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
 export function campaignWorld(root: string, context: Context): World
 {
-    // The same world until one of its pages, campaign.yaml or the system's pages translated on this computer change: in a session, across calls (D-137). A
-    // game system does not change while the server runs.
+    // The same world until one of its pages, campaign.yaml or the system's pages translated on this computer change, or a folder of the packages is read again
+    // whole, as after npm installed the system in the chat: in a session, across calls (D-137).
     const from = [join(root, worldFolderName), join(root, campaignFileName), ...(context.home === undefined ? [] : [join(context.home, "systems")])].map((path) => resolve(path));
-    const dependsOn = (path: string): boolean => from.some((source) => source === path || isInside(source, path) || isInside(path, source));
+    const packages = [...context.systemFolders, ...(context.extensionFolders ?? [])].map((path) => resolve(path));
+    const dependsOn = (path: string): boolean => from.some((source) => source === path || isInside(source, path) || isInside(path, source)) || packages.some((folder) => folder === path || isInside(path, folder));
     return files().remember(`world ${resolve(root)}`, dependsOn, () => {
         const named = readTextSetting(root, "system");
         const system = campaignSystem(root, context);

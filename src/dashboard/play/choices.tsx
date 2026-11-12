@@ -587,7 +587,7 @@ function OptionCard({ id, option, role, checked, closed, tabIndex, read, href, t
                         <bdi>{option.label}</bdi>
                         {option.notation !== undefined && <bdi class="num">{shownNotation(option.notation)}</bdi>}
                     </strong>
-                    {opening !== undefined && opening !== "" && <span class="choice-about" id={`${id}-about`}>{opening}</span>}
+                    {opening !== undefined && opening !== "" && <span class="choice-about" id={`${id}-about`} dir="auto">{opening}</span>}
                 </span>
                 {total !== undefined && <span class="choice-total num" id={`${id}-total`}>{total}</span>}
             </button>

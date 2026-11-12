@@ -3,6 +3,7 @@
 import { mkdirSync, readFileSync, rmdirSync, symlinkSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { packageCommand } from "../src/commands/package/package.ts";
 import type { EngineInstall, EngineUpdater } from "../src/core/context.ts";
 import { packageApi } from "../src/core/packages/declarations.ts";
 import { getVersion } from "../src/core/version.ts";
@@ -44,6 +45,10 @@ describe("the engine on the Packages page", () => {
         expect(await dashboard.get("/api/engine")).toEqual({ version: getVersion(), installed: "99.0.0", latest: "99.0.0", update: false, install: "global" });
         expect((await dashboard.post("/api/engine", { action: "update" })).body).toEqual({ error: "rpg-engine 99.0.0 is installed already: it comes with a new chat.", code: "engine-installed", values: { version: "99.0.0" } });
         expect((await dashboard.post("/api/engine", { action: "remove" })).status).toBe(400);
+    });
+
+    it("is the player's to update, as the master reads in the package tool, which no command of theirs does (T-193)", () => {
+        expect(packageCommand.description).toContain("RPG Engine itself is updated by the player on the dashboard's Packages page, never by you.");
     });
 
     it("gives its version alone where nothing updates it, as in the demo", async () => {

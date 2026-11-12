@@ -307,6 +307,21 @@
         }
     }
 
+    /* On touch the switch, and on a phone the link on its own line, are as tall as a finger needs. */
+    @media (max-width: 600px) and (pointer: coarse) {
+        .package-report {
+            display: flex;
+            align-items: center;
+            min-height: var(--target);
+        }
+    }
+
+    @media (pointer: coarse) {
+        .package-use {
+            min-height: var(--target);
+        }
+    }
+
     /* Where a package is already, the system in use, an adventure in the story: words, never a button. */
     .package-here,
     .package-lock {

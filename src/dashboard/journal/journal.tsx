@@ -236,7 +236,7 @@ function TrackedQuest({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow(): 
             </span>
             <button type="button" class="tracked-what" aria-expanded={open} aria-controls={id} onClick={toggle}>
                 <span class="followed-name">{quest.name}</span>
-                {!open && next !== undefined && <span class="followed-next" dir="auto">{plainText(next.text)}</span>}
+                {!open && next !== undefined && <span class="followed-next" dir="auto" title={plainText(next.text)}>{plainText(next.text)}</span>}
             </button>
             <span class="tracked-time">
                 {quest.clock !== undefined && <ClockTip clock={quest.clock} />}
@@ -275,7 +275,7 @@ function FollowedStrip({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow():
             <QuestFace quest={quest} small />
             <a class="followed-what" href={sectionAddress("journal")}>
                 <span class="followed-name">{quest.name}</span>
-                {next !== undefined && <span class="followed-next" dir="auto">{plainText(next.text)}</span>}
+                {next !== undefined && <span class="followed-next" dir="auto" title={plainText(next.text)}>{plainText(next.text)}</span>}
             </a>
             {quest.clock !== undefined && <ClockFace clock={quest.clock} small />}
             {quest.deadline !== undefined && <Deadline deadline={quest.deadline} />}

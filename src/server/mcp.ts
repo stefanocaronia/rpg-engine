@@ -379,7 +379,7 @@ async function runTool(
     context: Context,
     extra: ToolExtra,
     prepare: () => Promise<void>,
-    installer: Told,
+    installer: Installer,
     outside: Told,
     examples: { shown: Examples; },
 ): Promise<CallToolResult>
@@ -389,6 +389,8 @@ async function runTool(
         : command.slow === true
         ? reportProgress(extra, () => "still working")
         : undefined;
+    // Any call that waits for the campaign's system to install, as on a slow network, says so too (SYS-10).
+    const installing = keepAlive === undefined ? reportProgress(extra, () => "installing the campaign's game system", installer.busy) : undefined;
     let news: { lines: string[]; restore(): void; } | undefined;
     let changedOutside: string[] = [];
     let installed: string[] = [];
@@ -442,6 +444,7 @@ async function runTool(
         return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, error instanceof Error ? error.message : String(error)].join("\n\n") }, masterOnly(context)], isError: true };
     } finally {
         clearInterval(keepAlive);
+        clearInterval(installing);
 
         // An answer that never goes, as for a call the user stopped, gives what the player changed back to the next one, and its parts.
         if (extra.signal.aborted) {
@@ -472,23 +475,36 @@ interface Told
     giveBack(lines: string[]): void;
 }
 
+/** The campaign's system installed by itself, and whether an install is under way or waited for. */
+interface Installer extends Told
+{
+    install(): Promise<void>;
+    busy(): boolean;
+}
+
 /**
  * The campaign's game system installed by itself when it is one of ours not on this computer (SYS-10, D-514 (3)): tried once for each system a campaign of
  * the server's folder names, before a call; its line, that it was installed or why not, for the call that answers.
  */
-function systemInstaller(context: Context): Told & { install(): Promise<void>; }
+function systemInstaller(context: Context): Installer
 {
     const tried = new Set<string>();
     let untold: string[] = [];
     let installing = Promise.resolve();
+    let waiting = 0;
 
     return {
         // One at a time: two calls at once wait for the same install.
-        install: () => (installing = installing.then(async () => {
-            // A campaign that does not read installs nothing: the call says why.
-            const line = await installCampaignSystem(context, tried).catch(() => undefined);
-            untold = line === undefined ? untold : [...untold, line];
-        })),
+        install: () => {
+            waiting++;
+            installing = installing.then(async () => {
+                // A campaign that does not read installs nothing: the call says why.
+                const line = await installCampaignSystem(context, tried).catch(() => undefined);
+                untold = line === undefined ? untold : [...untold, line];
+            }).finally(() => waiting--);
+            return installing;
+        },
+        busy: () => waiting > 0,
         take: () => {
             const lines = untold;
             untold = [];
@@ -621,8 +637,11 @@ function formPlayer(server: McpServer, unavailable: () => void): Player
     };
 }
 
-/** Progress notifications while the player decides or a slow command works, when the host asked for them, saying what it waits for; undefined otherwise. */
-function reportProgress(extra: ToolExtra, saying: () => string): ReturnType<typeof setInterval> | undefined
+/**
+ * Progress notifications while the player decides or a slow command works, when the host asked for them, saying what it waits for; only while `now` holds,
+ * when given. Undefined when the host asked for none.
+ */
+function reportProgress(extra: ToolExtra, saying: () => string, now: () => boolean = () => true): ReturnType<typeof setInterval> | undefined
 {
     const progressToken = extra._meta?.progressToken;
 
@@ -632,6 +651,10 @@ function reportProgress(extra: ToolExtra, saying: () => string): ReturnType<type
 
     let progress = 0;
     return setInterval(() => {
+        if (!now()) {
+            return;
+        }
+
         void extra.sendNotification({ method: "notifications/progress", params: { progressToken, progress: ++progress, message: saying() } }).catch(() => undefined);
     }, progressEvery);
 }

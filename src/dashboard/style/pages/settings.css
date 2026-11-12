@@ -439,6 +439,7 @@
     /* Where fingers touch, every control as tall as a finger. */
     @media (pointer: coarse) {
         .segmented button {
+            min-width: var(--target);
             min-height: var(--target);
         }
 

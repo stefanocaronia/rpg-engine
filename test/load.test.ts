@@ -70,6 +70,12 @@ describe("the load a character carries", () => {
         );
     });
 
+    it("names every entry that counts nothing in one refusal, so that the master fixes them at once (STK-10)", async () => {
+        const refused = await runCommandLine(["write", "Ettore", "--add", "inventory=[[Reed Darts (10)]] 2, [[Fen Lantern Oil]] 3"], context);
+        expect(refused.output).toMatch(/^There is no page named Reed Darts \(10\), but it is a name of Reed Darts, .* There is no page named Fen Lantern Oil, so \[\[Fen Lantern Oil\]\] 3 counts nothing\. .* Nothing changed\.$/);
+        expect(refused.output.match(/Nothing changed/g)).toHaveLength(1);
+    });
+
     it("asks a weight for an item written without one, its own or its base's", async () => {
         expect(await ok("write", "Sacco di farina", "--type", "item")).toContain('Sacco di farina has no heft, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set heft="2 kg".');
         expect(await ok("write", "Lanterna di Bruna", "--type", "item", "--set", "item=[[Lantern]]")).not.toContain("has no heft");

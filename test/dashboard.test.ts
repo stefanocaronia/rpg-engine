@@ -635,7 +635,9 @@ describe("the dashboard's server (D-270, D-272)", () => {
             "@dimforge/rapier3d-compat": "/vendor/rapier.mjs",
             "rpg-engine/page": "/kit.js",
         });
-        expect(html.headers["content-security-policy"]).toBe(`default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'`);
+        expect(html.headers["content-security-policy"]).toBe(
+            `default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
+        );
         expect(await get("/app.js")).toMatchObject({ status: 200, body: "export {};\n", headers: { "content-type": "text/javascript; charset=utf-8" } });
         expect((await get("/style.css")).headers["content-type"]).toBe("text/css; charset=utf-8");
         expect((await get("/assets/logo.svg")).headers).toMatchObject({ "content-type": "image/svg+xml", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox" });

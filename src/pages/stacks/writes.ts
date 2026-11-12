@@ -48,18 +48,11 @@ export function checkStacks(world: World, holder: Page, field: string, before: u
     const was = textsIn(before).map((entry) => entry.trim());
     const now = textsIn(after).map((entry) => entry.trim());
     const added = now.filter((entry) => !was.includes(entry));
+    // Every entry that is wrong in one refusal, so that the master fixes them all at once.
+    const problems = added.flatMap((entry) => entryProblem(world, holder, field, entry) ?? []);
 
-    for (const entry of added) {
-        const read = readEntry(entry);
-        const page = read.shape === "text" ? undefined : entryPage(world, read.page);
-
-        if (read.shape === "text") {
-            checkCountedText(world, holder, field, entry);
-        } else if (read.shape === "other" && page !== undefined && isKind(world, page)) {
-            throw new Error(`"${entry}" is no stack: a stack is a link and a count from 1 up, such as write ${holder.name}, add ${field}="[[${page.name}]] 3". Nothing changed.`);
-        } else if (read.shape === "stack") {
-            checkCounted(world, holder, field, read, page);
-        }
+    if (problems.length > 0) {
+        throw new Error(`${problems.join(" ")} Nothing changed.`);
     }
 
     const kindOf = kindOfEntry(world);
@@ -114,34 +107,50 @@ export function isKindNamed(world: World, name: string): boolean
     return page !== undefined && isKind(world, page);
 }
 
+/** What is wrong with an entry a write adds to a container's list, with how to fix it; undefined when nothing is. */
+function entryProblem(world: World, holder: Page, field: string, entry: string): string | undefined
+{
+    const read = readEntry(entry);
+    const page = read.shape === "text" ? undefined : entryPage(world, read.page);
+
+    if (read.shape === "text") {
+        return countedTextProblem(world, holder, field, entry);
+    }
+
+    if (read.shape === "other" && page !== undefined && isKind(world, page)) {
+        return `"${entry}" is no stack: a stack is a link and a count from 1 up, such as write ${holder.name}, add ${field}="[[${page.name}]] 3".`;
+    }
+
+    return read.shape === "stack" ? countedProblem(world, holder, field, read, page) : undefined;
+}
+
 /** A count beside a link counts only a kind (STK-1, STK-10): never a page with a story of its own, nor one that is not there, which the message tells how to find or make. */
-function checkCounted(world: World, holder: Page, field: string, read: { page: string; count: number; }, page: Page | undefined): void
+function countedProblem(world: World, holder: Page, field: string, read: { page: string; count: number; }, page: Page | undefined): string | undefined
 {
     if (page === undefined) {
-        throw new Error(`${missingKindMessage(world, holder, field, read)} Nothing changed.`);
+        return missingKindMessage(world, holder, field, read);
     }
 
     const reason = notKindReason(world, page);
     const elsewhere = validHoldersOf(world, page).filter((other) => other.path !== holder.path);
 
     if (reason !== undefined) {
-        throw new Error(`${page.name} is no kind to count: ${reason}. Nothing changed.`);
+        return `${page.name} is no kind to count: ${reason}.`;
     }
 
     if (!isKind(world, page) && elsewhere.length > 0) {
-        throw new Error(`${page.name} is in ${elsewhere[0].name} as one thing with a story of its own: a count goes only beside a kind, as [[Name]] 7. Nothing changed.`);
+        return `${page.name} is in ${elsewhere[0].name} as one thing with a story of its own: a count goes only beside a kind, as [[Name]] 7.`;
     }
+
+    return undefined;
 }
 
 /** Text with a count at one end, as Torch 7, is a count inside a text (STK-10): refused when the rest names a kind, with its stack. */
-function checkCountedText(world: World, holder: Page, field: string, entry: string): void
+function countedTextProblem(world: World, holder: Page, field: string, entry: string): string | undefined
 {
     const counted = countedText(entry);
     const page = counted === undefined ? undefined : pageNamed(world, counted.name);
-
-    if (counted !== undefined && page !== undefined && isKind(world, page)) {
-        throw new Error(`"${entry}" is a count inside a text: write ${holder.name}, add ${field}="[[${page.name}]] ${counted.count}", a stack of ${page.name}. Nothing changed.`);
-    }
+    return counted !== undefined && page !== undefined && isKind(world, page) ? `"${entry}" is a count inside a text: write ${holder.name}, add ${field}="[[${page.name}]] ${counted.count}", a stack of ${page.name}.` : undefined;
 }
 
 /** The system's goods whose names hold a word, the shortest first, as Arrows for Arrow: for a refusal to name them, which saves a find (STK-10). */
