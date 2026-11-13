@@ -158,8 +158,8 @@ export const view = defineCommand({
                 kind: "journal",
                 ...(present === undefined ? {} : { now: formatGameDate(present) }),
                 ...shownJournal(root, world, knowledge, present, (entry) => storyFact(world, entry, known), known, (name) => placeLook(root, context, world, knowledge, name)),
-                // The companions' diaries, the last line first (DIA-4).
-                thoughts: thoughtsIn(root, world).reverse().map((one) => ({ who: known(one.page.name) ?? "someone", ...(one.date === undefined ? {} : { date: one.date }), text: one.text })),
+                // The diaries the player reads, the last line first: never a hidden line, as another character's (DIA-4).
+                thoughts: thoughtsIn(root, world).filter((one) => !one.hidden).reverse().map((one) => ({ who: known(one.page.name) ?? "someone", ...(one.date === undefined ? {} : { date: one.date }), text: one.text })),
             };
         }
 

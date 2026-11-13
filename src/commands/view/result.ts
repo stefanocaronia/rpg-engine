@@ -104,8 +104,10 @@ export type ViewResult =
         discovered: string[];
         /** "day 3, 19:05 · Ambush at Mill Ford: Four orcs ambushed the party.": the scenes they were in. */
         lived: string[];
-        /** A companion's last lines of their diary, with their dates (DIA-3); none for anyone else. */
+        /** A character's last lines of their diary, with their dates (DIA-3); none for the player's. */
         thoughts?: string[];
+        /** What they write in their diary: a companion's rule or another character's (DIA-3). */
+        thoughtsRule?: string;
         /** For a living player character played while their player is away (D-480 (4)), the prudence it is played with. */
         away?: string;
         /** For a living companion, or a player character played while its player is away, the player's standing orders to the companions (D-563). */

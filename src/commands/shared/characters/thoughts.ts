@@ -1,7 +1,7 @@
-// The companions' diaries (D-497, DIA): what they set on paper of how they took the story, kept in the log; never the facts, which the log already tells.
+// The diaries of companions and of the campaign's other characters (D-497, D-566, DIA): how they took the story, kept in the log; never the facts, which the log already tells.
 import type { Context } from "../../../core/context.ts";
 import { type LogEntry, readLog } from "../../../core/log.ts";
-import { isInParty, type Page, pagesWithNameOrAlias, parsePageReference, type World } from "../../../pages/index.ts";
+import { isInParty, isPlayerCharacter, type Page, pagesWithNameOrAlias, parsePageReference, type World } from "../../../pages/index.ts";
 import { readOpenScene } from "../scene/scene.ts";
 import { textList } from "./knowledge.ts";
 import { agentVoices } from "./voices.ts";
@@ -12,18 +12,30 @@ export const thoughtsType = "thoughts";
 /** How long a line of a diary may be, in characters (DIA-1). */
 export const thoughtsLength = 200;
 
-/** How many of their last lines a companion reads in view as (DIA-3). */
+/** How many of their last lines a character reads in view as, and the master in show (DIA-3). */
 export const thoughtsShown = 3;
 
-/** What a companion writes of themselves, as the character agent and the master read it (DIA-3). */
-export const thoughtsRule = "how you took what happened, whom you trust or fear now, what you mean to do; never what happened (Lived keeps it), and nothing you hide from the others";
+/** What a character writes of themselves, as the character agent and the master read it (DIA-3): a companion's the player reads too, another's no one but them. */
+export function thoughtsRule(companion: boolean): string
+{
+    return companion
+        ? "how you took what happened, whom you trust or fear now, what you mean to do; never what happened (Lived keeps it), and nothing you hide from the others"
+        : "how you took what happened, whom you trust or fear now, what you mean to do, even what you would show no one: no one reads it but you; never what happened (Lived keeps it), nor a secret or a plan your page already holds";
+}
 
-/** A line of a diary: whose, its game date, its text. */
+/** Whether a page keeps a diary (DIA-1): a character of the campaign, not the player's. */
+export function keepsDiary(page: Page): boolean
+{
+    return page.type === "character" && page.system === undefined && !isPlayerCharacter(page);
+}
+
+/** A line of a diary: whose, its game date, its text, and whether it is hidden from the player, as another character's than a companion (DIA-4). */
 export interface Thought
 {
     page: Page;
     date?: string;
     text: string;
+    hidden: boolean;
 }
 
 /** The lines of the diaries, oldest first (DIA-1); of one character when `page` is given. Lines of a page no longer there are left out. */
@@ -72,7 +84,9 @@ function diaryDue(root: string, world: World): Page | undefined
 function thoughtOf(world: World, entry: LogEntry): Thought | undefined
 {
     const page = entry.type === thoughtsType && typeof entry.data.page === "string" ? pageOf(world, entry.data.page) : undefined;
-    return page === undefined || typeof entry.data.text !== "string" ? undefined : { page, ...(entry.date === undefined ? {} : { date: entry.date }), text: entry.data.text };
+    return page === undefined || typeof entry.data.text !== "string"
+        ? undefined
+        : { page, ...(entry.date === undefined ? {} : { date: entry.date }), text: entry.data.text, hidden: entry.visibility !== "public" };
 }
 
 function pageOf(world: World, name: string): Page | undefined

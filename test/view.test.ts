@@ -287,6 +287,9 @@ describe("the view of another character, for the character agent voicing them (V
                 "Known:\n- Coppa (item): Una coppa d'argento.\n- Mulino (place): Una ruota che gira.\n- Kira (character): Una cacciatrice.",
                 "Discovered:\n- Coppa#Veleno: Il vino è avvelenato.",
                 "Lived:\n- day 1, 18:00 · Al mulino: Kira parla con Varro.",
+                // His diary, which only he and the master read (DIA-3, D-566).
+                "Your diary: nothing yet. When you write in it: how you took what happened, whom you trust or fear now, what you mean to do, even what you would show no one: no one reads it but you; "
+                + "never what happened (Lived keeps it), nor a secret or a plan your page already holds.",
             ].join("\n\n"),
         );
         // The player's view is as it was: no secret of Varro's.

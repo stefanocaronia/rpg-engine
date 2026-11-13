@@ -4,7 +4,7 @@ import { isPlayerCharacter, locate, type Page, pagesWithNameOrAlias, parsePageRe
 import { formatGameDate } from "../../time/index.ts";
 import { discoveredSecrets, knownIntroduction, knowsPage, scenesLivedBy } from "../shared/characters/knowledge.ts";
 import { quotedOrders, standingOrders } from "../shared/characters/orders.ts";
-import { thoughtsIn, thoughtsRule, thoughtsShown } from "../shared/characters/thoughts.ts";
+import { keepsDiary, thoughtsIn, thoughtsRule, thoughtsShown } from "../shared/characters/thoughts.ts";
 import { readOpenScene } from "../shared/scene/scene.ts";
 import { sheetText } from "../shared/sheet/sheet.ts";
 import { readPresent } from "../shared/time/time.ts";
@@ -47,7 +47,13 @@ export function memoryOf(sight: PlaceSight): Extract<ViewResult, { kind: "memory
         known,
         discovered: discoveredSecrets(world, knowledge).map((secret) => `${secret.page}#${secret.name}: ${secret.text.replace(/\s*\n\s*/g, " ")}`),
         lived: scenesLivedBy(root, world, self).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.title}${one.summary === "" ? "" : `: ${one.summary}`}`),
-        ...(self.fields.role === "companion" ? { thoughts: thoughtsIn(root, world, self).slice(-thoughtsShown).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.text}`) } : {}),
+        // Their own last lines, hidden or public alike (DIA-3).
+        ...(keepsDiary(self)
+            ? {
+                thoughts: thoughtsIn(root, world, self).slice(-thoughtsShown).map((one) => `${one.date === undefined ? "" : `${one.date} · `}${one.text}`),
+                thoughtsRule: thoughtsRule(self.fields.role === "companion"),
+            }
+            : {}),
         ...(away ? { away: awayRule } : {}),
         ...(orders.length === 0 ? {} : { orders }),
     };
@@ -68,7 +74,7 @@ export function memoryText(result: Extract<ViewResult, { kind: "memory"; }>): st
         list("Known", result.known),
         list("Discovered", result.discovered),
         list("Lived", result.lived),
-        result.thoughts === undefined ? "" : thoughtsText(result.thoughts),
+        result.thoughts === undefined ? "" : thoughtsText(result.thoughts, result.thoughtsRule ?? thoughtsRule(true)),
         result.away ?? "",
         // Last, where it is read just before the character speaks.
         result.orders === undefined
@@ -77,10 +83,10 @@ export function memoryText(result: Extract<ViewResult, { kind: "memory"; }>): st
     ].filter((block) => block !== "").join("\n\n");
 }
 
-/** A companion's last lines of their diary, and what to write in it (DIA-3). */
-function thoughtsText(lines: string[]): string
+/** A character's last lines of their diary, and what to write in it (DIA-3). */
+function thoughtsText(lines: string[], whatToWrite: string): string
 {
-    const rule = `When you write in it: ${thoughtsRule}.`;
+    const rule = `When you write in it: ${whatToWrite}.`;
     return lines.length === 0 ? `Your diary: nothing yet. ${rule}` : `Your diary, the last lines:\n${lines.map((line) => `- ${line}`).join("\n")}\n${rule}`;
 }
 

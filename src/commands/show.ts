@@ -28,6 +28,7 @@ import { featureParts } from "../progression/index.ts";
 import type { GameSystem } from "../systems/index.ts";
 import { firstInChat } from "./shared/campaign/parts.ts";
 import { campaignSystem, campaignWorld, missingSystemHint } from "./shared/campaign/world.ts";
+import { keepsDiary, thoughtsIn, thoughtsShown } from "./shared/characters/thoughts.ts";
 import { skippedPagesNote } from "./shared/notes.ts";
 import { surroundings, surroundingsText } from "./shared/places/environment.ts";
 import { holdsItems, isFallen, lootAdvice } from "./shared/scene/loot.ts";
@@ -46,6 +47,7 @@ export const show = defineCommand({
     description: "Show a page of the world, or one of its sections or secrets, with what it inherits from the pages it derives from. "
         + "It also says where the thing is and which pages link to it. "
         + "The player character and the companions show their sheet in groups, such as Abilities; Page#Group shows one group with how each number is made. "
+        + "A character's page ends with the last lines of their diary, when they keep one. "
         + 'Example: page "Old lighthouse#Cellar".',
     group: "game",
     readOnly: true,
@@ -148,6 +150,8 @@ export const show = defineCommand({
                 : [],
             // A system's page in the campaign's language where it has it, whole (D-542); a section as the system writes it.
             text: group === undefined ? (part?.text ?? page.translated ?? page.body) : "",
+            // The master reads a character's diary here, a hidden line too (DIA-3).
+            diary: reference.section === undefined && !isCopy && keepsDiary(page) ? diaryOf(root, world, page) : { hidden: false, lines: [] },
             linkedFrom: isCopy ? [] : backlinks(world, page).map((link) => ({ page: link.page.name, places: link.places })),
             problems: world.problems,
             loot: reference.section === undefined ? (lootNote(world, system, page, chain) ?? fallenCopiesNote(root, world, system, page)) : undefined,
@@ -212,9 +216,10 @@ export const show = defineCommand({
         const inheritedText = onSheet.size > 0
             ? result.inherited.filter((group) => group.parts.length > 0).map((group) => `From ${group.from}: ${group.parts.join(", ")}. show ${result.page}#${group.parts[0]} gives one.`)
             : result.inherited.filter((group) => group.text !== "").map((group) => `Text inherited from ${group.from}:\n\n${group.text}`);
+        const diary = result.diary.lines.length > 0 ? `Diary, in their words, the last lines${result.diary.hidden ? " (hidden from the player)" : ""}:\n${result.diary.lines.map((line) => `- ${line}`).join("\n")}` : "";
         const links = result.linkedFrom.length > 0 ? `Linked from:\n${result.linkedFrom.map((link) => `- ${link.page}: ${link.places.join(", ")}`).join("\n")}` : "";
         const notes = [result.loot ?? "", result.knows ?? ""].filter((note) => note !== "").join("\n");
-        return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, links, skippedPagesNote(result.problems), notes].filter((block) => block !== "").join("\n\n");
+        return [header, sheet, fields, worked, ...inheritedFields, result.text, ...inheritedText, diary, links, skippedPagesNote(result.problems), notes].filter((block) => block !== "").join("\n\n");
     },
 });
 
@@ -235,6 +240,17 @@ function layerLine(page: Page): string
     const ignored = layer.ignored.length === 0 ? "" : ` It also writes ${layer.ignored.join(", ")}, which a layer cannot change: validate says why.`;
     const what = changed.length === 0 ? "nothing yet" : changed.join("; ");
     return `The campaign changes it with its layer ${layer.path}: ${what}. write ${page.name} with layer and unset, or with empty text, gives back the system's; with reset, all of it.${ignored}`;
+}
+
+/**
+ * "day 1, 18:00 · I will watch him.": a character's last lines of their diary (DIA-3), and whether all of them are hidden from the player; where only some are,
+ * each of those says so.
+ */
+function diaryOf(root: string, world: World, page: Page): { hidden: boolean; lines: string[]; }
+{
+    const last = thoughtsIn(root, world, page).slice(-thoughtsShown);
+    const hidden = last.length > 0 && last.every((one) => one.hidden);
+    return { hidden, lines: last.map((one) => [one.date ?? "", one.hidden && !hidden ? "hidden from the player" : "", one.text].filter((part) => part !== "").join(" · ")) };
 }
 
 /** What show says once in a chat, as play's rule on what the character knows left the instructions for it (D-530). */

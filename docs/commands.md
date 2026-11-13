@@ -308,11 +308,11 @@ Read-only: no. Positional parameters: `who`, `mood`.
 
 ### thoughts
 
-Write a few lines in a companion's diary, when an output says it is due or after a moment that changed them, in their voice: how they took what happened, whom they trust or fear now, what they mean to do; never what happened, which the log keeps, and nothing they hide from the others.
+Write a few lines in a character's diary, in their voice: a companion's when an output says it is due, or any character's of the campaign after a moment that changed them.
 
 Read-only: no. Positional parameters: `page`, `text`.
 
-- `page` (`string`, required): the companion's page
+- `page` (`string`, required): the character's page: a companion, or another character of the campaign, never the player's
 - `text` (`string`, required): their lines, at most 200 characters
 
 ### advance
