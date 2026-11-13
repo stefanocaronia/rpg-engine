@@ -171,6 +171,14 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(await ok("view")).not.toContain("Herb Pouch");
     });
 
+    it("tells the measures of a changed page in the story's units, as the sheet does; in imperial as written (SYS-11, D-328)", async () => {
+        const fields = async () => (JSON.parse(await ok("view", "--json")) as Extract<View, { kind: "overview"; }>).layers?.[0]?.fields;
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12", "--set", "reach=a 10-foot-radius ring, 2 miles off");
+        expect(await fields()).toEqual([{ field: "grit", system: "9/9", campaign: "12/12" }, { field: "reach", campaign: "a 3 m radius ring, 3.2 km off" }]);
+        await ok("config", "units", "imperial");
+        expect(await fields()).toEqual([{ field: "grit", system: "9/9", campaign: "12/12" }, { field: "reach", campaign: "a 10-foot-radius ring, 2 miles off" }]);
+    });
+
     it("marks what shows a page of the system the campaign changed: the page, a thing carried, one that derives from it; never through a creature the character does not know (SYS-11)", async () => {
         await ok("write", "Hardtack", "--layer", "--set", "heft=0.4 kg");
         await ok("write", "Herb Pouch", "--layer", "--set", "uses=8/8");

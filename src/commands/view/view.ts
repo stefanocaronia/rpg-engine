@@ -279,7 +279,7 @@ export const view = defineCommand({
         // The system's pages of the party's sheets, in the campaign's language where the system has no translation (D-539).
         wantTexts(root, context, world, [...players, ...companions]);
         const textsTranslating = translatingTexts(context, world);
-        const layers = shownLayers(world, knowledge);
+        const layers = shownLayers(world, knowledge, system, measuresOf(root, system));
         return {
             kind: "overview",
             campaign: settings.name,

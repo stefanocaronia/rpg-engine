@@ -1,7 +1,7 @@
 // Roads as a graph (MECCANICHE, ROA-1, ROA-4, TRV-4, D-262): lengths, the stops of a road, and the laws of the quickest way on roads made at random.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { formatLength, formatStep, readFirstLength, readLength, readSpeed } from "../src/core/length.ts";
+import { formatLength, formatStep, lengthsInUnits, readFirstLength, readLength, readSpeed } from "../src/core/length.ts";
 import { crossingAlong, directionName, directionTo, distanceBetween, meanPoint, pointAlong, pointFrom, quickestWay, readDirection, type Stretch, stretchesOf, type Way } from "../src/map/index.ts";
 import { readStops } from "../src/pages/index.ts";
 
@@ -41,6 +41,18 @@ describe("lengths and speeds (ROA-1, TRV-1, D-262)", () => {
         expect([readFirstLength("30 ft., fly 60 ft.", fifth), readFirstLength("25 feet", fifth), readFirstLength("9 m", fifth), readFirstLength("0 ft", fifth)]).toEqual([9, 7.5, 9, 0]);
         expect([readFirstLength(30, fifth), readFirstLength("trenta piedi", fifth), readFirstLength("6 km/h", fifth), readFirstLength("9 metri", fifth)]).toEqual([undefined, undefined, undefined, undefined]);
         expect([formatStep(7.5, "metric"), formatStep(12, "metric"), formatStep(7.5, "imperial", fifth), formatStep(1.5, "imperial", fifth)]).toEqual(["7.5 m", "12 m", "25 feet", "5 feet"]);
+    });
+
+    it("D-328: a text's lengths in feet and miles are told in metric with the game's foot and mile, a hyphen around the unit too; in imperial the text stays as written", () => {
+        const fifth = { mile: 1500, foot: 0.3 };
+        const metric = (text: string): string => lengthsInUnits(text, "metric", fifth);
+        expect(metric("30 ft., fly 60 ft.")).toBe("9 m, fly 18 m");
+        expect(metric("a 15-foot cone")).toBe("a 4.5 m cone");
+        expect(metric("a 10-foot-radius sphere")).toBe("a 3 m radius sphere");
+        expect(metric("Range 1,000 feet")).toBe("Range 300 m");
+        expect([metric("1 mile"), metric("500 miles"), metric("a 5-mile radius")]).toEqual(["1.5 km", "750 km", "a 7.5 km radius"]);
+        expect([metric("18 m"), metric("6 km/h"), metric("20/60"), metric("2d6 + 3"), metric("a 5 left turn"), metric("3 feats")]).toEqual(["18 m", "6 km/h", "20/60", "2d6 + 3", "a 5 left turn", "3 feats"]);
+        expect(lengthsInUnits("a 15-foot cone, 500 miles", "imperial", fifth)).toBe("a 15-foot cone, 500 miles");
     });
 });
 

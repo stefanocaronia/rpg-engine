@@ -61,10 +61,22 @@ export function formatStep(metres: number, units: UnitSystem, imperial: Imperial
     return units === "imperial" ? `${Math.round(metres / imperial.foot)} feet` : `${oneDecimal(metres)} m`;
 }
 
-/** A text with the lengths it writes in feet told in the units of the story, as a speed of the sheet (D-328): 30 ft., fly 60 ft. is 9 m, fly 18 m in metric. */
+/**
+ * A text with the lengths it writes in feet and miles told in the units of the story, with the game's foot and mile, as a speed of the sheet (D-328): 30 ft.,
+ * fly 60 ft. is 9 m, fly 18 m in metric; a 15-foot cone a 4.5 m cone, a 10-foot-radius sphere a 3 m radius sphere, 500 miles 750 km.
+ */
 export function lengthsInUnits(text: string, units: UnitSystem, imperial: ImperialUnits = trueImperialUnits): string
 {
-    return units === "imperial" ? text : text.replace(/(\d+(?:\.\d+)?)\s*(?:ft\.?|feet|foot)(?![a-z])/gi, (_, number: string) => formatStep(Number(number) * imperial.foot, units, imperial));
+    if (units === "imperial") {
+        return text;
+    }
+
+    // A hyphen may join the number to its unit, and the unit to the word it measures.
+    return text.replace(/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)(?:-|\s*)(ft\.?|feet|foot|miles?)(?![a-z])(-(?=[a-z]))?/gi, (_, number: string, unit: string, hyphen?: string) => {
+        const amount = Number(number.replace(/,/g, ""));
+        const told = /^mile/i.test(unit) ? formatLength(amount * imperial.mile, units, imperial) : formatStep(amount * imperial.foot, units, imperial);
+        return hyphen === undefined ? told : `${told} `;
+    });
 }
 
 /** The first length a text gives, in metres, as a sheet writes a speed: 30 ft., 30 feet, 9 m; undefined when it gives none, or a number without its unit. */

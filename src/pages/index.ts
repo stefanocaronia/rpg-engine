@@ -27,7 +27,7 @@ export {
     writtenFieldName,
 } from "./inheritance.ts";
 export { layeredPage, layeredPages, layerFolder, type LayerMark, layerParts, layersFolderName, layerTakes, systemOriginal } from "./layers.ts";
-export { carriedWeight, type LoadRule, weightUnit } from "./load.ts";
+export { carriedWeight, type LoadRule, poundsInKilograms, weightUnit } from "./load.ts";
 export { type MapField, mapKey, mapOf, mapProblems, type PlaceMap, readMapField, sameFrame } from "./maps.ts";
 export {
     everyGoalTicked,

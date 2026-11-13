@@ -31,6 +31,19 @@ export function weightUnit(world: World, field: string): string | undefined
     return typeof written === "string" ? /(\p{L}[\p{L}.]*)\s*$/u.exec(written)?.[1] : undefined;
 }
 
+/** A weight written in pounds told in kilograms at the system's pound, its note kept: 6 lb is 3 kg, 5 lb (full) 2.5 kg (full); any other text unchanged. */
+export function poundsInKilograms(text: string, pound: number): string
+{
+    const match = /^\s*([\d,]*(?:\.\d+)?)\s*(½|¼|¾|\d+\/\d+)?\s*(?:lbs?\.?|pounds?)\s*(\([^()]*\))?\s*$/iu.exec(text);
+
+    if (match === null || (match[1] === "" && match[2] === undefined)) {
+        return text;
+    }
+
+    const kilograms = Math.round(writtenWeight(match[1], match[2]) * pound * 1000) / 1000;
+    return match[3] === undefined ? `${kilograms} kg` : `${kilograms} kg ${match[3]}`;
+}
+
 /** How many pieces one of a kind holds, by the field the system declares for its bundle: 1 for a kind not sold by the bundle (STK-2). */
 export function bundleOf(field: string | undefined, kind: Page): number
 {
@@ -86,10 +99,16 @@ function weightOf(world: World, field: string, page: Page): number
         return 0;
     }
 
+    return writtenWeight(match[1], match[2]);
+}
+
+/** A weight's number from its whole part and its fraction, as written: 1,000, 0,5, 1 and ½, and 1/4. */
+function writtenWeight(whole: string, fraction: string | undefined): number
+{
     // A comma before three digits groups thousands, as 1,000; any other is a decimal comma, as 0,5.
-    const whole = match[1] === "" ? 0 : Number(match[1].replace(/,(?=\d{3}(?!\d))/g, "").replace(",", "."));
-    const part = match[2] === undefined ? 0 : ({ "½": 0.5, "¼": 0.25, "¾": 0.75 } as Record<string, number>)[match[2]] ?? Number(match[2].split("/")[0]) / Number(match[2].split("/")[1]);
-    return whole + part;
+    const number = whole === "" ? 0 : Number(whole.replace(/,(?=\d{3}(?!\d))/g, "").replace(",", "."));
+    const part = fraction === undefined ? 0 : ({ "½": 0.5, "¼": 0.25, "¾": 0.75 } as Record<string, number>)[fraction] ?? Number(fraction.split("/")[0]) / Number(fraction.split("/")[1]);
+    return number + part;
 }
 
 /** What the coins of a purse weigh, as many coins as the system says make one unit of weight; 0 when it says none. */

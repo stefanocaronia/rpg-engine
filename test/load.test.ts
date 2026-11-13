@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
+import { poundsInKilograms } from "../src/pages/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 let folder: string;
@@ -80,6 +81,13 @@ describe("the load a character carries", () => {
         expect(await ok("write", "Sacco di farina", "--type", "item")).toContain('Sacco di farina has no heft, so it adds nothing to a load: if it weighs, estimate it from things like it, such as set heft="2 kg".');
         expect(await ok("write", "Lanterna di Bruna", "--type", "item", "--set", "item=[[Lantern]]")).not.toContain("has no heft");
         expect(await ok("write", "Pietra", "--type", "item", "--set", "heft=3 kg")).not.toContain("has no heft");
+    });
+
+    it("tells a weight written in pounds in kilograms at the system's pound, its note kept; any other text as written (LOAD-2)", () => {
+        const told = ["6 lb", "1/4 lb", "1½ lb", "5 lb (full)", "1,000 lb.", "2 pounds"].map((weight) => poundsInKilograms(weight, 0.5));
+        expect(told).toEqual(["3 kg", "0.125 kg", "0.75 kg", "2.5 kg (full)", "500 kg", "1 kg"]);
+        expect(["×2", "3 kg", "heavy", "lb", ""].map((weight) => poundsInKilograms(weight, 0.5))).toEqual(["×2", "3 kg", "heavy", "lb", ""]);
+        expect(poundsInKilograms("1 lb", 0.4536)).toBe("0.454 kg");
     });
 });
 
