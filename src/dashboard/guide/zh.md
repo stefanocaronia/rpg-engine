@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,94dddd74,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine：完整指南
 
 **RPG Engine** 让你和一位 **AI 主持人**一起玩桌面角色扮演游戏。你在**聊天**里和主持人交谈；RPG Engine 在幕后工作：它**记住世界**，**掷骰子**，**记账**。聊天旁边，你在浏览器里开着一个页面，也就是**仪表盘**，上面有你的角色卡、骰子、地图和日志。
@@ -233,11 +233,13 @@ RPG Engine 可以按**图片**设置，为你到达的地点、接下的任务�
 
 SRD 里没有的内容，你也可以玩，只要来自你自己拥有的书：主持人会把它写成你战役的页面，RPG Engine 将它们视为自己的内容。RPG Engine 只附带开放内容；主持人所知道的则不受此限。
 
-你自己的手册可以成为你的资料库：告诉主持人它们在哪里，*[我的手册在 D:\Books\5e。]*，或者在 Packages › Library 中添加它们所在的文件夹，并在电脑弹出的窗口里点一次“是”。RPG Engine 会在这台电脑上读取它们；每个战役使用你在那里打开的文件夹，主持人在裁定规则时会在 SRD 之后搜索这些手册，并注明书名和页码。纯文本，或文字可以选中的 PDF，读取效果最好；扫描版 PDF 则是根据页面图片来识别的，只支持 Windows，需要几分钟，也会有少量错误。RPG Engine 绝不会修改你的手册，绝不会把手册文字发送到任何地方，也绝不会把它复制进战役。
+你自己的手册可以成为你的资料库：告诉主持人它们在哪里，*[我的手册在 D:\Books\5e。]*，或者在 扩展包 › 资料库 中添加它们所在的文件夹，并在电脑弹出的窗口里点一次“是”。RPG Engine 会在这台电脑上读取它们；每个战役使用你在那里打开的文件夹，主持人在裁定规则时会在 SRD 之后搜索这些手册，并注明书名和页码。纯文本，或文字可以选中的 PDF，读取效果最好；扫描版 PDF 则是根据页面图片来识别的，只支持 Windows，需要几分钟，也会有少量错误。RPG Engine 绝不会修改你的手册，绝不会把手册文字发送到任何地方，也绝不会把它复制进战役。
 
 ### 5.3 房规与你自己的补充
 
 对主持人说：*[房规：攻击掷出自然 1 时，武器会脱手。]* 主持人会把它记为牌桌上的约定；需要时，也会写成一个页面，或角色卡上的一个数值。已经写好的房规，可以作为文本文件放进战役的 `rules` 文件夹。
+
+当主持人为你的战役修改游戏系统中的某个页面时，比如某个生物的生命值或某个法术的射程，仪表盘会在该内容出现的每个位置标上一个小铅笔图标。扩展包 › 已安装 会在对应的游戏系统下，列出被修改的内容，并与系统原有的内容并排显示；在那里，你可以把页面恢复成系统原本的写法。
 
 ### 5.4 添加或导入你自己的游戏系统
 

@@ -238,6 +238,8 @@ Your own manuals can be your library: tell the master where they are, *[My manua
 
 Ask the master: *[House rule: a natural 1 on an attack means you drop your weapon.]* It keeps it as an agreement of the table, or writes a page or a number of the sheet when one is needed. House rules already written out can go as text files in the campaign's `rules` folder.
 
+When the master changes a page of the game system for your campaign, as a creature's hit points or a spell's range, the dashboard marks it with a small pencil wherever it shows. Packages › Installed lists what changed, under the game system, beside what the system gave; there you can put a page back as the system writes it.
+
 ### 5.4 Adding or importing your own game system
 
 A game system is a package: the master installs one from npm, a folder or a file, and one that is not ours only with your yes, in a form of your agent or a window of your computer. Making one is a developer's work, described in RPG Engine's documents on GitHub. Turning a book of yours into a game system is not here yet ([Coming later](#9-coming-later)).

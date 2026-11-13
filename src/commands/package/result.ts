@@ -1,6 +1,6 @@
 // What the package command gives back
 import type { Extension } from "../../extensions/index.ts";
-import type { AdventureExported, AdventureInstalled } from "../shared/books/adventures.ts";
+import type { AdventureExported, AdventureInstalled, AdventureRemoved } from "../shared/books/adventures.ts";
 import type { InstalledLanguage, InstalledSystem } from "./here.ts";
 
 export type PackageResult =
@@ -12,7 +12,7 @@ export type PackageResult =
     | { kind: "system-installed"; system: InstalledSystem; plays?: string; loaded?: { runs: true; } | { why: string; }; }
     | { kind: "language-installed"; language: InstalledLanguage; replaced?: string; missing: number; }
     | ({ kind: "adventure-installed"; } & AdventureInstalled)
-    | { kind: "adventure-removed"; title: string; }
+    | ({ kind: "adventure-removed"; } & AdventureRemoved)
     | ({ kind: "exported"; } & AdventureExported);
 
 /** A package on this computer, as list gives it to the master and to the dashboard; broken when it does not read (D-442); with where its problems are reported. */

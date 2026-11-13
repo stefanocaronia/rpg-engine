@@ -1,5 +1,5 @@
 // What the page shows as last read, held back while a card's dice fly, and whose sheet it reads when the address names no one.
-import type { Asked, CalendarDay, ChoicesNow, Member, Mood, SheetCards, SheetGroup, ShownImport, ShownPlace, ShownRoll, ShownScene } from "../data.ts";
+import type { Asked, CalendarDay, ChoicesNow, Member, Mood, SheetCards, SheetGroup, ShownImport, ShownLayer, ShownPlace, ShownRoll, ShownScene } from "../data.ts";
 import type { PackCard } from "../packages/card.ts";
 import { hasTurns } from "../play/turns.tsx";
 
@@ -16,6 +16,8 @@ export interface Shown
     chosen?: string;
     /** The line under the chosen one's name, such as Level 3 Cleric. */
     headline?: string;
+    /** What the chosen one's sheet shows comes from a page of the game system the campaign changed (D-564). */
+    layered?: true | undefined;
     sheet: SheetGroup[];
     cards?: SheetCards;
     text: string;
@@ -49,6 +51,8 @@ export interface Shown
     pending?: Steady;
     /** The choices the master prepared for the party, and whether the player rolls their own dice (D-556). */
     choices?: ChoicesNow;
+    /** The pages of the game system the campaign changed (D-564). */
+    layers?: ShownLayer[] | undefined;
 }
 
 /** The page as read now; while a card's dice fly, with the sheet and the fight as they were, what the roll changed kept until they land (D-461). */
@@ -62,6 +66,7 @@ export function withHeld(before: Shown, next: Shown, hold: boolean): Shown
         party: shown.party,
         chosen: shown.chosen,
         headline: shown.headline,
+        layered: shown.layered,
         sheet: shown.sheet,
         cards: shown.cards,
         text: shown.text,
@@ -97,4 +102,4 @@ export function turnKey(scene: ShownScene | undefined): string
 }
 
 /** What a roll changes of the sheet and the fight, which the page shows only once its dice land. */
-type Steady = Pick<Shown, "party" | "chosen" | "headline" | "sheet" | "cards" | "text" | "knownBy" | "story" | "openScene" | "pack">;
+type Steady = Pick<Shown, "party" | "chosen" | "headline" | "layered" | "sheet" | "cards" | "text" | "knownBy" | "story" | "openScene" | "pack">;

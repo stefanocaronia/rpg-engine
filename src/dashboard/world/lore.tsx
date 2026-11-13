@@ -7,6 +7,7 @@ import { sectionAddress } from "../address.ts";
 import { pictureAddress, readView, type WorldView } from "../api.ts";
 import type { KnownEntry, Member, ShownDocument } from "../data.ts";
 import { useMedia } from "../parts/card.tsx";
+import { ChangedLine } from "../parts/changed.tsx";
 import { Icon } from "../parts/icons.tsx";
 import { placeKindLabel, placeKinds } from "../parts/map-symbols.ts";
 import { knowersOf, type LinkTo, Markdown, plainLine } from "../parts/markdown.tsx";
@@ -271,6 +272,8 @@ function LoreReader({ entry, version, link, onMap, focus, several, kinds }: {
     const [text, setText] = useState<string>();
     // Who knows each secret, when not all the player characters do: said after its title, the one place the page names them (D-480 (7)).
     const [knowers, setKnowers] = useState<{ secret: string; who: string[]; }[]>([]);
+    // Whether the campaign changed it, or the page of the game system it derives from (D-564).
+    const [changed, setChanged] = useState(false);
     const [problem, setProblem] = useState(false);
     const reads = useRef(0);
     const title = useRef<HTMLHeadingElement>(null);
@@ -283,6 +286,7 @@ function LoreReader({ entry, version, link, onMap, focus, several, kinds }: {
                 if (reading === reads.current) {
                     setText(page.kind === "page" ? page.text : "");
                     setKnowers(page.kind === "page" ? page.knownBy ?? [] : []);
+                    setChanged(page.kind === "page" && page.layered === true);
                     setProblem(false);
                 }
             },
@@ -314,6 +318,7 @@ function LoreReader({ entry, version, link, onMap, focus, several, kinds }: {
                             </span>
                         </p>
                     )}
+                    {changed && <ChangedLine />}
                 </div>
             </header>
             {(onMap !== undefined || entry.companion) && (

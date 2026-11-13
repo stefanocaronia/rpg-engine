@@ -234,7 +234,7 @@ function layerLine(page: Page): string
     ].filter((part) => part !== "");
     const ignored = layer.ignored.length === 0 ? "" : ` It also writes ${layer.ignored.join(", ")}, which a layer cannot change: validate says why.`;
     const what = changed.length === 0 ? "nothing yet" : changed.join("; ");
-    return `The campaign changes it with its layer ${layer.path}: ${what}. write ${page.name} with layer and unset, or with empty text, gives back the system's.${ignored}`;
+    return `The campaign changes it with its layer ${layer.path}: ${what}. write ${page.name} with layer and unset, or with empty text, gives back the system's; with reset, all of it.${ignored}`;
 }
 
 /** What show says once in a chat, as play's rule on what the character knows left the instructions for it (D-530). */

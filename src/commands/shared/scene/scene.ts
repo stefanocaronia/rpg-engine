@@ -3,6 +3,7 @@ import { z } from "zod";
 import { changeStateAt, readStateValues } from "../../../campaign/index.ts";
 import { readLog } from "../../../core/log.ts";
 import type { Problem } from "../../../core/problem.ts";
+import { Refusal } from "../../../core/refusal.ts";
 import { sameName } from "../../../core/text.ts";
 import { baseChain, findPage, isEmptyField, isInParty, kindMessage, locate, type Page, pagesWithName, parsePageReference, readOnlyMessage, systemFirstFix, systemLabel, systemPageNamed, type World } from "../../../pages/index.ts";
 import { readScene, type Scene, type SceneCopy } from "../../../scene/index.ts";
@@ -146,7 +147,12 @@ export function checkNotCopied(world: World, open: { scene?: Scene; problem?: Pr
     const copies = open.scene === undefined ? [] : copiesReadingFrom(world, open.scene, page);
 
     if (copies.length > 0) {
-        throw new Error(`${page.name} has copies in the open scene, which read from it what they do not change: ${copies.join(", ")}. Change a copy; to change ${page.name} for all, close the scene first. Nothing changed.`);
+        // A refusal with a code: on the dashboard the page says it in its own words, never these, which name the copies and their numbers.
+        throw new Refusal(
+            `${page.name} has copies in the open scene, which read from it what they do not change: ${copies.join(", ")}. Change a copy; to change ${page.name} for all, close the scene first. Nothing changed.`,
+            "copies-in-scene",
+            { page: page.name },
+        );
     }
 }
 

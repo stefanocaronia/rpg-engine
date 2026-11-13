@@ -1,7 +1,7 @@
-// Adventures as packages (D-483, ADV-1–ADV-7): installed whole or not at all, from a folder or a .zip, with their dates moved to today; taken out while the
-// story has not touched them; exported as they were at the start, without the player characters.
+// Adventures as packages (D-483, ADV-1–ADV-8): installed whole or not at all, from a folder or a .zip, with their dates moved to today; taken out while the
+// story has not touched them; exported as they were at the start, without the player characters, with the campaign's layers over its game system as they are now.
 import { zipSync } from "fflate";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -268,6 +268,284 @@ describe("package export (ADV-7)", () => {
     });
 });
 
+describe("the layers an adventure carries over its game system (ADV-8, SYS-11)", () => {
+    const layersFolder = "layers/fake/world/creatures";
+    const houndLayer = `${layersFolder}/Bog Hound.md`;
+    const witchLayer = `${layersFolder}/Fen Witch.md`;
+    const bigHound = "---\ngrit: 12/12\n---\n";
+    const oldWitch = "---\ngrit: 12/12\nguard: 9\n---\n\nAn old woman of the reeds, who trades in years.\n\n## Curse\n\nA name taken is a year lost.\n";
+    // Without its own Bog Hound, which would take the place of the system's.
+    const withLayers = (layers: Record<string, string>): Record<string, string | null> => ({ "world/creatures/Bog Hound.md": null, ...layers });
+    const layerNow = (path: string, root = folder): string | undefined => (existsSync(join(root, path)) ? readFileSync(join(root, path), "utf8") : undefined);
+    const exported = (root = folder) => readAdventureZip(readFileSync(join(root, "exports", "Prova.adventure.zip")), "Prova.adventure.zip");
+
+    function handWrite(path: string, text: string): void
+    {
+        mkdirSync(dirname(join(folder, path)), { recursive: true });
+        writeFileSync(join(folder, path), text);
+    }
+
+    /** A second adventure, with one page of its own and these layers. */
+    function towerFolder(layers: Record<string, string>): string
+    {
+        const none = Object.fromEntries(Object.keys(pages).map((path) => [path, null]));
+        return adventureFolder({ ...none, "world/places/Torre.md": "A tower.\n", ...layers }, "title: La torre\nabout: A tower in the fens.\nlanguage: en\nversion: 1.0.0\nneeds: {system: fake}\n");
+    }
+
+    /** Another campaign on the fake system, in play or still in its setup, with the commands that run in it. */
+    async function otherCampaign(played: boolean): Promise<{ root: string; run: (...args: string[]) => ReturnType<typeof runCommandLine>; }>
+    {
+        const root = makeTempFolder();
+        const own = testContext(root);
+        const run = (...args: string[]) => runCommandLine(args, own);
+        await run("init", "--name", "Altrove", "--language", "en", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
+
+        if (played) {
+            inPlay(root);
+        }
+
+        return { root, run };
+    }
+
+    it("exports the layers at their own path and installs them there in another campaign, the same bytes, with no folder of the adventure's and no date moved", async () => {
+        await rpg("write", "Borgo", "--type", "place");
+        await rpg("write", "Bog Hound", "--layer", "--set", "grit=12/12", "--set", "omen=day 2, 06:00");
+        await rpg("write", "Bog Hound#Bite", "--layer", "--text", "Three dice, at who stands beside it.");
+        const written = layerNow(houndLayer);
+        makeSave(folder, context, undefined, "session zero");
+        const result = await rpg("package", "export");
+        expect(result.output).toContain("1 pages, from the save 1 - save, and the campaign's layers over the game system as they are now (Bog Hound).");
+        const file = join(folder, "exports", "Prova.adventure.zip");
+        const first = readFileSync(file);
+        expect(Object.keys(exported().layers)).toEqual(["world/creatures/Bog Hound.md"]);
+        // The manifest lists no layer: they are told by their folder.
+        expect(new TextDecoder().decode(first)).not.toContain("layers:");
+        await rpg("package", "export");
+        expect(readFileSync(file).equals(first)).toBe(true);
+
+        const other = await otherCampaign(true);
+        const state = join(other.root, "state.yaml");
+        writeFileSync(state, `${readFileSync(state, "utf8").replace(/^date:.*\n/m, "")}date: day 5, 08:00\n`);
+        const installed = await other.run("package", "install", file);
+        expect(installed.exitCode, installed.output).toBe(0);
+        expect(installed.output).toContain("Its layers change pages of the game system for the whole campaign: Bog Hound (creature); show says what each changes.");
+        expect(layerNow(houndLayer, other.root)).toBe(written);
+        expect(existsSync(join(other.root, layersFolder, "Prova"))).toBe(false);
+        expect((await other.run("show", "Bog Hound")).output).toContain("grit: 12/12");
+        expect(readLogFile(other.root).at(-1)).toMatchObject({ type: "adventure-installed", data: { files: ["world/places/Prova/Borgo.md"], layers: { [houndLayer]: expect.stringMatching(/^[0-9a-f]{16}$/) } } });
+    });
+
+    it("needs the game system and credits it, saying the material is changed, with layers alone and no page that uses it", async () => {
+        await rpg("write", "Borgo", "--type", "place");
+        await rpg("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        makeSave(folder, context, undefined, "session zero");
+        await rpg("package", "export");
+        expect(exported().manifest.needs.system).toBe("fake");
+        expect(exported().manifest.attribution).toBe(
+            "The fake system of rpg-engine's tests, made for them; no game's text. Changes were made: the files under layers/ modify pages the game system adapted from that material.",
+        );
+    });
+
+    it("takes the layers as they are now: one written after the save of session zero, and those of a campaign never played", async () => {
+        makeSave(folder, context, undefined, "session zero");
+        await rpg("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        expect((await rpg("package", "export")).exitCode).toBe(0);
+        expect(new TextDecoder().decode(exported().layers["world/creatures/Bog Hound.md"])).toBe(bigHound);
+
+        const setup = await otherCampaign(false);
+        mkdirSync(join(setup.root, layersFolder), { recursive: true });
+        writeFileSync(join(setup.root, houndLayer), bigHound);
+        const result = await setup.run("package", "export");
+        expect(result.output).toContain("from the world as it is, before play, and the campaign's layers over the game system as they are now (Bog Hound)");
+        expect(Object.keys(readAdventureZip(readFileSync(join(setup.root, "exports", "Altrove.adventure.zip")), "a.zip").layers)).toEqual(["world/creatures/Bog Hound.md"]);
+    });
+
+    it("leaves out by name a layer over no page, one that writes what no layer changes, and one an installed adventure brought; that one goes once it is changed", async () => {
+        makeSave(folder, context, undefined, "session zero");
+        handWrite(`${layersFolder}/Nessuno.md`, "---\ngrit: 1/1\n---\n");
+        handWrite("layers/fake/world/items/Hardtack.md", "---\ntags: [cibo]\n---\n");
+        await rpg("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        expect((await rpg("package", "install", adventureFolder(withLayers({ [witchLayer]: oldWitch })))).exitCode).toBe(0);
+        const result = await rpg("package", "export");
+        expect(result.output).toContain("as they are now (Bog Hound), without the layers an installed adventure brought, not changed since (Fen Witch)");
+        expect(result.output).toContain("the layers over no page of the game system, which validate names (Nessuno)");
+        expect(result.output).toContain("the layers that write what a layer cannot change, which validate names with the fields to take out (Hardtack)");
+        expect(Object.keys(exported().layers)).toEqual(["world/creatures/Bog Hound.md"]);
+
+        await rpg("write", "Fen Witch", "--layer", "--set", "guard=8");
+        expect((await rpg("package", "export")).output).toContain("as they are now (Bog Hound, Fen Witch), without");
+        expect(Object.keys(exported().layers)).toEqual(["world/creatures/Bog Hound.md", "world/creatures/Fen Witch.md"]);
+    });
+
+    it("counts a layer with a source among what comes from the player's documents", async () => {
+        makeSave(folder, context, undefined, "session zero");
+        await rpg("write", "Bog Hound", "--layer", "--set", "grit=12/12", "--set", "source=The King, p. 3");
+        expect((await rpg("package", "export")).output).toContain("1 of its pages or layers come from the player's own documents (source:): Bog Hound. So it says personal use only.");
+        expect(exported().manifest.license).toBe("personal use only");
+    });
+
+    it("keeps the campaign's own layer over a page byte for byte, names what the adventure's would have given, and installs the rest; goblin.md is Goblin.md", async () => {
+        handWrite(witchLayer, "---\ngrit: 10/10\n---\n");
+        const result = await rpg("package", "install", adventureFolder(withLayers({ [`${layersFolder}/fen witch.md`]: oldWitch, [houndLayer]: bigHound, [`${layersFolder}/Nessuno.md`]: bigHound })));
+        expect(result.exitCode, result.output).toBe(0);
+        expect(layerNow(witchLayer)).toBe("---\ngrit: 10/10\n---\n");
+        expect(readdirSync(join(folder, layersFolder)).sort()).toEqual(["Bog Hound.md", "Fen Witch.md"]);
+        expect(result.output).toContain("Its layers change pages of the game system for the whole campaign: Bog Hound (creature); show says what each changes.");
+        expect(result.output).toContain(
+            "The campaign has its own layer over Fen Witch, which stays as it is: the adventure's is left out, and would have given Fen Witch (grit, guard, the section Curse, the introduction). To take any of it, write the page with layer.",
+        );
+        expect(result.output).toContain(`Left out, layers over no page of the game system in the rules the campaign plays: ${layersFolder}/Nessuno.md.`);
+        expect(Object.keys((readLogFile(folder).at(-1)?.data as { layers: Record<string, string>; }).layers)).toEqual([houndLayer]);
+        // Taken out, it leaves the campaign's own where it is.
+        expect((await rpg("package", "remove", "Il pozzo")).output).toBe("Il pozzo is out of the campaign, with the files it wrote. Its layers are off Bog Hound (creature): each reads as the game system writes it again.");
+        expect(layerNow(witchLayer)).toBe("---\ngrit: 10/10\n---\n");
+        expect(layerNow(houndLayer)).toBeUndefined();
+    });
+
+    it("leaves a layer two adventures brought the same with the one that stays", async () => {
+        await rpg("package", "install", adventureFolder(withLayers({ [witchLayer]: oldWitch })));
+        const second = await rpg("package", "install", towerFolder({ [witchLayer]: oldWitch }));
+        expect(second.exitCode, second.output).toBe(0);
+        expect(second.output).not.toContain("has its own layer");
+        expect((await rpg("package", "remove", "Il pozzo")).output).toBe("Il pozzo is out of the campaign, with the files it wrote.");
+        expect(layerNow(witchLayer)).toBe(oldWitch);
+        expect((await rpg("package", "remove", "La torre")).output).toContain("Its layers are off Fen Witch (creature)");
+        expect(layerNow(witchLayer)).toBeUndefined();
+    });
+
+    it("finishes an install that stopped halfway with its layers its own, which go when it is taken out (ADV-5)", async () => {
+        const adventure = adventureFolder(withLayers({ [houndLayer]: bigHound }));
+        await rpg("package", "install", adventure);
+        // As if it stopped before its line: the line goes, the mark stays.
+        writeFileSync(join(folder, "log.jsonl"), readFileSync(join(folder, "log.jsonl"), "utf8").trim().split("\n").slice(0, -1).join("\n") + "\n");
+        writeFileSync(join(folder, ".adventure-install.yaml"), 'title: "Il pozzo"\nshift: 0\n');
+        expect((await rpg("package", "install", adventure)).exitCode).toBe(0);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "adventure-installed", data: { layers: { [houndLayer]: expect.any(String) } } });
+        expect(layerNow(houndLayer)).toBe(bigHound);
+        expect((await rpg("package", "remove", "Il pozzo")).exitCode).toBe(0);
+        expect(layerNow(houndLayer)).toBeUndefined();
+    });
+
+    it("takes the mark away when the install stopped after its line, so that another adventure comes in (ADV-5)", async () => {
+        const adventure = adventureFolder();
+        await rpg("package", "install", adventure);
+        writeFileSync(join(folder, ".adventure-install.yaml"), 'title: "Il pozzo"\nshift: 0\n');
+        expect((await rpg("package", "install", adventure)).output).toContain("The campaign already has the adventure Il pozzo");
+        expect(existsSync(join(folder, ".adventure-install.yaml"))).toBe(false);
+        expect((await rpg("package", "install", towerFolder({}))).exitCode).toBe(0);
+    });
+
+    it("takes out the layers still as it wrote them, keeps by name one changed since with write or by hand, and skips one already gone (ADV-6)", async () => {
+        const oxLayer = `${layersFolder}/Mire Ox.md`;
+        const cutterLayer = `${layersFolder}/Reed Cutter.md`;
+        await rpg("package", "install", adventureFolder(withLayers({ [houndLayer]: bigHound, [witchLayer]: oldWitch, [oxLayer]: "---\ngrit: 30/30\n---\n", [cutterLayer]: "---\ngrit: 5/5\n---\n" })));
+        await rpg("write", "Fen Witch", "--layer", "--set", "guard=8");
+        handWrite(oxLayer, "---\ngrit: 31/31\n---\n");
+        rmSync(join(folder, cutterLayer));
+        const result = await rpg("package", "remove", "Il pozzo");
+        expect(result.output).toBe(
+            "Il pozzo is out of the campaign, with the files it wrote. Its layers are off Bog Hound (creature): each reads as the game system writes it again. "
+                + "What it layered over Fen Witch, Mire Ox was changed since it came, and stays the campaign's: write the page with layer and reset takes it off.",
+        );
+        expect(layerNow(houndLayer)).toBeUndefined();
+        expect(layerNow(witchLayer)).toContain("guard: 8");
+        expect(layerNow(oxLayer)).toBe("---\ngrit: 31/31\n---\n");
+        expect((await rpg("show", "Bog Hound")).output).toContain("grit: 9/9");
+    });
+
+    it("is taken out after a fight with the creature its layer changes: a layer is no page of the adventure's the story touched (ADV-6)", async () => {
+        await rpg("package", "install", adventureFolder(withLayers({ [houndLayer]: bigHound })));
+        expect((await rpg("scene", "open", "--title", "Bosco", "--type", "combat", "--creatures", "Bog Hound=1")).exitCode).toBe(0);
+        expect((await rpg("change", "Bog Hound 1", "grit", "--by=-3")).output).toContain("9/12");
+        expect((await rpg("scene", "close", "--summary", "The hound is driven off.")).exitCode).toBe(0);
+        expect((await rpg("package", "remove", "Il pozzo")).exitCode).toBe(0);
+        expect(layerNow(houndLayer)).toBeUndefined();
+    });
+
+    it("refuses whole a .zip with layers for another system, without the system it needs, of another kind, or writing what no layer changes", async () => {
+        const refused = async (changes: Record<string, string>, said: string) => {
+            const result = await rpg("package", "install", adventureZip(changes));
+            expect(result.exitCode, result.output).toBe(1);
+            expect(result.output).toContain(said);
+            expect(existsSync(join(folder, "world", "characters", "Il pozzo"))).toBe(false);
+            expect(existsSync(join(folder, "layers"))).toBe(false);
+        };
+
+        await refused({ "layers/free/world/creatures/Bog Hound.md": bigHound }, "holds layers/free/world/creatures/Bog Hound.md, and layers/ holds only fake/world/ with markdown files");
+        await refused({ "layers/fake/world/creatures/notes.txt": "Mine." }, "holds layers/fake/world/creatures/notes.txt, and layers/ holds only fake/world/ with markdown files");
+        await refused({ "layers/fake/rules/Acqua.md": "# Acqua\n" }, "layers/ holds only fake/world/ with markdown files");
+        await refused(
+            { "adventure.yaml": manifest.replace("needs: {system: fake}\n", "").replace("levels: 1-3\n", ""), [houndLayer]: bigHound },
+            "a layer over a page of a game system, and its adventure.yaml names none: write there the system its layers are for, as needs: {system: its name}",
+        );
+        await refused(
+            { [houndLayer]: "---\ngrit: 12/12\ntags: [fens]\nname: Cane\n---\n", "layers/fake/world/items/Hardtack.md": "---\nuses: 3/3\n---\n" },
+            "Il pozzo cannot be installed: its layer over Bog Hound writes tags, name; its layer over Hardtack writes uses. A layer changes neither the name nor the type of a page of the game system",
+        );
+        await refused({ [houndLayer]: "---\ngrit: [1\n---\n" }, "Il pozzo cannot be installed: its layer over Bog Hound does not read: The frontmatter of layers/fake/world/creatures/Bog Hound.md is not valid YAML");
+        // The same page twice: by the system's folder in another case, or by a name written another way.
+        await refused({ [houndLayer]: bigHound, "layers/FAKE/world/creatures/Bog Hound.md": bigHound }, "holds layers/fake/world/creatures/Bog Hound.md twice");
+        await refused({ [`${layersFolder}/Will-o'-the-Fen.md`]: bigHound, [`${layersFolder}/Will-o’-the-Fen.md`]: bigHound }, "two of its layers lie over Will-o'-the-Fen");
+    });
+
+    it("writes no layer for a file that gives nothing, as write leaves none, and exports none", async () => {
+        const result = await rpg("package", "install", adventureFolder(withLayers({ [houndLayer]: "---\n---\n", [witchLayer]: "\n" })));
+        expect(result.exitCode, result.output).toBe(0);
+        expect(result.output).not.toContain("Its layers change");
+        expect(existsSync(join(folder, "layers"))).toBe(false);
+        expect(readLogFile(folder).at(-1)?.data).not.toHaveProperty("layers");
+        handWrite(houndLayer, "---\n---\n");
+        makeSave(folder, context, undefined, "session zero");
+        expect((await rpg("package", "export")).output).not.toContain("layers");
+        expect(exported().layers).toEqual({});
+    });
+
+    it("INH-10: refuses to come in, and to go, while copies of a page whose fields its layer changes are in the open scene; nothing is written", async () => {
+        const adventure = adventureFolder(withLayers({ [houndLayer]: bigHound, [witchLayer]: "A woman of the reeds, older than the fens.\n" }));
+        await rpg("scene", "open", "--title", "Bosco", "--type", "combat", "--creatures", "Bog Hound=1", "--creatures", "Fen Witch=1");
+        const lines = readLogFile(folder).length;
+        const refused = await rpg("package", "install", adventure);
+        expect(refused.exitCode).toBe(1);
+        expect(refused.output).toBe(
+            "Il pozzo cannot be installed now: its layers change a page of the game system that has copies in the open scene, which read from it what they do not change. "
+                + "Close the scene first, then give the same command again. Nothing changed.",
+        );
+        expect(existsSync(join(folder, "world", "characters", "Il pozzo"))).toBe(false);
+        expect(existsSync(join(folder, "layers"))).toBe(false);
+        expect(existsSync(join(folder, ".adventure-install.yaml"))).toBe(false);
+        expect(readLogFile(folder).length).toBe(lines);
+
+        expect((await rpg("scene", "close", "--summary", "They part.")).exitCode).toBe(0);
+        expect((await rpg("package", "install", adventure)).exitCode).toBe(0);
+        await rpg("scene", "open", "--title", "Bosco", "--type", "combat", "--creatures", "Bog Hound=1");
+        const kept = await rpg("package", "remove", "Il pozzo");
+        expect(kept.exitCode).toBe(1);
+        expect(kept.output).toContain("Il pozzo cannot be taken out now: its layers change a page of the game system that has copies in the open scene");
+        expect(layerNow(houndLayer)).toBe(bigHound);
+        expect(existsSync(join(folder, "world", "characters", "Il pozzo", "Oste.md"))).toBe(true);
+        expect(readLogFile(folder).at(-1)?.type).not.toBe("adventure-removed");
+    });
+
+    it("INH-10: a layer that changes only a page's text comes in while its copies are in the open scene", async () => {
+        await rpg("scene", "open", "--title", "Bosco", "--type", "combat", "--creatures", "Fen Witch=1");
+        expect((await rpg("package", "install", adventureFolder(withLayers({ [witchLayer]: "A woman of the reeds, older than the fens.\n" })))).exitCode).toBe(0);
+        expect(layerNow(witchLayer)).toBe("A woman of the reeds, older than the fens.\n");
+    });
+
+    it("INH-11: a companion that derives from a page it layers has the public line of its counter, coming in and going", async () => {
+        await rpg("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Bog Hound]]");
+        await rpg("package", "install", adventureFolder(withLayers({ [houndLayer]: bigHound })));
+        const came = readLogFile(folder).slice(-2);
+        expect(came[0]).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Lupa", field: "grit", before: "9/9", after: "12/12" } });
+        expect(came[1]).toMatchObject({ type: "adventure-installed" });
+        // The line names Lupa, a page of the campaign: the adventure still goes.
+        expect((await rpg("package", "remove", "Il pozzo")).exitCode).toBe(0);
+        const went = readLogFile(folder).slice(-2);
+        expect(went[0]).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Lupa", field: "grit", before: "12/12", after: "9/9" } });
+        expect(went[1]).toMatchObject({ type: "adventure-removed" });
+    });
+});
+
 describe("the adventures on the dashboard's page (D-483)", () => {
     let session: SessionStore;
     let dashboard: Dashboard;
@@ -314,6 +592,17 @@ describe("the adventures on the dashboard's page (D-483)", () => {
         const twice = await send("POST", "/api/add", new TextEncoder().encode("not a zip"), { "x-file-name": "broken.zip" });
         expect(twice.status).toBe(400);
         expect(JSON.parse(twice.body.toString("utf8")).error).toContain("broken.zip is not a .zip that reads");
+    });
+
+    it("ADV-8: a .zip with a layer changes the system's page for the session at once, and gives it back when it is taken out", async () => {
+        const inSession = (...args: string[]) => runCommandLine(args, { ...context, files: session });
+        expect((await inSession("show", "Fen Witch")).output).toContain("grit: 8/8");
+        const zip = readFileSync(adventureZip({ "layers/fake/world/creatures/Fen Witch.md": "---\ngrit: 12/12\n---\n" }));
+        expect((await send("POST", "/api/add", zip, { "content-type": "application/zip", "x-file-name": encodeURIComponent("Il pozzo.adventure.zip") })).status).toBe(202);
+        expect(dashboard.news().lines.join(" ")).toContain("Its layers change pages of the game system for the whole campaign: Fen Witch (creature); show says what each changes.");
+        expect((await inSession("show", "Fen Witch")).output).toContain("grit: 12/12");
+        expect((await inSession("package", "remove", "Il pozzo")).exitCode).toBe(0);
+        expect((await inSession("show", "Fen Witch")).output).toContain("grit: 8/8");
     });
 
     it("adds one from a GitHub link, read as the zip of its branch", async () => {

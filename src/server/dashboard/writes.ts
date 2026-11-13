@@ -15,8 +15,12 @@ import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "
 import { campaignMode } from "../../commands/shared/campaign/mode.ts";
 import { exportsFolderName, resetPoints } from "../../commands/shared/campaign/saves.ts";
 import { campaignSystem, campaignWorld } from "../../commands/shared/campaign/world.ts";
+import { knowsPage, playerKnowledge } from "../../commands/shared/characters/knowledge.ts";
 import { catalog } from "../../commands/shared/packages/catalog.ts";
 import { packageCommands } from "../../commands/shared/packages/code.ts";
+import { readOpenScene } from "../../commands/shared/scene/scene.ts";
+import { listedLayer } from "../../commands/view/layers.ts";
+import { write } from "../../commands/write/write.ts";
 import { type Context, packagesFolder } from "../../core/context.ts";
 import { Refusal, refusalBody } from "../../core/refusal.ts";
 import { files, withFiles } from "../../core/store.ts";
@@ -207,6 +211,52 @@ export async function changeSaves(request: IncomingMessage, response: ServerResp
         sendJson(response, 202, {});
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+    }
+}
+
+/**
+ * A layer of the campaign the player takes off a page of the game system on the page (SYS-11), as write does with layer and reset, with the player as who did it;
+ * the master hears of it at their next call. Off any page the view lists, one the player may not read too (D-565); any other name gets one answer. One the
+ * player may not read waits while any scene is open, whoever is in it: a refusal for its copies would tell what the scene holds (D-254).
+ */
+export async function takeLayerOff(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const parsed = z.object({ page: z.string().trim().min(1).max(mostSaid) }).strict().safeParse(await readBody(request));
+
+    if (!parsed.success) {
+        sendJson(response, 400, { error: "Send the page of the game system whose change to take off: { page }." });
+        return;
+    }
+
+    try {
+        await served.session.ready();
+        const done = await withFiles(served.session, async () => {
+            const root = requireCampaign(served.context.folder);
+            const world = campaignWorld(root, served.context);
+            const page = listedLayer(world, parsed.data.page);
+
+            if (page === undefined) {
+                throw new Refusal(`The campaign changes no page of the game system named ${parsed.data.page}: reload the page.`, "no-layer", { page: parsed.data.page });
+            }
+
+            const knowledge = playerKnowledge(root, world);
+            const open = readOpenScene(root);
+
+            // A scene that does not read counts as open: its refusal too would say what the page is.
+            if ((knowledge === undefined || !knowsPage(knowledge, page)) && (open.scene !== undefined || open.problem !== undefined)) {
+                throw new Refusal(`A scene is being played: take the campaign's change off ${page.name} once it is over.`, "scene-open", { page: page.name });
+            }
+
+            return await write.run(write.input.parse({ page: page.name, layer: true, reset: true }), { ...served.context, actor: "player" });
+        });
+        const followers = done.followers.length === 0 ? "" : ` What reads from it changed with it: ${done.followers.join(", ")}.`;
+        served.events.push(`The player, on the dashboard, took the campaign's change off ${done.page}: it reads as the system writes it again.${followers}`);
+        sendJson(response, 202, {});
+    } catch (error) {
+        // The engine's words for it name the copies in the scene and their numbers, the master's: the player hears only to wait.
+        const copied = error instanceof Refusal && error.code === "copies-in-scene";
+        const waits = copied || (error instanceof Refusal && error.code === "scene-open");
+        sendJson(response, waits ? 409 : 400, copied ? { ...refusalBody(error), error: `${error.values.page} is in the scene being played: take the campaign's change off it once the scene is over.` } : refusalBody(error));
     }
 }
 

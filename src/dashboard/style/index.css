@@ -29,6 +29,7 @@
 @import "parts/list-reader.css";
 @import "parts/documents.css";
 @import "parts/calendar.css";
+@import "parts/changed.css";
 @import "pages/settings.css";
 @import "pages/saves.css";
 @import "pages/journal.css";

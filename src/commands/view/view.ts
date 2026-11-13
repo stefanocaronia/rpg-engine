@@ -29,6 +29,7 @@ import { sheetGroup, sheetHeadline, sheetText, tokenIcon } from "../shared/sheet
 import { calendarDayOf, readPresent } from "../shared/time/time.ts";
 import { fuelLeft } from "../shared/time/upkeep.ts";
 import { questText, shownJournal } from "./journal.ts";
+import { shownLayers } from "./layers.ts";
 import { mapText, shownMap } from "./map.ts";
 import { characterNamed, memoryOf, memoryText } from "./memory.ts";
 import { knownNamedPage, knownPage, lineValues, placeLook, shownName, shownPage, valueCoins } from "./page.ts";
@@ -278,6 +279,7 @@ export const view = defineCommand({
         // The system's pages of the party's sheets, in the campaign's language where the system has no translation (D-539).
         wantTexts(root, context, world, [...players, ...companions]);
         const textsTranslating = translatingTexts(context, world);
+        const layers = shownLayers(world, knowledge);
         return {
             kind: "overview",
             campaign: settings.name,
@@ -302,6 +304,7 @@ export const view = defineCommand({
             problems: campaignProblems(root, world, context).length,
             ...(importing === undefined ? {} : { importing }),
             ...(textsTranslating === undefined ? {} : { textsTranslating }),
+            ...(layers.length === 0 ? {} : { layers }),
         };
     },
 

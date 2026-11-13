@@ -11,6 +11,7 @@ import type { MoodMoment } from "../shared/characters/moods.ts";
 import type { SeenEffect } from "../shared/scene/effects.ts";
 import type { SheetGroupData, SheetValue } from "../shared/sheet/sheet.ts";
 import type { ShownChapter, ShownQuest, ShownThought } from "./journal.ts";
+import type { ShownLayer } from "./layers.ts";
 import type { ShownMap } from "./map.ts";
 import type { ShownPlace, ShownScene } from "./place.ts";
 import type { KnownEntry, ShownCalendar, ShownDocument } from "./world.ts";
@@ -53,10 +54,14 @@ export type ViewResult =
         importing?: ShownImport;
         /** The campaign's language, when this computer is translating the game system's pages into it, which the dashboard tells the player (D-539). */
         textsTranslating?: string;
+        /** The pages of the game system the campaign changed with a layer, one the player may not read by its name alone, which the dashboard lists and the player takes off (SYS-11); left out when there are none. */
+        layers?: ShownLayer[];
     }
     | {
         kind: "page";
         title: string;
+        /** What the page shows comes from a page of the game system the campaign changed with a layer, itself or one it derives from (SYS-11). */
+        layered?: true;
         /** The line under the character's name on the dashboard (D-288). */
         headline?: string;
         sheet: SheetGroupData[];

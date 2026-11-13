@@ -55,6 +55,27 @@ export function writeLayer(world: World, page: Page, change: PageChange): LayerW
     return { path, changed, removed: empty && before !== undefined, set: fields.set, again: fields.again, unset: fields.unset };
 }
 
+/**
+ * Takes the campaign's whole layer off a page of its game system (SYS-11): its file goes, one that does not read too, and the page reads as the system writes it
+ * again. Refused when the page has none.
+ */
+export function removeLayer(world: World, page: Page): LayerWrite
+{
+    if (page.system === undefined) {
+        throw new Error(`${page.name} is a page of the campaign, which has no layer: a layer changes a page of the game system for the whole campaign. Nothing changed.`);
+    }
+
+    const path = page.layer?.path ?? `${layersFolderName}/${page.system}/${systemOriginal(page).path}`;
+    const fullPath = join(world.root, path);
+
+    if (files().fresh(fullPath) === undefined) {
+        throw new Error(`The campaign has no layer over ${page.name} to take off: it already reads as the system ${page.system} writes it. Nothing changed.`);
+    }
+
+    files().remove(fullPath);
+    return { path, changed: true, removed: true, set: [], again: page.layer?.fields ?? [], unset: [] };
+}
+
 /** The fields a change gives the layer: those that differ from the system's go in, those equal to it come out, unset takes the layer's own away. */
 function layerFields(world: World, page: Page, original: Page, held: Record<string, unknown>, change: PageChange): { values: Record<string, unknown>; unsetKeys: string[]; set: string[]; again: string[]; unset: string[]; }
 {

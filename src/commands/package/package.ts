@@ -8,7 +8,19 @@ import { comparableText } from "../../core/text.ts";
 import { isNewerVersion } from "../../core/version.ts";
 import { installedExtensions, readExtension, shortName } from "../../extensions/index.ts";
 import { isVerified } from "../../packages/index.ts";
-import { type AdventureExported, type AdventureInstalled, exportAdventure, installAdventure, installedAdventures, isAdventureSpec, readAdventureSpec, removeAdventure, storyTouching } from "../shared/books/adventures.ts";
+import type { LayeredPage, LayerLeftOut, LayersInstalled } from "../shared/books/adventure-layers.ts";
+import {
+    type AdventureExported,
+    type AdventureInstalled,
+    type AdventureRemoved,
+    exportAdventure,
+    installAdventure,
+    installedAdventures,
+    isAdventureSpec,
+    readAdventureSpec,
+    removeAdventure,
+    storyTouching,
+} from "../shared/books/adventures.ts";
 import { listedExtensions } from "../shared/packages/extensions.ts";
 import { issuesOf, languagesHere, systemsHere, usable } from "./here.ts";
 import { installed } from "./install.ts";
@@ -65,8 +77,7 @@ export const packageCommand = defineCommand({
         const adventure = installedAdventures(root).find((one) => comparableText(one.title) === comparableText(name));
 
         if (input.action === "remove" && adventure !== undefined) {
-            removeAdventure(root, context, adventure);
-            return { kind: "adventure-removed", title: adventure.title };
+            return { kind: "adventure-removed", ...removeAdventure(root, context, adventure) };
         }
 
         return input.action === "remove" ? removed(root, context, name) : await uninstalled(root, context, name);
@@ -79,7 +90,7 @@ export const packageCommand = defineCommand({
         }
 
         if (result.kind === "adventure-removed") {
-            return `${result.title} is out of the campaign, with the files it wrote.`;
+            return removedText(result);
         }
 
         if (result.kind === "exported") {
@@ -184,8 +195,42 @@ export function adventureText(result: AdventureInstalled): string
         result.shadows.length === 0 ? "" : `Its pages take the place of the game system's: ${result.shadows.join(", ")}.`,
         result.covers.length === 0 ? "" : `Its rules take the place of the game system's: ${result.covers.join(", ")}.`,
         result.ignored.length === 0 ? "" : `Left out, no part of an adventure: ${result.ignored.join(", ")}.`,
+        ...layersText(result.layers),
         `${read} before you narrate.${start} Bring a hook into the story: the adventure begins when the player takes it.`,
     ].filter((line) => line !== "").join(" ");
+}
+
+/** What the master hears of an adventure's layers (ADV-8): the pages of the game system they change, with their type, and those left out, with why. */
+function layersText(layers: LayersInstalled): string[]
+{
+    const kept = layers.kept.map((one) => {
+        const sections = one.sections.length === 0 ? [] : [`the section${one.sections.length === 1 ? "" : "s"} ${one.sections.join(", ")}`];
+        return `${one.page} (${[...one.fields, ...sections, ...(one.introduction ? ["the introduction"] : [])].join(", ")})`;
+    });
+    return [
+        layers.changed.length === 0 ? "" : `Its layers change pages of the game system for the whole campaign: ${typedPages(layers.changed)}; show says what each changes.`,
+        kept.length === 0
+            ? ""
+            : `The campaign has its own layer over ${layers.kept.map((one) => one.page).join(", ")}, which stays as it is: the adventure's is left out, and would have given ${kept.join("; ")}. `
+                + "To take any of it, write the page with layer.",
+        layers.stray.length === 0 ? "" : `Left out, layers over no page of the game system in the rules the campaign plays: ${layers.stray.join(", ")}.`,
+    ];
+}
+
+/** What the master hears of an adventure taken out (ADV-6, ADV-8): its files gone, the pages of the game system its layers change no more, and the layers that stay. */
+function removedText(result: AdventureRemoved): string
+{
+    return [
+        `${result.title} is out of the campaign, with the files it wrote.`,
+        result.layers.length === 0 ? "" : `Its layers are off ${typedPages(result.layers)}: each reads as the game system writes it again.`,
+        result.layersKept.length === 0 ? "" : `What it layered over ${result.layersKept.join(", ")} was changed since it came, and stays the campaign's: write the page with layer and reset takes it off.`,
+    ].filter((line) => line !== "").join(" ");
+}
+
+/** "Bog Hound (creature), Hardtack (item)": pages of the game system, each with its type. */
+function typedPages(pages: LayeredPage[]): string
+{
+    return pages.map((one) => (one.type === undefined ? one.page : `${one.page} (${one.type})`)).join(", ");
 }
 
 /** The packages on this computer, and those the campaign lists and does not find there: at once, without npm (D-442). */
@@ -258,23 +303,32 @@ async function adventureInstalled(root: string, context: Context, spec: string):
     return { kind: "adventure-installed", ...installAdventure(root, context, adventure, spec) };
 }
 
-/** What the master hears of an export (ADV-7): the file, what it came from and what stayed out. */
+/** What the master hears of an export (ADV-7, ADV-8): the file, what it came from, the layers it carries and what stayed out. */
 function exportText(result: AdventureExported): string
 {
+    const layersOut = (why: LayerLeftOut["why"], what: string): string => {
+        const names = result.leftOut.layers.filter((one) => one.why === why).map((one) => one.name);
+        return names.length === 0 ? "" : `${what} (${names.join(", ")})`;
+    };
+
     const out = [
         result.leftOut.characters.length === 0 ? "" : `the player characters (${result.leftOut.characters.join(", ")})`,
         result.leftOut.adventures.length === 0 ? "" : `the adventures it installed (${result.leftOut.adventures.join(", ")})`,
-        // An adventure plays the system as it ships (SYS-11).
-        result.leftOut.layers.length === 0 ? "" : `the campaign's layers over pages of the system (${result.leftOut.layers.join(", ")}), which play as the system writes them`,
+        layersOut("adventure", "the layers an installed adventure brought, not changed since"),
+        layersOut("no-page", "the layers over no page of the game system, which validate names"),
+        layersOut("forbidden", "the layers that write what a layer cannot change, which validate names with the fields to take out"),
+        layersOut("unread", "the layers that do not read, which validate names with what to fix"),
     ].filter((part) => part !== "");
+    const layers = result.layers.length === 0 ? "" : `, and the campaign's layers over the game system as they are now (${result.layers.join(", ")})`;
+    const kinds = result.layers.length === 0 ? "pages" : "pages or layers";
     return [
-        `Wrote ${result.file}: ${result.pages} pages, from ${result.from}${out.length === 0 ? "" : `, without ${out.join(" and ")}`}.`,
+        `Wrote ${result.file}: ${result.pages} pages, from ${result.from}${layers}${out.length === 0 ? "" : `, without ${out.join(" and ")}`}.`,
         result.opening === undefined
             ? "It has no opening page: one tagged opening, with the situation, the hooks, what happens if no one steps in and the pages to read first, and its start, makes it ready."
             : `Its opening is [[${result.opening}]].`,
         result.sourced === undefined
             ? "The player shares it as a file, and only what they have the right to share."
-            : `${result.sourced.length} of its pages come from the player's own documents (source:): ${result.sourced.slice(0, 5).join(", ")}${result.sourced.length > 5 ? "…" : ""}. `
+            : `${result.sourced.length} of its ${kinds} come from the player's own documents (source:): ${result.sourced.slice(0, 5).join(", ")}${result.sourced.length > 5 ? "…" : ""}. `
                 + "So it says personal use only. Ask the player whether they may share it: only with the document's own license, or their rights to it; if so, export again with that license.",
     ].join(" ");
 }

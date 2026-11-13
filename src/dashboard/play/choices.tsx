@@ -7,6 +7,7 @@ import { choicesAddress } from "../address.ts";
 import { changeChoices, type ChoicesChange, readChoices, readView } from "../api.ts";
 import type { ChoicesNow, Member, OptionPage, ShownChoice, ShownChoices, ShownOption, ShownRoll } from "../data.ts";
 import { useMedia } from "../parts/card.tsx";
+import { ChangedLine, ChangedMark } from "../parts/changed.tsx";
 import { Icon, NotationIcons } from "../parts/icons.tsx";
 import { diceIn, shownNotation } from "../parts/labels.ts";
 import { type LinkTo, Markdown } from "../parts/markdown.tsx";
@@ -586,6 +587,8 @@ function OptionCard({ id, option, role, checked, closed, tabIndex, read, href, t
                         {option.notation !== undefined && <NotationIcons notation={option.notation} />}
                         <bdi>{option.label}</bdi>
                         {option.notation !== undefined && <bdi class="num">{shownNotation(option.notation)}</bdi>}
+                        {/* A page it names is one of the game system the campaign changed (D-564). */}
+                        {option.pages?.some((page) => page.layered === true) === true && <ChangedMark />}
                     </strong>
                     {opening !== undefined && opening !== "" && <span class="choice-about" id={`${id}-about`} dir="auto">{opening}</span>}
                 </span>
@@ -723,6 +726,7 @@ function ChoiceReader({ set, at, option, page, version, phone, link, closed, onP
                         {count !== undefined && <span class="num">{` · ${count}`}</span>}
                     </p>
                     <h3 id={`${key}-title`} tabIndex={-1} ref={title} dir="auto">{heading}</h3>
+                    {page.layered === true && <ChangedLine />}
                 </div>
                 {phone !== true && (
                     <a class="icon-button tip-left" href={choicesAddress(set.who)} aria-label={t("Close the page")} data-tip={t("Close the page")}>

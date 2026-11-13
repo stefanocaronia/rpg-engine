@@ -2,6 +2,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { readAdventureZip } from "../src/adventures/index.ts";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { makeSave } from "../src/commands/shared/campaign/saves.ts";
 import type { Context } from "../src/core/context.ts";
@@ -60,7 +61,7 @@ describe("SYS-11: write with layer changes a page of the system for the whole ca
         expect(readFileSync(houndSystem, "utf8")).toBe(system);
         expect(await ok("show", "Zanna")).toContain("grit: 12/12");
         expect(await ok("show", "Bog Hound")).toContain(
-            `Bog Hound (creature of the system fake, read-only)\nThe campaign changes it with its layer ${houndLayer}: grit. write Bog Hound with layer and unset, or with empty text, gives back the system's.`,
+            `Bog Hound (creature of the system fake, read-only)\nThe campaign changes it with its layer ${houndLayer}: grit. write Bog Hound with layer and unset, or with empty text, gives back the system's; with reset, all of it.`,
         );
         // The master's work on the world: one hidden line.
         const line = readLogFile(folder).at(-1);
@@ -156,6 +157,75 @@ describe("SYS-11: write with layer changes a page of the system for the whole ca
     });
 });
 
+describe("SYS-11: write with layer and reset takes the whole layer off", () => {
+    it("removes the file with every field and text it changed, and what derives from the page reads the system's again", async () => {
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12", "--set", "guard=9", "--text", "In these fens they hunt alone.");
+        await ok("write", "Bog Hound#Bite", "--layer", "--text", "Three dice, at who stands beside it.");
+        await ok("write", "Bog Hound#Howl", "--layer", "--text", "Every hound within a mile answers.");
+        const output = await ok("write", "Bog Hound", "--layer", "--reset", "--why", "the player wants the book's hound");
+        expect(output).toContain(`Updated Bog Hound (creature, ${houndLayer}): grit again as the system's; guard again as the system's.`);
+        expect(output).toContain("Changed with it, since they read grit, guard, #Bite, #Howl, the introduction from Bog Hound: Zanna.");
+        expect(output).toContain("The campaign's layer over Bog Hound is taken off, and its file is gone: Bog Hound reads as the system fake writes it again.");
+        expect(layerText()).toBeUndefined();
+        const shown = await ok("show", "Bog Hound");
+        expect(shown).not.toContain("The campaign changes it");
+        expect(shown).toContain("A long dog of the fens, grey as the reeds, that hunts in pairs.");
+        expect(shown).toContain("## Bite\n\nTwo dice and three, at who stands beside it.");
+        expect(shown).not.toContain("Howl");
+        expect(await ok("show", "Zanna")).toContain("grit: 9/9");
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "page-updated", visibility: "hidden", data: { page: "Bog Hound", layer: houndLayer, reset: true, why: "the player wants the book's hound" } });
+        expect(await ok("validate")).toBe("No problems.");
+    });
+
+    it("INH-11: a counter of the party that changes with it has its public line", async () => {
+        await ok("write", "Lupa", "--type", "character", "--set", "role=companion", "--set", "creature=[[Bog Hound]]");
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        await ok("write", "Bog Hound", "--layer", "--reset");
+        const lines = readLogFile(folder).slice(-2);
+        expect(lines[0]).toMatchObject({ type: "page-updated", visibility: "hidden", data: { page: "Bog Hound", reset: true } });
+        expect(lines[1]).toMatchObject({ type: "counter-changed", visibility: "public", data: { page: "Lupa", field: "grit", before: "12/12", after: "9/9" } });
+    });
+
+    it("refuses without layer, with anything to write, on a page without a layer, of the campaign, and on a copy; nothing changes", async () => {
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        expect(await refused("write", "Bog Hound", "--reset")).toBe(
+            "reset goes with layer: it takes the campaign's whole layer off a page of the game system, which reads as the system writes it again. Nothing changed.",
+        );
+        expect(await refused("write", "Bog Hound", "--layer", "--reset", "--set", "guard=9", "--unset", "grit")).toBe(
+            "reset takes the campaign's whole layer off Bog Hound, and nothing else: leave out set, unset. To give back one field or one section, leave reset out: unset for a field, empty text for a section. Nothing changed.",
+        );
+        expect(await refused("write", "Bog Hound#Bite", "--layer", "--reset")).toContain("leave out section.");
+        expect(await refused("write", "Bog Hound", "--layer", "--reset", "--text", "")).toContain("leave out text.");
+        expect(await refused("write", "Bog Hound", "--layer", "--reset", "--type", "creature")).toContain("leave out type.");
+        expect(layerText()).toBe("---\ngrit: 12/12\n---\n");
+        expect(await refused("write", "Fen Witch", "--layer", "--reset")).toBe("The campaign has no layer over Fen Witch to take off: it already reads as the system fake writes it. Nothing changed.");
+        expect(await refused("write", "Zanna", "--layer", "--reset")).toContain("Zanna is a page of the campaign");
+        expect(await refused("write", "Nessuno", "--layer", "--reset")).toContain("There is no page named Nessuno");
+        await ok("scene", "open", "--title", "Bosco", "--type", "combat", "--creatures", "Fen Witch=1");
+        expect(await refused("write", "Fen Witch 1", "--layer", "--reset")).toContain("is a copy in the open scene");
+    });
+
+    it("INH-10: refuses while copies in the open scene read the fields it gives, never for its text alone", async () => {
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        await ok("write", "Fen Witch", "--layer", "--text", "She trades in names, and in these fens in years.");
+        await ok("scene", "open", "--title", "Bosco", "--type", "combat", "--creatures", "Bog Hound=1", "--creatures", "Fen Witch=1");
+        expect(await refused("write", "Bog Hound", "--layer", "--reset")).toBe(
+            "Bog Hound has copies in the open scene, which read from it what they do not change: Bog Hound 1 (grit 12/12). Change a copy; to change Bog Hound for all, close the scene first. Nothing changed.",
+        );
+        expect(layerText()).toBe("---\ngrit: 12/12\n---\n");
+        await ok("write", "Fen Witch", "--layer", "--reset");
+        expect(layerText("layers/fake/world/creatures/Fen Witch.md")).toBeUndefined();
+    });
+
+    it("takes off a layer written by hand that does not read, which the page shows no mark of", async () => {
+        handWrite(houndLayer, "---\ngrit: [1\n---\n");
+        expect(await ok("show", "Bog Hound")).not.toContain("The campaign changes it");
+        expect(await ok("write", "Bog Hound", "--layer", "--reset")).toContain("The campaign's layer over Bog Hound is taken off");
+        expect(layerText()).toBeUndefined();
+        expect(await ok("validate")).toBe("No problems.");
+    });
+});
+
 describe("SYS-11: the merge of a layer, with the system's translation (D-542)", () => {
     const page: Page = {
         name: "Bog Hound",
@@ -245,10 +315,13 @@ describe("SYS-11: validate, the rules' version, saves and exports", () => {
         expect(await ok("show", "Zanna")).toContain("grit: 12/12");
     });
 
-    it("an adventure exported does not carry the layers, and says so", async () => {
+    it("ADV-8: an adventure exported carries the layers as they are now, at the page's path, and says so", async () => {
         await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12");
         makeSave(folder, context, undefined, "session zero");
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=14/14");
         const output = await ok("package", "export");
-        expect(output).toContain("the campaign's layers over pages of the system (Bog Hound), which play as the system writes them");
+        expect(output).toContain("and the campaign's layers over the game system as they are now (Bog Hound)");
+        const read = readAdventureZip(readFileSync(join(folder, "exports", "Guadoscuro.adventure.zip")), "Guadoscuro.adventure.zip");
+        expect(new TextDecoder().decode(read.layers["world/creatures/Bog Hound.md"])).toBe("---\ngrit: 14/14\n---\n");
     });
 });

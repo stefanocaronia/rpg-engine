@@ -4,17 +4,23 @@ import { archivePathParts, refuseTwice } from "../core/archive-paths.ts";
 import { filesIn } from "../core/files.ts";
 import { Refusal } from "../core/refusal.ts";
 import { files } from "../core/store.ts";
+import { comparableText } from "../core/text.ts";
 import { type AdventureManifest, manifestFileName, readManifest, writeManifest } from "./manifest.ts";
 
 /** The folders an adventure has, as a campaign has them (D-372). */
 export const adventureFolders = ["world", "images", "rules"] as const;
 
-/** An adventure as a package gives it (ADV-1): its manifest, its files by their path, and what was left out at its top. */
+// The folder of its layers over the pages of the game system it needs, as a campaign has it (ADV-8).
+const layersFolder = "layers";
+
+/** An adventure as a package gives it (ADV-1): its manifest, its files by their path, its layers, and what was left out at its top. */
 export interface AdventureFiles
 {
     manifest: AdventureManifest;
     /** By their path in the package, with forward slashes, such as world/places/Pozzo.md. */
     files: Record<string, Uint8Array>;
+    /** Its layers over the pages of the game system it needs (ADV-8), by their path under layers/<system>/, the page's own in the system, such as world/creatures/Goblin.md. */
+    layers: Record<string, Uint8Array>;
     /** The files and folders at its top that are no part of it, such as a README. */
     ignored: string[];
 }
@@ -124,7 +130,10 @@ function adventureOf(label: string, entries: [string, Uint8Array][]): AdventureF
         );
     }
 
+    const read = readManifest(new TextDecoder().decode(manifest[1]), `${label}, ${manifestFileName}`);
     const held: Record<string, Uint8Array> = {};
+    const layers: Record<string, Uint8Array> = {};
+    const layerPaths: string[] = [];
     const ignored = new Set<string>();
 
     for (const [parts, data] of inner) {
@@ -132,6 +141,14 @@ function adventureOf(label: string, entries: [string, Uint8Array][]): AdventureF
         const folder = adventureFolders.find((one) => one === parts[0].toLowerCase());
 
         if (parts.length === 1 && parts[0].toLowerCase() === manifestFileName) {
+            continue;
+        }
+
+        if (parts.length > 1 && parts[0].toLowerCase() === layersFolder) {
+            const under = layerPath(label, parts, read.needs.system);
+            layers[under] = data;
+            // Kept one by one: the system's folder written in two cases gives the same layer twice.
+            layerPaths.push(`${layersFolder}/${read.needs.system ?? ""}/${under}`);
             continue;
         }
 
@@ -157,5 +174,35 @@ function adventureOf(label: string, entries: [string, Uint8Array][]): AdventureF
     }
 
     refuseTwice(label, Object.keys(held));
-    return { manifest: readManifest(new TextDecoder().decode(manifest[1]), `${label}, ${manifestFileName}`), files: held, ignored: [...ignored].sort() };
+    refuseTwice(label, layerPaths);
+    return { manifest: read, files: held, layers, ignored: [...ignored].sort() };
+}
+
+/**
+ * Where a file under layers/ lies over the pages of the game system (ADV-8): only in layers/<the system the adventure needs>/world/, in markdown. Another folder
+ * there, a file of another kind, or layers in an adventure that needs no system refuse it whole.
+ */
+function layerPath(label: string, parts: string[], system: string | undefined): string
+{
+    const path = parts.join("/");
+
+    if (system === undefined) {
+        throw new Refusal(
+            `${label} holds ${path}, a layer over a page of a game system, and its ${manifestFileName} names none: write there the system its layers are for, as needs: {system: its name}, `
+                + `or take ${layersFolder}/ out, and give it again. It is refused whole.`,
+            "adventure-file",
+            { name: label, file: path },
+        );
+    }
+
+    if (comparableText(parts[1]) !== comparableText(system) || parts.length < 4 || parts[2].toLowerCase() !== "world" || !/\.md$/i.test(path)) {
+        throw new Refusal(
+            `${label} holds ${path}, and ${layersFolder}/ holds only ${system}/world/ with markdown files, its layers over the pages of the game system it needs: it is refused whole. `
+                + "Take it out, or move it there, and give it again.",
+            "adventure-file",
+            { name: label, file: path },
+        );
+    }
+
+    return ["world", ...parts.slice(3)].join("/");
 }

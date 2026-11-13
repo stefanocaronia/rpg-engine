@@ -1,5 +1,5 @@
 import { dirname, join, resolve } from "node:path";
-import { files } from "../core/store.ts";
+import { files, isInside } from "../core/store.ts";
 
 /** The file that marks a folder as a campaign and holds its settings. */
 export const campaignFileName = "campaign.yaml";
@@ -40,11 +40,14 @@ export function requireCampaign(folder: string): string
     return root;
 }
 
+// The campaign's layers over its game system, which lie a folder further down than its pages: layers/<system>/world/<type>.
+const layersFolder = "layers";
+
 // The folders the engine writes in: a link among them, a junction that came with a folder someone else made, would carry its writes outside the campaign. A file
 // that is a link the store refuses as it writes it.
-const writtenFolders = ["world", "images", "rules", "sessions", ".saves", "exports", ".player", ".imports", ".claude", ".codex"];
+const writtenFolders = ["world", "images", "rules", "sessions", ".saves", "exports", ".player", ".imports", ".claude", ".codex", layersFolder];
 
-/** Throws when a folder the engine writes in, or one in it two levels deep, is a link: a symbolic link or a junction. */
+/** Throws when a folder the engine writes in, or one in it two levels deep, three for the layers, is a link: a symbolic link or a junction. */
 function refuseLinksOut(root: string): void
 {
     const store = files();
@@ -54,7 +57,9 @@ function refuseLinksOut(root: string): void
         ...store.entries(folder).filter((entry) => entry.isFolder).map((entry) => join(folder, entry.name)),
     ];
     const types = folders.flatMap(inside);
-    const linked = [...folders, ...types, ...types.flatMap(inside)].find((path) => store.isLink(path));
+    const deeper = types.flatMap(inside);
+    const layerTypes = deeper.filter((path) => isInside(join(root, layersFolder), path)).flatMap(inside);
+    const linked = [...folders, ...types, ...deeper, ...layerTypes].find((path) => store.isLink(path));
 
     if (linked !== undefined) {
         throw new Error(`${linked} is a link to somewhere else, and what the engine writes there would leave the campaign: replace it with a real folder, with what it holds copied in.`);

@@ -1,7 +1,7 @@
 // The player's dashboard (D-270, D-272): view gives the party and the sheet as data, with the chat's text unchanged; the server gives only what view gives, only
 // to its own page, tells the page when a file changes, and serves the pictures.
 import { createHash } from "node:crypto";
-import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingHttpHeaders, request } from "node:http";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -136,6 +136,59 @@ describe("view as data (VIEW-1, D-272)", () => {
         const party = JSON.parse(await ok("view", "--json")).party;
         // Ettore keeps his own picture; Brina, with none, shows her people's.
         expect(party.map((member: { image?: { file: string; }; }) => member.image?.file)).toEqual(["Ettore.png", "fenfolk.svg", "hound.svg"]);
+    });
+
+    it("lists the pages of the system the campaign changed with a layer, with what the system gave; never a secret, and a creature the character does not know by its name alone (SYS-11)", async () => {
+        const overview = async () => JSON.parse(await ok("view", "--json")) as Extract<View, { kind: "overview"; }>;
+        expect(await overview()).not.toHaveProperty("layers");
+        await ok("write", "Fen Witch", "--layer", "--set", "grit=20/20", "--text", "She trades in years.");
+        await ok("write", "Fen Witch#Names", "--layer", "--text", "A name given is a year owed.");
+        await ok("write", "Bone Walker", "--layer", "--text", "In these fens they walk by day.");
+        // A creature the character does not know is named, the one exception to D-254 (D-565): no type, no value, nor which part changed.
+        const unknown = [{ name: "Bone Walker", fields: [], sections: [] }, { name: "Fen Witch", fields: [], sections: [] }];
+        expect((await overview()).layers).toEqual(unknown);
+        await ok("write", "Re Nero", "--type", "character", "--set", "role=npc");
+        await ok("write", "Herb Pouch", "--layer", "--set", "uses=8/8", "--set", "gatherer=[[Re Nero|a king]] and [[Varro]]", "--text", "A pouch of marsh herbs.");
+        await ok("write", "Herb Pouch#Brewing", "--layer", "--text", "Steeped an hour, it binds two wounds.");
+        await ok("write", "Herb Pouch#Rot", "--layer", "--secret", "--text", "Past a season it poisons.");
+        // The player knows the creature a companion derives from, with its numbers (D-275).
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        const shown = await overview();
+        expect(JSON.stringify(shown)).not.toMatch(/20\/20|trades in years|year owed|walk by day/);
+        expect(shown).not.toHaveProperty("hiddenLayers");
+        expect(shown.layers).toEqual([
+            { name: "Bog Hound", type: "creature", fields: [{ field: "grit", system: "9/9", campaign: "12/12" }], sections: [] },
+            ...unknown,
+            {
+                name: "Herb Pouch",
+                type: "item",
+                fields: [{ field: "uses", system: "5/5", campaign: "8/8" }, { field: "gatherer", campaign: "a king and [[Varro]]" }],
+                sections: ["Brewing"],
+                introduction: true,
+            },
+        ]);
+        // The chat's lines stay as they were.
+        expect(await ok("view")).not.toContain("Herb Pouch");
+    });
+
+    it("marks what shows a page of the system the campaign changed: the page, a thing carried, one that derives from it; never through a creature the character does not know (SYS-11)", async () => {
+        await ok("write", "Hardtack", "--layer", "--set", "heft=0.4 kg");
+        await ok("write", "Herb Pouch", "--layer", "--set", "uses=8/8");
+        await ok("write", "Fen Witch", "--layer", "--set", "grit=20/20");
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        await ok("write", "Borsa di Marta", "--type", "item", "--set", "item=[[Herb Pouch]]");
+        await ok("write", "Ettore", "--add", "inventory=[[Hardtack]] 2", "--add", "inventory=[[Rushlight]] 3", "--add", "inventory=[[Borsa di Marta]]");
+        await ok("write", "Varro", "--set", "creature=[[Fen Witch]]");
+        const page = async (name: string) => JSON.parse(await ok("view", name, "--json")) as Extract<View, { kind: "page"; }>;
+        expect((await page("Herb Pouch")).layered).toBe(true);
+        expect((await page("Borsa di Marta")).layered).toBe(true);
+        expect((await page("Lupa")).layered).toBe(true);
+        expect(await page("Rushlight")).not.toHaveProperty("layered");
+        // Varro derives from a creature the character does not know, whose layer the mark would tell (D-254).
+        expect(await page("Varro")).not.toHaveProperty("layered");
+        const items = (await page("Ettore")).sheet.flatMap((group) => group.items ?? []);
+        expect(items.filter((item) => item.layered === true).map((item) => item.item).sort()).toEqual(["Borsa di Marta", "Hardtack"]);
+        expect(items.find((item) => item.item.includes("Rushlight"))).not.toHaveProperty("layered");
     });
 
     it("gives the player's settings with their values and what each value means to the player, then the game system's, and only alone (D-341)", async () => {
@@ -764,7 +817,7 @@ describe("the dashboard's server (D-270, D-272)", () => {
                     response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
                 }).on("error", fail).end(body);
             });
-        const writes = ["act", "add", "answer", "bell", "card", "config", "engine", "export", "library", "notes", "package", "run", "saves", "seen", "setup", "story", "theme", "widget"];
+        const writes = ["act", "add", "answer", "bell", "card", "config", "engine", "export", "layer", "library", "notes", "package", "run", "saves", "seen", "setup", "story", "theme", "widget"];
         const hostile = [
             "",
             "not json",
@@ -1163,6 +1216,75 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const long = await send("POST", "/api/config", { setting: "orders", add: "a".repeat(121) });
         expect(long.status).toBe(400);
         expect(long.body).toContain("at most 120 characters");
+    });
+
+    it("takes a layer off from the page as write does with reset, as the player's, the master hearing it once; one answer for any name the view does not list, and of a scene's copies no number (SYS-11)", async () => {
+        const overview = async () => JSON.parse((await send("GET", "/api/view")).body) as Extract<View, { kind: "overview"; }>;
+        const witchLayer = join(folder, "layers", "fake", "world", "creatures", "Fen Witch.md");
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12");
+        await ok("write", "Fen Witch", "--layer", "--set", "grit=20/20");
+        expect((await overview()).layers?.map((layer) => layer.name)).toEqual(["Bog Hound", "Fen Witch"]);
+
+        // A page of the campaign, one that does not exist, one of the system without a layer and a section of one with a layer answer the same.
+        for (const page of ["Varro", "Nessuno", "Hardtack", "Bog Hound#Bite"]) {
+            const refused = await send("POST", "/api/layer", { page });
+            expect(refused.status).toBe(400);
+            expect(JSON.parse(refused.body)).toEqual({ error: `The campaign changes no page of the game system named ${page}: reload the page.`, code: "no-layer", values: { page } });
+        }
+
+        // A creature the character does not know is put back as any other in the list (D-565), and the master hears it.
+        expect(readFileSync(witchLayer, "utf8")).toBe("---\ngrit: 20/20\n---\n");
+        expect((await send("POST", "/api/layer", { page: "Fen Witch" })).status).toBe(202);
+        expect(existsSync(witchLayer)).toBe(false);
+        expect((await overview()).layers?.map((layer) => layer.name)).toEqual(["Bog Hound"]);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "page-updated", visibility: "hidden", by: "player", data: { page: "Fen Witch", reset: true } });
+        expect(dashboard.news().lines).toEqual(["The player, on the dashboard, took the campaign's change off Fen Witch: it reads as the system writes it again."]);
+        expect((await send("POST", "/api/layer", { page: "Fen Witch" })).status).toBe(400);
+        expect((await send("POST", "/api/layer", { page: "Bog Hound", reset: false })).status).toBe(400);
+        expect((await sendWithout("POST", "/api/layer", { page: "Bog Hound" })).status).toBe(405);
+        // The engine's words name the copies and their numbers, which are the master's (D-254). The scene opens in the session the page reads, as the master's call does.
+        expect((await runCommandLine(["scene", "open", "--title", "Canneto", "--type", "combat", "--creatures", "Bog Hound=1"], served)).exitCode).toBe(0);
+        const copied = await send("POST", "/api/layer", { page: "Bog Hound" });
+        expect(copied.status).toBe(409);
+        expect(JSON.parse(copied.body)).toEqual({ error: "Bog Hound is in the scene being played: take the campaign's change off it once the scene is over.", code: "copies-in-scene", values: { page: "Bog Hound" } });
+        expect(dashboard.news().lines).toEqual([]);
+        expect((await runCommandLine(["scene", "close", "--summary", "Fatto."], served)).exitCode).toBe(0);
+        expect((await send("POST", "/api/layer", { page: " bog hound " })).status).toBe(202);
+        expect(await overview()).not.toHaveProperty("layers");
+        expect(await ok("show", "Lupa")).toContain("grit: 9/9");
+        const lines = readLogFile(folder).slice(-2);
+        expect(lines[0]).toMatchObject({ type: "page-updated", visibility: "hidden", by: "player", data: { page: "Bog Hound", layer: "layers/fake/world/creatures/Bog Hound.md", reset: true } });
+        expect(lines[1]).toMatchObject({ type: "counter-changed", visibility: "public", by: "player", data: { page: "Lupa", field: "grit", before: "12/12", after: "9/9" } });
+        const news = dashboard.news();
+        expect(news.lines).toEqual(["The player, on the dashboard, took the campaign's change off Bog Hound: it reads as the system writes it again. What reads from it changed with it: Lupa."]);
+        expect(dashboard.news().lines).toEqual([]);
+        // Given back when the master's call never answered.
+        news.restore();
+        expect(dashboard.news().lines).toEqual(news.lines);
+        expect((await send("POST", "/api/layer", { page: "Bog Hound" })).status).toBe(400);
+    });
+
+    it("makes a creature the character does not know wait while any scene is open, with one answer whether it is in the scene or not (SYS-11, D-254)", async () => {
+        const witchLayer = join(folder, "layers", "fake", "world", "creatures", "Fen Witch.md");
+        await ok("write", "Fen Witch", "--layer", "--set", "grit=20/20");
+        await ok("write", "Herb Pouch", "--layer", "--set", "uses=8/8");
+
+        // A scene without it, then one with its copy: the same words, which never say whether the creature is there.
+        for (const scene of [["Al guado", "--type", "social"], ["Canneto", "--type", "combat", "--creatures", "Fen Witch=1"]]) {
+            expect((await runCommandLine(["scene", "open", "--title", ...scene], served)).exitCode).toBe(0);
+            const refused = await send("POST", "/api/layer", { page: "Fen Witch" });
+            expect(refused.status).toBe(409);
+            expect(JSON.parse(refused.body)).toEqual({ error: "A scene is being played: take the campaign's change off Fen Witch once it is over.", code: "scene-open", values: { page: "Fen Witch" } });
+            expect(readFileSync(witchLayer, "utf8")).toBe("---\ngrit: 20/20\n---\n");
+            expect((await runCommandLine(["scene", "close", "--summary", "Fatto."], served)).exitCode).toBe(0);
+        }
+
+        // A page the player reads waits only for its own copies.
+        expect((await runCommandLine(["scene", "open", "--title", "Alla torre", "--type", "social"], served)).exitCode).toBe(0);
+        expect((await send("POST", "/api/layer", { page: "Herb Pouch" })).status).toBe(202);
+        expect((await runCommandLine(["scene", "close", "--summary", "Fatto."], served)).exitCode).toBe(0);
+        expect((await send("POST", "/api/layer", { page: "Fen Witch" })).status).toBe(202);
+        expect(existsSync(witchLayer)).toBe(false);
     });
 
     it("changes the player's settings from the page as config does, logged as the player's, and gives the master each change once (D-341)", async () => {

@@ -186,6 +186,8 @@ export interface SheetItem
     equipped?: boolean;
     /** The lists of bonds it is in, as attuned (BND-1). */
     bonds?: string[];
+    /** Its page, or one it derives from, is a page of the game system the campaign changed with a layer (SYS-11): the view says so. */
+    layered?: true;
 }
 
 /**

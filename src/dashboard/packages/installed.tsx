@@ -14,10 +14,12 @@ import { PackageRow, pageLanguage, ReportLink, type RowState, SaidNote, Trust, U
  * newer version, to update it.
  */
 export function SystemRow(
-    { system, newer, needs, fresh, state, onUpdate, onUninstall }: {
+    { system, newer, needs, changes, fresh, state, onUpdate, onUninstall }: {
         system: ShownSystem;
         newer?: string | undefined;
         needs: ComponentChildren;
+        /** Under the campaign's system, the pages of it the campaign changed (D-564). */
+        changes?: ComponentChildren;
         fresh: boolean;
         state: RowState;
         onUpdate(target: string): void;
@@ -64,6 +66,7 @@ export function SystemRow(
         >
             <WorkNote work={state.work} />
             <SaidNote said={state.said} />
+            {changes}
         </PackageRow>
     );
 }

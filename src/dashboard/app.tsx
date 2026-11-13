@@ -22,6 +22,7 @@ import { PackagePage } from "./packages/page.tsx";
 import { PeopleContext } from "./packages/people.ts";
 import { WidgetCards, WidgetsContext } from "./packages/widgets.tsx";
 import { useMedia } from "./parts/card.tsx";
+import { setChangedPages } from "./parts/changed.tsx";
 import { Icon } from "./parts/icons.tsx";
 import { checkOf, systemNameLabel } from "./parts/labels.ts";
 import { AskedDice } from "./play/asked-dice.tsx";
@@ -210,6 +211,7 @@ function App()
 
             setSystemWords(overview.kind === "overview" ? overview.words : undefined);
             setSystemVerbs(overview.kind === "overview" ? overview.verbs : undefined);
+            setChangedPages(overview.kind === "overview" ? overview.layers : undefined);
 
             if (number === reading.current) {
                 document.documentElement.lang = language ?? "en";
@@ -278,6 +280,7 @@ function App()
                         foreground,
                         chosen: member?.name,
                         headline: page?.kind === "page" ? page.headline : undefined,
+                        layered: page?.kind === "page" ? page.layered : undefined,
                         sheet: page?.kind === "page" ? page.sheet : [],
                         cards: page?.kind === "page" ? page.cards : undefined,
                         text: page?.kind === "page" ? page.text : "",
@@ -296,6 +299,7 @@ function App()
                         problems: overview.kind === "overview" ? overview.problems : undefined,
                         importing: overview.kind === "overview" || overview.kind === "none" ? overview.importing : undefined,
                         textsTranslating: overview.kind === "overview" ? overview.textsTranslating : undefined,
+                        layers: overview.kind === "overview" ? overview.layers : undefined,
                         choices: choicesNow ?? before.choices,
                     }, holding.current !== undefined)
                 );
@@ -772,7 +776,15 @@ function App()
                                                     {address.section === "world" && <WorldView version={shown.version} lead={lead} players={many ? players : undefined} tab={address.tab} item={address.name} />}
                                                     {address.section === "settings" && <SettingsView version={shown.version} several={many} />}
                                                     {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} several={many} />}
-                                                    {address.section === "packages" && <PackagesPage version={shown.version} tab={address.tab} />}
+                                                    {address.section === "packages" && (
+                                                        <PackagesPage
+                                                            version={shown.version}
+                                                            tab={address.tab}
+                                                            item={address.name}
+                                                            layers={shown.layers}
+                                                            onChanged={() => void read()}
+                                                        />
+                                                    )}
                                                     {address.section === "pkg" && <PackagePage name={address.tab} page={address.name} modulesRead={modulesRead} />}
                                                     {address.section === "choices" && (
                                                         <ChoicesPage
@@ -793,6 +805,7 @@ function App()
                                                                 key={member.name}
                                                                 member={member}
                                                                 headline={shown.headline}
+                                                                layered={shown.layered === true}
                                                                 sheet={shown.sheet}
                                                                 cards={shown.cards}
                                                                 text={shown.text}

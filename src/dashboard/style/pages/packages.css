@@ -524,6 +524,99 @@
         color: var(--ink);
     }
 
+    /* The pages of the game system the campaign changed (D-564), under the system it plays, from the words' column: a small heading, a line of what they
+       are, then each page, its name and Put back on a line, what changed under them. */
+    .package-row > .package-changes {
+        grid-column: 2 / -1;
+    }
+
+    .package-changes {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+        margin-top: 6px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--rule);
+    }
+
+    .package-changes > .package-sub {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .package-changes > .package-sub .package-count {
+        letter-spacing: 0;
+    }
+
+    .changed-list {
+        display: grid;
+        margin: 4px 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .changed-page {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 2px 12px;
+        padding: 8px 0;
+        border-top: 1px solid var(--rule);
+    }
+
+    .changed-page > :is(.changed-fields, .package-note, .package-said) {
+        grid-column: 1 / -1;
+    }
+
+    /* What changed, a line each: the field's label in its column, as wide in every page, then what the system gave, an arrow, what the campaign has. */
+    .changed-fields {
+        display: grid;
+        grid-template-columns: 8.5em minmax(0, 1fr);
+        gap: 2px 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+    }
+
+    .changed-fields > li {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1 / -1;
+        align-items: baseline;
+    }
+
+    .changed-field,
+    .changed-was,
+    .changed-new {
+        color: var(--muted);
+    }
+
+    .changed-values {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 6px;
+        min-width: 0;
+    }
+
+    .changed-now {
+        font-weight: 650;
+    }
+
+    .changed-arrow {
+        align-self: center;
+        color: var(--muted);
+    }
+
+    .changed-arrow svg.icon {
+        display: block;
+        width: 14px;
+        height: 14px;
+    }
+
     /* What a package's latest needs of the engine (D-515 (2)), under its meta: the words in --muted, the way to the engine's card in the accent. */
     .package-needs {
         display: flex;
@@ -738,9 +831,29 @@
             grid-column: auto;
         }
 
-        .package-row > :is(.package-progress, .package-window, .package-said),
+        .package-row > :is(.package-progress, .package-window, .package-said, .package-changes),
         .package-credits {
             grid-column: 1 / -1;
+        }
+
+        /* A changed page: Put back goes under its name when the two do not fit, as with the text zoomed; the labels take what they need, half at most. */
+        .changed-page {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .changed-page > .package-title {
+            flex: 1 1 8em;
+            min-width: 0;
+        }
+
+        .changed-page > :is(.changed-fields, .package-note, .package-said) {
+            flex: 0 0 100%;
+        }
+
+        .changed-fields {
+            grid-template-columns: fit-content(45%) minmax(0, 1fr);
         }
 
         .package-add-line input {

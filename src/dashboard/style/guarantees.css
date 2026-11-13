@@ -104,6 +104,13 @@
         translate: 0 0 !important;
     }
 
+    /* The pencil of a changed page stands in narrow cards: its tooltip in lines, never wider than its card. */
+    .changed-mark[data-tip]::before {
+        width: max-content !important;
+        max-width: 200px !important;
+        white-space: normal !important;
+    }
+
     /* How a number is made, in its tooltip (FOR-8): lines that wrap, its free roll on the last. */
     [data-tip].tip-wide::before {
         width: max-content !important;

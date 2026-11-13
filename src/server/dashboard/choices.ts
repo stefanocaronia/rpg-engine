@@ -5,8 +5,9 @@ import { z } from "zod";
 import { type ChoiceItem, type ChoiceSet, findCampaign, readChoices, readSettings, writeChoices } from "../../campaign/index.ts";
 import { confirmedNotes, offeredPages, optionParts } from "../../commands/choices.ts";
 import { campaignSystem, campaignWorld } from "../../commands/shared/campaign/world.ts";
-import { type Knowledge, knownIntroduction, playerKnowledge, withPagesKnown } from "../../commands/shared/characters/knowledge.ts";
+import { type Knowledge, knownIntroduction, knowsPage, playerKnowledge, withPagesKnown } from "../../commands/shared/characters/knowledge.ts";
 import { newDatedLogEntry } from "../../commands/shared/time/time.ts";
+import { isLayered } from "../../commands/view/layers.ts";
 import { appendLogEntry } from "../../core/log.ts";
 import { withFiles } from "../../core/store.ts";
 import { firstSentence } from "../../core/text.ts";
@@ -32,6 +33,8 @@ export interface OptionPage
     name: string;
     title: string;
     opening: string;
+    /** It is, or derives from, a page of the game system the campaign changed with a layer (SYS-11). */
+    layered?: true;
 }
 
 /** A set of choices as the page shows it. */
@@ -133,7 +136,8 @@ function shownOption(world: World, knowledge: Knowledge | undefined, option: str
     const found = parts.pages.map((name) => findPage(world, name)).filter((page) => page !== undefined);
     const pages = found.filter((page, index) => found.findIndex((other) => other.name === page.name) === index).map((page) => {
         const introduction = knowledge === undefined ? withoutComments(introductionText(page.translated ?? page.body)) : knownIntroduction(world, knowledge, page);
-        return { name: page.name, title: page.title ?? page.name, opening: firstSentence(linkWords(world, introduction).replace(/\s+/g, " ").trim()) };
+        const layered = isLayered(world, page, (base) => knowledge === undefined || knowsPage(knowledge, base)) ? { layered: true as const } : {};
+        return { name: page.name, title: page.title ?? page.name, opening: firstSentence(linkWords(world, introduction).replace(/\s+/g, " ").trim()), ...layered };
     });
     return {
         text: option,

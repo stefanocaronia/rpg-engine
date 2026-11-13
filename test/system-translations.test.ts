@@ -64,6 +64,18 @@ describe("a system's text in the campaign's language (D-542)", () => {
         expect(words["Bog Hound"]).toBe("Segugio di palude");
     });
 
+    it("lists a creature the campaign changed that the character does not know by its name and its name in the campaign's language alone (SYS-11)", async () => {
+        await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
+        await ok("write", "Ettore", "--type", "character", "--set", "role=pc");
+        await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12", "--text", "Un cane più grosso.");
+        const shown = JSON.parse(await ok("view", "--json")) as { layers: unknown[]; };
+        expect(shown.layers).toEqual([{ name: "Bog Hound", title: "Segugio di palude", fields: [], sections: [] }]);
+        // Once a companion derives from it, the player reads it, with what the system gave.
+        await ok("write", "Fumo", "--type", "character", "--set", "role=companion", "--set", "creature=[[Bog Hound]]");
+        const known = JSON.parse(await ok("view", "--json")) as { layers: unknown[]; };
+        expect(known.layers).toEqual([{ name: "Bog Hound", title: "Segugio di palude", type: "creature", fields: [{ field: "grit", system: "9/9", campaign: "12/12" }], sections: [], introduction: true }]);
+    });
+
     it("reads the rules in the campaign's language, found by the system's words or the campaign's, and the condition's rule by its word there", async () => {
         await ok("init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
         expect(await ok("rules", "cadere")).toContain("A 0 di tempra si cade.");

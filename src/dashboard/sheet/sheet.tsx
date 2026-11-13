@@ -11,6 +11,7 @@ import { readExplanations } from "../api.ts";
 import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownChoices, ShownScene } from "../data.ts";
 import { WidgetCards, WidgetsContext } from "../packages/widgets.tsx";
 import { CardHeader, useOpen } from "../parts/card.tsx";
+import { ChangedLine, ChangedMark } from "../parts/changed.tsx";
 import { besideLabel, memberPlaceLabel } from "../parts/game-words.ts";
 import { cardIcons, DieIcon, Icon } from "../parts/icons.tsx";
 import { fieldLabel, groupLabels, itemLabel, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "../parts/labels.ts";
@@ -35,9 +36,11 @@ const backstoryCard = "Backstory";
 export type FreeRoll = (roll: SheetRoll, label: string, who?: string) => void;
 
 export function MemberSheet(
-    { member, headline, sheet, cards, text, knownBy, story, version, onRoll, scene, choices = [] }: {
+    { member, headline, layered, sheet, cards, text, knownBy, story, version, onRoll, scene, choices = [] }: {
         member: Member;
         headline?: string;
+        /** What the sheet shows comes from a page of the game system the campaign changed (D-564). */
+        layered?: boolean;
         sheet: SheetGroup[];
         cards?: SheetCards;
         text: string;
@@ -92,6 +95,7 @@ export function MemberSheet(
                                 {memberPlaceLabel(member.place)}
                             </p>
                         )}
+                        {layered === true && <ChangedLine />}
                     </div>
                 </div>
                 {choices.map((set) => <ChoicesNotice key={set.id} set={set} />)}
@@ -507,6 +511,8 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                             {said !== "" && <span class="visually-hidden">{said}</span>}
                         </>
                     );
+                    // The campaign changed its page of the game system (D-564): a pencil after its name, outside what acts.
+                    const changed = item.layered === true && <ChangedMark />;
                     // The name acts, when the system names a verb for it; a container's opens and closes what it holds (D-495).
                     const verbs = holds(index) ? undefined : itemVerbs(acts?.actions, item);
                     return (
@@ -522,6 +528,7 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                                     : verbs === undefined
                                     ? words
                                     : <ActName verbs={verbs} item={name} said={`${count(item) === "" ? "" : ` (${count(item)})`}${said}`}>{words}</ActName>}
+                                {changed}
                             </th>
                             {!carried && item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text, value.kind)}</td>)}
                         </tr>

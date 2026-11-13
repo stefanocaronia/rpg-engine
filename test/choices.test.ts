@@ -190,6 +190,16 @@ describe("the choices on the dashboard", () => {
         });
     }
 
+    it("marks the page of an option that the campaign changed with a layer (SYS-11)", async () => {
+        await ok("write", "Scout#Keen Eye", "--layer", "--text", "Notice with an edge, and in the dark too.");
+        await ok("choices", "--title", "Vocazione", "--items", JSON.stringify([{ question: "Quale", options: ["[[Scout]]", "[[Warden]]"] }]));
+        const sets = (await send("GET")).body.sets as { title: string; items: { options: { pages: Record<string, unknown>[]; }[]; }[]; }[];
+        const [scout, warden] = sets.find((set) => set.title === "Vocazione")?.items[0].options.map((option) => option.pages[0]) ?? [];
+        expect(scout).toMatchObject({ name: "Scout", layered: true });
+        expect(warden).toMatchObject({ name: "Warden" });
+        expect(warden).not.toHaveProperty("layered");
+    });
+
     it("shows each option's words, dice and page, takes the player's answers and rolls, and confirms only once all is answered", async () => {
         const shown = await send("GET");
         const sets = shown.body.sets as { id: string; items: { options: unknown[]; }[]; }[];

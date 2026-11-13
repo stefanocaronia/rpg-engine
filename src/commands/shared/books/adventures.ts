@@ -1,5 +1,5 @@
 // The adventures of a campaign (D-476, D-483): installed from a package whole or not at all, taken out while the story has not touched them, and exported as
-// they were at the start (ADV-1–ADV-7).
+// they were at the start (ADV-1–ADV-7), with the campaign's layers over its game system as they are now (ADV-8).
 import { basename, join, relative, resolve, sep } from "node:path";
 import { parse, parseDocument, Scalar, stringify, visit } from "yaml";
 import { type AdventureFiles, adventureFolderName, type AdventureManifest, adventureTarget, isAdventureFolder, largestAdventure, manifestLine, packAdventure, readAdventureFolder, readAdventureZip } from "../../../adventures/index.ts";
@@ -12,7 +12,7 @@ import { comparableText, linkTargetName } from "../../../core/text.ts";
 import { isNewerVersion } from "../../../core/version.ts";
 import { shortName } from "../../../extensions/index.ts";
 import { findImage, imageFileName, largestImage } from "../../../images/index.ts";
-import { layersFolderName, locate, type Page, pageNamed, pageNamedQuietly, readFields, splitPageFile, textsIn, type World, worldFolderName } from "../../../pages/index.ts";
+import { locate, type Page, pageNamed, pageNamedQuietly, readFields, splitPageFile, textsIn, type World, worldFolderName } from "../../../pages/index.ts";
 import { readRuleBook, ruleSections } from "../../../rules/index.ts";
 import { unpackFiles } from "../../../saves/index.ts";
 import { formatGameDate, readGameDate } from "../../../time/index.ts";
@@ -21,6 +21,7 @@ import { campaignSaves, exportsFolderName, resetSave, savesFolderName, savesWhy 
 import { campaignSystem, campaignWorld } from "../campaign/world.ts";
 import { listedExtensions } from "../packages/extensions.ts";
 import { newDatedLogEntry, readPresent } from "../time/time.ts";
+import { changedPages, checkLayersNotCopied, type LayeredPage, type LayerLeftOut, layerPrints, type LayersExported, type LayersInstalled, layersToExport, layersToRemove, logLayerCounters, planLayers } from "./adventure-layers.ts";
 import { houseRules, systemRuleBook } from "./rules.ts";
 
 /** An adventure the campaign has installed and not taken out (ADV-6). */
@@ -32,6 +33,8 @@ export interface InstalledAdventure
     since?: string;
     /** The files it wrote, from the campaign's folder. */
     files: string[];
+    /** The layers it brought over the pages of the game system (ADV-8), by their file, each with the print of its text as it wrote it. */
+    layers: Record<string, string>;
     /** The days its dates were moved by. */
     shift: number;
     /** The line of the log that installed it. */
@@ -53,20 +56,35 @@ export interface AdventureInstalled
     ignored: string[];
     /** The starting place, and whether the world already holds it in a place. */
     start?: { name: string; placed: boolean; };
+    /** What its layers over the pages of the game system did (ADV-8): the pages they change, and the layers left out. */
+    layers: LayersInstalled;
 }
 
-/** What an export wrote (ADV-7). */
+/** What taking an adventure out did (ADV-6, ADV-8): the pages of the game system its layers change no more, and those whose layer, changed since, stays the campaign's. */
+export interface AdventureRemoved
+{
+    title: string;
+    layers: LayeredPage[];
+    layersKept: string[];
+}
+
+/** What an export wrote (ADV-7, ADV-8). */
 export interface AdventureExported
 {
     file: string;
     from: string;
     pages: number;
-    /** The player characters, the adventures installed, and the pages of the game system the campaign's layers change (SYS-11), which an adventure does not carry. */
-    leftOut: { characters: string[]; adventures: string[]; layers: string[]; };
+    /** The pages of the game system whose layers it carries, as the campaign has them now. */
+    layers: string[];
+    /** The player characters, the adventures installed, and the campaign's layers that stay out, each with why. */
+    leftOut: { characters: string[]; adventures: string[]; layers: LayerLeftOut[]; };
     opening?: string;
-    /** The pages written from the player's documents (source:), when no license was given: the zip keeps them to the player. */
+    /** The pages and layers written from the player's documents (source:), when no license was given: the zip keeps them to the player. */
     sourced?: string[];
 }
+
+// What the system's attribution adds when the adventure carries layers over its pages: an open licence asks to say that the material was changed (ADV-8).
+const changesMade = "Changes were made: the files under layers/ modify pages the game system adapted from that material.";
 
 // The mark of an install under way, with its title and the days it moves dates by: while it is there, installing the same adventure finishes it (ADV-5).
 const installMarkName = ".adventure-install.yaml";
@@ -135,7 +153,12 @@ export function installAdventure(root: string, context: Context, adventure: Adve
             });
         }
 
-        return { ...describe(root, context, adventure, there.shift, [], []), already: true };
+        // An install that stopped after its line was written left only its mark behind.
+        if (comparableText(installMark(root)?.title ?? "") === comparableText(manifest.title)) {
+            files().remove(join(root, installMarkName));
+        }
+
+        return { ...describe(root, context, adventure, there.shift, [], []), already: true, layers: { changed: [], kept: [], stray: [] } };
     }
 
     const stopped = installMark(root);
@@ -148,7 +171,9 @@ export function installAdventure(root: string, context: Context, adventure: Adve
 
     checkNeeds(root, context, manifest);
     const shift = stopped?.shift ?? Math.max(0, (readPresent(root).date?.day ?? 1) - 1);
+    const world = campaignWorld(root, context);
     const plan = planInstall(root, context, adventure, shift);
+    const layers = planLayers(root, world, adventure);
 
     if (plan.problems.length > 0) {
         const listed = plan.problems.slice(0, 10).join("; ");
@@ -161,20 +186,42 @@ export function installAdventure(root: string, context: Context, adventure: Adve
         );
     }
 
+    if (layers.problems.length > 0) {
+        const listed = layers.problems.join("; ");
+        throw new Refusal(
+            `${manifest.title} cannot be installed: ${listed}. A layer changes neither the name nor the type of a page of the game system, nor a field no page inherits, nor gives uses to an item `
+                + "counted in stacks, and a page has one layer: fix its layers, in its folder or its .zip, and install it again. Nothing changed.",
+            "adventure-layers",
+            { name: manifest.title, layers: listed },
+        );
+    }
+
+    // The copies read the fields a layer gives, never its text (INH-10).
+    checkLayersNotCopied(root, world, manifest.title, "installed", layers.changed.filter((one) => one.fields.length > 0).map((one) => one.page));
     const mark = join(root, installMarkName);
     files().write(mark, stringify({ title: manifest.title, shift, from }));
 
-    for (const write of plan.writes) {
+    for (const write of [...plan.writes, ...layers.writes]) {
         files().writeBytes(join(root, ...write.path.split("/")), write.bytes);
     }
 
-    appendLogEntry(root, newDatedLogEntry(root, context, "adventure-installed", "public", { title: manifest.title, version: manifest.version, from, shift, files: plan.paths }));
+    // Before the adventure's own line: a line after it is the story going on (ADV-6).
+    logLayerCounters(root, context, world, layers.changed.map((one) => one.page));
+    const brought = Object.keys(layers.prints).length === 0 ? {} : { layers: layers.prints };
+    appendLogEntry(root, newDatedLogEntry(root, context, "adventure-installed", "public", { title: manifest.title, version: manifest.version, from, shift, files: plan.paths, ...brought }));
     files().remove(mark);
-    return { ...describe(root, context, adventure, shift, plan.shadows, plan.covers), already: false };
+    return {
+        ...describe(root, context, adventure, shift, plan.shadows, plan.covers),
+        already: false,
+        layers: { changed: changedPages(layers.changed.map((one) => one.page)), kept: layers.kept, stray: layers.stray },
+    };
 }
 
-/** Takes an adventure out (ADV-6), with the files it wrote, while no line of the log after it names one of its pages; else it throws, saying it stays. */
-export function removeAdventure(root: string, context: Context, adventure: InstalledAdventure): void
+/**
+ * Takes an adventure out (ADV-6), with the files it wrote and the layers still as it wrote them (ADV-8), while no line of the log after it names one of its pages;
+ * else it throws, saying it stays.
+ */
+export function removeAdventure(root: string, context: Context, adventure: InstalledAdventure): AdventureRemoved
 {
     const touching = storyTouching(root, adventure);
 
@@ -186,15 +233,23 @@ export function removeAdventure(root: string, context: Context, adventure: Insta
         );
     }
 
+    const world = campaignWorld(root, context);
+    const others = installedAdventures(root).filter((one) => one.entry !== adventure.entry).map((one) => one.layers);
+    const layers = layersToRemove(root, world, adventure.layers, others);
+    // The copies read the fields a layer gives, never its text (INH-10).
+    checkLayersNotCopied(root, world, adventure.title, "taken out", layers.changed.filter((page) => (page.layer?.fields.length ?? 0) > 0));
+
     // A file already gone, by hand or by a remove that stopped, is no reason to stop.
-    for (const path of adventure.files.map((one) => join(root, ...one.split("/"))).filter((one) => files().exists(one))) {
+    for (const path of [...adventure.files, ...layers.paths].map((one) => join(root, ...one.split("/"))).filter((one) => files().exists(one))) {
         files().remove(path);
     }
 
+    logLayerCounters(root, context, world, layers.changed);
     appendLogEntry(root, newDatedLogEntry(root, context, "adventure-removed", "public", { title: adventure.title }));
+    return { title: adventure.title, layers: changedPages(layers.changed), layersKept: layers.kept };
 }
 
-/** The first line of the log after an adventure came in that names one of its pages (ADV-6): it can no longer be taken out; undefined while none does. */
+/** The first line of the log after an adventure came in that names one of its pages (ADV-6), never of the system's its layers change: it can no longer be taken out; undefined while none does. */
 export function storyTouching(root: string, adventure: InstalledAdventure): LogEntry | undefined
 {
     const log = readLog(root);
@@ -205,7 +260,8 @@ export function storyTouching(root: string, adventure: InstalledAdventure): LogE
 
 /**
  * Exports the campaign's world as an adventure (ADV-7), as it was at its start: the save before session zero, else that of the start, else the world now while no
- * scene was ever opened; without the player characters and the adventures it installed. Written in exports/, by the campaign's name.
+ * scene was ever opened; without the player characters and the adventures it installed. Its layers over the game system go as they are now (ADV-8), whatever the
+ * save held. Written in exports/, by the campaign's name.
  */
 export function exportAdventure(root: string, context: Context, credits: { author?: string; license?: string; }): AdventureExported
 {
@@ -231,10 +287,16 @@ export function exportAdventure(root: string, context: Context, credits: { autho
     const opening = pages.find((page) => !installed.has(page.path) && textsIn(page.fields.tags).some((tag) => comparableText(tag) === "opening"));
     const start = opening === undefined ? undefined : textsIn(opening.fields.start)[0]?.replace(/^\[\[|\]\]$/g, "");
     const system = campaignSystem(root, context);
-    // The system is needed, with its credits, only where a page uses it (D-489 (6)); pages from the player's documents keep it to the player unless they say otherwise.
-    const usesSystem = settings.system !== undefined && systemUsed(kept, campaignWorld(root, context), system?.fields ?? {});
-    const sourced = pages.filter((page) => kept[page.path] !== undefined && page.fields.source !== undefined).map((page) => basename(page.path, ".md"));
+    const world = campaignWorld(root, context);
+    const none: LayersExported = { carried: {}, pages: [], sourced: [], leftOut: [] };
+    const layers = settings.system === undefined ? none : layersToExport(root, world, system?.name ?? settings.system, installedAdventures(root).map((adventure) => adventure.layers));
+    const layered = layers.pages.length > 0;
+    // The system is needed, with its credits, only where a page uses it (D-489 (6)), and always with layers over its pages (ADV-8); pages from the player's documents
+    // keep it to the player unless they say otherwise.
+    const usesSystem = settings.system !== undefined && (layered || systemUsed(kept, world, system?.fields ?? {}));
+    const sourced = [...pages.filter((page) => kept[page.path] !== undefined && page.fields.source !== undefined).map((page) => basename(page.path, ".md")), ...layers.sourced];
     const license = credits.license ?? (sourced.length > 0 ? "personal use only" : undefined);
+    const attribution = system?.attribution === undefined || !usesSystem ? undefined : layered ? `${system.attribution.trim()} ${changesMade}` : system.attribution;
     const manifest: AdventureManifest = {
         title: manifestLine(settings.name, "title"),
         about: manifestLine(settings.premise ?? settings.name, "about"),
@@ -242,24 +304,21 @@ export function exportAdventure(root: string, context: Context, credits: { autho
         version: "1.0.0",
         ...(credits.author === undefined ? {} : { author: credits.author }),
         ...(license === undefined ? {} : { license }),
-        ...(system?.attribution === undefined || !usesSystem ? {} : { attribution: system.attribution }),
+        ...(attribution === undefined ? {} : { attribution }),
         needs: { ...(usesSystem ? { system: settings.system } : {}), extensions: listedExtensions(root) },
         content: [],
         ...(start === undefined ? {} : { start }),
         ...(opening === undefined ? {} : { opening: basename(opening.path, ".md") }),
     };
     const file = join(root, exportsFolderName, `${settings.name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim()}.adventure.zip`);
-    files().writeBytes(file, packAdventure(manifest, kept));
+    files().writeBytes(file, packAdventure(manifest, { ...kept, ...layers.carried }));
     const adventures = adventuresOfLog(log).map((adventure) => adventure.title);
     return {
         file,
         from,
         pages: Object.keys(kept).filter((path) => path.startsWith(`${worldFolderName}/`)).length,
-        leftOut: {
-            characters: players.map((page) => basename(page.path, ".md")),
-            adventures,
-            layers: Object.keys(held).filter((path) => path.startsWith(`${layersFolderName}/`) && path.endsWith(".md")).map((path) => basename(path, ".md")),
-        },
+        layers: layers.pages,
+        leftOut: { characters: players.map((page) => basename(page.path, ".md")), adventures, layers: layers.leftOut },
         ...(sourced.length > 0 && credits.license === undefined ? { sourced } : {}),
         ...(opening === undefined ? {} : { opening: basename(opening.path, ".md") }),
     };
@@ -291,8 +350,9 @@ function adventuresOfLog(log: LogEntry[]): InstalledAdventure[]
         const title = String(data.title ?? "");
 
         if (entry.type === "adventure-installed") {
-            const shift = Number((entry.data as { shift?: unknown; }).shift ?? 0);
-            found.push({ title, version: String(data.version ?? ""), ...(entry.date === undefined ? {} : { since: entry.date }), files: textsIn(data.files), shift, entry: entry.id });
+            const { shift, layers } = entry.data as { shift?: unknown; layers?: unknown; };
+            const since = entry.date === undefined ? {} : { since: entry.date };
+            found.push({ title, version: String(data.version ?? ""), ...since, files: textsIn(data.files), layers: layerPrints(layers), shift: Number(shift ?? 0), entry: entry.id });
         } else if (entry.type === "adventure-removed") {
             const removed = found.findIndex((one) => comparableText(one.title) === comparableText(title));
 
@@ -429,7 +489,7 @@ function planInstall(root: string, context: Context, adventure: AdventureFiles, 
 }
 
 /** What the master hears of an install: the counts by kind, the dates, and where it starts. */
-function describe(root: string, context: Context, adventure: AdventureFiles, shift: number, shadows: string[], covers: string[]): Omit<AdventureInstalled, "already">
+function describe(root: string, context: Context, adventure: AdventureFiles, shift: number, shadows: string[], covers: string[]): Omit<AdventureInstalled, "already" | "layers">
 {
     const counts: Record<string, number> = {};
     let firstDate: { page: string; date: string; day: number; } | undefined;

@@ -48,6 +48,8 @@ const phrases: Record<string, (values: Values) => string> = {
     "adventure-halfway": (values) => t("Adding {name} stopped halfway: add it again first.", values),
     "adventure-names": (values) => t("{name} has pages with names this campaign already uses: {names}", values),
     "adventure-in-story": (values) => t("{name} is part of the story now: it stays.", values),
+    "adventure-copies": (values) => t("{name} changes something of the game system that is in the scene being played: try again once the scene is over.", values),
+    "adventure-layers": (values) => t("{name} brings changes to the game system that cannot be used as they are written: whoever made it has to fix them.", values),
     "adventure-needs": (values) => t("{name} needs the extension {needs}: add it first.", values),
     "adventure-needs-newer": (values) => t("{name} needs {needs} {version} or later, and this campaign has {has}: update it first.", values),
     "export-played": () => t("The campaign has been played and has no save of its start: keep it as a save of the whole game instead."),
@@ -69,6 +71,9 @@ const phrases: Record<string, (values: Values) => string> = {
     "engine-link": (values) => t("This RPG Engine is a development link to {name}: update it there.", values),
     "engine-elsewhere": (values) => t("This RPG Engine runs from {name}: update it the way it was installed.", values),
     "engine-failed": (values) => t("npm could not update RPG Engine: {why}", values),
+    "no-layer": (values) => t("{page} is no longer changed in this campaign: there is nothing to put back.", values),
+    "copies-in-scene": (values) => t("{page} is in the scene being played: put it back once the scene is over.", values),
+    "scene-open": () => t("It can be restored once the scene being played is over."),
     "file-big": (values) => t("The file is more than {size} MB: no package is that big.", values),
     "file-kind": (values) => t("{name} is neither a .zip nor a .tgz.", values),
 };

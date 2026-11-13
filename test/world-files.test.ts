@@ -1,5 +1,5 @@
-import { linkSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
@@ -156,6 +156,43 @@ describe("names and options", () => {
             expect(readFileSync(join(outside, "bashrc"), "utf8")).toBe("fuori");
         } finally {
             removeFolder(outside);
+        }
+    });
+
+    it("refuses a campaign whose layers, down to the folder a layer is written in, are a link that leads outside: write with layer, reset and an adventure coming in or going write nothing there", async () => {
+        const layer = "---\ngrit: 12/12\n---\n";
+        const creatures = "layers/fake/world/creatures";
+        const adventure = join(makeTempFolder(), "Il pozzo");
+        mkdirSync(join(adventure, creatures), { recursive: true });
+        writeFileSync(join(adventure, "adventure.yaml"), "title: Il pozzo\nabout: A well.\nlanguage: it\nversion: 1.0.0\nneeds: {system: fake}\n");
+        writeFileSync(join(adventure, creatures, "Bog Hound.md"), layer);
+
+        for (const linked of ["layers", "layers/fake", "layers/fake/world", creatures]) {
+            // Nothing there yet: neither a layer written nor an adventure's goes through the link.
+            const empty = makeTempFolder();
+            mkdirSync(join(folder, dirname(linked)), { recursive: true });
+            symlinkSync(empty, join(folder, linked), "junction");
+            expect((await rpg("write", "Bog Hound", "--layer", "--set", "grit=12/12")).output, linked).toContain(`${basename(linked)} is a link to somewhere else`);
+            expect((await rpg("package", "install", adventure)).output, linked).toContain("is a link to somewhere else");
+            expect(readdirSync(empty), linked).toEqual([]);
+            rmSync(join(folder, linked));
+
+            // The adventure's layer already there, behind the link: neither reset nor taking the adventure out removes it.
+            expect((await rpg("package", "install", adventure)).exitCode, linked).toBe(0);
+            const outside = makeTempFolder();
+            const kept = join(outside, creatures.slice(linked.length), "Bog Hound.md");
+            cpSync(join(folder, linked), outside, { recursive: true });
+            rmSync(join(folder, linked), { recursive: true });
+            symlinkSync(outside, join(folder, linked), "junction");
+            expect((await rpg("write", "Bog Hound", "--layer", "--reset")).output, linked).toContain("is a link to somewhere else");
+            expect((await rpg("package", "remove", "Il pozzo")).output, linked).toContain("is a link to somewhere else");
+            expect(readFileSync(kept, "utf8"), linked).toBe(layer);
+
+            // With a real folder in its place, as the refusal says, the adventure goes.
+            rmSync(join(folder, linked));
+            cpSync(outside, join(folder, linked), { recursive: true });
+            expect((await rpg("package", "remove", "Il pozzo")).exitCode, linked).toBe(0);
+            rmSync(join(folder, "layers"), { recursive: true, force: true });
         }
     });
 

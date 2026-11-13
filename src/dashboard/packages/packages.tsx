@@ -1,8 +1,8 @@
-// The Packages section (D-485, D-486, D-488), in three tabs: Installed first, what is here by kind: the game system, the campaign's adventures with its own
-// export last, the extensions with whether the campaign uses each, the languages; its tab counts the updates and marks what the campaign lacks. Then Add: one
-// card to add a package: the catalog of what npm and GitHub offer first, always open, then a link, an npm name, a folder or a file. Then Library: the folders
-// of the player's books for this campaign alone (D-491 (13)). One work at a time; one not ours with code, or a folder added to the library, waits for the
-// player's yes in a window of their computer, said in every tab.
+// The Packages section (D-485, D-486, D-488), in three tabs: Installed first, what is here by kind: the game system, with the pages of it the campaign changed
+// under the one it plays (D-564), the campaign's adventures with its own export last, the extensions with whether the campaign uses each, the languages; its
+// tab counts the updates and marks what the campaign lacks. Then Add: one card to add a package: the catalog of what npm and GitHub offer first, always open,
+// then a link, an npm name, a folder or a file. Then Library: the folders of the player's books for this campaign alone (D-491 (13)). One work at a time; one
+// not ours with code, or a folder added to the library, waits for the player's yes in a window of their computer, said in every tab.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "../address.ts";
 import {
@@ -25,6 +25,7 @@ import {
     readPackages,
     updateEngine,
 } from "../api.ts";
+import type { ShownLayer } from "../data.ts";
 import { CardHead } from "../parts/card.tsx";
 import { Icon, iconPath } from "../parts/icons.tsx";
 import { phraseLabel } from "../parts/labels.ts";
@@ -33,6 +34,7 @@ import { PageHead } from "../shell/pages.tsx";
 import { PageTabs } from "../shell/tabs.tsx";
 import { t } from "../text.ts";
 import { AddField, CatalogList, entryOf, entryTitle, newerOf, updateCount } from "./catalog.tsx";
+import { ChangedPages } from "./changes.tsx";
 import { EngineCard, engineName, type EngineUpdated, focusEngine, keepUpdate, keptUpdate, NeedsEngine } from "./engine.tsx";
 import { AdventureRow, ExtensionRow, LanguageRow, languageTitle, MissingRow, SystemRow } from "./installed.tsx";
 import { libraryReading, LibraryTab } from "./library.tsx";
@@ -52,7 +54,17 @@ type Asking =
     | { kind: "uninstall"; what: "system" | "extension" | "language"; name: string; target: string; at: string; }
     | { kind: "library"; path: string; name: string; };
 
-export function PackagesPage({ version, tab }: { version: number; tab?: string | undefined; })
+/**
+ * The page as the game last changed (`version`), at the tab the address names and what it names in it (`item`); with the pages of the game system the
+ * campaign changed, as the overview gives them (D-564), and what reads the game again once one is put back.
+ */
+export function PackagesPage({ version, tab, item, layers = [], onChanged }: {
+    version: number;
+    tab?: string | undefined;
+    item?: string | undefined;
+    layers?: ShownLayer[] | undefined;
+    onChanged(): void;
+})
 {
     const [view, setView] = useState<PackagesView>();
     const [problem, setProblem] = useState<string>();
@@ -357,6 +369,7 @@ export function PackagesPage({ version, tab }: { version: number; tab?: string |
                                                 system={system}
                                                 newer={system.package === undefined ? undefined : newerOf(system.package, "system", catalog.read)}
                                                 needs={system.package === undefined ? null : needs(entryOf(system.package, "system", catalog.read)?.newer)}
+                                                changes={system.used ? <ChangedPages layers={layers} open={item} onChanged={onChanged} /> : undefined}
                                                 fresh={fresh.includes(`system:${system.name}`)}
                                                 state={rowState(`system:${system.name}`)}
                                                 onUpdate={(target) => void change(`system:${system.name}`, "update", target, system.name)}

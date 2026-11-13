@@ -55,7 +55,24 @@ export interface SheetGroup
     icon?: string;
     values: SheetValue[];
     /** What a group's items are, as the things carried: each with its values, how deep inside another it is, whether equipped, and the lists of bonds it is in, as attuned. */
-    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; bonds?: string[]; image?: { file: string; version: number; }; }[];
+    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; bonds?: string[]; image?: { file: string; version: number; }; layered?: true; }[];
+}
+
+/**
+ * A page of the game system the campaign changed with a layer, as the page lists it: the fields it changes, each as the system gives it, none for one the
+ * layer adds, and as the campaign has it; the sections it writes, by name, never a secret; and whether it writes the introduction. One the player may not
+ * read, as a creature the character does not know, has its name and title alone: no type, no fields, no sections. The values are the engine's text, as a
+ * sheet's value. Taken off with POST /api/layer, { page: name }: 202, or an error with a code, no-layer, copies-in-scene or scene-open, and the page's name in its values.
+ */
+export interface ShownLayer
+{
+    name: string;
+    /** Its name in the campaign's language, when the system's translation gives one. */
+    title?: string;
+    type?: string;
+    fields: { field: string; system?: string; campaign: string; }[];
+    sections: string[];
+    introduction?: true;
 }
 
 /** One of the engine's verbs, attack, use, equip and unequip, or one the system declares (D-514). */
@@ -383,6 +400,8 @@ export interface OptionPage
     name: string;
     title: string;
     opening: string;
+    /** It is, or derives from, a page of the game system the campaign changed with a layer. */
+    layered?: true;
 }
 
 /** A choice of a set: its question, how many to pick, its options, the options picked so far, and the roll an option made. */
@@ -521,8 +540,11 @@ export type View =
         importing?: ShownImport;
         /** The campaign's language, when this computer is translating the game system's pages into it (D-539). */
         textsTranslating?: string;
+        /** The pages of the game system the campaign changed with a layer, one the player may not read by its name alone; left out when there are none. */
+        layers?: ShownLayer[];
     }
-    | { kind: "page"; title: string; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; actions?: Partial<Record<string, ActVerb[]>>; text: string; story?: string; knownBy?: { secret: string; who: string[]; }[]; }
+    // layered: what the page shows comes from a page of the game system the campaign changed with a layer, itself or one it derives from.
+    | { kind: "page"; title: string; layered?: true; headline?: string; sheet: SheetGroup[]; cards?: SheetCards; actions?: Partial<Record<string, ActVerb[]>>; text: string; story?: string; knownBy?: { secret: string; who: string[]; }[]; }
     | { kind: "section"; title: string; lines: string[]; text: string; }
     | ({ kind: "map"; } & WorldMap)
     | { kind: "settings"; settings: PlayerSetting[]; }

@@ -15,6 +15,7 @@ import { lineExperience } from "../shared/sheet/counters.ts";
 import { effectiveFields } from "../shared/sheet/effect-layer.ts";
 import { counterOf, experienceNeed, experienceProgress, sheetData, type SheetGroupData, sheetHeadline, type SheetValue, statBlock } from "../shared/sheet/sheet.ts";
 import { hasSheet } from "../shared/sheet/system-fields.ts";
+import { isLayered } from "./layers.ts";
 import type { ViewResult } from "./result.ts";
 
 /** A page as the one whose view it is knows it (VIEW-3): its text, and the whole sheet when it is theirs or of their party. */
@@ -42,6 +43,7 @@ export function shownPage(root: string, context: Context, world: World, knowledg
     return {
         kind: "page",
         title: `${page.name} (${page.type ?? "page"})`,
+        ...(isLayered(world, page, (base) => knowsPage(knowledge, base)) ? { layered: true as const } : {}),
         ...(headline === undefined ? {} : { headline }),
         sheet,
         ...(cards === undefined ? {} : { cards }),
@@ -172,7 +174,8 @@ function withItemImages(root: string, context: Context, world: World, groups: Sh
             items: group.items.map(({ page, ...item }) => {
                 const found = page === undefined ? undefined : entryPage(world, page);
                 const image = found === undefined ? undefined : shownImage(root, context, world, found);
-                return image === undefined ? item : { ...item, image };
+                const layered = found !== undefined && isLayered(world, found) ? { layered: true as const } : {};
+                return { ...item, ...layered, ...(image === undefined ? {} : { image }) };
             }),
         }),
     }));

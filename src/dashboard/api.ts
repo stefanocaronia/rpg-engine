@@ -454,6 +454,30 @@ export async function changeLibrary(action: "add" | "remove" | "forget", path: s
     return await packageWork(() => fetch("/api/library", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, path }) }));
 }
 
+/** What putting a page of the game system back came to: done, or the page's words for why not, with the engine's code when the page knows it. */
+export type PutBackOutcome = { done: true; } | { done: false; error: string; code?: "no-layer" | "copies-in-scene" | "scene-open"; };
+
+/**
+ * Takes the campaign's change off a page of the game system (D-564), which then reads as the system writes it; the master hears of it by itself. A refusal
+ * names the page by `shown`, its name as the player reads it.
+ */
+export async function putPageBack(page: string, shown: string): Promise<PutBackOutcome>
+{
+    try {
+        const response = await fetch("/api/layer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ page }) });
+
+        if (response.status === 202) {
+            return { done: true };
+        }
+
+        const body = await response.json().catch(() => ({})) as Refused;
+        const code = body.code === "no-layer" || body.code === "copies-in-scene" || body.code === "scene-open" ? body.code : undefined;
+        return { done: false, error: refusalText(code === undefined ? body : { ...body, values: { ...body.values, page: shown } }, t("It did not reach the game: try again.")), ...(code === undefined ? {} : { code }) };
+    } catch {
+        return { done: false, error: t("It did not reach the game: try again.") };
+    }
+}
+
 /** Exports the campaign as an adventure, as it was at its start (ADV-7): the address to download its .zip from, or what went wrong. */
 export async function exportCampaign(credits: { author?: string; license?: string; }): Promise<{ download: string; file: string; } | { error: string; }>
 {

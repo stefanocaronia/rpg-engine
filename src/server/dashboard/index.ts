@@ -25,7 +25,23 @@ import { builtPage, packagePageFile, pageFile, pageHtml, pageModulesOf, pagePoli
 import { act, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
 import { answerAsked, type Asked, closeCard, listenForChanges, pagePlayer, pageSeen, rollNamesOf, type ShownCard, spendShown } from "./player.ts";
 import { campaignPorts } from "./ports.ts";
-import { addPackage, catalogNow, changeLibrary, changePackage, changeSaves, changeSetting, engineNow, exportCampaign, exportedFile, libraryNow, type PackageAction, type PackagePhase, packagesNow, runForPlayer } from "./writes.ts";
+import {
+    addPackage,
+    catalogNow,
+    changeLibrary,
+    changePackage,
+    changeSaves,
+    changeSetting,
+    engineNow,
+    exportCampaign,
+    exportedFile,
+    libraryNow,
+    type PackageAction,
+    type PackagePhase,
+    packagesNow,
+    runForPlayer,
+    takeLayerOff,
+} from "./writes.ts";
 
 export { campaignPorts, dashboardPorts } from "./ports.ts";
 
@@ -417,6 +433,11 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     if (request.method === "POST" && path === "/api/saves" && origin !== undefined) {
         await changeSaves(request, response, served);
+        return;
+    }
+
+    if (request.method === "POST" && path === "/api/layer" && origin !== undefined) {
+        await takeLayerOff(request, response, served);
         return;
     }
 

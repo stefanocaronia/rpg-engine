@@ -3,6 +3,7 @@
 import { ActName, usePlayerActs } from "../acts/names.tsx";
 import type { Member, SheetValue } from "../data.ts";
 import { numberText, t } from "../text.ts";
+import { ChangedMark, isChanged } from "./changed.tsx";
 import { Coins } from "./coins.tsx";
 import { besideLabel, burnsLabel, effectEndLabel, effectLabel, effectName } from "./game-words.ts";
 import { itemLabel, shownText } from "./labels.ts";
@@ -128,7 +129,13 @@ function Items({ items, field, fields }: { items: string[]; field: string; field
         <ul class={[sentences ? "notes" : "chips", acting ? "acting" : ""].filter((name) => name !== "").join(" ")}>
             {items.map((item) => {
                 const label = itemLabel(item, fields);
-                return <li key={item}>{acting ? <ActName verbs={verbs} item={label}>{label}</ActName> : label}</li>;
+                // An item is only a name: one of a page of the game system the campaign changed has the pencil after it (D-564).
+                return (
+                    <li key={item}>
+                        {acting ? <ActName verbs={verbs} item={label}>{label}</ActName> : label}
+                        {isChanged(item) && <ChangedMark />}
+                    </li>
+                );
             })}
         </ul>
     );
