@@ -64,6 +64,12 @@ describe("the character agent's calls in a playtest's counts (D-490)", () => {
     });
 });
 
+describe("the death saves in a playtest's counts", () => {
+    it("are read from the log, whichever tool wrote them: a roll that counts one too, and write apart", () => {
+        expect(table).toContain("| Dying: the engine's lines; death saves written | 0; death-successes 1, by write 1 |");
+    });
+});
+
 /** A run of one session of two master turns, as Claude Code streams them: the first calls the agent once, the second twice and another agent. */
 function writeRun(results: string, world: string): void
 {
@@ -71,7 +77,13 @@ function writeRun(results: string, world: string): void
     writeFile(join(session, "meta.json"), JSON.stringify({ started: "2026-10-23T10:00:00.000Z", options: {} }));
     writeFile(join(session, "end.json"), JSON.stringify({ at: "2026-10-23T10:10:00.000Z", stop: "player", count: 2, masterCost: 0.9, playerRunCost: 0.1 }));
     writeFile(join(session, "dialogue.md"), "**P1**\n\nCiao\n\n**M1**\n\nEcco.\n\n**P2**\n\nE Gisella?\n\n**M2**\n\nNo.\n\n");
-    writeFile(join(session, "campaign-after", "log.jsonl"), `${JSON.stringify({ type: "campaign-created" })}\n`);
+    // A death save a roll counted, as the dashboard's ask writes it, and one set by hand with write (DIE).
+    const log = [
+        { type: "campaign-created" },
+        { type: "counter-changed", data: { page: "Ermanno", field: "death-successes", before: 0, after: 1, why: "death save" } },
+        { type: "page-updated", data: { page: "Gisella", set: { "death-successes": 1, "death-failures": 0 } } },
+    ];
+    writeFile(join(session, "campaign-after", "log.jsonl"), log.map((entry) => `${JSON.stringify(entry)}\n`).join(""));
 
     for (const name of ["Ermanno", "Agata", "Gisella"]) {
         writeFile(join(session, "campaign-after", "world", "characters", `${name}.md`), "---\nrole: npc\n---\n\nUno del casale.\n");

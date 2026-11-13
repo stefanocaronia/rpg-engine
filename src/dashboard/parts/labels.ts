@@ -1,5 +1,6 @@
 // Labels from the names of the fields, in English (D-273): "hit-dice-d8" reads "hit dice d8", "str-save" "STR save"; names in the campaign's language come later.
-import { isolated, numberText, pageLocale, systemWord, t, timeText } from "../text.ts";
+import type { ThrownDie } from "../data.ts";
+import { isolated, numberText, pageLocale, systemWord, systemWordAnyCase, t, timeText } from "../text.ts";
 
 // The dice the page has a picture of: the d% as 100, the coin as 2.
 const drawnDice = [2, 4, 6, 8, 10, 12, 20, 100];
@@ -67,11 +68,18 @@ export function drawnDiceOf(notation: string): { sides: number[]; count?: number
     return count <= 2 ? { sides: Array.from({ length: count }, () => sides), ...(oneOfTwo ? { faded: true as const } : {}) } : { sides: [sides], count };
 }
 
-/** An item of a list as the page shows it: a short name in capitals, as WIS; any other with its first letter a capital, as Light hammer. */
+/**
+ * An item of a list as the page shows it: in the system's words, a name and its number too, as Cleric 3 (playtest 19); a short name in capitals, as WIS; any other
+ * with its first letter a capital, as Light hammer.
+ */
 export function itemLabel(item: string, fields: ReadonlySet<string> = new Set()): string
 {
     const word = item.trim();
-    return systemWord("words", word) ?? systemWord("fields", word) ?? (isShortName(word.toLowerCase(), fields) ? word.toUpperCase() : phraseLabel(word));
+    const counted = /^(.*\D)\s+(\d+)$/.exec(word);
+    const countedWord = counted === null ? undefined : systemWord("words", counted[1]);
+    // A sheet's value as the master wrote it, «Dice set», finds the system's word in any case, «dice set».
+    return systemWord("words", word) ?? systemWord("fields", word) ?? systemWordAnyCase("words", word) ?? (counted === null || countedWord === undefined ? undefined : `${countedWord} ${counted[2]}`)
+        ?? (isShortName(word.toLowerCase(), fields) ? word.toUpperCase() : phraseLabel(word));
 }
 
 /** A label of a sheet's line as a phrase, its first letter a capital: "sleight of hand" reads "Sleight of hand"; "STR save" stays as it is. */
@@ -118,6 +126,28 @@ export function notationModifier(notation: string): number
 {
     const match = /([+-]\d+)$/.exec(notation.replace(/\s+/g, ""));
     return match === null ? 0 : Number(match[1]);
+}
+
+/**
+ * The number a roll adds to its dice: its notation's, as the 5 of 2d20kh1+5; with a field's name in it, as the master's 1d20+stealth, what its total adds to the
+ * dice kept, as the notation tells no number (playtest 19). A pool that counts successes adds none of its own.
+ */
+export function rollModifier(roll: { notation: string; total: number; dice: readonly ThrownDie[]; }): number
+{
+    const terms = roll.notation.replace(/\s+/g, "").split(/[+-]/);
+    const named = terms.some((term) => /^[a-z]/i.test(term) && !/^d(?:\d|%|F)/i.test(term));
+
+    if (!named || roll.dice.length === 0 || roll.dice.some((die) => die.success !== undefined)) {
+        return notationModifier(roll.notation);
+    }
+
+    return roll.total - roll.dice.reduce((sum, die) => (die.dropped === true ? sum : sum + die.value), 0);
+}
+
+/** A roll's notation or text with the fields it adds in the system's words: 1d20+stealth = 22 [15] + 7 (stealth +7) reads Furtività for stealth in Italian. */
+export function rollText(text: string): string
+{
+    return text.replace(/(?<![\w%-])[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?![\w-])/g, (name) => systemWord("fields", name) ?? name);
 }
 
 /**

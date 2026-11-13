@@ -48,7 +48,8 @@ export const scene = defineCommand({
         + "At open, whoever of the party is elsewhere moves to the scene's place, except in a travel scene. "
         + "order sets who takes turns, after rolling for it if the game does; next passes the turn; use marks what one uses of a turn: the engine counts the uses the game declares and refuses one too many. "
         + "now is the line the player's dashboard shows: give it at open too, and change it as the scene turns. "
-        + "hostile marks who attacks the party, calm takes the mark off; seen gives what the character sees of those it does not know by name; the player's dashboard shows both. "
+        + "hostile marks who attacks the party, calm takes the mark off; seen gives what the character sees of someone, which the player sees instead of the name, "
+        + "even one they know, until the scene closes or reveal names them; the player's dashboard shows both. "
         + "close ends the scene with a summary the player may read. Change a copy's counters with change, as for a page. "
         + 'Example: action open, title "Scontro all\'ossario", type combat, creatures {"Annegato": 2}.',
     group: "game",
@@ -67,7 +68,7 @@ export const scene = defineCommand({
         now: z.string().optional().describe('open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see'),
         summary: z.string().optional().describe("close: what happened, in one or two sentences, as the player saw it"),
         seen: z.union([textList, z.record(z.string(), z.string())]).optional().describe(
-            "open, add: what the character sees of one it does not know by name, by its page or creature, in two or three words, never its kind when that is a secret: "
+            "open, add: what the character sees of someone in the scene, by its page or creature, in two or three words, never its kind when that is a secret; the player sees it instead of the name: "
                 + 'Bandito=brigante incappucciato, or through MCP an object such as {"Varro": "il mugnaio"}',
         ),
     }),

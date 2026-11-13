@@ -209,7 +209,7 @@ function App()
                 return;
             }
 
-            setSystemWords(overview.kind === "overview" ? overview.words : undefined);
+            setSystemWords(overview.kind === "overview" || overview.kind === "none" ? overview.words : undefined);
             setSystemVerbs(overview.kind === "overview" ? overview.verbs : undefined);
             setChangedPages(overview.kind === "overview" ? overview.layers : undefined);
 

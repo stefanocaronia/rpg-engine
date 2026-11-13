@@ -118,7 +118,7 @@ function TabMark({ path }: { path: string; })
 
 /**
  * The table's measures, taken only when it or the window changes size, never as the page scrolls. The rolls' list grows with its rolls up to twelve, as tall as
- * its first one draws, then scrolls inside. The table stays at the top while it fits the window; taller, its top goes up so that it scrolls with the page until
+ * the first one that has opened draws, then scrolls inside. The table stays at the top while it fits the window; taller, its top goes up so that it scrolls with the page until
  * its foot reaches the window's and stays there, the end of the rolls always in reach.
  */
 function useTableFit(track: HTMLElement | null): void
@@ -138,8 +138,10 @@ function useTableFit(track: HTMLElement | null): void
                 return;
             }
 
+            // A new roll opens its place from nothing: measured then, a pixel high, it would leave the list room for one (playtest 19). The first row that has
+            // opened gives the measure; while none has, the list keeps the room it had.
             const rows = stick.querySelector<HTMLElement>(".roll-list");
-            const first = rows?.firstElementChild;
+            const first = [...(rows?.children ?? [])].find((row) => row.getAnimations().every((animation) => animation.playState !== "running"));
 
             if (rows !== null && first instanceof HTMLElement) {
                 const gap = Number.parseFloat(getComputedStyle(rows).rowGap) || 0;
@@ -170,8 +172,9 @@ function useTableFit(track: HTMLElement | null): void
         }
 
         window.addEventListener("resize", update);
-        // The table's top changes as the page's top or what the master asks come and go.
+        // The table's top changes as the page's top or what the master asks come and go; a roll has its height once it has opened.
         track.addEventListener("transitionend", update);
+        track.addEventListener("animationend", update);
         update();
 
         return () => {
@@ -179,6 +182,7 @@ function useTableFit(track: HTMLElement | null): void
             sizes.disconnect();
             window.removeEventListener("resize", update);
             track.removeEventListener("transitionend", update);
+            track.removeEventListener("animationend", update);
             track.style.removeProperty("--list-room");
             track.style.removeProperty("--table-top");
         };

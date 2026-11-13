@@ -18,7 +18,13 @@ import type { KnownEntry, ShownCalendar, ShownDocument } from "./world.ts";
 
 /** What the player may see: the party, the open quests and scene and the diary; a page as the player character knows it, whole or one section; or nothing. */
 export type ViewResult =
-    | { kind: "none"; language?: string; importing?: ShownImport; }
+    | {
+        kind: "none";
+        language?: string;
+        /** The game system's words in the campaign's language, as in play: they name the system's own questions of the setup (D-403). */
+        words?: SystemWords;
+        importing?: ShownImport;
+    }
     | {
         kind: "overview";
         campaign: string;

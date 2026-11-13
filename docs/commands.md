@@ -368,7 +368,7 @@ Read-only: no. Positional parameters: `action`.
 - `order` (`string | string[]`, optional): order: who takes turns, in order; those left out (fallen, fled) take none
 - `now` (`string`, optional): open, now: what is happening now, in one line as the player sees it, such as "The bandits overturn the tables"; never what they cannot see
 - `summary` (`string`, optional): close: what happened, in one or two sentences, as the player saw it
-- `seen` (`string | string[] | { [key]: string }`, optional): open, add: what the character sees of one it does not know by name, by its page or creature, in two or three words, never its kind when that is a secret: Bandito=brigante incappucciato, or through MCP an object such as {"Varro": "il mugnaio"}
+- `seen` (`string | string[] | { [key]: string }`, optional): open, add: what the character sees of someone in the scene, by its page or creature, in two or three words, never its kind when that is a secret; the player sees it instead of the name: Bandito=brigante incappucciato, or through MCP an object such as {"Varro": "il mugnaio"}
 
 ### save
 

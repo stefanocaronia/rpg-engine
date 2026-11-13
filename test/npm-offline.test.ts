@@ -79,5 +79,12 @@ describe("the newest version this engine reads (D-515 (2))", () => {
         expect(await packages.describe("@rpgengine/system-5e")).toMatchObject({ version: "1.1.0", api: 5, newer: { version: "2.0.0", engine: "0.9.0" } });
         expect(await packages.describe("@rpgengine/system-5e@2.0.0")).toMatchObject({ version: "2.0.0", api: 99 });
         expect(await packages.describe("@rpgengine/system-5e@2.0.0")).not.toHaveProperty("newer");
+        // The check at a session's start (D-569): the newest this engine reads, never the latest made for a newer one; nothing offline, or for no such package.
+        expect(await packages.newest?.("@rpgengine/system-5e")).toBe("1.1.0");
+        pages["https://registry.npmjs.org/@rpgengine%2fsystem-5e/latest"] = versions["1.1.0"];
+        expect(await packages.newest?.("@rpgengine/system-5e")).toBe("1.1.0");
+        expect(await packages.newest?.("@rpgengine/nothing")).toBeUndefined();
+        vi.stubGlobal("fetch", () => Promise.reject(new TypeError("fetch failed")));
+        expect(await packages.newest?.("@rpgengine/system-5e")).toBeUndefined();
     });
 });

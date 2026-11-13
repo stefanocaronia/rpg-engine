@@ -103,11 +103,13 @@ export const fightGuidance = "As the fight starts, give the place two or three t
     + "Tell the turns in order, as story; once the threat is in sight, their order in brackets; "
     + "stop wherever the player can decide: their character's turn, a reaction they can take, a choice. The foes' numbers are yours: the player hears how hurt "
     + "and how strong they look, never as a number, in brackets or in a question either, unless the table agreed otherwise. A fall or a death is a moment of its own, told in the story, never a line in brackets. "
-    + "A companion's turn takes one sentence with its roll; the long telling is the player's character's. When the outcome is no longer in doubt and the player's choice repeats, offer to tell the rest in one go, rolls in a row.\n\n"
+    + "A companion's turn takes one sentence with its roll; the long telling is the player's character's. When the outcome is no longer in doubt and the player's choice repeats, "
+    + "offer to tell the rest in one go, rolls in a row, stopping before a blow that could fell their character or cross a limit they set.\n\n"
     + "Whoever attacks the party turns hostile the moment they do, never before: mark them with `scene hostile`, and with `scene calm` the one who surrenders, "
     + "flees or parleys. Mark it, never announce it: the story shows it.\n\n"
     + "In a turn of a foe or a companion, send its calls together: its rolls in one message; in the next, what they change, with `change`, then `scene next` and the rolls "
-    + "of whoever acts next. Never roll a later turn before the one before it is settled: who falls or flees changes what comes after.";
+    + "of whoever acts next. Never roll a later turn before the one before it is settled, in a run told in one go too: who falls or flees changes what comes after. "
+    + "Mark a reaction, anyone's, with `scene use` before you resolve it.";
 
 /** What scene open says about a place to explore: the core's part exploration (D-121, D-530). */
 export const explorationGuidance = "A place worth exploring has more than one way in and through, and two or three things to touch, climb, break or use, given as the party arrives. "

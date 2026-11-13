@@ -111,7 +111,7 @@ export function Chips({ value, fields }: { value: SheetValue; fields?: ReadonlyS
             <Items items={value.items ?? []} field={value.field} fields={fields} />
             {value.always && (
                 <span class="always">
-                    <span class="always-from">{t("Always, from {sources}", { sources: value.always.from.join(` ${t("and")} `) })}</span>
+                    <span class="always-from">{t("Always, from {sources}", { sources: value.always.from.map((source) => itemLabel(source)).join(` ${t("and")} `) })}</span>
                     <Items items={value.always.items} field={value.field} fields={fields} />
                 </span>
             )}

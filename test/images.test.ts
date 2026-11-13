@@ -341,8 +341,8 @@ describe("pictures of places, quests, the party and those met made from words (D
         const rolls = JSON.parse(await ok("view", "--json")).rolls.slice(-3);
         expect(rolls.map((roll: { who: string; image?: unknown; }) => [roll.who, roll.image])).toEqual([["creature", hidden("png")], ["uomo col grembiule", hidden("svg")], ["creature", undefined]]);
         expect(JSON.stringify(rolls)).not.toMatch(/Varro|Oste|Brigante|Reed Cutter|Bog Hound/);
-        // Known, they show it by its own name.
-        await ok("write", "Ennio", "--add", "knows=[[Oste]]");
+        // Named by the master, they show it by its own name (D-568).
+        await ok("reveal", "Oste", "--to", "Ennio");
         expect(JSON.parse(await ok("view", "--json")).openScene.who[2]).toMatchObject({ name: "Oste", image: { file: "Oste.svg" } });
     });
 

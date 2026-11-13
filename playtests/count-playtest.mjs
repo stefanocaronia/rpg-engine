@@ -17,7 +17,7 @@ let before = startingPoint(sessions[0]);
 
 for (const name of sessions) {
     details[name] = countSession(join(results, name), before);
-    before = { pages: details[name].pages.after, log: details[name].logWhole, playerCost: details[name].end.playerRunCost };
+    before = { pages: details[name].pages.after, log: details[name].logWhole, deathSaves: details[name].deathSavesWhole, playerCost: details[name].end.playerRunCost };
 }
 
 details.questionnaire = { playerCost: round(lastPlayerCost(join(results, "player-turns.jsonl")) - before.playerCost) };
@@ -165,7 +165,10 @@ function countSession(folder, before)
     const dueNames = new Set(counts.due.map((item) => item.event));
     counts.eventsByHand = counts.eventsByHand.filter((item) => !dueNames.has(item.event));
     counts.logWhole = logCounts(join(campaignAfter, "log.jsonl"));
-    counts.log = Object.fromEntries(Object.entries(counts.logWhole).map(([type, count]) => [type, count - (before.log[type] ?? 0)]).filter(([, count]) => count > 0));
+    counts.log = sinceBefore(counts.logWhole, before.log);
+    // Death saves as the log keeps them: a roll the engine counts and change write the same lines, and write sets them by hand (DIE).
+    counts.deathSavesWhole = deathSaveCounts(join(campaignAfter, "log.jsonl"));
+    counts.deathSaves = sinceBefore(counts.deathSavesWhole, before.deathSaves);
     counts.masterCost = round(end.masterCost);
     counts.playerCost = round(end.playerRunCost - before.playerCost);
     counts.eventsWithDateAndClock = pagesWith(join(campaignAfter, "world", "events"), /^date:/m).filter((page) => pagesWith(join(campaignAfter, "world", "events"), /^clock:/m).includes(page));
@@ -525,7 +528,7 @@ function markdown(details)
         ["Damage with a type (refused; applies, does not apply)", (s) => `${s.typedDamage.length} (${s.typedDamage.filter((d) => d.refused).length}; ${s.typedDamage.filter((d) => /\(applies\)/i.test(d.damage)).length}, ${s.typedDamage.filter((d) => /does not apply/i.test(d.damage)).length})`],
         ["Damage with a type, by type", (s) => s.typedDamage.length ? countBy(s.typedDamage.filter((d) => !d.refused), (d) => String(d.damage).replace(/\s*\(.*\)$/, "")) : "0"],
         ["Damage without a type on a page with damage lists", (s) => s.untypedDamage.map((d) => `${d.turn} ${d.page}`).join(", ") || "0"],
-        ["Dying: the engine's lines; death saves written", (s) => `${s.dying.length ? countBy(s.dying, (d) => d.kind) : "0"}; ${Object.entries(s.changes).filter(([field]) => /^death-/.test(field)).map(([field, count]) => `${field} ${count}`).join(", ") || "0"}`],
+        ["Dying: the engine's lines; death saves written", (s) => `${s.dying.length ? countBy(s.dying, (d) => d.kind) : "0"}; ${Object.entries(s.deathSaves).map(([field, count]) => `${field} ${count}`).join(", ") || "0"}`],
         ["Rests by recipe (refused, a second within its time)", (s) => s.rests.length ? `${countBy(s.rests, (r) => `${r.recipe}${r.spend === undefined ? "" : " with hit dice"}`)} (${s.rests.filter((r) => r.refused).length}, ${s.rests.filter((r) => r.again).length})` : "0"],
         ["Upkeep: rations eaten, days without food; lifestyle paid, asked, short, set", (s) => `${s.upkeep.rations}, ${s.upkeep.hungry}; ${s.upkeep.lifestylePaid}, ${s.upkeep.lifestyleAsked}, ${s.upkeep.lifestyleShort}, ${s.upkeep.lifestyleSet}`],
         ["Attunement writes (refused)", (s) => s.attuned.length ? `${s.attuned.map((a) => `${a.turn} ${a.page}`).join(", ")} (${s.attuned.filter((a) => a.refused).length})` : "0"],
@@ -647,7 +650,8 @@ function startingPoint(name)
 {
     const from = name === undefined ? undefined : readJson(join(results, name, "meta.json")).options?.from;
     const campaign = from === undefined ? undefined : join(from, "campaign-after");
-    return { pages: pageCount(campaign === undefined ? scenarioWorld : join(campaign, "world")), log: campaign === undefined ? {} : logCounts(join(campaign, "log.jsonl")), playerCost: 0 };
+    const log = campaign === undefined ? undefined : join(campaign, "log.jsonl");
+    return { pages: pageCount(campaign === undefined ? scenarioWorld : join(campaign, "world")), log: log === undefined ? {} : logCounts(log), deathSaves: log === undefined ? {} : deathSaveCounts(log), playerCost: 0 };
 }
 
 /** How many entries of each type a campaign's log holds. */
@@ -660,6 +664,30 @@ function logCounts(file)
     }
 
     return counts;
+}
+
+/** How many times a campaign's log wrote each death save counter, such as death-successes; those set by hand with write, as "by write". */
+function deathSaveCounts(file)
+{
+    const counts = {};
+
+    for (const entry of readLines(file)) {
+        const changed = entry.type === "counter-changed" && /^death-/.test(String(entry.data?.field)) ? String(entry.data.field) : undefined;
+        const written = entry.type === "page-updated" && Object.keys(entry.data?.set ?? {}).some((field) => /^death-/.test(field)) ? "by write" : undefined;
+        const key = changed ?? written;
+
+        if (key !== undefined) {
+            counts[key] = (counts[key] ?? 0) + 1;
+        }
+    }
+
+    return counts;
+}
+
+/** The counts that grew since the session before, by how much. */
+function sinceBefore(counts, before)
+{
+    return Object.fromEntries(Object.entries(counts).map(([key, count]) => [key, count - (before[key] ?? 0)]).filter(([, count]) => count > 0));
 }
 
 function markdownFiles(folder)

@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, SheetRoll, ShownRoll, ThrownDie, Tone } from "../data.ts";
 import { CoinFace, CoinFaces, type CoinSide, DiceFaces, tossWords } from "../parts/faces.tsx";
 import { DieIcon, Icon } from "../parts/icons.tsx";
-import { notationModifier, shownText, signed } from "../parts/labels.ts";
+import { rollModifier, rollText, shownText, signed } from "../parts/labels.ts";
 import type { PageRoll } from "../play/free-rolls.ts";
 import { trayCheck, useRequested } from "../play/requested.ts";
 import { Token } from "../sheet/party.tsx";
@@ -276,21 +276,23 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
     useEffect(() => {
         if (requested !== undefined) {
             const toss = requested.toss;
-            const title = requested.check ?? (toss === undefined ? requested.notation : t("Coins"));
+            // The master's notation may name a field, as 1d20+stealth: in the system's words.
+            const written = rollText(requested.notation);
+            const title = requested.check ?? (toss === undefined ? written : t("Coins"));
             // A check's is the player's character's when it names no one; the master's own is no one's.
             const member = party.find((candidate) => candidate.name === requested.who) ?? (requested.by === "player" && toss === undefined ? party.find((candidate) => candidate.role === "pc") : undefined);
             void throwAndShow(
                 {
                     free: false,
                     title,
-                    ...(title === requested.notation || toss !== undefined ? {} : { notation: requested.notation }),
+                    ...(title === written || toss !== undefined ? {} : { notation: written }),
                     dice: requested.dice,
-                    modifier: notationModifier(requested.notation),
+                    modifier: rollModifier(requested),
                     total: requested.total,
                     ...(requested.says === undefined ? {} : { says: requested.says }),
                     ...(requested.tones === undefined ? {} : { tones: requested.tones }),
                     ...(toss === undefined ? {} : { toss, says: capitalized(tossWords(toss)) }),
-                    text: toss === undefined ? requested.text : tossWords(toss),
+                    text: toss === undefined ? rollText(requested.text) : tossWords(toss),
                     ...(member === undefined ? {} : { member }),
                     roll: requested.id,
                 },

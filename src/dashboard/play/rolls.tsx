@@ -9,7 +9,7 @@ import { CardHeader, useOpen } from "../parts/card.tsx";
 import { CoinFaces, DiceFaces, tossWords } from "../parts/faces.tsx";
 import { gameDateLabel, notationLabel } from "../parts/game-words.ts";
 import { cardIcons, Icon } from "../parts/icons.tsx";
-import { notationModifier, strangerLabel } from "../parts/labels.ts";
+import { rollModifier, rollText, strangerLabel } from "../parts/labels.ts";
 import { rollWindow } from "../parts/layout.ts";
 import { Token, type Tokened } from "../sheet/party.tsx";
 import { capitalized, pageLocale, t } from "../text.ts";
@@ -158,7 +158,7 @@ function RollRow({ roll, name, token, coins, fresh, greeted, several }: {
     const free = "free" in roll;
     // The whole roll, which the lines may cut: whom and what, the dice as the chat writes them, the notation in words, and when (D-299); a toss's coins in words.
     const toss = roll.toss === undefined ? undefined : tossWords(roll.toss);
-    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, toss ?? roll.text, toss === undefined ? notationLabel(roll.words) : undefined, rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
+    const said = [roll.check === undefined ? name : `${name} · ${roll.check}`, toss ?? rollText(roll.text), toss === undefined ? notationLabel(roll.words) : undefined, rolledWhen(roll), free ? t("Free roll · not logged") : undefined]
         .filter((line) => line !== undefined && line !== "")
         .join("\n");
     return (
@@ -188,8 +188,8 @@ function RollRow({ roll, name, token, coins, fresh, greeted, several }: {
                 {toss === undefined
                     ? (
                         <>
-                            <DiceFaces dice={roll.dice} modifier={notationModifier(roll.notation)} tones={roll.tones} />
-                            <span class="visually-hidden">{roll.text}</span>
+                            <DiceFaces dice={roll.dice} modifier={rollModifier(roll)} tones={roll.tones} />
+                            <span class="visually-hidden">{rollText(roll.text)}</span>
                         </>
                     )
                     : <span class="roll-toss">{capitalized(toss)}</span>}

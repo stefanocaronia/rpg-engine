@@ -119,7 +119,7 @@ describe("the renown (PRO-6, D-205, D-234)", () => {
         await ok("change", "Bog Hound 2", "grit", "--by=-20");
         await ok("change", "Rasco", "grit", "--to", "0");
         expect(await ok("scene", "close", "--summary", "I cani cadono.")).toContain(
-            "renown of those overcome: Bog Hound 2 4, Bog Hound 1 4, Rasco 2, 10 in all; 5 each to Ennio, Lena: change Ennio, field renown, by 5; change Lena, field renown, by 5. "
+            "renown of those overcome: Bog Hound 2 4, Bog Hound 1 4, Rasco 2, 10 in all; 5 each to Ennio, Lena: change Ennio, field renown, by 5; change Lena, field renown, by 5. Then tell the player what each got: 5 renown each. "
                 + "Rasco is a character: leave out any who fought on your side, and share again. Fled: Fen Witch 1 6, to count if the party overcame them. "
                 + "Leave out what the party summoned; count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained.",
         );

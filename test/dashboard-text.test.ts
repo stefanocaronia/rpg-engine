@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { readSettings, readView } from "../src/dashboard/api.ts";
 import { effectEndLabel, effectName, factLabel, fromLabel, gameDateLabel, levelNeedLabel, notationLabel } from "../src/dashboard/parts/game-words.ts";
-import { itemLabel, settingLabel, shownText } from "../src/dashboard/parts/labels.ts";
+import { itemLabel, rollText, settingLabel, shownText } from "../src/dashboard/parts/labels.ts";
 import { refusalText } from "../src/dashboard/parts/refusals.ts";
 import { arrowStep, browserLanguage, pageDirection, pageLanguageOf, pageTranslation, setLanguage, setSystemWords, shippedLanguages, t, tParts } from "../src/dashboard/text.ts";
 import { lengthText } from "../src/dashboard/world/map.ts";
@@ -36,7 +36,19 @@ describe("the page's words (D-394)", () => {
     });
 
     it("gives the page the campaign's language, even before there is a player character", () => {
-        expect(overview).toEqual({ kind: "none", language: "it" });
+        expect(overview).toMatchObject({ kind: "none", language: "it" });
+    });
+
+    it("gives the page the system's words before there is a player character, as in the setup: its own questions read in the campaign's language", async () => {
+        const campaign = join(makeTempFolder(), "free");
+        mkdirSync(campaign);
+        const context = { ...testContext(campaign), folder: campaign };
+        await runCommandLine(["init", "--language", "it", "--system", "free"], context);
+        const setup = JSON.parse((await runCommandLine(["view", "--json"], context)).output) as { kind: string; words?: Parameters<typeof setSystemWords>[0]; };
+        expect(setup.kind).toBe("none");
+        setSystemWords(setup.words);
+        expect([settingLabel("outcomes"), settingLabel("die")]).toEqual(["Modo di gioco", "Dado"]);
+        setSystemWords(undefined);
     });
 
     it("ships a file for each language it names, and names each file it ships", () => {
@@ -163,6 +175,14 @@ describe("the page's words (D-394)", () => {
         setSystemWords({ groups: {}, fields: { wis: "SAG" }, words: { insight: "Intuizione", advancement: "Avanzamento", "until long rest": "fino al riposo lungo" }, names: { cha: "Carisma" } });
         expect([itemLabel("insight"), itemLabel("wis", new Set(["wis"])), itemLabel("cha", new Set(["cha"])), itemLabel("light hammer")]).toEqual(["Intuizione", "SAG", "CHA", "Light hammer"]);
         expect([settingLabel("advancement"), effectEndLabel({ occasion: "long rest" })]).toEqual(["Avanzamento", "fino al riposo lungo"]);
+        setSystemWords(undefined);
+    });
+
+    it("writes a name with its number and the fields a roll adds in the system's words (playtest 19)", () => {
+        setSystemWords({ groups: {}, fields: { stealth: "Furtività", "con-save": "TS Costituzione" }, words: { Cleric: "Chierico" } });
+        expect([itemLabel("Cleric 3"), itemLabel("Bard 2"), itemLabel("Dice set")]).toEqual(["Chierico 3", "Bard 2", "Dice set"]);
+        expect(rollText("1d20+con-save = 19 [16] + 3 (con-save +3)")).toBe("1d20+TS Costituzione = 19 [16] + 3 (TS Costituzione +3)");
+        expect([rollText("2d20kh1+stealth"), rollText("d% = 42 [42]"), rollText("4dF+wits")]).toEqual(["2d20kh1+Furtività", "d% = 42 [42]", "4dF+wits"]);
         setSystemWords(undefined);
     });
 

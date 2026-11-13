@@ -34,7 +34,10 @@ export interface Scene
     used?: Record<string, string[]>;
     /** Who attacks the party, as the master marks them, characters or copies by name (D-415): the player's dashboard shows it in a fight. */
     hostile?: string[];
-    /** What the player character sees of who it does not know by name, by the character's or the creature's name, such as brigante incappucciato (D-416). */
+    /**
+     * What the player character sees of someone, by the character's or the creature's name, such as brigante incappucciato (D-416): the player is given it
+     * instead of the name, known or not, while the scene keeps them (D-568).
+     */
     seen?: Record<string, string>;
 }
 

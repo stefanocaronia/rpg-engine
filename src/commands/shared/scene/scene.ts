@@ -395,6 +395,11 @@ function sceneChangeLine(data: Record<string, unknown>): string
         return `left: ${data.left.map((name) => withNumbers(String(name))).join(", ")}`;
     }
 
+    // Who reveal gave back their name, no longer seen (D-568).
+    if (Array.isArray(data.named)) {
+        return `named: ${namesText(data.named)}`;
+    }
+
     const seen = data.seen !== null && typeof data.seen === "object" ? Object.entries(data.seen as Record<string, unknown>).map(([name, said]) => `${name} as ${String(said)}`) : [];
     const joined = Array.isArray(data.added) && data.added.length > 0 ? [`joined: ${namesText(data.added)}`] : [];
 

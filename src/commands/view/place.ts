@@ -161,9 +161,11 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
             .map(({ entry, place: holder }) => ({ name: entry.name, value: inKnownWords(world, knowledge, entry.value), ...placed(holder) })),
         ...placesAround(world, place).flatMap((holder) => effectsOf(holder).map((effect) => ({ effect: effect.name, ...(effect.end === undefined ? {} : { end: effect.end }), ...placed(holder) }))),
     ];
+    const scene = readOpenScene(sight.root).scene;
+    // One the open scene gives by what the character sees of them is there in the scene alone, as one it does not know (D-568).
     const present = world.pages.filter((page) =>
         page.type === "character" && page.fields.status !== "dead" && locate(world, page).chain[0] === place
-        && (sight.party.includes(page) || knowsPage(knowledge, page))
+        && (sight.party.includes(page) || (knowsPage(knowledge, page) && !seenInScene(world, sight.party, scene, page.name)))
     );
     const image = picture(sight, place);
     const grid = placeGrid(place)?.grid;
@@ -180,7 +182,7 @@ export function shownPlace(sight: PlaceSight): ShownPlace | undefined
         // The party first, the player character in the foreground at its head (VIEW-12).
         here: [...partyFirst(sight).filter((page) => present.includes(page)), ...present.filter((page) => !sight.party.includes(page))].map((page) => ({
             ...person(sight, page),
-            ...hostileMark(readOpenScene(sight.root).scene, page.name),
+            ...hostileMark(scene, page.name),
             ...stateOf(sight, page),
         })),
         ...(grid === undefined ? {} : { map: shownGrid(sight, place, grid) }),
@@ -199,7 +201,7 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
     const place = knownPage(sight, scene.place);
     const characters = scene.with.map((link) => {
         const name = parsePageReference(link).name;
-        const page = knownPage(sight, link);
+        const page = knownInScene(sight, scene, link);
         const hostile = hostileMark(scene, name);
         const written = pagesWithName(sight.world, name)[0];
         const state = written === undefined ? {} : strangerState(sight, scene, written);
@@ -210,7 +212,7 @@ export function shownScene(sight: PlaceSight): ShownScene | undefined
     });
     const creatures = [...new Set(Object.values(scene.copies).map((copy) => copy.creature))].map((creature) => {
         const count = Object.values(scene.copies).filter((copy) => copy.creature === creature).length;
-        const page = knownPage(sight, creature);
+        const page = knownInScene(sight, scene, creature);
         // A kind the character does not know by the letter its copies have in the scene, as creature B, with more kinds (D-331).
         const first = Object.keys(scene.copies).find((copy) => scene.copies[copy].creature === creature);
         const name = first === undefined ? "creature" : strangerName(scene, first).replace(/\s*\d+$/, "");
@@ -275,7 +277,7 @@ export function seenEffect(sight: PlaceSight, effect: Effect): SeenEffect
         return effectParts(sight.world, system, effect, sight.words);
     }
 
-    const scene = readOpenScene(sight.root).scene ?? { copies: {} };
+    const scene = readOpenScene(sight.root).scene ?? { with: [], copies: {} };
     return effectParts(sight.world, system, { ...effect, end: { ...end, turn: shownTurn(sight, scene, end.turn) } }, sight.words);
 }
 
@@ -288,6 +290,24 @@ export function strangerImage(root: string, context: Context, world: World, name
     // By a name of its bytes: the file's own is the page's, which the character does not know.
     const hidden = file === undefined ? undefined : hiddenImageName(file);
     return file === undefined || hidden === undefined ? undefined : { file: hidden, version: Math.trunc(files().modified(file) ?? 0) };
+}
+
+/**
+ * Whether the open scene gives someone by what the character sees of them (D-568), by their name, a copy's or its creature's: one in the scene the master gave
+ * seen for, known by name or not, while the scene keeps them; never one of the party.
+ */
+export function seenInScene(world: World, party: Page[], scene: Pick<Scene, "with" | "copies" | "gone" | "seen"> | undefined, name: string): boolean
+{
+    if (scene === undefined) {
+        return false;
+    }
+
+    const copies = { ...scene.gone, ...scene.copies };
+    const copy = Object.keys(copies).find((copyName) => comparableText(copyName) === comparableText(name));
+    const key = parsePageReference(copy === undefined ? name : copies[copy].creature).name;
+    const inScene = [...scene.with, ...Object.values(copies).map((one) => one.creature)].some((link) => comparableText(parsePageReference(link).name) === comparableText(key));
+    const page = pagesWithName(world, key)[0];
+    return inScene && seenOf(scene, key) !== undefined && (page === undefined || !party.includes(page));
 }
 
 /**
@@ -319,7 +339,7 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
 
         if (one.copy !== undefined && here !== undefined) {
             const copy = here.copies[one.copy];
-            const creature = knownPage(sight, copy?.creature);
+            const creature = knownInScene(sight, here, copy?.creature);
             const image = creature === undefined ? strangerPicture(sight, copy?.creature) : picture(sight, creature);
             const state = copy === undefined ? {} : stateOf(sight, copyPage(one.copy, copy));
             return [
@@ -335,7 +355,7 @@ function shownGrid(sight: PlaceSight, place: Page, written: Grid): ShownGrid
             return [];
         }
 
-        if (sight.party.includes(page) || knowsPage(sight.knowledge, page)) {
+        if (sight.party.includes(page) || knownInScene(sight, here, page.name) !== undefined) {
             return [{ ...person(sight, page), ...hostileMark(here, page.name), ...stateOf(sight, page), ...measured }];
         }
 
@@ -401,7 +421,7 @@ function fightersOf(sight: PlaceSight, scene: Scene): Fighter[]
 }
 
 /** One in the fight (D-314): a copy as the character knows its creature, a character as it knows them; the party in full, the others by what anyone sees. */
-function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "gone" | "hostile" | "seen">, name: string): Fighter | undefined
+function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "with" | "copies" | "gone" | "hostile" | "seen">, name: string): Fighter | undefined
 {
     const system = campaignSystem(sight.root, sight.context);
     const copy = Object.entries(scene.copies).find(([copyName]) => comparableText(copyName) === comparableText(name));
@@ -412,9 +432,9 @@ function fighterOf(sight: PlaceSight, scene: Pick<Scene, "type" | "copies" | "go
     }
 
     const party = sight.party.includes(page);
-    // A copy is named when the character knows its creature; a character when it knows them.
-    const creature = copy === undefined ? undefined : knownPage(sight, copy[1].creature);
-    const stranger = copy === undefined ? !party && !knowsPage(sight.knowledge, page) : creature === undefined;
+    // A copy is named when the character knows its creature; a character when it knows them; neither while the scene gives them by what is seen (D-568).
+    const creature = copy === undefined ? undefined : knownInScene(sight, scene, copy[1].creature);
+    const stranger = copy === undefined ? !party && knownInScene(sight, scene, page.name) === undefined : creature === undefined;
     const shown = !stranger ? page.name : copy === undefined ? seenName(scene, page.name) : strangerName(scene, copy[0]);
     const image = stranger ? strangerPicture(sight, copy === undefined ? page.name : copy[1].creature) : picture(sight, creature ?? page);
     const effects = shownEffects(sight, system, page, party);
@@ -578,16 +598,25 @@ function knownPage(sight: PlaceSight, name: string | undefined): Page | undefine
     return page !== undefined && knowsPage(sight.knowledge, page) ? page : undefined;
 }
 
-/** Whose turn it is, as the character knows them: a character it knows by name, a copy by its own name when it knows the creature, else creature and its number. */
-function shownTurn(sight: PlaceSight, scene: Pick<Scene, "copies" | "gone" | "seen">, name: string): string
+/**
+ * Whose turn it is, as the character knows them: a character it knows by name, a copy by its own name when it knows the creature, else creature and its number;
+ * by what is seen while the scene gives them so (D-568).
+ */
+function shownTurn(sight: PlaceSight, scene: Pick<Scene, "with" | "copies" | "gone" | "seen">, name: string): string
 {
     const copy = Object.entries(scene.copies).find(([copyName]) => comparableText(copyName) === comparableText(name));
 
     if (copy === undefined) {
-        return knownPage(sight, name)?.name ?? seenName(scene, name);
+        return knownInScene(sight, scene, name)?.name ?? seenName(scene, name);
     }
 
-    return knownPage(sight, copy[1].creature) === undefined ? strangerName(scene, copy[0]) : copy[0];
+    return knownInScene(sight, scene, copy[1].creature) === undefined ? strangerName(scene, copy[0]) : copy[0];
+}
+
+/** The page the character knows by a name in the open scene: none while the scene gives them by what is seen (D-568), known or not. */
+function knownInScene(sight: PlaceSight, scene: Pick<Scene, "with" | "copies" | "gone" | "seen"> | undefined, name: string | undefined): Page | undefined
+{
+    return name === undefined || seenInScene(sight.world, sight.party, scene, name) ? undefined : knownPage(sight, name);
 }
 
 /**

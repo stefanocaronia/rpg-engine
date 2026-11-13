@@ -62,6 +62,7 @@ export {
     concernsPlayer,
     createWorld,
     findPage,
+    heldNames,
     isCountedItem,
     isInParty,
     isPartyMember,

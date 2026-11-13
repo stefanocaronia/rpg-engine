@@ -36,21 +36,30 @@ export function SetupView({ setup }: { setup: Setup; })
     // The choices left to the master, as the game keeps them until the master makes them, and those just left here.
     const [leftHere, setLeftHere] = useState<Set<string>>(new Set());
     const left = new Set([...(setup.left ?? []), ...leftHere].filter((name) => questions.some((question) => question.name === name && !answered(question))));
-    // The first question still open, once: the player moves on from there; with none, the last card.
-    const [at, setAt] = useState(() => {
-        const first = questions.findIndex((question) => !answered(question) && !(setup.left ?? []).includes(question.name));
-        return first < 0 ? questions.length : first;
-    });
+    // Until the player uses the page, the card follows the chat: the first question still open, as the master fills them from what the player says there
+    // (playtest 01); with none, the last card. Once the player chooses or moves here, the card is theirs.
+    const [own, setOwn] = useState(false);
+    const [at, setAt] = useState(0);
+    const current = own ? at : firstOpen(questions, setup.left ?? []);
     // Whether the player moved among the cards: then the new card's title takes the focus, never at the first reading.
     const [moved, setMoved] = useState(false);
     const [said, setSaid] = useState<string>();
-    const done = at >= questions.length;
-    const question = questions[Math.min(at, questions.length - 1)];
+    const done = current >= questions.length;
+    const question = questions[Math.min(current, questions.length - 1)];
     const step = steps.indexOf(setup.mode);
 
     const go = (index: number): void => {
+        setOwn(true);
         setMoved(true);
         setAt(index);
+    };
+
+    // A choice made here keeps the card where it is, as the player made it.
+    const touch = (): void => {
+        if (!own) {
+            setOwn(true);
+            setAt(current);
+        }
     };
 
     const leave = async (name: string): Promise<void> => {
@@ -59,7 +68,7 @@ export function SetupView({ setup }: { setup: Setup; })
 
         if (refused === undefined) {
             setLeftHere((before) => new Set([...before, name]));
-            go(at + 1);
+            go(current + 1);
         }
     };
 
@@ -83,12 +92,13 @@ export function SetupView({ setup }: { setup: Setup; })
                 <Question
                     key={question.name}
                     question={question}
-                    count={t("{value} of {max}", { value: at + 1, max: questions.length })}
+                    count={t("{value} of {max}", { value: current + 1, max: questions.length })}
                     left={left.has(question.name)}
                     focus={moved}
-                    onBack={at > 0 ? () => go(at - 1) : undefined}
-                    onNext={() => go(at + 1)}
+                    onBack={current > 0 ? () => go(current - 1) : undefined}
+                    onNext={() => go(current + 1)}
                     onLeave={() => void leave(question.name)}
+                    onTouch={touch}
                     onProblem={setSaid}
                 />
             )}
@@ -98,9 +108,9 @@ export function SetupView({ setup }: { setup: Setup; })
                     <li key={one.name}>
                         <button
                             type="button"
-                            class={[answered(one) ? "answered" : left.has(one.name) ? "left" : "", index === at ? "here" : ""].filter((name) => name !== "").join(" ")}
+                            class={[answered(one) ? "answered" : left.has(one.name) ? "left" : "", index === current ? "here" : ""].filter((name) => name !== "").join(" ")}
                             aria-label={answered(one) ? t("{setting}: answered", { setting: settingLabel(one.name) }) : left.has(one.name) ? t("{setting}: left to the master", { setting: settingLabel(one.name) }) : settingLabel(one.name)}
-                            aria-current={index === at ? "step" : undefined}
+                            aria-current={index === current ? "step" : undefined}
                             onClick={() => go(index)}
                         />
                     </li>
@@ -115,7 +125,7 @@ export function SetupView({ setup }: { setup: Setup; })
  * One question as its card shows it: what it is, its choices large with what each means and the one the game suggests, or a list's items; back, next, or left
  * to the master. Its title takes the focus when the player moved to it.
  */
-function Question({ question, count, left, focus, onBack, onNext, onLeave, onProblem }: {
+function Question({ question, count, left, focus, onBack, onNext, onLeave, onTouch, onProblem }: {
     question: PlayerSetting;
     count: string;
     left: boolean;
@@ -123,6 +133,8 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onPro
     onBack?: () => void;
     onNext(): void;
     onLeave(): void;
+    /** The player chose or wrote something on the card. */
+    onTouch(): void;
     onProblem(problem: string | undefined): void;
 })
 {
@@ -151,6 +163,7 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onPro
 
     // A click chooses at once; the arrows show each choice and send the one they rest on.
     const pick = (choice: string, byKey: boolean): void => {
+        onTouch();
         setPicked(choice);
         clearTimeout(resting.current?.timer);
         resting.current = undefined;
@@ -168,12 +181,13 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onPro
     };
 
     return (
-        <article class="setup-card" aria-labelledby={id}>
+        // The focus in the card makes it the player's: it no longer moves on with the chat under their hands.
+        <article class="setup-card" aria-labelledby={id} onFocusIn={onTouch}>
             <p class="eyebrow setup-count">{count}</p>
             <h2 id={id} ref={heading} tabIndex={-1}>{title}</h2>
             <p class="setup-about">{phraseLabel(t(question.about))}</p>
             {question.choices !== undefined && <Choices question={question} value={value} labelledBy={id} onPick={pick} />}
-            {isList && <ListQuestion question={question} onProblem={onProblem} />}
+            {isList && <ListQuestion question={question} onTouch={onTouch} onProblem={onProblem} />}
             {left && value === undefined && <p class="setup-left">{t("Left to the master: they choose, and tell you.")}</p>}
             <div class="setup-moves">
                 {onBack !== undefined && <button type="button" class="button setup-back" onClick={onBack}>{t("Back")}</button>}
@@ -232,11 +246,16 @@ function Choices({ question, value, labelledBy, onPick }: { question: PlayerSett
 }
 
 /** A list of the setup, lines or veils: its items to take off, a field to add one, and None for a player who wants none. */
-function ListQuestion({ question, onProblem }: { question: PlayerSetting; onProblem(problem: string | undefined): void; })
+function ListQuestion({ question, onTouch, onProblem }: { question: PlayerSetting; onTouch(): void; onProblem(problem: string | undefined): void; })
 {
     const [item, setItem] = useState("");
     const field = useRef<HTMLInputElement>(null);
-    const send = (change: Parameters<typeof changeSetting>[0]): void => void changeSetting(change).then(onProblem);
+
+    const send = (change: Parameters<typeof changeSetting>[0]): void => {
+        onTouch();
+        void changeSetting(change).then(onProblem);
+    };
+
     return (
         <div class="setup-list">
             {(question.items ?? []).length > 0 && (
@@ -398,6 +417,13 @@ function CampaignName({ name }: { name: string; })
             <button type="submit" class="button gold">{t("Save")}</button>
         </form>
     );
+}
+
+/** Where the questions stand: the first still open, neither answered nor left to the master; with none, past the last. */
+function firstOpen(questions: PlayerSetting[], left: string[]): number
+{
+    const first = questions.findIndex((question) => !answered(question) && !left.includes(question.name));
+    return first < 0 ? questions.length : first;
 }
 
 /** Whether a question is answered: a value chosen, or a list given, even with none. */

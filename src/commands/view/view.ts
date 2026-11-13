@@ -2,7 +2,8 @@
 import { basename } from "node:path";
 import { z } from "zod";
 import { readSettings, requireCampaign } from "../../campaign/index.ts";
-import { readLog } from "../../core/log.ts";
+import type { Context } from "../../core/context.ts";
+import { type LogEntry, readLog } from "../../core/log.ts";
 import { defineCommand } from "../../core/registry.ts";
 import { comparableText } from "../../core/text.ts";
 import { isPartyMember, isPlayerCharacter, locate, type Page, parsePageReference, playerCharacters, secretNames, type World } from "../../pages/index.ts";
@@ -33,7 +34,7 @@ import { shownLayers } from "./layers.ts";
 import { mapText, shownMap } from "./map.ts";
 import { characterNamed, memoryOf, memoryText } from "./memory.ts";
 import { knownNamedPage, knownPage, lineValues, placeLook, shownName, shownPage, valueCoins } from "./page.ts";
-import { isDown, sceneLine, seenEffect, shownPlace, shownScene, strangerImage } from "./place.ts";
+import { isDown, sceneLine, seenEffect, seenInScene, shownPlace, shownScene, strangerImage } from "./place.ts";
 import type { PartyMember, ShownRoll, ViewResult } from "./result.ts";
 import { shownSaves } from "./saves.ts";
 import { diaryCount, diaryLine, diaryLines, isCopyName, rollCount, rollsShown, seenByRoll, shownRoll, storyFact } from "./story.ts";
@@ -121,9 +122,11 @@ export const view = defineCommand({
         // An import under way, which the dashboard tells the player (D-491 (11)); never the character agent.
         const importing = input.as === undefined ? importShown(root) : undefined;
 
+        // Before a player character, as in the setup, the system's words still name its own questions, as its Outcomes.
         if (knowledge === undefined) {
             const language = readSettings(root).language;
-            return { kind: "none", ...(language === undefined ? {} : { language }), ...(importing === undefined ? {} : { importing }) };
+            const words = shownWords(root, context, world, language);
+            return { kind: "none", ...(language === undefined ? {} : { language }), ...(words === undefined ? {} : { words }), ...(importing === undefined ? {} : { importing }) };
         }
 
         const pc = knowledge.pc;
@@ -154,10 +157,11 @@ export const view = defineCommand({
 
             const present = readPresent(root).date;
             const known = (name: unknown): string | undefined => shownName(world, knowledge, name);
+            const lineNamed = namedInLines(root, readLog(root), world, [...players, ...companionsOf(world)], known);
             return {
                 kind: "journal",
                 ...(present === undefined ? {} : { now: formatGameDate(present) }),
-                ...shownJournal(root, world, knowledge, present, (entry) => storyFact(world, entry, known), known, (name) => placeLook(root, context, world, knowledge, name)),
+                ...shownJournal(root, world, knowledge, present, (entry) => storyFact(world, entry, lineNamed(entry)), known, (name) => placeLook(root, context, world, knowledge, name)),
                 // The diaries the player reads, the last line first: never a hidden line, as another character's (DIA-4).
                 thoughts: thoughtsIn(root, world).filter((one) => !one.hidden).reverse().map((one) => ({ who: known(one.page.name) ?? "someone", ...(one.date === undefined ? {} : { date: one.date }), text: one.text })),
             };
@@ -209,7 +213,7 @@ export const view = defineCommand({
         const system = campaignSystem(root, context);
 
         const open = readJourney(root)?.at !== undefined;
-        const companions = world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
+        const companions = companionsOf(world);
         const language = readSettings(root).language;
         const memberWords = system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context);
         const sight = { root, context, world, knowledge, party: [...players, ...companions], ...(memberWords === undefined ? {} : { words: memberWords.words }) };
@@ -254,28 +258,29 @@ export const view = defineCommand({
         const now = readPresent(root).date;
         const named = (name: unknown): string | undefined => shownName(world, knowledge, name);
 
+        const log = readLog(root);
+        const lineNamed = namedInLines(root, log, world, sight.party, named);
+
         // The picture of someone the log names, as the player character knows them; of a stranger, as the scene shows them, a copy by its creature (D-420, D-421).
-        const picture = (name: unknown): ShownRoll["image"] => {
-            const page = knownNamedPage(world, knowledge, name);
+        const picture = (name: unknown, known = named): ShownRoll["image"] => {
+            const page = known(name) === undefined ? undefined : knownNamedPage(world, knowledge, name);
             const who = String(name ?? "").trim();
             return page !== undefined
                 ? shownImage(root, context, world, page, (base) => knowsPage(knowledge, base))
                 : strangerImage(root, context, world, isCopyName(world, who) ? who.replace(/ \d+$/, "") : who);
         };
 
-        const log = readLog(root);
         const seenAt = seenByRoll(log, readOpenScene(root).scene?.seen);
         const shownLines = log.filter((entry) => entry.visibility === "public");
         const moment = lastMoment(shownLines);
-        const diary = shownLines.flatMap((entry) => diaryLine(world, entry, named));
+        const diary = shownLines.flatMap((entry) => diaryLine(world, entry, lineNamed(entry)));
         const shown = input.diary?.trim().toLowerCase() === "all" ? diary.length : diaryCount(input.diary);
         const shownRolls = shownLines.filter((entry) => entry.type === "roll");
         const place = shownPlace(sight);
         const openScene = shownScene(sight);
         const settings = readSettings(root);
         const today = now === undefined ? undefined : calendarDayOf(root, context, now.day);
-        const words = system === undefined || settings.language === undefined ? undefined : systemWordsOf(root, system, settings.language, context);
-        const titled = withPageTitles(words, world);
+        const titled = shownWords(root, context, world, settings.language);
         // The system's pages of the party's sheets, in the campaign's language where the system has no translation (D-539).
         wantTexts(root, context, world, [...players, ...companions]);
         const textsTranslating = translatingTexts(context, world);
@@ -299,7 +304,7 @@ export const view = defineCommand({
             scene: sceneLine(sight, named),
             diary: diary.slice(Math.max(0, diary.length - shown)),
             total: diary.length,
-            rolls: shownRolls.slice(-rollCount(input.rolls)).map((entry) => shownRoll(world, entry, named, picture, seenAt.get(entry.id))),
+            rolls: shownRolls.slice(-rollCount(input.rolls)).map((entry) => shownRoll(world, entry, lineNamed(entry), (name) => picture(name, lineNamed(entry)), seenAt.get(entry.id))),
             rollsTotal: shownRolls.length,
             problems: campaignProblems(root, world, context).length,
             ...(importing === undefined ? {} : { importing }),
@@ -368,6 +373,32 @@ export const view = defineCommand({
         }
     },
 });
+
+function companionsOf(world: World): Page[]
+{
+    return world.pages.filter((page) => page.type === "character" && page.fields.role === "companion");
+}
+
+/**
+ * How each line of the log names people: those of the open scene name one it gives by what the character sees of them as one it does not know, while it keeps
+ * them (D-568); the lines before it as the character knows them.
+ */
+function namedInLines(root: string, log: LogEntry[], world: World, party: Page[], named: (name: unknown) => string | undefined): (entry: LogEntry) => (name: unknown) => string | undefined
+{
+    const scene = readOpenScene(root).scene;
+    const opened = scene === undefined ? -1 : log.findLastIndex((entry) => entry.type === "scene-opened");
+    const inScene = new Set(opened < 0 ? [] : log.slice(opened + 1).map((entry) => entry.id));
+    const hiding = (name: unknown): string | undefined => (typeof name === "string" && seenInScene(world, party, scene, name) ? undefined : named(name));
+    return (entry) => (inScene.has(entry.id) ? hiding : named);
+}
+
+/** The game system's words in the campaign's language, with its pages' titles, for the dashboard (D-403); none when it has neither. */
+function shownWords(root: string, context: Context, world: World, language: string | undefined): SystemWords | undefined
+{
+    const system = campaignSystem(root, context);
+    const words = system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context);
+    return withPageTitles(words, world);
+}
 
 /**
  * The system's words for the page, with the names its translation gives its pages, as Palla di fuoco for Fireball, where its words do not name them (D-542):

@@ -505,7 +505,13 @@ export interface ShownImport
 
 /** What view gives: the party, a page with its sheet, one section, the world map, or nothing. */
 export type View =
-    | { kind: "none"; language?: string; importing?: ShownImport; }
+    | {
+        kind: "none";
+        language?: string;
+        /** The game system's words, as in play: they name its own questions of the setup (D-403). */
+        words?: SystemWords;
+        importing?: ShownImport;
+    }
     | {
         kind: "overview";
         campaign: string;

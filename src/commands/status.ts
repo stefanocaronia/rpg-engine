@@ -25,6 +25,7 @@ import { quotedOrders } from "./shared/characters/orders.ts";
 import { installableSystems } from "./shared/packages/catalog.ts";
 import { packageCodeProblems } from "./shared/packages/code.ts";
 import { extensionsLine } from "./shared/packages/extensions.ts";
+import { packageUpdates } from "./shared/packages/updates.ts";
 import { surroundings, surroundingsText } from "./shared/places/environment.ts";
 import { journeyText, readJourney } from "./shared/places/journey.ts";
 import { measuresOf, roadsOf } from "./shared/places/roads.ts";
@@ -130,6 +131,8 @@ export const status = defineCommand({
         const installable = settings.system === undefined ? await installableSystems(context) : [];
         // The opening of an evening, once in a chat: notes said while the master read the game reached the player (playtests 15, 16).
         const opening = firstInChat(context, "opening");
+        // At the start of a session, the campaign's packages npm has newer (D-569): once in a chat, at every status on the command line.
+        const updates = opening || context.told === undefined ? await packageUpdates(root, context) : undefined;
         return {
             campaign: [
                 settings.name,
@@ -175,6 +178,7 @@ export const status = defineCommand({
             precedents: settings.precedents ?? [],
             // The extensions it uses, each with what it brings (D-28).
             extensions: extensionsLine(root, context),
+            updates,
             houseRules: bookTitles(readRuleBook(join(root, houseRulesFolderName), "house rules")),
             players: players.map(member),
             companions: characters.filter((page) => page.fields.role === "companion").map(member),
@@ -244,6 +248,7 @@ export const status = defineCommand({
             result.table.length === 0 ? "" : `Table: ${result.table.join("; ")}`,
             result.precedents.length === 0 ? "" : `Precedents: ${result.precedents.join("; ")}`,
             result.extensions,
+            result.updates ?? "",
             result.houseRules.length === 0 ? "" : `House rules (rules): ${result.houseRules.join(", ")}`,
             timeLine(result),
             result.betweenSessions ?? "",

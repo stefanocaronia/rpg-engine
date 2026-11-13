@@ -22,6 +22,8 @@ const localFolder = "local";
 // An npm name with a version or a tag, or nothing a shell would read otherwise: the master writes it, and npm runs in a shell.
 const npmSpec = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*(@[0-9A-Za-z.+-]+)?$/;
 const installWait = 5 * 60 * 1000;
+// How long the check for newer versions waits for the registry, at the start of a session (D-569): offline it gives up at once or after this.
+const checkWait = 3000;
 // An npm package's name alone, without a version: a .tgz's becomes the name of its folder.
 const packageName = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
 // A folder's copy installed as files, never as a link, which Node may not follow where the app keeps the player's data; npm's package.json still names it
@@ -107,6 +109,13 @@ export function npmPackages(folder: string, run: (args: string) => Promise<NpmRu
                 return described.filter((one): one is PackageInfo => !("failed" in one) && one.kind !== undefined);
             } catch (error) {
                 return { failed: `npm's registry could not be reached: ${error instanceof Error ? error.message : String(error)}` };
+            }
+        },
+        newest: async (name) => {
+            try {
+                return await newestReadable(name);
+            } catch {
+                return undefined;
             }
         },
     };
@@ -287,13 +296,32 @@ function madeForNewer(info: PackageInfo): boolean
  */
 async function readableVersion(name: string, latest: PackageInfo): Promise<PackageInfo>
 {
-    const all = await json(`${registry}/${name.replace("/", "%2f")}`) as { versions?: Record<string, Manifest>; } | undefined;
-    const kind = latest.kind === "system" ? "system" : "extension";
-    const readable = Object.values(all?.versions ?? {}).map(infoOf).filter((one) => !one.version.includes("-") && readsApi(one.api, kind));
-    const newest = readable.reduce<PackageInfo | undefined>((best, one) => (best === undefined || isNewerVersion(one.version, best.version) ? one : best), undefined);
+    const newest = newestOf(await json(`${registry}/${name.replace("/", "%2f")}`), latest);
     const engine = await engineReading(latest.api ?? 0);
     const newer = { version: latest.version, ...(engine === undefined ? {} : { engine }) };
     return newest === undefined ? latest : { ...newest, newer };
+}
+
+/**
+ * The newest version of a package this engine reads (D-569): its latest, else the newest of all its versions that reads; undefined when it has none. Asked
+ * within a short wait in all, as at the start of a session, which never waits on npm for long.
+ */
+async function newestReadable(name: string): Promise<string | undefined>
+{
+    const address = `${registry}/${checkedSpec(name).replace("/", "%2f")}`;
+    const signal = AbortSignal.timeout(checkWait);
+    const latest = await json(`${address}/latest`, signal) as Manifest | undefined;
+    const info = latest === undefined ? undefined : infoOf(latest);
+    return info === undefined || !madeForNewer(info) ? info?.version : newestOf(await json(address, signal), info)?.version;
+}
+
+/** The newest of all the versions npm's registry gives of a package that this engine reads, of the latest's kind, never a prerelease. */
+function newestOf(all: unknown, latest: PackageInfo): PackageInfo | undefined
+{
+    const versions = (all as { versions?: Record<string, Manifest>; } | undefined)?.versions ?? {};
+    const kind = latest.kind === "system" ? "system" : "extension";
+    const readable = Object.values(versions).map(infoOf).filter((one) => !one.version.includes("-") && readsApi(one.api, kind));
+    return readable.reduce<PackageInfo | undefined>((best, one) => (best === undefined || isNewerVersion(one.version, best.version) ? one : best), undefined);
 }
 
 /** The first version of rpg-engine on npm that reads a package made for this API, as its package.json says; undefined when none does yet, or npm does not say. */
@@ -476,10 +504,10 @@ function authorOf(read: Manifest): string | undefined
     return typeof read.author === "string" ? read.author : read.author?.name;
 }
 
-/** A JSON answer of the registry; undefined when it has none, 404. */
-async function json(url: string): Promise<unknown>
+/** A JSON answer of the registry, given up when the signal says; undefined when it has none, 404. */
+async function json(url: string, signal = AbortSignal.timeout(20_000)): Promise<unknown>
 {
-    const answer = await fetch(url, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(20_000) });
+    const answer = await fetch(url, { headers: { accept: "application/json" }, signal });
 
     if (answer.status === 404) {
         return undefined;

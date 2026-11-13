@@ -13,7 +13,7 @@ import { restingEffectsNote } from "../shared/scene/reminders.ts";
 import { keptRolls } from "../shared/sheet/counters.ts";
 import { effectiveFields } from "../shared/sheet/effect-layer.ts";
 import { spendableDice, spendDice } from "../shared/time/dice-pool.ts";
-import { effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "../shared/time/recipes.ts";
+import { carriedCounters, effectsAtRecipe, notBroughtBack, partyPages, recipeChoices, recipeNamed, recipeTargets } from "../shared/time/recipes.ts";
 import { newDatedLogEntry } from "../shared/time/time.ts";
 import { counterStep } from "./amounts.ts";
 import { applyStep, holderNamed, pageHolder, stepNotes, type StepOutcome } from "./holder.ts";
@@ -33,6 +33,8 @@ export interface RecipeOutcome
     /** The dice the recipe lets the page spend that would give something, as hit-dice-d8 2/3, which the player chooses for the player character (ASK-14). */
     spendable: string[];
     notBroughtBack: string[];
+    /** The counters below their maximum of the items the page carries, as Wand charges 3/7, whose text says what comes back and when. */
+    carried: string[];
     kept: string[];
     /** The effects without an end still on the page, which a rest may ask something of (EFF-15). */
     resting: string;
@@ -140,6 +142,7 @@ function recipeOn(root: string, context: Context, world: World, system: GameSyst
         choices: recipeChoices(current, recipe, pageCalled(current, name)),
         spendable: barred ? [] : spendableDice(current, recipe, pageCalled(current, name)),
         notBroughtBack: notBroughtBack(current, system, recipe, pageCalled(current, name)),
+        carried: carriedCounters(current, pageCalled(current, name)),
         kept: keptRolls(current, pageCalled(current, name)).map(([field, values]) => `${field} ${values.join(", ")}`),
         barred,
         resting: [atZero ? `At 0 ${recipe.needs ?? ""} when it began, ${name} gains nothing from it.` : tooSoon ?? "", restingEffectsNote(pageCalled(current, name))].filter((note) => note !== "").join(" "),
@@ -198,13 +201,14 @@ export function recipeText(result: { recipe: string; system: string; outcomes: R
     const lines = result.outcomes.flatMap((outcome) => {
         const done = [...outcome.ended.map((effect) => `${effect} ended`), ...outcome.steps.map(stepText)];
         const left = outcome.notBroughtBack.length === 0 ? "" : ` Not brought back: ${outcome.notBroughtBack.join(", ")}.`;
+        const carried = outcome.carried.length === 0 ? "" : ` ${outcome.page} carries ${outcome.carried.join(", ")}: ${outcome.carried.length === 1 ? "its page says" : "their pages say"} what comes back and when; give it with change.`;
         // The player chooses and rolls for the player character, the master for a companion (D-206, D-213).
         const chosen = [...outcome.choices.map((choice) => ` ${outcome.pc ? "Ask the player" : `Choose for ${outcome.page}`}: ${choice}.`), spendText(outcome, result)].join("");
         // Rolls kept for later: if this rest brings them back, they are rolled again (KEP-4).
         const roller = outcome.pc ? "the player rolls" : "roll";
         const kept = outcome.kept.length === 0 ? "" : ` ${outcome.page} keeps ${outcome.kept.join("; ")}: if this rest brings them back, ${roller} them again, with roll and keep.`;
         const resting = outcome.resting === "" ? "" : ` ${outcome.resting}`;
-        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${chosen}${left}${kept}${resting}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
+        return [`${outcome.page}: ${done.length === 0 ? "nothing changed" : done.join("; ")}.${chosen}${left}${carried}${kept}${resting}`, ...outcome.steps.flatMap(stepNotes).filter((note) => !note.includes("\n"))];
     });
     const rules = result.rules.length === 0 ? "" : `For the rest, read ${result.rules.map((rule) => `rules "${rule}"`).join(" and ")}.`;
     const title = `${result.recipe.charAt(0).toUpperCase()}${result.recipe.slice(1)} (a recipe of the system ${result.system}):`;

@@ -2,7 +2,7 @@
 import { comparableText } from "../../../core/text.ts";
 import { readCounter } from "../../../counters/index.ts";
 import type { Effect } from "../../../effects/index.ts";
-import { isDeclaredUncounted, isInParty, locate, type Page, playerCharacters, type World } from "../../../pages/index.ts";
+import { findPage, heldNames, isDeclaredUncounted, isInParty, locate, type Page, playerCharacters, type World } from "../../../pages/index.ts";
 import type { GameSystem, Recipe } from "../../../systems/index.ts";
 import { effectiveFields, effectsOf } from "../sheet/effect-layer.ts";
 import { formulaValue } from "../sheet/formula-scope.ts";
@@ -100,6 +100,32 @@ export function notBroughtBack(world: World, system: GameSystem, recipe: Recipe,
         const rule = system.thresholds.find((threshold) => comparableText(threshold.field) === comparableText(field) && (threshold.value === undefined || threshold.value === counter.value))?.rule;
         return [`${field} ${String(value).trim()}${rule === undefined ? "" : ` (rules "${rule}")`}`];
     });
+}
+
+/**
+ * The counters below their maximum of the items a page carries, also inside others, as in "Wand charges 3/7": what comes back to them, and when, only
+ * their text says, which a rest never applies by itself.
+ */
+export function carriedCounters(world: World, page: Page): string[]
+{
+    return carriedItems(world, page, new Set([page])).flatMap((item) =>
+        Object.entries(effectiveFields(world, item)).flatMap(([field, value]) => {
+            const counter = isDeclaredUncounted(world, field) ? undefined : readCounter(value);
+            return counter?.max === undefined || counter.value >= counter.max ? [] : [`${item.name} ${field} ${counter.value}/${counter.max}`];
+        })
+    );
+}
+
+/** The items a holder carries, and those inside them, each once. */
+function carriedItems(world: World, holder: Page, seen: Set<Page>): Page[]
+{
+    const held = heldNames(holder).flatMap((name) => findPage(world, name) ?? []).filter((item) => item.type === "item" && !seen.has(item));
+
+    for (const item of held) {
+        seen.add(item);
+    }
+
+    return held.flatMap((item) => [item, ...carriedItems(world, item, seen)]);
 }
 
 /**

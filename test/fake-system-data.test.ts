@@ -230,6 +230,18 @@ describe("recipes (DAT-4, DAT-5)", () => {
         expect(character("Ennio")).toContain("grit: 5/9\n");
     });
 
+    it("name the counters below their maximum of what a page carries, also inside another item, and leave them to the text of their pages", async () => {
+        await ok("write", "Bacchetta", "--type", "item", "--set", "charges=3/7");
+        await ok("write", "Anello", "--type", "item", "--set", "charges=2/2");
+        await ok("write", "Fiala", "--type", "item", "--set", "uses=0/1");
+        await ok("write", "Borsa", "--type", "item", "--add", "contains=[[Fiala]]", "--add", "contains=[[Anello]]");
+        await ok("write", "Ennio", "--add", "inventory=[[Bacchetta]]", "--add", "inventory=[[Borsa]]");
+        const rested = await ok("change", "Ennio", "--recipe", "breather");
+        expect(rested).toContain("Ennio carries Bacchetta charges 3/7, Fiala uses 0/1: their pages say what comes back and when; give it with change.");
+        expect(rested).not.toContain("Anello");
+        expect(character("Ennio")).not.toContain("charges");
+    });
+
     it("go to the page given, never to a copy, and are refused when the system has none by that name, with how to quote one", async () => {
         await ok("write", "Ennio", "--set", "ward=4");
         expect(await ok("change", "Ennio", "--recipe", "breather")).toContain(

@@ -196,7 +196,7 @@ function copyCreatures(world: World, copies: Record<string, SceneCopy>): Page[]
 }
 
 /**
- * What the character sees of those it does not know by name (D-416), by the name of a character in the scene or of a creature with copies in it: Bandito=brigante
+ * What the character sees of someone, known by name or not (D-416, D-568), by the name of a character in the scene or of a creature with copies in it: Bandito=brigante
  * incappucciato on the command line, {"Varro": "il mugnaio"} through MCP; none when not given.
  */
 function seenOf(world: World, seen: SceneInput["seen"], characters: Page[], copies: Record<string, SceneCopy>): Record<string, string> | undefined

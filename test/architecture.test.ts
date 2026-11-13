@@ -69,6 +69,8 @@ describe("architecture", () => {
             "helpers/programs.ts",
             // The page's words translated on the fly, in the player's data folder (D-406).
             "commands/shared/books/words.ts",
+            // What npm said of the campaign's packages today, in the player's data folder, apart from any campaign (D-569).
+            "commands/shared/packages/updates.ts",
             "documents/read.ts",
             "importer/work.ts",
             "library/books.ts",

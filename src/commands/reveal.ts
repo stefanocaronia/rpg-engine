@@ -10,7 +10,7 @@ import { campaignWorld } from "./shared/campaign/world.ts";
 import { type KnownLink, knownLink, knownLinks } from "./shared/characters/knowledge.ts";
 import { textList, textsOf } from "./shared/inputs.ts";
 import { placedPosition } from "./shared/places/positions.ts";
-import { copyName, readOpenScene } from "./shared/scene/scene.ts";
+import { copyName, readOpenScene, updateScene } from "./shared/scene/scene.ts";
 import { newDatedLogEntry } from "./shared/time/time.ts";
 
 /** Something that can be learned, as knows records it: a page, or one of its secrets where it is written (REV-1, REV-2); or a section everyone can read. */
@@ -22,6 +22,8 @@ interface RevealResult
     learned: { who: string; what: string[]; }[];
     known: { who: string; what: string[]; }[];
     notSecret: { what: string; page: string; }[];
+    /** Those the open scene gave by what the character sees of them, now by name (D-568). */
+    named?: string[];
     unplaced?: { places: string[]; from?: string; };
 }
 
@@ -29,6 +31,7 @@ export const reveal = defineCommand({
     name: "reveal",
     description: "Record what characters learn: a secret, as Page#Secret, or a whole page they did not know. "
         + "It adds the links to their knows and answers without the text: read a secret with show before you tell it. "
+        + "A whole page the player's character learns that the open scene gives by seen goes by its name again, known before or not. "
         + "Example: page [Coppa#Veleno, Varro], to [Ettore, Bruna].",
     group: "game",
     positionals: ["page"],
@@ -87,8 +90,9 @@ export const reveal = defineCommand({
         }
 
         logLearned(root, context, world, lines);
+        const named = learners.some(isPlayerCharacter) ? namedInScene(root, context, scene, known.map((item) => item.link)) : [];
         const unplaced = unplacedPlaces(world, lines);
-        return unplaced === undefined ? result : { ...result, unplaced };
+        return { ...result, ...(named.length === 0 ? {} : { named }), ...(unplaced === undefined ? {} : { unplaced }) };
     },
 
     format(result)
@@ -97,9 +101,30 @@ export const reveal = defineCommand({
         const known = result.known.length === 0 ? "" : `Already known: ${result.known.map((entry) => `${entry.who}: ${entry.what.join(", ")}`).join("; ")}.`;
         const notSecret = result.notSecret.length === 0 ? "" : `Not secrets, nothing to record: ${result.notSecret.map((entry) => `${entry.what} (whoever knows ${entry.page} knows it)`).join(", ")}.`;
         const unplaced = result.unplaced === undefined ? "" : placesNote(result.unplaced.places, result.unplaced.from);
-        return [...(learned.length === 0 ? ["Nothing new to record."] : learned), known, notSecret, unplaced].filter((line) => line !== "").join(" ");
+        const named = result.named === undefined ? "" : `The open scene now gives ${result.named.join(", ")} by name: the player sees it, no longer what the character saw.`;
+        return [...(learned.length === 0 && named === "" ? ["Nothing new to record."] : learned), known, notSecret, named, unplaced].filter((line) => line !== "").join(" ");
     },
 });
+
+/**
+ * Takes out of the open scene's seen the pages the player's character learns whole (D-568): from now the player sees their name; a hidden line of the log
+ * says so. The names taken out.
+ */
+function namedInScene(root: string, context: Context, scene: Scene | undefined, learned: string[]): string[]
+{
+    const pages = learned.flatMap((link) => links(link)).filter((link) => link.section === undefined).map((link) => comparableText(link.page));
+    const seen = Object.entries(scene?.seen ?? {});
+    const named = seen.filter(([name]) => pages.includes(comparableText(name))).map(([name]) => name);
+
+    if (scene === undefined || named.length === 0) {
+        return [];
+    }
+
+    const kept = seen.filter(([name]) => !named.includes(name));
+    updateScene(root, [[["seen"], kept.length === 0 ? undefined : Object.fromEntries(kept)]]);
+    appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: scene.title, named }));
+    return named;
+}
 
 /**
  * One line in the log for each who learned something (REV-3, D-158): public only for what the player's character knows, theirs and a companion's who learned it

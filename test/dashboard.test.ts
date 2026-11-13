@@ -14,7 +14,7 @@ import { choicesAddress, readAddress, sectionAddress } from "../src/dashboard/ad
 import { explanations } from "../src/dashboard/api.ts";
 import type { Asked, ChoicesNow, JournalFact, PlayerSetting, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/parts/game-words.ts";
-import { checkOf, customLabel, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, leveledItemLabel, phraseLabel, shownText, valueLabel } from "../src/dashboard/parts/labels.ts";
+import { checkOf, customLabel, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, leveledItemLabel, phraseLabel, rollModifier, shownText, valueLabel } from "../src/dashboard/parts/labels.ts";
 import { arrangedGroups, columnsByHeight, endedQuests, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/parts/layout.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
 import { unpackFiles } from "../src/saves/index.ts";
@@ -954,6 +954,17 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(diceIn("4dF")).toEqual([{ sides: "F", count: 4 }]);
         expect(diceIn("1d8+1d8")).toEqual([{ sides: 8, count: 2 }]);
         expect(diceIn("5")).toEqual([]);
+    });
+
+    it("tells what a roll adds to its dice: the notation's number, or with a field's name what the total adds to the dice kept (playtest 19)", () => {
+        const d20 = (value: number, dropped?: true) => ({ sides: 20, value, ...(dropped === undefined ? {} : { dropped }) });
+        expect(rollModifier({ notation: "1d20+5", total: 17, dice: [d20(12)] })).toBe(5);
+        expect(rollModifier({ notation: "1d20+stealth", total: 22, dice: [d20(15)] })).toBe(7);
+        expect(rollModifier({ notation: "2d20kh1+dex-save", total: 11, dice: [d20(13), d20(9, true)] })).toBe(-2);
+        expect(rollModifier({ notation: "1d20+stealth+2", total: 20, dice: [d20(11)] })).toBe(9);
+        expect(rollModifier({ notation: "d%", total: 42, dice: [{ sides: 100, value: 42 }] })).toBe(0);
+        // A pool that counts its successes adds nothing of its own.
+        expect(rollModifier({ notation: "4d10>=8+wits", total: 2, dice: [{ sides: 10, value: 9, success: true }, { sides: 10, value: 3, success: false }] })).toBe(0);
     });
 
     it("draws the dice of a notation (D-284): one kind once or twice, or once with how many; of more kinds the first two; a d3 or a dF as the d6 they are thrown with", () => {

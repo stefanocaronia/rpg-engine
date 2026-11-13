@@ -146,8 +146,10 @@ function rewardLines(world: World, system: GameSystem | undefined, scene: Scene)
         const calls = party.map((page) => (held(page) ? `change ${page.name}, field ${reward.field}, by ${share}` : `write ${page.name}, set ${reward.field}=${share}`)).join("; ");
         const kinds = [...new Set(unknown.map((item) => item.kind))];
         const characters = overcome.filter((item) => item.character).map((item) => item.name);
+        // The share is said to the player at once, where a master who divides it right may forget it.
+        const tell = `Then tell the player what each got: ${share} ${reward.field}${party.length === 1 ? "" : " each"}.`;
         const parts = [
-            total === 0 ? `${reward.field}:` : `${reward.field} of those overcome: ${overcome.map((item) => `${item.name} ${item.worth}`).join(", ")}, ${total} in all; ${to}: ${calls}.`,
+            total === 0 ? `${reward.field}:` : `${reward.field} of those overcome: ${overcome.map((item) => `${item.name} ${item.worth}`).join(", ")}, ${total} in all; ${to}: ${calls}. ${tell}`,
             characters.length === 0 ? "" : `${characters.join(", ")} ${characters.length === 1 ? "is a character" : "are characters"}: leave out any who fought on your side, and share again.`,
             fled.length === 0 ? "" : `Fled: ${fled.map((item) => `${item.name} ${item.worth}`).join(", ")}, to count if the party overcame them.`,
             unknown.length === 0

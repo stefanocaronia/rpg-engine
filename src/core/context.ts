@@ -145,6 +145,11 @@ export interface PackageManager
     uninstall(name: string): Promise<string | undefined>;
     /** The packages for rpg-engine npm has, by their keyword and what their package.json says. */
     search(): Promise<PackageInfo[] | { failed: string; }>;
+    /**
+     * The newest version of a package npm's registry has that this engine reads (D-569), asked within a few seconds; undefined when the registry does not
+     * answer in time, or has none. Missing where npm is not asked, as in most tests.
+     */
+    newest?(name: string): Promise<string | undefined>;
 }
 
 /** How this rpg-engine is installed (D-515 (3)): globally by npm, which updates it; as npm link of a folder in development; or any other way, from that folder. */

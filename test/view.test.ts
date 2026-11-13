@@ -493,7 +493,10 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(await ok("view", "--json")).not.toContain("Brunilde");
         expect(JSON.parse(await ok("view", "Brunilde", "--json")).kind).toBe("unknown");
         await ok("scene", "open", "--title", "Ancora nel bosco", "--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Brunilde", "--seen", "Brunilde=donna incappucciata");
+        // Her name written in knows does not take her out of seen while the scene keeps her (D-568); reveal does.
         await ok("write", "Kira", "--add", "knows=[[Brunilde]]");
+        expect((await names())[1]).toBe("donna incappucciata");
+        await ok("reveal", "Brunilde");
         expect((await names())[1]).toBe("Brunilde");
         expect((await rpg("scene", "add", "--seen", "Oste=oste")).output).toContain("seen Oste: there is no character or creature of that name in the scene. In it: Kira, Brunilde.");
     });
@@ -512,6 +515,35 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(JSON.parse(await ok("view", "Varro", "--json")).kind).toBe("unknown");
         await ok("write", "Kira", "--add", "knows=[[Varro]]");
         expect(await ok("view", "Varro")).toContain("Il mugnaio.");
+    });
+
+    it("gives by what is seen one the party knows by name while the scene keeps them so, until it closes or reveal names them (D-568, VIEW-4, VIEW-6, REV-2)", async () => {
+        await ok("write", "Kira", "--add", "knows=[[Varro]]", "--add", "knows=[[Lupo nero]]");
+        await ok("write", "Guado", "--add", "contains=[[Varro]]");
+        await ok("config", "master-rolls", "in view");
+        await ok("roll", "1d6", "--who", "Varro", "--check", "Prima");
+        const open = ["--type", "combat", "--place", "Guado", "--with", "Kira", "--with", "Varro", "--creatures", "Lupo nero=1", "--seen", "Varro=figura alta", "--seen", "Lupo nero=ombra"];
+        await ok("scene", "open", "--title", "Agguato", ...open);
+        await ok("roll", "1d20", "--who", "Varro", "--check", "Furtività");
+        await ok("roll", "1d20", "--who", "Lupo nero 1", "--check", "Morso");
+        const name = (one: { name: string; }): string => one.name;
+        const during = JSON.parse(await ok("view", "--json"));
+        expect(during.openScene.who.map(name)).toEqual(["Kira", "figura alta", "ombra"]);
+        expect(during.openScene.fighters.map(name)).toEqual(["Kira", "figura alta", "ombra 1"]);
+        expect(during.scene).toBe("Agguato (combat), at Guado, with Kira, figura alta and ombra 1");
+        // At the place he is in the scene alone, as one the character does not know; a roll before the scene keeps his name, those in it what is seen.
+        expect(during.place.here.map(name)).toEqual(["Kira", "Bran"]);
+        expect(during.rolls.map((roll: { who?: string; stranger?: true; }) => [roll.who, roll.stranger === true])).toEqual([["Varro", false], ["figura alta", true], ["ombra 1", true]]);
+        await ok("scene", "close", "--summary", "La figura sparisce.");
+        const after = JSON.parse(await ok("view", "--json"));
+        expect(after.rolls.map((roll: { who?: string; }) => roll.who)).toEqual(["Varro", "Varro", "Lupo nero 1"]);
+        expect(after.place.here.map(name)).toEqual(["Kira", "Bran", "Varro"]);
+
+        // reveal, for one already known, gives the name back while the scene is still open, and says so.
+        await ok("scene", "open", "--title", "Ancora", ...open);
+        expect(await ok("reveal", "Varro")).toBe("Already known: Kira: Varro. The open scene now gives Varro by name: the player sees it, no longer what the character saw.");
+        expect(JSON.parse(await ok("view", "--json")).openScene.fighters.map(name)).toEqual(["Kira", "Varro", "ombra 1"]);
+        expect(await ok("show", "Ancora")).toContain("named: Varro");
     });
 
     it("gives a fight's fighters in the order of the turns: the party's counter as numbers, a foe's in words, who does not act, who is down (D-314, D-516)", async () => {
@@ -596,7 +628,8 @@ describe("the place and the scene for the dashboard (VIEW-6, D-310)", () => {
         expect(states(overview.place.map.at)).toEqual({ Kira: { down: true }, Bran: bran, "uomo incappucciato": varro, someone: {}, "creature A1": atZero, "creature B1": { effects: [prone] }, "creature B2": {} });
         // The same marks in Combat.
         expect(overview.openScene.fighters.find((one: { name: string; }) => one.name === "Bran").effects).toEqual(bran.effects);
-        await ok("write", "Kira", "--add", "knows=[[Varro]]");
+        // The master names him (D-568).
+        await ok("reveal", "Varro");
         await ok("write", "Bran", "--set", "status=dead");
         overview = JSON.parse(await ok("view", "--json"));
         expect(states(overview.place.here)).toEqual({ Kira: { down: true }, Varro: varro });
