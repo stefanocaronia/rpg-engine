@@ -606,7 +606,16 @@
         font-weight: 650;
     }
 
+    /* The arrow and what it leads to: together on a new line when the two values do not fit on one. */
+    .changed-to {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        min-width: 0;
+    }
+
     .changed-arrow {
+        flex: none;
         align-self: center;
         color: var(--muted);
     }
@@ -615,6 +624,17 @@
         display: block;
         width: 14px;
         height: 14px;
+    }
+
+    /* While a scene is played nothing is put back: said over the list in the ink, apart from the line of what the list is. */
+    .changed-waits {
+        color: var(--ink);
+        font-weight: 600;
+    }
+
+    /* In the question, what goes back: the list's lines turned round, under their sentence. */
+    .confirm .changed-fields {
+        margin-top: 8px;
     }
 
     /* What a package's latest needs of the engine (D-515 (2)), under its meta: the words in --muted, the way to the engine's card in the accent. */

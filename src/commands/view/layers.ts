@@ -1,5 +1,5 @@
 // The pages of the game system the campaign changed with a layer (SYS-11), as the player may see them: what changed, and what the system gave
-import { comparableText, sameName, valueNamed } from "../../core/text.ts";
+import { comparableText, sameName, valueNamed, valueText } from "../../core/text.ts";
 import { baseChain, type Page, partContent, systemOriginal, type World } from "../../pages/index.ts";
 import { inKnownWords, type Knowledge, knowsPage } from "../shared/characters/knowledge.ts";
 
@@ -68,10 +68,4 @@ export function isLayered(world: World, page: Page, known: (base: Page) => boole
 function layeredPages(world: World): Page[]
 {
     return (world.system?.pages ?? []).filter((page) => page.layer !== undefined);
-}
-
-/** A field's value in a line: a list as its items, anything else as written. */
-function valueText(value: unknown): string
-{
-    return Array.isArray(value) ? value.map(String).join(", ") : typeof value === "object" && value !== null ? JSON.stringify(value) : String(value);
 }

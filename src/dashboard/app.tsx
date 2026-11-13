@@ -782,6 +782,7 @@ function App()
                                                             tab={address.tab}
                                                             item={address.name}
                                                             layers={shown.layers}
+                                                            sceneOpen={shown.openScene !== undefined}
                                                             onChanged={() => void read()}
                                                         />
                                                     )}

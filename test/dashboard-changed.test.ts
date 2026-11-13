@@ -65,12 +65,9 @@ describe("the pages the campaign changed, on the page (D-564)", () => {
         expect(await putPageBack("Wolf", "Lupo")).toEqual({ done: true });
         expect(asked).toEqual([{ address: "/api/layer", body: { page: "Wolf" } }]);
 
-        answers(409, { error: "Wolf is in the scene being played: take the campaign's change off it once the scene is over.", code: "copies-in-scene", values: { page: "Wolf" } });
-        expect(await putPageBack("Wolf", "Lupo")).toEqual({ done: false, code: "copies-in-scene", error: "Lupo is in the scene being played: put it back once the scene is over." });
-
-        // Of a creature the character does not know, while any scene is open: no word of where it is.
+        // While a scene is being played, whatever the page: no word of where it is.
         answers(409, { error: "A scene is being played: take the campaign's change off Wolf once it is over.", code: "scene-open", values: { page: "Wolf" } });
-        expect(await putPageBack("Wolf", "Lupo")).toEqual({ done: false, code: "scene-open", error: "It can be restored once the scene being played is over." });
+        expect(await putPageBack("Wolf", "Lupo")).toEqual({ done: false, code: "scene-open", error: "It can be put back once the scene being played is over." });
 
         answers(400, { error: "The campaign changes no page of the game system named Wolf: reload the page.", code: "no-layer", values: { page: "Wolf" } });
         expect(await putPageBack("Wolf", "Lupo")).toEqual({ done: false, code: "no-layer", error: "Lupo is no longer changed in this campaign: there is nothing to put back." });

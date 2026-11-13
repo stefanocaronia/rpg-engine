@@ -1,6 +1,6 @@
-/* A page of the game system that the campaign changed: the pencil after its name, and its line in the head of a page read whole. */
+/* A page of the game system that the campaign changed: the asterisk after its name, and its line in the head of a page read whole. */
 @layer parts {
-    /* The pencil after a name, no control: quiet, never the accent, which on the dark page is the gold of what is equipped or chosen. */
+    /* The asterisk after a name, no control: quiet, never the accent, which on the dark page is the gold of what is equipped or chosen. */
     .changed-mark {
         position: relative;
         display: inline-block;
@@ -15,10 +15,15 @@
         flex: none;
         width: 0.75rem;
         height: 0.75rem;
-        fill: currentColor;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.8;
+        stroke-linecap: round;
+        /* Raised, as a note's mark stands over its word: in a line of text and in a chip alike. */
+        translate: 0 -0.22em;
     }
 
-    /* In a chip the pencil stands inside it, after the name; after a name that acts, inside the chip's own room. */
+    /* In a chip the asterisk stands inside it, after the name; after a name that acts, inside the chip's own room. */
     .chips li:has(> .changed-mark) {
         display: inline-flex;
         align-items: center;
@@ -28,7 +33,7 @@
         margin-inline: -4px 8px;
     }
 
-    /* On touch a name that acts is taller: the pencil after it keeps the middle of its line. */
+    /* On touch a name that acts is taller: the asterisk after it keeps the middle of its line. */
     @media (pointer: coarse) {
         .items th > .act + .changed-mark {
             display: inline-flex;
@@ -38,7 +43,7 @@
         }
     }
 
-    /* In the head of a page read whole: the pencil and the words, which lead to what changed. */
+    /* In the head of a page read whole: the asterisk and the words, which lead to what changed. */
     .changed-line {
         margin: 6px 0 0;
         color: var(--muted);

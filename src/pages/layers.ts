@@ -4,7 +4,7 @@ import type { FieldKind } from "../core/field-kind.ts";
 import { frozen } from "../core/frozen.ts";
 import { comparableText } from "../core/text.ts";
 import { isNeverInherited } from "./inheritance.ts";
-import { introductionText, partContent, textParts, writeText } from "./markdown.ts";
+import { introductionText, partContent, sectionAbove, textParts, writeText } from "./markdown.ts";
 import { kindIn } from "./system-pages.ts";
 import type { Page } from "./world.ts";
 
@@ -56,8 +56,9 @@ export function layeredPages(pages: Page[], layers: Page[], prefix: string, decl
 }
 
 /**
- * A page of the game system with a layer over it: the layer's fields take the place of the page's, a section of the layer that of the section with its name, or is added,
- * and its introduction, when it has one, that of the page's. The translated text changes the same way where it has the section, else it goes, so that the
+ * A page of the game system with a layer over it: the layer's fields take the place of the page's, the text of a section of the layer that of the section with its name,
+ * at any level, or the section is added, inside the one the layer writes it under when the page has that one; and its introduction, when it has one, that of the
+ * page's. A heading with no text of its own takes nothing away. The translated text changes the same way where it has the section, else it goes, so that the
  * campaign's text is never hidden. The page stays the system's.
  */
 export function layeredPage(page: Page, layer: { fields: Record<string, unknown>; body: string; }, path: string, declared?: Record<string, FieldKind>): Page
@@ -78,7 +79,14 @@ export function layeredPage(page: Page, layer: { fields: Record<string, unknown>
     let translated = page.translated;
 
     for (const part of parts) {
-        body = writeText(body, part.content, { section: part.name, mode: "replace", secret: part.secret && partContent(body, part.name) === undefined });
+        const there = partContent(body, part.name) !== undefined;
+
+        // A heading without text only says where the sections under it go: the page's text under that name stays, and with nothing under it it is no section.
+        if (part.content === "" && (there || !parts.some((other) => comparableText(other.under ?? "") === comparableText(part.name)))) {
+            continue;
+        }
+
+        body = writeText(body, part.content, { section: part.name, mode: "replace", secret: part.secret && !there, under: part.under });
         translated = translated === undefined || partContent(translated, part.name) === undefined
             ? undefined
             : writeText(translated, part.content, { section: part.name, mode: "replace", secret: false });
@@ -89,7 +97,8 @@ export function layeredPage(page: Page, layer: { fields: Record<string, unknown>
         translated = translated === undefined ? undefined : writeText(translated, introduction, { mode: "replace" });
     }
 
-    const layered: LayerMark = { path, fields: given.map(([field]) => field), sections: parts.map((part) => part.name), introduction: introduction !== "", ignored };
+    const sections = parts.filter((part) => part.content !== "").map((part) => part.name);
+    const layered: LayerMark = { path, fields: given.map(([field]) => field), sections, introduction: introduction !== "", ignored };
     const merged: Page = { ...page, fields, body, translated, layer: layered };
 
     // A translation the layer could not follow goes, so that the campaign's text is never hidden.
@@ -121,12 +130,13 @@ export function layerTakes(page: Page, field: string, value: unknown, declared?:
     return page.type !== "item" || !counted(field, value) || Object.entries(page.fields).some(([name, given]) => counted(name, given));
 }
 
-/** The sections and secrets of a layer's text, each with its own text and whether it is a secret. */
-export function layerParts(body: string): { name: string; content: string; secret: boolean; }[]
+/** The sections and secrets of a layer's text, in order: each with its own text, none for a heading that only holds others, whether it is a secret, and the section it is written under. */
+export function layerParts(body: string): { name: string; content: string; secret: boolean; under?: string; }[]
 {
     return textParts(body).filter((part) => part.name !== "").flatMap((part) => {
         const own = partContent(body, part.name);
-        return own === undefined ? [] : [{ name: part.name, ...own }];
+        const under = own === undefined || own.secret ? undefined : sectionAbove(body, part.name);
+        return own === undefined ? [] : [{ name: part.name, ...own, ...(under === undefined ? {} : { under }) }];
     });
 }
 

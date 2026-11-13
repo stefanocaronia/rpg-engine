@@ -5,7 +5,7 @@ import type { AdventureFiles } from "../../../adventures/index.ts";
 import type { Context } from "../../../core/context.ts";
 import { Refusal } from "../../../core/refusal.ts";
 import { files } from "../../../core/store.ts";
-import { comparableText, textPrint } from "../../../core/text.ts";
+import { comparableText, textPrint, valueText } from "../../../core/text.ts";
 import { introductionText, layerFolder, layerParts, layersFolderName, layerTakes, type Page, type PageType, pageWithPath, readFields, splitPageFile, systemOriginal, type World, worldFolderName } from "../../../pages/index.ts";
 import { followersOfWrite, logCounterChanges } from "../../write/inheritance.ts";
 import { campaignCoins } from "../campaign/money.ts";
@@ -19,11 +19,11 @@ export interface LayeredPage
     type?: PageType;
 }
 
-/** A layer of the adventure that did not come in, since the campaign has its own over the page: what it would have given. */
+/** A layer of the adventure that did not come in, since the campaign has its own over the page: the fields it gave, each with its value, and the text it wrote. */
 export interface LayerKept
 {
     page: string;
-    fields: string[];
+    fields: Record<string, string>;
     sections: string[];
     introduction: boolean;
 }
@@ -35,7 +35,7 @@ export interface LayersInstalled
     changed: LayeredPage[];
     /** Those left out, over a page the campaign has its own layer on. */
     kept: LayerKept[];
-    /** Those left out, over no page of the system in the rules the campaign plays, by their file. */
+    /** Those left out, over no page of the system in the rules the campaign plays, by the name of the page each is for. */
     stray: string[];
 }
 
@@ -50,7 +50,7 @@ export interface LayerLeftOut
 export interface LayersExported
 {
     carried: Record<string, Uint8Array>;
-    pages: string[];
+    pages: LayeredPage[];
     sourced: string[];
     leftOut: LayerLeftOut[];
 }
@@ -105,7 +105,7 @@ export function layersToExport(root: string, world: World, system: string, broug
             exported.leftOut.push({ name, why: "adventure" });
         } else if (!givesNothing(layer)) {
             exported.carried[`${layersFolderName}/${system}/${systemOriginal(page).path}`] = bytes;
-            exported.pages.push(name);
+            exported.pages.push(...changedPages([page]));
             // From the player's documents when the layer says so, or the page under it does.
             exported.sourced.push(...(layer.fields.source !== undefined || systemOriginal(page).fields.source !== undefined ? [name] : []));
         }
@@ -153,7 +153,7 @@ export function planLayers(root: string, world: World, adventure: AdventureFiles
         }
 
         if (page === undefined) {
-            plan.stray.push(file);
+            plan.stray.push(basename(path, ".md"));
             continue;
         }
 
@@ -170,7 +170,8 @@ export function planLayers(root: string, world: World, adventure: AdventureFiles
 
         // The same as the campaign's by its print, which is what taking the adventure out compares.
         if (held !== undefined && printOf(there.get(held) ?? new Uint8Array()) !== printOf(bytes)) {
-            plan.kept.push({ page: page.name, fields: Object.keys(layer.fields), sections: layer.sections, introduction: layer.introduction });
+            const fields = Object.fromEntries(Object.entries(layer.fields).map(([field, value]) => [field, valueText(value)]));
+            plan.kept.push({ page: page.name, fields, sections: layer.sections, introduction: layer.introduction });
             continue;
         }
 
@@ -290,7 +291,7 @@ interface LayerRead
 function readLayer(file: string, bytes: Uint8Array): LayerRead
 {
     const text = splitPageFile(new TextDecoder().decode(bytes));
-    return { fields: readFields(text.frontmatter, file), sections: layerParts(text.body).map((part) => part.name), introduction: introductionText(text.body) !== "" };
+    return { fields: readFields(text.frontmatter, file), sections: layerParts(text.body).filter((part) => part.content !== "").map((part) => part.name), introduction: introductionText(text.body) !== "" };
 }
 
 /** What a layer's file gives, or why it does not read. */

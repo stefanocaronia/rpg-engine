@@ -2,7 +2,7 @@
 import type { Context } from "../../core/context.ts";
 import { listItemNames } from "../../core/formula.ts";
 import { appendLogEntry } from "../../core/log.ts";
-import { comparableText, valueNamed, withArticle } from "../../core/text.ts";
+import { comparableText, valueNamed, valueText, withArticle } from "../../core/text.ts";
 import { formatCounter, readCounter } from "../../counters/index.ts";
 import { type Coin, formatAmount, readAmount } from "../../money/index.ts";
 import {
@@ -220,12 +220,6 @@ export function ownValuesNote(now: World, before: Page, after: Page, coins: Coin
 export function changedNames(before: Page, after: Page): string[]
 {
     return [...new Set([...Object.keys(before.fields), ...Object.keys(after.fields)])].filter((field) => JSON.stringify(before.fields[field]) !== JSON.stringify(after.fields[field]));
-}
-
-/** A value as the outputs show it: a list as its items, anything else as written. */
-function valueText(value: unknown): string
-{
-    return Array.isArray(value) ? value.map(String).join(", ") : typeof value === "object" && value !== null ? JSON.stringify(value) : String(value);
 }
 
 /** Whether pages of this type can be bases: creatures and items (INH-1). */

@@ -112,6 +112,14 @@ export function partContent(text: string, name: string): { secret: boolean; cont
     return secret === undefined ? undefined : { secret: true, content: trimBlankLines(lines.slice(secret.start + 1, secret.end).map((line) => line.replace(quotePattern, "")).join("\n")) };
 }
 
+/** The section a section is written under: the nearest heading above its own, of a higher level; undefined for one at the top, a secret, or a name the text lacks. */
+export function sectionAbove(text: string, name: string): string | undefined
+{
+    const headings = headingsOf(text.split("\n"));
+    const index = headings.findIndex((heading) => comparableText(heading.title) === comparableText(name.trim()));
+    return index === -1 ? undefined : headings.slice(0, index).findLast((other) => other.level < headings[index].level)?.title;
+}
+
 /** A section with its subsections, down to the next heading of the same or a higher level, or a secret block. Names ignore case. */
 export function readSection(text: string, title: string): string | undefined
 {
@@ -125,9 +133,10 @@ export type TextMode = "replace" | "append" | "remove";
 
 /**
  * Writes the introduction (the text before the first heading), a section's own text (its subsections stay) or a secret block.
- * Secret blocks inside a rewritten text stay, after the new text. A missing section is added at the end: at the page's top heading level, or as a secret block.
+ * Secret blocks inside a rewritten text stay, after the new text. A missing section is added at the end: at the page's top heading level, or as a secret block;
+ * with `under`, a section the text has, at the end of that one, a level below it.
  */
-export function writeText(text: string, newText: string, options: { section?: string; mode: TextMode; secret?: boolean; }): string
+export function writeText(text: string, newText: string, options: { section?: string; mode: TextMode; secret?: boolean; under?: string; }): string
 {
     const lines = text.split("\n");
 
@@ -166,6 +175,13 @@ export function writeText(text: string, newText: string, options: { section?: st
 
     if (options.mode === "remove") {
         throw new Error(`There is no section or secret "${title}" to remove: show the page to see their names, or give some text to create it.`);
+    }
+
+    const parent = options.under === undefined || options.secret ? undefined : findSection(lines, options.under, "whole");
+
+    if (parent !== undefined) {
+        const level = Math.min(6, (headingPattern.exec(lines[parent.start])?.[1].length ?? 1) + 1);
+        return joinBlocks(lines.slice(0, parent.end).join("\n"), `${"#".repeat(level)} ${title}\n\n${newText}`, lines.slice(parent.end).join("\n"));
     }
 
     const block = options.secret ? [`> [!secret] ${title}`, ...quoteLines(newText)].join("\n") : `${"#".repeat(topHeadingLevel(lines))} ${title}\n\n${newText}`;

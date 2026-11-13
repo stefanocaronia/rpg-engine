@@ -244,6 +244,9 @@ describe("SYS-11: the merge of a layer, with the system's translation (D-542)", 
         ["a section the translation lacks: the translation goes", { fields: {}, body: "## Howl\n\nUlula." }, page.fields, "A long dog.\n\n## Bite\n\nTwo dice.\n\n## Howl\n\nUlula.", undefined],
         ["the introduction, in both", { fields: {}, body: "Un cane solo." }, page.fields, "Un cane solo.\n\n## Bite\n\nTwo dice.", "Un cane solo.\n\n## Bite\n\nDue dadi."],
         ["a field no layer changes, read from the system all the same", { fields: { tags: ["x"], name: "Cane" }, body: "" }, page.fields, page.body, page.translated],
+        ["a heading with no text of its own, which takes nothing away", { fields: {}, body: "## Bite\n" }, page.fields, page.body, page.translated],
+        ["a heading with no text and nothing under it, which is no section", { fields: {}, body: "## Howl\n" }, page.fields, page.body, page.translated],
+        ["a section written under one the page has, added inside it a level below", { fields: {}, body: "# Bite\n\n## Lock\n\nIt holds." }, page.fields, "A long dog.\n\n## Bite\n\nTwo dice.\n\n### Lock\n\nIt holds.", undefined],
     ])("%s", (_, layer, fields, body, translated) => {
         const merged = layeredPage(page, layer, "layers/fake/world/creatures/Bog Hound.md");
         expect(merged.fields).toEqual(fields);
@@ -251,6 +254,71 @@ describe("SYS-11: the merge of a layer, with the system's translation (D-542)", 
         expect(merged.translated).toBe(translated);
         expect(merged).toMatchObject({ name: "Bog Hound", system: "fake", title: "Cane di palude" });
         expect(systemOriginal(merged)).toBe(page);
+    });
+});
+
+describe("SYS-11: a layer's section with sections under it", () => {
+    const stalkerLayer = "layers/fake/world/creatures/Reed Stalker.md";
+    const traits = "## Traits\n\n### Nimble Escape\n\nIt slips away after it strikes.";
+    const actions = "## Actions\n\nIt strikes once.\n\n### Knife\n\nOne die and two.";
+
+    // The fake system with a creature whose sections hold others, as a game's creatures do.
+    beforeEach(() => {
+        const systems = makeTempFolder();
+        cpSync(join(import.meta.dirname, "systems", "fake"), join(systems, "fake"), { recursive: true });
+        writeFileSync(join(systems, "fake", "world", "creatures", "Reed Stalker.md"), `---\ngrit: 5/5\n---\n\nA thin hunter of the reeds.\n\n${traits}\n\n${actions}\n`);
+        context = { ...context, systemFolders: [systems, ...context.systemFolders] };
+    });
+
+    it("adds a section written under one the page has inside that one, where the system's sections stay, and names it alone", async () => {
+        expect(await ok("write", "Reed Stalker#Traits", "--layer", "--text", "### Pack\n\nIt fights better beside another.")).toContain('wrote "Traits"');
+        expect(layerText(stalkerLayer)).toBe("## Traits\n\n### Pack\n\nIt fights better beside another.\n");
+        const shown = await ok("show", "Reed Stalker");
+        expect(shown).toContain(`${traits}\n\n### Pack\n\nIt fights better beside another.\n\n${actions}`);
+        expect(shown).toContain(`with its layer ${stalkerLayer}: the section Pack. write`);
+        // Written again it would be there twice; the heading it lies under has no text of its own to give back.
+        expect(await refused("write", "Reed Stalker#Traits", "--layer", "--text", "### Pack\n\nIt fights better beside two.")).toBe(
+            `The campaign's layer over Reed Stalker would hold "Pack" twice, and each section is written once: to change it, write Reed Stalker#Pack with layer; for a new one, pick another name. Nothing changed.`,
+        );
+        expect(await refused("write", "Reed Stalker#Traits", "--layer", "--text", "")).toBe(
+            `The campaign's layer over Reed Stalker has no "Traits" of its own to remove: what the layer writes under it, Pack, goes by its own name. Nothing changed.`,
+        );
+        await ok("write", "Reed Stalker#Pack", "--layer", "--text", "It fights better beside two.");
+        expect(await ok("show", "Reed Stalker#Pack")).toContain("It fights better beside two.");
+        // Emptied, it leaves no heading behind: the layer is gone, and the page says no change.
+        expect(await ok("write", "Reed Stalker#Pack", "--layer", "--text", "")).toContain("The campaign's layer over Reed Stalker is empty now, and its file is gone");
+        expect(layerText(stalkerLayer)).toBeUndefined();
+        expect(await ok("show", "Reed Stalker")).not.toContain("The campaign changes it");
+    });
+
+    it("keeps of a section written back whole only what differs from the system's, each section by its name", async () => {
+        await ok("write", "Reed Stalker#Traits", "--layer", "--text", "### Nimble Escape\n\nIt slips away after it strikes.\n\n### Pack\n\nIt fights better beside another.");
+        expect(layerText(stalkerLayer)).toBe("## Traits\n\n### Pack\n\nIt fights better beside another.\n");
+        await ok("write", "Reed Stalker#Actions", "--layer", "--text", "It strikes twice.\n\n### Knife\n\nTwo dice.\n\n### Claw\n\nOne die.");
+        const shown = await ok("show", "Reed Stalker");
+        expect(shown).toContain("## Actions\n\nIt strikes twice.\n\n### Knife\n\nTwo dice.\n\n### Claw\n\nOne die.");
+        expect(shown).toContain("the sections Pack, Actions, Knife, Claw");
+        expect(shown).not.toContain("One die and two.");
+        // Its own text given back, what the layer writes under it stays.
+        expect(await ok("write", "Reed Stalker#Actions", "--layer", "--text", "")).toContain('removed "Actions"');
+        expect(await ok("show", "Reed Stalker")).toContain("## Actions\n\nIt strikes once.\n\n### Knife\n\nTwo dice.\n\n### Claw\n\nOne die.");
+        expect(await ok("validate")).toBe("No problems.");
+    });
+
+    it("adds a section the page lacks with the sections written under it, and takes it away with the last of them", async () => {
+        await ok("write", "Reed Stalker#Lair", "--layer", "--text", "### Traps\n\nPits under the reeds.");
+        const shown = await ok("show", "Reed Stalker");
+        expect(shown).toContain(`${actions}\n\n## Lair\n\n### Traps\n\nPits under the reeds.`);
+        expect(shown).toContain("the section Traps. write");
+        await ok("write", "Reed Stalker#Traps", "--layer", "--text", "");
+        expect(layerText(stalkerLayer)).toBeUndefined();
+    });
+
+    it("reads a heading written by hand with no text as no change: the system's text under that name stays", async () => {
+        handWrite(stalkerLayer, "## Actions\n\n## Traits\n");
+        const shown = await ok("show", "Reed Stalker");
+        expect(shown).toContain(`${traits}\n\n${actions}`);
+        expect(shown).toContain(`with its layer ${stalkerLayer}: nothing yet. write`);
     });
 });
 
@@ -320,7 +388,7 @@ describe("SYS-11: validate, the rules' version, saves and exports", () => {
         makeSave(folder, context, undefined, "session zero");
         await ok("write", "Bog Hound", "--layer", "--set", "grit=14/14");
         const output = await ok("package", "export");
-        expect(output).toContain("and the campaign's layers over the game system as they are now (Bog Hound)");
+        expect(output).toContain("1 pages, from the save 1 - save. It carries the campaign's layers over pages of the game system, as they are now: Bog Hound (creature).");
         const read = readAdventureZip(readFileSync(join(folder, "exports", "Guadoscuro.adventure.zip")), "Guadoscuro.adventure.zip");
         expect(new TextDecoder().decode(read.layers["world/creatures/Bog Hound.md"])).toBe("---\ngrit: 14/14\n---\n");
     });

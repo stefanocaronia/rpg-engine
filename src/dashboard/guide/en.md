@@ -238,7 +238,7 @@ Your own manuals can be your library: tell the master where they are, *[My manua
 
 Ask the master: *[House rule: a natural 1 on an attack means you drop your weapon.]* It keeps it as an agreement of the table, or writes a page or a number of the sheet when one is needed. House rules already written out can go as text files in the campaign's `rules` folder.
 
-When the master changes a page of the game system for your campaign, as a creature's hit points or a spell's range, the dashboard marks it with a small pencil wherever it shows. Packages › Installed lists what changed, under the game system, beside what the system gave; there you can put a page back as the system writes it.
+When the master changes a page of the game system for your campaign, as a creature's hit points or a spell's range, the dashboard marks it with a small asterisk after its name wherever it shows. Packages › Installed lists what changed, under the game system, beside what the system gave; a creature your character does not know is there by its name alone. There you can put a page back as the system writes it, once the scene being played is over; the dashboard cannot undo it, only the master can write the change again.
 
 ### 5.4 Adding or importing your own game system
 

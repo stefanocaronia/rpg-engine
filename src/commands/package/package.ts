@@ -203,17 +203,16 @@ export function adventureText(result: AdventureInstalled): string
 /** What the master hears of an adventure's layers (ADV-8): the pages of the game system they change, with their type, and those left out, with why. */
 function layersText(layers: LayersInstalled): string[]
 {
+    // With the values, so that the master can write any of them into the campaign's own layer.
     const kept = layers.kept.map((one) => {
         const sections = one.sections.length === 0 ? [] : [`the section${one.sections.length === 1 ? "" : "s"} ${one.sections.join(", ")}`];
-        return `${one.page} (${[...one.fields, ...sections, ...(one.introduction ? ["the introduction"] : [])].join(", ")})`;
+        const gave = [...Object.entries(one.fields).map(([field, value]) => `${field} ${value}`), ...sections, ...(one.introduction ? ["the introduction"] : [])];
+        return `The campaign's own layer over ${one.page} stays: the adventure's is left out (it gave ${gave.join(", ")}).`;
     });
     return [
         layers.changed.length === 0 ? "" : `Its layers change pages of the game system for the whole campaign: ${typedPages(layers.changed)}; show says what each changes.`,
-        kept.length === 0
-            ? ""
-            : `The campaign has its own layer over ${layers.kept.map((one) => one.page).join(", ")}, which stays as it is: the adventure's is left out, and would have given ${kept.join("; ")}. `
-                + "To take any of it, write the page with layer.",
-        layers.stray.length === 0 ? "" : `Left out, layers over no page of the game system in the rules the campaign plays: ${layers.stray.join(", ")}.`,
+        ...kept,
+        layers.stray.length === 0 ? "" : `Left out, as the rules the campaign plays have no such page: ${layers.stray.join(", ")}.`,
     ];
 }
 
@@ -319,10 +318,10 @@ function exportText(result: AdventureExported): string
         layersOut("forbidden", "the layers that write what a layer cannot change, which validate names with the fields to take out"),
         layersOut("unread", "the layers that do not read, which validate names with what to fix"),
     ].filter((part) => part !== "");
-    const layers = result.layers.length === 0 ? "" : `, and the campaign's layers over the game system as they are now (${result.layers.join(", ")})`;
     const kinds = result.layers.length === 0 ? "pages" : "pages or layers";
     return [
-        `Wrote ${result.file}: ${result.pages} pages, from ${result.from}${layers}${out.length === 0 ? "" : `, without ${out.join(" and ")}`}.`,
+        `Wrote ${result.file}: ${result.pages} pages, from ${result.from}${out.length === 0 ? "" : `, without ${out.join(" and ")}`}.`,
+        result.layers.length === 0 ? "" : `It carries the campaign's layers over pages of the game system, as they are now: ${typedPages(result.layers)}.`,
         result.opening === undefined
             ? "It has no opening page: one tagged opening, with the situation, the hooks, what happens if no one steps in and the pages to read first, and its start, makes it ready."
             : `Its opening is [[${result.opening}]].`,
@@ -330,5 +329,5 @@ function exportText(result: AdventureExported): string
             ? "The player shares it as a file, and only what they have the right to share."
             : `${result.sourced.length} of its ${kinds} come from the player's own documents (source:): ${result.sourced.slice(0, 5).join(", ")}${result.sourced.length > 5 ? "…" : ""}. `
                 + "So it says personal use only. Ask the player whether they may share it: only with the document's own license, or their rights to it; if so, export again with that license.",
-    ].join(" ");
+    ].filter((line) => line !== "").join(" ");
 }

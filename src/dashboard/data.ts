@@ -62,7 +62,7 @@ export interface SheetGroup
  * A page of the game system the campaign changed with a layer, as the page lists it: the fields it changes, each as the system gives it, none for one the
  * layer adds, and as the campaign has it; the sections it writes, by name, never a secret; and whether it writes the introduction. One the player may not
  * read, as a creature the character does not know, has its name and title alone: no type, no fields, no sections. The values are the engine's text, as a
- * sheet's value. Taken off with POST /api/layer, { page: name }: 202, or an error with a code, no-layer, copies-in-scene or scene-open, and the page's name in its values.
+ * sheet's value. Taken off with POST /api/layer, { page: name }: 202, or an error with a code, no-layer or, while a scene is played, scene-open, and the page's name in its values.
  */
 export interface ShownLayer
 {

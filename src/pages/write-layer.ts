@@ -4,8 +4,8 @@ import { files } from "../core/store.ts";
 import { comparableText, sameName, valueNamed } from "../core/text.ts";
 import { changedFields, changeFields, joinPageFile, readFields, splitPageFile } from "./file.ts";
 import { isNeverInherited } from "./inheritance.ts";
-import { layersFolderName, layerTakes, systemOriginal } from "./layers.ts";
-import { introductionText, partContent, writeText } from "./markdown.ts";
+import { layerParts, layersFolderName, layerTakes, systemOriginal } from "./layers.ts";
+import { introductionText, partContent, readSection, repeatedNames, sectionTitles, writeText } from "./markdown.ts";
 import { systemLabel } from "./system-pages.ts";
 import type { Page, World } from "./world.ts";
 import type { PageChange } from "./write-page.ts";
@@ -41,7 +41,8 @@ export function writeLayer(world: World, page: Page, change: PageChange): LayerW
     const held = readFields(file.frontmatter, path);
     const fields = layerFields(world, page, original, held, change);
     const frontmatter = fields.set.length + fields.unsetKeys.length === 0 ? file.frontmatter : changeFields(file.frontmatter, { set: fields.values, unset: fields.unsetKeys }, path);
-    const body = change.text === undefined ? file.body : layerText(page, original, file.body, change as PageChange & { text: string; });
+    const body = change.text === undefined ? file.body : withoutIdleSections(layerText(page, original, file.body, change as PageChange & { text: string; }), original.body);
+    checkNamedOnce(page, file.body, body);
     const empty = (frontmatter ?? "").trim() === "" && body.trim() === "";
     const text = joinPageFile({ frontmatter, body });
     const changed = empty ? before !== undefined : text !== (before === undefined ? undefined : joinPageFile(file));
@@ -154,15 +155,64 @@ function layerText(page: Page, original: Page, body: string, change: PageChange 
 
     if (content === "" || content === systemText) {
         if (own === undefined || own === "") {
-            const remedy = content === "" && systemText !== undefined && systemText !== "" ? `: the system's text cannot be removed, only written over with another` : "";
+            const under = section === undefined ? [] : layerParts(body).filter((part) => part.content !== "" && comparableText(part.under ?? "") === comparableText(section)).map((part) => part.name);
+            const remedy = content !== ""
+                ? ""
+                : under.length > 0
+                ? `: what the layer writes under it, ${under.join(", ")}, goes by its own name`
+                : systemText !== undefined && systemText !== ""
+                ? `: the system's text cannot be removed, only written over with another`
+                : "";
             throw new Error(content === "" ? `The campaign's layer over ${page.name} has no ${where} of its own to remove${remedy}. Nothing changed.` : `${where} of ${page.name} already reads like that. Nothing changed.`);
         }
 
-        return section === undefined ? writeText(body, "", { mode: "replace" }) : writeText(body, "", { section, mode: "remove" });
+        // A section loses its own text alone: what the layer writes under it stays, and a heading left with nothing goes with the idle ones.
+        return section === undefined ? writeText(body, "", { mode: "replace" }) : writeText(body, "", { section, mode: partContent(body, section)?.secret === true ? "remove" : "replace" });
     }
 
     const secret = change.secret === true || (typeof system === "object" && system.secret);
     return writeText(body, content, { mode: "replace", ...(section === undefined ? {} : { section, secret: own === undefined && secret }) });
+}
+
+/** Refuses a text that gives the layer a section or secret it already holds, as a heading of one written before: Page#Name finds one place. */
+function checkNamedOnce(page: Page, before: string, after: string): void
+{
+    const already = repeatedNames(before).map(comparableText);
+    const [repeated] = repeatedNames(after).filter((name) => !already.includes(comparableText(name)));
+
+    if (repeated !== undefined) {
+        throw new Error(
+            `The campaign's layer over ${page.name} would hold "${repeated}" twice, and each section is written once: to change it, write ${page.name}#${repeated} with layer; for a new one, pick another name. Nothing changed.`,
+        );
+    }
+}
+
+/**
+ * A layer's text without the sections that give nothing (SYS-11): the text of one that says what the system's says comes out, and a heading left with no text,
+ * no section under it and no secret goes, from the last, so that the one it was written under goes with it.
+ */
+function withoutIdleSections(body: string, system: string): string
+{
+    let text = body;
+
+    for (const name of [...sectionTitles(body)].reverse()) {
+        const own = partContent(text, name);
+
+        if (own === undefined || own.secret) {
+            continue;
+        }
+
+        if (own.content !== "" && own.content === partContent(system, name)?.content) {
+            text = writeText(text, "", { section: name, mode: "replace" });
+        }
+
+        // Its heading alone: no text, no section under it, no secret.
+        if (readSection(text, name)?.includes("\n") === false) {
+            text = writeText(text, "", { section: name, mode: "remove" });
+        }
+    }
+
+    return text;
 }
 
 function pick(lists: Record<string, unknown[]> | undefined, field: string): Record<string, unknown[]> | undefined

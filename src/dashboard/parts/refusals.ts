@@ -72,8 +72,7 @@ const phrases: Record<string, (values: Values) => string> = {
     "engine-elsewhere": (values) => t("This RPG Engine runs from {name}: update it the way it was installed.", values),
     "engine-failed": (values) => t("npm could not update RPG Engine: {why}", values),
     "no-layer": (values) => t("{page} is no longer changed in this campaign: there is nothing to put back.", values),
-    "copies-in-scene": (values) => t("{page} is in the scene being played: put it back once the scene is over.", values),
-    "scene-open": () => t("It can be restored once the scene being played is over."),
+    "scene-open": () => t("It can be put back once the scene being played is over."),
     "file-big": (values) => t("The file is more than {size} MB: no package is that big.", values),
     "file-kind": (values) => t("{name} is neither a .zip nor a .tgz.", values),
 };

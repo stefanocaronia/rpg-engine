@@ -109,7 +109,7 @@ Read-only: no. Positional parameters: `page`.
 - `secret` (`boolean`, optional): with a section: create it, if missing, as a secret block > [!secret] Name
 - `here` (`boolean`, optional): a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it
 - `layer` (`boolean`, optional): change a page of the game system for the whole campaign, in a layer that holds only what differs; unset or empty text gives back the system's
-- `reset` (`boolean`, optional): with layer, alone: take the whole layer off the page, which reads as the system writes it again
+- `reset` (`boolean`, optional): with layer, alone: take the whole layer off the page
 - `why` (`string`, optional): what the change is for, kept in the master's log
 
 ### rename

@@ -1,7 +1,8 @@
 // The importer (D-483 (10), D-484, D-489): the player's document read by a helper outside the chat piece after piece, the starts proposed, the world set at the
 // one chosen, the pictures its pages show and the license the document gives kept, and an adventure that package install takes.
-import { existsSync, mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { zipSync } from "fflate";
+import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { runCommandLine } from "../src/cli/command-line.ts";
@@ -212,6 +213,40 @@ describe("import of the player's document (D-489)", () => {
         const scan = join(makeTempFolder(), "scan.pdf");
         writeFileSync(scan, tinyPdf([{ text: "" }]));
         expect((await rpg("import", scan)).output).toContain("scan.pdf has no text the engine can read: a scan is pictures of pages");
+    });
+
+    it("refuses an adventure made already, a folder or a .zip with adventure.yaml, and says to install it; no helper starts", async () => {
+        const reader = fakeReader();
+        context.reader = reader;
+        const made = join(makeTempFolder(), "Il pozzo");
+        const top = "title: Il pozzo\nabout: A well in the fens.\nlanguage: it\nversion: 1.0.0\n";
+        mkdirSync(join(made, "world", "places"), { recursive: true });
+        writeFileSync(join(made, "adventure.yaml"), top);
+        writeFileSync(join(made, "world", "places", "Pozzo.md"), "A well.\n");
+        const zipped = join(makeTempFolder(), "pozzo.zip");
+        const page = new TextEncoder().encode("A well.\n");
+        writeFileSync(zipped, zipSync({ "adventure.yaml": new TextEncoder().encode(top), "world/places/Pozzo.md": page }));
+        // One with a mistake in it is an adventure still: package install says what to fix.
+        const wrong = join(makeTempFolder(), "wrong.zip");
+        writeFileSync(wrong, zipSync({ "adventure.yaml": new TextEncoder().encode("title: [\n"), "world/places/Pozzo.md": page }));
+
+        for (const given of [made, zipped, wrong]) {
+            const result = await rpg("import", given);
+            expect(result.exitCode, result.output).toBe(1);
+            expect(result.output).toBe(`${basename(given)} is an adventure already, not a document to read: install it with package, action install, name ${given}. Nothing changed.`);
+        }
+
+        expect(reader.briefs).toEqual([]);
+        expect(existsSync(join(folder, ".imports"))).toBe(false);
+        expect((await rpg("package", "install", zipped)).output).toContain("Installed the adventure Il pozzo 1.0.0");
+
+        // Any other .zip is no document, and a folder of notes without adventure.yaml is read as before.
+        const other = join(makeTempFolder(), "notes.zip");
+        writeFileSync(other, zipSync({ "notes.md": page }));
+        expect((await rpg("import", other)).output).toContain("notes.zip is no document the engine reads");
+        rmSync(join(made, "adventure.yaml"));
+        expect((await rpg("import", made)).exitCode).toBe(0);
+        expect(reader.briefs.length).toBeGreaterThan(0);
     });
 });
 

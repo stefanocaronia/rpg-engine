@@ -104,7 +104,7 @@
         translate: 0 0 !important;
     }
 
-    /* The pencil of a changed page stands in narrow cards: its tooltip in lines, never wider than its card. */
+    /* The asterisk of a changed page stands in narrow cards: its tooltip in lines, never wider than its card. */
     .changed-mark[data-tip]::before {
         width: max-content !important;
         max-width: 200px !important;

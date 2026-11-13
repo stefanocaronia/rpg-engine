@@ -119,7 +119,7 @@ export const write = defineCommand({
         secret: z.boolean().optional().describe("with a section: create it, if missing, as a secret block > [!secret] Name"),
         here: z.boolean().optional().describe("a new place where the journey stopped: on a road it becomes a stop there, in the open it takes the point; those who travel go into it"),
         layer: z.boolean().optional().describe("change a page of the game system for the whole campaign, in a layer that holds only what differs; unset or empty text gives back the system's"),
-        reset: z.boolean().optional().describe("with layer, alone: take the whole layer off the page, which reads as the system writes it again"),
+        reset: z.boolean().optional().describe("with layer, alone: take the whole layer off the page"),
         why: z.string().optional().describe("what the change is for, kept in the master's log"),
     }),
 

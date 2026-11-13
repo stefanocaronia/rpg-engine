@@ -1,4 +1,4 @@
-// A page of the game system that the campaign changed (D-564), wherever the page shows one: a small pencil after its name, its words in its tooltip and for a
+// A page of the game system that the campaign changed (D-564), wherever the page shows one: a small asterisk after its name, as a note's in a book, its words in its tooltip and for a
 // screen reader; in the head of a page read whole, the words too, which lead to what changed, listed in Packages under the game system.
 import { sectionAddress } from "../address.ts";
 import type { ShownLayer } from "../data.ts";
@@ -29,34 +29,34 @@ export function isChanged(name: string): boolean
     return changed.has(foldedText(name.trim()));
 }
 
-/** The pencil after a name: no control, its words for a screen reader and in its tooltip. */
+/** The asterisk after a name: no control, its words for a screen reader and in its tooltip. */
 export function ChangedMark()
 {
     return (
         <span class="changed-mark" role="img" aria-label={t("Changed in this campaign")} data-tip={t("Changed in this campaign: Packages lists what changed")}>
-            <Pencil />
+            <Asterisk />
         </span>
     );
 }
 
-/** In the head of a page read whole: the pencil and its words, a link to what changed while the page lists it, else words. */
+/** In the head of a page read whole: the asterisk and its words, as the note it stands for, a link to what changed while the page lists it, else words. */
 export function ChangedLine()
 {
     const words = (
         <>
-            <Pencil />
+            <Asterisk />
             {t("Changed in this campaign")}
         </>
     );
     return <p class="changed-line">{listed ? <a href={sectionAddress("packages", "installed", changedItem)}>{words}</a> : <span>{words}</span>}</p>;
 }
 
-/** A pencil, filled, as the marks of 12 px are: its body and tip, and its end apart. */
-function Pencil()
+/** An asterisk of six arms, never five, which at 12 px read as a favourite's star: it says there is a note, never that something can be edited. */
+function Asterisk()
 {
     return (
         <svg class="changed-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3.5 20.5l1.2-5.2L14.6 5.4l4 4L8.7 19.3Z M16.2 3.8l1-1a1.4 1.4 0 0 1 2 0l2 2a1.4 1.4 0 0 1 0 2l-1 1Z" />
+            <path d="M12 2.4v19.2M3.7 7.2l16.6 9.6M3.7 16.8l16.6-9.6" />
         </svg>
     );
 }

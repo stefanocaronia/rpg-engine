@@ -1,10 +1,12 @@
 import { basename, extname, join, relative, resolve, sep } from "node:path";
 import { z } from "zod";
-import { adventureFolderName } from "../../adventures/index.ts";
+import { adventureFolderName, isAdventureFolder, readAdventureZip } from "../../adventures/index.ts";
 import { changeSetting, readSettings, requireCampaign, storyWays } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { appendLogEntry } from "../../core/log.ts";
+import { Refusal } from "../../core/refusal.ts";
 import { defineCommand } from "../../core/registry.ts";
+import { files } from "../../core/store.ts";
 import { documentAt, readDocument } from "../../documents/index.ts";
 import { stopProcess } from "../../helpers/index.ts";
 import {
@@ -282,6 +284,10 @@ async function startImport(root: string, context: Context, document: string, tit
         throw new Error(`There is no ${document}: give the full path of the player's document. Nothing changed.`);
     }
 
+    if (isAdventure(document, found)) {
+        throw new Error(`${basename(document)} is an adventure already, not a document to read: install it with package, action install, name ${document}. Nothing changed.`);
+    }
+
     const name = title === undefined || title === "" ? basename(document, found === "folder" ? "" : extname(document)) : title;
     const folder = importFolder(root, adventureFolderName(name));
 
@@ -340,6 +346,26 @@ async function startImport(root: string, context: Context, document: string, tit
     }
 
     return { ...resultOf(root, folder, readImportState(folder) ?? state), pictures: text.pictures.length, ...recognized, helper: program };
+}
+
+/** Whether what was given as a document is an adventure made already: a folder with adventure.yaml, or a .zip that holds one, which package install reads and checks. */
+function isAdventure(path: string, found: "file" | "folder"): boolean
+{
+    if (found === "folder") {
+        return isAdventureFolder(path);
+    }
+
+    if (!/\.zip$/i.test(path)) {
+        return false;
+    }
+
+    try {
+        readAdventureZip(files().bytes(path) ?? new Uint8Array(), basename(path));
+        return true;
+    } catch (error) {
+        // Any other .zip is no document either, and is told so as one; an adventure with a mistake in it is still one.
+        return !(error instanceof Refusal && ["not-adventure", "archive-unread"].includes(error.code));
+    }
 }
 
 /** The next piece for the master to read in the chat, with the importer's instructions once in a chat; the last one ends the import. */

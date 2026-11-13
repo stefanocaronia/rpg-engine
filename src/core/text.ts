@@ -70,6 +70,12 @@ export function valueNamed(record: Record<string, unknown>, name: string): unkno
     return key === undefined ? undefined : record[key];
 }
 
+/** A field's value as the outputs show it in a line: a list as its items, anything else as written. */
+export function valueText(value: unknown): string
+{
+    return Array.isArray(value) ? value.map(String).join(", ") : typeof value === "object" && value !== null ? JSON.stringify(value) : String(value);
+}
+
 /** The page a link's target names: [[folder/Page.md]], and [[Page\|label]] as written in tables, name Page. */
 export function linkTargetName(target: string): string
 {

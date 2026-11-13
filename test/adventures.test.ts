@@ -314,7 +314,7 @@ describe("the layers an adventure carries over its game system (ADV-8, SYS-11)",
         const written = layerNow(houndLayer);
         makeSave(folder, context, undefined, "session zero");
         const result = await rpg("package", "export");
-        expect(result.output).toContain("1 pages, from the save 1 - save, and the campaign's layers over the game system as they are now (Bog Hound).");
+        expect(result.output).toContain("1 pages, from the save 1 - save. It carries the campaign's layers over pages of the game system, as they are now: Bog Hound (creature).");
         const file = join(folder, "exports", "Prova.adventure.zip");
         const first = readFileSync(file);
         expect(Object.keys(exported().layers)).toEqual(["world/creatures/Bog Hound.md"]);
@@ -356,7 +356,7 @@ describe("the layers an adventure carries over its game system (ADV-8, SYS-11)",
         mkdirSync(join(setup.root, layersFolder), { recursive: true });
         writeFileSync(join(setup.root, houndLayer), bigHound);
         const result = await setup.run("package", "export");
-        expect(result.output).toContain("from the world as it is, before play, and the campaign's layers over the game system as they are now (Bog Hound)");
+        expect(result.output).toContain("from the world as it is, before play. It carries the campaign's layers over pages of the game system, as they are now: Bog Hound (creature).");
         expect(Object.keys(readAdventureZip(readFileSync(join(setup.root, "exports", "Altrove.adventure.zip")), "a.zip").layers)).toEqual(["world/creatures/Bog Hound.md"]);
     });
 
@@ -367,14 +367,16 @@ describe("the layers an adventure carries over its game system (ADV-8, SYS-11)",
         await rpg("write", "Bog Hound", "--layer", "--set", "grit=12/12");
         expect((await rpg("package", "install", adventureFolder(withLayers({ [witchLayer]: oldWitch })))).exitCode).toBe(0);
         const result = await rpg("package", "export");
-        expect(result.output).toContain("as they are now (Bog Hound), without the layers an installed adventure brought, not changed since (Fen Witch)");
+        expect(result.output).toContain(", without the layers an installed adventure brought, not changed since (Fen Witch)");
+        expect(result.output).toContain("It carries the campaign's layers over pages of the game system, as they are now: Bog Hound (creature).");
         expect(result.output).toContain("the layers over no page of the game system, which validate names (Nessuno)");
         expect(result.output).toContain("the layers that write what a layer cannot change, which validate names with the fields to take out (Hardtack)");
         expect(Object.keys(exported().layers)).toEqual(["world/creatures/Bog Hound.md"]);
 
         await rpg("write", "Fen Witch", "--layer", "--set", "guard=8");
-        expect((await rpg("package", "export")).output).toContain("as they are now (Bog Hound, Fen Witch), without");
-        expect(Object.keys(exported().layers)).toEqual(["world/creatures/Bog Hound.md", "world/creatures/Fen Witch.md"]);
+        await rpg("write", "Rushlight", "--layer", "--set", "heft=0.2 kg");
+        expect((await rpg("package", "export")).output).toContain("It carries the campaign's layers over pages of the game system, as they are now: Bog Hound (creature), Fen Witch (creature), Rushlight (item).");
+        expect(Object.keys(exported().layers)).toEqual(["world/creatures/Bog Hound.md", "world/creatures/Fen Witch.md", "world/items/Rushlight.md"]);
     });
 
     it("counts a layer with a source among what comes from the player's documents", async () => {
@@ -384,7 +386,7 @@ describe("the layers an adventure carries over its game system (ADV-8, SYS-11)",
         expect(exported().manifest.license).toBe("personal use only");
     });
 
-    it("keeps the campaign's own layer over a page byte for byte, names what the adventure's would have given, and installs the rest; goblin.md is Goblin.md", async () => {
+    it("keeps the campaign's own layer over a page byte for byte, says what the adventure's gave with its values, names the page a layer has none under, and installs the rest; goblin.md is Goblin.md", async () => {
         handWrite(witchLayer, "---\ngrit: 10/10\n---\n");
         const result = await rpg("package", "install", adventureFolder(withLayers({ [`${layersFolder}/fen witch.md`]: oldWitch, [houndLayer]: bigHound, [`${layersFolder}/Nessuno.md`]: bigHound })));
         expect(result.exitCode, result.output).toBe(0);
@@ -392,9 +394,9 @@ describe("the layers an adventure carries over its game system (ADV-8, SYS-11)",
         expect(readdirSync(join(folder, layersFolder)).sort()).toEqual(["Bog Hound.md", "Fen Witch.md"]);
         expect(result.output).toContain("Its layers change pages of the game system for the whole campaign: Bog Hound (creature); show says what each changes.");
         expect(result.output).toContain(
-            "The campaign has its own layer over Fen Witch, which stays as it is: the adventure's is left out, and would have given Fen Witch (grit, guard, the section Curse, the introduction). To take any of it, write the page with layer.",
+            "The campaign's own layer over Fen Witch stays: the adventure's is left out (it gave grit 12/12, guard 9, the section Curse, the introduction).",
         );
-        expect(result.output).toContain(`Left out, layers over no page of the game system in the rules the campaign plays: ${layersFolder}/Nessuno.md.`);
+        expect(result.output).toContain("Left out, as the rules the campaign plays have no such page: Nessuno.");
         expect(Object.keys((readLogFile(folder).at(-1)?.data as { layers: Record<string, string>; }).layers)).toEqual([houndLayer]);
         // Taken out, it leaves the campaign's own where it is.
         expect((await rpg("package", "remove", "Il pozzo")).output).toBe("Il pozzo is out of the campaign, with the files it wrote. Its layers are off Bog Hound (creature): each reads as the game system writes it again.");

@@ -15,7 +15,6 @@ import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "
 import { campaignMode } from "../../commands/shared/campaign/mode.ts";
 import { exportsFolderName, resetPoints } from "../../commands/shared/campaign/saves.ts";
 import { campaignSystem, campaignWorld } from "../../commands/shared/campaign/world.ts";
-import { knowsPage, playerKnowledge } from "../../commands/shared/characters/knowledge.ts";
 import { catalog } from "../../commands/shared/packages/catalog.ts";
 import { packageCommands } from "../../commands/shared/packages/code.ts";
 import { readOpenScene } from "../../commands/shared/scene/scene.ts";
@@ -216,8 +215,9 @@ export async function changeSaves(request: IncomingMessage, response: ServerResp
 
 /**
  * A layer of the campaign the player takes off a page of the game system on the page (SYS-11), as write does with layer and reset, with the player as who did it;
- * the master hears of it at their next call. Off any page the view lists, one the player may not read too (D-565); any other name gets one answer. One the
- * player may not read waits while any scene is open, whoever is in it: a refusal for its copies would tell what the scene holds (D-254).
+ * the master hears of it at their next call. Off any page the view lists, one the player may not read too (D-565); any other name gets one answer. Every
+ * page waits while a scene is open, whoever is in it: what derives from the page would change in the middle of it, and a refusal for its copies alone would
+ * tell what the scene holds (D-254).
  */
 export async function takeLayerOff(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
@@ -239,11 +239,10 @@ export async function takeLayerOff(request: IncomingMessage, response: ServerRes
                 throw new Refusal(`The campaign changes no page of the game system named ${parsed.data.page}: reload the page.`, "no-layer", { page: parsed.data.page });
             }
 
-            const knowledge = playerKnowledge(root, world);
             const open = readOpenScene(root);
 
-            // A scene that does not read counts as open: its refusal too would say what the page is.
-            if ((knowledge === undefined || !knowsPage(knowledge, page)) && (open.scene !== undefined || open.problem !== undefined)) {
+            // A scene that does not read counts as open.
+            if (open.scene !== undefined || open.problem !== undefined) {
                 throw new Refusal(`A scene is being played: take the campaign's change off ${page.name} once it is over.`, "scene-open", { page: page.name });
             }
 
@@ -253,10 +252,7 @@ export async function takeLayerOff(request: IncomingMessage, response: ServerRes
         served.events.push(`The player, on the dashboard, took the campaign's change off ${done.page}: it reads as the system writes it again.${followers}`);
         sendJson(response, 202, {});
     } catch (error) {
-        // The engine's words for it name the copies in the scene and their numbers, the master's: the player hears only to wait.
-        const copied = error instanceof Refusal && error.code === "copies-in-scene";
-        const waits = copied || (error instanceof Refusal && error.code === "scene-open");
-        sendJson(response, waits ? 409 : 400, copied ? { ...refusalBody(error), error: `${error.values.page} is in the scene being played: take the campaign's change off it once the scene is over.` } : refusalBody(error));
+        sendJson(response, error instanceof Refusal && error.code === "scene-open" ? 409 : 400, refusalBody(error));
     }
 }
 

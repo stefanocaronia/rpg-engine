@@ -511,7 +511,7 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                             {said !== "" && <span class="visually-hidden">{said}</span>}
                         </>
                     );
-                    // The campaign changed its page of the game system (D-564): a pencil after its name, outside what acts.
+                    // The campaign changed its page of the game system (D-564): an asterisk after its name, outside what acts.
                     const changed = item.layered === true && <ChangedMark />;
                     // The name acts, when the system names a verb for it; a container's opens and closes what it holds (D-495).
                     const verbs = holds(index) ? undefined : itemVerbs(acts?.actions, item);

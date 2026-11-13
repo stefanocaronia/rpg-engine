@@ -74,8 +74,8 @@ export interface AdventureExported
     file: string;
     from: string;
     pages: number;
-    /** The pages of the game system whose layers it carries, as the campaign has them now. */
-    layers: string[];
+    /** The pages of the game system whose layers it carries, as the campaign has them now, each with its type. */
+    layers: LayeredPage[];
     /** The player characters, the adventures installed, and the campaign's layers that stay out, each with why. */
     leftOut: { characters: string[]; adventures: string[]; layers: LayerLeftOut[]; };
     opening?: string;

@@ -1218,7 +1218,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(long.body).toContain("at most 120 characters");
     });
 
-    it("takes a layer off from the page as write does with reset, as the player's, the master hearing it once; one answer for any name the view does not list, and of a scene's copies no number (SYS-11)", async () => {
+    it("takes a layer off from the page as write does with reset, as the player's, the master hearing it once; one answer for any name the view does not list, and none while a scene is open (SYS-11)", async () => {
         const overview = async () => JSON.parse((await send("GET", "/api/view")).body) as Extract<View, { kind: "overview"; }>;
         const witchLayer = join(folder, "layers", "fake", "world", "creatures", "Fen Witch.md");
         await ok("write", "Bog Hound", "--layer", "--set", "grit=12/12");
@@ -1242,13 +1242,19 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/layer", { page: "Fen Witch" })).status).toBe(400);
         expect((await send("POST", "/api/layer", { page: "Bog Hound", reset: false })).status).toBe(400);
         expect((await sendWithout("POST", "/api/layer", { page: "Bog Hound" })).status).toBe(405);
-        // The engine's words name the copies and their numbers, which are the master's (D-254). The scene opens in the session the page reads, as the master's call does.
-        expect((await runCommandLine(["scene", "open", "--title", "Canneto", "--type", "combat", "--creatures", "Bog Hound=1"], served)).exitCode).toBe(0);
-        const copied = await send("POST", "/api/layer", { page: "Bog Hound" });
-        expect(copied.status).toBe(409);
-        expect(JSON.parse(copied.body)).toEqual({ error: "Bog Hound is in the scene being played: take the campaign's change off it once the scene is over.", code: "copies-in-scene", values: { page: "Bog Hound" } });
-        expect(dashboard.news().lines).toEqual([]);
-        expect((await runCommandLine(["scene", "close", "--summary", "Fatto."], served)).exitCode).toBe(0);
+
+        // A page the player reads waits for the scene to end too, with its copies in it or without: Lupa, who derives from it, keeps her numbers in the middle of
+        // a fight, and the engine's words for the copies, with their numbers, are the master's (D-254). The scene opens in the session the page reads.
+        for (const scene of [["Al guado", "--type", "combat", "--with", "Lupa"], ["Canneto", "--type", "combat", "--creatures", "Bog Hound=1"]]) {
+            expect((await runCommandLine(["scene", "open", "--title", ...scene], served)).exitCode).toBe(0);
+            const waits = await send("POST", "/api/layer", { page: "Bog Hound" });
+            expect(waits.status).toBe(409);
+            expect(JSON.parse(waits.body)).toEqual({ error: "A scene is being played: take the campaign's change off Bog Hound once it is over.", code: "scene-open", values: { page: "Bog Hound" } });
+            expect(await ok("show", "Lupa")).toContain("grit: 12/12");
+            expect(dashboard.news().lines).toEqual([]);
+            expect((await runCommandLine(["scene", "close", "--summary", "Fatto."], served)).exitCode).toBe(0);
+        }
+
         expect((await send("POST", "/api/layer", { page: " bog hound " })).status).toBe(202);
         expect(await overview()).not.toHaveProperty("layers");
         expect(await ok("show", "Lupa")).toContain("grit: 9/9");
@@ -1264,7 +1270,7 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect((await send("POST", "/api/layer", { page: "Bog Hound" })).status).toBe(400);
     });
 
-    it("makes a creature the character does not know wait while any scene is open, with one answer whether it is in the scene or not (SYS-11, D-254)", async () => {
+    it("makes any page wait while a scene is open or does not read, a creature the character does not know with one answer whether it is in the scene or not (SYS-11, D-254)", async () => {
         const witchLayer = join(folder, "layers", "fake", "world", "creatures", "Fen Witch.md");
         await ok("write", "Fen Witch", "--layer", "--set", "grit=20/20");
         await ok("write", "Herb Pouch", "--layer", "--set", "uses=8/8");
@@ -1279,10 +1285,20 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
             expect((await runCommandLine(["scene", "close", "--summary", "Fatto."], served)).exitCode).toBe(0);
         }
 
-        // A page the player reads waits only for its own copies.
+        // A page the player reads waits the same, and a scene whose file does not read counts as open.
         expect((await runCommandLine(["scene", "open", "--title", "Alla torre", "--type", "social"], served)).exitCode).toBe(0);
-        expect((await send("POST", "/api/layer", { page: "Herb Pouch" })).status).toBe(202);
+        expect(JSON.parse((await send("POST", "/api/layer", { page: "Herb Pouch" })).body)).toMatchObject({ code: "scene-open", values: { page: "Herb Pouch" } });
         expect((await runCommandLine(["scene", "close", "--summary", "Fatto."], served)).exitCode).toBe(0);
+        const state = session.fresh(join(folder, "state.yaml")) ?? "";
+        session.write(join(folder, "state.yaml"), `${state.replace(/^scene:.*\n/m, "")}scene:\n  round: many\n`);
+        expect(await ok("validate")).toContain("The open scene in state.yaml is not valid");
+        expect(JSON.parse((await send("POST", "/api/layer", { page: "Herb Pouch" })).body)).toEqual({
+            error: "A scene is being played: take the campaign's change off Herb Pouch once it is over.",
+            code: "scene-open",
+            values: { page: "Herb Pouch" },
+        });
+        session.write(join(folder, "state.yaml"), state);
+        expect((await send("POST", "/api/layer", { page: "Herb Pouch" })).status).toBe(202);
         expect((await send("POST", "/api/layer", { page: "Fen Witch" })).status).toBe(202);
         expect(existsSync(witchLayer)).toBe(false);
     });

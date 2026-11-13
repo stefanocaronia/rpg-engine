@@ -56,13 +56,14 @@ type Asking =
 
 /**
  * The page as the game last changed (`version`), at the tab the address names and what it names in it (`item`); with the pages of the game system the
- * campaign changed, as the overview gives them (D-564), and what reads the game again once one is put back.
+ * campaign changed, as the overview gives them (D-564), whether a scene is being played, when none is put back, and what reads the game again once one is.
  */
-export function PackagesPage({ version, tab, item, layers = [], onChanged }: {
+export function PackagesPage({ version, tab, item, layers = [], sceneOpen = false, onChanged }: {
     version: number;
     tab?: string | undefined;
     item?: string | undefined;
     layers?: ShownLayer[] | undefined;
+    sceneOpen?: boolean;
     onChanged(): void;
 })
 {
@@ -369,7 +370,7 @@ export function PackagesPage({ version, tab, item, layers = [], onChanged }: {
                                                 system={system}
                                                 newer={system.package === undefined ? undefined : newerOf(system.package, "system", catalog.read)}
                                                 needs={system.package === undefined ? null : needs(entryOf(system.package, "system", catalog.read)?.newer)}
-                                                changes={system.used ? <ChangedPages layers={layers} open={item} onChanged={onChanged} /> : undefined}
+                                                changes={system.used ? <ChangedPages layers={layers} sceneOpen={sceneOpen} open={item} onChanged={onChanged} /> : undefined}
                                                 fresh={fresh.includes(`system:${system.name}`)}
                                                 state={rowState(`system:${system.name}`)}
                                                 onUpdate={(target) => void change(`system:${system.name}`, "update", target, system.name)}

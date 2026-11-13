@@ -455,7 +455,7 @@ export async function changeLibrary(action: "add" | "remove" | "forget", path: s
 }
 
 /** What putting a page of the game system back came to: done, or the page's words for why not, with the engine's code when the page knows it. */
-export type PutBackOutcome = { done: true; } | { done: false; error: string; code?: "no-layer" | "copies-in-scene" | "scene-open"; };
+export type PutBackOutcome = { done: true; } | { done: false; error: string; code?: "no-layer" | "scene-open"; };
 
 /**
  * Takes the campaign's change off a page of the game system (D-564), which then reads as the system writes it; the master hears of it by itself. A refusal
@@ -471,7 +471,7 @@ export async function putPageBack(page: string, shown: string): Promise<PutBackO
         }
 
         const body = await response.json().catch(() => ({})) as Refused;
-        const code = body.code === "no-layer" || body.code === "copies-in-scene" || body.code === "scene-open" ? body.code : undefined;
+        const code = body.code === "no-layer" || body.code === "scene-open" ? body.code : undefined;
         return { done: false, error: refusalText(code === undefined ? body : { ...body, values: { ...body.values, page: shown } }, t("It did not reach the game: try again.")), ...(code === undefined ? {} : { code }) };
     } catch {
         return { done: false, error: t("It did not reach the game: try again.") };

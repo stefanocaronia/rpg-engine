@@ -94,7 +94,6 @@ describe("the page's words (D-394)", () => {
         const other = { error: "lockpicking is installed on this computer, but it is for the game system 5e…", code: "other-system", values: { name: "lockpicking", system: "5e", plays: "free" } };
         expect(refusalText(other, "")).toBe("lockpicking è per 5e, e questa campagna gioca free: non lo usa.");
         expect(refusalText({ ...other, values: { ...other.values, plays: "" } }, "")).toBe("lockpicking è per 5e, e questa campagna non ha ancora un sistema di gioco.");
-        expect(refusalText({ error: "Wolf is in the scene being played…", code: "copies-in-scene", values: { page: "Lupo" } }, "")).toBe("Lupo è nella scena che si sta giocando: si ripristina a scena finita.");
         expect(refusalText({ error: "A scene is being played…", code: "scene-open", values: { page: "Lupo" } }, "")).toBe("Si ripristina quando la scena in corso è finita.");
         expect(refusalText({ error: "The campaign changes no page…", code: "no-layer", values: { page: "Lupo" } }, "")).toBe("Lupo non ha più modifiche in questa campagna: non c'è niente da ripristinare.");
         expect(refusalText({ error: "Il Guado cannot be installed now: its layers change…", code: "adventure-copies", values: { name: "Il Guado" } }, ""))
