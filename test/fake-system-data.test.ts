@@ -171,6 +171,13 @@ describe("thresholds (DAT-3)", () => {
 });
 
 describe("recipes (DAT-4, DAT-5)", () => {
+    it("say when the night just advanced was shorter than the rest, and when it would end (D-500)", async () => {
+        await ok("advance", "--by", "5h", "--why", "La notte");
+        expect(await ok("change", "--recipe", "night's sleep")).toContain(
+            "The last advance covered 5h (day 1, 18:00 → day 1, 23:00) of the night's sleep's 7h: if it began at day 1, 18:00, it ends at day 2, 01:00; advance the other 2h before anyone acts.",
+        );
+    });
+
     it("bring back the party where the player character is, end the effects until the rest first, and say which counters are left away from their usual value", async () => {
         await ok("write", "Ennio", "--set", "ward=4", "--set", "resolve-loss=1/5");
         await ok("change", "Ennio", "rallies", "--to", "0");

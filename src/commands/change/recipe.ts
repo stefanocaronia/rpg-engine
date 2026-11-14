@@ -17,7 +17,7 @@ import { carriedCounters, effectsAtRecipe, notBroughtBack, partyPages, recipeCho
 import { newDatedLogEntry } from "../shared/time/time.ts";
 import { counterStep } from "./amounts.ts";
 import { applyStep, holderNamed, pageHolder, stepNotes, type StepOutcome } from "./holder.ts";
-import { logRecipeApplied, tooSoonNote } from "./recipe-pace.ts";
+import { logRecipeApplied, shortRestNote, tooSoonNote } from "./recipe-pace.ts";
 
 /**
  * What a recipe did to a page: the effects it ended, the steps it wrote, what it leaves to the player or, for a companion, to the master (D-206), and the
@@ -51,7 +51,7 @@ export function recipeResult(
     context: Context,
     world: World,
     input: { page?: string; field?: string; by?: unknown; spend?: unknown; to?: unknown; why?: string; recipe: string; values?: number[]; },
-): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; lasts?: string; buttons?: boolean; physical?: boolean; spent?: string; }
+): { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; lasts?: string; short?: string; buttons?: boolean; physical?: boolean; spent?: string; }
 {
     const named = campaignSystem(root, context);
     const page = input.page?.trim() === "" ? undefined : input.page;
@@ -92,7 +92,9 @@ export function recipeResult(
     });
     // Where the dashboard serves a page, the player spends their dice there with ask (ASK-14); with physical dice, they roll their own (ASK-8).
     const physical = readSettings(root).dice === "physical";
-    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules, lasts: recipe.lasts, buttons: context.page?.spendDice !== undefined, physical };
+    // A night advanced shorter than the rest, as 6h10 for a long rest of 8h (D-500): said, not refused, since the rest may have begun earlier.
+    const short = shortRestNote(root, recipe);
+    return { recipe: recipe.name, system: system.name, outcomes, rules: recipe.rules, lasts: recipe.lasts, short, buttons: context.page?.spendDice !== undefined, physical };
 }
 
 /**
@@ -195,7 +197,7 @@ function recipePage(root: string, world: World, name: string): Page
  * "Long rest (a recipe of the system 5e):", then for each page what ended and changed, as in "Ennio: Prosciugato ended; hp 8/12 → 12/12. Not brought back:
  * hit-dice 1/3.", with the thresholds it touched; the rules for the rest; the game date, which a recipe does not move.
  */
-export function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; lasts?: string; buttons?: boolean; physical?: boolean; }): string
+export function recipeText(result: { recipe: string; system: string; outcomes: RecipeOutcome[]; rules: string[]; lasts?: string; short?: string; buttons?: boolean; physical?: boolean; }): string
 {
     const notes = result.outcomes.flatMap((outcome) => outcome.steps.flatMap(stepNotes));
     const lines = result.outcomes.flatMap((outcome) => {
@@ -215,7 +217,7 @@ export function recipeText(result: { recipe: string; system: string; outcomes: R
     // A refused rest has no hours to advance (D-500).
     const hours = result.outcomes.every((outcome) => outcome.barred)
         ? ""
-        : `The game date did not move: apply a rest once its hours${result.lasts === undefined ? "" : ` (${result.lasts})`} have passed; if they have not yet, advance them now.`;
+        : result.short ?? `The game date did not move: apply a rest once its hours${result.lasts === undefined ? "" : ` (${result.lasts})`} have passed; if they have not yet, advance them now.`;
     const text = [title, ...lines, rules, hours].filter((line) => line !== "").join("\n");
     return [text, ...notes.filter((note) => note.includes("\n"))].join("\n\n");
 }

@@ -3,7 +3,7 @@ import type { Context } from "../../core/context.ts";
 import { appendLogEntry, readLog } from "../../core/log.ts";
 import { comparableText } from "../../core/text.ts";
 import type { Recipe } from "../../systems/index.ts";
-import { addDuration, formatGameDate, minutesBetween, readDuration, readGameDate } from "../../time/index.ts";
+import { addDuration, formatDuration, formatGameDate, minutesBetween, readDuration, readGameDate } from "../../time/index.ts";
 import { newDatedLogEntry, readPresent } from "../shared/time/time.ts";
 
 const appliedType = "recipe-applied";
@@ -26,6 +26,33 @@ export function tooSoonNote(root: string, recipe: Recipe, page: string): string 
     }
 
     return `${page} had a ${recipe.name} at ${formatGameDate(then)}, and gains nothing from another before ${formatGameDate(addDuration(then, every))}: one in ${recipe.oncePer}.`;
+}
+
+/**
+ * When the last advance ended now and was shorter than the rest, as a night of 6h10 for a long rest of 8h (D-500): "The last advance covered 6h 10m (day 1,
+ * 23:50 → day 2, 06:00) …"; undefined otherwise. A watch split into advances may trip it, hence the "if".
+ */
+export function shortRestNote(root: string, recipe: Recipe): string | undefined
+{
+    const lasts = recipe.lasts === undefined ? undefined : readDuration(recipe.lasts);
+    const now = readPresent(root).date;
+    const last = readLog(root).filter((entry) => entry.type === "time-advanced").at(-1);
+    const from = last === undefined ? undefined : readGameDate(String(last.data.from));
+    const to = last === undefined ? undefined : readGameDate(String(last.data.to));
+
+    if (lasts === undefined || now === undefined || from === undefined || to === undefined || minutesBetween(to, now) !== 0) {
+        return undefined;
+    }
+
+    const covered = minutesBetween(from, to);
+
+    if (covered <= 0 || covered >= lasts) {
+        return undefined;
+    }
+
+    return `The last advance covered ${formatDuration(covered)} (${formatGameDate(from)} → ${formatGameDate(to)}) of the ${recipe.name}'s ${recipe.lasts}: if it began at ${formatGameDate(from)}, it ends at ${
+        formatGameDate(addDuration(from, lasts))
+    }; advance the other ${formatDuration(lasts - covered)} before anyone acts.`;
 }
 
 /** Writes in the log that a recipe gave a page something, when the system counts how often it may (RST-1). */
