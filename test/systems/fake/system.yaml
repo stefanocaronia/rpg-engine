@@ -9,6 +9,8 @@ theme: theme
 # Not decimal, as an innkeeper gives change (D-128): a crown is 20 shillings, a mark 160 pence and rare.
 coins: crown 240, mark 160 rare, shilling 12, penny 1
 round: 10 seconds
+# The hour dawn comes at: an advance through it names what the party carries below its maximum, and who had no night's sleep (RST-2).
+dawn: "05:30"
 length-unit: m
 load:
   field: heft

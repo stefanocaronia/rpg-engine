@@ -10,7 +10,7 @@
   "types": "./dist/index.d.ts",
   "rpg-engine": {
     "kind": "engine",
-    "api": 8
+    "api": 9
   },
   "exports": {
     ".": {

@@ -708,6 +708,8 @@ function mergedTimes(times: TimePassed[]): TimePassed | undefined
         newDayPart: times.map((time) => time.newDayPart).find((part) => part !== "") ?? "",
         // What the party used up at every midnight of every leg (UPK-1).
         upkeep: times.flatMap((time) => time.upkeep ?? []),
+        // The last dawn of the journey, as an advance through more than one says it (RST-2).
+        dawn: times.map((time) => time.dawn ?? []).findLast((lines) => lines.length > 0) ?? [],
     };
 }
 

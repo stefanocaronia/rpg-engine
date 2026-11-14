@@ -90,17 +90,18 @@ fields: {hp: counter, str: number, str-mod: modifier, bonus-saves: bonus, speed:
 
 A field not declared is free; written as a number or `current/max`, it counts as a counter.
 
-### coins, round, imperial, load, length-unit
+### coins, round, dawn, imperial, load, length-unit
 
 ```yaml
 coins: gp 100, pp 1000 rare, ep 50 rare, sp 10, cp 1
 round: 6 seconds
+dawn: "06:00"
 imperial: {mile: 1.5 km, foot: 0.3 m, pound: 0.5 kg}
 load: {field: weight, limit: ["str * 15 * table(carry-by-size, size)", str * 15], coins: 50, weightless: extradimensional, bundle: bundle}
 length-unit: ft
 ```
 
-Each coin's value in the smallest; `rare` coins are never given as change. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, a stack of a kind sold by the bundle by its pieces, how many the field `bundle` names holds, what items hold, unless an item has the field `weightless` names set to true, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules` or `simulation`, or a custom one's item load at either; formulas read them as `load` and `load-limit`. `stages` lists what a load makes a character, the heaviest last, each with `when`, the formula that says so above 0, as `[{name: Encumbered, when: "has(rigor, simulation) * ceil(load - 5 * str)"}]`: the dashboard shows the heaviest reached, in the system's words. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
+Each coin's value in the smallest; `rare` coins are never given as change. `dawn` is the hour dawn comes at: when an advance or a journey goes through it, the output names the counters below their maximum of what the party carries, for the master to bring back as their text says, and who of the party had no recipe with `once-per` and `lasts` in that time; the engine gives nothing by itself. Since API 9. Every measure is written in metric; `imperial` says what the game's mile and foot are, for campaigns in imperial units, and its pound, to show a load in kilograms. `load` sums what a character carries: each page's weight in `field`, a stack of a kind sold by the bundle by its pieces, how many the field `bundle` names holds, what items hold, unless an item has the field `weightless` names set to true, and the coins, `coins` to a unit of weight; the sheet shows it against `limit`, a formula or formulas in order, and `status` says when a character goes over it under the rigor `rules` or `simulation`, or a custom one's item load at either; formulas read them as `load` and `load-limit`. `stages` lists what a load makes a character, the heaviest last, each with `when`, the formula that says so above 0, as `[{name: Encumbered, when: "has(rigor, simulation) * ceil(load - 5 * str)"}]`: the dashboard shows the heaviest reached, in the system's words. `length-unit` is the unit of the lengths the formulas work out, as the speeds.
 
 ### travel
 

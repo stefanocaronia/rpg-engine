@@ -237,6 +237,7 @@ export function readSystem(folder: string, name: string, layers: SystemLayer[] =
         coins: data.coins,
         coinMetals: data["coin-metals"] ?? {},
         roundSeconds: data.round === undefined ? undefined : Number.parseInt(data.round, 10),
+        ...(data.dawn === undefined ? {} : { dawn: minuteOfDay(data.dawn) }),
         ...(data.imperial === undefined ? {} : { imperial: { mile: readLength(data.imperial.mile) ?? 0, foot: readLength(data.imperial.foot) ?? 0 } }),
         ...(data.imperial?.pound === undefined ? {} : { pound: Number.parseFloat(data.imperial.pound) }),
         ...(data["length-unit"] === undefined ? {} : { lengthUnit: data["length-unit"] }),
@@ -565,4 +566,11 @@ function downRule(at: string): Down
 {
     const [field, value] = at.split(" ");
     return { field, value: Number(value) };
+}
+
+/** An hour as the schema took it, as 06:00, in minutes since midnight. */
+function minuteOfDay(hour: string): number
+{
+    const [hours, minutes] = hour.split(":").map(Number);
+    return (hours ?? 0) * 60 + (minutes ?? 0);
 }

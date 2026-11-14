@@ -40,6 +40,7 @@ const playerSchema = JSON.stringify({
     properties: {
         message: { type: "string", description: "what you write to the master" },
         endSession: { type: "boolean", description: "true when you are ending the evening with this message" },
+        page: { type: "string", description: "with the dashboard open: what its images show that matters to you, disagrees with the master or confuses you, in a sentence or two; empty when nothing" },
     },
 });
 
@@ -158,7 +159,7 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
     const hard = Number(options.hard ?? max + 10);
     const lateNote = "(Organizer: it is getting late. End the evening at the next good point, in your own words.)";
     const earlyNote = "(Organizer: it is still early, and the evening goes on. Write your last message again, without ending the evening: the master has not read it.)";
-    const dashboardNote = "(Organizer: tonight the game's dashboard is open in the browser beside the chat. When the master asks you a roll or a choice there, you get its buttons here, and press one.)";
+    const dashboardNote = "(Organizer: tonight the game's dashboard is open in the browser beside the chat. When the master asks you a roll or a choice there, you get its buttons here, and press one. With the master's messages you see images of the dashboard, its parts that changed: glance at them as a player does, and say in page what matters to you, disagrees with the master or confuses you.)";
     let note = [`(Organizer: a new evening begins. You open it by writing «${options.first}»; the master's answer follows.)`, options.dashboard ? dashboardNote : ""].filter(Boolean).join("\n");
     let player = { message: options.first, endSession: false };
     const page = options.dashboard ? pagePlayer({ folder, askPlayer: async (prompt, schema) => (await askPlayer(prompt, schema)).answer, moments }) : undefined;
@@ -195,7 +196,13 @@ async function playTurns(campaign, folder, masterSession, progress, memory, mome
             const woken = said && chat ? await wokenTurn(chat, page, folder, `${count}-bell`) : undefined;
             progress.masterCost = woken?.cost ?? progress.masterCost;
             const unread = [rest, woken === undefined ? "" : notYetRead(folder, woken.text)].filter(Boolean).join("\n\n") || "(The master's message ends there.)";
-            player = await playerTurn([count === 1 ? memory : "", note, unread].filter(Boolean).join("\n\n"), true);
+            // The page as it is after the turn the page woke, if any.
+            const seen = page?.takeSeen() ?? [];
+            player = await playerTurn([count === 1 ? memory : "", note, unread].filter(Boolean).join("\n\n"), true, seen);
+
+            if (player.page?.trim()) {
+                record(folder, "Page seen", `${player.page.trim()}\n\n(${seen.map((path) => basename(path)).join(", ") || "no new image"})`);
+            }
 
             // A goodbye before the late note, as when the characters go to sleep (playtests 05b and 06), is written again once.
             if (player.endSession && count < max) {
@@ -437,10 +444,13 @@ function turnIsolationProblem(events)
     return problems.join("; ");
 }
 
-/** One player turn: the player sees only the text given here, and answers with its message and, in play, whether it ends the evening. */
-async function playerTurn(prompt, inPlay)
+/**
+ * One player turn: the player sees only the text and the dashboard's screenshots given here, and answers with its message and, in play, whether it ends the
+ * evening and what the dashboard showed.
+ */
+async function playerTurn(prompt, inPlay, images = [])
 {
-    const { answer, cost } = await askPlayer(prompt, inPlay ? playerSchema : undefined);
+    const { answer, cost } = await askPlayer(prompt, inPlay ? playerSchema : undefined, images);
     const turn = inPlay ? answer : { message: answer };
 
     if (!turn?.message) {
@@ -451,23 +461,27 @@ async function playerTurn(prompt, inPlay)
 }
 
 /**
- * A turn of the player's chat, which sees only the text given here: its answer as `schema` asks, or its text without one, and the run's cost so far. The buttons
- * on the dashboard are answered in the same chat, so that the player remembers them.
+ * A turn of the player's chat, which sees only the text and the images given here: its answer as `schema` asks, or its text without one, and the run's cost so
+ * far. The buttons on the dashboard are answered in the same chat, so that the player remembers them. Images go as a message of Claude Code's stream.
  */
-async function askPlayer(prompt, schema)
+async function askPlayer(prompt, schema, images = [])
 {
     const resume = existsSync(playerChatFile);
     const id = resume ? readFileSync(playerChatFile, "utf8").trim() : randomUUID();
     const isolation = ["--tools", "", "--setting-sources", "project,local", "--strict-mcp-config"];
-    const answerFormat = ["--output-format", "json", ...(schema === undefined ? [] : ["--json-schema", typeof schema === "string" ? schema : JSON.stringify(schema)])];
+    const stream = images.length > 0;
+    const format = stream ? ["--input-format", "stream-json", "--output-format", "stream-json", "--verbose"] : ["--output-format", "json"];
+    const answerFormat = [...format, ...(schema === undefined ? [] : ["--json-schema", typeof schema === "string" ? schema : JSON.stringify(schema)])];
     const chat = resume ? ["--resume", id] : ["--session-id", id];
     // Claude Code would keep the profile a chat began with; with no snapshot, a profile changed between sessions reaches the player.
     const profile = ["--system-prompt-file", resolve(options.profile), "--system-prompt-snapshot", "off"];
     const args = ["-p", "--model", options["player-model"], ...profile, ...isolation, ...answerFormat, ...chat];
-    const run = await claudeAsync(args, playerFolder, prompt);
+    const run = await claudeAsync(args, playerFolder, stream ? withImages(prompt, images) : prompt);
     writeFileSync(playerChatFile, id);
-    appendFileSync(join(out, "player-turns.jsonl"), run.stdout.trim() + "\n");
-    const result = parseJson(run.stdout);
+    // From a stream, its last event, the result, which has the same fields as the plain JSON answer.
+    const output = stream ? run.stdout.trim().split("\n").filter((line) => line.includes('"type":"result"')).at(-1) ?? run.stdout : run.stdout;
+    appendFileSync(join(out, "player-turns.jsonl"), output.trim() + "\n");
+    const result = parseJson(output);
     const answer = schema === undefined ? result?.result : result?.structured_output;
 
     if (!result || result.is_error || !answer) {
@@ -475,6 +489,13 @@ async function askPlayer(prompt, schema)
     }
 
     return { answer, cost: result.total_cost_usd ?? 0 };
+}
+
+/** The player's message with the dashboard's screenshots, as one user message of Claude Code's input stream. */
+function withImages(prompt, images)
+{
+    const pictures = images.map((path) => ({ type: "image", source: { type: "base64", media_type: "image/png", data: readFileSync(path).toString("base64") } }));
+    return JSON.stringify({ type: "user", message: { role: "user", content: [{ type: "text", text: prompt }, ...pictures] } }) + "\n";
 }
 
 /**
@@ -633,6 +654,11 @@ function copySave(campaign, hostFiles)
     cpSync(join(save, "campaign-after"), campaign, { recursive: true });
 
     for (const [name, text] of Object.entries(hostFiles)) {
+        // With voices: master the campaign has no character agent (D-490).
+        if (name === characterAgent && voicedByMaster(campaign)) {
+            continue;
+        }
+
         mkdirSync(dirname(join(campaign, name)), { recursive: true });
         writeFileSync(join(campaign, name), text);
     }

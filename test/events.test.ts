@@ -97,7 +97,7 @@ describe("clocks (EVT-2)", () => {
         );
         await ok("write", "La marcia", "--set", "by=[[Varro]]");
         expect(await ok("advance", "--by", "3d")).toBe(
-            `day 2, 02:00 → day 5, 02:00.\nStill due: Il crollo (day 1, 18:00). ${one}\nNext: La marcia (clock 1/4, day 9, in 3d 22h).\n3 new days (to day 5), with clocks to move: La marcia 1/4 (Varro).\n${turn}`,
+            `day 2, 02:00 → day 5, 02:00.\nStill due: Il crollo (day 1, 18:00). ${one}\nNext: La marcia (clock 1/4, day 9, in 3d 22h).\n3 new days (to day 5), with clocks to move: La marcia 1/4 (Varro).\n${turn}\nDawn came at day 4, 05:30.\n${"No night's sleep in the last 20h: Ennio (none yet). If they slept, give it with change and the recipe night's sleep."}`,
         );
     });
 });

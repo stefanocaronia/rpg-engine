@@ -119,6 +119,29 @@ describe("the lodging in a settlement (D-449, UPK-4)", () => {
     });
 });
 
+describe("what comes back at dawn (D-571, RST-2)", () => {
+    it("names, at the dawn an advance goes through, what the party carries below its maximum and who had no night's sleep in its time, and gives nothing", async () => {
+        await ok("write", "Lanterna cieca", "--type", "item", "--set", "charges=2/5");
+        await ok("write", "Ettore", "--add", "inventory=[[Lanterna cieca]]");
+        expect(await ok("advance", "--to", "day 2, 05:00")).not.toContain("Dawn");
+        const dawn = await ok("advance", "--to", "day 2, 07:00");
+        expect(dawn).toContain(
+            "Dawn came at day 2, 05:30. Below their maximum, what the party carries: Lanterna cieca charges 2/5 (Ettore); what comes back at dawn, its text says: give it with change.",
+        );
+        expect(dawn).toContain("No night's sleep in the last 20h: Ettore (none yet). If they slept, give it with change and the recipe night's sleep.");
+        expect(page("items/Lanterna cieca.md")).toContain("charges: 2/5");
+        await ok("change", "Ettore", "--recipe", "night's sleep");
+        // The next dawn, 22 hours later, is past the 20 hours: the sleep had at day 2, 07:00 is named.
+        expect(await ok("advance", "--to", "day 3, 06:00")).toContain("Ettore (last at day 2, 07:00)");
+    });
+
+    it("says nothing at a dawn with all at their maximum and the night's sleep had", async () => {
+        await ok("advance", "--to", "day 2, 00:00");
+        await ok("change", "Ettore", "--recipe", "night's sleep");
+        expect(await ok("advance", "--to", "day 2, 08:00")).not.toContain("Dawn");
+    });
+});
+
 describe("one night's sleep in 20 hours (D-449, RST-1)", () => {
     it("gives nothing from a second one called within 20 hours of the last that gave something, its hours advanced first, and says from when (D-500)", async () => {
         await ok("write", "Ettore", "--set", "grit=3/12");

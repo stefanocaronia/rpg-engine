@@ -132,6 +132,7 @@ export const systemSchema = z.object({
     coins: z.union([z.string().min(1), z.record(z.string(), z.unknown())]).optional(),
     "coin-metals": z.record(z.string().min(1), z.string().min(1), { error: "write it as a map, each coin with its metal, such as {gp: gold, sp: silver}" }).optional(),
     round: z.string().regex(/^[1-9]\d* seconds?$/, 'write it as "6 seconds"').optional(),
+    dawn: z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d$/, 'write it as the hour, such as "06:00"').optional(),
     imperial: z.object({ mile: lengthSchema, foot: lengthSchema, pound: z.string().regex(/^\d+(\.\d+)? kg$/, { error: "write it in kilograms, such as 0.5 kg" }).optional() }).strict().optional(),
     "length-unit": z.string().min(1).optional(),
     "bonus-lists": z.array(z.string().min(1)).optional(),

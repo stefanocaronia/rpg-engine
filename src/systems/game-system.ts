@@ -249,6 +249,8 @@ export interface GameSystem
     coinMetals: Record<string, string>;
     /** How long a round lasts, in seconds (D-187, DAT-7). */
     roundSeconds?: number;
+    /** The minute of the day dawn comes at, as 360 for 06:00, when the system has one (D-571, RST-2): what comes back at dawn, an advance through it names. */
+    dawn?: number;
     /** How many metres its mile and foot are worth, when it has its own (D-262): outputs in imperial use them. */
     imperial?: ImperialUnits;
     /**

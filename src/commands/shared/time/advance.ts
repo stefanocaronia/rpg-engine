@@ -11,6 +11,7 @@ import { shortList, skippedPagesNote } from "../notes.ts";
 import { surroundings, surroundingsText } from "../places/environment.ts";
 import { endedByDate, endEffects } from "../scene/effects.ts";
 import { readOpenScene } from "../scene/scene.ts";
+import { dawnLines } from "./dawn.ts";
 import { clocksToMove, type DatedEvent, dueAdvice, dueEvents, dueText, isDated, plannedEvents, plannedText } from "./events.ts";
 import { calendarDayOf, newDatedLogEntry } from "./time.ts";
 import { dailyUpkeep } from "./upkeep.ts";
@@ -46,6 +47,8 @@ export interface TimePassed
     diary?: string;
     /** What the party used up at each midnight passed, under the rigor «rules» (UPK-1, UPK-2). */
     upkeep?: string[];
+    /** What comes back at the dawn it went through, and who had no rest of a night (D-571, RST-2). */
+    dawn?: string[];
     /** The day of the calendar reached, when the campaign has one (TIM-8): 15 April, spring. */
     calendar?: string;
     /** What the campaign's extensions said of the time passed, such as the weather of a new morning (D-436). */
@@ -95,7 +98,8 @@ export function passTime(root: string, context: Context, world: World, now: Game
     const newDayPart = result.clocks.length === 0 ? "" : situationPart("new-day", context, campaignSystem(root, context));
     const upkeep = passed > 0 ? dailyUpkeep(root, context, campaignSystem(root, context), result.newDays) : [];
     const diary = result.newDays > 0 ? diaryDueLine(root, context, world) : "";
-    return { ...result, ended, around, newDayPart, ...(upkeep.length === 0 ? {} : { upkeep }), ...(diary === "" ? {} : { diary }) };
+    const dawn = passed > 0 ? dawnLines(root, world, campaignSystem(root, context), now, reached) : [];
+    return { ...result, ended, around, newDayPart, ...(upkeep.length === 0 ? {} : { upkeep }), ...(dawn.length === 0 ? {} : { dawn }), ...(diary === "" ? {} : { diary }) };
 }
 
 /**
@@ -114,6 +118,7 @@ export function passedLines(result: TimePassed, then: string): string[]
         clocksLine(result.newDays, result.to, result.clocks),
         result.newDayPart,
         ...(result.upkeep ?? []),
+        ...(result.dawn ?? []),
         result.diary ?? "",
         ...(result.extensionLines ?? []),
         result.unreadable.length === 0 ? "" : `Time does not stop at these planned events, whose date is not a game date: ${result.unreadable.join(" · ")}. Give each one a game date with write.`,

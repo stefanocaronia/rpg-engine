@@ -13,14 +13,19 @@ const askedPoll = 250;
 const bannerWait = 10_000;
 // How long the page is given to draw a section after its address changes.
 const drawWait = 1200;
+// How many screenshots the player sees in an evening: a chat holds at most 100 images, and the dialogue's own turns need room.
+const sightLimit = 60;
 
-/** The scenario's moments on the page (--moments): before the player's message `before`, a setting changed, a note written, a library folder turned on or someone talked to, and what the player is told. */
+/**
+ * The scenario's moments on the page (--moments): before the player's message `before`, a setting changed, a note written, a library folder turned on, someone
+ * talked to or a tab looked at (`look`, with what `ask` asks of it), and what the player is told.
+ */
 export function readMoments(file)
 {
     const moments = file === undefined ? [] : parse(readFileSync(file, "utf8")) ?? [];
 
     if (!Array.isArray(moments) || moments.some((moment) => !(Number.isInteger(moment?.before) && moment.before > 1))) {
-        throw new Error(`${file}: write a list of moments, each with before, the number of a player's message from 2, and a setting, a note, a library folder, talk or tell.`);
+        throw new Error(`${file}: write a list of moments, each with before, the number of a player's message from 2, and a setting, a note, a library folder, talk, look or tell.`);
     }
 
     return moments;
@@ -34,7 +39,8 @@ export function pagePlayer({ folder, askPlayer, moments })
 {
     const pageFolder = join(folder, "page");
     mkdirSync(pageFolder, { recursive: true });
-    const state = { link: undefined, browser: undefined, page: undefined, opening: undefined, said: [], answered: new Set(), busy: false, timer: undefined, turn: 0 };
+    // seen: the screenshots of the last master turn not yet shown to the player; shown: each section's last accessibility tree the player saw, to send only what changed.
+    const state = { link: undefined, browser: undefined, page: undefined, opening: undefined, said: [], answered: new Set(), busy: false, timer: undefined, turn: 0, seen: [], shown: new Map(), sent: 0, rang: false };
 
     const note = (line) => appendFileSync(join(pageFolder, "console.txt"), `M${state.turn} ${line}\n`);
 
@@ -257,6 +263,52 @@ export function pagePlayer({ folder, askPlayer, moments })
         return undefined;
     };
 
+    // The choices the master prepared on the sheet, as a new level's (D-556): offered to the player once a turn until made, then picked, rolled and confirmed
+    // on the page's own requests, as its panel sends them.
+    const makeChoices = async () => {
+        const waiting = ((await getJson(`${state.link}api/choices`).catch(() => undefined))?.sets ?? []).filter((set) => set.confirmed === undefined);
+
+        for (const set of waiting) {
+            const items = set.items.map((item, index) => {
+                const pick = item.least === item.most ? `pick ${item.most}` : `pick ${item.least} to ${item.most}`;
+                const options = item.options.map((option) => `«${option.label}»${option.notation === undefined ? "" : ` (rolls ${option.notation})`}`).join(" · ");
+                return `${index + 1}. ${item.question} (${pick}): ${options}`;
+            });
+            const prompt = `(Your sheet on the dashboard shows the choices «${set.title}» for ${set.who}, waiting for you:\n${
+                items.join("\n")
+            }\nMake them now, as you would, or leave them for later. For each item, in order, give the options you pick by their exact text; one that rolls is rolled when you pick it. Then a sentence to the master, said when you confirm.)`;
+            const schema = {
+                type: "object",
+                required: ["now", "picks", "said"],
+                properties: {
+                    now: { type: "boolean", description: "true to make them now, false to leave them for later" },
+                    picks: { type: "array", items: { type: "array", items: { type: "string" } }, description: "for each item, in order, the options picked by their exact text" },
+                    said: { type: "string" },
+                },
+            };
+            const reply = await askPlayer(prompt, schema);
+
+            if (!reply.now) {
+                record(folder, "Page", `(Choices «${set.title}»: left for later)`);
+                continue;
+            }
+
+            const results = [];
+
+            for (const [index, item] of set.items.entries()) {
+                const picked = (reply.picks[index] ?? []).map((given) => item.options.find((option) => option.label.trim() === given.trim() || option.text.trim() === given.trim())).filter(Boolean);
+                const rolls = picked.find((option) => option.notation !== undefined);
+                const body = rolls === undefined ? { id: set.id, item: index, answer: picked.map((option) => option.text) } : { id: set.id, item: index, roll: rolls.text };
+                results.push(`${item.question}: ${picked.map((option) => option.label).join(", ") || "nothing"} → ${(await post("api/choices", body)).slice(0, 3)}`);
+            }
+
+            const confirmed = (await post("api/choices", { id: set.id, confirm: true, said: reply.said })).slice(0, 3);
+            // The player's sentence rings the master through the doorbell, as a sentence said in Scene does: the run waits for the turn it wakes.
+            state.rang ||= confirmed === "200" && reply.said.trim() !== "" && (await getJson(`${state.link}api/act`).catch(() => undefined))?.bell === true;
+            record(folder, "Page", `(Choices «${set.title}», made on the sheet)\n\n${results.join("\n")}\nConfirmed → ${confirmed}, with «${reply.said}»`);
+        }
+    };
+
     const post = async (path, body) => {
         const response = await fetch(`${state.link}${path.replace(/^\//, "")}`, { method: "POST", headers: { "Content-Type": "application/json", Origin: state.link.replace(/\/$/, "") }, body: JSON.stringify(body) });
         return `${response.status} ${await response.text()}`;
@@ -277,8 +329,27 @@ export function pagePlayer({ folder, askPlayer, moments })
     };
 
     const keep = async (name) => {
-        await state.page.screenshot({ path: join(pageFolder, `${name}.png`) });
-        writeFileSync(join(pageFolder, `${name}.aria.yaml`), await state.page.locator("body").ariaSnapshot().catch((error) => `(no snapshot: ${error.message})`));
+        const path = join(pageFolder, `${name}.png`);
+        await state.page.screenshot({ path });
+        const tree = await state.page.locator("body").ariaSnapshot().catch((error) => `(no snapshot: ${error.message})`);
+        writeFileSync(join(pageFolder, `${name}.aria.yaml`), tree);
+        return { path, tree };
+    };
+
+    // A section's screenshot goes to the player when it differs from the last one they saw, up to the images a chat can hold.
+    const sight = (section, kept) => {
+        if (state.shown.get(section) === kept.tree) {
+            return;
+        }
+
+        if (state.sent >= sightLimit) {
+            note(`run: ${section} changed, but the player has seen ${sightLimit} images tonight and gets no more`);
+            return;
+        }
+
+        state.shown.set(section, kept.tree);
+        state.sent += 1;
+        state.seen.push(kept.path);
     };
 
     return {
@@ -317,12 +388,14 @@ export function pagePlayer({ folder, askPlayer, moments })
 
             for (const section of ["party", "scene", ...(fight ? ["combat"] : [])]) {
                 await show(section);
-                await keep(`M${count}-${section}`);
+                sight(section, await keep(`M${count}-${section}`));
             }
+
+            await makeChoices().catch((error) => note(`run: the choices not made: ${error.message}`));
         },
         /**
          * Before the player's message `count`: the scenario's moments for it, done on the page; returns what the player is told of them, and whether the
-         * player said a sentence to the master on the page (D-495), which may wake the master by itself.
+         * player said a sentence to the master on the page (D-495), or confirmed choices with one, which may wake the master by itself.
          */
         async momentsBefore(count)
         {
@@ -341,12 +414,32 @@ export function pagePlayer({ folder, askPlayer, moments })
                     said ||= done.said;
                 }
 
+                // A tab looked at on purpose: shown to the player even when unchanged, with what the scenario asks of it.
+                if (state.page !== undefined && moment.look) {
+                    await show(moment.look);
+                    const kept = await keep(`P${count}-look-${moment.look.replaceAll("/", "-")}`);
+                    state.shown.set(moment.look, kept.tree);
+                    state.sent += 1;
+                    state.seen.push(kept.path);
+                    told.push(`(Organizer: you look at ${moment.look} on the dashboard, its image below. ${moment.ask ?? "Say in page what it tells you."})`);
+                    record(folder, "Page", `Before P${count}: ${moment.look} shown to the player`);
+                }
+
                 if (moment.tell) {
                     told.push(`(Organizer: ${moment.tell})`);
                 }
             }
 
+            said ||= state.rang;
+            state.rang = false;
             return { told, said };
+        },
+        /** The screenshots the player has not seen yet, taken once: called right before the player's message, after any turn the page woke. */
+        takeSeen()
+        {
+            const seen = state.seen;
+            state.seen = [];
+            return seen;
         },
         /** The session's end: what the Journal and the World show by then is kept, a tab each, before the page closes. */
         async close()

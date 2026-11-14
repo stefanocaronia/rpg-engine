@@ -313,7 +313,7 @@ describe("the edges of the command, case by case", () => {
 
     it("keeps an effect without an end through advance, the turns and validate", async () => {
         await ok("effect", "add", "Ennio", "Maledizione");
-        expect(await ok("advance", "--by", "1d")).toBe("day 1, 18:00 → day 2, 18:00.");
+        expect((await ok("advance", "--by", "1d")).split("\n")[0]).toBe("day 1, 18:00 → day 2, 18:00.");
         await combat();
         // The effect without an end is named on the turn that ends (EFF-15).
         expect(await ok("scene", "next")).toBe(`Round 1 · now Annegato 1 (then Lena).\nEnd of Ennio's turn: Maledizione. Read in their text what acts now. ${quietTurn}`);
