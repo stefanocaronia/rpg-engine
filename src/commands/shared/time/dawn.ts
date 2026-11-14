@@ -1,11 +1,13 @@
 // What comes back at dawn (D-571, RST-2): when time passes through the system's dawn, what the party carries below its maximum, which its text brings back, and
 // who of the party had no rest of a night in its time, which the master gives if they slept. The engine gives nothing by itself.
 import { readLog } from "../../../core/log.ts";
-import { comparableText } from "../../../core/text.ts";
-import type { Page, World } from "../../../pages/index.ts";
+import { comparableText, valueNamed } from "../../../core/text.ts";
+import { readCounter } from "../../../counters/index.ts";
+import { isInParty, type Page, type World } from "../../../pages/index.ts";
 import type { GameSystem, Recipe } from "../../../systems/index.ts";
 import { formatGameDate, type GameDate, minutesBetween, readDuration, readGameDate } from "../../../time/index.ts";
-import { carriedCounters, partyPages } from "./recipes.ts";
+import { effectiveFields } from "../sheet/effect-layer.ts";
+import { carriedCounters, recipeTargets } from "./recipes.ts";
 
 /** The type of the log's line that says a recipe gave a page something (RST-1). */
 export const recipeAppliedType = "recipe-applied";
@@ -19,9 +21,10 @@ export function dawnLines(root: string, world: World, system: GameSystem | undef
         return [];
     }
 
-    const members = partyPages(world);
+    // Dawn comes for the whole living party, wherever each one is.
+    const members = world.pages.filter(isInParty);
     const carried = members.flatMap((member) => carriedCounters(world, member).map((counter) => `${counter} (${member.name})`));
-    const unrested = system.recipes.filter((recipe) => recipe.oncePer !== undefined && recipe.lasts !== undefined).flatMap((recipe) => unrestedLine(root, recipe, members, to));
+    const unrested = system.recipes.filter((recipe) => recipe.oncePer !== undefined && recipe.lasts !== undefined).flatMap((recipe) => unrestedLine(root, world, recipe, members, to));
     const counters = carried.length === 0 ? "" : ` Below their maximum, what the party carries: ${carried.join(" · ")}; what comes back at dawn, its text says: give it with change.`;
     return counters === "" && unrested.length === 0 ? [] : [`Dawn came at ${formatGameDate(dawn)}.${counters}`, ...unrested];
 }
@@ -41,13 +44,23 @@ function lastDawn(from: GameDate, to: GameDate, minute: number): GameDate | unde
     return day >= 1 && minutesBetween(from, dawn) > 0 ? dawn : undefined;
 }
 
-/** "No long rest in the last 24h: …", for those of the party who had none in its time (RST-1); none when all had one. */
-function unrestedLine(root: string, recipe: Recipe, members: Page[], now: GameDate): string[]
+/** "No long rest in the last 24h: …", for those of the party it would give something to who had none in its time (RST-1); none when no one is left. */
+function unrestedLine(root: string, world: World, recipe: Recipe, members: Page[], now: GameDate): string[]
 {
     const every = readDuration(recipe.oncePer ?? "") ?? 0;
-    const missing = members.flatMap((member) => {
+    const missing = members.filter((member) => gainsFrom(world, recipe, member)).flatMap((member) => {
         const last = lastApplied(root, recipe, member.name);
         return last === undefined ? [`${member.name} (none yet)`] : minutesBetween(last, now) >= every ? [`${member.name} (last at ${formatGameDate(last)})`] : [];
     });
     return missing.length === 0 ? [] : [`No ${recipe.name} in the last ${recipe.oncePer}: ${missing.join(", ")}. If they slept, give it with change and the recipe ${recipe.name}.`];
+}
+
+/** Whether a recipe would change something on a page now: a counter it brings back that is not there yet. */
+function gainsFrom(world: World, recipe: Recipe, page: Page): boolean
+{
+    const fields = effectiveFields(world, page);
+    return recipeTargets(world, recipe, page).some(({ field, target }) => {
+        const counter = readCounter(valueNamed(fields, field));
+        return counter !== undefined && counter.value !== (target === "max" ? counter.max : target);
+    });
 }
