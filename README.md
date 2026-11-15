@@ -70,7 +70,7 @@ Then write *Hi! Let's start.* The master answers with the link to your dashboard
 
 ## Try it, and tell us
 
-RPG Engine is at its first versions, and it grows with the games played on it. Try it, and when something breaks, confuses you or could work better, open an [issue on GitHub](https://github.com/stefanocaronia/rpg-engine/issues): what you did, what you expected, what happened. Every report helps.
+RPG Engine is at its first versions, and it grows with the games played on it. Try it, and when something breaks or confuses you, open an [issue on GitHub](https://github.com/stefanocaronia/rpg-engine/issues): what you did, what you expected, what happened. Every report helps. Questions, ideas and the stories of your games go to the [Discussions](https://github.com/stefanocaronia/rpg-engine/discussions).
 
 ## How it works
 

@@ -1,0 +1,18 @@
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What you are trying to do, and where you are stuck. Something that is broken goes to the issues.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: What `rpg --version` prints, and your game system if you play one, such as rpg-engine 0.19.1 with 5e.
+  - type: input
+    id: agent
+    attributes:
+      label: Your AI agent and your computer
+      description: Such as Claude Code with Opus on Windows, or Codex on macOS.
