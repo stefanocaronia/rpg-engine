@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,30f9af2f,60051919,8619db5f,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,d8c01f15,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,3de0391e,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,e47ab79b,f4c26681,20018bab,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,aa0e26a1,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4ee44b3b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine：完整指南
 
 **RPG Engine** 让你和一位 **AI 主持人**一起玩桌面角色扮演游戏。你在**聊天**里和主持人交谈；RPG Engine 在幕后工作：它**记住世界**，**掷骰子**，**记账**。聊天旁边，你在浏览器里开着一个页面，也就是**仪表盘**，上面有你的角色卡、骰子、地图和日志。
@@ -64,13 +64,14 @@ rpg init "The Salt Isles"
 
 ### 2.4 连接你的 AI
 
-主持人运行在一个 **AI 智能体**里：这是一个在终端或桌面上运行的 AI 应用，能处理你电脑上的文件，比如 Claude Code 或 Codex。像 claude.ai 或 ChatGPT 这样的普通聊天，或者手机应用，都不够用：主持人需要读取你电脑上的战役文件。每个智能体都需要自己的套餐和登录：Claude Code 需要付费的 Claude 套餐，Codex 需要 ChatGPT 登录。你只需安装一次，从它自己的页面安装：[Claude Code](https://code.claude.com/docs/en/setup)，[Codex](https://developers.openai.com/codex)。
+主持人运行在一个 **AI 智能体**里：这是一个在终端或桌面上运行的 AI 应用，能处理你电脑上的文件，比如 Claude Code、Codex 或 Antigravity。像 claude.ai 或 ChatGPT 这样的普通聊天，或者手机应用，都不够用：主持人需要读取你电脑上的战役文件。每个智能体都需要自己的套餐和登录：Claude Code 需要付费的 Claude 套餐，Codex 需要 ChatGPT 登录，Antigravity 需要 Google 账号，其免费套餐每周的额度很小。你只需安装一次，从它自己的页面安装：[Claude Code](https://code.claude.com/docs/en/setup)，[Codex](https://developers.openai.com/codex)，[Antigravity](https://antigravity.google)。
 
 - **Claude Code**：在战役文件夹里输入 `claude`。当它询问是否信任这个文件夹时，选择 **Yes, I trust this folder**。注意，默认选中的答案是 *No, exit*。战役里还有一个小钩子 `rpg --listen`，这个询问不会显示它：当你在仪表盘上操作时，它会立刻通知主持人。
 - **Codex**：在战役文件夹里输入 `codex`，当它询问是否信任这个文件夹时，回答“是”。如果用它的桌面应用，请在设置里确认游戏的聊天已关闭记忆。
+- **Antigravity**：在战役文件夹里输入 `agy`，如果它询问是否信任这个文件夹，回答“是”。战役里有一个小钩子 `rpg --approve`，让主持人使用 RPG Engine 的工具时不必每次都问你。主持人直接在聊天里画图。Antigravity 会保留你过去的聊天，它的记忆无法关闭：主持人已被告知绝不读取这些内容。你写的内容会发送给 Google，Google 可能安排人员查看：请不要在游戏里写入个人信息。RPG Engine 不是 Google 的产品。
 - **其他智能体**：在战役文件夹里启动它，并给它 MCP 服务器 `rpg mcp`。RPG Engine 是标准的 MCP 服务器：任何支持 MCP 的智能体都可以当主持人，本地运行的也行。
 
-我们用 **Claude Code** 来游玩和测试；**Codex** 已经接入并检查过，但还没有用它完整玩过一个战役。战役会关闭智能体自带的记忆：游戏存在它的文件里，这样回到某个存档时，才是真正回到过去。
+我们用 **Claude Code** 来游玩和测试；**Codex** 和 **Antigravity** 已经接入并检查过，但还没有用它们完整玩过一个战役。战役会关闭智能体自带的记忆：游戏存在它的文件里，这样回到某个存档时，才是真正回到过去。
 
 ### 2.5 第一次聊天
 

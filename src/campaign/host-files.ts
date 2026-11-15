@@ -106,8 +106,35 @@ function hostFiles(root: string, instructions: HostInstructions, platform: strin
         () => claudeSettingsFile(root),
         () => characterAgentFile(root, instructions.character),
         () => codexConfigFile(root, platform),
+        () => antigravityServerFile(root, platform),
+        () => antigravityHooksFile(root),
     ];
 }
+
+/** Antigravity's servers for the campaign, in the format of .mcp.json: the rpg server added when missing; the player's own servers, and their rpg, stay. */
+function antigravityServerFile(root: string, platform: string): HostFile | undefined
+{
+    const path = join(root, ".agents", "mcp_config.json");
+    const text = files().fresh(path);
+    const config = text === undefined ? {} : jsonObject(path, text, "Antigravity cannot be set up for the game in it");
+    const servers = isObject(config.mcpServers) ? config.mcpServers : {};
+    return servers.rpg !== undefined ? undefined : { path, text: settingsText({ ...config, mcpServers: { ...servers, rpg: rpgServer(platform) } }) };
+}
+
+/**
+ * Antigravity's hooks for the campaign: before each tool, rpg --approve lets the rpg server's tools run without asking, as Claude Code's and Codex's settings
+ * do (D-412), and asks for every other; the player's own hooks stay beside it.
+ */
+function antigravityHooksFile(root: string): HostFile | undefined
+{
+    const path = join(root, ".agents", "hooks.json");
+    const text = files().fresh(path);
+    const hooks = text === undefined ? {} : jsonObject(path, text, "Antigravity cannot be set up for the game in it");
+    return hooks.rpg !== undefined ? undefined : { path, text: settingsText({ ...hooks, rpg: { PreToolUse: [{ matcher: ".*", hooks: [approveHook] }] } }) };
+}
+
+// Antigravity's hook that approves the rpg server's tools: it answers in about a second, as the hooks of a chat must.
+const approveHook = { type: "command", command: "rpg --approve", timeout: 10 };
 
 /** An effort for the hosts' files (D-462): one the player chose, or app, the player's choice to take it away. */
 type Effort = (typeof efforts)[number] | "app";

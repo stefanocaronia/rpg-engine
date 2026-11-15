@@ -1,7 +1,7 @@
 import { join, relative, resolve } from "node:path";
 import { z } from "zod";
 import { readListSetting, readSettings, requireCampaign } from "../campaign/index.ts";
-import type { Context } from "../core/context.ts";
+import type { Context, PictureSubject } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files, isInside } from "../core/store.ts";
@@ -27,6 +27,8 @@ interface ImageResult
     changed: boolean;
     /** The picture is being made, and comes by itself (D-308). */
     making?: boolean;
+    /** The brief of the picture the chat makes itself with its own tool, as Antigravity (D-390). */
+    paint?: string;
 }
 
 export const image = defineCommand({
@@ -80,6 +82,10 @@ export const image = defineCommand({
 
     format(result)
     {
+        if (result.paint !== undefined) {
+            return `Make ${result.page}'s picture yourself with your own image tool, from this brief, then give its file with image, page ${result.page}, file and its full path; if your tool makes none, go on without.\n\n${result.paint}`;
+        }
+
         if (result.making === true) {
             return `${result.page}'s picture is being made, in a minute or so: the player's dashboard shows it when it comes. Go on with the story.`;
         }
@@ -174,7 +180,15 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
 
     const unseen = [...readListSetting(root, "lines"), ...readListSetting(root, "veils")];
     const { name, who } = kind === "place" || kind === "quest" ? { name: page.name } : isPartyMember(page) ? { name: page.name, who: portraitWho(root, context, world, page) } : metWho(root, world, page);
-    const making = context.pictures.make({ kind, name, ...(who === undefined ? {} : { who }), seen, unseen }).then((made) => {
+    const subject: PictureSubject = { kind, name, ...(who === undefined ? {} : { who }), seen, unseen };
+    const paint = context.pictures.brief?.(subject);
+
+    // The chat paints it itself, with its own tool.
+    if (paint !== undefined) {
+        return { page: page.name, changed: false, paint };
+    }
+
+    const making = context.pictures.make(subject).then((made) => {
         if ("refused" in made) {
             appendLogEntry(root, newDatedLogEntry(root, context, "image-refused", "hidden", { page: page.name, why: made.refused }));
             throw new Error(`No picture of ${page.name}: ${made.refused}. Go on without, or give one with file.`);

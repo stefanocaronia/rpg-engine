@@ -274,6 +274,7 @@
   "Clues": "단서",
   "Codex is on this computer but not logged in. To have pictures:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Codex는 이 컴퓨터에 있지만 로그인되어 있지 않아요. 이미지를 만들려면:\n1. 터미널을 열어요. Windows에서는 시작을 누르고 터미널을 입력해요.\n2. `codex login`을 붙여넣고, 열리는 브라우저에서 ChatGPT 계정으로 로그인해요.\nCodex는 ChatGPT 요금제로 이미지를 만들기 때문에 이미지당 따로 결제하지 않아요.",
   "Codex makes them on this computer, from your ChatGPT plan.": "이 컴퓨터에서 Codex가 ChatGPT 요금제로 만들어요.",
+  "Antigravity makes them in your chat, from your Google plan.": "채팅에서 Antigravity가 Google 요금제로 만들어요.",
   "Codex on this computer pays for each picture with an API key, which the engine never uses. To make them with your ChatGPT plan instead:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.": "이 컴퓨터의 Codex는 API 키로 이미지마다 비용을 내는데, 엔진은 API 키를 쓰지 않아요. 대신 ChatGPT 요금제로 만들려면:\n1. 터미널을 열어요. Windows에서는 시작을 누르고 터미널을 입력해요.\n2. `codex login`을 붙여넣고, 열리는 브라우저에서 ChatGPT 계정으로 로그인해요.",
   "Coin": "동전",
   "Coin design": "동전 디자인",

@@ -46,7 +46,7 @@ export const init = defineCommand({
     {
         return [
             `Created the campaign "${result.name}" in ${result.root}.`,
-            "To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.",
+            "To play, open Claude Code, Codex or Antigravity in this folder and say hello: the master asks you the rest.",
             ...(result.note === "" ? [] : ["", `For the master: ${result.note}`]),
         ].join("\n");
     },

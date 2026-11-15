@@ -274,6 +274,7 @@
   "Clues": "线索",
   "Codex is on this computer but not logged in. To have pictures:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "这台电脑上已安装 Codex，但尚未登录。要使用图片：\n1. 打开终端：在 Windows 中点击开始，然后输入“终端”。\n2. 粘贴 `codex login`，并在弹出的浏览器中登录你的 ChatGPT 账号。\nCodex 使用你的 ChatGPT 套餐生成图片，无需按张付费。",
   "Codex makes them on this computer, from your ChatGPT plan.": "由 Codex 在这台电脑上使用你的 ChatGPT 套餐生成。",
+  "Antigravity makes them in your chat, from your Google plan.": "由 Antigravity 在你的对话中使用你的 Google 套餐生成。",
   "Codex on this computer pays for each picture with an API key, which the engine never uses. To make them with your ChatGPT plan instead:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.": "这台电脑上的 Codex 使用 API 密钥按张付费，而引擎从不使用该方式。若要改用你的 ChatGPT 套餐生成图片：\n1. 打开终端：在 Windows 中点击开始，然后输入“终端”。\n2. 粘贴 `codex login`，并在弹出的浏览器中登录你的 ChatGPT 账号。",
   "Coin": "硬币",
   "Coin design": "硬币图案",

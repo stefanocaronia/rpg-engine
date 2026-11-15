@@ -25,7 +25,7 @@ An AI is a wonderful storyteller, but a storyteller tends to make the world fit 
 - **Save**, as in a video game: at the end of every scene, to go back or start over as you choose.
 - **Choose how you play**: difficulty, lethality, how much the master teaches the rules, its style, your lines and veils.
 - **Play in your language**: the dashboard speaks 26, and any other is translated for you.
-- **See where you are**: pictures of the places you reach, the quests you take and the people you meet. Painted ones, as the inn above, come from **Codex** signed in with your ChatGPT account, even when your master is Claude Code: install it with `npm install -g @openai/codex` and sign in once with `codex login`. With Claude Code alone, the master draws simpler ones.
+- **See where you are**: pictures of the places you reach, the quests you take and the people you meet. Painted ones, as the inn above, come from **Codex** signed in with your ChatGPT account, even when your master is Claude Code; Antigravity paints its own. Install Codex with `npm install -g @openai/codex` and sign in once with `codex login`. With Claude Code alone, the master draws simpler ones.
 
 ## The game
 
@@ -43,11 +43,11 @@ A game comes as a game system, a package the master installs when you set up a c
 
 ## What you need
 
-**Node.js 24** or newer, a web browser, and an AI agent to be the master: an AI app that can work with the files on your computer, such as Claude Code or Codex. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer.
+**Node.js 24** or newer, a web browser, and an AI agent to be the master: an AI app that can work with the files on your computer, such as Claude Code, Codex or Antigravity. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer.
 
-RPG Engine is tied to no AI company: any agent that supports MCP tools can be the master, local ones included. We play and test it with **Claude Code**; **Codex** is connected and checked, but no whole campaign has been played with it yet; [the guide](https://github.com/stefanocaronia/rpg-engine/blob/main/src/dashboard/guide/en.md#24-connect-your-ai) says how to connect any other agent. Give the master the largest model you have: a small one is easier to talk into revealing secrets or bending the rules.
+RPG Engine is tied to no AI company: any agent that supports MCP tools can be the master, local ones included. We play and test it with **Claude Code**; **Codex** and **Antigravity** are connected and checked, but no whole campaign has been played with them yet; [the guide](https://github.com/stefanocaronia/rpg-engine/blob/main/src/dashboard/guide/en.md#24-connect-your-ai) says how to connect any other agent. Give the master the largest model you have: a small one is easier to talk into revealing secrets or bending the rules.
 
-RPG Engine is free: the master runs on your agent's own plan (for Claude Code, a paid Claude plan; for Codex, a ChatGPT account), or on your computer with a local model. RPG Engine itself never uses an API key, which is paid by the call: sign your agent in with your account, not with a key. You do not need to know how to program, and once your agent is installed, you are playing in a few minutes.
+RPG Engine is free: the master runs on your agent's own plan (for Claude Code, a paid Claude plan; for Codex, a ChatGPT account; for Antigravity, a Google account), or on your computer with a local model. RPG Engine itself never uses an API key, which is paid by the call: sign your agent in with your account, not with a key. You do not need to know how to program, and once your agent is installed, you are playing in a few minutes.
 
 ## Quick start
 
@@ -62,7 +62,7 @@ claude
 
 If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer yes and try again.
 
-With Codex write `codex`; with another agent, start it in that folder (the guide says how to connect it). When it asks whether you trust the folder, say yes; careful, in Claude Code the answer already selected is *No, exit*.
+With Codex write `codex`, with Antigravity `agy`; with another agent, start it in that folder (the guide says how to connect it). When it asks whether you trust the folder, say yes; careful, in Claude Code the answer already selected is *No, exit*.
 
 Then write *Hi! Let's start.* The master answers with the link to your dashboard: open it beside the chat. It asks how you want to play, a few questions at a time, then you make your character together, and the story begins.
 

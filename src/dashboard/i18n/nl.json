@@ -274,6 +274,7 @@
   "Clues": "Aanwijzingen",
   "Codex is on this computer but not logged in. To have pictures:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Codex staat op deze computer, maar is niet ingelogd. Zo krijg je afbeeldingen:\n1. Open een terminal: op Windows klik je op Start en typ je Terminal.\n2. Plak `codex login` en log in met je ChatGPT-account in de browser die opent.\nCodex maakt ze met je ChatGPT-abonnement, zonder per afbeelding te betalen.",
   "Codex makes them on this computer, from your ChatGPT plan.": "Codex maakt ze op deze computer, met je ChatGPT-abonnement.",
+  "Antigravity makes them in your chat, from your Google plan.": "Antigravity maakt ze in je chat, met je Google-abonnement.",
   "Codex on this computer pays for each picture with an API key, which the engine never uses. To make them with your ChatGPT plan instead:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.": "Codex op deze computer betaalt elke afbeelding met een API-sleutel, en die gebruikt de engine nooit. Om ze in plaats daarvan met je ChatGPT-abonnement te maken:\n1. Open een terminal: op Windows klik je op Start en typ je Terminal.\n2. Plak `codex login` en log in met je ChatGPT-account in de browser die opent.",
   "Coin": "Munt",
   "Coin design": "Muntontwerp",

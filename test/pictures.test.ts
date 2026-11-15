@@ -1,7 +1,8 @@
 // The pictures by the chat in use (D-390): Codex first, Claude's SVG where Codex is not ready, never Claude in Codex; the SVG cleaned from a white list (D-342).
 import { describe, expect, it } from "vitest";
 import type { DocumentReader, PictureMaker, PicturesReady, PictureSubject } from "../src/core/context.ts";
-import { cleanSvg, hostPictures, hostReader, svgBrief, svgIn } from "../src/helpers/index.ts";
+import { antigravityClient, cleanSvg, hostPictures, hostReader, svgBrief, svgIn } from "../src/helpers/index.ts";
+import { approval } from "../src/server/approver.ts";
 
 /** A maker that says whether it is ready and records what it was asked to make. */
 function maker(said: PicturesReady): PictureMaker & { made: PictureSubject[]; }
@@ -29,6 +30,20 @@ describe("who makes the pictures, by the chat in use (D-390)", () => {
         expect(hostPictures(() => "codex-mcp-client", away, claude).ready()).toEqual({ ready: false, why: "Codex is not installed on this computer" });
         // With neither, Codex's no and how to have it.
         expect(hostPictures(() => undefined, away, maker({ ready: false, why: "Claude Code is not logged in on this computer" })).ready()).toMatchObject({ ready: false, why: "Codex is not installed on this computer" });
+    });
+
+    it("in Antigravity has the chat paint it itself from the brief, and starts nothing", async () => {
+        const codex = maker({ ready: true, maker: "Codex" });
+        const pictures = hostPictures(() => antigravityClient, codex, maker({ ready: true, maker: "Claude" }));
+        expect(pictures.ready()).toEqual({ ready: true, maker: "Antigravity" });
+        const brief = pictures.brief?.(bridge) ?? "";
+        expect(brief).toMatch(/^Make exactly one new image from the brief below with your own image generation tool/);
+        expect(brief).toContain("Ponte, as adventurers see it arriving: un ponte di pietra");
+        expect(brief).toContain("landscape, 16:9");
+        expect(brief).toContain("Never show: ragni");
+        // Elsewhere no brief: the engine makes the picture.
+        expect(hostPictures(() => "claude-code", codex).brief?.(bridge)).toBeUndefined();
+        expect(codex.made).toEqual([]);
     });
 
     it("names the program that would read a document, which the player is told it goes to (D-493)", () => {
@@ -67,6 +82,19 @@ describe("who makes the pictures, by the chat in use (D-390)", () => {
         expect(creature).toContain("a close-up of the head, its face or muzzle centred");
         expect(creature).toContain("Never show: ragni");
         expect(creature).not.toContain("Faithfulness");
+    });
+});
+
+describe("Antigravity's hook before each tool", () => {
+    it("lets the rpg server's tools and their descriptions run, and asks for every other", () => {
+        const call = (name: string, args: Record<string, unknown>): string => JSON.stringify({ toolCall: { name, args }, hookEventName: "PreToolUse" });
+        expect(approval(call("call_mcp_tool", { ServerName: "rpg", ToolName: "roll", Arguments: {} }))).toEqual({ decision: "auto_approve" });
+        expect(approval(call("read_file", { Path: "C:\\Users\\me\\.gemini\\antigravity-cli\\mcp\\rpg\\roll.json" }))).toEqual({ decision: "auto_approve" });
+        expect(approval(call("call_mcp_tool", { ServerName: "mappe", ToolName: "draw" }))).toEqual({ decision: "ask" });
+        expect(approval(call("read_file", { Path: "/home/me/.gemini/antigravity-cli/mcp/rpg/../../oauth_creds.json" }))).toEqual({ decision: "ask" });
+        expect(approval(call("read_file", { Path: "campaign.yaml" }))).toEqual({ decision: "ask" });
+        expect(approval(call("run_command", { CommandLine: "rpg status" }))).toEqual({ decision: "ask" });
+        expect(approval("not json")).toEqual({ decision: "ask" });
     });
 });
 

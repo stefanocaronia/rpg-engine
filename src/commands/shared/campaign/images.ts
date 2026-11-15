@@ -22,8 +22,10 @@ export function picturesNote(root: string, context: Context, world: World, place
         // Asked once in a chat, not at every status and scene (T-64).
         const ready = context.told === undefined || firstInChat(context, "pictures-ask") ? context.pictures?.ready() : undefined;
         return ready?.ready === true
-            ? `Pictures: this computer can make the pictures of places, quests and those met with the player's ${
-                ready.maker === "Claude" ? "Claude Code" : "Codex"
+            ? `Pictures: ${
+                ready.maker === "Antigravity"
+                    ? "you can make the pictures of places, quests and those met with your own image tool"
+                    : `this computer can make the pictures of places, quests and those met with the player's ${ready.maker === "Claude" ? "Claude Code" : "Codex"}`
             }, which spends their plan: ask them once whether they want one for each new place, quest and one met, only those they ask for, or none; then config pictures (new elements, on request or none).`
             : undefined;
     }

@@ -1,6 +1,15 @@
 // The briefs of the pictures (D-308, D-388, D-390): a painted one for Codex, an SVG one for Claude, the same subject, never what the table keeps out of sight.
 import type { PictureSubject } from "../core/context.ts";
 
+/**
+ * The painted brief as the chat makes the picture itself with its own tool (D-390), as Antigravity: saved by the chat, a place 16:9, the widest its tool makes,
+ * which the page crops.
+ */
+export function chatBrief(subject: PictureSubject): string
+{
+    return paintedBrief(subject).replace(imageAsk, chatAsk).replace("landscape, 21:9", "landscape, 16:9");
+}
+
 /** The painted brief of a place's or a quest's picture, a portrait or a creature's head, as Codex makes it. */
 export function paintedBrief(subject: PictureSubject): string
 {
@@ -94,6 +103,7 @@ export function creatureBrief(name: string, seen: string, unseen: string[] = [],
 // What every brief asks of the helper first, and the style every picture is painted in.
 const imageAsk = "Use your built-in image generation tool to make exactly one new image from the brief below. Do not copy, save or edit any file and run no commands: "
     + 'the caller collects the image itself. If you cannot make it, reply with one line saying why; otherwise reply with only "done".';
+const chatAsk = "Make exactly one new image from the brief below with your own image generation tool, as a PNG file.";
 const paintedStyle = "Style/medium: painterly digital illustration, fantasy concept art, muted natural colours, soft brushwork";
 // A portrait, a person's or a creature's, as a circle crops it.
 const faceFraming = "a close-up of the face, centred, from the top of the head to the chin and only a hint of the shoulders, the face filling most of the picture; "

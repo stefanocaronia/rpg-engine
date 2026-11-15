@@ -21,7 +21,7 @@ const askedBrief =
     + "character (made with the player, made by the master, the player's own), companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
 const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
-const playLine = "To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.";
+const playLine = "To play, open Claude Code, Codex or Antigravity in this folder and say hello: the master asks you the rest.";
 
 /** What config shows of the settings, before what the campaign still needs. */
 function shown(output: string): string
@@ -157,6 +157,21 @@ ${playLine}`);
             }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME"]\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
         );
         expect(existsSync(join(folder, "nuova", ".gemini"))).toBe(false);
+        // Antigravity: the rpg server, and the hook that lets its tools run without asking.
+        expect(JSON.parse(readFileSync(join(folder, "nuova", ".agents", "mcp_config.json"), "utf8"))).toEqual({ mcpServers: { rpg } });
+        expect(JSON.parse(readFileSync(join(folder, "nuova", ".agents", "hooks.json"), "utf8"))).toEqual({
+            rpg: { PreToolUse: [{ matcher: ".*", hooks: [{ type: "command", command: "rpg --approve", timeout: 10 }] }] },
+        });
+    });
+
+    it("keeps the player's own servers and hooks of Antigravity, and their rpg, adding only what is missing", async () => {
+        mkdirSync(join(folder, "mia", ".agents"), { recursive: true });
+        writeFileSync(join(folder, "mia", ".agents", "mcp_config.json"), '{ "mcpServers": { "mappe": { "command": "mappe" } } }');
+        writeFileSync(join(folder, "mia", ".agents", "hooks.json"), '{ "rpg": { "Stop": [] }, "mio": { "PreToolUse": [] } }');
+        await runCommandLine(["init", "mia"], context);
+        const servers = JSON.parse(readFileSync(join(folder, "mia", ".agents", "mcp_config.json"), "utf8")).mcpServers;
+        expect(Object.keys(servers)).toEqual(["mappe", "rpg"]);
+        expect(JSON.parse(readFileSync(join(folder, "mia", ".agents", "hooks.json"), "utf8"))).toEqual({ rpg: { Stop: [] }, mio: { PreToolUse: [] } });
     });
 
     it("keeps what the player wrote in Codex's settings, and adds only what is missing (D-362)", async () => {

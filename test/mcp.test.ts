@@ -17,7 +17,7 @@ import { createMcpServer } from "../src/server/mcp.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 // What init tells the player who made the campaign in a terminal.
-const playLine = "To play, open Claude Code or Codex in this folder and say hello: the master asks you the rest.";
+const playLine = "To play, open Claude Code, Codex or Antigravity in this folder and say hello: the master asks you the rest.";
 
 let folder: string;
 let client: Client;

@@ -219,7 +219,7 @@ export interface DocumentReader
  * Whether pictures can be made here, or why not, in words the master can tell the player, and in the player's own with the steps to have them, one a line,
  * numbered, with the commands between backticks (D-341).
  */
-export type PicturesReady = { ready: true; maker?: "Codex" | "Claude"; } | { ready: false; why: string; fix?: string; };
+export type PicturesReady = { ready: true; maker?: "Codex" | "Claude" | "Antigravity"; } | { ready: false; why: string; fix?: string; };
 
 /**
  * What a picture shows (D-308, D-388, D-408): a place as the party sees it arriving, a quest as the character knows it, or the portrait of one of the party as
@@ -248,6 +248,8 @@ export interface PictureMaker
     /** Asked once; with again, a no a minute old or more is asked once more, as after the player logs in. */
     ready(again?: boolean): PicturesReady;
     make(subject: PictureSubject): Promise<MadePicture | { refused: string; }>;
+    /** Where the chat makes the picture itself with its own tool (D-390), as Antigravity: the brief it follows; the engine then starts nothing. */
+    brief?(subject: PictureSubject): string | undefined;
 }
 
 /** The player's own words in place of a button, as the dashboard's page lets them write (ASK-10). */

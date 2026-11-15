@@ -190,7 +190,11 @@ function offeredSetting(root: string, context: Context, setting: PlayerSetting):
 }
 
 // Who makes the pictures on this computer, in the player's words (D-390).
-const madeBy = { Codex: "Codex makes them on this computer, from your ChatGPT plan.", Claude: "Claude draws them on this computer, as vector pictures, from your Claude plan." };
+const madeBy = {
+    Codex: "Codex makes them on this computer, from your ChatGPT plan.",
+    Claude: "Claude draws them on this computer, as vector pictures, from your Claude plan.",
+    Antigravity: "Antigravity makes them in your chat, from your Google plan.",
+};
 
 /** Every note the pictures' setting may have, which the dashboard writes in its language (D-394). */
 export const picturesNotes = [...Object.values(madeBy), ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];

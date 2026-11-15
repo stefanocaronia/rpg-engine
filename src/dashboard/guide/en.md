@@ -63,13 +63,14 @@ The master cannot create a campaign for you: before `init`, nothing tells your a
 
 ### 2.4 Connect your AI
 
-The master runs in an **AI agent**: an AI app, in the terminal or on the desktop, that can work with the files on your computer, such as Claude Code or Codex. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer. Each agent needs its own plan and login: Claude Code a paid Claude plan, Codex a ChatGPT login. You install it once, from its own page: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex).
+The master runs in an **AI agent**: an AI app, in the terminal or on the desktop, that can work with the files on your computer, such as Claude Code, Codex or Antigravity. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer. Each agent needs its own plan and login: Claude Code a paid Claude plan, Codex a ChatGPT login, Antigravity a Google account, whose free plan has a small weekly quota. You install it once, from its own page: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google).
 
 - **Claude Code**: in the campaign folder write `claude`. When it asks whether you trust the folder, choose **Yes, I trust this folder**; careful, the answer already selected is *No, exit*. The campaign also has a small hook, `rpg --listen`, which the question does not show: it tells the master at once when you act from the dashboard.
 - **Codex**: in the campaign folder write `codex`, and say yes when it asks whether you trust the folder. In its desktop app, check in the settings that memories are off for the game's chats.
+- **Antigravity**: in the campaign folder write `agy`, and say yes if it asks whether you trust the folder. The campaign has a small hook, `rpg --approve`, that lets the master use RPG Engine's tools without asking you each time. The master paints the pictures in the chat itself. Antigravity keeps your past chats, and its memory cannot be turned off: the master is told never to read them. What you write goes to Google, which may have people read it: keep personal data out of the game. RPG Engine is not a Google product.
 - **Another agent**: start it in the campaign folder and give it the MCP server `rpg mcp`. RPG Engine is a standard MCP server: any agent that supports MCP can be the master, local ones included.
 
-We play and test it with **Claude Code**; **Codex** is connected and checked, but no whole campaign has been played with it yet. The campaign turns off the agent's own memory: the game lives in its files, so that going back to a save really goes back.
+We play and test it with **Claude Code**; **Codex** and **Antigravity** are connected and checked, but no whole campaign has been played with them yet. The campaign turns off the agent's own memory: the game lives in its files, so that going back to a save really goes back.
 
 ### 2.5 The first chat
 

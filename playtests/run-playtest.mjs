@@ -25,7 +25,8 @@ const repo = fileURLToPath(new URL("..", import.meta.url));
 const out = resolve(options.out);
 const playerFolder = join(out, "player");
 const playerChatFile = join(out, "player-session.txt");
-const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.toUpperCase().startsWith("CLAUDE")));
+// Never an API key, which pays by the call: the master and the player run on the user's plan (D-493).
+const environment = Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^(CLAUDE|ANTHROPIC)/i.test(name)));
 // Codex plays the master instead of Claude Code (codex-master.mjs).
 const codexHost = options["master-host"] === "codex";
 // The character agent, which a campaign with voices: master lacks (D-490).
@@ -113,6 +114,11 @@ async function playSession()
     } finally {
         writeJson(join(folder, "end.json"), { at: new Date().toISOString(), ...progress });
         cpSync(campaign, join(folder, "campaign-after"), { recursive: true });
+
+        // The login copied for Codex stays no longer than the session (OpenAI's guidance on auth.json, Riccardo 15 November).
+        if (host !== undefined) {
+            rmSync(join(host.home, "auth.json"), { force: true });
+        }
     }
 
     console.log(`Session ${options.session} ended (${progress.stop}) after ${progress.count} player messages; master $${progress.masterCost.toFixed(2)}, player $${progress.playerRunCost.toFixed(2)} since the run began. Output: ${folder}`);

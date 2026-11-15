@@ -274,6 +274,7 @@
   "Clues": "Stopy",
   "Codex is on this computer but not logged in. To have pictures:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Codex na tomto počítači je, ale není přihlášený. Jak získat obrázky:\n1. Otevři terminál: ve Windows klikni na Start a napiš Terminal.\n2. Vlož `codex login` a přihlas se svým účtem ChatGPT v prohlížeči, který se otevře.\nCodex je vytváří z tvého plánu ChatGPT, nikdy se neplatí za jednotlivý obrázek.",
   "Codex makes them on this computer, from your ChatGPT plan.": "Vytváří je Codex na tomto počítači z tvého plánu ChatGPT.",
+  "Antigravity makes them in your chat, from your Google plan.": "Vytváří je Antigravity ve tvém chatu z tvého plánu Google.",
   "Codex on this computer pays for each picture with an API key, which the engine never uses. To make them with your ChatGPT plan instead:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.": "Codex na tomto počítači platí za každý obrázek pomocí klíče API, který engine nikdy nepoužívá. Chceš-li je místo toho vytvářet z plánu ChatGPT:\n1. Otevři terminál: ve Windows klikni na Start a napiš Terminal.\n2. Vlož `codex login` a přihlas se svým účtem ChatGPT v prohlížeči, který se otevře.",
   "Coin": "Mince",
   "Coin design": "Vzhled mincí",

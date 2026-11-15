@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, PictureMaker } from "../src/core/context.ts";
 import { FileStore, withFiles } from "../src/core/store.ts";
-import { paintedBrief } from "../src/helpers/index.ts";
+import { antigravityClient, hostPictures, paintedBrief } from "../src/helpers/index.ts";
 import { imageFileName, readImage } from "../src/images/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
@@ -219,6 +219,17 @@ describe("pictures of places, quests, the party and those met made from words (D
         expect(await refused("image", "Guado", "--describe", "Un altare insanguinato")).toContain("No picture of Guado: the generator's safety check refused it");
         expect(made.briefs).toHaveLength(1);
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "image-refused", visibility: "hidden", data: { page: "Guado" } });
+    });
+
+    it("in Antigravity gives the master the brief to paint the picture itself, and changes nothing", async () => {
+        await ok("config", "pictures", "new places");
+        await ok("config", "lines", "--add", "ragni");
+        context = { ...context, pictures: hostPictures(() => antigravityClient, maker(true, picture("made.png", png))) };
+        const said = await ok("image", "Guado", "--describe", "Un guado di pietre");
+        expect(said).toMatch(/^Make Guado's picture yourself with your own image tool, from this brief, then give its file with image, page Guado, file/);
+        expect(said).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre");
+        expect(said).toContain("Never show: ragni");
+        expect(page("places/Guado.md")).not.toContain("image:");
     });
 
     it("in the MCP server, answers at once and the picture comes by itself", async () => {

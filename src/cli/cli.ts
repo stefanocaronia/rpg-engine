@@ -4,7 +4,8 @@ import { runCommandLine } from "./command-line.ts";
 const args = process.argv.slice(2);
 
 // "rpg mcp" turns the process into a server for an AI host; "rpg --read-library" reads the player's books apart, as rules starts it (LIB-3); "rpg --listen"
-// is Claude Code's doorbell for the player's sentences on the dashboard (D-495); everything else is a command.
+// is Claude Code's doorbell for the player's sentences on the dashboard (D-495); "rpg --approve" is Antigravity's hook that lets the rpg tools run; everything
+// else is a command.
 if (args.length === 1 && args[0] === "mcp") {
     // The server and its SDK load only here: every other command starts faster without them (D-194).
     const { startMcpServer } = await import("../server/mcp.ts");
@@ -15,6 +16,9 @@ if (args.length === 1 && args[0] === "mcp") {
 } else if (args.length === 1 && args[0] === "--listen") {
     const { listenHere } = await import("../server/bell-listener.ts");
     await listenHere();
+} else if (args.length === 1 && args[0] === "--approve") {
+    const { approveHere } = await import("../server/approver.ts");
+    await approveHere();
 } else {
     const { output, exitCode } = await runCommandLine(args);
 
