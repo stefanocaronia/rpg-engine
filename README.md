@@ -72,6 +72,8 @@ Then write *Hi! Let's start.* The master answers with the link to your dashboard
 
 RPG Engine is at its first versions, and it grows with the games played on it. Try it, and when something breaks or confuses you, open an [issue on GitHub](https://github.com/stefanocaronia/rpg-engine/issues): what you did, what you expected, what happened. Every report helps. Questions, ideas and the stories of your games go to the [Discussions](https://github.com/stefanocaronia/rpg-engine/discussions).
 
+RPG Engine takes no pull requests: we write its code with our AI, from your reports. To add something to the game, make a package of your own, a [game system](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/game-systems.md) or an [extension](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/extensions.md), in a repository of yours.
+
 ## How it works
 
 RPG Engine is an MCP server and a command line, `rpg`, made from the same commands. `rpg init` writes into the campaign folder the few files that tell your AI app where RPG Engine is, and that keep the app's own memory off: the campaign lives in its files, and only there, so that going back to a save really goes back.
