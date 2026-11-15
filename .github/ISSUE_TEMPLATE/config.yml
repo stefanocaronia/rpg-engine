@@ -1,0 +1,10 @@
+contact_links:
+  - name: A rule of the fifth edition system
+    url: https://github.com/stefanocaronia/rpg-engine-5e/issues/new/choose
+    about: A rule ruled wrong, a sheet's number, a creature, spell or item page.
+  - name: The weather extension
+    url: https://github.com/stefanocaronia/rpg-engine-weather/issues/new/choose
+    about: The sky, the seasons and the climates.
+  - name: The lockpicking extension
+    url: https://github.com/stefanocaronia/rpg-engine-lockpicking/issues/new/choose
+    about: Locks, their complexity and the rolls to open them.
