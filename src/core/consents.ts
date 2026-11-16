@@ -38,15 +38,15 @@ type Consents = Record<string, { version: string; fingerprint: string; }>;
 
 /**
  * The fingerprint of a package's files as installed, and of its dependencies' as npm resolved them: every file but those npm or git keep beside them, by its
- * path and its bytes, so that a dependency another install changed asks the yes again. Worked out again only when a file's size or time changed: it is asked
- * at each load of the package's code.
+ * path and its bytes, so that a dependency another install changed asks the yes again. Worked out again only when a file's size or times changed (ctime too,
+ * since npm installs every file with one fixed mtime): it is asked at each load of the package's code.
  */
 export function packageFingerprint(folder: string): string
 {
     const paths = withDependencies(folder).flatMap(packageFiles);
     const signature = paths.map((path) => {
         const stat = statSync(path);
-        return `${path}|${stat.size}|${stat.mtimeMs}`;
+        return `${path}|${stat.size}|${stat.mtimeMs}|${stat.ctimeMs}`;
     }).join("\n");
     const known = fingerprints.get(folder);
 

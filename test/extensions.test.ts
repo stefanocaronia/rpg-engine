@@ -757,7 +757,8 @@ describe("a package's code in the dashboard's page (D-510, D-511)", () => {
         writeFileSync(join(helper, "index.js"), "export const shuffle = () => 1;");
         recordConsent(tarot, "@test/tarot", "1.0.0");
         expect(hasConsent(tarot, "@test/tarot", "1.0.0")).toBe(true);
-        writeFileSync(join(helper, "index.js"), "export const shuffle = () => 2;");
+        // Another size: Windows stamps a file's times in ticks of about 15 ms, too coarse for two writes in a row.
+        writeFileSync(join(helper, "index.js"), "export const shuffle = () => 22;");
         expect(hasConsent(tarot, "@test/tarot", "1.0.0")).toBe(false);
     });
 
