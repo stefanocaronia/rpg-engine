@@ -72,6 +72,8 @@ async function readyForPlay(): Promise<void>
         ["character", "made with the player"],
         ["companions", "none"],
         ["calendar-start", "day 1"],
+        ["pictures", "none"],
+        ["pictures-by", "chat"],
         ["lines", "none"],
         ["veils", "none"],
     ];

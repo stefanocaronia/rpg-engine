@@ -2,7 +2,7 @@
 import { type CampaignSettings, customLevel, customLevels, customSettings, lastChoices, type LeveledSetting, listSettingNames, readOneSetting, readSettings, setupSettingNames } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { comparableText } from "../../core/text.ts";
-import { claudeSays, codexSays } from "../../helpers/index.ts";
+import { claudeSays, codexClient, codexSays } from "../../helpers/index.ts";
 import { readBetweenSessions } from "../../time/index.ts";
 import { heldSystemSettings, isLeading, offeredValues, playedEngineSetting } from "../shared/campaign/offers.ts";
 import { playedSettingValue } from "../shared/campaign/world.ts";
@@ -24,8 +24,13 @@ export interface PlayerSetting
     last?: string;
     /** In the setup, the question its card asks in place of its name, as how well the player knows the game (D-347). */
     question?: string;
-    /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
-    note?: { text: string; fix?: true; };
+    /** In the setup, the game system its question names as {game}, by its name (T-211). */
+    game?: string;
+    /**
+     * What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing; the values its
+     * {names} take, as a maker's own words; and a line after it.
+     */
+    note?: { text: string; fix?: true; values?: Record<string, string>; also?: string; };
     /** A setting of the player's own words, as the author the master writes like, the longest its text may be (D-395); for a list, each item's (D-563). */
     most?: number;
     /** The items of a custom difficulty or rigor, each with its level, one of the choices (T-132). */
@@ -52,19 +57,23 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
     // The value a system's setting suggests (DAT-17).
     const systemSuggests = Object.fromEntries(held.flatMap((setting) => setting.values.filter((value) => value.suggested === true).map((value) => [setting.name, value.value])));
     // The player's last choices first: how they like to play, from their last campaign on this computer (T-134).
-    const last = lastChoices(context.home);
+    const last = lastChoices(context.home, root);
     const suggested: Record<string, string> = { ...suggestedValues, ...(difficulty === undefined ? {} : { lethality: suggestedLethality[difficulty] ?? "dice" }), ...systemSuggests, ...last };
     // The system's settings others depend on right after the mentor, before what they change (DAT-16, DAT-17).
     const leading = held.filter(isLeading).map((setting) => setting.name);
     const order = setupOrder.filter((name) => !writtenWorld || !worldSettingNames.includes(name));
     const others = system.filter((name) => !leading.includes(name));
-    return [...order.slice(0, 1), ...leading, ...order.slice(1), ...others, "lines", "veils"].flatMap(named).map((question) => {
+    // How well the player knows the game, once the chat has chosen it: the question names it (T-211).
+    const game = settings.system;
+    const first = game === undefined ? [] : order.slice(0, 1);
+    return [...first, ...leading, ...order.slice(1), ...others, "lines", "veils"].flatMap(named).map((question) => {
         const suggestion = suggested[question.name];
         // A suggestion the game does not offer is none (DAT-16).
         const offered = suggestion !== undefined && (question.choices === undefined || question.choices.some((choice) => choice.value === suggestion));
         const asked = { ...question, ...(question.choices === undefined ? {} : { choices: question.choices.filter((choice) => choice.value !== customLevel) }) };
         const lastOne = offered && last[question.name] === suggestion ? { last: suggestion } : {};
-        return { ...(question.name === "mentor" ? mentorQuestion(asked) : unsetUnanswered(asked, settings)), ...(offered ? { suggested: suggestion } : {}), ...lastOne };
+        const worded = Object.hasOwn(questionTexts, question.name) ? { question: questionTexts[question.name] } : {};
+        return { ...(question.name === "mentor" ? mentorQuestion(asked, game ?? "") : unsetUnanswered(asked, settings)), ...worded, ...(offered ? { suggested: suggestion } : {}), ...lastOne };
     });
 }
 
@@ -129,7 +138,7 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
                 ...(choices === undefined ? {} : { choices }),
                 ...(words.most === undefined ? {} : { most: words.most }),
             }];
-        }).flatMap((setting) => offeredSetting(root, context, setting)),
+        }).flatMap((setting) => offeredSetting(root, context, setting)).map((setting) => (setting.name === "pictures-by" ? makersInChat(context, setting) : setting)),
         ...own,
     ];
 }
@@ -142,7 +151,10 @@ export function playerSettingNamed(root: string, context: Context, name: string)
 
 // The setup's questions, in the order the player meets them on the dashboard: how well they know the game, how it plays, how it is rolled, who comes along,
 // the world and how long it plays, then the limits.
-const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "character", "companions", "preparation", "length"];
+const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "character", "companions", "preparation", "length", "pictures", "pictures-by"];
+
+// The questions the setup's cards ask in place of a setting's name (D-572).
+const questionTexts: Record<string, string> = { pictures: "Do you want pictures of places and of those you meet?", "pictures-by": "Who makes them?" };
 
 // The mentor as the setup asks it (D-347): how well the player knows the game, each answer a way of the mentor, from the newest player's.
 const mentorAnswers: Record<string, string> = { tutorial: "never played it", hints: "a little", off: "I know it" };
@@ -151,7 +163,7 @@ const mentorAnswers: Record<string, string> = { tutorial: "never played it", hin
 const worldSettingNames = ["preparation", "length"];
 
 // The values the game suggests in the setup, as the design has them by default (D-370): never chosen for the player.
-const suggestedValues: Record<string, string> = { saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", character: "made with the player", preparation: "on the fly", length: "one evening" };
+const suggestedValues: Record<string, string> = { saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", character: "made with the player", preparation: "on the fly", length: "one evening", "pictures-by": "chat" };
 
 // The lethality the difficulty suggests (D-141).
 const suggestedLethality: Record<string, string> = { story: "narrative", easy: "epic" };
@@ -163,12 +175,27 @@ function unsetUnanswered(question: PlayerSetting, settings: CampaignSettings): P
     return value !== undefined && wordsOf(question.name)?.unset === value && (settings as Record<string, unknown>)[question.name] === undefined ? unanswered : question;
 }
 
-/** The mentor as the setup asks it (D-347): how well the player knows the game, never played it first. */
-function mentorQuestion(question: PlayerSetting): PlayerSetting
+/** The mentor as the setup asks it (D-347): how well the player knows the game, by the name of its system (T-211), never played it first. */
+function mentorQuestion(question: PlayerSetting, game: string): PlayerSetting
 {
     const order = Object.keys(mentorAnswers);
     const choices = (question.choices ?? []).map((choice) => ({ ...choice, label: mentorAnswers[choice.value] })).sort((one, other) => order.indexOf(one.value) - order.indexOf(other.value));
-    return { ...question, question: "How well do you know this game?", about: "the master teaches it as much as you need", choices };
+    // Free play has no rules of its own to know: the question is about role-playing games.
+    const named = game === freePlay ? { question: "How well do you know role-playing games?" } : { question: "How well do you know {game}?", game };
+    return { ...question, ...named, about: "the master teaches it as much as you need", choices };
+}
+
+// The engine's own game system, free play, without rules of its own.
+const freePlay = "free";
+
+/** Who makes the pictures as the chat in use offers it (D-572): in Codex, Codex is the chat itself, so it is not offered, and a campaign that chose it plays chat. */
+function makersInChat(context: Context, setting: PlayerSetting): PlayerSetting
+{
+    if (context.host?.() !== codexClient) {
+        return setting;
+    }
+
+    return { ...setting, ...(setting.value === "codex" ? { value: "chat" } : {}), choices: setting.choices?.filter((choice) => choice.value !== "codex") };
 }
 
 /** A player's setting as the game offers it (DAT-16): none where it plays one value alone; only the values it offers, and no value written that it does not. */
@@ -189,21 +216,57 @@ function offeredSetting(root: string, context: Context, setting: PlayerSetting):
     return [{ ...rest, ...kept, ...(setting.choices === undefined ? {} : { choices: setting.choices.filter((choice) => offered.some((one) => comparableText(one) === comparableText(choice.value))) }) }];
 }
 
-// Who makes the pictures on this computer, in the player's words (D-390).
+// Who makes the pictures on this computer, in the player's words (D-390, D-572).
 const madeBy = {
     Codex: "Codex makes them on this computer, from your ChatGPT plan.",
     Claude: "Claude draws them on this computer, as vector pictures, from your Claude plan.",
     Antigravity: "Antigravity makes them in your chat, from your Google plan.",
 };
 
-/** Every note the pictures' setting may have, which the dashboard writes in its language (D-394). */
-export const picturesNotes = [...Object.values(madeBy), ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];
+// The master makes them with an image tool of its own, as ElevenLabs's (D-572).
+const madeWithTool = "The master makes them with {tool}.";
+const toolAsked = "The master asks you in the chat which tool to use.";
 
-/** Whether this computer makes pictures, and with whose plan, in the player's words (D-308, D-390); why not and how to have them; nothing where no maker is asked. */
+// Where the maker the player chose made no picture, and the chat in use makes them (D-572): it refused one, with its own words, or it cannot.
+const refusedNote = "{maker} refused the last picture: {why}. {by} makes them instead.";
+const madeMeanwhile = "{by} makes them meanwhile.";
+
+/** Every note the pictures' setting may have, which the dashboard writes in its language (D-394). */
+export const picturesNotes = [...Object.values(madeBy), madeWithTool, toolAsked, refusedNote, madeMeanwhile, ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];
+
+/**
+ * Whether this computer makes pictures, and with whose plan, in the player's words (D-308, D-390); why not and how to have them; where the maker the player
+ * chose made none and the chat in use makes them, why (D-572); nothing where no maker is asked.
+ */
 function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
 {
     const ready = context.pictures?.ready(true);
-    return ready === undefined ? {} : { note: ready.ready ? { text: madeBy[ready.maker ?? "Codex"] } : { text: notReadyText(ready), fix: true } };
+
+    if (ready === undefined) {
+        return {};
+    }
+
+    if (!ready.ready) {
+        return { note: { text: notReadyText(ready), fix: true } };
+    }
+
+    const instead = ready.instead;
+
+    if (instead !== undefined) {
+        return instead.refused === true
+            ? { note: { text: refusedNote, values: { maker: instead.maker, why: instead.why.replace(/\.$/, ""), by: instead.by } } }
+            : { note: { text: notReadyText(instead), fix: true, values: { by: instead.by }, also: madeMeanwhile } };
+    }
+
+    if (ready.tool !== undefined) {
+        return { note: { text: madeWithTool, values: { tool: ready.tool } } };
+    }
+
+    if (ready.askTool === true) {
+        return { note: { text: toolAsked } };
+    }
+
+    return { note: { text: madeBy[ready.maker === "Claude" || ready.maker === "Antigravity" ? ready.maker : "Codex"] } };
 }
 
 /** How the player has pictures, or else why there are none. */

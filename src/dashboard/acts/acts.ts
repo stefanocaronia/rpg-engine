@@ -4,8 +4,8 @@ import type { ActsShown, ActVerb, SheetGroup, SheetVerb, ShownPerson, ShownPlace
 import { strangerLabel } from "../parts/labels.ts";
 import { t } from "../text.ts";
 
-/** What the player does: one of the system's verbs with a thing of the sheet, or talking to someone. */
-export type ActStart = { verbs: ActVerb[]; item: string; } | { talk: string; };
+/** What the player does: a thing of the sheet, its page and what the sheet says of it, with the system's verbs for it (none: only read); or talking to someone. */
+export type ActStart = { verbs: ActVerb[]; item: string; page?: string; facts?: string[]; document?: true; } | { talk: string; };
 
 /** On whom, or where: someone by the name the page shows, the character itself, no one in particular, or a square of the map. */
 export type ActTarget = { person: string; } | { square: string; } | "self" | "none";

@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 import { z } from "zod";
-import { findCampaign } from "../campaign/index.ts";
+import { chosenPictureMaker, findCampaign } from "../campaign/index.ts";
 import { commands } from "../commands/index.ts";
 import { libraryRunner } from "../commands/shared/books/library-reader.ts";
 import { loadCampaignCode, packageCommands } from "../commands/shared/packages/code.ts";
@@ -36,7 +36,8 @@ export async function runCommandLine(
     argv: string[],
     context: Context = {
         ...defaultContext(),
-        pictures: hostPictures(() => undefined),
+        // Who makes the pictures, as the campaign of the folder chose (D-572); else Claude's drawing.
+        pictures: hostPictures(() => undefined, () => chosenPictureMaker(process.cwd())),
         // An import run apart by the MCP server uses the helper of the chat that started it.
         reader: hostReader(() => process.env.RPG_HOST || undefined),
         packages: npmPackages(packagesFolder()),

@@ -45,7 +45,7 @@ export const find = defineCommand({
         const found = [...lines, ...system];
         const note = systemNote(result, lines.length > 0);
         // A name said in play and never written is no page: the player who remembers it is right (D-266).
-        const unwritten = result.withText ? " What was said in play and never written is not in the files: if the player remembers it, write it." : "";
+        const unwritten = result.withText ? " What was said in play and never written is not in the files: chats finds it in the past chats; if the player remembers it, write it." : "";
         const none = `${note === "" || result.withText ? "No page matches." : "No page of the campaign matches."}${unwritten}`;
         return [found.length > 0 ? found.join("\n") : none, note, skippedPagesNote(result.problems)].filter((block) => block !== "").join("\n\n");
     },

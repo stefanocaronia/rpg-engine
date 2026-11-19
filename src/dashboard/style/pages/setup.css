@@ -206,7 +206,14 @@
         text-transform: uppercase;
     }
 
-    .setup-choice[aria-checked="true"] span:not(.setup-suggested) {
+    /* What the player chose in their last campaign: a note's mark beside the name, never a control, in the muted ink. */
+    .setup-choice .setup-last {
+        font-size: 0.75rem;
+        font-style: italic;
+        font-weight: 400;
+    }
+
+    .setup-choice[aria-checked="true"] span:not(.setup-suggested, .setup-last) {
         color: var(--ink);
     }
 

@@ -221,7 +221,7 @@ function DayDetails({ calendar, day }: { calendar: ShownCalendar; day: number; }
                     ))}
                     {marks.scenes.map((scene) => (
                         <li key={scene.number}>
-                            <a class="calendar-line" href={sectionAddress("journal", "story", String(scene.number))}>
+                            <a class="calendar-line" href={sectionAddress("journal", "timeline", String(scene.number))}>
                                 <Icon name="journal" />
                                 <span class="calendar-scene">
                                     <span>

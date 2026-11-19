@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, PictureMaker } from "../src/core/context.ts";
 import { FileStore, withFiles } from "../src/core/store.ts";
+import type { PlayerSetting } from "../src/dashboard/data.ts";
 import { antigravityClient, hostPictures, paintedBrief } from "../src/helpers/index.ts";
 import { imageFileName, readImage } from "../src/images/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
@@ -138,6 +139,72 @@ image: "[[Lupo.png]]"`);
     });
 });
 
+describe("image from an address, as an image tool gives it (T-222)", () => {
+    const address = "https://example.org/generations/1.png?signature=secret";
+
+    /** A download that gives these bytes, or fails as the engine's does past its size or on a bad answer, and remembers what it was asked. */
+    function downloading(answer: Uint8Array | Error): { asked: { url: string; most: number; }[]; } & Pick<Context, "download">
+    {
+        const asked: { url: string; most: number; }[] = [];
+
+        const download = (url: string, most: number): Promise<Uint8Array> => {
+            asked.push({ url, most });
+
+            if (answer instanceof Error) {
+                return Promise.reject(answer);
+            }
+
+            return answer.length > most ? Promise.reject(new Error(`${url} is more than ${most / 1024 / 1024} MB, more than may be taken from it.`)) : Promise.resolve(answer);
+        };
+
+        return { asked, download };
+    }
+
+    it("downloads the picture and takes it as a file, never logging the address", async () => {
+        const fake = downloading(png);
+        context = { ...context, download: fake.download };
+        expect(await ok("image", "Ennio", "--url", address)).toBe("Ennio's picture is now images/Ennio.png.");
+        expect(fake.asked).toEqual([{ url: address, most: 5 * 1024 * 1024 }]);
+        expect(readFileSync(join(folder, "images", "Ennio.png"))).toEqual(Buffer.from(png));
+        expect(page("characters/Ennio.md")).toContain('image: "[[Ennio.png]]"');
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "image-set", data: { page: "Ennio", image: "images/Ennio.png" } });
+        expect(JSON.stringify(readLogFile(folder))).not.toContain("signature");
+    });
+
+    it("refuses an address that is not https, and file with url, before downloading anything", async () => {
+        const fake = downloading(png);
+        context = { ...context, download: fake.download };
+        expect(await refused("image", "Ennio", "--url", "http://example.org/1.png")).toContain("url takes the https address of the picture");
+        expect(await refused("image", "Ennio", "--url", "file:///C:/a.png")).toContain("url takes the https address of the picture");
+        expect(await refused("image", "Ennio", picture("a.png", png), "--url", address)).toBe("Give file or url, not both: file is a picture on this computer, url one on the web. Nothing changed.");
+        expect(await refused("image", "Ennio", "--url", address, "--describe", "Un viso")).toContain("Give file, url or describe, one of them");
+        expect(fake.asked).toEqual([]);
+        expect(existsSync(join(folder, "images"))).toBe(false);
+    });
+
+    it("refuses a picture too large and what is no picture, by its bytes, changing nothing", async () => {
+        context = { ...context, download: downloading(new Uint8Array(5 * 1024 * 1024 + 1).fill(0x89)).download };
+        expect(await refused("image", "Ennio", "--url", address)).toContain("is more than 5 MB");
+        context = { ...context, download: downloading(new TextEncoder().encode("<html>Access denied</html>")).download };
+        expect(await refused("image", "Ennio", "--url", address)).toBe(
+            "What the address gave is not a PNG, JPEG, WebP or SVG picture: convert it to one of those, or give another file. Nothing changed.",
+        );
+        expect(existsSync(join(folder, "images"))).toBe(false);
+        expect(page("characters/Ennio.md")).not.toContain("image");
+    });
+
+    it("says what to do when the download fails, as an expired address, or where the engine cannot download", async () => {
+        context = { ...context, download: downloading(new Error(`${address} answered 403: check the address, or download it and give the file.`)).download };
+        expect(await refused("image", "Ennio", "--url", address)).toBe(
+            `No picture came from the address: ${address} answered 403: check the address, or download it and give the file. `
+                + "If it expired, as signed addresses do, ask your image tool for a new one. Nothing changed.",
+        );
+        context = { ...context, download: undefined };
+        expect(await refused("image", "Ennio", "--url", address)).toContain("Here the engine cannot download: download the picture yourself and give it with file");
+        expect(existsSync(join(folder, "images"))).toBe(false);
+    });
+});
+
 describe("validate", () => {
     it("finds a page whose picture is in no images folder", async () => {
         await ok("write", "Rosa", "--type", "character", "--set", "role=npc", "--set", "image=[[rosa.png]]");
@@ -171,6 +238,12 @@ describe("pictures of places, quests, the party and those met made from words (D
                 return Promise.resolve(made === undefined ? { refused: "the generator's safety check refused it" } : { file: made, done: () => undefined });
             },
         };
+    }
+
+    /** Claude's drawing, faked: its picture, never spent. */
+    function claudeMaker(made: string): PictureMaker
+    {
+        return { ready: () => ({ ready: true, maker: "Claude" }), make: () => Promise.resolve({ file: made, done: () => undefined }) };
     }
 
     beforeEach(async () => {
@@ -224,12 +297,75 @@ describe("pictures of places, quests, the party and those met made from words (D
     it("in Antigravity gives the master the brief to paint the picture itself, and changes nothing", async () => {
         await ok("config", "pictures", "new places");
         await ok("config", "lines", "--add", "ragni");
-        context = { ...context, pictures: hostPictures(() => antigravityClient, maker(true, picture("made.png", png))) };
+        context = { ...context, pictures: hostPictures(() => antigravityClient, () => undefined, maker(true, picture("made.png", png))) };
         const said = await ok("image", "Guado", "--describe", "Un guado di pietre");
-        expect(said).toMatch(/^Make Guado's picture yourself with your own image tool, from this brief, then give its file with image, page Guado, file/);
+        expect(said).toMatch(/^Make Guado's picture yourself with your own image tool, from this brief, then give it with image, page Guado, file and its full path, or url and its https address/);
         expect(said).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre");
         expect(said).toContain("Never show: ragni");
         expect(page("places/Guado.md")).not.toContain("image:");
+    });
+
+    it("has the master make it with ElevenLabs or a tool the player named, from the brief, as the campaign chose (D-572)", async () => {
+        await ok("config", "pictures", "on request");
+        const chosen = (): string | undefined => readFileSync(join(folder, "campaign.yaml"), "utf8").match(/^pictures-by: (.*)$/m)?.[1];
+        context = { ...context, pictures: hostPictures(() => "claude-code", chosen, maker(true), maker(true, picture("made.png", png))) };
+        await ok("config", "pictures-by", "elevenlabs");
+        const eleven = await ok("image", "Guado", "--describe", "Un guado di pietre");
+        expect(eleven).toMatch(/^Make Guado's picture with your ElevenLabs image tool, from this brief: one picture \(generations_count 1\)/);
+        expect(eleven).toContain("then give its full-resolution address with image, page Guado, url, or download it and give file");
+        expect(eleven).toContain("tell the player to add the full ElevenLabs connector, a custom connector at https://api.elevenlabs.io/v1/mcp");
+        expect(eleven).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre");
+        await ok("config", "pictures-by", "Pittore");
+        expect(await ok("image", "Guado", "--describe", "Un guado di pietre")).toMatch(/^Make Guado's picture with Pittore, from this brief, then give it with image, page Guado/);
+        expect(page("places/Guado.md")).not.toContain("image:");
+    });
+
+    it("with another tool not named yet, has the master ask the player which, write it, then make it with that one (D-572)", async () => {
+        await ok("config", "pictures", "on request");
+        const chosen = (): string | undefined => readFileSync(join(folder, "campaign.yaml"), "utf8").match(/^pictures-by: (.*)$/m)?.[1];
+        const pictures = hostPictures(() => "claude-code", chosen, maker(true), claudeMaker(picture("made.png", png)));
+        context = { ...context, pictures };
+        expect(await ok("config", "pictures-by", "other")).toContain("ask the player which, then set its name with config pictures-by");
+        const asked = await ok("image", "Guado", "--describe", "Un guado di pietre");
+        expect(asked).toMatch(/^The player chose another image tool for the pictures and has not named it: ask them which, set its name with config pictures-by, then make Guado's picture/);
+        expect(asked).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre");
+        const settings = async () => (JSON.parse(await ok("view", "--settings", "--json")) as { settings: PlayerSetting[]; }).settings;
+        expect((await settings()).find((setting) => setting.name === "pictures")?.note).toEqual({ text: "The master asks you in the chat which tool to use." });
+        // The player names it in the chat: the master writes it, and it makes the pictures from then on.
+        await ok("config", "pictures-by", "Pittore");
+        expect(await ok("image", "Guado", "--describe", "Un guado di pietre")).toMatch(/^Make Guado's picture with Pittore, from this brief/);
+        const shown = await settings();
+        expect(shown.find((setting) => setting.name === "pictures-by")).toMatchObject({ value: "Pittore", choices: expect.arrayContaining([expect.objectContaining({ value: "other" })]) });
+        expect(shown.find((setting) => setting.name === "pictures")?.note).toEqual({ text: "The master makes them with {tool}.", values: { tool: "Pittore" } });
+        expect(page("places/Guado.md")).not.toContain("image:");
+    });
+
+    it("says on the command line that the chat in use drew the picture Codex refused (D-572)", async () => {
+        await ok("config", "pictures", "on request");
+        await ok("config", "pictures-by", "codex");
+        context = { ...context, pictures: hostPictures(() => "claude-code", () => "codex", maker(true), claudeMaker(picture("made.png", png))) };
+        expect(await ok("image", "Guado", "--describe", "Un guado")).toBe(
+            "Guado's picture is now images/Guado.png. Codex refused Guado's picture: the generator's safety check refused it. Claude made it instead.",
+        );
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "image-set", data: { page: "Guado" } });
+    });
+
+    it("in the MCP server, tells the master at their next call that Codex refused and the chat in use drew it, or that none came (D-572)", async () => {
+        const later: string[] = [];
+        await ok("config", "pictures", "on request");
+        const lines = { add: (line: string) => void later.push(line), take: () => later.splice(0), giveBack: (lines: string[]) => void later.unshift(...lines) };
+        const files = new FileStore(context.systemFolders);
+        context = { ...context, later: lines, files, pictures: hostPictures(() => "claude-code", () => "codex", maker(true), claudeMaker(picture("made.png", png))) };
+        expect(await ok("image", "Guado", "--describe", "Un guado")).toContain("Guado's picture is being made");
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(page("places/Guado.md")).toContain("[[Guado.png]]");
+        expect(later).toEqual(["Codex refused Guado's picture: the generator's safety check refused it. Claude made it instead."]);
+        later.length = 0;
+        // Nothing makes it: the master hears why, and goes on without.
+        context = { ...context, pictures: maker(true) };
+        await ok("image", "Mulino", "--describe", "Un mulino");
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(later).toEqual(["No picture of Mulino: the generator's safety check refused it. Go on without, or give one with file."]);
     });
 
     it("in the MCP server, answers at once and the picture comes by itself", async () => {

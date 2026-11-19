@@ -69,6 +69,8 @@ export interface Context
     news?: (told?: Set<string>) => { lines: string[]; restore(): void; };
     /** What makes pictures from words on this computer (D-308), as Codex with the player's login; missing where none can, as in tests. */
     pictures?: PictureMaker;
+    /** Lines for the master's next call, as of a picture that came after its call answered (D-572); MCP only. */
+    later?: LaterLines;
     /** What writes text from a brief on this computer, outside the chat, as Codex or Claude Code with the player's login (D-406); missing where none can. */
     writer?: TextWriter;
     /** A game system's pages translated on this computer as a player first reads them, where the system has no translation of its own (D-539); missing elsewhere. */
@@ -92,6 +94,23 @@ export interface Context
     pageFolder?: string;
     /** Codex and Claude Code on this computer, installed and signed in with the player's yes (D-424); missing outside the MCP server, as in tests. */
     helpers?: Helpers;
+    /** Where the AI hosts keep their chats on this computer, which the MCP server copies into the campaign (T-225); missing elsewhere, as in tests. */
+    chatFolders?: ChatFolders;
+}
+
+/** The folders where Claude Code and Codex keep their chats, each in its own way (T-225). */
+export interface ChatFolders
+{
+    claudeCode: string;
+    codex: string;
+}
+
+/** Lines for the master at the head of their next call: added as they come, taken by the call, given back by one whose answer never goes. */
+export interface LaterLines
+{
+    add(line: string): void;
+    take(): string[];
+    giveBack(lines: string[]): void;
 }
 
 /** A game system's pages a player reads, translated into the campaign's language in the background where they lack it (D-539). */
@@ -217,9 +236,25 @@ export interface DocumentReader
 
 /**
  * Whether pictures can be made here, or why not, in words the master can tell the player, and in the player's own with the steps to have them, one a line,
- * numbered, with the commands between backticks (D-341).
+ * numbered, with the commands between backticks (D-341). Ready, who makes them, as Codex, Claude or Antigravity, and the master's own image tool it names, as
+ * ElevenLabs, or that the player is to name it (D-572).
  */
-export type PicturesReady = { ready: true; maker?: "Codex" | "Claude" | "Antigravity"; } | { ready: false; why: string; fix?: string; };
+export type PicturesReady =
+    | { ready: true; maker?: string; tool?: string; askTool?: true; instead?: PictureFallback; }
+    | { ready: false; why: string; fix?: string; };
+
+/**
+ * Why the maker the player chose made no picture and the chat in use makes it (D-572): its name, who makes it in its place, its reason, how the player has
+ * it, and whether it refused a picture.
+ */
+export interface PictureFallback
+{
+    maker: string;
+    by: string;
+    why: string;
+    fix?: string;
+    refused?: true;
+}
 
 /**
  * What a picture shows (D-308, D-388, D-408): a place as the party sees it arriving, a quest as the character knows it, or the portrait of one of the party as
@@ -240,6 +275,8 @@ export interface MadePicture
 {
     file: string;
     done(): void;
+    /** Made by the chat in use in place of the maker the player chose, and why (D-572). */
+    instead?: PictureFallback;
 }
 
 /** What makes a picture from a brief: whether it can, and the picture, or why none came. */
@@ -247,7 +284,8 @@ export interface PictureMaker
 {
     /** Asked once; with again, a no a minute old or more is asked once more, as after the player logs in. */
     ready(again?: boolean): PicturesReady;
-    make(subject: PictureSubject): Promise<MadePicture | { refused: string; }>;
+    /** A picture, or why none came; onlyThis when the next may come, as after a safety check or a timeout (D-572). */
+    make(subject: PictureSubject): Promise<MadePicture | { refused: string; onlyThis?: true; }>;
     /** Where the chat makes the picture itself with its own tool (D-390), as Antigravity: the brief it follows; the engine then starts nothing. */
     brief?(subject: PictureSubject): string | undefined;
 }

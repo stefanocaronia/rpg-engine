@@ -132,7 +132,7 @@ function Items({ items, field, fields }: { items: string[]; field: string; field
                 // An item is only a name: one of a page of the game system the campaign changed has the asterisk after it (D-564).
                 return (
                     <li key={item}>
-                        {acting ? <ActName verbs={verbs} item={label}>{label}</ActName> : label}
+                        {acting ? <ActName verbs={verbs} item={label} page={item}>{label}</ActName> : label}
                         {isChanged(item) && <ChangedMark />}
                     </li>
                 );

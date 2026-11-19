@@ -39,7 +39,7 @@ export async function downloadBytes(url: string, most: number, signal?: AbortSig
     }
 
     if (size > most) {
-        throw new Error(`${url} is more than ${most / 1024 / 1024} MB, more than an adventure may.`);
+        throw new Error(`${url} is more than ${most / 1024 / 1024} MB, more than may be taken from it.`);
     }
 
     const bytes = new Uint8Array(size);

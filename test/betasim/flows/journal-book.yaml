@@ -1,0 +1,10 @@
+name: Read the story as a book in the Journal, and turn back a chapter
+covers: [journal-book]
+# The demo's three scenes told as a book (T-227): it opens at the last chapter, with its bookmark.
+setup: {}
+steps:
+  - tapOn: Journal
+  - tapOn: Story
+  - assertVisible: La locanda del Guado
+  - tapOn: Il sigillo spezzato
+  - assertVisible: Il campo del viandante era un cerchio di pietre annerite

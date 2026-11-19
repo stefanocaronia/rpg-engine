@@ -2,15 +2,17 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { ElicitRequestSchema, type ElicitResult, LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { type ChildProcessByStdio, spawn } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { commands } from "../src/commands/index.ts";
-import type { Context, Player } from "../src/core/context.ts";
+import type { Context, PictureMaker, Player } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
+import { FileStore } from "../src/core/store.ts";
+import { hostPictures } from "../src/helpers/index.ts";
 import { startInstructions } from "../src/instructions/index.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import { createMcpServer } from "../src/server/mcp.ts";
@@ -208,6 +210,28 @@ describe("what the player changed on the dashboard (D-341)", () => {
         const failed = await plain.callTool({ name: "show", arguments: { page: "Nessuno" } });
         expect(failed.isError).toBe(true);
         expect((failed.content as { text: string; }[])[0].text).toMatch(/^The player took "ragni" off lines on the dashboard\.\n\n\S/);
+        await plain.close();
+    });
+
+    it("tells the master at the head of their next call that Codex refused a picture and the chat in use made it (D-572)", async () => {
+        await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
+        inPlay(folder);
+        await runCommandLine(["config", "pictures", "on request"], testContext(folder));
+        await runCommandLine(["write", "Guado", "--type", "place"], testContext(folder));
+        const png = join(makeTempFolder(), "made.png");
+        writeFileSync(png, Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]));
+        const codex: PictureMaker = { ready: () => ({ ready: true, maker: "Codex" }), make: () => Promise.resolve({ refused: "your plan makes no pictures" }) };
+        const claude: PictureMaker = { ready: () => ({ ready: true, maker: "Claude" }), make: () => Promise.resolve({ file: png, done: () => undefined }) };
+        const context = { ...testContext(folder), files: new FileStore(testContext(folder).systemFolders), pictures: hostPictures(() => "claude-code", () => "codex", codex, claude) };
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer(context, {}).connect(serverTransport);
+        const plain = new Client({ name: "plain", version: "1.0.0" });
+        await plain.connect(clientTransport);
+        const answer = async (name: string, args: Record<string, unknown>) => ((await plain.callTool({ name, arguments: args })).content as { text: string; }[])[0].text;
+        expect(await answer("image", { page: "Guado", describe: "Un guado di pietre" })).toContain("Guado's picture is being made");
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(await answer("status", {})).toMatch(/^Codex refused Guado's picture: your plan makes no pictures\. Claude made it instead\.\n\n\S/);
+        expect(await answer("status", {})).not.toContain("Codex refused");
         await plain.close();
     });
 
@@ -557,15 +581,22 @@ describe("MCP server, loading a save in a session (SAV-5)", () => {
             expect(await tool("show", { page: "Varro" })).toContain("There is no page named Varro");
 
             // A save holds the files as the disk has them, also those the session read before they were changed by hand, outside world and rules.
-            writeFileSync(join(folder, "sessions", "note.md"), "v1");
+            mkdirSync(join(folder, "notes"));
+            writeFileSync(join(folder, "notes", "note.md"), "v1");
             await tool("save", { action: "make" });
-            writeFileSync(join(folder, "sessions", "note.md"), "v2");
-            writeFileSync(join(folder, "sessions", "nuova.md"), "nuova");
+            writeFileSync(join(folder, "notes", "note.md"), "v2");
+            writeFileSync(join(folder, "notes", "nuova.md"), "nuova");
+            // The chats copied as text are no part of the game: a save leaves them out, and a load never takes them back (T-225).
+            writeFileSync(join(folder, "sessions", "2026-11-19 claude-code 7dfe1e5a.md"), "the chat");
             await tool("save", { action: "make" });
             const [last] = readdirSync(join(folder, ".saves")).filter((file) => file.startsWith("003"));
             const held = unpackFiles(readFileSync(join(folder, ".saves", last)));
-            expect(new TextDecoder().decode(held["sessions/note.md"])).toBe("v2");
-            expect(new TextDecoder().decode(held["sessions/nuova.md"])).toBe("nuova");
+            expect(new TextDecoder().decode(held["notes/note.md"])).toBe("v2");
+            expect(new TextDecoder().decode(held["notes/nuova.md"])).toBe("nuova");
+            expect(Object.keys(held).filter((path) => path.startsWith("sessions/"))).toEqual([]);
+            await tool("save", { action: "load", save: "2" });
+            expect(readFileSync(join(folder, "sessions", "2026-11-19 claude-code 7dfe1e5a.md"), "utf8")).toBe("the chat");
+            expect(existsSync(join(folder, "notes", "nuova.md"))).toBe(false);
         } finally {
             await host.close();
             session.close();

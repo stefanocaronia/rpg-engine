@@ -10,6 +10,7 @@ import { type GameSystem, rulesetSetting } from "../systems/index.ts";
 import type { GameDate } from "../time/index.ts";
 import { choicesNotes } from "./choices.ts";
 import { importLine } from "./import/import.ts";
+import { bookBehind } from "./shared/campaign/book.ts";
 import { allStateChecks, type Contradiction, markStateChecksTold } from "./shared/campaign/checks.ts";
 import { picturesNote } from "./shared/campaign/images.ts";
 import { campaignMode, campaignNote } from "./shared/campaign/mode.ts";
@@ -201,6 +202,8 @@ export const status = defineCommand({
             journey: journeyText(world, roadsOf(world), readJourney(root), measuresOf(root, system)),
             lastScenes: closed.slice(0, shownNames).map((scene) => `${scene.title} (${scene.type}): ${scene.summary}`),
             sceneCounts: sceneCounts(closed),
+            // The book's chapters left behind, once it has begun (T-227).
+            book: bookBehind(root),
             openQuests: openQuests(world, now),
             now: now === undefined ? undefined : datedText(root, context, now),
             // In play, the game time to let pass when the last move is an hour old or more and the time runs between sessions (D-133).
@@ -271,6 +274,7 @@ export const status = defineCommand({
             result.journey === undefined ? "" : `Journey: ${result.journey}`,
             result.lastScenes.length === 0 ? "" : `Last scenes: ${result.lastScenes.join(" · ")}`,
             result.sceneCounts === "" ? "" : `Scenes so far: ${result.sceneCounts}`,
+            result.book ?? "",
             dueLine(result.dueEvents),
             namesLine("Open quests", result.openQuests, "find text open, type quest"),
             namesLine("Planned events", result.plannedEvents, "find text planned, type event"),

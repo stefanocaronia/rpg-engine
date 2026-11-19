@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { stringify } from "yaml";
 import { z } from "zod";
 import { files } from "../core/store.ts";
-import { campaignFileName, findCampaign } from "./find-campaign.ts";
+import { campaignFileName, findCampaign, sessionsFolderName } from "./find-campaign.ts";
 import { hostFileChanges, type HostInstructions, rpgServer, writeHostFile } from "./host-files.ts";
 import { type CampaignSettings, settingsSchema } from "./settings.ts";
 
@@ -23,7 +23,7 @@ export function createCampaign(folder: string, settings: CampaignSettings, platf
 
     const mcpConfig = mcpConfigWithRpg(root, platform);
     const hostFiles = hostFileChanges(root, instructions, platform);
-    files().makeFolder(join(root, "sessions"));
+    files().makeFolder(join(root, sessionsFolderName));
     files().write(join(root, campaignFileName), `# Campaign settings: change them with the config command.\n${stringify(parsed.data)}`);
     // A new campaign starts in setup (MOD-1).
     files().write(join(root, "state.yaml"), "# The present of the game, kept by rpg: mode, date and current scene.\nmode: setup\n");

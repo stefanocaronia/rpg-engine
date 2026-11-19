@@ -597,11 +597,11 @@ export async function readActs(): Promise<ActsShown>
     return await response.json() as ActsShown;
 }
 
-/** Says a sentence to the master (D-495): its id, with how the sentences stand now; else what went wrong. */
-export async function sayAct(text: string): Promise<{ id: string; shown: ActsShown; } | { error: string; }>
+/** Says a sentence to the master (D-495), with the thing of the sheet it starts from (T-218): its id, with how the sentences stand now; else what went wrong. */
+export async function sayAct(text: string, item?: string): Promise<{ id: string; shown: ActsShown; } | { error: string; }>
 {
     try {
-        const response = await fetch("/api/act", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+        const response = await fetch("/api/act", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item === undefined ? { text } : { text, item }) });
         const body = await response.json().catch(() => ({})) as ActsShown & { id?: string; error?: string; };
         return response.status === 202 && body.id !== undefined ? { id: body.id, shown: body } : { error: body.error ?? t("It did not reach the game: try again.") };
     } catch {

@@ -46,7 +46,10 @@ export async function settingPhrases(): Promise<Set<string>>
     };
 
     const own = new Set<string>([...playerSettingNames, "companions", "preparation", "length", "character", "name"]);
-    const settings = [...await read("--settings"), ...await read("--setup")].filter((setting) => own.has(setting.name));
+    const unplayed = [...await read("--settings"), ...await read("--setup")];
+    // How well the player knows the game, which the setup asks once the campaign has a system (T-211).
+    await runCommandLine(["config", "system", "free"], context);
+    const settings = [...unplayed, ...await read("--setup")].filter((setting) => own.has(setting.name));
     const words = settings.flatMap((setting) => [setting.about, setting.question, ...(setting.choices ?? []).flatMap((choice) => [choice.means, choice.label])]);
     return new Set([...words, ...picturesNotes].filter((word) => word !== undefined));
 }

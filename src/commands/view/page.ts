@@ -13,7 +13,7 @@ import { type Knowledge, knownSecretsApart, knownText, knowsPage, pageKnownBy, p
 import { type Measures, measuresOf } from "../shared/places/roads.ts";
 import { lineExperience } from "../shared/sheet/counters.ts";
 import { effectiveFields } from "../shared/sheet/effect-layer.ts";
-import { counterOf, experienceNeed, experienceProgress, sheetData, type SheetGroupData, sheetHeadline, type SheetValue, statBlock } from "../shared/sheet/sheet.ts";
+import { counterOf, experienceNeed, experienceProgress, sheetData, type SheetGroupData, sheetHeadline, type SheetValue, statBlock, thingBlock } from "../shared/sheet/sheet.ts";
 import { hasSheet } from "../shared/sheet/system-fields.ts";
 import { isLayered } from "./layers.ts";
 import type { ViewResult } from "./result.ts";
@@ -22,13 +22,9 @@ import type { ViewResult } from "./result.ts";
 export function shownPage(root: string, context: Context, world: World, knowledge: Knowledge, page: Page, party: boolean): Extract<ViewResult, { kind: "page"; }>
 {
     const system = campaignSystem(root, context);
-    // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275).
-    const sheet = withItemImages(
-        root,
-        context,
-        world,
-        withCoins(speedInUnits(!party ? [] : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page), system, measuresOf(root, system)), campaignCoins(root, context).coins, system),
-    );
+    // A companion who keeps no sheet shows the stat block of the creature it derives from (D-275); a thing, what its page says of it as data (D-573).
+    const groups = !party ? thingBlock(world, system, page) : hasSheet(world, page) ? sheetData(world, system, page) : statBlock(world, system, page);
+    const sheet = withItemImages(root, context, world, withCoins(speedInUnits(groups, system, measuresOf(root, system)), campaignCoins(root, context).coins, system));
     const language = readSettings(root).language;
     const headline = party ? sheetHeadline(world, system, page, system === undefined || language === undefined ? undefined : systemWordsOf(root, system, language, context)) : undefined;
     const cards = party && hasSheet(world, page) ? system?.sheetCards : undefined;

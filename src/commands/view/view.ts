@@ -13,6 +13,7 @@ import { offeredPages } from "../choices.ts";
 import { type PlayerSetting, setupQuestions, shownPlayerSettings } from "../config/dashboard.ts";
 import { importShown } from "../import/import.ts";
 import { translatingTexts, wantTexts } from "../shared/books/system-texts.ts";
+import { campaignBook } from "../shared/campaign/book.ts";
 import { shownImage } from "../shared/campaign/images.ts";
 import { blockingMode, campaignMode, modes } from "../shared/campaign/mode.ts";
 import { campaignCoins } from "../shared/campaign/money.ts";
@@ -164,6 +165,8 @@ export const view = defineCommand({
                 ...shownJournal(root, world, knowledge, present, (entry) => storyFact(world, entry, lineNamed(entry)), known, (name) => placeLook(root, context, world, knowledge, name)),
                 // The diaries the player reads, the last line first: never a hidden line, as another character's (DIA-4).
                 thoughts: thoughtsIn(root, world).filter((one) => !one.hidden).reverse().map((one) => ({ who: known(one.page.name) ?? "someone", ...(one.date === undefined ? {} : { date: one.date }), text: one.text })),
+                // The story told as a book, the chapters of the scenes the story holds as it stands (T-227).
+                book: campaignBook(root),
             };
         }
 
@@ -346,6 +349,7 @@ export const view = defineCommand({
                     ...(result.quests.length === 0 ? ["No quests yet."] : result.quests.map(questText)),
                     ...result.chapters.map((chapter) => `${chapter.title ?? "Between scenes"}${chapter.date === undefined ? "" : `, ${chapter.date}`}${chapter.summary === undefined ? "" : `: ${chapter.summary}`}`),
                     ...result.thoughts.map((thought) => `${thought.who}'s diary${thought.date === undefined ? "" : `, ${thought.date}`}: ${thought.text}`),
+                    ...(result.book.length === 0 ? [] : [`The book: ${result.book.length} ${result.book.length === 1 ? "chapter" : "chapters"} written; book reads one.`]),
                 ].join("\n");
             case "world":
                 return [

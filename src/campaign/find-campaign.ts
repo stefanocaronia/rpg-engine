@@ -7,6 +7,12 @@ export const campaignFileName = "campaign.yaml";
 /** The folder of a campaign with its house rules, a markdown file for each (D-178). */
 export const houseRulesFolderName = "rules";
 
+/** The folder of a campaign with its chats as text, copied from the AI hosts as they go on, kept out of the saves (T-225). */
+export const sessionsFolderName = "sessions";
+
+/** The folder of a campaign with its story told as a book, a chapter for each closed scene, kept out of the saves (T-227). */
+export const bookFolderName = "book";
+
 /** The campaign that holds `folder`: the nearest folder, from `folder` upwards, with a campaign.yaml. */
 export function findCampaign(folder: string): string | undefined
 {
@@ -45,7 +51,7 @@ const layersFolder = "layers";
 
 // The folders the engine writes in: a link among them, a junction that came with a folder someone else made, would carry its writes outside the campaign. A file
 // that is a link the store refuses as it writes it.
-const writtenFolders = ["world", "images", "rules", "sessions", ".saves", "exports", ".player", ".imports", ".claude", ".codex", layersFolder];
+const writtenFolders = ["world", "images", "rules", sessionsFolderName, bookFolderName, ".saves", "exports", ".player", ".imports", ".claude", ".codex", layersFolder];
 
 /** Throws when a folder the engine writes in, or one in it two levels deep, three for the layers, is a link: a symbolic link or a junction. */
 function refuseLinksOut(root: string): void

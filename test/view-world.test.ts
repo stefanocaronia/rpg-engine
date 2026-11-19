@@ -94,6 +94,9 @@ describe("what the World section shows (VIEW-11)", () => {
             { name: "Lettera di Lidia", document: "letter", text: "Una lettera piegata in quattro.", carried: true },
             { name: "Avviso", document: "notice", text: "Taglia sul mostro del fiume: 50 monete.", carried: false },
         ]);
+        // The sheet's row of a document carried says so, for its card to open it here (D-573).
+        const sheet = JSON.parse(await ok("view", "Kira", "--json")) as { sheet: { items?: { item: string; document?: true; }[]; }[]; };
+        expect(sheet.sheet.flatMap((group) => group.items ?? []).filter((row) => row.document === true).map((row) => row.item)).toEqual(["Lettera di Lidia"]);
         await ok("reveal", "Lettera di Lidia#Contenuto", "--to", "Kira");
         expect(world().documents[0].text).toContain("Ti aspetto al mulino.");
         expect(world().known.map((entry) => entry.name)).not.toContain("Lettera di Lidia");

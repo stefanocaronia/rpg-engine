@@ -3,9 +3,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
 import { spawn } from "node:child_process";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import { findCampaign, hasCharacterAgent, readTextSetting, refreshHostFiles } from "../campaign/index.ts";
+import { chosenPictureMaker, findCampaign, hasCharacterAgent, readTextSetting, refreshHostFiles } from "../campaign/index.ts";
+import { chatFolders } from "../chats/index.ts";
 import { commands } from "../commands/index.ts";
 import { installCampaignSystem } from "../commands/package/install.ts";
 import { libraryRunner } from "../commands/shared/books/library-reader.ts";
@@ -16,7 +18,7 @@ import { campaignWorld } from "../commands/shared/campaign/world.ts";
 import { campaignExamples } from "../commands/shared/examples.ts";
 import { packageCommands } from "../commands/shared/packages/code.ts";
 import { systemConfirm } from "../confirm/index.ts";
-import { type Context, defaultContext, packagesFolder, type Player, playerWait } from "../core/context.ts";
+import { type Context, defaultContext, type LaterLines, packagesFolder, type Player, playerWait } from "../core/context.ts";
 import { downloadBytes } from "../core/download.ts";
 import { type Examples, neutralExamples, withExamples } from "../core/examples.ts";
 import type { Command } from "../core/registry.ts";
@@ -29,6 +31,7 @@ import { hostInstructions, startInstructions } from "../instructions/index.ts";
 import { npmEngine, npmPackages } from "../packages/index.ts";
 import type { World } from "../pages/index.ts";
 import { loadSystemCode } from "../systems/index.ts";
+import { chatKeeper } from "./chats.ts";
 import { type Dashboard, startDashboard } from "./dashboard/index.ts";
 
 type AnyCommand = Command<any, any>;
@@ -64,6 +67,8 @@ export function createMcpServer(context: Context = defaultContext(), environment
     // A server lives as long as its chat: it gives each part of the instructions once (D-97).
     context.told ??= new Set();
     context.chat ??= { calls: 0 };
+    // What came after a call answered, as a picture made in its place or none, for the next (D-572).
+    context.later ??= laterLines();
     // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4).
     const outside = context.files instanceof SessionStore ? watchOutside(context, context.files) : { take: () => [], giveBack: () => undefined };
     // The campaign's game system, one of ours, installed by itself when it is not on this computer, and said once (SYS-10).
@@ -83,9 +88,12 @@ export function createMcpServer(context: Context = defaultContext(), environment
     // The examples of the descriptions in the names of the campaign's system, read without the session's store before the host asks for the tools (D-518).
     const examples = { shown: examplesFor(context, new FileStore(context.systemFolders)) };
     const coreTools = new Map<AnyCommand, RegisteredTool>();
+    // The chats copied into the campaign, the first time as the server starts, once its world is read (T-225).
+    const keepChats = chatKeeper(context);
 
     // After every call the descriptions follow the campaign's system, as after init or config system, and the extensions' tools follow campaign.yaml.
     const afterCall = (): Promise<void> => {
+        keepChats();
         refreshExamples(coreTools, examples, examplesFor(context, context.files ?? new FileStore(context.systemFolders)));
         return extensions();
     };
@@ -141,12 +149,12 @@ export async function startMcpServer(): Promise<void>
     const leave = (): never => process.exit(0);
     process.stdin.on("end", leave);
     process.stdin.on("close", leave);
-    // The pictures, by the chat in use, which names itself as the session starts (D-308, D-390).
+    // The pictures, by the campaign's choice, else by the chat in use, which names itself as the session starts (D-308, D-572).
     let server: ReturnType<typeof createMcpServer> | undefined;
     const host = (): string | undefined => server?.server.getClientVersion()?.name;
     const context: Context = {
         ...defaultContext(),
-        pictures: hostPictures(host),
+        pictures: hostPictures(host, () => chosenPictureMaker(context.folder)),
         writer: hostWriter(host),
         reader: hostReader(host),
         // The command line that started this server runs the import apart, `rpg import` in the campaign's folder, with the chat's own helper.
@@ -160,6 +168,7 @@ export async function startMcpServer(): Promise<void>
         download: downloadBytes,
         host,
         chat: { calls: 0 },
+        chatFolders: chatFolders(process.env, homedir()),
     };
     // The systems' code, loaded once for the session, as the engine's own: a system changed since needs the server started again (D-448).
     context.systemCode = await loadSystemCode(context.systemFolders);
@@ -394,6 +403,7 @@ async function runTool(
     let news: { lines: string[]; restore(): void; } | undefined;
     let changedOutside: string[] = [];
     let installed: string[] = [];
+    let later: string[] = [];
     // The call tells its parts on a copy of what the chat was told, given back at its end: an answer that never goes tells nothing, so its parts are told again
     // (D-97), and what a call beside it told stays told.
     const before = new Set(context.told);
@@ -417,12 +427,14 @@ async function runTool(
         await prepare();
         // The campaign's system installed by itself, said first (SYS-10); a call stopped while it installed leaves the line to the next.
         installed = extra.signal.aborted ? [] : installer.take();
+        // What came after the last calls answered, as a picture Claude drew in another's place, right after (D-572).
+        later = extra.signal.aborted ? [] : (context.later?.take() ?? []);
         // After a load the chat going on remembers what is gone: nothing runs in it, until a new chat begins with instructions (D-361).
         const back = chatAfterLoad(context, command.name, input);
 
         if (back.refused !== undefined) {
             news = context.news?.(told);
-            return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), back.refused].join("\n\n") }, masterOnly(context)], isError: true };
+            return { content: [{ type: "text", text: [...installed, ...later, ...(news?.lines ?? []), back.refused].join("\n\n") }, masterOnly(context)], isError: true };
         }
 
         const checked = checkedInput(command, input, examples.shown);
@@ -438,10 +450,11 @@ async function runTool(
         const text = command.format(await command.run(checked, { ...context, told, signal: extra.signal }));
         // What the player changed on the dashboard comes first, once, what they changed while the call waited included (D-341).
         news = context.news?.(told);
-        return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }, masterOnly(context)] };
+        return { content: [{ type: "text", text: [...installed, ...later, ...(news?.lines ?? []), ...changedOutside, ...back.begun, text].join("\n\n") }, masterOnly(context)] };
     } catch (error) {
         news ??= context.news?.(told);
-        return { content: [{ type: "text", text: [...installed, ...(news?.lines ?? []), ...changedOutside, error instanceof Error ? error.message : String(error)].join("\n\n") }, masterOnly(context)], isError: true };
+        const said = error instanceof Error ? error.message : String(error);
+        return { content: [{ type: "text", text: [...installed, ...later, ...(news?.lines ?? []), ...changedOutside, said].join("\n\n") }, masterOnly(context)], isError: true };
     } finally {
         clearInterval(keepAlive);
         clearInterval(installing);
@@ -450,6 +463,7 @@ async function runTool(
         if (extra.signal.aborted) {
             news?.restore();
             installer.giveBack(installed);
+            context.later?.giveBack(later);
             outside.giveBack(changedOutside);
 
             if (chat !== undefined) {
@@ -505,6 +519,25 @@ function systemInstaller(context: Context): Installer
             return installing;
         },
         busy: () => waiting > 0,
+        take: () => {
+            const lines = untold;
+            untold = [];
+            return lines;
+        },
+        giveBack: (lines) => {
+            untold = [...lines, ...untold];
+        },
+    };
+}
+
+/** Lines a command leaves for the master's next call, as of a picture that came after its call answered (D-572). */
+function laterLines(): LaterLines
+{
+    let untold: string[] = [];
+    return {
+        add: (line) => {
+            untold = [...untold, line];
+        },
         take: () => {
             const lines = untold;
             untold = [];

@@ -55,7 +55,7 @@ export interface SheetGroup
     icon?: string;
     values: SheetValue[];
     /** What a group's items are, as the things carried: each with its values, how deep inside another it is, whether equipped, and the lists of bonds it is in, as attuned. */
-    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; bonds?: string[]; image?: { file: string; version: number; }; layered?: true; }[];
+    items?: { item: string; values: SheetValue[]; depth?: number; inside?: string; equipped?: boolean; bonds?: string[]; image?: { file: string; version: number; }; layered?: true; document?: true; }[];
 }
 
 /**
@@ -556,7 +556,7 @@ export type View =
     | { kind: "settings"; settings: PlayerSetting[]; }
     | { kind: "saves"; mode: string; rule: string; saves: ShownSave[]; make: boolean; reset: ResetPoint[]; wentBack?: string; }
     // thoughts may be missing from a server older than the page, as a chat started before an update (D-497).
-    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts?: ShownThought[]; }
+    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts?: ShownThought[]; book?: BookChapter[]; }
     | { kind: "world"; known: KnownEntry[]; documents: ShownDocument[]; calendar: ShownCalendar; }
     | { kind: "setup"; mode: string; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; left?: string[]; }
     | { kind: "unknown"; text: string; };
@@ -608,6 +608,14 @@ export interface ShownThought
 }
 
 /** A scene as a chapter of the story (D-367); without a title, what happened between scenes; its number, and its place's kind and picture (D-384). */
+/** A chapter of the story told as a book, in the master's prose (T-227): the number of its scene, its title, its markdown. */
+export interface BookChapter
+{
+    number: number;
+    title: string;
+    text: string;
+}
+
 export interface ShownChapter
 {
     title?: string;
@@ -654,8 +662,13 @@ export interface PlayerSetting
     last?: string;
     /** In the setup, the question its card asks in place of its name, as how well the player knows the game (D-347). */
     question?: string;
-    /** What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing. */
-    note?: { text: string; fix?: true; };
+    /** In the setup, the game system its question names as {game}, by its name (T-211). */
+    game?: string;
+    /**
+     * What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing; the values its
+     * {names} take, as a maker's own words; and a line after it.
+     */
+    note?: { text: string; fix?: true; values?: Record<string, string>; also?: string; };
     /** A setting of the player's own words, as the author the master writes like, the longest its text may be (D-395); for a list, each item's (D-563). */
     most?: number;
     /** The parts of a custom difficulty or rigor, each with its level, one of the choices (T-132). */

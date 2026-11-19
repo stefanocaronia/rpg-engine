@@ -1,4 +1,4 @@
-// The pictures by the chat in use (D-390): Codex first, Claude's SVG where Codex is not ready, never Claude in Codex; the SVG cleaned from a white list (D-342).
+// The pictures as the campaign chose, else by the chat in use (D-390, D-572): Codex where chosen, the chat in use where it cannot; the SVG cleaned from a white list (D-342).
 import { describe, expect, it } from "vitest";
 import type { DocumentReader, PictureMaker, PicturesReady, PictureSubject } from "../src/core/context.ts";
 import { antigravityClient, cleanSvg, hostPictures, hostReader, svgBrief, svgIn } from "../src/helpers/index.ts";
@@ -13,28 +13,90 @@ function maker(said: PicturesReady): PictureMaker & { made: PictureSubject[]; }
 
 const bridge: PictureSubject = { kind: "place", name: "Ponte", seen: "un ponte di pietra", unseen: ["ragni"] };
 
-describe("who makes the pictures, by the chat in use (D-390)", () => {
-    it("takes Codex where it is ready, else Claude, and in Codex only Codex", async () => {
+describe("who makes the pictures, as the campaign chose, else by the chat in use (D-390, D-572)", () => {
+    it("takes the chat in use where nothing is chosen, or chat is: Claude elsewhere, Codex in Codex", async () => {
         const codex = maker({ ready: true, maker: "Codex" });
         const claude = maker({ ready: true, maker: "Claude" });
-        expect(hostPictures(() => "claude-code", codex, claude).ready()).toEqual({ ready: true, maker: "Codex" });
-
-        const away = maker({ ready: false, why: "Codex is not installed on this computer" });
-        const pictures = hostPictures(() => "claude-code", away, claude);
-        expect(pictures.ready()).toEqual({ ready: true, maker: "Claude" });
+        expect(hostPictures(() => "claude-code", () => undefined, codex, claude).ready()).toEqual({ ready: true, maker: "Claude" });
+        expect(hostPictures(() => undefined, () => "chat", codex, claude).ready()).toEqual({ ready: true, maker: "Claude" });
+        const pictures = hostPictures(() => "claude-code", () => undefined, codex, claude);
         await pictures.make(bridge);
         expect(claude.made).toEqual([bridge]);
-        expect(away.made).toEqual([]);
+        expect(codex.made).toEqual([]);
+        expect(hostPictures(() => "codex-mcp-client", () => undefined, codex, claude).ready()).toEqual({ ready: true, maker: "Codex" });
+        // In Codex, Codex is the chat: its no is the answer, with nothing in its place.
+        const away = maker({ ready: false, why: "Codex is not installed on this computer" });
+        expect(hostPictures(() => "codex-mcp-client", () => "codex", away, claude).ready()).toEqual({ ready: false, why: "Codex is not installed on this computer" });
+    });
 
-        // In Codex, Codex alone: its no is the answer.
-        expect(hostPictures(() => "codex-mcp-client", away, claude).ready()).toEqual({ ready: false, why: "Codex is not installed on this computer" });
+    it("takes Codex where chosen, and where it is not ready leaves the picture to the chat in use, saying why", async () => {
+        const codex = maker({ ready: true, maker: "Codex" });
+        const claude = maker({ ready: true, maker: "Claude" });
+        expect(hostPictures(() => "claude-code", () => "codex", codex, claude).ready()).toEqual({ ready: true, maker: "Codex" });
+        const away = maker({ ready: false, why: "Codex is not logged in on this computer", fix: "1. Paste `codex login`." });
+        const pictures = hostPictures(() => "claude-code", () => "codex", away, claude);
+        expect(pictures.ready()).toEqual({
+            ready: true,
+            maker: "Claude",
+            instead: { maker: "Codex", by: "Claude", why: "Codex is not logged in on this computer", fix: "1. Paste `codex login`." },
+        });
+        expect(await pictures.make(bridge)).toEqual({ refused: "Codex is not logged in on this computer; Claude made none either: a fake makes nothing" });
+        expect(claude.made).toEqual([bridge]);
         // With neither, Codex's no and how to have it.
-        expect(hostPictures(() => undefined, away, maker({ ready: false, why: "Claude Code is not logged in on this computer" })).ready()).toMatchObject({ ready: false, why: "Codex is not installed on this computer" });
+        expect(hostPictures(() => undefined, () => "codex", away, maker({ ready: false, why: "Claude Code is not logged in on this computer" })).ready()).toMatchObject({
+            ready: false,
+            why: "Codex is not logged in on this computer",
+        });
+    });
+
+    it("remembers a refusal of Codex until the choice changes, the chat in use making the pictures meanwhile", async () => {
+        let choice = "codex";
+        const codex: PictureMaker & { asked: number; } = { asked: 0, ready: () => ({ ready: true, maker: "Codex" }), make: () => (codex.asked++, Promise.resolve({ refused: "your plan makes no pictures" })) };
+        const claude: PictureMaker = { ready: () => ({ ready: true, maker: "Claude" }), make: () => Promise.resolve({ file: "drawn.svg", done: () => undefined }) };
+        const pictures = hostPictures(() => "claude-code", () => choice, codex, claude);
+        const instead = { maker: "Codex", by: "Claude", why: "your plan makes no pictures", refused: true };
+        expect(await pictures.make(bridge)).toMatchObject({ file: "drawn.svg", instead });
+        expect(pictures.ready()).toEqual({ ready: true, maker: "Claude", instead });
+        expect(await pictures.make(bridge)).toMatchObject({ file: "drawn.svg", instead });
+        expect(codex.asked).toBe(1);
+        // Chosen again: Codex is asked again.
+        choice = "chat";
+        pictures.ready();
+        choice = "codex";
+        expect(pictures.ready()).toEqual({ ready: true, maker: "Codex" });
+    });
+
+    it("asks Codex again after a refusal of that one picture, as the safety check's", async () => {
+        const codex: PictureMaker & { asked: number; } = {
+            asked: 0,
+            ready: () => ({ ready: true, maker: "Codex" }),
+            make: () => (codex.asked++, Promise.resolve({ refused: "the generator's safety check refused it", onlyThis: true as const })),
+        };
+        const claude: PictureMaker = { ready: () => ({ ready: true, maker: "Claude" }), make: () => Promise.resolve({ file: "drawn.svg", done: () => undefined }) };
+        const pictures = hostPictures(() => "claude-code", () => "codex", codex, claude);
+        expect(await pictures.make(bridge)).toMatchObject({ file: "drawn.svg", instead: { maker: "Codex", by: "Claude", refused: true } });
+        expect(pictures.ready()).toEqual({ ready: true, maker: "Codex" });
+        await pictures.make(bridge);
+        expect(codex.asked).toBe(2);
+    });
+
+    it("has the master make it from the brief with ElevenLabs, or with a tool the player named, and starts nothing", () => {
+        const codex = maker({ ready: true, maker: "Codex" });
+        const claude = maker({ ready: true, maker: "Claude" });
+        const eleven = hostPictures(() => "claude-code", () => "elevenlabs", codex, claude);
+        expect(eleven.ready()).toEqual({ ready: true, maker: "ElevenLabs", tool: "ElevenLabs" });
+        expect(eleven.brief?.(bridge)).toContain("Ponte, as adventurers see it arriving");
+        expect(hostPictures(() => "claude-code", () => "Pittore", codex, claude).ready()).toEqual({ ready: true, maker: "Pittore", tool: "Pittore" });
+        // Another tool, not named yet: the master asks the player which.
+        const other = hostPictures(() => "claude-code", () => "other", codex, claude);
+        expect(other.ready()).toEqual({ ready: true, maker: "another tool", askTool: true });
+        expect(other.brief?.(bridge)).toContain("Ponte, as adventurers see it arriving");
+        expect([...codex.made, ...claude.made]).toEqual([]);
     });
 
     it("in Antigravity has the chat paint it itself from the brief, and starts nothing", async () => {
         const codex = maker({ ready: true, maker: "Codex" });
-        const pictures = hostPictures(() => antigravityClient, codex, maker({ ready: true, maker: "Claude" }));
+        const pictures = hostPictures(() => antigravityClient, () => undefined, codex, maker({ ready: true, maker: "Claude" }));
         expect(pictures.ready()).toEqual({ ready: true, maker: "Antigravity" });
         const brief = pictures.brief?.(bridge) ?? "";
         expect(brief).toMatch(/^Make exactly one new image from the brief below with your own image generation tool/);
@@ -42,7 +104,10 @@ describe("who makes the pictures, by the chat in use (D-390)", () => {
         expect(brief).toContain("landscape, 16:9");
         expect(brief).toContain("Never show: ragni");
         // Elsewhere no brief: the engine makes the picture.
-        expect(hostPictures(() => "claude-code", codex).brief?.(bridge)).toBeUndefined();
+        expect(hostPictures(() => "claude-code", () => undefined, codex).brief?.(bridge)).toBeUndefined();
+        // Codex chosen and not ready: the chat paints it in its place.
+        const away = maker({ ready: false, why: "Codex is not installed on this computer" });
+        expect(hostPictures(() => antigravityClient, () => "codex", away).brief?.(bridge)).toContain("Ponte, as adventurers see it arriving");
         expect(codex.made).toEqual([]);
     });
 

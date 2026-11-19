@@ -29,7 +29,22 @@ export type SceneResult =
     | { action: "now"; title: string; now: string; members: string[]; }
     | { action: "use"; line: string; }
     | { action: "hostile" | "calm"; title: string; marked: string[]; hostile: string[]; }
-    | ({ action: "close"; title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; fallen?: string; afterPeak?: string; quests: string[]; } & Saved);
+    | ({
+        action: "close";
+        title?: string;
+        rounds?: number;
+        copies: Member[];
+        gone?: Member[];
+        unreadable?: string;
+        ended: string[];
+        endless: string[];
+        rewards?: string[];
+        fallen?: string;
+        afterPeak?: string;
+        quests: string[];
+        chapter?: number;
+        craft?: string;
+    } & Saved);
 
 /** The order of turns, where the scene has one, and whether the turn is the player's character's. */
 export interface Turns

@@ -30,15 +30,27 @@ export function readImage(path: string): ReadImage
     const extension = imageExtensions.find((candidate) => isFormat[candidate](head));
 
     if (extension === undefined) {
-        return { problem: `${basename(path)} is not a PNG, JPEG, WebP or SVG picture: convert it to one of those, or give another file.` };
+        return { problem: notPicture(basename(path)) };
     }
 
     if (size !== undefined && size > largestImage) {
-        return { problem: `${basename(path)} is ${megabytes(size)} MB, and a picture can be ${megabytes(largestImage)} MB at most: make it smaller (512 pixels a side are enough).` };
+        return { problem: tooLarge(basename(path), size) };
     }
 
     const bytes = files().bytes(path);
     return bytes === undefined ? { problem: `There is no file at ${path}: give the full path of the picture.` } : { bytes, extension };
+}
+
+/** The picture in `bytes`, as a download gives them, by what they are as readImage does; `name` names them in a problem. */
+export function imageOfBytes(bytes: Uint8Array, name: string): ReadImage
+{
+    const extension = imageExtensions.find((candidate) => isFormat[candidate](bytes));
+
+    if (extension === undefined) {
+        return { problem: notPicture(name) };
+    }
+
+    return bytes.length > largestImage ? { problem: tooLarge(name, bytes.length) } : { bytes, extension };
 }
 
 /** The file named `name` in the images folder of the first of `folders` that has one, looked for in the folders inside it too; undefined when none has it. */
@@ -108,6 +120,16 @@ function startsWith(bytes: Uint8Array, prefix: number[]): boolean
 function ascii(bytes: Uint8Array, start: number, end: number): string
 {
     return String.fromCharCode(...bytes.subarray(start, end));
+}
+
+function notPicture(name: string): string
+{
+    return `${name} is not a PNG, JPEG, WebP or SVG picture: convert it to one of those, or give another file.`;
+}
+
+function tooLarge(name: string, size: number): string
+{
+    return `${name} is ${megabytes(size)} MB, and a picture can be ${megabytes(largestImage)} MB at most: make it smaller (512 pixels a side are enough).`;
 }
 
 function megabytes(size: number): string

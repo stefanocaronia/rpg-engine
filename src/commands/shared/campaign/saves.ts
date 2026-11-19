@@ -1,6 +1,6 @@
 // The saves of a campaign as commands use them (D-54, D-55): which files a save holds, a save made at the end of a scene or when asked, and given back.
 import { join, relative, resolve, sep } from "node:path";
-import { campaignFileName, hostFileNames, readSettings, saveModes } from "../../../campaign/index.ts";
+import { bookFolderName, campaignFileName, hostFileNames, readSettings, saveModes, sessionsFolderName } from "../../../campaign/index.ts";
 import type { Context } from "../../../core/context.ts";
 import { filesIn } from "../../../core/files.ts";
 import { appendLogEntry, logFileName, logLine, readLog } from "../../../core/log.ts";
@@ -154,7 +154,17 @@ export function loadSave(root: string, context: Context, save: Save): { removed:
         step(join(folder, other.file), () => files().remove(join(folder, other.file)));
     }
 
-    appendLogEntry(root, newDatedLogEntry(root, context, "save-loaded", "public", { save: save.number, label: save.label, removed: later.length === 0 ? undefined : later.map((other) => other.number) }));
+    // When the save was made: what was said in the chats from then to now did not happen (T-225).
+    const made = files().modified(join(folder, save.file));
+    appendLogEntry(
+        root,
+        newDatedLogEntry(root, context, "save-loaded", "public", {
+            save: save.number,
+            label: save.label,
+            made: made === undefined ? undefined : new Date(made).toISOString(),
+            removed: later.length === 0 ? undefined : later.map((other) => other.number),
+        }),
+    );
     files().remove(join(folder, loadingMarkName));
     files().writeBytes(join(folder, newChatMarkName), new TextEncoder().encode(saveText(save)));
     return { removed: later, copy };
@@ -333,8 +343,8 @@ function gameFileBytes(root: string): Record<string, Uint8Array>
 }
 
 /**
- * The files a save holds (SAV-2), as the disk has them, not as a session last saw them: every file of the campaign but those of the AI hosts, the exports, and those
- * under a name with a dot at its top, as .saves, .git, .obsidian.
+ * The files a save holds (SAV-2), as the disk has them, not as a session last saw them: every file of the campaign but those of the AI hosts, the exports, the
+ * chats, which a load must never take back (T-225), and those under a name with a dot at its top, as .saves, .git, .obsidian.
  */
 function gameFiles(root: string): string[]
 {
@@ -347,7 +357,8 @@ function gameFiles(root: string): string[]
 /** Whether a name at the top of a campaign is the game's: not the host's, in any case, as Windows reads them, and not starting with a dot. */
 function isGameName(name: string): boolean
 {
-    return !name.startsWith(".") && !hostNames.has(name.toLowerCase()) && name.toLowerCase() !== exportsFolderName;
+    return !name.startsWith(".") && !hostNames.has(name.toLowerCase()) && name.toLowerCase() !== exportsFolderName && name.toLowerCase() !== sessionsFolderName
+        && name.toLowerCase() !== bookFolderName;
 }
 
 function joinBytes(first: Uint8Array | undefined, second: Uint8Array): Uint8Array

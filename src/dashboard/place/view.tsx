@@ -42,7 +42,7 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
     acting?: string;
     picking?: Picking;
     choosing?: Choosing;
-    /** Without its key and who is where, as in a sheet whose list says it. */
+    /** Only the map, without its title, key and who is where, as in a card whose list says it. */
     bare?: boolean;
     /** With more than one player character, the one in the foreground, whom the distances are from (VIEW-12). */
     self?: string | undefined;
@@ -138,8 +138,8 @@ export function PlaceMap({ map, place, acting, picking, choosing, bare = false, 
         </>
     );
     return (
-        <section class="lm" aria-labelledby="lm-title">
-            <CardHead icon={iconPath("world")} title={<h3 id="lm-title">{t("Map")}</h3>} note={place} />
+        <section class={bare ? "lm bare" : "lm"} {...(bare ? { "aria-label": `${t("Map")}: ${place}` } : { "aria-labelledby": "lm-title" })}>
+            {!bare && <CardHead icon={iconPath("world")} title={<h3 id="lm-title">{t("Map")}</h3>} note={place} />}
             <div ref={frame} class={picking === undefined && choosing === undefined ? "lm-frame" : "lm-frame panned"} style={{ "--map-width": String(width) }}>
                 {/* To choose a square or someone, each at least 44 px wide, the map scrolls rather than shrinks (D-325 (6)). */}
                 <svg

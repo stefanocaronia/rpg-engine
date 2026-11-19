@@ -24,7 +24,7 @@ Show or change the campaign settings.
 
 Read-only: no. Positional parameters: `setting`, `value`.
 
-- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, effort, lines, veils, orders, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets, or one the game system adds
+- `setting` (`string`, optional): setting to show or change: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, pictures-by, effort, lines, veils, orders, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets, or one the game system adds
 - `value` (`string`, optional): new value of the setting
 - `add` (`string[]`, optional): items to add to a list setting (lines, veils, orders, table, precedents, learned, library, status-line), repeatable
 - `remove` (`string[]`, optional): items to remove from a list setting (lines, veils, orders, table, precedents, learned, library, status-line), repeatable
@@ -161,7 +161,8 @@ Give a page its picture: a portrait for a character, an image for a creature, an
 Read-only: no. Positional parameters: `page`, `file`.
 
 - `page` (`string`, required): the page that gets the picture
-- `file` (`string`, optional): the picture's file, PNG, JPEG, WebP or SVG up to 5 MB: its full path or one from the folder the command runs in; leave it out to remove the page's own picture
+- `file` (`string`, optional): the picture's file, PNG, JPEG, WebP or SVG up to 5 MB: its full path or one from the folder the command runs in; leave it and url out to remove the page's own picture
+- `url` (`string`, optional): instead of file, the picture's https address, as an image tool gives it: the engine downloads it, the same formats up to 5 MB
 - `describe` (`string`, optional): instead of file, in a few lines, never a victim or wounds: for a place, what the party sees arriving; for a quest, what the character knows of it; for one of the party, their look, their people as this world has them and the rest as the player described it; for a character or a creature met, what the character sees of them, a disguise as the disguise; never what the character does not know. The picture is made where it can be, and comes by itself
 
 ### import
@@ -210,6 +211,26 @@ Read-only: yes. Positional parameters: `text`.
 
 - `text` (`string`, optional): text to look for, ignoring case; every page if left out
 - `type` (`"character" | "place" | "faction" | "quest" | "item" | "event" | "topic" | "creature"`, optional): only pages of this type: character, place, faction, quest, item, event, topic, creature
+
+### chats
+
+Read what the player and you said in the campaign's past chats, kept as text: what was narrated or promised, a detail described, a name said and never written.
+
+Read-only: yes. Positional parameters: `text`.
+
+- `text` (`string`, optional): words to find in the chats, ignoring case and accents
+- `day` (`string`, optional): a day of real time, as 2026-11-19, to read its chats in order
+- `from` (`string`, optional): with day: read from this time (UTC), where the last reading stopped
+
+### book
+
+The campaign's story told as a book, which the player reads in the dashboard's Journal: a novel's chapter, never a summary, for each closed scene, by its number.
+
+Read-only: no. Positional parameters: `chapter`.
+
+- `chapter` (`integer`, optional): the chapter's number, its scene's as the journal counts them
+- `title` (`string`, optional): the chapter's title, its scene's if left out
+- `text` (`string`, optional): the chapter's prose, in markdown; empty to take it out
 
 ### rules
 

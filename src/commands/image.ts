@@ -1,12 +1,12 @@
 import { join, relative, resolve } from "node:path";
 import { z } from "zod";
 import { readListSetting, readSettings, requireCampaign } from "../campaign/index.ts";
-import type { Context, PictureSubject } from "../core/context.ts";
+import type { Context, PictureFallback, PictureSubject } from "../core/context.ts";
 import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText, withArticle } from "../core/text.ts";
-import { imageFileName, imageLink, imagesFolderName, readImage } from "../images/index.ts";
+import { imageFileName, imageLink, imageOfBytes, imagesFolderName, largestImage, type ReadImage, readImage } from "../images/index.ts";
 import { baseChain, findPage, isPartyMember, ownField, type Page, pageNamed, parsePageReference, type World, writePage } from "../pages/index.ts";
 import { imageFile, ownImage } from "./shared/campaign/images.ts";
 import { campaignSystem, campaignWorld } from "./shared/campaign/world.ts";
@@ -29,13 +29,19 @@ interface ImageResult
     making?: boolean;
     /** The brief of the picture the chat makes itself with its own tool, as Antigravity (D-390). */
     paint?: string;
+    /** The master's own image tool that makes it from the brief, as ElevenLabs (D-572); none for the chat's own. */
+    tool?: string;
+    /** The player chose another image tool and has not named it yet: the master asks which (D-572). */
+    askTool?: true;
+    /** Why the chat in use made it, or makes it, in place of the maker the player chose (D-572). */
+    instead?: string;
 }
 
 export const image = defineCommand({
     name: "image",
     description: "Give a page its picture: a portrait for a character, an image for a creature, an item or a place, as the dashboard will show it in a round token. "
         + "It copies the file into the campaign and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a wolf's icon. "
-        + "Use it when the player gives you a picture, or after you made or downloaded one with your own tools. "
+        + "Use it when the player gives you a picture, or after you made one with your own tools: its file, or url with the https address your tool gives, which the engine downloads. "
         + "For a place, a quest, a character or a creature of the campaign, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: "
         + "for the player character or a companion only when the player asks; for a creature once for each kind, whose copies show it. "
         + "Example: page Ettore, file C:\\Users\\me\\Pictures\\ettore.png.",
@@ -43,7 +49,8 @@ export const image = defineCommand({
     positionals: ["page", "file"],
     input: z.object({
         page: z.string().describe("the page that gets the picture"),
-        file: z.string().optional().describe("the picture's file, PNG, JPEG, WebP or SVG up to 5 MB: its full path or one from the folder the command runs in; leave it out to remove the page's own picture"),
+        file: z.string().optional().describe("the picture's file, PNG, JPEG, WebP or SVG up to 5 MB: its full path or one from the folder the command runs in; leave it and url out to remove the page's own picture"),
+        url: z.string().optional().describe("instead of file, the picture's https address, as an image tool gives it: the engine downloads it, the same formats up to 5 MB"),
         describe: z.string().optional().describe(
             "instead of file, in a few lines, never a victim or wounds: for a place, what the party sees arriving; for a quest, what the character knows of it; "
                 + "for one of the party, their look, their people as this world has them and the rest as the player described it; for a character or a creature met, what the character sees of them, "
@@ -65,25 +72,37 @@ export const image = defineCommand({
             throw new Error(`${systemRefusal(page)} Nothing changed.`);
         }
 
+        const url = input.url?.trim() ?? "";
+        const file = input.file?.trim() ?? "";
+
         if (input.describe !== undefined && input.describe.trim() !== "") {
-            if (input.file !== undefined && input.file.trim() !== "") {
-                throw new Error("Give file or describe, not both: file is a picture you have, describe has one made. Nothing changed.");
+            if (file !== "" || url !== "") {
+                throw new Error("Give file, url or describe, one of them: file and url are a picture you have, describe has one made. Nothing changed.");
             }
 
             return madePicture(root, context, world, page, input.describe.trim());
         }
 
-        if (input.file === undefined || input.file.trim() === "") {
+        if (url !== "") {
+            if (file !== "") {
+                throw new Error("Give file or url, not both: file is a picture on this computer, url one on the web. Nothing changed.");
+            }
+
+            return downloadedImage(root, context, world, page, url);
+        }
+
+        if (file === "") {
             return removeImage(root, context, world, page, imageFile(root, context, ownImage(page)));
         }
 
-        return setImage(root, context, world, page, resolve(context.folder, input.file.trim()));
+        return setImage(root, context, world, page, resolve(context.folder, file));
     },
 
     format(result)
     {
         if (result.paint !== undefined) {
-            return `Make ${result.page}'s picture yourself with your own image tool, from this brief, then give its file with image, page ${result.page}, file and its full path; if your tool makes none, go on without.\n\n${result.paint}`;
+            const how = result.askTool === true ? askToolText(result.page) : paintText(result.page, result.tool);
+            return `${result.instead === undefined ? "" : `${result.instead} `}${how}\n\n${result.paint}`;
         }
 
         if (result.making === true) {
@@ -91,7 +110,8 @@ export const image = defineCommand({
         }
 
         if (result.image !== undefined) {
-            return `${result.page}'s picture is now ${result.image}${result.from === undefined ? "" : `, copied from ${result.from}`}.`;
+            const now = `${result.page}'s picture is now ${result.image}${result.from === undefined ? "" : `, copied from ${result.from}`}.`;
+            return result.instead === undefined ? now : `${now} ${result.instead}`;
         }
 
         const shown = result.inheritedFrom === undefined ? "it has none now" : `it shows the picture of ${result.inheritedFrom}`;
@@ -102,24 +122,55 @@ export const image = defineCommand({
 /** Copies a picture into the campaign's images folder and links it in the page; the page's old picture goes when nothing else links it. */
 function setImage(root: string, context: Context, world: World, page: Page, from: string): ImageResult
 {
-    const old = imageFile(root, context, ownImage(page));
-    const picture = readImage(from);
+    return placeImage(root, context, world, page, readImage(from), from);
+}
 
+/**
+ * The picture at an https address, as an image tool gives it (T-222), downloaded by the engine where the master has no shell, then taken as a file is.
+ * The address itself is neither logged nor kept: a signed one is a key.
+ */
+async function downloadedImage(root: string, context: Context, world: World, page: Page, url: string): Promise<ImageResult>
+{
+    if (!/^https:\/\/[^\s/]+/i.test(url)) {
+        throw new Error("url takes the https address of the picture, as your image tool gives it, and that is not one: give the full https address, or the picture's file. Nothing changed.");
+    }
+
+    if (context.download === undefined) {
+        throw new Error("Here the engine cannot download: download the picture yourself and give it with file and its full path. Nothing changed.");
+    }
+
+    const signal = context.signal === undefined ? AbortSignal.timeout(longestDownload) : AbortSignal.any([context.signal, AbortSignal.timeout(longestDownload)]);
+    const bytes = await context.download(url, largestImage, signal).catch((error: unknown) => {
+        const why = error instanceof Error ? error.message : String(error);
+        throw new Error(`No picture came from the address: ${why} If it expired, as signed addresses do, ask your image tool for a new one. Nothing changed.`);
+    });
+
+    return placeImage(root, context, world, page, imageOfBytes(bytes, "What the address gave"));
+}
+
+/** Writes a picture into the campaign's images folder and links it in the page, logging it; `from` is the file it was read from, if any. */
+function placeImage(root: string, context: Context, world: World, page: Page, picture: ReadImage, from?: string): ImageResult
+{
     if ("problem" in picture) {
         throw new Error(`${picture.problem} Nothing changed.`);
     }
 
+    const old = imageFile(root, context, ownImage(page));
     const target = join(root, imagesFolderName, `${page.name}.${picture.extension}`);
+    const copied = from !== undefined && resolve(target) !== from;
 
-    if (resolve(target) !== from) {
+    if (from === undefined || copied) {
         files().writeBytes(target, picture.bytes);
     }
 
     writePage(world, page.name, undefined, { set: { image: imageLink(`${page.name}.${picture.extension}`) } });
     removeUnused(root, world, page, old, target);
     appendLogEntry(root, newDatedLogEntry(root, context, "image-set", "public", { page: page.name, image: shownPath(root, target) }));
-    return { page: page.name, image: shownPath(root, target), from: resolve(target) === from ? undefined : from, changed: true };
+    return { page: page.name, image: shownPath(root, target), from: copied ? from : undefined, changed: true };
 }
+
+// How long a picture's download may take: a few megabytes come in seconds.
+const longestDownload = 60 * 1000;
 
 /** Why a page of the game system takes no picture, and how to give one: to a page of the campaign that derives from it, which a creature's scenes then bring in. */
 function systemRefusal(page: Page): string
@@ -153,8 +204,8 @@ function copyRefusal(root: string, world: World, name: string): string | undefin
 /**
  * A place's picture made from what the party sees, a quest's from what the character knows of it, the portrait of one of the party as the player described
  * them, or the token of a character or a kind of creature met, from what the character sees (D-308, D-388, D-408, D-420, PIC-1–PIC-3), where the campaign's
- * setting allows it and this computer can: in the MCP server it comes by itself while the story goes on; on the command line the command waits for it. A refusal
- * is never tried again.
+ * setting allows it and this computer can: in the MCP server it comes by itself while the story goes on, and the master's next call says whether another
+ * maker drew it or none came (D-572); on the command line the command waits for it. A refusal is never tried again.
  */
 function madePicture(root: string, context: Context, world: World, page: Page, seen: string): ImageResult | Promise<ImageResult>
 {
@@ -183,9 +234,11 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
     const subject: PictureSubject = { kind, name, ...(who === undefined ? {} : { who }), seen, unseen };
     const paint = context.pictures.brief?.(subject);
 
-    // The chat paints it itself, with its own tool.
+    // The chat paints it itself, with its own tool or one it names.
     if (paint !== undefined) {
-        return { page: page.name, changed: false, paint };
+        const instead = ready.instead === undefined ? {} : { instead: insteadText(page.name, ready.instead, false) };
+        const tool = ready.askTool === true ? { askTool: true as const } : ready.tool === undefined ? {} : { tool: ready.tool };
+        return { page: page.name, changed: false, paint, ...tool, ...instead };
     }
 
     const making = context.pictures.make(subject).then((made) => {
@@ -198,7 +251,7 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
             const world = campaignWorld(root, context);
             const now = world.pages.find((candidate) => candidate.path === page.path) ?? page;
             // Codex's own copy goes once copied: the picture is the campaign's.
-            return { ...setImage(root, context, world, now, made.file), from: undefined };
+            return { ...setImage(root, context, world, now, made.file), from: undefined, ...(made.instead === undefined ? {} : { instead: insteadText(page.name, made.instead, true) }) };
         } finally {
             made.done();
         }
@@ -208,9 +261,54 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
         return making;
     }
 
-    // The MCP server lives on: the picture comes by itself, and the dashboard shows it.
-    making.catch(() => undefined);
+    // The MCP server lives on: the picture comes by itself, the dashboard shows it, and the master's next call hears what went otherwise.
+    void making.then(
+        (made) => {
+            if (made.instead !== undefined) {
+                context.later?.add(made.instead);
+            }
+        },
+        (error: unknown) => context.later?.add(error instanceof Error ? error.message : String(error)),
+    );
     return { page: page.name, changed: false, making: true };
+}
+
+/** Why the chat in use made a picture, or makes it, in place of the maker the player chose, for the master (D-572). */
+function insteadText(name: string, instead: PictureFallback, made: boolean): string
+{
+    const why = `${instead.maker} ${instead.refused === true ? "refused" : "could not make"} ${name}'s picture: ${instead.why.replace(/\.$/, "")}.`;
+    return made ? `${why} ${instead.by} made it instead.` : why;
+}
+
+/** How the master makes a picture from its brief: with their own image tool, with ElevenLabs's, or with the one the player named (D-390, D-572). */
+function paintText(page: string, tool: string | undefined): string
+{
+    const give = giveText(page);
+
+    if (tool === undefined) {
+        return `Make ${page}'s picture yourself with your own image tool, from this brief, then ${give}; if your tool makes none, go on without.`;
+    }
+
+    if (tool === "ElevenLabs") {
+        return `Make ${page}'s picture with your ElevenLabs image tool, from this brief: one picture (generations_count 1). Its view shows the player the progress, but the game needs the finished file: `
+            + `ask for the generation again every 15 seconds or so until it is completed, then give its full-resolution address with image, page ${page}, url, or download it and give file. `
+            + `If your ElevenLabs tools make no pictures, tell the player to add the full ElevenLabs connector, a custom connector at https://api.elevenlabs.io/v1/mcp; if it fails, tell them why and go on without.`;
+    }
+
+    return `Make ${page}'s picture with ${tool}, from this brief, then ${give}; if it makes none, tell the player why and go on without.`;
+}
+
+/** What the master does where the player chose another image tool without naming it (D-572): asks which, writes it, then makes the picture with it. */
+function askToolText(page: string): string
+{
+    return `The player chose another image tool for the pictures and has not named it: ask them which, set its name with config pictures-by, then make ${page}'s picture with it from this brief `
+        + `and ${giveText(page)}; if they have none, go on without.`;
+}
+
+/** How the master gives the picture its tool made: its file, or the address the tool gives where they cannot download it (T-222). */
+function giveText(page: string): string
+{
+    return `give it with image, page ${page}, file and its full path, or url and its https address where the tool gives one you cannot download`;
 }
 
 /** What the game says one of the party is, for their portrait (D-408): what their page derives from, as their people, and the line under their name. */

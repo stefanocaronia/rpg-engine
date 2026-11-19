@@ -6,6 +6,8 @@ export interface Act
 {
     id: string;
     text: string;
+    /** The thing of the sheet it starts from, by its page, whose known text the master hears with it (T-218). */
+    item?: string;
     rung?: boolean;
 }
 
@@ -71,13 +73,20 @@ export function giveBackAct(acts: Acts, act: Act): void
     acts.heard = acts.heard.filter((id) => id !== act.id);
 }
 
-/** The sentences for the head of the master's call, marked heard; given back, in order, when that call never answers. */
-export function takeActs(acts: Acts, quoted: (text: string) => string): { lines: string[]; restore(): void; }
+/**
+ * The sentences for the head of the master's call, marked heard; given back, in order, when that call never answers. `known` gives what the player character
+ * already knows of a sentence's thing, for the master to tell only what is new (T-218).
+ */
+export function takeActs(acts: Acts, quoted: (text: string) => string, known: (item: string) => string | undefined = () => undefined): { lines: string[]; restore(): void; }
 {
     const taken = [...acts.pending];
     markHeard(acts, taken.map((act) => act.id));
     return {
-        lines: taken.map((act) => actNews(act.text, quoted)),
+        lines: taken.map((act) => {
+            const already = act.item === undefined ? undefined : known(act.item);
+            return already === undefined ? actNews(act.text, quoted) : `${actNews(act.text, quoted)}
+${already}`;
+        }),
         restore: () => {
             acts.pending = [...taken, ...acts.pending];
             acts.heard = acts.heard.filter((id) => !taken.some((act) => act.id === id));

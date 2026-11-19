@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { changeSetting, readSetup, sendSetupWord, type SetupView as Setup } from "../api.ts";
 import type { PlayerSetting } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
-import { phraseLabel, settingLabel, valueLabel } from "../parts/labels.ts";
+import { phraseLabel, settingLabel, systemNameLabel, valueLabel } from "../parts/labels.ts";
 import { Master } from "../shell/master.tsx";
 import { arrowStep, t } from "../text.ts";
 
@@ -142,7 +142,7 @@ function Question({ question, count, left, focus, onBack, onNext, onLeave, onTou
     const resting = useRef<{ choice: string; timer: ReturnType<typeof setTimeout>; } | undefined>(undefined);
     const heading = useRef<HTMLHeadingElement>(null);
     const value = picked ?? question.value;
-    const title = question.question === undefined ? settingLabel(question.name) : t(question.question);
+    const title = question.question === undefined ? settingLabel(question.name) : t(question.question, question.game === undefined ? {} : { game: systemNameLabel(question.game) });
     const id = `setup-${question.name.replace(/[^a-z0-9]+/gi, "-")}`;
     const isList = lists.has(question.name);
     const open = value === undefined && question.items === undefined && !left;
@@ -236,7 +236,9 @@ function Choices({ question, value, labelledBy, onPick }: { question: PlayerSett
                 >
                     <strong>
                         {choice.label === undefined ? valueLabel(choice.value) : phraseLabel(t(choice.label))}
-                        {choice.value === question.suggested && <span class="setup-suggested">{choice.value === question.last ? t("Like last time") : t("Suggested")}</span>}
+                        {choice.value === question.last
+                            ? <span class="setup-last">{t("Like last time")}</span>
+                            : choice.value === question.suggested && <span class="setup-suggested">{t("Suggested")}</span>}
                     </strong>
                     {choice.means !== undefined && <span>{phraseLabel(t(choice.means))}</span>}
                 </button>

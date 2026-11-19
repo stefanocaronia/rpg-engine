@@ -34,6 +34,8 @@ export interface PlayerSentences
     actsElsewhere: string | undefined;
     actPlace: { who: string; place?: ShownPlace; } | undefined;
     reply: ActReply;
+    /** The master's open question the sentence answers, and whether it has buttons the words take the place of. */
+    answering: { question: string; buttons: boolean; } | undefined;
     strip: ReturnType<typeof saidStates>;
     actProblem: string | undefined;
     sendAct(text: string): Promise<string | undefined>;
@@ -102,6 +104,7 @@ export function useActs({ read, live, asked, foreground, version, players, membe
     // With a question of the master's open, the sentence answers it (ASK-10); else it rings the master, or, in a chat that hears nothing by itself, is copied.
     const question = asked !== undefined && asked.spend === undefined && asked.forced !== true ? asked : undefined;
     const reply: ActReply = question !== undefined ? "answer" : acts?.bell === true ? "tell" : "copy";
+    const answering = question === undefined ? undefined : { question: question.question, buttons: question.labels.length > 0 };
 
     const sendAct = async (text: string): Promise<string | undefined> => {
         setActProblem(undefined);
@@ -116,7 +119,9 @@ export function useActs({ read, live, asked, foreground, version, players, membe
             return await copyAct(text) ? undefined : t("Copy did not work: select the words and copy them yourself.");
         }
 
-        const result = await sayAct(text);
+        // The thing it starts from, for the master to hear what the character already knows of it (T-218).
+        const item = acting !== undefined && "verbs" in acting.start ? acting.start.page ?? acting.start.item : undefined;
+        const result = await sayAct(text, item);
 
         if ("error" in result) {
             return result.error;
@@ -163,5 +168,5 @@ export function useActs({ read, live, asked, foreground, version, players, membe
 
     const playerActs: PlayerActs | undefined = actions === undefined || players.length === 0 ? undefined : { actions, start: (start, opener) => setActing({ start, opener }) };
 
-    return { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, strip, actProblem, sendAct, closeAct, withdraw, copyFromStrip, dismissAct };
+    return { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, answering, strip, actProblem, sendAct, closeAct, withdraw, copyFromStrip, dismissAct };
 }

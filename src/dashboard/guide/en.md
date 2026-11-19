@@ -126,7 +126,7 @@ Out of the story, write between square brackets: *[How does grappling work?]* Th
 
 You say what you try; the master says what happens. The master never decides for your character, and never talks about the engine. You can ask it how to use the dashboard.
 
-**Acting from the dashboard**: click a name on your sheet, such as a weapon, a spell or something you carry, then whom it is for; or click a person to talk to. The dashboard writes your sentence, *I attack Hooded Bandit 1 with Mace.*, which you can change before **Tell the master**. The master hears it as said in the chat, and rules it as any other. Where your AI app cannot hear it by itself, **Copy** gets it ready to paste in the chat.
+**Acting from the dashboard**: click a name on your sheet, such as a weapon, a spell or something you carry: its card says what it is. Choose what you do with it, such as **Use**, then whom it is for, in the list or with a click on the map; or click a person to talk to. The dashboard writes your sentence, *I attack Hooded Bandit 1 with Mace.*, which you can change before **Tell the master**. The master hears it as said in the chat, and rules it as any other. Where your AI app cannot hear it by itself, **Copy** gets it ready to paste in the chat.
 
 ### 3.2 Rolls
 
@@ -142,7 +142,7 @@ The master asks for a roll only when the outcome is uncertain and matters, and s
 
 ### 3.3 Scenes and fights
 
-The story runs in **scenes**: a fight, a conversation, exploring, travelling, a rest. At the end of each scene the game saves by itself, and the scene goes into your journal.
+The story runs in **scenes**: a fight, a conversation, exploring, travelling, a rest. At the end of each scene the game saves by itself, the scene goes into your journal, and the master writes it as a chapter of your story's book.
 
 In a fight the master tells every turn that is not yours, and stops where you can decide. The **Scene** shows on top whose turn it is and who comes next, and your character's card beside the map; the order of the turns, your party's hit points and how hurt the enemies look, in words, stay beside the page. If your character falls, the death saves appear large on the page.
 
@@ -158,11 +158,11 @@ Villains have plans with deadlines. Each new day the master moves the threats th
 
 **World** shows the places your character knows, the roads between them and the trail you walked, with fog over the rest. **Scene** shows the map of the place where you are, when it has one, with who stands where; in a fight, on your turn, the squares you cannot reach are veiled. When the master asks where you move, touch a square, or write it, such as *E4*.
 
-**World** also keeps what your character knows. **Lore** lists the people, places, factions, creatures and stories they know, each as they know it: search it, or open one to read it whole; a name in the text leads to its page. **Documents** keeps the letters, notices and pages they found, to read again. **Calendar** shows today, your quests' deadlines with the time left, and the days of the story: a day with scenes leads to its chapters in the Journal.
+**World** also keeps what your character knows. **Lore** lists the people, places, factions, creatures and stories they know, each as they know it: search it, or open one to read it whole; a name in the text leads to its page. **Documents** keeps the letters, notices and pages they found, to read again. **Calendar** shows today, your quests' deadlines with the time left, and the days of the story: a day with scenes leads to them in the Journal's timeline.
 
 ### 3.6 Quests, journal and notes
 
-A task your character takes becomes a quest in the **Journal**, with its goals, its deadline and what it measures; star it to keep it in view at the top of Scene. The Journal also tells your **story**, scene by scene, and keeps your **notes**: private, unless you **Share** one, which the master hears as what you think, never as a fact. Under **Companions** you read your companions' diaries: now and then, at the end of a day or a quest, they write a few lines of what they think and feel.
+A task your character takes becomes a quest in the **Journal**, with its goals, its deadline and what it measures; star it to keep it in view at the top of Scene. Under **Story** the Journal tells your story as a book: the master writes a chapter of prose for each scene once it ends, in the style you chose; read it chapter by chapter, the last marked by its bookmark, and download it as Markdown or as a web page to print or pass on. In a game begun before, ask the master to write the story so far. **Timeline** lists the scenes with what happened in each. The Journal also keeps your **notes**: private, unless you **Share** one, which the master hears as what you think, never as a fact. Under **Companions** you read your companions' diaries: now and then, at the end of a day or a quest, they write a few lines of what they think and feel.
 
 ### 3.7 Your character's story and picture
 
@@ -210,7 +210,7 @@ A page on your own computer, open only in that computer's browser, live while th
 
 - **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from and, when an arrow marks its die, what makes the roll better or worse. When the master prepares choices for you, as at a new level, a notice on the sheet opens them: pick when you like, read the pages the options name, roll where an option rolls, then confirm; the story goes on meanwhile. Beside it, the rolls.
 - **Scene**: where you are, its picture and map, who is there, what is happening; in a fight, the turns and your character's card.
-- **Journal**: quests, the story, your companions' diaries, your notes.
+- **Journal**: quests, the story as a book, its timeline, your companions' diaries, your notes.
 - **World**: the world map, what your character knows, the documents found and the calendar.
 - **The dice tray**: choose dice and a modifier, and throw; ×2 doubles the dice, never the modifier, as for a critical hit.
 - **Saves**, **Help**, **Settings** and **About**, as icons at the end of the row. Settings also holds the page's own preferences: theme, dice sound, dice set.
@@ -271,7 +271,7 @@ One language per campaign, the master's, which the dashboard follows. The dashbo
 
 ## 8. For the curious: the campaign folder <!-- icon: list -->
 
-You never need to open it, and it holds the secrets of your campaign. It has `campaign.yaml` (your settings), `state.yaml` (where the game stands), `world/` (one markdown page for each character, place, quest and the rest), `rules/` (your house rules), `images/`, `log.jsonl` (every change), `.saves/`, `.player/` (your notes), and the small files that tell AI agents where RPG Engine is. The pages use Obsidian's format. If you change a page by hand, the master hears of it at its next answer.
+You never need to open it, and it holds the secrets of your campaign. It has `campaign.yaml` (your settings), `state.yaml` (where the game stands), `world/` (one markdown page for each character, place, quest and the rest), `rules/` (your house rules), `images/`, `log.jsonl` (every change), `sessions/` (your chats with the master as text, from Claude Code and Codex), `.saves/`, `.player/` (your notes), and the small files that tell AI agents where RPG Engine is. The pages use Obsidian's format. If you change a page by hand, the master hears of it at its next answer.
 
 RPG Engine stays in this folder: it reads and writes the game only here, and never touches your other files; the folders of your manuals it only reads. Outside it, it keeps only data folders of its own (the dashboard's translations, the text it read of your manuals, and Codex or Claude Code if you let it install them) and temporary folders while a picture is drawn. Anything else your agent wants to do on your computer, it asks you first. A game system or an extension is code, as any npm package is: one that is not ours runs on your computer with your permissions, and RPG Engine installs it only with your yes, in a form of your agent or a window of your computer. Say yes only to packages whose authors you trust.
 

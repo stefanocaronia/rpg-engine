@@ -1,7 +1,9 @@
 import type { Command } from "../core/registry.ts";
 import { advance } from "./advance.ts";
 import { ask } from "./ask.ts";
+import { book } from "./book.ts";
 import { change } from "./change/change.ts";
+import { chats } from "./chats.ts";
 import { choices } from "./choices.ts";
 import { config } from "./config/config.ts";
 import { effect } from "./effect.ts";
@@ -50,6 +52,8 @@ export const commands: Command<any, any>[] = [
     show,
     view,
     find,
+    chats,
+    book,
     rules,
     roll,
     ask,

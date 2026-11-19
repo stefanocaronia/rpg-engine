@@ -11,6 +11,7 @@ import {
     listLimits,
     masterRollWays,
     mentorWays,
+    pictureMakers,
     pictureWays,
     preparations,
     proseWays,
@@ -47,6 +48,7 @@ export const playerSettingNames = [
     "units",
     "voices",
     "pictures",
+    "pictures-by",
     "effort",
     "lines",
     "veils",
@@ -73,7 +75,7 @@ export const playerWords: Record<(typeof playerSettingNames)[number], PlayerWord
     saves: {
         about: "when the game may go back",
         values: saveModes,
-        means: { permadeath: "never: what happens stays; only starting the campaign over", checkpoint: "if your character dies: back to the end of the last scene", free: "back to any save, and a save whenever you ask" },
+        means: { permadeath: "never: what happens stays; only starting the campaign over", checkpoint: "only when all is lost: back to the end of the last scene", free: "back to any save, and a save whenever you ask" },
     },
     rigor: {
         about: "how closely food, light, fatigue and the like follow the rules",
@@ -143,7 +145,7 @@ export const playerWords: Record<(typeof playerSettingNames)[number], PlayerWord
         most: styleTextLengths.style,
         cleared: "their own words on how you write no longer hold",
     },
-    dice: { about: "who rolls your character's dice", values: diceWays, means: { digital: "the engine rolls them", physical: "you roll your own and tell the values" } },
+    dice: { about: "who rolls your character's dice", values: diceWays, means: { digital: "rolled in the game, on the dashboard", physical: "you roll your own and tell the values" } },
     "master-rolls": {
         about: "the master's rolls for foes and the characters you meet; yours and your companions' are always in view",
         values: masterRollWays,
@@ -167,13 +169,25 @@ export const playerWords: Record<(typeof playerSettingNames)[number], PlayerWord
         values: pictureWays,
         means: { none: "no pictures", "on request": "those you ask for", "new elements": "one for each new place and quest, and for each one you meet" },
     },
+    // Any other value names an image tool of the master's, which the page shows as written (D-572).
+    "pictures-by": {
+        about: "who makes the pictures",
+        values: pictureMakers,
+        means: {
+            chat: "your AI app, by its own means: Claude draws them as vector pictures, Codex and Antigravity paint them, each from your plan",
+            codex: "Codex paints them on this computer, from your ChatGPT plan (Plus or higher)",
+            elevenlabs: "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan",
+            other: "another image tool connected to your AI app: the master asks you which in the chat",
+        },
+        unset: "chat",
+    },
     effort: {
         about: "how much the master thinks before each answer, from the next chat",
         values: [...efforts, "app"],
         means: { low: "quicker answers, a little less thought", medium: "the usual balance", high: "slower answers, more thought", app: "your AI app decides, as it does in any chat" },
         unset: "app",
     },
-    lines: { about: "what never appears in the game" },
+    lines: { about: "what must never appear in the game" },
     veils: { about: "what happens only off screen, without details" },
     // The standing orders, always before the master: their longest item, which the page's field keeps to (D-563).
     orders: {

@@ -60,6 +60,8 @@ describe("the character agent (D-490)", () => {
             ["config", "character", "made with the player"],
             ["config", "companions", "none"],
             ["config", "calendar-start", "day 1"],
+            ["config", "pictures", "none"],
+            ["config", "pictures-by", "chat"],
             ["config", "lines", "none"],
             ["config", "veils", "none"],
             ["config", "outcomes", "tossed"],

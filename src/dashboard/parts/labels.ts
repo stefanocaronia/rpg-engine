@@ -303,6 +303,7 @@ export function settingLabel(name: string): string
         units: t("Units"),
         voices: t("Character voices"),
         pictures: t("Pictures"),
+        "pictures-by": t("Who makes them"),
         effort: t("Master's thinking"),
         lines: t("Lines"),
         veils: t("Veils"),
@@ -416,6 +417,11 @@ export function valueLabel(value: string): string
         stops: t("Stops"),
         "1d per 7d": t("A day a week"),
         "1d per 1d": t("Real time"),
+        chat: t("Your AI app"),
+        other: t("Another tool"),
+        // Names of programs, the same in every language.
+        codex: "Codex",
+        elevenlabs: "ElevenLabs",
     };
     return labels[value] ?? itemLabel(value);
 }

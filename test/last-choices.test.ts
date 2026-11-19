@@ -68,10 +68,28 @@ describe("the last choices", () => {
         expect(lastChoices(home)).toEqual({ difficulty: "easy" });
     });
 
-    it("read nothing from a file written wrongly, and are rewritten whole at the next choice", async () => {
+    it("never come from the campaign being set up: a first campaign has none, and a new choice leaves the last campaign's in view (T-212)", async () => {
+        await ok(first, "init", "--name", "Prima", "--language", "it", "--system", "fake", "--difficulty", "hard");
+        await ok(first, "config", "saves", "permadeath");
+        const firstAsked = setupQuestions(first, contextIn(first), false);
+        expect(firstAsked.filter((question) => question.last !== undefined)).toEqual([]);
+
+        await ok(second, "init", "--name", "Seconda", "--language", "it", "--system", "fake");
+        await ok(second, "config", "saves", "free");
+        const asked = (name: string) => setupQuestions(second, contextIn(second), false).find((question) => question.name === name);
+        expect(asked("saves")).toMatchObject({ value: "free", last: "permadeath" });
+        expect(asked("difficulty")).toMatchObject({ last: "hard" });
+        // The next campaign has the second's choice, and the first's where the second made none.
+        expect(lastChoices(home)).toEqual({ difficulty: "hard", saves: "free" });
+    });
+
+    it("read nothing from a file written wrongly, and are rewritten whole at the next choice; a file of the choices alone is the campaigns' before", async () => {
         writeFileSync(join(home, "last-choices.json"), "{ not json");
         expect(lastChoices(home)).toEqual({});
         await ok(first, "init", "--name", "Prima", "--language", "it", "--system", "fake", "--difficulty", "normal");
-        expect(JSON.parse(readFileSync(join(home, "last-choices.json"), "utf8"))).toEqual({ difficulty: "normal" });
+        expect(JSON.parse(readFileSync(join(home, "last-choices.json"), "utf8"))).toMatchObject({ own: { difficulty: "normal" }, before: {} });
+
+        writeFileSync(join(home, "last-choices.json"), JSON.stringify({ units: "imperial" }));
+        expect(lastChoices(home, first)).toEqual({ units: "imperial" });
     });
 });

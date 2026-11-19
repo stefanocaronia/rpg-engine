@@ -9,6 +9,7 @@ import { findPage, isPartyMember, linksIn, type Page, pagesWithName, parsePageRe
 import { type Scene, sceneTypes } from "../../scene/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
 import { formatGameDate } from "../../time/index.ts";
+import { chapterCraft, sceneChapters } from "../shared/campaign/book.ts";
 import { firstInChat } from "../shared/campaign/parts.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "../shared/campaign/quests.ts";
 import { isPlayerDead, makeSave, saveText } from "../shared/campaign/saves.ts";
@@ -62,7 +63,7 @@ export function close(root: string, world: World, summary: string, context: Cont
     if (current === undefined) {
         const titled = rawTitleAndType(raw);
         appendLogEntry(root, newDatedLogEntry(root, context, "scene-closed", "public", { ...titled, closed, summary: summary.trim() }));
-        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [], quests, ...endOfSceneSave(root, context, world, titled.title) };
+        return { action: "close", copies: [], unreadable: problem?.message, ended, endless: [], quests, ...bookChapter(root, context), ...endOfSceneSave(root, context, world, titled.title) };
     }
 
     logCopies(root, context, current.title, current.copies);
@@ -86,8 +87,16 @@ export function close(root: string, world: World, summary: string, context: Cont
         ...(fallen === "" ? {} : { fallen }),
         ...(peakEnded(current.type) && firstInChat(context, "after-peak") ? { afterPeak } : {}),
         quests,
+        ...bookChapter(root, context),
         ...saved,
     };
+}
+
+/** The chapter of the book the scene just closed is, for the master to write, with how to write it once in a chat (T-227). */
+function bookChapter(root: string, context: Context): { chapter?: number; craft?: string; }
+{
+    const chapter = sceneChapters(root).at(-1)?.number;
+    return chapter === undefined ? {} : { chapter, ...(firstInChat(context, "book") ? { craft: chapterCraft } : {}) };
 }
 
 /**
@@ -192,14 +201,28 @@ function rawTitleAndType(raw: unknown): { title: string; type: string; }
 }
 
 export function closedText(
-    result: { title?: string; rounds?: number; copies: Member[]; gone?: Member[]; unreadable?: string; ended: string[]; endless: string[]; rewards?: string[]; fallen?: string; afterPeak?: string; quests: string[]; } & Saved,
+    result: {
+        title?: string;
+        rounds?: number;
+        copies: Member[];
+        gone?: Member[];
+        unreadable?: string;
+        ended: string[];
+        endless: string[];
+        rewards?: string[];
+        fallen?: string;
+        afterPeak?: string;
+        quests: string[];
+        chapter?: number;
+        craft?: string;
+    } & Saved,
 ): string
 {
     const saved = result.saved === undefined ? (result.unsaved === undefined ? "" : `\n${result.unsaved}`) : `\nSaved: ${result.saved}.`;
     const advance = "Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.";
     const endless = result.endless.length === 0 ? "" : `\nStill there, with no end: ${result.endless.join(" · ")}. End those the scene ended, with effect end.`;
     const ended = `${result.ended.length === 0 ? "" : `\nEnded with the scene: ${result.ended.join(" · ")}.`}${endless}`;
-    const quests = result.quests.map((line) => `\n${line}`).join("");
+    const quests = `${result.quests.map((line) => `\n${line}`).join("")}${chapterLine(result.chapter, result.craft)}`;
 
     if (result.unreadable !== undefined) {
         return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}${ended}${quests}${saved}`;
@@ -214,4 +237,10 @@ export function closedText(
     const fallen = result.fallen === undefined ? "" : `\n${result.fallen}`;
     const peak = result.afterPeak === undefined ? "" : `\n${result.afterPeak}`;
     return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${fallen}${rewards}${quests}${peak}${saved}`;
+}
+
+/** The book's chapter the scene leaves to write (T-227). */
+function chapterLine(chapter: number | undefined, craft: string | undefined): string
+{
+    return chapter === undefined ? "" : `\nChapter ${chapter} of the book waits for its prose: write it with book now, while the scene is fresh.${craft === undefined ? "" : ` ${craft}`}`;
 }

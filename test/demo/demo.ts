@@ -4,6 +4,7 @@
 import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseDocument } from "yaml";
+import { chosenPictureMaker } from "../../src/campaign/index.ts";
 import { runCommandLine } from "../../src/cli/command-line.ts";
 import { ask } from "../../src/commands/ask.ts";
 import { readLibraryHere } from "../../src/commands/shared/books/library-reader.ts";
@@ -13,7 +14,7 @@ import { type Context, defaultContext } from "../../src/core/context.ts";
 import { downloadBytes } from "../../src/core/download.ts";
 import { SessionStore } from "../../src/core/session-store.ts";
 import { withFiles } from "../../src/core/store.ts";
-import { codexPictures, hostWriter } from "../../src/helpers/index.ts";
+import { hostPictures, hostWriter } from "../../src/helpers/index.ts";
 import { npmPackages } from "../../src/packages/index.ts";
 import { type Dashboard, startDashboard } from "../../src/server/dashboard/index.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
@@ -83,6 +84,35 @@ const demoQuestions: Record<DemoSystem, DemoQuestion[]> = {
 /** Our extensions, in their repositories beside the engine's (D-506): the demo uses each that is there and built, as the player's own; the lockpicking needs the 5e. */
 const demoExtensions: { repository: string; system?: DemoSystem; }[] = [{ repository: "rpg-engine-weather" }, { repository: "rpg-engine-lockpicking", system: "5e" }];
 
+/** The demo's three scenes told as a book (T-227): its number, its title, its prose. */
+const demoBook: [string, string, string][] = [
+    [
+        "1",
+        "Tre giorni",
+        "Il castellano non si alzò quando Ettore entrò. Restò seduto dietro il tavolo ingombro di carte, le mani intrecciate, e per un lungo momento guardò soltanto il fuoco.\n\n"
+        + "«Sei pellegrini», disse alla fine. «Partiti da qui all'alba di quattro giorni fa, diretti al santuario oltre il guado. Al santuario non sono mai arrivati.»\n\n"
+        + "Ettore aspettò. Aveva imparato da tempo che chi chiede aiuto dice sempre una cosa di troppo, se lo si lascia parlare.\n\n"
+        + "«Tra loro c'era mia nipote.» Il castellano sollevò finalmente lo sguardo. «Ti do tre giorni. Dopo, manderò i miei uomini, e i miei uomini non sanno fare altro che bruciare.»\n\n"
+        + "***\n\n"
+        + "Fuori, Lupa lo aspettava accucciata contro il muro, il muso sulle zampe. Si alzò senza un suono e lo seguì giù per la Strada del Re, mentre il sole scendeva dietro le torri.",
+    ],
+    [
+        "2",
+        "Il sigillo spezzato",
+        "Il campo del viandante era un cerchio di pietre annerite e una tettoia che il vento aveva quasi strappato. Qualcuno ci aveva acceso un fuoco, e non da molto: la cenere era ancora tiepida sotto la crosta.\n\n"
+        + "Ettore si chinò. Nel fango, tra le orme di stivali, correvano due solchi profondi, troppo larghi per un carretto da pellegrini. *Un carro pesante*, pensò. *E chi lo guidava aveva fretta.*\n\n"
+        + "Accanto alle pietre trovò il sigillo. Cera rossa, spezzata in due, con l'impronta di una torre sottile. Lo rigirò tra le dita finché Lupa non gli spinse il muso contro il polso, impaziente, e poi si voltò verso nord-est, le orecchie tese.\n\n"
+        + "Non abbaiò. Lupa non abbaiava mai, quando la cosa era seria.",
+    ],
+    [
+        "3",
+        "La locanda del Guado",
+        "La pioggia li accompagnò fino alla porta. Dentro, la locanda del Guado era calda e quasi vuota, e Bertoldo asciugava lo stesso boccale da troppo tempo per non stare ascoltando.\n\n"
+        + "«Luci sulla Torre dei Sussurri», disse quando Ettore posò il sigillo sul banco. «Tre notti di fila. E un mercante, la settimana scorsa, che chiedeva di comprare sigilli. Pagava bene. Troppo bene.»\n\n"
+        + "Ettore guardò la torre impressa nella cera, poi la finestra, dove la pioggia rigava il buio.",
+    ],
+];
+
 /**
  * The demo's dashboard, which can also ask the player on its page, as the master does with ask (D-279), where Ettore goes on the map (ASK-11), and roll as the
  * master: what they say to the master.
@@ -112,7 +142,7 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
         throw new Error(`The demo of the 5e cannot be made: ${missing}.`);
     }
 
-    // Codex as the chat has it, for Settings to say whether pictures can be made here (D-341); the demo never has one made.
+    // The pictures as the campaign chose, outside any chat, for Settings to say whether they can be made here (D-341, D-572); the demo never has one made.
     // And what translates the page into a language the package does not ship, with a data folder of the demo's own, never the player's (D-406).
     // And npm, the web and the window of the player's yes, for the Packages page's catalog to list, add and take away for real: in a folder of packages of the
     // demo's own, so that the player's campaigns never see what the demo installs (D-436, D-485).
@@ -127,7 +157,7 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
         packages: npmPackages(packages),
         download: downloadBytes,
         confirm: systemConfirm(process.platform, process.env),
-        pictures: codexPictures(),
+        pictures: hostPictures(() => undefined, () => chosenPictureMaker(folder)),
         writer: hostWriter(() => undefined),
         home: `${folder}-home`,
         // The library's books indexed in the demo's own folder, read here in the demo's process (D-491 (13)).
@@ -669,6 +699,11 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (l
     }
 
     await scene("Arrivo alla locanda", "social", "Bertoldo parla di luci sulla Torre dei Sussurri e di un mercante che compra sigilli.");
+
+    // The three scenes told as a book, as the master writes them (T-227).
+    for (const [chapter, title, text] of demoBook) {
+        await rpg("book", chapter, "--title", title, "--text", text);
+    }
 
     // In from the village by the door, then by the fire.
     await rpg("move", "Ettore", "--at", "E6");

@@ -36,8 +36,8 @@ export const init = defineCommand({
         createWorld(root);
         appendLogEntry(root, newLogEntry(context, "campaign-created", "public", settings));
         // What the next campaign's setup suggests (T-134).
-        rememberChoice(context.home, "difficulty", settings.difficulty);
-        rememberChoice(context.home, "lethality", settings.lethality);
+        rememberChoice(context.home, root, "difficulty", settings.difficulty);
+        rememberChoice(context.home, root, "lethality", settings.lethality);
         return { root, name: settings.name, note: input.master === true ? campaignNote(root, context) : "" };
     },
 

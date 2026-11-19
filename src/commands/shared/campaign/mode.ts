@@ -60,6 +60,8 @@ const settingLabels: Partial<Record<SettingName, string>> = {
     character: "character (made with the player; made by the master, from a few words; the player's own, one they bring)",
     companions: `companions (${companionWays.join(", ")})`,
     "calendar-start": "calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491)",
+    pictures: "pictures (of places, quests and those met: none; on request; new elements, one for each)",
+    "pictures-by": "pictures-by (who makes them: chat, your app by its own means; codex; elevenlabs; other, a tool the player names, written by its name; suggest chat)",
     lines: 'lines ("none" is an answer)',
     veils: 'veils ("none" is an answer)',
 };
@@ -209,7 +211,7 @@ function setupMissingNames(root: string, context: Context, world: World): string
  */
 function lastChoicesNote(root: string, context: Context, world: World): string
 {
-    const last = lastChoices(context.home);
+    const last = lastChoices(context.home, root);
     const chosen = setupMissingNames(root, context, world).flatMap((name) => {
         const value = last[name];
         const offered = offeredValues(root, context, name);

@@ -27,7 +27,7 @@ const groups: { names: string[]; system?: true; }[] = [
     { names: ["dice", "master-rolls", "units"], system: true },
     { names: ["lines", "veils"] },
     { names: ["orders"] },
-    { names: ["pictures", "language"] },
+    { names: ["pictures", "pictures-by", "language"] },
 ];
 
 /** The Settings section; with `several` player characters, what a value means says so where it speaks of one character (D-480 (2)). */
@@ -269,9 +269,16 @@ function writtenLabel(setting: string, value: string): string
     return rate === undefined ? valueLabel(value) : t("{game} every {real}", rate);
 }
 
-/** What a value the page does not offer means: a rate of the time between sessions as the others say it, or that it reads as none (D-133); undefined for another setting's. */
+/**
+ * What a value the page does not offer means: a rate of the time between sessions as the others say it, or that it reads as none (D-133); an image tool of
+ * the master's that makes the pictures (D-572); undefined for another setting's.
+ */
 function writtenMeans(setting: string, value: string): string | undefined
 {
+    if (setting === "pictures-by") {
+        return t("the master makes them with {tool}", { tool: value });
+    }
+
     if (setting !== "between-sessions") {
         return undefined;
     }
@@ -515,10 +522,10 @@ function TextSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
     );
 }
 
-/** What the player should know of a setting on this computer, as how to have pictures: its lines, its steps in order, and the commands to copy. */
-function SettingNote({ note }: { note: { text: string; fix?: true; }; })
+/** What the player should know of a setting on this computer, as how to have pictures: its lines, its steps in order, the commands to copy, and a line after. */
+function SettingNote({ note }: { note: NonNullable<PlayerSetting["note"]>; })
 {
-    const blocks = noteBlocks(t(note.text));
+    const blocks = [...noteBlocks(t(note.text, note.values)), ...(note.also === undefined ? [] : [t(note.also, note.values)])];
     return (
         <div class={note.fix ? "setting-note fix" : "setting-note"}>
             <Icon name="info" />

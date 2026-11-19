@@ -52,6 +52,8 @@ async function inPlay(...settings: [string, string][]): Promise<void>
         ["character", "made with the player"],
         ["companions", "none"],
         ["calendar-start", "day 1"],
+        ["pictures", "none"],
+        ["pictures-by", "chat"],
         ["lines", "none"],
         ["veils", "none"],
     ];

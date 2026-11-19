@@ -491,11 +491,14 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
 
                     const name = itemName(item.item);
                     const bonds = (item.bonds ?? []).map((list) => fieldLabel(list, fields));
-                    const said = [
+                    const parts = [
                         item.inside === undefined ? undefined : t("in {container}", { container: itemName(item.inside) }),
                         item.equipped === true ? t("Equipped") : undefined,
                         ...bonds,
-                    ].filter((part) => part !== undefined).map((part) => `, ${part}`).join("");
+                    ].filter((part) => part !== undefined);
+                    const said = parts.map((part) => `, ${part}`).join("");
+                    // What the thing's card says under its name: how many, where it is, whether equipped.
+                    const facts = [...(count(item) === "" ? [] : [`×${count(item)}`]), ...parts];
                     const words = (
                         <>
                             {/* The thing's own picture, in the colour of its words, else a thing's; in gold when it is equipped (D-431). */}
@@ -513,7 +516,7 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                     );
                     // The campaign changed its page of the game system (D-564): an asterisk after its name, outside what acts.
                     const changed = item.layered === true && <ChangedMark />;
-                    // The name acts, when the system names a verb for it; a container's opens and closes what it holds (D-495).
+                    // The name opens the thing's card, with its verbs when the system names some; a container's opens and closes what it holds (D-495).
                     const verbs = holds(index) ? undefined : itemVerbs(acts?.actions, item);
                     return (
                         <tr key={key(index)} class={item.depth === undefined ? undefined : "inside"}>
@@ -525,9 +528,20 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                                             {words}
                                         </button>
                                     )
-                                    : verbs === undefined
+                                    : acts === undefined
                                     ? words
-                                    : <ActName verbs={verbs} item={name} said={`${count(item) === "" ? "" : ` (${count(item)})`}${said}`}>{words}</ActName>}
+                                    : (
+                                        <ActName
+                                            verbs={verbs ?? []}
+                                            item={name}
+                                            page={item.item}
+                                            facts={facts}
+                                            {...(item.document === true ? { document: true as const } : {})}
+                                            said={`${count(item) === "" ? "" : ` (${count(item)})`}${said}`}
+                                        >
+                                            {words}
+                                        </ActName>
+                                    )}
                                 {changed}
                             </th>
                             {!carried && item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text, value.kind)}</td>)}

@@ -188,6 +188,8 @@ export interface SheetItem
     bonds?: string[];
     /** Its page, or one it derives from, is a page of the game system the campaign changed with a layer (SYS-11): the view says so. */
     layered?: true;
+    /** It is a document, as a letter, read again among the World's documents (D-573). */
+    document?: true;
 }
 
 /**
@@ -340,6 +342,32 @@ export function statBlock(world: World, system: GameSystem | undefined, page: Pa
         return [{ ...sheetValue(world, fields, field, value), ...(beside === undefined ? {} : { beside }) }];
     });
     return values.length === 0 ? [] : [{ name: creature.name, values }];
+}
+
+/**
+ * What a thing's page says of it as data, for its card on the dashboard (D-573): the fields the system declares, of its own and of the pages it derives from,
+ * as damage and weight; never the formulas it gives who holds it, as an attack, nor a bonus of 0. None for a page that is not an item.
+ */
+export function thingBlock(world: World, system: GameSystem | undefined, page: Page): SheetGroupData[]
+{
+    if (system === undefined || page.type !== "item") {
+        return [];
+    }
+
+    const fields = effectiveFields(world, page);
+    const given = new Set(Object.values(system.itemFormulas).flat().map(comparableText));
+    const names = [...new Set([...baseChain(world, page)].reverse().concat(page).flatMap((holder) => Object.keys(holder.fields)))];
+    const values = names.flatMap((field): SheetValue[] => {
+        const value = valueNamed(fields, field);
+        const kind = declaredKind(world, field);
+
+        if (kind === undefined || isStandardField(page.type, field) || given.has(comparableText(field)) || isEmptyField(value) || (kind === "bonus" && Number(value) === 0)) {
+            return [];
+        }
+
+        return [sheetValue(world, fields, field, value)];
+    });
+    return values.length === 0 ? [] : [{ name: page.name, values }];
 }
 
 /** "Abilities: str 14 (+2) · dex 12 (+1)…": the sheet as the chat gives it, a line for each group. */
@@ -644,6 +672,13 @@ function groupEntries(world: World, system: GameSystem, group: SheetGroup, field
  * What a holder carries, as rows of the sheet (D-431): a stack with its count (STK-1), an item with a story of its own, 1, and below it what it holds, one level deeper, and
  * text as written; marked when equipped. Pages that are elsewhere, or not items, are left out.
  */
+/** Whether a thing is a document, as a letter: an item with a document field. */
+function isDocument(page: Page): boolean
+{
+    const value = page.fields.document;
+    return page.type === "item" && typeof value === "string" && value.trim() !== "";
+}
+
 function carriedRows(world: World, holder: Page, marks: { equipped: Page[]; bonds: Map<Page, string[]>; }, depth = 0, seen = new Set<Page>()): SheetItem[]
 {
     const field = containerFieldOf(holder.type);
@@ -659,6 +694,7 @@ function carriedRows(world: World, holder: Page, marks: { equipped: Page[]; bond
             ...(depth === 0 ? {} : { depth, inside: holder.name }),
             ...(page !== undefined && marks.equipped.includes(page) ? { equipped: true } : {}),
             ...(bonds === undefined ? {} : { bonds }),
+            ...(page !== undefined && isDocument(page) ? { document: true as const } : {}),
         };
     };
 

@@ -3,7 +3,7 @@ import { type ComponentChildren, createContext } from "preact";
 import { useContext } from "preact/hooks";
 import type { ActVerb } from "../data.ts";
 import { t } from "../text.ts";
-import { type ActStart, actTitle, type SheetActions } from "./acts.ts";
+import { type ActStart, type SheetActions, verbLabel } from "./acts.ts";
 
 /** What the page lets the player do with the sheet and the people (D-495): the verbs of the sheet's lists, and how an action starts. */
 export interface PlayerActs
@@ -21,15 +21,28 @@ export function usePlayerActs(): PlayerActs | undefined
     return useContext(PlayerActsContext);
 }
 
-/** A thing's name that acts (D-495): a click starts its first verb, its tooltip says it; `said`, what a screen reader hears after it. */
-export function ActName({ verbs, item, said = "", children }: { verbs: ActVerb[]; item: string; said?: string; children: ComponentChildren; })
+/**
+ * A thing's name that opens its card (D-495): what it is, then its verbs; with none, only what it is. Its tooltip names its verbs; `page`, the thing's page
+ * when the name shown is another; `facts`, what the sheet says of it; `said`, what a screen reader hears after it.
+ */
+export function ActName({ verbs, item, page, facts, document, said = "", children }: {
+    verbs: ActVerb[];
+    item: string;
+    page?: string;
+    facts?: string[];
+    document?: true;
+    said?: string;
+    children: ComponentChildren;
+})
 {
     const acts = usePlayerActs();
-    const title = actTitle(verbs[0], item);
+    // The click opens the card: the tooltip names what can be done there, a screen reader the thing and what the sheet says of it.
+    const title = verbs.length === 0 ? undefined : verbs.map(verbLabel).join(" · ");
+    const start = { verbs, item, ...(page === undefined ? {} : { page }), ...(facts === undefined ? {} : { facts }), ...(document === undefined ? {} : { document }) };
     return (
-        <button type="button" class="act" data-tip={`${title}…`} aria-label={`${title}…${said}`} onClick={(event) => acts?.start({ verbs, item }, event.currentTarget)}>
+        <button type="button" class={verbs.length === 0 ? "act reads" : "act"} data-tip={title} aria-label={`${item}${said}`} onClick={(event) => acts?.start(start, event.currentTarget)}>
             {children}
-            <span class="act-mark" aria-hidden="true">›</span>
+            {verbs.length > 0 && <span class="act-mark" aria-hidden="true">›</span>}
         </button>
     );
 }

@@ -23,6 +23,7 @@ Where things are in the repository, what each module depends on, and where new c
 | [src/cli/cli.ts](../src/cli/cli.ts), [src/cli/command-line.ts](../src/cli/command-line.ts) | The `rpg` binary |
 | [src/commands/shared/books/library-reader.ts](../src/commands/shared/books/library-reader.ts) | `rpg --read-library`, the process that reads the books of the computer's library apart, as `rules`, `config` and the dashboard start it |
 | [src/server/mcp.ts](../src/server/mcp.ts) | The MCP server |
+| [src/server/chats.ts](../src/server/chats.ts) | The MCP server's copies of the campaign's chats into `sessions/`, now and then after a call |
 | [src/server/bell-listener.ts](../src/server/bell-listener.ts) | `rpg --listen`, Claude Code's Stop hook that `init` writes: it waits at its chat's dashboard and wakes the chat when the player acts there |
 | [src/server/approver.ts](../src/server/approver.ts) | `rpg --approve`, Antigravity's hook that `init` writes: it lets the rpg tools run without asking, and asks for every other |
 | [src/server/dashboard/](../src/server/dashboard/), [src/dashboard/](../src/dashboard/) | The dashboard's server, and its page (Preact) |
@@ -59,6 +60,7 @@ Where things are in the repository, what each module depends on, and where new c
 | `grid` | The map of a place: squares, legend, reach, adjacency |
 | `saves` | Saves as zips |
 | `player-notes` | The player's notes, outside the game |
+| `chats` | The chats Claude Code and Codex keep of a campaign, read in their folders and written into it as text |
 
 No module names a game's concepts: hit points or conditions exist only as data in a system.
 

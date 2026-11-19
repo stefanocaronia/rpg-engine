@@ -79,7 +79,7 @@ function codexReady(): PicturesReady
 }
 
 /** One picture: Codex in an empty folder of its own, the painted brief on its input, its events read for its thread; the picture from its own folder. */
-function make(subject: PictureSubject): Promise<MadePicture | { refused: string; }>
+function make(subject: PictureSubject): Promise<MadePicture | { refused: string; onlyThis?: true; }>
 {
     const folder = mkdtempSync(join(tmpdir(), "rpg-picture-"));
     const last = join(folder, "last.txt");
@@ -123,7 +123,8 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
             const failed = events.find((event) => event.type === "turn.failed");
             const said = existsSync(last) ? lastLine(last) : "";
             clean();
-            done({ refused: refusal(errors, failed, said) });
+            const onlyThis = /moderation_blocked/.test(errors) || (failed === undefined && said === "");
+            done({ refused: refusal(errors, failed, said), ...(onlyThis ? { onlyThis: true as const } : {}) });
         });
         child.stdin.end(paintedBrief(subject));
     });

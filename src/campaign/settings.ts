@@ -6,7 +6,7 @@ import type { Problem } from "../core/problem.ts";
 import { files } from "../core/store.ts";
 import { comparableText } from "../core/text.ts";
 import { readYamlFile, readYamlValues, writeYamlFile } from "../core/yaml-file.ts";
-import { campaignFileName } from "./find-campaign.ts";
+import { campaignFileName, findCampaign } from "./find-campaign.ts";
 import { type CountedByGame, customLevel, difficulties, difficultyItems, levelMeaning, rigorItems, rigors } from "./levels.ts";
 
 const settingsHold = 'settings, such as "name: ..."';
@@ -27,7 +27,7 @@ export function settingMeaning(name: string, value: unknown, counted?: CountedBy
         return levelMeaning(name, value, counted, custom);
     }
 
-    const meanings: Record<string, Record<string, string> | undefined> = { mentor: mentorMeanings, ...styleMeanings };
+    const meanings: Record<string, Record<string, string> | undefined> = { mentor: mentorMeanings, "pictures-by": pictureMakerMeanings, ...styleMeanings };
     const own = Object.hasOwn(meanings, name) ? meanings[name] : undefined;
     return typeof value === "string" && own !== undefined && Object.hasOwn(own, value) ? own[value] : undefined;
 }
@@ -363,6 +363,31 @@ export { unitSystems };
 /** Which pictures the engine has made, where it can (D-308, D-388, D-420): none, only those the player asks for, or one for each new place, quest and one met. */
 export const pictureWays = ["none", "on request", "new elements"] as const;
 
+/**
+ * Who makes the pictures (D-572): the chat in use by its own means, as when unset, Codex, the master with ElevenLabs's image tool, or another tool the player
+ * names in the chat; any other value is that tool's name.
+ */
+export const pictureMakers = ["chat", "codex", "elevenlabs", "other"] as const;
+
+/** What each way of making the pictures means to the master, which config gives for the chosen one, and the player's change of it on the dashboard (D-572). */
+const pictureMakerMeanings: Record<(typeof pictureMakers)[number], string> = {
+    chat: "you make them by this chat's own means, as image gives them",
+    codex: "Codex makes them on this computer; where it cannot, this chat does, and you hear why",
+    elevenlabs: "you make them with ElevenLabs's image tool, from the brief image gives you",
+    other: "another image tool of yours, not named yet: ask the player which, then set its name with config pictures-by",
+};
+
+/** Who makes the pictures of the campaign of a folder, as its pictures-by setting says; undefined when unset, or with no campaign that reads. */
+export function chosenPictureMaker(folder: string): string | undefined
+{
+    try {
+        const root = findCampaign(folder);
+        return root === undefined ? undefined : readTextSetting(root, "pictures-by");
+    } catch {
+        return undefined;
+    }
+}
+
 /** How much the master thinks before each answer, written for each AI app in the campaign's folder (D-462). */
 export const efforts = ["low", "medium", "high"] as const;
 
@@ -497,6 +522,10 @@ export const settingsSchema = z.object({
         "the pictures of places, quests and those met the engine has made on this computer, which spend the player's plan, Codex's or Claude's: none, on request (those the player asks for) "
             + "or new elements (one for each new place and quest, and for each character and kind of creature the character meets)",
     ),
+    "pictures-by": z.string().trim().min(1).optional().describe(
+        "who makes the pictures, the player's to choose: chat (the default: this chat by its own means), codex (Codex, from the player's ChatGPT plan, Plus or higher; "
+            + "where it cannot, this chat makes them), elevenlabs (you, with ElevenLabs's image tool), other (another tool of yours the player names: ask which) or that tool's name",
+    ),
     effort: z.enum(efforts).optional().describe(
         "how much the master thinks before each answer, the player's to choose: low, medium or high, written where Claude Code and Codex read it in the campaign's folder; "
             + "unset, each app keeps its own",
@@ -543,16 +572,16 @@ export const mapSettingNames: SettingName[] = ["fields", "tables", "computed", "
 export const entrySettingNames: SettingName[] = [...mapSettingNames, "widgets", "custom-difficulty", "custom-rigor"];
 
 /**
- * What only the setup asks (D-241, MOD-3, D-347, D-287, D-557): how much the master teaches the game, whether the master's rolls are shown, how the player
- * character and the companions come, when the story starts, and the lines and veils, which "none" answers too.
+ * What only the setup asks (D-241, MOD-3, D-347, D-287, D-557, D-572): how much the master teaches the game, whether the master's rolls are shown, how the
+ * player character and the companions come, when the story starts, the pictures and who makes them, and the lines and veils, which "none" answers too.
  */
-export const setupSettingNames: SettingName[] = ["mentor", "master-rolls", "character", "companions", "calendar-start", "lines", "veils"];
+export const setupSettingNames: SettingName[] = ["mentor", "master-rolls", "character", "companions", "calendar-start", "pictures", "pictures-by", "lines", "veils"];
 
 /** What the setup asks only of a campaign without a written world (D-79, D-80, D-558, MOD-3). */
 const premiseSettingNames: SettingName[] = ["premise", "preparation", "length"];
 
 // Settings that only some games have, or that only the setup asks: never asked for in play when missing.
-// The pictures: status asks for them once, only where they can be made (D-308).
+// The pictures: the setup asks them; in a campaign made before, status asks for them once, only where they can be made (D-308, D-572).
 // How the master writes: the core's own until the player chooses (D-395).
 const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
 

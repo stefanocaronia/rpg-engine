@@ -1,6 +1,6 @@
-// The Journal section (D-367, D-369, D-371, D-384, D-388): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
+// The Journal section (D-367, D-369, D-371, D-384, D-388, T-227): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
 // goals, its counters as bars and its clock with its name, the main ones first and in gold; the ones the player follows, the main one until they choose, shown
-// small beside the page, or in Scene and Combat on a narrow screen; the story by its scenes, as chapters, the last first, each with what the diary tells of it; the companions'
+// small beside the page, or in Scene and Combat on a narrow screen; the story told as a book; its timeline by scenes, as chapters, the last first, each with what the diary tells of it; the companions'
 // diaries (D-497); and the player's own notes.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "../address.ts";
@@ -18,12 +18,13 @@ import { PageHead } from "../shell/pages.tsx";
 import { useChoice, useKeptText } from "../shell/prefs.ts";
 import { PageTabs } from "../shell/tabs.tsx";
 import { arrowStep, t } from "../text.ts";
+import { Book } from "./book.tsx";
 import { Notes } from "./notes.tsx";
 
 // The tab the player last chose, kept in this browser.
-const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story", "companions", "notes"] } as const;
+const tabChoice = { key: "rpg-engine.journal-tab", initial: "quests", values: ["quests", "story", "timeline", "companions", "notes"] } as const;
 
-/** The Journal: the tab the player last chose, or the one the address says, as #/journal/story, and a chapter in the story, as #/journal/story/3. */
+/** The Journal: the tab the player last chose, or the one the address says, as #/journal/story, and a chapter, of the book or of the timeline, as #/journal/story/3. */
 export function JournalView({ version, campaign, tab: asked, item }: { version: number; campaign?: string | undefined; tab?: string | undefined; item?: string | undefined; })
 {
     const journal = useJournal(version);
@@ -42,7 +43,7 @@ export function JournalView({ version, campaign, tab: asked, item }: { version: 
 
     // A chapter the address says, as the calendar's scenes lead to, brought into view once the story is read.
     useEffect(() => {
-        const chapter = item === undefined || tab !== "story" ? null : document.querySelector<HTMLElement>(`.chapter[data-number="${CSS.escape(item)}"]`);
+        const chapter = item === undefined || tab !== "timeline" ? null : document.querySelector<HTMLElement>(`.chapter[data-number="${CSS.escape(item)}"]`);
         chapter?.scrollIntoView({ block: "center" });
         chapter?.focus({ preventScroll: true });
     }, [item, tab, journal.read !== undefined]);
@@ -55,7 +56,8 @@ export function JournalView({ version, campaign, tab: asked, item }: { version: 
             <div id="journal-panel" role="tabpanel" aria-labelledby={`journal-tab-${tab}`}>
                 {journal.problem !== undefined && <p class="journal-problem" role="alert">{journal.problem}</p>}
                 {journal.read !== undefined && tab === "quests" && <QuestLog quests={journal.read.quests} followed={followed} onFollow={setFollowed} />}
-                {journal.read !== undefined && tab === "story" && <Story chapters={journal.read.chapters} now={journal.read.now} />}
+                {journal.read !== undefined && tab === "story" && <Book chapters={journal.read.book ?? []} asked={item} campaign={campaign} />}
+                {journal.read !== undefined && tab === "timeline" && <Timeline chapters={journal.read.chapters} now={journal.read.now} />}
                 {journal.read !== undefined && tab === "companions" && <Diaries thoughts={journal.read.thoughts ?? []} />}
                 {tab === "notes" && <Notes version={version} />}
                 {journal.read === undefined && journal.problem === undefined && journal.done && tab !== "notes" && <p class="journal-none">{t("The journal starts with the player character.")}</p>}
@@ -493,7 +495,7 @@ export function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadl
 }
 
 /** The story by its scenes, the last first: each with its place and date, its summary, and what the diary tells of it, folded. */
-function Story({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
+function Timeline({ chapters, now }: { chapters: ShownChapter[]; now?: string; })
 {
     if (chapters.length === 0) {
         return <p class="journal-none">{t("The story starts with the first scene.")}</p>;
@@ -758,7 +760,7 @@ function plainText(text: string): string
 /** A tab's name in the page's language. */
 function tabName(tab: string): string
 {
-    return tab === "quests" ? t("Quests") : tab === "story" ? t("Story") : tab === "companions" ? t("Companions") : t("Notes");
+    return tab === "quests" ? t("Quests") : tab === "story" ? t("Story") : tab === "timeline" ? t("Timeline") : tab === "companions" ? t("Companions") : t("Notes");
 }
 
 /** A chapter's key as the story grows, newest first: its number; a stretch between scenes by the chapter after it, so that what is open stays with it. */

@@ -541,7 +541,7 @@ function App()
     const lead = playerNamed(shown.party, shown.foreground) ?? players[0];
     const actor = member?.role === "pc" ? member : lead;
     // The player's sentences to the master (D-495); read() sets the acts and the verbs it reads, by setters that never change.
-    const { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, strip, actProblem, sendAct, closeAct, withdraw, copyFromStrip, dismissAct } = useActs({
+    const { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, answering: answeringQuestion, strip, actProblem, sendAct, closeAct, withdraw, copyFromStrip, dismissAct } = useActs({
         read,
         live,
         asked: shown.asked,
@@ -886,6 +886,7 @@ function App()
                                         scene={shown.openScene}
                                         companions={shown.party.filter((one) => one.role === "companion").map((one) => one.name)}
                                         reply={reply}
+                                        asked={answeringQuestion}
                                         onSend={sendAct}
                                         onClose={closeAct}
                                     />

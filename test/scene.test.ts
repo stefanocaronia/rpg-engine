@@ -108,6 +108,8 @@ describe("rpg scene", () => {
                 // A creature of the campaign written without its experience points is named, not left out in silence (DAT-11).
                 + "\nrenown: Annegato 2 counts nothing, with no renown-value on Annegato: write it, such as write Annegato, set renown-value=…, and share it. Leave out what the party summoned; "
                 + "count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained."
+                // The scene is a chapter of the book, for the master to write (T-227).
+                + "\nChapter 1 of the book waits for its prose: write it with book now, while the scene is fresh."
                 + "\nSaved: 1 - Ossario.",
         );
         expect(stateFile()).not.toContain("scene:");

@@ -138,6 +138,12 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(party.map((member: { image?: { file: string; }; }) => member.image?.file)).toEqual(["Ettore.png", "fenfolk.svg", "hound.svg"]);
     });
 
+    it("gives a thing's page its data for its card, never the formulas it gives who holds it (D-573)", async () => {
+        const buckler = JSON.parse(await ok("view", "Buckler", "--json"));
+        expect(buckler.sheet).toEqual([{ name: "Buckler", values: [{ field: "heft", kind: "text", text: "1 kg", marks: 0 }] }]);
+        expect(buckler.text).toContain("boiled leather");
+    });
+
     it("lists the pages of the system the campaign changed with a layer, with what the system gave; never a secret, and a creature the character does not know by its name alone (SYS-11)", async () => {
         const overview = async () => JSON.parse(await ok("view", "--json")) as Extract<View, { kind: "overview"; }>;
         expect(await overview()).not.toHaveProperty("layers");
@@ -220,6 +226,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             "units",
             "voices",
             "pictures",
+            "pictures-by",
             "effort",
             "lines",
             "veils",
@@ -231,7 +238,7 @@ describe("view as data (VIEW-1, D-272)", () => {
         const named = (name: string) => data.settings.find((setting) => setting.name === name);
         expect(named("difficulty")).toMatchObject({ about: "how hard the world plays", value: "normal" });
         expect(named("difficulty")).toHaveProperty("choices", expect.arrayContaining([{ value: "hard", means: "fights high, smart and tenacious foes, resources scarce" }]));
-        expect(named("lines")).toEqual({ name: "lines", about: "what never appears in the game", items: ["ragni"] });
+        expect(named("lines")).toEqual({ name: "lines", about: "what must never appear in the game", items: ["ragni"] });
         expect(named("veils")).toEqual({ name: "veils", about: "what happens only off screen, without details" });
         expect(named("language")).toMatchObject({ value: "it" });
         // How the master writes (D-395): the core's own ways while unset, the player's own words with how long they may be.
@@ -261,6 +268,27 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(await pictures({ ready: false, why: "Codex is not logged in", fix: "1. Paste `codex login` in a terminal." })).toEqual({ text: "1. Paste `codex login` in a terminal.", fix: true });
         expect(await pictures({ ready: false, why: "Nothing makes pictures here" })).toEqual({ text: "Nothing makes pictures here.", fix: true });
         expect(named("pictures")).not.toHaveProperty("note");
+        // Where the maker chosen made none, why, and who makes them in its place (D-572).
+        const instead = { maker: "Codex", by: "Claude", why: "your plan makes no pictures." };
+        expect(await pictures({ ready: true, maker: "Claude", instead: { ...instead, refused: true } })).toEqual({
+            text: "{maker} refused the last picture: {why}. {by} makes them instead.",
+            values: { maker: "Codex", why: "your plan makes no pictures", by: "Claude" },
+        });
+        expect(await pictures({ ready: true, maker: "Claude", instead: { ...instead, fix: "1. Paste `codex login` in a terminal." } })).toEqual({
+            text: "1. Paste `codex login` in a terminal.",
+            fix: true,
+            values: { by: "Claude" },
+            also: "{by} makes them meanwhile.",
+        });
+        expect(await pictures({ ready: true, maker: "ElevenLabs", tool: "ElevenLabs" })).toEqual({ text: "The master makes them with {tool}.", values: { tool: "ElevenLabs" } });
+        // Unset, the chat in use; and in Codex, Codex is no choice of its own.
+        expect(named("pictures-by")).toMatchObject({ value: "chat", choices: [{ value: "chat" }, { value: "codex" }, { value: "elevenlabs" }, { value: "other" }].map((choice) => expect.objectContaining(choice)) });
+        await ok("config", "pictures-by", "codex");
+        const inCodex = JSON.parse((await runCommandLine(["view", "--settings", "--json"], { ...context, host: () => "codex-mcp-client" })).output) as { settings: PlayerSetting[]; };
+        expect(inCodex.settings.find((setting) => setting.name === "pictures-by")).toMatchObject({
+            value: "chat",
+            choices: [expect.objectContaining({ value: "chat" }), expect.objectContaining({ value: "elevenlabs" }), expect.objectContaining({ value: "other" })],
+        });
         const refused = await runCommandLine(["view", "--settings", "--map"], context);
         expect(refused.exitCode).not.toBe(0);
         expect(refused.output).toContain("Give settings alone");
@@ -347,6 +375,18 @@ describe("view as data (VIEW-1, D-272)", () => {
 });
 
 describe("the setup as the dashboard shows it (D-370)", () => {
+    it("asks how well the player knows the game only once the chat has chosen it, by its name (T-211)", async () => {
+        const campaign = join(makeTempFolder(), "senza-sistema");
+        mkdirSync(campaign);
+        const there = { ...context, folder: campaign };
+        const names = async (): Promise<string[]> => (JSON.parse((await runCommandLine(["view", "--setup", "--json"], there)).output) as { questions: PlayerSetting[]; }).questions.map((question) => question.name);
+
+        expect((await runCommandLine(["init", "--language", "it"], there)).exitCode).toBe(0);
+        expect(await names()).not.toContain("mentor");
+        expect((await runCommandLine(["config", "system", "fake"], there)).exitCode).toBe(0);
+        expect((await names())[0]).toBe("mentor");
+    });
+
     it("gives the setup's questions in order, what the next mode needs, and the name; the page sets them, leaves them to the master, says it is ready", async () => {
         const campaign = join(makeTempFolder(), "nuova-campagna");
         mkdirSync(campaign);
@@ -375,6 +415,8 @@ describe("the setup as the dashboard shows it (D-370)", () => {
             "companions",
             "preparation",
             "length",
+            "pictures",
+            "pictures-by",
             "ruleset",
             "harshness",
             "lines",
@@ -382,14 +424,23 @@ describe("the setup as the dashboard shows it (D-370)", () => {
         ]);
         expect(setup.questions[0]).toMatchObject({
             name: "mentor",
-            question: "How well do you know this game?",
+            question: "How well do you know {game}?",
+            game: "fake",
             about: "the master teaches it as much as you need",
             choices: [expect.objectContaining({ value: "tutorial", label: "never played it" }), expect.objectContaining({ value: "hints", label: "a little" }), expect.objectContaining({ value: "off", label: "I know it" })],
         });
         expect(setup.questions[1]).toMatchObject({ value: "normal", choices: expect.arrayContaining([expect.objectContaining({ value: "hard" })]) });
         // The values the game suggests, never chosen for the player; the lethality as the difficulty has it.
         const suggested = Object.fromEntries(setup.questions.filter((question: { suggested?: string; }) => question.suggested !== undefined).map((question: { name: string; suggested: string; }) => [question.name, question.suggested]));
-        expect(suggested).toEqual({ lethality: "dice", saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", character: "made with the player", preparation: "on the fly", length: "one evening" });
+        expect(suggested).toEqual({ lethality: "dice", saves: "checkpoint", rigor: "smooth", "master-rolls": "behind the screen", character: "made with the player", preparation: "on the fly", length: "one evening", "pictures-by": "chat" });
+        // The pictures, and who makes them, each with its question in the player's words (D-572).
+        expect(setup.questions[12]).toMatchObject({ name: "pictures", question: "Do you want pictures of places and of those you meet?" });
+        expect(setup.questions[13]).toMatchObject({
+            name: "pictures-by",
+            question: "Who makes them?",
+            choices: [expect.objectContaining({ value: "chat" }), expect.objectContaining({ value: "codex" }), expect.objectContaining({ value: "elevenlabs" }), expect.objectContaining({ value: "other" })],
+        });
+        expect(setup.questions[13]).not.toHaveProperty("value");
         expect(setup.questions.find((question: { name: string; }) => question.name === "harshness")).toMatchObject({ about: "how hard the road is" });
         // How the player character comes, each way in the player's words (D-557); how long a world not written plays (D-558).
         expect(setup.questions[8]).toMatchObject({

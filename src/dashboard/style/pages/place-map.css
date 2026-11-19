@@ -642,16 +642,12 @@
         color: var(--muted);
     }
 
-    /* The sheet of an action (D-495): over the whole page with the map, else a card in the middle; the verbs, on whom, then the sentence and its buttons. */
-    .act-sheet[open] {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .act-sheet:not(.full) {
-        width: min(560px, calc(100% - 24px));
+    /* The card of an action (D-495): a thing, its text and its verbs; then on whom as chips and on the place's map, the sentence and its buttons.
+       A card in the middle, wider with the map; on a phone a sheet from the foot. */
+    .map-sheet.act-sheet {
+        width: min(520px, calc(100% - 24px));
         height: fit-content;
-        max-height: calc(100% - 24px);
+        max-height: calc(100% - 48px);
         margin: auto;
         overflow: hidden;
         border: 1px solid var(--rule);
@@ -659,78 +655,124 @@
         box-shadow: var(--overlay);
     }
 
-    .act-verbs {
+    .map-sheet.act-sheet.wide {
+        width: min(960px, calc(100% - 24px));
+    }
+
+    .act-sheet[open] {
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+        flex-direction: column;
+    }
+
+    @media (max-width: 599px) {
+        .map-sheet.act-sheet,
+        .map-sheet.act-sheet.wide {
+            width: 100%;
+            max-height: calc(100% - 24px);
+            margin: auto 0 0;
+            border-width: 1px 0 0;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        }
+    }
+
+    .act-head {
+        align-items: flex-start;
+        background: none;
+    }
+
+    .act-heading {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .act-facts {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .act-back svg.icon {
+        scale: -1 1;
+    }
+
+    [dir="rtl"] .act-back svg.icon {
+        scale: 1;
+    }
+
+    /* The thing's own page, as much as fits; the rest scrolls. */
+    .act-about {
+        flex: 0 1 auto;
+        min-height: 0;
+        max-height: 50vh;
+        overflow: auto;
+        padding: 14px 16px 4px;
+        line-height: 1.5;
+    }
+
+    /* The thing's data, as damage and weight: label and value in two columns, as a stat block. */
+    .act-data {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 6px 16px;
         margin: 0;
-        padding: 12px 16px 0;
-        border: 0;
+        padding: 14px 16px 0;
     }
 
-    .act-verb {
-        display: inline-flex;
-        align-items: center;
-        min-height: 40px;
-        padding: 0 16px;
-        border: 1px solid var(--rule);
-        border-radius: 999px;
-        font-weight: 650;
-        cursor: pointer;
+    .act-data > div {
+        display: contents;
     }
 
-    .act-verb:has(input:checked) {
-        border-color: var(--accent);
-        background: color-mix(in srgb, var(--accent) 14%, var(--panel));
-        box-shadow: inset 0 0 0 1px var(--accent);
+    .act-data dt {
+        color: var(--muted);
+        font-size: 0.85rem;
     }
 
-    .act-verb input,
-    .act-who-one input[type="radio"] {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
+    .act-data dd {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .act-about .markdown > :first-child {
+        margin-top: 0;
+    }
+
+    .act-verbs {
+        flex-wrap: wrap;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
     }
 
     .act-body {
         flex: 1 1 auto;
         min-height: 0;
+        overflow: auto;
         padding: 12px 16px;
     }
 
-    .act-sheet:not(.full) .act-body {
-        padding-top: 4px;
+    /* The map under the chips, only the paper: as high as leaves the sentence in view, the rest scrolls. */
+    .act-body .lm {
+        max-width: none;
+        margin: 12px 0 0;
+        box-shadow: none;
     }
 
-    /* On a narrow screen the list first, the names at hand; the map under it, which scrolls to keep its tokens large enough to touch. */
-    @media (max-width: 899px) {
-        .act-sheet.full .act-body {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .act-sheet.full .act-who {
-            order: -1;
-        }
+    .act-body .lm-frame {
+        max-height: 44vh;
+        overflow: auto;
+        border: 0;
     }
 
-    @media (min-width: 900px) {
-        .act-sheet.full .act-body {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 320px;
-            gap: 16px;
-            align-items: start;
-        }
-
-        .act-sheet.full .act-body .lm {
-            margin: 0;
+    /* On a phone the map would be a slit inside a scrolling card: the chips, which name the squares, are enough (desktop first). */
+    @media (max-width: 599px) {
+        .act-body .lm {
+            display: none;
         }
     }
 
+    /* On whom, as chips among peers: the side's colour as a dot before the name, red for a foe the master marked; chosen, in the accent. */
     .act-who {
-        display: grid;
-        gap: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
         margin: 0;
         padding: 0;
         border: 0;
@@ -741,47 +783,55 @@
         padding: 0;
     }
 
-    /* One to choose, as on the map's list of who is where: a line in the side's colour, red for a foe the master marked; chosen, ringed in the accent. */
     .act-who-one {
         position: relative;
-        display: flex;
-        flex-wrap: wrap;
+        display: inline-flex;
         align-items: center;
-        gap: 6px 8px;
-        min-height: 44px;
-        padding: 6px 12px;
+        gap: 6px;
+        min-height: 40px;
+        padding: 0 14px;
         border: 1px solid var(--rule);
-        border-radius: var(--radius-m);
+        border-radius: 999px;
         background: var(--panel);
-        box-shadow: inset 3px 0 0 var(--ally);
+        color: var(--ink);
+        font: inherit;
         cursor: pointer;
     }
 
-    .act-who-one.other {
-        box-shadow: inset 3px 0 0 color-mix(in srgb, var(--muted) 45%, transparent);
+    .act-who-one::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--ally);
     }
 
-    .act-who-one.hostile {
-        box-shadow: inset 3px 0 0 var(--low);
+    .act-who-one.other::before {
+        background: color-mix(in srgb, var(--muted) 60%, transparent);
     }
 
-    .act-who-one.plain {
-        box-shadow: none;
+    .act-who-one.hostile::before {
+        background: var(--low);
+    }
+
+    .act-who-one.plain::before {
+        content: none;
     }
 
     .act-who-one:has(input:checked) {
         border-color: var(--accent);
-        background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+        background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+        box-shadow: inset 0 0 0 1px var(--accent);
     }
 
-    /* A sign beside the one chosen, not only the colour. */
-    .act-who-one:has(input:checked)::after {
-        content: "";
-        width: 9px;
-        height: 9px;
-        margin-inline-start: auto;
-        border-radius: 50%;
-        background: var(--accent);
+    .act-who-one input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .act-who-one .lm-key-square {
+        margin: 0;
     }
 
     .act-who-name {
@@ -819,6 +869,23 @@
         font: inherit;
         line-height: 1.4;
         resize: vertical;
+    }
+
+    .act-words-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+    }
+
+    .act-words-label svg.icon {
+        width: 14px;
+        height: 14px;
+    }
+
+    .act-answer {
+        color: var(--ink);
+        font-weight: 600;
     }
 
     .act-note {

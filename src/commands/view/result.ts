@@ -5,6 +5,7 @@ import type { ActVerb, SheetVerb, SystemWords } from "../../systems/index.ts";
 import type { CalendarDay } from "../../time/index.ts";
 import type { PlayerSetting } from "../config/dashboard.ts";
 import type { ShownImport } from "../import/import.ts";
+import type { BookChapter } from "../shared/campaign/book.ts";
 import type { Mode } from "../shared/campaign/mode.ts";
 import type { ResetPoint, SaveMode } from "../shared/campaign/saves.ts";
 import type { MoodMoment } from "../shared/characters/moods.ts";
@@ -126,7 +127,7 @@ export type ViewResult =
     /** The setup (D-370): the mode, the campaign's name and whether it is still its folder's, what the next mode still needs, and the setup's questions. */
     | { kind: "setup"; mode: Mode; name: string; folderName: boolean; missing: string[]; questions: PlayerSetting[]; }
     /** The journal (D-367): the quests the player character knows, and the story by scenes. */
-    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts: ShownThought[]; }
+    | { kind: "journal"; now?: string; quests: ShownQuest[]; chapters: ShownChapter[]; thoughts: ShownThought[]; book: BookChapter[]; }
     /** The World section but the map (VIEW-11): the pages the character knows, each as it knows it, the documents it has or read, and the calendar. */
     | { kind: "world"; known: KnownEntry[]; documents: ShownDocument[]; calendar: ShownCalendar; }
     /** The saves and what the mode allows (D-359): make one, go back to some, start over from the first. */

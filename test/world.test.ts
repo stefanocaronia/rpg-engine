@@ -159,14 +159,14 @@ describe("rpg find", () => {
         expect((await rpg("find", "companion")).output).toBe("Lena (character): role: companion\n\nfind looks for the pages of the system fake in their names and fields, in English.");
         expect((await rpg("find", "varro")).output).toBe("Varro (character)\nLa cripta (place): I servitori di Varro dormono qui.\n\nfind looks for the pages of the system fake in their names and fields, in English.");
         expect((await rpg("find", "basilisco")).output).toBe(
-            "No page matches. What was said in play and never written is not in the files: if the player remembers it, write it.\n\nfind looks for the pages of the system fake in their names and fields, in English.",
+            "No page matches. What was said in play and never written is not in the files: chats finds it in the past chats; if the player remembers it, write it.\n\nfind looks for the pages of the system fake in their names and fields, in English.",
         );
     });
 
     it("says only that no page matches in a campaign without a game system, and reads only", async () => {
         writeFileSync(join(folder, "campaign.yaml"), readFileSync(join(folder, "campaign.yaml"), "utf8").replace("system: fake\n", ""));
         expect((await rpg("find", "--type", "creature")).output).toBe("No page matches.");
-        expect((await rpg("find", "basilisco")).output).toBe("No page matches. What was said in play and never written is not in the files: if the player remembers it, write it.");
+        expect((await rpg("find", "basilisco")).output).toBe("No page matches. What was said in play and never written is not in the files: chats finds it in the past chats; if the player remembers it, write it.");
         expect(commands.find((command) => command.name === "find")?.readOnly).toBe(true);
     });
 

@@ -12,6 +12,7 @@ const asked =
     + "difficulty (how hard the world plays: story, easy, normal, hard, brutal), lethality (what a fall means: narrative, the character never dies; epic, only when it matters; dice, the dice decide), saves (when the game may go back: permadeath, never but to the start; checkpoint, to the last end of a scene once the player character dies; free, to any save), rigor (how closely travel, fatigue, food and the like follow the rules: smooth, glossed over; rules, as written; simulation, beyond them), dice (who rolls the player character's dice: digital, rpg; physical, the player, who tells you the values), "
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
     + "character (made with the player; made by the master, from a few words; the player's own, one they bring), companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
+    + "pictures (of places, quests and those met: none; on request; new elements, one for each), pictures-by (who makes them: chat, your app by its own means; codex; elevenlabs; other, a tool the player names, written by its name; suggest chat), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
 // The same, as config's results give them: the settings with a meaning in status by their values alone (T-168).
 const askedBrief =
@@ -19,6 +20,7 @@ const askedBrief =
     + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation), dice (digital, physical), "
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
     + "character (made with the player, made by the master, the player's own), companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
+    + "pictures (of places, quests and those met: none; on request; new elements, one for each), pictures-by (who makes them: chat, your app by its own means; codex; elevenlabs; other, a tool the player names, written by its name; suggest chat), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
 const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
 const playLine = "To play, open Claude Code, Codex or Antigravity in this folder and say hello: the master asks you the rest.";
@@ -258,7 +260,7 @@ describe("rpg config", () => {
         expect(result.output).toBe(
             "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: free, fake)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\nlength: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
-                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncharacter: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\nbetween-sessions: stops (unset: no game time passes between sessions)\npictures: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\norders: (none)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
+                + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncharacter: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\nbetween-sessions: stops (unset: no game time passes between sessions)\npictures: (missing)\npictures-by: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\norders: (none)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
                 + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: free, fake), language (a code, such as it), ${askedBrief}; ${onward}`,
         );
     });
@@ -378,7 +380,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, effort, lines, veils, orders, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
+            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, pictures-by, effort, lines, veils, orders, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

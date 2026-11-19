@@ -257,7 +257,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
         const chosen = (readSettings(root) as Record<string, unknown>)[input.setting];
 
         if (chosen !== customLevel) {
-            rememberChoice(context.home, input.setting, chosen);
+            rememberChoice(context.home, root, input.setting, chosen);
         }
     }
 
