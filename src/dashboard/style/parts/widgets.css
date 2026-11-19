@@ -122,6 +122,12 @@
         grid-column: auto;
     }
 
+    /* The icon at the top of words that wrap, as every card's. */
+    .widget-lead-icon,
+    .widget-lead.figured > .ext-figure.small {
+        align-self: start;
+    }
+
     .widget-lead-icon {
         width: 40px;
         height: 40px;

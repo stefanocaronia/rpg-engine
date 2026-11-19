@@ -442,7 +442,7 @@ function LoreThumb({ entry }: { entry: KnownEntry; })
 
     const kind = entry.kind === undefined ? undefined : placeKinds[entry.kind];
     return (
-        <span class={`browse-thumb mark ${loreGroupOf(entry)}`} aria-hidden="true">
+        <span class="browse-thumb" aria-hidden="true">
             {kind === undefined ? <span class="browse-letter">{[...entry.name][0]?.toUpperCase()}</span> : (
                 <svg viewBox="0 0 24 24">
                     <path d={kind.glyph} />
