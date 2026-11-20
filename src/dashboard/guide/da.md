@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: den komplette guide
 
 **RPG Engine** lader dig spille et bordrollespil med **en AI som spilleder**. Du taler med spillederen i en **chat**. RPG Engine arbejder i baggrunden: det **husker verdenen**, **slår med terningerne** og **fører regnskabet**. Ved siden af chatten har du en side åben i din browser, **dashboardet**, med dit karakterark, terningerne, kortene og din dagbog.
@@ -123,7 +123,7 @@ Skriv, hvad din karakter gør eller siger, med dine egne ord:
 
 > Jeg spørger værten, hvem der ellers kom forbi i aften.
 
-Når du taler uden for historien, skriv i kantede parenteser: *[Hvordan fungerer det at gribe fat i en modstander?]* Spillederen svarer også i parenteser.
+Når du taler uden for historien, skriv `[OOC: …]` (out of character): *[OOC: Hvordan fungerer det at gribe fat i en modstander?]* Spillederen svarer på samme måde.
 
 Du siger, hvad du prøver på. Spillederen siger, hvad der sker. Spillederen bestemmer aldrig noget for din karakter og taler aldrig om motoren. Du kan spørge spillederen, hvordan dashboardet bruges.
 
@@ -143,7 +143,7 @@ Spillederen beder kun om et slag, når udfaldet er usikkert og har betydning, og
 
 ### 3.3 Scener og kampe
 
-Historien foregår i **scener**: en kamp, en samtale, en udforskning, en rejse, en hvile. I slutningen af hver scene gemmer spillet automatisk, scenen kommer i din dagbog, og spillederen skriver den som et kapitel i din historiebog.
+Historien foregår i **scener**: en kamp, en samtale, en udforskning, en rejse, en hvile. I slutningen af hver scene gemmer spillet automatisk, scenen kommer i din dagbog, og når historien vender, skriver spillederen scenerne siden sidste kapitel som et nyt kapitel i din historiebog.
 
 I en kamp fortæller spillederen om hver tur, der ikke er din, og stopper, når du skal beslutte noget. **Scene** viser øverst, hvis tur det er, og hvem der kommer derefter, og din karakters kort ved siden af kortet. Rækkefølgen af turene, din gruppes hitpoints og hvor såret fjenderne ser ud, i ord, bliver stående ved siden af siden. Hvis din karakter falder, vises dødsslagene store på siden.
 
@@ -163,7 +163,7 @@ Skurke har planer med tidsfrister. Hver ny dag flytter spillederen de trusler, s
 
 ### 3.6 Missioner, dagbog og noter
 
-En opgave, din karakter tager på sig, bliver til en mission i **Dagbog** med sine mål, sin tidsfrist og det, den måler. Sæt en stjerne ved den for at holde den synlig øverst i **Scene**. Under **Historie** fortæller dagbogen din historie som en bog: Spillederen skriver et kapitel i prosa for hver scene, når den er slut, i den stil, du har valgt. Læs den kapitel for kapitel, hvor det sidste er markeret med sit bogmærke, og download den som Markdown eller som en webside, du kan printe eller give videre. Hvis spillet er begyndt før, kan du bede spillederen om at skrive historien indtil nu. **Tidslinje** viser scenerne med det, der skete i hver af dem. Dagbogen gemmer også dine **Noter**: De er private, medmindre du vælger **Del** ved en af dem. Spillederen hører den som det, du mener, aldrig som et faktum. Under **Følgesvende** kan du læse dine følgesvendes dagbøger: Nu og da, ved slutningen af en dag eller en mission, skriver de nogle linjer om, hvad de tænker og føler.
+En opgave, din karakter tager på sig, bliver til en mission i **Dagbog** med sine mål, sin tidsfrist og det, den måler. Sæt en stjerne ved den for at holde den synlig øverst i Scene. Under **Historie** fortæller dagbogen din historie som en bog: Spillederen skriver et kapitel i prosa, hver gang historien vender, og fortæller scenerne siden det forrige kapitel, i den stil, du har valgt. Læs den kapitel for kapitel, hvor det sidste er markeret med sit bogmærke, og download den som Markdown eller som en webside, du kan printe eller give videre. Hvis spillet er begyndt før, kan du bede spillederen om at skrive historien indtil nu. **Tidslinje** viser scenerne, nummereret, med det, der skete i hver af dem. Dagbogen gemmer også dine **Noter**: De er private, medmindre du vælger **Del** ved en af dem. Spillederen hører den delte note som det, du tænker, aldrig som et faktum. Under **Følgesvende** kan du læse dine følgesvendes dagbøger: Nu og da, ved slutningen af en dag eller en mission, skriver de nogle linjer om, hvad de tænker og føler.
 
 ### 3.7 Din karakters historie og billede
 
@@ -193,7 +193,7 @@ Robotten øverst på dashboardet er spillederen. Dens ansigt følger historiens 
 
 ### 3.11 Billeder
 
-RPG Engine kan få lavet billeder af de steder, du når frem til, de missioner, du tager på dig, og dem, du møder, som indstillingen **billeder** siger, og din karakters portræt, når du beder om det. Det bruger din egen Codex eller Claude Code, med dit login, på dit abonnement og dets grænser: **Codex** maler dem, ellers tegner **Claude Code** dem. **Indstillinger** viser, om denne computer kan lave dem, og hvordan du sætter det op, hvis ikke. Du kan altid give spillederen et billede, du selv har.
+RPG Engine kan få lavet billeder af de steder, du når frem til, de missioner, du tager på dig, og de personer, du møder, som indstillingen **Billeder** angiver, og din karakters portræt, når du beder om det. Det bruger din egen Codex eller Claude Code, med dit login, på dit abonnement og dets grænser: **Codex** maler dem, ellers tegner **Claude Code** dem. **Indstillinger** viser, om denne computer kan lave dem, og hvordan du sætter det op, hvis ikke. Du kan altid give et billede, du selv har, til din karakter eller til en hvilken som helst side, du ser: Før markøren hen over et af dens billeder, så vises en lille billedknap i hjørnet (det virker også med tastaturet og er altid synligt på en telefon). I **Verden** har den side, du åbner, også **Skift billedet…**, eller **Tilføj et billede…**, mens den ikke har nogen. Dit billede træder i stedet for det, siden har. Du kan også lægge filen i kampagnens mappe **inbox** og sige til spillederen, hvilken side den er til.
 
 ### 3.12 Sikkerhed: linjer, slør og stop
 
@@ -294,7 +294,7 @@ Alle kommandoer, spillederen bruger, kan også køres i kampagnemappen: `rpg --h
 
 ### Spørgsmål
 
-**Skal jeg kende reglerne?** Nej. Vælg tutorial-mentoren, og spørg i kantede parenteser, når du vil.
+**Skal jeg kende reglerne?** Nej. Vælg tutorial-mentoren, og spørg i `[OOC: …]`, når du vil.
 
 **Kan spillederen snyde?** Spillederen kan ikke ændre et slag, som RPG Engine har lavet, undtagen ved sværhedsgraden story, og heller ikke fakta, der allerede er fastlagt.
 
@@ -308,7 +308,7 @@ Alle kommandoer, spillederen bruger, kan også køres i kampagnemappen: `rpg --h
 
 ### Problemer
 
-**Dashboardet åbner ikke.** Spørg spillederen: `[Hvad er linket til dashboardet?]`. Det virker kun, mens en chat er åben i den kampagne, efter spillederens første svar.
+**Dashboardet åbner ikke.** Spørg spillederen: `[OOC: Hvad er linket til dashboardet?]`. Det virker kun, mens en chat er åben i den kampagne, efter spillederens første svar.
 
 **Spillederen ser ikke ud til at kende spillet.** Din agent har ikke indlæst RPG Engine. Tjek, at du startede den i kampagnemappen og stolede på den. I Claude Code skriver du `/mcp` og forbinder `rpg` igen. I Codex skal `codex mcp list` i kampagnemappen vise `rpg`. Hvis `rpg --version` ikke findes, så installer RPG Engine igen ([2.2](#22-install)).
 

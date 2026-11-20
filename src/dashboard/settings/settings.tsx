@@ -525,7 +525,7 @@ function TextSetting({ setting, label, onChange }: { setting: PlayerSetting; lab
 /** What the player should know of a setting on this computer, as how to have pictures: its lines, its steps in order, the commands to copy, and a line after. */
 function SettingNote({ note }: { note: NonNullable<PlayerSetting["note"]>; })
 {
-    const blocks = [...noteBlocks(t(note.text, note.values)), ...(note.also === undefined ? [] : [t(note.also, note.values)])];
+    const blocks = [...noteBlocks(t(note.text, note.values)), ...(note.also ?? []).map((line) => t(line, note.values))];
     return (
         <div class={note.fix ? "setting-note fix" : "setting-note"}>
             <Icon name="info" />

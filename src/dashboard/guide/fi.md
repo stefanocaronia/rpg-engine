@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
 **RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
@@ -123,7 +123,7 @@ Kirjoita, mitä hahmosi tekee tai sanoo, omin sanoin:
 
 > Kysyn majatalon isännältä, kuka muu kävi täällä tänä iltana.
 
-Jos haluat puhua tarinan ulkopuolelta, kirjoita hakasulkeisiin: *[Miten painiminen toimii?]* Pelinjohtaja vastaa myös hakasulkeissa.
+Jos haluat puhua tarinan ulkopuolelta, kirjoita `[OOC: …]` (out of character, eli hahmon ulkopuolelta): *[OOC: Miten painiminen toimii?]* Pelinjohtaja vastaa samalla tavalla.
 
 Sinä kerrot, mitä yrität. Pelinjohtaja kertoo, mitä tapahtuu. Pelinjohtaja ei koskaan päätä hahmosi puolesta eikä puhu pelimoottorista. Pelinjohtajalta voi kysyä, miten kojelautaa käytetään.
 
@@ -143,7 +143,7 @@ Pelinjohtaja pyytää heiton vain, kun lopputulos on epävarma ja sillä on merk
 
 ### 3.3 Kohtaukset ja taistelut
 
-Tarina etenee **kohtauksina**: taistelu, keskustelu, tutkiminen, matkustaminen, lepo. Jokaisen kohtauksen lopussa peli tallentaa itse, kohtaus siirtyy päiväkirjaasi ja pelinjohtaja kirjoittaa siitä luvun tarinasi kirjaan.
+Tarina etenee **kohtauksina**: taistelu, keskustelu, tutkiminen, matkustaminen, lepo. Jokaisen kohtauksen lopussa peli tallentaa itse ja kohtaus siirtyy päiväkirjaasi. Kun tarina kääntyy, pelinjohtaja kirjoittaa edellisen luvun jälkeiset kohtaukset uudeksi luvuksi tarinasi kirjaan.
 
 Taistelussa pelinjohtaja kertoo jokaisen vuoron, joka ei ole sinun, ja pysähtyy kohtaan, jossa voit päättää. **Kohtaus** näyttää ylhäällä, kenen vuoro on ja kuka on seuraava. Hahmosi kortti on kartan vieressä. Vuorojärjestys, seurueesi osumapisteet ja se, miten haavoittuneilta viholliset näyttävät sanoin kuvattuna, pysyvät sivun reunalla. Jos hahmosi kaatuu, kuolemanpelastusheitot näkyvät isoina sivulla.
 
@@ -163,7 +163,7 @@ Konnilla on suunnitelmia ja määräaikoja. Joka uusi päivä pelinjohtaja siirt
 
 ### 3.6 Tehtävät, päiväkirja ja muistiinpanot
 
-Tehtävä, jonka hahmosi ottaa vastaan, muuttuu **Päiväkirjassa** tehtäväksi tavoitteineen, määräaikoineen ja mittareineen. Merkitse se tähdellä, niin se pysyy esillä **Kohtaus**-näkymän yläreunassa. **Tarina**-osiossa Päiväkirja kertoo tarinasi kirjana: pelinjohtaja kirjoittaa jokaisesta kohtauksesta proosaluvun, kun kohtaus on päättynyt, valitsemallasi tyylillä. Lue kirjaa luku kerrallaan, viimeisen luvun kohdalla on kirjanmerkki. Voit ladata kirjan Markdownina tai verkkosivuna tulostettavaksi tai jaettavaksi. Jos peli on alkanut ennen tätä, pyydä pelinjohtajaa kirjoittamaan tarina tähän asti. **Aikajana** listaa kohtaukset ja sen, mitä kussakin tapahtui. Päiväkirja säilyttää myös **Muistiinpanosi**: ne ovat yksityisiä, ellet paina **Jaa** jonkin kohdalla. Pelinjohtaja kuulee jaetun muistiinpanon sinun ajatuksenasi, ei koskaan tosiasiana. **Seuralaiset**-osiossa luet seuralaistesi päiväkirjoja: silloin tällöin, päivän tai tehtävän lopussa, he kirjoittavat muutaman rivin siitä, mitä ajattelevat ja tuntevat.
+Tehtävä, jonka hahmosi ottaa vastaan, muuttuu **Päiväkirjassa** tehtäväksi tavoitteineen, määräaikoineen ja mittareineen. Merkitse se tähdellä, niin se pysyy esillä **Kohtaus**-näkymän yläreunassa. **Tarina**-osiossa Päiväkirja kertoo tarinasi kirjana: pelinjohtaja kirjoittaa proosaluvun aina, kun tarina kääntyy, ja kertoo siinä edellisen luvun jälkeiset kohtaukset valitsemallasi tyylillä. Lue kirjaa luku kerrallaan, viimeisen luvun kohdalla on kirjanmerkki. Voit ladata kirjan Markdownina tai verkkosivuna tulostettavaksi tai jaettavaksi. Jos peli on alkanut ennen tätä, pyydä pelinjohtajaa kirjoittamaan tarina tähän asti. **Aikajana** listaa kohtaukset numeroituina ja sen, mitä kussakin tapahtui. Päiväkirja säilyttää myös **Muistiinpanot**: ne ovat yksityisiä, ellet paina **Jaa** jonkin kohdalla. Pelinjohtaja kuulee jaetun muistiinpanon sinun ajatuksenasi, ei koskaan tosiasiana. **Seuralaiset**-osiossa luet seuralaistesi päiväkirjoja: silloin tällöin, päivän tai tehtävän lopussa, he kirjoittavat muutaman rivin siitä, mitä ajattelevat ja tuntevat.
 
 ### 3.7 Hahmosi tarina ja kuva
 
@@ -193,7 +193,7 @@ Kojelaudan yläreunan robotti on pelinjohtaja. Sen ilme seuraa tarinan sävyä e
 
 ### 3.11 Kuvat
 
-RPG Engine voi teettää kuvia paikoista, joihin saavut, tehtävistä, jotka otat vastaan, ja ihmisistä, joita tapaat, **kuvat**-asetuksen mukaan. Pyynnöstä se tekee myös hahmosi muotokuvan. Se käyttää omaa Codexiasi tai Claude Codeasi, sinun kirjautumisellasi, sinun tilauksellasi ja sen rajoilla: **Codex** maalaa ne, muuten **Claude Code** piirtää ne. **Asetukset** kertoo, pystyykö tämä tietokone tekemään niitä, ja jos ei, miten sen saa kuntoon. Voit aina antaa pelinjohtajalle oman kuvasi.
+RPG Engine voi teettää kuvia paikoista, joihin saavut, tehtävistä, jotka otat vastaan, ja ihmisistä, joita tapaat, **Kuvat**-asetuksen mukaan. Pyynnöstä se tekee myös hahmosi muotokuvan. Se käyttää omaa Codexiasi tai Claude Codeasi, sinun kirjautumisellasi, sinun tilauksellasi ja sen rajoilla: **Codex** maalaa kuvat, muuten **Claude Code** piirtää ne. **Asetukset** kertoo, pystyykö tämä tietokone tekemään niitä, ja jos ei, miten sen saa kuntoon. Voit aina antaa oman kuvasi hahmollesi tai mille tahansa näkemällesi sivulle: vie osoitin jonkin sivun kuvan päälle, niin sen kulmaan ilmestyy pieni kuvapainike (myös näppäimistöllä, ja puhelimessa aina). Kohdassa **Maailma** avaamallasi sivulla on myös **Vaihda kuva…**, tai **Lisää kuva…**, kun sivulla ei vielä ole kuvaa. Oma kuvasi korvaa sivun nykyisen kuvan. Voit myös pudottaa tiedoston kampanjan **inbox**-kansioon ja kertoa pelinjohtajalle, mille sivulle se kuuluu.
 
 ### 3.12 Turvallisuus: rajat, verhot ja stop
 
@@ -294,7 +294,7 @@ Jokaisen komennon, jota pelinjohtaja käyttää, voi ajaa myös kampanjakansioss
 
 ### Kysymykset
 
-**Pitääkö minun osata säännöt?** Ei. Valitse mentoriksi opastus ja kysy hakasulkeissa milloin haluat.
+**Pitääkö minun osata säännöt?** Ei. Valitse mentoriksi opastus ja kysy `[OOC: …]`-merkinnällä milloin haluat.
 
 **Voiko pelinjohtaja huijata?** Se ei voi muuttaa RPG Enginen tekemää heittoa, paitsi vaikeustasolla tarina, eikä jo vahvistettuja tosiasioita.
 
@@ -308,7 +308,7 @@ Jokaisen komennon, jota pelinjohtaja käyttää, voi ajaa myös kampanjakansioss
 
 ### Ongelmat
 
-**Kojelauta ei aukea.** Kysy pelinjohtajalta: `[Mikä on kojelaudan linkki?]`. Se toimii vain, kun kyseisessä kampanjassa on keskustelu auki, pelinjohtajan ensimmäisen vastauksen jälkeen.
+**Kojelauta ei aukea.** Kysy pelinjohtajalta: `[OOC: Mikä on kojelaudan linkki?]`. Se toimii vain, kun kyseisessä kampanjassa on keskustelu auki, pelinjohtajan ensimmäisen vastauksen jälkeen.
 
 **Pelinjohtaja ei tunnu tuntevan peliä.** Agenttisi ei ladannut RPG Engineä. Tarkista, että käynnistit sen kampanjakansiossa ja että luotit kansioon. Claude Codessa kirjoita `/mcp` ja yhdistä `rpg` uudelleen. Codexissa komennon `codex mcp list` kampanjakansiossa pitää näyttää `rpg`. Jos komentoa `rpg --version` ei löydy, asenna RPG Engine uudelleen ([2.2](#22-install)).
 

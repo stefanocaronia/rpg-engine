@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
 Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
@@ -123,7 +123,7 @@ Van már karaktered, egy másik játékból vagy egy másik kampányból? Válas
 
 > Megkérdezem a fogadóst, ki járt még erre ma este.
 
-A történeten kívül szögletes zárójelben írj: *[Hogyan működik a dulakodás?]* A mesélő is zárójelben válaszol.
+A történeten kívül írd így: `[OOC: …]` (out of character): *[OOC: Hogyan működik a dulakodás?]* A mesélő is így válaszol.
 
 Te azt mondod meg, mit próbálsz tenni; a mesélő azt, mi történik. A mesélő sosem dönt a karaktered helyett, és sosem beszél a motorról. Megkérdezheted tőle, hogyan használd a vezérlőpultot.
 
@@ -143,7 +143,7 @@ A mesélő csak akkor kér dobást, ha a kimenetel bizonytalan és számít, és
 
 ### 3.3 Jelenetek és harcok
 
-A történet **jelenetekben** zajlik: harc, beszélgetés, felfedezés, utazás, pihenés. Minden jelenet végén a játék magától ment, a jelenet bekerül a naplódba, a mesélő pedig fejezetként megírja a történeted könyvébe.
+A történet **jelenetekben** zajlik: harc, beszélgetés, felfedezés, utazás, pihenés. Minden jelenet végén a játék magától ment, a jelenet bekerül a naplódba, és amikor a történet fordulatot vesz, a mesélő az előző fejezet óta játszott jeleneteket új fejezetként megírja a történeted könyvébe.
 
 Harcban a mesélő elmondja az összes kört, amely nem a tiéd, és ott áll meg, ahol te döntesz. A **Jelenet** felül mutatja, ki következik és ki jön utána, a karaktered kártyáját pedig a térkép mellett; a körök sorrendje, a csapatod életereje és az ellenfelek sérülése szavakkal leírva az oldal mellett marad. Ha a karaktered elesik, a halálmentők nagyban megjelennek a lapon.
 
@@ -163,7 +163,7 @@ A **Világ** azt is őrzi, amit a karaktered tud. Az **Ismeretek** felsorolja az
 
 ### 3.6 Küldetések, napló és jegyzetek
 
-Amit a karaktered vállal, az küldetés lesz a **Naplóban**, céljaival, határidejével és azzal, amit mér; csillagozd meg, hogy a Jelenet tetején szem előtt maradjon. A **Történet** alatt a Napló könyvként meséli el a történetedet: a mesélő minden jelenethez ír egy prózai fejezetet, amint az véget ér, az általad választott stílusban; olvasd fejezetenként, az utolsót a könyvjelzője jelöli, és töltsd le Markdownként vagy weboldalként, hogy kinyomtasd vagy továbbadd. Egy korábban elkezdett játékban kérd meg a mesélőt, hogy írja meg az eddigi történetet. Az **Idővonal** felsorolja a jeleneteket, mindegyikben azzal, ami történt. A Napló a **Jegyzeteidet** is őrzi: ezek privátak, hacsak nem a **Megosztás** gombbal osztasz meg egyet; azt a mesélő úgy hallja, mint amit gondolsz, sosem mint tényt. A **Társak** alatt elolvashatod a társaid naplóját: időnként, egy nap vagy egy küldetés végén írnak néhány sort arról, mit gondolnak és éreznek.
+Amit a karaktered vállal, az küldetés lesz a **Naplóban**, céljaival, határidejével és azzal, amit mér; csillagozd meg, hogy a **Jelenet** tetején szem előtt maradjon. A **Történet** alatt a Napló könyvként meséli el a történetedet: a mesélő minden alkalommal ír egy prózai fejezetet, amikor a történet fordulatot vesz, az előző fejezet óta történt jelenetekről, az általad választott stílusban; olvasd fejezetenként, az utolsót a könyvjelzője jelöli, és töltsd le Markdownként vagy weboldalként, hogy kinyomtasd vagy továbbadd. Egy korábban elkezdett játékban kérd meg a mesélőt, hogy írja meg az eddigi történetet. Az **Idővonal** felsorolja a jeleneteket, számozva, mindegyikben azzal, ami történt. A Naplóban találod a **Jegyzeteket** is: ezek privátak, hacsak nem a **Megosztás** gombbal osztasz meg egyet; azt a mesélő úgy hallja, mint amit gondolsz, sosem mint tényt. A **Társak** alatt elolvashatod a társaid naplóját: időnként, egy nap vagy egy küldetés végén írnak néhány sort arról, mit gondolnak és éreznek.
 
 ### 3.7 A karaktered története és képe
 
@@ -193,7 +193,7 @@ A vezérlőpult tetején lévő robot a mesélő: az arca követi a történet h
 
 ### 3.11 Képek
 
-Az RPG Engine képeket készíthet az általad elért helyszínekről, a vállalt küldetésekről és azokról, akikkel találkozol, ahogy a **képek** beállítás mondja, és a karaktered portréját is, ha kéred. A saját Codexedet vagy Claude Cododat használja, a te belépéseddel, a te csomagodon és annak korlátai szerint: a **Codex** festi őket, egyébként a **Claude Code** rajzolja. A **Beállítások** megmondja, hogy ez a számítógép tudja-e készíteni őket, és ha nem, hogyan állítsd be. A mesélőnek mindig adhatsz saját képet.
+Az RPG Engine képeket készíthet az általad elért helyszínekről, a vállalt küldetésekről és azokról, akikkel találkozol, ahogy a **Képek** beállítás előírja, és a karaktered portréját is, ha kéred. A saját Codexedet vagy Claude Code-odat használja, a te bejelentkezéseddel, a te csomagodon és annak korlátai szerint: a **Codex** festi őket, egyébként a **Claude Code** rajzolja. A **Beállítások** megmondja, hogy ez a számítógép tudja-e készíteni őket, és ha nem, hogyan állítsd be. Bármikor adhatsz saját képet a karakterednek vagy bármelyik oldalnak, amelyet látsz: húzd az egérmutatót az egyik képe fölé, és a sarkában megjelenik egy kis képgomb (billentyűzettel is, telefonon pedig mindig); a **Világban** a megnyitott oldalon is van **Kép cseréje…**, vagy **Kép hozzáadása…**, amíg még nincs képe. A tiéd a meglévő helyére kerül. Vagy tedd a fájlt a kampány **inbox** mappájába, és told meg a mesélőnek, melyik oldalhoz való.
 
 ### 3.12 Biztonság: határok, fátylak és leállítás
 
@@ -294,7 +294,7 @@ A mesélő által használt minden parancs a kampánymappában is futtatható: a
 
 ### Kérdések
 
-**Ismernem kell a szabályokat?** Nem. Válaszd a bemutató mentort, és kérdezz zárójelben, amikor csak akarsz.
+**Ismernem kell a szabályokat?** Nem. Válaszd a bemutató mentort, és kérdezz `[OOC: …]` formában, amikor csak akarsz.
 
 **Csalhat a mesélő?** Nem változtathat meg egy dobást, amelyet az RPG Engine végzett, kivéve a történet nehézségen, és nem változtathat meg már rögzített tényeket sem.
 
@@ -308,7 +308,7 @@ A mesélő által használt minden parancs a kampánymappában is futtatható: a
 
 ### Problémák
 
-**Az irányítópult nem nyílik meg.** Kérdezd meg a mesélőt: `[Mi az irányítópult linkje?]`. Csak akkor működik, amíg abban a kampányban nyitva van egy csevegés, a mesélő első válasza után.
+**Az irányítópult nem nyílik meg.** Kérdezd meg a mesélőt: `[OOC: Mi az irányítópult linkje?]`. Csak akkor működik, amíg abban a kampányban nyitva van egy csevegés, a mesélő első válasza után.
 
 **A mesélő nem ismeri a játékot.** Az ügynököd nem töltötte be az RPG Engine-t. Ellenőrizd, hogy a kampány mappájában indítottad el, és megbíztál benne. Claude Code-ban írd be: `/mcp`, és csatlakoztasd újra az `rpg`-t. Codexben a `codex mcp list` parancsnak a kampány mappájában mutatnia kell az `rpg`-t. Ha az `rpg --version` nem található, telepítsd újra az RPG Engine-t ([2.2](#22-install)).
 

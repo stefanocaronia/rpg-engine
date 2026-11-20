@@ -75,4 +75,8 @@ const phrases: Record<string, (values: Values) => string> = {
     "scene-open": () => t("It can be put back once the scene being played is over."),
     "file-big": (values) => t("The file is more than {size} MB: no package is that big.", values),
     "file-kind": (values) => t("{name} is neither a .zip nor a .tgz.", values),
+    "picture-big": (values) => t("The picture is more than {size} MB: make it smaller.", values),
+    "not-picture": (values) => t("{name} is not a PNG, JPEG, WebP or SVG picture.", values),
+    "no-page": (values) => t("Your character knows no page called {page}: reload the page.", values),
+    "system-page": (values) => t("{page} comes from the game system, with its own picture.", values),
 };

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
 **RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
@@ -123,7 +123,7 @@ Karakterin ne yapıyor ya da ne söylüyorsa kendi sözlerinle yaz:
 
 > Han sahibine bu gece başka kimin uğradığını soruyorum.
 
-Hikâyenin dışına çıkmak için köşeli parantez kullan: *[Tutuşma nasıl işliyor?]* Oyun yöneticisi de köşeli parantezle yanıt verir.
+Hikâyenin dışına çıkmak için `[OOC: …]` yaz (karakter dışı): *[OOC: Tutuşma nasıl işliyor?]* Oyun yöneticisi de aynı şekilde yanıt verir.
 
 Sen neyi denediğini söylersin, ne olacağını oyun yöneticisi söyler. Oyun yöneticisi karakterin adına asla karar vermez ve motordan asla söz etmez. Gösterge panelini nasıl kullanacağını ona sorabilirsin.
 
@@ -143,7 +143,7 @@ Oyun yöneticisi atış istemeyi yalnızca sonuç belirsizse ve önemliyse yapar
 
 ### 3.3 Sahneler ve çatışmalar
 
-Hikâye **sahneler** halinde ilerler: bir çatışma, bir konuşma, keşif, yolculuk, bir dinlenme. Her sahnenin sonunda oyun kendiliğinden kaydeder, sahne günlüğüne girer ve oyun yöneticisi onu hikâyenin kitabına bir bölüm olarak yazar.
+Hikâye **sahneler** halinde ilerler: bir çatışma, bir konuşma, keşif, yolculuk, bir dinlenme. Her sahnenin sonunda oyun kendiliğinden kaydeder ve sahne günlüğüne girer. Hikâye bir dönemece girdiğinde oyun yöneticisi, son bölümden bu yana geçen sahneleri hikâyenin kitabına yeni bir bölüm olarak yazar.
 
 Bir çatışmada, sırası sende olmayan her sırayı oyun yöneticisi anlatır ve karar verebileceğin yerde durur. **Sahne** üstte sırasının kimde olduğunu ve sonra kimin geldiğini, haritanın yanında da karakterinin kartını gösterir. Sıraların düzeni, grubunun can puanları ve düşmanların ne kadar yaralı göründüğü ise sözcüklerle sayfanın yanında durur. Karakterin düşerse ölüm kurtarmaları sayfada büyük görünür.
 
@@ -163,7 +163,7 @@ Kötülerin son tarihli planları vardır. Her yeni günde oyun yöneticisi, zam
 
 ### 3.6 Görevler, günlük ve notlar
 
-Karakterinin üstlendiği bir iş, **Günlük**'te hedefleri, son tarihi ve neyi ölçtüğüyle bir görev olur. Sahne'nin en üstünde görünür kalması için görevi yıldızla. **Hikâye** altında Günlük, hikâyeni bir kitap gibi anlatır: oyun yöneticisi her sahne bitince seçtiğin üslupla düzyazı bir bölüm yazar. Bölüm bölüm oku; sonuncusu yer imiyle işaretlidir. Hikâyeyi Markdown olarak ya da yazdırmak veya paylaşmak için web sayfası olarak indirebilirsin. Daha önce başlamış bir oyunda oyun yöneticisinden şimdiye kadarki hikâyeyi yazmasını iste. **Zaman çizelgesi**, sahneleri her birinde olanlarla listeler. Günlük, **Notlar**'ı da tutar. Notlar özeldir; bir notu **Paylaş**ırsan oyun yöneticisi bunu senin düşüncen olarak duyar, asla bir gerçek olarak değil. **Yoldaşlar** altında yoldaşlarının günlüklerini okursun: arada bir, bir günün ya da görevin sonunda, düşündükleri ve hissettikleri hakkında birkaç satır yazarlar.
+Karakterinin üstlendiği bir iş, **Günlük**'te hedefleri, son tarihi ve neyi ölçtüğüyle bir görev olur. Sahne'nin en üstünde görünür kalması için görevi yıldızla. **Hikâye** altında Günlük, hikâyeni bir kitap gibi anlatır: hikâye her dönemece girdiğinde oyun yöneticisi, seçtiğin üslupla düzyazı bir bölüm yazar ve bir önceki bölümden bu yana geçen sahneleri anlatır. Bölüm bölüm oku; sonuncusu yer imiyle işaretlidir. Hikâyeyi Markdown olarak ya da yazdırmak veya paylaşmak için web sayfası olarak indirebilirsin. Daha önce başlamış bir oyunda oyun yöneticisinden şimdiye kadarki hikâyeyi yazmasını iste. **Zaman çizelgesi**, sahneleri numaralı olarak, her birinde olanlarla listeler. Günlük, **Notlar**'ı da tutar. Notlar özeldir. **Paylaş**'a basarsan oyun yöneticisi o notu senin düşüncen olarak duyar, asla bir gerçek olarak değil. **Yoldaşlar** altında yoldaşlarının günlüklerini okursun: arada bir, bir günün ya da görevin sonunda, düşündükleri ve hissettikleri hakkında birkaç satır yazarlar.
 
 ### 3.7 Karakterinin hikâyesi ve resmi
 
@@ -193,7 +193,7 @@ Gösterge panelinin üstündeki robot oyun yöneticisidir. Yüzü hikâyenin ton
 
 ### 3.11 Resimler
 
-RPG Engine, ulaştığın yerlerin, üstlendiğin görevlerin ve karşılaştığın kişilerin görsellerini, **Görseller** ayarının dediği gibi yaptırabilir; istersen karakterinin portresini de. Kendi Codex'ini ya da Claude Code'unu, kendi girişinle, kendi planın ve sınırlarınla kullanır: **Codex** boyar, o yoksa **Claude Code** çizer. **Ayarlar**, bu bilgisayarın görsel yapıp yapamadığını ve yapamıyorsa nasıl kurulacağını söyler. Oyun yöneticisine her zaman kendi görselini de verebilirsin.
+RPG Engine, ulaştığın yerlerin, üstlendiğin görevlerin ve karşılaştığın kişilerin görsellerini, **Görseller** ayarının dediği gibi yaptırabilir; istersen karakterinin portresini de. Kendi Codex'ini ya da Claude Code'unu, kendi girişinle, kendi planın ve sınırlarınla kullanır: **Codex** boyar, o yoksa **Claude Code** çizer. **Ayarlar**, bu bilgisayarın görsel yapıp yapamadığını ve yapamıyorsa nasıl kurulacağını söyler. Karakterine ya da gördüğün herhangi bir sayfaya her zaman kendi görselini verebilirsin: imleci sayfanın görsellerinden birinin üstüne getir, köşesinde küçük bir resim düğmesi çıkar (klavyeyle de çıkar, telefonda her zaman görünür). **Dünya**'da açtığın sayfada da **Resmi değiştir…** vardır; sayfanın görseli yoksa **Resim ekle…** vardır. Seninki, sayfadaki görselin yerini alır. Ya da dosyayı kampanyanın **inbox** klasörüne bırak ve oyun yöneticisine hangi sayfa için olduğunu söyle.
 
 ### 3.12 Güvenlik: sınırlar, perdeler ve dur
 
@@ -294,7 +294,7 @@ Oyun yöneticisinin kullandığı her komut kampanya klasöründe de çalıştı
 
 ### Sorular
 
-**Kuralları bilmem gerekiyor mu?** Hayır. Eğitim akıl hocasını seç ve istediğin zaman köşeli parantez içinde sor.
+**Kuralları bilmem gerekiyor mu?** Hayır. Eğitim akıl hocasını seç ve istediğin zaman `[OOC: …]` içinde sor.
 
 **Oyun yöneticisi hile yapabilir mi?** RPG Engine'in yaptığı bir atışı değiştiremez; yalnızca hikâye zorluğunda değiştirebilir. Belirlenmiş gerçekleri de değiştiremez.
 
@@ -308,7 +308,7 @@ Oyun yöneticisinin kullandığı her komut kampanya klasöründe de çalıştı
 
 ### Sorunlar
 
-**Panel açılmıyor.** Oyun yöneticisine sor: `[Panelin bağlantısı ne?]`. Yalnızca o kampanyada bir sohbet açıkken, oyun yöneticisinin ilk yanıtından sonra çalışır.
+**Gösterge paneli açılmıyor.** Oyun yöneticisine sor: `[OOC: Gösterge panelinin bağlantısı ne?]`. Yalnızca o kampanyada bir sohbet açıkken, oyun yöneticisinin ilk yanıtından sonra çalışır.
 
 **Oyun yöneticisi oyunu bilmiyor gibi.** Ajanın RPG Engine'i yüklemedi. Onu kampanya klasöründe başlattığını ve klasöre güvendiğini kontrol et. Claude Code'da `/mcp` yaz ve `rpg`'yi yeniden bağla. Codex'te kampanya klasöründe `codex mcp list` çıktısında `rpg` görünmelidir. `rpg --version` bulunamıyorsa RPG Engine'i yeniden kur ([2.2](#22-install)).
 

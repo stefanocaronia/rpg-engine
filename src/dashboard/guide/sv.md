@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: den kompletta guiden
 
 **RPG Engine** låter dig spela ett bordsrollspel med en **AI som spelledare**. Du pratar med spelledaren i en **chatt**. RPG Engine arbetar i bakgrunden: det **minns världen**, **slår tärningarna** och **för räkenskaperna**. Bredvid chatten har du en sida öppen i webbläsaren, **dashboarden**, med ditt rollformulär, tärningarna, kartorna och din dagbok.
@@ -123,7 +123,7 @@ Skriv vad din rollperson gör eller säger, med egna ord:
 
 > Jag frågar värdshusvärden vem mer som kom förbi ikväll.
 
-Skriv inom hakparenteser när du pratar utanför berättelsen: *[Hur fungerar brottning?]* Spelledaren svarar också inom hakparenteser.
+Skriv `[OOC: …]` (out of character) när du pratar utanför berättelsen: *[OOC: Hur fungerar brottning?]* Spelledaren svarar på samma sätt.
 
 Du säger vad du försöker göra. Spelledaren säger vad som händer. Spelledaren bestämmer aldrig något åt din rollperson och pratar aldrig om motorn. Du kan fråga spelledaren hur du använder dashboarden.
 
@@ -143,7 +143,7 @@ Spelledaren ber om ett slag bara när utgången är osäker och spelar roll. Fö
 
 ### 3.3 Scener och strider
 
-Berättelsen går i **scener**: en strid, ett samtal, utforskning, resa eller vila. I slutet av varje scen sparas spelet av sig självt, scenen hamnar i din dagbok, och spelledaren skriver den som ett kapitel i din berättelses bok.
+Berättelsen går i **scener**: en strid, ett samtal, utforskning, resa eller vila. I slutet av varje scen sparas spelet av sig självt, scenen hamnar i din dagbok, och när berättelsen vänder skriver spelledaren scenerna sedan det förra kapitlet som ett nytt kapitel i din berättelses bok.
 
 I en strid berättar spelledaren varje tur som inte är din, och stannar där du kan bestämma. **Scen** visar högst upp vems tur det är och vem som kommer härnäst, och din rollpersons kort bredvid kartan. Turordningen, gruppens träffpoäng och hur skadade fienderna ser ut, i ord, står kvar bredvid sidan. Om din rollperson faller visas dödsslagen stort på sidan.
 
@@ -163,7 +163,7 @@ Skurkar har planer med tidsfrister. Varje ny dag flyttar spelledaren fram de hot
 
 ### 3.6 Uppdrag, dagbok och anteckningar
 
-En uppgift som din rollperson tar sig an blir ett uppdrag i **Dagbok**, med sina mål, sin tidsfrist och det den mäter. Stjärnmärk det för att ha det i sikte högst upp i **Scen**. Under **Berättelse** berättar dagboken din berättelse som en bok: spelledaren skriver ett kapitel i prosa för varje scen när den är slut, i den stil du har valt. Läs den kapitel för kapitel, där det senaste är markerat med sitt bokmärke, och ladda ner den som Markdown eller som en webbsida att skriva ut eller dela vidare. I ett spel som du började på tidigare ber du spelledaren skriva berättelsen hittills. **Tidslinje** listar scenerna med det som hände i var och en. Dagboken sparar också dina **Anteckningar**: de är privata, om du inte väljer **Dela** för en av dem. Spelledaren hör den då som något du tänker, aldrig som ett faktum. Under **Följeslagare** läser du dina följeslagares dagböcker. Då och då, i slutet av en dag eller ett uppdrag, skriver de några rader om vad de tänker och känner.
+En uppgift som din rollperson tar sig an blir ett uppdrag i **Dagbok**, med sina mål, sin tidsfrist och det den mäter. Stjärnmärk det för att ha det i sikte högst upp i **Scen**. Under **Berättelse** berättar dagboken din berättelse som en bok: spelledaren skriver ett kapitel i prosa varje gång berättelsen vänder, som återger scenerna sedan det förra kapitlet, i den stil du har valt. Läs den kapitel för kapitel, där det senaste är markerat med sitt bokmärke, och ladda ner den som Markdown eller som en webbsida att skriva ut eller dela vidare. I ett spel som du började på tidigare ber du spelledaren skriva berättelsen hittills. **Tidslinje** listar scenerna, numrerade, med det som hände i var och en. Dagboken sparar också dina **Anteckningar**: de är privata, om du inte väljer **Dela** för en av dem. Spelledaren hör den då som något du tänker, aldrig som ett faktum. Under **Följeslagare** läser du dina följeslagares dagböcker. Då och då, i slutet av en dag eller ett uppdrag, skriver de några rader om vad de tänker och känner.
 
 ### 3.7 Din rollpersons historia och bild
 
@@ -193,7 +193,7 @@ Roboten högst upp på dashboarden är spelledaren. Dess ansikte följer berätt
 
 ### 3.11 Bilder
 
-RPG Engine kan låta skapa bilder av platserna ni når, uppdragen ni tar och dem ni möter, så som inställningen **bilder** säger, och din rollpersons porträtt när du ber om det. Det använder ditt eget Codex eller Claude Code, med din inloggning, på din plan och inom dess gränser: **Codex** målar dem, annars ritar **Claude Code** dem. **Inställningar** visar om den här datorn kan göra dem, och hur du ställer in det om den inte kan. Du kan alltid ge spelledaren en egen bild.
+RPG Engine kan låta skapa bilder av platserna ni når, uppdragen ni tar och dem ni möter, så som inställningen **Bilder** säger, och din rollpersons porträtt när du ber om det. Det använder ditt eget Codex eller Claude Code, med din inloggning, på din plan och inom dess gränser: **Codex** målar dem, annars ritar **Claude Code** dem. **Inställningar** visar om den här datorn kan göra dem, och hur du ställer in det om den inte kan. Du kan alltid ge en egen bild, till din rollperson eller till vilken sida som helst du ser: för pekaren över en av sidans bilder, så visas en liten bildknapp i hörnet (det går också med tangentbordet, och på en telefon syns den alltid). I **Värld** har sidan du öppnar dessutom **Byt bild…**, eller **Lägg till bild…** så länge den saknar en. Din bild tar den befintliga bildens plats. Eller lägg filen i kampanjens mapp **inbox** och tala om för spelledaren vilken sida den är till för.
 
 ### 3.12 Trygghet: gränser, slöjor och stopp
 
@@ -294,7 +294,7 @@ Varje kommando som spelledaren använder kan också köras i kampanjmappen: `rpg
 
 ### Frågor
 
-**Måste jag kunna reglerna?** Nej. Välj handledning som mentor och fråga inom hakparenteser när du vill.
+**Måste jag kunna reglerna?** Nej. Välj mentorn handledning och fråga med `[OOC: …]` när du vill.
 
 **Kan spelledaren fuska?** Spelledaren kan inte ändra ett slag som RPG Engine har gjort, utom på svårighetsgraden berättelse, och inte heller fakta som redan är fastslagna.
 
@@ -308,7 +308,7 @@ Varje kommando som spelledaren använder kan också köras i kampanjmappen: `rpg
 
 ### Problem
 
-**Dashboarden öppnas inte.** Fråga spelledaren: `[Vad är länken till dashboarden?]`. Den fungerar bara medan en chatt är öppen i den kampanjen, efter spelledarens första svar.
+**Dashboarden öppnas inte.** Fråga spelledaren: `[OOC: Vad är länken till dashboarden?]`. Den fungerar bara medan en chatt är öppen i den kampanjen, efter spelledarens första svar.
 
 **Spelledaren verkar inte kunna spelet.** Din agent laddade inte RPG Engine. Kontrollera att du startade den i kampanjmappen och att du litade på den. I Claude Code skriver du `/mcp` och återansluter `rpg`. I Codex måste `codex mcp list` i kampanjmappen visa `rpg`. Om `rpg --version` inte hittas, installera RPG Engine igen ([2.2](#22-install)).
 

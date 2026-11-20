@@ -18,6 +18,7 @@ import { fieldLabel, groupLabels, itemLabel, phraseLabel, readableIds, rollLabel
 import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "../parts/layout.ts";
 import { knowersOf, Markdown, plainLine } from "../parts/markdown.tsx";
 import { MoodFace, moodLabel } from "../parts/mood.tsx";
+import { PictureSpot } from "../parts/picture.tsx";
 import { besideWord, memberStatus } from "../parts/status.tsx";
 import { Effects, ProgressBar, ValueDrawing } from "../parts/widgets.tsx";
 import { ChoicesNotice } from "../play/choices.tsx";
@@ -71,7 +72,9 @@ export function MemberSheet(
         <section class="sheet" aria-label={member.name}>
             <header class="band">
                 <div class="identity">
-                    <MemberToken member={member} large status={status} />
+                    <PictureSpot page={member.name} has={member.image !== undefined}>
+                        <MemberToken member={member} large status={status} />
+                    </PictureSpot>
                     <div class="who">
                         <h2>{member.name}</h2>
                         {/* The system's headline, and the mood: only here, its face before its word (D-305, D-419). */}

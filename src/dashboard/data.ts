@@ -607,8 +607,8 @@ export interface ShownThought
     text: string;
 }
 
-/** A scene as a chapter of the story (D-367); without a title, what happened between scenes; its number, and its place's kind and picture (D-384). */
-/** A chapter of the story told as a book, in the master's prose (T-227): the number of its scene, its title, its markdown. */
+/** A scene of the story's timeline (D-367); without a title, what happened between scenes; its number, and its place's kind and picture (D-384). */
+/** A chapter of the story told as a book, in the master's prose (T-227), telling a few scenes: its number in the book, its title, its markdown. */
 export interface BookChapter
 {
     number: number;
@@ -668,7 +668,7 @@ export interface PlayerSetting
      * What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing; the values its
      * {names} take, as a maker's own words; and a line after it.
      */
-    note?: { text: string; fix?: true; values?: Record<string, string>; also?: string; };
+    note?: { text: string; fix?: true; values?: Record<string, string>; also?: string[]; };
     /** A setting of the player's own words, as the author the master writes like, the longest its text may be (D-395); for a list, each item's (D-563). */
     most?: number;
     /** The parts of a custom difficulty or rigor, each with its level, one of the choices (T-132). */

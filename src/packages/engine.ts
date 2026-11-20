@@ -1,12 +1,15 @@
 // rpg-engine itself on npm (D-515 (3)): its latest version, how this one is installed, and its update with npm, globally as it was installed; a development
 // link, or any other install, is told and never touched.
-import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { EngineInstall, EngineUpdater } from "../core/context.ts";
 import { npmError, npmErrorCode, type NpmRun, runNpm } from "./npm.ts";
 
 const registry = "https://registry.npmjs.org";
+// npm's latest rpg-engine, kept in the player's folder for a day (T-219).
+const latestFile = "engine-update.json";
+const latestHolds = 24 * 60 * 60 * 1000;
 
 /** rpg-engine on npm, for the engine in this folder, from src/ and dist/ alike its package's own; `run` runs npm, a fake in tests. */
 export function npmEngine(folder = fileURLToPath(new URL("../../", import.meta.url)), run: (args: string) => Promise<NpmRun> = runNpm): EngineUpdater
@@ -38,6 +41,38 @@ export function npmEngine(folder = fileURLToPath(new URL("../../", import.meta.u
             return ran.code === 0 ? undefined : updateProblem(ran);
         },
     };
+}
+
+/** npm's latest rpg-engine as checked today and kept in the player's folder; none when older, from the future or unreadable. */
+export function keptLatestEngine(home: string | undefined, now: number): { checked: number; version: string; } | undefined
+{
+    if (home === undefined) {
+        return undefined;
+    }
+
+    try {
+        const read = JSON.parse(readFileSync(join(home, latestFile), "utf8")) as { checked?: unknown; latest?: unknown; };
+        const checked = typeof read.checked === "string" ? Date.parse(read.checked) : Number.NaN;
+        const fresh = !Number.isNaN(checked) && now - checked >= 0 && now - checked < latestHolds;
+        return fresh && typeof read.latest === "string" ? { checked, version: read.latest } : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+/** Keeps npm's latest rpg-engine in the player's folder; a folder that cannot be written only means npm is asked again next time. */
+export function keepLatestEngine(home: string | undefined, now: number, version: string): void
+{
+    if (home === undefined) {
+        return;
+    }
+
+    try {
+        mkdirSync(home, { recursive: true });
+        writeFileSync(join(home, latestFile), `${JSON.stringify({ checked: new Date(now).toISOString(), latest: version }, null, 2)}\n`);
+    } catch {
+        // Nothing to keep is no reason to stop.
+    }
 }
 
 /** How the engine in this folder is installed, by npm's global folder: the package there, a link to this folder, or neither. */

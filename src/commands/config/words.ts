@@ -103,7 +103,7 @@ export const playerWords: Record<(typeof playerSettingNames)[number], PlayerWord
         about: "how much the master teaches the game, out of the story",
         values: mentorWays,
         means: {
-            off: "only the story; ask in brackets whenever you want",
+            off: "only the story; ask in [OOC: …] whenever you want",
             hints: "a short note before big choices and when a rule slips by",
             tutorial: "each rule explained the first time, the numbers shown, a short review after fights",
         },

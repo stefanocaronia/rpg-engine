@@ -1,7 +1,7 @@
 // The campaign: a folder with campaign.yaml, its settings, the present, the sessions and the files an AI host reads.
 export { type ChoiceItem, type ChoiceSet, type PickRange, pickText, readChoices, readPick, writeChoices } from "./choices.ts";
 export { createCampaign } from "./create-campaign.ts";
-export { bookFolderName, campaignFileName, findCampaign, houseRulesFolderName, requireCampaign, sessionsFolderName } from "./find-campaign.ts";
+export { bookFolderName, campaignFileName, findCampaign, houseRulesFolderName, inboxFolderName, requireCampaign, sessionsFolderName } from "./find-campaign.ts";
 export { hasCharacterAgent, hostFileNames, refreshHostFiles, writeEffortFiles } from "./host-files.ts";
 export { lastChoices, rememberChoice, rememberedSettings } from "./last-choices.ts";
 export { type CountedByGame, customLevel, customLevels, customSettings, difficulties, difficultyItems, itemMeaning, leveled, type LeveledSetting, rigorItems, rigors, startingLevels } from "./levels.ts";

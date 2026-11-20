@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -123,7 +123,7 @@ Escribe lo que hace o dice tu personaje, con tus palabras:
 
 > Le pregunto al posadero quién más ha pasado por aquí esta noche.
 
-Fuera de la historia, escribe entre corchetes: *[¿Cómo funciona el agarre?]* El máster también responde entre corchetes.
+Fuera de la historia, escribe `[OOC: …]` (fuera de personaje): *[OOC: ¿Cómo funciona el agarre?]* El máster responde del mismo modo.
 
 Tú dices lo que intentas; el máster dice lo que pasa. El máster nunca decide por tu personaje y nunca habla del motor del juego. Puedes preguntarle cómo usar el dashboard.
 
@@ -143,7 +143,7 @@ El máster pide una tirada solo cuando el resultado es incierto e importa, y ant
 
 ### 3.3 Escenas y combates
 
-La historia avanza en **escenas**: un combate, una conversación, una exploración, un viaje, un descanso. Al final de cada escena la partida se guarda sola, la escena pasa a tu diario y el máster la escribe como un capítulo del libro de tu historia.
+La historia avanza en **escenas**: un combate, una conversación, una exploración, un viaje, un descanso. Al final de cada escena la partida se guarda sola, la escena pasa a tu diario y, cuando la historia da un giro, el máster escribe las escenas desde el último capítulo como un capítulo nuevo del libro de tu historia.
 
 En un combate, el máster cuenta todos los turnos que no son tuyos y se detiene donde puedes decidir. **Escena** muestra arriba de quién es el turno y quién va después, y la tarjeta de tu personaje junto al mapa. El orden de los turnos, los puntos de golpe de tu grupo y lo heridos que parecen los enemigos, con palabras, quedan al lado de la página. Si tu personaje cae, las salvaciones de muerte aparecen en grande en la página.
 
@@ -163,7 +163,7 @@ Los villanos tienen planes con plazos. Cada día nuevo, el máster mueve las ame
 
 ### 3.6 Misiones, diario y notas
 
-Una tarea que asume tu personaje se convierte en una misión en el **Diario**, con sus objetivos, su plazo y lo que mide; márcala con una estrella para tenerla a la vista arriba en Escena. En **Historia**, el Diario cuenta tu historia como un libro: el máster escribe un capítulo en prosa de cada escena cuando termina, con el estilo que elegiste; léelo capítulo a capítulo, con el último señalado por su marcapáginas, y descarga el libro como Markdown o como página web para imprimirlo o compartirlo. En una partida empezada antes, pide al máster que escriba la historia hasta ahora. **Cronología** enumera las escenas con lo que pasó en cada una. El Diario también guarda tus **Notas**: son privadas, salvo que pulses **Compartir** en una, y entonces el máster la oye como lo que piensas, nunca como un hecho. En **Compañeros** puedes leer los diarios de tus compañeros: de vez en cuando, al final de un día o de una misión, escriben unas líneas sobre lo que piensan y sienten.
+Una tarea que asume tu personaje se convierte en una misión en el **Diario**, con sus objetivos, su plazo y lo que mide; márcala con una estrella para tenerla a la vista arriba en Escena. En **Historia**, el Diario cuenta tu historia como un libro: cada vez que la historia da un giro, el máster escribe un capítulo en prosa que cuenta las escenas desde el anterior, con el estilo que elegiste; léelo capítulo a capítulo, con el último señalado por su marcapáginas, y descarga el libro como Markdown o como página web para imprimirlo o compartirlo. En una partida empezada antes, pide al máster que escriba la historia hasta ahora. **Cronología** enumera las escenas, numeradas, con lo que pasó en cada una. El Diario también guarda tus **Notas**: son privadas, salvo que pulses **Compartir** en una, y entonces el máster la oye como lo que piensas, nunca como un hecho. En **Compañeros** puedes leer los diarios de tus compañeros: de vez en cuando, al final de un día o de una misión, escriben unas líneas sobre lo que piensan y sienten.
 
 ### 3.7 La historia y la imagen de tu personaje
 
@@ -193,7 +193,7 @@ El robot de la parte superior del dashboard es el máster: su cara sigue el tono
 
 ### 3.11 Imágenes
 
-RPG Engine puede generar imágenes de los lugares a los que llegas, las misiones que aceptas y los personajes que conoces, según indique el ajuste de **imágenes**, y el retrato de tu personaje cuando lo pides. Usa tu propio Codex o Claude Code, con tu inicio de sesión, en tu plan y con sus límites: **Codex** las pinta y, si no, **Claude Code** las dibuja. **Ajustes** indica si este equipo puede generarlas y, si no, cómo prepararlo. Siempre puedes darle al máster una imagen tuya.
+RPG Engine puede generar imágenes de los lugares a los que llegas, las misiones que aceptas y los personajes que conoces, según indique el ajuste de **Imágenes**, y el retrato de tu personaje cuando lo pides. Usa tu propio Codex o Claude Code, con tu inicio de sesión, en tu plan y con sus límites: **Codex** las pinta y, si no, **Claude Code** las dibuja. **Ajustes** indica si este equipo puede generarlas y, si no, cómo prepararlo. Siempre puedes dar una imagen tuya, a tu personaje o a cualquier página que veas: pasa el puntero sobre una de sus imágenes y aparece un pequeño botón de imagen en su esquina (también con el teclado, y siempre en el móvil); en **Mundo**, la página que abres también tiene **Cambiar la imagen…**, o **Añadir una imagen…** mientras no tiene ninguna. La tuya ocupa el lugar de la que haya. O deja el archivo en la carpeta **inbox** de la campaña y dile al máster para qué página es.
 
 ### 3.12 Seguridad: líneas, velos y stop
 
@@ -294,7 +294,7 @@ Cada comando que usa el máster también se puede ejecutar en la carpeta de la c
 
 ### Preguntas
 
-**¿Necesito saber las reglas?** No. Elige el mentor tutorial y pregunta entre corchetes cuando quieras.
+**¿Necesito saber las reglas?** No. Elige el mentor tutorial y pregunta con `[OOC: …]` cuando quieras.
 
 **¿Puede hacer trampas el máster?** No puede cambiar una tirada hecha por RPG Engine, salvo en dificultad historia, ni hechos ya establecidos.
 
@@ -308,7 +308,7 @@ Cada comando que usa el máster también se puede ejecutar en la carpeta de la c
 
 ### Problemas
 
-**El panel no se abre.** Pregúntale al máster: `[¿Cuál es el enlace del panel?]`. Solo funciona mientras haya un chat abierto en esa campaña, después de la primera respuesta del máster.
+**El dashboard no se abre.** Pregúntale al máster: `[OOC: ¿Cuál es el enlace del dashboard?]`. Solo funciona mientras haya un chat abierto en esa campaña, después de la primera respuesta del máster.
 
 **El máster no parece conocer el juego.** Tu agente no cargó RPG Engine. Comprueba que lo iniciaste en la carpeta de la campaña y que confiaste en ella. En Claude Code, escribe `/mcp` y vuelve a conectar `rpg`. En Codex, `codex mcp list` en la carpeta de la campaña debe mostrar `rpg`. Si `rpg --version` no se encuentra, instala RPG Engine de nuevo ([2.2](#22-install)).
 

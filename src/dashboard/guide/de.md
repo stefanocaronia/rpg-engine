@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
 **RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
@@ -123,7 +123,7 @@ Schreib, was dein Charakter tut oder sagt, in deinen eigenen Worten:
 
 > Ich frage die Wirtin, wer heute Nacht noch vorbeigekommen ist.
 
-Außerhalb der Geschichte schreibst du in eckigen Klammern: *[Wie funktioniert das Ringen?]* Die Spielleitung antwortet ebenfalls in Klammern.
+Außerhalb der Geschichte schreibst du `[OOC: …]` (out of character): *[OOC: Wie funktioniert das Ringen?]* Die Spielleitung antwortet genauso.
 
 Du sagst, was du versuchst. Die Spielleitung sagt, was passiert. Sie entscheidet nie für deinen Charakter und spricht nie über die Engine. Du kannst sie fragen, wie das Dashboard funktioniert.
 
@@ -143,7 +143,7 @@ Die Spielleitung verlangt nur dann einen Wurf, wenn der Ausgang unsicher ist und
 
 ### 3.3 Szenen und Kämpfe
 
-Die Geschichte läuft in **Szenen**: ein Kampf, ein Gespräch, Erkunden, Reisen, eine Rast. Am Ende jeder Szene speichert das Spiel von selbst, die Szene kommt in dein Tagebuch, und die Spielleitung schreibt sie als Kapitel im Buch deiner Geschichte.
+Die Geschichte läuft in **Szenen**: ein Kampf, ein Gespräch, Erkunden, Reisen, eine Rast. Am Ende jeder Szene speichert das Spiel von selbst, die Szene kommt in dein Tagebuch, und wenn die Geschichte eine Wendung nimmt, schreibt die Spielleitung die Szenen seit dem letzten Kapitel als neues Kapitel im Buch deiner Geschichte.
 
 In einem Kampf erzählt die Spielleitung jeden Zug, der nicht deiner ist, und hält an, wo du entscheiden kannst. Die **Szene** zeigt oben, wer am Zug ist und wer als Nächstes kommt, und daneben die Karte deines Charakters neben der Karte des Ortes. Die Reihenfolge der Züge, die Trefferpunkte deiner Gruppe und in Worten, wie verletzt die Gegner aussehen, bleiben neben der Seite stehen. Wenn dein Charakter fällt, erscheinen die Todesrettungswürfe groß auf der Seite.
 
@@ -163,7 +163,7 @@ Schurken haben Pläne mit Fristen. Mit jedem neuen Tag bewegt die Spielleitung d
 
 ### 3.6 Quests, Tagebuch und Notizen
 
-Eine Aufgabe, die dein Charakter übernimmt, wird im **Tagebuch** zu einer Quest, mit ihren Zielen, ihrer Frist und dem, was sie misst. Markier sie mit einem Stern, um sie oben in der Szene im Blick zu behalten. Unter **Geschichte** erzählt das Tagebuch deine Geschichte wie ein Buch: Die Spielleitung schreibt für jede Szene, sobald sie zu Ende ist, ein Kapitel in Prosa, in dem Stil, den du gewählt hast. Du liest es Kapitel für Kapitel, das letzte ist durch sein Lesezeichen markiert, und kannst es als Markdown oder als Webseite herunterladen, zum Drucken oder Weitergeben. Wenn du ein Spiel schon vorher begonnen hast, bitte die Spielleitung, die Geschichte bis jetzt zu schreiben. Die **Zeitleiste** listet die Szenen auf, mit dem, was in jeder passiert ist. Das Tagebuch bewahrt auch deine **Notizen** auf: Sie sind privat, es sei denn, du klickst bei einer auf **Teilen**. Die Spielleitung hört sie dann als das, was du denkst, nie als Tatsache. Unter **Begleiter** liest du die Tagebücher deiner Begleiter: Hin und wieder, am Ende eines Tages oder einer Quest, schreiben sie ein paar Zeilen darüber, was sie denken und fühlen.
+Eine Aufgabe, die dein Charakter übernimmt, wird im **Tagebuch** zu einer Quest, mit ihren Zielen, ihrer Frist und dem, was sie misst. Markier sie mit einem Stern, um sie oben in der Szene im Blick zu behalten. Unter **Geschichte** erzählt das Tagebuch deine Geschichte wie ein Buch: Jedes Mal, wenn die Geschichte eine Wendung nimmt, schreibt die Spielleitung ein Kapitel in Prosa, das die Szenen seit dem letzten Kapitel erzählt, in dem Stil, den du gewählt hast. Du liest es Kapitel für Kapitel, das letzte ist durch sein Lesezeichen markiert, und kannst es als Markdown oder als Webseite herunterladen, zum Drucken oder Weitergeben. Wenn du ein Spiel schon vorher begonnen hast, bitte die Spielleitung, die Geschichte bis jetzt zu schreiben. Die **Zeitleiste** listet die Szenen nummeriert auf, mit dem, was in jeder passiert ist. Das Tagebuch bewahrt auch deine **Notizen** auf: Sie sind privat, es sei denn, du klickst bei einer auf **Teilen**. Die Spielleitung hört sie dann als das, was du denkst, nie als Tatsache. Unter **Begleiter** liest du die Tagebücher deiner Begleiter: Hin und wieder, am Ende eines Tages oder einer Quest, schreiben sie ein paar Zeilen darüber, was sie denken und fühlen.
 
 ### 3.7 Die Geschichte und das Bild deines Charakters
 
@@ -193,7 +193,7 @@ Der Roboter oben auf dem Dashboard ist die Spielleitung: Sein Gesicht folgt dem 
 
 ### 3.11 Bilder
 
-RPG Engine kann Bilder von den Orten erstellen lassen, die du erreichst, von den Quests, die du übernimmst, und von den Menschen, denen du begegnest, so wie es die Einstellung **Bilder** sagt. Auf Wunsch entsteht auch das Porträt deines Charakters. Es nutzt dein eigenes Codex oder Claude Code, mit deinem Login, in deinem Tarif und mit dessen Grenzen: **Codex** malt sie, sonst zeichnet **Claude Code** sie. Die **Einstellungen** sagen, ob dieser Computer sie erstellen kann und wie du es einrichtest, wenn nicht. Du kannst der Spielleitung jederzeit ein eigenes Bild geben.
+RPG Engine kann Bilder von den Orten erstellen lassen, die du erreichst, von den Quests, die du übernimmst, und von den Menschen, denen du begegnest, so wie es die Einstellung **Bilder** festlegt. Auf Wunsch entsteht auch das Porträt deines Charakters. Es nutzt dein eigenes Codex oder Claude Code, mit deinem Login, in deinem Tarif und mit dessen Grenzen: **Codex** malt sie, sonst zeichnet **Claude Code** sie. Die **Einstellungen** sagen, ob dieser Computer sie erstellen kann und wie du es einrichtest, wenn nicht. Du kannst jederzeit ein eigenes Bild geben, für deinen Charakter oder für jede Seite, die du siehst: Fahr mit dem Mauszeiger über eines ihrer Bilder, dann erscheint in dessen Ecke eine kleine Bild-Schaltfläche (auch mit der Tastatur, und auf dem Handy immer). In **Welt** hat die Seite, die du öffnest, außerdem **Bild ändern…**, oder **Bild hinzufügen…**, solange sie noch keines hat. Dein Bild ersetzt das vorhandene. Oder leg die Datei im Ordner **inbox** der Kampagne ab und sag der Spielleitung, für welche Seite sie gedacht ist.
 
 ### 3.12 Sicherheit: Linien, Schleier und Stopp
 
@@ -294,7 +294,7 @@ Jeden Befehl, den die Spielleitung benutzt, kannst du auch im Kampagnenordner au
 
 ### Fragen
 
-**Muss ich die Regeln kennen?** Nein. Wähle den Mentor Tutorial und frag in Klammern, wann immer du willst.
+**Muss ich die Regeln kennen?** Nein. Wähle den Mentor Tutorial und frag mit `[OOC: …]`, wann immer du willst.
 
 **Kann die Spielleitung schummeln?** Sie kann einen Wurf, den RPG Engine gemacht hat, nicht ändern, außer bei der Schwierigkeit Story, und auch keine Fakten, die schon feststehen.
 
@@ -308,7 +308,7 @@ Jeden Befehl, den die Spielleitung benutzt, kannst du auch im Kampagnenordner au
 
 ### Probleme
 
-**Das Dashboard öffnet sich nicht.** Frag die Spielleitung: `[Wie lautet der Link zum Dashboard?]`. Es funktioniert nur, solange in dieser Kampagne ein Chat offen ist, nach der ersten Antwort der Spielleitung.
+**Das Dashboard öffnet sich nicht.** Frag die Spielleitung: `[OOC: Wie lautet der Link zum Dashboard?]`. Es funktioniert nur, solange in dieser Kampagne ein Chat offen ist, nach der ersten Antwort der Spielleitung.
 
 **Die Spielleitung scheint das Spiel nicht zu kennen.** Dein Agent hat RPG Engine nicht geladen. Prüfe, ob du ihn im Kampagnenordner gestartet und dem Ordner vertraut hast. Schreib in Claude Code `/mcp` und verbinde `rpg` neu. In Codex muss `codex mcp list` im Kampagnenordner `rpg` anzeigen. Wenn `rpg --version` nicht gefunden wird, installiere RPG Engine neu ([2.2](#22-install)).
 

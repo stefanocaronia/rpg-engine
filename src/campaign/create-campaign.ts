@@ -3,12 +3,12 @@ import { join, resolve } from "node:path";
 import { stringify } from "yaml";
 import { z } from "zod";
 import { files } from "../core/store.ts";
-import { campaignFileName, findCampaign, sessionsFolderName } from "./find-campaign.ts";
+import { campaignFileName, findCampaign, inboxFolderName, sessionsFolderName } from "./find-campaign.ts";
 import { hostFileChanges, type HostInstructions, rpgServer, writeHostFile } from "./host-files.ts";
 import { type CampaignSettings, settingsSchema } from "./settings.ts";
 
 /**
- * Creates a campaign in `folder`: campaign.yaml, state.yaml, the sessions folder, the .mcp.json through which AI hosts such as Claude Code find the rpg tools,
+ * Creates a campaign in `folder`: campaign.yaml, state.yaml, the sessions folder, the inbox for the player's pictures, the .mcp.json through which AI hosts such as Claude Code find the rpg tools,
  * and the host files that send them to the start lines and give Claude Code the character agent (D-97, D-242, D-490). `platform` is the operating system, as Node names it. Returns the campaign's full path.
  */
 export function createCampaign(folder: string, settings: CampaignSettings, platform: string, instructions: HostInstructions): string
@@ -24,6 +24,7 @@ export function createCampaign(folder: string, settings: CampaignSettings, platf
     const mcpConfig = mcpConfigWithRpg(root, platform);
     const hostFiles = hostFileChanges(root, instructions, platform);
     files().makeFolder(join(root, sessionsFolderName));
+    files().makeFolder(join(root, inboxFolderName));
     files().write(join(root, campaignFileName), `# Campaign settings: change them with the config command.\n${stringify(parsed.data)}`);
     // A new campaign starts in setup (MOD-1).
     files().write(join(root, "state.yaml"), "# The present of the game, kept by rpg: mode, date and current scene.\nmode: setup\n");

@@ -316,7 +316,7 @@
         display: contents;
     }
 
-    .place-band.compact .place-disc {
+    .place-band.compact .place-disc-spot {
         grid-row: 1 / span 2;
     }
 

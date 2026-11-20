@@ -6,7 +6,7 @@
         outline-offset: 2px !important;
     }
 
-    /* A clip or a mask on a control would cut its focus ring and its tooltip (D-528). */
+    /* A clip or a mask on a control would cut its focus ring (D-528). */
     :is(button, a, summary, input, select, textarea, label, [role="tab"], [role="button"], [role="radio"], [tabindex], [data-tip]) {
         clip-path: none !important;
         mask: none !important;
@@ -18,19 +18,6 @@
 
     .page-tabs button:focus-visible {
         outline-offset: -2px !important;
-    }
-
-    /* The last tab's mark is near the page's edge: its tip ends at the mark, else on a phone the page grows wider. */
-    .page-tabs > [role="tab"]:last-child .tab-mark[data-tip]::before {
-        left: auto !important;
-        inset-inline-end: 0 !important;
-        translate: 0 4px !important;
-    }
-
-    @media (hover: hover) {
-        .page-tabs > [role="tab"]:last-child .tab-mark[data-tip]:hover::before {
-            translate: 0 0 !important;
-        }
     }
 
     .quest-cover-top :focus-visible {
@@ -60,63 +47,8 @@
         outline-offset: 4px !important;
     }
 
-    /* Its tooltip from the pip toward the name, where there is room, in lines when it is long. */
-    .token .status-pip[data-tip]::before {
-        left: auto !important;
-        inset-inline-start: 0 !important;
-        width: max-content !important;
-        max-width: 240px !important;
-        white-space: normal !important;
-        translate: 0 4px !important;
-    }
-
-    @media (hover: hover) {
-        .token .status-pip[data-tip]:hover::before {
-            translate: 0 0 !important;
-        }
-    }
-
-    /* Over the pip, its tooltip alone: not the one of the class of whom it is on. */
-    .token-holder:has(.status-pip:hover)::before {
-        opacity: 0 !important;
-    }
-
     .row:focus-visible {
         outline-offset: -2px !important;
-    }
-
-    :is(.effect.icon-only, .effect.more)[data-tip]::before {
-        left: auto !important;
-        inset-inline-start: 0 !important;
-        width: max-content !important;
-        max-width: 240px !important;
-        white-space: normal !important;
-        translate: 0 4px !important;
-    }
-
-    @media (hover: hover) {
-        :is(.effect.icon-only, .effect.more)[data-tip]:hover::before {
-            translate: 0 0 !important;
-        }
-    }
-
-    :is(.effect.icon-only, .effect.more)[data-tip]:focus-visible::before {
-        translate: 0 0 !important;
-    }
-
-    /* The asterisk of a changed page stands in narrow cards: its tooltip in lines, never wider than its card. */
-    .changed-mark[data-tip]::before {
-        width: max-content !important;
-        max-width: 200px !important;
-        white-space: normal !important;
-    }
-
-    /* How a number is made, in its tooltip (FOR-8): lines that wrap, its free roll on the last. */
-    [data-tip].tip-wide::before {
-        width: max-content !important;
-        max-width: 260px !important;
-        text-align: start !important;
-        white-space: pre-line !important;
     }
 
     .asked.folded .asked-fold:focus-visible {
@@ -153,79 +85,62 @@
         outline-offset: 1px !important;
     }
 
-    /* A control without words says its name when hovered, after a moment, or reached by the keyboard; never at a touch, where it would stay lit. A name of
-       several things, as a gathered spark's, has a line for each. */
-    [data-tip]::before {
-        content: attr(data-tip) !important;
-        position: absolute !important;
-        bottom: calc(100% + 8px) !important;
-        left: 50% !important;
-        z-index: 40 !important;
+    /* The page's one tooltip (T-228), what a control's data-tip says: in the top layer, over every card, list and dialog, nothing cuts it; shell/tooltip.ts
+       shows it after a moment under a pointer or at once by the keyboard, never at a touch, and places it beside its control inside the window. Its lines
+       wrap, a name of several things a line for each. It comes from its control's side. */
+    .page-tip {
+        position: fixed !important;
+        inset: var(--tip-top, 0) auto auto var(--tip-left, 0) !important;
+        box-sizing: border-box !important;
+        width: max-content !important;
+        max-width: min(20rem, calc(100vw - 16px)) !important;
+        height: auto !important;
+        margin: 0 !important;
         padding: 5px 8px !important;
+        border: 0 !important;
         border-radius: var(--radius-xs) !important;
+        overflow: visible !important;
         background: var(--ink) !important;
         color: var(--paper) !important;
         font: 400 0.8rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif !important;
         letter-spacing: 0 !important;
+        text-align: start !important;
         text-transform: none !important;
-        white-space: pre !important;
-        opacity: 0 !important;
-        translate: -50% 4px !important;
+        white-space: pre-line !important;
+        overflow-wrap: break-word !important;
         pointer-events: none !important;
-        transition: opacity var(--quick) linear, translate var(--quick) var(--ease) !important;
-    }
-
-    [data-tip].tip-left::before {
-        inset-inline-start: auto !important;
-        inset-inline-end: calc(100% + 8px) !important;
-        bottom: 50% !important;
-        translate: 4px 50% !important;
-    }
-
-    /* Under the control, where one over it would cover what is above, as the chips of the head over the row's icons (D-409). */
-    [data-tip].tip-below::before {
-        top: calc(100% + 8px) !important;
-        bottom: auto !important;
-        translate: -50% -4px !important;
-    }
-
-    @media (hover: hover) {
-        [data-tip]:hover::before {
-            opacity: 1 !important;
-            translate: -50% 0 !important;
-            transition-delay: var(--wait) !important;
-        }
-
-        [data-tip].tip-left:hover::before {
-            translate: 0 50% !important;
-        }
-    }
-
-    [data-tip]:focus-visible::before {
         opacity: 1 !important;
-        translate: -50% 0 !important;
+        transition: opacity var(--quick) linear !important;
     }
 
-    [data-tip].tip-left:focus-visible::before {
-        translate: 0 50% !important;
-    }
-
-    /* On a phone a hidden tip takes no room, as one wider than the window would widen the page with the text zoomed; shown, it wraps in the window. */
-    @media (max-width: 600px) {
-        [data-tip]:not(:focus-visible)::before {
-            display: none !important;
-        }
-
-        [data-tip]::before {
-            width: max-content !important;
-            max-width: calc(100vw - 32px) !important;
-            white-space: pre-line !important;
+    @starting-style {
+        .page-tip.shown {
+            opacity: 0 !important;
         }
     }
 
-    @media (max-width: 600px) and (hover: hover) {
-        [data-tip]:hover::before {
-            display: block !important;
+    @media (prefers-reduced-motion: no-preference) {
+        .page-tip {
+            translate: 0 0 !important;
+            transition: opacity var(--quick) linear, translate var(--quick) var(--ease) !important;
+        }
+
+        @starting-style {
+            .page-tip.shown[data-side="above"] {
+                translate: 0 4px !important;
+            }
+
+            .page-tip.shown[data-side="below"] {
+                translate: 0 -4px !important;
+            }
+
+            .page-tip.shown[data-side="start"] {
+                translate: 4px 0 !important;
+            }
+
+            .page-tip.shown[data-side="start"][dir="rtl"] {
+                translate: -4px 0 !important;
+            }
         }
     }
 

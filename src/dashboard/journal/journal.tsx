@@ -1,6 +1,6 @@
 // The Journal section (D-367, D-369, D-371, D-384, D-388, T-227): the quests the character knows as a video game's quest log, each with the time left before its deadline at its top, its
 // goals, its counters as bars and its clock with its name, the main ones first and in gold; the ones the player follows, the main one until they choose, shown
-// small beside the page, or in Scene and Combat on a narrow screen; the story told as a book; its timeline by scenes, as chapters, the last first, each with what the diary tells of it; the companions'
+// small beside the page, or in Scene and Combat on a narrow screen; the story told as a book; its timeline by scenes, numbered, the last first, each with what the diary tells of it; the companions'
 // diaries (D-497); and the player's own notes.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "../address.ts";
@@ -14,6 +14,7 @@ import { fieldLabel, phraseLabel, sceneTypeLabel } from "../parts/labels.ts";
 import { endedQuests, followedQuests, keptFollowed } from "../parts/layout.ts";
 import { placeKinds } from "../parts/map-symbols.ts";
 import { knowersOf, Markdown } from "../parts/markdown.tsx";
+import { PictureButton } from "../parts/picture.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { useChoice, useKeptText } from "../shell/prefs.ts";
 import { PageTabs } from "../shell/tabs.tsx";
@@ -355,7 +356,7 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
     return (
         <article class={["quest-card", quest.main ? "main" : "", quest.status].filter((name) => name !== "").join(" ")} aria-labelledby={id}>
             {/* The card's head is its picture, as a video game's quest log has it: the star, the time left and Main over its top, its name over its foot (D-388, D-389). */}
-            <header class="quest-cover">
+            <header class="quest-cover picture-host">
                 <QuestFace quest={quest} />
                 <div class="quest-cover-top">
                     {open && (
@@ -374,6 +375,7 @@ function QuestCard({ quest, followed, onFollow }: { quest: ShownQuest; followed:
                     {quest.main && <span class="quest-badge">{t("Main")}</span>}
                 </div>
                 <h4 class="quest-name" id={id} title={quest.name}>{quest.name}</h4>
+                <PictureButton page={quest.name} has={quest.picture !== undefined} icon />
             </header>
             {from.length > 0 && <p class="quest-from">{from.join(" · ")}</p>}
             {quest.text !== "" && (
@@ -483,8 +485,11 @@ export function Deadline({ deadline }: { deadline: NonNullable<ShownQuest["deadl
     const text = minutes === undefined ? byDateLabel(deadline.date) : minutes <= 0 ? t("Time is up") : durationText(minutes);
     // Its word apart, which the followed quest's strip leaves to a screen reader on a phone.
     const left = minutes !== undefined && minutes > 0;
+    const by = phraseLabel(byDateLabel(deadline.date));
+    // Its date in its tip, and for a screen reader before the time left, as the tip is for the eye (T-228).
     return (
-        <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={phraseLabel(byDateLabel(deadline.date))}>
+        <span class={near ? "quest-deadline near" : "quest-deadline"} data-tip={by}>
+            {minutes !== undefined && <span class="visually-hidden">{by}</span>}
             <Icon name="hourglass" />
             <span>
                 {text}
@@ -520,7 +525,7 @@ function Timeline({ chapters, now }: { chapters: ShownChapter[]; now?: string; }
                             <ChapterPicture chapter={chapter} />
                             <div class="chapter-body">
                                 <header class="chapter-head">
-                                    {chapter.number !== undefined && <span class="eyebrow chapter-number">{t("Chapter {number}", { number: chapter.number })}</span>}
+                                    {chapter.number !== undefined && <span class="eyebrow chapter-number">{t("Scene {number}", { number: chapter.number })}</span>}
                                     <h3>{chapter.title}</h3>
                                     {chapter.open && <span class="chapter-now">{t("Now")}</span>}
                                     {chapter.type !== undefined && <span class="chapter-type">{phraseLabel(sceneTypeLabel(chapter.type))}</span>}
@@ -606,8 +611,9 @@ function ChapterPicture({ chapter }: { chapter: ShownChapter; })
 
     if (chapter.picture !== undefined) {
         return (
-            <div class="chapter-picture" aria-hidden="true">
-                <img src={pictureAddress(chapter.picture)} alt="" loading="lazy" />
+            <div class="chapter-picture picture-host">
+                <img src={pictureAddress(chapter.picture)} alt="" loading="lazy" aria-hidden="true" />
+                {chapter.place !== undefined && <PictureButton page={chapter.place} has icon />}
             </div>
         );
     }

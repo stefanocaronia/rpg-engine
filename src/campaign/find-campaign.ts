@@ -10,6 +10,9 @@ export const houseRulesFolderName = "rules";
 /** The folder of a campaign with its chats as text, copied from the AI hosts as they go on, kept out of the saves (T-225). */
 export const sessionsFolderName = "sessions";
 
+/** The folder of a campaign where the player drops pictures of their own, which the master gives to pages with image (D-572 (3)); kept out of the saves. */
+export const inboxFolderName = "inbox";
+
 /** The folder of a campaign with its story told as a book, a chapter for each closed scene, kept out of the saves (T-227). */
 export const bookFolderName = "book";
 

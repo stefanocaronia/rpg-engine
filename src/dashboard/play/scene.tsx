@@ -1,5 +1,6 @@
 // The Scene section (D-309, VIEW-6, D-444): where the party is, its picture with the places around it, its name, what holds there and its text; the open
 // scene and who is in it; outside a scene who is there of those the character knows; the map. While the scene goes by turns, the turns first.
+import type { ComponentChildren } from "preact";
 import { useContext, useEffect, useRef, useState } from "preact/hooks";
 import { TalkName } from "../acts/names.tsx";
 import { sectionAddress } from "../address.ts";
@@ -10,6 +11,7 @@ import { cardIcons, Icon } from "../parts/icons.tsx";
 import { phraseLabel, sceneTypeLabel, strangerLabel } from "../parts/labels.ts";
 import { biomeLabel, biomes } from "../parts/map-symbols.ts";
 import { InlineText, knowersOf, type LinkTo, Markdown, type SecretKnowers } from "../parts/markdown.tsx";
+import { PictureButton, PictureSpot } from "../parts/picture.tsx";
 import { downTint, personState, StatusPip } from "../parts/status.tsx";
 import { PlaceMap } from "../place/view.tsx";
 import { sideOf, Token } from "../sheet/party.tsx";
@@ -235,9 +237,11 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
         ? (
             <header class="place-band compact">
                 <div class="place-shot">
-                    <div class="place-disc">
-                        <Icon name="house" />
-                    </div>
+                    <PictureSpot page={place.name} has={false} class="place-disc-spot">
+                        <div class="place-disc">
+                            <Icon name="house" />
+                        </div>
+                    </PictureSpot>
                     {caption}
                 </div>
                 {text !== "" && <PlaceAbout text={text} link={link} knowers={knowers} />}
@@ -245,11 +249,13 @@ function PlaceBand({ place, fold }: { place: ShownPlace; fold?: { open: boolean;
         )
         : (
             <header class={fold === undefined ? "place-band over" : `place-band over folding${fold.open ? "" : " low"}`}>
-                <div class="place-shot">
+                {/* The picture's control over the shot, not the figure: the name's veil covers the figure's foot. */}
+                <div class="place-shot picture-host">
                     <figure class="place-image">
                         <img src={`/images/${encodeURIComponent(place.image.file)}?v=${place.image.version}`} alt="" />
                     </figure>
                     {caption}
+                    <PictureButton page={place.name} has icon />
                 </div>
                 {fold === undefined && text !== "" && <PlaceAbout text={text} link={link} knowers={knowers} />}
                 {fold?.open === true && text !== "" && (
@@ -357,14 +363,16 @@ function People({ people }: { people: ShownPerson[]; })
                             </span>
                         )
                         : (
-                            <Token
-                                member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }), ...(person.icon === undefined ? {} : { icon: person.icon }) }}
-                                hostile={person.hostile === true}
-                                side={sideOf(person.role)}
-                                status={statusOf(person)}
-                                dying={downTint(statusOf(person))}
-                                number={person.stranger ? letterOf(person.name) : undefined}
-                            />
+                            <PersonPicture person={person}>
+                                <Token
+                                    member={{ name: person.name, role: person.role, ...(person.image === undefined ? {} : { image: person.image }), ...(person.icon === undefined ? {} : { icon: person.icon }) }}
+                                    hostile={person.hostile === true}
+                                    side={sideOf(person.role)}
+                                    status={statusOf(person)}
+                                    dying={downTint(statusOf(person))}
+                                    number={person.stranger ? letterOf(person.name) : undefined}
+                                />
+                            </PersonPicture>
                         )}
                     {/* Anyone but the player's own character is someone to talk to (D-495). */}
                     {person.role === "pc"
@@ -395,4 +403,10 @@ function PersonName({ person }: { person: ShownPerson; })
 function letterOf(name: string): string | undefined
 {
     return /^creature ([A-Z])$/.exec(name)?.[1];
+}
+
+/** Someone's token with the control for a picture of the player's own, but a stranger's: what stands for them is no page the player sees. */
+function PersonPicture({ person, children }: { person: ShownPerson; children: ComponentChildren; })
+{
+    return person.stranger === true ? <>{children}</> : <PictureSpot page={person.name} has={person.image !== undefined}>{children}</PictureSpot>;
 }

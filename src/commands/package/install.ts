@@ -53,7 +53,7 @@ export async function installCampaignSystem(context: Context, tried: Set<string>
         } catch (error) {
             // npm's why, without what package install adds for the master, and without its period: the master tells the player, and the player chooses (D-514 (3)).
             const why = (error instanceof Error ? error.message : String(error)).replace(/^\S+ could not be installed: /, "").replace(/\s*Nothing changed[^.]*\.$/, "").replace(/\.$/, "");
-            return `The campaign's game system, ${ours.name}, is not on this computer, and could not be installed: ${why}. Tell the player off-game, in brackets and in a table's words, `
+            return `The campaign's game system, ${ours.name}, is not on this computer, and could not be installed: ${why}. Tell the player off-game, in [OOC: …] and in a table's words, `
                 + `that this computer lacks the ${ours.name} rules and could not download them: once it is online, you install them with package install ${ours.name}, no yes needed. `
                 + "Until then you play without its pages and the sheet's worked-out numbers, or wait, as the player chooses.";
         }

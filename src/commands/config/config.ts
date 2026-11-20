@@ -328,7 +328,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     };
 }
 
-const ordersKept = "Kept until the player lifts it; the lines and veils still come first. An order for this scene only stays in the scene; when unsure, ask in one bracket.";
+const ordersKept = "Kept until the player lifts it; the lines and veils still come first. An order for this scene only stays in the scene; when unsure, ask in one [OOC: …].";
 
 // The settings of free words the player may leave unset again, with the value none, and all those of how the master writes (D-395).
 const freeSettingNames: SettingName[] = ["author", "style", "calendar"];

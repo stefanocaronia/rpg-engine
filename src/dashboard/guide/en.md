@@ -122,7 +122,7 @@ Write what your character does or says, in your own words:
 
 > I ask the innkeeper who else came through tonight.
 
-Out of the story, write between square brackets: *[How does grappling work?]* The master answers in brackets too.
+Out of the story, write `[OOC: …]` (out of character): *[OOC: How does grappling work?]* The master answers the same way.
 
 You say what you try; the master says what happens. The master never decides for your character, and never talks about the engine. You can ask it how to use the dashboard.
 
@@ -142,7 +142,7 @@ The master asks for a roll only when the outcome is uncertain and matters, and s
 
 ### 3.3 Scenes and fights
 
-The story runs in **scenes**: a fight, a conversation, exploring, travelling, a rest. At the end of each scene the game saves by itself, the scene goes into your journal, and the master writes it as a chapter of your story's book.
+The story runs in **scenes**: a fight, a conversation, exploring, travelling, a rest. At the end of each scene the game saves by itself, the scene goes into your journal, and when the story turns the master writes the scenes since the last chapter as a new chapter of your story's book.
 
 In a fight the master tells every turn that is not yours, and stops where you can decide. The **Scene** shows on top whose turn it is and who comes next, and your character's card beside the map; the order of the turns, your party's hit points and how hurt the enemies look, in words, stay beside the page. If your character falls, the death saves appear large on the page.
 
@@ -162,7 +162,7 @@ Villains have plans with deadlines. Each new day the master moves the threats th
 
 ### 3.6 Quests, journal and notes
 
-A task your character takes becomes a quest in the **Journal**, with its goals, its deadline and what it measures; star it to keep it in view at the top of Scene. Under **Story** the Journal tells your story as a book: the master writes a chapter of prose for each scene once it ends, in the style you chose; read it chapter by chapter, the last marked by its bookmark, and download it as Markdown or as a web page to print or pass on. In a game begun before, ask the master to write the story so far. **Timeline** lists the scenes with what happened in each. The Journal also keeps your **notes**: private, unless you **Share** one, which the master hears as what you think, never as a fact. Under **Companions** you read your companions' diaries: now and then, at the end of a day or a quest, they write a few lines of what they think and feel.
+A task your character takes becomes a quest in the **Journal**, with its goals, its deadline and what it measures; star it to keep it in view at the top of Scene. Under **Story** the Journal tells your story as a book: the master writes a chapter of prose each time the story turns, telling the scenes since the last one, in the style you chose; read it chapter by chapter, the last marked by its bookmark, and download it as Markdown or as a web page to print or pass on. In a game begun before, ask the master to write the story so far. **Timeline** lists the scenes, numbered, with what happened in each. The Journal also keeps your **notes**: private, unless you **Share** one, which the master hears as what you think, never as a fact. Under **Companions** you read your companions' diaries: now and then, at the end of a day or a quest, they write a few lines of what they think and feel.
 
 ### 3.7 Your character's story and picture
 
@@ -192,7 +192,7 @@ The robot at the top of the dashboard is the master: its face follows the tone o
 
 ### 3.11 Pictures
 
-RPG Engine can have pictures made of the places you reach, the quests you take and those you meet, as the **pictures** setting says, and your character's portrait when you ask. It uses your own Codex or Claude Code, with your login, on your plan and its limits: **Codex** paints them, otherwise **Claude Code** draws them. **Settings** says whether this computer can make them, and how to set it up if not. You can always give the master a picture of your own.
+RPG Engine can have pictures made of the places you reach, the quests you take and those you meet, as the **pictures** setting says, and your character's portrait when you ask. It uses your own Codex or Claude Code, with your login, on your plan and its limits: **Codex** paints them, otherwise **Claude Code** draws them. **Settings** says whether this computer can make them, and how to set it up if not. You can always give a picture of your own, to your character or to any page you see: pass the pointer over one of its pictures and a small picture button shows in its corner (with the keyboard too, and always on a phone); in **World** the page you open also has **Change the picture…**, or **Add a picture…** while it has none. Yours takes the place of the one it has. Or drop the file in the campaign's **inbox** folder and tell the master which page it is for.
 
 ### 3.12 Safety: lines, veils and stop
 
@@ -293,7 +293,7 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 
 ### Questions
 
-**Do I need to know the rules?** No. Choose the tutorial mentor, and ask between brackets whenever you want.
+**Do I need to know the rules?** No. Choose the tutorial mentor, and ask in `[OOC: …]` whenever you want.
 
 **Can the master cheat?** It cannot change a roll RPG Engine made, except at difficulty story, nor facts already set.
 
@@ -307,7 +307,7 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 
 ### Problems
 
-**The dashboard does not open.** Ask the master: `[What's the dashboard link?]`. It works only while a chat is open in that campaign, after the master's first answer.
+**The dashboard does not open.** Ask the master: `[OOC: What's the dashboard link?]`. It works only while a chat is open in that campaign, after the master's first answer.
 
 **The master does not seem to know the game.** Your agent did not load RPG Engine. Check that you started it in the campaign folder and trusted it. In Claude Code, write `/mcp` and reconnect `rpg`. In Codex, `codex mcp list` in the campaign folder must show `rpg`. If `rpg --version` is not found, install RPG Engine again ([2.2](#22-install)).
 

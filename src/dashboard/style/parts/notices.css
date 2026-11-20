@@ -56,4 +56,30 @@
     .notice.away {
         --tone: var(--warn);
     }
+
+    /* A notice with somewhere to go, as a newer RPG Engine's (T-219): its link after its words, its cross at the end, which hides it. */
+    .notice:has(.notice-hide) {
+        padding-block: 4px;
+        padding-inline-end: 4px;
+    }
+
+    .notice-words {
+        display: flex;
+        flex-wrap: wrap;
+        column-gap: 8px;
+    }
+
+    .notice-link {
+        color: var(--accent);
+        font-weight: 650;
+    }
+
+    .notice-hide {
+        flex: none;
+        margin-inline-start: auto;
+    }
+
+    .notice-hide svg.icon {
+        color: var(--muted);
+    }
 }

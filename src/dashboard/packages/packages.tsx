@@ -38,7 +38,7 @@ import { ChangedPages } from "./changes.tsx";
 import { EngineCard, engineName, type EngineUpdated, focusEngine, keepUpdate, keptUpdate, NeedsEngine } from "./engine.tsx";
 import { AdventureRow, ExtensionRow, LanguageRow, languageTitle, MissingRow, SystemRow } from "./installed.tsx";
 import { libraryReading, LibraryTab } from "./library.tsx";
-import { addedText, doneText, failure, uninstallText } from "./outcomes.tsx";
+import { addedText, doneText, engineFailure, failure, uninstallText } from "./outcomes.tsx";
 import { CardSaid, type RowState, type Said, SaidNote, WorkNote } from "./rows.tsx";
 import { ShareCampaign } from "./share.tsx";
 
@@ -252,13 +252,7 @@ export function PackagesPage({ version, tab, item, layers = [], sceneOpen = fals
             keepUpdate(done);
             setUpdated({ ...done, now: true });
         } else {
-            setSaid({
-                at: "engine",
-                problem: true,
-                ...(outcome.code === "busy"
-                    ? { text: t("One package at a time: wait for the one under way, then try again.") }
-                    : { text: t("RPG Engine was not updated."), why: outcome.error }),
-            });
+            setSaid({ at: "engine", problem: true, ...engineFailure(outcome) });
             askEngine();
         }
 

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
@@ -123,7 +123,7 @@ Tu as déjà un personnage, d'un autre jeu ou d'une autre campagne ? Choisis **J
 
 > Je demande à l'aubergiste qui d'autre est passé ce soir.
 
-Pour parler hors de l'histoire, écris entre crochets : *[Comment fonctionne la lutte ?]* Le MJ répond lui aussi entre crochets.
+Pour parler hors de l'histoire, écris `[OOC: …]` (hors personnage) : *[OOC: Comment fonctionne la lutte ?]* Le MJ répond de la même façon.
 
 Tu dis ce que tu tentes ; le MJ dit ce qui arrive. Le MJ ne décide jamais à la place de ton personnage, et ne parle jamais du moteur de jeu. Tu peux lui demander comment utiliser le tableau de bord.
 
@@ -143,7 +143,7 @@ Le MJ demande un jet seulement quand l'issue est incertaine et compte, et dit d'
 
 ### 3.3 Scènes et combats
 
-L'histoire se déroule en **scènes** : un combat, une conversation, une exploration, un voyage, un repos. À la fin de chaque scène, le jeu se sauvegarde tout seul, la scène entre dans ton journal, et le MJ l'écrit comme un chapitre du livre de ton histoire.
+L'histoire se déroule en **scènes** : un combat, une conversation, une exploration, un voyage, un repos. À la fin de chaque scène, le jeu se sauvegarde tout seul et la scène entre dans ton journal. Quand l'histoire prend un tournant, le MJ écrit les scènes depuis le dernier chapitre sous la forme d'un nouveau chapitre du livre de ton histoire.
 
 Dans un combat, le MJ raconte chaque tour qui n'est pas le tien, et s'arrête au moment où tu peux décider. La **Scène** affiche en haut à qui est le tour et qui vient ensuite, ainsi que la carte de ton personnage à côté de la carte du lieu. L'ordre des tours, les points de vie de ton groupe et l'état des ennemis, décrit avec des mots, restent à côté de la page. Si ton personnage tombe, les jets de sauvegarde contre la mort s'affichent en grand sur la page.
 
@@ -163,7 +163,7 @@ Les méchants ont des plans avec des échéances. Chaque nouveau jour, le MJ fai
 
 ### 3.6 Quêtes, journal et notes
 
-Une tâche que ton personnage accepte devient une quête dans le **Journal**, avec ses objectifs, son échéance et ce qu'elle mesure ; mets-la en favori pour la garder en vue en haut de la **Scène**. Sous **Histoire**, le Journal raconte ton histoire comme un livre : le MJ écrit un chapitre en prose pour chaque scène une fois terminée, dans le style que tu as choisi ; lis-le chapitre par chapitre, le dernier étant marqué par son signet, et télécharge-le en Markdown ou en page web à imprimer ou à partager. Dans une partie commencée avant, demande au MJ d'écrire l'histoire jusqu'ici. La **Chronologie** liste les scènes avec ce qui s'est passé dans chacune. Le Journal garde aussi tes **Notes** : elles sont privées, sauf si tu utilises **Partager** sur l'une d'elles ; le MJ l'entend alors comme ce que tu penses, jamais comme un fait. Sous **Compagnons**, tu lis les journaux de tes compagnons : de temps en temps, à la fin d'une journée ou d'une quête, ils écrivent quelques lignes sur ce qu'ils pensent et ressentent.
+Une tâche que ton personnage accepte devient une quête dans le **Journal**, avec ses objectifs, son échéance et ce qu'elle mesure ; mets-la en favori pour la garder en vue en haut de la **Scène**. Sous **Histoire**, le Journal raconte ton histoire comme un livre : le MJ écrit un chapitre en prose chaque fois que l'histoire prend un tournant, en racontant les scènes depuis le dernier chapitre, dans le style que tu as choisi ; lis-le chapitre par chapitre, le dernier étant marqué par son signet, et télécharge-le en Markdown ou en page web à imprimer ou à partager. Dans une partie commencée avant, demande au MJ d'écrire l'histoire jusqu'ici. La **Chronologie** liste les scènes, numérotées, avec ce qui s'est passé dans chacune. Le Journal garde aussi tes **Notes** : elles sont privées, sauf si tu utilises **Partager** sur l'une d'elles ; le MJ l'entend alors comme ce que tu penses, jamais comme un fait. Sous **Compagnons**, tu lis les journaux de tes compagnons : de temps en temps, à la fin d'une journée ou d'une quête, ils écrivent quelques lignes sur ce qu'ils pensent et ressentent.
 
 ### 3.7 Histoire et image de ton personnage
 
@@ -193,7 +193,7 @@ Le robot en haut du tableau de bord, c'est le MJ : son visage suit le ton de l'h
 
 ### 3.11 Images
 
-RPG Engine peut faire créer des images des lieux que tu atteins, des quêtes que tu acceptes et des personnes que tu rencontres, selon le réglage **images**, ainsi que le portrait de ton personnage quand tu le demandes. Il utilise ton propre Codex ou Claude Code, avec ta connexion, sur ton abonnement et ses limites : **Codex** les peint, sinon **Claude Code** les dessine. **Paramètres** indique si cet ordinateur peut les créer, et comment le configurer si ce n'est pas le cas. Tu peux toujours donner au MJ une image à toi.
+RPG Engine peut faire créer des images des lieux que tu atteins, des quêtes que tu acceptes et des personnes que tu rencontres, selon le réglage **Images**, ainsi que le portrait de ton personnage quand tu le demandes. Il utilise ton propre Codex ou Claude Code, avec ta connexion, sur ton abonnement et ses limites : **Codex** les peint, sinon **Claude Code** les dessine. **Paramètres** indique si cet ordinateur peut les créer, et comment le configurer si ce n'est pas le cas. Tu peux toujours donner une image à toi, pour ton personnage ou pour n'importe quelle page que tu vois : passe le pointeur sur l'une de ses images et un petit bouton image apparaît dans son coin (au clavier aussi, et toujours sur téléphone) ; dans **Monde**, la page que tu ouvres a aussi **Changer l'image…**, ou **Ajouter une image…** tant qu'elle n'en a pas. La tienne prend la place de celle qui existe. Ou dépose le fichier dans le dossier **inbox** de la campagne et dis au MJ pour quelle page il est.
 
 ### 3.12 Sécurité : lignes, voiles et stop
 
@@ -294,7 +294,7 @@ Toutes les commandes que le MJ utilise peuvent aussi être lancées dans le doss
 
 ### Questions
 
-**Dois-je connaître les règles ?** Non. Choisis le mentor tutoriel, et pose tes questions entre crochets quand tu veux.
+**Dois-je connaître les règles ?** Non. Choisis le mentor tutoriel, et pose tes questions avec `[OOC: …]` quand tu veux.
 
 **Le MJ peut-il tricher ?** Il ne peut pas changer un jet fait par RPG Engine, sauf en difficulté histoire, ni les faits déjà établis.
 
@@ -308,7 +308,7 @@ Toutes les commandes que le MJ utilise peuvent aussi être lancées dans le doss
 
 ### Problèmes
 
-**Le tableau de bord ne s'ouvre pas.** Demande au MJ : `[Quel est le lien du tableau de bord ?]`. Il ne fonctionne que tant qu'un chat est ouvert dans cette campagne, après la première réponse du MJ.
+**Le tableau de bord ne s'ouvre pas.** Demande au MJ : `[OOC: Quel est le lien du tableau de bord ?]`. Il ne fonctionne que tant qu'un chat est ouvert dans cette campagne, après la première réponse du MJ.
 
 **Le MJ ne semble pas connaître le jeu.** Ton agent n'a pas chargé RPG Engine. Vérifie que tu l'as lancé dans le dossier de la campagne et que tu lui as fait confiance. Dans Claude Code, écris `/mcp` et reconnecte `rpg`. Dans Codex, `codex mcp list` dans le dossier de la campagne doit afficher `rpg`. Si `rpg --version` est introuvable, réinstalle RPG Engine ([2.2](#22-install)).
 

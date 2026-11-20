@@ -320,7 +320,7 @@ describe("the edges of the command, case by case", () => {
         await ok("effect", "add", "Lena", "Schivata", "--for", "1 round");
         expect((await rpg("validate")).output).toBe("No problems.");
         expect(await ok("scene", "close", "--summary", "Fatto.")).toBe(
-            "Scene closed after 1 round: Scontro. Copies gone: Annegato 1: grit 22/22; Annegato 2: grit 22/22. Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.\nEnded with the scene: Schivata on Lena.\nStill there, with no end: Maledizione on Ennio. End those the scene ended, with effect end.\nChapter 1 of the book waits for its prose: write it with book now, while the scene is fresh.\nSaved: 1 - day 2, 18.00 - Scontro.",
+            "Scene closed after 1 round: Scontro. Copies gone: Annegato 1: grit 22/22; Annegato 2: grit 22/22. Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.\nEnded with the scene: Schivata on Lena.\nStill there, with no end: Maledizione on Ennio. End those the scene ended, with effect end.\nThe book: scene 1 waits for the next chapter; if the story turned here (a goal reached or lost, a place left, a night passed), write it now with book, while the scenes are fresh; else at a later scene's end.\nSaved: 1 - day 2, 18.00 - Scontro.",
         );
         expect(page("characters/Ennio.md")).toContain("Maledizione");
     });

@@ -145,6 +145,7 @@ function Items({ items, field, fields }: { items: string[]; field: string; field
 export function Effects({ effects, most }: { effects: Member["effects"]; most?: number; })
 {
     const shown = most === undefined ? effects : effects.slice(0, most);
+    const others = effects.slice(shown.length).map((effect) => effectLabel(effect)).join(", ");
     // Where few fit (`most`), one with a drawing is its icon alone, its words in its tooltip and for a screen reader (D-516); else its icon before its words.
     return effects.length === 0 ? null : (
         <span class="effects">
@@ -165,8 +166,8 @@ export function Effects({ effects, most }: { effects: Member["effects"]; most?: 
                         </span>
                     )
             )}
-            {/* How many more, +1 in a page written from right to left too, the others' words in its tooltip. */}
-            {effects.length > shown.length && <span class="effect more" dir="ltr" data-tip={effects.slice(shown.length).map((effect) => effectLabel(effect)).join(", ")}>{`+${numberText(effects.length - shown.length)}`}</span>}
+            {/* How many more, +1 in a page written from right to left too, the others' words in its tooltip and its name. */}
+            {effects.length > shown.length && <span class="effect more" dir="ltr" role="img" aria-label={others} data-tip={others}>{`+${numberText(effects.length - shown.length)}`}</span>}
         </span>
     );
 }

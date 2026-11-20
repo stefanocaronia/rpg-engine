@@ -28,6 +28,7 @@ import { getVersion, isNewerVersion } from "../../core/version.ts";
 import { extensionWords, findExtension } from "../../extensions/index.ts";
 import { samePath } from "../../library/index.ts";
 import { readableSystems } from "../../systems/index.ts";
+import { askLatest, knownLatest } from "./engine.ts";
 import { decoded, mostSaid, readBody, readBytes, securityHeaders, send, sendJson } from "./files.ts";
 import type { Served } from "./index.ts";
 
@@ -418,8 +419,9 @@ export async function changeLibrary(request: IncomingMessage, response: ServerRe
 }
 
 /**
- * rpg-engine itself on the Packages page (D-515 (3)): its version, npm's latest and whether it is newer, and how it is installed, read at each look; its update,
- * from the page alone, globally with npm as it was installed, a development link or another install told and never touched; then how the chat takes it.
+ * rpg-engine itself on the Packages page (D-515 (3)): its version, npm's latest and whether it is newer, asked at most once a day (T-219), and how it is
+ * installed; its update, from the page alone with the player's yes in a window of their computer, globally with npm as it was installed, a development link or
+ * another install told and never touched; then how the chat takes it.
  */
 export async function engineNow(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
@@ -436,7 +438,7 @@ export async function engineNow(request: IncomingMessage, response: ServerRespon
     const onDisk = updater.onDisk();
 
     if (request.method === "GET") {
-        const [latest, installed] = await Promise.all([updater.latest(), updater.installed()]);
+        const [latest, installed] = await Promise.all([knownLatest(served, updater), updater.installed()]);
         sendJson(response, 200, {
             version,
             ...(onDisk === version ? {} : { installed: onDisk }),
@@ -455,8 +457,8 @@ export async function engineNow(request: IncomingMessage, response: ServerRespon
         return;
     }
 
-    await packageWork(response, served, "rpg-engine", "engine", async () => {
-        const latest = await updater.latest();
+    await packageWork(response, served, "rpg-engine", "engine", async (context) => {
+        const latest = await askLatest(served, updater);
 
         if ("failed" in latest) {
             throw new Refusal(`${latest.failed}: update it once this computer is online. Nothing changed.`, "engine-offline", { why: latest.failed });
@@ -482,6 +484,7 @@ export async function engineNow(request: IncomingMessage, response: ServerRespon
                 });
         }
 
+        await engineYes(context, onDisk, latest.version);
         const why = await updater.update(latest.version);
 
         if (why !== undefined) {
@@ -497,6 +500,29 @@ export async function engineNow(request: IncomingMessage, response: ServerRespon
             answer: { version: latest.version, restart },
         };
     });
+}
+
+/**
+ * The player's own yes to updating rpg-engine, in a window of their computer, never the page's click alone (D-477): a no holds for the session (D-510); where
+ * no window opens, the command that updates it from a terminal.
+ */
+async function engineYes(context: Context, from: string, to: string): Promise<void>
+{
+    if (context.declined?.has("rpg-engine") === true) {
+        throw new Refusal("The player said no to updating rpg-engine in this session: it is not asked again until the game's server starts again. Nothing changed.", "declined");
+    }
+
+    const question = `Update RPG Engine from ${from} to ${to}? npm installs it on this computer, for every campaign. The chat you play in keeps ${from} until you start a new one.`;
+    const answer = context.confirm === undefined ? "none" : await context.confirm.ask("Update RPG Engine", question, context.signal, { yes: "Update", no: "Not now" });
+
+    if (answer === "no") {
+        context.declined?.add("rpg-engine");
+        throw new Refusal("The player did not want to update rpg-engine. Nothing changed.", "declined");
+    }
+
+    if (answer === "none") {
+        throw new Refusal("No window for the player's yes opens on this computer: update it in a terminal with npm install -g rpg-engine. Nothing changed.", "no-window");
+    }
 }
 
 /** What the page may add (D-485, D-486), from npm and GitHub, read again at most every ten minutes, or when the page asks it fresh. */

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: de complete handleiding
 
 **RPG Engine** laat je een tafelrollenspel spelen met een **AI als spelleider**. Je praat met de spelleider in een **chat**; RPG Engine werkt op de achtergrond: het **onthoudt de wereld**, **gooit de dobbelstenen** en **houdt de cijfers bij**. Naast de chat houd je een pagina open in je browser, het **dashboard**, met je karakterblad, de dobbelstenen, de kaarten en je dagboek.
@@ -123,7 +123,7 @@ Schrijf wat jouw personage doet of zegt, in je eigen woorden:
 
 > Ik vraag de herbergier wie er vanavond nog meer langskwam.
 
-Wil je buiten het verhaal om iets zeggen? Schrijf het dan tussen vierkante haken: *[Hoe werkt grijpen?]* De spelleider antwoordt ook tussen haken.
+Buiten het verhaal schrijf je `[OOC: …]` (out of character): *[OOC: Hoe werkt grijpen?]* De spelleider antwoordt op dezelfde manier.
 
 Jij zegt wat je probeert; de spelleider zegt wat er gebeurt. De spelleider beslist nooit voor jouw personage en praat nooit over de engine. Je kunt de spelleider wel vragen hoe je het dashboard gebruikt.
 
@@ -143,7 +143,7 @@ De spelleider vraagt alleen om een worp als de uitkomst onzeker is en ertoe doet
 
 ### 3.3 Scènes en gevechten
 
-Het verhaal verloopt in **scènes**: een gevecht, een gesprek, verkennen, reizen of rusten. Aan het einde van elke scène slaat het spel zichzelf op, komt de scène in je dagboek en schrijft de spelleider haar als hoofdstuk van het boek van je verhaal.
+Het verhaal verloopt in **scènes**: een gevecht, een gesprek, verkennen, reizen of rusten. Aan het einde van elke scène slaat het spel zichzelf op en komt de scène in je dagboek. Wanneer het verhaal een keerpunt bereikt, schrijft de spelleider de scènes sinds het vorige hoofdstuk op als nieuw hoofdstuk in het boek van je verhaal.
 
 In een gevecht vertelt de spelleider elke beurt die niet van jou is, en stopt waar jij kunt beslissen. De **Scène** toont bovenaan wie er aan de beurt is en wie daarna komt, en de kaart van jouw personage naast de kaart van de plek. De volgorde van de beurten, de hitpoints van je groep en hoe gewond de vijanden eruitzien, in woorden, blijven naast de pagina staan. Valt jouw personage neer, dan verschijnen de tiro salvezza tegen de dood groot op de pagina.
 
@@ -163,7 +163,7 @@ Schurken hebben plannen met deadlines. Elke nieuwe dag laat de spelleider de dre
 
 ### 3.6 Missies, dagboek en notities
 
-Een taak die jouw personage op zich neemt, wordt een missie in het **Dagboek**, met de doelen, de deadline en wat de missie meet. Geef er een ster aan om de missie bovenaan bij **Scène** in beeld te houden. Onder **Verhaal** vertelt het Dagboek je verhaal als een boek: de spelleider schrijft voor elke scène een hoofdstuk in proza zodra de scène voorbij is, in de stijl die je koos. Lees het hoofdstuk voor hoofdstuk, het laatste gemarkeerd met een bladwijzer, en download het als Markdown of als webpagina om te printen of door te geven. Is je spel eerder begonnen? Vraag de spelleider dan om het verhaal tot nu toe te schrijven. **Tijdlijn** toont de scènes met wat er in elke scène gebeurde. Het Dagboek bewaart ook je **Notities**: die zijn privé, tenzij je er een **Deelt**. De spelleider hoort die dan als wat jij denkt, nooit als een feit. Onder **Metgezellen** lees je de dagboeken van je metgezellen. Af en toe, aan het einde van een dag of een missie, schrijven ze een paar regels over wat ze denken en voelen.
+Een taak die jouw personage op zich neemt, wordt een missie in het **Dagboek**, met de doelen, de deadline en wat de missie meet. Geef de missie een ster om haar bovenaan bij Scène in beeld te houden. Onder **Verhaal** vertelt het Dagboek je verhaal als een boek: telkens als het verhaal een keerpunt bereikt, schrijft de spelleider een hoofdstuk in proza over de scènes sinds het vorige hoofdstuk, in de stijl die je koos. Lees het hoofdstuk voor hoofdstuk, waarbij het laatste is gemarkeerd met een bladwijzer, en download het als Markdown of als webpagina om te printen of door te geven. Is je spel eerder begonnen? Vraag de spelleider dan om het verhaal tot nu toe te schrijven. **Tijdlijn** toont de scènes, genummerd, met wat er in elke scène gebeurde. Het Dagboek bewaart ook je **Notities**: die zijn privé, tenzij je een notitie via **Delen** met de spelleider deelt. De spelleider hoort die dan als wat jij denkt, nooit als een feit. Onder **Metgezellen** lees je de dagboeken van je metgezellen. Af en toe, aan het einde van een dag of een missie, schrijven ze een paar regels over wat ze denken en voelen.
 
 ### 3.7 Het verhaal en het portret van je personage
 
@@ -193,7 +193,7 @@ De robot bovenaan het dashboard is de spelleider. Zijn gezicht volgt de toon van
 
 ### 3.11 Plaatjes
 
-RPG Engine kan afbeeldingen laten maken van de plaatsen die je bereikt, de missies die je aanneemt en de mensen die je ontmoet, zoals de instelling **Afbeeldingen** bepaalt, en het portret van je personage als je erom vraagt. Het gebruikt je eigen Codex of Claude Code, met jouw login, op jouw abonnement en binnen de limieten daarvan: **Codex** schildert ze, anders tekent **Claude Code** ze. **Instellingen** laat zien of deze computer ze kan maken, en zo niet, hoe je dat instelt. Je kunt de spelleider altijd een eigen afbeelding geven.
+RPG Engine kan afbeeldingen laten maken van de plaatsen die je bereikt, de missies die je aanneemt en de mensen die je ontmoet, zoals de instelling **Afbeeldingen** bepaalt, en het portret van je personage als je erom vraagt. Het gebruikt je eigen Codex of Claude Code, met jouw login, op jouw abonnement en binnen de limieten daarvan: **Codex** schildert ze, anders tekent **Claude Code** ze. **Instellingen** laat zien of deze computer ze kan maken, en zo niet, hoe je dat instelt. Je kunt altijd een eigen afbeelding geven, aan je personage of aan elke pagina die je ziet: beweeg de muisaanwijzer over een van de afbeeldingen en in de hoek verschijnt een kleine afbeeldingsknop (ook met het toetsenbord, en op een telefoon altijd). In **Wereld** heeft de pagina die je opent ook **Afbeelding wijzigen…**, of **Afbeelding toevoegen…** zolang er nog geen afbeelding is. Jouw afbeelding neemt de plaats in van de afbeelding die er stond. Of zet het bestand in de map **inbox** van de campagne en vertel de spelleider voor welke pagina het is.
 
 ### 3.12 Veiligheid: grenzen, sluiers en stop
 
@@ -294,7 +294,7 @@ Elk commando dat de spelleider gebruikt, kun je ook in de campagnemap uitvoeren:
 
 ### Vragen
 
-**Moet ik de regels kennen?** Nee. Kies de mentor tutorial en vraag tussen haken wanneer je maar wilt.
+**Moet ik de regels kennen?** Nee. Kies de mentor tutorial en vraag in `[OOC: …]` wanneer je maar wilt.
 
 **Kan de spelleider valsspelen?** De spelleider kan een worp die RPG Engine deed niet veranderen, behalve bij moeilijkheid verhaal, en ook geen feiten die al vastliggen.
 
@@ -308,7 +308,7 @@ Elk commando dat de spelleider gebruikt, kun je ook in de campagnemap uitvoeren:
 
 ### Problemen
 
-**Het dashboard gaat niet open.** Vraag het de spelleider: `[Wat is de link naar het dashboard?]`. Het werkt alleen zolang er een chat open is in die campagne, na het eerste antwoord van de spelleider.
+**Het dashboard gaat niet open.** Vraag het de spelleider: `[OOC: Wat is de link naar het dashboard?]`. Het werkt alleen zolang er een chat open is in die campagne, na het eerste antwoord van de spelleider.
 
 **De spelleider lijkt het spel niet te kennen.** Je agent heeft RPG Engine niet geladen. Controleer of je hem in de campagnemap hebt gestart en de map hebt vertrouwd. Schrijf in Claude Code `/mcp` en verbind `rpg` opnieuw. In Codex moet `codex mcp list` in de campagnemap `rpg` tonen. Wordt `rpg --version` niet gevonden, installeer RPG Engine dan opnieuw ([2.2](#22-install)).
 

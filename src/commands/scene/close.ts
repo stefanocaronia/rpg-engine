@@ -9,7 +9,7 @@ import { findPage, isPartyMember, linksIn, type Page, pagesWithName, parsePageRe
 import { type Scene, sceneTypes } from "../../scene/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
 import { formatGameDate } from "../../time/index.ts";
-import { chapterCraft, sceneChapters } from "../shared/campaign/book.ts";
+import { chapterCraft, scenesPerChapter, scenesText, untoldScenes } from "../shared/campaign/book.ts";
 import { firstInChat } from "../shared/campaign/parts.ts";
 import { isTickedOpenQuest, tickedQuestNote } from "../shared/campaign/quests.ts";
 import { isPlayerDead, makeSave, saveText } from "../shared/campaign/saves.ts";
@@ -92,11 +92,11 @@ export function close(root: string, world: World, summary: string, context: Cont
     };
 }
 
-/** The chapter of the book the scene just closed is, for the master to write, with how to write it once in a chat (T-227). */
-function bookChapter(root: string, context: Context): { chapter?: number; craft?: string; }
+/** The closed scenes that wait for the book's next chapter, for the master to write it where the story turns, with how to write it once in a chat (T-227). */
+function bookChapter(root: string, context: Context): { untold?: number[]; craft?: string; }
 {
-    const chapter = sceneChapters(root).at(-1)?.number;
-    return chapter === undefined ? {} : { chapter, ...(firstInChat(context, "book") ? { craft: chapterCraft } : {}) };
+    const untold = untoldScenes(root).map((scene) => scene.number);
+    return untold.length === 0 ? {} : { untold, ...(firstInChat(context, "book") ? { craft: chapterCraft } : {}) };
 }
 
 /**
@@ -213,7 +213,7 @@ export function closedText(
         fallen?: string;
         afterPeak?: string;
         quests: string[];
-        chapter?: number;
+        untold?: number[];
         craft?: string;
     } & Saved,
 ): string
@@ -222,7 +222,7 @@ export function closedText(
     const advance = "Advance any time it took that you have not advanced yet; write on their pages what it changed for good, such as a fire put out or a door broken.";
     const endless = result.endless.length === 0 ? "" : `\nStill there, with no end: ${result.endless.join(" · ")}. End those the scene ended, with effect end.`;
     const ended = `${result.ended.length === 0 ? "" : `\nEnded with the scene: ${result.ended.join(" · ")}.`}${endless}`;
-    const quests = `${result.quests.map((line) => `\n${line}`).join("")}${chapterLine(result.chapter, result.craft)}`;
+    const quests = `${result.quests.map((line) => `\n${line}`).join("")}${chapterLine(result.untold, result.craft)}`;
 
     if (result.unreadable !== undefined) {
         return `The open scene could not be read (${result.unreadable}): closed it, without its copies. ${advance}${ended}${quests}${saved}`;
@@ -239,8 +239,16 @@ export function closedText(
     return `Scene closed${rounds}: ${result.title}.${gone} ${advance}${ended}${left}${fallen}${rewards}${quests}${peak}${saved}`;
 }
 
-/** The book's chapter the scene leaves to write (T-227). */
-function chapterLine(chapter: number | undefined, craft: string | undefined): string
+/** The scenes the book's next chapter waits for (T-227): written now where the story turns, and once they are many. */
+function chapterLine(untold: number[] | undefined, craft: string | undefined): string
 {
-    return chapter === undefined ? "" : `\nChapter ${chapter} of the book waits for its prose: write it with book now, while the scene is fresh.${craft === undefined ? "" : ` ${craft}`}`;
+    if (untold === undefined) {
+        return "";
+    }
+
+    const scenes = scenesText(untold.map((number) => ({ number })));
+    const when = untold.length >= scenesPerChapter
+        ? "write it now with book."
+        : "if the story turned here (a goal reached or lost, a place left, a night passed), write it now with book, while the scenes are fresh; else at a later scene's end.";
+    return `\nThe book: ${scenes} ${untold.length === 1 ? "waits" : "wait"} for the next chapter; ${when}${craft === undefined ? "" : ` ${craft}`}`;
 }

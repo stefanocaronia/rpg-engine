@@ -21,8 +21,10 @@ import { helperCommand, queueInCodex } from "../../helpers/index.ts";
 import { loadSystemCode } from "../../systems/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
 import { choicesNews, choicesRequest } from "./choices.ts";
+import type { EngineAsked } from "./engine.ts";
 import { builtPage, packagePageFile, pageFile, pageHtml, pageModulesOf, pagePolicy, pageWords, securityHeaders, send, sendFile, sendImage, sendJson, sendPacked, sendThemeFile, themeAddress, themeNow, vendorModule } from "./files.ts";
 import { act, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
+import { givePicture } from "./pictures.ts";
 import { answerAsked, type Asked, closeCard, listenForChanges, pagePlayer, pageSeen, rollNamesOf, type ShownCard, spendShown } from "./player.ts";
 import { campaignPorts } from "./ports.ts";
 import {
@@ -195,6 +197,8 @@ export interface Served
     declined: Set<string>;
     /** What the page may add, as npm and GitHub said it last, and when (D-486). */
     catalog?: { at: number; catalog: Catalog; };
+    /** What npm said of its latest rpg-engine, asked at most once a day (T-219). */
+    engineLatest?: EngineAsked;
     /** The player's sentences said on the page, waiting for the master or heard lately (D-495). */
     acts: Acts;
     /** The doorbell of Claude Code's hook, waiting for a sentence; and whether one ever came, so that this chat has one (D-495). */
@@ -403,6 +407,12 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
     // An adventure the player adds from a .zip of their computer, and the campaign exported as one (D-483): files, never code.
     if (request.method === "POST" && path === "/api/add" && origin !== undefined) {
         await addPackage(request, response, served);
+        return;
+    }
+
+    // A picture of the player's own for a page (D-572 (3)).
+    if (request.method === "POST" && path === "/api/picture" && origin !== undefined) {
+        await givePicture(request, response, served, url.searchParams.get("page") ?? "");
         return;
     }
 

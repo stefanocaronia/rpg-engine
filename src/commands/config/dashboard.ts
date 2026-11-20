@@ -28,9 +28,9 @@ export interface PlayerSetting
     game?: string;
     /**
      * What the player should know of it on this computer, as whether pictures can be made here; fix when it says how to have what is missing; the values its
-     * {names} take, as a maker's own words; and a line after it.
+     * {names} take, as a maker's own words; and the lines after it.
      */
-    note?: { text: string; fix?: true; values?: Record<string, string>; also?: string; };
+    note?: { text: string; fix?: true; values?: Record<string, string>; also?: string[]; };
     /** A setting of the player's own words, as the author the master writes like, the longest its text may be (D-395); for a list, each item's (D-563). */
     most?: number;
     /** The items of a custom difficulty or rigor, each with its level, one of the choices (T-132). */
@@ -105,7 +105,7 @@ export function setupSettingNamed(root: string, name: string): PlayerSetting | u
 /** The player's settings as the dashboard shows them (D-341): with what this computer lacks, as pictures without Codex, asked again. */
 export function shownPlayerSettings(root: string, context: Context): PlayerSetting[]
 {
-    return playerSettings(root, context).map((setting) => (setting.name === "pictures" ? { ...setting, ...picturesReadyNote(context) } : setting));
+    return playerSettings(root, context).map((setting) => (setting.name === "pictures" ? { ...setting, ...withOwnPicture(picturesReadyNote(context)) } : setting));
 }
 
 /** The player's settings with their values, then those the game system adds (D-341). */
@@ -231,8 +231,11 @@ const toolAsked = "The master asks you in the chat which tool to use.";
 const refusedNote = "{maker} refused the last picture: {why}. {by} makes them instead.";
 const madeMeanwhile = "{by} makes them meanwhile.";
 
+// Whoever makes them, the player may give a page a picture of their own (D-572 (3)).
+const ownPicture = "You can also give a page you see a picture of your own: with its picture button, or dropped in the campaign's inbox folder for the master.";
+
 /** Every note the pictures' setting may have, which the dashboard writes in its language (D-394). */
-export const picturesNotes = [...Object.values(madeBy), madeWithTool, toolAsked, refusedNote, madeMeanwhile, ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];
+export const picturesNotes = [...Object.values(madeBy), madeWithTool, toolAsked, refusedNote, madeMeanwhile, ownPicture, ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];
 
 /**
  * Whether this computer makes pictures, and with whose plan, in the player's words (D-308, D-390); why not and how to have them; where the maker the player
@@ -255,7 +258,7 @@ function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
     if (instead !== undefined) {
         return instead.refused === true
             ? { note: { text: refusedNote, values: { maker: instead.maker, why: instead.why.replace(/\.$/, ""), by: instead.by } } }
-            : { note: { text: notReadyText(instead), fix: true, values: { by: instead.by }, also: madeMeanwhile } };
+            : { note: { text: notReadyText(instead), fix: true, values: { by: instead.by }, also: [madeMeanwhile] } };
     }
 
     if (ready.tool !== undefined) {
@@ -267,6 +270,12 @@ function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
     }
 
     return { note: { text: madeBy[ready.maker === "Claude" || ready.maker === "Antigravity" ? ready.maker : "Codex"] } };
+}
+
+/** The pictures' note with the line that the player may give a picture of their own after it. */
+function withOwnPicture(note: Pick<PlayerSetting, "note">): Pick<PlayerSetting, "note">
+{
+    return note.note === undefined ? note : { note: { ...note.note, also: [...note.note.also ?? [], ownPicture] } };
 }
 
 /** How the player has pictures, or else why there are none. */

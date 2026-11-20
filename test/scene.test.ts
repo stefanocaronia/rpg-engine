@@ -109,7 +109,7 @@ describe("rpg scene", () => {
                 + "\nrenown: Annegato 2 counts nothing, with no renown-value on Annegato: write it, such as write Annegato, set renown-value=…, and share it. Leave out what the party summoned; "
                 + "count those overcome another way and what the story rewards, as you judge, and tell the player only what each gained."
                 // The scene is a chapter of the book, for the master to write (T-227).
-                + "\nChapter 1 of the book waits for its prose: write it with book now, while the scene is fresh."
+                + "\nThe book: scene 1 waits for the next chapter; if the story turned here (a goal reached or lost, a place left, a night passed), write it now with book, while the scenes are fresh; else at a later scene's end."
                 + "\nSaved: 1 - Ossario.",
         );
         expect(stateFile()).not.toContain("scene:");

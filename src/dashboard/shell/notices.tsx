@@ -15,6 +15,10 @@ export interface Notice
     text: string;
     key?: string;
     count?: { done: number; of: number; };
+    /** Where to do something about it, as a link after its words. */
+    link?: { href: string; text: string; };
+    /** Hides it, with what its cross says. */
+    hide?: { label: string; onHide(): void; };
 }
 
 export function Notices({ notices }: { notices: Notice[]; })
@@ -26,12 +30,20 @@ export function Notices({ notices }: { notices: Notice[]; })
                 return (
                     <p key={notice.key ?? notice.text} class={`notice ${notice.kind}`}>
                         <Icon name={notice.kind === "info" ? "info" : "alert"} />
-                        <span role={notice.kind === "problem" ? "alert" : "status"}>{notice.text}</span>
+                        <span class="notice-words">
+                            <span role={notice.kind === "problem" ? "alert" : "status"}>{notice.text}</span>
+                            {notice.link !== undefined && <a class="notice-link" href={notice.link.href}>{notice.link.text}</a>}
+                        </span>
                         {notice.count !== undefined && (
                             <>
                                 <span class="count" dir="ltr">{`${notice.count.done}/${notice.count.of}`}</span>
                                 <span class="bar" aria-hidden="true" style={{ "--done": `${Math.round((100 * notice.count.done) / Math.max(notice.count.of, 1))}%` }} />
                             </>
+                        )}
+                        {notice.hide !== undefined && (
+                            <button type="button" class="icon-button notice-hide tip-left" aria-label={notice.hide.label} data-tip={notice.hide.label} onClick={notice.hide.onHide}>
+                                <Icon name="close" />
+                            </button>
                         )}
                     </p>
                 );

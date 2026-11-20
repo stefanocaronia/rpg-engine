@@ -224,13 +224,14 @@ Read-only: yes. Positional parameters: `text`.
 
 ### book
 
-The campaign's story told as a book, which the player reads in the dashboard's Journal: a novel's chapter, never a summary, for each closed scene, by its number.
+The campaign's story told as a book, which the player reads in the dashboard's Journal: chapters of a novel, never summaries, each telling the scenes closed since the last one, ended where the story turns.
 
 Read-only: no. Positional parameters: `chapter`.
 
-- `chapter` (`integer`, optional): the chapter's number, its scene's as the journal counts them
-- `title` (`string`, optional): the chapter's title, its scene's if left out
-- `text` (`string`, optional): the chapter's prose, in markdown; empty to take it out
+- `chapter` (`integer`, optional): the number of a chapter written, to read, write again or retitle; the next chapter if left out
+- `title` (`string`, optional): the chapter's title, its first scene's if left out
+- `text` (`string`, optional): the chapter's prose, in markdown; empty to take the last chapter out
+- `through` (`integer`, optional): for the next chapter, the number of its last scene, when it tells only the first of the scenes still untold
 
 ### rules
 

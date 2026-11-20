@@ -176,6 +176,8 @@ export function WorkNote({ work, whose }: { work: PackageWork | undefined; whose
                     {named}
                     <strong>{t("Answer in the window of your computer.")}</strong> {work.action === "library"
                         ? t("It asks whether RPG Engine may read the documents of that folder. Can't see it? It is behind the browser.")
+                        : work.action === "engine"
+                        ? t("It asks whether to update RPG Engine on this computer. Can't see it? It is behind the browser.")
                         : t("It asks whether code that RPG Engine did not publish may run here. Can't see it? It is behind the browser.")}
                 </span>
             </div>

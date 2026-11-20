@@ -11,6 +11,7 @@ import { ChangedLine } from "../parts/changed.tsx";
 import { Icon } from "../parts/icons.tsx";
 import { placeKindLabel, placeKinds } from "../parts/map-symbols.ts";
 import { knowersOf, type LinkTo, Markdown, plainLine } from "../parts/markdown.tsx";
+import { PictureButton, PictureSpot } from "../parts/picture.tsx";
 import { Token } from "../sheet/party.tsx";
 import { arrowStep, capitalized, foldedText, t } from "../text.ts";
 import { documentLook, foundLore, groupedLore, knownTo, type LoreGroup, loreGroupOf } from "./known.ts";
@@ -87,7 +88,7 @@ export function LoreTab({ world, version, open, onMap, players = [], kinds = new
                         </h3>
                         <ul class="browse-rows">
                             {part.entries.map((one, index) => (
-                                <li key={one.name}>
+                                <li key={one.name} class="picture-host">
                                     <a
                                         class="browse-row"
                                         href={sectionAddress("world", "lore", one.name)}
@@ -104,6 +105,7 @@ export function LoreTab({ world, version, open, onMap, players = [], kinds = new
                                             </span>
                                         </span>
                                     </a>
+                                    <PictureButton page={one.name} has={one.picture !== undefined} icon row />
                                 </li>
                             ))}
                         </ul>
@@ -299,9 +301,18 @@ function LoreReader({ entry, version, link, onMap, focus, several, kinds }: {
     const banner = entry.picture !== undefined && !person;
     return (
         <article class="browse-reader" aria-labelledby="reader-title">
-            {banner && <img class="reader-banner" src={pictureAddress(entry.picture as NonNullable<KnownEntry["picture"]>)} alt="" />}
+            {banner && (
+                <div class="picture-host">
+                    <img class="reader-banner" src={pictureAddress(entry.picture as NonNullable<KnownEntry["picture"]>)} alt="" />
+                    <PictureButton page={entry.name} has icon />
+                </div>
+            )}
             <header class="reader-head">
-                {person && <Token member={{ name: entry.name, image: entry.picture, role: entry.companion ? "companion" : "other" }} large {...(entry.companion ? { side: "ally" as const } : {})} />}
+                {person && (
+                    <PictureSpot page={entry.name} has={entry.picture !== undefined}>
+                        <Token member={{ name: entry.name, image: entry.picture, role: entry.companion ? "companion" : "other" }} large {...(entry.companion ? { side: "ally" as const } : {})} />
+                    </PictureSpot>
+                )}
                 <div>
                     <p class="eyebrow">{entryKind(entry, kinds)}</p>
                     <h3 id="reader-title" tabIndex={-1} ref={title}>{entry.name}</h3>
@@ -321,22 +332,21 @@ function LoreReader({ entry, version, link, onMap, focus, several, kinds }: {
                     {changed && <ChangedLine />}
                 </div>
             </header>
-            {(onMap !== undefined || entry.companion) && (
-                <p class="reader-actions">
-                    {onMap !== undefined && (
-                        <a class="button package-button" href={onMap}>
-                            <Icon name="world" />
-                            {t("Show on the map")}
-                        </a>
-                    )}
-                    {entry.companion && (
-                        <a class="button package-button" href={`#/party/${encodeURIComponent(entry.name)}`}>
-                            <Icon name="party" />
-                            {t("Open the sheet")}
-                        </a>
-                    )}
-                </p>
-            )}
+            <p class="reader-actions">
+                {onMap !== undefined && (
+                    <a class="button package-button" href={onMap}>
+                        <Icon name="world" />
+                        {t("Show on the map")}
+                    </a>
+                )}
+                {entry.companion && (
+                    <a class="button package-button" href={`#/party/${encodeURIComponent(entry.name)}`}>
+                        <Icon name="party" />
+                        {t("Open the sheet")}
+                    </a>
+                )}
+                <PictureButton page={entry.name} has={entry.picture !== undefined} />
+            </p>
             <div class="reader-text">
                 {text === undefined && !problem && entry.summary !== "" && <Markdown text={entry.summary} link={link} />}
                 {text !== undefined && text.trim() !== "" && <Markdown text={text} link={link} secretKnowers={several ? knowersOf(knowers) : undefined} />}
@@ -363,12 +373,18 @@ function DocumentReader({ document, link, focus, several }: { document: ShownDoc
                     <h3 id="reader-title" tabIndex={-1} ref={title}>{document.name}</h3>
                 </div>
             </header>
+            <p class="reader-actions">
+                <PictureButton page={document.name} has={document.picture !== undefined} />
+            </p>
             <div class={`paper look-${look}`}>
                 <span class="paper-mark" aria-hidden="true" />
                 {document.picture !== undefined && (
-                    <a class="paper-picture" href={pictureAddress(document.picture)} target="_blank" rel="noreferrer">
-                        <img src={pictureAddress(document.picture)} alt={t("{name}, as drawn", { name: document.name })} />
-                    </a>
+                    <div class="picture-host">
+                        <a class="paper-picture" href={pictureAddress(document.picture)} target="_blank" rel="noreferrer">
+                            <img src={pictureAddress(document.picture)} alt={t("{name}, as drawn", { name: document.name })} />
+                        </a>
+                        <PictureButton page={document.name} has icon />
+                    </div>
                 )}
                 {document.text.trim() !== "" && <Markdown text={document.text} link={link} />}
             </div>

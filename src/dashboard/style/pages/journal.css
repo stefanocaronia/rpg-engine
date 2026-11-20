@@ -226,13 +226,19 @@
         margin-inline-start: auto;
     }
 
+    /* Why the cover's picture was refused floats over its control, as the cover clips what is under it. */
+    .quest-cover > .picture-give .picture-problem {
+        inset-block: auto calc(100% + 6px);
+    }
+
     .quest-cover .quest-name {
         position: relative;
         z-index: 2;
         display: -webkit-box;
         grid-row: 3;
         margin: 0 0 12px;
-        padding: 0 16px;
+        padding-block: 0;
+        padding-inline: 16px 56px;
         overflow: hidden;
         color: var(--on-veil);
         font-size: 1.3rem;
@@ -1276,6 +1282,18 @@
         color: var(--doc-link);
         font-size: 3.3em;
         line-height: 0.82;
+    }
+
+    /* Where the browser sets a capital by the lines it drops, three of them: its top on the first line's capitals, its foot on the third's baseline. */
+    @supports (initial-letter: 3) {
+        .book-text p:first-child:not(:lang(ar), :lang(hi), :lang(ja), :lang(zh), :lang(ko))::first-letter {
+            float: none;
+            margin-inline-end: 0.22em;
+            padding: 0;
+            font-size: 1em;
+            line-height: inherit;
+            initial-letter: 3;
+        }
     }
 
     .book-text .book-break {

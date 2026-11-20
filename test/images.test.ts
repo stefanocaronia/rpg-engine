@@ -330,13 +330,13 @@ describe("pictures of places, quests, the party and those met made from words (D
         expect(asked).toMatch(/^The player chose another image tool for the pictures and has not named it: ask them which, set its name with config pictures-by, then make Guado's picture/);
         expect(asked).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre");
         const settings = async () => (JSON.parse(await ok("view", "--settings", "--json")) as { settings: PlayerSetting[]; }).settings;
-        expect((await settings()).find((setting) => setting.name === "pictures")?.note).toEqual({ text: "The master asks you in the chat which tool to use." });
+        expect((await settings()).find((setting) => setting.name === "pictures")?.note).toMatchObject({ text: "The master asks you in the chat which tool to use." });
         // The player names it in the chat: the master writes it, and it makes the pictures from then on.
         await ok("config", "pictures-by", "Pittore");
         expect(await ok("image", "Guado", "--describe", "Un guado di pietre")).toMatch(/^Make Guado's picture with Pittore, from this brief/);
         const shown = await settings();
         expect(shown.find((setting) => setting.name === "pictures-by")).toMatchObject({ value: "Pittore", choices: expect.arrayContaining([expect.objectContaining({ value: "other" })]) });
-        expect(shown.find((setting) => setting.name === "pictures")?.note).toEqual({ text: "The master makes them with {tool}.", values: { tool: "Pittore" } });
+        expect(shown.find((setting) => setting.name === "pictures")?.note).toMatchObject({ text: "The master makes them with {tool}.", values: { tool: "Pittore" } });
         expect(page("places/Guado.md")).not.toContain("image:");
     });
 
@@ -365,7 +365,9 @@ describe("pictures of places, quests, the party and those met made from words (D
         context = { ...context, pictures: maker(true) };
         await ok("image", "Mulino", "--describe", "Un mulino");
         await new Promise((resolve) => setTimeout(resolve, 50));
-        expect(later).toEqual(["No picture of Mulino: the generator's safety check refused it. Go on without, or give one with file."]);
+        expect(later).toEqual([
+            "No picture of Mulino: the generator's safety check refused it. Give one with file, or ask the player for one of their own, given on the page in their dashboard or dropped in the campaign's inbox folder, or go on without.",
+        ]);
     });
 
     it("in the MCP server, answers at once and the picture comes by itself", async () => {

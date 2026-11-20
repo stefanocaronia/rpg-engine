@@ -82,7 +82,7 @@ describe("rpg init", () => {
 
         const typeFolders = ["characters", "places", "factions", "quests", "items", "events", "topics", "creatures"].map((type) => `world/${type}`);
 
-        for (const path of ["campaign.yaml", "state.yaml", "log.jsonl", "sessions", ...typeFolders]) {
+        for (const path of ["campaign.yaml", "state.yaml", "log.jsonl", "sessions", "inbox", ...typeFolders]) {
             expect(existsSync(join(folder, path)), path).toBe(true);
         }
 

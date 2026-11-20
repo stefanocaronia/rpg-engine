@@ -42,7 +42,7 @@ describe("config orders (D-563 (1))", () => {
         const added = await ok("config", "orders", "--add", ` ${alive} `);
         expect(added).toContain(`orders: ${alive}
 `);
-        expect(added).toContain("Kept until the player lifts it; the lines and veils still come first. An order for this scene only stays in the scene; when unsure, ask in one bracket.");
+        expect(added).toContain("Kept until the player lifts it; the lines and veils still come first. An order for this scene only stays in the scene; when unsure, ask in one [OOC: …].");
         expect(readLogFile(folder).at(-1)).toMatchObject({ type: "config-changed", data: { setting: "orders", add: [` ${alive} `] } });
         await ok("config", "orders", "--add", children);
         expect(await refused("config", "orders", "none")).toContain(`"orders" holds ${alive}; ${children}: remove each one with remove`);

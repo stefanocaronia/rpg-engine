@@ -7,6 +7,7 @@ import { fromLabel } from "../parts/game-words.ts";
 import { Icon, type IconName } from "../parts/icons.tsx";
 import { placeKindLabel } from "../parts/map-symbols.ts";
 import { plainLine } from "../parts/markdown.tsx";
+import { PictureButton } from "../parts/picture.tsx";
 import { t } from "../text.ts";
 import { lengthText, type MapLayout, type Spot, waysOf } from "./map.ts";
 
@@ -48,7 +49,12 @@ export function PlaceCard(
     ) => part !== undefined);
     return (
         <div class={narrow ? "place-card sheet" : "place-card"} role="dialog" aria-labelledby="place-card-title" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()}>
-            {place.image !== undefined && <img class="pc-image" src={pictureAddress(place.image)} alt="" />}
+            {place.image !== undefined && (
+                <div class="picture-host">
+                    <img class="pc-image" src={pictureAddress(place.image)} alt="" />
+                    <PictureButton page={place.name} has icon />
+                </div>
+            )}
             <button ref={closer} type="button" class="pc-close icon-button" aria-label={t("Close")} onClick={onClose}>
                 <Icon name="close" />
             </button>

@@ -261,7 +261,11 @@ describe("view as data (VIEW-1, D-272)", () => {
         // Whether this computer makes pictures, and how to have them where it does not (D-308).
         const pictures = async (ready: PicturesReady) => {
             const shown = await runCommandLine(["view", "--settings", "--json"], { ...context, pictures: { ready: () => ready, make: () => Promise.resolve({ refused: "no" }) } });
-            return (JSON.parse(shown.output) as { settings: { name: string; note?: { text: string; fix?: true; }; }[]; }).settings.find((setting) => setting.name === "pictures")?.note;
+            const note = (JSON.parse(shown.output) as { settings: { name: string; note?: { text: string; fix?: true; also?: string[]; }; }[]; }).settings.find((setting) => setting.name === "pictures")?.note;
+            // Every note ends with the line that the player may give a picture of their own (D-572 (3)).
+            expect(note?.also?.at(-1)).toMatch(/picture of your own/);
+            const also = note?.also?.slice(0, -1) ?? [];
+            return { ...note, also: also.length === 0 ? undefined : also };
         };
 
         expect(await pictures({ ready: true })).toEqual({ text: "Codex makes them on this computer, from your ChatGPT plan." });
@@ -278,7 +282,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             text: "1. Paste `codex login` in a terminal.",
             fix: true,
             values: { by: "Claude" },
-            also: "{by} makes them meanwhile.",
+            also: ["{by} makes them meanwhile."],
         });
         expect(await pictures({ ready: true, maker: "ElevenLabs", tool: "ElevenLabs" })).toEqual({ text: "The master makes them with {tool}.", values: { tool: "ElevenLabs" } });
         // Unset, the chat in use; and in Codex, Codex is no choice of its own.
@@ -1286,6 +1290,79 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         const long = await send("POST", "/api/config", { setting: "orders", add: "a".repeat(121) });
         expect(long.status).toBe(400);
         expect(long.body).toContain("at most 120 characters");
+    });
+
+    it("gives a page the player sees a picture of their own, as image with a file does, the master hearing it once; refuses one too big, not a picture, from elsewhere, or for a page the character does not know (D-572 (3))", async () => {
+        const lines: string[] = [];
+        served.later = { add: (line) => lines.push(line), take: () => lines.splice(0), giveBack: (back) => lines.unshift(...back) };
+        const give = (page: string, body: Uint8Array | Buffer, headers: Record<string, string> = {}): Promise<{ status: number; body: string; }> =>
+            new Promise((done, fail) => {
+                const sent = request(
+                    { host: "127.0.0.1", port, path: `/api/picture?${new URLSearchParams({ page })}`, method: "POST", headers: { origin: `http://127.0.0.1:${port}`, "x-file-name": "mine.png", ...headers } },
+                    (response) => {
+                        let text = "";
+                        response.setEncoding("utf8");
+                        response.on("data", (chunk: string) => (text += chunk));
+                        response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+                    },
+                );
+                sent.on("error", fail).end(body);
+            });
+
+        // Another character the character knows, and its own: each takes it in place of the one it has, logged as the player's.
+        expect(await give("Varro", png)).toEqual({ status: 200, body: JSON.stringify({ page: "Varro" }) });
+        expect(readFileSync(join(folder, "images", "Varro.png"))).toEqual(Buffer.from(png));
+        expect(await ok("show", "Varro")).toContain('image: "[[Varro.png]]"');
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "image-set", visibility: "public", by: "player", data: { page: "Varro", image: "images/Varro.png" } });
+        expect(lines.splice(0)).toEqual(["The player gave Varro a picture of their own, on the dashboard: it is images/Varro.png now."]);
+        const webp = Buffer.concat([Buffer.from("RIFF"), Buffer.alloc(4), Buffer.from("WEBPVP8 ")]);
+        expect((await give("Ettore", webp)).status).toBe(200);
+        expect(await ok("show", "Ettore")).toContain("[[Ettore.webp]]");
+        expect(existsSync(join(folder, "images", "Ettore.png"))).toBe(false);
+        expect(lines).toHaveLength(1);
+        lines.splice(0);
+
+        // What is not a picture, and a page the character does not know, which answers as one that is not there; nothing changes, the master hears nothing.
+        const text = await give("Varro", Buffer.from("not a picture"), { "x-file-name": "notes.txt" });
+        expect(text.status).toBe(400);
+        expect(JSON.parse(text.body)).toMatchObject({ code: "not-picture", values: { name: "notes.txt" } });
+        await ok("write", "Ombra", "--type", "character", "--set", "role=npc");
+
+        for (const page of ["Ombra", "Nessuno"]) {
+            const unknown = await give(page, png);
+            expect(unknown.status).toBe(404);
+            expect(JSON.parse(unknown.body)).toEqual({ error: `Your character knows no page called ${page}: reload the page.`, code: "no-page", values: { page } });
+        }
+
+        expect(existsSync(join(folder, "images", "Ombra.png"))).toBe(false);
+        expect(JSON.parse((await give("Hardtack", png)).body)).toMatchObject({ code: "system-page", values: { page: "Hardtack" } });
+
+        // Too big, by its declared length before a byte of it is read, or as its bytes pass 5 MB.
+        const answered = (headers: Record<string, string>, pieces: Buffer[], end: boolean): Promise<{ status: number; body: string; }> =>
+            new Promise((done, fail) => {
+                const sent = request({ host: "127.0.0.1", port, path: "/api/picture?page=Varro", method: "POST", headers: { origin: `http://127.0.0.1:${port}`, ...headers } }, (response) => {
+                    let text = "";
+                    response.setEncoding("utf8");
+                    response.on("data", (chunk: string) => (text += chunk));
+                    response.on("end", () => done({ status: response.statusCode ?? 0, body: text }));
+                });
+                sent.on("error", fail);
+                pieces.forEach((piece) => sent.write(piece));
+
+                if (end) {
+                    sent.end();
+                }
+            });
+        const declared = await answered({ "content-length": String(6 * 1024 * 1024) }, [Buffer.from(png)], false);
+        expect(declared.status).toBe(413);
+        expect(JSON.parse(declared.body)).toMatchObject({ code: "picture-big", values: { size: "5" } });
+        const chunked = (await answered({}, [Buffer.from(png), ...Array.from({ length: 5 }, () => Buffer.alloc(1024 * 1024))], true)).status;
+        expect(chunked).toBe(413);
+
+        // From another site, or without an origin, as another program: refused.
+        expect((await give("Varro", png, { origin: "http://example.com" })).status).toBe(403);
+        expect((await sendWithout("POST", "/api/picture?page=Varro", {})).status).toBe(405);
+        expect(lines).toEqual([]);
     });
 
     it("takes a layer off from the page as write does with reset, as the player's, the master hearing it once; one answer for any name the view does not list, and none while a scene is open (SYS-11)", async () => {

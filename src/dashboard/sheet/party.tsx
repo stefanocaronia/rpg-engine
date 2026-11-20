@@ -60,11 +60,14 @@ export function PartyStrip({ party, chosen, scene, waiting = new Map() }: { part
     );
 }
 
-/** A party member's token with the pip of their state (D-419), in the strip and the sheet's band; never in the rolls. Their class in its tooltip (D-409). */
+/**
+ * A party member's token with the pip of their state (D-419), in the strip and the sheet's band; never in the rolls. Their class in its tooltip in the strip
+ * (D-409); none on the sheet's band, large, which writes name and class beside it and has the picture's control on its rim.
+ */
 export function MemberToken({ member, large, status, choices }: { member: Member; large?: boolean; status: TokenStatus; choices?: boolean; })
 {
     return (
-        <span class="token-holder" data-tip={member.headline === undefined ? undefined : `${member.name} · ${member.headline}`}>
+        <span class="token-holder" data-tip={member.headline === undefined || large === true ? undefined : `${member.name} · ${member.headline}`}>
             <Token member={member} large={large} side={sideOf(member.role)} status={status} dying={downTint(status)} />
             {/* Choices that wait for them (D-556): a chevron up in the accent, its words in the name of the link the token is in. */}
             {choices === true && (

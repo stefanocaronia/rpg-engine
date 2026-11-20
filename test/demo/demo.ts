@@ -84,22 +84,19 @@ const demoQuestions: Record<DemoSystem, DemoQuestion[]> = {
 /** Our extensions, in their repositories beside the engine's (D-506): the demo uses each that is there and built, as the player's own; the lockpicking needs the 5e. */
 const demoExtensions: { repository: string; system?: DemoSystem; }[] = [{ repository: "rpg-engine-weather" }, { repository: "rpg-engine-lockpicking", system: "5e" }];
 
-/** The demo's three scenes told as a book (T-227): its number, its title, its prose. */
+/** The demo's three scenes told as a book (T-227), in two chapters: the last scene of each, its title, its prose. */
 const demoBook: [string, string, string][] = [
     [
-        "1",
+        "2",
         "Tre giorni",
         "Il castellano non si alzò quando Ettore entrò. Restò seduto dietro il tavolo ingombro di carte, le mani intrecciate, e per un lungo momento guardò soltanto il fuoco.\n\n"
         + "«Sei pellegrini», disse alla fine. «Partiti da qui all'alba di quattro giorni fa, diretti al santuario oltre il guado. Al santuario non sono mai arrivati.»\n\n"
         + "Ettore aspettò. Aveva imparato da tempo che chi chiede aiuto dice sempre una cosa di troppo, se lo si lascia parlare.\n\n"
         + "«Tra loro c'era mia nipote.» Il castellano sollevò finalmente lo sguardo. «Ti do tre giorni. Dopo, manderò i miei uomini, e i miei uomini non sanno fare altro che bruciare.»\n\n"
         + "***\n\n"
-        + "Fuori, Lupa lo aspettava accucciata contro il muro, il muso sulle zampe. Si alzò senza un suono e lo seguì giù per la Strada del Re, mentre il sole scendeva dietro le torri.",
-    ],
-    [
-        "2",
-        "Il sigillo spezzato",
-        "Il campo del viandante era un cerchio di pietre annerite e una tettoia che il vento aveva quasi strappato. Qualcuno ci aveva acceso un fuoco, e non da molto: la cenere era ancora tiepida sotto la crosta.\n\n"
+        + "Fuori, Lupa lo aspettava accucciata contro il muro, il muso sulle zampe. Si alzò senza un suono e lo seguì giù per la Strada del Re, mentre il sole scendeva dietro le torri.\n\n"
+        + "***\n\n"
+        + "Il campo del viandante era un cerchio di pietre annerite e una tettoia che il vento aveva quasi strappato. Qualcuno ci aveva acceso un fuoco, e non da molto: la cenere era ancora tiepida sotto la crosta.\n\n"
         + "Ettore si chinò. Nel fango, tra le orme di stivali, correvano due solchi profondi, troppo larghi per un carretto da pellegrini. *Un carro pesante*, pensò. *E chi lo guidava aveva fretta.*\n\n"
         + "Accanto alle pietre trovò il sigillo. Cera rossa, spezzata in due, con l'impronta di una torre sottile. Lo rigirò tra le dita finché Lupa non gli spinse il muso contro il polso, impaziente, e poi si voltò verso nord-est, le orecchie tese.\n\n"
         + "Non abbaiò. Lupa non abbaiava mai, quando la cosa era seria.",
@@ -700,9 +697,9 @@ async function makeDemoWorld(rpg: (...args: string[]) => Promise<void>, save: (l
 
     await scene("Arrivo alla locanda", "social", "Bertoldo parla di luci sulla Torre dei Sussurri e di un mercante che compra sigilli.");
 
-    // The three scenes told as a book, as the master writes them (T-227).
-    for (const [chapter, title, text] of demoBook) {
-        await rpg("book", chapter, "--title", title, "--text", text);
+    // The three scenes told as a book, as the master writes them where the story turns (T-227).
+    for (const [through, title, text] of demoBook) {
+        await rpg("book", "--through", through, "--title", title, "--text", text);
     }
 
     // In from the village by the door, then by the fire.

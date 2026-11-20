@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
 **RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
@@ -123,7 +123,7 @@ Skrifaðu hvað persónan þín gerir eða segir, með þínum eigin orðum:
 
 > Ég spyr gestgjafann hver annar kom hér við í kvöld.
 
-Utan sögunnar skrifarðu innan hornklofa: *[Hvernig virka glímutök?]* Sögumaðurinn svarar líka innan hornklofa.
+Utan sögunnar skrifarðu `[OOC: …]` (utan persónu): *[OOC: Hvernig virka glímutök?]* Sögumaðurinn svarar á sama hátt.
 
 Þú segir hvað þú reynir. Sögumaðurinn segir hvað gerist. Sögumaðurinn ákveður aldrei neitt fyrir persónuna þína og talar aldrei um vélina á bak við leikinn. Þú getur spurt um það hvernig á að nota stjórnborðið.
 
@@ -143,7 +143,7 @@ Sögumaðurinn biður um kast aðeins þegar útkoman er óviss og skiptir máli
 
 ### 3.3 Atriði og bardagar
 
-Sagan gengur fram í **atriðum**: bardaga, samtali, könnun, ferðalagi eða hvíld. Í lok hvers atriðis vistast leikurinn sjálfkrafa, atriðið fer í dagbókina þína og sögumaðurinn skrifar það sem kafla í sögubók þinni.
+Sagan gengur fram í **atriðum**: bardaga, samtali, könnun, ferðalagi eða hvíld. Í lok hvers atriðis vistast leikurinn sjálfkrafa og atriðið fer í dagbókina þína. Þegar sagan tekur nýja stefnu skrifar sögumaðurinn atriðin frá síðasta kafla sem nýjan kafla í sögubók þinni.
 
 Í bardaga segir sögumaðurinn frá hverri röð sem er ekki þín og stoppar þar sem þú getur tekið ákvörðun. **Atriði** sýnir efst hver á röðina og hver kemur næst, og spjald persónunnar þinnar við hlið kortsins. Röð umferðarinnar, lífsstig hópsins þíns og hve særðir óvinirnir líta út, í orðum, eru áfram við hlið síðunnar. Ef persónan þín fellur birtast dauðabjörgunarköstin stór á síðunni.
 
@@ -163,7 +163,7 @@ Skúrkar hafa áætlanir með tímamörkum. Með hverjum nýjum degi færir sög
 
 ### 3.6 Verkefni, dagbók og minnisblöð
 
-Verk sem persónan þín tekur að sér verður að verkefni í **Dagbók**, með markmiðum sínum, tímamörkum og því sem það mælir. Settu stjörnu á það til að hafa það sýnilegt efst í **Atriði**. Undir **Saga** segir dagbókin söguna þína sem bók: sögumaðurinn skrifar kafla í lausu máli fyrir hvert atriði þegar því lýkur, í þeim stíl sem þú valdir. Lestu hana kafla fyrir kafla, þann síðasta merktan með bókamerki, og sæktu hana sem Markdown eða sem vefsíðu til að prenta eða senda áfram. Í leik sem hófst áður skaltu biðja sögumanninn að skrifa söguna fram til þessa. **Tímalína** telur upp atriðin með því sem gerðist í hverju þeirra. Dagbókin geymir líka **minnisblöðin** þín: þau eru einkamál, nema þú veljir að **Deila** einu þeirra. Sögumaðurinn heyrir það þá sem það sem þú heldur, aldrei sem staðreynd. Undir **Félagar** lestu dagbækur félaga þinna: öðru hverju, í lok dags eða verkefnis, skrifa þeir nokkrar línur um það sem þeir hugsa og finna.
+Verk sem persónan þín tekur að sér verður að verkefni í **Dagbók**, með markmiðum sínum, tímamörkum og því sem það mælir. Settu stjörnu á það til að hafa það sýnilegt efst í **Atriði**. Undir **Saga** segir dagbókin söguna þína sem bók: sögumaðurinn skrifar kafla í lausu máli í hvert sinn sem sagan tekur nýja stefnu, um atriðin frá síðasta kafla, í þeim stíl sem þú valdir. Lestu hana kafla fyrir kafla, þann síðasta merktan með bókamerki, og sæktu hana sem Markdown eða sem vefsíðu til að prenta eða senda áfram. Í leik sem hófst áður skaltu biðja sögumanninn að skrifa söguna fram til þessa. **Tímalína** telur upp atriðin, númeruð, með því sem gerðist í hverju þeirra. Í dagbókinni eru líka **Minnisblöð**: þau eru einkamál, nema þú smellir á **Deila** á einu þeirra. Sögumaðurinn heyrir það þá sem það sem þú heldur, aldrei sem staðreynd. Undir **Félagar** lestu dagbækur félaga þinna: öðru hverju, í lok dags eða verkefnis, skrifa þeir nokkrar línur um það sem þeir hugsa og finna.
 
 ### 3.7 Saga og mynd persónunnar
 
@@ -193,7 +193,7 @@ Vélmennið efst á stjórnborðinu er sögumaðurinn: svipur þess fylgir tóni
 
 ### 3.11 Myndir
 
-RPG Engine getur látið gera myndir af stöðunum sem þú kemur til, verkefnunum sem þú tekur að þér og þeim sem þú hittir, eins og stillingin **myndir** segir til um, og andlitsmynd af persónunni þinni þegar þú biður um það. Það notar þitt eigið Codex eða Claude Code, með þinni innskráningu, á þinni áskrift og innan hennar marka: **Codex** málar þær, annars teiknar **Claude Code** þær. **Stillingar** segja hvort þessi tölva getur gert þær og hvernig á að setja það upp ef ekki. Þú getur alltaf gefið sögumanninum þína eigin mynd.
+RPG Engine getur látið gera myndir af stöðunum sem þú kemur til, verkefnunum sem þú tekur að þér og persónum sem þú hittir, eins og stillingin **Myndir** segir til um, og andlitsmynd af persónunni þinni þegar þú biður um það. Það notar þitt eigið Codex eða Claude Code, með þinni innskráningu, á þinni áskrift og innan hennar marka: **Codex** málar þær, annars teiknar **Claude Code** þær. Í **Stillingar** sérðu hvort þessi tölva getur gert þær og hvernig á að setja það upp ef ekki. Þú getur alltaf lagt til þína eigin mynd, fyrir persónuna þína eða hvaða síðu sem þú sérð: færðu bendilinn yfir eina af myndum hennar og lítill myndahnappur birtist í horninu (líka með lyklaborðinu og alltaf í síma). Undir **Heimur** er líka hnappurinn **Skipta um mynd…** á síðunni sem þú opnar, eða **Bæta við mynd…** á meðan hún er án myndar. Þín mynd kemur í stað þeirrar sem er fyrir. Eða settu skrána í möppuna **inbox** í herferðinni og segðu sögumanninum fyrir hvaða síðu hún er.
 
 ### 3.12 Öryggi: línur, slæður og stopp
 
@@ -294,7 +294,7 @@ Sérhver skipun sem sögumaður notar má líka keyra í herferðarmöppunni: `r
 
 ### Spurningar
 
-**Þarf ég að kunna reglurnar?** Nei. Veldu kennslu sem leiðbeinanda og spurðu innan hornklofa hvenær sem þú vilt.
+**Þarf ég að kunna reglurnar?** Nei. Veldu kennslu sem leiðbeinanda og spurðu með `[OOC: …]` hvenær sem þú vilt.
 
 **Getur sögumaðurinn svindlað?** Hann getur ekki breytt kasti sem RPG Engine gerði, nema á erfiðleikastiginu saga, né staðreyndum sem þegar hafa verið ákveðnar.
 
@@ -308,7 +308,7 @@ Sérhver skipun sem sögumaður notar má líka keyra í herferðarmöppunni: `r
 
 ### Vandamál
 
-**Mælaborðið opnast ekki.** Spurðu sögumanninn: `[Hver er hlekkurinn á mælaborðið?]`. Það virkar aðeins meðan spjall er opið í þeirri herferð, eftir fyrsta svar sögumannsins.
+**Stjórnborðið opnast ekki.** Spurðu sögumanninn: `[OOC: Hver er hlekkurinn á stjórnborðið?]`. Það virkar aðeins meðan spjall er opið í þeirri herferð, eftir fyrsta svar sögumannsins.
 
 **Sögumaðurinn virðist ekki þekkja leikinn.** Gervigreindarforritið þitt hlóð ekki RPG Engine. Athugaðu að þú ræstir það í herferðarmöppunni og treystir henni. Í Claude Code skaltu skrifa `/mcp` og tengja `rpg` aftur. Í Codex verður `codex mcp list` í herferðarmöppunni að sýna `rpg`. Ef `rpg --version` finnst ekki skaltu setja RPG Engine upp aftur ([2.2](#22-install)).
 

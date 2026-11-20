@@ -1,6 +1,6 @@
 // The saves of a campaign as commands use them (D-54, D-55): which files a save holds, a save made at the end of a scene or when asked, and given back.
 import { join, relative, resolve, sep } from "node:path";
-import { bookFolderName, campaignFileName, hostFileNames, readSettings, saveModes, sessionsFolderName } from "../../../campaign/index.ts";
+import { bookFolderName, campaignFileName, hostFileNames, inboxFolderName, readSettings, saveModes, sessionsFolderName } from "../../../campaign/index.ts";
 import type { Context } from "../../../core/context.ts";
 import { filesIn } from "../../../core/files.ts";
 import { appendLogEntry, logFileName, logLine, readLog } from "../../../core/log.ts";
@@ -358,7 +358,7 @@ function gameFiles(root: string): string[]
 function isGameName(name: string): boolean
 {
     return !name.startsWith(".") && !hostNames.has(name.toLowerCase()) && name.toLowerCase() !== exportsFolderName && name.toLowerCase() !== sessionsFolderName
-        && name.toLowerCase() !== bookFolderName;
+        && name.toLowerCase() !== bookFolderName && name.toLowerCase() !== inboxFolderName;
 }
 
 function joinBytes(first: Uint8Array | undefined, second: Uint8Array): Uint8Array

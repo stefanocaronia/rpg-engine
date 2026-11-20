@@ -1,0 +1,197 @@
+/* A picture of the player's own for a page (D-572 (3)): over a picture's corner a small square on the veil, seen under the pointer and with the keyboard, always
+   on touch; as words in the open page of the World; the picture darkened while it is sent, and why the game did not take it under the control. */
+@layer parts {
+    .picture-give {
+        position: relative;
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .picture-host {
+        position: relative;
+    }
+
+    /* A coin keeps its own box, no line's room under a picture: the control sits on its rim. */
+    .picture-spot {
+        position: relative;
+        display: inline-flex;
+        flex: none;
+    }
+
+    /* Over a picture that fills its box, at its lower corner at the end; on the Scene's band at its upper one, as the lower has the place's name. */
+    :is(.picture-spot, .picture-host) > .picture-give {
+        position: absolute;
+        inset-block-end: 8px;
+        inset-inline-end: 8px;
+        z-index: 3;
+    }
+
+    .place-shot.picture-host > .picture-give {
+        inset-block: 8px auto;
+    }
+
+    /* The button is what is hit, the plate what is seen: one size under a pointer, the plate within 44 px on touch. */
+    .picture-give.icon .icon-button {
+        --plate: 32px;
+        width: var(--plate);
+        height: var(--plate);
+        border-radius: var(--radius-m);
+        color: var(--on-veil);
+    }
+
+    .picture-plate {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: var(--plate);
+        height: var(--plate);
+        border: 1px solid color-mix(in srgb, var(--on-veil) 22%, transparent);
+        border-radius: var(--radius-m);
+        background: color-mix(in srgb, var(--veil) 72%, transparent);
+        backdrop-filter: blur(3px);
+    }
+
+    .picture-plate svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* On a coin, smaller, on its rim at the upper end, across from the pip of its side, as the lower end has the pip of its state; ringed by the panel to stand
+       apart from the picture. */
+    .picture-spot > .picture-give {
+        inset-block: -3px auto;
+        inset-inline-end: -3px;
+    }
+
+    :is(.picture-spot, li.picture-host) > .picture-give .icon-button {
+        --plate: 24px;
+        border-radius: var(--radius-s);
+    }
+
+    :is(.picture-spot, li.picture-host) > .picture-give .picture-plate {
+        border: 2px solid var(--panel);
+        border-radius: var(--radius-s);
+    }
+
+    :is(.picture-spot, li.picture-host) > .picture-give .picture-plate svg.icon {
+        width: 13px;
+        height: 13px;
+    }
+
+    .picture-spot:has(.token.large) > .picture-give .icon-button {
+        --plate: 30px;
+    }
+
+    .picture-spot:has(.token.large) > .picture-give .picture-plate svg.icon {
+        width: 17px;
+        height: 17px;
+    }
+
+    /* In a row of a list, on the rim of its thumb as on a coin: the thumb is 44 px at the row's start past its padding, in the row's middle. */
+    li.picture-host > .picture-give {
+        inset-block: calc(50% - 25px) auto;
+        inset-inline: 33px auto;
+    }
+
+    /* Under a pointer: seen over the picture or the row under it, with the keyboard, while it sends and after a refusal. */
+    @media (hover: hover) {
+        :is(.picture-spot, .picture-host) > .picture-give:not(.sending, .refused, :has(:focus-visible)) {
+            opacity: 0;
+        }
+
+        :is(.picture-spot, .picture-host):hover > .picture-give {
+            opacity: 1;
+        }
+    }
+
+    /* On touch: always there, the plate as it is and the target 44 px around it; none on a list's rows, as the page they open has the button. */
+    @media (pointer: coarse) {
+        .picture-give.icon .icon-button {
+            width: 44px;
+            height: 44px;
+            margin: calc((var(--plate) - 44px) / 2);
+        }
+    }
+
+    @media (hover: none) {
+        li.picture-host > .picture-give {
+            display: none;
+        }
+    }
+
+    /* While it sends: the picture darkened, a turning ring in the plate, gold over the veil, in the accent in the words; the new picture clears in. */
+    :is(.picture-spot, .picture-host):has(> .picture-give.sending) :is(img, .initials) {
+        filter: brightness(0.55) saturate(0.6);
+    }
+
+    .picture-wait {
+        width: 16px;
+        height: 16px;
+        border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+        border-block-start-color: var(--accent);
+        border-radius: 50%;
+    }
+
+    .picture-plate .picture-wait {
+        border-block-start-color: var(--gold);
+    }
+
+    .picture-spot .picture-plate .picture-wait {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* Refused: the plate ringed in the colour of what went wrong, why under it, until the next try. */
+    .picture-give.refused .picture-plate {
+        box-shadow: 0 0 0 2px var(--low);
+    }
+
+    .picture-problem {
+        color: var(--low);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .picture-give.icon .picture-problem {
+        position: absolute;
+        inset-block-start: calc(100% + 6px);
+        inset-inline-end: 0;
+        z-index: 5;
+        width: max-content;
+        max-width: min(280px, 80vw);
+        padding: 8px 10px;
+        border: 1px solid color-mix(in srgb, var(--low) 45%, var(--rule));
+        border-radius: var(--radius-m);
+        background: var(--panel);
+        box-shadow: var(--overlay);
+        line-height: 1.35;
+        white-space: normal;
+    }
+
+    /* From a coin or a row's thumb the words run into the page, at the start of the control. */
+    :is(.picture-spot, li.picture-host) > .picture-give .picture-problem {
+        inset-inline: 0 auto;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        :is(.picture-spot, .picture-host) > .picture-give {
+            transition: opacity var(--quick) var(--ease);
+        }
+
+        :is(.picture-spot, .picture-host) :is(img, .initials) {
+            transition: filter var(--short) var(--ease);
+        }
+
+        .picture-wait {
+            animation: picture-turn 0.8s linear infinite;
+        }
+    }
+
+    @keyframes picture-turn {
+        to {
+            rotate: 1turn;
+        }
+    }
+}

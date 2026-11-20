@@ -277,7 +277,7 @@ describe("SYS-10: a campaign whose system is one of ours, not installed, opened 
         const said = await call("status");
         expect(
             said.startsWith(
-                `The campaign's game system, 5e, is not on this computer, and could not be installed: ${offline}. Tell the player off-game, in brackets and in a table's words, that this computer lacks `
+                `The campaign's game system, 5e, is not on this computer, and could not be installed: ${offline}. Tell the player off-game, in [OOC: …] and in a table's words, that this computer lacks `
                     + "the 5e rules and could not download them: once it is online, you install them with package install 5e, no yes needed. Until then you play without its pages "
                     + "and the sheet's worked-out numbers, or wait, as the player chooses.\n\n"
                     + "Prova · en · 5e (not installed: install it, one of RPG Engine's own, with package install 5e;",

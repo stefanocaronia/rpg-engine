@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -123,7 +123,7 @@ Napiš, co tvoje postava dělá nebo říká, vlastními slovy:
 
 > Ptám se hostinského, kdo další tudy dnes večer procházel.
 
-Když chceš mluvit mimo příběh, piš do hranatých závorek: *[Jak funguje zápas v držení?]* Pán jeskyně odpoví také v závorkách.
+Když chceš mluvit mimo příběh, napiš `[OOC: …]` (out of character): *[OOC: Jak funguje zápas v držení?]* Pán jeskyně odpoví stejně.
 
 Ty říkáš, o co se pokoušíš. Pán jeskyně říká, co se stane. Pán jeskyně nikdy nerozhoduje za tvou postavu a nikdy nemluví o enginu. Můžeš se ho zeptat, jak se používá dashboard.
 
@@ -143,7 +143,7 @@ Pán jeskyně žádá o hod, jen když je výsledek nejistý a záleží na něm
 
 ### 3.3 Scény a boje
 
-Příběh běží ve **scénách**: boj, rozhovor, zkoumání, cestování, odpočinek. Na konci každé scény se hra sama uloží, scéna přejde do tvé kroniky a Pán jeskyně ji napíše jako kapitolu knihy tvého příběhu.
+Příběh běží ve **scénách**: boj, rozhovor, zkoumání, cestování, odpočinek. Na konci každé scény se hra sama uloží, scéna přejde do tvé kroniky a když se příběh obrátí, Pán jeskyně napíše scény od poslední kapitoly jako novou kapitolu knihy tvého příběhu.
 
 V boji Pán jeskyně vypráví každý tah, který není tvůj, a zastaví se tam, kde se můžeš rozhodnout. **Scéna** nahoře ukazuje, kdo je na tahu a kdo bude další, a vedle mapy kartu tvé postavy. Pořadí tahů, životy tvé družiny a slovní popis toho, jak jsou nepřátelé raněni, zůstávají na straně stránky. Pokud tvá postava padne, na stránce se velké zobrazí záchrany před smrtí.
 
@@ -163,7 +163,7 @@ Padouši mají plány s termíny. Každý nový den Pán jeskyně posune hrozby,
 
 ### 3.6 Úkoly, kronika a poznámky
 
-Úkol, který tvá postava přijme, se objeví v **Kronice** i s cíli, termínem a tím, co měří. Označ ho hvězdičkou, aby zůstal na očích nahoře ve Scéně. Pod **Příběh** Kronika vypráví tvůj příběh jako knihu: Pán jeskyně po skončení každé scény napíše kapitolu prózou ve stylu, který sis vybral/a. Čti ji kapitolu po kapitole, poslední přečtenou označí záložka. Stáhnout ji můžeš jako Markdown nebo jako webovou stránku k vytištění či předání dál. Ve hře, která začala dřív, požádej Pána jeskyně, aby napsal dosavadní příběh. **Časová osa** uvádí scény i s tím, co se v každé stalo. Kronika také uchovává tvé **Poznámky**: jsou soukromé, dokud u některé nezvolíš **Sdílet**. Pán jeskyně ji pak slyší jako to, co si myslíš, nikdy jako fakt. V části **Společníci** čteš deníky svých společníků: čas od času, na konci dne nebo úkolu, napíšou pár řádků o tom, co si myslí a cítí.
+Úkol, který tvá postava přijme, se objeví v **Kronice** i s cíli, termínem a tím, co se měří. Označ ho hvězdičkou, aby zůstal na očích nahoře ve Scéně. V části **Příběh** Kronika vypráví tvůj příběh jako knihu: Pán jeskyně napíše kapitolu prózou pokaždé, když se příběh obrátí, a převypráví v ní scény od té poslední, ve zvoleném stylu. Čti ji kapitolu po kapitole, poslední přečtenou označí záložka. Stáhnout ji můžeš jako Markdown nebo jako webovou stránku k vytištění či předání dál. Ve hře, která začala dřív, požádej Pána jeskyně, aby napsal dosavadní příběh. **Časová osa** uvádí očíslované scény s tím, co se v každé stalo. Kronika také uchovává tvé **Poznámky**: jsou soukromé, dokud některou nezvolíš **Sdílet**. Pán jeskyně ji pak slyší jako to, co si myslíš, nikdy jako fakt. V části **Společníci** čteš deníky svých společníků: čas od času, na konci dne nebo úkolu, napíšou pár řádků o tom, co si myslí a cítí.
 
 ### 3.7 Příběh a podoba tvé postavy
 
@@ -193,7 +193,7 @@ Robot nahoře na dashboardu je Pán jeskyně. Jeho tvář sleduje tón příběh
 
 ### 3.11 Obrázky
 
-RPG Engine může nechat vytvořit obrázky míst, kam dojdeš, úkolů, které přijmeš, a těch, které potkáš, podle nastavení **obrázků**, a také portrét tvé postavy, když o něj požádáš. Používá tvůj vlastní Codex nebo Claude Code, s tvým přihlášením, na tvém tarifu a v jeho mezích: **Codex** je maluje, jinak je kreslí **Claude Code**. **Nastavení** ukazuje, zda je tento počítač umí vytvářet, a jak to případně nastavit. Pánu jeskyně můžeš vždy dát vlastní obrázek.
+RPG Engine může nechat vytvořit obrázky míst, kam dojdeš, úkolů, které přijmeš, i postav, které potkáš, podle nastavení **Obrázky**, a také portrét tvé postavy, když o něj požádáš. Používá tvůj vlastní Codex nebo Claude Code, s tvým přihlášením, na tvém tarifu a v jeho limitech: **Codex** je maluje, jinak je kreslí **Claude Code**. **Nastavení** ukazuje, zda je tento počítač umí vytvářet, a jak to případně nastavit. Vlastní obrázek můžeš dát vždy, své postavě i kterékoli stránce, kterou vidíš: najeď ukazatelem na některý její obrázek a v rohu se ukáže malé tlačítko s obrázkem (jde to i klávesnicí a na telefonu je vidět vždy). Ve **Světě** má otevřená stránka také **Změnit obrázek…**, nebo **Přidat obrázek…**, dokud žádný nemá. Tvůj obrázek nahradí ten, který stránka má. Nebo soubor vlož do složky **inbox** v kampani a řekni Pánu jeskyně, pro kterou stránku je.
 
 ### 3.12 Bezpečí: hranice, závoje a stop
 
@@ -294,7 +294,7 @@ Každý příkaz, který Pán jeskyně používá, jde spustit i ve složce kamp
 
 ### Otázky
 
-**Musím znát pravidla?** Ne. Vyber mentora s výukou a ptej se v závorkách, kdykoli chceš.
+**Musím znát pravidla?** Ne. Vyber mentora s výukou a ptej se přes `[OOC: …]`, kdykoli chceš.
 
 **Může Pán jeskyně podvádět?** Nemůže změnit hod, který udělal RPG Engine, kromě obtížnosti příběh, ani už stanovená fakta.
 
@@ -308,7 +308,7 @@ Každý příkaz, který Pán jeskyně používá, jde spustit i ve složce kamp
 
 ### Problémy
 
-**Dashboard se neotevře.** Zeptej se Pána jeskyně: `[Jaký je odkaz na dashboard?]`. Funguje jen tehdy, když je v té kampani otevřený chat, po první odpovědi Pána jeskyně.
+**Dashboard se neotevře.** Zeptej se Pána jeskyně: `[OOC: Jaký je odkaz na dashboard?]`. Funguje jen tehdy, když je v té kampani otevřený chat, po první odpovědi Pána jeskyně.
 
 **Pán jeskyně jako by hru neznal.** Tvůj agent nenačetl RPG Engine. Zkontroluj, že jsi ho spustil(a) ve složce kampaně a že jsi jí důvěřoval(a). V Claude Code napiš `/mcp` a znovu připoj `rpg`. V Codexu musí `codex mcp list` ve složce kampaně ukázat `rpg`. Pokud se `rpg --version` nenajde, nainstaluj RPG Engine znovu ([2.2](#22-install)).
 

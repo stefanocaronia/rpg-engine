@@ -29,6 +29,7 @@ export function Button({ children, onClick, kind, disabled, tip }: {
             type="button"
             class={kind === undefined ? "button" : `button ${kind}`}
             aria-disabled={disabled === true ? "true" : undefined}
+            aria-description={tip}
             data-tip={tip}
             onClick={() => disabled !== true && onClick()}
         >

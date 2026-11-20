@@ -1,5 +1,5 @@
 // What a change of the Packages page came to, in the player's words: what went wrong, what was added or done, what uninstalling does.
-import type { PackageAction, PackageKind, PackageOutcome, PackageWork } from "../api.ts";
+import type { EngineOutcome, PackageAction, PackageKind, PackageOutcome, PackageWork } from "../api.ts";
 import { t } from "../text.ts";
 import type { Said } from "./rows.tsx";
 
@@ -20,6 +20,29 @@ export function failure(at: string, action: PackageWork["action"], name: string,
     }
 
     return { at, problem: true, text: action === "add" ? t("Nothing was added.") : t("Nothing changed."), why: outcome.error };
+}
+
+/**
+ * Why RPG Engine was not updated (T-219), in the page's words: the no, another package's work; where no window for the yes opens or npm failed, with the
+ * command that updates it from a terminal.
+ */
+export function engineFailure(outcome: Extract<EngineOutcome, { done: false; }>): Pick<Said, "text" | "why" | "command">
+{
+    const command = "npm install -g rpg-engine";
+
+    if (outcome.code === "declined") {
+        return { text: t("You said no: nothing changed.") };
+    }
+
+    if (outcome.code === "busy") {
+        return { text: t("One package at a time: wait for the one under way, then try again.") };
+    }
+
+    if (outcome.code === "no-window") {
+        return { text: t("No window for your yes opens on this computer: update RPG Engine from a terminal."), command };
+    }
+
+    return { text: t("RPG Engine was not updated."), why: outcome.error, ...(outcome.code === "engine-failed" ? { command } : {}) };
 }
 
 /** What an addition did, by the kind the engine recognized. */

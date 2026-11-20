@@ -1,8 +1,11 @@
-// RPG Engine itself on the Packages page: its card, how a new chat takes the version installed, and what a package's latest needs of it.
-import { useEffect, useRef } from "preact/hooks";
-import type { EngineView } from "../api.ts";
+// RPG Engine itself on the Packages page: its card, how a new chat takes the version installed, and what a package's latest needs of it; and the page's
+// notice of a newer one (T-219).
+import { useEffect, useRef, useState } from "preact/hooks";
+import { type Section, sectionAddress } from "../address.ts";
+import { type EngineView, readEngine } from "../api.ts";
 import { CardHead } from "../parts/card.tsx";
 import { Icon, iconPath } from "../parts/icons.tsx";
+import type { Notice } from "../shell/notices.tsx";
 import { t } from "../text.ts";
 import { PackageRow, type RowState, SaidNote, UpdateButton, VersionMeta, WorkNote } from "./rows.tsx";
 
@@ -19,6 +22,47 @@ export interface EngineUpdated
 export const engineName = "RPG Engine";
 // Where the engine installed from this page is kept while the chat goes on with the one before it: in this tab, through a reload.
 const updatedKey = "rpg-engine-updated";
+// The newer version whose notice the player hid, on this browser: the next one is said again.
+const hiddenKey = "rpg-engine-newer-hidden";
+
+/**
+ * The page's notice of a newer RPG Engine on npm (T-219), as the server knows it today, read once as the page opens and never waited for; with the way to
+ * the Packages page, where its card updates it, and a cross that hides it until a newer one. None on that page, for a development link, or once installed.
+ */
+export function useEngineNotice(section: Section): Notice[]
+{
+    const [newer, setNewer] = useState<string>();
+    const [hidden, setHidden] = useState(hiddenVersion);
+
+    useEffect(() => {
+        void readEngine().then(
+            (read) => setNewer(read?.update === true && read.install !== "link" ? read.latest : undefined),
+            () => undefined,
+        );
+    }, []);
+
+    if (newer === undefined || newer === hidden || newer === keptUpdate()?.to || section === "packages") {
+        return [];
+    }
+
+    const hide = (): void => {
+        try {
+            localStorage.setItem(hiddenKey, newer);
+        } catch {
+            // Hidden while the page is open.
+        }
+
+        setHidden(newer);
+    };
+
+    return [{
+        kind: "info",
+        key: "engine-newer",
+        text: t("RPG Engine {version} is out.", { version: newer }),
+        link: { href: sectionAddress("packages"), text: t("Update it in Packages") },
+        hide: { label: t("Hide until the next version"), onHide: hide },
+    }];
+}
 
 /** The engine installed from this page in this tab, if any. */
 export function keptUpdate(): EngineUpdated | undefined
@@ -148,4 +192,14 @@ function RestartNote({ updated }: { updated: EngineUpdated; })
             </ol>
         </div>
     );
+}
+
+/** The newer version whose notice the player hid, if any. */
+function hiddenVersion(): string | undefined
+{
+    try {
+        return localStorage.getItem(hiddenKey) ?? undefined;
+    } catch {
+        return undefined;
+    }
 }

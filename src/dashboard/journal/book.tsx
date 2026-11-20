@@ -1,4 +1,4 @@
-// The story told as a book (T-227): the master's prose, a chapter for each closed scene, set as a book's pages: one chapter at a time on paper, its paragraphs
+// The story told as a book (T-227): the master's prose, a chapter each time the story turns, set as a book's pages: one chapter at a time on paper, its paragraphs
 // justified and indented, a capital at its start; the chapters listed beside it, closing to the left, the last with its bookmark; downloaded as Markdown or as a
 // web page that prints as the book.
 import { render } from "preact";
@@ -44,7 +44,7 @@ export function Book({ chapters, asked, campaign }: { chapters: BookChapter[]; a
     if (chapters.length === 0) {
         return (
             <div class="book-empty">
-                <p>{t("Here the master writes the story as a book: a chapter for each scene, once it ends.")}</p>
+                <p>{t("Here the master writes the story as a book: a chapter each time the story turns.")}</p>
                 <p>{t("In a campaign begun before, ask the master to write the story so far.")}</p>
             </div>
         );
@@ -200,6 +200,7 @@ h2 { text-align: center; font-weight: normal; font-size: 1.6rem; margin: .3rem 0
 .book-text p { margin: 0; text-indent: 1.5em; text-align: justify; hyphens: auto; text-wrap: pretty; orphans: 2; widows: 2; }
 .book-text p:first-child, .book-text .book-break + p { text-indent: 0; }
 .book-text p:first-child:not(:lang(ar), :lang(hi), :lang(ja), :lang(zh), :lang(ko))::first-letter { float: inline-start; font-size: 3.2em; line-height: .85; padding-block-start: .05em; padding-inline-end: .08em; }
+@supports (initial-letter: 3) { .book-text p:first-child:not(:lang(ar), :lang(hi), :lang(ja), :lang(zh), :lang(ko))::first-letter { float: none; margin-inline-end: .22em; padding: 0; font-size: 1em; line-height: inherit; initial-letter: 3; } }
 .book-text .book-break { text-align: center; text-indent: 0; margin: .8rem 0; }
 @media (max-width: 30rem) { body { padding: 2rem 1.25rem; } .book-text p { text-align: start; } }
 @media print { body { background: none; padding: 0; } .chapter { break-before: page; } h1 + .chapter { break-before: auto; } }

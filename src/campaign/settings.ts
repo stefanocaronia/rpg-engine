@@ -340,8 +340,8 @@ export const mentorWays = ["off", "hints", "tutorial"] as const;
 
 /** What each way of the mentor means to the master, which config gives for the chosen one, and the player's change of it on the dashboard (D-347). */
 const mentorMeanings: Record<(typeof mentorWays)[number], string> = {
-    off: "the story alone: no tips or explanations of yours, only your answers to what the player asks between brackets",
-    hints: "a tip of a sentence or two, in brackets, before a choice that matters and when a rule slips by, as the mentor's part of your instructions says; no lessons",
+    off: "the story alone: no tips or explanations of yours, only your answers to what the player asks in [OOC: …]",
+    hints: "a tip of a sentence or two, in [OOC: …], before a choice that matters and when a rule slips by, as the mentor's part of your instructions says; no lessons",
     tutorial: "each mechanic explained the first time it comes up, the whole sum of a roll shown, a debrief after fights and at the end of a session, "
         + "as the mentor's part of your instructions says",
 };

@@ -16,6 +16,7 @@ import { Help } from "./help/help.tsx";
 import { FollowedQuests, JournalView, QuestEndings } from "./journal/journal.tsx";
 import { AskCard } from "./packages/ask-card.tsx";
 import { inCard, nextPackCard, type PackCard } from "./packages/card.ts";
+import { useEngineNotice } from "./packages/engine.tsx";
 import { PackagesPage } from "./packages/packages.tsx";
 import { codeOfModule, ModulesContext, ownKey, preloadModules, systemPageStyle, useNavPages } from "./packages/page-code.tsx";
 import { PackagePage } from "./packages/page.tsx";
@@ -46,6 +47,7 @@ import { calledOf, playerNamed, type Shown, turnKey, withHeld } from "./shell/sh
 import { gameStyleChanged, takeSystemStyle } from "./shell/system-style.ts";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./shell/table.tsx";
 import { restoreTheme } from "./shell/theme.ts";
+import { startTooltips } from "./shell/tooltip.ts";
 import { SetupCorner, Top } from "./shell/top.tsx";
 import { browserLanguage, pageDirection, pageLocale, setLanguage, setSystemWords, t } from "./text.ts";
 import { WorldView } from "./world/world.tsx";
@@ -607,8 +609,9 @@ function App()
     const pageWidgets = useMemo(() => (packWidget === undefined ? widgets : widgets.filter((widget) => widget.id !== packWidget)), [widgets, packWidget]);
     // While the campaign is in its setup, the page is its first configuration, as a portal's (D-370).
     const inSetup = setup?.mode === "setup";
+    const engineNotice = useEngineNotice(address.section);
 
-    // The page's own messages, over it (D-298): a problem, the game away, a word to know.
+    // The page's own messages, over it (D-298): a problem, the game away, a word to know; a newer RPG Engine last (T-219).
     const notices: Notice[] = [
         ...(shown.problem === undefined ? [] : [{ kind: "problem" as const, text: shown.problem }]),
         ...(!live && shown.readAt !== undefined
@@ -618,6 +621,7 @@ function App()
         ...gameNotices(shown.problems, shown.textsTranslating),
         // In the setup an import under way is with the page's other notices, in the column of its card (D-491 (11)).
         ...(inSetup ? importNotices(shown.importing) : []),
+        ...engineNotice,
     ];
     // In play, under the player's turn, which counts more in a fight.
     const importing = inSetup ? [] : importNotices(shown.importing);
@@ -907,8 +911,9 @@ function App()
     );
 }
 
-// The theme the player picked before, from the start (D-300).
+// The theme the player picked before, from the start (D-300); the tooltips over everything (T-228).
 restoreTheme();
+startTooltips();
 
 const root = document.getElementById("app");
 

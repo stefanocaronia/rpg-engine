@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
 **RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
@@ -123,7 +123,7 @@ Pisz, co robi lub mówi Twoja postać, własnymi słowami:
 
 > Pytam karczmarza, kto jeszcze tu dzisiaj zaglądał.
 
-Żeby wyjść poza opowieść, pisz w nawiasach kwadratowych: *[Jak działa chwyt zapaśniczy?]* Mistrz Gry też odpowie w nawiasach.
+Żeby wyjść poza opowieść, pisz `[OOC: …]` (poza postacią): *[OOC: Jak działa chwyt zapaśniczy?]* Mistrz Gry odpowiada w ten sam sposób.
 
 Ty mówisz, czego próbujesz. Mistrz Gry mówi, co się dzieje. Mistrz Gry nigdy nie decyduje za Twoją postać i nigdy nie mówi o silniku gry. Możesz go zapytać, jak korzystać z dashboardu.
 
@@ -143,7 +143,7 @@ Mistrz Gry prosi o rzut tylko wtedy, gdy wynik jest niepewny i ma znaczenie. Naj
 
 ### 3.3 Sceny i walki
 
-Opowieść toczy się w **scenach**: walka, rozmowa, zwiedzanie, podróż, odpoczynek. Na końcu każdej sceny gra zapisuje się sama, scena trafia do Twojego dziennika, a Mistrz Gry spisuje ją jako rozdział książki o Twojej opowieści.
+Opowieść toczy się w **scenach**: walka, rozmowa, zwiedzanie, podróż, odpoczynek. Na końcu każdej sceny gra zapisuje się sama, scena trafia do Twojego dziennika, a gdy opowieść skręca, Mistrz Gry spisuje sceny od ostatniego rozdziału jako nowy rozdział książki o Twojej opowieści.
 
 W walce Mistrz Gry opowiada o każdej turze, która nie jest Twoja, i zatrzymuje się tam, gdzie możesz podjąć decyzję. **Scena** pokazuje u góry, czyja jest tura i kto będzie następny, a obok mapy kartę Twojej postaci. Kolejność tur, punkty wytrzymałości drużyny i to, jak ranni wyglądają przeciwnicy (opisane słowami), zostają z boku strony. Jeśli Twoja postać upadnie, rzuty obronne przeciw śmierci pojawią się na stronie w dużym rozmiarze.
 
@@ -163,7 +163,7 @@ Złoczyńcy mają plany z terminami. Każdego nowego dnia Mistrz Gry porusza zag
 
 ### 3.6 Zadania, dziennik i notatki
 
-Sprawa, którą podejmuje Twoja postać, staje się zadaniem w **Dzienniku**, z jego celami, terminem i tym, co mierzy. Oznacz je gwiazdką, żeby zostało na widoku u góry Sceny. W części **Historia** Dziennik opowiada Twoją historię jak książkę: Mistrz Gry pisze rozdział prozą o każdej scenie, gdy ta się skończy, w stylu, który wybierasz. Czytaj rozdział po rozdziale, a ostatni przeczytany zaznaczy zakładka. Możesz pobrać książkę jako Markdown albo jako stronę internetową do wydruku lub przekazania dalej. W grze rozpoczętej wcześniej poproś Mistrza Gry o spisanie dotychczasowej historii. **Oś czasu** wylicza sceny wraz z tym, co się w każdej wydarzyło. Dziennik przechowuje też Twoje **Notatki**: są prywatne, chyba że klikniesz **Udostępnij** przy jednej z nich. Mistrz Gry słyszy wtedy notatkę jako to, co myślisz, nigdy jako fakt. W części **Towarzysze** czytasz dzienniki towarzyszy: od czasu do czasu, na koniec dnia lub zadania, zapisują kilka linijek o tym, co myślą i czują.
+Zadanie, które podejmuje Twoja postać, staje się zadaniem w **Dzienniku**, z jego celami, terminem i tym, co mierzy. Oznacz je gwiazdką, żeby zostało na widoku u góry Sceny. W części **Historia** Dziennik opowiada Twoją historię jak książkę: Mistrz Gry pisze rozdział prozą za każdym razem, gdy opowieść skręca, opisując sceny od poprzedniego rozdziału, w stylu, który wybierasz. Czytaj rozdział po rozdziale, a ostatni przeczytany oznacza zakładka. Możesz pobrać książkę jako Markdown albo jako stronę internetową do wydruku lub przekazania dalej. W grze rozpoczętej wcześniej poproś Mistrza Gry o spisanie dotychczasowej historii. **Oś czasu** wylicza ponumerowane sceny wraz z tym, co się w każdej wydarzyło. Dziennik przechowuje też Twoje **Notatki**: są prywatne, chyba że klikniesz **Udostępnij** przy jednej z nich. Mistrz Gry słyszy wtedy notatkę jako to, co myślisz, nigdy jako fakt. W części **Towarzysze** czytasz dzienniki towarzyszy: od czasu do czasu, na koniec dnia lub zadania, zapisują kilka linijek o tym, co myślą i czują.
 
 ### 3.7 Historia i obraz postaci
 
@@ -193,7 +193,7 @@ Robot u góry dashboardu to Mistrz Gry: jego twarz podąża za tonem opowieści 
 
 ### 3.11 Obrazy
 
-RPG Engine potrafi tworzyć obrazy miejsc, do których docierasz, zadań, które podejmujesz, i osób, które spotykasz, zgodnie z ustawieniem **obrazów**, a także portret Twojej postaci na prośbę. Korzysta z Twojego własnego Codex lub Claude Code, z Twoim logowaniem, w ramach Twojego planu i jego limitów: **Codex** maluje obrazy, a w przeciwnym razie rysuje je **Claude Code**. **Ustawienia** pokazują, czy ten komputer może je tworzyć, a jeśli nie, jak to skonfigurować. Zawsze możesz dać Mistrzowi Gry własny obraz.
+RPG Engine potrafi tworzyć obrazy miejsc, do których docierasz, zadań, które podejmujesz, i osób, które spotykasz, zgodnie z ustawieniem **Obrazy**, a także portret Twojej postaci na prośbę. Korzysta z Twojego własnego Codex lub Claude Code, z Twoim logowaniem, w ramach Twojego planu i jego limitów: **Codex** maluje obrazy, a w przeciwnym razie rysuje je **Claude Code**. **Ustawienia** pokazują, czy ten komputer może je tworzyć, a jeśli nie, jak to skonfigurować. Zawsze możesz dać własny obraz, swojej postaci lub dowolnej stronie, którą widzisz: najedź wskaźnikiem na jeden z jej obrazów, a w rogu pojawi się mały przycisk obrazu (działa też z klawiatury, a na telefonie jest zawsze widoczny). W części **Świat** otwarta strona ma także **Zmień obraz…**, a gdy jeszcze nie ma obrazu, **Dodaj obraz…**. Twój obraz zajmuje miejsce dotychczasowego. Możesz też wrzucić plik do folderu **inbox** kampanii i powiedzieć Mistrzowi Gry, do której strony należy.
 
 ### 3.12 Bezpieczeństwo: linie, zasłony i stop
 
@@ -294,7 +294,7 @@ Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze 
 
 ### Pytania
 
-**Czy muszę znać zasady?** Nie. Wybierz mentora w trybie samouczka i pytaj w nawiasach, kiedy chcesz.
+**Czy muszę znać zasady?** Nie. Wybierz mentora w trybie samouczka i pytaj, kiedy chcesz, pisząc `[OOC: …]`.
 
 **Czy Mistrz Gry może oszukiwać?** Nie może zmienić rzutu wykonanego przez RPG Engine, chyba że na poziomie trudności fabularnym, ani faktów już ustalonych.
 
@@ -308,7 +308,7 @@ Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze 
 
 ### Problemy
 
-**Dashboard się nie otwiera.** Zapytaj Mistrza Gry: `[Jaki jest link do dashboardu?]`. Działa tylko wtedy, gdy w tej kampanii jest otwarty czat, po pierwszej odpowiedzi Mistrza Gry.
+**Dashboard się nie otwiera.** Zapytaj Mistrza Gry: `[OOC: Jaki jest link do dashboardu?]`. Działa tylko wtedy, gdy w tej kampanii jest otwarty czat, po pierwszej odpowiedzi Mistrza Gry.
 
 **Mistrz Gry chyba nie zna gry.** Twój agent nie załadował RPG Engine. Sprawdź, czy uruchomiono go w folderze kampanii i czy ufasz temu folderowi. W Claude Code wpisz `/mcp` i połącz ponownie `rpg`. W Codex polecenie `codex mcp list` w folderze kampanii musi pokazać `rpg`. Jeśli `rpg --version` nie zostanie znalezione, zainstaluj RPG Engine ponownie ([2.2](#22-install)).
 

@@ -42,6 +42,7 @@ export const image = defineCommand({
     description: "Give a page its picture: a portrait for a character, an image for a creature, an item or a place, as the dashboard will show it in a round token. "
         + "It copies the file into the campaign and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a wolf's icon. "
         + "Use it when the player gives you a picture, or after you made one with your own tools: its file, or url with the https address your tool gives, which the engine downloads. "
+        + "The player may drop pictures in the campaign's inbox folder: ask what each is for, give it, then delete it from the inbox. "
         + "For a place, a quest, a character or a creature of the campaign, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: "
         + "for the player character or a companion only when the player asks; for a creature once for each kind, whose copies show it. "
         + "Example: page Ettore, file C:\\Users\\me\\Pictures\\ettore.png.",
@@ -149,7 +150,7 @@ async function downloadedImage(root: string, context: Context, world: World, pag
 }
 
 /** Writes a picture into the campaign's images folder and links it in the page, logging it; `from` is the file it was read from, if any. */
-function placeImage(root: string, context: Context, world: World, page: Page, picture: ReadImage, from?: string): ImageResult
+export function placeImage(root: string, context: Context, world: World, page: Page, picture: ReadImage, from?: string): ImageResult
 {
     if ("problem" in picture) {
         throw new Error(`${picture.problem} Nothing changed.`);
@@ -168,6 +169,9 @@ function placeImage(root: string, context: Context, world: World, page: Page, pi
     appendLogEntry(root, newDatedLogEntry(root, context, "image-set", "public", { page: page.name, image: shownPath(root, target) }));
     return { page: page.name, image: shownPath(root, target), from: copied ? from : undefined, changed: true };
 }
+
+// Where nothing makes the picture, the player may give one of their own (D-572 (3)).
+const playerGives = "ask the player for one of their own, given on the page in their dashboard or dropped in the campaign's inbox folder";
 
 // How long a picture's download may take: a few megabytes come in seconds.
 const longestDownload = 60 * 1000;
@@ -226,7 +230,7 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
     const ready = context.pictures?.ready(true) ?? { ready: false as const, why: "Nothing on this computer makes pictures" };
 
     if (!ready.ready || context.pictures === undefined) {
-        throw new Error(`${ready.ready ? "Nothing on this computer makes pictures" : ready.why}. If your own tools make pictures, make one and give it with file; else go on without. Nothing changed.`);
+        throw new Error(`${ready.ready ? "Nothing on this computer makes pictures" : ready.why}. If your own tools make pictures, make one and give it with file; else ${playerGives}, or go on without. Nothing changed.`);
     }
 
     const unseen = [...readListSetting(root, "lines"), ...readListSetting(root, "veils")];
@@ -244,7 +248,7 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
     const making = context.pictures.make(subject).then((made) => {
         if ("refused" in made) {
             appendLogEntry(root, newDatedLogEntry(root, context, "image-refused", "hidden", { page: page.name, why: made.refused }));
-            throw new Error(`No picture of ${page.name}: ${made.refused}. Go on without, or give one with file.`);
+            throw new Error(`No picture of ${page.name}: ${made.refused}. Give one with file, or ${playerGives}, or go on without.`);
         }
 
         try {

@@ -1,10 +1,11 @@
-// rpg-engine itself on the dashboard (D-515 (3)): its version and npm's latest for the Packages page, its update from the page alone, globally with npm as it was
-// installed, never for a development link or another install; then how the chat takes it. npm is a fake here.
-import { mkdirSync, readFileSync, rmdirSync, symlinkSync, unlinkSync } from "node:fs";
+// rpg-engine itself on the dashboard (D-515 (3)): its version and npm's latest for the Packages page, asked at most once a day (T-219), its update from the
+// page alone with the player's yes in a window, globally with npm as it was installed, never for a development link or another install; then how the chat
+// takes it. npm and the window are fakes here.
+import { existsSync, mkdirSync, readFileSync, rmdirSync, symlinkSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { packageCommand } from "../src/commands/package/package.ts";
-import type { EngineInstall, EngineUpdater } from "../src/core/context.ts";
+import type { Confirm, Confirmed, EngineInstall, EngineUpdater } from "../src/core/context.ts";
 import { packageApi } from "../src/core/packages/declarations.ts";
 import { getVersion } from "../src/core/version.ts";
 import { npmEngine } from "../src/packages/index.ts";
@@ -19,10 +20,13 @@ afterEach(async () => {
 });
 
 /** npm as the engine sees it: its latest, how this one is installed, and the versions it was asked to install, the last of which is then on disk. */
-function fakeEngine(latest: string, install: EngineInstall, updated: string[]): EngineUpdater
+function fakeEngine(latest: string, install: EngineInstall, updated: string[], asked: string[] = []): EngineUpdater
 {
     return {
-        latest: () => Promise.resolve({ version: latest }),
+        latest: () => {
+            asked.push(latest);
+            return Promise.resolve({ version: latest });
+        },
         installed: () => Promise.resolve(install),
         onDisk: () => updated.at(-1) ?? getVersion(),
         update: (version) => {
@@ -32,11 +36,22 @@ function fakeEngine(latest: string, install: EngineInstall, updated: string[]): 
     };
 }
 
+/** The player's window, answering as told, with the questions it was asked. */
+function fakeWindow(answer: Confirmed, questions: string[] = []): Confirm
+{
+    return {
+        ask: (title, text) => {
+            questions.push(`${title}: ${text}`);
+            return Promise.resolve(answer);
+        },
+    };
+}
+
 describe("the engine on the Packages page", () => {
     it("says its version, npm's latest and how it is installed; updates a global one to the latest, and says how the chat takes it", async () => {
         const updated: string[] = [];
         campaign = await testCampaign({ system: "free" });
-        campaign.context = { ...campaign.context, engine: fakeEngine("99.0.0", { how: "global" }, updated), host: () => "claude-code" };
+        campaign.context = { ...campaign.context, engine: fakeEngine("99.0.0", { how: "global" }, updated), host: () => "claude-code", confirm: fakeWindow("yes") };
         const dashboard = await campaign.dashboard();
         expect(await dashboard.get("/api/engine")).toEqual({ version: getVersion(), latest: "99.0.0", update: true, install: "global" });
         expect(await dashboard.post("/api/engine", { action: "update" })).toEqual({ status: 202, body: { kind: "engine-updated", version: "99.0.0", restart: "chat" } });
@@ -78,6 +93,73 @@ describe("the engine on the Packages page", () => {
         expect(await dashboard.get("/api/engine")).toMatchObject({ update: false });
         expect((await dashboard.post("/api/engine", { action: "update" })).body).toEqual({ error: `rpg-engine ${getVersion()} is npm's latest: there is nothing to update.`, code: "engine-latest", values: { version: getVersion() } });
         expect(updated).toEqual([]);
+    });
+});
+
+describe("the player's yes to an update (T-219)", () => {
+    it("asks it in a window of their computer: a no holds for the session, and with no window the terminal's command is said", async () => {
+        const updated: string[] = [];
+        const questions: string[] = [];
+        campaign = await testCampaign({ system: "free" });
+        campaign.context = { ...campaign.context, engine: fakeEngine("99.0.0", { how: "global" }, updated), confirm: fakeWindow("no", questions) };
+        const dashboard = await campaign.dashboard();
+        expect(await dashboard.post("/api/engine", { action: "update" })).toMatchObject({ status: 400, body: { code: "declined" } });
+        expect(questions).toEqual([`Update RPG Engine: Update RPG Engine from ${getVersion()} to 99.0.0? npm installs it on this computer, for every campaign. The chat you play in keeps ${getVersion()} until you start a new one.`]);
+        expect(await dashboard.post("/api/engine", { action: "update" })).toMatchObject({ status: 400, body: { code: "declined" } });
+        expect(questions).toHaveLength(1);
+        expect(updated).toEqual([]);
+
+        campaign.context = { ...campaign.context, confirm: undefined };
+        const windowless = await campaign.dashboard();
+        expect(await windowless.post("/api/engine", { action: "update" })).toEqual({
+            status: 400,
+            body: { error: "No window for the player's yes opens on this computer: update it in a terminal with npm install -g rpg-engine. Nothing changed.", code: "no-window" },
+        });
+        expect(updated).toEqual([]);
+    });
+});
+
+describe("npm's latest, asked at most once a day (T-219)", () => {
+    it("is asked once for the page's looks, kept in the player's folder for a new chat, and asked again the next day or for the update", async () => {
+        const asked: string[] = [];
+        const home = makeTempFolder();
+        let now = new Date("2026-11-20T10:00:00Z");
+        campaign = await testCampaign({ system: "free" });
+        campaign.context = { ...campaign.context, home, now: () => now, engine: fakeEngine("99.0.0", { how: "global" }, [], asked), confirm: fakeWindow("no") };
+        const dashboard = await campaign.dashboard();
+        expect(await dashboard.get("/api/engine")).toMatchObject({ latest: "99.0.0", update: true });
+        expect(await dashboard.get("/api/engine")).toMatchObject({ latest: "99.0.0" });
+        expect(asked).toHaveLength(1);
+        expect(existsSync(join(home, "engine-update.json"))).toBe(true);
+
+        // A new chat's server reads it from the player's folder.
+        const next = await campaign.dashboard();
+        expect(await next.get("/api/engine")).toMatchObject({ latest: "99.0.0" });
+        expect(asked).toHaveLength(1);
+
+        // The update asks npm anew, whatever was kept.
+        await next.post("/api/engine", { action: "update" });
+        expect(asked).toHaveLength(2);
+
+        now = new Date("2026-11-21T10:00:01Z");
+        const tomorrow = await campaign.dashboard();
+        await tomorrow.get("/api/engine");
+        expect(asked).toHaveLength(3);
+    });
+
+    it("offline, says so without keeping it, and asks again after an hour", async () => {
+        let calls = 0;
+        const home = makeTempFolder();
+        let now = new Date("2026-11-20T10:00:00Z");
+        const offline: EngineUpdater = { ...fakeEngine("99.0.0", { how: "global" }, []), latest: () => Promise.resolve({ failed: `npm's registry could not be reached (${++calls})` }) };
+        campaign = await testCampaign({ system: "free" });
+        campaign.context = { ...campaign.context, home, now: () => now, engine: offline };
+        const dashboard = await campaign.dashboard();
+        expect(await dashboard.get("/api/engine")).toMatchObject({ failed: "npm's registry could not be reached (1)" });
+        expect(await dashboard.get("/api/engine")).toMatchObject({ failed: "npm's registry could not be reached (1)" });
+        expect(existsSync(join(home, "engine-update.json"))).toBe(false);
+        now = new Date("2026-11-20T11:00:01Z");
+        expect(await dashboard.get("/api/engine")).toMatchObject({ failed: "npm's registry could not be reached (2)" });
     });
 });
 

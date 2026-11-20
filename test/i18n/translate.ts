@@ -467,7 +467,7 @@ function guideRules(language: string, english: string): string[]
         "  tables, quotes and blank lines.",
         "- Keep each link's target in parentheses exactly, such as (#24-connect-your-ai) or a web address; translate the link's words.",
         "- Keep each block of code between ``` exactly: commands, and what a command prints. In `inline code`, keep commands, file names, keys and paths as",
-        "  they are; translate a line the player writes to the master, such as `[What's the dashboard link?]`.",
+        "  they are; translate a line the player writes to the master, such as `[OOC: What's the dashboard link?]`, keeping `OOC:`.",
         "- Keep the names of products and programs: RPG Engine, Claude Code, Codex, ChatGPT, Node.js, npm, Obsidian. What Claude Code and Codex show stays in",
         `  English, as they show it (Yes, I trust this folder; No, exit). Menu items of Windows and macOS as those systems name them in ${name}.`,
         "- The Italian terms the guide gives as examples (Classe Armatura, tiro salvezza, vantaggio) stay as they are.",

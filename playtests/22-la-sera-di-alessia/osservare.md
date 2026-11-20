@@ -19,7 +19,7 @@ Per chi le sta accanto. Un foglio, una penna, l'ora. Ogni nota: `21:14 · M12 ·
 ## Quando intervenire, quando tacere
 
 - **Taci** davanti a una scelta della storia, anche per due minuti: è il gioco. Non suggerire mai cosa fare, non spiegare la plancia prima che ci guardi, non correggere il master quando sbaglia: lo annoti.
-- **Su una regola** che ti chiede: «chiedilo al master, tra parentesi quadre». Vediamo come risponde lui, non tu.
+- **Su una regola** che ti chiede: «chiedilo al master, con [OOC: …]». Vediamo come risponde lui, non tu.
 - **Sulla pagina**, se è bloccata da più di due minuti: prima «cosa stai cercando?», poi l'aiuto più piccolo che la sblocca.
 - **Subito**, senza aspettare: un errore tecnico (la chat si ferma, la pagina dice *Non collegato*), o un contenuto che la mette a disagio (ricordale `[stop]`).
 - Ogni volta che intervieni scrivi l'ora e cosa hai detto: da lì in poi quello che fa non è più suo soltanto.

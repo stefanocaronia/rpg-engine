@@ -268,8 +268,11 @@ export async function readEngine(): Promise<EngineView | undefined>
     return body;
 }
 
-/** What updating RPG Engine came to: the version installed, and whether a new chat or the app opened again brings it; or the engine's words. */
-export type EngineOutcome = { done: true; version: string; restart: "chat" | "app"; } | { done: false; error: string; code?: "busy"; };
+/**
+ * What updating RPG Engine came to: the version installed, and whether a new chat or the app opened again brings it; or the engine's words, and why: another
+ * package at work, the player's no, no window for their yes, or npm's failure.
+ */
+export type EngineOutcome = { done: true; version: string; restart: "chat" | "app"; } | { done: false; error: string; code?: "busy" | "declined" | "no-window" | "engine-failed"; };
 
 /** Installs npm's latest RPG Engine as it was installed: the chat and this page go on with the one they started with. */
 export async function updateEngine(): Promise<EngineOutcome>
@@ -282,7 +285,8 @@ export async function updateEngine(): Promise<EngineOutcome>
             return { done: true, version: body.version, restart: body.restart === "app" ? "app" : "chat" };
         }
 
-        return { done: false, error: refusalText(body, t("It did not reach the game: try again.")), ...(body.code === "busy" ? { code: body.code } : {}) };
+        const code = body.code === "busy" || body.code === "declined" || body.code === "no-window" || body.code === "engine-failed" ? body.code : undefined;
+        return { done: false, error: refusalText(body, t("It did not reach the game: try again.")), ...(code === undefined ? {} : { code }) };
     } catch {
         return { done: false, error: t("It did not reach the game: try again.") };
     }
@@ -475,6 +479,33 @@ export async function putPageBack(page: string, shown: string): Promise<PutBackO
         return { done: false, error: refusalText(code === undefined ? body : { ...body, values: { ...body.values, page: shown } }, t("It did not reach the game: try again.")), ...(code === undefined ? {} : { code }) };
     } catch {
         return { done: false, error: t("It did not reach the game: try again.") };
+    }
+}
+
+/** The largest picture the page sends, as the engine takes it: 5 MB. */
+export const largestPicture = 5 * 1024 * 1024;
+
+/** Gives a page the player's own picture (D-572 (3)): undefined when it is the page's now, else why not, in the page's words. */
+export async function givePicture(page: string, file: File): Promise<string | undefined>
+{
+    if (file.size > largestPicture) {
+        return refusalText({ code: "picture-big", values: { size: String(largestPicture / 1024 / 1024) } }, "");
+    }
+
+    try {
+        const response = await fetch(`/api/picture?${new URLSearchParams({ page })}`, {
+            method: "POST",
+            headers: { "Content-Type": file.type || "application/octet-stream", "X-File-Name": encodeURIComponent(file.name) },
+            body: file,
+        });
+
+        if (response.ok) {
+            return undefined;
+        }
+
+        return refusalText(await response.json().catch(() => ({})) as Refused, t("It did not reach the game: try again."));
+    } catch {
+        return t("It did not reach the game: try again.");
     }
 }
 

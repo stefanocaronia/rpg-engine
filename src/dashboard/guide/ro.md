@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e2d161a6,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,36cfcada,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,b3f85edd,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,2b2d7c37,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,b830ae6c,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,891d9bc7,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,105b4a93,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -123,7 +123,7 @@ Scrie ce face sau ce spune personajul tău, cu cuvintele tale:
 
 > Îl întreb pe hangiu cine a mai trecut pe aici în seara asta.
 
-Când vrei să ieși din poveste, scrie între paranteze drepte: *[Cum funcționează imobilizarea?]* Maestrul de joc răspunde tot între paranteze.
+Când vrei să ieși din poveste, scrie `[OOC: …]` (out of character): *[OOC: Cum funcționează imobilizarea?]* Maestrul de joc răspunde la fel.
 
 Tu spui ce încerci, iar maestrul de joc spune ce se întâmplă. Maestrul de joc nu decide niciodată pentru personajul tău și nu vorbește despre motor. Poți întreba maestrul de joc cum se folosește tabloul de bord.
 
@@ -143,7 +143,7 @@ Maestrul de joc cere o aruncare doar când rezultatul este incert și contează,
 
 ### 3.3 Scene și lupte
 
-Povestea se desfășoară în **scene**: o luptă, o conversație, o explorare, o călătorie, un popas. La sfârșitul fiecărei scene jocul se salvează singur, scena intră în jurnalul tău, iar maestrul de joc o scrie ca pe un capitol din cartea poveștii tale.
+Povestea se desfășoară în **scene**: o luptă, o conversație, o explorare, o călătorie, un popas. La sfârșitul fiecărei scene jocul se salvează singur, scena intră în jurnalul tău, iar când povestea face o cotitură, maestrul de joc scrie scenele de la ultimul capitol ca pe un capitol nou în cartea poveștii tale.
 
 Într-o luptă, maestrul de joc povestește fiecare tură care nu este a ta și se oprește acolo unde poți decide. **Scenă** arată sus al cui este rândul și cine urmează, iar lângă hartă apare cartonașul personajului tău. Ordinea turelor, punctele de viață ale grupului și cât de răniți arată dușmanii, în cuvinte, rămân lângă pagină. Dacă personajul tău cade, aruncările de salvare împotriva morții apar mari pe pagină.
 
@@ -163,7 +163,7 @@ Răufăcătorii au planuri cu termene limită. În fiecare zi nouă, maestrul de
 
 ### 3.6 Misiuni, jurnal și notițe
 
-O sarcină pe care o preia personajul tău devine o misiune în **Jurnal**, cu obiectivele ei, termenul limită și ce măsoară; marchez-o cu stea ca s-o ai la vedere în partea de sus a paginii Scenă. La **Poveste**, Jurnalul îți spune povestea ca pe o carte: maestrul de joc scrie un capitol în proză pentru fiecare scenă, după ce se termină, în stilul pe care l-ai ales; citește capitol cu capitol, ultimul fiind marcat cu semnul de carte, și descarcă-l ca Markdown sau ca pagină web, ca să-l tipărești sau să-l dai mai departe. Într-un joc început înainte, cere maestrului de joc să scrie povestea de până acum. **Cronologia** enumeră scenele, cu ce s-a întâmplat în fiecare. Jurnalul păstrează și **notițele** tale: private, până când apeși **Partajează** pe una; maestrul de joc o aude ca pe ce gândești tu, niciodată ca pe un fapt. La **Însoțitori** citești jurnalele însoțitorilor tăi: din când în când, la sfârșitul unei zile sau al unei misiuni, ei scriu câteva rânduri despre ce gândesc și ce simt.
+O sarcină pe care o preia personajul tău devine o misiune în **Jurnal**, cu obiectivele ei, termenul limită și ce măsoară; marchează-o cu stea ca s-o ai la vedere în partea de sus a paginii Scenă. La **Poveste**, Jurnalul îți spune povestea ca pe o carte: maestrul de joc scrie un capitol în proză de fiecare dată când povestea face o cotitură, relatând scenele de la ultimul capitol, în stilul pe care l-ai ales; citește capitol cu capitol, ultimul fiind marcat cu semnul de carte, și descarcă-l ca Markdown sau ca pagină web, ca să-l tipărești sau să-l dai mai departe. Într-un joc început înainte, cere maestrului de joc să scrie povestea de până acum. **Cronologia** enumeră scenele, numerotate, cu ce s-a întâmplat în fiecare. Jurnalul păstrează și **notițele** tale: private, până când apeși **Partajează** pe una; maestrul de joc o aude ca pe ceea ce gândești tu, niciodată ca pe un fapt. La **Însoțitori** citești jurnalele însoțitorilor tăi: din când în când, la sfârșitul unei zile sau al unei misiuni, ei scriu câteva rânduri despre ce gândesc și ce simt.
 
 ### 3.7 Povestea și chipul personajului tău
 
@@ -193,7 +193,7 @@ Robotul din partea de sus a tabloului de bord este maestrul de joc: chipul lui u
 
 ### 3.11 Imagini
 
-RPG Engine poate genera imagini cu locurile la care ajungi, misiunile pe care le preiei și persoanele pe care le întâlnești, după cum spune setarea **imagini**, plus portretul personajului tău când îl ceri. Folosește propriul tău Codex sau Claude Code, cu contul tău, în planul tău și cu limitele lui: **Codex** le pictează, altfel le desenează **Claude Code**. **Setări** arată dacă acest calculator le poate genera și, dacă nu, cum le configurezi. Poți oricând să-i dai maestrului de joc o imagine a ta.
+RPG Engine poate genera imagini cu locurile la care ajungi, misiunile pe care le preiei și persoanele pe care le întâlnești, după cum spune setarea **Imagini**, plus portretul personajului tău când îl ceri. Folosește propriul tău Codex sau Claude Code, cu contul tău, în planul tău și cu limitele lui: **Codex** le pictează, altfel le desenează **Claude Code**. **Setări** arată dacă acest calculator le poate genera și, dacă nu, cum le configurezi. Poți oricând să dai o imagine a ta, personajului tău sau oricărei pagini pe care o vezi: trece cursorul peste una dintre imaginile ei și în colț apare un mic buton cu o imagine (și de la tastatură, iar pe telefon mereu); în **Lume**, pagina pe care o deschizi are și **Schimbă imaginea…**, sau **Adaugă o imagine…** cât timp nu are niciuna. Imaginea ta o înlocuiește pe cea existentă. Sau pune fișierul în folderul **inbox** al campaniei și spune-i maestrului de joc pentru ce pagină este.
 
 ### 3.12 Siguranță: linii, văluri și oprire
 
@@ -294,7 +294,7 @@ Fiecare comandă pe care o folosește maestrul de joc poate fi rulată și în f
 
 ### Întrebări
 
-**Trebuie să cunosc regulile?** Nu. Alege mentorul tutorial și întreabă între paranteze oricând vrei.
+**Trebuie să cunosc regulile?** Nu. Alege mentorul tutorial și întreabă în `[OOC: …]` oricând vrei.
 
 **Poate maestrul să trișeze?** Nu poate schimba o aruncare făcută de RPG Engine, decât la dificultatea poveste, și nici faptele deja stabilite.
 
@@ -308,7 +308,7 @@ Fiecare comandă pe care o folosește maestrul de joc poate fi rulată și în f
 
 ### Probleme
 
-**Dashboardul nu se deschide.** Întreabă maestrul: `[Care e linkul către dashboard?]`. Funcționează doar cât timp e deschis un chat în acea campanie, după primul răspuns al maestrului.
+**Dashboardul nu se deschide.** Întreabă maestrul de joc: `[OOC: Care e linkul către dashboard?]`. Funcționează doar cât timp este deschis un chat în acea campanie, după primul răspuns al maestrului de joc.
 
 **Maestrul pare să nu cunoască jocul.** Agentul tău nu a încărcat RPG Engine. Verifică dacă l-ai pornit în folderul campaniei și dacă ai avut încredere în el. În Claude Code, scrie `/mcp` și reconectează `rpg`. În Codex, `codex mcp list` în folderul campaniei trebuie să arate `rpg`. Dacă `rpg --version` nu e găsit, instalează din nou RPG Engine ([2.2](#22-install)).
 

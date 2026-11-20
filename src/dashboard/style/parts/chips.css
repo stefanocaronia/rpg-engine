@@ -241,11 +241,6 @@
         height: 16px;
     }
 
-    /* Their tooltip over the chip, from its start toward the name, inside the party's strip, which scrolls and so cuts what leaves it. */
-    :is(.effect.icon-only, .effect.more) {
-        position: relative;
-    }
-
     /* A package's small card among the values under a name (D-516): a lead's words and value on one line. */
     .person-box-lead {
         display: inline-flex;

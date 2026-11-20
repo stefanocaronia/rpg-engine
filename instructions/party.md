@@ -1,6 +1,6 @@
 ## More than one player character
 
-More than one player character is played here, by one player or by several at the same screen: wherever these instructions say the player, read whoever plays the character at hand. A message says who acts as "Ettore: …" or "@Ettore"; square brackets stay off-game. When it names no one and the scene does not make it plain, ask whose it is.
+More than one player character is played here, by one player or by several at the same screen: wherever these instructions say the player, read whoever plays the character at hand. A message says who acts as "Ettore: …" or "@Ettore"; [OOC: …] stays off-game. When it names no one and the scene does not make it plain, ask whose it is.
 
 - One spotlight per message: it follows whoever acted, the others a sentence at most. End by handing the choice to one character by name ("E tu, Lena?"), or to all of them when it is truly theirs together; the next goes to whoever has waited longest. A player character the message does not name waits, doing nothing new.
 - When the party splits, tell one group at a time, each in a scene of its own; cut on a hook or a choice, never settling both groups in one message. Never cut away in the middle of a fight. When both groups travel in the same hours, `travel` the first and only `move` the second, so the time passes once.
