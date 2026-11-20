@@ -61,12 +61,14 @@
         }
     }
 
+    /* What a whole group asks of the player, as keeping the repository private: a setting's note in ink with its edge, its icon saying what it is about. Not
+       the accent's tint, which on the light page fades to grey and on the dark one is the gold of what is chosen; not the warning's colour, for nothing is wrong. */
     .settings-group-note {
         margin: 4px 0 8px;
-        padding: 8px 12px;
-        border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--rule));
-        border-radius: var(--radius-l);
-        background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+    }
+
+    .settings-group-note > p {
+        margin: 0;
     }
 
     .settings-group h3 + .setting,
@@ -293,10 +295,16 @@
         gap: 6px;
     }
 
-    /* A setting that counts for nothing now, as the prose while an author is written: its values faded, still to choose. */
-    .setting.off > .segmented,
+    /* A setting that counts for nothing now, as the prose while an author is written or what goes into the repository without commits: the chosen value's
+       gold paled and what it means in the muted ink, still to choose. Colours, not opacity: the values stay at 4.5:1, as they can still be chosen. */
+    .setting.off > .segmented button[aria-checked="true"] {
+        background: color-mix(in srgb, var(--gold) 35%, var(--float));
+        color: var(--ink);
+    }
+
     .setting.off .setting-means {
-        opacity: 0.55;
+        border-inline-start-color: color-mix(in srgb, var(--gold) 45%, var(--rule));
+        color: var(--muted);
     }
 
     .setting-off {

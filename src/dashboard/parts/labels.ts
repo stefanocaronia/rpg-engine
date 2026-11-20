@@ -309,7 +309,7 @@ export function settingLabel(name: string): string
         veils: t("Veils"),
         orders: t("Standing orders"),
         language: t("Language"),
-        git: t("Git"),
+        git: t("Automatic commits"),
         "git-saves": t("Saves in the repository"),
         "git-sessions": t("Chats in the repository"),
         companions: t("Companions"),

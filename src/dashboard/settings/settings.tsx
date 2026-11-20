@@ -93,7 +93,12 @@ export function SettingsView({ version, several = false }: { version: number; se
                 return (
                     <section key={group.names[0]} class="settings-group">
                         <h3>{groupTitle(index)}</h3>
-                        {group.note !== undefined && <p class="settings-group-note">{group.note()}</p>}
+                        {group.note !== undefined && (
+                            <div class="settings-group-note setting-note fix">
+                                <Icon name="lock" />
+                                <p>{group.note()}</p>
+                            </div>
+                        )}
                         {shown.map((setting) => (
                             <SettingRow
                                 key={setting.name}
@@ -122,11 +127,23 @@ function meansText(setting: string, value: string, means: string, several: boole
     return several && setting === "saves" && value === "checkpoint" ? t("if they all die, or if the table chooses it when one dies: back to the end of the last scene") : t(means);
 }
 
-/** Why a setting counts for nothing now, as the prose while an author is written (D-395); undefined for one that counts. */
+/**
+ * Why a setting counts for nothing now, as the prose while an author is written (D-395), or what goes into the repository while the engine commits nothing
+ * (D-576); undefined for one that counts. Its values stay to choose, for when it counts again.
+ */
 function offBy(setting: PlayerSetting, settings: PlayerSetting[]): string | undefined
 {
-    const author = settings.find((one) => one.name === "author")?.value;
-    return setting.name === "prose" && author !== undefined ? t("The author you wrote takes its place: this counts again once you clear the author.") : undefined;
+    const valueOf = (name: string): string | undefined => settings.find((one) => one.name === name)?.value;
+
+    if (setting.name === "prose" && valueOf("author") !== undefined) {
+        return t("The author you wrote takes its place: this counts again once you clear the author.");
+    }
+
+    if ((setting.name === "git-saves" || setting.name === "git-sessions") && valueOf("git") === "off") {
+        return t("Counts only with automatic commits: while they are off, the engine puts nothing into the repository.");
+    }
+
+    return undefined;
 }
 
 /**
