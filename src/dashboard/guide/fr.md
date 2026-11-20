@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,e71aa28a,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,244fcead,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,c000ae61. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
 **RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
@@ -183,6 +183,8 @@ Dans tous les modes, tu peux **recommencer**, depuis le début du jeu ou depuis 
 
 Après un retour en arrière, **ouvre un nouveau chat** : l'ancien se souvient de ce qui a été annulé. Écris *continue* dans le nouveau chat, puis appuie sur **J'ai ouvert un nouveau chat** dans Sauvegardes.
 
+Si le dossier de la campagne est un dépôt git, **Paramètres** contient une section **Git**, entièrement désactivée tant que tu n'as rien choisi : un commit au début de chaque session, à chaque sauvegarde et à la fin de chaque scène, et un push juste après si tu le veux. Les sauvegardes et tes chats avec le MJ restent hors du dépôt, sauf si tu les y autorises ; n'autorise les chats que si le dépôt est privé.
+
 ### 3.9 Sessions : s'arrêter et revenir
 
 Arrête-toi quand tu veux : *[On s'arrête ici pour ce soir.]* Tout est déjà sauvegardé dans les fichiers. Pour revenir, lance ton agent dans le dossier de la campagne et écris *continue* : le MJ te fait un court résumé et reprend l'histoire.
@@ -308,7 +310,7 @@ Toutes les commandes que le MJ utilise peuvent aussi être lancées dans le doss
 
 ### Problèmes
 
-**Le tableau de bord ne s'ouvre pas.** Demande au MJ : `[OOC: Quel est le lien du tableau de bord ?]`. Il ne fonctionne que tant qu'un chat est ouvert dans cette campagne, après la première réponse du MJ.
+**Le tableau de bord ne s'ouvre pas.** Demande au MJ : `[OOC: Quel est le lien du tableau de bord ?]`. Il ne fonctionne que tant qu'un chat est ouvert dans cette campagne : il démarre avec le chat.
 
 **Le MJ ne semble pas connaître le jeu.** Ton agent n'a pas chargé RPG Engine. Vérifie que tu l'as lancé dans le dossier de la campagne et que tu lui as fait confiance. Dans Claude Code, écris `/mcp` et reconnecte `rpg`. Dans Codex, `codex mcp list` dans le dossier de la campagne doit afficher `rpg`. Si `rpg --version` est introuvable, réinstalle RPG Engine ([2.2](#22-install)).
 
@@ -322,4 +324,4 @@ Toutes les commandes que le MJ utilise peuvent aussi être lancées dans le doss
 
 **L'installation échoue, ou `rpg` ne démarre pas.** `node --version` doit afficher 24 ou plus. Si Windows répond que l'exécution de scripts est désactivée, consulte [2.1](#21-what-you-need). Sous Windows, garde RPG Engine et tes campagnes loin des chemins qui contiennent `&`.
 
-**Le lien du tableau de bord a changé.** Un autre programme a pris l'adresse habituelle ; le MJ te donne le nouveau lien.
+**Le lien du tableau de bord a changé.** Chaque campagne garde sa propre adresse, chat après chat. Elle ne change que si un autre programme l'occupe : le MJ te donne alors le nouveau lien, que la campagne garde ensuite.

@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,e71aa28a,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,244fcead,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,c000ae61. Change the English, then run it again. -->
 # RPG Engine: la guía completa
 
 **RPG Engine** te permite jugar un juego de rol de mesa con una **IA como máster**. Hablas con el máster en un **chat**; RPG Engine trabaja entre bastidores: **recuerda el mundo**, **tira los dados** y **lleva las cuentas**. Junto al chat mantienes abierta una página en el navegador, el **panel**, con tu ficha, los dados, los mapas y tu diario.
@@ -183,6 +183,8 @@ En todos los modos puedes **empezar de nuevo**, desde el inicio del juego o desd
 
 Después de volver atrás, **abre un chat nuevo**: el anterior recuerda lo que se deshizo. Escribe *continuar* en el chat nuevo y luego pulsa **He abierto un chat nuevo** en Partidas guardadas.
 
+Si la carpeta de la campaña es un repositorio de git, **Ajustes** tiene una sección **Git**, todo desactivado hasta que tú elijas: un commit al inicio de cada sesión, en cada partida guardada y al final de cada escena, y un push después si quieres. Las partidas guardadas y tus chats con el máster quedan fuera del repositorio a menos que los incluyas; incluye los chats solo si el repositorio es privado.
+
 ### 3.9 Sesiones: parar y volver
 
 Para cuando quieras: *[Lo dejamos aquí por esta noche.]* Todo está ya guardado en los archivos. Para volver, inicia tu agente en la carpeta de la campaña y escribe *continuar*: el máster te da un resumen breve y sigue.
@@ -308,7 +310,7 @@ Cada comando que usa el máster también se puede ejecutar en la carpeta de la c
 
 ### Problemas
 
-**El dashboard no se abre.** Pregúntale al máster: `[OOC: ¿Cuál es el enlace del dashboard?]`. Solo funciona mientras haya un chat abierto en esa campaña, después de la primera respuesta del máster.
+**El panel no se abre.** Pregúntale al máster: `[OOC: ¿Cuál es el enlace del panel?]`. Solo funciona mientras haya un chat abierto en esa campaña: se inicia con el chat.
 
 **El máster no parece conocer el juego.** Tu agente no cargó RPG Engine. Comprueba que lo iniciaste en la carpeta de la campaña y que confiaste en ella. En Claude Code, escribe `/mcp` y vuelve a conectar `rpg`. En Codex, `codex mcp list` en la carpeta de la campaña debe mostrar `rpg`. Si `rpg --version` no se encuentra, instala RPG Engine de nuevo ([2.2](#22-install)).
 
@@ -322,4 +324,4 @@ Cada comando que usa el máster también se puede ejecutar en la carpeta de la c
 
 **La instalación falla, o `rpg` no se inicia.** `node --version` debe indicar 24 o superior. Si Windows responde que la ejecución de scripts está deshabilitada, consulta [2.1](#21-what-you-need). En Windows, mantén RPG Engine y tus campañas fuera de rutas que contengan `&`.
 
-**El enlace del panel cambió.** Otro programa ocupó la dirección habitual; el máster te da el enlace nuevo.
+**El enlace del panel cambió.** Cada campaña conserva su propia dirección, chat tras chat. Solo cambia cuando otro programa la ocupa: el máster te da el enlace nuevo, que la campaña conserva desde entonces.

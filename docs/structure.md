@@ -59,6 +59,7 @@ Where things are in the repository, what each module depends on, and where new c
 | `map` | The world map: roads, quickest way, compass, distances |
 | `grid` | The map of a place: squares, legend, reach, adjacency |
 | `saves` | Saves as zips |
+| `git` | Git in a folder, through the git of the computer, never asking: whether it is a repository, a commit of the folder, a push, the engine's block of a `.gitignore` |
 | `player-notes` | The player's notes, outside the game |
 | `chats` | The chats Claude Code and Codex keep of a campaign, read in their folders and written into it as text |
 

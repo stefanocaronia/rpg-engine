@@ -5,7 +5,7 @@ import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCommandLine } from "../../src/cli/command-line.ts";
-import { picturesNotes } from "../../src/commands/config/dashboard.ts";
+import { gitNotes, gitQuestions, picturesNotes } from "../../src/commands/config/dashboard.ts";
 import { playerSettingNames } from "../../src/commands/config/words.ts";
 import type { PlayerSetting } from "../../src/dashboard/data.ts";
 import { masterScreenLine } from "../../src/server/mcp.ts";
@@ -36,6 +36,8 @@ export async function settingPhrases(): Promise<Set<string>>
 {
     const campaign = join(makeTempFolder(), "campaign");
     mkdirSync(campaign);
+    // In a git repository, for the settings of git, which only one shows (D-576).
+    mkdirSync(join(campaign, ".git"));
     const context = { ...testContext(campaign), folder: campaign };
     // Without a system, which may leave some of them out (DAT-16).
     await runCommandLine(["init", "--language", "it"], context);
@@ -51,7 +53,7 @@ export async function settingPhrases(): Promise<Set<string>>
     await runCommandLine(["config", "system", "free"], context);
     const settings = [...unplayed, ...await read("--setup")].filter((setting) => own.has(setting.name));
     const words = settings.flatMap((setting) => [setting.about, setting.question, ...(setting.choices ?? []).flatMap((choice) => [choice.means, choice.label])]);
-    return new Set([...words, ...picturesNotes].filter((word) => word !== undefined));
+    return new Set([...words, ...picturesNotes, ...gitNotes, ...gitQuestions].filter((word) => word !== undefined));
 }
 
 /** The {names} a phrase fills, in order of their names. */

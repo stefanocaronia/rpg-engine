@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,e71aa28a,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,244fcead,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,c000ae61. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
 **RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
@@ -183,6 +183,8 @@ RPG Engine salvează toată campania la sfârșitul fiecărei scene. Setarea **s
 
 După ce te-ai întors în timp, **deschide un chat nou**: cel vechi își amintește ce a fost anulat. Scrie *continuă* în chatul nou, apoi apasă **Am deschis un chat nou** în Salvări.
 
+Dacă folderul campaniei este un depozit git, **Setări** are o secțiune **Git**, toate dezactivate până când alegi tu: un commit la începutul fiecărei sesiuni, la fiecare salvare și la sfârșitul fiecărei scene, plus un push după aceea, dacă vrei. Salvările și chaturile tale cu maestrul de joc rămân în afara depozitului, dacă nu le permiți tu să intre; permite intrarea chaturilor doar dacă depozitul este privat.
+
 ### 3.9 Sesiuni: oprirea și revenirea
 
 Oprește-te oricând vrei: *[Să ne oprim aici pentru în seara asta.]* Totul este deja salvat în fișiere. Ca să revii, pornește-ți agentul în folderul campaniei și scrie *continuă*: maestrul de joc îți face un scurt rezumat și merge mai departe.
@@ -308,7 +310,7 @@ Fiecare comandă pe care o folosește maestrul de joc poate fi rulată și în f
 
 ### Probleme
 
-**Dashboardul nu se deschide.** Întreabă maestrul de joc: `[OOC: Care e linkul către dashboard?]`. Funcționează doar cât timp este deschis un chat în acea campanie, după primul răspuns al maestrului de joc.
+**Dashboardul nu se deschide.** Întreabă maestrul de joc: `[OOC: Care e linkul către dashboard?]`. Funcționează doar cât timp este deschis un chat în acea campanie: pornește odată cu chatul.
 
 **Maestrul pare să nu cunoască jocul.** Agentul tău nu a încărcat RPG Engine. Verifică dacă l-ai pornit în folderul campaniei și dacă ai avut încredere în el. În Claude Code, scrie `/mcp` și reconectează `rpg`. În Codex, `codex mcp list` în folderul campaniei trebuie să arate `rpg`. Dacă `rpg --version` nu e găsit, instalează din nou RPG Engine ([2.2](#22-install)).
 
@@ -322,4 +324,4 @@ Fiecare comandă pe care o folosește maestrul de joc poate fi rulată și în f
 
 **Instalarea eșuează sau `rpg` nu pornește.** `node --version` trebuie să arate 24 sau mai nou. Dacă Windows răspunde că rularea scripturilor este dezactivată, vezi [2.1](#21-what-you-need). Pe Windows, ține RPG Engine și campaniile tale departe de căi care conțin `&`.
 
-**Linkul dashboardului s-a schimbat.** Alt program a luat adresa obișnuită; maestrul îți dă noul link.
+**Linkul dashboardului s-a schimbat.** Fiecare campanie își păstrează propria adresă, chat după chat. Se schimbă doar când alt program o ocupă: maestrul de joc îți dă noul link, pe care campania îl păstrează de acum înainte.

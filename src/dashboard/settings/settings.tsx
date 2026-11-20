@@ -20,7 +20,7 @@ import { Confirm } from "./saves.tsx";
 
 // The groups of the campaign's settings, in order; a setting the game system adds goes with the dice, as whether the master's rolls are shown (D-287). How the
 // master plays holds who voices the characters (D-490) and how much the master thinks (D-462) too.
-const groups: { names: string[]; system?: true; }[] = [
+const groups: { names: string[]; system?: true; note?: () => string; }[] = [
     { names: ["ruleset", "difficulty", "lethality", "saves", "rigor", "between-sessions"] },
     { names: ["mentor", "learned"] },
     { names: ["prose", "story", "author", "style", "voices", "effort"] },
@@ -28,6 +28,12 @@ const groups: { names: string[]; system?: true; }[] = [
     { names: ["lines", "veils"] },
     { names: ["orders"] },
     { names: ["pictures", "pictures-by", "language"] },
+    // Only where the campaign's folder is a git repository (D-576).
+    // What a public repository would show of the player (D-576).
+    {
+        names: ["git", "git-saves", "git-sessions"],
+        note: () => t("Keep the repository private: the campaign holds the log of its sessions and paths of this computer, with your user's name, and with the chats in, everything you wrote to the master."),
+    },
 ];
 
 /** The Settings section; with `several` player characters, what a value means says so where it speaks of one character (D-480 (2)). */
@@ -79,9 +85,15 @@ export function SettingsView({ version, several = false }: { version: number; se
                     ...group.names.flatMap((name) => settings.filter((setting) => setting.name === name)),
                     ...(group.system ? settings.filter((setting) => !known.has(setting.name)) : []),
                 ];
+
+                if (shown.length === 0) {
+                    return null;
+                }
+
                 return (
                     <section key={group.names[0]} class="settings-group">
                         <h3>{groupTitle(index)}</h3>
+                        {group.note !== undefined && <p class="settings-group-note">{group.note()}</p>}
                         {shown.map((setting) => (
                             <SettingRow
                                 key={setting.name}
@@ -956,7 +968,7 @@ function Segmented({ label, described, options, value, onPick }: {
 /** A group of the campaign's settings by its place, in the page's language. */
 function groupTitle(index: number): string
 {
-    return [t("The game"), t("Learning the game"), t("The master's style"), t("Dice and measures"), t("Limits"), t("Your companions"), t("Pictures and language")][index] ?? "";
+    return [t("The game"), t("Learning the game"), t("The master's style"), t("Dice and measures"), t("Limits"), t("Your companions"), t("Pictures and language"), t("Git")][index] ?? "";
 }
 
 /** What a list's field suggests, as an example. */

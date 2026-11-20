@@ -7,6 +7,7 @@ import { defineCommand } from "../../core/registry.ts";
 import { sameName } from "../../core/text.ts";
 import { isEmptyField, linkListItems, parsePageReference } from "../../pages/index.ts";
 import { type Scene, sceneTypes } from "../../scene/index.ts";
+import { commitCampaign } from "../shared/campaign/git.ts";
 import { campaignWorld } from "../shared/campaign/world.ts";
 import { textList } from "../shared/inputs.ts";
 import { openScene, updateScene } from "../shared/scene/scene.ts";
@@ -81,7 +82,10 @@ export const scene = defineCommand({
         const world = campaignWorld(root, context);
 
         if (input.action === "close") {
-            return close(root, world, input.summary ?? "", context);
+            const closed = close(root, world, input.summary ?? "", context);
+            // The save made at the end of the scene commits it already; a scene closed with no save is committed here (D-576).
+            void commitCampaign(root, `rpg: scene closed, ${input.summary?.trim().split(/\r?\n/)[0] ?? ""}`);
+            return closed;
         }
 
         const current = openScene(root);

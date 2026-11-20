@@ -12,6 +12,7 @@ import { commands } from "../commands/index.ts";
 import { installCampaignSystem } from "../commands/package/install.ts";
 import { libraryRunner } from "../commands/shared/books/library-reader.ts";
 import { pagePhrase } from "../commands/shared/books/words.ts";
+import { commitSessionStart } from "../commands/shared/campaign/git.ts";
 import { outsideNews, whileClosedNews } from "../commands/shared/campaign/outside.ts";
 import { newChatText, wentBackTo } from "../commands/shared/campaign/saves.ts";
 import { campaignWorld } from "../commands/shared/campaign/world.ts";
@@ -229,6 +230,8 @@ async function preload(context: Context, session: SessionStore): Promise<void>
                 context.characterAgent = hasCharacterAgent(root);
                 refreshHostFiles(root, hostInstructions(), context.platform);
                 campaignWorld(root, context);
+                // What the last session left, committed as this one starts, where the campaign keeps itself in git (D-576).
+                void commitSessionStart(root, context);
             }
         });
     } catch {

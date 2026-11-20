@@ -87,7 +87,7 @@ export interface AdventureExported
 const changesMade = "Changes were made: the files under layers/ modify pages the game system adapted from that material.";
 
 // The mark of an install under way, with its title and the days it moves dates by: while it is there, installing the same adventure finishes it (ADV-5).
-const installMarkName = ".adventure-install.yaml";
+export const installMarkName = ".adventure-install.yaml";
 
 /** The adventures the log says are installed and not taken out, in the order they came (ADV-6): they go back with a save. */
 export function installedAdventures(root: string): InstalledAdventure[]

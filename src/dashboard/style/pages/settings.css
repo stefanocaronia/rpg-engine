@@ -61,7 +61,16 @@
         }
     }
 
+    .settings-group-note {
+        margin: 4px 0 8px;
+        padding: 8px 12px;
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--rule));
+        border-radius: var(--radius-l);
+        background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+    }
+
     .settings-group h3 + .setting,
+    .settings-group .settings-group-note + .setting,
     .settings-group .setting-about + .setting {
         border-top: 0;
     }

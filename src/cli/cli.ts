@@ -29,4 +29,24 @@ if (args.length === 1 && args[0] === "mcp") {
     }
 
     process.exitCode = exitCode;
+    await waitForGit();
+}
+
+/** The commit a command started, and its push, which the process waits for anyway: said, then what went wrong, if anything (D-576). */
+async function waitForGit(): Promise<void>
+{
+    const { gitProblem, gitUnderWay } = await import("../commands/shared/campaign/git.ts");
+
+    for (const { root, pushes, done } of gitUnderWay()) {
+        if (pushes) {
+            console.error("Pushing the campaign to git…");
+        }
+
+        await done;
+        const problem = gitProblem(root);
+
+        if (problem !== undefined) {
+            console.error(`git: the ${problem.act} failed: ${problem.why}`);
+        }
+    }
 }

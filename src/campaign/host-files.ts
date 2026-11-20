@@ -263,7 +263,12 @@ function codexConfigFile(root: string, platform: string, effort = chosenEffort(r
     const text = effort === undefined ? hidden : withTopKey(hidden, "model_reasoning_effort", effort === "app" ? undefined : JSON.stringify(effort));
     const server = rpgServer(platform);
     const tables: [string, string][] = [
-        ["mcp_servers.rpg", `command = ${JSON.stringify(server.command)}\nargs = [${server.args.map((arg) => JSON.stringify(arg)).join(", ")}]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME"]`],
+        [
+            "mcp_servers.rpg",
+            `command = ${JSON.stringify(server.command)}\nargs = [${
+                server.args.map((arg) => JSON.stringify(arg)).join(", ")
+            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME", "SSH_AUTH_SOCK", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy"]`,
+        ],
         ["memories", "generate_memories = false\nuse_memories = false"],
     ];
     // A table's header with a comment after it is that table all the same.

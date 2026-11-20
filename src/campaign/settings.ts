@@ -17,6 +17,12 @@ export const lethalities = ["narrative", "epic", "dice"] as const;
 /** When the game may go back (D-55): never, to the last end of a scene once the player character dies, or to any save, which the player may also ask for. */
 export const saveModes = ["permadeath", "checkpoint", "free"] as const;
 
+/** What the engine does with git in a campaign that is a repository (D-576): nothing, a commit at each session's start, save and end of a scene, or a push too. */
+export const gitWays = ["off", "commit", "push"] as const;
+
+/** Whether the saves or the chats go into the campaign's repository (D-576): left out, as when unset, or in. */
+export const gitIncludeWays = ["out", "in"] as const;
+
 /**
  * What the chosen difficulty, rigor or mentor means, as status and config give it, the rigor with what the game counts itself, a custom one with the levels of
  * its items as custom-difficulty or custom-rigor writes them (T-132); undefined for another setting or a value it does not take.
@@ -537,6 +543,12 @@ export const settingsSchema = z.object({
     precedents: listSetting.describe("the rulings made without the text, each starting with the name of the rule in the system's language: Poisoned: …"),
     learned: listSetting.describe("the game's mechanics the master has explained, by their names in the system's language: explained again only when the player gets one wrong"),
     library: listSetting.describe("the player's library (D-491): folders of their books, or books, by full path, which rules searches after the game system"),
+    git: z.enum(gitWays).optional().describe(
+        "what rpg does with git where the campaign's folder is a repository: off (unset, nothing), commit (a commit at the start of each session, at each save and each end of a scene) "
+            + "or push (a commit, then a push)",
+    ),
+    "git-saves": z.enum(gitIncludeWays).optional().describe("whether the saves' zips go into the campaign's repository: out (unset) or in"),
+    "git-sessions": z.enum(gitIncludeWays).optional().describe("whether the chats kept as text, all the player wrote, go into the campaign's repository: out (unset) or in, for a private one"),
     // Checked by the money module (MON-1): coins written wrongly by hand must not stop the other settings from being read.
     coins: z.unknown().optional().describe("the coins, for a game with money: each with its value in the smallest coin, such as gp 100, sp 10, cp 1"),
     // Checked by the time module (TIM-8): a mistake there never stops the game, whose date stays day N.
@@ -585,7 +597,22 @@ const premiseSettingNames: SettingName[] = ["premise", "preparation", "length"];
 // How the master writes: the core's own until the player chooses (D-395).
 const styleSettingNames: SettingName[] = ["prose", "story", "author", "style"];
 
-const optionalSettingNames: SettingName[] = ["coins", "pictures", "effort", "voices", "calendar", "calendar-start", "between-sessions", ...entrySettingNames, ...setupSettingNames, ...premiseSettingNames, ...styleSettingNames];
+const optionalSettingNames: SettingName[] = [
+    "coins",
+    "pictures",
+    "effort",
+    "voices",
+    "calendar",
+    "calendar-start",
+    "between-sessions",
+    "git",
+    "git-saves",
+    "git-sessions",
+    ...entrySettingNames,
+    ...setupSettingNames,
+    ...premiseSettingNames,
+    ...styleSettingNames,
+];
 
 /** The YAML list of a list setting, edited in place so that its comments stay; created when missing. */
 function listNode(document: Document, setting: SettingName): YAMLSeq

@@ -23,6 +23,8 @@ export {
     diceWays,
     efforts,
     entrySettingNames,
+    gitIncludeWays,
+    gitWays,
     lengths,
     lethalities,
     listLimits,

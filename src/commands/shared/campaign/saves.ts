@@ -11,6 +11,7 @@ import { packFiles, readSaves, type Save, saveFileName, unpackFiles } from "../.
 import { formatGameDate } from "../../../time/index.ts";
 import { playerCharacter } from "../characters/knowledge.ts";
 import { newDatedLogEntry, readPresent } from "../time/time.ts";
+import { commitCampaign } from "./git.ts";
 import { campaignWorld } from "./world.ts";
 
 /** The folder of the saves, at the top of the campaign. */
@@ -96,7 +97,9 @@ export function makeSave(root: string, context: Context, label: string | undefin
     held[logFileName] = joinBytes(held[logFileName], new TextEncoder().encode(logLine(entry)));
     files().writeBytes(join(root, savesFolderName, file), packFiles(held));
     appendLogEntry(root, entry);
-    return readSaves([file])[0];
+    const save = readSaves([file])[0];
+    void commitCampaign(root, `rpg: ${saveText(save)}`);
+    return save;
 }
 
 /**
@@ -167,6 +170,7 @@ export function loadSave(root: string, context: Context, save: Save): { removed:
     );
     files().remove(join(folder, loadingMarkName));
     files().writeBytes(join(folder, newChatMarkName), new TextEncoder().encode(saveText(save)));
+    void commitCampaign(root, `rpg: loaded ${saveText(save)}`);
     return { removed: later, copy };
 }
 

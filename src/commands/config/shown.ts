@@ -44,6 +44,10 @@ export function shownValue(root: string, context: Context, settings: CampaignSet
         voices: "auto (a subagent at key moments, as you choose, where the app has them)",
         "master-rolls": "behind the screen (unset: roll hides your rolls for foes and NPCs)",
         "between-sessions": "stops (unset: no game time passes between sessions)",
+        // Git, unset: off, the player's to choose where the campaign's folder is a repository (D-576).
+        git: "off (unset: the player's to choose where the campaign's folder is a git repository)",
+        "git-saves": "out (unset)",
+        "git-sessions": "out (unset)",
     };
 
     if (settings[name] === undefined && Object.hasOwn(own, name)) {

@@ -4,10 +4,11 @@ import type { Context } from "../../core/context.ts";
 import { comparableText } from "../../core/text.ts";
 import { claudeSays, codexClient, codexSays } from "../../helpers/index.ts";
 import { readBetweenSessions } from "../../time/index.ts";
+import { gitProblem, isCampaignRepository, isInLargerRepository } from "../shared/campaign/git.ts";
 import { heldSystemSettings, isLeading, offeredValues, playedEngineSetting } from "../shared/campaign/offers.ts";
 import { playedSettingValue } from "../shared/campaign/world.ts";
 import { customOf } from "./custom-levels.ts";
-import { betweenSessionsWays, playerSettingNames, type PlayerWords, playerWords, setupWords, wordsOf } from "./words.ts";
+import { betweenSessionsWays, gitSettingNames, playerSettingNames, type PlayerWords, playerWords, setupWords, wordsOf } from "./words.ts";
 
 /** A setting of the player's as the dashboard shows it (D-341): what it is, its value or a list's items, and its values with what each means to the player. */
 export interface PlayerSetting
@@ -72,7 +73,7 @@ export function setupQuestions(root: string, context: Context, writtenWorld: boo
         const offered = suggestion !== undefined && (question.choices === undefined || question.choices.some((choice) => choice.value === suggestion));
         const asked = { ...question, ...(question.choices === undefined ? {} : { choices: question.choices.filter((choice) => choice.value !== customLevel) }) };
         const lastOne = offered && last[question.name] === suggestion ? { last: suggestion } : {};
-        const worded = Object.hasOwn(questionTexts, question.name) ? { question: questionTexts[question.name] } : {};
+        const worded = Object.hasOwn(questionTexts, question.name) ? { question: questionText(question.name, root) } : {};
         return { ...(question.name === "mentor" ? mentorQuestion(asked, game ?? "") : unsetUnanswered(asked, settings)), ...worded, ...(offered ? { suggested: suggestion } : {}), ...lastOne };
     });
 }
@@ -105,7 +106,26 @@ export function setupSettingNamed(root: string, name: string): PlayerSetting | u
 /** The player's settings as the dashboard shows them (D-341): with what this computer lacks, as pictures without Codex, asked again. */
 export function shownPlayerSettings(root: string, context: Context): PlayerSetting[]
 {
-    return playerSettings(root, context).map((setting) => (setting.name === "pictures" ? { ...setting, ...withOwnPicture(picturesReadyNote(context)) } : setting));
+    return playerSettings(root, context).map((setting) => {
+        if (setting.name === "pictures") {
+            return { ...setting, ...withOwnPicture(picturesReadyNote(context)) };
+        }
+
+        return setting.name === "git" ? { ...setting, ...gitNote(root) } : setting;
+    });
+}
+
+// What went wrong the last time git ran (D-576), told until it goes right.
+const gitFailed = { commit: "The last commit failed: {why}", push: "The last push failed: {why}" };
+
+/** Every note the setting of git may have, which the dashboard writes in its language (D-394). */
+export const gitNotes = Object.values(gitFailed);
+
+/** What went wrong the last time git ran for the campaign; nothing when it went right. */
+function gitNote(root: string): Pick<PlayerSetting, "note">
+{
+    const problem = gitProblem(root);
+    return problem === undefined ? {} : { note: { text: gitFailed[problem.act], values: { why: problem.why } } };
 }
 
 /** The player's settings with their values, then those the game system adds (D-341). */
@@ -138,7 +158,8 @@ export function playerSettings(root: string, context: Context): PlayerSetting[]
                 ...(choices === undefined ? {} : { choices }),
                 ...(words.most === undefined ? {} : { most: words.most }),
             }];
-        }).flatMap((setting) => offeredSetting(root, context, setting)).map((setting) => (setting.name === "pictures-by" ? makersInChat(context, setting) : setting)),
+        }).flatMap((setting) => offeredSetting(root, context, setting)).map((setting) => (setting.name === "pictures-by" ? makersInChat(context, setting) : setting))
+            .filter((setting) => !gitSettingNames.includes(setting.name) || isCampaignRepository(root)),
         ...own,
     ];
 }
@@ -151,10 +172,26 @@ export function playerSettingNamed(root: string, context: Context, name: string)
 
 // The setup's questions, in the order the player meets them on the dashboard: how well they know the game, how it plays, how it is rolled, who comes along,
 // the world and how long it plays, then the limits.
-const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "character", "companions", "preparation", "length", "pictures", "pictures-by"];
+const setupOrder = ["mentor", "difficulty", "lethality", "saves", "rigor", "dice", "master-rolls", "units", "character", "companions", "preparation", "length", "pictures", "pictures-by", "git"];
 
 // The questions the setup's cards ask in place of a setting's name (D-572).
-const questionTexts: Record<string, string> = { pictures: "Do you want pictures of places and of those you meet?", "pictures-by": "Who makes them?" };
+const questionTexts: Record<string, string> = {
+    pictures: "Do you want pictures of places and of those you meet?",
+    "pictures-by": "Who makes them?",
+    git: "This campaign's folder is a git repository: what should the engine do with it?",
+};
+
+// The question of git where the repository holds more than the campaign: a push sends the player's other commits too (D-576).
+const largerGitQuestion = "This campaign's folder is in a git repository that holds other folders too: what should the engine do with it? A push sends your commits on those folders as well.";
+
+/** Every question of git the setup may ask, which the dashboard writes in its language. */
+export const gitQuestions = [questionTexts.git, largerGitQuestion];
+
+/** The question a setting's card asks in the setup. */
+function questionText(name: string, root: string): string | undefined
+{
+    return name === "git" && isInLargerRepository(root) ? largerGitQuestion : questionTexts[name];
+}
 
 // The mentor as the setup asks it (D-347): how well the player knows the game, each answer a way of the mentor, from the newest player's.
 const mentorAnswers: Record<string, string> = { tutorial: "never played it", hints: "a little", off: "I know it" };

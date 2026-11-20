@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,27458948,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e214ff4a. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,e71aa28a,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,244fcead,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,c000ae61. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
 **RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
@@ -183,6 +183,8 @@ V každém režimu můžeš **začít znovu**, od začátku hry nebo od nultého
 
 Po návratu zpět **otevři nový chat**: starý si pamatuje, co bylo zrušeno. V novém chatu napiš *pokračuj*, potom v Uložené hry stiskni **Nový chat otevřen**.
 
+Pokud je složka kampaně repozitář gitu, **Nastavení** obsahuje sekci **Git**, kde je všechno vypnuté, dokud nezvolíš jinak: commit na začátku každého sezení, při každém uložení hry a na konci každé scény, a pokud chceš, také push po něm. Uložené hry a tvoje chaty s Pánem jeskyně zůstávají mimo repozitář, dokud je do něj nepustíš. Chaty tam pusť, jen když je repozitář soukromý.
+
 ### 3.9 Sezení: přestávka a návrat
 
 Přestaň, kdy chceš: *[Pro dnešek skončeme.]* Všechno je už uloženo v souborech. Až se budeš chtít vrátit, spusť svého agenta ve složce kampaně a napiš *pokračuj*: Pán jeskyně ti krátce shrne děj a jde se dál.
@@ -308,7 +310,7 @@ Každý příkaz, který Pán jeskyně používá, jde spustit i ve složce kamp
 
 ### Problémy
 
-**Dashboard se neotevře.** Zeptej se Pána jeskyně: `[OOC: Jaký je odkaz na dashboard?]`. Funguje jen tehdy, když je v té kampani otevřený chat, po první odpovědi Pána jeskyně.
+**Dashboard se neotevře.** Zeptej se Pána jeskyně: `[OOC: Jaký je odkaz na dashboard?]`. Funguje jen tehdy, když je v té kampani otevřený chat: spouští se spolu s chatem.
 
 **Pán jeskyně jako by hru neznal.** Tvůj agent nenačetl RPG Engine. Zkontroluj, že jsi ho spustil(a) ve složce kampaně a že jsi jí důvěřoval(a). V Claude Code napiš `/mcp` a znovu připoj `rpg`. V Codexu musí `codex mcp list` ve složce kampaně ukázat `rpg`. Pokud se `rpg --version` nenajde, nainstaluj RPG Engine znovu ([2.2](#22-install)).
 
@@ -322,4 +324,4 @@ Každý příkaz, který Pán jeskyně používá, jde spustit i ve složce kamp
 
 **Instalace selže, nebo `rpg` nechce začít.** `node --version` musí hlásit 24 nebo novější. Pokud Windows odpoví, že spouštění skriptů je zakázané, viz [2.1](#21-what-you-need). Ve Windows nech RPG Engine a své kampaně mimo cesty, které obsahují `&`.
 
-**Odkaz na dashboard se změnil.** Obvyklou adresu zabral jiný program. Nový odkaz ti dá Pán jeskyně.
+**Odkaz na dashboard se změnil.** Každá kampaň si drží vlastní adresu, chat za chatem. Změní se jen tehdy, když ji zabere jiný program: Pán jeskyně ti pak dá nový odkaz, který si kampaň od té chvíle ponechá.

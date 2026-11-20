@@ -156,7 +156,7 @@ ${playLine}`);
         expect(readFileSync(join(folder, "nuova", ".codex", "config.toml"), "utf8")).toBe(
             `hide_agent_reasoning = true\n\n[mcp_servers.rpg]\ncommand = "${rpg.command}"\nargs = [${
                 rpg.args.map((arg) => `"${arg}"`).join(", ")
-            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME"]\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
+            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME", "SSH_AUTH_SOCK", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy"]\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
         );
         expect(existsSync(join(folder, "nuova", ".gemini"))).toBe(false);
         // Antigravity: the rpg server, and the hook that lets its tools run without asking.
@@ -261,6 +261,7 @@ describe("rpg config", () => {
             "name: Guadoscuro\nlanguage: (missing)\nsystem: (missing; installed: free, fake)\nmentor: (missing)\npremise: (missing)\npreparation: (missing)\nlength: (missing)\n"
                 + "prose: plain (as your instructions write)\nstory: situations (as your instructions write)\nauthor: (none)\nstyle: (none)\ndifficulty: (missing)\nlethality: (missing)\n"
                 + "saves: (missing)\nrigor: (missing)\ndice: (missing)\nmaster-rolls: behind the screen (unset: roll hides your rolls for foes and NPCs)\nunits: (missing)\nvoices: auto (a subagent at key moments, as you choose, where the app has them)\ncharacter: (missing)\ncompanions: (missing)\ncalendar-start: (missing)\nbetween-sessions: stops (unset: no game time passes between sessions)\npictures: (missing)\npictures-by: (missing)\neffort: (the app's own: the player's to choose)\nlines: (missing)\nveils: (missing)\norders: (none)\ntable: (none)\nprecedents: (none)\nlearned: (none)\nlibrary: (none)\n"
+                + "git: off (unset: the player's to choose where the campaign's folder is a git repository)\ngit-saves: out (unset)\ngit-sessions: out (unset)\n"
                 + `coins: (none: neither the campaign nor its game system gives coins)\n\nStill to agree with the player: system (installed: free, fake), language (a code, such as it), ${askedBrief}; ${onward}`,
         );
     });
@@ -380,7 +381,7 @@ describe("rpg config", () => {
 
     it("refuses unknown settings and invalid values", async () => {
         expect((await runCommandLine(["config", "colour", "red"], context)).output).toBe(
-            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, pictures-by, effort, lines, veils, orders, table, precedents, learned, library, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
+            `There is no setting "colour". The settings are: name, language, system, mentor, premise, preparation, length, prose, story, author, style, difficulty, lethality, saves, rigor, custom-difficulty, custom-rigor, dice, master-rolls, units, voices, character, companions, calendar-start, between-sessions, pictures, pictures-by, effort, lines, veils, orders, table, precedents, learned, library, git, git-saves, git-sessions, coins, calendar, fields, tables, computed, counters, recipes, status-line, travel, values, condition-icons, widgets.`,
         );
         expect((await runCommandLine(["config", "language", "Italiano"], context)).exitCode).toBe(1);
     });

@@ -6,6 +6,8 @@ import {
     diceWays,
     difficulties,
     efforts,
+    gitIncludeWays,
+    gitWays,
     lengths,
     lethalities,
     listLimits,
@@ -54,7 +56,13 @@ export const playerSettingNames = [
     "veils",
     "orders",
     "language",
+    "git",
+    "git-saves",
+    "git-sessions",
 ] as const;
+
+/** The settings of git (D-576), which count, and which the dashboard shows, only where the campaign's folder is a git repository. */
+export const gitSettingNames: string[] = ["git", "git-saves", "git-sessions"];
 
 // What each of the player's settings is, and what its values mean to the player, in their words rather than the master's.
 export const playerWords: Record<(typeof playerSettingNames)[number], PlayerWords> = {
@@ -197,6 +205,28 @@ export const playerWords: Record<(typeof playerSettingNames)[number], PlayerWord
         most: listLimits.orders?.length,
     },
     language: { about: "the language the master plays in, and the page's too when it is translated" },
+    git: {
+        about: "what the engine does with git, as this campaign's folder is a git repository",
+        values: gitWays,
+        means: {
+            off: "nothing: you keep the repository yourself",
+            commit: "a commit at the start of each session, at each save and at each end of a scene",
+            push: "a commit at the start of each session, at each save and at each end of a scene, then a push",
+        },
+        unset: "off",
+    },
+    "git-saves": {
+        about: "whether the saves go into the repository",
+        values: gitIncludeWays,
+        means: { out: "the repository keeps the story without them", in: "each save's zip too, which makes the repository grow quickly" },
+        unset: "out",
+    },
+    "git-sessions": {
+        about: "whether your chats with the master go into the repository",
+        values: gitIncludeWays,
+        means: { out: "they stay on this computer", in: "everything you wrote to the master: keep the repository private" },
+        unset: "out",
+    },
 };
 
 /**
