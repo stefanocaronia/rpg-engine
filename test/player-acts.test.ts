@@ -212,6 +212,11 @@ describe("the player's sentences on the dashboard (D-495)", () => {
         removeFolder(other);
     });
 
+    it("leave the page to the chat that serves it, when the hook's chat only waits there for it (D-577)", async () => {
+        expect(JSON.parse((await send("GET", "/api/bell?probe&also=s2")).body)).toMatchObject({ others: ["s2"] });
+        expect(await waitForBell(JSON.stringify({ session_id: "s2", cwd: folder }), [port])).toBe(false);
+    });
+
     it("go to Codex's queue in its thread while no call runs, and wait for the next call once Codex refuses one", async () => {
         host = "codex-mcp-client";
         expect((await shown()).bell).toBe(false);

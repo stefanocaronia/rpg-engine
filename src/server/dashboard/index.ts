@@ -1,9 +1,8 @@
 // The player's dashboard (D-270, D-272): the MCP server of the chat serves it on localhost. It gives the page what the player may see through the same commands,
 // and tells it when a file of the campaign changes, by whoever, so that it reads again: nothing else goes through the notice, so no secret can.
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { connect } from "node:net";
 import { z } from "zod";
-import { findCampaign } from "../../campaign/index.ts";
+import { findCampaign, savedPort, savePort } from "../../campaign/index.ts";
 import type { PlayerSetting } from "../../commands/config/dashboard.ts";
 import { importShown } from "../../commands/import/import.ts";
 import { systemTexts } from "../../commands/shared/books/system-texts.ts";
@@ -18,6 +17,7 @@ import type { SessionStore } from "../../core/session-store.ts";
 import { withFiles } from "../../core/store.ts";
 import { notationParts } from "../../dice/index.ts";
 import { helperCommand, queueInCodex } from "../../helpers/index.ts";
+import { samePath } from "../../library/index.ts";
 import { loadSystemCode } from "../../systems/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
 import { choicesNews, choicesRequest } from "./choices.ts";
@@ -46,7 +46,7 @@ import {
 import { act, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
 import { givePicture } from "./pictures.ts";
 import { answerAsked, type Asked, closeCard, listenForChanges, pagePlayer, pageSeen, rollNamesOf, type ShownCard, spendShown } from "./player.ts";
-import { campaignPorts } from "./ports.ts";
+import { answers, campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
 import {
     addPackage,
     catalogNow,
@@ -65,7 +65,7 @@ import {
     takeLayerOff,
 } from "./writes.ts";
 
-export { campaignPorts, dashboardPorts } from "./ports.ts";
+export { answers, campaignPorts, dashboardAt, dashboardPorts } from "./ports.ts";
 
 /** A dashboard that is running: its link, and how to stop it. */
 export interface Dashboard
@@ -121,25 +121,45 @@ const pageHidden = 5000;
 // How often the server looks at an import under way, for the pages to tell how far it is (D-491 (11)).
 const importLookEvery = 2000;
 
-/** Serves the dashboard of the campaign of context.folder, on 127.0.0.1 only, at the first of the ports that is free; undefined when none is. */
+/**
+ * Serves the dashboard of the campaign of context.folder, on 127.0.0.1 only, at the first of the ports that is free, which campaign.yaml then keeps; undefined
+ * when none is, or when another chat of the campaign serves its page already: one page for each campaign (D-577).
+ */
 export async function startDashboard(context: Context, session: SessionStore, options: DashboardOptions = {}): Promise<Dashboard | undefined>
 {
     // The systems' code, when no MCP server loaded it first, as the dashboard served alone (D-448).
     context.systemCode ??= await loadSystemCode(context.systemFolders);
     // And the campaign's extensions', whose hooks are called at once too (D-514).
     await withFiles(session, () => loadCampaignCode(context));
-    const root = withFiles(session, () => findCampaign(context.folder)) ?? context.folder;
+    const campaign = withFiles(session, () => findCampaign(context.folder));
+    const root = campaign ?? context.folder;
+    const saved = campaign === undefined ? undefined : withFiles(session, () => savedPort(campaign));
 
     for (const port of options.ports ?? campaignPorts(root)) {
-        // A port another program answers at, even on ::1 or on every address, is its: a browser asking localhost could reach it instead (D-277).
+        // A port another program answers at, even on ::1 or on every address, is its: a browser asking localhost could reach it instead (D-277). The
+        // campaign's own page, which another chat serves, is the page: no second one at another port (D-577).
         if (port !== 0 && await answers(port)) {
+            if (campaign !== undefined && await campaignServes(port, campaign, saved)) {
+                return undefined;
+            }
+
             continue;
         }
 
         const server = createServer();
         const listening = await listen(server, port);
 
+        // Another chat of the campaign that started with this one may have taken the port a moment before: its page, then (D-577).
+        if (listening === undefined && port !== 0 && campaign !== undefined && await campaignServes(port, campaign, saved)) {
+            return undefined;
+        }
+
         if (listening !== undefined) {
+            // The port from then on, as the folder moves too, never one the system gave at random; the tests choose theirs.
+            if (campaign !== undefined && options.ports === undefined && port !== 0) {
+                withFiles(session, () => savePort(campaign, listening));
+            }
+
             const served: Served = {
                 port: listening,
                 context,
@@ -160,6 +180,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 words: pageTranslator(context, options.page ?? builtPage, () => served.notify()),
                 texts: systemTexts(context, () => served.notify()),
                 acts: newActs(),
+                others: new Map<string, number>(),
                 queue: options.queue ?? codexQueue(),
             };
             return serve(server, served);
@@ -167,6 +188,41 @@ export async function startDashboard(context: Context, session: SessionStore, op
     }
 
     return undefined;
+}
+
+/** The link of the campaign's page where another chat serves it (D-577); undefined when none does. */
+export async function campaignPageElsewhere(root: string, ports: number[] = campaignPorts(root)): Promise<{ url: string; port: number; } | undefined>
+{
+    for (const port of ports.filter((one) => one !== 0)) {
+        if (await campaignServes(port, root)) {
+            return { url: `http://127.0.0.1:${port}`, port };
+        }
+    }
+
+    return undefined;
+}
+
+/**
+ * Whether the campaign's page answers at a port, asked a few times: a chat busy with its world for a second or two answers late (D-577); longer at the port
+ * campaign.yaml keeps, where no other program is likely to take calls and not answer them.
+ */
+async function campaignServes(port: number, root: string, saved?: number): Promise<boolean>
+{
+    for (let asked = 0; asked < (port === saved ? 8 : 3); asked++) {
+        const there = await dashboardAt(port);
+
+        if (there !== undefined) {
+            return isCampaignPage(there, root);
+        }
+    }
+
+    return false;
+}
+
+/** Whether what answers at a port is the page of this campaign. */
+export function isCampaignPage(there: DashboardAt | undefined, root: string): boolean
+{
+    return there?.root !== null && there?.root !== undefined && samePath(there.root, root);
 }
 
 /** What the server keeps while it runs, shared by the files beside it: the pages open, the question asked, what the master has not heard yet. */
@@ -221,6 +277,8 @@ export interface Served
     engineLatest?: EngineAsked;
     /** The player's sentences said on the page, waiting for the master or heard lately (D-495). */
     acts: Acts;
+    /** The other chats of the campaign that wait for its page, by session, with when each last asked (D-577). */
+    others: Map<string, number>;
     /** The doorbell of Claude Code's hook, waiting for a sentence; and whether one ever came, so that this chat has one (D-495). */
     bell?: ServerResponse;
     belled?: boolean;
@@ -239,25 +297,6 @@ function codexQueue(): CodexQueue
 {
     let found: boolean | undefined;
     return { ready: () => (found ??= helperCommand("codex") !== undefined), send: queueInCodex };
-}
-
-/** Whether a program answers at a port of this machine, on 127.0.0.1 or on ::1. */
-async function answers(port: number): Promise<boolean>
-{
-    const answersAt = (host: string): Promise<boolean> =>
-        new Promise((done) => {
-            const socket = connect({ host, port });
-
-            const end = (answered: boolean): void => {
-                socket.destroy();
-                done(answered);
-            };
-
-            socket.setTimeout(300, () => end(false));
-            socket.once("connect", () => end(true));
-            socket.once("error", () => end(false));
-        });
-    return (await Promise.all(["127.0.0.1", "::1"].map(answersAt))).some((answer) => answer);
 }
 
 /** The port the server listens on, or undefined when it cannot have this one, as when another program has it. */
@@ -400,7 +439,7 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
 
     // Claude Code's hook waits here for the player's next sentence, from this computer (D-495).
     if (request.method === "GET" && path === "/api/bell") {
-        listenForBell(request, response, served, url.searchParams.has("probe"));
+        listenForBell(request, response, served, url.searchParams);
         return;
     }
 

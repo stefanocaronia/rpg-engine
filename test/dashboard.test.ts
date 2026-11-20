@@ -1,10 +1,13 @@
 // The player's dashboard (D-270, D-272): view gives the party and the sheet as data, with the chat's text unchanged; the server gives only what view gives, only
 // to its own page, tells the page when a file changes, and serves the pictures.
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingHttpHeaders, request } from "node:http";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { savedPort, savePort } from "../src/campaign/index.ts";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view/result.ts";
@@ -20,7 +23,7 @@ import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import type { ShownChoices as ServerChoices } from "../src/server/dashboard/choices.ts";
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/server/dashboard/index.ts";
-import { dashboardOpener } from "../src/server/mcp.ts";
+import { createMcpServer, dashboardOpener } from "../src/server/mcp.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
@@ -846,6 +849,62 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(new Set(["A", "B", "C", "D", "E", "F", "G", "H"].map((name) => campaignPorts(`/giochi/${name}`)[0])).size).toBeGreaterThan(1);
     });
 
+    it("keeps the campaign's port in campaign.yaml, among no setting, and tries it first wherever the folder goes (D-577)", async () => {
+        const derived = campaignPorts(folder);
+        expect(savedPort(folder)).toBeUndefined();
+        savePort(folder, 6123);
+        expect(savedPort(folder)).toBe(6123);
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("dashboard-port: 6123");
+        expect(campaignPorts(folder)).toEqual([6123, ...derived]);
+        expect((await runCommandLine(["status"], context)).exitCode).toBe(0);
+        const settings = (await runCommandLine(["config"], context)).output;
+        expect(settings).toContain("lethality");
+        expect(settings).not.toContain("dashboard-port");
+    });
+
+    it("lets a second chat of the campaign give the page the first one serves, and serve it at the same port once that one closes (D-577)", async () => {
+        const first = await startDashboard({ ...context, files: session }, session, { ports: [0] });
+        const port = Number(new URL(first?.url ?? "").port);
+        const other = new SessionStore({ systemFolders: context.systemFolders });
+        const served: Context = { ...context, files: other };
+        const opener = dashboardOpener(served, other, [port, 0]);
+
+        try {
+            await opener.open();
+            expect(served.dashboard).toBe(first?.url);
+            expect(served.news).toBeUndefined();
+            await first?.close();
+            await expect.poll(() => served.news, { timeout: 8000, interval: 200 }).toBeDefined();
+            expect(served.dashboard).toBe(`http://127.0.0.1:${port}`);
+        } finally {
+            await opener.close();
+            other.close();
+        }
+    }, 15_000);
+
+    it("gives two chats of the campaign that start at once one page, at the first port (D-577)", async () => {
+        const free = createServer();
+        await new Promise<void>((done) => free.listen(0, "127.0.0.1", done));
+        const port = (free.address() as { port: number; }).port;
+        await new Promise((done) => free.close(done));
+        const chats = [0, 1].map(() => {
+            const files = new SessionStore({ systemFolders: context.systemFolders });
+            const served: Context = { ...context, files };
+            return { files, served, opener: dashboardOpener(served, files, [port, 0]) };
+        });
+
+        try {
+            await Promise.all(chats.map((chat) => chat.opener.open()));
+            expect(chats.map((chat) => chat.served.dashboard)).toEqual([`http://127.0.0.1:${port}`, `http://127.0.0.1:${port}`]);
+            expect(chats.filter((chat) => chat.served.news !== undefined)).toHaveLength(1);
+        } finally {
+            for (const chat of chats) {
+                await chat.opener.close();
+                chat.files.close();
+            }
+        }
+    });
+
     it("takes the next port when another program answers at one, even on ::1 only, and gives its link on 127.0.0.1 (D-277)", async () => {
         for (const host of ["127.0.0.1", "::1"]) {
             const taken = createServer();
@@ -949,6 +1008,26 @@ describe("the session's notices (D-193, D-272)", () => {
             await opener.close();
             session.close();
             removeFolder(empty);
+        }
+    });
+});
+
+describe("the page as the chat starts (D-577)", () => {
+    it("opens before the master's first call, once the host has started the chat", async () => {
+        let opened = 0;
+        const files = new SessionStore({ systemFolders: context.systemFolders });
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...context, files }, {}, async () => {
+            opened++;
+        }).connect(serverTransport);
+        const client = new Client({ name: "test", version: "1.0.0" });
+
+        try {
+            await client.connect(clientTransport);
+            await expect.poll(() => opened, { timeout: 5000 }).toBe(1);
+        } finally {
+            await client.close();
+            files.close();
         }
     });
 });

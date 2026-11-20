@@ -33,7 +33,7 @@ import { npmEngine, npmPackages } from "../packages/index.ts";
 import type { World } from "../pages/index.ts";
 import { loadSystemCode } from "../systems/index.ts";
 import { chatKeeper } from "./chats.ts";
-import { type Dashboard, startDashboard } from "./dashboard/index.ts";
+import { answers, campaignPageElsewhere, campaignPorts, type Dashboard, dashboardAt, isCampaignPage, startDashboard } from "./dashboard/index.ts";
 
 type AnyCommand = Command<any, any>;
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
@@ -51,6 +51,8 @@ const entryPointsWithoutForms = ["claude-desktop"];
 
 // Hosts ask for the tools tens of milliseconds after initialized: the world, which takes a second or more to read in a large campaign, is read after that.
 const preloadAfter = 250;
+// How often a chat asks after its campaign's page, which another chat serves, to serve it once that one closes (D-577).
+const heldAskEvery = 3000;
 
 /** The line that closes every answer of a tool, a phrase of the page's, so that its languages have it. */
 export const masterScreenLine = "The text above lies behind the master's screen, forbidden to the players' eyes.";
@@ -132,7 +134,12 @@ export function createMcpServer(context: Context = defaultContext(), environment
         const installing = (): void => void installer.install().then(afterCall).catch(() => undefined);
 
         if (context.files instanceof SessionStore) {
-            setTimeout(() => void preload(context, context.files as SessionStore).then(installing), preloadAfter);
+            // The campaign's page too, as the chat starts, never waiting for the player's first words (D-577).
+            setTimeout(() =>
+                void preload(context, context.files as SessionStore).then(() => {
+                    void beforeCall?.().catch(() => undefined);
+                    installing();
+                }), preloadAfter);
         } else {
             installing();
         }
@@ -183,21 +190,63 @@ export async function startMcpServer(): Promise<void>
 }
 
 /**
- * Opens the player's dashboard before the first call that finds a campaign in the server's folder, as after init, and lets that call wait for it, so that its
- * status gives the link (D-270, D-277); never in a folder without a campaign. The game goes on without it.
+ * Opens the player's dashboard as the chat starts and before the first call that finds a campaign in the server's folder, as after init, and lets that call
+ * wait for it, so that its status gives the link (D-270, D-277, D-577); never in a folder without a campaign. Where another chat of the campaign serves its
+ * page, the link is that page's, and this chat asks after it every few seconds, to serve it at the same port once that chat closes. The game goes on without it.
  */
 export function dashboardOpener(context: Context, session: SessionStore, ports?: number[]): { open(): Promise<void>; close(): Promise<void>; }
 {
     let opening: Promise<Dashboard | undefined> | undefined;
+    // The page another chat serves, and the wait for it to go.
+    let held: string | undefined;
+    let waiting: NodeJS.Timeout | undefined;
+    let closed = false;
+
+    const open = async (): Promise<void> => {
+        const root = withFiles(session, () => findCampaign(context.folder));
+        opening ??= root === undefined ? undefined : startDashboard(context, session, { ports }).catch(() => undefined);
+        const dashboard = await opening;
+
+        if (dashboard === undefined && root !== undefined && held === undefined && waiting === undefined && !closed) {
+            const elsewhere = await campaignPageElsewhere(root, ports ?? campaignPorts(root));
+
+            if (elsewhere !== undefined && !closed && waiting === undefined) {
+                held = elsewhere.url;
+                waitFor(root, elsewhere.port);
+            }
+        }
+
+        context.dashboard = dashboard?.url ?? held;
+        context.page = dashboard?.player;
+        context.news = dashboard?.news;
+    };
+
+    // Asks after the page, saying this chat waits there, so that the doorbell does not take that chat's for this one's; once it goes, serves it. A page
+    // that does not answer while its port still takes calls is a chat busy with its world: it is still there.
+    const waitFor = (root: string, port: number): void => {
+        waiting = setInterval(() => {
+            void dashboardAt(port, process.env.CLAUDE_CODE_SESSION_ID).then(async (there) => {
+                const gone = there === undefined ? !(await answers(port)) : !isCampaignPage(there, root);
+
+                if (closed || waiting === undefined || !gone) {
+                    return;
+                }
+
+                clearInterval(waiting);
+                waiting = undefined;
+                held = undefined;
+                opening = undefined;
+                void open().catch(() => undefined);
+            });
+        }, heldAskEvery);
+        waiting.unref();
+    };
+
     return {
-        open: async () => {
-            opening ??= withFiles(session, () => findCampaign(context.folder)) === undefined ? undefined : startDashboard(context, session, { ports }).catch(() => undefined);
-            const dashboard = await opening;
-            context.dashboard = dashboard?.url;
-            context.page = dashboard?.player;
-            context.news = dashboard?.news;
-        },
+        open,
         close: async () => {
+            closed = true;
+            clearInterval(waiting);
             await (await opening)?.close();
         },
     };
