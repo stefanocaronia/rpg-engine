@@ -217,6 +217,7 @@ export function dashboardOpener(context: Context, session: SessionStore, ports?:
         }
 
         context.dashboard = dashboard?.url ?? held;
+        context.dashboardHeld = dashboard === undefined && held !== undefined;
         context.page = dashboard?.player;
         context.news = dashboard?.news;
     };

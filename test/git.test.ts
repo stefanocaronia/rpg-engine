@@ -94,12 +94,14 @@ describe.runIf(hasGit)("the campaign's commits and pushes", () => {
         writeFileSync(join(root, "sessions", "chat.md"), "what the player wrote");
         mkdirSync(join(root, ".saves"), { recursive: true });
         writeFileSync(join(root, ".saves", "001 - start.zip"), "zip");
+        // This computer's port of the page stays on it (D-577).
+        writeFileSync(join(root, ".dashboard-port"), "4751\n");
         await commitCampaign(root, "rpg: test");
         expect(commits(root)).toEqual(["rpg: test"]);
         const kept = git(root, "ls-files").split("\n");
         expect(kept).toContain("campaign.yaml");
         expect(kept).toContain(".gitignore");
-        expect(kept.some((path) => path.startsWith("sessions/") || path.startsWith(".saves/") || path === "AGENTS.md")).toBe(false);
+        expect(kept.some((path) => path.startsWith("sessions/") || path.startsWith(".saves/") || path === "AGENTS.md" || path === ".dashboard-port")).toBe(false);
         expect(readFileSync(join(root, ".gitignore"), "utf8")).toContain("/sessions/\n");
         // Nothing changed since: no empty commit.
         await commitCampaign(root, "rpg: again");
@@ -125,7 +127,11 @@ describe.runIf(hasGit)("the campaign's commits and pushes", () => {
         await runCommandLine(["config", "git", "push"], context);
         await commitCampaign(root, "rpg: no remote");
         expect(gitProblem(root)?.act).toBe("push");
-        expect(shownPlayerSettings(root, context).find((setting) => setting.name === "git")?.note?.text).toBe("The last push failed: {why}");
+        expect(shownPlayerSettings(root, context).find((setting) => setting.name === "git")?.note?.text).toBe(
+            "The last push failed: the campaign is safe on this computer, only its copy online is behind. Ask the master to look at it. ({why})",
+        );
+        // The master reads it too, where the player sends them.
+        expect((await runCommandLine(["config", "git"], context)).output).toContain("The last push failed: ");
         // A remote with no upstream yet: the push sets it.
         git(root, "remote", "add", "origin", remote);
         writeFileSync(join(root, "state.yaml"), "date: day 2, 08:00\n");
@@ -224,6 +230,8 @@ describe("the settings of git on the dashboard", () => {
         await runCommandLine(["init", "--language", "it"], context);
         const names = (): string[] => shownPlayerSettings(root, context).map((setting) => setting.name).filter((name) => name.startsWith("git"));
         expect(names()).toEqual([]);
+        // The master, who may set it anyway, hears that nothing is committed yet.
+        expect((await runCommandLine(["config", "git"], context)).output).toContain("This folder is not a git repository yet");
         mkdirSync(join(root, ".git"));
         expect(names()).toEqual(["git", "git-saves", "git-sessions"]);
         expect(shownPlayerSettings(root, context).find((setting) => setting.name === "git")?.value).toBe("off");

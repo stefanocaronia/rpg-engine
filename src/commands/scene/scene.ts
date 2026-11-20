@@ -84,7 +84,8 @@ export const scene = defineCommand({
         if (input.action === "close") {
             const closed = close(root, world, input.summary ?? "", context);
             // The save made at the end of the scene commits it already; a scene closed with no save is committed here (D-576).
-            void commitCampaign(root, `rpg: scene closed, ${input.summary?.trim().split(/\r?\n/)[0] ?? ""}`);
+            const firstLine = input.summary?.trim().split(/\r?\n/)[0] ?? "";
+            void commitCampaign(root, firstLine === "" ? "rpg: scene closed" : `rpg: scene closed, ${firstLine}`);
             return closed;
         }
 

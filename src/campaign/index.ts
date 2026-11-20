@@ -5,7 +5,7 @@ export { bookFolderName, campaignFileName, findCampaign, houseRulesFolderName, i
 export { hasCharacterAgent, hostFileNames, refreshHostFiles, writeEffortFiles } from "./host-files.ts";
 export { lastChoices, rememberChoice, rememberedSettings } from "./last-choices.ts";
 export { type CountedByGame, customLevel, customLevels, customSettings, difficulties, difficultyItems, itemMeaning, leveled, type LeveledSetting, rigorItems, rigors, startingLevels } from "./levels.ts";
-export { savedPort, savePort } from "./port.ts";
+export { portFileName, savedPort, savePort } from "./port.ts";
 export {
     type CampaignSettings,
     changeExtensions,

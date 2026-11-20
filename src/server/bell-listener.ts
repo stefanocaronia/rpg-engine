@@ -40,8 +40,9 @@ export async function waitForBell(input: string, ports?: number[]): Promise<bool
 
     const probes = await Promise.all((ports ?? campaignPorts(root)).filter((port) => port !== 0).map(async (port) => ({ port, said: await dashboardAt(port) })));
     const ours = probes.flatMap((one) => (one.said !== undefined && one.said.root !== null && samePath(one.said.root, root) ? [{ port: one.port, said: one.said }] : []));
-    // The only page of the campaign, once nobody else waits for it: a chat that does could be this one, and a wrong chat cannot read the page.
-    const only = ours.length === 1 && ours[0].said.others.length === 0 ? ours[0] : undefined;
+    // The only page of the campaign, once nobody else waits for it: a chat that does could be this one, and a wrong chat cannot read the page. An older
+    // engine's page does not say who waits, so it is never taken as this chat's.
+    const only = ours.length === 1 && ours[0].said.others?.length === 0 ? ours[0] : undefined;
     const port = (ours.find((one) => hook.session !== undefined && one.said.session === hook.session) ?? only)?.port;
     return port === undefined ? false : (await askDashboard(port, "/api/bell")) === "ring";
 }

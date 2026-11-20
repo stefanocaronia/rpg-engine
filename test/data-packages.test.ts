@@ -186,7 +186,7 @@ describe("a theme as a package of its own", () => {
     it("refuses one that asks a newer rpg-engine before any check, its unknown keys too, and installs one this engine reads", async () => {
         const newer = zipOf(themeFiles((yaml) => yaml.replace("name: Ledger\n", 'name: Ledger\nversion: 3.0.0\nengine: "99.0"\nsparkle: true\n')));
         expect((await rpg("package", "install", newer)).output).toBe(
-            `Ledger 3.0.0 needs rpg-engine 99.0 or newer; this is ${getVersion()}. Update RPG Engine, then add it again. Nothing changed.`,
+            `Ledger 3.0.0 needs rpg-engine 99.0 or newer; this is ${getVersion()}. The player updates RPG Engine on the dashboard's Packages page, never you; then add it again. Nothing changed.`,
         );
         await expect(packageCommand.run({ action: "install", name: newer }, context)).rejects.toMatchObject({ code: "engine-too-old", values: { name: "Ledger", version: "3.0.0" } });
         expect(themesThere()).toEqual([]);
@@ -238,7 +238,7 @@ describe("a language as a package of data alone", () => {
         await expect(packageCommand.run({ action: "install", name: newer }, context)).rejects.toMatchObject({
             code: "engine-too-old",
             values: { name: "Deutsch", version: "2.0.0" },
-            message: `Deutsch 2.0.0 needs rpg-engine 99.0 or newer; this is ${getVersion()}. Update RPG Engine, then add it again. Nothing changed.`,
+            message: `Deutsch 2.0.0 needs rpg-engine 99.0 or newer; this is ${getVersion()}. The player updates RPG Engine on the dashboard's Packages page, never you; then add it again. Nothing changed.`,
         });
         expect(languagePackFor(languageFolders(context), "de")).toBeUndefined();
         await rpg("package", "install", zipOf({ ...files, "language.yaml": `code: de\nname: Deutsch\nversion: 2.0.0\nengine: "${getVersion()}"\n` }));

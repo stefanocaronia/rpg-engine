@@ -46,7 +46,8 @@
         inset: 0 0 auto;
         z-index: 21;
         display: grid;
-        grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
+        /* A long name gives way to the chips' widest (their min-width), the rest of them wrapping out of sight, never running under them. */
+        grid-template-columns: auto minmax(0, max-content) minmax(auto, 1fr);
         grid-template-areas: "robot titles chips" "robot nav nav" "place place place";
         align-items: center;
         column-gap: 20px;
@@ -147,9 +148,15 @@
         display: none;
     }
 
+    /* The name's link cuts the name, not its title: a cut by the title would cut the link's focus ring too. As wide as the name, the title's at most. */
     .title-home {
+        display: block;
+        width: fit-content;
+        max-width: 100%;
+        overflow: hidden;
         color: inherit;
         text-decoration: none;
+        text-overflow: ellipsis;
     }
 
     .top > .titles {
@@ -160,6 +167,7 @@
     /* The chips to the right edge, in line with what the master asks and the cards under them. */
     .top > .status-chips {
         grid-area: chips;
+        min-width: min-content;
         margin: 0;
         /* Clear of the theme's corner, whose button is wider than its triangle. */
         margin-inline-end: 40px;
@@ -459,12 +467,10 @@
     }
 
     .titles h1 {
-        overflow: hidden;
         font-size: 2.4rem;
         line-height: 1.05;
         letter-spacing: var(--title-spacing, 0.04em);
         font-variant: small-caps;
-        text-overflow: ellipsis;
         white-space: nowrap;
     }
 

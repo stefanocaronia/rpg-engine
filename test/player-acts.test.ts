@@ -1,6 +1,7 @@
 // The player's sentences on the dashboard (D-493 (1), D-495): said on the page, heard once at the head of the master's next call, taken back until then; the
 // doorbell of Claude Code's hook rings for each, never for anything else; in Codex they go to its queue, as the player's own messages.
-import { request } from "node:http";
+import { createServer, request } from "node:http";
+import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { ChatState, Context } from "../src/core/context.ts";
@@ -215,6 +216,18 @@ describe("the player's sentences on the dashboard (D-495)", () => {
     it("leave the page to the chat that serves it, when the hook's chat only waits there for it (D-577)", async () => {
         expect(JSON.parse((await send("GET", "/api/bell?probe&also=s2")).body)).toMatchObject({ others: ["s2"] });
         expect(await waitForBell(JSON.stringify({ session_id: "s2", cwd: folder }), [port])).toBe(false);
+    });
+
+    it("leave an older engine's page to its chat: it does not say who waits there", async () => {
+        const older = createServer((asked, answer) => {
+            const url = asked.url ?? "";
+            answer.writeHead(url.startsWith("/api/bell") ? 200 : 404).end(url.startsWith("/api/bell?probe") ? JSON.stringify({ session: "s1", root: folder }) : "ring");
+        });
+        await new Promise<void>((done) => older.listen(0, "127.0.0.1", () => done()));
+        const olderPort = (older.address() as AddressInfo).port;
+        expect(await waitForBell(JSON.stringify({ session_id: "s2", cwd: folder }), [olderPort])).toBe(false);
+        expect(await waitForBell(JSON.stringify({ session_id: "s1", cwd: folder }), [olderPort])).toBe(true);
+        older.close();
     });
 
     it("go to Codex's queue in its thread while no call runs, and wait for the next call once Codex refuses one", async () => {

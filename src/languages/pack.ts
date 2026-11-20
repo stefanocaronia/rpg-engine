@@ -25,7 +25,7 @@ const languageSchema = z.object({
     code: z.string().regex(codePattern, "a language's code, such as de or pt-PT").refine((code) => code.split("-")[0] !== "en", "English is the page's own"),
     name: z.string().trim().min(1),
     // The lowest rpg-engine that reads it, such as "0.22": checked as one of data alone is installed.
-    engine: z.union([z.string().min(1), z.number()]).transform(String).optional(),
+    engine: z.string({ error: 'engine is written in quotes, as engine: "0.22": without them YAML reads 0.30 as the number 0.3' }).regex(/^\d+(\.\d+){0,2}$/, 'engine is the lowest rpg-engine version, such as "0.22", not a range').optional(),
     // Its version, for a package of data alone, which has no package.json to say it.
     version: z.union([z.string(), z.number()]).transform(String).optional(),
 }).strict();

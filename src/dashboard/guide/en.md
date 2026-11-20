@@ -182,7 +182,7 @@ In every mode you can **start over**, from the start of play or from session zer
 
 After going back, **open a new chat**: the old one remembers what was undone. Write *continue* in the new chat, then press **I opened a new chat** in Saves.
 
-If the campaign's folder is a git repository, **Settings** has a **Git** section, all off until you choose: a commit at the start of each session, at each save and at each end of a scene, and a push after it if you want. The saves and your chats with the master stay out of the repository unless you let them in; let the chats in only if the repository is private.
+If the campaign's folder is a git repository, **Settings** has a **Git** section, all off until you choose: a commit at the start of each session, at each save and at each end of a scene, and a push after it if you want. A commit is a snapshot of the campaign at that moment; a push sends the snapshots to the repository online, on GitHub for example, so that a copy lives outside this computer. The saves and your chats with the master stay out of the repository unless you let them in; let the chats in only if the repository is private.
 
 ### 3.9 Sessions: stopping and coming back
 
@@ -309,7 +309,7 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 
 ### Problems
 
-**The dashboard does not open.** Ask the master: `[OOC: What's the dashboard link?]`. It works only while a chat is open in that campaign: it starts with the chat.
+**The dashboard does not open.** Ask the master: `[OOC: What's the dashboard link?]`. It works only while a chat of that campaign is open: in Claude Code and Codex it starts as the chat opens, in Antigravity with your first message. In the Claude app a chat left in the background for a while sleeps, and the page with it: click the chat, and the page comes back at the same address.
 
 **The master does not seem to know the game.** Your agent did not load RPG Engine. Check that you started it in the campaign folder and trusted it. In Claude Code, write `/mcp` and reconnect `rpg`. In Codex, `codex mcp list` in the campaign folder must show `rpg`. If `rpg --version` is not found, install RPG Engine again ([2.2](#22-install)).
 
@@ -323,4 +323,4 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 
 **Installing fails, or `rpg` will not start.** `node --version` must say 24 or newer. If Windows answers that running scripts is disabled, see [2.1](#21-what-you-need). On Windows, keep RPG Engine and your campaigns out of paths that contain `&`.
 
-**The dashboard link changed.** Each campaign keeps its own address, chat after chat. It changes only when another program holds it: the master gives you the new link, which the campaign keeps from then on.
+**The dashboard link changed.** Each campaign has its own address, the same chat after chat. It changes only when another program is already using it: the master gives you the new link, and from then on it stays. A second chat of the same campaign keeps the page at the same address, and takes it over once you close the first.

@@ -1,6 +1,6 @@
 // The campaign in its git repository (D-576): a commit at the start of a session, at each save and at each end of a scene, then a push, as the settings say.
 import { join, resolve } from "node:path";
-import { hostFileNames, inboxFolderName, readSettings, sessionsFolderName } from "../../../campaign/index.ts";
+import { hostFileNames, inboxFolderName, portFileName, readSettings, sessionsFolderName } from "../../../campaign/index.ts";
 import type { Context } from "../../../core/context.ts";
 import { files } from "../../../core/store.ts";
 import { commitFolder, isRepository, push, repositoryRoot, withIgnoreBlock } from "../../../git/index.ts";
@@ -78,7 +78,7 @@ const problems = new Map<string, GitProblem>();
 function alwaysIgnored(): string[]
 {
     // .gemini/ of the campaigns made before D-493, which it leaves on the disk.
-    return [".agents/", ".claude/", ".codex/", ".gemini/", ".mcp.json", ...hostFileNames, `${inboxFolderName}/`, `${exportsFolderName}/`, `${importsFolderName}/`, installMarkName, `${savesFolderName}/*.txt`];
+    return [".agents/", ".claude/", ".codex/", ".gemini/", ".mcp.json", ...hostFileNames, `${inboxFolderName}/`, `${exportsFolderName}/`, `${importsFolderName}/`, installMarkName, `${savesFolderName}/*.txt`, portFileName];
 }
 
 function pushesTo(root: string): boolean

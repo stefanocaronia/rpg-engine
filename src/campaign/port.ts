@@ -1,37 +1,29 @@
-// The port of the campaign's page on this computer (D-577): chosen once, kept in campaign.yaml, changed only when another program or campaign holds it.
+// The port of the campaign's page on this computer (D-577): chosen once, kept in a file of the campaign's own that git leaves out, so that it moves with
+// the folder and never to another computer, and changed only when another program or campaign holds it.
 import { join } from "node:path";
-import { parseDocument } from "yaml";
 import { files } from "../core/store.ts";
-import { readYamlFile, writeYamlFile } from "../core/yaml-file.ts";
-import { campaignFileName } from "./find-campaign.ts";
 
-// Not one of the player's settings: the config command neither shows nor changes it.
-const portKey = "dashboard-port";
+/** The file that keeps the port of the campaign's page, in its folder: this computer's, which the engine's .gitignore leaves out. */
+export const portFileName = ".dashboard-port";
 
-/** The port campaign.yaml keeps for the campaign's page; undefined when it keeps none, or one that is no port. */
+/** The port kept for the campaign's page; undefined when none is, or one that is no port. */
 export function savedPort(root: string): number | undefined
 {
-    try {
-        const value: unknown = parseDocument(files().text(join(root, campaignFileName)) ?? "").get(portKey);
-        return typeof value === "number" && Number.isInteger(value) && value > 0 && value < 65536 ? value : undefined;
-    } catch {
-        return undefined;
-    }
+    const text = files().text(join(root, portFileName))?.trim() ?? "";
+    const port = /^\d+$/.test(text) ? Number(text) : Number.NaN;
+    return Number.isInteger(port) && port > 0 && port < 65536 ? port : undefined;
 }
 
-/** Keeps the port of the campaign's page in campaign.yaml, the rest of the file as it is; nothing when the file does not read, as the page works all the same. */
+/** Keeps the port of the campaign's page; nothing when it cannot be written, as the page works all the same and the next chat chooses again. */
 export function savePort(root: string, port: number): void
 {
-    const path = join(root, campaignFileName);
+    if (savedPort(root) === port) {
+        return;
+    }
 
     try {
-        const document = readYamlFile(path, 'settings, such as "name: ..."');
-
-        if (document.get(portKey) !== port) {
-            document.set(portKey, port);
-            writeYamlFile(path, document);
-        }
+        files().write(join(root, portFileName), `${port}\n`);
     } catch {
-        // A campaign.yaml that does not read keeps no port: the next chat chooses one again.
+        // A folder that cannot be written keeps no port.
     }
 }

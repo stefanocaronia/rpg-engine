@@ -849,17 +849,18 @@ describe("the dashboard's server (D-270, D-272)", () => {
         expect(new Set(["A", "B", "C", "D", "E", "F", "G", "H"].map((name) => campaignPorts(`/giochi/${name}`)[0])).size).toBeGreaterThan(1);
     });
 
-    it("keeps the campaign's port in campaign.yaml, among no setting, and tries it first wherever the folder goes (D-577)", async () => {
+    it("keeps the campaign's port in a file of its own, out of campaign.yaml and of git, and tries it first wherever the folder goes (D-577)", async () => {
         const derived = campaignPorts(folder);
         expect(savedPort(folder)).toBeUndefined();
         savePort(folder, 6123);
         expect(savedPort(folder)).toBe(6123);
-        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).toContain("dashboard-port: 6123");
+        expect(readFileSync(join(folder, ".dashboard-port"), "utf8")).toBe("6123\n");
+        expect(readFileSync(join(folder, "campaign.yaml"), "utf8")).not.toContain("6123");
         expect(campaignPorts(folder)).toEqual([6123, ...derived]);
         expect((await runCommandLine(["status"], context)).exitCode).toBe(0);
         const settings = (await runCommandLine(["config"], context)).output;
         expect(settings).toContain("lethality");
-        expect(settings).not.toContain("dashboard-port");
+        expect(settings).not.toContain("6123");
     });
 
     it("lets a second chat of the campaign give the page the first one serves, and serve it at the same port once that one closes (D-577)", async () => {
@@ -873,9 +874,11 @@ describe("the dashboard's server (D-270, D-272)", () => {
             await opener.open();
             expect(served.dashboard).toBe(first?.url);
             expect(served.news).toBeUndefined();
+            expect(served.dashboardHeld).toBe(true);
             await first?.close();
             await expect.poll(() => served.news, { timeout: 8000, interval: 200 }).toBeDefined();
             expect(served.dashboard).toBe(`http://127.0.0.1:${port}`);
+            expect(served.dashboardHeld).toBe(false);
         } finally {
             await opener.close();
             other.close();
@@ -925,6 +928,11 @@ describe("the dashboard's server (D-270, D-272)", () => {
         const status = await runCommandLine(["status"], dashboarded);
         expect(status.output).toMatch(/^Offer the player their dashboard's link in your first answer: http:\/\/localhost:4747\.\n/);
         expect((await runCommandLine(["status"], dashboarded)).output).toContain("Dashboard: http://localhost:4747.");
+        // A page another chat serves is never offered as this one's (D-577).
+        const held = (await runCommandLine(["status"], { ...context, dashboard: "http://localhost:4747", dashboardHeld: true, chat: { calls: 0 } })).output;
+        expect(held).toMatch(/^The dashboard at http:\/\/localhost:4747 is served by another chat of this campaign that is still open/);
+        expect(held).not.toContain("Offer the player");
+        expect(held).not.toContain("Dashboard: ");
     });
 
     it("turns down every hostile body on every write, changing nothing and staying up (T-63)", { timeout: 60_000 }, async () => {

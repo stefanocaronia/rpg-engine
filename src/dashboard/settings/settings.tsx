@@ -32,7 +32,7 @@ const groups: { names: string[]; system?: true; note?: () => string; }[] = [
     // What a public repository would show of the player (D-576).
     {
         names: ["git", "git-saves", "git-sessions"],
-        note: () => t("Keep the repository private: the campaign holds the log of its sessions and paths of this computer, with your user's name, and with the chats in, everything you wrote to the master."),
+        note: () => t("Keep the repository private. It holds the log of your sessions and your user's name on this computer; with the chats in, everything you wrote to the master too."),
     },
 ];
 

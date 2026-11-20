@@ -44,6 +44,10 @@ describe("a theme as the engine reads it", () => {
     it("reads the lowest rpg-engine it asks, which its install checks", () => {
         const { problems } = readTheme(themeLike((yaml) => yaml.replace("name: Ledger", 'name: Ledger\nversion: 1.1.0\nengine: "0.22"')));
         expect(problems).toEqual([]);
+        const unquoted = readTheme(themeLike((yaml) => yaml.replace("name: Ledger", "name: Ledger\nengine: 0.30")));
+        expect(unquoted.problems.join(" ")).toContain('engine: "0.22"');
+        const range = readTheme(themeLike((yaml) => yaml.replace("name: Ledger", 'name: Ledger\nengine: ">=0.22"')));
+        expect(range.problems.join(" ")).toContain("not a range");
     });
 
     it("writes faces, then one layer of custom properties and nothing else, both modes by data-theme, its files at the address given", () => {

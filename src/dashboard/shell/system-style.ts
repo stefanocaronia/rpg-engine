@@ -244,8 +244,10 @@ function fitTitles(): void
 
         for (const title of document.querySelectorAll<HTMLElement>(titles)) {
             const head = title.closest<HTMLElement>("summary, .card-head") ?? title;
+            // The campaign's name is cut by its link, not by its title.
+            const cut = title.querySelector<HTMLElement>(":scope > .title-home") ?? title;
 
-            if (!title.classList.contains("title-too-wide") && (title.scrollWidth > title.clientWidth + 1 || head.scrollWidth > head.clientWidth + 1)) {
+            if (!title.classList.contains("title-too-wide") && (cut.scrollWidth > cut.clientWidth + 1 || head.scrollWidth > head.clientWidth + 1)) {
                 title.classList.add("title-too-wide");
             }
         }

@@ -23,12 +23,15 @@ export function campaignPorts(root: string): number[]
     return [...own, ...dashboardPorts.filter((port) => !own.includes(port))];
 }
 
-/** Whose dashboard answers at a port: its chat's session, its campaign, and the other chats of that campaign that wait for it (D-577); undefined where none does. */
+/**
+ * Whose dashboard answers at a port: its chat's session, its campaign, and the other chats of that campaign that wait for it (D-577), undefined from an
+ * engine older than that, which does not know them; the whole undefined where none answers.
+ */
 export interface DashboardAt
 {
     session: string | null;
     root: string | null;
-    others: string[];
+    others?: string[];
 }
 
 // How long a port may take to say whose dashboard it is: one of this computer answers at once.
@@ -44,7 +47,7 @@ export async function dashboardAt(port: number, also?: string): Promise<Dashboar
         return parsed === undefined ? undefined : {
             session: typeof parsed.session === "string" ? parsed.session : null,
             root: typeof parsed.root === "string" ? parsed.root : null,
-            others: Array.isArray(parsed.others) ? parsed.others.filter((one): one is string => typeof one === "string") : [],
+            ...(Array.isArray(parsed.others) ? { others: parsed.others.filter((one): one is string => typeof one === "string") } : {}),
         };
     } catch {
         return undefined;

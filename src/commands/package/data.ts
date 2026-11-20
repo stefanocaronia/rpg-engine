@@ -150,7 +150,9 @@ function checkEngine(data: DataPackage): void
     const name = typeof read?.name === "string" && read.name.trim() !== "" ? read.name : data.label;
     const version = typeof read?.version === "string" || typeof read?.version === "number" ? String(read.version) : "";
     throw new Refusal(
-        `${[name, version].filter((part) => part !== "").join(" ")} needs rpg-engine ${engine} or newer; this is ${getVersion()}. Update RPG Engine, then add it again. Nothing changed.`,
+        `${
+            [name, version].filter((part) => part !== "").join(" ")
+        } needs rpg-engine ${engine} or newer; this is ${getVersion()}. The player updates RPG Engine on the dashboard's Packages page, never you; then add it again. Nothing changed.`,
         "engine-too-old",
         { name, version },
     );

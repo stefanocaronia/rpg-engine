@@ -34,6 +34,7 @@ import { declaredKind } from "../../pages/index.ts";
 import { campaignDataNames, rulesetSetting, type SystemSetting } from "../../systems/index.ts";
 import { readBetweenSessions, readCalendar, readCalendarStart } from "../../time/index.ts";
 import { checkLibraryRemovals, libraryAdditions, libraryRemovals, startLibraryReading } from "../shared/books/library.ts";
+import { gitProblem, isCampaignRepository } from "../shared/campaign/git.ts";
 import { campaignMode, campaignNote } from "../shared/campaign/mode.ts";
 import { campaignCoins } from "../shared/campaign/money.ts";
 import { askedBy, heldSystemSettings, offerRefusal, playedEngineSetting, unofferedLines, valuePart } from "../shared/campaign/offers.ts";
@@ -94,7 +95,7 @@ export const config = defineCommand({
             return changeLibrary(input, context);
         }
 
-        const result = configure(input, context);
+        const result = withGitState(configure(input, context), input, context);
 
         // A system installed in this chat, as in the setup, brings its code once the campaign plays it (D-513 (1)).
         return input.setting === "system" && input.value !== undefined ? loadNewSystemCode(context).then(() => result) : result;
@@ -143,6 +144,22 @@ async function changeLibrary(input: ConfigInput, context: Context): Promise<Conf
     const result = configure(add === undefined && remove?.length === 0 ? { setting: "library" } : { ...input, add, remove }, context);
     startLibraryReading(context);
     return result;
+}
+
+/** The setting of git with what the master cannot see otherwise (D-576): a folder that is no repository yet, and what went wrong the last time git ran. */
+function withGitState(result: ConfigResult, input: ConfigInput, context: Context): ConfigResult
+{
+    if (input.setting !== "git") {
+        return result;
+    }
+
+    const root = requireCampaign(context.folder);
+    const problem = gitProblem(root);
+    const lines = [
+        isCampaignRepository(root) ? "" : "This folder is not a git repository yet: nothing is committed until it is.",
+        problem === undefined ? "" : `The last ${problem.act} failed: ${problem.why}`,
+    ].filter((line) => line !== "");
+    return lines.length === 0 ? result : { ...result, note: [result.note, ...lines].filter((line) => line !== "").join("\n") };
 }
 
 function configure(input: ConfigInput, context: Context): ConfigResult

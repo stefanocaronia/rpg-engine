@@ -116,7 +116,10 @@ export function shownPlayerSettings(root: string, context: Context): PlayerSetti
 }
 
 // What went wrong the last time git ran (D-576), told until it goes right.
-const gitFailed = { commit: "The last commit failed: {why}", push: "The last push failed: {why}" };
+const gitFailed = {
+    commit: "The last commit failed; the game goes on all the same. Ask the master to look at it. ({why})",
+    push: "The last push failed: the campaign is safe on this computer, only its copy online is behind. Ask the master to look at it. ({why})",
+};
 
 /** Every note the setting of git may have, which the dashboard writes in its language (D-394). */
 export const gitNotes = Object.values(gitFailed);

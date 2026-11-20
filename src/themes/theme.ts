@@ -416,7 +416,7 @@ const themeSchema = z.object({
     name: z.string().min(1),
     version: z.union([z.string().min(1), z.number()]).transform(String).optional(),
     // The lowest rpg-engine that reads it, such as "0.22": checked as it is installed.
-    engine: z.union([z.string().min(1), z.number()]).transform(String).optional(),
+    engine: z.string({ error: 'engine is written in quotes, as engine: "0.22": without them YAML reads 0.30 as the number 0.3' }).regex(/^\d+(\.\d+){0,2}$/, 'engine is the lowest rpg-engine version, such as "0.22", not a range').optional(),
     fonts: z.array(
         z.object({
             family: z.string().regex(/^[\p{L}\p{N} _-]+$/u, { error: "letters, numbers, spaces and hyphens alone" }),

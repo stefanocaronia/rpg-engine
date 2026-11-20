@@ -64,6 +64,8 @@ export interface Context
     characterAgent?: boolean;
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
+    /** Whether another chat of the campaign, still open, serves the dashboard at that link, which this chat takes over once it closes (D-577). */
+    dashboardHeld?: boolean;
     /**
      * What the player changed on the dashboard since the master's last call, taken for the head of the next call's answer, and given back when that answer
      * never goes, as for a call the user stopped (D-341); the parts it tells count as told in `told`, the call's own.

@@ -186,6 +186,8 @@ export const status = defineCommand({
             // The player's standing orders to the companions, in play, for those who come later too (D-563).
             orders: mode === "play" ? settings.orders ?? [] : [],
             dashboard: context.dashboard,
+            // What the player does on a page another chat serves reaches that chat, not this one (D-577).
+            dashboardHeld: context.dashboardHeld === true,
             // The chat's first status opens with the dashboard, for the master to offer it in their first answer (D-353).
             offerDashboard: offerDashboard(context),
             // Whether to ask for the places' pictures, or to have this one made (D-308).
@@ -238,7 +240,11 @@ export const status = defineCommand({
     {
         const companion = (member: Member): string => `${member.name}${member.with === undefined ? whereabouts(member) : `, with ${member.with}`}${memberCounters(member)}`;
         const state = [
-            result.offerDashboard && result.dashboard !== undefined
+            result.dashboardHeld
+                ? `The dashboard at ${
+                    result.dashboard ?? ""
+                } is served by another chat of this campaign that is still open: what the player does on it reaches that chat, not you. Ask the player to close that chat; this one takes the page over within seconds.`
+                : result.offerDashboard && result.dashboard !== undefined
                 ? `Offer the player their dashboard's link in your first answer: ${result.dashboard}.`
                 : "",
             result.campaign.join(" · "),
@@ -261,7 +267,7 @@ export const status = defineCommand({
             result.orders.length === 0
                 ? ""
                 : `Standing orders, the player's to the companions (they follow them as their pages allow, and break one only in the open): ${quotedOrders(result.orders)}.`,
-            result.dashboard === undefined || result.offerDashboard ? "" : `Dashboard: ${result.dashboard}.`,
+            result.dashboard === undefined || result.offerDashboard || result.dashboardHeld ? "" : `Dashboard: ${result.dashboard}.`,
             result.pictures ?? "",
             result.importing,
             result.translation ?? "",
