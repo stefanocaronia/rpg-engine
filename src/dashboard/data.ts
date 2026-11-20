@@ -771,8 +771,10 @@ export interface ShownTheme
     css?: string;
     /** The lines of the page's icons it draws anew, by name. */
     icons?: Record<string, string>;
+    /** The address of the sheet of one line that brings its own style sheet into its layer, which changes with what that holds: the page links it last, unless the player turns it off or shows Settings (D-575). */
+    style?: string;
     refused?: boolean;
-    themes?: { id: string; name: string; css: string; icons: Record<string, string>; }[];
+    themes?: { id: string; name: string; css: string; icons: Record<string, string>; style?: string; }[];
 }
 
 /** A page module of the campaign's system or one of its extensions whose code runs, as /api/modules lists it (D-511). */

@@ -17,7 +17,7 @@ import { realPath } from "../../core/files.ts";
 import { files, isInside, withFiles } from "../../core/store.ts";
 import { findHiddenImage, findImage } from "../../images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "../../languages/index.ts";
-import { drawnOrnament, isThemeId, readTheme, themeCss, themeFile } from "../../themes/index.ts";
+import { drawnOrnament, drawnTexture, isThemeId, readTheme, type Theme, themeCss, themeFile } from "../../themes/index.ts";
 import type { Served } from "./index.ts";
 
 const imageTypes: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
@@ -38,6 +38,8 @@ const pageTypes: Record<string, string> = {
 export const themeAddress = "/theme";
 export const themesAddress = "/themes";
 const themeTypes: Record<string, string> = { ...imageTypes, ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf" };
+// A theme's own style sheet, served only as the one its theme.yaml names.
+const styleType = "text/css; charset=utf-8";
 
 // A picture runs nothing, even an SVG opened by itself.
 const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
@@ -197,6 +199,24 @@ export function pageModulesOf(root: string, served: Served): PageModule[]
 }
 
 /**
+ * A theme's own style sheet, when it names one: the address of a sheet of one line, which the page links and which brings the theme's into the layer
+ * theme-style, so that none of its braces leaves that layer and its url() come from its own folder; it changes with what the sheet holds.
+ */
+function styleOf(theme: Theme, address: string): { style?: string; }
+{
+    const sheet = sheetAddress(theme, address);
+    return sheet === undefined ? {} : { style: `${sheet}&layer` };
+}
+
+/** The address of a theme's own style sheet, which changes with what it holds; undefined when it names none. */
+function sheetAddress(theme: Theme, address: string): string | undefined
+{
+    const bytes = theme.style === undefined ? undefined : files().bytes(join(theme.folder, theme.style));
+    const at = `${address}/${(theme.style ?? "").split("/").map(encodeURIComponent).join("/")}`;
+    return bytes === undefined ? undefined : `${at}?v=${createHash("sha1").update(bytes).digest("base64url").slice(0, 12)}`;
+}
+
+/**
  * The theme of the campaign's game system (D-528): its CSS of custom properties, its icons and its name, which the page uses while the player keeps the game's
  * style on; refused when it does not pass its checks, which validate says; the system's name alone when it names none. Beside it, the themes installed on
  * their own that pass their checks, for any system, each with its CSS at its own address, which the player chooses in Settings; none when there are none.
@@ -207,7 +227,10 @@ export async function themeNow(response: ServerResponse, served: Served): Promis
     await served.session.ready();
     const system = root === undefined ? undefined : withFiles(served.session, () => campaignSystem(root, served.context));
     const reading = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context));
-    const installed = withFiles(served.session, () => themesHere(served.context)).flatMap(({ id, theme }) => theme === undefined ? [] : [{ id, name: theme.name, css: themeCss(theme, `${themesAddress}/${id}`), icons: theme.icons }]);
+    const installed = withFiles(
+        served.session,
+        () => themesHere(served.context).flatMap(({ id, theme }) => theme === undefined ? [] : [{ id, name: theme.name, css: themeCss(theme, `${themesAddress}/${id}`), icons: theme.icons, ...styleOf(theme, `${themesAddress}/${id}`) }]),
+    );
     const themes = installed.length === 0 ? {} : { themes: installed };
 
     if (system === undefined) {
@@ -218,20 +241,22 @@ export async function themeNow(response: ServerResponse, served: Served): Promis
     } else if (reading.theme === undefined) {
         sendJson(response, 200, { system: reading.system, refused: true, ...themes });
     } else {
-        sendJson(response, 200, { system: reading.system, name: reading.theme.name, css: themeCss(reading.theme, themeAddress), icons: reading.theme.icons, ...themes });
+        const style = withFiles(served.session, () => (reading.theme === undefined ? {} : styleOf(reading.theme, themeAddress)));
+        sendJson(response, 200, { system: reading.system, name: reading.theme.name, css: themeCss(reading.theme, themeAddress), icons: reading.theme.icons, ...style, ...themes });
     }
 }
 
 /**
- * A file of the theme of the campaign's game system, at theme/<path>, only from its folder, by real paths, and only while the theme passes its checks: a face
- * or a picture. Its ornament comes in the colour asked, ?ink=#rrggbb, and turned for a page that reads right to left, &mirrored.
+ * A file of the theme of the campaign's game system, at theme/<path>, only from its folder, by real paths, and only while the theme passes its checks: a face,
+ * a picture or its style sheet. Its ornament comes in the colour asked, ?ink=#rrggbb, and turned for a page that reads right to left, &mirrored; its cards'
+ * texture in the colour asked, &texture.
  */
 export async function sendThemeFile(name: string, query: URLSearchParams, request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
     const root = findCampaign(served.context.folder);
     await served.session.ready();
-    const folder = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context))?.theme?.folder;
-    sendFileOfTheme(folder, name, `${themeAddress}/${name}`, query, request, response, served);
+    const theme = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context))?.theme;
+    sendFileOfTheme(theme, name, themeAddress, query, request, response, served);
 }
 
 /**
@@ -243,25 +268,38 @@ export async function sendInstalledThemeFile(path: string, query: URLSearchParam
     const [id, ...rest] = path.split("/");
     const themes = themesFolder(served.context);
     await served.session.ready();
-    const folder = themes === undefined || !isThemeId(id) ? undefined : withFiles(served.session, () => readTheme(join(themes, id)).theme?.folder);
-    sendFileOfTheme(folder, rest.join("/"), `${themesAddress}/${path}`, query, request, response, served);
+    const theme = themes === undefined || !isThemeId(id) ? undefined : withFiles(served.session, () => readTheme(join(themes, id)).theme);
+    sendFileOfTheme(theme, rest.join("/"), `${themesAddress}/${id}`, query, request, response, served);
 }
 
-/** A face or a picture of the theme in this folder, by its name in the address; its ornament in the colour asked, ?ink=#rrggbb, and turned, &mirrored. */
-function sendFileOfTheme(folder: string | undefined, name: string, address: string, query: URLSearchParams, request: IncomingMessage, response: ServerResponse, served: Served): void
+/**
+ * A face or a picture of this theme, by its name in the address after the theme's, or the style sheet it names, &layer the line that brings it into its
+ * layer; its ornament in the colour asked, ?ink=#rrggbb, and turned, &mirrored; its cards' texture, &texture, all it fills in that colour.
+ */
+function sendFileOfTheme(theme: Theme | undefined, name: string, base: string, query: URLSearchParams, request: IncomingMessage, response: ServerResponse, served: Served): void
 {
-    const given = decoded(name);
-    const file = folder === undefined || given === undefined ? undefined : themeFile(folder, given);
-    const type = file === undefined ? undefined : themeTypes[extname(file).toLowerCase()];
+    const address = `${base}/${name}`;
+    const given = decoded(name)?.replaceAll("\\", "/");
+    const file = theme === undefined || given === undefined ? undefined : themeFile(theme.folder, given);
+    const style = theme !== undefined && given === theme.style;
+    const type = file === undefined ? undefined : style ? styleType : themeTypes[extname(file).toLowerCase()];
 
     if (file === undefined || type === undefined) {
         send(response, 404, "text/plain; charset=utf-8", `Nothing at ${address}.`);
         return;
     }
 
+    const sheet = theme !== undefined && style && query.has("layer") ? withFiles(served.session, () => sheetAddress(theme, base)) : undefined;
+
+    if (sheet !== undefined) {
+        sendTagged(request, response, Buffer.from(`@import url("${sheet}") layer(theme-style);\n`), { "Content-Type": styleType, "Content-Security-Policy": securityHeaders["Content-Security-Policy"] });
+        return;
+    }
+
     const ink = query.get("ink");
     const tinted = type === imageTypes[".svg"] && ink !== null && /^#[0-9a-f]{6}$/i.test(ink);
-    const bytes = withFiles(served.session, () => (tinted ? Buffer.from(drawnOrnament(files().text(file) ?? "", ink, query.has("mirrored"))) : files().bytes(file)));
+    const drawn = (svg: string, colour: string): string => (query.has("texture") ? drawnTexture(svg, colour) : drawnOrnament(svg, colour, query.has("mirrored")));
+    const bytes = withFiles(served.session, () => (tinted ? Buffer.from(drawn(files().text(file) ?? "", ink)) : files().bytes(file)));
 
     if (bytes === undefined) {
         send(response, 404, "text/plain; charset=utf-8", `Nothing at ${address}.`);

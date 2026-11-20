@@ -9,7 +9,7 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { startDashboard } from "../src/server/dashboard/index.ts";
-import { contrast, drawnOrnament, readTheme, themeCss, themeFile, themeIconNames } from "../src/themes/index.ts";
+import { contrast, drawnOrnament, drawnTexture, readTheme, themeCss, themeFile, themeFilesNamed, themeIconNames } from "../src/themes/index.ts";
 import { inPlay, makeTempFolder, testContext } from "./support.ts";
 
 const fake = fileURLToPath(new URL("./systems/fake", import.meta.url));
@@ -41,6 +41,11 @@ describe("a theme as the engine reads it", () => {
         expect(theme?.modes.dark.titleGlow).toBe("#2d5a3a");
     });
 
+    it("reads the lowest rpg-engine it asks, which its install checks", () => {
+        const { problems } = readTheme(themeLike((yaml) => yaml.replace("name: Ledger", 'name: Ledger\nversion: 1.1.0\nengine: "0.22"')));
+        expect(problems).toEqual([]);
+    });
+
     it("writes faces, then one layer of custom properties and nothing else, both modes by data-theme, its files at the address given", () => {
         const folder = themeLike((yaml) => yaml.replace("name: Ledger", "name: Ledger\nfonts:\n  - {family: Plain Sans, file: fonts/plain.woff2, weight: 100 900, license: fonts/OFL.txt}\ntitle-font: Plain Sans"), {
             "fonts/plain.woff2": new Uint8Array([0x77, 0x4f, 0x46, 0x32]),
@@ -48,7 +53,8 @@ describe("a theme as the engine reads it", () => {
         });
         const { theme } = readTheme(folder);
         const css = themeCss(theme!, "/theme");
-        const [faces, layer] = css.split("@layer theme {");
+        const [faces, rest] = css.split("@layer theme {");
+        const [layer, guarded] = rest.split("@layer guarantees {");
         expect(faces.trim()).toBe('@font-face { font-family: "Plain Sans"; src: url("/theme/fonts/plain.woff2"); font-weight: 100 900; font-display: swap; }');
         expect(layer.match(/^ {4}\S.*\{$/gm)).toEqual([":root {", ':root[data-theme="light"] {', ':root[data-theme="dark"] {'].map((selector) => `    ${selector}`));
         // Inside the blocks, custom properties alone, and the scheme of colours of each mode.
@@ -59,6 +65,49 @@ describe("a theme as the engine reads it", () => {
         expect(css).toContain('--card-ornament: url("/theme/images/corner.svg?ink=%23cfcbbb");');
         expect(css).toContain('--card-ornament-mirrored: url("/theme/images/corner.svg?ink=%2333402f&mirrored");');
         expect(css).toContain("--dice-body: #9fd3a8;");
+        // Then the colours the focus ring and the tooltip draw with, on every element and !important, which a theme's own style sheet cannot change (D-575).
+        expect(guarded.match(/^ {4}\S.*\{$/gm)).toEqual(['    :root[data-theme="light"], :root[data-theme="light"] * {', '    :root[data-theme="dark"], :root[data-theme="dark"] * {']);
+        expect(guarded.split("\n").filter((line) => line.startsWith("        ")).every((line) => /^ {8}--guard-[a-z]+: #[0-9a-f]{6} !important;$/.test(line))).toBe(true);
+        expect(guarded).toContain(`--guard-accent: ${theme!.modes.dark.colours.accent} !important;`);
+        expect(guarded).toContain(`--guard-ink: ${theme!.modes.light.colours.ink} !important;`);
+    });
+
+    it("keeps in the guarantees no value a theme's own style sheet could change: their colours their own, on every element, the tooltip's place set inline", () => {
+        const style = (file: string): string => readFileSync(fileURLToPath(new URL(`../src/dashboard/style/${file}`, import.meta.url)), "utf8").replace(/\r\n/g, "\n");
+        const guarantees = style("guarantees.css");
+        const read = [...new Set([...guarantees.matchAll(/var\((--[a-z0-9-]+)/g)].map((match) => match[1]))];
+        expect(read.filter((name) => !name.startsWith("--guard-"))).toEqual([]);
+
+        for (const mode of ["light", "dark"]) {
+            expect(guarantees).toContain(`:root[data-theme="${mode}"],\n    :root[data-theme="${mode}"] * {`);
+        }
+
+        // Their colours registered by the page, outside every layer, after the imports: an @property of the layer theme-style cannot make them invalid.
+        const index = style("index.css");
+        const lastImport = index.lastIndexOf("@import ");
+        const guards = [...new Set([...guarantees.matchAll(/(--guard-[a-z]+):/g)].map((match) => match[1]))];
+        expect(guards.length).toBeGreaterThan(0);
+
+        for (const name of guards) {
+            const at = index.indexOf(`\n@property ${name} {\n    syntax: "<color>";\n    inherits: true;\n    initial-value: #`);
+            expect(at, name).toBeGreaterThan(lastImport);
+            expect(index.slice(0, at).split("{").length, `${name} outside every block`).toBe(index.slice(0, at).split("}").length);
+        }
+
+        // The tooltip open: every property first to its initial value, then the page's; its pseudo-elements put out; no matter what a sheet says of it.
+        const open = guarantees.match(/\n {4}\.page-tip:is\(:popover-open, :not\(\[popover\], \[hidden\]\)\) \{\n([^}]*)\}/)?.[1] ?? "";
+        expect(open.trimStart().startsWith("all: initial !important;")).toBe(true);
+
+        for (const property of ["display", "position", "inset", "background", "color", "font", "opacity", "transition", "scale", "translate", "rotate", "zoom"]) {
+            expect(open, property).toMatch(new RegExp(`\\n {8}${property}: [^;]+ !important;`));
+        }
+
+        expect(guarantees).toMatch(/\.page-tip::before,\n {4}\.page-tip::after,\n {4}\.page-tip::backdrop \{\n {8}all: initial !important;\n {8}display: none !important;/);
+        expect(guarantees).toMatch(/\.page-tip::first-line,\n {4}\.page-tip::first-letter \{\n {8}all: unset !important;/);
+
+        const tooltip = readFileSync(fileURLToPath(new URL("../src/dashboard/shell/tooltip.ts", import.meta.url)), "utf8");
+        expect(tooltip.match(/style\.setProperty\("(left|top)", [^;]+, "important"\)/g)).toHaveLength(2);
+        expect(tooltip).not.toContain("--tip-");
     });
 
     it("refuses a theme with what to fix, each a line, and gives none (D-528 (1), (3))", () => {
@@ -193,6 +242,171 @@ describe("a theme as the engine reads it", () => {
     });
 });
 
+describe("the hooks a theme may give beyond colours and faces (D-575)", () => {
+    const grain = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path d="M0 0h1v1H0Z" fill="currentColor"/></svg>';
+    const hooked = (yaml: string): string =>
+        yaml
+            .replace("cards:\n  inner-line: dashed\n", "cards:\n  inner-line: dashed\n  corner: cut\n  texture: {picture: images/grain.svg}\n")
+            .replace("name: Ledger", 'name: Ledger\nbuttons: {shape: pill}\ntabs: {shape: cut}\nshadows: sharp\npapers: {maps: "#eef0e4", documents: "#f3f0e2"}\nportraits: {shape: square, frame: double}\nstyle: style.css')
+            .replace(
+                "  page-texture: {picture: images/ruled.svg, fit: tile}",
+                '  page-texture: {picture: images/ruled.svg, fit: tile}\n  head-picture: {picture: images/ruled.svg}\n  card-grain: "#d9d4c0"\n  shadow: "#2d5a3a"\n  portrait-frame: "#2d5a3a"',
+            );
+    const files = { "images/grain.svg": grain, "style.css": ".band h2 { letter-spacing: 0.1em; background: url(images/ruled.svg); }\n" };
+
+    it("reads them, and writes each as custom properties of the layer theme alone", () => {
+        const { theme, problems } = readTheme(themeLike(hooked, files));
+        expect(problems).toEqual([]);
+        expect(theme).toMatchObject({ buttonShape: "pill", tabShape: "cut", cardCorner: "cut", cardTexture: { picture: "images/grain.svg", fit: "tile" }, shadows: "sharp", style: "style.css" });
+        expect(theme).toMatchObject({ papers: { maps: "#eef0e4", documents: "#f3f0e2" }, portraitShape: "square", portraitFrame: "double" });
+        expect(theme?.modes.light).toMatchObject({ cardGrain: "#d9d4c0", shadow: "#2d5a3a", portraitFrame: "#2d5a3a", headPicture: { picture: "images/ruled.svg", fit: "cover" } });
+        // What the dark mode left out: the grain in the cards' edge, the frame in the strong colour, the page's shadows' colour.
+        expect(theme?.modes.dark).toMatchObject({ cardGrain: "#33402f", portraitFrame: "#9fd3a8" });
+        expect(theme?.modes.dark.shadow).toBeUndefined();
+
+        const css = themeCss(theme!, "/theme");
+        const layer = css.slice(css.indexOf("@layer theme {"));
+        expect(layer.split("\n").filter((line) => line.startsWith("        ")).every((line) => /^ {8}(--[a-z0-9-]+|color-scheme): [^;{}]+;$/.test(line))).toBe(true);
+
+        for (
+            const line of [
+                "--button-radius: 999px;",
+                "--button-corner: round;",
+                "--tab-radius: 8px;",
+                "--tab-corner: bevel;",
+                "--tab-chosen: color-mix(in srgb, var(--accent) 16%, var(--paper));",
+                "--card-corner: bevel;",
+                "--doc-paper: #f3f0e2;",
+                "--m-land: #eef0e4;",
+                "--portrait-radius: 4px;",
+                "--portrait-rim: linear-gradient(transparent, transparent);",
+                '--head-picture: url("/theme/images/ruled.svg");',
+                '--head-picture-shown: "";',
+                '--card-texture-layer: linear-gradient(color-mix(in srgb, var(--panel) 70%, transparent), color-mix(in srgb, var(--panel) 70%, transparent)), url("/theme/images/grain.svg?ink=%23d9d4c0&texture") 0 0 / auto repeat;',
+                "--lift: 1px 1px 0 color-mix(in srgb, #2d5a3a 30%, transparent);",
+                "--portrait-frame: inset 0 0 0 1.5px #2d5a3a, inset 0 0 0 3px rgb(0 0 0 / 0.55), inset 0 0 0 4.5px #2d5a3a;",
+            ]
+        ) {
+            expect(css, line).toContain(line);
+        }
+
+        // The style sheet is no part of the CSS the engine writes: the page adds it by itself.
+        expect(css).not.toContain("letter-spacing");
+    });
+
+    it("writes none of them for a theme that gives none, which looks as it did", () => {
+        const css = themeCss(readTheme(fakeTheme).theme!, "/theme");
+
+        for (const token of ["--button-", "--tab-", "--card-corner", "--card-texture-layer", "--head-picture", "--lift", "--raise", "--overlay", "--doc-", "--m-land", "--map-", "--portrait-"]) {
+            expect(css, token).not.toContain(token);
+        }
+    });
+
+    it("writes each kind of shadow, and none at all as shadows that cast nothing", () => {
+        const of = (kind: string): string => themeCss(readTheme(themeLike((yaml) => yaml.replace("name: Ledger", `name: Ledger\nshadows: ${kind}`))).theme!, "/theme");
+        expect(of("none")).toContain("--overlay: 0 0 0 transparent;");
+        expect(of("glow")).toContain("--raise: 0 0 16px -4px color-mix(in srgb, #2d5a3a 55%, transparent);");
+        // Soft with no colour of its own is the page's own.
+        expect(of("soft")).not.toContain("--lift");
+    });
+
+    it("refuses what would break the page's reading, each with what to fix", () => {
+        const cases: [string, (yaml: string) => string, string, Record<string, string>?][] = [
+            ["a shape it does not know", (yaml) => yaml.replace("name: Ledger", "name: Ledger\nbuttons: {shape: round}"), "buttons.shape: "],
+            ["a texture that is no SVG", (yaml) => hooked(yaml).replace("images/grain.svg", "images/grain.png"), 'cards.texture.picture: "images/grain.png" must be a file .svg', { ...files, "images/grain.png": "png" }],
+            [
+                "a texture with colours of its own",
+                hooked,
+                "cards.texture.picture: images/grain.svg must draw in currentColor alone, which the page paints in card-grain; it paints #000",
+                { ...files, "images/grain.svg": '<svg viewBox="0 0 4 4"><path d="M0 0h1v1H0Z" style="fill:#000"/></svg>' },
+            ],
+            [
+                "a texture with a picture in it",
+                hooked,
+                "cards.texture.picture: images/grain.svg must draw with shapes alone; it has <image>",
+                { ...files, "images/grain.svg": '<svg viewBox="0 0 4 4"><image href="photo.png"/></svg>' },
+            ],
+            ["a grain that muddies the cards' words", (yaml) => hooked(yaml).replace('card-grain: "#d9d4c0"', 'card-grain: "#1f2a1f"'), "light: card-grain #1f2a1f does not read: muted on grain", files],
+            ["a chosen tab whose accent does not read on its tint", (yaml) => hooked(yaml).replace('accent: "#9fd3a8"', 'accent: "#5f9a6a"'), "dark: accent #5f9a6a does not read:", files],
+            ["a documents' paper too dark for their ink", (yaml) => hooked(yaml).replace('documents: "#f3f0e2"', 'documents: "#6b6455"'), "papers.documents #6b6455 does not read: the documents' ink #2f261b on it is", files],
+            ["a portrait frame that looks like a foe's ring", (yaml) => hooked(yaml).replace('portrait-frame: "#2d5a3a"', 'portrait-frame: "#a5321f"'), "light: portrait-frame #a5321f and low #a3331f are too alike", files],
+            ["a style sheet that imports another", hooked, "style: style.css must not @import", { ...files, "style.css": '@import "other.css";\n.band { color: red; }' }],
+            ["a style sheet that reaches the web", hooked, "style: url(https://example.com/a.png) in style.css: a theme never reaches the web", { ...files, "style.css": ".band { background: url(https://example.com/a.png); }" }],
+            ["a style sheet that climbs out of its folder", hooked, 'style: url(../../system.yaml) in style.css: "../../system.yaml" must be a file of the theme\'s folder', {
+                ...files,
+                "style.css": ".band { background: url('../../system.yaml'); }",
+            }],
+            ["a style sheet's picture it does not have", hooked, 'style: url(images/none.png) in style.css: "images/none.png" is not in the theme\'s folder', { ...files, "style.css": '.band { background: url("images/none.png"); }' }],
+            ["a style sheet's face, which goes in fonts with its licence", hooked, "style: url(face.woff2) in style.css: ", { ...files, "style.css": "@font-face { font-family: X; src: url(face.woff2); }", "face.woff2": "x" }],
+            ["a style sheet that is no CSS", (yaml) => hooked(yaml).replace("style: style.css", "style: style.txt"), 'style: "style.txt" must be a file .css', { ...files, "style.txt": "" }],
+            [
+                "a style sheet that names the page's own files",
+                hooked,
+                "style: url(/images/ruled.svg) in style.css: an address from / is the page's, not the theme's folder; write it from the sheet, such as images/ruled.svg",
+                { ...files, "style.css": ".band { background: url(/images/ruled.svg); }" },
+            ],
+            [
+                "a style sheet with a picture written in it",
+                hooked,
+                "style: url(data:image/svg+xml,<svg/>) in style.css: the page blocks a data: address; put the picture in the theme's folder",
+                { ...files, "style.css": '.band { background: url("data:image/svg+xml,<svg/>"); }' },
+            ],
+            [
+                "a texture that changes its colour as it is drawn",
+                hooked,
+                "cards.texture.picture: images/grain.svg must draw with shapes alone; it has <set>, <animate>",
+                { ...files, "images/grain.svg": '<svg viewBox="0 0 4 4"><path d="M0 0h1"><set attributeName="fill" to="#ff0000"/><animate attributeName="fill" values="red;blue"/></path></svg>' },
+            ],
+            [
+                "a maps' paper on which the regions' names do not read",
+                (yaml) => hooked(yaml).replace('maps: "#eef0e4"', 'maps: "#a4a4a4"'),
+                "papers.maps #a4a4a4 does not read: the regions' names #5a3f4f on it is 3.73:1, the page needs 4.5:1, the rivers #3a6d96 on it is 2.21:1, the page needs 3:1, the party's trail",
+                files,
+            ],
+        ];
+
+        for (const [what, change, said, given] of cases) {
+            const reading = readTheme(themeLike(change, given));
+            expect(reading.theme, what).toBeUndefined();
+            expect(reading.problems.some((problem) => problem.startsWith(said)), `${what}: ${reading.problems.join(" | ")}`).toBe(true);
+        }
+    });
+
+    it("takes a style sheet's url() from its own folder, its comments left out", () => {
+        const folder = themeLike((yaml) => hooked(yaml).replace("style: style.css", "style: css/look.css"), {
+            ...files,
+            "css/look.css": "/* url(images/none.png) */ .band { background: url(../images/ruled.svg) } .top { background: url( 'paper.svg' ) }",
+            "css/paper.svg": "<svg/>",
+        });
+        expect(readTheme(folder).problems).toEqual([]);
+        expect(themeFilesNamed(readFileSync(join(folder, "theme.yaml"), "utf8"), (name) => readFileSync(join(folder, name), "utf8"))).toEqual(
+            expect.arrayContaining(["css/look.css", "images/ruled.svg", "css/paper.svg", "images/grain.svg"]),
+        );
+    });
+
+    it("takes a style sheet named from ./ as the file it is, and its url() as the browser reads them", () => {
+        const folder = themeLike((yaml) => hooked(yaml).replace("style: style.css", "style: ./css/look.css"), {
+            ...files,
+            "css/look.css": ".band { filter: url(#glow); background: url(my%20paper.svg) } .top { background: url(../images/ruled.svg) }",
+            "css/my paper.svg": "<svg/>",
+        });
+        const reading = readTheme(folder);
+        expect(reading.problems).toEqual([]);
+        expect(reading.theme?.style).toBe("css/look.css");
+        const named = themeFilesNamed(readFileSync(join(folder, "theme.yaml"), "utf8"), (name) => readFileSync(join(folder, name), "utf8"));
+        expect(named).toEqual(expect.arrayContaining(["css/look.css", "css/my paper.svg", "images/ruled.svg"]));
+        // What the sheet names from the page's root, or as no file, the install never takes from the theme's folder.
+        const rooted = themeFilesNamed("style: css/look.css\n", () => ".a { background: url(/images/x.png) } .b { filter: url(#glow) } .c { background: url(data:image/png,x) }");
+        expect(rooted).toEqual(["css/look.css"]);
+    });
+
+    it("draws the cards' texture in one colour, what it fills without saying how included", () => {
+        expect(drawnTexture(grain, "#123456")).toContain('<path d="M0 0h1v1H0Z" fill="#123456"/>');
+        expect(drawnTexture('<svg viewBox="0 0 4 4"><path d="M0 0h1"/></svg>', "#123456")).toBe('<svg fill="#123456" viewBox="0 0 4 4"><path d="M0 0h1"/></svg>');
+        expect(drawnTexture('<svg fill="none" viewBox="0 0 4 4"><path d="M0 0h1" stroke="currentColor"/></svg>', "#123456")).toBe('<svg fill="none" viewBox="0 0 4 4"><path d="M0 0h1" stroke="#123456"/></svg>');
+    });
+});
+
 describe("the icons a theme draws anew", () => {
     it("are icons the page has, by its own names", () => {
         const page = readFileSync(fileURLToPath(new URL("../src/dashboard/parts/icons.tsx", import.meta.url)), "utf8");
@@ -275,6 +489,32 @@ describe("a system's theme in a campaign", () => {
             for (const refused of ["theme.yaml", "../system.yaml", "%2e%2e/system.yaml", "..%5Csystem.yaml", "images%5C..%5C..%5Csystem.yaml", "Images/corner.svg", "images/none.svg"]) {
                 expect((await get(`/theme/${refused}`)).status, refused).toBe(404);
             }
+        });
+    });
+
+    it("gives a theme's own style sheet at an address that changes with it, as CSS, and its cards' texture in one colour (D-575)", async () => {
+        const systems = makeTempFolder();
+        cpSync(fake, join(systems, "fake"), { recursive: true });
+        const theme = join(systems, "fake", "theme");
+        const yaml = readFileSync(join(fakeTheme, "theme.yaml"), "utf8").replace("name: Ledger", "name: Ledger\nstyle: ./css/look.css");
+        writeFileSync(join(theme, "theme.yaml"), yaml.replace("  ornament: images/corner.svg", "  ornament: images/corner.svg\n  texture: {picture: images/grain.svg}"));
+        mkdirSync(join(theme, "css"));
+        writeFileSync(join(theme, "css", "look.css"), ".band { background: url(../images/ruled.svg); }");
+        writeFileSync(join(theme, "other.css"), ".band { display: none; }");
+        writeFileSync(join(theme, "images", "grain.svg"), '<svg viewBox="0 0 4 4"><path d="M0 0h1"/></svg>');
+        await campaign(systems);
+        await served(async (get) => {
+            // The page links a sheet of one line, which brings the theme's into the layer theme-style: its url() from its own folder, none of its braces out of it.
+            const given = JSON.parse((await get("/api/theme")).body) as { style: string; };
+            expect(given.style).toMatch(/^\/theme\/css\/look\.css\?v=[\w-]{12}&layer$/);
+            const linked = await get(given.style);
+            const sheet = given.style.replace(/&layer$/, "");
+            expect(linked).toMatchObject({ status: 200, type: "text/css; charset=utf-8", body: `@import url("${sheet}") layer(theme-style);\n` });
+            expect(await get(sheet)).toMatchObject({ status: 200, type: "text/css; charset=utf-8", body: ".band { background: url(../images/ruled.svg); }" });
+            expect((await get("/theme/other.css")).status).toBe(404);
+            expect((await get("/theme/images/grain.svg?ink=%23abcdef&texture")).body).toBe('<svg fill="#abcdef" viewBox="0 0 4 4"><path d="M0 0h1"/></svg>');
+            writeFileSync(join(theme, "css", "look.css"), ".band { color: inherit; }");
+            expect(JSON.parse((await get("/api/theme")).body).style).not.toBe(given.style);
         });
     });
 

@@ -24,7 +24,8 @@ const codePattern = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 const languageSchema = z.object({
     code: z.string().regex(codePattern, "a language's code, such as de or pt-PT").refine((code) => code.split("-")[0] !== "en", "English is the page's own"),
     name: z.string().trim().min(1),
-    engine: z.string().optional(),
+    // The lowest rpg-engine that reads it, such as "0.22": checked as one of data alone is installed.
+    engine: z.union([z.string().min(1), z.number()]).transform(String).optional(),
     // Its version, for a package of data alone, which has no package.json to say it.
     version: z.union([z.string(), z.number()]).transform(String).optional(),
 }).strict();

@@ -228,9 +228,10 @@ export function MissingRow({ name, state, onInstall }: { name: string; state: Ro
  * with why, which Settings does not offer.
  */
 export function ThemeRow(
-    { theme, newer, shown, fresh, state, onUpdate, onUninstall }: {
+    { theme, newer, needs, shown, fresh, state, onUpdate, onUninstall }: {
         theme: ShownInstalledTheme;
         newer?: string | undefined;
+        needs: ComponentChildren;
         shown: boolean;
         fresh: boolean;
         state: RowState;
@@ -277,6 +278,7 @@ export function ThemeRow(
                     {shown && `${theme.version !== undefined || newer !== undefined ? " · " : ""}${t("the style of this page")}`}
                 </>
             )}
+            needs={needs}
             row={`theme:${theme.id}`}
             fresh={fresh}
             actions={

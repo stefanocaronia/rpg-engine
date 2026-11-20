@@ -454,6 +454,7 @@ export function PackagesPage({ version, tab, item, layers = [], sceneOpen = fals
                                                             key={theme.id}
                                                             theme={theme}
                                                             newer={newerVersion(entry)}
+                                                            needs={needs(entry?.newer)}
                                                             shown={theme.id === themeShown}
                                                             fresh={fresh.includes(`theme:${theme.id}`)}
                                                             state={rowState(`theme:${theme.id}`)}

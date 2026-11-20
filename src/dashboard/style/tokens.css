@@ -33,7 +33,8 @@
         /* Gold as text or a line, readable on the light page; text on the danger's colour. */
         --gold-ink: light-dark(#8a5a00, var(--gold));
         --on-low: light-dark(#ffffff, var(--on-gold));
-        /* The land of the map's paper, the same in both themes: each biome's colour and the ink of its marks, on the map and wherever a biome is named. */
+        /* The land of the map's paper, the same in both themes: each biome's colour and the ink of its marks, on the map and wherever a biome is named. Its
+           inks, and the documents' below, are copied in themes/theme.ts (paperInks), which measures them on a theme's paper: change them there too. */
         --m-mark: #6b4a5c;
         --m-land: #f1e6cc;
         --m-ink: #3f2f1f;

@@ -86,7 +86,7 @@
         margin-bottom: var(--gap);
         border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--card-ornament-layer), linear-gradient(180deg, var(--panel-2), var(--panel));
+        background: var(--card-ornament-layer), var(--card-texture-layer, none), linear-gradient(180deg, var(--panel-2), var(--panel));
         box-shadow: var(--lift), var(--raise);
     }
 

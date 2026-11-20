@@ -13,7 +13,7 @@
         padding: 0 16px 6px;
         border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--card-ornament-layer), var(--panel);
+        background: var(--card-ornament-layer), var(--card-texture-layer, none), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 

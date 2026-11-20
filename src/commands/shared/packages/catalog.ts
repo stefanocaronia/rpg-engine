@@ -7,7 +7,7 @@ import type { Context, PackageInfo } from "../../../core/context.ts";
 import { ourSystems, readsApi } from "../../../core/packages/declarations.ts";
 import { files } from "../../../core/store.ts";
 import { comparableText } from "../../../core/text.ts";
-import { isNewerVersion } from "../../../core/version.ts";
+import { isNewerVersion, newerEngineAsked } from "../../../core/version.ts";
 import { installedExtensions, readExtension, shortName } from "../../../extensions/index.ts";
 import { installedLanguages, type LanguagePack } from "../../../languages/index.ts";
 import { isVerified } from "../../../packages/index.ts";
@@ -249,10 +249,13 @@ function adventureEntry(repository: Repository, manifest: AdventureManifest, her
     };
 }
 
-/** A theme GitHub has, by the name and version its theme.yaml gives; here only when it was installed from this repository. Its checks are made as it is installed. */
+/**
+ * A theme GitHub has, by the name, version and engine its theme.yaml gives; here only when it was installed from this repository. Its checks are made as it is
+ * installed.
+ */
 function themeEntry(repository: Repository, text: string, here: Here): CatalogEntry | undefined
 {
-    const read = parse(text) as { name?: unknown; version?: unknown; } | null;
+    const read = parse(text) as { name?: unknown; version?: unknown; engine?: unknown; } | null;
 
     if (typeof read?.name !== "string" || read.name.trim() === "") {
         return undefined;
@@ -260,13 +263,13 @@ function themeEntry(repository: Repository, text: string, here: Here): CatalogEn
 
     const name = read.name;
     const found = here.themes.find((one) => isSameSource(unpackedSource(one.folder), repository.html_url));
-    return githubEntry("theme", repository, name, versionOf(read.version), found === undefined ? undefined : (found.theme?.version ?? ""));
+    return readableEntry(githubEntry("theme", repository, name, versionOf(read.version), found === undefined ? undefined : (found.theme?.version ?? "")), read.engine);
 }
 
-/** A language GitHub has, by the code, name and version its language.yaml gives: here only when it was installed from this repository, never npm's. */
+/** A language GitHub has, by the code, name, version and engine its language.yaml gives: here only when it was installed from this repository, never npm's. */
 function languageEntry(repository: Repository, text: string, here: Here): CatalogEntry | undefined
 {
-    const read = parse(text) as { code?: unknown; name?: unknown; version?: unknown; } | null;
+    const read = parse(text) as { code?: unknown; name?: unknown; version?: unknown; engine?: unknown; } | null;
 
     if (typeof read?.code !== "string" || typeof read.name !== "string") {
         return undefined;
@@ -274,7 +277,28 @@ function languageEntry(repository: Repository, text: string, here: Here): Catalo
 
     const code = read.code;
     const installed = here.languages.find((one) => isSameSource(unpackedSource(one.folder), repository.html_url))?.version;
-    return { ...githubEntry("language", repository, read.name, versionOf(read.version), installed), language: code };
+    return readableEntry({ ...githubEntry("language", repository, read.name, versionOf(read.version), installed), language: code }, read.engine);
+}
+
+/**
+ * A theme or a language as this engine reads it, by the lowest rpg-engine its file asks (D-515 (2)): one that asks a newer engine is no update, and says the
+ * engine its version needs; not offered when it is not here, as npm's that no version of reads, since adding it would be refused.
+ */
+function readableEntry(entry: CatalogEntry, asked: unknown): CatalogEntry | undefined
+{
+    const engine = newerEngineAsked(asked);
+
+    if (engine === undefined) {
+        return entry;
+    }
+
+    if (entry.installed === undefined) {
+        return undefined;
+    }
+
+    const { version, ...rest } = entry;
+    const newer = version !== undefined && (entry.installed === "" || isNewerVersion(version, entry.installed));
+    return { ...rest, ...(entry.installed === "" ? {} : { version: entry.installed }), update: false, ...(newer ? { newer: { version, engine } } : {}) };
 }
 
 /** What every package GitHub has gives: never verified, never code, added by its link; its version here, and whether GitHub's is newer: only when both are known. */

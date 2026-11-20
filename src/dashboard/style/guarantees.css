@@ -1,8 +1,26 @@
 /* What no style sheet may take away, a package's either (D-523, D-528): the ring of the focus and the other rings drawn as outlines, no clip or mask on a
    control, and the tooltips. All !important. */
 @layer guarantees {
+    /* The colours they draw with, the page's; a theme gives its own here too (themes/css.ts). Set on every element and !important, so that no rule of a theme's
+       own style sheet changes them where they are read (D-575); the rules below read nothing else a sheet could change. */
+    :root[data-theme="light"],
+    :root[data-theme="light"] * {
+        --guard-accent: #254b83 !important;
+        --guard-ink: #182c4c !important;
+        --guard-paper: #f3ede2 !important;
+        --guard-gold: #f5c63e !important;
+    }
+
+    :root[data-theme="dark"],
+    :root[data-theme="dark"] * {
+        --guard-accent: #f5c63e !important;
+        --guard-ink: #eff0fa !important;
+        --guard-paper: #06132b !important;
+        --guard-gold: #f5c63e !important;
+    }
+
     :focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 2px !important;
     }
 
@@ -21,7 +39,14 @@
     }
 
     .quest-cover-top :focus-visible {
-        outline-color: var(--on-veil) !important;
+        outline-color: #f3f4fa !important;
+    }
+
+    /* Over a place's picture, on its dark veil, the ring in gold as on the dark page; on a phone the name goes under the picture. */
+    @media (min-width: 601px) {
+        .place-band.over .place-caption :focus-visible {
+            outline-color: var(--guard-gold) !important;
+        }
     }
 
     .note-title:focus-visible,
@@ -34,7 +59,7 @@
     }
 
     .tracked-what:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 3px !important;
     }
 
@@ -43,7 +68,7 @@
     }
 
     .setup-card h2:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 4px !important;
     }
 
@@ -56,61 +81,87 @@
     }
 
     .asked.folded:has(.asked-fold:focus-visible) {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 3px !important;
     }
 
     .asked-buttons button.sent {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 2px !important;
     }
 
     .ask-choices > .sent {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 2px !important;
     }
 
     .requested {
-        outline: 2px solid var(--gold) !important;
+        outline: 2px solid var(--guard-gold) !important;
         outline-offset: -1px !important;
     }
 
     :is(.asked-hand, .package-use) input:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 2px !important;
     }
 
     .asked-own input:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 1px !important;
     }
 
     /* The page's one tooltip (T-228), what a control's data-tip says: in the top layer, over every card, list and dialog, nothing cuts it; shell/tooltip.ts
        shows it after a moment under a pointer or at once by the keyboard, never at a touch, and places it beside its control inside the window. Its lines
-       wrap, a name of several things a line for each. It comes from its control's side. */
-    .page-tip {
+       wrap, a name of several things a line for each. It comes from its control's side.
+       While it shows (where a browser has no popover, while it is not hidden), every property first to its initial value, then the page's: nothing a theme's
+       own style sheet says of it shows (D-575). tooltip.ts sets top and left inline; its sizes have a floor in pixels, whatever a sheet makes of the root's. */
+    .page-tip:is(:popover-open, :not([popover], [hidden])) {
+        all: initial !important;
+        display: block !important;
         position: fixed !important;
-        inset: var(--tip-top, 0) auto auto var(--tip-left, 0) !important;
+        inset: 0 auto auto 0 !important;
         box-sizing: border-box !important;
         width: max-content !important;
-        max-width: min(20rem, calc(100vw - 16px)) !important;
-        height: auto !important;
-        margin: 0 !important;
+        max-width: min(max(20rem, 320px), calc(100vw - 16px)) !important;
         padding: 5px 8px !important;
-        border: 0 !important;
-        border-radius: var(--radius-xs) !important;
-        overflow: visible !important;
-        background: var(--ink) !important;
-        color: var(--paper) !important;
-        font: 400 0.8rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif !important;
-        letter-spacing: 0 !important;
+        border-radius: 4px !important;
+        background: var(--guard-ink) !important;
+        color: var(--guard-paper) !important;
+        font: 400 max(0.8rem, 12px)/1.2 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+        unicode-bidi: isolate !important;
         text-align: start !important;
-        text-transform: none !important;
         white-space: pre-line !important;
         overflow-wrap: break-word !important;
         pointer-events: none !important;
         opacity: 1 !important;
-        transition: opacity var(--quick) linear !important;
+        transition: opacity 100ms linear !important;
+        transform: none !important;
+        scale: none !important;
+        translate: none !important;
+        rotate: none !important;
+        zoom: 1 !important;
+        -webkit-text-fill-color: currentcolor !important;
+    }
+
+    /* all leaves the direction out: the one tooltip.ts gives it, from its control. */
+    .page-tip[dir="ltr"] {
+        direction: ltr !important;
+    }
+
+    .page-tip[dir="rtl"] {
+        direction: rtl !important;
+    }
+
+    .page-tip::before,
+    .page-tip::after,
+    .page-tip::backdrop {
+        all: initial !important;
+        display: none !important;
+    }
+
+    .page-tip::first-line,
+    .page-tip::first-letter {
+        all: unset !important;
     }
 
     @starting-style {
@@ -120,9 +171,8 @@
     }
 
     @media (prefers-reduced-motion: no-preference) {
-        .page-tip {
-            translate: 0 0 !important;
-            transition: opacity var(--quick) linear, translate var(--quick) var(--ease) !important;
+        .page-tip:is(:popover-open, :not([popover], [hidden])) {
+            transition: opacity 100ms linear, translate 100ms cubic-bezier(0.2, 0, 0, 1) !important;
         }
 
         @starting-style {
@@ -151,17 +201,17 @@
 
     /* A chapter the calendar led to, ringed while it has the focus. */
     .chapter:focus {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 4px !important;
     }
 
     .act-who-one:has(input:focus-visible) {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 2px !important;
     }
 
     .act-words:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 1px !important;
     }
 
@@ -174,19 +224,19 @@
     }
 
     :is(.package-add-line, .package-credits, .search) input:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 0 !important;
     }
 
     .filter-chips :is(button, a):focus-visible,
     .package-show:focus-visible,
     .package-row:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 2px !important;
     }
 
     .package-bin:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
     }
 
     .package-said:focus {
@@ -194,7 +244,7 @@
     }
 
     .package-said:focus-visible {
-        outline: 2px solid var(--accent) !important;
+        outline: 2px solid var(--guard-accent) !important;
         outline-offset: 2px !important;
     }
 }

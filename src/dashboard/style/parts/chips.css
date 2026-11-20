@@ -7,7 +7,8 @@
         gap: 2px;
         padding: 3px;
         border: 1px solid var(--rule);
-        border-radius: var(--radius-m);
+        border-radius: var(--button-radius, var(--radius-m));
+        corner-shape: var(--button-corner, round);
         background: var(--float);
     }
 
@@ -15,7 +16,8 @@
         min-height: 36px;
         padding: 0 12px;
         border: 0;
-        border-radius: var(--radius-s);
+        border-radius: var(--button-radius, var(--radius-s));
+        corner-shape: var(--button-corner, round);
         background: transparent;
         color: var(--muted);
         font: inherit;

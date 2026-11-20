@@ -3,9 +3,10 @@
     /* The paper's colours, fixed: the map is a sheet, not a screen. */
     /* The map of the place (GRD-6, D-323, D-325): ink and washes on paper that stays light in both themes, as the world map's; the ground by the place's look; in Combat beside the order of the turns. */
     .lm {
-        --l-paper: #f1e6cc;
-        --l-floor: #f6ecd6;
-        --l-grid: #cdb98f;
+        /* The game's paper of the maps, its floor and grid drawn of it (D-528), when it gives one. */
+        --l-paper: var(--map-paper, #f1e6cc);
+        --l-floor: var(--map-floor, #f6ecd6);
+        --l-grid: var(--map-grid, #cdb98f);
         --l-ink: #3f2f1f;
         --l-wood: #dcb47c;
         --l-wood-dark: #bb8a52;
@@ -631,7 +632,8 @@
         flex: 1;
         min-height: 44px;
         border: 0;
-        border-radius: var(--radius-m);
+        border-radius: var(--button-radius, var(--radius-m));
+        corner-shape: var(--button-corner, round);
         background: var(--gold);
         color: var(--on-gold);
         font-weight: 700;
@@ -920,7 +922,8 @@
         min-height: 44px;
         padding: 0 16px;
         border: 1px solid var(--rule);
-        border-radius: var(--radius-m);
+        border-radius: var(--button-radius, var(--radius-m));
+        corner-shape: var(--button-corner, round);
         background: none;
     }
 

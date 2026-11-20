@@ -3,4 +3,4 @@
 export { contrast } from "./contrast.ts";
 export { themeCss } from "./css.ts";
 export { type InstalledTheme, installedThemes, isThemeId, themeId } from "./installed.ts";
-export { drawnOrnament, readTheme, themeFile, themeFileName, themeFilesNamed, themeIconNames, type ThemeReading } from "./theme.ts";
+export { drawnOrnament, drawnTexture, readTheme, type Theme, themeFile, themeFileName, themeFilesNamed, themeIconNames, type ThemeReading } from "./theme.ts";

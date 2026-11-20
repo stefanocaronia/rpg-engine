@@ -27,7 +27,8 @@ export function themeInstalled(root: string, context: Context, data: DataPackage
         throw new Error("Themes are installed only by the game's server or the command line, which keep them for every campaign on this computer.");
     }
 
-    const named = new Set(themeFilesNamed(new TextDecoder().decode(topFile(data.entries, themeFileName)?.[1] ?? new Uint8Array())));
+    const text = (bytes: Uint8Array | undefined): string | undefined => (bytes === undefined ? undefined : new TextDecoder().decode(bytes));
+    const named = new Set(themeFilesNamed(text(topFile(data.entries, themeFileName)?.[1]) ?? "", (name) => text(data.entries.find(([parts]) => parts.join("/") === name)?.[1])));
     const keep = (parts: string[]): boolean => isThemeYaml(parts) || named.has(parts.join("/")) || (parts.length === 1 && licence.test(parts[0]));
     const kept = keptFiles(data.label, data.entries, keep, "theme-refused", "a theme").map(([parts, bytes]): [string[], Uint8Array] => [isThemeYaml(parts) ? [themeFileName] : parts, bytes]);
     // Checked where it is written, in a folder of its own that no list reads, then put where its id puts it.

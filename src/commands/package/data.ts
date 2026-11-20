@@ -1,12 +1,14 @@
 // Packages of data alone: an adventure, a theme or a language, from an https link, a .zip or a folder of this computer, read once into its files and told by
 // the file at its top. No npm and no code, so no player's yes; packages with code come from npm.
 import { basename, join, relative, resolve, sep } from "node:path";
+import { parse } from "yaml";
 import { largestAdventure, manifestFileName, readAdventureEntries } from "../../adventures/index.ts";
 import { packageEntries, type PackageEntry, topFile, unzipFiles, zipListing } from "../../core/archive.ts";
 import type { Context } from "../../core/context.ts";
 import { filesIn } from "../../core/files.ts";
 import { Refusal } from "../../core/refusal.ts";
 import { files } from "../../core/store.ts";
+import { getVersion, newerEngineAsked } from "../../core/version.ts";
 import { languageFileName } from "../../languages/index.ts";
 import { themeFileName } from "../../themes/index.ts";
 import { installAdventure } from "../shared/books/adventures.ts";
@@ -128,7 +130,42 @@ export async function installDataPackage(root: string, context: Context, data: D
         return { kind: "adventure-installed", ...installAdventure(root, context, readAdventureEntries(data.label, data.entries), from) };
     }
 
+    checkEngine(data);
     return data.kind === "theme" ? themeInstalled(root, context, data) : await dataLanguageInstalled(root, context, data);
+}
+
+/**
+ * Refuses a theme or a language whose file at its top asks a newer rpg-engine than this one, read loosely before any check, so that one with keys this engine
+ * does not know yet says what it needs, as an npm package made for a newer API does.
+ */
+function checkEngine(data: DataPackage): void
+{
+    const read = looseTopFile(data);
+    const engine = newerEngineAsked(read?.engine);
+
+    if (engine === undefined) {
+        return;
+    }
+
+    const name = typeof read?.name === "string" && read.name.trim() !== "" ? read.name : data.label;
+    const version = typeof read?.version === "string" || typeof read?.version === "number" ? String(read.version) : "";
+    throw new Refusal(
+        `${[name, version].filter((part) => part !== "").join(" ")} needs rpg-engine ${engine} or newer; this is ${getVersion()}. Update RPG Engine, then add it again. Nothing changed.`,
+        "engine-too-old",
+        { name, version },
+    );
+}
+
+/** The file at a package's top, read as YAML without any check; undefined when it does not read, which the checks of its kind then say. */
+function looseTopFile(data: DataPackage): { name?: unknown; version?: unknown; engine?: unknown; } | undefined
+{
+    const bytes = topFile(data.entries, topFiles[data.kind])?.[1];
+
+    try {
+        return bytes === undefined ? undefined : (parse(new TextDecoder().decode(bytes)) as { name?: unknown; version?: unknown; engine?: unknown; } | null) ?? undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 /** A part of an address as written, its %20 and such read back: a link copied from a browser or typed by hand gives the same. */

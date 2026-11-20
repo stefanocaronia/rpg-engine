@@ -13,6 +13,7 @@ import { catalog } from "../src/commands/shared/packages/catalog.ts";
 import { languageFolders } from "../src/commands/shared/packages/unpacked.ts";
 import type { Context, PackageManager } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
+import { getVersion } from "../src/core/version.ts";
 import { languagePackFor } from "../src/languages/index.ts";
 import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { inPlay, makeTempFolder, readLogFile, testContext } from "./support.ts";
@@ -182,6 +183,20 @@ describe("a theme as a package of its own", () => {
         expect((await rpg("package", "install", "book.pdf")).output).toContain("is a document, not a package: make an adventure from it with import");
     });
 
+    it("refuses one that asks a newer rpg-engine before any check, its unknown keys too, and installs one this engine reads", async () => {
+        const newer = zipOf(themeFiles((yaml) => yaml.replace("name: Ledger\n", 'name: Ledger\nversion: 3.0.0\nengine: "99.0"\nsparkle: true\n')));
+        expect((await rpg("package", "install", newer)).output).toBe(
+            `Ledger 3.0.0 needs rpg-engine 99.0 or newer; this is ${getVersion()}. Update RPG Engine, then add it again. Nothing changed.`,
+        );
+        await expect(packageCommand.run({ action: "install", name: newer }, context)).rejects.toMatchObject({ code: "engine-too-old", values: { name: "Ledger", version: "3.0.0" } });
+        expect(themesThere()).toEqual([]);
+
+        for (const engine of [getVersion(), "0.1"]) {
+            const read = await rpg("package", "install", zipOf(themeFiles((yaml) => yaml.replace("name: Ledger\n", `name: Ledger\nengine: "${engine}"\n`))));
+            expect(read.output).toContain("Installed the theme Ledger for every campaign");
+        }
+    });
+
     it("is taken off this computer by its name, and is no more listed", async () => {
         await rpg("package", "install", zipOf(themeFiles()));
         expect((await rpg("package", "uninstall", "Ledger")).output).toBe("Ledger is off this computer.");
@@ -215,6 +230,19 @@ describe("a language as a package of data alone", () => {
         expect(readdirSync(join(unpacked, "languages"))).toEqual(["de"]);
         expect((await rpg("package", "uninstall", "de")).output).toBe("Deutsch is off this computer.");
         expect(languagePackFor(languageFolders(context), "de")).toBeUndefined();
+    });
+
+    it("refuses one that asks a newer rpg-engine, its unknown keys too, and installs one this engine reads", async () => {
+        const files = germanFiles({ "{count} failures": "{count} Fehlschläge" });
+        const newer = zipOf({ ...files, "language.yaml": 'code: de\nname: Deutsch\nversion: 2.0.0\nengine: "99.0"\nscript: Latn\n' });
+        await expect(packageCommand.run({ action: "install", name: newer }, context)).rejects.toMatchObject({
+            code: "engine-too-old",
+            values: { name: "Deutsch", version: "2.0.0" },
+            message: `Deutsch 2.0.0 needs rpg-engine 99.0 or newer; this is ${getVersion()}. Update RPG Engine, then add it again. Nothing changed.`,
+        });
+        expect(languagePackFor(languageFolders(context), "de")).toBeUndefined();
+        await rpg("package", "install", zipOf({ ...files, "language.yaml": `code: de\nname: Deutsch\nversion: 2.0.0\nengine: "${getVersion()}"\n` }));
+        expect(languagePackFor(languageFolders(context), "de")?.version).toBe("2.0.0");
     });
 
     it("refuses before writing anything when npm cannot take off the language package of the same code", async () => {
@@ -322,6 +350,19 @@ describe("the themes on the dashboard", () => {
         expect(picture.policy).toContain("sandbox");
         expect((await send("GET", "/themes/ledger/images/corner.svg?ink=%23abcdef")).body).toContain('stroke="#abcdef"');
 
+        // Its own style sheet, kept with the pictures its url() name, served as CSS at an address that changes with it (D-575).
+        const styled = themeFiles((yaml) => yaml.replace("name: Ledger", "name: Ledger\nstyle: css/look.css"));
+        await runCommandLine(["package", "install", zipOf({ ...styled, "css/look.css": ".band { background: url(../images/seal.png); }", "images/seal.png": "png", "css/unused.css": "" })], { ...context, files: session });
+        expect(readdirSync(join(unpacked, "themes", "ledger"), { recursive: true }).map(String).map((path) => path.replaceAll("\\", "/"))).toEqual(
+            expect.arrayContaining(["css/look.css", "images/seal.png"]),
+        );
+        expect(existsSync(join(unpacked, "themes", "ledger", "css", "unused.css"))).toBe(false);
+        const style = (JSON.parse((await send("GET", "/api/theme")).body) as { themes: { style: string; }[]; }).themes[0].style;
+        expect(style).toMatch(/^\/themes\/ledger\/css\/look\.css\?v=[\w-]{12}&layer$/);
+        const sheet = style.replace(/&layer$/, "");
+        expect(await send("GET", style)).toMatchObject({ status: 200, type: "text/css; charset=utf-8", body: `@import url("${sheet}") layer(theme-style);\n` });
+        expect(await send("GET", sheet)).toMatchObject({ status: 200, type: "text/css; charset=utf-8", body: ".band { background: url(../images/seal.png); }" });
+
         for (const refused of ["ledger/theme.yaml", "ledger/../../campaign.yaml", "ledger/%2e%2e/%2e%2e/campaign.yaml", "ledger/..%5C..%5Ccampaign.yaml", "Ledger/images/ruled.svg", "other/images/ruled.svg", "ledger"]) {
             expect((await send("GET", `/themes/${refused}`)).status, refused).toBe(404);
         }
@@ -330,7 +371,7 @@ describe("the themes on the dashboard", () => {
 
 describe("the catalog of GitHub's packages of data alone", () => {
     /** GitHub as these tests have it: a repository for each topic, its file at the top, and the searches that fail. */
-    function github(failing: string[] = [], ledger = "name: Ledger\nversion: 1.0.0\n"): (url: string) => Promise<Uint8Array>
+    function github(failing: string[] = [], ledger = "name: Ledger\nversion: 1.0.0\n", files: Record<string, string> = {}): (url: string) => Promise<Uint8Array>
     {
         const repository = (name: string, description: string, owner = "ada") => ({
             full_name: `${owner}/${name}`,
@@ -351,6 +392,7 @@ describe("the catalog of GitHub's packages of data alone", () => {
             "https://raw.githubusercontent.com/eve/ledger/main/theme.yaml": "name: Ledger\nversion: 9.0.0\n",
             "https://raw.githubusercontent.com/ada/broken/main/theme.yaml": "colours: none\n",
             "https://raw.githubusercontent.com/ada/lingua-de/main/language.yaml": "code: de\nname: Deutsch\nversion: 1.5.0\n",
+            ...files,
         };
         const zips: Record<string, Uint8Array> = {
             "https://codeload.github.com/ada/ledger/zip/HEAD": zipBytes(themeFiles((yaml) => yaml.replace("name: Ledger\n", ledger)), "ledger-main/"),
@@ -399,6 +441,29 @@ describe("the catalog of GitHub's packages of data alone", () => {
         await rpg("package", "install", "https://github.com/ada/ledger");
         const unversioned = await catalog(folder, context);
         expect(unversioned.entries.find((one) => one.source === "https://github.com/ada/ledger")).toMatchObject({ installed: "", update: false });
+    });
+
+    it("offers no update of one that asks a newer rpg-engine, says the engine it needs, and leaves out one not here", async () => {
+        context = { ...context, download: github() };
+        await rpg("package", "install", "https://github.com/ada/ledger");
+        await rpg("package", "install", "https://github.com/ada/lingua-de");
+        const asking = (engine: string) =>
+            github([], undefined, {
+                "https://raw.githubusercontent.com/ada/ledger/main/theme.yaml": `name: Ledger\nversion: 2.0.0\nengine: "${engine}"\n`,
+                "https://raw.githubusercontent.com/eve/ledger/main/theme.yaml": `name: Ledger\nversion: 9.0.0\nengine: "${engine}"\n`,
+                "https://raw.githubusercontent.com/ada/lingua-de/main/language.yaml": `code: de\nname: Deutsch\nversion: 1.5.0\nengine: "${engine}"\n`,
+            });
+        const fromGitHub = async (engine: string) => (await catalog(folder, { ...context, download: asking(engine) })).entries.filter((one) => one.source.startsWith("https://github.com/") && one.kind !== "adventure");
+
+        expect((await fromGitHub("99.0")).map((one) => [one.kind, one.source, one.version, one.installed, one.update, one.newer])).toEqual([
+            ["language", "https://github.com/ada/lingua-de", "1.2.0", "1.2.0", false, { version: "1.5.0", engine: "99.0" }],
+            ["theme", "https://github.com/ada/ledger", "1.0.0", "1.0.0", false, { version: "2.0.0", engine: "99.0" }],
+        ]);
+        expect((await fromGitHub(getVersion())).map((one) => [one.source, one.version, one.update, one.newer])).toEqual([
+            ["https://github.com/ada/lingua-de", "1.5.0", true, undefined],
+            ["https://github.com/ada/ledger", "2.0.0", true, undefined],
+            ["https://github.com/eve/ledger", "9.0.0", false, undefined],
+        ]);
     });
 
     it("lists the rest when one search fails, and says which", async () => {

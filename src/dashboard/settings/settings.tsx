@@ -596,7 +596,7 @@ export function Command({ text }: { text: string; })
 /**
  * Under the theme, the game's style, when the campaign's system has one, a theme or a page style (D-528), or this computer has themes installed (D-574): the
  * game's, each installed theme by its name, or the page's, kept in this browser for that system; the game's left out when its theme does not pass the check
- * of legibility, which the page's then says.
+ * of legibility, which the page's then says. Under it, for a theme shown with a style sheet of its own, whether the page adds it.
  */
 function gameStyleRows(): PageRow[]
 {
@@ -619,19 +619,36 @@ function gameStyleRows(): PageRow[]
         ...style.themes.map((one) => ({ value: installedStyle(one.id), label: one.name })),
         { value: "page", label: t("The page's"), ...refusedMeans },
     ];
-    return [{
-        key: "game-style",
-        name: t("Game style"),
-        about,
-        options,
-        value: readChoice(choice),
-        pick: (value) => {
-            writeChoice(choice, value);
-            applyGameStyle();
+    const own = style.ownStyle;
+    return [
+        {
+            key: "game-style",
+            name: t("Game style"),
+            about,
+            options,
+            value: readChoice(choice),
+            pick: (value) => {
+                writeChoice(choice, value);
+                applyGameStyle();
+            },
+            // The names of the installed themes go under the row's, with room for them.
+            ...(installed ? { under: true } : {}),
         },
-        // The names of the installed themes go under the row's, with room for them.
-        ...(installed ? { under: true } : {}),
-    }];
+        // The own style sheet of the theme shown, which the page adds unchecked: off, the theme keeps its colours, faces and pictures (D-575).
+        ...(own === undefined ? [] : [{
+            key: "theme-style",
+            name: t("Theme's own style"),
+            about: t("what the theme adds to the page's look beyond its colours, faces and pictures; the page does not check it, so it may read less well"),
+            // Settings never take it, whatever it does: this switch stays in reach.
+            note: t("Settings never show it, so you can always turn it off here."),
+            options: [{ value: "on", label: t("On") }, { value: "off", label: t("Off") }],
+            value: readChoice(own),
+            pick: (value: string) => {
+                writeChoice(own, value);
+                applyGameStyle();
+            },
+        }]),
+    ];
 }
 
 /** A name as a part of an element's id, without spaces: "dice sound" is dice-sound. */
@@ -651,6 +668,8 @@ interface PageRow
     value: string;
     pick(value: string): void;
     under?: boolean;
+    /** A line under the choice, whatever is chosen. */
+    note?: string;
 }
 
 /** The page's own settings, in this browser alone: the theme, the game's style, the tokens' symbols and conditions, the dice's sound, set and edges, the coins, rolling by hand. */
@@ -751,18 +770,22 @@ function PageSettings()
             {rows.map((row) => {
                 const id = `page-${row.key}`;
                 const chosen = row.options.find((option) => option.value === row.value);
+                const described = [`${id}-about`, ...(chosen?.means === undefined ? [] : [`${id}-means`]), ...(row.note === undefined ? [] : [`${id}-note`])].join(" ");
                 return (
                     <div key={row.key} class={row.under === true ? "setting under" : "setting"}>
                         <div class="setting-what">
                             <span class="setting-name" id={id}>{row.name}</span>
                             <span class="setting-about" id={`${id}-about`}>{row.about}</span>
                         </div>
-                        <Segmented label={id} described={chosen?.means === undefined ? `${id}-about` : `${id}-about ${id}-means`} options={row.options} value={row.value} onPick={row.pick} />
-                        {chosen?.means !== undefined && (
+                        <Segmented label={id} described={described} options={row.options} value={row.value} onPick={row.pick} />
+                        {(chosen?.means !== undefined || row.note !== undefined) && (
                             <div class="setting-after">
-                                <p class="setting-means" id={`${id}-means`}>
-                                    <strong>{chosen.label}:</strong> {chosen.means}
-                                </p>
+                                {chosen?.means !== undefined && (
+                                    <p class="setting-means" id={`${id}-means`}>
+                                        <strong>{chosen.label}:</strong> {chosen.means}
+                                    </p>
+                                )}
+                                {row.note !== undefined && <p class="setting-means" id={`${id}-note`}>{row.note}</p>}
                             </div>
                         )}
                     </div>

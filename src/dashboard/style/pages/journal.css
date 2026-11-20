@@ -105,7 +105,7 @@
         padding: 14px 16px;
         border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--card-ornament-layer), var(--panel);
+        background: var(--card-ornament-layer), var(--card-texture-layer, none), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 
@@ -554,7 +554,7 @@
         padding: 12px 14px 8px;
         border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--card-ornament-layer), var(--panel);
+        background: var(--card-ornament-layer), var(--card-texture-layer, none), var(--panel);
         box-shadow: var(--lift), var(--raise);
     }
 
@@ -912,7 +912,7 @@
         grid-template-columns: 168px minmax(0, 1fr);
         border: 1px solid var(--card-edge);
         border-radius: var(--radius-l);
-        background: var(--card-ornament-layer), var(--panel);
+        background: var(--card-ornament-layer), var(--card-texture-layer, none), var(--panel);
         box-shadow: var(--lift);
     }
 

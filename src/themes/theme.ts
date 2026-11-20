@@ -1,7 +1,7 @@
 // A theme of the dashboard (D-527, D-528): a folder of data, theme.yaml with its fonts, pictures and icons, read and checked as the engine reads its game
 // system. It gives values alone, colours, corners, fonts and the hooks the page documents; the page's own rules read them, so no part is the theme's to redraw.
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { extname, isAbsolute, join, relative, sep } from "node:path";
+import { extname, isAbsolute, join, posix, relative, sep } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
 import { contrast, distance, isLight, mix } from "./contrast.ts";
@@ -50,6 +50,22 @@ export interface Theme
     innerLine?: "none" | "solid" | "dashed" | "dotted";
     /** The picture in a card's lower corner, a file of the folder drawn in one colour. */
     ornament?: string;
+    /** The cards' corners cut, notched or scooped instead of round, as far as `corners` says. */
+    cardCorner?: "round" | "cut" | "notch" | "scoop";
+    /** A texture under the cards, an SVG drawn in each mode's grain colour, faint under the card's own colour. */
+    cardTexture?: ThemeTexture;
+    /** The shape of the buttons of words, and of the chosen tab. */
+    buttonShape?: Shape;
+    tabShape?: "underline" | Shape;
+    /** The shadows of whatever lifts: soft as the page's, sharp, none, or a glow. */
+    shadows?: "soft" | "sharp" | "none" | "glow";
+    /** The paper of the maps and of the documents found, the same in both modes. */
+    papers: { maps?: string; documents?: string; };
+    /** The portraits' shape and a frame drawn inside their edge. */
+    portraitShape?: "round" | "rounded" | "square" | "cut";
+    portraitFrame?: "none" | "thin" | "thick" | "double";
+    /** A style sheet of its own, a file of the folder, which the page adds over its rules in a layer of its own, unchecked. */
+    style?: string;
     /** The lines of each icon it draws, by name: the d of its paths, on a grid of 24. */
     icons: Record<string, string>;
     modes: Record<ThemeModeName, ThemeMode>;
@@ -73,7 +89,18 @@ export interface ThemeMode
     barEdge?: string;
     pageTexture?: ThemeTexture;
     barTexture?: ThemeTexture;
+    /** A picture at the end of the top, beside the campaign's name, under no words. */
+    headPicture?: ThemeTexture;
+    /** The colour the cards' texture is drawn in. */
+    cardGrain: string;
+    /** The colour of the shadows, when not the page's. */
+    shadow?: string;
+    /** The colour of the portraits' frame. */
+    portraitFrame: string;
 }
+
+/** The shapes of a button or a tab: the page's rounded corners, square, a pill, or cut. */
+type Shape = "rounded" | "square" | "pill" | "cut";
 
 /** A picture under the page or the top, repeated or covering it. */
 export interface ThemeTexture
@@ -122,13 +149,13 @@ export function readTheme(folder: string): ThemeReading
             problems.push(`${place}: ${problem}`);
         }
 
-        return name.replaceAll("\\", "/");
+        return written(name);
     };
 
     const fonts = (given.fonts ?? []).map((font, index) => {
         file(`fonts.${index}.file`, font.file, fontFiles);
         file(`fonts.${index}.license`, font.license, licenseFiles);
-        return { family: font.family, file: font.file.replaceAll("\\", "/"), weight: String(font.weight ?? 400) };
+        return { family: font.family, file: written(font.file), weight: String(font.weight ?? 400) };
     });
 
     const family = (key: "text-font" | "title-font" | "story-font"): string | undefined => {
@@ -166,21 +193,41 @@ export function readTheme(folder: string): ThemeReading
     }
 
     const ornament = given.cards?.ornament === undefined ? undefined : file("cards.ornament", given.cards.ornament, [".svg"]);
+    const cardTexture = given.cards?.texture === undefined ? undefined : { picture: file("cards.texture.picture", given.cards.texture.picture, [".svg"]), fit: given.cards.texture.fit ?? "tile" };
+
+    if (cardTexture !== undefined && fileProblem(folder, cardTexture.picture, [".svg"]) === undefined) {
+        problems.push(...oneColourProblems(readFileSync(join(folder, cardTexture.picture), "utf8")).map((problem) => `cards.texture.picture: ${cardTexture.picture} ${problem}`));
+    }
+
+    const style = given.style === undefined ? undefined : file("style", given.style, [".css"]);
+
+    if (style !== undefined && fileProblem(folder, style, [".css"]) === undefined) {
+        problems.push(...styleProblems(folder, style));
+    }
+
+    const hooks: Hooks = { tabs: given.tabs?.shape ?? "underline", grain: cardTexture !== undefined, frame: (given.portraits?.frame ?? "none") !== "none" };
     const modes = {} as Record<ThemeModeName, ThemeMode>;
 
     for (const mode of themeModes) {
         const asked = given[mode];
         const colours = derived(asked);
+        const cardEdge = asked["card-edge"] ?? colours.rule;
         modes[mode] = {
             colours,
-            cardEdge: asked["card-edge"] ?? colours.rule,
+            cardEdge,
             ...(asked["title-glow"] === undefined || asked["title-glow"] === "none" ? {} : { titleGlow: asked["title-glow"] }),
             ...(asked["bar-edge"] === undefined || asked["bar-edge"] === "none" ? {} : { barEdge: asked["bar-edge"] }),
             ...(asked["page-texture"] === undefined ? {} : { pageTexture: { picture: file(`${mode}.page-texture.picture`, asked["page-texture"].picture, pictureFiles), fit: asked["page-texture"].fit ?? "tile" } }),
             ...(asked["bar-texture"] === undefined ? {} : { barTexture: { picture: file(`${mode}.bar-texture.picture`, asked["bar-texture"].picture, pictureFiles), fit: asked["bar-texture"].fit ?? "tile" } }),
+            ...(asked["head-picture"] === undefined ? {} : { headPicture: { picture: file(`${mode}.head-picture.picture`, asked["head-picture"].picture, pictureFiles), fit: asked["head-picture"].fit ?? "cover" } }),
+            cardGrain: asked["card-grain"] ?? cardEdge,
+            ...optional("shadow", asked.shadow),
+            portraitFrame: asked["portrait-frame"] ?? colours.gold,
         };
-        problems.push(...legibilityProblems(mode, modes[mode]));
+        problems.push(...legibilityProblems(mode, modes[mode], hooks));
     }
+
+    problems.push(...paperProblems(given.papers ?? {}));
 
     const theme: Theme = {
         name: given.name,
@@ -196,6 +243,15 @@ export function readTheme(folder: string): ThemeReading
         ...optional("titleSpacing", given.titles?.spacing),
         ...optional("innerLine", given.cards?.["inner-line"]),
         ...optional("ornament", ornament),
+        ...optional("cardCorner", given.cards?.corner),
+        ...optional("cardTexture", cardTexture),
+        ...optional("buttonShape", given.buttons?.shape),
+        ...optional("tabShape", given.tabs?.shape),
+        ...optional("shadows", given.shadows),
+        papers: given.papers ?? {},
+        ...optional("portraitShape", given.portraits?.shape),
+        ...optional("portraitFrame", given.portraits?.frame),
+        ...optional("style", style),
         icons,
         modes,
     };
@@ -216,10 +272,10 @@ export function themeFile(folder: string, name: string): string | undefined
 }
 
 /**
- * The files a theme.yaml names, with forward slashes, as written from its folder: its fonts and their licences, its ornament, icons and textures. None when
- * it does not read: its checks say why.
+ * The files a theme.yaml names, with forward slashes, as written from its folder: its fonts and their licences, its ornament, icons, textures and pictures,
+ * its style sheet and the pictures that names, read by `read`. None when it does not read: its checks say why.
  */
-export function themeFilesNamed(text: string): string[]
+export function themeFilesNamed(text: string, read: (name: string) => string | undefined = () => undefined): string[]
 {
     let data: unknown;
 
@@ -233,9 +289,50 @@ export function themeFilesNamed(text: string): string[]
     const field = (value: unknown, key: string): unknown => (typeof value === "object" && value !== null ? (value as Record<string, unknown>)[key] : undefined);
     const fonts = Array.isArray(given.fonts) ? given.fonts.flatMap((font: unknown) => [field(font, "file"), field(font, "license")]) : [];
     const icons = typeof given.icons === "object" && given.icons !== null ? Object.values(given.icons) : [];
-    const textures = ["light", "dark"].flatMap((mode) => ["page-texture", "bar-texture"].map((texture) => field(field(given[mode], texture), "picture")));
-    const named = [...fonts, ...icons, ...textures, field(given.cards, "ornament")];
-    return named.filter((one): one is string => typeof one === "string").map((one) => one.replaceAll("\\", "/").replace(/^(\.\/)+/, ""));
+    const textures = ["light", "dark"].flatMap((mode) => ["page-texture", "bar-texture", "head-picture"].map((texture) => field(field(given[mode], texture), "picture")));
+    const named = [...fonts, ...icons, ...textures, field(given.cards, "ornament"), field(field(given.cards, "texture"), "picture"), given.style];
+    const files = named.filter((one): one is string => typeof one === "string").map(written);
+    const style = typeof given.style === "string" ? written(given.style) : undefined;
+    const sheet = style === undefined ? undefined : read(style);
+    return sheet === undefined || style === undefined ? files : [...files, ...styleUrls(sheet).filter(namesFile).map((url) => fromStyle(style, url))];
+}
+
+/** A name as written from a theme's folder, with forward slashes and no ./ before it. */
+function written(name: string): string
+{
+    return name.replaceAll("\\", "/").replace(/^(\.\/)+/, "");
+}
+
+/** The addresses a style sheet's url() give, as written, without their quotes. */
+function styleUrls(css: string): string[]
+{
+    return [...withoutComments(css).matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s]*))\s*\)/gi)].map((match) => (match[1] ?? match[2] ?? match[3]).trim());
+}
+
+/** Whether a style sheet's url() names a file from the sheet: not an element of the page (#glow), an address with a scheme, nor one from the page's root. */
+function namesFile(url: string): boolean
+{
+    return !url.startsWith("#") && !url.startsWith("/") && !/^[a-z][a-z\d+.-]*:/i.test(url);
+}
+
+/** An address of a theme's style sheet as a file of its folder: relative to the sheet, decoded as the browser does, its ./ and ../ resolved; one that climbs out keeps its .. */
+function fromStyle(style: string, url: string): string
+{
+    const path = url.split(/[?#]/)[0];
+    let name = path;
+
+    try {
+        name = decodeURIComponent(path);
+    } catch {
+        // No valid escape: the browser asks for it as written, and the check says it is missing.
+    }
+
+    return posix.normalize(posix.join(posix.dirname(style), name));
+}
+
+function withoutComments(css: string): string
+{
+    return css.replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
 /** An ornament drawn in one colour, turned for a page that reads right to left: the theme gives one drawing for both modes and both directions. */
@@ -258,6 +355,14 @@ export function drawnOrnament(svg: string, ink: string, mirrored: boolean): stri
     const start = opened.index + opened[0].length;
     const end = coloured.lastIndexOf("</svg>");
     return `${coloured.slice(0, start)}<g transform="translate(${across} 0) scale(-1 1)">${coloured.slice(start, end)}</g>${coloured.slice(end)}`;
+}
+
+/** The cards' texture drawn in one colour: what it draws in currentColor, and what it fills without saying how, in that colour. */
+export function drawnTexture(svg: string, ink: string): string
+{
+    const coloured = svg.replaceAll("currentColor", ink);
+    const opened = /<svg\b[^>]*>/.exec(coloured);
+    return opened === null || /\sfill\s*=/.test(opened[0]) ? coloured : `${coloured.slice(0, opened.index + 4)} fill="${ink}"${coloured.slice(opened.index + 4)}`;
 }
 
 /** Whether each part of a file's name is written as the disk has it, capitals too: Windows finds Images/Corner.SVG, Linux does not. */
@@ -299,11 +404,19 @@ const modeSchema = z.object({
     "bar-edge": z.union([z.literal("none"), colour]).optional(),
     "page-texture": texture.optional(),
     "bar-texture": texture.optional(),
+    "head-picture": texture.optional(),
+    "card-grain": colour.optional(),
+    shadow: colour.optional(),
+    "portrait-frame": colour.optional(),
 }).strict();
+
+const shapes = ["rounded", "square", "pill", "cut"] as const;
 
 const themeSchema = z.object({
     name: z.string().min(1),
     version: z.union([z.string().min(1), z.number()]).transform(String).optional(),
+    // The lowest rpg-engine that reads it, such as "0.22": checked as it is installed.
+    engine: z.union([z.string().min(1), z.number()]).transform(String).optional(),
     fonts: z.array(
         z.object({
             family: z.string().regex(/^[\p{L}\p{N} _-]+$/u, { error: "letters, numbers, spaces and hyphens alone" }),
@@ -318,7 +431,18 @@ const themeSchema = z.object({
     "number-font": z.enum(["text", "title"]).optional(),
     corners: z.number().min(0).max(16, { error: "a card's corner in pixels, from 0 to 16" }).optional(),
     titles: z.object({ case: z.enum(["as-written", "capitals", "small-capitals"]).optional(), spacing: z.number().min(-0.02).max(0.15).optional() }).strict().optional(),
-    cards: z.object({ "inner-line": z.enum(["none", "solid", "dashed", "dotted"]).optional(), ornament: fileName.optional() }).strict().optional(),
+    cards: z.object({
+        "inner-line": z.enum(["none", "solid", "dashed", "dotted"]).optional(),
+        ornament: fileName.optional(),
+        corner: z.enum(["round", "cut", "notch", "scoop"]).optional(),
+        texture: texture.optional(),
+    }).strict().optional(),
+    buttons: z.object({ shape: z.enum(shapes).optional() }).strict().optional(),
+    tabs: z.object({ shape: z.enum(["underline", ...shapes]).optional() }).strict().optional(),
+    shadows: z.enum(["soft", "sharp", "none", "glow"]).optional(),
+    papers: z.object({ maps: colour.optional(), documents: colour.optional() }).strict().optional(),
+    portraits: z.object({ shape: z.enum(["round", "rounded", "square", "cut"]).optional(), frame: z.enum(["none", "thin", "thick", "double"]).optional() }).strict().optional(),
+    style: fileName.optional(),
     icons: z.record(z.string(), fileName).optional(),
     light: modeSchema,
     dark: modeSchema,
@@ -328,7 +452,7 @@ const themeSchema = z.object({
 // change when one does not reach it. The grounds and words the page mixes are measured as it mixes them: an effect's chip, the accent at 16% on the card's
 // second tone, its end the muted at 70% with the ink; the player's turn, its softer words on-gold at 75%; an ornament may lie under a word in a card's corner;
 // on-low, given or derived, on the danger's button.
-const pairs: { ink: string; ground: string; least: number; change: string; }[] = [
+const pairs: Pair[] = [
     { ink: "ink", ground: "paper", least: 4.5, change: "ink" },
     { ink: "ink", ground: "panel", least: 4.5, change: "ink" },
     { ink: "ink", ground: "float", least: 4.5, change: "ink" },
@@ -349,21 +473,33 @@ const pairs: { ink: string; ground: string; least: number; change: string; }[] =
     { ink: "on-low", ground: "low", least: 4.5, change: "on-low" },
 ];
 
+// The pairs a hook adds when a theme uses it: the chosen tab's accent on its tint, and the words of a card on its texture where it is thickest, whose grain
+// colour is the one to change.
+const tabPairs: Pair[] = [{ ink: "accent", ground: "tab", least: 4.5, change: "accent" }];
+const grainPairs: Pair[] = ["ink", "muted", "accent", "gold-ink", "ally", "low", "warn"].map((ink) => ({ ink, ground: "grain", least: 4.5, change: "card-grain" }));
+
+/** The pairs a theme's colours must pass, with those of the hooks it uses. */
+function pairsOf(hooks: Hooks): Pair[]
+{
+    return [...pairs, ...(hooks.tabs === "underline" ? [] : tabPairs), ...(hooks.grain ? grainPairs : [])];
+}
+
 /**
  * What does not read in a mode: by colour of the theme to change, the pairs it fails, and the nearest colour that makes them all read without making another
  * pair fail; or, when none does, that one of the colours it sits on or under must change.
  */
-function legibilityProblems(mode: ThemeModeName, given: ThemeMode): string[]
+function legibilityProblems(mode: ThemeModeName, given: ThemeMode, hooks: Hooks): string[]
 {
-    const written: Record<string, string> = { ...given.colours, "card-edge": given.cardEdge };
+    const all = pairsOf(hooks);
+    const written: Record<string, string> = { ...given.colours, "card-edge": given.cardEdge, "card-grain": given.cardGrain };
     const shown = measured(written);
-    const failing = pairs.filter((pair) => !reads(pair, shown));
+    const failing = all.filter((pair) => !reads(pair, shown));
     const problems = [...new Set(failing.map((pair) => pair.change))].map((change) => {
         const own = failing.filter((pair) => pair.change === change);
         const fails = own.map((pair) => `${pair.ink === change ? "" : `${pair.ink} `}on ${pair.ground} ${shown[pair.ground]} is ${ratioText(shown[pair.ink], shown[pair.ground])}:1`);
         const said = `${mode}: ${change} ${written[change]} does not read: ${fails.join(", ")}, the page needs ${own[0].least}:1`;
-        const offered = readingColour(written, change);
-        const others = [...new Set(pairs.filter((pair) => pair.change === change).flatMap((pair) => madeOf(pair.ground === change ? pair.ink : pair.ground)))].filter((name) => name !== change);
+        const offered = readingColour(written, change, all);
+        const others = [...new Set(all.filter((pair) => pair.change === change).flatMap((pair) => madeOf(pair.ground === change ? pair.ink : pair.ground)))].filter((name) => name !== change);
         return offered === undefined ? `${said}; no one colour reads on ${others.join(" and ")} as they are: change one of those` : `${said}; ${offered} would do`;
     });
 
@@ -371,15 +507,62 @@ function legibilityProblems(mode: ThemeModeName, given: ThemeMode): string[]
         problems.push(`${mode}: ally ${written.ally} and low ${written.low} are too alike; friends and foes must not look the same`);
     }
 
+    if (hooks.frame && distance(given.portraitFrame, written.low) < 60) {
+        problems.push(`${mode}: portrait-frame ${given.portraitFrame} and low ${written.low} are too alike; a foe is ringed in low, and every portrait would look like one`);
+    }
+
     return problems;
 }
 
-// The colours the page mixes of the theme's: the two each mixes, and how much of the first.
+/** The hooks of a theme that add pairs to check: the chosen tab's shape, a texture under the cards, a frame round the portraits. */
+interface Hooks
+{
+    tabs: string;
+    grain: boolean;
+    frame: boolean;
+}
+
+interface Pair
+{
+    ink: string;
+    ground: string;
+    least: number;
+    change: string;
+}
+
+// The inks the page writes on the paper of the documents and of the maps, copied from tokens.css and world.css, and the contrast each needs: words 4.5:1,
+// a mark 3:1. The documents' ruled lines are faint, a texture, and need none.
+const paperInks: Record<"documents" | "maps", [string, string, number][]> = {
+    documents: [["the documents' ink", "#2f261b", 4.5], ["their notes", "#5c4a30", 4.5], ["their links", "#7a3b16", 4.5], ["their seals", "#9b2f24", 3]],
+    maps: [["the maps' ink", "#3f2f1f", 4.5], ["the regions' names", "#5a3f4f", 4.5], ["their marks", "#6b4a5c", 3], ["the rivers", "#3a6d96", 3], ["the party's trail", "#b2361f", 3]],
+};
+
+/** What does not read on the paper a theme gives the documents or the maps, the same in both modes, and the nearest paper that reads. */
+function paperProblems(papers: { maps?: string; documents?: string; }): string[]
+{
+    return (["documents", "maps"] as const).flatMap((kind) => {
+        const paper = papers[kind];
+        const failing = paper === undefined ? [] : paperInks[kind].filter(([, ink, least]) => contrast(ink, paper) < least);
+
+        if (paper === undefined || failing.length === 0) {
+            return [];
+        }
+
+        const fails = failing.map(([name, ink, least]) => `${name} ${ink} on it is ${ratioText(ink, paper)}:1, the page needs ${least}:1`).join(", ");
+        const offered = [...Array(100).keys()].map((step) => mix("#ffffff", paper, (step + 1) / 100)).find((tried) => paperInks[kind].every(([, ink, least]) => contrast(ink, tried) >= least));
+        return [`papers.${kind} ${paper} does not read: ${fails}; the page writes dark on it in both modes, ${offered ?? "#ffffff"} would do`];
+    });
+}
+
+// The colours the page mixes of the theme's: the two each mixes, and how much of the first. The chosen tab's tint over the page; a card's texture where it
+// is thickest, its grain at 30% over the card.
 const mixes: Record<string, [string, string, number]> = {
     cell: ["ink", "panel", 0.06],
     chip: ["accent", "panel-2", 0.16],
     "chip-muted": ["muted", "ink", 0.7],
     "on-gold-soft": ["on-gold", "gold", 0.75],
+    tab: ["accent", "paper", 0.16],
+    grain: ["card-grain", "panel", 0.3],
 };
 
 /** The colours as the page shows them, those it mixes included. */
@@ -416,7 +599,7 @@ function ratioText(first: string, second: string): string
  * The colour nearest to the one written, toward white or toward black, that makes every pair it is in read, no pair that read stop reading, and friends and foes
  * that looked apart still look so; undefined when there is none.
  */
-function readingColour(written: Record<string, string>, change: string): string | undefined
+function readingColour(written: Record<string, string>, change: string, pairs: Pair[]): string | undefined
 {
     const before = measured(written);
     const readBefore = pairs.filter((pair) => reads(pair, before));
@@ -481,6 +664,62 @@ function fileProblem(folder: string, name: string, kinds: readonly string[]): st
 
     const size = statSync(path).size;
     return size > mostBytes ? `"${name}" weighs ${Math.round(size / 1000)} KB; a theme's file weighs at most ${mostBytes / 1000} KB` : undefined;
+}
+
+/**
+ * What keeps an SVG from being drawn in one colour, as the cards' texture is, so that the page knows the colour under every word: a paint other than
+ * currentColor, or what brings colours of its own, a style, a picture, foreign content, a filter, an animation that changes them.
+ */
+function oneColourProblems(svg: string): string[]
+{
+    const paints = [...svg.matchAll(/\b(fill|stroke|stop-color|flood-color|lighting-color|color)\s*(?:=\s*(["'])(.*?)\2|:\s*([^;"'}>]+))/gi)]
+        .map((match) => (match[3] ?? match[4]).trim())
+        .filter((paint) => !/^(currentcolor|none|inherit|transparent|url\(\s*['"]?#[^)]*\))$/i.test(paint));
+    const elements = [...new Set([...svg.matchAll(/<(style|image|foreignObject|script|filter|set|animateColor|animate)\b/gi)].map((match) => match[1]))];
+    return [
+        ...(paints.length === 0 ? [] : [`must draw in currentColor alone, which the page paints in card-grain; it paints ${[...new Set(paints)].slice(0, 4).join(", ")}`]),
+        ...(elements.length === 0 ? [] : [`must draw with shapes alone; it has ${elements.map((element) => `<${element}>`).join(", ")}`]),
+    ];
+}
+
+/**
+ * What a theme's own style sheet must not do: import another sheet, or name in url() what is not a picture of its folder. A help to its author, not a wall:
+ * the page's content security policy keeps the sheet from reaching the web.
+ */
+function styleProblems(folder: string, style: string): string[]
+{
+    const css = withoutComments(readFileSync(join(folder, style), "utf8"));
+    const imports = /@import\b/i.test(css) ? [`style: ${style} must not @import: write its rules in it, and name its pictures with url()`] : [];
+    const urls = styleUrls(css).flatMap((url) => {
+        const problem = urlProblem(folder, style, url);
+        return problem === undefined ? [] : [`style: url(${url}) in ${style}: ${problem}`];
+    });
+    return [...imports, ...urls];
+}
+
+/** What is wrong with a url() of a theme's style sheet, if anything: an element of the page, as url(#glow), is fine; a file is a picture of its folder. */
+function urlProblem(folder: string, style: string, url: string): string | undefined
+{
+    const instead = "put the picture in the theme's folder and name it from the sheet, such as images/ruled.svg";
+
+    if (url.startsWith("#")) {
+        return undefined;
+    }
+
+    if (/^data:/i.test(url)) {
+        return `the page blocks a data: address; ${instead}`;
+    }
+
+    if (/^[a-z][a-z\d+.-]*:/i.test(url) || url.startsWith("//")) {
+        return `a theme never reaches the web, and the page blocks it; ${instead}`;
+    }
+
+    if (url.startsWith("/")) {
+        return "an address from / is the page's, not the theme's folder; write it from the sheet, such as images/ruled.svg";
+    }
+
+    const problem = fileProblem(folder, fromStyle(style, url), pictureFiles);
+    return problem === undefined ? undefined : `${problem}; its url() name pictures of the theme's folder, written from the sheet`;
 }
 
 /** The files of the same folder, to say which one was meant. */

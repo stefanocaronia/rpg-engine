@@ -2,8 +2,9 @@
    The layers in their order, then the files, which the build joins in this order into one style.css: a layer later wins over one before it, whatever
    the selectors; a style sheet without a layer wins over them all, but never over the guarantees, all !important and first, as among !important
    declarations the first layer wins. The game's style, the theme of the campaign's system, is the layer theme, which the page adopts while the player keeps
-   it on: custom properties alone, over the tokens (D-528). docs/dashboard-style.md says where a rule goes. */
-@layer guarantees, tokens, theme, base, parts, pages;
+   it on: custom properties alone, over the tokens (D-528). A theme's own style sheet, which the player may turn off, comes last, theme-style, over every
+   rule of the page but the guarantees (D-575). docs/dashboard-style.md says where a rule goes. */
+@layer guarantees, tokens, theme, base, parts, pages, theme-style;
 
 @import "tokens.css";
 @import "guarantees.css";
@@ -43,3 +44,29 @@
 @import "pages/place-map.css";
 @import "pages/packages.css";
 @import "pages/choices.css";
+
+/* The colours the guarantees draw with, registered here, outside every layer, as among @property rules the last layer wins and a style sheet without a layer
+   over them all: no @property of a theme's own style sheet gives them another syntax, which would make them invalid and put out the ring and the tooltip. */
+@property --guard-accent {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #254b83;
+}
+
+@property --guard-ink {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #182c4c;
+}
+
+@property --guard-paper {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #f3ede2;
+}
+
+@property --guard-gold {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #f5c63e;
+}

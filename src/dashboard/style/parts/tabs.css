@@ -1,4 +1,4 @@
-/* Tabs: a section's tabs and their marks. */
+/* Tabs: a section's tabs and their marks; the chosen one with a bar under it, or in the game's shape of the tabs on a tint of the accent (D-528). */
 @layer parts {
     .page-tabs {
         display: flex;
@@ -16,6 +16,8 @@
         padding: 0 16px;
         border: 0;
         border-bottom: 3px solid transparent;
+        border-radius: var(--tab-radius, 0);
+        corner-shape: var(--tab-corner, round);
         background: transparent;
         color: var(--muted);
         font: inherit;
@@ -24,7 +26,8 @@
     }
 
     .page-tabs button[aria-selected="true"] {
-        border-bottom-color: var(--accent);
+        border-bottom-color: var(--tab-bar, var(--accent));
+        background: var(--tab-chosen, transparent);
         color: var(--accent);
     }
 

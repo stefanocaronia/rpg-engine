@@ -224,8 +224,9 @@ function place(): void
     const left = side === "start" ? startLeft : box.left + box.width / 2 - width / 2;
     const top = side === "start" ? box.top + box.height / 2 - height / 2 : side === "above" ? box.top - gap - height : box.bottom + gap;
     tip.dataset.side = side;
-    tip.style.setProperty("--tip-left", `${Math.round(within(left, margin, windowWidth - margin - width))}px`);
-    tip.style.setProperty("--tip-top", `${Math.round(within(top, margin, windowHeight - margin - height))}px`);
+    // Inline and !important, as no style sheet's rule outweighs them, a theme's own either (D-575).
+    tip.style.setProperty("left", `${Math.round(within(left, margin, windowWidth - margin - width))}px`, "important");
+    tip.style.setProperty("top", `${Math.round(within(top, margin, windowHeight - margin - height))}px`, "important");
 }
 
 function askedSide(element: Element): Side
@@ -281,10 +282,10 @@ function supportsPopover(element: HTMLElement): boolean
     return typeof element.showPopover === "function";
 }
 
-// The moment a pointer rests on a control before its tip shows: the page's --wait.
+// The moment a pointer rests on a control before its tip shows: the page's --wait, never more than a second, whatever a theme's own sheet says (D-575).
 function waitTime(): number
 {
     const value = getComputedStyle(document.documentElement).getPropertyValue("--wait").trim();
     const time = Number.parseFloat(value);
-    return Number.isNaN(time) ? 500 : value.endsWith("ms") ? time : time * 1000;
+    return Number.isNaN(time) ? 500 : Math.min(Math.max(value.endsWith("ms") ? time : time * 1000, 0), 1000);
 }

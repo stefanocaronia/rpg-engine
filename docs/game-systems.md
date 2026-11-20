@@ -40,7 +40,7 @@ attribution: This work includes material taken from the System Reference Documen
 
 ### theme
 
-The folder of its theme of the dashboard, `theme: theme`: data alone, which the engine checks and turns into the dashboard's CSS, custom properties and nothing else, while the player keeps the game's style on in Settings. The dashboard's style guide says what each value changes ([dashboard-style.md](dashboard-style.md#the-games-style)).
+The folder of its theme of the dashboard, `theme: theme`: data alone, which the engine checks and turns into the dashboard's CSS, custom properties and nothing else, while the player keeps the game's style on in Settings; and, if it wants, a style sheet of its own that the page adds over its rules. The dashboard's style guide says what each value changes ([dashboard-style.md](dashboard-style.md#the-games-style)).
 
 ```yaml
 # theme/theme.yaml
@@ -53,7 +53,17 @@ title-font: Grenze Gotisch
 number-font: text             # the big numbers in the text's face or the titles'
 corners: 3                    # a card's corner in px, 0 to 16; the rest of the page's corners follow
 titles: {case: as-written, spacing: 0.01}   # or capitals, small-capitals; spacing in em, -0.02 to 0.15
-cards: {inner-line: solid, ornament: images/thorn.svg}   # none, solid, dashed, dotted; an SVG drawn in currentColor
+cards:
+  inner-line: solid           # none, solid, dashed, dotted
+  ornament: images/thorn.svg  # an SVG drawn in currentColor, in the cards' edge colour
+  corner: notch               # round, cut, notch, scoop, as large as corners
+  texture: {picture: images/grain.svg, fit: tile}  # an SVG in currentColor alone, drawn in card-grain, at most 30% over the card
+buttons: {shape: square}      # rounded, square, pill, cut: buttons of words, segmented choices, the master's question
+tabs: {shape: square}         # underline, rounded, square, pill, cut: the tab chosen, on a tint of the accent
+shadows: sharp                # soft, sharp, none, glow
+papers: {documents: "#efe2c2", maps: "#ecdfc0"}  # the same in both modes; the page writes dark ink on them
+portraits: {shape: round, frame: double}         # round, rounded, square, cut; none, thin, thick, double
+style: style.css              # a style sheet of its own, added over the page's rules, unchecked
 icons: {party: icons/party.svg, scene: icons/scene.svg}  # party, scene, combat, journal, world, saves, help, settings, about, packages, menu
 light:
   paper: "#ebe0cc"            # required: paper, panel, rule, ink, muted, accent, gold, on-gold, ally, low
@@ -61,13 +71,19 @@ light:
   # ...
   card-edge: "#b39478"        # and title-glow, bar-edge: a colour or none
   page-texture: {picture: images/vellum.svg, fit: tile}   # and bar-texture; tile or cover
+  head-picture: {picture: images/arcade.svg, fit: cover}  # beside the campaign's name, under no words; not on a phone
+  card-grain: "#b4a288"       # the texture's colour, else card-edge
+  shadow: "#3b2a1c"           # the shadows' colour, else the page's (the accent for glow)
+  portrait-frame: "#b08a3a"   # the frame's colour, else gold; never like low, a foe's ring
 dark:
   # the same keys, the dark page's colours
 ```
 
-Both modes are required. Every file is one of the theme's folder, written from it, never an address of the web: faces as woff2, woff, ttf or otf, each naming in `license` the file of its license, .txt or .md, in the folder; pictures as svg, png, webp or jpg; icons as SVGs of paths alone on a grid of 24; each file at most 1000 KB, its name written with the capitals it has on the disk; the dashboard serves them itself. The engine measures the contrast of the pairs of colours the page sets one on the other, text 4.5:1 (the danger's button, `on-low` on `low`, too) and the focus ring 3:1 on the page, and that friends and foes do not look alike. A theme that fails a check is not used: the dashboard keeps its own look, `status` counts it among the campaign's problems, and `validate` and `systemChecks` say what to change, with the nearest colour that reads and leaves the rest reading, or, when there is none, which colour under it to change.
+Both modes are required. Every file is one of the theme's folder, written from it, never an address of the web: faces as woff2, woff, ttf or otf, each naming in `license` the file of its license, .txt or .md, in the folder; pictures as svg, png, webp or jpg; icons as SVGs of paths alone on a grid of 24; the cards' texture as an SVG that paints in currentColor alone, with no style, picture, filter or animation; each file at most 1000 KB, its name written with the capitals it has on the disk; the dashboard serves them itself. The engine measures the contrast of the pairs of colours the page sets one on the other, text 4.5:1 (the danger's button, `on-low` on `low`, too) and the focus ring 3:1 on the page, and that friends and foes do not look alike; with the hooks that change a ground, the words of a card on its texture where it is thickest, the chosen tab's accent on its tint, the documents' and the maps' inks, marks and names on their paper, and a portrait's frame apart from `low`.
 
-A theme is also a package of its own, for any game system, `free` included: a GitHub repository with the topic `rpg-engine-theme`, a `.zip` or a folder, with `theme.yaml` at its top and, if wanted, its `version`. `package install` takes its link, file or folder; its .zip may unpack to 50 MB; it keeps only `theme.yaml`, the files that names and a licence at its top, at most 20 MB, checks it as above, and installs it for every campaign on this computer, in place of one with the same name. The player chooses it in Settings; `package uninstall` takes it away by its name, or by `theme:<id>` when an npm package has the same name. A language comes the same way, with the topic `rpg-engine-language` and `language.yaml` at its top, its `version` there too (extensions.md, section 5).
+`style` names a CSS file of the folder: the page adds it after its own rules and the theme's values, in a layer of its own, `theme-style`, so that it wins over them but never over the focus ring and the tooltips. Its `url()` name pictures of the theme's folder, written from the sheet, or an element of the page, as `url(#glow)`; it never uses `@import`, nor a face (faces go in `fonts`, with their license). The engine checks those, not what its rules do; the check helps its author, while what keeps the sheet from reaching the web or a `data:` picture is the page's content security policy. A theme that passes its checks is legible without its style sheet, and Settings lets the player turn the sheet off, keeping the rest of the theme; Settings themselves never show it. A theme that fails a check is not used: the dashboard keeps its own look, `status` counts it among the campaign's problems, and `validate` and `systemChecks` say what to change, with the nearest colour that reads and leaves the rest reading, or, when there is none, which colour under it to change.
+
+A theme is also a package of its own, for any game system, `free` included: a GitHub repository with the topic `rpg-engine-theme`, a `.zip` or a folder, with `theme.yaml` at its top and, if wanted, its `version`. Its `engine`, quoted, as `engine: "0.22"`, is the lowest rpg-engine that reads it: an older one refuses to install it, saying to update RPG Engine, and its catalog offers no update to it. `package install` takes its link, file or folder; its .zip may unpack to 50 MB; it keeps only `theme.yaml`, the files that names, the pictures its style sheet names and a licence at its top, at most 20 MB, checks it as above, and installs it for every campaign on this computer, in place of one with the same name. The player chooses it in Settings; `package uninstall` takes it away by its name, or by `theme:<id>` when an npm package has the same name. A language comes the same way, with the topic `rpg-engine-language` and `language.yaml` at its top, its `version` there too (extensions.md, section 5).
 
 ### fields
 

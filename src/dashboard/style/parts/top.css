@@ -170,6 +170,35 @@
         margin-inline-start: -14px;
     }
 
+    /* The game's picture at the head (D-528), only when it gives one: in the room the chips leave beside the campaign's name, to the window's top and end
+       edges, fading into the top toward the name; under no words but the chips', which have their own ground. Not on a phone, whose top has no such room. */
+    .top::before {
+        content: var(--head-picture-shown, none);
+        grid-area: chips;
+        align-self: stretch;
+        z-index: -1;
+        margin-block-start: calc(-1 * var(--gap));
+        margin-inline-end: calc(-1 * var(--gap));
+        background: var(--head-picture, none) right center / var(--head-picture-size, cover) var(--head-picture-repeat, no-repeat);
+        mask-image: linear-gradient(to right, transparent, #000 45%);
+        pointer-events: none;
+    }
+
+    .top.compact::before {
+        margin-block-start: -8px;
+    }
+
+    [dir="rtl"] .top::before {
+        background-position: left center;
+        mask-image: linear-gradient(to left, transparent, #000 45%);
+    }
+
+    @media (max-width: 600px) {
+        .top::before {
+            content: none;
+        }
+    }
+
     /* The row of the sections (D-333): the sections, then the pages at its end, then the menu with what does not fit; what does not fit stays in the row unseen,
        for the page to measure it. */
     .nav-row {
@@ -325,7 +354,8 @@
         display: none;
     }
 
-    /* The sections (D-309): links with their pictures, the one shown in the accent with a bar under it, drawn as a background since ::after is the state layer. */
+    /* The sections (D-309): links with their pictures, the one shown in the accent with a bar under it, drawn as a background since ::after is the state layer;
+       or, in the game's shape of the tabs (D-528), on a tint of the accent, --tab-chosen, with the corners --tab-radius and --tab-corner. */
     .sections {
         display: flex;
         gap: 2px;
@@ -337,7 +367,8 @@
         gap: 8px;
         height: 40px;
         padding: 0 14px;
-        border-radius: var(--radius-m) var(--radius-m) 0 0;
+        border-radius: var(--tab-radius, var(--radius-m) var(--radius-m) 0 0);
+        corner-shape: var(--tab-corner, round);
         color: var(--muted);
         font-size: inherit;
         font-weight: 600;
@@ -347,7 +378,7 @@
 
     /* The section shown: in the accent, its tab lit as under a pointer, with a bar as wide as the tab. */
     .sections a[aria-current="page"] {
-        background: linear-gradient(var(--accent), var(--accent)) no-repeat center bottom / 100% 3px;
+        background: var(--tab-chosen, linear-gradient(var(--accent), var(--accent)) no-repeat center bottom / 100% 3px);
         color: var(--accent);
     }
 
@@ -838,7 +869,8 @@
         .top .main-nav .section-mark {
             width: 52px;
             height: 30px;
-            border-radius: var(--radius-m);
+            border-radius: var(--tab-radius, var(--radius-m));
+            corner-shape: var(--tab-corner, round);
         }
 
         .top .main-nav a[aria-current="page"] .section-mark {

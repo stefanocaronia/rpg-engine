@@ -35,9 +35,11 @@
         overflow: hidden;
     }
 
+    /* The fog where the map is not known and the halo of its words: of the game's paper of the maps, when it gives one (D-528). The rivers', the trail's and
+       the regions' inks are copied in themes/theme.ts (paperInks), which measures them on a theme's paper: change them there too. */
     .map-card {
-        --m-fog: #dccaa2;
-        --m-halo: #f1e6cc;
+        --m-fog: var(--map-fog, #dccaa2);
+        --m-halo: var(--map-paper, #f1e6cc);
         --m-river: #3a6d96;
         --m-trail: #b2361f;
         --m-region-ink: #5a3f4f;

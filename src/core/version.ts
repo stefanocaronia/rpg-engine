@@ -15,3 +15,10 @@ export function getVersion(): string
     const packageJson = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as { version: string; };
     return packageJson.version;
 }
+
+/** The rpg-engine a package of data asks for, as its YAML writes it ("0.22"), when it is newer than this one; undefined when this one reads it. */
+export function newerEngineAsked(asked: unknown): string | undefined
+{
+    const engine = typeof asked === "string" || typeof asked === "number" ? String(asked).trim() : "";
+    return engine !== "" && isNewerVersion(engine, getVersion()) ? engine : undefined;
+}

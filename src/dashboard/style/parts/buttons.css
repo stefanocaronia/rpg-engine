@@ -1,4 +1,5 @@
-/* Buttons: buttons of words and of icons, and the state layer of whatever is clicked. */
+/* Buttons: buttons of words and of icons, and the state layer of whatever is clicked. A button of words, a segmented control's and the master's question's
+   take the game's shape (D-528): --button-radius and --button-corner, the page's corners while it gives none. */
 @layer parts {
     /* A button of words: gold for the one main action of a view, quiet for a secondary one, danger for one that loses something. */
     .button {
@@ -9,7 +10,8 @@
         min-height: 38px;
         padding: 0 14px;
         border: 1px solid var(--rule);
-        border-radius: var(--radius-m);
+        border-radius: var(--button-radius, var(--radius-m));
+        corner-shape: var(--button-corner, round);
         background: var(--float);
         color: var(--ink);
         font: inherit;
