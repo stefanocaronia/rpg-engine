@@ -9,9 +9,12 @@ import { comparableText } from "../../core/text.ts";
 import { dropConsent, installedExtensions, shortName } from "../../extensions/index.ts";
 import { isPackageName } from "../../packages/index.ts";
 import { listedExtensions } from "../shared/packages/extensions.ts";
+import { findUnpacked, unpackedName } from "../shared/packages/unpacked.ts";
 import { newDatedLogEntry } from "../shared/time/time.ts";
 import { installedExtensionFolder, languagesHere, systemsHere } from "./here.ts";
+import { dataLanguageUninstalled } from "./language.ts";
 import type { PackageResult } from "./result.ts";
+import { themeUninstalled } from "./theme.ts";
 
 /** Takes an extension out of the campaign; it stays on this computer, for other campaigns. */
 export function removed(root: string, context: Context, name: string): PackageResult
@@ -30,25 +33,46 @@ export function removed(root: string, context: Context, name: string): PackageRe
     return { kind: "removed", name: shortName(found) };
 }
 
-/** Takes a package off this computer with npm, and out of the campaign when it uses it (D-442); other campaigns that list it ask to install it again. */
+/**
+ * Takes a package off this computer with npm, and out of the campaign when it uses it (D-442); other campaigns that list it ask to install it again. A theme
+ * or a language of data alone goes by its folder, when no npm package has its name: theme:<id> and language:<code> name them alone.
+ */
 export async function uninstalled(root: string, context: Context, name: string): Promise<PackageResult>
 {
     const packages = context.packages;
-    const system = systemsHere(root, context).find((one) => one.package !== undefined && (one.package === name || comparableText(one.name) === comparableText(name)));
+    const npmName = name.startsWith("npm:") ? name.slice(4) : name;
+    const unpacked = findUnpacked(context, name);
+    const system = systemsHere(root, context).find((one) => one.package !== undefined && (one.package === npmName || comparableText(one.name) === comparableText(npmName)));
+    const other = system?.package
+        ?? languagesHere(context).find((one) => one.unpacked !== true && (one.package === npmName || comparableText(one.code) === comparableText(npmName)))?.package;
+    const found = other === undefined
+        ? installedExtensions(context.extensionFolders ?? []).find((one) => one.package === npmName || comparableText(shortName(one.package)) === comparableText(npmName))
+        : { package: other };
+    // A package that reads as nothing, as a system whose system.yaml is broken, is still npm's to take away by its folder, under its npm name.
+    const unread = found === undefined && packages !== undefined && isPackageName(npmName)
+        && (context.extensionFolders ?? []).some((folder) => files().entries(join(folder, ...npmName.split("/"))).length > 0);
+    const npm = unpacked !== undefined && /^(theme|language):/i.test(name) ? undefined : (found?.package ?? (unread ? npmName : undefined));
+
+    // A theme or a language of data alone goes only when no npm package has its name; when both have it, the player says which.
+    if (unpacked !== undefined && npm !== undefined) {
+        const npmAs = npm.startsWith("@") ? npm : `npm:${npm}`;
+        throw new Refusal(
+            `${name} names two packages on this computer: ${npm} from npm, and the ${unpacked.kind} ${unpacked.kind === "theme" ? (unpacked.theme.theme?.name ?? unpacked.theme.id) : unpacked.pack.name}. `
+                + `Say which: ${npmAs} for the one from npm, ${unpackedName(unpacked)} for the ${unpacked.kind}. Nothing changed.`,
+            "ambiguous-name",
+            { name, npm: npmAs, unpacked: unpackedName(unpacked) },
+        );
+    }
+
+    if (unpacked !== undefined) {
+        return unpacked.kind === "theme" ? themeUninstalled(root, context, unpacked.theme) : dataLanguageUninstalled(root, context, unpacked.pack);
+    }
 
     if (system?.used === true) {
         throw new Refusal(`The campaign plays ${system.name}: it stays on this computer. Nothing changed.`, "system-played", { name: system.name });
     }
 
-    const other = system?.package ?? languagesHere(context).find((one) => one.package === name || comparableText(one.code) === comparableText(name))?.package;
-    const found = other === undefined
-        ? installedExtensions(context.extensionFolders ?? []).find((one) => one.package === name || comparableText(shortName(one.package)) === comparableText(name))
-        : { package: other };
-
-    // A package that reads as nothing, as a system whose system.yaml is broken, is still npm's to take away by its folder, under its npm name.
-    const npmName = name.startsWith("npm:") ? name.slice(4) : name;
-
-    if (found === undefined && packages !== undefined && isPackageName(npmName) && (context.extensionFolders ?? []).some((folder) => files().entries(join(folder, ...npmName.split("/"))).length > 0)) {
+    if (unread && packages !== undefined) {
         const why = await packages.uninstall(npmName);
 
         if (why !== undefined) {

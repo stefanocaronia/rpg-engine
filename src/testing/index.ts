@@ -147,6 +147,7 @@ export async function testCampaign(options: TestCampaignOptions): Promise<TestCa
         systemFolders,
         systemCode: await loadSystemCode(systemFolders),
         extensionFolders: [packages],
+        unpacked: join(base, "unpacked"),
     };
     const started: TestDashboard[] = [];
     // Each call reads the campaign's context as the test left it, a page or a signal of its own included.

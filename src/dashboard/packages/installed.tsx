@@ -1,6 +1,6 @@
-// The rows of what is installed: the game systems, the campaign's adventures, the extensions, those the campaign lacks, the languages.
+// The rows of what is installed: the game systems, the campaign's adventures, the extensions, those the campaign lacks, the themes, the languages.
 import type { ComponentChildren } from "preact";
-import type { ShownAdventure, ShownExtension, ShownLanguage, ShownSystem } from "../api.ts";
+import type { ShownAdventure, ShownExtension, ShownInstalledTheme, ShownLanguage, ShownSystem } from "../api.ts";
 import { gameDateLabel, sinceDateLabel } from "../parts/game-words.ts";
 import { Icon } from "../parts/icons.tsx";
 import { phraseLabel, systemTitleLabel } from "../parts/labels.ts";
@@ -215,6 +215,75 @@ export function MissingRow({ name, state, onInstall }: { name: string; state: Ro
                     <Icon name="download" />
                     {t("Install")}
                 </button>
+            }
+        >
+            <WorkNote work={state.work} />
+            <SaidNote said={state.said} />
+        </PackageRow>
+    );
+}
+
+/**
+ * A theme installed on this computer (D-574): its name, its version and GitHub's newer one, and whether this page shows it now; one that fails a check, in red
+ * with why, which Settings does not offer.
+ */
+export function ThemeRow(
+    { theme, newer, shown, fresh, state, onUpdate, onUninstall }: {
+        theme: ShownInstalledTheme;
+        newer?: string | undefined;
+        shown: boolean;
+        fresh: boolean;
+        state: RowState;
+        onUpdate(): void;
+        onUninstall(): void;
+    },
+)
+{
+    const name = <bdi>{theme.name}</bdi>;
+    const problems = theme.problems ?? [];
+    const uninstall = <UninstallButton name={theme.name} busy={state.busy} onClick={onUninstall} />;
+
+    if (problems.length > 0) {
+        return (
+            <PackageRow
+                tile="alert"
+                tone="broken"
+                name={name}
+                about={<span class="package-red">{t("It does not pass the page's checks: Settings does not offer it.")}</span>}
+                meta={
+                    <>
+                        {theme.version !== undefined && `${theme.version} · `}
+                        {/* The first of what to fix is enough to tell why; its maker reads the rest in the package's list. */}
+                        <bdi class="package-why">{problems[0]}</bdi>
+                    </>
+                }
+                row={`theme:${theme.id}`}
+                fresh={fresh}
+                actions={uninstall}
+            >
+                <WorkNote work={state.work} />
+                <SaidNote said={state.said} />
+            </PackageRow>
+        );
+    }
+
+    return (
+        <PackageRow
+            tile="theme"
+            name={name}
+            meta={(theme.version !== undefined || newer !== undefined || shown) && (
+                <>
+                    <VersionMeta version={theme.version} newer={newer} />
+                    {shown && `${theme.version !== undefined || newer !== undefined ? " · " : ""}${t("the style of this page")}`}
+                </>
+            )}
+            row={`theme:${theme.id}`}
+            fresh={fresh}
+            actions={
+                <>
+                    {newer !== undefined && <UpdateButton name={theme.name} version={newer} busy={state.busy} onClick={onUpdate} />}
+                    {uninstall}
+                </>
             }
         >
             <WorkNote work={state.work} />

@@ -152,6 +152,8 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
         systemFolders: [own.systemFolders[0], ...(system === "5e" ? [linkFifthEdition(`${folder}-systems`)] : []), join(packages, "node_modules")],
         extensionFolders: [linked, join(packages, "node_modules")],
         packages: npmPackages(packages),
+        // The themes and languages of data alone, the demo's own too.
+        unpacked: join(packages, "unpacked"),
         download: downloadBytes,
         confirm: systemConfirm(process.platform, process.env),
         pictures: hostPictures(() => undefined, () => chosenPictureMaker(folder)),

@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { z } from "zod";
 import { packageFoldersIn } from "../core/files.ts";
 import { codeAndBase } from "../core/language.ts";
@@ -25,6 +25,8 @@ const languageSchema = z.object({
     code: z.string().regex(codePattern, "a language's code, such as de or pt-PT").refine((code) => code.split("-")[0] !== "en", "English is the page's own"),
     name: z.string().trim().min(1),
     engine: z.string().optional(),
+    // Its version, for a package of data alone, which has no package.json to say it.
+    version: z.union([z.string(), z.number()]).transform(String).optional(),
 }).strict();
 const phrasesSchema = z.record(z.string(), z.string());
 // Characters that turn the order of a text, which could make it read otherwise than it is.
@@ -57,7 +59,10 @@ export function languagePackFor(folders: string[], code: string): LanguagePack |
     return codeAndBase(code).map((wanted) => packs.find((pack) => pack.code.toLowerCase() === wanted)).find((pack) => pack !== undefined);
 }
 
-/** A language package from its folder; it throws, saying what is wrong, when it does not read. */
+/**
+ * A language package from its folder; it throws, saying what is wrong, when it does not read. One of data alone, without a package.json, is named by its
+ * code, language-de, with the version its language.yaml gives.
+ */
 export function readLanguagePack(folder: string): LanguagePack
 {
     const manifest = JSON.parse(files().text(join(folder, "package.json")) ?? "{}") as { name?: unknown; version?: unknown; };
@@ -67,7 +72,13 @@ export function readLanguagePack(folder: string): LanguagePack
         throw new Error(`${join(folder, languageFileName)}: ${read.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ")}.`);
     }
 
-    return { package: String(manifest.name ?? ""), version: String(manifest.version ?? ""), folder, code: read.data.code, name: read.data.name };
+    return {
+        package: String(manifest.name ?? `language-${read.data.code}`),
+        version: String(manifest.version ?? read.data.version ?? ""),
+        folder,
+        code: read.data.code,
+        name: read.data.name,
+    };
 }
 
 /** The dashboard's phrases the package translates, by their English; none when it has none that reads. */
@@ -121,10 +132,10 @@ export function languagePackProblems(pack: LanguagePack, english: string[]): { p
     return { problems: problems.slice(0, 10), missing: english.filter((phrase) => !(phrase in phrases)).length };
 }
 
-/** The folders of packages with a language.yaml in these folders, and in their scopes' folders. */
+/** The folders of packages with a language.yaml in these folders, and in their scopes' folders; never one being unpacked, whose name starts with a dot. */
 function packageFolders(folders: string[]): string[]
 {
-    return packageFoldersIn(folders).filter((candidate) => files().exists(join(candidate, languageFileName)));
+    return packageFoldersIn(folders).filter((candidate) => !basename(candidate).startsWith(".") && files().exists(join(candidate, languageFileName)));
 }
 
 /** The package's phrases.json as JSON: undefined when it has none, the error when it does not read. */

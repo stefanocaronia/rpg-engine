@@ -37,7 +37,9 @@ const phrases: Record<string, (values: Values) => string> = {
     "system-taken": (values) => t("There is already a game system called {system} on this computer: {name} would take its name.", values),
     "system-unread": (values) => t("{name} was installed, but it does not read as a game system: uninstall it.", values),
     "language-code": (values) => t("{name} says it is a language, but brings code: a language is texts only.", values),
-    "language-refused": (values) => t("{name} cannot be used, and was taken off this computer: {why}", values),
+    // npm's language taken off again, or one of data alone never written: either way, it is not on this computer.
+    "language-refused": (values) => t("{name} cannot be used, and is not on this computer: {why}", values),
+    "theme-refused": (values) => t("{name} is no theme the page can use: {why}", values),
     "language-kept": (values) => t("{name} cannot be used, and version {version} stays: {why}", values),
     "not-used": (values) => t("This campaign does not use {name}.", values),
     "system-played": (values) => t("This campaign plays {name}: it stays on this computer.", values),
@@ -58,6 +60,7 @@ const phrases: Record<string, (values: Values) => string> = {
     "archive-link": (values) => t("{name} holds {entry}, which is not a plain file: it is refused whole.", values),
     "archive-accents": (values) => t("{name} names files with accents in another encoding: make the zip again with 7-Zip.", values),
     "not-adventure": (values) => t("{name} is not an adventure: it has no adventure.yaml at its top. A document is imported by the master.", values),
+    "not-package": (values) => t("{name} is no package: it has no adventure.yaml, theme.yaml or language.yaml at its top. A document is imported by the master.", values),
     "adventure-file": (values) => t("{name} holds {file}, which an adventure may not hold: it is refused whole.", values),
     "not-a-name": (values) => t("{name} is not the name of an npm package.", values),
     "folder-characters": (values) => t("The folder {name} has characters npm cannot take: move it to another path.", values),

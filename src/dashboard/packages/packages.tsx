@@ -1,6 +1,6 @@
 // The Packages section (D-485, D-486, D-488), in three tabs: Installed first, what is here by kind: the game system, with the pages of it the campaign changed
-// under the one it plays (D-564), the campaign's adventures with its own export last, the extensions with whether the campaign uses each, the languages; its
-// tab counts the updates and marks what the campaign lacks. Then Add: one card to add a package: the catalog of what npm and GitHub offer first, always open,
+// under the one it plays (D-564), the campaign's adventures with its own export last, the extensions with whether the campaign uses each, the themes and the
+// languages of every campaign (D-574); its tab counts the updates and marks what the campaign lacks. Then Add: one card to add a package: the catalog of what npm and GitHub offer first, always open,
 // then a link, an npm name, a folder or a file. Then Library: the folders of the player's books for this campaign alone (D-491 (13)). One work at a time; one
 // not ours with code, or a folder added to the library, waits for the player's yes in a window of their computer, said in every tab.
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -31,12 +31,13 @@ import { Icon, iconPath } from "../parts/icons.tsx";
 import { phraseLabel } from "../parts/labels.ts";
 import { Confirm } from "../settings/saves.tsx";
 import { PageHead } from "../shell/pages.tsx";
+import { shownInstalledTheme } from "../shell/system-style.ts";
 import { PageTabs } from "../shell/tabs.tsx";
 import { t } from "../text.ts";
-import { AddField, CatalogList, entryOf, entryTitle, newerOf, updateCount } from "./catalog.tsx";
+import { AddField, CatalogList, entryOf, entryTitle, languageEntryOf, newerOf, newerVersion, themeEntryOf, updateCount } from "./catalog.tsx";
 import { ChangedPages } from "./changes.tsx";
 import { EngineCard, engineName, type EngineUpdated, focusEngine, keepUpdate, keptUpdate, NeedsEngine } from "./engine.tsx";
-import { AdventureRow, ExtensionRow, LanguageRow, languageTitle, MissingRow, SystemRow } from "./installed.tsx";
+import { AdventureRow, ExtensionRow, LanguageRow, languageTitle, MissingRow, SystemRow, ThemeRow } from "./installed.tsx";
 import { libraryReading, LibraryTab } from "./library.tsx";
 import { addedText, doneText, engineFailure, failure, uninstallText } from "./outcomes.tsx";
 import { CardSaid, type RowState, type Said, SaidNote, WorkNote } from "./rows.tsx";
@@ -51,7 +52,7 @@ type Sending = PackageWork & { at: string; };
 /** A change that asks first. */
 type Asking =
     | { kind: "adventure"; title: string; }
-    | { kind: "uninstall"; what: "system" | "extension" | "language"; name: string; target: string; at: string; }
+    | { kind: "uninstall"; what: "system" | "extension" | "language" | "theme"; name: string; target: string; at: string; }
     | { kind: "library"; path: string; name: string; };
 
 /**
@@ -262,6 +263,11 @@ export function PackagesPage({ version, tab, item, layers = [], sceneOpen = fals
     const add = (at: string, source: string): Promise<void> => run(at, "add", source, () => addSource(source), addedText);
     const addTheFile = (file: File): Promise<void> => run("add", "add", file.name, () => addFile(file), addedText);
     const change = (at: string, action: PackageAction, name: string, label: string, after?: string): Promise<void> => run(at, action, name, () => changePackage(action, name), () => doneText(action, label), after);
+    // One of data alone from GitHub, a theme or a language, is updated by adding it again from its link, in the place of the one here; npm's by npm.
+    const update = (at: string, name: string, label: string, entry: CatalogEntry | undefined): Promise<void> =>
+        entry !== undefined && /^https?:\/\//i.test(entry.source)
+            ? run(at, "update", entry.source, () => addSource(entry.source), () => doneText("update", label))
+            : change(at, "update", name, label);
     const addToLibrary = (path: string): Promise<void> =>
         run("library", "library", path, () => changeLibrary("add", path), () => t("The folder is on this computer and in this campaign: its books are read now, then the master searches them."));
     // One the computer has not leaves the list once taken out: what came of it is said under the field.
@@ -297,6 +303,8 @@ export function PackagesPage({ version, tab, item, layers = [], sceneOpen = fals
     const systems = view?.systems ?? [];
     const adventures = view?.adventures ?? [];
     const languages = view?.languages ?? [];
+    const themes = view?.themes ?? [];
+    const themeShown = shownInstalledTheme();
     // The engine npm has that this page may install: one more update on the Installed tab, and the way for a package that needs it.
     const engineNew = engine.read?.update === true && engine.read.install === "global" && updated === undefined ? engine.read.latest : undefined;
     const updates = (view === undefined ? 0 : updateCount(view, catalog.read)) + (engineNew === undefined ? 0 : 1);
@@ -344,7 +352,7 @@ export function PackagesPage({ version, tab, item, layers = [], sceneOpen = fals
                                     state={(entry) => rowState(`catalog:${entry.source}`)}
                                     needs={(entry) => needs(entry.newer)}
                                     onAdd={(entry) => void add(`catalog:${entry.source}`, entry.source)}
-                                    onUpdate={(entry) => void change(`catalog:${entry.source}`, "update", entry.source, entryTitle(entry))}
+                                    onUpdate={(entry) => void update(`catalog:${entry.source}`, entry.source, entryTitle(entry), entry)}
                                     onRetry={() => askCatalog(true)}
                                 />
                                 <AddField state={rowState("add")} onAdd={(source) => void add("add", source)} onFile={(file) => void addTheFile(file)} />
@@ -432,24 +440,63 @@ export function PackagesPage({ version, tab, item, layers = [], sceneOpen = fals
                                     <CardSaid said={said} at="extensions" />
                                 </div>
                             </section>
+                            <section class="card" aria-labelledby="packages-themes">
+                                <CardHead icon={iconPath("theme")} title={<h3 id="packages-themes" tabIndex={-1}>{t("Themes")}</h3>} {...(themes.length === 0 ? {} : { note: String(themes.length) })} />
+                                <div class="card-body package-body">
+                                    {themes.length === 0 && <p class="package-note">{t("None: a theme changes the page's colours, faces and pictures, in every campaign; you find them in Add, in the catalog.")}</p>}
+                                    {themes.length > 0 && (
+                                        <>
+                                            <ul class="package-list">
+                                                {themes.map((theme) => {
+                                                    const entry = themeEntryOf(theme, catalog.read);
+                                                    return (
+                                                        <ThemeRow
+                                                            key={theme.id}
+                                                            theme={theme}
+                                                            newer={newerVersion(entry)}
+                                                            shown={theme.id === themeShown}
+                                                            fresh={fresh.includes(`theme:${theme.id}`)}
+                                                            state={rowState(`theme:${theme.id}`)}
+                                                            onUpdate={() => void update(`theme:${theme.id}`, theme.id, theme.name, entry)}
+                                                            onUninstall={() => setAsking({ kind: "uninstall", what: "theme", name: theme.name, target: `theme:${theme.id}`, at: `theme:${theme.id}` })}
+                                                        />
+                                                    );
+                                                })}
+                                            </ul>
+                                            <p class="package-note">{t("You choose one in Settings, under Game style.")}</p>
+                                        </>
+                                    )}
+                                    <CardSaid said={said} at="themes" />
+                                </div>
+                            </section>
                             <section class="card" aria-labelledby="packages-languages">
                                 <CardHead icon={iconPath("language")} title={<h3 id="packages-languages" tabIndex={-1}>{t("Languages")}</h3>} />
                                 <div class="card-body package-body">
                                     {languages.length === 0 && <p class="package-note">{t("None. The dashboard has its own languages; a language package takes the place of one with a translation made by hand.")}</p>}
                                     {languages.length > 0 && (
                                         <ul class="package-list">
-                                            {languages.map((language) => (
-                                                <LanguageRow
-                                                    key={language.package}
-                                                    language={language}
-                                                    newer={newerOf(language.package, "language", catalog.read)}
-                                                    needs={needs(entryOf(language.package, "language", catalog.read)?.newer)}
-                                                    fresh={fresh.includes(`language:${language.code}`)}
-                                                    state={rowState(`language:${language.code}`)}
-                                                    onUpdate={() => void change(`language:${language.code}`, "update", language.package, languageTitle(language))}
-                                                    onUninstall={() => setAsking({ kind: "uninstall", what: "language", name: languageTitle(language), target: language.package, at: `language:${language.code}` })}
-                                                />
-                                            ))}
+                                            {languages.map((language) => {
+                                                const entry = languageEntryOf(language, catalog.read);
+                                                return (
+                                                    <LanguageRow
+                                                        key={language.package}
+                                                        language={language}
+                                                        newer={newerVersion(entry)}
+                                                        needs={needs(entry?.newer)}
+                                                        fresh={fresh.includes(`language:${language.code}`)}
+                                                        state={rowState(`language:${language.code}`)}
+                                                        onUpdate={() => void update(`language:${language.code}`, language.package, languageTitle(language), entry)}
+                                                        onUninstall={() =>
+                                                            setAsking({
+                                                                kind: "uninstall",
+                                                                what: "language",
+                                                                name: languageTitle(language),
+                                                                target: language.unpacked === true ? `language:${language.code}` : language.package,
+                                                                at: `language:${language.code}`,
+                                                            })}
+                                                    />
+                                                );
+                                            })}
                                         </ul>
                                     )}
                                     <CardSaid said={said} at="languages" />
@@ -527,6 +574,7 @@ function rowKeys(view: PackagesView): string[]
         ...(view.systems ?? []).map((one) => `system:${one.name}`),
         ...(view.adventures ?? []).map((one) => `adventure:${one.title}`),
         ...view.installed.map((one) => `extension:${one.package}`),
+        ...(view.themes ?? []).map((one) => `theme:${one.id}`),
         ...(view.languages ?? []).map((one) => `language:${one.code}`),
     ];
 }
@@ -545,7 +593,13 @@ function tabOf(at: string): PackagesTab
 }
 
 // The card of each kind among the installed, by its heading's id.
-const cardOf: Record<PackageKind, string> = { system: "packages-systems", adventure: "packages-adventures", extension: "packages-extensions", language: "packages-languages" };
+const cardOf: Record<PackageKind, string> = {
+    system: "packages-systems",
+    adventure: "packages-adventures",
+    extension: "packages-extensions",
+    theme: "packages-themes",
+    language: "packages-languages",
+};
 
 /** How many extensions the campaign uses, those this computer lacks among them. */
 function usedCount(view: PackagesView): number
@@ -562,6 +616,7 @@ function workPlace(work: PackageWork, view: PackagesView, catalog: Catalog | und
     const adventure = view.adventures?.find((one) => same(one.title));
     const system = view.systems?.find((one) => same(one.name, one.package));
     const language = view.languages?.find((one) => same(one.code, one.package));
+    const theme = view.themes?.find((one) => same(one.id, one.name));
     const entry = catalog?.entries.find((one) => same(one.source));
 
     if (work.action === "library" || work.action === "engine") {
@@ -580,6 +635,8 @@ function workPlace(work: PackageWork, view: PackagesView, catalog: Catalog | und
         ? `system:${system.name}`
         : language !== undefined
         ? `language:${language.code}`
+        : theme !== undefined
+        ? `theme:${theme.id}`
         : entry !== undefined
         ? `catalog:${entry.source}`
         : "add";

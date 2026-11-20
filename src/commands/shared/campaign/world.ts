@@ -27,6 +27,7 @@ import {
 } from "../../../systems/index.ts";
 import { homeSystemWords } from "../books/words.ts";
 import { campaignExtensions, extensionSources, layeredParts } from "../packages/extensions.ts";
+import { languageFolders } from "../packages/unpacked.ts";
 
 /** The world of the campaign in `root`, with the pages of its game system when campaign.yaml names one that is installed (SYS-1, SYS-3). */
 export function campaignWorld(root: string, context: Context): World
@@ -71,7 +72,7 @@ export function ownTranslationFolder(context: Context, system: string, language:
 export function systemWordsOf(root: string, system: GameSystem, language: string, context: Context): SystemWords | undefined
 {
     // A language package's words come first, then the system's own, then those translated on the fly (D-485 (3)).
-    const pack = languagePackFor(context.extensionFolders ?? [], language);
+    const pack = languagePackFor(languageFolders(context), language);
     const packed = pack === undefined ? undefined : packSystemFolder(pack, system.name);
     const own = (packed === undefined ? undefined : systemWords(packed, language)) ?? layeredSystemWords(systemContentFolders(system), language) ?? homeSystemWords(context.home, system, language);
     const added = campaignExtensions(root, context).extensions.reduce((fields, extension) => ({ ...fields, ...extensionFieldWords(extension, language) }), {});

@@ -4,13 +4,14 @@ import type { AdventureExported, AdventureInstalled, AdventureRemoved } from "..
 import type { InstalledLanguage, InstalledSystem } from "./here.ts";
 
 export type PackageResult =
-    | { kind: "list"; installed: Installed[]; missing: string[]; adventures: { title: string; version: string; since?: string; removable: boolean; }[]; systems: InstalledSystem[]; languages: InstalledLanguage[]; }
+    | { kind: "list"; installed: Installed[]; missing: string[]; adventures: { title: string; version: string; since?: string; removable: boolean; }[]; systems: InstalledSystem[]; languages: InstalledLanguage[]; themes: ListedTheme[]; }
     | { kind: "available"; packages: Available[]; failed?: string; }
     | { kind: "installed"; extension: Extension; verified: boolean; commands: string[]; codeLeftOut: boolean; already: boolean; part?: string; tools: string; }
     | { kind: "removed"; name: string; }
     | { kind: "uninstalled"; name: string; wasUsed: boolean; extension: boolean; }
     | { kind: "system-installed"; system: InstalledSystem; plays?: string; loaded?: { runs: true; } | { why: string; }; }
     | { kind: "language-installed"; language: InstalledLanguage; replaced?: string; missing: number; }
+    | { kind: "theme-installed"; theme: { id: string; name: string; version?: string; }; replaced?: { name: string; version?: string; }; }
     | ({ kind: "adventure-installed"; } & AdventureInstalled)
     | ({ kind: "adventure-removed"; } & AdventureRemoved)
     | ({ kind: "exported"; } & AdventureExported);
@@ -33,4 +34,13 @@ export interface Available
     update: boolean;
     /** Its latest version, which needs a newer rpg-engine (D-515 (2)). */
     newer?: { version: string; engine?: string; };
+}
+
+/** A theme of the dashboard on this computer, for every campaign: its id, its name, and why it is not offered while it fails a check. */
+export interface ListedTheme
+{
+    id: string;
+    name: string;
+    version?: string;
+    problems?: string[];
 }

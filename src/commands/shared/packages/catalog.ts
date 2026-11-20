@@ -1,20 +1,23 @@
-// The catalog of the packages one may add (D-485, D-486): what npm has for this rpg-engine, extensions, game systems and languages, and the adventures
-// GitHub has by their topic, each with what the player needs to trust it and whether it is here already.
+// The catalog of the packages one may add (D-485, D-486): what npm has for this rpg-engine, extensions, game systems and languages, and the packages of data
+// alone GitHub has by their topic, adventures, themes and languages, each with what the player needs to trust it and whether it is here already.
 import { join } from "node:path";
-import { readManifest } from "../../../adventures/index.ts";
+import { parse } from "yaml";
+import { type AdventureManifest, readManifest } from "../../../adventures/index.ts";
 import type { Context, PackageInfo } from "../../../core/context.ts";
 import { ourSystems, readsApi } from "../../../core/packages/declarations.ts";
 import { files } from "../../../core/store.ts";
 import { comparableText } from "../../../core/text.ts";
 import { isNewerVersion } from "../../../core/version.ts";
 import { installedExtensions, readExtension, shortName } from "../../../extensions/index.ts";
-import { installedLanguages } from "../../../languages/index.ts";
+import { installedLanguages, type LanguagePack } from "../../../languages/index.ts";
 import { isVerified } from "../../../packages/index.ts";
 import { systemFolders } from "../../../systems/index.ts";
-import { installedAdventures } from "../books/adventures.ts";
+import type { InstalledTheme } from "../../../themes/index.ts";
+import { type InstalledAdventure, installedAdventures } from "../books/adventures.ts";
+import { isDataLanguage, isSameSource, languageFolders, themesHere, unpackedSource } from "./unpacked.ts";
 
 /** The kinds of packages the catalog lists. */
-export type CatalogKind = "system" | "adventure" | "extension" | "language";
+export type CatalogKind = "system" | "adventure" | "extension" | "language" | "theme";
 
 /** A package one may add, as the page lists it (D-486 (3)). */
 export interface CatalogEntry
@@ -29,14 +32,14 @@ export interface CatalogEntry
     code: boolean;
     /** What the player adds it by: an npm name or a GitHub link. */
     source: string;
-    /** The version here, when it is installed. */
+    /** The version here, when it is installed; empty for a theme installed without one. */
     installed?: string;
     update: boolean;
     /** Its latest version, when it needs a newer rpg-engine than this one, which version offers the newest it reads (D-515 (2)): with the first engine that reads it. */
     newer?: { version: string; engine?: string; };
     /** The game system an extension is made for, as its package.json says (D-548). */
     system?: string;
-    /** An adventure's levels, length and language, as its adventure.yaml says. */
+    /** An adventure's levels, length and language, as its adventure.yaml says; a language's code. */
     levels?: string;
     length?: string;
     language?: string;
@@ -84,11 +87,15 @@ export async function installableSystems(context: Context): Promise<InstallableS
     return listed.filter((system) => !here.includes(installedName(system))).sort((first, second) => Number(second.verified) - Number(first.verified) || first.name.localeCompare(second.name));
 }
 
-/** The topic a GitHub repository carries to be found as an adventure (D-485 (4)). */
-const adventureTopic = "rpg-engine-adventure";
+/** The topic a GitHub repository carries to be found, by the kind of package of data alone it is (D-485 (4)), and the file at its top that says what it is. */
+const githubTopics = [
+    { kind: "adventure", topic: "rpg-engine-adventure", file: "adventure.yaml" },
+    { kind: "theme", topic: "rpg-engine-theme", file: "theme.yaml" },
+    { kind: "language", topic: "rpg-engine-language", file: "language.yaml" },
+] as const;
 
-// How many repositories are read, each with its adventure.yaml: GitHub answers without a login only so many times an hour.
-const mostAdventures = 30;
+// How many repositories of each topic are read, each with the file at its top: GitHub answers a search without a login only so many times an hour.
+const mostRepositories = 20;
 const kinds = new Set<string>(["system", "extension", "language"]);
 
 /** What npm and GitHub offer now, ours first, then by title; each source asked once, side by side. */
@@ -146,7 +153,7 @@ function installedVersion(context: Context, found: PackageInfo): string | undefi
     }
 
     if (found.kind === "language") {
-        return installedLanguages(context.extensionFolders ?? []).find((one) => one.package === found.name)?.version;
+        return installedLanguages(languageFolders(context)).find((one) => one.package === found.name)?.version;
     }
 
     // A system npm installed, by its package's own version.
@@ -163,51 +170,133 @@ function packageIn(folder: string): { name?: string; version?: string; } | undef
     }
 }
 
-/** The adventures GitHub has by their topic, each read from its adventure.yaml; a repository without one that reads is left out. */
+/** A repository GitHub found by its topic. */
+interface Repository
+{
+    full_name: string;
+    default_branch: string;
+    description?: string | null;
+    owner?: { login?: string; };
+    stargazers_count?: number;
+    html_url: string;
+}
+
+/** What this computer has of the packages GitHub may offer, to say which are here and which are newer. */
+interface Here
+{
+    adventures: InstalledAdventure[];
+    themes: InstalledTheme[];
+    languages: LanguagePack[];
+}
+
+/**
+ * The adventures, themes and languages GitHub has by their topics, the three searches side by side, each repository read from the file at its top; one without
+ * one that reads is left out, and a search that fails leaves the others listed.
+ */
 async function githubEntries(root: string, context: Context): Promise<{ entries: CatalogEntry[]; failed?: string; }>
 {
-    if (context.download === undefined) {
+    const download = context.download;
+
+    if (download === undefined) {
         return { entries: [], failed: "only the game's server and the command line reach GitHub" };
     }
 
-    const download = context.download;
-    let repositories: { full_name: string; default_branch: string; description?: string | null; owner?: { login?: string; }; stargazers_count?: number; html_url: string; }[];
-
-    try {
-        const found = JSON.parse(
-            new TextDecoder().decode(await download(`https://api.github.com/search/repositories?q=topic:${adventureTopic}&sort=stars&per_page=${mostAdventures}`, 2 * 1024 * 1024, context.signal)),
-        ) as { items?: typeof repositories; };
-        repositories = found.items ?? [];
-    } catch (error) {
-        return { entries: [], failed: `GitHub could not be asked: ${error instanceof Error ? error.message : String(error)}` };
-    }
-
-    const here = installedAdventures(root);
-    const read = await Promise.all(repositories.map(async (repository): Promise<CatalogEntry | undefined> => {
+    const searched = await Promise.all(githubTopics.map(async (topic): Promise<{ topic: (typeof githubTopics)[number]; repositories: Repository[]; failed?: string; }> => {
         try {
-            const text = new TextDecoder().decode(await download(`https://raw.githubusercontent.com/${repository.full_name}/${repository.default_branch}/adventure.yaml`, 64 * 1024, context.signal));
-            const manifest = readManifest(text, repository.full_name);
-            const installed = here.find((one) => comparableText(one.title) === comparableText(manifest.title))?.version;
-            const levels = manifest.levels === undefined ? undefined : manifest.levels.from === manifest.levels.to ? String(manifest.levels.from) : `${manifest.levels.from}-${manifest.levels.to}`;
-            return {
-                kind: "adventure",
-                title: manifest.title,
-                description: manifest.about,
-                author: manifest.author ?? repository.owner?.login,
-                version: manifest.version,
-                verified: false,
-                code: false,
-                source: repository.html_url,
-                ...(installed === undefined ? {} : { installed }),
-                update: installed !== undefined && isNewerVersion(manifest.version, installed),
-                ...(levels === undefined ? {} : { levels }),
-                ...(manifest.length === undefined ? {} : { length: manifest.length }),
-                language: manifest.language,
-                ...(repository.stargazers_count === undefined ? {} : { stars: repository.stargazers_count }),
-            };
-        } catch {
-            return undefined;
+            const url = `https://api.github.com/search/repositories?q=topic:${topic.topic}&sort=stars&per_page=${mostRepositories}`;
+            const found = JSON.parse(new TextDecoder().decode(await download(url, 2 * 1024 * 1024, context.signal))) as { items?: Repository[]; };
+            return { topic, repositories: found.items ?? [] };
+        } catch (error) {
+            // The reason without the long address, so that three searches refused alike read as one.
+            const why = (error instanceof Error ? error.message : String(error)).replace(/^https:\/\/\S+ /, "").replace(/: check the address.*$/, "");
+            return { topic, repositories: [], failed: why };
         }
     }));
-    return { entries: read.filter((one) => one !== undefined) };
+    const here: Here = { adventures: installedAdventures(root), themes: themesHere(context), languages: installedLanguages(languageFolders(context)).filter((one) => isDataLanguage(context, one)) };
+    const read = await Promise.all(searched.flatMap(({ topic, repositories }) =>
+        repositories.map(async (repository): Promise<CatalogEntry | undefined> => {
+            try {
+                const raw = `https://raw.githubusercontent.com/${repository.full_name}/${repository.default_branch}/${topic.file}`;
+                const text = new TextDecoder().decode(await download(raw, 64 * 1024, context.signal));
+                return topic.kind === "adventure"
+                    ? adventureEntry(repository, readManifest(text, repository.full_name), here)
+                    : topic.kind === "theme"
+                    ? themeEntry(repository, text, here)
+                    : languageEntry(repository, text, here);
+            } catch {
+                return undefined;
+            }
+        })
+    ));
+    const reasons = [...new Set(searched.flatMap((one) => (one.failed === undefined ? [] : [one.failed])))];
+    const failed = reasons.map((why) => `GitHub could not be asked for its ${searched.filter((one) => one.failed === why).map((one) => `${one.topic.kind}s`).join(" and ")}: ${why}`);
+    return { entries: read.filter((one) => one !== undefined), ...(failed.length === 0 ? {} : { failed: failed.join("; ") }) };
+}
+
+/** An adventure GitHub has, as its adventure.yaml says. */
+function adventureEntry(repository: Repository, manifest: AdventureManifest, here: Here): CatalogEntry
+{
+    const installed = here.adventures.find((one) => comparableText(one.title) === comparableText(manifest.title))?.version;
+    const levels = manifest.levels === undefined ? undefined : manifest.levels.from === manifest.levels.to ? String(manifest.levels.from) : `${manifest.levels.from}-${manifest.levels.to}`;
+    const author = manifest.author ?? repository.owner?.login;
+    return {
+        ...githubEntry("adventure", repository, manifest.title, manifest.version, installed),
+        description: manifest.about,
+        ...(author === undefined ? {} : { author }),
+        ...(levels === undefined ? {} : { levels }),
+        ...(manifest.length === undefined ? {} : { length: manifest.length }),
+        language: manifest.language,
+    };
+}
+
+/** A theme GitHub has, by the name and version its theme.yaml gives; here only when it was installed from this repository. Its checks are made as it is installed. */
+function themeEntry(repository: Repository, text: string, here: Here): CatalogEntry | undefined
+{
+    const read = parse(text) as { name?: unknown; version?: unknown; } | null;
+
+    if (typeof read?.name !== "string" || read.name.trim() === "") {
+        return undefined;
+    }
+
+    const name = read.name;
+    const found = here.themes.find((one) => isSameSource(unpackedSource(one.folder), repository.html_url));
+    return githubEntry("theme", repository, name, versionOf(read.version), found === undefined ? undefined : (found.theme?.version ?? ""));
+}
+
+/** A language GitHub has, by the code, name and version its language.yaml gives: here only when it was installed from this repository, never npm's. */
+function languageEntry(repository: Repository, text: string, here: Here): CatalogEntry | undefined
+{
+    const read = parse(text) as { code?: unknown; name?: unknown; version?: unknown; } | null;
+
+    if (typeof read?.code !== "string" || typeof read.name !== "string") {
+        return undefined;
+    }
+
+    const code = read.code;
+    const installed = here.languages.find((one) => isSameSource(unpackedSource(one.folder), repository.html_url))?.version;
+    return { ...githubEntry("language", repository, read.name, versionOf(read.version), installed), language: code };
+}
+
+/** What every package GitHub has gives: never verified, never code, added by its link; its version here, and whether GitHub's is newer: only when both are known. */
+function githubEntry(kind: CatalogKind, repository: Repository, title: string, version: string | undefined, installed: string | undefined): CatalogEntry
+{
+    return {
+        kind,
+        title,
+        ...(typeof repository.description === "string" ? { description: repository.description } : {}),
+        ...(repository.owner?.login === undefined ? {} : { author: repository.owner.login }),
+        ...(version === undefined ? {} : { version }),
+        verified: false,
+        code: false,
+        source: repository.html_url,
+        ...(installed === undefined ? {} : { installed }),
+        update: installed !== undefined && installed !== "" && version !== undefined && isNewerVersion(version, installed),
+        ...(repository.stargazers_count === undefined ? {} : { stars: repository.stargazers_count }),
+    };
+}
+
+/** A version as a YAML file may write it, 1.0 a number; undefined when it gives none. */
+function versionOf(value: unknown): string | undefined
+{
+    return typeof value === "string" || typeof value === "number" ? String(value) : undefined;
 }

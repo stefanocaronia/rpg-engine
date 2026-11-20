@@ -1,5 +1,4 @@
 // Installs a package, an extension, a game system or a language, and checks what npm put there; and the system a campaign plays when this computer lacks it
-import { join } from "node:path";
 import { changeExtensions, findCampaign, readTextSetting } from "../../campaign/index.ts";
 import type { Context, PackageInfo } from "../../core/context.ts";
 import { type Examples, neutralExamples } from "../../core/examples.ts";
@@ -16,9 +15,11 @@ import { campaignWorld } from "../shared/campaign/world.ts";
 import { campaignExamples } from "../shared/examples.ts";
 import { loadCampaignCode, loadNewSystemCode, packageCommandNames, packagesInstalled } from "../shared/packages/code.ts";
 import { listedExtensions, runsCode } from "../shared/packages/extensions.ts";
+import { languageFolders } from "../shared/packages/unpacked.ts";
 import { newDatedLogEntry } from "../shared/time/time.ts";
 import { playerYes } from "./consent.ts";
 import { installedAs, installedExtensionFolder, type InstalledLanguage, isSystemHere, languagesHere, systemsHere, unreadSystemWhy, usable } from "./here.ts";
+import { pagePhrases, takeOffLanguage } from "./language.ts";
 import type { PackageResult } from "./result.ts";
 
 /**
@@ -318,7 +319,7 @@ async function languageInstalled(root: string, context: Context, spec: string, d
         });
     }
 
-    const before = installedLanguages(context.extensionFolders ?? []);
+    const before = installedLanguages(languageFolders(context));
     const packages = context.packages as NonNullable<Context["packages"]>;
     const why = await packages.install(spec);
 
@@ -350,12 +351,18 @@ async function languageInstalled(root: string, context: Context, spec: string, d
         throw back === undefined ? new Refusal(message, "language-refused", { name: described.name, why }) : new Refusal(message, "language-kept", { name: described.name, why, version: back });
     }
 
-    // One language, one package: the one before for the same code goes (D-485 (3)).
+    // One language, one package: the one before for the same code goes (D-485 (3)), one of data alone too.
     const replaced = before.find((one) => one.code.toLowerCase() === pack.code.toLowerCase() && one.package !== described.name);
 
     if (replaced !== undefined) {
-        await packages.uninstall(replaced.package);
-        (context.extensionFolders ?? []).forEach((one) => files().refresh(one));
+        try {
+            await takeOffLanguage(context, replaced);
+        } catch (error) {
+            // The one before stays when npm cannot take it off: the new one goes, so that nothing changed.
+            await packages.uninstall(described.name);
+            (context.extensionFolders ?? []).forEach((one) => files().refresh(one));
+            throw error;
+        }
     }
 
     const language = languagesHere(context).find((one) => one.package === described.name) as InstalledLanguage;
@@ -382,16 +389,6 @@ function namesNote(root: string, context: Context, system: string): string
     const counter = own("counter");
     const names = [counter === undefined ? undefined : `${counter} for damage`, own("rest"), coins === "" ? undefined : coins].filter((name) => name !== undefined);
     return names.length === 0 ? "" : ` The commands' descriptions may keep neutral examples until a new chat: in ${system} use its own names, such as ${names.join(", ")}.`;
-}
-
-/** The dashboard's phrases, by their English, as its curated Italian lists them all; none where the built page is not here. */
-function pagePhrases(context: Context): Record<string, string>
-{
-    try {
-        return JSON.parse(files().text(join(context.pageFolder ?? "", "i18n", "it.json")) ?? "{}") as Record<string, string>;
-    } catch {
-        return {};
-    }
 }
 
 /** A package made for an API this engine does not read: one newer than the engine, which an update of the engine reads, or one older, which a newer version of it fixes. */

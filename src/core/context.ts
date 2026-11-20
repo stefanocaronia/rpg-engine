@@ -38,6 +38,8 @@ export interface Context
     systemCode?: Record<string, ({ code: object; } | { problem: string; } | { refused: string; }) & { version?: string; }>;
     /** The folders that hold the installed extensions, each a package folder or npm's node_modules (D-436); none where missing. */
     extensionFolders?: string[];
+    /** Where the packages of data alone are unpacked, for every campaign on this computer: themes/<id>/ and languages/<code>/; none where nothing installs them. */
+    unpacked?: string;
     /** The AI app the MCP server serves, by the name it gives itself, such as claude-code; missing on the command line. */
     host?: () => string | undefined;
     /** The packages the player said no to in a window in this session, by the name npm describes: never asked again until the server starts again (D-510). */
@@ -384,6 +386,7 @@ export function defaultContext(folder = process.cwd()): Context
         // From src/core/ and from dist/core/ alike, the package's systems/ folder is two levels up; then those npm installed (D-485).
         systemFolders: [engineSystemsFolder, join(packagesFolder(), "node_modules")],
         extensionFolders: [join(packagesFolder(), "node_modules")],
+        unpacked: join(packagesFolder(), "unpacked"),
         home: userDataFolder(),
         bookIndex: join(dirname(packagesFolder()), "library"),
         // The built page is in dist/dashboard, two levels up from src/core/ and from dist/core/ alike.

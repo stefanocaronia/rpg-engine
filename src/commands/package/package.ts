@@ -1,4 +1,4 @@
-// The package command: lists, asks npm, installs, removes, uninstalls and exports, and says what it did
+// The package command: lists, asks npm, installs from npm or as data alone, removes, uninstalls and exports, and says what it did
 import { z } from "zod";
 import { requireCampaign } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
@@ -9,27 +9,19 @@ import { isNewerVersion } from "../../core/version.ts";
 import { installedExtensions, readExtension, shortName } from "../../extensions/index.ts";
 import { isVerified } from "../../packages/index.ts";
 import type { LayeredPage, LayerLeftOut, LayersInstalled } from "../shared/books/adventure-layers.ts";
-import {
-    type AdventureExported,
-    type AdventureInstalled,
-    type AdventureRemoved,
-    exportAdventure,
-    installAdventure,
-    installedAdventures,
-    isAdventureSpec,
-    readAdventureSpec,
-    removeAdventure,
-    storyTouching,
-} from "../shared/books/adventures.ts";
+import { type AdventureExported, type AdventureInstalled, type AdventureRemoved, exportAdventure, installedAdventures, removeAdventure, storyTouching } from "../shared/books/adventures.ts";
 import { listedExtensions } from "../shared/packages/extensions.ts";
+import { installDataPackage, isDataSpec, readDataSpec } from "./data.ts";
 import { issuesOf, languagesHere, systemsHere, usable } from "./here.ts";
 import { installed } from "./install.ts";
-import type { Available, Installed, PackageResult } from "./result.ts";
+import type { Available, Installed, ListedTheme, PackageResult } from "./result.ts";
+import { themesListed } from "./theme.ts";
 import { removed, uninstalled } from "./uninstall.ts";
 
 export const packageCommand = defineCommand({
     name: "package",
-    description: "The packages of the campaign: extensions such as weather, from npm, and adventures, as a .zip, a folder or a link with adventure.yaml. "
+    description: "The packages of the campaign: extensions such as weather, from npm; adventures, dashboard themes and languages, as a .zip, a folder or a GitHub link "
+        + "with adventure.yaml, theme.yaml or language.yaml; a theme or a language serves every campaign on this computer. "
         + "list says those on this computer and those the campaign uses; available, those npm has, and updates; RPG Engine itself is updated by the player on the dashboard's Packages page, never by you. install adds or updates one, on this computer and in the campaign, "
         + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked in the host's form, or in a window of their computer. "
         + "An adventure is installed when you bring its hook into the story, once the player wants it as the next. "
@@ -42,7 +34,7 @@ export const packageCommand = defineCommand({
         action: z.enum(["list", "available", "install", "remove", "uninstall", "export"]).describe("list, available, install, remove, uninstall or export"),
         name: z.string().optional().describe(
             "the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; a folder or a .tgz "
-                + "file on this computer; an adventure's .zip, folder or https link; an adventure's title to remove it",
+                + "file on this computer; an adventure's, a theme's or a language's .zip, folder or https link; an adventure's title to remove it; a theme's or a language's name to uninstall it, or theme:<id> and language:<code> when an npm package has that name too",
         ),
         author: z.string().min(1).optional().describe("export: who wrote the adventure, as the player wants it credited"),
         license: z.string().min(1).optional().describe("export: the licence the player gives it, such as CC BY 4.0; without one, all rights are reserved"),
@@ -71,7 +63,7 @@ export const packageCommand = defineCommand({
         }
 
         if (input.action === "install") {
-            return isAdventureSpec(name) ? await adventureInstalled(root, context, name) : await installed(root, context, name);
+            return isDataSpec(name) ? await installDataPackage(root, context, await readDataSpec(name, context), name) : await installed(root, context, name);
         }
 
         const adventure = installedAdventures(root).find((one) => comparableText(one.title) === comparableText(name));
@@ -104,6 +96,12 @@ export const packageCommand = defineCommand({
                 result.replaced === undefined ? "" : `It takes the place of ${result.replaced}.`,
                 result.missing === 0 ? "" : `The ${result.missing} phrases it lacks stay as the dashboard has them, its own or translated on the fly.`,
             ].filter((line) => line !== "").join(" ");
+        }
+
+        if (result.kind === "theme-installed") {
+            const { theme, replaced } = result;
+            const was = replaced === undefined ? "" : ` It takes the place of ${replaced.name}${replaced.version === undefined ? "" : ` ${replaced.version}`}.`;
+            return `Installed the theme ${theme.name}${theme.version === undefined ? "" : ` ${theme.version}`} for every campaign on this computer: the player chooses it in Settings.${was}`;
         }
 
         if (result.kind === "system-installed") {
@@ -163,6 +161,8 @@ export const packageCommand = defineCommand({
             `On this computer: ${installedLines.length === 0 ? "none" : installedLines.join("; ")}.`,
             result.missing.length === 0 ? "" : `The campaign lists, not installed here: ${result.missing.join(", ")}; install each with package install.`,
             result.adventures.length === 0 ? "" : `Its adventures: ${result.adventures.map((one) => `${one.title} ${one.version}${one.since === undefined ? "" : `, since ${one.since}`}`).join("; ")}.`,
+            result.languages.length === 0 ? "" : `Languages of the dashboard: ${result.languages.map((one) => `${one.name} (${one.code})${one.version === "" ? "" : ` ${one.version}`}`).join("; ")}.`,
+            result.themes.length === 0 ? "" : `Themes of the dashboard, which the player chooses in Settings: ${result.themes.map(themeLine).join("; ")}.`,
             "package available says those npm has, and updates.",
         ].filter((line) => line !== "").join("\n");
     },
@@ -256,7 +256,7 @@ function listed(root: string, context: Context): PackageResult
         }
     });
     const adventures = installedAdventures(root).map((one) => ({ title: one.title, version: one.version, ...(one.since === undefined ? {} : { since: one.since }), removable: storyTouching(root, one) === undefined }));
-    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)), adventures, systems: systemsHere(root, context), languages: languagesHere(context) };
+    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)), adventures, systems: systemsHere(root, context), languages: languagesHere(context), themes: themesListed(context) };
 }
 
 /** The extensions npm has for this rpg-engine's API, ours first, each with the version installed here and whether npm has a newer one (D-442). */
@@ -295,11 +295,11 @@ function codeText(loaded: { runs: true; } | { why: string; } | undefined): strin
     return loaded === undefined ? "Its code runs from the next start of the game's server." : "runs" in loaded ? "Its code runs from now." : `Its code does not run: ${loaded.why.replace(/\.$/, "")}.`;
 }
 
-/** Installs an adventure from a .zip, a folder or a link (D-483): no npm, no code, and the same refusals wherever it comes from. */
-async function adventureInstalled(root: string, context: Context, spec: string): Promise<PackageResult>
+/** A theme as list says it: with its version, and why it is not offered while it fails a check. */
+function themeLine(theme: ListedTheme): string
 {
-    const adventure = await readAdventureSpec(spec, context);
-    return { kind: "adventure-installed", ...installAdventure(root, context, adventure, spec) };
+    const version = theme.version === undefined ? "" : ` ${theme.version}`;
+    return theme.problems === undefined ? `${theme.name}${version}` : `${theme.name}${version} (not offered: ${theme.problems[0]})`;
 }
 
 /** What the master hears of an export (ADV-7, ADV-8): the file, what it came from, the layers it carries and what stayed out. */

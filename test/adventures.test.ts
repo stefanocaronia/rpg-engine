@@ -621,7 +621,7 @@ describe("the adventures on the dashboard's page (D-483)", () => {
         port = Number(new URL(dashboard.url).port);
         const added = await send("POST", "/api/add", JSON.stringify({ source: "https://github.com/ada/pozzo/tree/main" }), { "content-type": "application/json" });
         expect(added.status).toBe(202);
-        expect(asked).toEqual(["https://codeload.github.com/ada/pozzo/zip/refs/heads/main"]);
+        expect(asked).toEqual(["https://codeload.github.com/ada/pozzo/zip/main"]);
         expect((await send("POST", "/api/add", JSON.stringify({ source: "http://example.com/a.zip" }), { "content-type": "application/json" })).status).toBe(400);
     });
 

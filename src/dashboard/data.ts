@@ -772,6 +772,7 @@ export interface ShownTheme
     /** The lines of the page's icons it draws anew, by name. */
     icons?: Record<string, string>;
     refused?: boolean;
+    themes?: { id: string; name: string; css: string; icons: Record<string, string>; }[];
 }
 
 /** A page module of the campaign's system or one of its extensions whose code runs, as /api/modules lists it (D-511). */

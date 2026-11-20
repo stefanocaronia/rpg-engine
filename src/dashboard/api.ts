@@ -211,8 +211,19 @@ export interface ShownLanguage
     package: string;
     version: string;
     verified: boolean;
+    /** A package of data alone, from a link, a .zip or a folder, never npm (D-574). */
+    unpacked?: true;
     /** Where its problems are reported, as its package says. */
     issues?: string;
+}
+
+/** A theme installed on this computer for every campaign (D-574): its id and name, its version if it gives one; why it is not offered, when it fails a check. */
+export interface ShownInstalledTheme
+{
+    id: string;
+    name: string;
+    version?: string;
+    problems?: string[];
 }
 
 /** An adventure of the campaign, with the game date it came in on, and whether it can still go: not once the story touched it (D-476). */
@@ -301,6 +312,7 @@ export interface PackagesView
     installed: ShownExtension[];
     missing: string[];
     languages?: ShownLanguage[];
+    themes?: ShownInstalledTheme[];
     working?: PackageWork;
 }
 
@@ -343,7 +355,7 @@ export async function readModules(): Promise<ShownModule[]>
 }
 
 /** The kinds of packages. */
-export type PackageKind = "system" | "adventure" | "extension" | "language";
+export type PackageKind = "system" | "adventure" | "extension" | "language" | "theme";
 
 /** A package one may add (D-486): what the player needs to trust it, whether it brings code, what to add it by, and whether it is here already. */
 export interface CatalogEntry
@@ -356,10 +368,12 @@ export interface CatalogEntry
     verified: boolean;
     code: boolean;
     source: string;
+    /** Its version here; empty for a theme installed without one. */
     installed?: string;
     update: boolean;
     levels?: string;
     length?: string;
+    /** An adventure's language; a language's own code, from GitHub. */
     language?: string;
     stars?: number;
     /** The game system an extension is made for (D-548). */

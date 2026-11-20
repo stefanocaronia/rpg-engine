@@ -22,7 +22,27 @@ import { loadSystemCode } from "../../systems/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
 import { choicesNews, choicesRequest } from "./choices.ts";
 import type { EngineAsked } from "./engine.ts";
-import { builtPage, packagePageFile, pageFile, pageHtml, pageModulesOf, pagePolicy, pageWords, securityHeaders, send, sendFile, sendImage, sendJson, sendPacked, sendThemeFile, themeAddress, themeNow, vendorModule } from "./files.ts";
+import {
+    builtPage,
+    packagePageFile,
+    pageFile,
+    pageHtml,
+    pageModulesOf,
+    pagePolicy,
+    pageWords,
+    securityHeaders,
+    send,
+    sendFile,
+    sendImage,
+    sendInstalledThemeFile,
+    sendJson,
+    sendPacked,
+    sendThemeFile,
+    themeAddress,
+    themeNow,
+    themesAddress,
+    vendorModule,
+} from "./files.ts";
 import { act, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
 import { givePicture } from "./pictures.ts";
 import { answerAsked, type Asked, closeCard, listenForChanges, pagePlayer, pageSeen, rollNamesOf, type ShownCard, spendShown } from "./player.ts";
@@ -559,6 +579,8 @@ async function answer(request: IncomingMessage, response: ServerResponse, served
         sendImage(path.slice("/images/".length), request, response, served);
     } else if (sendPacked(path, response, served)) {
         // A language package's phrases or Guide, before the page's own (D-485 (3)).
+    } else if (path.startsWith(`${themesAddress}/`)) {
+        await sendInstalledThemeFile(path.slice(themesAddress.length + 1), url.searchParams, request, response, served);
     } else if (path.startsWith(`${themeAddress}/`)) {
         await sendThemeFile(path.slice(themeAddress.length + 1), url.searchParams, request, response, served);
     } else if (path.startsWith("/vendor/")) {

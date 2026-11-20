@@ -1,8 +1,8 @@
 // The adventures of a campaign (D-476, D-483): installed from a package whole or not at all, taken out while the story has not touched them, and exported as
 // they were at the start (ADV-1–ADV-7), with the campaign's layers over its game system as they are now (ADV-8).
-import { basename, join, relative, resolve, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 import { parse, parseDocument, Scalar, stringify, visit } from "yaml";
-import { type AdventureFiles, adventureFolderName, type AdventureManifest, adventureTarget, isAdventureFolder, largestAdventure, manifestLine, packAdventure, readAdventureFolder, readAdventureZip } from "../../../adventures/index.ts";
+import { type AdventureFiles, adventureFolderName, type AdventureManifest, adventureTarget, manifestLine, packAdventure } from "../../../adventures/index.ts";
 import { houseRulesFolderName, readSettings } from "../../../campaign/index.ts";
 import type { Context } from "../../../core/context.ts";
 import { appendLogEntry, type LogEntry, readLog } from "../../../core/log.ts";
@@ -88,50 +88,6 @@ const changesMade = "Changes were made: the files under layers/ modify pages the
 
 // The mark of an install under way, with its title and the days it moves dates by: while it is there, installing the same adventure finishes it (ADV-5).
 const installMarkName = ".adventure-install.yaml";
-// The documents a master imports, never a package: their pages are written by the master (D-483 (10)).
-const documentPattern = /\.(pdf|docx?|odt|rtf|txt|md|epub)$/i;
-
-/** Whether what was given to package install is an adventure: a .zip, a link, or a folder with adventure.yaml; a document says it is imported instead. */
-export function isAdventureSpec(spec: string): boolean
-{
-    if (documentPattern.test(spec)) {
-        throw new Refusal(
-            `${spec} is a document, not a package: make an adventure from it with import; package install takes only what has adventure.yaml. Nothing changed.`,
-            "document",
-            { name: spec },
-        );
-    }
-
-    return /\.zip$/i.test(spec) || /^https:\/\//i.test(spec) || isAdventureFolder(resolve(spec));
-}
-
-/** The adventure a .zip, a folder or an https link gives (ADV-1): a GitHub repository is read as the zip of its branch. */
-export async function readAdventureSpec(spec: string, context: Context): Promise<AdventureFiles>
-{
-    if (/^https:\/\//i.test(spec)) {
-        if (context.download === undefined) {
-            throw new Error("Only the game's server and the command line download an adventure: give a .zip or a folder of this computer.");
-        }
-
-        const repository = /^https:\/\/github\.com\/([^/]+)\/([^/#?]+?)(?:\.git)?(?:\/tree\/([^#?]+))?\/?$/i.exec(spec);
-        const url = repository === null ? spec : `https://codeload.github.com/${repository[1]}/${repository[2]}/zip/${repository[3] === undefined ? "HEAD" : `refs/heads/${repository[3]}`}`;
-        return readAdventureZip(await context.download(url, largestAdventure, context.signal), spec);
-    }
-
-    const path = resolve(spec);
-
-    if (/\.zip$/i.test(spec)) {
-        const bytes = files().bytes(path);
-
-        if (bytes === undefined) {
-            throw new Refusal(`There is no file ${path}: give the path of the adventure's .zip. Nothing changed.`, "not-on-computer", { name: path });
-        }
-
-        return readAdventureZip(bytes, basename(path));
-    }
-
-    return readAdventureFolder(path);
-}
 
 /** The adventures the log says are installed and not taken out, in the order they came (ADV-6): they go back with a save. */
 export function installedAdventures(root: string): InstalledAdventure[]

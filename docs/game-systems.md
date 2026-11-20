@@ -67,6 +67,8 @@ dark:
 
 Both modes are required. Every file is one of the theme's folder, written from it, never an address of the web: faces as woff2, woff, ttf or otf, each naming in `license` the file of its license, .txt or .md, in the folder; pictures as svg, png, webp or jpg; icons as SVGs of paths alone on a grid of 24; each file at most 1000 KB, its name written with the capitals it has on the disk; the dashboard serves them itself. The engine measures the contrast of the pairs of colours the page sets one on the other, text 4.5:1 (the danger's button, `on-low` on `low`, too) and the focus ring 3:1 on the page, and that friends and foes do not look alike. A theme that fails a check is not used: the dashboard keeps its own look, `status` counts it among the campaign's problems, and `validate` and `systemChecks` say what to change, with the nearest colour that reads and leaves the rest reading, or, when there is none, which colour under it to change.
 
+A theme is also a package of its own, for any game system, `free` included: a GitHub repository with the topic `rpg-engine-theme`, a `.zip` or a folder, with `theme.yaml` at its top and, if wanted, its `version`. `package install` takes its link, file or folder; its .zip may unpack to 50 MB; it keeps only `theme.yaml`, the files that names and a licence at its top, at most 20 MB, checks it as above, and installs it for every campaign on this computer, in place of one with the same name. The player chooses it in Settings; `package uninstall` takes it away by its name, or by `theme:<id>` when an npm package has the same name. A language comes the same way, with the topic `rpg-engine-language` and `language.yaml` at its top, its `version` there too (extensions.md, section 5).
+
 ### fields
 
 ```yaml

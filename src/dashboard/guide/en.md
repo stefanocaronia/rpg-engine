@@ -213,7 +213,7 @@ A page on your own computer, open only in that computer's browser, live while th
 - **Journal**: quests, the story as a book, its timeline, your companions' diaries, your notes.
 - **World**: the world map, what your character knows, the documents found and the calendar.
 - **The dice tray**: choose dice and a modifier, and throw; ×2 doubles the dice, never the modifier, as for a critical hit.
-- **Saves**, **Help**, **Settings** and **About**, as icons at the end of the row. Settings also holds the page's own preferences: theme, dice sound, dice set.
+- **Saves**, **Help**, **Settings** and **About**, as icons at the end of the row. Settings also holds the page's own preferences: theme, dice sound, dice set, and the **game style**, the colours, faces and pictures of the page: the game system's, a theme you added in Packages › Add, from the catalog, a GitHub link, a .zip or a folder, or the page's own.
 
 When the master asks you something, its banner stays at the top, whatever section you are in.
 

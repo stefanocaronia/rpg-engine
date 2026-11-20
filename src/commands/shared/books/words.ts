@@ -9,6 +9,7 @@ import { codeAndBase } from "../../../core/language.ts";
 import { files } from "../../../core/store.ts";
 import { languagePackFor, packPhrases } from "../../../languages/index.ts";
 import { layeredSystemWords, systemContentFolders, type SystemWords, systemWords } from "../../../systems/index.ts";
+import { languageFolders } from "../packages/unpacked.ts";
 
 /** What the page has of a language: its phrases so far, whether they are being translated, whether this computer can, and how many it still lacks. */
 export interface PageWords
@@ -91,7 +92,7 @@ export function pageTranslator(context: Context, page: string, notify: () => voi
     return {
         read: (language, system) => {
             // A translation made by hand, installed as a package, comes before the one made on the fly (D-485 (3)).
-            const pack = languagePackFor(context.extensionFolders ?? [], language);
+            const pack = languagePackFor(languageFolders(context), language);
             const own = { ...(context.home === undefined ? {} : readJson(join(context.home, "i18n", `${language}.json`))), ...(pack === undefined ? {} : packPhrases(pack)) };
             const missing = Object.keys(reference()).filter((phrase) => !(phrase in own)).length;
             const can = context.writer?.ready() === true && context.home !== undefined;
@@ -143,7 +144,7 @@ export function pagePhrase(context: Context, language: string | undefined, phras
 
     const page = context.pageFolder;
     const codes = codeAndBase(language);
-    const pack = languagePackFor(context.extensionFolders ?? [], language);
+    const pack = languagePackFor(languageFolders(context), language);
     const shipped = [...codes, codes.at(-1) === "no" ? "nb" : ""].filter((candidate) => candidate !== "").map((candidate) => readJson(join(page, "i18n", `${candidate}.json`)));
     const own = context.home === undefined ? {} : readJson(join(context.home, "i18n", `${language}.json`));
     return [pack === undefined ? {} : packPhrases(pack), ...shipped, own].map((phrases) => phrases[phrase]).find((said) => typeof said === "string" && said !== "") ?? phrase;

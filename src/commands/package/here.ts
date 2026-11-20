@@ -1,4 +1,5 @@
-// What is on this computer: the game systems, languages and extensions npm installed, and where each takes reports of its problems
+// What is on this computer: the game systems, languages and extensions npm installed, the languages and themes of data alone, and where each takes reports of
+// its problems
 import { join } from "node:path";
 import { readTextSetting } from "../../campaign/index.ts";
 import { type Context, engineSystemsFolder } from "../../core/context.ts";
@@ -9,6 +10,7 @@ import { type Extension, findExtension, installedExtensions, readExtension, shor
 import { installedLanguages } from "../../languages/index.ts";
 import { isPackageName, issuesPage, isVerified, verifiedScope } from "../../packages/index.ts";
 import { findSystem, readableSystems, systemFolders, systemHasCode, systemInFolder, systemWords } from "../../systems/index.ts";
+import { findUnpacked, isDataLanguage, languageFolders } from "../shared/packages/unpacked.ts";
 
 /** A game system on this computer (D-485): shipped with the engine, or a package npm installed; the campaign plays one, chosen in its setup. */
 export interface InstalledSystem
@@ -33,13 +35,22 @@ export interface InstalledLanguage
     package: string;
     version: string;
     verified: boolean;
+    /** A package of data alone, which the engine unpacked from a link, a .zip or a folder, never npm. */
+    unpacked?: true;
     /** Where its problems are reported, as its package.json says. */
     issues?: string;
 }
 
-/** Whether a package is on this computer, by its name as package takes it: an extension, a game system or a language npm installed (D-510). */
+/**
+ * Whether a package is on this computer, by its name as package takes it: an extension, a game system or a language npm installed (D-510); a theme or a
+ * language of data alone, theme:<id> and language:<code> too.
+ */
 export function isInstalledPackage(context: Context, name: string): boolean
 {
+    if (findUnpacked(context, name) !== undefined) {
+        return true;
+    }
+
     const asked = name.startsWith("npm:") ? name.slice(4) : name.startsWith("@") ? name : `${verifiedScope}${name}`;
     // An npm name only, never a path that climbs to npm's own folder (D-510).
     return [asked, name].some((one) => isPackageName(one) && installedExtensionFolder(context, one) !== undefined);
@@ -70,17 +81,21 @@ export function systemsHere(root: string, context: Context): InstalledSystem[]
     });
 }
 
-/** The language packages on this computer, one for each language (D-485 (3)). */
+/** The language packages on this computer, one for each language (D-485 (3)): npm's, and those of data alone, never verified. */
 export function languagesHere(context: Context): InstalledLanguage[]
 {
-    return installedLanguages(context.extensionFolders ?? []).map((pack) => ({
-        code: pack.code,
-        name: pack.name,
-        package: pack.package,
-        version: pack.version,
-        verified: isVerified(pack.package, installedFromFolder(pack.folder)),
-        ...issuesOf(pack.folder),
-    }));
+    return installedLanguages(languageFolders(context)).map((pack) => {
+        const unpacked = isDataLanguage(context, pack);
+        return {
+            code: pack.code,
+            name: pack.name,
+            package: pack.package,
+            version: pack.version,
+            verified: !unpacked && isVerified(pack.package, installedFromFolder(pack.folder)),
+            ...(unpacked ? { unpacked: true as const } : {}),
+            ...issuesOf(pack.folder),
+        };
+    });
 }
 
 /** Whether a game system by this name is on this computer; one whose system.yaml does not read is there too, and validate says why. */

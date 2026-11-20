@@ -99,6 +99,8 @@ const iconPaths = {
     library: "M4 6h3.5v14.5H4Z M9 3.5h3.5v17H9Z M9 7.5h3.5 M16.5 20.5l3.3-.9-3.4-12.5-3.3.9Z",
     search: "M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M15.5 15.5 20 20",
     language: "M4 5h9 M8.5 3v2 M6 5c.5 3 2.8 5.5 6 7 M11 5c-.6 3-2.5 5.6-5.5 7.3 M12.5 21l4-9 4 9 M14 17.5h5",
+    // A painter's palette: a theme, the page's colours and faces (D-574).
+    theme: "M12 3a9 9 0 1 0 0 18c1 0 1.7-.8 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.8-1.7 1.7-1.7h2.1a5.3 5.3 0 0 0 5.3-5.3C22 6.6 17.5 3 12 3Z M7.5 12h.01 M9 8h.01 M13.5 7h.01 M17 10h.01",
     window: "M3 5h18v14H3Z M3 9h18 M6 7h.01 M8.5 7h.01",
     more: "M6 9l6 6 6-6",
     // A thing in a list of bonds, as attuned: two rings linked.

@@ -12,7 +12,7 @@ import { DieSwatch, Icon } from "../parts/icons.tsx";
 import { customLabel, itemLabel, leveledItemLabel, phraseLabel, rateParts, settingLabel, valueLabel } from "../parts/labels.ts";
 import { PageHead } from "../shell/pages.tsx";
 import { byHandPref, conditionsPref, readChoice, soundPref, tokenSymbolsPref, useChoice, usePref, usePrefChange, writeChoice } from "../shell/prefs.ts";
-import { applyGameStyle, gameStyle, systemStylePref } from "../shell/system-style.ts";
+import { applyGameStyle, gameStyle, installedStyle, systemStylePref } from "../shell/system-style.ts";
 import { pickTheme, shownTheme } from "../shell/theme.ts";
 import { arrowStep, t } from "../text.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
@@ -594,35 +594,43 @@ export function Command({ text }: { text: string; })
 }
 
 /**
- * Under the theme, the game's style, when the campaign's system has one, a theme or a page style (D-528): its own or the page's, kept in this browser for that
- * system; the page's alone when its theme does not pass the check of legibility.
+ * Under the theme, the game's style, when the campaign's system has one, a theme or a page style (D-528), or this computer has themes installed (D-574): the
+ * game's, each installed theme by its name, or the page's, kept in this browser for that system; the game's left out when its theme does not pass the check
+ * of legibility, which the page's then says.
  */
 function gameStyleRows(): PageRow[]
 {
     const style = gameStyle();
+    const installed = style.themes.length > 0;
 
-    if (style.system === undefined || (!style.shows && !style.refused)) {
+    if (style.system === undefined || (!style.shows && !style.refused && !installed)) {
         return [];
     }
 
     const choice = systemStylePref(style.system);
-    const name = t("Game style");
-
-    if (!style.shows) {
-        const means = t("This game's style does not pass the page's check of legibility: the page keeps its own.");
-        return [{ key: "game-style", name, about: t("the colours, faces and pictures of the game system"), options: [{ value: "page", label: t("The page's"), means }], value: "page", pick: () => undefined }];
-    }
-
+    const refusedMeans = style.refused && !style.shows ? { means: t("This game's style does not pass the page's check of legibility: the page keeps its own.") } : {};
+    const about = !installed
+        ? style.name === undefined ? t("the colours, faces and pictures of the game system") : t("the colours, faces and pictures of {name}, from the game system", { name: style.name })
+        : style.shows
+        ? t("the colours, faces and pictures: the game system's, a theme you installed, or the page's own")
+        : t("the colours, faces and pictures: a theme you installed, or the page's own");
+    const options: Option[] = [
+        ...(style.shows ? [{ value: "game", label: t("The game's") }] : []),
+        ...style.themes.map((one) => ({ value: installedStyle(one.id), label: one.name })),
+        { value: "page", label: t("The page's"), ...refusedMeans },
+    ];
     return [{
         key: "game-style",
-        name,
-        about: style.name === undefined ? t("the colours, faces and pictures of the game system") : t("the colours, faces and pictures of {name}, from the game system", { name: style.name }),
-        options: [{ value: "game", label: t("The game's") }, { value: "page", label: t("The page's") }],
+        name: t("Game style"),
+        about,
+        options,
         value: readChoice(choice),
         pick: (value) => {
             writeChoice(choice, value);
             applyGameStyle();
         },
+        // The names of the installed themes go under the row's, with room for them.
+        ...(installed ? { under: true } : {}),
     }];
 }
 

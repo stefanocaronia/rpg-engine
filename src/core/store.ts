@@ -1,7 +1,7 @@
 // The files as a command sees them (D-137, D-194): each read at most once in a call, kept as its text and as what it reads as, frozen; what the command writes
 // updates what is kept. A command runs inside its store, and the modules reach it with files(): the MCP server will keep one for a whole session.
 import { AsyncLocalStorage } from "node:async_hooks";
-import { appendFileSync, closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileOrder, filesIn } from "./files.ts";
 import { frozen } from "./frozen.ts";
@@ -201,7 +201,7 @@ export class FileStore
         return existsSync(path) && statSync(path).isFile() ? statSync(path).size : undefined;
     }
 
-    /** When a file last changed, in milliseconds, as the disk says now; undefined when there is none. */
+    /** When a file or a folder last changed, in milliseconds, as the disk says now; undefined when there is none. */
     modified(path: string): number | undefined
     {
         return existsSync(path) ? statSync(path).mtimeMs : undefined;
@@ -212,6 +212,23 @@ export class FileStore
     {
         rmSync(path);
         this.changed(path, { text: undefined }, false);
+        markWritten();
+    }
+
+    /** Removes a folder with all it holds, if it is there: what the store kept of it goes too. */
+    removeFolder(path: string): void
+    {
+        rmSync(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+        this.refresh(path);
+        markWritten();
+    }
+
+    /** Moves a file or a folder to a path of the same disk where nothing is, in one step: no one reads it half there. */
+    move(from: string, to: string): void
+    {
+        renameSync(from, to);
+        this.refresh(from);
+        this.refresh(to);
         markWritten();
     }
 

@@ -17,7 +17,7 @@ Where things are in the repository, what each module depends on, and where new c
 
 | Path | What it holds |
 |---|---|
-| [src/core/](../src/core/) | Shared utilities: command registry, context, file store, log, YAML files, text comparison, formulas, problems, the mark of a process that works alone |
+| [src/core/](../src/core/) | Shared utilities: command registry, context, file store, log, YAML files, text comparison, formulas, problems, a package's archive read whole, the mark of a process that works alone |
 | `src/<module>/` | One job each, behind its `index.ts` (table below) |
 | [src/commands/](../src/commands/) | The commands, a file each; a topic whose commands have helpers of their own is a folder with them, such as [view/](../src/commands/view/), [scene/](../src/commands/scene/), [config/](../src/commands/config/) and [package/](../src/commands/package/), and the helpers that join modules for several topics are in [shared/](../src/commands/shared/), a folder for each topic: `campaign/`, `sheet/`, `scene/`, `time/`, `places/`, `characters/`, `books/`, `packages/` |
 | [src/cli/cli.ts](../src/cli/cli.ts), [src/cli/command-line.ts](../src/cli/command-line.ts) | The `rpg` binary |
@@ -38,8 +38,8 @@ Where things are in the repository, what each module depends on, and where new c
 | `extensions` | The installed extensions, their `extension.yaml` and their words |
 | `packages` | npm for every package, game systems and the engine included: install, update, a `.tgz` read |
 | `adventures` | Adventures as packages of content: their manifest, a `.zip` or folder checked whole, the `.zip` an export writes |
-| `languages` | Languages as packages: the dashboard's phrases, its Guide and a system's words, translated by hand |
-| `themes` | A game system's theme of the dashboard: read, checked, written as CSS |
+| `languages` | Languages as packages, from npm or of data alone: the dashboard's phrases, its Guide and a system's words, translated by hand |
+| `themes` | A game system's theme of the dashboard, and those installed on their own: read, checked, written as CSS |
 | `dice` | Dice notation, digital or physical faces, proofs for hidden rolls, random tables, the yes/no oracle |
 | `counters` | Counters such as `5/12` |
 | `money` | Coins and amounts, paying with change |

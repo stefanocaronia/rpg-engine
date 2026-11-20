@@ -12,11 +12,12 @@ import { campaignTheme } from "../../commands/shared/campaign/theme.ts";
 import { campaignSystem } from "../../commands/shared/campaign/world.ts";
 import { campaignPackages } from "../../commands/shared/packages/code.ts";
 import { campaignPageModules, type PageModule } from "../../commands/shared/packages/extensions.ts";
+import { languageFolders, themesFolder, themesHere } from "../../commands/shared/packages/unpacked.ts";
 import { realPath } from "../../core/files.ts";
 import { files, isInside, withFiles } from "../../core/store.ts";
 import { findHiddenImage, findImage } from "../../images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "../../languages/index.ts";
-import { drawnOrnament, themeCss, themeFile } from "../../themes/index.ts";
+import { drawnOrnament, isThemeId, readTheme, themeCss, themeFile } from "../../themes/index.ts";
 import type { Served } from "./index.ts";
 
 const imageTypes: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
@@ -33,8 +34,9 @@ const pageTypes: Record<string, string> = {
     ".wav": "audio/wav",
 };
 
-// Where the page finds the theme's files, and what they may be: faces and pictures.
+// Where the page finds the theme's files, the system's and those installed on their own by their id, and what they may be: faces and pictures.
 export const themeAddress = "/theme";
+export const themesAddress = "/themes";
 const themeTypes: Record<string, string> = { ...imageTypes, ".woff2": "font/woff2", ".woff": "font/woff", ".ttf": "font/ttf", ".otf": "font/otf" };
 
 // A picture runs nothing, even an SVG opened by itself.
@@ -104,7 +106,7 @@ export const securityHeaders = { "X-Content-Type-Options": "nosniff", "Referrer-
 export function sendPacked(path: string, response: ServerResponse, served: Served): boolean
 {
     const match = /^\/(i18n|guide)\/([a-z]{2,3}(?:-[a-z0-9]{2,8})*)\.(json|md)$/i.exec(path);
-    const pack = match === null ? undefined : languagePackFor(served.context.extensionFolders ?? [], match[2]);
+    const pack = match === null ? undefined : languagePackFor(languageFolders(served.context), match[2]);
 
     if (match === null || pack === undefined) {
         return false;
@@ -196,7 +198,8 @@ export function pageModulesOf(root: string, served: Served): PageModule[]
 
 /**
  * The theme of the campaign's game system (D-528): its CSS of custom properties, its icons and its name, which the page uses while the player keeps the game's
- * style on; refused when it does not pass its checks, which validate says; the system's name alone when it names none.
+ * style on; refused when it does not pass its checks, which validate says; the system's name alone when it names none. Beside it, the themes installed on
+ * their own that pass their checks, for any system, each with its CSS at its own address, which the player chooses in Settings; none when there are none.
  */
 export async function themeNow(response: ServerResponse, served: Served): Promise<void>
 {
@@ -204,16 +207,18 @@ export async function themeNow(response: ServerResponse, served: Served): Promis
     await served.session.ready();
     const system = root === undefined ? undefined : withFiles(served.session, () => campaignSystem(root, served.context));
     const reading = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context));
+    const installed = withFiles(served.session, () => themesHere(served.context)).flatMap(({ id, theme }) => theme === undefined ? [] : [{ id, name: theme.name, css: themeCss(theme, `${themesAddress}/${id}`), icons: theme.icons }]);
+    const themes = installed.length === 0 ? {} : { themes: installed };
 
     if (system === undefined) {
-        sendJson(response, 200, {});
+        sendJson(response, 200, themes);
     } else if (reading === undefined) {
         // No theme, but the system's name, which keeps the player's switch of its page style, if its page module gives one.
-        sendJson(response, 200, { system: system.name });
+        sendJson(response, 200, { system: system.name, ...themes });
     } else if (reading.theme === undefined) {
-        sendJson(response, 200, { system: reading.system, refused: true });
+        sendJson(response, 200, { system: reading.system, refused: true, ...themes });
     } else {
-        sendJson(response, 200, { system: reading.system, name: reading.theme.name, css: themeCss(reading.theme, themeAddress), icons: reading.theme.icons });
+        sendJson(response, 200, { system: reading.system, name: reading.theme.name, css: themeCss(reading.theme, themeAddress), icons: reading.theme.icons, ...themes });
     }
 }
 
@@ -226,13 +231,31 @@ export async function sendThemeFile(name: string, query: URLSearchParams, reques
     const root = findCampaign(served.context.folder);
     await served.session.ready();
     const folder = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context))?.theme?.folder;
+    sendFileOfTheme(folder, name, `${themeAddress}/${name}`, query, request, response, served);
+}
+
+/**
+ * A file of a theme installed on its own, at themes/<id>/<path>, as the system's theme sends its files: only from its folder, by real paths, and only while it
+ * passes its checks; a picture runs nothing, whoever made it.
+ */
+export async function sendInstalledThemeFile(path: string, query: URLSearchParams, request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const [id, ...rest] = path.split("/");
+    const themes = themesFolder(served.context);
+    await served.session.ready();
+    const folder = themes === undefined || !isThemeId(id) ? undefined : withFiles(served.session, () => readTheme(join(themes, id)).theme?.folder);
+    sendFileOfTheme(folder, rest.join("/"), `${themesAddress}/${path}`, query, request, response, served);
+}
+
+/** A face or a picture of the theme in this folder, by its name in the address; its ornament in the colour asked, ?ink=#rrggbb, and turned, &mirrored. */
+function sendFileOfTheme(folder: string | undefined, name: string, address: string, query: URLSearchParams, request: IncomingMessage, response: ServerResponse, served: Served): void
+{
     const given = decoded(name);
     const file = folder === undefined || given === undefined ? undefined : themeFile(folder, given);
-
     const type = file === undefined ? undefined : themeTypes[extname(file).toLowerCase()];
 
     if (file === undefined || type === undefined) {
-        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${themeAddress}/${name}.`);
+        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${address}.`);
         return;
     }
 
@@ -241,7 +264,7 @@ export async function sendThemeFile(name: string, query: URLSearchParams, reques
     const bytes = withFiles(served.session, () => (tinted ? Buffer.from(drawnOrnament(files().text(file) ?? "", ink, query.has("mirrored"))) : files().bytes(file)));
 
     if (bytes === undefined) {
-        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${themeAddress}/${name}.`);
+        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${address}.`);
         return;
     }
 

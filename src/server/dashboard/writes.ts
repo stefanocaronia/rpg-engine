@@ -3,14 +3,13 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { basename, join } from "node:path";
 import { z } from "zod";
-import { readAdventureZip } from "../../adventures/index.ts";
 import { findCampaign, readSettings, readTextSetting, requireCampaign, settingNames } from "../../campaign/index.ts";
 import { config } from "../../commands/config/config.ts";
 import { playerSettingNamed, playerSettings, setupSettingNamed } from "../../commands/config/dashboard.ts";
+import { installDataPackage, zipDataPackage } from "../../commands/package/data.ts";
 import { isInstalledPackage } from "../../commands/package/here.ts";
 import { adventureText, packageCommand } from "../../commands/package/package.ts";
 import { playerSaveNews, save } from "../../commands/save.ts";
-import { installAdventure } from "../../commands/shared/books/adventures.ts";
 import { libraryContents, libraryEntries, startLibraryReading, unquoted } from "../../commands/shared/books/library.ts";
 import { campaignMode } from "../../commands/shared/campaign/mode.ts";
 import { exportsFolderName, resetPoints } from "../../commands/shared/campaign/saves.ts";
@@ -274,7 +273,16 @@ export async function packagesNow(response: ServerResponse, served: Served, npm:
                 system: system === undefined ? null : { name: system.name, title: system.title },
                 // The other systems of this computer, for a new campaign: a campaign's own is chosen in its setup (D-475).
                 otherSystems: readableSystems(served.context.systemFolders).filter((other) => other.name !== system?.name).map((other) => ({ name: other.name, title: other.title })),
-                ...(list.kind === "list" ? { installed: inLanguage(list.installed, served, readTextSetting(root, "language")), missing: list.missing, adventures: list.adventures, systems: list.systems, languages: list.languages } : {}),
+                ...(list.kind === "list"
+                    ? {
+                        installed: inLanguage(list.installed, served, readTextSetting(root, "language")),
+                        missing: list.missing,
+                        adventures: list.adventures,
+                        systems: list.systems,
+                        languages: list.languages,
+                        themes: list.themes,
+                    }
+                    : {}),
                 ...(available?.kind === "available" ? { available: available.packages, ...(available.failed === undefined ? {} : { failed: available.failed }) } : {}),
                 ...(served.packageWork === undefined ? {} : { working: served.packageWork }),
             };
@@ -315,7 +323,8 @@ export async function changePackage(request: IncomingMessage, response: ServerRe
 
 /**
  * Something the player adds on the page (D-485 (1)): a .zip or a .tgz as the request's body, named by its X-File-Name, or { source }: a link, an npm name or a
- * folder of this computer. The engine tells the kind by what it holds; an adventure is read in memory, a .tgz kept in the player's data folder while npm installs it.
+ * folder of this computer. The engine tells the kind by what it holds; a .zip, an adventure, a theme or a language, is read in memory, a .tgz kept in the
+ * player's data folder while npm installs it.
  */
 export async function addPackage(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
@@ -336,7 +345,7 @@ export async function addPackage(request: IncomingMessage, response: ServerRespo
 
     if (bytes !== undefined && !/\.(zip|tgz|tar\.gz)$/i.test(file)) {
         sendJson(response, 400, {
-            error: `${file} is neither a .zip nor a .tgz: an adventure comes as a .zip, an extension, a game system or a language as a .tgz.`,
+            error: `${file} is neither a .zip nor a .tgz: an adventure, a theme or a language comes as a .zip; an extension, a game system or a language from npm as a .tgz.`,
             code: "file-kind",
             values: { name: file },
         });
@@ -346,9 +355,9 @@ export async function addPackage(request: IncomingMessage, response: ServerRespo
     const source = given?.success === true ? given.data.source : file;
     await packageWork(response, served, source, "add", async (context) => {
         if (bytes !== undefined && /\.zip$/i.test(file)) {
-            const root = requireCampaign(context.folder);
-            const installed = installAdventure(root, context, readAdventureZip(bytes, file), file);
-            return { kind: "adventure", news: `The player, on the dashboard, added an adventure: ${adventureText(installed)}` };
+            const result = await installDataPackage(requireCampaign(context.folder), context, zipDataPackage(bytes, file, file), file);
+            const said = result.kind === "adventure-installed" ? `an adventure: ${adventureText(result)}` : `${file}: ${packageCommand.format(result)}`;
+            return { kind: kindOf(result.kind), news: `The player, on the dashboard, added ${said}` };
         }
 
         const kept = bytes === undefined ? undefined : join(served.context.home ?? packagesFolder(), "uploads", file);
@@ -670,7 +679,8 @@ async function packageWork(
 /** The kind of package a result of package install says it installed. */
 function kindOf(result: string): string
 {
-    return result === "adventure-installed" ? "adventure" : result === "system-installed" ? "system" : result === "language-installed" ? "language" : "extension";
+    const kinds: Record<string, string> = { "adventure-installed": "adventure", "system-installed": "system", "language-installed": "language", "theme-installed": "theme" };
+    return kinds[result] ?? "extension";
 }
 
 /** A file's name as the page sends it, encoded for a header; as it is when it does not decode. */

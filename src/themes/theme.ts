@@ -30,6 +30,8 @@ type ColourName = (typeof requiredColours)[number] | (typeof optionalColours)[nu
 export interface Theme
 {
     name: string;
+    /** Its version, as a theme installed on its own gives it. */
+    version?: string;
     /** The folder it was read from: its files are served from there. */
     folder: string;
     fonts: ThemeFont[];
@@ -182,6 +184,7 @@ export function readTheme(folder: string): ThemeReading
 
     const theme: Theme = {
         name: given.name,
+        ...optional("version", given.version),
         folder,
         fonts,
         ...optional("textFont", family("text-font")),
@@ -210,6 +213,29 @@ export function themeFile(folder: string, name: string): string | undefined
     } catch {
         return undefined;
     }
+}
+
+/**
+ * The files a theme.yaml names, with forward slashes, as written from its folder: its fonts and their licences, its ornament, icons and textures. None when
+ * it does not read: its checks say why.
+ */
+export function themeFilesNamed(text: string): string[]
+{
+    let data: unknown;
+
+    try {
+        data = parse(text);
+    } catch {
+        return [];
+    }
+
+    const given = (typeof data === "object" && data !== null ? data : {}) as Record<string, unknown>;
+    const field = (value: unknown, key: string): unknown => (typeof value === "object" && value !== null ? (value as Record<string, unknown>)[key] : undefined);
+    const fonts = Array.isArray(given.fonts) ? given.fonts.flatMap((font: unknown) => [field(font, "file"), field(font, "license")]) : [];
+    const icons = typeof given.icons === "object" && given.icons !== null ? Object.values(given.icons) : [];
+    const textures = ["light", "dark"].flatMap((mode) => ["page-texture", "bar-texture"].map((texture) => field(field(given[mode], texture), "picture")));
+    const named = [...fonts, ...icons, ...textures, field(given.cards, "ornament")];
+    return named.filter((one): one is string => typeof one === "string").map((one) => one.replaceAll("\\", "/").replace(/^(\.\/)+/, ""));
 }
 
 /** An ornament drawn in one colour, turned for a page that reads right to left: the theme gives one drawing for both modes and both directions. */
@@ -277,6 +303,7 @@ const modeSchema = z.object({
 
 const themeSchema = z.object({
     name: z.string().min(1),
+    version: z.union([z.string().min(1), z.number()]).transform(String).optional(),
     fonts: z.array(
         z.object({
             family: z.string().regex(/^[\p{L}\p{N} _-]+$/u, { error: "letters, numbers, spaces and hyphens alone" }),

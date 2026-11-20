@@ -53,6 +53,7 @@ export function addedText(kind: PackageKind | undefined): string
         extension: t("The extension is in the campaign: it counts from now on."),
         system: t("The game system is on this computer, for a new campaign."),
         language: t("The language is on this computer, for every campaign."),
+        theme: t("The theme is on this computer, for every campaign: choose it in Settings, under Game style."),
     };
     return kind === undefined ? t("Done.") : texts[kind];
 }
@@ -69,8 +70,12 @@ export function doneText(action: PackageAction, name: string): string
 }
 
 /** What uninstalling does, by kind. */
-export function uninstallText(what: "system" | "extension" | "language")
+export function uninstallText(what: "system" | "extension" | "language" | "theme")
 {
+    if (what === "theme") {
+        return <p>{t("It goes off this computer: where you chose it, the page goes back to the game's style, or its own.")}</p>;
+    }
+
     if (what === "system") {
         return <p>{t("It goes off this computer: a new campaign can no longer choose it. This campaign does not change.")}</p>;
     }

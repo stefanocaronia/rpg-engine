@@ -1,7 +1,7 @@
 // The Add tab: the catalog of what npm and GitHub offer, the field that adds from a link, a name, a folder or a file, and how the catalog sees what is here.
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { Catalog, CatalogEntry, PackageKind, PackagesView } from "../api.ts";
+import type { Catalog, CatalogEntry, PackageKind, PackagesView, ShownInstalledTheme, ShownLanguage } from "../api.ts";
 import { useMedia } from "../parts/card.tsx";
 import { Icon, type IconName } from "../parts/icons.tsx";
 import { phraseLabel, systemNameLabel } from "../parts/labels.ts";
@@ -97,7 +97,7 @@ export function AddField({ state, onAdd, onFile }: { state: RowState; onAdd(sour
                     }}
                 />
             </div>
-            <p class="package-note" id="package-source-about">{t("It tells the kind by itself: a game system, an adventure, an extension or a language. A file is a .zip or a .tgz.")}</p>
+            <p class="package-note" id="package-source-about">{t("It tells the kind by itself: a game system, an adventure, an extension, a theme or a language. A file is a .zip or a .tgz.")}</p>
             {empty && state.work === undefined && <p class="package-said problem" role="status">{t("Write a link, an npm name or a folder first.")}</p>}
             <WorkNote work={state.work} />
             <SaidNote said={state.said} onSee={state.onSee} />
@@ -224,22 +224,44 @@ export function entryOf(name: string, kind: PackageKind, catalog: Catalog | unde
     return catalog?.entries.find((one) => one.kind === kind && samePackage(one, name));
 }
 
-/** How many packages here npm has a newer version of: the count on the Installed tab. */
+/** A theme here as the catalog has it, from GitHub: the repository it was installed from, which the engine marks installed, by its name. */
+export function themeEntryOf(theme: ShownInstalledTheme, catalog: Catalog | undefined): CatalogEntry | undefined
+{
+    return catalog?.entries.find((one) => one.kind === "theme" && one.installed !== undefined && foldedText(one.title) === foldedText(theme.name));
+}
+
+/** A language here as the catalog has it: npm's by its package, one of data alone by its code, from the GitHub repository it was installed from. */
+export function languageEntryOf(language: ShownLanguage, catalog: Catalog | undefined): CatalogEntry | undefined
+{
+    return language.unpacked === true
+        ? catalog?.entries.find((one) => one.kind === "language" && one.installed !== undefined && one.language?.toLowerCase() === language.code.toLowerCase())
+        : entryOf(language.package, "language", catalog);
+}
+
+/** The newer version the catalog has of an entry here; undefined when it has none. */
+export function newerVersion(entry: CatalogEntry | undefined): string | undefined
+{
+    return entry?.update === true ? entry.version : undefined;
+}
+
+/** How many packages here npm or GitHub has a newer version of: the count on the Installed tab. */
 export function updateCount(view: PackagesView, catalog: Catalog | undefined): number
 {
     const systems = (view.systems ?? []).filter((one) => one.package !== undefined && newerOf(one.package, "system", catalog) !== undefined);
     const extensions = view.installed.filter((one) => newerOf(one.package, "extension", catalog) !== undefined);
-    const languages = (view.languages ?? []).filter((one) => newerOf(one.package, "language", catalog) !== undefined);
-    return systems.length + extensions.length + languages.length;
+    const languages = (view.languages ?? []).filter((one) => newerVersion(languageEntryOf(one, catalog)) !== undefined);
+    const themes = (view.themes ?? []).filter((one) => newerVersion(themeEntryOf(one, catalog)) !== undefined);
+    return systems.length + extensions.length + languages.length + themes.length;
 }
 
 /** A catalog's title: an adventure's as its author wrote it; an npm package's name with its first letter a capital, as the rows of what is here. */
 export function entryTitle(entry: CatalogEntry): string
 {
-    // A language by its code, as lang-de: named in the page's language.
-    const code = entry.kind === "language" ? /^(?:lang-)?([a-z]{2,3}(?:-[a-z0-9]+)?)$/i.exec(entry.title)?.[1] : undefined;
+    // A language by its code, GitHub's as its language.yaml gives it, npm's by its name, as lang-de: named in the page's language.
+    const code = entry.kind === "language" ? entry.language ?? /^(?:lang-)?([a-z]{2,3}(?:-[a-z0-9]+)?)$/i.exec(entry.title)?.[1] : undefined;
     const language = code === undefined ? undefined : languageName(code, pageLanguage());
-    return entry.kind === "adventure" ? entry.title : phraseLabel(language ?? entry.title);
+    // An adventure's and a theme's titles are their authors'.
+    return entry.kind === "adventure" || entry.kind === "theme" ? entry.title : phraseLabel(language ?? entry.title);
 }
 
 /** npm or GitHub away, or both: the rest is added all the same; the engine's words under the page's, and Try again. */
@@ -250,7 +272,7 @@ function CatalogAway({ failed, asking, onRetry }: { failed: Catalog["failed"]; a
         ? [t("The catalog does not answer."), t("A file, a link or a folder can be added all the same.")]
         : failed.npm !== undefined
         ? [t("npm does not answer."), t("Game systems, extensions and languages come from npm: a file, a link or a folder can be added all the same.")]
-        : [t("GitHub does not answer."), t("The catalog's adventures come from GitHub: a .zip or a link can be added all the same.")];
+        : [t("GitHub does not answer."), t("The catalog's adventures and themes come from GitHub: a .zip or a link can be added all the same.")];
     const why = [...new Set([failed.npm, failed.github].filter((one) => one !== undefined))];
     return (
         <div class="package-offline" role="status">
@@ -289,12 +311,13 @@ function CatalogRow(
         entry.author !== undefined && !entry.verified && !entry.code ? t("by {author}", { author: entry.author }) : "",
         entry.levels === undefined ? "" : levelsText(entry.levels),
         entry.length ?? "",
-        entry.language === undefined ? "" : languageName(entry.language, pageLanguage()) ?? entry.language,
+        // An adventure's language; a language's own is its title.
+        entry.language === undefined || entry.kind === "language" ? "" : languageName(entry.language, pageLanguage()) ?? entry.language,
         entry.stars === undefined || entry.stars === 0 ? "" : `★ ${entry.stars}`,
         asksYes ? t("has code: asks your yes") : "",
         entry.kind === "system" && here === "none" && view.system !== null ? t("for a new campaign: this one stays in {system}", { system: systemNameLabel(view.system.name) }) : "",
     ].filter((fact) => fact !== "");
-    const version = entry.update && entry.installed !== undefined && entry.version !== undefined
+    const version = entry.update && entry.installed !== undefined && entry.installed !== "" && entry.version !== undefined
         ? (
             <span class="package-update">
                 <Icon name="update" />
@@ -362,20 +385,20 @@ function CatalogRow(
 }
 
 // The kinds in the order of the chips, each with its tile.
-const kindOrder: PackageKind[] = ["system", "adventure", "extension", "language"];
-const kindIcon: Record<PackageKind, IconName> = { system: "dice", adventure: "world", extension: "packages", language: "language" };
+const kindOrder: PackageKind[] = ["system", "adventure", "extension", "theme", "language"];
+const kindIcon: Record<PackageKind, IconName> = { system: "dice", adventure: "world", extension: "packages", theme: "theme", language: "language" };
 
 /** A kind, for one package. */
 function kindLabel(kind: PackageKind): string
 {
-    const labels: Record<PackageKind, string> = { system: t("System"), adventure: t("Adventure"), extension: t("Extension"), language: t("Language") };
+    const labels: Record<PackageKind, string> = { system: t("System"), adventure: t("Adventure"), extension: t("Extension"), theme: t("Theme"), language: t("Language") };
     return labels[kind];
 }
 
 /** A kind, for its chip. */
 function kindsLabel(kind: PackageKind): string
 {
-    const labels: Record<PackageKind, string> = { system: t("Systems"), adventure: t("Adventures"), extension: t("Extensions"), language: t("Languages") };
+    const labels: Record<PackageKind, string> = { system: t("Systems"), adventure: t("Adventures"), extension: t("Extensions"), theme: t("Themes"), language: t("Languages") };
     return labels[kind];
 }
 
