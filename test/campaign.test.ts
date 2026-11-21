@@ -1,9 +1,10 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { hostFileChanges, refreshHostFiles, refreshUserHostFiles } from "../src/campaign/host-files.ts";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
-import { startInstructions } from "../src/instructions/index.ts";
+import { hostInstructions, startInstructions } from "../src/instructions/index.ts";
 import { makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
 // The settings the setup asks of a new campaign without a written world, after the system and the language (MOD-3), and the call that moves on (MOD-7).
@@ -23,7 +24,23 @@ const askedBrief =
     + "pictures (of places, quests and those met: none; on request; new elements, one for each), pictures-by (who makes them: chat, your app by its own means; codex; elevenlabs; other, a tool the player names, written by its name; suggest chat), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
 const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
-const playLine = "To play, open Claude Code, Codex or Antigravity in this folder and say hello: the master asks you the rest.";
+const playLine = "To play, open Claude Code, Codex, Antigravity or OpenCode in this folder and say hello: the master asks you the rest.";
+
+/** A link to a folder: a junction on Windows, which needs no rights. */
+function link(target: string, path: string): void
+{
+    symlinkSync(target, path, "junction");
+}
+
+/** Takes a link away, never what it leads to. */
+function unlink(path: string): void
+{
+    try {
+        unlinkSync(path);
+    } catch {
+        rmdirSync(path);
+    }
+}
 
 /** What config shows of the settings, before what the campaign still needs. */
 function shown(output: string): string
@@ -47,6 +64,13 @@ afterEach(() => removeFolder(folder));
 
 // The doorbell init writes for Claude Code (D-495).
 const bell = { type: "command", command: "rpg --listen", asyncRewake: true, timeout: 86_400 };
+// Antigravity's hooks under the engine's key: the tools approved, and the doorbell (D-578).
+const antigravityHooks = {
+    PreToolUse: [{ matcher: ".*", hooks: [{ type: "command", command: "rpg --approve", timeout: 10 }] }],
+    Stop: [{ type: "command", command: "rpg --listen antigravity", timeout: 86_400 }],
+};
+// OpenCode's plugin as the package ships it.
+const openCodePlugin = readFileSync(new URL("../plugins/opencode.js", import.meta.url), "utf8");
 
 describe("rpg init", () => {
     it("refuses an empty name, with how to give one, and writes nothing", async () => {
@@ -107,14 +131,123 @@ ${playLine}`);
         );
     });
 
-    it("refuses a second campaign in the same folder, inside another one or around another one", async () => {
+    it("refuses a campaign inside another one or around another one", async () => {
         mkdirSync(join(folder, "campagne", "vecchia"), { recursive: true });
         writeFileSync(join(folder, "campagne", "vecchia", "campaign.yaml"), "name: Vecchia\n");
         expect((await runCommandLine(["init", "campagne"], context)).output).toContain(`holds the campaign in ${join(folder, "campagne", "vecchia")}`);
 
         await runCommandLine(["init", "nuova"], context);
-        expect((await runCommandLine(["init", "nuova"], context)).output).toContain("is already a campaign");
         expect((await runCommandLine(["init", "nuova/world/inner"], context)).output).toContain("a campaign cannot hold another one");
+    });
+
+    it("given the folder of a campaign, only brings its hosts' files up to date, and keeps its settings (D-578)", async () => {
+        const root = join(folder, "nuova");
+        await runCommandLine(["init", "nuova", "--language", "it"], context);
+        rmSync(join(root, "AGENTS.md"));
+        rmSync(join(root, ".opencode"), { recursive: true });
+        writeFileSync(join(root, ".mcp.json"), JSON.stringify({ mcpServers: { altro: { command: "altro" } } }));
+        const settings = readFileSync(join(root, "campaign.yaml"), "utf8");
+
+        const again = await runCommandLine(["init", "nuova", "--language", "en"], context);
+        expect(again).toEqual({ output: `${root} is already a campaign: its files for Claude Code, Codex, Antigravity and OpenCode are up to date.`, exitCode: 0 });
+        expect(readFileSync(join(root, "AGENTS.md"), "utf8")).toContain(hostInstructions().start);
+        expect(existsSync(join(root, ".opencode", "plugins", "rpg.js"))).toBe(true);
+        expect(JSON.parse(readFileSync(join(root, ".mcp.json"), "utf8"))).toEqual({ mcpServers: { altro: { command: "altro" }, rpg: { command: "rpg", args: ["mcp"] } } });
+        expect(readFileSync(join(root, "campaign.yaml"), "utf8")).toBe(settings);
+    });
+
+    it("refuses to write the hosts' files through a link, and looks only where it writes in their folders (c3.mjs)", async () => {
+        const root = join(folder, "linked");
+        await runCommandLine(["init", "linked"], context);
+        const elsewhere = makeTempFolder();
+
+        try {
+            for (const name of [".opencode", ".agents"]) {
+                rmSync(join(root, name), { recursive: true });
+                link(elsewhere, join(root, name));
+                const again = await runCommandLine(["init", "linked"], context);
+                expect(again.exitCode).toBe(1);
+                expect(again.output).toContain(`${join(root, name)} is a link to somewhere else, and what the engine writes there would leave the campaign`);
+                refreshHostFiles(root, hostInstructions(), "linux");
+                expect(readdirSync(elsewhere)).toEqual([]);
+                unlink(join(root, name));
+            }
+
+            // A link of the player's own deeper in a host's folder, as shared skills, is theirs: the campaign plays on.
+            await runCommandLine(["init", "linked"], context);
+            mkdirSync(join(root, ".agents", "skills"));
+            link(elsewhere, join(root, ".agents", "skills", "mine"));
+            expect((await runCommandLine(["status"], testContext(root))).exitCode).toBe(0);
+            expect((await runCommandLine(["init", "linked"], context)).exitCode).toBe(0);
+            unlink(join(root, ".agents", "skills", "mine"));
+        } finally {
+            removeFolder(elsewhere);
+        }
+    });
+
+    it("says how to fix a .mcp.json that holds no servers, in a campaign that exists (c1.mjs)", async () => {
+        const root = join(folder, "rotta");
+        await runCommandLine(["init", "rotta"], context);
+
+        for (const text of ["null", "[]", '{ "mcpServers": 3 }', "{ rotto"]) {
+            writeFileSync(join(root, ".mcp.json"), text);
+            const again = await runCommandLine(["init", "rotta"], context);
+            expect(again.exitCode).toBe(1);
+            expect(again.output).toContain(`${join(root, ".mcp.json")} is not`);
+            expect(again.output).toContain("Fix it or remove it by hand, then run rpg init in this folder again.");
+        }
+    });
+    it("adds the rpg server to Antigravity's own servers in the player's home, when Antigravity is installed, beside the player's (D-578)", async () => {
+        const home = makeTempFolder();
+        const servers = join(home, ".gemini", "config", "mcp_config.json");
+
+        try {
+            // Not installed: nothing written.
+            await runCommandLine(["init", "senza"], { ...context, userHome: home });
+            expect(existsSync(servers)).toBe(false);
+
+            // Installed, with an empty file: the rpg server alone, never with a backslash.
+            mkdirSync(join(home, ".gemini", "antigravity-cli"), { recursive: true });
+            mkdirSync(join(home, ".gemini", "config"), { recursive: true });
+            writeFileSync(servers, "");
+            await runCommandLine(["init", "con"], { ...context, userHome: home, platform: "win32" });
+            expect(readFileSync(servers, "utf8")).toBe(`${JSON.stringify({ mcpServers: { rpg: { command: "cmd", args: ["/c", "rpg", "mcp"] } } }, null, 2)}\n`);
+            expect(readFileSync(servers, "utf8")).not.toContain("\\");
+
+            // The player's servers, and what they set on rpg, stay (c1.mjs).
+            writeFileSync(servers, JSON.stringify({ theme: "dark", mcpServers: { altro: { command: "altro" }, rpg: { command: "vecchio", env: { A: "1" }, disabled: true, disabledTools: ["roll"] } } }));
+            expect(refreshUserHostFiles(home, "linux")).toBeUndefined();
+            expect(JSON.parse(readFileSync(servers, "utf8"))).toEqual({
+                theme: "dark",
+                mcpServers: { altro: { command: "altro" }, rpg: { command: "rpg", env: { A: "1" }, disabled: true, disabledTools: ["roll"], args: ["mcp"] } },
+            });
+
+            // A file that cannot be read, or a folder in its place, stays as it is, and init says so, the campaign's own files written all the same.
+            for (const [broken, said] of [["{ rotto", "is not valid JSON"], ["[]", "is not valid JSON"]]) {
+                writeFileSync(servers, broken);
+                const again = await runCommandLine(["init", "con"], { ...context, userHome: home });
+                expect(again.exitCode).toBe(0);
+                expect(again.output).toBe(
+                    `${
+                        join(folder, "con")
+                    } is already a campaign: its files for Claude Code, Codex, Antigravity and OpenCode in this folder are up to date.\n${servers} ${said}, so Antigravity's app cannot be set up for the game. Fix it or remove it by hand, then run rpg init in the campaign again.`,
+                );
+                expect(readFileSync(servers, "utf8")).toBe(broken);
+            }
+
+            rmSync(servers);
+            mkdirSync(servers);
+            expect(refreshUserHostFiles(home, "linux")).toBe(`${servers} is a folder, not Antigravity's settings, so its app cannot be set up for the game: take it away, then run rpg init in the campaign again.`);
+            rmSync(servers, { recursive: true });
+
+            // The app alone, without the command line, is Antigravity installed.
+            rmSync(join(home, ".gemini", "antigravity-cli"), { recursive: true });
+            mkdirSync(join(home, ".gemini", "antigravity"));
+            expect(refreshUserHostFiles(home, "linux")).toBeUndefined();
+            expect(JSON.parse(readFileSync(servers, "utf8"))).toEqual({ mcpServers: { rpg: { command: "rpg", args: ["mcp"] } } });
+        } finally {
+            removeFolder(home);
+        }
     });
 
     it("writes the .mcp.json through which an AI host finds the tools, in the form each system needs", async () => {
@@ -159,21 +292,57 @@ ${playLine}`);
             }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME", "SSH_AUTH_SOCK", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy"]\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
         );
         expect(existsSync(join(folder, "nuova", ".gemini"))).toBe(false);
-        // Antigravity: the rpg server, and the hook that lets its tools run without asking.
+        // Antigravity: the rpg server, the hook that lets its tools run without asking, and the doorbell.
         expect(JSON.parse(readFileSync(join(folder, "nuova", ".agents", "mcp_config.json"), "utf8"))).toEqual({ mcpServers: { rpg } });
-        expect(JSON.parse(readFileSync(join(folder, "nuova", ".agents", "hooks.json"), "utf8"))).toEqual({
-            rpg: { PreToolUse: [{ matcher: ".*", hooks: [{ type: "command", command: "rpg --approve", timeout: 10 }] }] },
-        });
+        expect(JSON.parse(readFileSync(join(folder, "nuova", ".agents", "hooks.json"), "utf8"))).toEqual({ rpg: antigravityHooks });
+        // OpenCode: the rpg server in its format, and the plugin that runs the doorbell (D-578).
+        // OpenCode's agent writes and edits no file by itself: the master writes the campaign through the rpg tools (D-362).
+        expect(JSON.parse(readFileSync(join(folder, "nuova", "opencode.json"), "utf8"))).toEqual({ permission: { edit: "deny", shell: "ask" }, mcp: { servers: { rpg: { type: "local", command: [rpg.command, ...rpg.args] } } } });
+        expect(readFileSync(join(folder, "nuova", ".opencode", "plugins", "rpg.js"), "utf8")).toBe(openCodePlugin);
     });
 
-    it("keeps the player's own servers and hooks of Antigravity, and their rpg, adding only what is missing", async () => {
+    it("keeps the player's own servers and hooks of Antigravity, and their rpg server, and writes the engine's hooks again (D-578)", async () => {
         mkdirSync(join(folder, "mia", ".agents"), { recursive: true });
         writeFileSync(join(folder, "mia", ".agents", "mcp_config.json"), '{ "mcpServers": { "mappe": { "command": "mappe" } } }');
         writeFileSync(join(folder, "mia", ".agents", "hooks.json"), '{ "rpg": { "Stop": [] }, "mio": { "PreToolUse": [] } }');
         await runCommandLine(["init", "mia"], context);
         const servers = JSON.parse(readFileSync(join(folder, "mia", ".agents", "mcp_config.json"), "utf8")).mcpServers;
         expect(Object.keys(servers)).toEqual(["mappe", "rpg"]);
-        expect(JSON.parse(readFileSync(join(folder, "mia", ".agents", "hooks.json"), "utf8"))).toEqual({ rpg: { Stop: [] }, mio: { PreToolUse: [] } });
+        expect(JSON.parse(readFileSync(join(folder, "mia", ".agents", "hooks.json"), "utf8"))).toEqual({ rpg: antigravityHooks, mio: { PreToolUse: [] } });
+    });
+
+    it("gives a campaign made before the doorbell of Antigravity and OpenCode as the MCP server starts, and keeps OpenCode's other settings (D-578)", async () => {
+        await runCommandLine(["init", "vecchia"], context);
+        const root = join(folder, "vecchia");
+        const hooks = join(root, ".agents", "hooks.json");
+        const plugin = join(root, ".opencode", "plugins", "rpg.js");
+        writeFileSync(hooks, JSON.stringify({ rpg: { PreToolUse: antigravityHooks.PreToolUse }, mio: { Stop: [] } }));
+        writeFileSync(plugin, "// an older plugin\n");
+        const own = {
+            model: "ollama/gpt-oss:20b",
+            permission: { bash: "ask" },
+            mcp: { servers: { mappe: { type: "local", command: ["mappe"] }, rpg: { command: ["old"], environment: { RPG_HOME: "D:/runs" }, enabled: false, timeout: 9000 } } },
+        };
+        writeFileSync(join(root, "opencode.json"), JSON.stringify(own));
+
+        refreshHostFiles(root, hostInstructions(), "linux");
+        expect(JSON.parse(readFileSync(hooks, "utf8"))).toEqual({ rpg: antigravityHooks, mio: { Stop: [] } });
+        expect(readFileSync(plugin, "utf8")).toBe(openCodePlugin);
+        expect(JSON.parse(readFileSync(join(root, "opencode.json"), "utf8"))).toEqual({
+            model: "ollama/gpt-oss:20b",
+            permission: { edit: "deny", shell: "ask", bash: "ask" },
+            mcp: { servers: { mappe: own.mcp.servers.mappe, rpg: { type: "local", command: ["rpg", "mcp"], environment: { RPG_HOME: "D:/runs" }, enabled: false, timeout: 9000 } } },
+        });
+
+        // A permission the player set on editing, or on every tool at once, stays theirs.
+        for (const permission of [{ edit: "allow" }, "ask"]) {
+            writeFileSync(join(root, "opencode.json"), JSON.stringify({ permission }));
+            refreshHostFiles(root, hostInstructions(), "linux");
+            expect(JSON.parse(readFileSync(join(root, "opencode.json"), "utf8")).permission).toEqual(typeof permission === "string" ? permission : { shell: "ask", ...permission });
+        }
+
+        // Once up to date, nothing is written again.
+        expect(hostFileChanges(root, hostInstructions(), "linux")).toEqual([]);
     });
 
     it("keeps what the player wrote in Codex's settings, and adds only what is missing (D-362)", async () => {

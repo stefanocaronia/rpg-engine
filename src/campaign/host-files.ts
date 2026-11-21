@@ -1,14 +1,16 @@
 // What an AI host reads in a campaign besides .mcp.json: AGENTS.md, opening with the start lines (D-97); CLAUDE.md, which imports it; Claude Code's settings,
 // with its auto memory off, so that the master keeps nothing outside the campaign (D-242), the rpg server approved with its tools allowed (D-412) and no tasks in
 // the background, so that the character agent answers within the master's turn (D-490), and the doorbell of the player's sentences (D-495); Codex's, with
-// the rpg server and its memories off (D-362); Claude Code's character agent, the agent the master calls to voice a character (D-490). Gemini CLI is no
-// longer set up (D-493): a campaign's .gemini/ stays as it is.
+// the rpg server and its memories off (D-362); Claude Code's character agent, the agent the master calls to voice a character (D-490); Antigravity's and
+// OpenCode's, each with the rpg server and the doorbell (D-578). Gemini CLI is no longer set up (D-493): a campaign's .gemini/ stays as it is.
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { files } from "../core/store.ts";
+import { refuseCampaignLinks } from "./find-campaign.ts";
 import { efforts, readTextSetting } from "./settings.ts";
 
 /** The files of the AI hosts at the top of a campaign, which are not the game's: a save leaves them as they are (SAV-2), Gemini CLI's of an older campaign too. */
-export const hostFileNames = ["AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", "GEMINI.md"];
+export const hostFileNames = ["AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", "GEMINI.md", "opencode.json"];
 
 /** The engine's texts a campaign's host files carry: the start lines, and the character agent's instructions (D-490). */
 export interface HostInstructions
@@ -51,9 +53,18 @@ export function hostFileChanges(root: string, instructions: HostInstructions, pl
     return hostFiles(root, instructions, platform).map((file) => file()).filter((file) => file !== undefined);
 }
 
-/** Brings the host files of a campaign up to date, as the MCP server starts: a file that cannot be read or written stays as it is. */
+/**
+ * Brings the host files of a campaign up to date, as the MCP server starts: a file that cannot be read or written stays as it is, and none is written while a
+ * folder they go in is a link, which the first command refuses with how to fix it.
+ */
 export function refreshHostFiles(root: string, instructions: HostInstructions, platform: string): void
 {
+    try {
+        refuseCampaignLinks(root);
+    } catch {
+        return;
+    }
+
     for (const change of hostFiles(root, instructions, platform)) {
         try {
             const file = change();
@@ -108,6 +119,8 @@ function hostFiles(root: string, instructions: HostInstructions, platform: strin
         () => codexConfigFile(root, platform),
         () => antigravityServerFile(root, platform),
         () => antigravityHooksFile(root),
+        () => openCodeConfigFile(root, platform),
+        () => openCodePluginFile(root),
     ];
 }
 
@@ -122,19 +135,107 @@ function antigravityServerFile(root: string, platform: string): HostFile | undef
 }
 
 /**
- * Antigravity's hooks for the campaign: before each tool, rpg --approve lets the rpg server's tools run without asking, as Claude Code's and Codex's settings
- * do (D-412), and asks for every other; the player's own hooks stay beside it.
+ * Antigravity's hooks for the campaign, under the key rpg, which is the engine's and is written again whenever it differs: before each tool, rpg --approve
+ * lets the rpg server's tools run without asking, as Claude Code's and Codex's settings do (D-412), and asks for every other; at the end of each turn, the
+ * doorbell (D-578). The player's own hooks stay beside them.
  */
 function antigravityHooksFile(root: string): HostFile | undefined
 {
     const path = join(root, ".agents", "hooks.json");
     const text = files().fresh(path);
     const hooks = text === undefined ? {} : jsonObject(path, text, "Antigravity cannot be set up for the game in it");
-    return hooks.rpg !== undefined ? undefined : { path, text: settingsText({ ...hooks, rpg: { PreToolUse: [{ matcher: ".*", hooks: [approveHook] }] } }) };
+    const rpg = { PreToolUse: [{ matcher: ".*", hooks: [approveHook] }], Stop: [antigravityBellHook] };
+    return JSON.stringify(hooks.rpg) === JSON.stringify(rpg) ? undefined : { path, text: settingsText({ ...hooks, rpg }) };
 }
 
 // Antigravity's hook that approves the rpg server's tools: it answers in about a second, as the hooks of a chat must.
 const approveHook = { type: "command", command: "rpg --approve", timeout: 10 };
+
+// Antigravity's Stop hook for the doorbell: it holds the turn's end until the player acts on the dashboard, writes in the chat or stops it; a day at most.
+const antigravityBellHook = { type: "command", command: "rpg --listen antigravity", timeout: 86_400 };
+
+/**
+ * OpenCode's settings for the campaign: the rpg server beside the player's own, in OpenCode's format, keeping what the player set on it, as its environment.
+ * Its tools need no permission: OpenCode's agent allows every tool unless told otherwise. The agent's own writing and editing of files is denied, and its
+ * shell asks, so that the master writes the campaign only through the rpg tools, as for Gemini CLI (D-362); a permission the player set stays theirs.
+ */
+function openCodeConfigFile(root: string, platform: string): HostFile | undefined
+{
+    const path = join(root, "opencode.json");
+    const text = files().fresh(path);
+    const config = text === undefined ? {} : jsonObject(path, text, "OpenCode cannot be set up for the game in it");
+    const mcp = isObject(config.mcp) ? config.mcp : {};
+    const servers = isObject(mcp.servers) ? mcp.servers : {};
+    const before = isObject(servers.rpg) ? servers.rpg : {};
+    const { command, args } = rpgServer(platform);
+    const rpg = { ...before, type: "local", command: [command, ...args] };
+    // OpenCode's tools that write or edit a file, a patch too, all ask for edit; its shell writes files as well, and asks the player each time.
+    const permission = config.permission === undefined ? openCodePermission : isObject(config.permission) ? { ...openCodePermission, ...config.permission } : config.permission;
+    const wanted = { ...config, permission, mcp: { ...mcp, servers: { ...servers, rpg } } };
+    return text !== undefined && JSON.stringify(wanted) === JSON.stringify(config) ? undefined : { path, text: settingsText(wanted) };
+}
+
+// What OpenCode's agent may do by itself in a campaign, where the player set nothing: no writing of files, and the shell only on the player's yes.
+const openCodePermission = { edit: "deny", shell: "ask" };
+
+/**
+ * The engine's plugin for OpenCode, which runs no hooks of its own: on OpenCode's events it runs the doorbell after each turn, and sends its line to the
+ * chat (D-578). Its source is in the package, under a name no host reads there; written again whenever it differs.
+ */
+function openCodePluginFile(root: string): HostFile | undefined
+{
+    const path = join(root, ".opencode", "plugins", "rpg.js");
+    openCodePlugin ??= readFileSync(new URL("../../plugins/opencode.js", import.meta.url), "utf8");
+    return files().fresh(path) === openCodePlugin ? undefined : { path, text: openCodePlugin };
+}
+
+let openCodePlugin: string | undefined;
+
+/**
+ * Brings up to date the engine's files outside any campaign, in the player's home: Antigravity's own servers, which its app reads for every folder (D-578),
+ * when Antigravity is installed. What could not be written, with how to fix it; undefined when all is in order.
+ */
+export function refreshUserHostFiles(userHome: string, platform: string): string | undefined
+{
+    try {
+        const file = antigravityInstalled(userHome, platform) ? antigravityAppFile(userHome, platform) : undefined;
+
+        if (file !== undefined) {
+            writeHostFile(file);
+        }
+
+        return undefined;
+    } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+    }
+}
+
+/** Whether Antigravity is installed for the player: its app's folder or its command line's in the home, or its program. */
+function antigravityInstalled(userHome: string, platform: string): boolean
+{
+    const program = platform === "win32" ? join(userHome, "AppData", "Local", "agy", "bin", "agy.exe") : join(userHome, ".local", "bin", "agy");
+    return [join(userHome, ".gemini", "antigravity"), join(userHome, ".gemini", "antigravity-cli"), program].some((path) => existsSync(path));
+}
+
+/**
+ * Antigravity's own servers, which its app starts for every folder: the rpg server beside the player's, keeping what they set on it, as disabled tools or its
+ * environment; outside a campaign it routes each conversation to the campaign it plays (D-578). An empty file holds no servers.
+ */
+function antigravityAppFile(userHome: string, platform: string): HostFile | undefined
+{
+    const path = join(userHome, ".gemini", "config", "mcp_config.json");
+
+    if (existsSync(path) && !statSync(path).isFile()) {
+        throw new Error(`${path} is a folder, not Antigravity's settings, so its app cannot be set up for the game: take it away, then run rpg init in the campaign again.`);
+    }
+
+    const text = files().fresh(path);
+    const config = text === undefined || text.trim() === "" ? {} : jsonObject(path, text, "Antigravity's app cannot be set up for the game", "run rpg init in the campaign again");
+    const servers = isObject(config.mcpServers) ? config.mcpServers : {};
+    const before = isObject(servers.rpg) ? servers.rpg : {};
+    const wanted = settingsText({ ...config, mcpServers: { ...servers, rpg: { ...before, ...rpgServer(platform) } } });
+    return text === wanted ? undefined : { path, text: wanted };
+}
 
 /** An effort for the hosts' files (D-462): one the player chose, or app, the player's choice to take it away. */
 type Effort = (typeof efforts)[number] | "app";
@@ -295,8 +396,8 @@ function withTopKey(text: string, key: string, value: string | undefined): strin
     return joined.trimEnd() === plain.trimEnd() ? text : joined;
 }
 
-/** A host's settings file read as a JSON object; refused, with how to fix it, when it is not one. */
-function jsonObject(path: string, text: string, cannot: string): Record<string, unknown>
+/** A host's settings file read as a JSON object; refused, with how to fix it and what to do `then`, when it is not one. */
+function jsonObject(path: string, text: string, cannot: string, then = "try again"): Record<string, unknown>
 {
     let settings: unknown;
 
@@ -307,7 +408,7 @@ function jsonObject(path: string, text: string, cannot: string): Record<string, 
     }
 
     if (!isObject(settings)) {
-        throw new Error(`${path} is not valid JSON, so ${cannot}. Fix it or remove it by hand, then try again.`);
+        throw new Error(`${path} is not valid JSON, so ${cannot}. Fix it or remove it by hand, then ${then}.`);
     }
 
     return settings;

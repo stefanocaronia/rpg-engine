@@ -19,7 +19,7 @@ import { createMcpServer } from "../src/server/mcp.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
 // What init tells the player who made the campaign in a terminal.
-const playLine = "To play, open Claude Code, Codex or Antigravity in this folder and say hello: the master asks you the rest.";
+const playLine = "To play, open Claude Code, Codex, Antigravity or OpenCode in this folder and say hello: the master asks you the rest.";
 
 let folder: string;
 let client: Client;
@@ -55,7 +55,8 @@ describe("MCP server", () => {
 
     it("sends the host to instructions, then status, marks the tools that change nothing, and loads both at once", async () => {
         expect(client.getInstructions()).toContain("call `instructions` (how to be its game master), then `status`");
-        expect(client.getInstructions()!.length).toBeLessThan(512);
+        // Short, as every chat reads it: with the line that sends a chat without the rpg tools to `rpg init` (D-578).
+        expect(client.getInstructions()!.length).toBeLessThan(640);
 
         const { tools } = await client.listTools();
         const tool = (name: string) => tools.find((candidate) => candidate.name === name);

@@ -78,7 +78,7 @@ const problems = new Map<string, GitProblem>();
 function alwaysIgnored(): string[]
 {
     // .gemini/ of the campaigns made before D-493, which it leaves on the disk.
-    return [".agents/", ".claude/", ".codex/", ".gemini/", ".mcp.json", ...hostFileNames, `${inboxFolderName}/`, `${exportsFolderName}/`, `${importsFolderName}/`, installMarkName, `${savesFolderName}/*.txt`, portFileName];
+    return [".agents/", ".claude/", ".codex/", ".gemini/", ".opencode/", ".mcp.json", ...hostFileNames, `${inboxFolderName}/`, `${exportsFolderName}/`, `${importsFolderName}/`, installMarkName, `${savesFolderName}/*.txt`, portFileName];
 }
 
 function pushesTo(root: string): boolean

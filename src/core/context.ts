@@ -94,6 +94,8 @@ export interface Context
     importRunner?: (root: string) => void;
     /** The folder of this player's data on this computer, apart from any campaign: the page's words translated on the fly (D-406). */
     home?: string;
+    /** The user's own home on this computer, where an AI app keeps its settings for every folder, as Antigravity's (D-578); missing in tests. */
+    userHome?: string;
     /** The folder of the dashboard's built page, whose i18n/ lists every phrase it has (D-423). */
     pageFolder?: string;
     /** Codex and Claude Code on this computer, installed and signed in with the player's yes (D-424); missing outside the MCP server, as in tests. */
@@ -201,12 +203,13 @@ export type HelperLogin = { state: "waiting"; link?: string; } | { state: "done"
 
 /**
  * The chat of an MCP server, kept across its calls: the master's calls running now, the Codex thread of the last one, and what the dashboard does as each
- * ends (D-495); whether status has already had the master offer the dashboard, as its first does (D-353).
+ * begins and ends (D-495); whether status has already had the master offer the dashboard, as its first does (D-353).
  */
 export interface ChatState
 {
     calls: number;
     thread?: string;
+    beforeCall?: () => void;
     afterCall?: () => void;
     dashboardOffered?: boolean;
 }
@@ -390,6 +393,7 @@ export function defaultContext(folder = process.cwd()): Context
         extensionFolders: [join(packagesFolder(), "node_modules")],
         unpacked: join(packagesFolder(), "unpacked"),
         home: userDataFolder(),
+        userHome: homedir(),
         bookIndex: join(dirname(packagesFolder()), "library"),
         // The built page is in dist/dashboard, two levels up from src/core/ and from dist/core/ alike.
         pageFolder: fileURLToPath(new URL("../../dist/dashboard/", import.meta.url)),
@@ -414,7 +418,7 @@ export function packagesFolder(): string
 }
 
 /** Where this player's data is kept on this computer (D-406): the folder the system gives a program's data. */
-function userDataFolder(): string
+export function userDataFolder(): string
 {
     const home = homedir();
 

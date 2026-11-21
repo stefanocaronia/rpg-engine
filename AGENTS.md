@@ -26,6 +26,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `src/` | core, CLI, MCP server, the dashboard's server and page (`src/dashboard/`) | yes | built into `dist/` |
 | `systems/` | `free`, the one game system the engine ships; a campaign plays one, required; the others are packages with repos of their own, the 5e `../rpg-engine-5e` and Ironsworn `../rpg-engine-ironsworn`, a test system for now | yes | yes |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |
+| `plugins/` | the engine's plugin for OpenCode, installed into each campaign as `.opencode/plugins/rpg.js` | yes | yes |
 | `test/` | tests, and the fake game system they play, `test/systems/fake` | yes | no |
 | `playtests/` | playtest scenarios: player profiles, starting points, checklists | yes | no |
 | `sandbox/`, `tmp/` | output of automated tests | no | no |

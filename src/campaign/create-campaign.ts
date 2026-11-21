@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { stringify } from "yaml";
 import { z } from "zod";
 import { files } from "../core/store.ts";
-import { campaignFileName, findCampaign, inboxFolderName, sessionsFolderName } from "./find-campaign.ts";
+import { campaignFileName, findCampaign, inboxFolderName, refuseCampaignLinks, sessionsFolderName } from "./find-campaign.ts";
 import { hostFileChanges, type HostInstructions, rpgServer, writeHostFile } from "./host-files.ts";
 import { type CampaignSettings, settingsSchema } from "./settings.ts";
 
@@ -21,7 +21,8 @@ export function createCampaign(folder: string, settings: CampaignSettings, platf
         throw new Error(`The campaign settings are not valid:\n${z.prettifyError(parsed.error)}`);
     }
 
-    const mcpConfig = mcpConfigWithRpg(root, platform);
+    refuseCampaignLinks(root);
+    const mcpConfig = mcpConfigWithRpg(root, platform, "create the campaign again");
     const hostFiles = hostFileChanges(root, instructions, platform);
     files().makeFolder(join(root, sessionsFolderName));
     files().makeFolder(join(root, inboxFolderName));
@@ -33,21 +34,60 @@ export function createCampaign(folder: string, settings: CampaignSettings, platf
     return root;
 }
 
-/** The folder's .mcp.json with the rpg server added; other servers already listed stay. On Windows a host must start rpg through cmd. */
-function mcpConfigWithRpg(root: string, platform: string): { mcpServers?: Record<string, unknown>; }
+/**
+ * Brings the files through which the AI hosts find the game up to date in a campaign that exists, as init does when given its folder again: the rpg server
+ * in .mcp.json when missing, and the host files. A broken settings file of a host, or a link among the folders written, stops it with how to fix it.
+ */
+export function updateHostFiles(root: string, platform: string, instructions: HostInstructions): void
 {
-    const path = join(root, ".mcp.json");
-    let config: { mcpServers?: Record<string, unknown>; } = {};
+    refuseCampaignLinks(root);
+    const again = "run rpg init in this folder again";
+    const before = mcpConfig(root, again);
+    const hostFiles = hostFileChanges(root, instructions, platform);
 
-    if (files().exists(path)) {
-        try {
-            config = JSON.parse(files().text(path) ?? "");
-        } catch {
-            throw new Error(`${path} is not valid JSON, so the rpg server cannot be added to it. Fix it or remove it by hand, then create the campaign again.`);
-        }
+    if (before.mcpServers?.rpg === undefined) {
+        files().write(join(root, ".mcp.json"), JSON.stringify(mcpConfigWithRpg(root, platform, again), null, 2) + "\n");
     }
 
+    hostFiles.forEach(writeHostFile);
+}
+
+/** The folder's .mcp.json with the rpg server added; other servers already listed stay. On Windows a host must start rpg through cmd. */
+function mcpConfigWithRpg(root: string, platform: string, again: string): { mcpServers?: Record<string, unknown>; }
+{
+    const config = mcpConfig(root, again);
     return { ...config, mcpServers: { ...config.mcpServers, rpg: rpgServer(platform) } };
+}
+
+/** The folder's .mcp.json, empty when there is none; refused, with how to fix it and what to do `again` after, when it holds no JSON object of servers. */
+function mcpConfig(root: string, again: string): { mcpServers?: Record<string, unknown>; }
+{
+    const path = join(root, ".mcp.json");
+
+    if (!files().exists(path)) {
+        return {};
+    }
+
+    let config: unknown;
+
+    try {
+        config = JSON.parse(files().text(path) ?? "");
+    } catch {
+        throw new Error(`${path} is not valid JSON, so the rpg server cannot be added to it. Fix it or remove it by hand, then ${again}.`);
+    }
+
+    const servers = isObject(config) ? config.mcpServers : undefined;
+
+    if (!isObject(config) || (servers !== undefined && !isObject(servers))) {
+        throw new Error(`${path} is not a JSON object with its servers under mcpServers, so the rpg server cannot be added to it. Fix it or remove it by hand, then ${again}.`);
+    }
+
+    return config as { mcpServers?: Record<string, unknown>; };
+}
+
+function isObject(value: unknown): value is Record<string, unknown>
+{
+    return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 /** A campaign cannot sit inside another one, nor hold one. */

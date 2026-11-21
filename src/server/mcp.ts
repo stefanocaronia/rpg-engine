@@ -5,8 +5,9 @@ import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequ
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import type { Readable } from "node:stream";
 import { z } from "zod";
-import { chosenPictureMaker, findCampaign, hasCharacterAgent, readTextSetting, refreshHostFiles } from "../campaign/index.ts";
+import { chosenPictureMaker, findCampaign, hasCharacterAgent, readTextSetting, refreshHostFiles, refreshUserHostFiles } from "../campaign/index.ts";
 import { chatFolders } from "../chats/index.ts";
 import { commands } from "../commands/index.ts";
 import { installCampaignSystem } from "../commands/package/install.ts";
@@ -150,13 +151,13 @@ export function createMcpServer(context: Context = defaultContext(), environment
 
 /**
  * Serves the tools over standard input and output, as AI hosts expect, with the files kept for the whole session (D-137, D-193). It ends when the host
- * goes and its input closes: its watchers, or a player's form still waiting, never keep it alive.
+ * goes and its input closes: its watchers, or a player's form still waiting, never keep it alive. `input` is the process's own, or what the router passes on.
  */
-export async function startMcpServer(): Promise<void>
+export async function startMcpServer(input: Readable = process.stdin): Promise<void>
 {
     const leave = (): never => process.exit(0);
-    process.stdin.on("end", leave);
-    process.stdin.on("close", leave);
+    input.on("end", leave);
+    input.on("close", leave);
     // The pictures, by the campaign's choice, else by the chat in use, which names itself as the session starts (D-308, D-572).
     let server: ReturnType<typeof createMcpServer> | undefined;
     const host = (): string | undefined => server?.server.getClientVersion()?.name;
@@ -186,7 +187,7 @@ export async function startMcpServer(): Promise<void>
     server = createMcpServer(served, process.env, dashboardOpener(served, session).open);
     // The extensions' tools are there in the first list the host asks for.
     await firstExtensions.get(server);
-    await server.connect(new StdioServerTransport());
+    await server.connect(new StdioServerTransport(input));
 }
 
 /**
@@ -279,6 +280,11 @@ async function preload(context: Context, session: SessionStore): Promise<void>
                 // An agent written now reaches only the chats after this one (D-490).
                 context.characterAgent = hasCharacterAgent(root);
                 refreshHostFiles(root, hostInstructions(), context.platform);
+
+                if (context.userHome !== undefined) {
+                    refreshUserHostFiles(context.userHome, context.platform);
+                }
+
                 campaignWorld(root, context);
                 // What the last session left, committed as this one starts, where the campaign keeps itself in git (D-576).
                 void commitSessionStart(root, context);
@@ -469,6 +475,7 @@ async function runTool(
     if (chat !== undefined) {
         chat.calls++;
         chat.thread = typeof thread === "string" && thread !== "" ? thread : chat.thread;
+        chat.beforeCall?.();
     }
 
     try {

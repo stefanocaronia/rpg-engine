@@ -1,4 +1,4 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,4c052d2b,8b310594,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,39487445,086f7b8c,da6d0862,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,6bd01b74,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,774591fd,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,fa64227b,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,6ea1911c,b8e71497,32482cb4,65c75baa,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,252805d8,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
 # RPG Engine: la guida completa
 
 **RPG Engine** ti permette di giocare a un gioco di ruolo da tavolo con una **IA come master**. Parli con il master in una **chat**; RPG Engine lavora dietro le quinte: **ricorda il mondo**, **tira i dadi** e **tiene i conti**. Accanto alla chat tieni aperta nel browser una pagina, la **dashboard**, con la tua scheda, i dadi, le mappe e il tuo diario.
@@ -33,85 +33,88 @@ Un gioco arriva come sistema di gioco, un pacchetto che il master installa per l
 
 ---
 
-## 2. Per cominciare <!-- icon: path -->
+## 2. Per iniziare <!-- icon: path -->
 
 ### 2.1 Cosa ti serve
 
 - Un computer con Windows, macOS o Linux, e un browser.
-- **Node.js 24** o più recente, da [nodejs.org](https://nodejs.org). Porta con sé `npm`, che installa RPG Engine.
-- Un **terminale**: su Windows, Terminale o PowerShell; su macOS, Terminale. Per aprirne uno in una cartella, clic destro sulla cartella e **Apri nel terminale** (Windows) o **Servizi > Nuovo terminale nella cartella** (macOS). Se Windows risponde che l'esecuzione di script è disabilitata, scrivi una volta `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e rispondi di sì.
-- Un **agente IA** per il master ([2.4](#24-connect-your-ai)), con il **modello più grande** che offre: un modello piccolo si lascia convincere più facilmente a svelare segreti o a piegare le regole.
+- **Node.js 24** o più recente, da [nodejs.org](https://nodejs.org). Include `npm`, che installa RPG Engine.
+- Un **terminale**: su Windows, Terminale o PowerShell; su macOS, Terminale. Per aprirne uno in una cartella, fai clic con il tasto destro sulla cartella e scegli **Apri in Terminale** (Windows) o **Servizi > Nuovo Terminale nella cartella** (macOS). Se Windows risponde che l'esecuzione degli script è disattivata, scrivi una volta `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e rispondi di sì.
+- Un **agente AI** per il master ([2.4](#24-connect-your-ai)), con il **modello più grande** che offre: un modello piccolo si lascia convincere più facilmente a rivelare segreti o a piegare le regole.
 
-### 2.2 Installare
+### 2.2 Installazione
 
 ```text
 npm install -g rpg-engine
 ```
 
-`rpg --version` controlla che abbia funzionato. Se npm si offre di aggiornarsi da solo, puoi ignorarlo. Usi `rpg` una volta per campagna, per crearla; dopo, il tuo agente avvia RPG Engine da solo. `rpg` da solo non apre niente: la dashboard te la dà il master.
+Con `rpg --version` controlli che sia andato tutto bene. Se npm propone di aggiornarsi, puoi ignorarlo. Usi `rpg` una volta per campagna, per crearla; dopo, il tuo agente avvia RPG Engine da solo. `rpg` da solo non apre niente: la dashboard te la dà il master.
 
 ### 2.3 Creare una campagna
 
-Apri un terminale nella cartella dove tieni i tuoi giochi (come, lo dice la [2.1](#21-what-you-need)):
+Apri un terminale nella cartella dove tieni i tuoi giochi ([2.1](#21-what-you-need) spiega come):
 
 ```text
 rpg init "The Salt Isles"
 ```
 
-Crea la cartella `The Salt Isles` con dentro una campagna nuova; entraci con `cd "The Salt Isles"`. Scrivi sempre il nome: senza, la cartella in cui ti trovi diventa la campagna, accanto a tutto ciò che contiene già. Ricorda dov'è: ci torni ogni volta che giochi. Tutto il resto lo scegli dopo, in chat o sulla dashboard.
+Questo crea la cartella `The Salt Isles` con una nuova campagna dentro; entraci con `cd "The Salt Isles"`. Scrivi sempre il nome: senza, la cartella in cui ti trovi diventa la campagna, accanto a tutto quello che contiene già. Ricorda dove si trova: ci torni ogni volta che giochi. Tutto il resto lo scegli dopo, nella chat o nella dashboard.
 
-Il master non può creare una campagna per te: prima di `init`, niente dice al tuo agente dov'è RPG Engine.
+Il master non può creare una campagna al posto tuo: prima di `init`, niente dice al tuo agente dove si trova RPG Engine.
 
-### 2.4 Collegare la tua IA
+### 2.4 Collegare la tua AI
 
-Il master gira in un **agente IA**: un'app di IA, nel terminale o sul desktop, che sa lavorare con i file del tuo computer, come Claude Code, Codex o Antigravity. Una chat semplice come claude.ai o ChatGPT, o un'app del telefono, non basta: il master deve arrivare ai file della campagna sul tuo computer. Ogni agente vuole il suo piano e il suo accesso: Claude Code un piano Claude a pagamento, Codex un accesso ChatGPT, Antigravity un account Google, il cui piano gratuito ha una piccola quota settimanale. Si installa una volta sola, dalla sua pagina: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google).
+Il master gira in un **agente AI**: un'app AI, nel terminale o sul desktop, che può lavorare con i file del tuo computer, come Claude Code, Codex, Antigravity o OpenCode. Una chat semplice come claude.ai o ChatGPT, o un'app per telefono, non basta: il master deve poter raggiungere i file della campagna sul tuo computer. Ogni agente ha bisogno del suo piano e del suo accesso: Claude Code di un piano Claude a pagamento, Codex di un accesso ChatGPT, Antigravity di un account Google, il cui piano gratuito ha una piccola quota settimanale; OpenCode funziona con i modelli che gli dai, anche quelli locali. Lo installi una volta sola, dalla sua pagina: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
 
-- **Claude Code**: nella cartella della campagna scrivi `claude`. Quando chiede se ti fidi della cartella, scegli **Yes, I trust this folder**; attento, la risposta già selezionata è *No, exit*. La campagna ha anche un piccolo hook, `rpg --listen`, che la domanda non mostra: avvisa subito il master quando agisci dalla dashboard.
-- **Codex**: nella cartella della campagna scrivi `codex`, e rispondi di sì quando chiede se ti fidi della cartella. Nella sua app desktop, controlla nelle impostazioni che le memorie siano spente per le chat del gioco.
-- **Antigravity**: nella cartella della campagna scrivi `agy`, e rispondi di sì se chiede se ti fidi della cartella. La campagna ha un piccolo hook, `rpg --approve`, che lascia al master gli strumenti di RPG Engine senza chiederti ogni volta. Il master dipinge le immagini da sé, nella chat. Antigravity conserva le tue chat passate, e la sua memoria non si può spegnere: al master è detto di non leggerle mai. Ciò che scrivi va a Google, che può farlo leggere a delle persone: tieni fuori dal gioco i dati personali. RPG Engine non è un prodotto Google.
-- **Un altro agente**: avvialo nella cartella della campagna e dagli il server MCP `rpg mcp`. RPG Engine è un server MCP standard: qualsiasi agente che supporta MCP può fare il master, anche uno locale.
+- **Claude Code**: nella cartella della campagna scrivi `claude`. Quando chiede se ti fidi della cartella, scegli **Yes, I trust this folder**; attenzione, la risposta già selezionata è *No, exit*. La campagna ha anche un piccolo hook, `rpg --listen`, che la domanda non mostra: avvisa subito il master quando agisci dalla dashboard.
+- **Codex**: nella cartella della campagna scrivi `codex` e rispondi di sì quando chiede se ti fidi della cartella. Nella sua app desktop, controlla nelle impostazioni che le memorie siano disattivate per le chat del gioco.
+- **Antigravity**: nella cartella della campagna scrivi `agy` e rispondi di sì se chiede se ti fidi della cartella; oppure, nella sua app, apri la cartella della campagna. Per l'app, RPG Engine si aggiunge anche alle impostazioni di Antigravity, `.gemini/config/mcp_config.json` nella tua home, che valgono per ogni cartella che apri, non solo per quella della campagna: fuori da una campagna non fa nulla. La campagna ha due piccoli hook: `rpg --approve` lascia che il master usi gli strumenti di RPG Engine senza chiederti ogni volta il permesso, e `rpg --listen` avvisa subito il master quando agisci dalla dashboard. Il master dipinge le immagini direttamente nella chat. Antigravity conserva le tue chat passate e la sua memoria non si può disattivare: al master viene detto di non leggerle mai. Quello che scrivi va a Google, che potrebbe farlo leggere a delle persone: tieni i dati personali fuori dal gioco. RPG Engine non è un prodotto Google.
+- **OpenCode**: nella cartella della campagna scrivi `opencode`. La campagna ha un piccolo plugin, `.opencode/plugins/rpg.js`, che avvisa subito il master quando agisci dalla dashboard. Nella campagna il master scrive i file solo attraverso RPG Engine: la scrittura e la modifica dei file di OpenCode stesso lì sono spente, e prima di lanciare un comando te lo chiede.
+- **Un altro agente**: avvialo nella cartella della campagna e dagli il server MCP `rpg mcp`. RPG Engine è un normale server MCP: qualsiasi agente che supporti MCP può fare da master, anche quelli locali.
 
-Noi lo giochiamo e lo proviamo con **Claude Code**; **Codex** e **Antigravity** sono collegati e verificati, ma non ci abbiamo ancora giocato una campagna intera. La campagna spegne la memoria propria dell'agente: il gioco vive nei suoi file, così tornare a un salvataggio torna davvero indietro.
+Se il master dice di non trovare gli strumenti di RPG Engine, scrivi `rpg init` nella cartella della campagna: in una cartella che è già una campagna aggiorna soltanto questi file; poi apri una nuova chat.
+
+Noi giochiamo e proviamo con **Claude Code**; **Codex** e **Antigravity** sono collegati e verificati, ma con loro non è ancora stata giocata una campagna intera. La campagna disattiva la memoria propria dell'agente: il gioco vive nei suoi file, così tornare a un salvataggio significa davvero tornare indietro.
 
 ### 2.5 La prima chat
 
-Scrivi qualsiasi cosa, come *Ciao! Cominciamo.* Nella prima risposta di ogni chat il master ti dà il **link alla tua dashboard**, qualcosa come `http://127.0.0.1:4750`: aprilo e tienilo accanto alla chat.
+Scrivi quello che vuoi, per esempio *Ciao! Iniziamo.* Nella sua prima risposta di ogni chat il master ti dà il **link alla tua dashboard**, qualcosa come `http://127.0.0.1:4750`: aprilo e tienilo accanto alla chat.
 
-Tra i messaggi del master il tuo agente mostra i tool che usa: non aprirne i dettagli (in Claude Code, ctrl+o), possono mostrare dei segreti.
+Tra un messaggio e l'altro del master, il tuo agente mostra gli strumenti che usa: non aprirne i dettagli (in Claude Code, ctrl+o), perché possono mostrare segreti.
 
-Una campagna nuova passa per tre fasi, che la dashboard mostra in alto: **1 Impostazioni** (come vuoi giocare), **2 Sessione zero** (crei il tuo personaggio, giocando), **3 Gioco**.
+Una nuova campagna passa per tre fasi, mostrate in cima alla dashboard: **1 Impostazioni** (come vuoi giocare), **2 Sessione zero** (crei il tuo personaggio, giocando), **3 Gioco**.
 
 ### 2.6 Impostazioni: scegliere come giocare
 
-Il master chiede solo ciò che manca, poche domande alla volta; il passo **Impostazioni** della dashboard mostra le stesse domande come carte. Scrivi "decidi tu" e il master sceglie. Tutto si può cambiare dopo, in chat o nelle **Impostazioni**.
+Il master chiede solo ciò che manca ancora, poche domande alla volta; il passo **Impostazioni** della dashboard mostra le stesse domande come schede. Scrivi "decidi tu" e il master sceglie. Tutto si può cambiare dopo, nella chat o in **Impostazioni**.
 
 | Impostazione | Cosa decide | Valori |
 |---|---|---|
 | **Mentore** | Quanto il master ti insegna le regole | spento, suggerimenti, tutorial |
 | **Difficoltà** | Quanto è duro il mondo | storia, facile, normale, difficile, brutale |
-| **Letalità** | Cosa vuol dire cadere in uno scontro | narrativa (non si muore), epica (solo quando conta), dadi |
+| **Letalità** | Cosa significa cadere in uno scontro | narrativa (non si muore mai), epica (solo quando conta), dadi |
 | **Salvataggi** | Quando puoi tornare indietro | morte permanente, checkpoint, libero ([3.8](#38-saves-and-going-back)) |
-| **Rigore** | Quanto cibo, luce e viaggi seguono le regole | scorrevole, regole, simulazione |
+| **Rigore** | Quanto cibo, luce e viaggio seguono da vicino le regole | fluido, regole, simulazione |
 | **Dadi** | Chi tira i tuoi dadi | digitali, fisici |
-| **Unità di misura** | Distanze e pesi | metrico, imperiale |
-| **Voci dei personaggi** | Chi dà voce ai personaggi che incontri, dal master ai personaggi: sempre il master; nei momenti chiave il personaggio stesso, che sa solo ciò che sa, quando il master lo sceglie; oppure sempre il personaggio, per i principali o per tutti, più lento e costoso, dove la tua app di IA lo permette | il master, a volte, i principali, tutti |
-| **Il tuo personaggio** | Come si crea il tuo personaggio nella sessione zero | con il master, dal master, il tuo ([2.7](#27-session-zero-your-character)) |
-| **Compagni** | Chi viaggia con te | nessuno, creati con te, fatti dal master, incontrati in gioco |
-| **Immagini** | Immagini di luoghi, missioni e di chi incontri | niente, su richiesta, nuovi luoghi, missioni e chi incontri ([3.11](#311-pictures)) |
-| **Linee** e **Veli** | Cosa non compare mai, e cosa succede solo fuori scena | elenchi |
+| **Unità di misura** | Distanze e pesi | metriche, imperiali |
+| **Voci dei personaggi** | Chi parla per i personaggi che incontri, dal master ai personaggi stessi: sempre il master; nei momenti chiave il personaggio in persona, che sa solo ciò che sa lui, a scelta del master; oppure sempre il personaggio, per quelli principali o per tutti, in modo più lento e più costoso, dove la tua app AI lo permette | il master, a volte, personaggi principali, tutti |
+| **Il tuo personaggio** | Come viene creato il tuo personaggio nella sessione zero | con il master, dal master, il tuo ([2.7](#27-session-zero-your-character)) |
+| **Compagni** | Chi viaggia con te | nessuno, creati con te, creati dal master, incontrati giocando |
+| **Immagini** | Immagini di luoghi, missioni e di chi incontri | nessuna, su richiesta, nuovi luoghi, missioni e chi incontri ([3.11](#311-pictures)) |
+| **Linee** e **Veli** | Ciò che non appare mai e ciò che accade solo fuori scena | elenchi |
 | **Lingua** | La lingua del gioco e della dashboard | qualsiasi |
 
-La quinta edizione aggiunge l'**avanzamento**: punti esperienza o traguardi.
+La quinta edizione aggiunge l'**avanzamento**: punti esperienza o tappe.
 
-Senza un mondo scritto, il master chiede anche una **premessa** (genere, tono, qualche elemento e cosa ti piace di più in un gioco, come gli scontri, i misteri, le conversazioni o l'esplorazione, con parole tue), la **preparazione**: costruire il mondo al momento, man mano, o tutto all'inizio; e la **durata**: una sera, qualche sessione (da tre a cinque serate), o senza fine, un'avventura dopo l'altra. Alla fine di una storia con una durata puoi sempre continuare.
+Se non c'è un mondo già scritto, il master chiede anche una **Premessa** (genere, tono, qualche elemento e ciò che ti piace di più in un gioco, come scontri, misteri, dialoghi o esplorazione, **A parole tue**), la **Preparazione**: costruire il mondo al volo, man mano, oppure tutto all'inizio; e la **Durata**: una sera, qualche sessione (da tre a cinque sere), oppure aperta, un'avventura dopo l'altra. Alla fine di una storia con una durata puoi sempre continuare.
 
-**Lo stile del master** non viene chiesto, ma puoi cambiarlo in chat o nelle **Impostazioni**: la **narrazione** (asciutta, letteraria, pulp, ironica), le **storie** che inventa (situazioni, archi, episodi, mistero), **scrivi come** un autore, o altro **a parole tue**.
+**Lo stile del master** non viene mai chiesto, ma puoi cambiarlo nella chat o in **Impostazioni**: la **Narrazione** (sobria, letteraria, pulp, ironica), le **Storie** che inventa (situazioni, archi, episodi, mistero), un autore da cui **Scrivi come**, o qualsiasi altra cosa **A parole tue**.
 
 ### 2.7 Sessione zero: il tuo personaggio
 
-Crei il tuo personaggio con il master, come al tavolo. Ogni scelta è tua, a meno che tu non chieda al master di farla: vieni con un'idea completa, una vaga, o nessuna; oppure chiedi al master di fare tutto partendo da poche parole. In un gioco con i livelli il master ti chiede da quale livello parti: il primo, a meno che tu non ne voglia un altro. Il master ti dice come si calcolano le caratteristiche prima di tirare qualsiasi dado. La tua storia non è mai obbligatoria; se ne dai una, il master la scrive con le tue parole. Poi il master ti chiede un'immagine del tuo personaggio ([3.7](#37-your-characters-story-and-picture)). La scheda la calcola RPG Engine: tu non fai mai i conti.
+Crei il tuo personaggio insieme al master, come a un tavolo. Ogni scelta è tua, a meno che tu non chieda al master di farla: puoi arrivare con un'idea completa, con una vaga o con niente; oppure chiedere al master di creare tutto partendo da poche parole. In un gioco con i livelli il master ti chiede da quale livello vuoi partire: il primo, a meno che tu non ne voglia un altro. Il master ti spiega come si determinano i punteggi di caratteristica prima che venga tirato qualsiasi dado. La tua storia non è mai obbligatoria; se ne dai una, il master la scrive con le tue parole. Poi il master ti chiede un'immagine del tuo personaggio ([3.7](#37-your-characters-story-and-picture)). RPG Engine calcola la scheda: i conti non li fai mai tu.
 
-Hai già un personaggio, di un altro gioco o di un'altra campagna? Scegli **Ce l'ho già** nelle **Impostazioni** e dallo al master: incolla la scheda in chat, oppure di' dove si trova il suo file sul tuo computer (un PDF, un'immagine, un testo). Il master lo scrive così com'è, al suo livello, lo confronta con le regole e con il mondo, e concorda con te tutto ciò che non torna.
+Hai già un personaggio, di un altro gioco o di un'altra campagna? Scegli **Ce l'ho già** nella configurazione e consegnalo al master: incolla la scheda nella chat, oppure di' dove si trova il suo file sul tuo computer (un PDF, un'immagine, un testo). Il master lo scrive così com'è, al suo livello, lo confronta con le regole e con il mondo, e concorda con te tutto ciò che non torna.
 
 ---
 

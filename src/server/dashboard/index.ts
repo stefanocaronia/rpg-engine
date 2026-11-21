@@ -43,7 +43,7 @@ import {
     themesAddress,
     vendorModule,
 } from "./files.ts";
-import { act, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
+import { act, callBegins, deliverActs, keepProblems, listenForBell, notes, pageNews, setupWord, story } from "./news.ts";
 import { givePicture } from "./pictures.ts";
 import { answerAsked, type Asked, closeCard, listenForChanges, pagePlayer, pageSeen, rollNamesOf, type ShownCard, spendShown } from "./player.ts";
 import { answers, campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
@@ -94,6 +94,8 @@ export interface DashboardOptions
     pageHidden?: number;
     /** Codex's queue for the player's sentences (D-495): Codex's own command, else a fake in the tests. */
     queue?: CodexQueue;
+    /** How long sentences given to a hook that speaks them wait for the master's next call before they are given back, in ms (D-578). */
+    heldFor?: number;
 }
 
 /** Codex's queue: whether this computer has the command, and a message queued in a thread, as the player's own (D-495). */
@@ -117,6 +119,9 @@ const pageReturn = 5000;
 
 // How long a question waits on pages that are open but that no one sees, as one in a tab behind, before it goes to the form or to words (D-455).
 const pageHidden = 5000;
+
+// How long the sentences given to OpenCode's hook wait for a call of the master before they are given back (D-578).
+const heldFor = 60_000;
 
 // How often the server looks at an import under way, for the pages to tell how far it is (D-491 (11)).
 const importLookEvery = 2000;
@@ -182,6 +187,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 acts: newActs(),
                 others: new Map<string, number>(),
                 queue: options.queue ?? codexQueue(),
+                heldFor: options.heldFor ?? heldFor,
             };
             return serve(server, served);
         }
@@ -279,9 +285,16 @@ export interface Served
     acts: Acts;
     /** The other chats of the campaign that wait for its page, by session, with when each last asked (D-577). */
     others: Map<string, number>;
-    /** The doorbell of Claude Code's hook, waiting for a sentence; and whether one ever came, so that this chat has one (D-495). */
+    /**
+     * The doorbell's hook, waiting for a sentence; whether it asked for the player's words, as OpenCode's does (D-578); whether one ever came, so that this chat
+     * has one (D-495); and whether the last went away without a ring, as when the chat was stopped, until a hook or a call of the master comes again.
+     */
     bell?: ServerResponse;
+    bellWords?: boolean;
     belled?: boolean;
+    bellGone?: boolean;
+    /** How long sentences given to a hook wait for the master's next call, in ms (D-578). */
+    heldFor: number;
     /** Codex's queue, and the sentences being put in it now (D-495). */
     queue: CodexQueue;
     queueing?: Promise<void>;
@@ -327,6 +340,7 @@ function serve(server: Server, served: Served): Dashboard
     const chat = served.context.chat;
 
     if (chat !== undefined) {
+        chat.beforeCall = () => callBegins(served);
         chat.afterCall = () => deliverActs(served);
     }
 
@@ -375,6 +389,7 @@ function serve(server: Server, served: Served): Dashboard
                 served.bell?.end("gone");
 
                 if (chat !== undefined) {
+                    chat.beforeCall = undefined;
                     chat.afterCall = undefined;
                 }
 

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { ChatState, Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { bellLine, waitForBell } from "../src/server/bell-listener.ts";
+import { bellHeard, bellLine, waitForBell } from "../src/server/bell/index.ts";
 import { type Dashboard, startDashboard } from "../src/server/dashboard/index.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
@@ -46,7 +46,8 @@ beforeEach(async () => {
             return codexTakes;
         },
     };
-    const started = await startDashboard(served, session, { ports: [0], page: folder, queue });
+    // Sentences given to a hook wait so long for a call of the master before they come back (D-578).
+    const started = await startDashboard(served, session, { ports: [0], page: folder, queue, heldFor: 300 });
 
     if (started === undefined) {
         throw new Error("The dashboard did not start.");
@@ -61,6 +62,11 @@ afterEach(async () => {
     session.close();
     removeFolder(folder);
 });
+
+async function write(...args: string[]): Promise<void>
+{
+    expect((await runCommandLine(["write", ...args], context)).exitCode).toBe(0);
+}
 
 function send(method: string, path: string, body?: unknown): Promise<{ status: number; body: string; }>
 {
@@ -198,6 +204,125 @@ describe("the player's sentences on the dashboard (D-495)", () => {
         expect(await newer).toBe(true);
     });
 
+    it("bring OpenCode's hook the sentences themselves, held until a call of the master begins, with what the character knows of their thing; never one taken back (D-578)", async () => {
+        const words = (): ReturnType<typeof bellHeard> => bellHeard(JSON.stringify({ session_id: "s1", cwd: folder }), { ports: [port], words: true });
+
+        // A hook that waits hears the sentence as the player says it: held, no longer taken back, and heard once the master's next call begins.
+        const waiting = words();
+        await expect.poll(async () => (await shown()).bell).toBe(true);
+        const first = await say("Attacco Brigante incappucciato 1 con Mazza.");
+        expect(await waiting).toEqual({ rang: true, words: "Attacco Brigante incappucciato 1 con Mazza." });
+        expect((await shown()).pending.map((one) => one.id)).toEqual([first]);
+        expect((await send("POST", "/api/act", { withdraw: first })).status).toBe(409);
+        chat.beforeCall?.();
+        expect(dashboard.news().lines).toEqual([]);
+        expect(await shown()).toMatchObject({ pending: [], heard: [first] });
+
+        // Those waiting as the hook comes, in order, but one taken back.
+        await say("Parlo con Varro.");
+        const withdrawn = await say("Fuggo.");
+        expect((await send("POST", "/api/act", { withdraw: withdrawn })).status).toBe(200);
+        await write("Plettro", "--type", "item", "--text", "Un plettro d'osso.");
+        await write("Ettore", "--type", "character", "--set", "role=pc", "--add", "inventory=[[Plettro]]");
+        expect((await send("POST", "/api/act", { text: "Uso Plettro.", item: "Plettro" })).status).toBe(202);
+        const heard = await words();
+        expect(heard.words).toBe("Parlo con Varro.\n\nUso Plettro.\n\nWhat Ettore already knows of Plettro, from its page:\n> Un plettro d'osso.\nNarrate as found only what this does not say.");
+        chat.beforeCall?.();
+        expect((await shown()).pending).toEqual([]);
+
+        // A hook that asks for no words hears the bell alone, and the sentence waits for the master's call.
+        const plain = bellHeard(JSON.stringify({ session_id: "s1", cwd: folder }), { ports: [port] });
+        await new Promise((done) => setTimeout(done, 50));
+        await say("Imbraccio Scudo.");
+        expect(await plain).toEqual({ rang: true });
+        expect((await shown()).pending.map((one) => one.text)).toEqual(["Imbraccio Scudo."]);
+    });
+
+    it("never say twice the sentences OpenCode's hook took, however late the master's call begins (r7.mjs)", async () => {
+        const words = (): ReturnType<typeof bellHeard> => bellHeard(JSON.stringify({ session_id: "s1", cwd: folder }), { ports: [port], words: true });
+        const waiting = words();
+        await expect.poll(async () => (await shown()).bell).toBe(true);
+        const id = await say("Apro la porta.");
+        expect((await waiting).words).toBe("Apro la porta.");
+        // Not at the head of a call yet: the chat has them as the player's message.
+        expect(dashboard.news().lines).toEqual([]);
+
+        // Past the wait with no call, as with a slow model: they are in the chat already, so they neither wait again nor ring the next hook.
+        await new Promise((done) => setTimeout(done, 700));
+        expect((await shown()).pending).toEqual([expect.objectContaining({ id, taken: true })]);
+        const next = words();
+        const again = await say("Chiudo la porta.");
+        expect((await next).words).toBe("Chiudo la porta.");
+
+        // The call that begins makes them heard, and its head repeats neither.
+        chat.beforeCall?.();
+        expect(dashboard.news().lines).toEqual([]);
+        expect(await shown()).toMatchObject({ pending: [], heard: expect.arrayContaining([id, again]) });
+    });
+
+    it("bring the master's next call a sentence given to OpenCode's hook that never said it took it, as one killed meanwhile (r4.mjs)", async () => {
+        const said = new Promise<string>((done) => {
+            request({ host: "127.0.0.1", port, path: "/api/bell?words" }, (response) => {
+                let text = "";
+                response.setEncoding("utf8");
+                response.on("data", (chunk: string) => (text += chunk));
+                response.on("end", () => done(text));
+            }).end();
+        });
+        await expect.poll(async () => (await shown()).bell).toBe(true);
+        const id = await say("Chiudo la porta.");
+        expect(await said).toBe(`ring ${id}\nChiudo la porta.`);
+        // Never taken, and no call within the wait: it waits again, for the next hook or the next call.
+        await expect.poll(async () => (await shown()).pending.map((one) => one.id), { timeout: 2000 }).toEqual([id]);
+        chat.beforeCall?.();
+        expect(dashboard.news().lines).toEqual([expect.stringContaining("> Chiudo la porta.")]);
+        expect((await shown()).heard).toContain(id);
+    });
+
+    it("let the page offer to copy a sentence while the chat's hook went away without a ring, as when the chat was stopped, until a hook or a call comes again", async () => {
+        // A hook that waits, then goes, as Esc ends it.
+        const gone = request({ host: "127.0.0.1", port, path: "/api/bell" });
+        gone.on("error", () => undefined).end();
+        await expect.poll(async () => (await shown()).bell).toBe(true);
+        gone.destroy();
+        await expect.poll(async () => (await shown()).bell).toBe(false);
+
+        // A call of the master, or a new hook, and the page rings again.
+        chat.beforeCall?.();
+        expect((await shown()).bell).toBe(true);
+        const waits = request({ host: "127.0.0.1", port, path: "/api/bell" });
+        waits.on("error", () => undefined).end();
+        await new Promise((done) => setTimeout(done, 50));
+        waits.destroy();
+        await expect.poll(async () => (await shown()).bell).toBe(false);
+        const back = listen();
+        await expect.poll(async () => (await shown()).bell).toBe(true);
+        await say("Uso Torce.");
+        expect(await back).toBe(true);
+    });
+
+    it("never offer to copy in Claude Code's cycle: the hook waits, rings, the turn's call, the hook again", async () => {
+        const seen: boolean[] = [];
+        const look = async (): Promise<void> => void seen.push((await shown()).bell);
+
+        for (const text of ["Uno.", "Due.", "Tre."]) {
+            const waiting = listen();
+            await expect.poll(async () => (await shown()).bell).toBe(true);
+            await look();
+            await say(text);
+            expect(await waiting).toBe(true);
+            await look();
+            chat.calls = 1;
+            chat.beforeCall?.();
+            await look();
+            dashboard.news();
+            chat.calls = 0;
+            chat.afterCall?.();
+            await look();
+        }
+
+        expect(seen.every((one) => one)).toBe(true);
+    });
     it("wait for hours, past the five seconds Node gives an idle connection", async () => {
         const waiting = listen();
         await new Promise((done) => setTimeout(done, 6000));
@@ -209,7 +334,7 @@ describe("the player's sentences on the dashboard (D-495)", () => {
         expect(await waitForBell(JSON.stringify({ cwd: makeTempFolder() }), [port])).toBe(false);
         const other = makeTempFolder();
         expect((await runCommandLine(["init", "--name", "Altrove"], testContext(other))).exitCode).toBe(0);
-        expect(await waitForBell(JSON.stringify({ session_id: "s1", cwd: other }), [port])).toBe(false);
+        expect(await waitForBell(JSON.stringify({ session_id: "s1", cwd: other }), [port], { every: 0, times: 0 })).toBe(false);
         removeFolder(other);
     });
 

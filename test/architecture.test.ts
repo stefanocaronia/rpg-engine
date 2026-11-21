@@ -61,6 +61,12 @@ describe("architecture", () => {
             // A game system's theme of the dashboard, read in its package's folder (D-528).
             "themes/theme.ts",
             "campaign/create-campaign.ts",
+            // OpenCode's plugin, read from the package, and whether Antigravity is installed (D-578).
+            "campaign/host-files.ts",
+            // Antigravity's own history and log, outside the campaign, which tell the doorbell the player wrote in the chat (D-578).
+            "server/bell/antigravity.ts",
+            // Which campaign each conversation of Antigravity's app plays, in the player's data folder, for the router (D-578).
+            "server/route/notes.ts",
             // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
             "campaign/last-choices.ts",
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).

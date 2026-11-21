@@ -9,12 +9,18 @@ export interface Act
     /** The thing of the sheet it starts from, by its page, whose known text the master hears with it (T-218). */
     item?: string;
     rung?: boolean;
+    /** Held for a hook that speaks it as the player: whether the hook said it took it (D-578). */
+    taken?: boolean;
 }
 
-/** The sentences said and not yet heard, in order, and the ids of those heard lately, for the page to tell. */
+/**
+ * The sentences said and not yet heard, in order; those given to a hook that speaks them as the player, held until the master's next call begins (D-578);
+ * and the ids of those heard lately, for the page to tell.
+ */
 export interface Acts
 {
     pending: Act[];
+    held: Act[];
     heard: string[];
 }
 
@@ -26,7 +32,7 @@ const unseen = /[\u0000-\u001f\u007f]+/g;
 
 export function newActs(): Acts
 {
-    return { pending: [], heard: [] };
+    return { pending: [], held: [], heard: [] };
 }
 
 /** The player's words as one sentence: what does not show taken away, every break a space; empty when nothing is left. */
@@ -41,7 +47,7 @@ export function withdrawAct(acts: Acts, id: string): "withdrawn" | "heard" | "un
     const index = acts.pending.findIndex((act) => act.id === id);
 
     if (index === -1) {
-        return acts.heard.includes(id) ? "heard" : "unknown";
+        return acts.heard.includes(id) || acts.held.some((act) => act.id === id) ? "heard" : "unknown";
     }
 
     // The doorbell rang for it: the master is called, and would find nothing.
@@ -64,6 +70,52 @@ export function markHeard(acts: Acts, ids: string[]): void
 {
     acts.pending = acts.pending.filter((act) => !ids.includes(act.id));
     acts.heard = [...acts.heard.filter((id) => !ids.includes(id)), ...ids].slice(-heardKept);
+}
+
+/** Holds the sentences waiting, as given to a hook that speaks them as the player, until it says it took them, then until the master's next call begins. */
+export function holdActs(acts: Acts): Act[]
+{
+    const taken = acts.pending;
+    acts.pending = [];
+    acts.held = [...acts.held, ...taken.map((act) => ({ ...act, rung: true, taken: false }))];
+    return taken;
+}
+
+/** Marks held sentences as taken by the hook they were given to: they are on their way to the chat. */
+export function takeHeld(acts: Acts, ids: string[]): void
+{
+    acts.held = acts.held.map((act) => (ids.includes(act.id) ? { ...act, taken: true } : act));
+}
+
+/**
+ * As a call of the master begins: the held sentences their hook took are heard; those it never took, as from a hook killed meanwhile, go back to the head of
+ * those waiting, for this call to take.
+ */
+export function hearHeld(acts: Acts): void
+{
+    const held = acts.held;
+    acts.held = [];
+    markHeard(acts, held.filter((act) => act.taken === true).map((act) => act.id));
+    acts.pending = [...held.filter((act) => act.taken !== true).map(waiting), ...acts.pending];
+}
+
+/**
+ * Gives the held sentences among `ids` that the hook never took back to the head of those waiting, as the master never began a call after them; whether any
+ * came back. One the hook took is in the chat already, however long the master takes to call: given back, it would be said twice.
+ */
+export function giveBackHeld(acts: Acts, ids: string[]): boolean
+{
+    const back = acts.held.filter((act) => ids.includes(act.id) && act.taken !== true);
+    acts.held = acts.held.filter((act) => !back.includes(act));
+    acts.pending = [...back.map(waiting), ...acts.pending];
+    return back.length > 0;
+}
+
+/** A held sentence as one waiting again, neither rung for nor taken. */
+function waiting(act: Act): Act
+{
+    const { rung: _, taken: __, ...rest } = act;
+    return rest;
 }
 
 /** Gives a sentence back to the head of those waiting, as one Codex never took. */

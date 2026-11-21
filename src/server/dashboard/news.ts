@@ -13,7 +13,7 @@ import { comparableText } from "../../core/text.ts";
 import { codexClient } from "../../helpers/index.ts";
 import { playerCharacters } from "../../pages/index.ts";
 import { type Note, readNotes, removeNote, writeNote } from "../../player-notes/index.ts";
-import { type Acts, actText, giveBackAct, markHeard, markRung, takeActs, withdrawAct } from "../player-acts.ts";
+import { type Acts, actText, giveBackAct, giveBackHeld, hearHeld, holdActs, markHeard, markRung, takeActs, takeHeld, withdrawAct } from "../player-acts.ts";
 import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
 import type { Served } from "./index.ts";
 
@@ -297,16 +297,62 @@ export function deliverActs(served: Served): void
     }
 
     if (served.bell !== undefined) {
-        markRung(served.acts);
-        served.bell.end("ring");
+        ringBell(served, served.bell, served.bellWords === true);
         served.bell = undefined;
         served.notify();
     }
 }
 
 /**
+ * Rings for a hook: "ring" alone, the sentences marked rung for the master's next call; or, for a hook that asked for the player's words, "ring" with them on the
+ * next lines, with what the character knows of the thing each names (D-578): held until the hook says it took them, then heard once a call of the master
+ * begins; given back to those waiting when a call begins before the hook took them, as when it was killed, or none begins within `heldFor`.
+ */
+function ringBell(served: Served, response: ServerResponse, words: boolean): void
+{
+    // A hook gone a moment ago takes nothing: the sentences wait for the next hook, or the master's next call.
+    if (response.destroyed) {
+        return;
+    }
+
+    if (!words) {
+        markRung(served.acts);
+        response.end("ring");
+        return;
+    }
+
+    const taken = holdActs(served.acts);
+    const ids = taken.map((one) => one.id);
+    const texts = taken.map((one) => {
+        const known = one.item === undefined ? undefined : knownOfThing(served, one.item);
+        return known === undefined ? one.text : `${one.text}\n\n${known}`;
+    });
+
+    // The hook says it took them by their ids, which come on the first line.
+    response.end(`ring ${ids.join(",")}\n${texts.join("\n\n")}`);
+    setTimeout(() => {
+        if (giveBackHeld(served.acts, ids)) {
+            served.notify();
+            deliverActs(served);
+        }
+    }, served.heldFor).unref();
+}
+
+/** As a call of the master begins: the sentences held for it are heard, and the chat listens again, whatever its last hook did. */
+export function callBegins(served: Served): void
+{
+    const changed = served.acts.held.length > 0 || served.bellGone === true;
+    hearHeld(served.acts);
+    served.bellGone = false;
+
+    if (changed) {
+        served.notify();
+    }
+}
+
+/**
  * Claude Code's doorbell (D-495): the hook of the chat that ended its turn waits here, one at a time, and hears "ring" when the player says a sentence, or one
- * already waits. With probe, the chat's session and campaign, and the other chats of the campaign that wait for its page, for the hook to find its own
+ * already waits; with words, as OpenCode's hook asks, with the sentences themselves (D-578). With probe, the chat's session and campaign, and the other chats of the campaign that wait for its page, for the hook to find its own
  * server; with also, one of those, which says so as it asks (D-577).
  */
 export function listenForBell(request: IncomingMessage, response: ServerResponse, served: Served, asked: URLSearchParams): void
@@ -333,23 +379,38 @@ export function listenForBell(request: IncomingMessage, response: ServerResponse
 
     response.writeHead(200, { ...securityHeaders, "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
 
-    if (served.belled !== true) {
+    // A hook that was given the player's words says it took them, before it speaks them.
+    const took = asked.get("took");
+
+    if (took !== null) {
+        takeHeld(served.acts, took.split(",").slice(0, 100));
+        response.end("ok");
+        return;
+    }
+
+    if (served.belled !== true || served.bellGone === true) {
         served.belled = true;
+        served.bellGone = false;
         served.notify();
     }
 
+    const words = asked.has("words");
+
     if (served.acts.pending.length > 0 && (served.context.chat?.calls ?? 0) === 0) {
-        markRung(served.acts);
-        response.end("ring");
+        ringBell(served, response, words);
         served.notify();
         return;
     }
 
     served.bell?.end("dismissed");
     served.bell = response;
+    served.bellWords = words;
+    // A hook that goes away without a ring, as when the chat was stopped, leaves nobody to call the master: the page offers to copy the sentence instead.
     request.on("close", () => {
         if (served.bell === response) {
             served.bell = undefined;
+            served.bellGone = true;
+            served.notify();
         }
     });
 }
@@ -424,15 +485,19 @@ Narrate as found only what this does not say.`;
     }
 }
 
+// The sentences held for the master show as those the doorbell rang for: no longer taken back.
 function actsShown(served: Served): { pending: Acts["pending"]; heard: string[]; bell: boolean; }
 {
-    return { pending: served.acts.pending, heard: served.acts.heard, bell: hasBell(served) };
+    return { pending: [...served.acts.held, ...served.acts.pending], heard: served.acts.heard, bell: hasBell(served) };
 }
 
-/** Whether a sentence said on the page reaches the master at once (D-495): Claude Code's doorbell came in this chat, or Codex named its thread. */
+/**
+ * Whether a sentence said on the page reaches the master at once (D-495): Claude Code's doorbell came in this chat, and its last hook did not go away without
+ * a ring; or Codex named its thread.
+ */
 function hasBell(served: Served): boolean
 {
-    return served.belled === true || (inCodex(served) && served.context.chat?.thread !== undefined && served.queueBroken !== true && served.queue.ready());
+    return (served.belled === true && served.bellGone !== true) || (inCodex(served) && served.context.chat?.thread !== undefined && served.queueBroken !== true && served.queue.ready());
 }
 
 function inCodex(served: Served): boolean
