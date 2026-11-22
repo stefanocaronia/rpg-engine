@@ -16,6 +16,6 @@ export function settingsTab(written: string | undefined): SettingsTab
 /** A tab's name, in the page's language. */
 export function settingsTabLabel(tab: SettingsTab): string
 {
-    const labels: Record<SettingsTab, string> = { game: t("Game"), master: t("Master"), campaign: t("Campaign"), page: t("This page") };
+    const labels: Record<SettingsTab, string> = { game: t("Game"), master: t("Master"), campaign: t("Campaign"), page: t("Dashboard") };
     return labels[tab];
 }

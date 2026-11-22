@@ -53,7 +53,7 @@ export function addedText(kind: PackageKind | undefined): string
         extension: t("The extension is in the campaign: it counts from now on."),
         system: t("The game system is on this computer, for a new campaign."),
         language: t("The language is on this computer, for every campaign."),
-        theme: t("The theme is on this computer, for every campaign: choose it in Settings, under Game style."),
+        theme: t("The theme is on this computer, for every campaign: choose it in Settings, under Theme."),
     };
     return kind === undefined ? t("Done.") : texts[kind];
 }

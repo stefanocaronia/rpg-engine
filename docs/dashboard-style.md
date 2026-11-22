@@ -173,7 +173,7 @@ A later layer wins over an earlier one whatever the selectors; inside a layer, s
 
 ### The game's style
 
-A game system may name a theme ([game-systems.md](game-systems.md#theme)): colours, corners and faces, and the hooks below, light and dark. It changes values, never rules: the page's rules read them, each in its part's layer, with today's look as their default. Settings, in This page, turns it off for that system in this browser ("Game style"); off, the page is as without it.
+A game system may name a theme ([game-systems.md](game-systems.md#theme)): colours, corners and faces, and the hooks below, light and dark. It changes values, never rules: the page's rules read them, each in its part's layer, with today's look as their default. Settings, in Dashboard, turns it off for that system in this browser ("Theme"); off, the page is as without it.
 
 | Hook | What it changes | Read by |
 |---|---|---|

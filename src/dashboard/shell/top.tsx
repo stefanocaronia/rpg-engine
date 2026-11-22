@@ -487,7 +487,7 @@ function useTheme(): [{ next: "light" | "dark"; name: string; }, () => void]
     const next = shownTheme() === "dark" ? "light" : "dark";
     const flip = (): void => pickTheme(next);
 
-    return [{ next, name: next === "dark" ? t("Dark theme") : t("Light theme") }, flip];
+    return [{ next, name: next === "dark" ? t("Dark mode") : t("Light mode") }, flip];
 }
 
 /** Where the party is (D-333), from the largest place that holds it to its own, which stays whole when the line is short; its own leads to the scene (D-309). */

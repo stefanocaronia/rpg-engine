@@ -34,7 +34,7 @@ export function About({ product, system }: { product: string; system?: { name: s
                 <img src="/assets/icon-180.png" alt="" />
                 <div>
                     <h3>{product}</h3>
-                    <p>{t("The dashboard of the campaign, beside the chat where you play.")}</p>
+                    <p>{t("Play a role-playing game with an AI as your game master")}</p>
                     <p class="about-links">
                         <a class="about-link" href={footLinks.github} target="_blank" rel="noreferrer">
                             <Icon name="github" />

@@ -466,7 +466,7 @@ export function PackagesPage({ version, tab, item, layers = [], sceneOpen = fals
                                             </ul>
                                             <p class="package-note">
                                                 {/* To the top of the page's own tab, where the game's style is: this card is far down its own. */}
-                                                <a class="md-link" href={sectionAddress("settings", "page")} onClick={() => window.scrollTo({ top: 0 })}>{t("You choose one in Settings, under Game style.")}</a>
+                                                <a class="md-link" href={sectionAddress("settings", "page")} onClick={() => window.scrollTo({ top: 0 })}>{t("You choose one in Settings, under Theme.")}</a>
                                             </p>
                                         </>
                                     )}

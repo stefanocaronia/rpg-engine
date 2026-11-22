@@ -678,7 +678,7 @@ function gameStyleRows(): PageRow[]
     return [
         {
             key: "game-style",
-            name: t("Game style"),
+            name: t("Theme"),
             about,
             options,
             value: readChoice(choice),
@@ -745,8 +745,8 @@ function PageSettings()
     const look: PageRow[] = [
         {
             key: "theme",
-            name: t("Theme"),
-            about: t("the page's look"),
+            name: t("Mode"),
+            about: t("the page's colours, light or dark"),
             options: [{ value: "light", label: t("Light") }, { value: "dark", label: t("Dark") }],
             value: shownTheme(),
             pick: (value) => pickTheme(value === "dark" ? "dark" : "light"),
@@ -1080,7 +1080,7 @@ function coinMetalLabel(value: string): string | undefined
 function diceSetLabel(value: string): string | undefined
 {
     const labels: Record<string, string> = {
-        theme: t("Theme"),
+        theme: t("The theme's"),
         ivory: t("Ivory"),
         obsidian: t("Obsidian"),
         ruby: t("Ruby"),
