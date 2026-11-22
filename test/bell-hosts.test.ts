@@ -2,7 +2,7 @@
 // OpenCode is gone, and the engine's plugin that runs it in OpenCode.
 import { spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { appendFileSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { basename, join } from "node:path";
@@ -406,7 +406,8 @@ function fakeOpenCode(folder: string, start?: () => void): {
 /** A campaign's folder, with the .agents folder Antigravity runs its hooks in. */
 function campaign(): string
 {
-    const root = temporary();
+    // Its real path, as a hook started in it sees it: on macOS the temporary folder is behind a link.
+    const root = realpathSync(temporary());
     writeFileSync(join(root, "campaign.yaml"), "name: Guadoscuro\n");
     mkdirSync(join(root, ".agents"));
     return root;

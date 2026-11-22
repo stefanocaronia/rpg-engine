@@ -1,7 +1,7 @@
 // OpenCode does the work outside the chat in its own chat (D-578 (3)): the writer's answer is the last text part of its run, a failure gives none; the importer
 // runs fenced in the import's folder; the agent comes through the environment, never as a file; every session it made is deleted, however the run ends; and
 // the chains of writers and readers take it first only in OpenCode's chat. A fake opencode on a line of its own plays the program.
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DocumentReader, TextWriter } from "../src/core/context.ts";
@@ -47,7 +47,8 @@ if (args[0] === "debug" && args[1] === "paths") {
 let folder: string;
 
 beforeEach(() => {
-    folder = makeTempFolder();
+    // Its real path, as a program started in it sees it: on macOS the temporary folder is behind a link.
+    folder = realpathSync(makeTempFolder());
 });
 
 afterEach(() => {
