@@ -3,12 +3,13 @@
 // the player's folders, with every tool denied but what it needs; the project's own configuration is left out, and the session it made is deleted as it ends.
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, dirname, join } from "node:path";
+import { basename, join } from "node:path";
 import type { DocumentReader, PicturesReady, TextWriter } from "../core/context.ts";
-import { knownReady } from "./programs.ts";
-import { stopProcess, stopTree } from "./stop.ts";
+import { isAlive } from "../core/process-mark.ts";
+import { chatEnvironment, isOwn, knownReady } from "./programs.ts";
+import { stopProcess, stopTree, whenEnded } from "./stop.ts";
 
 // The same limits as Claude's: a brief in three minutes, a run of the importer in thirty.
 const longest = 3 * 60 * 1000;
@@ -56,6 +57,12 @@ export function openCodeReader(program = "opencode"): DocumentReader
     return {
         ready: () => ready().ready,
         program: () => "OpenCode",
+        clean: () => void sweepRuns(program),
+        // The model OpenCode named when it was asked whether it is ready, for the player, as it may be paid by the call.
+        model: () => {
+            const model = ready();
+            return model.ready ? model.maker : undefined;
+        },
         read: async (folder, brief, writable, signal) => {
             const model = ready();
 
@@ -63,6 +70,7 @@ export function openCodeReader(program = "opencode"): DocumentReader
                 return { failed: model.ready ? "OpenCode has no model" : model.why };
             }
 
+            ownRepository(folder);
             const ran = await runAgent(program, model.maker, folder, readerAgent(writable), brief, longestReading, signal);
 
             if (ran.code === 0 && ran.error === undefined && ran.text !== undefined) {
@@ -73,6 +81,17 @@ export function openCodeReader(program = "opencode"): DocumentReader
             return { failed: said === "" ? "OpenCode stopped without an answer" : `OpenCode said: ${said}` };
         },
     };
+}
+
+/**
+ * A git repository of the import's folder's own, where the campaign above it is one: OpenCode lets an agent read up to the root of the repository it runs in,
+ * the campaign's secrets too, and with its own the import's folder is the root. Without git on this computer nothing is done, as no campaign is a repository.
+ */
+function ownRepository(folder: string): void
+{
+    if (!existsSync(join(folder, ".git"))) {
+        spawnSync("git", ["init", "-q"], { cwd: folder, windowsHide: true, timeout: 15_000, stdio: "ignore" });
+    }
 }
 
 /** The importer's fence (D-489 (1)), as Elena's probe proved it: everything denied, then reading in the folder and editing in the folders given, never outside it. */
@@ -178,12 +197,29 @@ function runAgent(program: string, model: string, folder: string, agent: Agent, 
     const config = { agents: { [agent.name]: { description: agent.system, mode: "primary", system: agent.system, permissions: agent.rules } } };
     const environment = { ...openCodeEnvironment(), OPENCODE_CONFIG_CONTENT: JSON.stringify(config), OPENCODE_DISABLE_PROJECT_CONFIG: "1" };
     const line = `${program} run --standalone --agent ${agent.name} -m "${model}" --format json --archived --session ${session}`;
+    void sweepRuns(program);
+    markRun(session, { engine: process.pid, program });
 
     return new Promise((done) => {
         // Off Windows it leads a group of its own: the shell alone, stopped, would leave OpenCode running with the output held open.
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: environment, stdio: ["pipe", "pipe", "pipe"], detached: process.platform !== "win32" });
+        let stopped = false;
+
+        if (child.pid !== undefined) {
+            markRun(session, { engine: process.pid, child: child.pid, program });
+        }
+
         // Dropped while it runs: OpenCode stops with its own server.
-        const stop = (): void => (process.platform === "win32" || child.pid === undefined ? stopTree(child) : stopProcess(child.pid));
+        const stop = (): void => {
+            stopped = true;
+
+            if (process.platform === "win32" || child.pid === undefined) {
+                stopTree(child);
+            } else {
+                stopProcess(child.pid);
+            }
+        };
+
         signal?.addEventListener("abort", stop, { once: true });
         let output = "";
         let errors = "";
@@ -194,14 +230,20 @@ function runAgent(program: string, model: string, folder: string, agent: Agent, 
         child.stderr.on("data", (chunk: string) => (errors += chunk));
         child.stdin.on("error", () => undefined);
         child.on("error", () => undefined);
-        child.on("close", (code) => {
+        whenEnded(child, (exitCode) => {
             clearTimeout(timer);
             signal?.removeEventListener("abort", stop);
             const events = eventsOf(output);
             const text = events.filter((event) => event.type === "text").map((event) => event.part?.text).filter((one) => typeof one === "string" && one.trim() !== "").at(-1);
             const failed = events.find((event) => event.type === "error");
             const error = failed === undefined ? undefined : errorText(failed);
-            void deleteSession(program, session).then(() => done({ code, errors, ...(typeof text === "string" ? { text: text.trim() } : {}), ...(error === undefined ? {} : { error }) }));
+            // A run stopped after its last step finished keeps its answer.
+            const finished = events.some((event) => event.type === "step_finish" && event.part?.reason === "stop");
+            const code = stopped && finished && error === undefined ? 0 : exitCode;
+            void deleteSession(program, session).then(() => {
+                unmarkRun(session);
+                done({ code, errors, ...(typeof text === "string" ? { text: text.trim() } : {}), ...(error === undefined ? {} : { error }) });
+            });
         });
         child.stdin.end(brief);
     });
@@ -221,10 +263,100 @@ function deleteSession(program: string, session: string): Promise<void>
     });
 }
 
+/** The mark of a run under way: the engine's process that runs it, the OpenCode it started, and the line that starts OpenCode. */
+interface RunMark
+{
+    engine: number;
+    child?: number;
+    program: string;
+}
+
+// The marks of the runs under way, one a session: a run stopped from outside, as by an import's cancel, leaves its own, and the next sweep deletes its session.
+function runsFolder(): string
+{
+    return join(tmpdir(), "rpg-opencode-runs");
+}
+
+function markRun(session: string, mark: RunMark): void
+{
+    try {
+        mkdirSync(runsFolder(), { recursive: true });
+        writeFileSync(join(runsFolder(), `${session}.json`), JSON.stringify(mark));
+    } catch {
+        // No mark: a run stopped from outside would leave its session, as before.
+    }
+}
+
+function unmarkRun(session: string): void
+{
+    try {
+        rmSync(join(runsFolder(), `${session}.json`), { force: true });
+    } catch {
+        // Held a moment: a sweep finds its engine alive, or takes it later.
+    }
+}
+
+/**
+ * Deletes the sessions that runs of `program` stopped from outside left: each mark whose engine process is gone, its OpenCode stopped first if it still runs.
+ * Only marks of the same program line, never a line read from a file alone. Never throws.
+ */
+async function sweepRuns(program: string): Promise<void>
+{
+    try {
+        const marks = readdirSync(runsFolder()).filter((name) => /^ses_rpg[0-9a-f]{20}\.json$/.test(name));
+
+        for (const name of marks) {
+            const file = join(runsFolder(), name);
+            const mark = markOf(file);
+
+            if (mark === undefined || mark.program !== program || isAlive(mark.engine) || !isOwn(file)) {
+                continue;
+            }
+
+            await sweepRun(program, file, mark);
+        }
+    } catch {
+        // No marks: nothing to sweep.
+    }
+}
+
+// One mark of a run whose engine is gone: its OpenCode stopped if it still runs, its session deleted, the mark taken away.
+async function sweepRun(program: string, file: string, mark: RunMark): Promise<void>
+{
+    const taken = `${file}.taken`;
+
+    try {
+        // Taken by this sweep alone: another at the same time finds it gone.
+        renameSync(file, taken);
+    } catch {
+        return;
+    }
+
+    if (mark.child !== undefined && isAlive(mark.child)) {
+        stopProcess(mark.child);
+    }
+
+    await deleteSession(program, basename(file, ".json"));
+    rmSync(taken, { force: true });
+}
+
+function markOf(file: string): RunMark | undefined
+{
+    try {
+        const mark = JSON.parse(readFileSync(file, "utf8")) as { engine?: unknown; child?: unknown; program?: unknown; };
+        const pid = (value: unknown): number | undefined => (typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined);
+        const engine = pid(mark.engine);
+        const child = pid(mark.child);
+        return engine === undefined || typeof mark.program !== "string" ? undefined : { engine, program: mark.program, ...(child === undefined ? {} : { child }) };
+    } catch {
+        return undefined;
+    }
+}
+
 interface OpenCodeEvent
 {
     type?: unknown;
-    part?: { text?: unknown; };
+    part?: { text?: unknown; reason?: unknown; };
     error?: { name?: unknown; data?: { message?: unknown; }; };
 }
 
@@ -246,25 +378,11 @@ function errorText(event: OpenCodeEvent): string
     return typeof message === "string" && message !== "" ? message : "it failed";
 }
 
-/**
- * The environment of OpenCode's runs: the chat's own, without what names the campaign, as the chat's session and folder, nor what OpenCode would take from the
- * chat; the player's keys and settings stay, as their model needs them. On Windows the shell does not look for programs in the folder it starts in.
- */
+// The chat's variables OpenCode's runs never get: the engine's, the chat's session and folder, and what OpenCode would take from the chat.
+const chatVariables = /^(RPG_|OPENCODE_(SESSION_ID|CLIENT|CONFIG_CONTENT|DISABLE_PROJECT_CONFIG|SERVER_PASSWORD)$|PWD$|OLDPWD$|INIT_CWD$)/i;
+
+/** The environment of OpenCode's runs: the chat's own, without what names the campaign; the player's keys and settings stay, as their model needs them. */
 function openCodeEnvironment(): NodeJS.ProcessEnv
 {
-    // The folder the chat runs in, a campaign's; never a root, which every path would name.
-    const here = dirname(process.cwd()) === process.cwd() ? "\u0000" : process.cwd().toLowerCase();
-    const chats = /^(RPG_|OPENCODE_(SESSION_ID|CLIENT|CONFIG_CONTENT|DISABLE_PROJECT_CONFIG|SERVER_PASSWORD)$|PWD$|OLDPWD$|INIT_CWD$)/i;
-    const kept = Object.entries(process.env).flatMap(([variable, value]): [string, string][] => {
-        if (value === undefined || chats.test(variable)) {
-            return [];
-        }
-
-        if (variable.toUpperCase() === "PATH") {
-            return [[variable, value.split(delimiter).filter((folder) => !folder.toLowerCase().startsWith(here)).join(delimiter)]];
-        }
-
-        return value.toLowerCase().includes(here) ? [] : [[variable, value]];
-    });
-    return { ...Object.fromEntries(kept), NoDefaultCurrentDirectoryInExePath: "1" };
+    return chatEnvironment(chatVariables);
 }

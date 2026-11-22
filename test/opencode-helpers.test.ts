@@ -1,11 +1,15 @@
 // OpenCode does the work outside the chat in its own chat (D-578 (3)): the writer's answer is the last text part of its run, a failure gives none; the importer
 // runs fenced in the import's folder; the agent comes through the environment, never as a file; every session it made is deleted, however the run ends; and
 // the chains of writers and readers take it first only in OpenCode's chat. A fake opencode on a line of its own plays the program.
+import { spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DocumentReader, TextWriter } from "../src/core/context.ts";
 import { hostReader, hostWriter, openCodeClient, openCodeReader, openCodeWriter } from "../src/helpers/index.ts";
+import { chatEnvironment } from "../src/helpers/programs.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
 // The fake: debug paths, models, run and session delete, as mode.json beside it says; each call written to calls.jsonl.
@@ -148,14 +152,18 @@ describe("OpenCode's writer (D-406, D-578 (3))", () => {
 });
 
 describe("OpenCode's importer (D-489 (1), D-578 (3))", () => {
-    it("runs in the import's folder fenced as measured, leaves no file of its own there, and deletes its session", async () => {
+    it("runs in the import's folder fenced as measured, leaves there only a repository of its own, and deletes its session", async () => {
         const line = fakeOpenCode({ models: listed, run: "two" }, chosen);
         const reader = openCodeReader(line);
         const work = join(folder, "import");
         mkdirSync(work);
         expect(reader.program?.()).toBe("OpenCode");
+        // The model it reads with, which the player is told (D-579 (2)).
+        expect(reader.model?.()).toBe("ollama/gpt-oss:20b");
+        expect(hostReader(() => openCodeClient, reader, reader, reader).model?.()).toBe("ollama/gpt-oss:20b");
         expect(await reader.read(work, "Read the source", ["adventure", "notes"])).toEqual({ said: "the last answer" });
-        expect(readdirSync(work)).toEqual([]);
+        // Its own repository, so that the campaign's above is not the one OpenCode lets it read; nothing where git is missing.
+        expect(readdirSync(work).filter((name) => name !== ".git")).toEqual([]);
         const [run, deleted] = calls(line);
         expect(run.cwd).toBe(work);
         expect(run.noProject).toBe("1");
@@ -192,6 +200,48 @@ describe("OpenCode's importer (D-489 (1), D-578 (3))", () => {
     }, 20_000);
 });
 
+describe("the sessions of runs stopped from outside (D-578 (3))", () => {
+    /** A mark of a run of `line` whose engine process is gone; its session. */
+    function deadMark(line: string): string
+    {
+        const session = `ses_rpg${randomBytes(10).toString("hex")}`;
+        const dead = spawnSync(process.execPath, ["-e", ""]).pid;
+        mkdirSync(join(tmpdir(), "rpg-opencode-runs"), { recursive: true });
+        writeFileSync(join(tmpdir(), "rpg-opencode-runs", `${session}.json`), JSON.stringify({ engine: dead, program: line }));
+        return session;
+    }
+
+    it("deletes the session of a dead engine's run, at the next run and at the reader's clean, and takes its mark away", async () => {
+        const line = fakeOpenCode({ models: listed, run: "two" }, chosen);
+        const left = deadMark(line);
+        await openCodeWriter(line).write("brief");
+        await waitFor(() => calls(line).some((call) => call.deleted === left));
+        expect(calls(line).some((call) => call.deleted === left)).toBe(true);
+
+        const again = deadMark(line);
+        openCodeReader(line).clean?.();
+        await waitFor(() => calls(line).some((call) => call.deleted === again));
+        expect(calls(line).some((call) => call.deleted === again)).toBe(true);
+        await waitFor(() => !existsSync(join(tmpdir(), "rpg-opencode-runs", `${again}.json.taken`)));
+        expect(readdirSync(join(tmpdir(), "rpg-opencode-runs")).filter((name) => name.startsWith(left) || name.startsWith(again))).toEqual([]);
+    }, 30_000);
+});
+
+describe("the chat's environment for a helper", () => {
+    it("drops from the PATH the campaign's folders, never a sibling whose name begins the same", () => {
+        const campaign = join(folder, "rpg");
+        const saved = process.env.PATH;
+        process.env.PATH = [join(campaign, "bin"), `${campaign}${sep}`, join(folder, "rpg-tools", "bin")].join(delimiter);
+
+        try {
+            const path = Object.entries(chatEnvironment(/^$/, campaign)).find(([name]) => name.toUpperCase() === "PATH")?.[1];
+            expect(path?.split(delimiter)).toEqual([join(folder, "rpg-tools", "bin")]);
+        } finally {
+            restore("PATH", saved);
+        }
+    });
+});
+
 describe("who does the work outside the chat, by the chat in use (D-578 (3))", () => {
     const writer = (name: string, ready: boolean): TextWriter & { name: string; } => ({ name, ready: () => ready, write: () => Promise.resolve(name) });
     const reader = (name: "Codex" | "Claude Code" | "OpenCode", ready: boolean): DocumentReader => ({ ready: () => ready, program: () => name, read: () => Promise.resolve({ said: name }) });
@@ -202,7 +252,7 @@ describe("who does the work outside the chat, by the chat in use (D-578 (3))", (
         expect(await hostWriter(() => openCodeClient, writer("codex", false), writer("claude", true), writer("opencode", false)).write("brief")).toBe("claude");
         expect(await hostWriter(() => "claude-code", writer("codex", true), writer("claude", true), writer("opencode", true)).write("brief")).toBe("codex");
         expect(await hostWriter(() => "codex-mcp-client", writer("codex", false), writer("claude", true), writer("opencode", true)).ready()).toBe(false);
-        expect(hostWriter(() => "antigravity-client", writer("codex", false), writer("claude", false), writer("opencode", true)).ready()).toBe(false);
+        expect(hostWriter(() => "antigravity-client", writer("codex", false), writer("claude", false), writer("opencode", true), writer("antigravity", false)).ready()).toBe(false);
 
         expect(hostReader(() => openCodeClient, reader("Codex", true), reader("Claude Code", true), reader("OpenCode", true)).program?.()).toBe("OpenCode");
         expect(hostReader(() => openCodeClient, reader("Codex", true), reader("Claude Code", true), reader("OpenCode", false)).program?.()).toBe("Claude Code");

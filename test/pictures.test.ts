@@ -232,15 +232,24 @@ describe("an SVG drawn by a model, cleaned (D-342)", () => {
         expect(cleanSvg(`<svg viewBox="0 0 1 1"><rect fill='x" onmouseover="alert(1)'/><rect fill='url("#a")' fill="red"/></svg>`)).toBe(
             `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect fill="x' onmouseover='alert(1)"/><rect fill="url('#a')"/></svg>`,
         );
-        expect(cleanSvg('<SVG VIEWBOX="0 0 1 1"><lineargradient id="a" gradientunits="userSpaceOnUse"></LINEARGRADIENT></SVG>')).toBe(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><linearGradient id="a" gradientUnits="userSpaceOnUse"></linearGradient></svg>',
+        expect(cleanSvg('<SVG VIEWBOX="0 0 1 1"><lineargradient id="a" gradientunits="userSpaceOnUse"></LINEARGRADIENT><RECT/></SVG>')).toBe(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><linearGradient id="a" gradientUnits="userSpaceOnUse"></linearGradient><rect/></svg>',
         );
+    });
+
+    it("drops an outer url() left open, and a CSS escape, from any value", () => {
+        expect(cleanSvg('<svg viewBox="0 0 1 1"><rect filter="url(http://example.com/x" fill="\\75rl(http://example.com/y)" stroke="url( \'#a\' )"/></svg>')).toBe(
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect stroke="url( '#a' )"/></svg>`,
+        );
+        expect(cleanSvg('<svg viewBox="0 0 1 1"><rect fill="url(  #a"/></svg>')).toBe('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect fill="url(  #a"/></svg>');
     });
 
     it("takes none without a single closed root, or larger than 100 KB, and finds the SVG in an answer with words around it", () => {
         expect(cleanSvg("<g><rect/></g>")).toBeUndefined();
         expect(cleanSvg('<svg viewBox="0 0 1 1"><g>')).toBeUndefined();
         expect(cleanSvg(`<svg viewBox="0 0 1 1"><path d="${"M0 0 ".repeat(25_000)}"/></svg>`)).toBeUndefined();
+        // Nothing with a shape left: text, a link and a use alone.
+        expect(cleanSvg('<svg viewBox="0 0 1 1"><text>hi</text><a href="#a"><use href="#b"/></a><defs></defs></svg>')).toBeUndefined();
         expect(svgIn('Here it is:\n```svg\n<svg viewBox="0 0 1 1"></svg>\n```')).toBe('<svg viewBox="0 0 1 1"></svg>');
         expect(svgIn("I cannot draw that.")).toBeUndefined();
     });

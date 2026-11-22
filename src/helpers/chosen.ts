@@ -2,8 +2,10 @@
 // with its own tool, which the engine never starts (its terms); in Claude Code and on the command line, Claude's SVG, always on the player's own plan, never an
 // API key (D-493); in any other chat, as OpenCode, the chat draws the SVG itself and hands it back with image, svg. Or Codex,
 // which, where it cannot or refuses, leaves the picture to the chat in use, saying why; or an image tool of the master's own, as ElevenLabs, from the same
-// brief as Antigravity's. Without any, the page shows its own picture all the same (D-389).
+// brief as Antigravity's. Without any, the page shows its own picture all the same (D-389). The text and the import outside the chat are Codex's and Claude's;
+// in OpenCode, OpenCode's first, in Antigravity, its agy's first (D-579 (1)).
 import type { DocumentReader, MadePicture, PictureFallback, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
+import { antigravityReader, antigravityWriter } from "./antigravity.ts";
 import { antigravityBrief, chatBrief, drawnBrief } from "./briefs.ts";
 import { claudePictures, claudeReader, claudeWriter } from "./claude.ts";
 import { codexPictures, codexReader, codexWriter } from "./codex.ts";
@@ -186,23 +188,48 @@ function masterTool(name: string): PictureMaker
     };
 }
 
-/** The writer of text of this computer for the chat `host` names (D-406): Codex first, then Claude; in OpenCode, OpenCode before them. */
-export function hostWriter(host: () => string | undefined, codex: TextWriter = codexWriter(), claude: TextWriter = claudeWriter(), openCode: TextWriter = openCodeWriter()): TextWriter
+/** The writer of text of this computer for the chat `host` names (D-406): Codex first, then Claude; in OpenCode, OpenCode before them, in Antigravity, its agy (D-579 (1)). */
+export function hostWriter(
+    host: () => string | undefined,
+    codex: TextWriter = codexWriter(),
+    claude: TextWriter = claudeWriter(),
+    openCode: TextWriter = openCodeWriter(),
+    antigravity: TextWriter = antigravityWriter(),
+): TextWriter
 {
-    const writers = (): TextWriter[] => (host() === codexClient ? [codex] : host() === openCodeClient ? [openCode, codex, claude] : [codex, claude]);
+    const writers = (): TextWriter[] => {
+        const chat = host();
+        return chat === codexClient ? [codex] : chat === openCodeClient ? [openCode, codex, claude] : chat === antigravityClient ? [antigravity, codex, claude] : [codex, claude];
+    };
+
     return {
         ready: () => writers().some((writer) => writer.ready()),
         write: (brief) => (writers().find((writer) => writer.ready()) ?? codex).write(brief),
     };
 }
 
-/** The importer of this computer for the chat `host` names (D-489 (1)): Codex in Codex, else Claude first, which Elena's probe measured, then Codex; in OpenCode, OpenCode before them. */
-export function hostReader(host: () => string | undefined, codex: DocumentReader = codexReader(), claude: DocumentReader = claudeReader(), openCode: DocumentReader = openCodeReader()): DocumentReader
+/**
+ * The importer of this computer for the chat `host` names (D-489 (1)): Codex in Codex, else Claude first, which Elena's probe measured, then Codex; in OpenCode,
+ * OpenCode before them, in Antigravity, its agy (D-579 (1)).
+ */
+export function hostReader(
+    host: () => string | undefined,
+    codex: DocumentReader = codexReader(),
+    claude: DocumentReader = claudeReader(),
+    openCode: DocumentReader = openCodeReader(),
+    antigravity: DocumentReader = antigravityReader(),
+): DocumentReader
 {
-    const readers = (): DocumentReader[] => (host() === codexClient ? [codex] : host() === openCodeClient ? [openCode, claude, codex] : [claude, codex]);
+    const readers = (): DocumentReader[] => {
+        const chat = host();
+        return chat === codexClient ? [codex] : chat === openCodeClient ? [openCode, claude, codex] : chat === antigravityClient ? [antigravity, claude, codex] : [claude, codex];
+    };
+
     return {
         ready: () => readers().some((reader) => reader.ready()),
         program: () => readers().find((reader) => reader.ready())?.program?.(),
+        model: () => readers().find((reader) => reader.ready())?.model?.(),
+        clean: () => [codex, claude, openCode, antigravity].forEach((reader) => reader.clean?.()),
         read: (folder, brief, writable, signal) => (readers().find((reader) => reader.ready()) ?? claude).read(folder, brief, writable, signal),
     };
 }

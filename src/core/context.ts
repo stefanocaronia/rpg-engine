@@ -236,7 +236,11 @@ export interface DocumentReader
 {
     ready(): boolean;
     /** The program that would read now, which the player is told the document goes to (D-493). */
-    program?(): "Claude Code" | "Codex" | "OpenCode" | undefined;
+    program?(): "Claude Code" | "Codex" | "OpenCode" | "Antigravity" | undefined;
+    /** The model it reads with, where the player chose it in the program, as in OpenCode, which may be paid by the call. */
+    model?(): string | undefined;
+    /** Takes away what a run stopped from outside left, as the importer's own process killed by a cancel. */
+    clean?(): void;
     /** One run: the brief on its input, reading only in `folder` and writing only in its `writable` subfolders; its last words, or why it stopped. Stopped by `signal`. */
     read(folder: string, brief: string, writable: string[], signal?: AbortSignal): Promise<{ said: string; } | { failed: string; }>;
 }

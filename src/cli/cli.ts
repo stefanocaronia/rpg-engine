@@ -5,8 +5,12 @@ const args = process.argv.slice(2);
 
 // "rpg mcp" turns the process into a server for an AI host; "rpg --read-library" reads the player's books apart, as rules starts it (LIB-3); "rpg --listen"
 // is the doorbell for the player's sentences on the dashboard (D-495), Claude Code's, or with its host's name another's (D-578); "rpg --approve" is
-// Antigravity's hook that lets the rpg tools run; everything else is a command.
-if (args.length === 1 && args[0] === "mcp") {
+// Antigravity's hook that lets the rpg tools run, "rpg --fence" the hook that fences Antigravity's importer; everything else is a command.
+if (args.length === 1 && args[0] === "mcp" && process.env.RPG_HELPER === "1") {
+    // A run of the engine's helper gets no rpg server, not even one with no tools, which would empty its host's tool cache (D-579 (1)).
+    console.error("rpg mcp: not started, this is a run of RPG Engine's own helper (RPG_HELPER=1)");
+    process.exitCode = 0;
+} else if (args.length === 1 && args[0] === "mcp") {
     // The server and its SDK load only here: every other command starts faster without them (D-194).
     const { startMcpServer } = await import("../server/mcp.ts");
     const { serverInput } = await import("../server/route/index.ts");
@@ -32,6 +36,9 @@ if (args.length === 1 && args[0] === "mcp") {
 } else if (args.length === 1 && args[0] === "--approve") {
     const { approveHere } = await import("../server/approver.ts");
     await approveHere();
+} else if (args.length === 2 && args[0] === "--fence") {
+    const { fenceHere } = await import("../server/fence.ts");
+    await fenceHere(args[1]);
 } else {
     const { output, exitCode } = await runCommandLine(args);
 

@@ -109,10 +109,12 @@ describe("image", () => {
 
     it("refuses SVG code it cannot use, or given with another picture, saying how to fix it and changing nothing (D-572)", async () => {
         expect(await refused("image", "Ennio", "--svg", '<svg viewBox="0 0 10 10"><rect width="10" height="10"/>')).toBe(
-            "svg takes the picture's SVG code, and this is none the engine can use: give one <svg> root that closes, under 100 KB, with only shapes, groups, gradients, masks and blur, "
-                + "no text, script, style or image; draw it again so, or go on without. Nothing changed.",
+            "svg takes the picture's SVG code, and this is none the engine can use, or nothing in it could be kept: give one <svg> root that closes, under 100 KB, with at least one shape "
+                + "and only shapes, groups, gradients, masks and blur, no text, script, style or image; draw it again so, or go on without. Nothing changed.",
         );
         expect(await refused("image", "Ennio", "--svg", "a castle on a hill")).toContain("none the engine can use");
+        // A drawing with no shape left once cleaned never replaces a picture.
+        expect(await refused("image", "Ennio", "--svg", '<svg viewBox="0 0 10 10"><text>Guado</text><a href="#x"><use href="#y"/></a></svg>')).toContain("nothing in it could be kept");
         expect(await refused("image", "Ennio", picture("a.png", png), "--svg", '<svg viewBox="0 0 10 10"></svg>')).toBe(
             "Give svg alone: it is the picture you drew, and file, url and describe are other ways to give one. Nothing changed.",
         );

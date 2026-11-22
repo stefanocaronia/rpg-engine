@@ -1,9 +1,9 @@
 // Codex and Claude Code with the player's own login (D-424, D-425): found on the PATH or in the engine's folder, installed there with npm, never globally, and
 // signed in by the player in the browser; started through the shell from a folder of no campaign, without the chat's variables or an API key.
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import type { HelperLogin, HelperName, Helpers, HelperState, PicturesReady } from "../core/context.ts";
 import { stopTree } from "./stop.ts";
 
@@ -167,6 +167,46 @@ export function helperEnvironment(name: HelperName): NodeJS.ProcessEnv
     const dropped = name === "codex" ? /^(OPENAI_API_KEY|CODEX_API_KEY)$/i : /^(CLAUDE|ANTHROPIC)/i;
     const own = Object.fromEntries(Object.entries(process.env).filter(([variable]) => kept.has(variable.toUpperCase()) || !dropped.test(variable)));
     return { ...own, NoDefaultCurrentDirectoryInExePath: "1" };
+}
+
+/** Whether a file or folder of the temporary folder is this user's own, never another's left to have the engine stop or run something; always on Windows. */
+export function isOwn(path: string): boolean
+{
+    try {
+        return process.getuid === undefined || statSync(path).uid === process.getuid();
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * The environment of a program of the chat in use, as OpenCode or Antigravity: the chat's own, without the variables whose names `dropped` matches nor any that
+ * names the `campaign`'s folder, and the PATH without its folders; the player's keys and settings stay. On Windows the shell does not look for programs in the
+ * folder it starts in.
+ */
+export function chatEnvironment(dropped: RegExp, campaign = process.cwd()): NodeJS.ProcessEnv
+{
+    // The folder the chat runs in, a campaign's; never a root, which every path would name.
+    const here = dirname(campaign) === campaign ? "\u0000" : campaign.toLowerCase().replace(/[\\/]+$/, "");
+
+    // A folder of the PATH in the campaign: the campaign itself or one below it, never a sibling whose name begins the same.
+    const inCampaign = (folder: string): boolean => {
+        const path = folder.toLowerCase().replace(/[\\/]+$/, "");
+        return path === here || path.startsWith(`${here}\\`) || path.startsWith(`${here}/`);
+    };
+
+    const kept = Object.entries(process.env).flatMap(([variable, value]): [string, string][] => {
+        if (value === undefined || dropped.test(variable)) {
+            return [];
+        }
+
+        if (variable.toUpperCase() === "PATH") {
+            return [[variable, value.split(delimiter).filter((folder) => !inCampaign(folder)).join(delimiter)]];
+        }
+
+        return value.toLowerCase().includes(here) ? [] : [[variable, value]];
+    });
+    return { ...Object.fromEntries(kept), NoDefaultCurrentDirectoryInExePath: "1" };
 }
 
 /**

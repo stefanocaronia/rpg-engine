@@ -174,8 +174,8 @@ function drawnImage(root: string, context: Context, world: World, page: Page, co
 
     if (clean === undefined) {
         throw new Error(
-            "svg takes the picture's SVG code, and this is none the engine can use: give one <svg> root that closes, under 100 KB, with only shapes, groups, gradients, masks and blur, "
-                + "no text, script, style or image; draw it again so, or go on without. Nothing changed.",
+            "svg takes the picture's SVG code, and this is none the engine can use, or nothing in it could be kept: give one <svg> root that closes, under 100 KB, with at least one shape "
+                + "and only shapes, groups, gradients, masks and blur, no text, script, style or image; draw it again so, or go on without. Nothing changed.",
         );
     }
 

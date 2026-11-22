@@ -73,7 +73,13 @@ const largest = 100 * 1024;
 const token = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<![^>]*>|<\?[\s\S]*?\?>|<\/?([A-Za-z][\w:.-]*)((?:\s+[^\s=>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>|[^<]+|</g;
 const attribute = /([^\s=>/]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]+))?/g;
 
-/** The SVG rebuilt from what is allowed, its root always in the SVG namespace; undefined when it has no single allowed root, does not close, or is too large. */
+// The elements that draw something; a drawing keeps at least one.
+const shapeElements = new Set(["path", "rect", "circle", "ellipse", "polygon", "polyline", "line"]);
+
+/**
+ * The SVG rebuilt from what is allowed, its root always in the SVG namespace; undefined when it has no single allowed root, does not close, is too large, or has
+ * no shape left.
+ */
 export function cleanSvg(svg: string): string | undefined
 {
     if (Buffer.byteLength(svg) > largest) {
@@ -84,6 +90,7 @@ export function cleanSvg(svg: string): string | undefined
     const open: { name: string; skipped: boolean; }[] = [];
     let skipping = 0;
     let roots = 0;
+    let shapes = 0;
 
     for (const [whole, rawName, rawAttributes = "", selfClosing] of svg.matchAll(token)) {
         if (rawName === undefined) {
@@ -116,6 +123,7 @@ export function cleanSvg(svg: string): string | undefined
         }
 
         roots += name === "svg" ? 1 : 0;
+        shapes += shapeElements.has(name) ? 1 : 0;
         const namespace = name === "svg" ? ' xmlns="http://www.w3.org/2000/svg"' : "";
         kept.push(`<${name}${namespace}${keptAttributes(rawAttributes)}${selfClosing === "/" ? "/" : ""}>`);
 
@@ -124,7 +132,8 @@ export function cleanSvg(svg: string): string | undefined
         }
     }
 
-    return roots === 1 && open.length === 0 ? kept.join("") : undefined;
+    // A drawing with no shape left, as one of text alone, would hide a good picture behind an empty one.
+    return roots === 1 && open.length === 0 && shapes > 0 ? kept.join("") : undefined;
 }
 
 /** The SVG in a model's answer, from <svg to </svg>, whatever came around it; undefined when there is none. */
@@ -135,7 +144,10 @@ export function svgIn(answer: string): string | undefined
     return start < 0 || end < start ? undefined : answer.slice(start, end + "</svg>".length);
 }
 
-/** An element's allowed attributes, each once, with no outer url(), no markup in a value, and no double quote, which could close the value and open another. */
+/**
+ * An element's allowed attributes, each once, with no outer url(), closed or not, no markup or CSS escape in a value, and no double quote, which could close the
+ * value and open another.
+ */
 function keptAttributes(rawAttributes: string): string
 {
     const seen = new Set<string>();
@@ -145,7 +157,9 @@ function keptAttributes(rawAttributes: string): string
         const value = (quoted ? rawValue.slice(1, -1) : rawValue).replaceAll('"', "'");
         const urls = [...value.matchAll(/url\s*\(([^)]*)\)/gi)].map((found) => found[1].trim().replace(/^'|'$/g, ""));
 
-        if (!attributes.has(key) || seen.has(key) || urls.some((url) => !/^#[\w-]+$/.test(url)) || /[<>&]/.test(value)) {
+        const outer = urls.some((url) => !/^#[\w-]+$/.test(url)) || /url\s*\(\s*["']?\s*(?![\s"'#])/i.test(value);
+
+        if (!attributes.has(key) || seen.has(key) || outer || /[<>&\\]/.test(value)) {
             return [];
         }
 

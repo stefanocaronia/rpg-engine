@@ -60,7 +60,9 @@ interface ImportResult
     /** How many of the document's pages were read from their pictures, as it started (LIB-4). */
     recognized?: number;
     /** Begun now by a helper, named when known: the player hears whose plan reads the document, and under whose terms (D-493). */
-    helper?: "Claude Code" | "Codex" | "OpenCode" | "a helper";
+    helper?: "Claude Code" | "Codex" | "OpenCode" | "Antigravity" | "a helper";
+    /** The model the helper reads with, where the player chose it in it, as in OpenCode, which may be paid by the call. */
+    helperModel?: string;
 }
 
 export const importCommand = defineCommand({
@@ -101,6 +103,8 @@ export const importCommand = defineCommand({
 
             await stopRunner(open.folder);
             await stopImport(open.folder);
+            // The runner killed left its helper's leftovers, which no finally of its took away.
+            context.reader?.clean?.();
             dropImport(open.folder);
             appendLogEntry(root, newDatedLogEntry(root, context, "import-cancelled", "hidden", { title: open.state.title }));
             return { ...resultOf(root, open.folder, open.state), cancelled: true };
@@ -146,7 +150,7 @@ export const importCommand = defineCommand({
     },
 
     // A document read from its pictures is told first, for the master to tell the player before anything else (LIB-4).
-    format: (result) => [recognizedText(result.recognized), helperText(result.helper), importText(result)].filter((part) => part !== "").join("\n\n"),
+    format: (result) => [recognizedText(result.recognized), helperText(result.helper, result.helperModel), importText(result)].filter((part) => part !== "").join("\n\n"),
 });
 
 /** An import under way as the dashboard tells it (D-491 (11)): what it is doing, and how far; while its document is opened, its pages read by the OCR. */
@@ -339,13 +343,14 @@ async function startImport(root: string, context: Context, document: string, tit
 
     // Asked before the reading, which a program that stops being ready would change.
     const program = context.reader?.program?.() ?? "a helper";
+    const model = context.reader?.model?.();
     const going = goOn(root, context, folder);
 
     if (context.files === undefined) {
         await going;
     }
 
-    return { ...resultOf(root, folder, readImportState(folder) ?? state), pictures: text.pictures.length, ...recognized, helper: program };
+    return { ...resultOf(root, folder, readImportState(folder) ?? state), pictures: text.pictures.length, ...recognized, helper: program, ...(model === undefined ? {} : { helperModel: model }) };
 }
 
 /** Whether what was given as a document is an adventure made already: a folder with adventure.yaml, or a .zip that holds one, which package install reads and checks. */
@@ -536,16 +541,22 @@ function recognizedText(recognized: number | undefined): string
 }
 
 /** Whose plan reads the document, and under whose terms it goes out (D-493): said once, as a helper begins it. */
-function helperText(helper: ImportResult["helper"]): string
+function helperText(helper: ImportResult["helper"], model?: string): string
 {
     if (helper === undefined) {
         return "";
     }
 
-    // OpenCode reads with the model the player chose in it, whose maker is the one the document goes to.
+    // OpenCode reads with the model the player chose in it, whose maker is the one the document goes to; named, as it may be paid by the call.
     if (helper === "OpenCode") {
-        return "Tell the player in a few words that their own OpenCode reads it, with the model they last chose in it and on its plan or price, and that the whole document "
+        const which = model === undefined ? "with the model they last chose in it" : `with its model ${model}`;
+        return `Tell the player in a few words that their own OpenCode reads it, ${which} and on its plan or price, and that the whole document `
             + "goes to that model's provider, or stays on their computer with a local model, under the terms of their account, its choice on training included.";
+    }
+
+    if (helper === "Antigravity") {
+        return "Tell the player in a few words that their own Antigravity reads it, on their Google account's plan, whose quota it uses, and that the whole document "
+            + "goes to Google under the terms of that account.";
     }
 
     const [program, company] = helper === "Codex" ? ["Codex", "OpenAI"] : helper === "Claude Code" ? ["Claude Code", "Anthropic"] : ["Claude Code or Codex", "Anthropic or OpenAI"];

@@ -65,11 +65,15 @@ describe("architecture", () => {
             "campaign/host-files.ts",
             // Antigravity's own history and log, outside the campaign, which tell the doorbell the player wrote in the chat (D-578).
             "server/bell/antigravity.ts",
+            // The fence of Antigravity's importer, a file of the engine's outside the campaign (D-579 (1)).
+            "server/fence.ts",
             // Which campaign each conversation of Antigravity's app plays, in the player's data folder, for the router (D-578).
             "server/route/notes.ts",
             // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
             "campaign/last-choices.ts",
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).
+            // Antigravity's writer in a folder of its own, with its settings beside it (D-579 (1)).
+            "helpers/antigravity.ts",
             "helpers/claude.ts",
             "helpers/codex.ts",
             // OpenCode's writer in a folder of its own, and the player's model read from OpenCode's state folder (D-578 (3)).

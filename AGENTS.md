@@ -22,7 +22,7 @@ This file is about **developing** rpg-engine. The instructions for **playing** a
 | `AGENTS.md`, `CLAUDE.md` | this guide (`CLAUDE.md` only imports it) | yes | no |
 | `private/` | the maintainer's private repository: project docs (`project/`, Italian) and the colleagues (`.claude/`) | no | no |
 | `.claude/` | a link to `private/.claude/`, where Claude Code looks for it: see "Colleagues" | no | no |
-| `docs/` | the docs for developers and agents: `structure.md`, `architecture.md`, `game-systems.md`, `extensions.md`, `dashboard-style.md`, `commands.md` (generated); the player's guide is Help's, `src/dashboard/guide/` | yes | no |
+| `docs/` | the docs for developers and agents: `structure.md`, `architecture.md`, `game-systems.md`, `extensions.md`, `dashboard-style.md`, `commands.md` (generated), `hosts.md` (what works in each AI host, for players too); the player's guide is Help's, `src/dashboard/guide/` | yes | no |
 | `src/` | core, CLI, MCP server, the dashboard's server and page (`src/dashboard/`) | yes | built into `dist/` |
 | `systems/` | `free`, the one game system the engine ships; a campaign plays one, required; the others are packages with repos of their own, the 5e `../rpg-engine-5e` and Ironsworn `../rpg-engine-ironsworn`, a test system for now | yes | yes |
 | `instructions/` | game instructions for the AI, installed into each campaign | yes | yes |

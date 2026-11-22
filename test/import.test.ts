@@ -288,6 +288,22 @@ describe("an import that goes wrong (D-489, Matteo's review of 20 October)", () 
         expect(existsSync(work())).toBe(false);
     });
 
+    it("names OpenCode's model to the player, as it may be paid by the call (D-579 (2))", async () => {
+        context.files = new FileStore();
+        context.reader = { ...fakeReader({ waits: true }), program: () => "OpenCode", model: () => "deepseek/deepseek-v4-pro" };
+        const started = (await rpg("import", book(), "--title", "The King")).output;
+        expect(started).toContain("their own OpenCode reads it, with its model deepseek/deepseek-v4-pro and on its plan or price");
+        await rpg("import", "--cancel");
+    });
+
+    it("names Antigravity to the player, its Google account's plan and terms (D-579 (1))", async () => {
+        context.files = new FileStore();
+        context.reader = { ...fakeReader({ waits: true }), program: () => "Antigravity" };
+        const started = (await rpg("import", book(), "--title", "The King")).output;
+        expect(started).toContain("their own Antigravity reads it, on their Google account's plan, whose quota it uses, and that the whole document goes to Google under the terms of that account");
+        await rpg("import", "--cancel");
+    });
+
     it("leaves an import to the live process that runs it, and tells one whose mark was broken by hand", async () => {
         context.reader = fakeReader({ waits: true });
         context.files = new FileStore();
