@@ -99,6 +99,26 @@ describe("image", () => {
         expect(await ok("image", "Ennio", join(folder, "images", "Ennio.svg"))).toBe("Ennio's picture is now images/Ennio.svg.");
     });
 
+    it("takes the SVG code the chat drew, cleaned as Claude's drawing is, and stores it as a file given (D-572)", async () => {
+        const drawn = 'Here it is:\n<svg viewBox="0 0 2100 900" onload="alert(1)"><script>alert(2)</script><rect width="2100" height="900" fill="#335"/><text>Guado</text></svg>';
+        expect(await ok("image", "Ennio", "--svg", drawn)).toBe("Ennio's picture is now images/Ennio.svg.");
+        expect(readFileSync(join(folder, "images", "Ennio.svg"), "utf8")).toBe('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2100 900"><rect width="2100" height="900" fill="#335"/></svg>');
+        expect(page("characters/Ennio.md")).toContain('image: "[[Ennio.svg]]"');
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "image-set", visibility: "public", data: { page: "Ennio", image: "images/Ennio.svg" } });
+    });
+
+    it("refuses SVG code it cannot use, or given with another picture, saying how to fix it and changing nothing (D-572)", async () => {
+        expect(await refused("image", "Ennio", "--svg", '<svg viewBox="0 0 10 10"><rect width="10" height="10"/>')).toBe(
+            "svg takes the picture's SVG code, and this is none the engine can use: give one <svg> root that closes, under 100 KB, with only shapes, groups, gradients, masks and blur, "
+                + "no text, script, style or image; draw it again so, or go on without. Nothing changed.",
+        );
+        expect(await refused("image", "Ennio", "--svg", "a castle on a hill")).toContain("none the engine can use");
+        expect(await refused("image", "Ennio", picture("a.png", png), "--svg", '<svg viewBox="0 0 10 10"></svg>')).toBe(
+            "Give svg alone: it is the picture you drew, and file, url and describe are other ways to give one. Nothing changed.",
+        );
+        expect(page("characters/Ennio.md")).not.toContain("image:");
+    });
+
     it("replaces the page's picture, and removes the old file unless another page links it", async () => {
         await ok("image", "Ennio", picture("a.png", png));
         await ok("image", "Ennio", picture("b.webp", webp));
@@ -303,6 +323,20 @@ describe("pictures of places, quests, the party and those met made from words (D
         expect(said).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre");
         expect(said).toContain("Never show: ragni");
         expect(page("places/Guado.md")).not.toContain("image:");
+    });
+
+    it("in OpenCode or any other chat gives the master the SVG brief to draw the picture itself and hand back with svg (D-572)", async () => {
+        await ok("config", "pictures", "new places");
+        const claude = claudeMaker(picture("made.png", png));
+        context = { ...context, pictures: hostPictures(() => "opencode", () => undefined, maker(true), claude) };
+        const said = await ok("image", "Guado", "--describe", "Un guado di pietre");
+        expect(said).toMatch(/^Draw Guado's picture yourself as SVG code, from this brief, then give it with image, page Guado, svg and the code; if you cannot, go on without\.\n\nDraw exactly one new picture/);
+        expect(said).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre");
+        expect(said).toMatch(/call image again for the same page with svg holding the code, from <svg to <\/svg>: write no file, and do not show the code to the player\.$/);
+        expect(page("places/Guado.md")).not.toContain("image:");
+        expect(await ok("image", "Guado", "--svg", '<svg viewBox="0 0 2100 900"><rect width="2100" height="900" fill="#678"/></svg>')).toBe("Guado's picture is now images/Guado.svg.");
+        const settings = (JSON.parse(await ok("view", "--settings", "--json")) as { settings: PlayerSetting[]; }).settings;
+        expect(settings.find((setting) => setting.name === "pictures")?.note).toMatchObject({ text: "{maker} draws them in your chat, as simple vector pictures, from your plan.", values: { maker: "OpenCode" } });
     });
 
     it("has the master make it with ElevenLabs or a tool the player named, from the brief, as the campaign chose (D-572)", async () => {

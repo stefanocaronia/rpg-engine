@@ -60,8 +60,8 @@ export interface Context
     files?: FileStore;
     /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */
     told?: Set<string>;
-    /** Whether the chat has the character agent as an agent, which the campaign had as the MCP server started (D-490); instructions then gives Voices. */
-    characterAgent?: boolean;
+    /** Whether the campaign had the character agent as the MCP server started, as Claude Code's agent and as OpenCode's subagent (D-490): the chat of that host then gets Voices. */
+    characterAgents?: { claudeCode?: boolean; openCode?: boolean; };
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
     /** Whether another chat of the campaign, still open, serves the dashboard at that link, which this chat takes over once it closes (D-577). */
@@ -75,7 +75,7 @@ export interface Context
     pictures?: PictureMaker;
     /** Lines for the master's next call, as of a picture that came after its call answered (D-572); MCP only. */
     later?: LaterLines;
-    /** What writes text from a brief on this computer, outside the chat, as Codex or Claude Code with the player's login (D-406); missing where none can. */
+    /** What writes text from a brief on this computer, outside the chat, as Codex or Claude Code with the player's login, or OpenCode in its own chat (D-406); missing where none can. */
     writer?: TextWriter;
     /** A game system's pages translated on this computer as a player first reads them, where the system has no translation of its own (D-539); missing elsewhere. */
     texts?: SystemTexts;
@@ -236,7 +236,7 @@ export interface DocumentReader
 {
     ready(): boolean;
     /** The program that would read now, which the player is told the document goes to (D-493). */
-    program?(): "Claude Code" | "Codex" | undefined;
+    program?(): "Claude Code" | "Codex" | "OpenCode" | undefined;
     /** One run: the brief on its input, reading only in `folder` and writing only in its `writable` subfolders; its last words, or why it stopped. Stopped by `signal`. */
     read(folder: string, brief: string, writable: string[], signal?: AbortSignal): Promise<{ said: string; } | { failed: string; }>;
 }
@@ -244,10 +244,10 @@ export interface DocumentReader
 /**
  * Whether pictures can be made here, or why not, in words the master can tell the player, and in the player's own with the steps to have them, one a line,
  * numbered, with the commands between backticks (D-341). Ready, who makes them, as Codex, Claude or Antigravity, and the master's own image tool it names, as
- * ElevenLabs, or that the player is to name it (D-572).
+ * ElevenLabs, or that the player is to name it, or that the chat draws them itself as SVG code (D-572).
  */
 export type PicturesReady =
-    | { ready: true; maker?: string; tool?: string; askTool?: true; instead?: PictureFallback; }
+    | { ready: true; maker?: string; tool?: string; askTool?: true; draws?: true; instead?: PictureFallback; }
     | { ready: false; why: string; fix?: string; };
 
 /**

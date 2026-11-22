@@ -278,7 +278,7 @@ async function preload(context: Context, session: SessionStore): Promise<void>
             if (root !== undefined) {
                 session.track(root);
                 // An agent written now reaches only the chats after this one (D-490).
-                context.characterAgent = hasCharacterAgent(root);
+                context.characterAgents = hasCharacterAgent(root);
                 refreshHostFiles(root, hostInstructions(), context.platform);
 
                 if (context.userHome !== undefined) {

@@ -1,17 +1,22 @@
 // Who makes the pictures (D-572), as the campaign chose: the chat in use, by its own means, as by default: in Codex, Codex; in Antigravity, the chat itself
-// with its own tool, which the engine never starts (its terms); elsewhere Claude's SVG, always on the player's own plan, never an API key (D-493). Or Codex,
+// with its own tool, which the engine never starts (its terms); in Claude Code and on the command line, Claude's SVG, always on the player's own plan, never an
+// API key (D-493); in any other chat, as OpenCode, the chat draws the SVG itself and hands it back with image, svg. Or Codex,
 // which, where it cannot or refuses, leaves the picture to the chat in use, saying why; or an image tool of the master's own, as ElevenLabs, from the same
 // brief as Antigravity's. Without any, the page shows its own picture all the same (D-389).
 import type { DocumentReader, MadePicture, PictureFallback, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
-import { chatBrief } from "./briefs.ts";
+import { antigravityBrief, chatBrief, drawnBrief } from "./briefs.ts";
 import { claudePictures, claudeReader, claudeWriter } from "./claude.ts";
 import { codexPictures, codexReader, codexWriter } from "./codex.ts";
+import { openCodeReader, openCodeWriter } from "./opencode.ts";
 
 /** The chat whose own pictures are Codex's, as its MCP client names itself. */
 export const codexClient = "codex-mcp-client";
 
 /** Antigravity's chat, as its MCP client names itself: it makes its pictures itself. */
 export const antigravityClient = "antigravity-client";
+
+/** OpenCode's chat, as its MCP client names itself: its master draws the pictures, and OpenCode does the work outside the chat there, and nowhere else (D-578 (3)). */
+export const openCodeClient = "opencode";
 
 /**
  * The pictures of this computer, by the campaign's choice, which `choice` reads when a picture is asked: unset or chat, the chat `host` names, by its own
@@ -22,8 +27,17 @@ export function hostPictures(host: () => string | undefined, choice: () => strin
 {
     let refused: string | undefined;
     let lastChoice: string | undefined;
-    // The chat in use, by its own means.
-    const chat = (): PictureMaker => (host() === codexClient ? codex : host() === antigravityClient ? antigravityPictures : claude);
+
+    // The chat in use, by its own means: Claude's drawing in Claude Code, whose clients' names start with claude, and where no chat names itself.
+    const chat = (): PictureMaker => {
+        const name = host() ?? "";
+
+        if (name === "" || name.toLowerCase().startsWith("claude")) {
+            return claude;
+        }
+
+        return name === codexClient ? codex : name === antigravityClient ? antigravityPictures : chatDrawing(chatNames[name] ?? name);
+    };
 
     // The maker the campaign chose, and whether it is Codex apart from the chat in use, which leaves the picture to it where it cannot.
     const chosen = (): { maker: PictureMaker; codexApart: boolean; } => {
@@ -58,9 +72,9 @@ export function hostPictures(host: () => string | undefined, choice: () => strin
             return { refused: instead.why };
         }
 
-        // A chat that paints itself gets no picture to make after its call answered: the next ones are its own.
+        // A chat that paints or draws itself gets no picture to make after its call answered: the next ones are its own.
         if (other.brief !== undefined) {
-            return { refused: `${instead.why}; the next pictures are yours to make with your own image tool` };
+            return { refused: `${instead.why}; the next pictures are yours to ${drawsItself(other) ? "draw as SVG code and give with image, svg" : "make with your own image tool"}` };
         }
 
         const made = await other.make(subject);
@@ -83,7 +97,7 @@ export function hostPictures(host: () => string | undefined, choice: () => strin
 
             const said = codexReady(again);
             const instead = said.ready ? undefined : fallbackOf(said);
-            return said.ready || instead === undefined ? said : { ready: true, maker: instead.by, instead };
+            return said.ready || instead === undefined ? said : { ready: true, maker: instead.by, ...(drawsItself(chat()) ? { draws: true as const } : {}), instead };
         },
         make: async (subject) => {
             const { maker, codexApart } = chosen();
@@ -135,12 +149,32 @@ const unnamedTool: PictureMaker = {
     brief: chatBrief,
 };
 
-// Antigravity paints in its own chat, from the brief the image command gives it: the engine starts nothing.
+// Antigravity paints in its own chat, from the brief the image command gives it, or draws the SVG where its tool fails: the engine starts nothing.
 const antigravityPictures: PictureMaker = {
     ready: () => ({ ready: true, maker: "Antigravity" }),
     make: () => Promise.resolve({ refused: "Antigravity makes its pictures in its own chat" }),
-    brief: chatBrief,
+    brief: antigravityBrief,
 };
+
+// The chats' names for the player, by the names their MCP clients give themselves; any other is shown as it comes.
+const chatNames: Record<string, string> = { [openCodeClient]: "OpenCode" };
+
+/** A chat that draws its pictures itself as SVG code (D-572), as OpenCode: from the SVG brief image gives it, handed back with image, svg; the engine starts nothing. */
+export function chatDrawing(name: string): PictureMaker
+{
+    return {
+        ready: () => ({ ready: true, maker: name, draws: true }),
+        make: () => Promise.resolve({ refused: `${name} draws its pictures in its own chat` }),
+        brief: drawnBrief,
+    };
+}
+
+// Whether a maker is a chat that draws itself; one with no brief never is, and is not asked.
+function drawsItself(maker: PictureMaker): boolean
+{
+    const said = maker.brief === undefined ? undefined : maker.ready();
+    return said?.ready === true && said.draws === true;
+}
 
 // An image tool of the master's own, by its name, as ElevenLabs's: the same brief, and the engine starts nothing.
 function masterTool(name: string): PictureMaker
@@ -152,20 +186,20 @@ function masterTool(name: string): PictureMaker
     };
 }
 
-/** The writer of text of this computer for the chat `host` names (D-406), chosen as the pictures are: Codex first, then Claude. */
-export function hostWriter(host: () => string | undefined, codex: TextWriter = codexWriter(), claude: TextWriter = claudeWriter()): TextWriter
+/** The writer of text of this computer for the chat `host` names (D-406): Codex first, then Claude; in OpenCode, OpenCode before them. */
+export function hostWriter(host: () => string | undefined, codex: TextWriter = codexWriter(), claude: TextWriter = claudeWriter(), openCode: TextWriter = openCodeWriter()): TextWriter
 {
-    const writers = (): TextWriter[] => (host() === codexClient ? [codex] : [codex, claude]);
+    const writers = (): TextWriter[] => (host() === codexClient ? [codex] : host() === openCodeClient ? [openCode, codex, claude] : [codex, claude]);
     return {
         ready: () => writers().some((writer) => writer.ready()),
         write: (brief) => (writers().find((writer) => writer.ready()) ?? codex).write(brief),
     };
 }
 
-/** The importer of this computer for the chat `host` names (D-489 (1)): Codex in Codex, else Claude first, which Elena's probe measured, then Codex. */
-export function hostReader(host: () => string | undefined, codex: DocumentReader = codexReader(), claude: DocumentReader = claudeReader()): DocumentReader
+/** The importer of this computer for the chat `host` names (D-489 (1)): Codex in Codex, else Claude first, which Elena's probe measured, then Codex; in OpenCode, OpenCode before them. */
+export function hostReader(host: () => string | undefined, codex: DocumentReader = codexReader(), claude: DocumentReader = claudeReader(), openCode: DocumentReader = openCodeReader()): DocumentReader
 {
-    const readers = (): DocumentReader[] => (host() === codexClient ? [codex] : [claude, codex]);
+    const readers = (): DocumentReader[] => (host() === codexClient ? [codex] : host() === openCodeClient ? [openCode, claude, codex] : [claude, codex]);
     return {
         ready: () => readers().some((reader) => reader.ready()),
         program: () => readers().find((reader) => reader.ready())?.program?.(),

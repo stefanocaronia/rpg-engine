@@ -163,6 +163,7 @@ Read-only: no. Positional parameters: `page`, `file`.
 - `page` (`string`, required): the page that gets the picture
 - `file` (`string`, optional): the picture's file, PNG, JPEG, WebP or SVG up to 5 MB: its full path or one from the folder the command runs in; leave it and url out to remove the page's own picture
 - `url` (`string`, optional): instead of file, the picture's https address, as an image tool gives it: the engine downloads it, the same formats up to 5 MB
+- `svg` (`string`, optional): instead of file, the picture's SVG code, from <svg to </svg>, as you drew it from the brief image gave you: the engine cleans it and keeps it
 - `describe` (`string`, optional): instead of file, in a few lines, never a victim or wounds: for a place, what the party sees arriving; for a quest, what the character knows of it; for one of the party, their look, their people as this world has them and the rest as the player described it; for a character or a creature met, what the character sees of them, a disguise as the disguise; never what the character does not know. The picture is made where it can be, and comes by itself
 
 ### import

@@ -109,6 +109,52 @@ describe("who makes the pictures, as the campaign chose, else by the chat in use
         const away = maker({ ready: false, why: "Codex is not installed on this computer" });
         expect(hostPictures(() => antigravityClient, () => "codex", away).brief?.(bridge)).toContain("Ponte, as adventurers see it arriving");
         expect(codex.made).toEqual([]);
+        // Its tool fails or it has none: it draws the SVG instead, in one more line.
+        expect(brief.split("\n").at(-1)).toMatch(/^If your image tool fails or you have none, draw it as SVG code instead: .* call image again for the same page with svg holding the code\.$/);
+        expect(brief.length).toBeLessThan(1400);
+    });
+
+    it("gives each chat its own means by the name its client gives itself", () => {
+        const codex = maker({ ready: true, maker: "Codex" });
+        const claude = maker({ ready: true, maker: "Claude" });
+        const ready = (client: string | undefined): PicturesReady => hostPictures(() => client, () => undefined, codex, claude).ready();
+        expect(ready("codex-mcp-client")).toEqual({ ready: true, maker: "Codex" });
+        expect(ready(antigravityClient)).toEqual({ ready: true, maker: "Antigravity" });
+        expect(ready("claude-code")).toEqual({ ready: true, maker: "Claude" });
+        expect(ready("claude-ai")).toEqual({ ready: true, maker: "Claude" });
+        expect(ready(undefined)).toEqual({ ready: true, maker: "Claude" });
+        expect(ready("opencode")).toEqual({ ready: true, maker: "OpenCode", draws: true });
+        expect(ready("some-agent")).toEqual({ ready: true, maker: "some-agent", draws: true });
+    });
+
+    it("has any other chat, as OpenCode, draw the SVG itself and hand it back with svg, and starts nothing", async () => {
+        const codex = maker({ ready: true, maker: "Codex" });
+        const claude = maker({ ready: true, maker: "Claude" });
+        const pictures = hostPictures(() => "opencode", () => undefined, codex, claude);
+        const brief = pictures.brief?.(bridge) ?? "";
+        expect(brief).toMatch(/^Draw exactly one new picture from the brief below yourself, as SVG code\./);
+        expect(brief).toContain('viewBox="0 0 2100 900" (21:9)');
+        expect(brief).toContain("Primary request: Ponte, as adventurers see it arriving: un ponte di pietra");
+        expect(brief).toContain("Never show: ragni");
+        expect(brief).toContain("no script, style, text, image, use, a, foreignObject or animation");
+        expect(brief).not.toContain("Reply with the SVG alone");
+        expect(brief.split("\n").at(-1)).toBe("Then call image again for the same page with svg holding the code, from <svg to </svg>: write no file, and do not show the code to the player.");
+        expect(await pictures.make(bridge)).toEqual({ refused: "OpenCode draws its pictures in its own chat" });
+        expect([...codex.made, ...claude.made]).toEqual([]);
+    });
+
+    it("leaves the picture to a chat that draws where Codex is chosen and cannot, saying the next are its own to draw", async () => {
+        const away = maker({ ready: false, why: "Codex is not installed on this computer" });
+        const pictures = hostPictures(() => "opencode", () => "codex", away, maker({ ready: true, maker: "Claude" }));
+        expect(pictures.ready()).toEqual({ ready: true, maker: "OpenCode", draws: true, instead: { maker: "Codex", by: "OpenCode", why: "Codex is not installed on this computer" } });
+        expect(pictures.brief?.(bridge)).toMatch(/^Draw exactly one new picture/);
+        // Codex ready, then refusing a picture: the call has answered, and the next pictures are the chat's to draw.
+        const refusing: PictureMaker = { ready: () => ({ ready: true, maker: "Codex" }), make: () => Promise.resolve({ refused: "your plan makes no pictures" }) };
+        const after = hostPictures(() => "opencode", () => "codex", refusing);
+        expect(after.brief?.(bridge)).toBeUndefined();
+        expect(await after.make(bridge)).toEqual({ refused: "your plan makes no pictures; the next pictures are yours to draw as SVG code and give with image, svg" });
+        expect(after.ready()).toMatchObject({ ready: true, maker: "OpenCode", draws: true, instead: { refused: true } });
+        expect(after.brief?.(bridge)).toMatch(/^Draw exactly one new picture/);
     });
 
     it("names the program that would read a document, which the player is told it goes to (D-493)", () => {

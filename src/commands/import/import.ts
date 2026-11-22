@@ -60,7 +60,7 @@ interface ImportResult
     /** How many of the document's pages were read from their pictures, as it started (LIB-4). */
     recognized?: number;
     /** Begun now by a helper, named when known: the player hears whose plan reads the document, and under whose terms (D-493). */
-    helper?: "Claude Code" | "Codex" | "a helper";
+    helper?: "Claude Code" | "Codex" | "OpenCode" | "a helper";
 }
 
 export const importCommand = defineCommand({
@@ -540,6 +540,12 @@ function helperText(helper: ImportResult["helper"]): string
 {
     if (helper === undefined) {
         return "";
+    }
+
+    // OpenCode reads with the model the player chose in it, whose maker is the one the document goes to.
+    if (helper === "OpenCode") {
+        return "Tell the player in a few words that their own OpenCode reads it, with the model they last chose in it and on its plan or price, and that the whole document "
+            + "goes to that model's provider, or stays on their computer with a local model, under the terms of their account, its choice on training included.";
     }
 
     const [program, company] = helper === "Codex" ? ["Codex", "OpenAI"] : helper === "Claude Code" ? ["Claude Code", "Anthropic"] : ["Claude Code or Codex", "Anthropic or OpenAI"];

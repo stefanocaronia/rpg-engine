@@ -139,12 +139,12 @@ describe("whose diary is due (DIA-2)", () => {
 
     it("asks the character agent where the chat has it and the master does not voice everyone", async () => {
         await scene("Al pozzo", "Kira", "Bran");
-        const agent = await runCommandLine(["advance", "--by", "12h"], { ...context, host: () => "claude-code", characterAgent: true });
+        const agent = await runCommandLine(["advance", "--by", "12h"], { ...context, host: () => "claude-code", characterAgents: { claudeCode: true } });
         expect(agent.output).toContain(
             `Diary: Bran's is due: at this pause, before the story goes on, have them write a few lines on how they took what they lived: ask their agent "Write your diary" and keep its Writes line with thoughts.`,
         );
         await ok("config", "voices", "master");
-        const master = await runCommandLine(["advance", "--by", "1d"], { ...context, host: () => "claude-code", characterAgent: true });
+        const master = await runCommandLine(["advance", "--by", "1d"], { ...context, host: () => "claude-code", characterAgents: { claudeCode: true } });
         expect(master.output).toContain("write it yourself in their voice, with thoughts.");
     });
 

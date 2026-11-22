@@ -1,0 +1,1 @@
+Here the agent is the subagent rpg-character, started with the subagent tool, and its answer comes later as a message: once you started it, end your turn without a word to the player, and narrate when its lines come.

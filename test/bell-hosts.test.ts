@@ -220,6 +220,33 @@ describe("the engine's plugin for OpenCode (D-578)", () => {
         expect(last.killed).toBe(true);
     });
 
+    it("waits for the player across the character agent's round: the subagent's turns start no doorbell, and the master's second round waits again (D-490)", async () => {
+        const folder = temporary();
+        const opencode = fakeOpenCode(folder);
+        await (await plugin()).setup(opencode.context, opencode.run);
+        await opencode.send("session.inbox.enqueued", { sessionID: "ses_1", item: { type: "user", payload: { text: "Marta, vieni con noi?" } } });
+        await opencode.send("session.execution.started", { sessionID: "ses_1" });
+        // The master starts the subagent, whose tool answers at once, and ends its turn: a doorbell waits.
+        await opencode.send("session.execution.succeeded", { sessionID: "ses_1" });
+        const waiting = opencode.children.at(-1)!;
+        const before = opencode.hooks().length;
+
+        // The subagent's own session runs and ends in the same folder: no doorbell for it, and the master's still waits.
+        await opencode.send("session.created", { sessionID: "ses_marta", parentID: "ses_1" });
+        await opencode.send("session.inbox.enqueued", { sessionID: "ses_marta", item: { type: "user", payload: { text: "Marta, ..." } } });
+        await opencode.send("session.execution.started", { sessionID: "ses_marta" });
+        await opencode.send("session.execution.succeeded", { sessionID: "ses_marta" });
+        expect(opencode.hooks()).toHaveLength(before);
+        expect(waiting.killed).toBe(false);
+
+        // Its lines come to the master as a message, which starts the master's second round: that wait goes, and the round's end waits again.
+        await opencode.send("session.execution.started", { sessionID: "ses_1" });
+        expect(waiting.killed).toBe(true);
+        await opencode.send("session.execution.succeeded", { sessionID: "ses_1" });
+        expect(opencode.hooks()).toHaveLength(before + 1);
+        expect(opencode.children.at(-1)!.killed).toBe(false);
+    });
+
     it("leaves alone the chats of other folders, which OpenCode's background service tells it of too", async () => {
         const folder = temporary();
         const opencode = fakeOpenCode(folder);

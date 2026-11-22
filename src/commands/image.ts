@@ -6,6 +6,7 @@ import { appendLogEntry } from "../core/log.ts";
 import { defineCommand } from "../core/registry.ts";
 import { files, isInside } from "../core/store.ts";
 import { comparableText, withArticle } from "../core/text.ts";
+import { cleanSvg, svgIn } from "../helpers/index.ts";
 import { imageFileName, imageLink, imageOfBytes, imagesFolderName, largestImage, type ReadImage, readImage } from "../images/index.ts";
 import { baseChain, findPage, isPartyMember, ownField, type Page, pageNamed, parsePageReference, type World, writePage } from "../pages/index.ts";
 import { imageFile, ownImage } from "./shared/campaign/images.ts";
@@ -33,6 +34,8 @@ interface ImageResult
     tool?: string;
     /** The player chose another image tool and has not named it yet: the master asks which (D-572). */
     askTool?: true;
+    /** The brief is the SVG one: the chat draws the picture itself and gives it with svg (D-572). */
+    draw?: true;
     /** Why the chat in use made it, or makes it, in place of the maker the player chose (D-572). */
     instead?: string;
 }
@@ -41,7 +44,8 @@ export const image = defineCommand({
     name: "image",
     description: "Give a page its picture: a portrait for a character, an image for a creature, an item or a place, as the dashboard will show it in a round token. "
         + "It copies the file into the campaign and links it in the page's image field; a page without one shows the picture of the page it derives from, such as a wolf's icon. "
-        + "Use it when the player gives you a picture, or after you made one with your own tools: its file, or url with the https address your tool gives, which the engine downloads. "
+        + "Use it when the player gives you a picture, or after you made one with your own tools: its file, url with the https address your tool gives, which the engine downloads, "
+        + "or svg with the code you drew. "
         + "The player may drop pictures in the campaign's inbox folder: ask what each is for, give it, then delete it from the inbox. "
         + "For a place, a quest, a character or a creature of the campaign, describe instead of file has the picture made on this computer, as the campaign's pictures setting allows: "
         + "for the player character or a companion only when the player asks; for a creature once for each kind, whose copies show it. "
@@ -52,6 +56,7 @@ export const image = defineCommand({
         page: z.string().describe("the page that gets the picture"),
         file: z.string().optional().describe("the picture's file, PNG, JPEG, WebP or SVG up to 5 MB: its full path or one from the folder the command runs in; leave it and url out to remove the page's own picture"),
         url: z.string().optional().describe("instead of file, the picture's https address, as an image tool gives it: the engine downloads it, the same formats up to 5 MB"),
+        svg: z.string().optional().describe("instead of file, the picture's SVG code, from <svg to </svg>, as you drew it from the brief image gave you: the engine cleans it and keeps it"),
         describe: z.string().optional().describe(
             "instead of file, in a few lines, never a victim or wounds: for a place, what the party sees arriving; for a quest, what the character knows of it; "
                 + "for one of the party, their look, their people as this world has them and the rest as the player described it; for a character or a creature met, what the character sees of them, "
@@ -75,6 +80,15 @@ export const image = defineCommand({
 
         const url = input.url?.trim() ?? "";
         const file = input.file?.trim() ?? "";
+        const svg = input.svg?.trim() ?? "";
+
+        if (svg !== "") {
+            if (file !== "" || url !== "" || (input.describe ?? "").trim() !== "") {
+                throw new Error("Give svg alone: it is the picture you drew, and file, url and describe are other ways to give one. Nothing changed.");
+            }
+
+            return drawnImage(root, context, world, page, svg);
+        }
 
         if (input.describe !== undefined && input.describe.trim() !== "") {
             if (file !== "" || url !== "") {
@@ -102,7 +116,7 @@ export const image = defineCommand({
     format(result)
     {
         if (result.paint !== undefined) {
-            const how = result.askTool === true ? askToolText(result.page) : paintText(result.page, result.tool);
+            const how = result.draw === true ? drawText(result.page) : result.askTool === true ? askToolText(result.page) : paintText(result.page, result.tool);
             return `${result.instead === undefined ? "" : `${result.instead} `}${how}\n\n${result.paint}`;
         }
 
@@ -147,6 +161,25 @@ async function downloadedImage(root: string, context: Context, world: World, pag
     });
 
     return placeImage(root, context, world, page, imageOfBytes(bytes, "What the address gave"));
+}
+
+/**
+ * The picture the chat drew as SVG code (D-572), as OpenCode's, whose own writing is denied in a campaign: cleaned as Claude's drawing is, then taken as a file
+ * is; refused with how to draw it again when nothing usable is left.
+ */
+function drawnImage(root: string, context: Context, world: World, page: Page, code: string): ImageResult
+{
+    const drawn = svgIn(code);
+    const clean = drawn === undefined ? undefined : cleanSvg(drawn);
+
+    if (clean === undefined) {
+        throw new Error(
+            "svg takes the picture's SVG code, and this is none the engine can use: give one <svg> root that closes, under 100 KB, with only shapes, groups, gradients, masks and blur, "
+                + "no text, script, style or image; draw it again so, or go on without. Nothing changed.",
+        );
+    }
+
+    return placeImage(root, context, world, page, imageOfBytes(Buffer.from(clean), "The SVG"));
 }
 
 /** Writes a picture into the campaign's images folder and links it in the page, logging it; `from` is the file it was read from, if any. */
@@ -241,7 +274,7 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
     // The chat paints it itself, with its own tool or one it names.
     if (paint !== undefined) {
         const instead = ready.instead === undefined ? {} : { instead: insteadText(page.name, ready.instead, false) };
-        const tool = ready.askTool === true ? { askTool: true as const } : ready.tool === undefined ? {} : { tool: ready.tool };
+        const tool = ready.draws === true ? { draw: true as const } : ready.askTool === true ? { askTool: true as const } : ready.tool === undefined ? {} : { tool: ready.tool };
         return { page: page.name, changed: false, paint, ...tool, ...instead };
     }
 
@@ -290,7 +323,7 @@ function paintText(page: string, tool: string | undefined): string
     const give = giveText(page);
 
     if (tool === undefined) {
-        return `Make ${page}'s picture yourself with your own image tool, from this brief, then ${give}; if your tool makes none, go on without.`;
+        return `Make ${page}'s picture yourself with your own image tool, from this brief, then ${give}; if your tool makes none, draw it as the brief's last line says, or go on without.`;
     }
 
     if (tool === "ElevenLabs") {
@@ -300,6 +333,12 @@ function paintText(page: string, tool: string | undefined): string
     }
 
     return `Make ${page}'s picture with ${tool}, from this brief, then ${give}; if it makes none, tell the player why and go on without.`;
+}
+
+/** How the master of a chat that draws itself makes a picture (D-572): as SVG code, from the brief, given back with svg. */
+function drawText(page: string): string
+{
+    return `Draw ${page}'s picture yourself as SVG code, from this brief, then give it with image, page ${page}, svg and the code; if you cannot, go on without.`;
 }
 
 /** What the master does where the player chose another image tool without naming it (D-572): asks which, writes it, then makes the picture with it. */

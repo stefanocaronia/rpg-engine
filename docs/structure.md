@@ -53,7 +53,7 @@ Where things are in the repository, what each module depends on, and where new c
 | `instructions` | Reads `instructions/` from the package |
 | `progression` | Tables of levels: rows and features up to a level |
 | `images` | Picture formats and finding a picture file |
-| `helpers` | Codex and Claude Code as the player's own programs: found, installed, signed in, stopped; the pictures, the import's reader and the translations' writer they give |
+| `helpers` | Codex and Claude Code as the player's own programs: found, installed, signed in, stopped; the pictures, the import's reader and the translations' writer they give; OpenCode's reader and writer, in its own chat (`opencode.ts`) |
 | `documents` | The player's documents as text and pictures: PDF, by OCR where it has no text, Word, OpenDocument, EPUB, HTML, RTF, text |
 | `importer` | The import's folder: a document in pieces, how far it is, the adventure the helper writes |
 | `library` | The player's books: their text indexed once in the local data folder, read apart one at a time |

@@ -10,6 +10,18 @@ export function chatBrief(subject: PictureSubject): string
     return paintedBrief(subject).replace(imageAsk, chatAsk).replace("landscape, 21:9", "landscape, 16:9");
 }
 
+/** Antigravity's painted brief, with the SVG drawing for when its image tool fails (D-572). */
+export function antigravityBrief(subject: PictureSubject): string
+{
+    return `${chatBrief(subject)}\n${svgInstead}`;
+}
+
+/** The SVG brief as the chat draws the picture itself (D-572), as OpenCode: handed back with image, svg, never as a file. */
+export function drawnBrief(subject: PictureSubject): string
+{
+    return `${svgBrief(subject).replace(svgOpening, chatDraw)}\n${handIn}`;
+}
+
 /** The painted brief of a place's or a quest's picture, a portrait or a creature's head, as Codex makes it. */
 export function paintedBrief(subject: PictureSubject): string
 {
@@ -115,6 +127,11 @@ const creatureFraming = "a close-up of the head, its face or muzzle centred and 
 const svgOpening = "Draw exactly one picture as SVG code from the brief below. Reply with the SVG alone, from <svg to </svg>: no words, no code fence.";
 const svgStyle = "Style/medium: vector illustration with depth: layered shapes from far to near, gradients for sky, light and water, far layers paler and bluer, "
     + "a few soft blurred shapes for mist and glow; a sober palette of muted natural colours";
+// The chat draws the SVG itself, and gives it to the engine in its call.
+const chatDraw = "Draw exactly one new picture from the brief below yourself, as SVG code.";
+const handIn = "Then call image again for the same page with svg holding the code, from <svg to </svg>: write no file, and do not show the code to the player.";
+const svgInstead = "If your image tool fails or you have none, draw it as SVG code instead: one <svg> root with a viewBox of the same proportions, only shapes and gradients, "
+    + "no text, script, style or image, under 40 KB; then call image again for the same page with svg holding the code.";
 const svgRules = "SVG rules: one <svg> root with only the viewBox above and xmlns; only the elements svg, g, defs, path, rect, circle, ellipse, polygon, polyline, line, "
     + "linearGradient, radialGradient, stop, clipPath, mask, filter, feGaussianBlur; no script, style, text, image, use, a, foreignObject or animation, "
     + "no event attributes, no href, no url() other than url(#id) of this file; under 40 KB";

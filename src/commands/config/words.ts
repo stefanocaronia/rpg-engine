@@ -182,7 +182,7 @@ export const playerWords: Record<(typeof playerSettingNames)[number], PlayerWord
         about: "who makes the pictures",
         values: pictureMakers,
         means: {
-            chat: "your AI app, by its own means: Claude draws them as vector pictures, Codex and Antigravity paint them, each from your plan",
+            chat: "your AI app, by its own means: Claude draws them as vector pictures, Codex and Antigravity paint them, OpenCode and the other apps draw simple vector pictures in the chat, each from your plan",
             codex: "Codex paints them on this computer, from your ChatGPT plan (Plus or higher)",
             elevenlabs: "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan",
             other: "another image tool connected to your AI app: the master asks you which in the chat",

@@ -72,6 +72,8 @@ describe("architecture", () => {
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).
             "helpers/claude.ts",
             "helpers/codex.ts",
+            // OpenCode's writer in a folder of its own, and the player's model read from OpenCode's state folder (D-578 (3)).
+            "helpers/opencode.ts",
             "helpers/programs.ts",
             // The page's words translated on the fly, in the player's data folder (D-406).
             "commands/shared/books/words.ts",

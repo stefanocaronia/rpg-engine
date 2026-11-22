@@ -263,6 +263,9 @@ const madeBy = {
     Antigravity: "Antigravity makes them in your chat, from your Google plan.",
 };
 
+// The chat in use draws them itself, as OpenCode (D-572).
+const drawnInChat = "{maker} draws them in your chat, as simple vector pictures, from your plan.";
+
 // The master makes them with an image tool of its own, as ElevenLabs's (D-572).
 const madeWithTool = "The master makes them with {tool}.";
 const toolAsked = "The master asks you in the chat which tool to use.";
@@ -275,7 +278,7 @@ const madeMeanwhile = "{by} makes them meanwhile.";
 const ownPicture = "You can also give a page you see a picture of your own: with its picture button, or dropped in the campaign's inbox folder for the master.";
 
 /** Every note the pictures' setting may have, which the dashboard writes in its language (D-394). */
-export const picturesNotes = [...Object.values(madeBy), madeWithTool, toolAsked, refusedNote, madeMeanwhile, ownPicture, ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];
+export const picturesNotes = [...Object.values(madeBy), drawnInChat, madeWithTool, toolAsked, refusedNote, madeMeanwhile, ownPicture, ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];
 
 /**
  * Whether this computer makes pictures, and with whose plan, in the player's words (D-308, D-390); why not and how to have them; where the maker the player
@@ -307,6 +310,10 @@ function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
 
     if (ready.askTool === true) {
         return { note: { text: toolAsked } };
+    }
+
+    if (ready.draws === true) {
+        return { note: { text: drawnInChat, values: { maker: ready.maker ?? "" } } };
     }
 
     return { note: { text: madeBy[ready.maker === "Claude" || ready.maker === "Antigravity" ? ready.maker : "Codex"] } };

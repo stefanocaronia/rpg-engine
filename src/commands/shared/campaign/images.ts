@@ -27,6 +27,8 @@ export function picturesNote(root: string, context: Context, world: World, place
                     ? `you can make the pictures of places, quests and those met with ${ready.tool}`
                     : ready.askTool === true
                     ? "you can make the pictures of places, quests and those met with the image tool the player names"
+                    : ready.draws === true
+                    ? "you can draw the pictures of places, quests and those met yourself, as simple vector pictures"
                     : ready.maker === "Antigravity"
                     ? "you can make the pictures of places, quests and those met with your own image tool"
                     : `this computer can make the pictures of places, quests and those met with the player's ${ready.maker === "Claude" ? "Claude Code" : "Codex"}`

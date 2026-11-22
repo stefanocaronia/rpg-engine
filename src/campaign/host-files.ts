@@ -101,12 +101,12 @@ export function writeEffortFiles(root: string, platform: string, cleared = false
 }
 
 /**
- * Whether the campaign has the character agent as a Claude Code agent (D-490): looked at as the MCP server starts, before it writes its host files, it says whether
- * the chat found the agent, as Claude Code reads its agents only when a chat starts.
+ * Whether the campaign has the character agent as a Claude Code agent and as an OpenCode subagent (D-490): looked at as the MCP server starts, before it writes
+ * its host files, it says whether the chat found the agent, as both hosts read their agents only when a chat starts.
  */
-export function hasCharacterAgent(root: string): boolean
+export function hasCharacterAgent(root: string): { claudeCode: boolean; openCode: boolean; }
 {
-    return files().fresh(characterAgentPath(root)) !== undefined;
+    return { claudeCode: files().fresh(characterAgentPath(root)) !== undefined, openCode: files().fresh(openCodeAgentPath(root)) !== undefined };
 }
 
 function hostFiles(root: string, instructions: HostInstructions, platform: string): (() => HostFile | undefined)[]
@@ -116,6 +116,7 @@ function hostFiles(root: string, instructions: HostInstructions, platform: strin
         () => claudeFile(root),
         () => claudeSettingsFile(root),
         () => characterAgentFile(root, instructions.character),
+        () => openCodeAgentFile(root, instructions.character),
         () => codexConfigFile(root, platform),
         () => antigravityServerFile(root, platform),
         () => antigravityHooksFile(root),
@@ -292,6 +293,43 @@ function characterAgentFile(root: string, instructions: string): HostFile | unde
         "---",
         "",
         instructions,
+        "",
+    ].join("\n");
+    return files().fresh(path)?.replace(/\r\n/g, "\n") === text ? undefined : { path, text };
+}
+
+function openCodeAgentPath(root: string): string
+{
+    return join(root, ".opencode", "agents", "rpg-character.md");
+}
+
+/**
+ * The character agent as an OpenCode subagent (D-490), as Claude Code's is written and taken away: every tool denied but execute and the rpg server's view,
+ * which OpenCode's subagents reach through execute, as Elena's probe proved it.
+ */
+function openCodeAgentFile(root: string, instructions: string): HostFile | undefined
+{
+    const path = openCodeAgentPath(root);
+
+    if (readTextSetting(root, "voices") === "master") {
+        return files().fresh(path) === undefined ? undefined : { path };
+    }
+
+    const rule = (action: string, effect: string): string[] => [`  - action: "${action}"`, '    resource: "*"', `    effect: ${effect}`];
+    const text = [
+        "---",
+        "# Written by rpg, which writes it again as the game starts: a change made here does not last.",
+        "description: Voices one character of the campaign at a key moment, knowing only what they know. Begin with their name, then the moment, as Voices says.",
+        "mode: subagent",
+        "permissions:",
+        ...rule("*", "deny"),
+        ...rule("execute", "allow"),
+        ...rule("rpg_view", "allow"),
+        "---",
+        "",
+        instructions,
+        "",
+        'Your tool: tools.rpg.view, called through execute, as await tools.rpg.view({ as: "your name" }).',
         "",
     ].join("\n");
     return files().fresh(path)?.replace(/\r\n/g, "\n") === text ? undefined : { path, text };
