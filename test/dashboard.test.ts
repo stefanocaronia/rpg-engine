@@ -19,7 +19,9 @@ import type { Asked, ChoicesNow, JournalFact, PlayerSetting, SheetGroup, SheetVa
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/parts/game-words.ts";
 import { checkOf, customLabel, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, leveledItemLabel, phraseLabel, rollModifier, shownText, valueLabel } from "../src/dashboard/parts/labels.ts";
 import { arrangedGroups, columnsByHeight, endedQuests, equippedFirst, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/parts/layout.ts";
+import { settingsTab, settingsTabs } from "../src/dashboard/settings/tabs.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
+import { antigravityClient, antigravitySays } from "../src/helpers/index.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import type { ShownChoices as ServerChoices } from "../src/server/dashboard/choices.ts";
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/server/dashboard/index.ts";
@@ -293,13 +295,39 @@ describe("view as data (VIEW-1, D-272)", () => {
             also: ["{by} makes them meanwhile."],
         });
         expect(await pictures({ ready: true, maker: "ElevenLabs", tool: "ElevenLabs" })).toEqual({ text: "The master makes them with {tool}.", values: { tool: "ElevenLabs" } });
-        // Unset, the chat in use; and in Codex, Codex is no choice of its own.
-        expect(named("pictures-by")).toMatchObject({ value: "chat", choices: [{ value: "chat" }, { value: "codex" }, { value: "elevenlabs" }, { value: "other" }].map((choice) => expect.objectContaining(choice)) });
+        // Antigravity's painter apart from its chat, and its own in its chat (T-251); its not-ready words, with no step, as the engine does not install it.
+        expect(await pictures({ ready: true, maker: "Antigravity" })).toEqual({ text: "Antigravity paints them on this computer, from your Google plan." });
+        const inAntigravityChat = await runCommandLine(["view", "--settings", "--json"], {
+            ...context,
+            host: () => antigravityClient,
+            pictures: { ready: () => ({ ready: true, maker: "Antigravity" }), make: () => Promise.resolve({ refused: "no" }) },
+        });
+        expect((JSON.parse(inAntigravityChat.output) as { settings: PlayerSetting[]; }).settings.find((setting) => setting.name === "pictures")?.note?.text).toBe("Antigravity makes them in your chat, from your Google plan.");
+        expect(await pictures({ ready: true, maker: "Claude", instead: { maker: "Antigravity", by: "Claude", ...antigravitySays.notReady } })).toEqual({
+            text: "Antigravity's agy does not answer on this computer, or is not signed in.",
+            fix: true,
+            values: { by: "Claude" },
+            also: ["{by} makes them meanwhile."],
+        });
+        // Unset, the chat in use; and in Codex, Codex is no choice of its own, nor Antigravity in Antigravity.
+        expect(named("pictures-by")).toMatchObject({
+            value: "chat",
+            choices: [{ value: "chat" }, { value: "codex" }, { value: "antigravity" }, { value: "elevenlabs" }, { value: "other" }].map((choice) => expect.objectContaining(choice)),
+        });
+        expect(named("pictures-by")).toMatchObject({
+            choices: expect.arrayContaining([{ value: "antigravity", means: "Antigravity paints them on this computer, from your Google plan (a paid one: on the free plan its image tool fails)" }]) as unknown,
+        });
         await ok("config", "pictures-by", "codex");
         const inCodex = JSON.parse((await runCommandLine(["view", "--settings", "--json"], { ...context, host: () => "codex-mcp-client" })).output) as { settings: PlayerSetting[]; };
         expect(inCodex.settings.find((setting) => setting.name === "pictures-by")).toMatchObject({
             value: "chat",
-            choices: [expect.objectContaining({ value: "chat" }), expect.objectContaining({ value: "elevenlabs" }), expect.objectContaining({ value: "other" })],
+            choices: [expect.objectContaining({ value: "chat" }), expect.objectContaining({ value: "antigravity" }), expect.objectContaining({ value: "elevenlabs" }), expect.objectContaining({ value: "other" })],
+        });
+        await ok("config", "pictures-by", "antigravity");
+        const inAntigravity = JSON.parse((await runCommandLine(["view", "--settings", "--json"], { ...context, host: () => antigravityClient })).output) as { settings: PlayerSetting[]; };
+        expect(inAntigravity.settings.find((setting) => setting.name === "pictures-by")).toMatchObject({
+            value: "chat",
+            choices: [expect.objectContaining({ value: "chat" }), expect.objectContaining({ value: "codex" }), expect.objectContaining({ value: "elevenlabs" }), expect.objectContaining({ value: "other" })],
         });
         const refused = await runCommandLine(["view", "--settings", "--map"], context);
         expect(refused.exitCode).not.toBe(0);
@@ -450,7 +478,13 @@ describe("the setup as the dashboard shows it (D-370)", () => {
         expect(setup.questions[13]).toMatchObject({
             name: "pictures-by",
             question: "Who makes them?",
-            choices: [expect.objectContaining({ value: "chat" }), expect.objectContaining({ value: "codex" }), expect.objectContaining({ value: "elevenlabs" }), expect.objectContaining({ value: "other" })],
+            choices: [
+                expect.objectContaining({ value: "chat" }),
+                expect.objectContaining({ value: "codex" }),
+                expect.objectContaining({ value: "antigravity" }),
+                expect.objectContaining({ value: "elevenlabs" }),
+                expect.objectContaining({ value: "other" }),
+            ],
         });
         expect(setup.questions[13]).not.toHaveProperty("value");
         expect(setup.questions.find((question: { name: string; }) => question.name === "harshness")).toMatchObject({ about: "how hard the road is" });
@@ -1182,6 +1216,19 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(sectionAddress("world", undefined, "Guadoscuro")).toBe("#/world");
         expect(readAddress("#/elsewhere/Ettore")).toEqual({ section: "party" });
         expect(readAddress("#/party/%E0%A4%A")).toEqual({ section: "party" });
+    });
+
+    it("shows Settings on the tab its address names, the first for none or for one it does not have", () => {
+        expect([...settingsTabs]).toEqual(["game", "master", "campaign", "page"]);
+        expect(readAddress("#/settings")).toEqual({ section: "settings" });
+        expect(readAddress("#/settings/master")).toEqual({ section: "settings", tab: "master" });
+        // The first tab's address is the section's own, each other's ends with its key: what the tabs write, and what a link gives, as Packages' to the page's own.
+        const addresses = settingsTabs.map((tab) => sectionAddress("settings", tab === settingsTabs[0] ? undefined : tab));
+        expect(addresses).toEqual(["#/settings", "#/settings/master", "#/settings/campaign", "#/settings/page"]);
+        expect(addresses.map((address) => settingsTab(readAddress(address).tab))).toEqual([...settingsTabs]);
+        expect(settingsTab(readAddress("#/settings/game").tab)).toBe("game");
+        expect(settingsTab(readAddress("#/settings/nowhere").tab)).toBe("game");
+        expect(settingsTab(undefined)).toBe("game");
     });
 
     it("shows the rolls of the last half hour since the list was cleared, and older ones as asked, read or still in the log (D-302)", () => {

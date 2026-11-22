@@ -78,7 +78,7 @@ Motion is added inside `@media (prefers-reduced-motion: no-preference)`, so that
 
 ## 2. Parts
 
-**Page.** A section is a `PageHead` (its icon and title in the accent) over a `.page-stack` of cards, with room at the bottom for the dice's button. The page never changes section by itself.
+**Page.** A section is a `PageHead` (its icon and title in the accent) over a `.page-stack` of cards, with room at the bottom for the dice's button. The page never changes section by itself. A section too long for one stack follows the scheme of Packages and Settings: its head, a line that says what a change there does, its tabs, then the chosen tab's cards, always open, each with its icon and title (`CardHead`) and a few rows on one matter. A section made after them reuses these parts, and adds one of its own only where they do not fit.
 
 **Tabs.** Parts of one section are tabs under its head (`PageTabs`, `.page-tabs`): words in `--muted`, the chosen one in the accent with a 3 px bar under it, 40 px tall (44 on touch). On a phone they close up, and when they still do not fit the row scrolls sideways; it never wraps and never widens the page. The tab is in the address (`#/world/lore`), changed with `location.replace`; an item opened inside it is too (`#/world/lore/Bertoldo`), pushed, so that Back returns to it and the master can give a link. Arrows move along the tabs, Home and End go to the ends, and one Tab stop reaches the row. A tab may carry a mark after its name (`.tab-mark`): a count in the accent, or what is missing in `--low`, with its tip and in the tab's name for a screen reader.
 

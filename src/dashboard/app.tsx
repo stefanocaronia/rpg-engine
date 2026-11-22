@@ -778,7 +778,7 @@ function App()
                                                         />
                                                     )}
                                                     {address.section === "world" && <WorldView version={shown.version} lead={lead} players={many ? players : undefined} tab={address.tab} item={address.name} />}
-                                                    {address.section === "settings" && <SettingsView version={shown.version} several={many} />}
+                                                    {address.section === "settings" && <SettingsView version={shown.version} tab={address.tab} several={many} />}
                                                     {address.section === "saves" && <SavesView version={shown.version} campaign={shown.campaign} several={many} />}
                                                     {address.section === "packages" && (
                                                         <PackagesPage

@@ -4,5 +4,6 @@ setup: {}
 steps:
   - phone: {tapOn: Menu}   # on a phone Settings is in the menu
   - tapOn: Settings
+  - tapOn: Master   # the master's style is in the master's tab
   - tapOn: {text: The master, within: Character voices}
   - assertState: {query: setting, arg: voices, equals: master}

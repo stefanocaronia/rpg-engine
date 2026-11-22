@@ -132,7 +132,7 @@
 
     /* The game's second line inside the cards (D-528): an outline that takes no room, in the colour of their edge; and their corners, cut, notched or
        scooped, where the browser draws them, else round. */
-    :is(.card, .group, .band, .rolls-card, .turns-card, .settings-group, .scene-now, .quest-card, .note-card, .save-card, .chapter) {
+    :is(.card, .group, .band, .rolls-card, .turns-card, .scene-now, .quest-card, .note-card, .save-card, .chapter) {
         outline: 1px var(--card-inner-line) color-mix(in srgb, var(--card-edge) 70%, transparent);
         outline-offset: -5px;
         corner-shape: var(--card-corner, round);

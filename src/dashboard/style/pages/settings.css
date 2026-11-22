@@ -1,14 +1,7 @@
 /* Settings. */
 @layer pages {
-    /* The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, the chosen one in gold and what it
-       means under it; the page's own last. */
-    .settings {
-        display: grid;
-        gap: var(--gap);
-        /* Room at the end for the dice button, which stays over the page: no row is left under it. */
-        padding-bottom: 72px;
-    }
-
+    /* The Settings section (D-341), a stack as Packages': its head, what a change does, its tabs, then the chosen tab's cards of settings, each setting with
+       what it is and its values, the chosen one in gold and what it means under it; the page's own in the last tab. */
     .settings-lead,
     .settings-problem {
         margin: -6px 0 0;
@@ -20,18 +13,24 @@
         color: var(--low);
     }
 
-    .settings-group {
+    .settings-panel {
         display: grid;
-        padding: 14px 16px 6px;
-        border: 1px solid var(--card-edge);
-        border-radius: var(--radius-l);
-        background: var(--card-ornament-layer), var(--card-texture-layer, none), var(--panel);
-        box-shadow: var(--lift), var(--raise);
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--gap);
     }
 
-    .settings-group h3 {
-        margin: 0 0 4px;
-        font-size: 1.1rem;
+    /* Over the cards of the page's own settings: where they are kept. */
+    .settings-kept {
+        margin: -6px 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    /* A card's settings, a rule between them: each row has its own room, so the body gives little. */
+    .settings-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        padding: 2px 16px 6px;
     }
 
     .setting {
@@ -61,19 +60,19 @@
         }
     }
 
-    /* What a whole group asks of the player, as keeping the repository private: a setting's note in ink with its edge, its icon saying what it is about. Not
+    /* What a whole card asks of the player, as keeping the repository private: a setting's note in ink with its edge, its icon saying what it is about. Not
        the accent's tint, which on the light page fades to grey and on the dark one is the gold of what is chosen; not the warning's colour, for nothing is wrong. */
-    .settings-group-note {
-        margin: 4px 0 8px;
+    .settings-card-note {
+        margin: 12px 0 0;
     }
 
-    .settings-group-note > p {
+    .settings-card-note > p {
         margin: 0;
     }
 
-    .settings-group h3 + .setting,
-    .settings-group .settings-group-note + .setting,
-    .settings-group .setting-about + .setting {
+    /* The first setting of a card stands under the head's rule, or under the card's note, without one of its own. */
+    .settings-body > .setting:first-child,
+    .settings-card-note + .setting {
         border-top: 0;
     }
 

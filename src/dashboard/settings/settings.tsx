@@ -1,5 +1,6 @@
-// The Settings section (D-341): the player's settings of the campaign in groups, each with what it is and its values, which the page changes as config does,
-// the master hearing of it at their next call; then the page's own, kept in this browser: the theme, the dice's sound, set and edges, the coins, rolling by hand.
+// The Settings section (D-341): the player's settings of the campaign in cards under three tabs, the game, the master and the campaign, each setting with what
+// it is and its values, which the page changes as config does, the master hearing of it at their next call; in the last tab the page's own, kept in this
+// browser: the theme, the tokens' marks, the dice's sound, set and edges, the coins, rolling by hand.
 import type { ComponentChildren } from "preact";
 import { useContext, useEffect, useRef, useState } from "preact/hooks";
 import { sectionLabel } from "../address.ts";
@@ -7,38 +8,49 @@ import { changeSetting, readSettings, type SettingChange } from "../api.ts";
 import type { PlayerSetting, ShownWidget, WidgetPage, WidgetSpot } from "../data.ts";
 import { coinDesignPref, coinDesigns, coinLook, coinMetals, coinPref, diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "../dice/sets.ts";
 import { WidgetsContext } from "../packages/widgets.tsx";
+import { CardHead } from "../parts/card.tsx";
 import { CoinFace } from "../parts/faces.tsx";
-import { DieSwatch, Icon } from "../parts/icons.tsx";
+import { cardIcons, DieSwatch, Icon, iconPath } from "../parts/icons.tsx";
 import { customLabel, itemLabel, leveledItemLabel, phraseLabel, rateParts, settingLabel, valueLabel } from "../parts/labels.ts";
 import { PageHead } from "../shell/pages.tsx";
 import { byHandPref, conditionsPref, readChoice, soundPref, tokenSymbolsPref, useChoice, usePref, usePrefChange, writeChoice } from "../shell/prefs.ts";
 import { applyGameStyle, gameStyle, installedStyle, systemStylePref } from "../shell/system-style.ts";
+import { PageTabs } from "../shell/tabs.tsx";
 import { pickTheme, shownTheme } from "../shell/theme.ts";
 import { arrowStep, t } from "../text.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
 import { Confirm } from "./saves.tsx";
+import { type SettingsTab, settingsTab, settingsTabLabel, settingsTabs } from "./tabs.ts";
 
-// The groups of the campaign's settings, in order; a setting the game system adds goes with the dice, as whether the master's rolls are shown (D-287). How the
-// master plays holds who voices the characters (D-490) and how much the master thinks (D-462) too.
-const groups: { names: string[]; system?: true; note?: () => string; }[] = [
-    { names: ["ruleset", "difficulty", "lethality", "saves", "rigor", "between-sessions"] },
-    { names: ["mentor", "learned"] },
-    { names: ["prose", "story", "author", "style", "voices", "effort"] },
-    { names: ["dice", "master-rolls", "units"], system: true },
-    { names: ["lines", "veils"] },
-    { names: ["orders"] },
-    { names: ["pictures", "pictures-by", "language"] },
+// The cards of the campaign's settings, in the order groupTitle names them: each in its tab, with its picture and its settings in order. A setting the game
+// system adds goes with the dice, as whether the master's rolls are shown (D-287). The master's style holds who voices the characters (D-490) and how much the
+// master thinks (D-462) too.
+const groups: { tab: SettingsTab; key: string; icon(): string; names: string[]; system?: true; note?: () => string; }[] = [
+    { tab: "game", key: "rules", icon: () => iconPath("combat"), names: ["ruleset", "difficulty", "lethality", "saves", "rigor", "between-sessions"] },
+    { tab: "game", key: "dice", icon: () => iconPath("dice"), names: ["dice", "master-rolls", "units"], system: true },
+    { tab: "game", key: "learning", icon: () => iconPath("help"), names: ["mentor", "learned"] },
+    { tab: "master", key: "style", icon: () => cardIcons.backstory, names: ["prose", "story", "author", "style", "voices", "effort"] },
+    { tab: "master", key: "limits", icon: () => iconPath("hand"), names: ["lines", "veils"] },
+    { tab: "master", key: "companions", icon: () => cardIcons.here, names: ["orders"] },
+    { tab: "campaign", key: "pictures", icon: () => iconPath("picture"), names: ["pictures", "pictures-by", "language"] },
     // Only where the campaign's folder is a git repository (D-576).
     // What a public repository would show of the player (D-576).
     {
+        tab: "campaign",
+        key: "git",
+        icon: () => iconPath("branch"),
         names: ["git", "git-saves", "git-sessions"],
         note: () => t("Keep the repository private. It holds the log of your sessions and your user's name on this computer; with the chats in, everything you wrote to the master too."),
     },
 ];
 
-/** The Settings section; with `several` player characters, what a value means says so where it speaks of one character (D-480 (2)). */
-export function SettingsView({ version, several = false }: { version: number; several?: boolean; })
+/**
+ * The Settings section, on the tab its address names; with `several` player characters, what a value means says so where it speaks of one character
+ * (D-480 (2)).
+ */
+export function SettingsView({ version, tab, several = false }: { version: number; tab?: string | undefined; several?: boolean; })
 {
+    const shownTab = settingsTab(tab);
     const [settings, setSettings] = useState<PlayerSetting[]>();
     const [problem, setProblem] = useState<string>();
     const reads = useRef(0);
@@ -76,44 +88,58 @@ export function SettingsView({ version, several = false }: { version: number; se
 
     const known = new Set([...groups.flatMap((group) => group.names), ...Object.values(customParts)]);
     return (
-        <section class="settings" aria-labelledby="settings-title">
+        <section class="page-stack settings" aria-labelledby="settings-title">
             <PageHead section="settings" id="settings-title" />
             <p class="settings-lead">{t("A change counts at once, from now on: what is already in play stays as it is. The master hears of it at their next move, and of nothing you put back as it was.")}</p>
             {problem !== undefined && <p class="settings-problem" role="alert">{problem}</p>}
-            {settings !== undefined && groups.map((group, index) => {
-                const shown = [
-                    ...group.names.flatMap((name) => settings.filter((setting) => setting.name === name)),
-                    ...(group.system ? settings.filter((setting) => !known.has(setting.name)) : []),
-                ];
+            <PageTabs section="settings" label={t("Settings")} chosen={shownTab} tabs={settingsTabs.map((key) => ({ key, name: settingsTabLabel(key) }))} />
+            <div class="settings-panel" id="settings-panel" role="tabpanel" aria-labelledby={`settings-tab-${shownTab}`}>
+                {settings !== undefined && groups.map((group, index) => {
+                    const shown = group.tab !== shownTab ? [] : [
+                        ...group.names.flatMap((name) => settings.filter((setting) => setting.name === name)),
+                        ...(group.system ? settings.filter((setting) => !known.has(setting.name)) : []),
+                    ];
 
-                if (shown.length === 0) {
-                    return null;
-                }
+                    if (shown.length === 0) {
+                        return null;
+                    }
 
-                return (
-                    <section key={group.names[0]} class="settings-group">
-                        <h3>{groupTitle(index)}</h3>
-                        {group.note !== undefined && (
-                            <div class="settings-group-note setting-note fix">
-                                <Icon name="lock" />
-                                <p>{group.note()}</p>
-                            </div>
-                        )}
-                        {shown.map((setting) => (
-                            <SettingRow
-                                key={setting.name}
-                                setting={setting}
-                                off={offBy(setting, settings)}
-                                several={several}
-                                parts={settings.find((one) => one.name === customParts[setting.name])}
-                                onChange={change}
-                            />
-                        ))}
-                    </section>
-                );
-            })}
-            <WidgetSettings onChange={change} />
-            <PageSettings />
+                    return (
+                        <SettingsCard key={group.key} name={group.key} icon={group.icon()} title={groupTitle(index)}>
+                            {group.note !== undefined && (
+                                <div class="settings-card-note setting-note fix">
+                                    <Icon name="lock" />
+                                    <p>{group.note()}</p>
+                                </div>
+                            )}
+                            {shown.map((setting) => (
+                                <SettingRow
+                                    key={setting.name}
+                                    setting={setting}
+                                    off={offBy(setting, settings)}
+                                    several={several}
+                                    parts={settings.find((one) => one.name === customParts[setting.name])}
+                                    onChange={change}
+                                />
+                            ))}
+                        </SettingsCard>
+                    );
+                })}
+                {shownTab === "campaign" && <WidgetSettings onChange={change} />}
+                {shownTab === "page" && <PageSettings />}
+            </div>
+        </section>
+    );
+}
+
+/** A card of settings, always open: its picture and its title, then its rows, a rule between them. */
+function SettingsCard({ name, icon, title, children }: { name: string; icon: string; title: string; children: ComponentChildren; })
+{
+    const id = `settings-${name}`;
+    return (
+        <section class="card" aria-labelledby={id}>
+            <CardHead icon={icon} title={<h3 id={id}>{title}</h3>} />
+            <div class="card-body settings-body">{children}</div>
         </section>
     );
 }
@@ -701,7 +727,10 @@ interface PageRow
     note?: string;
 }
 
-/** The page's own settings, in this browser alone: the theme, the game's style, the tokens' symbols and conditions, the dice's sound, set and edges, the coins, rolling by hand. */
+/**
+ * The page's own settings, in this browser alone, in three cards: its look, the theme and the game's style; the tokens' symbols and conditions; the dice's
+ * sound, set and edges, the coins, rolling by hand.
+ */
 function PageSettings()
 {
     usePrefChange();
@@ -713,7 +742,7 @@ function PageSettings()
     const [byHand, setByHand] = usePref(byHandPref);
     const [symbols, setSymbols] = usePref(tokenSymbolsPref);
     const [conditions, setConditions] = useChoice(conditionsPref);
-    const rows: PageRow[] = [
+    const look: PageRow[] = [
         {
             key: "theme",
             name: t("Theme"),
@@ -723,6 +752,8 @@ function PageSettings()
             pick: (value) => pickTheme(value === "dark" ? "dark" : "light"),
         },
         ...gameStyleRows(),
+    ];
+    const tokens: PageRow[] = [
         {
             key: "token-symbols",
             name: t("Token symbols"),
@@ -739,6 +770,8 @@ function PageSettings()
             value: conditions,
             pick: setConditions,
         },
+    ];
+    const dice: PageRow[] = [
         { key: "dice-sound", name: t("Dice sound"), about: t("the dice as they roll"), options: [{ value: "on", label: t("On") }, { value: "off", label: t("Off") }], value: sound ? "on" : "off", pick: (value) => setSound(value === "on") },
         {
             key: "dice-set",
@@ -793,40 +826,51 @@ function PageSettings()
         },
     ];
     return (
-        <section class="settings-group">
-            <h3>{t("This page")}</h3>
-            <p class="setting-about">{t("Kept in this browser alone.")}</p>
-            {rows.map((row) => {
-                const id = `page-${row.key}`;
-                const chosen = row.options.find((option) => option.value === row.value);
-                const described = [`${id}-about`, ...(chosen?.means === undefined ? [] : [`${id}-means`]), ...(row.note === undefined ? [] : [`${id}-note`])].join(" ");
-                return (
-                    <div key={row.key} class={row.under === true ? "setting under" : "setting"}>
-                        <div class="setting-what">
-                            <span class="setting-name" id={id}>{row.name}</span>
-                            <span class="setting-about" id={`${id}-about`}>{row.about}</span>
-                        </div>
-                        <Segmented label={id} described={described} options={row.options} value={row.value} onPick={row.pick} />
-                        {(chosen?.means !== undefined || row.note !== undefined) && (
-                            <div class="setting-after">
-                                {chosen?.means !== undefined && (
-                                    <p class="setting-means" id={`${id}-means`}>
-                                        <strong>{chosen.label}:</strong> {chosen.means}
-                                    </p>
-                                )}
-                                {row.note !== undefined && <p class="setting-means" id={`${id}-note`}>{row.note}</p>}
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
-        </section>
+        <>
+            <p class="settings-kept">{t("Kept in this browser alone: the master hears nothing of them.")}</p>
+            <SettingsCard name="look" icon={iconPath("theme")} title={t("Look")}>
+                {look.map((row) => <PageSetting key={row.key} row={row} />)}
+            </SettingsCard>
+            <SettingsCard name="tokens" icon={iconPath("party")} title={t("Tokens")}>
+                {tokens.map((row) => <PageSetting key={row.key} row={row} />)}
+            </SettingsCard>
+            <SettingsCard name="dice-set" icon={iconPath("dice")} title={t("Dice and coins")}>
+                {dice.map((row) => <PageSetting key={row.key} row={row} />)}
+            </SettingsCard>
+        </>
+    );
+}
+
+/** One of the page's own settings: its name and what it is, its values, what the chosen one means and the line under it. */
+function PageSetting({ row }: { row: PageRow; })
+{
+    const id = `page-${row.key}`;
+    const chosen = row.options.find((option) => option.value === row.value);
+    const described = [`${id}-about`, ...(chosen?.means === undefined ? [] : [`${id}-means`]), ...(row.note === undefined ? [] : [`${id}-note`])].join(" ");
+    return (
+        <div class={row.under === true ? "setting under" : "setting"}>
+            <div class="setting-what">
+                <span class="setting-name" id={id}>{row.name}</span>
+                <span class="setting-about" id={`${id}-about`}>{row.about}</span>
+            </div>
+            <Segmented label={id} described={described} options={row.options} value={row.value} onPick={row.pick} />
+            {(chosen?.means !== undefined || row.note !== undefined) && (
+                <div class="setting-after">
+                    {chosen?.means !== undefined && (
+                        <p class="setting-means" id={`${id}-means`}>
+                            <strong>{chosen.label}:</strong> {chosen.means}
+                        </p>
+                    )}
+                    {row.note !== undefined && <p class="setting-means" id={`${id}-note`}>{row.note}</p>}
+                </div>
+            )}
+        </div>
     );
 }
 
 /**
- * Where the page shows the extensions' widgets (D-502), for the campaign: each in the top, the table's column, a page, or nowhere, and which page; the place its
- * extension gives it sends it back there. None without a widget; never one on each of the party.
+ * Where the page shows the extensions' widgets (D-502), for the campaign, in a card of the campaign's tab: each in the top, the table's column, a page, or
+ * nowhere, and which page; the place its extension gives it sends it back there. None without a widget; never one on each of the party.
  */
 function WidgetSettings({ onChange }: { onChange(change: SettingChange): Promise<string | undefined>; })
 {
@@ -838,11 +882,9 @@ function WidgetSettings({ onChange }: { onChange(change: SettingChange): Promise
     }
 
     return (
-        <section class="settings-group">
-            <h3>{t("Extensions on the page")}</h3>
-            <p class="setting-about">{t("Where the page shows what the extensions add, in this campaign.")}</p>
+        <SettingsCard name="widgets" icon={iconPath("packages")} title={t("Extensions on the page")}>
             {widgets.map((widget) => <WidgetRow key={widget.id} widget={widget} onChange={onChange} />)}
-        </section>
+        </SettingsCard>
     );
 }
 
@@ -982,10 +1024,10 @@ function Segmented({ label, described, options, value, onPick }: {
     );
 }
 
-/** A group of the campaign's settings by its place, in the page's language. */
+/** A card of the campaign's settings by its place, in the page's language. */
 function groupTitle(index: number): string
 {
-    return [t("The game"), t("Learning the game"), t("The master's style"), t("Dice and measures"), t("Limits"), t("Your companions"), t("Pictures and language"), t("Git")][index] ?? "";
+    return [t("Rules and difficulty"), t("Dice and measures"), t("Learning the game"), t("The master's style"), t("Limits"), t("Your companions"), t("Pictures and language"), t("Git")][index] ?? "";
 }
 
 /** What a list's field suggests, as an example. */

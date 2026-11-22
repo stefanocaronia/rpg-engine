@@ -4,6 +4,7 @@ setup: {}
 steps:
   - phone: {tapOn: Menu}   # on a phone Settings is in the menu
   - tapOn: Settings
+  - tapOn: Master   # the limits are in the master's tab
   - inputText: {into: {label: Add to lines}, text: ragni}
   - tapOn: {text: Add, within: Lines}
   - assertState: {query: setting, arg: lines, contains: ragni}
