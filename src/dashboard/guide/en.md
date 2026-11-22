@@ -129,7 +129,7 @@ Out of the story, write `[OOC: …]` (out of character): *[OOC: How does grappli
 
 You say what you try; the master says what happens. The master never decides for your character, and never talks about the engine. You can ask it how to use the dashboard.
 
-**Acting from the dashboard**: click a name on your sheet, such as a weapon, a spell or something you carry: its card says what it is. Choose what you do with it, such as **Use**, then whom it is for, in the list or with a click on the map; or click a person to talk to. The dashboard writes your sentence, *I attack Hooded Bandit 1 with Mace.*, which you can change before **Tell the master**. The master hears it as said in the chat, and rules it as any other. Where your AI app cannot hear it by itself, **Copy** gets it ready to paste in the chat.
+**Acting from the dashboard**: click a name on your sheet, such as a weapon, a spell or something you carry: its card says what it is; a bag opens with its arrow, and its ⓘ shows its card. Choose what you do with it. Something that needs no one, such as **Equip**, asks you to confirm on the same button, *Confirm: I equip Shield*: press it again and it goes to the master. Something done to someone, such as **Attack**, asks whom, in the list or with a click on the map; then the button says the whole sentence, *I attack Hooded Bandit 1 with Mace*, and one click sends it. To say it your own way, click a person to talk to, or write in the chat. The master hears it as said in the chat, rules it as any other, and asks you with buttons what you left out. Where your AI app has no doorbell, the master reads it as soon as you next write in the chat; if the chat was closed before, **Say it again** sends it once more.
 
 ### 3.2 Rolls
 

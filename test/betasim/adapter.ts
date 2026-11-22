@@ -196,7 +196,7 @@ async function share(note: { title: string; text: string; }): Promise<void>
     await post({ share: notes.find((one) => one.title === note.title)?.id ?? "" });
 }
 
-/** Waits until the dashboard says the chat has its doorbell, so that the page sends the player's sentences instead of copying them. */
+/** Waits until the dashboard says the chat has its doorbell, so that the master is called for the player's sentences at once. */
 async function rung(): Promise<void>
 {
     for (let tries = 0; tries < 50; tries++) {

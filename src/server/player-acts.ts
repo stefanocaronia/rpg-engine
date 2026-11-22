@@ -149,5 +149,7 @@ ${already}`;
 /** What the master hears of a sentence: the player's words quoted, as their move in the story, which the master rules as any other (D-493 (1)). */
 function actNews(text: string, quoted: (text: string) => string): string
 {
-    return `The player acts on the dashboard, in their own words, as if said in chat:\n${quoted(text)}\nRule it as the player's move, and answer as to their words in chat.`;
+    return `The player acts on the dashboard, in their own words, as if said in chat:\n${
+        quoted(text)
+    }\nRule it as the player's move, and answer as to their words in chat. If you need what they left unsaid to rule it, ask them with buttons.`;
 }

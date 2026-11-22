@@ -130,7 +130,7 @@ Fuori dalla storia, scrivi `[OOC: …]` (fuori dal personaggio): *[OOC: Come fun
 
 Tu dici cosa tenti; il master dice cosa succede. Il master non decide mai per il tuo personaggio, e non parla mai del motore. Puoi chiedergli come si usa la dashboard.
 
-**Agire dalla dashboard**: clicca un nome della tua scheda, come un'arma, un incantesimo o una cosa che porti: la sua carta dice cos'è. Scegli cosa ci fai, come **Usa**, poi su chi, nell'elenco o con un clic sulla mappa; oppure clicca una persona per parlarle. La dashboard scrive la tua frase, *Attacco Brigante incappucciato 1 con Mazza.*, che puoi cambiare prima di **Di' al master**. Il master la sente come detta in chat, e la decide come ogni altra. Dove la tua app di IA non la sente da sola, **Copia** te la prepara da incollare in chat.
+**Agire dalla dashboard**: clicca un nome della tua scheda, come un'arma, un incantesimo o una cosa che porti: la sua carta dice cos'è; uno zaino si apre con la sua freccia, e la sua ⓘ ne mostra la carta. Scegli cosa ci fai. Ciò che non ha bisogno di nessuno, come **Equipaggia**, chiede conferma sullo stesso pulsante, *Conferma: Mi equipaggio con Scudo*: premilo di nuovo e va al master. Ciò che fai a qualcuno, come **Attacca**, chiede su chi, nell'elenco o con un clic sulla mappa; poi il pulsante dice tutta la frase, *Attacco Brigante incappucciato 1 con Mazza*, e un clic la manda. Per dirla a modo tuo, clicca una persona per parlarle, o scrivi in chat. Il master la sente come detta in chat, la decide come ogni altra, e ti chiede con dei pulsanti ciò che hai lasciato fuori. Dove la tua app di IA non ha il campanello, il master la legge appena gli scrivi di nuovo in chat; se la chat era stata chiusa prima, **Ridillo** la manda di nuovo.
 
 ### 3.2 I tiri
 

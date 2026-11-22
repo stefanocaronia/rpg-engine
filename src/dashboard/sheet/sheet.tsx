@@ -3,19 +3,19 @@
 // player character's story in a card of its own, where the player writes their own character's story (D-373); a click on a number the system rolls throws it for fun (D-280), and its tooltip says how it is made
 // (FOR-8). While the master asks a roll, the number its check names lights up and answers it (D-330, ASK-12). A companion who keeps no sheet shows the stat
 // block of its creature (D-275).
-import type { ComponentChildren } from "preact";
+import { type ComponentChildren, Fragment } from "preact";
 import { useContext, useEffect, useId, useRef, useState } from "preact/hooks";
-import { itemVerbs } from "../acts/acts.ts";
-import { ActName, usePlayerActs } from "../acts/names.tsx";
+import { itemVerbs, thingKey, thingVerbs } from "../acts/acts.ts";
+import { ActName, ThingVerbsContext, usePlayerActs } from "../acts/names.tsx";
 import { readExplanations } from "../api.ts";
-import type { Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownChoices, ShownScene } from "../data.ts";
+import type { ActVerb, Member, SheetCards, SheetGroup, SheetRoll, SheetValue, ShownChoices, ShownScene } from "../data.ts";
 import { WidgetCards, WidgetsContext } from "../packages/widgets.tsx";
 import { CardHeader, useOpen } from "../parts/card.tsx";
 import { ChangedLine, ChangedMark } from "../parts/changed.tsx";
 import { besideLabel, memberPlaceLabel } from "../parts/game-words.ts";
 import { cardIcons, DieIcon, Icon } from "../parts/icons.tsx";
 import { fieldLabel, groupLabels, itemLabel, phraseLabel, readableIds, rollLabel, shownNotation, shownText } from "../parts/labels.ts";
-import { arrangedGroups, groupLayout, orderedValues, widgetOf } from "../parts/layout.ts";
+import { arrangedGroups, equippedFirst, groupLayout, orderedValues, widgetOf } from "../parts/layout.ts";
 import { knowersOf, Markdown, plainLine } from "../parts/markdown.tsx";
 import { MoodFace, moodLabel } from "../parts/mood.tsx";
 import { PictureSpot } from "../parts/picture.tsx";
@@ -68,65 +68,69 @@ export function MemberSheet(
     const shownApart = personFields([...person, ...boxes]);
     // The player character's story has its own card: the rest of the page's text is its description (D-386).
     const described = story !== undefined && story.trim() !== "" && text.startsWith(story) ? text.slice(story.length).trimStart() : text;
+    // A thing has the same verbs wherever the sheet has it (D-581 (D)).
+    const verbs = thingVerbs(usePlayerActs()?.actions, sheet);
     return (
-        <section class="sheet" aria-label={member.name}>
-            <header class="band">
-                <div class="identity">
-                    <PictureSpot page={member.name} has={member.image !== undefined}>
-                        <MemberToken member={member} large status={status} />
-                    </PictureSpot>
-                    <div class="who">
-                        <h2>{member.name}</h2>
-                        {/* The system's headline, and the mood: only here, its face before its word (D-305, D-419). */}
-                        {(headline !== undefined && headline !== "") || member.mood !== undefined
-                            ? (
-                                <p class="headline">
-                                    {headline}
-                                    {headline !== undefined && headline !== "" && member.mood !== undefined && " · "}
-                                    {member.mood !== undefined && (
-                                        <span class="mood-word">
-                                            <MoodFace mood={member.mood} />
-                                            {moodLabel(member.mood)}
-                                        </span>
-                                    )}
+        <ThingVerbsContext.Provider value={verbs}>
+            <section class="sheet" aria-label={member.name}>
+                <header class="band">
+                    <div class="identity">
+                        <PictureSpot page={member.name} has={member.image !== undefined}>
+                            <MemberToken member={member} large status={status} />
+                        </PictureSpot>
+                        <div class="who">
+                            <h2>{member.name}</h2>
+                            {/* The system's headline, and the mood: only here, its face before its word (D-305, D-419). */}
+                            {(headline !== undefined && headline !== "") || member.mood !== undefined
+                                ? (
+                                    <p class="headline">
+                                        {headline}
+                                        {headline !== undefined && headline !== "" && member.mood !== undefined && " · "}
+                                        {member.mood !== undefined && (
+                                            <span class="mood-word">
+                                                <MoodFace mood={member.mood} />
+                                                {moodLabel(member.mood)}
+                                            </span>
+                                        )}
+                                    </p>
+                                )
+                                : null}
+                            {member.place && (
+                                <p class="place">
+                                    <Icon name="place" />
+                                    {memberPlaceLabel(member.place)}
                                 </p>
-                            )
-                            : null}
-                        {member.place && (
-                            <p class="place">
-                                <Icon name="place" />
-                                {memberPlaceLabel(member.place)}
-                            </p>
-                        )}
-                        {layered === true && <ChangedLine />}
+                            )}
+                            {layered === true && <ChangedLine />}
+                        </div>
+                    </div>
+                    {choices.map((set) => <ChoicesNotice key={set.id} set={set} />)}
+                    {person.map((shown) => <PersonPanel key={shown.widget.id} shown={shown} />)}
+                    <ValueLine values={member.counters.filter((value) => !shownApart.has(value.field))} fields={fields} boxes={boxes} />
+                    <Effects effects={besideWord(member.effects, status.person)} />
+                </header>
+                <div class="sheet-body">
+                    {rail.length > 0 && <div class="rail">{rail.map(group)}</div>}
+                    <div class="sheet-main">
+                        <FixedColumns cards={others.map((shown) => ({ key: shown.name, node: group(shown) }))} />
+                        <div class="wide-cards">
+                            {story !== undefined && (
+                                <Card name={backstoryCard} title={t("Backstory")} icon={cardIcons.backstory} layout="lore" preview={plainLine(story) ?? t("Not written yet")}>
+                                    {story.trim() !== "" && <Markdown text={story} />}
+                                    <StoryBox story={story} who={member.name} />
+                                </Card>
+                            )}
+                            {described.trim() !== "" && (
+                                <Card name={descriptionCard} title={t("Description")} icon={cardIcons.description} layout="lore" preview={plainLine(described)}>
+                                    <Markdown text={described} secretKnowers={knowersOf(knownBy)} />
+                                </Card>
+                            )}
+                        </div>
+                        <WidgetCards place="page" page="sheet" who={member.name} view={member} />
                     </div>
                 </div>
-                {choices.map((set) => <ChoicesNotice key={set.id} set={set} />)}
-                {person.map((shown) => <PersonPanel key={shown.widget.id} shown={shown} />)}
-                <ValueLine values={member.counters.filter((value) => !shownApart.has(value.field))} fields={fields} boxes={boxes} />
-                <Effects effects={besideWord(member.effects, status.person)} />
-            </header>
-            <div class="sheet-body">
-                {rail.length > 0 && <div class="rail">{rail.map(group)}</div>}
-                <div class="sheet-main">
-                    <FixedColumns cards={others.map((shown) => ({ key: shown.name, node: group(shown) }))} />
-                    <div class="wide-cards">
-                        {story !== undefined && (
-                            <Card name={backstoryCard} title={t("Backstory")} icon={cardIcons.backstory} layout="lore" preview={plainLine(story) ?? t("Not written yet")}>
-                                {story.trim() !== "" && <Markdown text={story} />}
-                                <StoryBox story={story} who={member.name} />
-                            </Card>
-                        )}
-                        {described.trim() !== "" && (
-                            <Card name={descriptionCard} title={t("Description")} icon={cardIcons.description} layout="lore" preview={plainLine(described)}>
-                                <Markdown text={described} secretKnowers={knowersOf(knownBy)} />
-                            </Card>
-                        )}
-                    </div>
-                    <WidgetCards place="page" page="sheet" who={member.name} view={member} />
-                </div>
-            </div>
-        </section>
+            </section>
+        </ThingVerbsContext.Provider>
     );
 }
 
@@ -140,11 +144,13 @@ export function SheetAtHand({ member, sheet, names, version, onRoll }: { member:
     const counted = personFields(boxes);
     const line = names.flatMap((wanted) => sheet.flatMap((group) => group.values).filter((value) => same(value.field, wanted) && !counted.has(value.field)));
     const groups = names.flatMap((wanted) => sheet.filter((group) => same(group.name, wanted)));
+    // The verbs of the whole sheet, not only of the groups at hand (D-581 (D)).
+    const verbs = thingVerbs(usePlayerActs()?.actions, sheet);
     return (
-        <>
+        <ThingVerbsContext.Provider value={verbs}>
             {(line.length > 0 || boxes.length > 0) && <ValueLine values={line} fields={fields} boxes={boxes} />}
             {groups.map((group) => <Group key={group.name} member={member.name} group={group} fields={fields} version={version} onRoll={onRoll} />)}
-        </>
+        </ThingVerbsContext.Provider>
     );
 }
 
@@ -458,8 +464,11 @@ function systemText(word: string): string
 function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<string>; })
 {
     const acts = usePlayerActs();
+    const verbsOf = useContext(ThingVerbsContext);
     const [closed, setClosed] = useState<ReadonlySet<string>>(new Set());
-    const items = group.items ?? [];
+    // What is equipped first, under its own heading, then a rule and the rest (D-581 (6)).
+    const { equipped, rest } = equippedFirst(group.items ?? []);
+    const items = [...equipped, ...rest];
     const columns = items[0]?.values.map((value) => value.field) ?? [];
     const labels = groupLabels(columns, fields);
     const depths = items.map((item) => item.depth ?? 0);
@@ -476,6 +485,9 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
     // What is carried tells how many after its name, as Torce (6), with no column of its own (Stefano, 15 October).
     const carried = columns.length === 1 && columns[0] === "quantity";
     const count = (item: typeof items[number]): string => (carried ? item.values[0]?.text ?? "" : "");
+    const span = carried ? 1 : columns.length + 1;
+    // The verbs of a thing, the same wherever the sheet has it (D-581 (D)).
+    const verbsFor = (item: typeof items[number]): ActVerb[] => verbsOf?.get(thingKey(item.item)) ?? itemVerbs(acts?.actions, item) ?? [];
     return (
         <table class={["items", marked ? "marked" : "", carried ? "carried" : ""].filter((name) => name !== "").join(" ")}>
             <thead class={carried ? "visually-hidden" : undefined}>
@@ -487,6 +499,11 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                 </tr>
             </thead>
             <tbody>
+                {equipped.length > 0 && (
+                    <tr class="items-head">
+                        <th scope="colgroup" colSpan={span} class="eyebrow">{t("Equipped")}</th>
+                    </tr>
+                )}
                 {items.map((item, index) => {
                     if (!shown[index]) {
                         return null;
@@ -519,23 +536,37 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                     );
                     // The campaign changed its page of the game system (D-564): an asterisk after its name, outside what acts.
                     const changed = item.layered === true && <ChangedMark />;
-                    // The name opens the thing's card, with its verbs when the system names some; a container's opens and closes what it holds (D-495).
-                    const verbs = holds(index) ? undefined : itemVerbs(acts?.actions, item);
-                    return (
+                    // The name opens the thing's card, with its verbs when the system names some; a container's opens and closes what it holds, and its info
+                    // icon opens its card (D-495, D-581).
+                    const about = t("About {item}", { item: name });
+                    const line = (
                         <tr key={key(index)} class={item.depth === undefined ? undefined : "inside"}>
                             <th scope="row" class={holds(index) ? "holds" : undefined} style={item.depth === undefined ? undefined : { "--depth": item.depth }}>
                                 {holds(index)
                                     ? (
-                                        <button type="button" class="fold" aria-expanded={!closed.has(key(index))} onClick={() => toggle(index)}>
-                                            <Icon name="fold" />
-                                            {words}
-                                        </button>
+                                        <>
+                                            <button type="button" class="fold" aria-expanded={!closed.has(key(index))} onClick={() => toggle(index)}>
+                                                <Icon name="fold" />
+                                                {words}
+                                            </button>
+                                            {acts !== undefined && (
+                                                <button
+                                                    type="button"
+                                                    class="icon-button item-info"
+                                                    aria-label={about}
+                                                    data-tip={about}
+                                                    onClick={(event) => acts.start({ verbs: verbsFor(item), item: name, page: item.item, facts }, event.currentTarget)}
+                                                >
+                                                    <Icon name="info" />
+                                                </button>
+                                            )}
+                                        </>
                                     )
                                     : acts === undefined
                                     ? words
                                     : (
                                         <ActName
-                                            verbs={verbs ?? []}
+                                            verbs={verbsFor(item)}
                                             item={name}
                                             page={item.item}
                                             facts={facts}
@@ -550,6 +581,17 @@ function ItemsTable({ group, fields }: { group: SheetGroup; fields: ReadonlySet<
                             {!carried && item.values.map((value) => <td key={value.field} class={widgetOf(value) === "text" ? undefined : "num"}>{shownText(value.text, value.kind)}</td>)}
                         </tr>
                     );
+                    // A rule between what is equipped and the rest, when both have lines.
+                    return index === equipped.length && index > 0
+                        ? (
+                            <Fragment key={key(index)}>
+                                <tr class="items-rule" aria-hidden="true">
+                                    <td colSpan={span} />
+                                </tr>
+                                {line}
+                            </Fragment>
+                        )
+                        : line;
                 })}
             </tbody>
         </table>

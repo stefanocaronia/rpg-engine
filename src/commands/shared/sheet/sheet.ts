@@ -345,12 +345,12 @@ export function statBlock(world: World, system: GameSystem | undefined, page: Pa
 }
 
 /**
- * What a thing's page says of it as data, for its card on the dashboard (D-573): the fields the system declares, of its own and of the pages it derives from,
- * as damage and weight; never the formulas it gives who holds it, as an attack, nor a bonus of 0. None for a page that is not an item.
+ * What a thing's or a topic's page says of it as data, for its card on the dashboard (D-573, D-581): the fields the system declares, of its own and of the
+ * pages it derives from, as damage and weight or a spell's range; never the formulas it gives who holds it, as an attack, nor a bonus of 0. None for any other page.
  */
 export function thingBlock(world: World, system: GameSystem | undefined, page: Page): SheetGroupData[]
 {
-    if (system === undefined || page.type !== "item") {
+    if (system === undefined || (page.type !== "item" && page.type !== "topic")) {
         return [];
     }
 

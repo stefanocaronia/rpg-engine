@@ -543,7 +543,7 @@ function App()
     const lead = playerNamed(shown.party, shown.foreground) ?? players[0];
     const actor = member?.role === "pc" ? member : lead;
     // The player's sentences to the master (D-495); read() sets the acts and the verbs it reads, by setters that never change.
-    const { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, answering: answeringQuestion, strip, actProblem, sendAct, closeAct, withdraw, copyFromStrip, dismissAct } = useActs({
+    const { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, answering: answeringQuestion, strip, actProblem, sendAct, closeAct, withdraw, sayAgain, dismissAct, bell: actsBell } = useActs({
         read,
         live,
         asked: shown.asked,
@@ -899,7 +899,9 @@ function App()
                                     entries={strip}
                                     problem={actProblem}
                                     onWithdraw={(id) => void withdraw(id)}
-                                    onCopy={copyFromStrip}
+                                    bell={actsBell}
+                                    live={live}
+                                    onSayAgain={(id) => void sayAgain(id)}
                                     onDismiss={dismissAct}
                                 />
                             </div>

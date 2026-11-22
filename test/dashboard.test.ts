@@ -18,7 +18,7 @@ import { explanations } from "../src/dashboard/api.ts";
 import type { Asked, ChoicesNow, JournalFact, PlayerSetting, SheetGroup, SheetValue, ShownRoll, View } from "../src/dashboard/data.ts";
 import { effectLabel, factLabel, levelNeedLabel, memberPlaceLabel, notationLabel } from "../src/dashboard/parts/game-words.ts";
 import { checkOf, customLabel, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupLabels, initials, itemLabel, leveledItemLabel, phraseLabel, rollModifier, shownText, valueLabel } from "../src/dashboard/parts/labels.ts";
-import { arrangedGroups, columnsByHeight, endedQuests, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/parts/layout.ts";
+import { arrangedGroups, columnsByHeight, endedQuests, equippedFirst, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/parts/layout.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import type { ShownChoices as ServerChoices } from "../src/server/dashboard/choices.ts";
@@ -145,6 +145,11 @@ describe("view as data (VIEW-1, D-272)", () => {
         const buckler = JSON.parse(await ok("view", "Buckler", "--json"));
         expect(buckler.sheet).toEqual([{ name: "Buckler", values: [{ field: "heft", kind: "text", text: "1 kg", marks: 0 }] }]);
         expect(buckler.text).toContain("boiled leather");
+    });
+
+    it("gives a topic's page its data too, as a spell's range for its card (D-581)", async () => {
+        const scout = JSON.parse(await ok("view", "Scout", "--json"));
+        expect(scout.sheet).toEqual([{ name: "Scout", values: expect.arrayContaining([{ field: "stamina-die", kind: "text", text: "d4", marks: 0 }]) }]);
     });
 
     it("lists the pages of the system the campaign changed with a layer, with what the system gave; never a secret, and a creature the character does not know by its name alone (SYS-11)", async () => {
@@ -1247,6 +1252,26 @@ describe("the page's reading of a sheet (D-273)", () => {
         expect(progressShare({ value: 1500, from: 900, to: 2700 })).toBeCloseTo(1 / 3);
         expect(progressShare({ value: 900, from: 900, to: 2700 })).toBe(0);
         expect(progressShare({ value: 5, from: 5, to: 5 })).toBe(1);
+    });
+
+    it("lists what is equipped first, out of its container, an equipped container with what it holds, then the rest as it was (D-581 (6))", () => {
+        const line = (item: string, more: Partial<NonNullable<SheetGroup["items"]>[number]> = {}) => ({ item, values: [], ...more });
+        const carried = [
+            line("Backpack"),
+            line("Rope", { depth: 1, inside: "Backpack" }),
+            line("Dagger", { depth: 1, inside: "Backpack", equipped: true }),
+            line("Pouch", { depth: 1, inside: "Backpack" }),
+            line("Coin", { depth: 2, inside: "Pouch" }),
+            line("Quiver", { equipped: true }),
+            line("Arrows", { depth: 1, inside: "Quiver" }),
+            line("Ring", { depth: 1, inside: "Quiver", equipped: true }),
+            line("Torches"),
+        ];
+        const { equipped, rest } = equippedFirst(carried);
+        expect(equipped).toEqual([line("Dagger", { equipped: true }), line("Quiver", { equipped: true }), line("Arrows", { depth: 1, inside: "Quiver" }), line("Ring", { depth: 1, inside: "Quiver", equipped: true })]);
+        expect(rest).toEqual([carried[0], carried[1], carried[3], carried[4], carried[8]]);
+        // Nothing equipped, the list is as it was.
+        expect(equippedFirst([carried[0], carried[1]])).toEqual({ equipped: [], rest: [carried[0], carried[1]] });
     });
 
     it("reads how each number of a group is made from what view gives for Page#Group (FOR-8)", () => {

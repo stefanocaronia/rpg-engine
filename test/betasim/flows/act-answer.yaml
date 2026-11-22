@@ -1,12 +1,14 @@
-name: The master asks, and the player answers with an action from the sheet
+name: The master asks, and the player answers in words, the sheet's verbs waiting for it
 covers: [act-sheet, asked-choice]
-# On the 5e's demo, whose sheet has spells.
+# On the 5e's demo, whose sheet has spells: while the master waits for an answer, a thing's verbs wait too (D-581), and the answer goes in words.
 setup:
   system: 5e
   ask: {question: "Il secondo brigante alza il coltello verso Lupa: che fai?", options: ["Mi metto in mezzo", "Lascio fare a Lupa"]}
 steps:
   - phone: {tapOn: Spells}   # on a phone the lists of the Combat card start closed
-  - tapOn: Cast Healing Word
-  - tapOn: {css: ".act-who-one.companion"}   # Lupa, in the list On whom
-  - tapOn: Answer the master
+  - tapOn: {text: Healing Word, within: Prepared}
+  - assertVisible: The master is waiting for your answer
+  - tapOn: {label: Close}
+  - inputText: {into: {label: Or write what you do}, text: I cast Healing Word on Lupa.}
+  - tapOn: {label: Send}
   - assertState: {query: answer, contains: I cast Healing Word on Lupa.}

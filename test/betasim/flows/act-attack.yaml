@@ -4,10 +4,11 @@ covers: [act-sheet, act-target, act-strip]
 setup: {bell: true, system: 5e}
 steps:
   - phone: {tapOn: Attacks}   # on a phone the lists of the Combat card start closed
-  - tapOn: Attack with Mace
-    concept: {name: a name on the sheet acts, the number rolls, difficulty: 2}
+  - tapOn: {text: Mace, within: Attacks}
+    concept: {name: a name on the sheet opens its card, the number rolls, difficulty: 2}
+  - tapOn: {css: "button[data-verb=attack]"}   # Attack, among the card's verbs
   - tapOn: {css: ".act-who-one.hostile", index: 0}   # the first foe in the list On whom
-  - tapOn: Tell the master
+  - tapOn: I attack Brigante incappucciato 1 with Mace   # the button says the whole action, and sends it (D-581)
   - assertVisible: The master is about to read it   # the doorbell rang at once: too late to take it back
   - assertNotVisible: {label: Take it back from the master}
   - assertState: {query: news, contains: "I attack Brigante incappucciato 1 with Mace."}

@@ -1,6 +1,8 @@
 // The widgets of a value (D-273, D-284): pips, a bar, a track centred on zero, a number's progress, chips or a list of sentences; each says its value in words
 // for a screen reader.
-import { ActName, usePlayerActs } from "../acts/names.tsx";
+import { useContext } from "preact/hooks";
+import { thingKey } from "../acts/acts.ts";
+import { ActName, ThingVerbsContext, usePlayerActs } from "../acts/names.tsx";
 import type { Member, SheetValue } from "../data.ts";
 import { numberText, t } from "../text.ts";
 import { ChangedMark, isChanged } from "./changed.tsx";
@@ -123,6 +125,8 @@ export function Chips({ value, fields }: { value: SheetValue; fields?: ReadonlyS
 function Items({ items, field, fields }: { items: string[]; field: string; fields?: ReadonlySet<string>; })
 {
     const verbs = usePlayerActs()?.actions[field];
+    // A thing's verbs are the same wherever the sheet has it (D-581 (D)); outside a sheet, those of the list.
+    const verbsOf = useContext(ThingVerbsContext);
     const acting = verbs !== undefined && verbs.length > 0;
     const sentences = items.some((item) => item.trim().split(/\s+/).length >= sentenceWords);
     return (
@@ -132,7 +136,7 @@ function Items({ items, field, fields }: { items: string[]; field: string; field
                 // An item is only a name: one of a page of the game system the campaign changed has the asterisk after it (D-564).
                 return (
                     <li key={item}>
-                        {acting ? <ActName verbs={verbs} item={label} page={item}>{label}</ActName> : label}
+                        {acting ? <ActName verbs={verbsOf?.get(thingKey(item)) ?? verbs} item={label} page={item}>{label}</ActName> : label}
                         {isChanged(item) && <ChangedMark />}
                     </li>
                 );

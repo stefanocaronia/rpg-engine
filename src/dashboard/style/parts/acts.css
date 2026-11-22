@@ -95,6 +95,12 @@
         font-weight: 650;
     }
 
+    /* Say it again waits for the game to be back. */
+    .act-small:disabled {
+        color: var(--muted);
+        cursor: default;
+    }
+
     .act-close {
         flex: 0 0 auto;
         width: 36px;

@@ -15,6 +15,9 @@ export interface PlayerActs
 /** The player's actions where the page has them: none for a system that names none, and the page is as it was. */
 export const PlayerActsContext = createContext<PlayerActs | undefined>(undefined);
 
+/** The verbs of each thing of the sheet shown, by thingVerbs (D-581 (D)): none outside a sheet, where a name keeps the verbs of its own list. */
+export const ThingVerbsContext = createContext<ReadonlyMap<string, ActVerb[]> | undefined>(undefined);
+
 /** The player's actions, when the page has them. */
 export function usePlayerActs(): PlayerActs | undefined
 {
@@ -42,7 +45,6 @@ export function ActName({ verbs, item, page, facts, document, said = "", childre
     return (
         <button type="button" class={verbs.length === 0 ? "act reads" : "act"} data-tip={title} aria-label={`${item}${said}`} onClick={(event) => acts?.start(start, event.currentTarget)}>
             {children}
-            {verbs.length > 0 && <span class="act-mark" aria-hidden="true">›</span>}
         </button>
     );
 }

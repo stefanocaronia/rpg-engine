@@ -1,4 +1,4 @@
-goal: "The master asks what you do: answer by casting Healing Word on Lupa."
+goal: "The master asks what you do: answer that you cast Healing Word on Lupa."
 flow: act-answer
 audience: [newcomer, veteran-5e, screen-reader, keyboard]
 frequency: 3

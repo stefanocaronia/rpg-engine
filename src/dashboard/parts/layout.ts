@@ -149,6 +149,54 @@ export function trackPlaces(counter: { value: number; min?: number; max?: number
     return { zero: place(0), value: place(counter.value) };
 }
 
+/** A line of a list of items, as a thing carried. */
+export type SheetItem = NonNullable<SheetGroup["items"]>[number];
+
+/**
+ * What is carried, what is equipped first (D-581 (6)): each thing equipped at depth 0, in its order, out of the container it is in, so without its `inside`,
+ * with what it holds under it at the same depths from it; then the rest as it was. Nothing equipped, all of it is the rest.
+ */
+export function equippedFirst(items: SheetItem[]): { equipped: SheetItem[]; rest: SheetItem[]; }
+{
+    const depths = items.map((item) => item.depth ?? 0);
+    const taken = new Set<number>();
+    const equipped: SheetItem[] = [];
+
+    items.forEach((item, index) => {
+        if (taken.has(index) || item.equipped !== true) {
+            return;
+        }
+
+        // The thing and what it holds: the lines after it deeper than it.
+        const top = depths[index];
+        let end = index + 1;
+
+        while (end < items.length && depths[end] > top) {
+            end++;
+        }
+
+        for (let line = index; line < end; line++) {
+            taken.add(line);
+            equipped.push(movedLine(items[line], depths[line] - top, line === index));
+        }
+    });
+
+    return { equipped, rest: items.filter((_, index) => !taken.has(index)) };
+}
+
+/** A line moved to the head of its list: at its depth there, out of its container when it is the thing moved. */
+function movedLine(item: SheetItem, depth: number, head: boolean): SheetItem
+{
+    const moved = { ...item };
+    delete moved.depth;
+
+    if (head) {
+        delete moved.inside;
+    }
+
+    return depth === 0 ? moved : { ...moved, depth };
+}
+
 function widgetRank(value: SheetValue): number
 {
     const widget = widgetOf(value);

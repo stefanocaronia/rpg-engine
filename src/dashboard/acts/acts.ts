@@ -140,6 +140,47 @@ export function itemVerbs(actions: SheetActions | undefined, item: NonNullable<S
     return (item.equipped === true ? actions?.equipped : undefined) ?? actions?.inventory;
 }
 
+/**
+ * The verbs of each thing of a sheet, by its page's name in any case (D-581 (D)): those every place of the sheet gives it, its lines by itemVerbs and the items
+ * of the lists the system names, in the order they first come in the groups, without repeats; the same verbs wherever the thing is clicked.
+ */
+export function thingVerbs(actions: SheetActions | undefined, sheet: SheetGroup[]): Map<string, ActVerb[]>
+{
+    const verbs = new Map<string, ActVerb[]>();
+
+    const add = (page: string, more: ActVerb[] | undefined): void => {
+        const key = thingKey(page);
+        const before = verbs.get(key) ?? [];
+        verbs.set(key, [...before, ...(more ?? []).filter((verb) => !before.includes(verb))]);
+    };
+
+    for (const group of sheet) {
+        for (const value of group.values) {
+            const named = actions?.[value.field];
+
+            if (named !== undefined && named.length > 0) {
+                [...(value.items ?? []), ...(value.always?.items ?? [])].forEach((item) => add(item, named));
+            }
+        }
+
+        (group.items ?? []).forEach((item) => add(item.item, itemVerbs(actions, item)));
+    }
+
+    return verbs;
+}
+
+/** How thingVerbs keys a thing's page: its name trimmed, in any case. */
+export function thingKey(page: string): string
+{
+    return page.trim().toLocaleLowerCase();
+}
+
+/** A sentence as a button's label says it: without its final full stop. */
+export function withoutFullStop(sentence: string): string
+{
+    return sentence.trimEnd().replace(/[.。]$/u, "");
+}
+
 /** Someone the player may act on or talk to, as the page shows them: their name, side, where they stand and how far, how many copies. */
 export interface ActPerson
 {
@@ -171,25 +212,25 @@ export function actPeople(place: ShownPlace | undefined, scene: ShownScene | und
     return [...shown.filter((person) => person.role === "pc"), ...shown.filter((person) => person.role === "companion"), ...away, ...shown.filter((person) => person.role === "other")];
 }
 
-/** A sentence the player said on this page, by its id; lost when the game went away before the master heard it; or one copied, for the chat. */
+/** A sentence the player said on this page, by its id, with the thing it starts from; lost when the game went away before the master heard it. */
 export interface SaidAct
 {
     id: string;
     text: string;
+    item?: string;
     lost?: boolean;
-    copied?: boolean;
 }
 
 /**
  * How a sentence stands: said and waiting, which the player may take back; called, the doorbell rang for it and the master comes to read it, too late to take
- * back; heard by the master; never heard, the chat gone; or copied for the chat (D-495).
+ * back; heard by the master; or never heard, the chat gone (D-495).
  */
-export type SaidState = "said" | "called" | "heard" | "lost" | "copied";
+export type SaidState = "said" | "called" | "heard" | "lost";
 
 /**
  * Each sentence said on this page with how it stands, as the server tells it: waiting while it is pending, called once the doorbell rang for it, heard once
- * the master's call took it; while the game is away, and after, what was not heard is lost, to say again in the chat. One the server no longer knows of,
- * heard long ago, is left out; one copied stays so, in its place.
+ * the master's call took it; while the game is away, and after, what was not heard is lost, to say again. One the server no longer knows of, heard long
+ * ago, is left out.
  */
 export function saidStates(said: SaidAct[], shown: ActsShown | undefined, live: boolean): { act: SaidAct; state: SaidState; }[]
 {
@@ -197,9 +238,7 @@ export function saidStates(said: SaidAct[], shown: ActsShown | undefined, live: 
         const pending = shown?.pending.find((one) => one.id === act.id);
         const heard = shown?.heard.includes(act.id) === true;
         const waiting = pending?.rung === true ? "called" : "said";
-        const state: SaidState | undefined = act.copied === true
-            ? "copied"
-            : heard
+        const state: SaidState | undefined = heard
             ? "heard"
             : pending !== undefined && live
             ? waiting

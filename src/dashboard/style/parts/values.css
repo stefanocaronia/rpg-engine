@@ -341,6 +341,11 @@
         margin-top: 0;
     }
 
+    /* A block of lines after a list or a text keeps the same room from it as the list from the block before (D-581 (F)). */
+    .rows > :is(.row-list, .row-text) + :is(.row-number, .row-pips, .row-bar, .row-track, .row-progress) {
+        margin-top: calc(var(--gap) * 0.75);
+    }
+
     :is(.row-list, .row-text) > .label,
     .always-from {
         color: var(--muted);

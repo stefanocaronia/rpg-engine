@@ -107,8 +107,8 @@
         font-weight: 600;
     }
 
-    /* A name that acts (D-495): the name acts, the number rolls. A dotted line in the accent under it and a chevron after it; in a chip or a line, its whole
-       width the target. */
+    /* A name that opens its card (D-495, D-581): the name acts, the number rolls. A dotted line in the accent under it, its one sign; in a chip or a line, its
+       whole width the target. */
     .act {
         display: inline-block;
         max-width: 100%;
@@ -130,13 +130,6 @@
     /* In a bulleted list a long name wraps as the item's text does, under its bullet. */
     .notes .act {
         max-width: none;
-    }
-
-    /* Inline, a character after the last word, so that it never goes to a line of its own; mirrored by itself from right to left. */
-    .act-mark {
-        margin-inline-start: 0.25em;
-        color: var(--accent);
-        font-weight: 700;
     }
 
     .chips.acting li {

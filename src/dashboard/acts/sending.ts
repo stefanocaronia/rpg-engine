@@ -1,5 +1,5 @@
-// The player's sentences to the master (D-495), as the page holds them: the verbs of the sheet, the sentence being written, those said or copied and how the
-// server holds them, sent, taken back, copied and gone from the strip after a while. The page's read() sets the acts and the verbs it reads, by their setters.
+// The player's sentences to the master (D-495), as the page holds them: the verbs of the sheet, the sentence being written, those said and how the
+// server holds them, sent, taken back, said again and gone from the strip after a while. The page's read() sets the acts and the verbs it reads, by their setters.
 import { type Dispatch, type StateUpdater, useEffect, useState } from "preact/hooks";
 import { answer, readView, sayAct, withdrawAct } from "../api.ts";
 import type { ActsShown, Asked, Member, ShownPlace } from "../data.ts";
@@ -8,7 +8,7 @@ import { type ActStart, type SaidAct, saidStates, type SheetActions } from "./ac
 import type { PlayerActs } from "./names.tsx";
 import type { ActReply } from "./sheet.tsx";
 
-// How long a sentence the master heard, or one copied for the chat, stays in the strip (D-495).
+// How long a sentence the master heard stays in the strip (D-495).
 const heardTime = 6000;
 
 /** What the page knows that the player's sentences follow. */
@@ -34,6 +34,8 @@ export interface PlayerSentences
     actsElsewhere: string | undefined;
     actPlace: { who: string; place?: ShownPlace; } | undefined;
     reply: ActReply;
+    /** Whether the chat has a doorbell: without one, the master reads a sentence when the player next writes in the chat. */
+    bell: boolean;
     /** The master's open question the sentence answers, and whether it has buttons the words take the place of. */
     answering: { question: string; buttons: boolean; } | undefined;
     strip: ReturnType<typeof saidStates>;
@@ -41,14 +43,14 @@ export interface PlayerSentences
     sendAct(text: string): Promise<string | undefined>;
     closeAct(): void;
     withdraw(id: string): Promise<void>;
-    copyFromStrip(id: string, text: string): void;
+    sayAgain(id: string): Promise<void>;
     dismissAct(...ids: string[]): void;
 }
 
 /** The player's sentences to the master and what the page does with them (D-495). */
 export function useActs({ read, live, asked, foreground, version, players, member, several }: ActsAround): PlayerSentences
 {
-    // The verbs of the player character's sheet, the sentences said or copied and how the server holds them, and the action the player is writing, with
+    // The verbs of the player character's sheet, the sentences said and how the server holds them, and the action the player is writing, with
     // what started it, which has the focus back.
     const [actions, setActions] = useState<SheetActions>();
     const [acts, setActs] = useState<ActsShown>();
@@ -84,9 +86,9 @@ export function useActs({ read, live, asked, foreground, version, players, membe
     }, [live]);
 
     const strip = saidStates(said, acts, live);
-    const leaving = strip.filter((entry) => entry.state === "heard" || entry.state === "copied").map((entry) => entry.act.id).join();
+    const leaving = strip.filter((entry) => entry.state === "heard").map((entry) => entry.act.id).join();
 
-    // A sentence heard, or copied, goes from the strip after a while.
+    // A sentence heard goes from the strip after a while.
     useEffect(() => {
         if (leaving === "") {
             return;
@@ -101,9 +103,9 @@ export function useActs({ read, live, asked, foreground, version, players, membe
         setActProblem(undefined);
     };
 
-    // With a question of the master's open, the sentence answers it (ASK-10); else it rings the master, or, in a chat that hears nothing by itself, is copied.
+    // With a question of the master's open, the sentence answers it (ASK-10); else it goes to the master, who reads it at once with a doorbell, else at their next call.
     const question = asked !== undefined && asked.spend === undefined && asked.forced !== true ? asked : undefined;
-    const reply: ActReply = question !== undefined ? "answer" : acts?.bell === true ? "tell" : "copy";
+    const reply: ActReply = question !== undefined ? "answer" : "tell";
     const answering = question === undefined ? undefined : { question: question.question, buttons: question.labels.length > 0 };
 
     const sendAct = async (text: string): Promise<string | undefined> => {
@@ -115,35 +117,39 @@ export function useActs({ read, live, asked, foreground, version, players, membe
             return taken ? undefined : t("The answer did not reach the game: try again.");
         }
 
-        if (reply === "copy") {
-            return await copyAct(text) ? undefined : t("Copy did not work: select the words and copy them yourself.");
-        }
-
         // The thing it starts from, for the master to hear what the character already knows of it (T-218).
         const item = acting !== undefined && "verbs" in acting.start ? acting.start.page ?? acting.start.item : undefined;
+        return await say(text, item);
+    };
+
+    // Sends a sentence to the master and puts it in the strip: undefined when done, else what went wrong.
+    const say = async (text: string, item: string | undefined, instead?: string): Promise<string | undefined> => {
         const result = await sayAct(text, item);
 
         if ("error" in result) {
             return result.error;
         }
 
-        setSaid((before) => [...before, { id: result.id, text }]);
+        setSaid((before) => [...before.filter((one) => one.id !== instead), { id: result.id, text, ...(item === undefined ? {} : { item }) }]);
         setActs(result.shown);
         return undefined;
     };
 
-    const copyAct = async (text: string): Promise<boolean> => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setSaid((before) => [...before.filter((one) => one.copied !== true || one.text !== text), { id: `copied ${Date.now()}`, text, copied: true }]);
-            return true;
-        } catch {
-            return false;
+    // A sentence lost with the chat, said again with the same words, in place of the lost one.
+    const sayAgain = async (id: string): Promise<void> => {
+        const lost = said.find((one) => one.id === id);
+
+        if (lost === undefined) {
+            return;
+        }
+
+        setActProblem(undefined);
+        const failed = await say(lost.text, lost.item, id);
+
+        if (failed !== undefined) {
+            setActProblem(failed);
         }
     };
-
-    // A sentence copied again from the strip goes from it; one that would not copy says so.
-    const copyFromStrip = (id: string, text: string): void => void copyAct(text).then((done) => (done ? dismissAct(id) : setActProblem(t("Copy did not work: select the words and copy them yourself."))));
 
     const withdraw = async (id: string): Promise<void> => {
         const result = await withdrawAct(id);
@@ -168,5 +174,5 @@ export function useActs({ read, live, asked, foreground, version, players, membe
 
     const playerActs: PlayerActs | undefined = actions === undefined || players.length === 0 ? undefined : { actions, start: (start, opener) => setActing({ start, opener }) };
 
-    return { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, answering, strip, actProblem, sendAct, closeAct, withdraw, copyFromStrip, dismissAct };
+    return { setActs, setActions, playerActs, acting, actsElsewhere, actPlace, reply, bell: acts?.bell === true, answering, strip, actProblem, sendAct, closeAct, withdraw, sayAgain, dismissAct };
 }

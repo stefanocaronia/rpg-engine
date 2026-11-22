@@ -350,6 +350,38 @@
         }
     }
 
+    /* A container's info icon, after its name, opens its card (D-581): small, a target of 2rem that takes no height from its line. */
+    .items .item-info {
+        width: 2rem;
+        height: 2rem;
+        margin-block: -0.5rem;
+        margin-inline-start: 2px;
+        text-indent: 0;
+        vertical-align: middle;
+    }
+
+    .items .item-info svg.icon {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .items .item-info:hover {
+        color: var(--ink);
+    }
+
+    /* What is equipped heads the list under its eyebrow, a hairline under it before the rest (D-581 (6)). */
+    .items tbody tr.items-head th {
+        padding: 4px 8px 2px;
+        border-top: 0;
+        text-indent: 0;
+    }
+
+    .items tr.items-rule td {
+        height: 0;
+        padding: 0;
+        border-top: 1px solid var(--rule);
+    }
+
     /* The group's values, as the money, above its table. */
     .rows + .items {
         margin-top: 12px;

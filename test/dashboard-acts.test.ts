@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { actPeople, actSentence, actTitle, itemVerbs, saidStates, setSystemVerbs, spokenBy, talkSentence, targetMode, verbLabel } from "../src/dashboard/acts/acts.ts";
+import { actPeople, actSentence, actTitle, itemVerbs, saidStates, setSystemVerbs, spokenBy, talkSentence, targetMode, thingKey, thingVerbs, verbLabel, withoutFullStop } from "../src/dashboard/acts/acts.ts";
 import type { ShownPlace, ShownScene } from "../src/dashboard/data.ts";
 import { systemNameLabel } from "../src/dashboard/parts/labels.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
@@ -149,6 +149,25 @@ describe("which lines of the sheet act (D-495)", () => {
         expect(itemVerbs(undefined, { item: "Mace", values: [value("attack")] })).toBeUndefined();
         expect(itemVerbs({ spells: ["cast"] }, { item: "Mace", values: [value("attack")] })).toBeUndefined();
     });
+
+    it("gives a thing the same verbs wherever the sheet has it: those of every place, in the order they first come, without repeats (D-581 (D))", () => {
+        const sheet = [
+            { name: "Attacks", values: [], items: [{ item: "Mace", values: [value("attack")] }] },
+            { name: "Equipment", values: [{ ...value("equipped"), items: ["mace", "Shield"] }], items: [{ item: "Mace", values: [value("quantity")], equipped: true }, { item: "Torches", values: [value("quantity")] }] },
+            { name: "Notes", values: [{ ...value("languages"), items: ["Common"] }] },
+        ];
+        const verbs = thingVerbs(actions, sheet);
+        expect([verbs.get(thingKey("Mace")), verbs.get(thingKey("Shield")), verbs.get(thingKey("Torches")), verbs.get(thingKey("Common"))]).toEqual([
+            ["attack", "use", "unequip"],
+            ["use", "unequip"],
+            ["use", "equip"],
+            undefined,
+        ]);
+    });
+
+    it("says a sentence on a button without its final full stop", () => {
+        expect([withoutFullStop("Attacco Brigante incappucciato 1 con Mazza."), withoutFullStop("我使用火把。"), withoutFullStop("Mira: Uso Torce")]).toEqual(["Attacco Brigante incappucciato 1 con Mazza", "我使用火把", "Mira: Uso Torce"]);
+    });
 });
 
 describe("whom a sentence names (D-495)", () => {
@@ -181,10 +200,11 @@ describe("whom a sentence names (D-495)", () => {
 });
 
 describe("how a sentence said stands (D-495)", () => {
-    const said = [{ id: "a", text: "I attack." }, { id: "b", text: "I use Torches." }, { id: "c", text: "I cast Bless.", copied: true }];
+    const said = [{ id: "a", text: "I attack." }, { id: "b", text: "I use Torches." }];
 
-    it("waits while the server holds it, is heard once the master's call took it, and stays copied for the chat", () => {
-        expect(saidStates(said, { pending: [{ id: "a", text: "I attack." }], heard: ["b"], bell: true }, true).map((one) => one.state)).toEqual(["said", "heard", "copied"]);
+    it("waits while the server holds it, with a doorbell or without one, and is heard once the master's call took it", () => {
+        expect(saidStates(said, { pending: [{ id: "a", text: "I attack." }], heard: ["b"], bell: true }, true).map((one) => one.state)).toEqual(["said", "heard"]);
+        expect(saidStates(said, { pending: [{ id: "a", text: "I attack." }], heard: [], bell: false }, true).map((one) => one.state)).toEqual(["said"]);
     });
 
     it("is called, no longer to take back, once the doorbell rang for it; lost if the game goes before the master reads it", () => {

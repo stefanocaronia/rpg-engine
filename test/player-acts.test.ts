@@ -121,7 +121,7 @@ describe("the player's sentences on the dashboard (D-495)", () => {
         dashboard.news().restore();
         const heard = dashboard.news().lines;
         expect(heard).toEqual([
-            "The player acts on the dashboard, in their own words, as if said in chat:\n> Attacco Brigante incappucciato 1 con Mazza.\nRule it as the player's move, and answer as to their words in chat.",
+            "The player acts on the dashboard, in their own words, as if said in chat:\n> Attacco Brigante incappucciato 1 con Mazza.\nRule it as the player's move, and answer as to their words in chat. If you need what they left unsaid to rule it, ask them with buttons.",
         ]);
         expect(dashboard.news().lines).toEqual([]);
         expect(await shown()).toEqual({ pending: [], heard: [first], bell: false });

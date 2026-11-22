@@ -711,36 +711,46 @@
         line-height: 1.5;
     }
 
-    /* The thing's data, as damage and weight: label and value in two columns, as a stat block. */
+    /* The thing's data, as damage and weight or a spell's range (D-581): a grid of facts, each its label over its value, hairlines between them; the lines on
+       the grid's outer edges fall outside it, cut. */
     .act-data {
         display: grid;
-        grid-template-columns: max-content 1fr;
-        gap: 6px 16px;
-        margin: 0;
-        padding: 14px 16px 0;
+        grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+        overflow: hidden;
+        margin: 14px 16px 0;
+        padding: 0;
     }
 
     .act-data > div {
-        display: contents;
-    }
-
-    .act-data dt {
-        color: var(--muted);
-        font-size: 0.85rem;
+        display: grid;
+        align-content: start;
+        gap: 2px;
+        margin-block-end: -1px;
+        margin-inline-end: -1px;
+        padding: 8px 12px;
+        border-inline-end: 1px solid var(--rule);
+        border-bottom: 1px solid var(--rule);
     }
 
     .act-data dd {
         margin: 0;
         font-weight: 600;
+        overflow-wrap: anywhere;
     }
 
     .act-about .markdown > :first-child {
         margin-top: 0;
     }
 
+    /* The verbs under the thing, with what is said of them: that the master waits for an answer, that a chat does not hear by itself, a problem. */
     .act-verbs {
-        flex-wrap: wrap;
+        display: grid;
+        gap: 10px;
         padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .act-verbs .act-buttons {
+        flex-wrap: wrap;
     }
 
     .act-body {
@@ -937,8 +947,38 @@
     }
 
     .act-go svg.icon {
+        flex: none;
         width: 18px;
         height: 18px;
+    }
+
+    /* A button that says the whole action, as Confirm: Equip Staff (D-581): its words wrap, from their start; on a phone it takes the bar's width. */
+    .act-go.says {
+        padding-block: 8px;
+        white-space: normal;
+        text-align: start;
+    }
+
+    @media (max-width: 599px) {
+        .act-buttons:has(.says) {
+            flex-wrap: wrap;
+        }
+
+        .act-go.says {
+            flex: 1 1 100%;
+        }
+    }
+
+    /* A verb that waits, while the master waits for an answer: there, dimmed. */
+    .map-sheet-go[aria-disabled="true"] {
+        background: color-mix(in srgb, var(--gold) 35%, var(--panel));
+        color: var(--muted);
+        cursor: default;
+    }
+
+    .act-cancel[aria-disabled="true"] {
+        color: var(--muted);
+        cursor: default;
     }
 
     /* A token to choose on the map of the sheet, or to talk to on the page (D-495): a ring at the pointer, the one chosen ringed in gold. */
