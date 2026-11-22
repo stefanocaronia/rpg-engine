@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import type { DocumentReader, PicturesReady, TextWriter } from "../core/context.ts";
 import { knownReady } from "./programs.ts";
-import { stopTree } from "./stop.ts";
+import { stopProcess, stopTree } from "./stop.ts";
 
 // The same limits as Claude's: a brief in three minutes, a run of the importer in thirty.
 const longest = 3 * 60 * 1000;
@@ -180,9 +180,10 @@ function runAgent(program: string, model: string, folder: string, agent: Agent, 
     const line = `${program} run --standalone --agent ${agent.name} -m "${model}" --format json --archived --session ${session}`;
 
     return new Promise((done) => {
-        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: environment, stdio: ["pipe", "pipe", "pipe"] });
+        // Off Windows it leads a group of its own: the shell alone, stopped, would leave OpenCode running with the output held open.
+        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: environment, stdio: ["pipe", "pipe", "pipe"], detached: process.platform !== "win32" });
         // Dropped while it runs: OpenCode stops with its own server.
-        const stop = (): void => stopTree(child);
+        const stop = (): void => (process.platform === "win32" || child.pid === undefined ? stopTree(child) : stopProcess(child.pid));
         signal?.addEventListener("abort", stop, { once: true });
         let output = "";
         let errors = "";
