@@ -60,8 +60,8 @@ export interface Context
     files?: FileStore;
     /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */
     told?: Set<string>;
-    /** Whether the campaign had the character agent as the MCP server started, as Claude Code's agent and as OpenCode's subagent (D-490): the chat of that host then gets Voices. */
-    characterAgents?: { claudeCode?: boolean; openCode?: boolean; };
+    /** Whether the campaign had the character agent as the MCP server started, in each host that has agents (D-490, D-580): the chat of that host then gets Voices. */
+    characterAgents?: { claudeCode?: boolean; openCode?: boolean; codex?: boolean; antigravity?: boolean; };
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
     /** Whether another chat of the campaign, still open, serves the dashboard at that link, which this chat takes over once it closes (D-577). */

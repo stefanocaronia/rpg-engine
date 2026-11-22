@@ -2,7 +2,7 @@
 import { type CampaignSettings, customLevel, customLevels, customSettings, lastChoices, type LeveledSetting, listSettingNames, readOneSetting, readSettings, setupSettingNames } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { comparableText } from "../../core/text.ts";
-import { claudeSays, codexClient, codexSays } from "../../helpers/index.ts";
+import { antigravityClient, antigravitySays, claudeSays, codexClient, codexSays } from "../../helpers/index.ts";
 import { readBetweenSessions } from "../../time/index.ts";
 import { gitProblem, isCampaignRepository, isInLargerRepository } from "../shared/campaign/git.ts";
 import { heldSystemSettings, isLeading, offeredValues, playedEngineSetting } from "../shared/campaign/offers.ts";
@@ -228,14 +228,19 @@ function mentorQuestion(question: PlayerSetting, game: string): PlayerSetting
 // The engine's own game system, free play, without rules of its own.
 const freePlay = "free";
 
-/** Who makes the pictures as the chat in use offers it (D-572): in Codex, Codex is the chat itself, so it is not offered, and a campaign that chose it plays chat. */
+/**
+ * Who makes the pictures as the chat in use offers it (D-572, T-251): in Codex, Codex is the chat itself, as Antigravity in Antigravity, so it is not offered,
+ * and a campaign that chose it plays chat.
+ */
 function makersInChat(context: Context, setting: PlayerSetting): PlayerSetting
 {
-    if (context.host?.() !== codexClient) {
+    const own = ({ [codexClient]: "codex", [antigravityClient]: "antigravity" } as Record<string, string>)[context.host?.() ?? ""];
+
+    if (own === undefined) {
         return setting;
     }
 
-    return { ...setting, ...(setting.value === "codex" ? { value: "chat" } : {}), choices: setting.choices?.filter((choice) => choice.value !== "codex") };
+    return { ...setting, ...(setting.value === own ? { value: "chat" } : {}), choices: setting.choices?.filter((choice) => choice.value !== own) };
 }
 
 /** A player's setting as the game offers it (DAT-16): none where it plays one value alone; only the values it offers, and no value written that it does not. */
@@ -261,6 +266,8 @@ const madeBy = {
     Codex: "Codex makes them on this computer, from your ChatGPT plan.",
     Claude: "Claude draws them on this computer, as vector pictures, from your Claude plan.",
     Antigravity: "Antigravity makes them in your chat, from your Google plan.",
+    // Antigravity's agy, started apart from the chat in use (T-251).
+    AntigravityApart: "Antigravity paints them on this computer, from your Google plan.",
 };
 
 // The chat in use draws them itself, as OpenCode (D-572).
@@ -278,7 +285,16 @@ const madeMeanwhile = "{by} makes them meanwhile.";
 const ownPicture = "You can also give a page you see a picture of your own: with its picture button, or dropped in the campaign's inbox folder for the master.";
 
 /** Every note the pictures' setting may have, which the dashboard writes in its language (D-394). */
-export const picturesNotes = [...Object.values(madeBy), drawnInChat, madeWithTool, toolAsked, refusedNote, madeMeanwhile, ownPicture, ...[...Object.values(codexSays), ...Object.values(claudeSays)].map(notReadyText)];
+export const picturesNotes = [
+    ...Object.values(madeBy),
+    drawnInChat,
+    madeWithTool,
+    toolAsked,
+    refusedNote,
+    madeMeanwhile,
+    ownPicture,
+    ...[...Object.values(codexSays), ...Object.values(claudeSays), ...Object.values(antigravitySays)].map(notReadyText),
+];
 
 /**
  * Whether this computer makes pictures, and with whose plan, in the player's words (D-308, D-390); why not and how to have them; where the maker the player
@@ -316,7 +332,9 @@ function picturesReadyNote(context: Context): Pick<PlayerSetting, "note">
         return { note: { text: drawnInChat, values: { maker: ready.maker ?? "" } } };
     }
 
-    return { note: { text: madeBy[ready.maker === "Claude" || ready.maker === "Antigravity" ? ready.maker : "Codex"] } };
+    // Antigravity makes them in its own chat, and paints them apart from any other.
+    const antigravity = context.host?.() === antigravityClient ? "Antigravity" : "AntigravityApart";
+    return { note: { text: madeBy[ready.maker === "Claude" ? "Claude" : ready.maker === "Antigravity" ? antigravity : "Codex"] } };
 }
 
 /** The pictures' note with the line that the player may give a picture of their own after it. */

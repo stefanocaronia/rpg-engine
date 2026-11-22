@@ -57,7 +57,17 @@ const layersFolder = "layers";
 const writtenFolders = ["world", "images", "rules", sessionsFolderName, bookFolderName, ".saves", "exports", ".player", ".imports", layersFolder];
 
 // The hosts' folders, where the engine writes only its own files, beside the player's: these alone are looked at, never what the player keeps in them.
-const hostFolders = [".claude", join(".claude", "agents"), ".codex", ".agents", ".opencode", join(".opencode", "plugins"), join(".opencode", "agents")];
+const hostFolders = [
+    ".claude",
+    join(".claude", "agents"),
+    ".codex",
+    join(".codex", "agents"),
+    ".agents",
+    join(".agents", "agents"),
+    ".opencode",
+    join(".opencode", "plugins"),
+    join(".opencode", "agents"),
+];
 
 /**
  * Throws when a folder the engine writes in, or one in it two levels deep, three for the layers, is a link: a symbolic link or a junction; in the hosts' folders,

@@ -35,6 +35,7 @@ import type { World } from "../pages/index.ts";
 import { loadSystemCode } from "../systems/index.ts";
 import { chatKeeper } from "./chats.ts";
 import { answers, campaignPageElsewhere, campaignPorts, type Dashboard, dashboardAt, isCampaignPage, startDashboard } from "./dashboard/index.ts";
+import { fromSubagent, subagentRefusal } from "./subagent.ts";
 
 type AnyCommand = Command<any, any>;
 type ToolExtra = RequestHandlerExtra<ServerRequest, ServerNotification>;
@@ -452,6 +453,14 @@ async function runTool(
     examples: { shown: Examples; },
 ): Promise<CallToolResult>
 {
+    // A character's subagent only looks, and takes none of the master's lines (D-580).
+    if (fromSubagent(extra._meta)) {
+        // Only view, and only as a character: without `as` it would be the player's own view, which is not theirs.
+        const as = (input as { as?: unknown; } | null)?.as;
+        const looks = command.name === "view" && typeof as === "string" && as.trim() !== "";
+        return looks ? subagentView(command, input, context, extra, prepare, examples) : { content: [{ type: "text", text: subagentRefusal }], isError: true };
+    }
+
     const keepAlive = command.needsPlayer || command.waitsForPlayer
         ? reportProgress(extra, () => (context.page?.asking?.() === true ? "waiting for the player's click on the dashboard" : "waiting for the player"))
         : command.slow === true
@@ -539,6 +548,26 @@ async function runTool(
             chat.calls--;
             chat.afterCall?.();
         }
+    }
+}
+
+/**
+ * A view of a character's subagent (D-580): it runs as any call, but takes none of the lines meant for the master, as what the player changed or what changed
+ * outside the chat, counts in none of the chat's calls, and tells the master's chat nothing.
+ */
+async function subagentView(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, prepare: () => Promise<void>, examples: { shown: Examples; }): Promise<CallToolResult>
+{
+    try {
+        if (context.files instanceof SessionStore) {
+            await context.files.ready(false);
+        }
+
+        await prepare();
+        const checked = checkedInput(command, input, examples.shown);
+        const text = command.format(await command.run(checked, { ...context, told: new Set(context.told), signal: extra.signal }));
+        return { content: [{ type: "text", text }, masterOnly(context)] };
+    } catch (error) {
+        return { content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }, masterOnly(context)], isError: true };
     }
 }
 

@@ -428,6 +428,7 @@ export function valueLabel(value: string): string
         other: t("Another tool"),
         // Names of programs, the same in every language.
         codex: "Codex",
+        antigravity: "Antigravity",
         elevenlabs: "ElevenLabs",
     };
     return labels[value] ?? itemLabel(value);

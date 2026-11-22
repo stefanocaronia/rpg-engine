@@ -1,4 +1,5 @@
-// Antigravity does the work outside the chat where it is the chat in use (D-579 (1)): the writer of text and the importer. The engine starts its agy with the
+// Antigravity does the work outside the chat where it is the chat in use (D-579 (1)): the writer of text and the importer; and it paints the pictures where
+// the campaign chose it (T-251). The engine starts its agy with the
 // player's own login and model, in an empty folder of its own, never in the campaign's tree, with a home of the engine's, so that it starts none of the
 // player's global servers and leaves nothing in their history; settings of the engine's and its hook fence it, and the brief goes as one stream-json message on
 // its input. Each start keeps all it makes in one temporary folder, which names its process: what a run stopped from outside left is swept by the next.
@@ -8,8 +9,9 @@ import { rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DocumentReader, PicturesReady, TextWriter } from "../core/context.ts";
+import type { DocumentReader, PictureMaker, PicturesReady, TextWriter } from "../core/context.ts";
 import { isAlive } from "../core/process-mark.ts";
+import { chatBrief } from "./briefs.ts";
 import { chatEnvironment, isOwn, knownReady } from "./programs.ts";
 import { stopProcess, stopTree, whenEnded } from "./stop.ts";
 
@@ -89,6 +91,93 @@ export function antigravityReader(program = "agy", home = homedir()): DocumentRe
             }
         },
     };
+}
+
+/** Why Antigravity paints no pictures, for the master and the player (T-251): the engine never installs it, so there is no step to give. */
+export const antigravitySays = { notReady: { why: "Antigravity's agy does not answer on this computer, or is not signed in" } };
+
+/**
+ * Antigravity on this computer as the painter, where the campaign chose it and another host is the chat (T-251): agy in an empty folder of its own, with its
+ * image tool and the two it calls it with let through, every other refused; the picture it saves in its own data folder, under its home of the engine's.
+ */
+export function antigravityPainter(program = "agy", home = homedir()): PictureMaker
+{
+    const ready = antigravityReady(program);
+    return {
+        ready,
+        make: async (subject) => {
+            const said = ready();
+
+            if (!said.ready) {
+                return { refused: said.why };
+            }
+
+            const run = runFolder();
+
+            try {
+                prepareRun(run, painterSettings(run.work, playerModel(home)), { read: [], write: [], tools: painterTools });
+                const ran = await runAgy(program, run, chatBrief(subject), longestPainting);
+                const file = newestPicture(join(run.home, ".gemini", "antigravity-cli", "brain"));
+
+                // The folder stays until the engine copied the picture.
+                if (file !== undefined) {
+                    return { file, done: () => dropFolder(run.root) };
+                }
+
+                dropFolder(run.root);
+                const words = ran.error ?? ran.response?.split("\n")[0]?.trim();
+                return words === undefined || words === "" ? { refused: "Antigravity made no picture, and said nothing", onlyThis: true } : { refused: `Antigravity made no picture: ${words}` };
+            } catch (error) {
+                dropFolder(run.root);
+                throw error;
+            }
+        },
+    };
+}
+
+/** The painter's settings: its working folder trusted, the player's model, and every command, MCP tool and URL denied. */
+export function painterSettings(work: string, model: string | undefined): AgySettings
+{
+    return { trustedWorkspaces: [work], ...modelOf(model), permissions: { deny: ["command(*)", "mcp(*)", "read_url(*)", "execute_url(*)", "download_url(*)"] } };
+}
+
+// The tools the painter calls, as the real run of 22 November did: its image tool, and the subagent and message it uses to reach it.
+const painterTools = ["invoke_subagent", "generate_image", "send_message"];
+
+// A picture in five minutes: the real run's took 52 seconds.
+const longestPainting = 5 * 60 * 1000;
+
+// The pictures agy saves, by their names' ends.
+const pictureFile = /\.(png|jpe?g|webp)$/i;
+
+/** The newest picture under `folder`, at any depth, but none under a .system_generated folder, which holds agy's own copies; undefined where there is none. */
+function newestPicture(folder: string): string | undefined
+{
+    let newest: { path: string; time: number; } | undefined;
+
+    const look = (here: string): void => {
+        let entries;
+
+        try {
+            entries = readdirSync(here, { withFileTypes: true });
+        } catch {
+            return;
+        }
+
+        for (const entry of entries) {
+            const path = join(here, entry.name);
+
+            if (entry.isDirectory() && entry.name !== ".system_generated") {
+                look(path);
+            } else if (entry.isFile() && pictureFile.test(entry.name)) {
+                const time = statSync(path).mtimeMs;
+                newest = newest === undefined || time > newest.time ? { path, time } : newest;
+            }
+        }
+    };
+
+    look(folder);
+    return newest?.path;
 }
 
 /** The writer's settings: `folder` trusted, the player's model, and every command, MCP tool, URL and file of the computer's `roots` denied. */
@@ -193,7 +282,7 @@ function runFolder(): RunFolder
 }
 
 // The settings, the fence and the hook of a run, in its folder: the hook in its working folder, where agy reads it.
-function prepareRun(run: RunFolder, settings: AgySettings, fence: { read: string[]; write: string[]; }): void
+function prepareRun(run: RunFolder, settings: AgySettings, fence: { read: string[]; write: string[]; tools?: string[]; }): void
 {
     writeFileSync(join(run.root, "settings.json"), JSON.stringify(settings));
     writeFileSync(join(run.root, "fence.json"), JSON.stringify(fence));
@@ -280,7 +369,7 @@ function modelsListed(program: string): PicturesReady
 
     try {
         const listed = spawnSync(`${program} models`, { shell: true, encoding: "utf8", timeout: 15_000, windowsHide: true, cwd: run.work, env: agyEnvironment(run.home) });
-        return listed.error === undefined && listed.status === 0 ? { ready: true, maker: "Antigravity" } : { ready: false, why: "Antigravity's agy does not answer on this computer, or is not signed in" };
+        return listed.error === undefined && listed.status === 0 ? { ready: true, maker: "Antigravity" } : { ready: false, ...antigravitySays.notReady };
     } finally {
         dropFolder(run.root);
     }

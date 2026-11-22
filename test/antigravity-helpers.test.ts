@@ -7,8 +7,9 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpath
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { DocumentReader, TextWriter } from "../src/core/context.ts";
-import { type AgySettings, antigravityClient, antigravityReader, antigravityWriter, hostReader, hostWriter, openCodeClient, playerModel, sealedSettings } from "../src/helpers/index.ts";
+import type { DocumentReader, PictureSubject, TextWriter } from "../src/core/context.ts";
+import { type AgySettings, antigravityClient, antigravityPainter, antigravityReader, antigravitySays, antigravityWriter, hostReader, hostWriter, openCodeClient, painterSettings, playerModel, sealedSettings } from "../src/helpers/index.ts";
+import { readImage } from "../src/images/index.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
 // The fake: models, and a run that answers as mode.json beside it says, reading its input until it is closed; each start written to calls.jsonl.
@@ -58,6 +59,19 @@ process.stdin.on("data", (chunk) => {
     if (mode.run === "answerHang") { say({ event: "result", result: { status: "SUCCESS", response: " the answer " } }); log({ hanging: true }); setInterval(() => undefined, 1000); return; }
     if (mode.run === "closed") { say({ event: "result", result: { status: "SUCCESS", response: "", denied_actions: ["read_file"], conversation_id: "conversation-1" } }); return; }
     if (mode.run === "error") { say({ event: "result", result: { status: "ERROR", error: "quota exhausted", conversation_id: "conversation-1" } }); return; }
+    if (mode.run === "paint") {
+        const { mkdirSync, utimesSync, writeFileSync } = require("node:fs");
+        const brain = join(home, ".gemini", "antigravity-cli", "brain", "conversation-1");
+        const media = join(brain, ".system_generated", "logs", "media");
+        mkdirSync(media, { recursive: true });
+        writeFileSync(join(brain, "older_1.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+        utimesSync(join(brain, "older_1.png"), new Date(2020, 0, 1), new Date(2020, 0, 1));
+        writeFileSync(join(brain, "ponte_1764000000.jpg"), Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46]));
+        writeFileSync(join(media, "copy.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+        say({ event: "result", result: { status: "SUCCESS", response: "done", conversation_id: "conversation-1" } });
+        return;
+    }
+    if (mode.run === "paintNothing") { say({ event: "result", result: { status: "SUCCESS", response: "I cannot make images here.\nSorry.", conversation_id: "conversation-1" } }); return; }
     say({ event: "result", result: { status: mode.status ?? "SUCCESS", response: " the answer ", conversation_id: "conversation-1" } });
 });
 process.stdin.on("end", () => {
@@ -79,7 +93,7 @@ afterEach(() => {
 });
 
 /** A fake agy in a folder of its own; the line that starts it. */
-function fakeAgy(mode: { models?: false; status?: string; exit?: number; noEffort?: true; run?: "hang" | "closed" | "error" | "die" | "holdOutput" | "answerHang"; }): string
+function fakeAgy(mode: { models?: false; status?: string; exit?: number; noEffort?: true; run?: "hang" | "closed" | "error" | "die" | "holdOutput" | "answerHang" | "paint" | "paintNothing"; }): string
 {
     const fake = join(folder, `fake-${readdirSync(folder).length}`);
     mkdirSync(fake, { recursive: true });
@@ -355,6 +369,38 @@ describe("Antigravity's importer (D-489 (1), D-579 (1))", () => {
         expect((run.settings as AgySettings).permissions.allow).toEqual([`read_file(${work})`, `write_file(${join(work, "adventure")})`]);
         expect(run.fence).toEqual({ read: [work, join(work, "adventure")], write: [join(work, "adventure")] });
         expect(String((run.message as { message: { content: string; }; }).message.content).startsWith(work)).toBe(true);
+    });
+});
+
+describe("Antigravity's painter (T-251)", () => {
+    const bridge: PictureSubject = { kind: "place", name: "Ponte", seen: "un ponte di pietra", unseen: [] };
+
+    it("gives the newest picture agy saved in its home, never its copies under .system_generated, with the run's folder kept until done", async () => {
+        const line = fakeAgy({ run: "paint" });
+        const made = await antigravityPainter(line, playerHome("gemini-3-pro")).make(bridge);
+
+        if ("refused" in made) {
+            throw new Error(made.refused);
+        }
+
+        expect(made.file.replace(/\\/g, "/")).toMatch(/\/home\/\.gemini\/antigravity-cli\/brain\/conversation-1\/ponte_1764000000\.jpg$/);
+        expect(readImage(made.file)).toMatchObject({ extension: "jpg" });
+        const [run] = runs(line);
+        expect(String((run.message as { message: { content: string; }; }).message.content)).toMatch(/^Make exactly one new image from the brief below with your own image generation tool/);
+        expect(String((run.message as { message: { content: string; }; }).message.content)).not.toMatch(/\bimage again\b|\brpg\b/);
+        expect(run.settings).toEqual(painterSettings(String(run.cwd), "gemini-3-pro"));
+        expect(run.fence).toEqual({ read: [], write: [], tools: ["invoke_subagent", "generate_image", "send_message"] });
+        expect(existsSync(made.file)).toBe(true);
+        made.done();
+        expect(await gone([dirname(String(run.settingsFile))])).toBe(true);
+    });
+
+    it("refuses with agy's words where no picture came, its folder gone at once", async () => {
+        const line = fakeAgy({ run: "paintNothing" });
+        expect(await antigravityPainter(line, playerHome()).make(bridge)).toEqual({ refused: "Antigravity made no picture: I cannot make images here." });
+        expect(await gone([dirname(String(runs(line)[0].settingsFile))])).toBe(true);
+        expect(await antigravityPainter(fakeAgy({ run: "error" }), playerHome()).make(bridge)).toEqual({ refused: "Antigravity made no picture: quota exhausted" });
+        expect(await antigravityPainter(fakeAgy({ models: false }), playerHome()).make(bridge)).toEqual({ refused: antigravitySays.notReady.why });
     });
 });
 

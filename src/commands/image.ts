@@ -287,7 +287,7 @@ function madePicture(root: string, context: Context, world: World, page: Page, s
         try {
             const world = campaignWorld(root, context);
             const now = world.pages.find((candidate) => candidate.path === page.path) ?? page;
-            // Codex's own copy goes once copied: the picture is the campaign's.
+            // The maker's own copy goes once copied, by its real format's extension: the picture is the campaign's.
             return { ...setImage(root, context, world, now, made.file), from: undefined, ...(made.instead === undefined ? {} : { instead: insteadText(page.name, made.instead, true) }) };
         } finally {
             made.done();

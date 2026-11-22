@@ -297,7 +297,7 @@ function configure(input: ConfigInput, context: Context): ConfigResult
     // The character agent written or taken away at once, not when the server starts again (D-490).
     if (input.setting?.trim() === "voices" && input.value !== undefined) {
         refreshHostFiles(root, hostInstructions(), context.platform);
-        replaced = [...replaced, "Claude Code finds the character agent, or finds it gone, from the next chat."];
+        replaced = [...replaced, "An AI app with subagents finds the character agent, or finds it gone, from the next chat."];
     }
 
     // New months may leave the day the story starts on without its month (TIM-8): said at once, not at the next date.

@@ -25,7 +25,7 @@ An AI is a wonderful storyteller, but a storyteller tends to make the world fit 
 - **Save**, as in a video game: at the end of every scene, to go back or start over as you choose.
 - **Choose how you play**: difficulty, lethality, how much the master teaches the rules, its style, your lines and veils.
 - **Play in your language**: the dashboard speaks 26, and any other is translated for you.
-- **See where you are**: pictures of the places you reach, the quests you take and the people you meet. Painted ones, as the inn above, come from **Codex** signed in with your ChatGPT account, even when your master is Claude Code; Antigravity paints its own. Install Codex with `npm install -g @openai/codex` and sign in once with `codex login`. With Claude Code alone, Claude draws simpler vector ones; in OpenCode, and in Antigravity when its tool fails, the master draws them itself, the same way.
+- **See where you are**: pictures of the places you reach, the quests you take and the people you meet. Painted ones, as the inn above, come from **Codex** signed in with your ChatGPT account, even when your master is Claude Code; Antigravity paints its own with a paid Google plan, and can paint for another master too. Install Codex with `npm install -g @openai/codex` and sign in once with `codex login`. With Claude Code alone, Claude draws simpler vector ones; in OpenCode, and in Antigravity when its tool fails, the master draws them itself, the same way.
 
 ## The game
 

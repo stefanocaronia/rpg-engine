@@ -1,8 +1,8 @@
 // What an AI host reads in a campaign besides .mcp.json: AGENTS.md, opening with the start lines (D-97); CLAUDE.md, which imports it; Claude Code's settings,
 // with its auto memory off, so that the master keeps nothing outside the campaign (D-242), the rpg server approved with its tools allowed (D-412) and no tasks in
 // the background, so that the character agent answers within the master's turn (D-490), and the doorbell of the player's sentences (D-495); Codex's, with
-// the rpg server and its memories off (D-362); Claude Code's character agent, the agent the master calls to voice a character (D-490); Antigravity's and
-// OpenCode's, each with the rpg server and the doorbell (D-578). Gemini CLI is no longer set up (D-493): a campaign's .gemini/ stays as it is.
+// the rpg server and its memories off (D-362); the character agent, the agent the master calls to voice a character, in each host that has agents (D-490,
+// D-580); Antigravity's and OpenCode's, each with the rpg server and the doorbell (D-578). Gemini CLI is no longer set up (D-493): a campaign's .gemini/ stays as it is.
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { files } from "../core/store.ts";
@@ -101,12 +101,12 @@ export function writeEffortFiles(root: string, platform: string, cleared = false
 }
 
 /**
- * Whether the campaign has the character agent as a Claude Code agent and as an OpenCode subagent (D-490): looked at as the MCP server starts, before it writes
- * its host files, it says whether the chat found the agent, as both hosts read their agents only when a chat starts.
+ * Whether the campaign has the character agent in each host that has agents (D-490, D-580): looked at as the MCP server starts, before it writes its host
+ * files, it says whether the chat found the agent, as the hosts read their agents only when a chat starts.
  */
-export function hasCharacterAgent(root: string): { claudeCode: boolean; openCode: boolean; }
+export function hasCharacterAgent(root: string): Record<AgentHost, boolean>
 {
-    return { claudeCode: files().fresh(characterAgentPath(root)) !== undefined, openCode: files().fresh(openCodeAgentPath(root)) !== undefined };
+    return Object.fromEntries(agentHosts.map((host) => [host, files().fresh(characterAgentPath(root, host)) !== undefined])) as Record<AgentHost, boolean>;
 }
 
 function hostFiles(root: string, instructions: HostInstructions, platform: string): (() => HostFile | undefined)[]
@@ -115,8 +115,7 @@ function hostFiles(root: string, instructions: HostInstructions, platform: strin
         () => agentsFile(root, instructions.start),
         () => claudeFile(root),
         () => claudeSettingsFile(root),
-        () => characterAgentFile(root, instructions.character),
-        () => openCodeAgentFile(root, instructions.character),
+        ...agentHosts.map((host) => () => characterAgentFile(root, host, instructions.character)),
         () => codexConfigFile(root, platform),
         () => antigravityServerFile(root, platform),
         () => antigravityHooksFile(root),
@@ -264,74 +263,118 @@ function agentsFile(root: string, startLines: string): HostFile | undefined
     return updated === lines ? undefined : { path, text: text.includes("\r\n") ? updated.replace(/\n/g, "\r\n") : updated };
 }
 
-function characterAgentPath(root: string): string
+/** The hosts whose campaign has the character agent as one of its agents (D-490, D-580). */
+export type AgentHost = "claudeCode" | "openCode" | "codex" | "antigravity";
+
+// What every host's file of the character agent says of itself.
+const agentHeader = "# Written by rpg, which writes it again as the game starts: a change made here does not last.";
+const agentDescription = "Voices one character of the campaign at a key moment, knowing only what they know. Begin with their name, then the moment, as Voices says.";
+
+/** Each host's file of the character agent: where it goes in a campaign, and its text with the agent's instructions. */
+const characterAgents: Record<AgentHost, { path: string[]; text: (instructions: string) => string; }> = {
+    // Claude Code's: it reads only its character's view, and not the campaign's CLAUDE.md, the master's instructions.
+    claudeCode: {
+        path: [".claude", "agents", "rpg-character.md"],
+        text: (instructions) =>
+            [
+                "---",
+                agentHeader,
+                "name: rpg-character",
+                `description: ${agentDescription}`,
+                "tools: mcp__rpg__view",
+                "model: inherit",
+                "omitClaudeMd: true",
+                "---",
+                "",
+                instructions,
+                "",
+            ].join("\n"),
+    },
+    // OpenCode's: every tool denied but execute and the rpg server's view, which OpenCode's subagents reach through execute.
+    openCode: {
+        path: [".opencode", "agents", "rpg-character.md"],
+        text: (instructions) => {
+            const rule = (action: string, effect: string): string[] => [`  - action: "${action}"`, '    resource: "*"', `    effect: ${effect}`];
+            return [
+                "---",
+                agentHeader,
+                `description: ${agentDescription}`,
+                "mode: subagent",
+                "permissions:",
+                ...rule("*", "deny"),
+                ...rule("execute", "allow"),
+                ...rule("rpg_view", "allow"),
+                "---",
+                "",
+                instructions,
+                "",
+                'Your tool: tools.rpg.view, called through execute, as await tools.rpg.view({ as: "your name" }).',
+                "",
+            ].join("\n");
+        },
+    },
+    // Codex's role, without its shell, apps, plugins and skills; an unknown key drops the whole role, and the server lets it only look (D-580).
+    codex: {
+        path: [".codex", "agents", "rpg-character.toml"],
+        text: (instructions) =>
+            [
+                agentHeader,
+                'name = "rpg-character"',
+                `description = "${agentDescription}"`,
+                'developer_instructions = """',
+                instructions,
+                '"""',
+                "",
+                "[features]",
+                "shell_tool = false",
+                "apps = false",
+                "plugins = false",
+                "",
+                "[skills]",
+                "include_instructions = false",
+                "",
+                "[skills.bundled]",
+                "enabled = false",
+                "",
+            ].join("\n"),
+    },
+    // Antigravity's subagent, which the player cannot pick as the main agent; the server lets it only look (D-580).
+    antigravity: {
+        path: [".agents", "agents", "rpg-character.md"],
+        text: (instructions) =>
+            [
+                "---",
+                agentHeader,
+                "name: rpg-character",
+                `description: ${agentDescription}`,
+                "mainAgent: false",
+                "subagent: true",
+                "model: inherit",
+                "---",
+                "",
+                instructions,
+                "",
+            ].join("\n"),
+    },
+};
+
+const agentHosts = Object.keys(characterAgents) as AgentHost[];
+
+function characterAgentPath(root: string, host: AgentHost): string
 {
-    return join(root, ".claude", "agents", "rpg-character.md");
+    return join(root, ...characterAgents[host].path);
 }
 
-/**
- * The character agent as a Claude Code agent (D-490): the engine's, rewritten when it changed. It reads only its character's view, and not the campaign's CLAUDE.md,
- * the master's instructions.
- */
-function characterAgentFile(root: string, instructions: string): HostFile | undefined
+/** The character agent in a host's format (D-490): the engine's, rewritten when it changed, and taken away when the player wants the master to voice every character. */
+function characterAgentFile(root: string, host: AgentHost, instructions: string): HostFile | undefined
 {
-    const path = characterAgentPath(root);
+    const path = characterAgentPath(root, host);
 
-    // The player wants the master to voice every character.
     if (readTextSetting(root, "voices") === "master") {
         return files().fresh(path) === undefined ? undefined : { path };
     }
 
-    const text = [
-        "---",
-        "# Written by rpg, which writes it again as the game starts: a change made here does not last.",
-        "name: rpg-character",
-        "description: Voices one character of the campaign at a key moment, knowing only what they know. Begin with their name, then the moment, as Voices says.",
-        "tools: mcp__rpg__view",
-        "model: inherit",
-        "omitClaudeMd: true",
-        "---",
-        "",
-        instructions,
-        "",
-    ].join("\n");
-    return files().fresh(path)?.replace(/\r\n/g, "\n") === text ? undefined : { path, text };
-}
-
-function openCodeAgentPath(root: string): string
-{
-    return join(root, ".opencode", "agents", "rpg-character.md");
-}
-
-/**
- * The character agent as an OpenCode subagent (D-490), as Claude Code's is written and taken away: every tool denied but execute and the rpg server's view,
- * which OpenCode's subagents reach through execute, as Elena's probe proved it.
- */
-function openCodeAgentFile(root: string, instructions: string): HostFile | undefined
-{
-    const path = openCodeAgentPath(root);
-
-    if (readTextSetting(root, "voices") === "master") {
-        return files().fresh(path) === undefined ? undefined : { path };
-    }
-
-    const rule = (action: string, effect: string): string[] => [`  - action: "${action}"`, '    resource: "*"', `    effect: ${effect}`];
-    const text = [
-        "---",
-        "# Written by rpg, which writes it again as the game starts: a change made here does not last.",
-        "description: Voices one character of the campaign at a key moment, knowing only what they know. Begin with their name, then the moment, as Voices says.",
-        "mode: subagent",
-        "permissions:",
-        ...rule("*", "deny"),
-        ...rule("execute", "allow"),
-        ...rule("rpg_view", "allow"),
-        "---",
-        "",
-        instructions,
-        "",
-        'Your tool: tools.rpg.view, called through execute, as await tools.rpg.view({ as: "your name" }).',
-        "",
-    ].join("\n");
+    const text = characterAgents[host].text(instructions);
     return files().fresh(path)?.replace(/\r\n/g, "\n") === text ? undefined : { path, text };
 }
 

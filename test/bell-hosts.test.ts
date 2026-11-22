@@ -8,7 +8,7 @@ import type { AddressInfo } from "node:net";
 import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { bellLine, hookAnswer, waitForBell, watchNewTurn } from "../src/server/bell/index.ts";
+import { bellLine, hookAnswer, isSubagentConversation, waitForBell, watchNewTurn } from "../src/server/bell/index.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
 const folders: string[] = [];
@@ -92,6 +92,37 @@ describe("the doorbell's answer in each host (D-578)", () => {
         expect(await soon(replaced.started)).toBe(true);
     });
 
+    it("lets the master's conversation go when a subagent's answer waits for it under the command line's folder, as under the app's (D-580)", async () => {
+        const cli = temporary();
+        const app = temporary();
+        const waiting = (folder: string): string => join(folder, "brain", "master", ".system_generated", "messages", "undelivered");
+
+        for (const folder of [cli, app]) {
+            const turn = watchNewTurn("master", cli, 5, app);
+            mkdirSync(waiting(folder), { recursive: true });
+            expect(await soon(turn.started)).toBe(false);
+            writeFileSync(join(waiting(folder), "answer"), "");
+            expect(await soon(turn.started)).toBe(true);
+            removeFolder(join(folder, "brain"));
+        }
+    });
+
+    it("knows a subagent's conversation by its file under its parent's, in the command line's folder or the app's, and no other (D-580)", () => {
+        const cli = temporary();
+        const app = temporary();
+        const subagents = (folder: string): string => join(folder, "brain", "master", ".system_generated", "subagents");
+        expect(isSubagentConversation("child", [cli, app])).toBe(false);
+        mkdirSync(subagents(app), { recursive: true });
+        writeFileSync(join(subagents(app), "child.json"), "{}");
+        expect(isSubagentConversation("child", [cli, app])).toBe(true);
+        expect(isSubagentConversation("child", [cli])).toBe(false);
+        mkdirSync(subagents(cli), { recursive: true });
+        writeFileSync(join(subagents(cli), "other.json"), "{}");
+        expect(isSubagentConversation("other", [cli])).toBe(true);
+        expect(isSubagentConversation("master", [cli, app])).toBe(false);
+        expect(isSubagentConversation("../master", [cli, app])).toBe(false);
+    });
+
     it("lets Antigravity's chat go when the player writes in it while the hook waits, and wakes it when the player acts on the dashboard", async () => {
         const root = campaign();
         const home = temporary();
@@ -114,6 +145,12 @@ describe("the doorbell's answer in each host (D-578)", () => {
 
         // No dashboard to wait at: the chat may stop at once.
         expect(await listening("antigravity", input, temporary(), env)).toEqual({ code: 0, stdout: "{}\n" });
+
+        // A subagent's conversation, as the character agent's, never waits at the dashboard (D-580).
+        const subagents = join(agy, "brain", "conv-1", ".system_generated", "subagents");
+        mkdirSync(subagents, { recursive: true });
+        writeFileSync(join(subagents, "conv-child.json"), "{}");
+        expect(await listening("antigravity", { ...input, conversationId: "conv-child" }, join(root, ".agents"), env)).toEqual({ code: 0, stdout: "{}\n" });
     }, 30_000);
 
     it("gives OpenCode's plugin the player's words, or the line from a page with none, and stops waiting, saying nothing, once OpenCode is gone", async () => {

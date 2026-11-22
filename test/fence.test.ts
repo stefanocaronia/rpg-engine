@@ -62,6 +62,24 @@ describe("rpg --fence (D-579 (1))", () => {
         expect(readFence(broken)).toEqual(fence);
     });
 
+    it("lets the tools it names through as they are, as the painter's, and no other, nor any file where it names no folder (T-251)", () => {
+        const file = join(folder, "painter.json");
+        writeFileSync(file, JSON.stringify({ read: [], write: [], tools: ["invoke_subagent", "generate_image", "send_message"] }));
+        const painter = readFence(file);
+        expect(painter).toEqual({ read: [], write: [], tools: ["invoke_subagent", "generate_image", "send_message"] });
+
+        for (const name of ["invoke_subagent", "generate_image", "send_message"]) {
+            expect(fenceDecision(call(name, { Prompt: "a bridge" }), painter)).toEqual({ decision: "allow" });
+        }
+
+        expect(fenceDecision(call("run_command", { CommandLine: "dir" }), painter).decision).toBe("deny");
+        expect(fenceDecision(call("read_file", { Path: join(folder, "secret.txt") }), painter).decision).toBe("deny");
+        // The reader's fence names no tools: they are refused there.
+        expect(fenceDecision(call("generate_image", { Prompt: "a bridge" }), fence).decision).toBe("deny");
+        writeFileSync(file, JSON.stringify({ read: [], write: [], tools: "generate_image" }));
+        expect(readFence(file)).toBeUndefined();
+    });
+
     it("is inside by path segments, without regard to case on Windows", () => {
         expect(isInside(join(folder, "alpha", "x"), join(folder, "alpha"))).toBe(true);
         expect(isInside(join(folder, "alpha"), join(folder, "alpha"))).toBe(true);

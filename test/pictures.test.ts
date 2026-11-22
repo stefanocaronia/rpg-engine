@@ -80,6 +80,60 @@ describe("who makes the pictures, as the campaign chose, else by the chat in use
         expect(codex.asked).toBe(2);
     });
 
+    it("takes Antigravity's painter where chosen in another chat, and the chat's own in Antigravity (T-251)", async () => {
+        const codex = maker({ ready: true, maker: "Codex" });
+        const claude = maker({ ready: true, maker: "Claude" });
+        const painter = maker({ ready: true, maker: "Antigravity" });
+        const pictures = hostPictures(() => "claude-code", () => "antigravity", codex, claude, painter);
+        expect(pictures.ready()).toEqual({ ready: true, maker: "Antigravity" });
+        expect(pictures.brief?.(bridge)).toBeUndefined();
+        await pictures.make(bridge);
+        expect(painter.made).toEqual([bridge]);
+        // In Antigravity, the chat paints it itself: the painter is never started.
+        const inAntigravity = hostPictures(() => antigravityClient, () => "antigravity", codex, claude, painter);
+        expect(inAntigravity.ready()).toEqual({ ready: true, maker: "Antigravity" });
+        expect(inAntigravity.brief?.(bridge)).toMatch(/^Make exactly one new image from the brief below/);
+        expect(await inAntigravity.make(bridge)).toEqual({ refused: "Antigravity makes its pictures in its own chat" });
+        expect(painter.made).toEqual([bridge]);
+        expect(codex.made).toEqual([]);
+    });
+
+    it("leaves the picture to the chat in use where Antigravity's painter is not ready, saying why, as Codex's (T-251)", async () => {
+        const claude = maker({ ready: true, maker: "Claude" });
+        const away = maker({ ready: false, why: "Antigravity's agy does not answer on this computer, or is not signed in" });
+        const pictures = hostPictures(() => "claude-code", () => "antigravity", maker({ ready: true, maker: "Codex" }), claude, away);
+        expect(pictures.ready()).toEqual({
+            ready: true,
+            maker: "Claude",
+            instead: { maker: "Antigravity", by: "Claude", why: "Antigravity's agy does not answer on this computer, or is not signed in" },
+        });
+        expect(await pictures.make(bridge)).toEqual({ refused: "Antigravity's agy does not answer on this computer, or is not signed in; Claude made none either: a fake makes nothing" });
+        expect(claude.made).toEqual([bridge]);
+        expect(away.made).toEqual([]);
+    });
+
+    it("remembers a refusal of Antigravity's painter apart from Codex's, until the choice changes (T-251)", async () => {
+        let choice = "antigravity";
+        const painter: PictureMaker & { asked: number; } = {
+            asked: 0,
+            ready: () => ({ ready: true, maker: "Antigravity" }),
+            make: () => (painter.asked++, Promise.resolve({ refused: "Antigravity made no picture: the image tool failed" })),
+        };
+        const claude: PictureMaker = { ready: () => ({ ready: true, maker: "Claude" }), make: () => Promise.resolve({ file: "drawn.svg", done: () => undefined }) };
+        const codex = maker({ ready: true, maker: "Codex" });
+        const pictures = hostPictures(() => "claude-code", () => choice, codex, claude, painter);
+        const instead = { maker: "Antigravity", by: "Claude", why: "Antigravity made no picture: the image tool failed", refused: true };
+        expect(await pictures.make(bridge)).toMatchObject({ file: "drawn.svg", instead });
+        expect(pictures.ready()).toEqual({ ready: true, maker: "Claude", instead });
+        await pictures.make(bridge);
+        expect(painter.asked).toBe(1);
+        // Codex is not the one that refused.
+        choice = "codex";
+        expect(pictures.ready()).toEqual({ ready: true, maker: "Codex" });
+        choice = "antigravity";
+        expect(pictures.ready()).toEqual({ ready: true, maker: "Antigravity" });
+    });
+
     it("has the master make it from the brief with ElevenLabs, or with a tool the player named, and starts nothing", () => {
         const codex = maker({ ready: true, maker: "Codex" });
         const claude = maker({ ready: true, maker: "Claude" });

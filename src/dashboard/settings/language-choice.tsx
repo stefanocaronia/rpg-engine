@@ -129,7 +129,7 @@ export function languageLine(code: string): string
     }
 
     if (state === "unable") {
-        return t("The master plays in {language}; the page stays in English: Codex or Claude Code would translate it on this computer.", { language: name });
+        return t("The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.", { language: name });
     }
 
     return state === "ready"

@@ -143,6 +143,19 @@ describe("the router of rpg mcp outside a campaign", () => {
         expect(children.some((one) => one.stopped)).toBe(false);
     });
 
+    it("passes a call's metadata to the child as it came, by which the child knows a character's subagent (D-580)", async () => {
+        const routed = router();
+        await routed.fromClient(initialize);
+        const line = JSON.stringify({
+            jsonrpc: "2.0",
+            id: 4,
+            method: "tools/call",
+            params: { name: "view", arguments: {}, _meta: { [conversationKey]: "uno", "antigravity.google/parent_conversation_id": "padre" } },
+        });
+        await routed.fromClient(line);
+        expect(child("campagne/uno").given.slice(-1)).toEqual([line]);
+    });
+
     it("brings the answer of a call under way while another conversation calls (r2.mjs, call 12)", async () => {
         const routed = router();
         await routed.fromClient(initialize);

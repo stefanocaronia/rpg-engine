@@ -13,7 +13,7 @@ const asked =
     + "difficulty (how hard the world plays: story, easy, normal, hard, brutal), lethality (what a fall means: narrative, the character never dies; epic, only when it matters; dice, the dice decide), saves (when the game may go back: permadeath, never but to the start; checkpoint, to the last end of a scene once the player character dies; free, to any save), rigor (how closely travel, fatigue, food and the like follow the rules: smooth, glossed over; rules, as written; simulation, beyond them), dice (who rolls the player character's dice: digital, rpg; physical, the player, who tells you the values), "
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
     + "character (made with the player; made by the master, from a few words; the player's own, one they bring), companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
-    + "pictures (of places, quests and those met: none; on request; new elements, one for each), pictures-by (who makes them: chat, your app by its own means; codex; elevenlabs; other, a tool the player names, written by its name; suggest chat), "
+    + "pictures (of places, quests and those met: none; on request; new elements, one for each), pictures-by (who makes them: chat, your app by its own means; codex; antigravity; elevenlabs; other, a tool the player names, written by its name; suggest chat), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
 // The same, as config's results give them: the settings with a meaning in status by their values alone (T-168).
 const askedBrief =
@@ -21,7 +21,7 @@ const askedBrief =
     + "difficulty (story, easy, normal, hard, brutal), lethality (narrative, epic, dice), saves (permadeath, checkpoint, free), rigor (smooth, rules, simulation), dice (digital, physical), "
     + "master-rolls (your rolls for foes and NPCs: behind the screen, in view; suggest behind the screen), units (metric, imperial), "
     + "character (made with the player, made by the master, the player's own), companions (none, made with the player, made by the master, met in play), calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491), "
-    + "pictures (of places, quests and those met: none; on request; new elements, one for each), pictures-by (who makes them: chat, your app by its own means; codex; elevenlabs; other, a tool the player names, written by its name; suggest chat), "
+    + "pictures (of places, quests and those met: none; on request; new elements, one for each), pictures-by (who makes them: chat, your app by its own means; codex; antigravity; elevenlabs; other, a tool the player names, written by its name; suggest chat), "
     + 'lines ("none" is an answer), veils ("none" is an answer)';
 const onward = 'set each with config. When none is left and the player confirms: mode, to "session zero".';
 const playLine = "To play, open Claude Code, Codex, Antigravity or OpenCode in this folder and say hello: the master asks you the rest.";
@@ -162,7 +162,9 @@ ${playLine}`);
         const elsewhere = makeTempFolder();
 
         try {
-            for (const name of [".opencode", ".agents"]) {
+            // The character agent's folders too (D-580).
+            for (const name of [".opencode", ".agents", join(".codex", "agents"), join(".agents", "agents")]) {
+                expect((await runCommandLine(["init", "linked"], context)).exitCode).toBe(0);
                 rmSync(join(root, name), { recursive: true });
                 link(elsewhere, join(root, name));
                 const again = await runCommandLine(["init", "linked"], context);

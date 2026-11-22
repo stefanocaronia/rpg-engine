@@ -20,12 +20,19 @@ export function hostInstructions(): { start: string; character: string; }
     return { start: startInstructions(), character: readInstructions("character.md") };
 }
 
-/** When and how the master calls the character agent, in play, where the host has it (D-490); in OpenCode, how its subagent answers. */
-export function voicesInstructions(way: string, openCode = false): string
+/** A host that has the character agent (D-490, D-580). */
+export type VoicesHost = "claudeCode" | "openCode" | "codex" | "antigravity";
+
+// The host's own lines on calling the agent, after voices.md; Claude Code needs none.
+const hostVoices: Partial<Record<VoicesHost, string>> = { openCode: "voices-opencode.md", codex: "voices-codex.md", antigravity: "voices-antigravity.md" };
+
+/** When and how the master calls the character agent, in play, where the host has it (D-490), with the host's own way of calling it (D-580). */
+export function voicesInstructions(way: string, host: VoicesHost): string
 {
+    const own = hostVoices[host];
     // Always for the main characters, or for everyone, as the player chose, on top of the key moments (D-490).
     const more = way === "important" || way === "always" ? `\n\n${readInstructions(`voices-${way}.md`)}` : "";
-    return `${readInstructions("voices.md")}${openCode ? `\n\n${readInstructions("voices-opencode.md")}` : ""}${more}`;
+    return `${readInstructions("voices.md")}${own === undefined ? "" : `\n\n${readInstructions(own)}`}${more}`;
 }
 
 /** The line that sends the master to the buttons, where the player sees them (D-148, D-279); for choices alone when the player rolls their own dice (ASK-8). */

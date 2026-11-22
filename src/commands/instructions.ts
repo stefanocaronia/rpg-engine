@@ -102,7 +102,7 @@ function partyText(folder: string, context: Context): string
     }
 }
 
-/** When and how to call the character agent (D-490): in play, in Claude Code, when the chat has it as an agent of the campaign; none elsewhere. */
+/** When and how to call the character agent (D-490): in play, in an AI app with subagents, when the chat has it as an agent of the campaign; none elsewhere. */
 function voicesText(folder: string, context: Context): string
 {
     const root = findCampaign(folder);

@@ -370,15 +370,16 @@ export { unitSystems };
 export const pictureWays = ["none", "on request", "new elements"] as const;
 
 /**
- * Who makes the pictures (D-572): the chat in use by its own means, as when unset, Codex, the master with ElevenLabs's image tool, or another tool the player
- * names in the chat; any other value is that tool's name.
+ * Who makes the pictures (D-572): the chat in use by its own means, as when unset, Codex, Antigravity (T-251), the master with ElevenLabs's image tool, or
+ * another tool the player names in the chat; any other value is that tool's name.
  */
-export const pictureMakers = ["chat", "codex", "elevenlabs", "other"] as const;
+export const pictureMakers = ["chat", "codex", "antigravity", "elevenlabs", "other"] as const;
 
 /** What each way of making the pictures means to the master, which config gives for the chosen one, and the player's change of it on the dashboard (D-572). */
 const pictureMakerMeanings: Record<(typeof pictureMakers)[number], string> = {
     chat: "you make them by this chat's own means, as image gives them",
     codex: "Codex makes them on this computer; where it cannot, this chat does, and you hear why",
+    antigravity: "Antigravity paints them on this computer, started apart from its own chats, from the player's Google plan; where it cannot, this chat makes them",
     elevenlabs: "you make them with ElevenLabs's image tool, from the brief image gives you",
     other: "another image tool of yours, not named yet: ask the player which, then set its name with config pictures-by",
 };
@@ -530,7 +531,7 @@ export const settingsSchema = z.object({
     ),
     "pictures-by": z.string().trim().min(1).optional().describe(
         "who makes the pictures, the player's to choose: chat (the default: this chat by its own means), codex (Codex, from the player's ChatGPT plan, Plus or higher; "
-            + "where it cannot, this chat makes them), elevenlabs (you, with ElevenLabs's image tool), other (another tool of yours the player names: ask which) or that tool's name",
+            + "where it cannot, this chat makes them), antigravity (Antigravity, from the player's Google plan, a paid one; where it cannot, this chat makes them), elevenlabs (you, with ElevenLabs's image tool), other (another tool of yours the player names: ask which) or that tool's name",
     ),
     effort: z.enum(efforts).optional().describe(
         "how much the master thinks before each answer, the player's to choose: low, medium or high, written where Claude Code and Codex read it in the campaign's folder; "

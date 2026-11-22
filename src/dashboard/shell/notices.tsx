@@ -91,9 +91,9 @@ export function gameNotices(problems: number | undefined, textsTranslating?: str
                 text: problems === 1 ? t("The campaign has a problem in its files: the master sees it and fixes it.") : t("The campaign has {count} problems in its files: the master sees them and fixes them.", { count: problems }),
             }]),
         ...(translation?.state === "translating" ? [{ kind: "info" as const, text: t("This computer is translating the page into {language}: until then it stays in English.", { language }) }] : []),
-        ...(translation?.state === "unable" ? [{ kind: "info" as const, text: t("The page stays in English: Codex or Claude Code would translate it into {language} on this computer.", { language }) }] : []),
+        ...(translation?.state === "unable" ? [{ kind: "info" as const, text: t("The page stays in English: your AI app would translate it into {language} on this computer, but none can now.", { language }) }] : []),
         ...(textsTranslating !== undefined
-            ? [{ kind: "info" as const, text: t("With your account, Codex, Claude Code or OpenCode is translating the game's rules into {language}: until then they stay in English.", { language: textsLanguage }) }]
+            ? [{ kind: "info" as const, text: t("With your account, your AI app is translating the game's rules into {language}: until then they stay in English.", { language: textsLanguage }) }]
             : []),
     ];
 }

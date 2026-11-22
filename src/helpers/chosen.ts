@@ -1,11 +1,11 @@
 // Who makes the pictures (D-572), as the campaign chose: the chat in use, by its own means, as by default: in Codex, Codex; in Antigravity, the chat itself
 // with its own tool, which the engine never starts (its terms); in Claude Code and on the command line, Claude's SVG, always on the player's own plan, never an
-// API key (D-493); in any other chat, as OpenCode, the chat draws the SVG itself and hands it back with image, svg. Or Codex,
+// API key (D-493); in any other chat, as OpenCode, the chat draws the SVG itself and hands it back with image, svg. Or Codex, or Antigravity's agy (T-251),
 // which, where it cannot or refuses, leaves the picture to the chat in use, saying why; or an image tool of the master's own, as ElevenLabs, from the same
 // brief as Antigravity's. Without any, the page shows its own picture all the same (D-389). The text and the import outside the chat are Codex's and Claude's;
 // in OpenCode, OpenCode's first, in Antigravity, its agy's first (D-579 (1)).
 import type { DocumentReader, MadePicture, PictureFallback, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
-import { antigravityReader, antigravityWriter } from "./antigravity.ts";
+import { antigravityPainter, antigravityReader, antigravityWriter } from "./antigravity.ts";
 import { antigravityBrief, chatBrief, drawnBrief } from "./briefs.ts";
 import { claudePictures, claudeReader, claudeWriter } from "./claude.ts";
 import { codexPictures, codexReader, codexWriter } from "./codex.ts";
@@ -22,12 +22,23 @@ export const openCodeClient = "opencode";
 
 /**
  * The pictures of this computer, by the campaign's choice, which `choice` reads when a picture is asked: unset or chat, the chat `host` names, by its own
- * means; codex; elevenlabs, or the name of another image tool of the master's, from the brief. Codex, where it cannot or refuses, leaves the picture to the chat
- * in use; once it refused, it is not asked again while the server lives, until the choice changes.
+ * means; codex or antigravity, a maker apart from the chat in use, or the chat's own in its own chat; elevenlabs, or the name of another image tool of the
+ * master's, from the brief. A maker apart, where it cannot or refuses, leaves the picture to the chat in use; once it refused, it is not asked again while the
+ * server lives, until the choice changes.
  */
-export function hostPictures(host: () => string | undefined, choice: () => string | undefined = () => undefined, codex: PictureMaker = codexPictures(), claude: PictureMaker = claudePictures()): PictureMaker
+export function hostPictures(
+    host: () => string | undefined,
+    choice: () => string | undefined = () => undefined,
+    codex: PictureMaker = codexPictures(),
+    claude: PictureMaker = claudePictures(),
+    antigravity: PictureMaker = antigravityPainter(),
+): PictureMaker
 {
-    let refused: string | undefined;
+    // The makers the campaign may choose apart from the chat in use, by their values: each with its name, its own chat, and its refusal remembered.
+    const makersApart: Record<string, Apart> = {
+        [codexChoice]: { maker: codex, name: "Codex", chat: codexClient },
+        [antigravityChoice]: { maker: antigravity, name: "Antigravity", chat: antigravityClient },
+    };
     let lastChoice: string | undefined;
 
     // The chat in use, by its own means: Claude's drawing in Claude Code, whose clients' names start with claude, and where no chat names itself.
@@ -41,31 +52,39 @@ export function hostPictures(host: () => string | undefined, choice: () => strin
         return name === codexClient ? codex : name === antigravityClient ? antigravityPictures : chatDrawing(chatNames[name] ?? name);
     };
 
-    // The maker the campaign chose, and whether it is Codex apart from the chat in use, which leaves the picture to it where it cannot.
-    const chosen = (): { maker: PictureMaker; codexApart: boolean; } => {
+    // The maker the campaign chose, and the maker apart it is, which leaves the picture to the chat in use where it cannot; in its own chat, the chat's own.
+    const chosen = (): { maker: PictureMaker; apart?: Apart; } => {
         const said = choice()?.trim();
 
-        // The player chose again: Codex is asked again.
+        // The player chose again: every maker apart is asked again.
         if (said !== lastChoice) {
-            refused = undefined;
+            Object.values(makersApart).forEach((one) => (one.refused = undefined));
             lastChoice = said;
         }
 
         const key = said?.toLowerCase();
 
         if (key === undefined || key === "" || key === chatChoice) {
-            return { maker: chat(), codexApart: false };
+            return { maker: chat() };
         }
 
-        if (key === codexChoice) {
-            return { maker: codex, codexApart: chat() !== codex };
+        const apart = makersApart[key];
+
+        if (apart !== undefined) {
+            return host() === apart.chat ? { maker: chat() } : { maker: apart.maker, apart };
         }
 
-        return { maker: key === otherChoice ? unnamedTool : masterTool(key === elevenlabsChoice ? "ElevenLabs" : said ?? ""), codexApart: false };
+        return { maker: key === otherChoice ? unnamedTool : masterTool(key === elevenlabsChoice ? "ElevenLabs" : said ?? "") };
     };
 
-    // Codex's own answer, or its refusal remembered; in Codex, the chat's own.
-    const codexReady = (again?: boolean): PicturesReady => (refused === undefined ? codex.ready(again) : { ready: false, why: refused });
+    // A maker apart's record, as Codex is the chat's own in Codex too.
+    const apartOf = (maker: PictureMaker): Apart | undefined => Object.values(makersApart).find((one) => one.maker === maker);
+
+    // A maker's own answer, or its refusal remembered.
+    const readyOf = (maker: PictureMaker, again?: boolean): PicturesReady => {
+        const refused = apartOf(maker)?.refused;
+        return refused === undefined ? maker.ready(again) : { ready: false, why: refused };
+    };
 
     const madeInstead = async (subject: PictureSubject, instead: PictureFallback): Promise<MadePicture | { refused: string; }> => {
         const other = chat();
@@ -83,64 +102,77 @@ export function hostPictures(host: () => string | undefined, choice: () => strin
         return "refused" in made ? { refused: `${instead.why}; ${instead.by} made none either: ${made.refused}` } : { ...made, instead };
     };
 
-    const fallbackOf = (said: { why: string; fix?: string; }, refusedPicture = refused !== undefined): PictureFallback | undefined => {
+    const fallbackOf = (said: { why: string; fix?: string; }, apart: Apart, refusedPicture = apart.refused !== undefined): PictureFallback | undefined => {
         const other = chat().ready();
         const by = other.ready ? other.maker : undefined;
-        return by === undefined ? undefined : { maker: "Codex", by, why: said.why, ...(said.fix === undefined ? {} : { fix: said.fix }), ...(refusedPicture ? { refused: true as const } : {}) };
+        return by === undefined
+            ? undefined
+            : { maker: apart.name, by, why: said.why, ...(said.fix === undefined ? {} : { fix: said.fix }), ...(refusedPicture ? { refused: true as const } : {}) };
     };
 
     return {
         ready: (again) => {
-            const { maker, codexApart } = chosen();
+            const { maker, apart } = chosen();
+            const said = readyOf(maker, again);
 
-            if (!codexApart) {
-                return maker === codex ? codexReady(again) : maker.ready(again);
+            if (apart === undefined) {
+                return said;
             }
 
-            const said = codexReady(again);
-            const instead = said.ready ? undefined : fallbackOf(said);
+            const instead = said.ready ? undefined : fallbackOf(said, apart);
             return said.ready || instead === undefined ? said : { ready: true, maker: instead.by, ...(drawsItself(chat()) ? { draws: true as const } : {}), instead };
         },
         make: async (subject) => {
-            const { maker, codexApart } = chosen();
-            const said = maker === codex ? codexReady() : maker.ready();
+            const { maker, apart } = chosen();
+            const said = readyOf(maker);
 
             if (!said.ready) {
-                const instead = codexApart ? fallbackOf(said) : undefined;
+                const instead = apart === undefined ? undefined : fallbackOf(said, apart);
                 return instead === undefined ? { refused: said.why } : madeInstead(subject, instead);
             }
 
             const made = await maker.make(subject);
+            const remembered = apartOf(maker);
 
-            if (!("refused" in made) || maker !== codex) {
+            if (!("refused" in made) || remembered === undefined) {
                 return made;
             }
 
-            // A refusal of this one picture, as the safety check's, leaves Codex asked for the next.
+            // A refusal of this one picture, as the safety check's, leaves the maker asked for the next.
             if (made.onlyThis !== true) {
-                refused = made.refused;
+                remembered.refused = made.refused;
             }
 
-            const instead = codexApart ? fallbackOf({ why: made.refused }, true) : undefined;
+            const instead = apart === undefined ? undefined : fallbackOf({ why: made.refused }, apart, true);
             return instead === undefined ? made : madeInstead(subject, instead);
         },
         brief: (subject) => {
-            const { maker, codexApart } = chosen();
+            const { maker, apart } = chosen();
 
-            if (!codexApart) {
+            if (apart === undefined) {
                 return maker.ready().ready ? maker.brief?.(subject) : undefined;
             }
 
-            // Codex not ready: a chat that paints itself makes it in its place.
-            return codexReady().ready ? undefined : chat().brief?.(subject);
+            // The maker apart not ready: a chat that paints itself makes it in its place.
+            return readyOf(maker).ready ? undefined : chat().brief?.(subject);
         },
     };
+}
+
+/** A maker the campaign may choose apart from the chat in use: its name for the player, the chat where it is the chat's own, and its refusal remembered. */
+interface Apart
+{
+    maker: PictureMaker;
+    name: string;
+    chat: string;
+    refused?: string;
 }
 
 // The values of the campaign's pictures-by setting the engine knows: the chat in use, Codex, ElevenLabs, another tool not named yet; any other names an
 // image tool of the master's.
 const chatChoice = "chat";
 const codexChoice = "codex";
+const antigravityChoice = "antigravity";
 const elevenlabsChoice = "elevenlabs";
 const otherChoice = "other";
 

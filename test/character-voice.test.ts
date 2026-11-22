@@ -1,4 +1,4 @@
-// The character agent (D-490): the agent init gives Claude Code and OpenCode in a campaign, kept as the engine writes it, and the part of the instructions that tells
+// The character agent (D-490, D-580): the agent init gives Claude Code, OpenCode, Codex and Antigravity in a campaign, kept as the engine writes it, and the part of the instructions that tells
 // the master when to call it, in play and only in the host whose agent the chat found.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -84,14 +84,91 @@ describe("the character agent (D-490)", () => {
         const voices = (host: string, characterAgents: Context["characterAgents"]): Promise<string> => runCommandLine(["instructions"], { ...context, host: () => host, characterAgents }).then((result) => result.output);
         const told = await voices("opencode", { openCode: true });
         expect(told).toContain("## Voices");
-        expect(told).toContain(
-            "Here the agent is the subagent rpg-character, started with the subagent tool, and its answer comes later as a message: once you started it, end your turn without a word to the player, and narrate when its lines come.",
-        );
+        expect(told).toContain("Here the agent is the subagent rpg-character, started with the subagent tool (agent rpg-character, prompt your words to them).");
+        expect(told).toContain("end your turn with one short line of the story and nothing else");
         // Only OpenCode's file counts for OpenCode's chat, and never for another host's.
         expect(await voices("opencode", { claudeCode: true })).not.toContain("## Voices");
         expect(await voices("claude-code", { openCode: true })).not.toContain("## Voices");
         expect(await voices("codex-mcp-client", { claudeCode: true, openCode: true })).not.toContain("## Voices");
         expect(await voices("antigravity-client", { claudeCode: true, openCode: true })).not.toContain("## Voices");
+    });
+
+    it("is a Codex role and an Antigravity subagent too, exactly as each host reads it, written with voices unset or auto and taken away with master (D-580)", async () => {
+        const header = "# Written by rpg, which writes it again as the game starts: a change made here does not last.";
+        const description = "Voices one character of the campaign at a key moment, knowing only what they know. Begin with their name, then the moment, as Voices says.";
+        const codexPath = join(folder, ".codex", "agents", "rpg-character.toml");
+        const antigravityPath = join(folder, ".agents", "agents", "rpg-character.md");
+        const codex = [
+            header,
+            'name = "rpg-character"',
+            `description = "${description}"`,
+            'developer_instructions = """',
+            hostInstructions().character,
+            '"""',
+            "",
+            "[features]",
+            "shell_tool = false",
+            "apps = false",
+            "plugins = false",
+            "",
+            "[skills]",
+            "include_instructions = false",
+            "",
+            "[skills.bundled]",
+            "enabled = false",
+            "",
+        ].join("\n");
+        const antigravity = [
+            "---",
+            header,
+            "name: rpg-character",
+            `description: ${description}`,
+            "mainAgent: false",
+            "subagent: true",
+            "model: inherit",
+            "---",
+            "",
+            hostInstructions().character,
+            "",
+        ].join("\n");
+        expect(readFileSync(codexPath, "utf8")).toBe(codex);
+        expect(readFileSync(antigravityPath, "utf8")).toBe(antigravity);
+        writeFileSync(codexPath, 'name = "altro"\n');
+        writeFileSync(antigravityPath, "---\nname: altro\n---\n");
+        refreshHostFiles(folder, hostInstructions(), context.platform);
+        expect(readFileSync(codexPath, "utf8")).toBe(codex);
+        expect(readFileSync(antigravityPath, "utf8")).toBe(antigravity);
+        await runCommandLine(["config", "voices", "master"], context);
+        expect(existsSync(codexPath)).toBe(false);
+        expect(existsSync(antigravityPath)).toBe(false);
+        await runCommandLine(["config", "voices", "auto"], context);
+        expect(readFileSync(codexPath, "utf8")).toBe(codex);
+        expect(readFileSync(antigravityPath, "utf8")).toBe(antigravity);
+    });
+
+    it("has instructions that fit in Codex's TOML string as they are, with no triple quote and no backslash", () => {
+        // Codex's role holds them in a multi-line basic string: """ would end it and a backslash would start an escape, and a broken file drops the whole role.
+        expect(hostInstructions().character).not.toContain('"""');
+        expect(hostInstructions().character).not.toContain("\\");
+    });
+
+    it("is called in Codex and in Antigravity with each host's own line, when that chat found it, and not where the master voices everyone (D-580)", async () => {
+        inPlay(folder);
+        const voices = (host: string, characterAgents: Context["characterAgents"]): Promise<string> => runCommandLine(["instructions"], { ...context, host: () => host, characterAgents }).then((result) => result.output);
+        const codexLine = "start it with spawn_agent, with agent_type rpg-character, fork_turns none";
+        const antigravityLine = "started with invoke_subagent (TypeName rpg-character, Role the character's name, Prompt your words to them)";
+        const codex = await voices("codex-mcp-client", { codex: true });
+        expect(codex).toContain("## Voices");
+        expect(codex).toContain(codexLine);
+        expect(codex).not.toContain(antigravityLine);
+        const antigravity = await voices("antigravity-client", { antigravity: true });
+        expect(antigravity).toContain("## Voices");
+        expect(antigravity).toContain(antigravityLine);
+        expect(antigravity).not.toContain(codexLine);
+        expect(await voices("codex-mcp-client", { antigravity: true })).not.toContain("## Voices");
+        await runCommandLine(["config", "voices", "master"], context);
+        expect(await voices("codex-mcp-client", { codex: true })).not.toContain("## Voices");
+        expect(await voices("antigravity-client", { antigravity: true })).not.toContain("## Voices");
     });
 
     it("comes with play's part when mode reaches play in a chat that has the agent, as one where session zero is played (playtest 01)", async () => {

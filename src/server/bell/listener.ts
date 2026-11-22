@@ -4,7 +4,7 @@
 import { findCampaign } from "../../campaign/index.ts";
 import { samePath } from "../../library/index.ts";
 import { askDashboard, campaignPorts, type DashboardAt, dashboardAt } from "../dashboard/ports.ts";
-import { watchNewTurn } from "./antigravity.ts";
+import { isSubagentConversation, watchNewTurn } from "./antigravity.ts";
 
 /** What the chat hears from the doorbell: never the player's words, only where to read them. */
 export const bellLine = "The player acted on the dashboard: call status to read what they did.";
@@ -28,6 +28,13 @@ export async function listen(host: ListeningHost = "claude"): Promise<void>
     }
 
     const hook = hookInput(input);
+
+    // A subagent's conversation, as the character agent's, is not the master's: its end lets it go at once (D-580).
+    if (host === "antigravity" && hook.session !== undefined && isSubagentConversation(hook.session)) {
+        process.stdout.write(`${hookAnswer(host, false)}\n`, () => process.exit(0));
+        return;
+    }
+
     const turn = host === "antigravity" && hook.session !== undefined ? watchNewTurn(hook.session) : undefined;
     const opener = hook.hostPid === undefined ? undefined : watchProcessEnd(hook.hostPid);
     const unheard: Heard = { rang: false };

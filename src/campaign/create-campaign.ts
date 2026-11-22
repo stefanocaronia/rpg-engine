@@ -9,7 +9,7 @@ import { type CampaignSettings, settingsSchema } from "./settings.ts";
 
 /**
  * Creates a campaign in `folder`: campaign.yaml, state.yaml, the sessions folder, the inbox for the player's pictures, the .mcp.json through which AI hosts such as Claude Code find the rpg tools,
- * and the host files that send them to the start lines and give Claude Code the character agent (D-97, D-242, D-490). `platform` is the operating system, as Node names it. Returns the campaign's full path.
+ * and the host files that send them to the start lines and give each AI app with subagents the character agent (D-97, D-242, D-490, D-580). `platform` is the operating system, as Node names it. Returns the campaign's full path.
  */
 export function createCampaign(folder: string, settings: CampaignSettings, platform: string, instructions: HostInstructions): string
 {

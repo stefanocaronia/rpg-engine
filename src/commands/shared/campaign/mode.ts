@@ -61,7 +61,7 @@ const settingLabels: Partial<Record<SettingName, string>> = {
     companions: `companions (${companionWays.join(", ")})`,
     "calendar-start": "calendar-start (when the story starts: day 1 to count only the days, or a day of the world, such as 14 April 1491)",
     pictures: "pictures (of places, quests and those met: none; on request; new elements, one for each)",
-    "pictures-by": "pictures-by (who makes them: chat, your app by its own means; codex; elevenlabs; other, a tool the player names, written by its name; suggest chat)",
+    "pictures-by": "pictures-by (who makes them: chat, your app by its own means; codex; antigravity; elevenlabs; other, a tool the player names, written by its name; suggest chat)",
     lines: 'lines ("none" is an answer)',
     veils: 'veils ("none" is an answer)',
 };

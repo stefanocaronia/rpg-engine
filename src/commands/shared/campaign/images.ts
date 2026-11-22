@@ -4,6 +4,7 @@ import { readSettings } from "../../../campaign/index.ts";
 import type { Context } from "../../../core/context.ts";
 import type { Problem } from "../../../core/problem.ts";
 import { files } from "../../../core/store.ts";
+import { antigravityClient } from "../../../helpers/index.ts";
 import { findImage, imageFileName } from "../../../images/index.ts";
 import { baseChain, isPartyMember, ownField, type Page, type World } from "../../../pages/index.ts";
 import { systemContentFolders } from "../../../systems/index.ts";
@@ -29,9 +30,9 @@ export function picturesNote(root: string, context: Context, world: World, place
                     ? "you can make the pictures of places, quests and those met with the image tool the player names"
                     : ready.draws === true
                     ? "you can draw the pictures of places, quests and those met yourself, as simple vector pictures"
-                    : ready.maker === "Antigravity"
+                    : ready.maker === "Antigravity" && context.host?.() === antigravityClient
                     ? "you can make the pictures of places, quests and those met with your own image tool"
-                    : `this computer can make the pictures of places, quests and those met with the player's ${ready.maker === "Claude" ? "Claude Code" : "Codex"}`
+                    : `this computer can make the pictures of places, quests and those met with the player's ${ready.maker === "Claude" ? "Claude Code" : ready.maker === "Antigravity" ? "Antigravity" : "Codex"}`
             }, which spends their plan: ask them once whether they want one for each new place, quest and one met, only those they ask for, or none; then config pictures (new elements, on request or none).`
             : undefined;
     }

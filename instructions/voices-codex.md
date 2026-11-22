@@ -1,0 +1,1 @@
+Here the agent is the agent type rpg-character: start it with spawn_agent, with agent_type rpg-character, fork_turns none and your words to the character as the message, then call wait_agent until its answer comes, and narrate in the same turn, with not a word to the player in between.

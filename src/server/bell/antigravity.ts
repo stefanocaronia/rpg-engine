@@ -1,7 +1,7 @@
 // Antigravity's Stop hook holds the chat until it ends: a message the player writes meanwhile waits behind it, and Esc leaves it running. Antigravity's own
 // files tell either: the history of what the player typed, with the conversation it went to, and its log, which notes the conversation stopped; in its app,
 // the messages it keeps to send once the turn ends.
-import { closeSync, openSync, readdirSync, readSync, statSync } from "node:fs";
+import { closeSync, existsSync, openSync, readdirSync, readSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -12,8 +12,29 @@ export function antigravityFolder(userHome = homedir()): string
 }
 
 /**
- * Watches, from now on, whether the player starts a new turn in the conversation: writes in the chat, or stops it with Esc. `started` resolves then, never
- * otherwise; `stop` ends the watch.
+ * Whether the conversation is a subagent's, as the character agent's (D-580): Antigravity keeps a file for each subagent under its parent conversation, in
+ * its command line's folder or its app's. Such a conversation gets no doorbell.
+ */
+export function isSubagentConversation(conversation: string, folders = [antigravityFolder(), join(antigravityFolder(), "..", "antigravity")]): boolean
+{
+    if (!/^[\w-]+$/.test(conversation)) {
+        return false;
+    }
+
+    return folders.some((folder) => {
+        const brain = join(folder, "brain");
+
+        try {
+            return readdirSync(brain).some((parent) => existsSync(join(brain, parent, ".system_generated", "subagents", `${conversation}.json`)));
+        } catch {
+            return false;
+        }
+    });
+}
+
+/**
+ * Watches, from now on, whether the player starts a new turn in the conversation: writes in the chat, or stops it with Esc; or whether a message waits to be
+ * delivered to it, as the character's subagent's answer (D-580). `started` resolves then, never otherwise; `stop` ends the watch.
  */
 export function watchNewTurn(conversation: string, folder = antigravityFolder(), every = 500, appFolder = join(folder, "..", "antigravity")): { started: Promise<void>; stop: () => void; }
 {
@@ -24,7 +45,7 @@ export function watchNewTurn(conversation: string, folder = antigravityFolder(),
 
     const started = new Promise<void>((done) => {
         timer = setInterval(() => {
-            if (wrote(newText(history, read), conversation) || stopped(newText(log, read), conversation) || queued(appFolder, conversation)) {
+            if (wrote(newText(history, read), conversation) || stopped(newText(log, read), conversation) || queued(appFolder, conversation) || queued(folder, conversation)) {
                 clearInterval(timer);
                 done();
             }
@@ -36,8 +57,8 @@ export function watchNewTurn(conversation: string, folder = antigravityFolder(),
 }
 
 /**
- * Whether Antigravity's app holds a message the player wrote in the conversation while its turn has not ended: the app keeps one file for each in the
- * conversation's own folder, and sends them once the turn ends.
+ * Whether Antigravity holds a message for the conversation while its turn has not ended, as one the player wrote in its app or a subagent's answer: it keeps
+ * one file for each in the conversation's own folder, and sends them once the turn ends.
  */
 function queued(appFolder: string, conversation: string): boolean
 {
