@@ -48,19 +48,26 @@
     "node": ">=24"
   },
   "keywords": [
+    "ai-game-master",
+    "game-master",
     "rpg",
     "ttrpg",
-    "ai",
-    "game-master",
-    "dice",
-    "mcp",
-    "mcp-server",
     "tabletop",
     "role-playing",
     "solo-rpg",
+    "dice",
+    "interactive-fiction",
     "5e",
+    "ai",
+    "ai-agents",
+    "llm",
+    "mcp",
+    "mcp-server",
     "claude-code",
-    "codex"
+    "codex",
+    "opencode",
+    "antigravity",
+    "rpg-engine"
   ],
   "author": {
     "name": "Stefano Caronia",
