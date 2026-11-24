@@ -1,10 +1,11 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { ourScope } from "../core/consents.ts";
 import type { PackageInfo, PackageManager } from "../core/context.ts";
 import { packageApi, readsApi } from "../core/packages/declarations.ts";
+import { stopTree } from "../core/process.ts";
 import { Refusal } from "../core/refusal.ts";
 import { isNewerVersion } from "../core/version.ts";
 import { isTarball, tarballText, unpackTarball } from "./tarball.ts";
@@ -192,7 +193,7 @@ export function runNpm(args: string): Promise<NpmRun>
     return new Promise((done) => {
         const child = spawn(`npm ${args}`, { shell: true, windowsHide: true, cwd: tmpdir(), env: { ...process.env, NoDefaultCurrentDirectoryInExePath: "1" }, stdio: ["ignore", "pipe", "pipe"] });
         let [out, errors] = ["", ""];
-        const timer = setTimeout(() => stopTree(child.pid), installWait);
+        const timer = setTimeout(() => stopTree(child.pid, "SIGKILL"), installWait);
         child.stdout.setEncoding("utf8").on("data", (chunk: string) => (out += chunk));
         child.stderr.setEncoding("utf8").on("data", (chunk: string) => (errors += chunk));
         child.on("error", (error) => (errors += error.message));
@@ -552,20 +553,6 @@ function inTurn(run: (args: string) => Promise<NpmRun>): (args: string) => Promi
         npmTurn = next.catch(() => undefined);
         return next;
     };
-}
-
-/** Stops a process with the ones it started: on Windows the shell's child, npm, outlives a kill of the shell alone. */
-function stopTree(pid: number | undefined): void
-{
-    if (pid === undefined) {
-        return;
-    }
-
-    if (process.platform === "win32") {
-        spawnSync("taskkill", ["/pid", String(pid), "/T", "/F"], { windowsHide: true });
-    } else {
-        process.kill(pid, "SIGKILL");
-    }
 }
 
 /** True for a plain file or folder of the package folder `spec`; it throws for a link, which refuses the package whole, as a link in a .tgz does. */

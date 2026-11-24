@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { stopTree } from "../core/process.ts";
 
 /** Whether `folder` is inside a git repository: it, or a folder above it, holds a .git. Git itself need not be installed. */
 export function isRepository(folder: string): boolean
@@ -148,7 +149,7 @@ function gitOnce(folder: string, args: string[], variables: NodeJS.ProcessEnv): 
 
         // A git stopped answers at once: its hooks, ssh or the remote's helper may keep its pipes open long after.
         const timer = setTimeout(() => {
-            stopTree(child.pid);
+            stopTree(child.pid, "SIGKILL");
             child.stdout.destroy();
             child.stderr.destroy();
             settle(() => fail(new Error(`git ${args[0]} took longer than ${longest / 60_000} minutes and was stopped: look at the network, or at a hook of the repository that waits.`)));
@@ -182,25 +183,6 @@ function gitFailure(said: string, command: string): string
     const lines = said.split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== "");
     const told = lines.filter((line) => /^(fatal|error|hint):/i.test(line));
     return (told.length > 0 ? told : lines.slice(0, 6)).join(" ") || `git ${command} stopped`;
-}
-
-/** Stops a process and every process it started: on Windows by its tree, elsewhere by a kill its children see as their pipes close. */
-function stopTree(pid: number | undefined): void
-{
-    if (pid === undefined) {
-        return;
-    }
-
-    if (process.platform === "win32") {
-        spawn("taskkill", ["/pid", String(pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" }).on("error", () => undefined);
-        return;
-    }
-
-    try {
-        process.kill(pid, "SIGKILL");
-    } catch {
-        // Already gone.
-    }
 }
 
 /** The environment of git: the one of this process, with every question it could ask turned into a failure. */

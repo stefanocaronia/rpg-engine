@@ -1,17 +1,13 @@
 import { McpServer, type RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { CallToolResult, ClientCapabilities, ServerNotification, ServerRequest } from "@modelcontextprotocol/sdk/types.js";
-import { spawn } from "node:child_process";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import type { Readable } from "node:stream";
 import { z } from "zod";
-import { chosenPictureMaker, findCampaign, hasCharacterAgent, readTextSetting, refreshHostFiles, refreshUserHostFiles } from "../campaign/index.ts";
-import { chatFolders } from "../chats/index.ts";
+import { findCampaign, hasCharacterAgent, readTextSetting, refreshHostFiles, refreshUserHostFiles } from "../campaign/index.ts";
 import { commands } from "../commands/index.ts";
 import { installCampaignSystem } from "../commands/package/install.ts";
-import { libraryRunner } from "../commands/shared/books/library-reader.ts";
 import { pagePhrase } from "../commands/shared/books/words.ts";
 import { commitSessionStart } from "../commands/shared/campaign/git.ts";
 import { outsideNews, whileClosedNews } from "../commands/shared/campaign/outside.ts";
@@ -19,22 +15,17 @@ import { newChatText, wentBackTo } from "../commands/shared/campaign/saves.ts";
 import { campaignWorld } from "../commands/shared/campaign/world.ts";
 import { campaignExamples } from "../commands/shared/examples.ts";
 import { packageCommands } from "../commands/shared/packages/code.ts";
-import { systemConfirm } from "../confirm/index.ts";
-import { type Context, defaultContext, type LaterLines, packagesFolder, type Player, playerWait } from "../core/context.ts";
-import { downloadBytes } from "../core/download.ts";
+import { type Context, defaultContext, type LaterLines, type Player, playerWait } from "../core/context.ts";
 import { type Examples, neutralExamples, withExamples } from "../core/examples.ts";
 import type { Command } from "../core/registry.ts";
 import { SessionStore } from "../core/session-store.ts";
 import { FileStore, withFiles } from "../core/store.ts";
 import { getVersion } from "../core/version.ts";
-import { systemPageReader } from "../documents/index.ts";
-import { computerHelpers, hostPictures, hostReader, hostWriter } from "../helpers/index.ts";
 import { hostInstructions, startInstructions } from "../instructions/index.ts";
-import { npmEngine, npmPackages } from "../packages/index.ts";
 import type { World } from "../pages/index.ts";
-import { loadSystemCode } from "../systems/index.ts";
 import { chatKeeper } from "./chats.ts";
-import { answers, campaignPageElsewhere, campaignPorts, type Dashboard, dashboardAt, isCampaignPage, startDashboard } from "./dashboard/index.ts";
+import { servedContext } from "./context.ts";
+import { dashboardOpener } from "./dashboard/opener.ts";
 import { fromSubagent, subagentRefusal } from "./subagent.ts";
 
 type AnyCommand = Command<any, any>;
@@ -53,8 +44,6 @@ const entryPointsWithoutForms = ["claude-desktop"];
 
 // Hosts ask for the tools tens of milliseconds after initialized: the world, which takes a second or more to read in a large campaign, is read after that.
 const preloadAfter = 250;
-// How often a chat asks after its campaign's page, which another chat serves, to serve it once that one closes (D-577).
-const heldAskEvery = 3000;
 
 /** The line that closes every answer of a tool, a phrase of the page's, so that its languages have it. */
 export const masterScreenLine = "The text above lies behind the master's screen, forbidden to the players' eyes.";
@@ -72,6 +61,8 @@ export function createMcpServer(context: Context = defaultContext(), environment
     // A server lives as long as its chat: it gives each part of the instructions once (D-97).
     context.told ??= new Set();
     context.chat ??= { calls: 0 };
+    // The host's own name for the chat, for the doorbell's hook to find its server (D-495).
+    context.chat.session ??= environment.CLAUDE_CODE_SESSION_ID;
     // What came after a call answered, as a picture made in its place or none, for the next (D-572).
     context.later ??= laterLines();
     // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4).
@@ -159,100 +150,17 @@ export async function startMcpServer(input: Readable = process.stdin): Promise<v
     const leave = (): never => process.exit(0);
     input.on("end", leave);
     input.on("close", leave);
-    // The pictures, by the campaign's choice, else by the chat in use, which names itself as the session starts (D-308, D-572).
     let server: ReturnType<typeof createMcpServer> | undefined;
-    const host = (): string | undefined => server?.server.getClientVersion()?.name;
-    const context: Context = {
-        ...defaultContext(),
-        pictures: hostPictures(host, () => chosenPictureMaker(context.folder)),
-        writer: hostWriter(host),
-        reader: hostReader(host),
-        // The command line that started this server runs the import apart, `rpg import` in the campaign's folder, with the chat's own helper.
-        importRunner: (root) => spawn(process.execPath, [process.argv[1] ?? "", "import"], { cwd: root, detached: true, stdio: "ignore", windowsHide: true, env: { ...process.env, RPG_HOST: host() ?? "" } }).unref(),
-        helpers: computerHelpers(),
-        packages: npmPackages(packagesFolder()),
-        engine: npmEngine(),
-        confirm: systemConfirm(process.platform, process.env),
-        ocr: systemPageReader(process.platform, process.env),
-        readLibrary: libraryRunner(),
-        download: downloadBytes,
-        host,
-        chat: { calls: 0 },
-        chatFolders: chatFolders(process.env, homedir()),
-    };
-    // The systems' code, loaded once for the session, as the engine's own: a system changed since needs the server started again (D-448).
-    context.systemCode = await loadSystemCode(context.systemFolders);
-    // The game systems, and what this computer translated of them, written only through the session (D-539).
-    const session = new SessionStore({ systemFolders: [...context.systemFolders, ...(context.home === undefined ? [] : [join(context.home, "systems")])] });
-    const served: Context = { ...context, files: session };
-    server = createMcpServer(served, process.env, dashboardOpener(served, session).open);
-    // The extensions' tools are there in the first list the host asks for.
-    await firstExtensions.get(server);
-    await server.connect(new StdioServerTransport(input));
+    const { context, session } = await servedContext({ host: () => server?.server.getClientVersion()?.name, environment: () => process.env });
+    server = createMcpServer(context, process.env, dashboardOpener(context, session).open);
+    await serveOver(server, new StdioServerTransport(input));
 }
 
-/**
- * Opens the player's dashboard as the chat starts and before the first call that finds a campaign in the server's folder, as after init, and lets that call
- * wait for it, so that its status gives the link (D-270, D-277, D-577); never in a folder without a campaign. Where another chat of the campaign serves its
- * page, the link is that page's, and this chat asks after it every few seconds, to serve it at the same port once that chat closes. The game goes on without it.
- */
-export function dashboardOpener(context: Context, session: SessionStore, ports?: number[]): { open(): Promise<void>; close(): Promise<void>; }
+/** Connects a server to its chat once the extensions' tools are loaded, so that they are there in the first list the host asks for. */
+export async function serveOver(server: McpServer, transport: Transport): Promise<void>
 {
-    let opening: Promise<Dashboard | undefined> | undefined;
-    // The page another chat serves, and the wait for it to go.
-    let held: string | undefined;
-    let waiting: NodeJS.Timeout | undefined;
-    let closed = false;
-
-    const open = async (): Promise<void> => {
-        const root = withFiles(session, () => findCampaign(context.folder));
-        opening ??= root === undefined ? undefined : startDashboard(context, session, { ports }).catch(() => undefined);
-        const dashboard = await opening;
-
-        if (dashboard === undefined && root !== undefined && held === undefined && waiting === undefined && !closed) {
-            const elsewhere = await campaignPageElsewhere(root, ports ?? campaignPorts(root));
-
-            if (elsewhere !== undefined && !closed && waiting === undefined) {
-                held = elsewhere.url;
-                waitFor(root, elsewhere.port);
-            }
-        }
-
-        context.dashboard = dashboard?.url ?? held;
-        context.dashboardHeld = dashboard === undefined && held !== undefined;
-        context.page = dashboard?.player;
-        context.news = dashboard?.news;
-    };
-
-    // Asks after the page, saying this chat waits there, so that the doorbell does not take that chat's for this one's; once it goes, serves it. A page
-    // that does not answer while its port still takes calls is a chat busy with its world: it is still there.
-    const waitFor = (root: string, port: number): void => {
-        waiting = setInterval(() => {
-            void dashboardAt(port, process.env.CLAUDE_CODE_SESSION_ID).then(async (there) => {
-                const gone = there === undefined ? !(await answers(port)) : !isCampaignPage(there, root);
-
-                if (closed || waiting === undefined || !gone) {
-                    return;
-                }
-
-                clearInterval(waiting);
-                waiting = undefined;
-                held = undefined;
-                opening = undefined;
-                void open().catch(() => undefined);
-            });
-        }, heldAskEvery);
-        waiting.unref();
-    };
-
-    return {
-        open,
-        close: async () => {
-            closed = true;
-            clearInterval(waiting);
-            await (await opening)?.close();
-        },
-    };
+    await firstExtensions.get(server);
+    await server.connect(transport);
 }
 
 /** What a host reads of each of the core's tools in the campaign of this context's folder: its description, then its parameters', with the examples of its system (D-518). */
@@ -668,7 +576,14 @@ function watchOutside(context: Context, session: SessionStore): Told
 
     return {
         take: () => {
-            const lines = [...untold, ...inCampaign((root) => [...(first ? whileClosedNews(root, context, began) : []), ...outsideNews(root, context, session.takeOutsideChanges(), before)], [])];
+            // A session that outlives its chats, as a table's, saw some of the changes made while no chat was open: those are told once, with what changed.
+            const lines = [
+                ...untold,
+                ...inCampaign((root) => {
+                    const changes = session.takeOutsideChanges();
+                    return [...(first ? whileClosedNews(root, context, began, changes.map((change) => change.path)) : []), ...outsideNews(root, context, changes, before)];
+                }, []),
+            ];
             untold = [];
             first = false;
             before = undefined;

@@ -2,6 +2,7 @@ import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { HostId } from "./hosts.ts";
 import type { FileStore } from "./store.ts";
 
 /** How long the player may take to click, on the page or in the host's form: as long as a host waits for a call that keeps reporting progress. */
@@ -61,7 +62,7 @@ export interface Context
     /** The parts of the instructions already given in this chat, which the MCP server keeps until instructions starts over (D-97); without it, every call gives them. */
     told?: Set<string>;
     /** Whether the campaign had the character agent as the MCP server started, in each host that has agents (D-490, D-580): the chat of that host then gets Voices. */
-    characterAgents?: { claudeCode?: boolean; openCode?: boolean; codex?: boolean; antigravity?: boolean; };
+    characterAgents?: Partial<Record<HostId, boolean>>;
     /** The link of the player's dashboard, when the MCP server serves one (D-270); status gives it. */
     dashboard?: string;
     /** Whether another chat of the campaign, still open, serves the dashboard at that link, which this chat takes over once it closes (D-577). */
@@ -102,6 +103,26 @@ export interface Context
     helpers?: Helpers;
     /** Where the AI hosts keep their chats on this computer, which the MCP server copies into the campaign (T-225); missing elsewhere, as in tests. */
     chatFolders?: ChatFolders;
+    /**
+     * At a campaign's table (D-582): says that the packages' code it loaded is no longer the code on disk, so that the table ends once no call runs. Missing
+     * for a chat's own server, which a new chat starts again.
+     */
+    codeOutdated?: () => void;
+}
+
+/**
+ * Forgets what of a server's context was its chat's, as that chat leaves a campaign's table (D-582): what it was told, the lines left for its next call, its
+ * form player, the chat itself (its calls, Codex's thread, the dashboard offered, its session), whether its host had the character agent, and where its host
+ * keeps its chats. A new chat's server makes them again.
+ */
+export function forgetChat(context: Context): void
+{
+    context.told = undefined;
+    context.later = undefined;
+    context.player = undefined;
+    context.chat = { calls: 0 };
+    context.characterAgents = undefined;
+    context.chatFolders = undefined;
 }
 
 /** The folders where Claude Code and Codex keep their chats, each in its own way (T-225). */
@@ -209,6 +230,8 @@ export interface ChatState
 {
     calls: number;
     thread?: string;
+    /** The host's own id of the chat, as Claude Code gives it to its servers, for the doorbell's hook to find its server (D-495). */
+    session?: string;
     beforeCall?: () => void;
     afterCall?: () => void;
     dashboardOffered?: boolean;

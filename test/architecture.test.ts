@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { posix } from "node:path";
 import { describe, expect, it } from "vitest";
+import { hostIds, hosts } from "../src/core/hosts.ts";
 
 const sourceFolder = new URL("../src/", import.meta.url);
 
@@ -69,6 +70,8 @@ describe("architecture", () => {
             "server/fence.ts",
             // Which campaign each conversation of Antigravity's app plays, in the player's data folder, for the router (D-578).
             "server/route/notes.ts",
+            // Where each campaign's table is found, in the player's data folder (D-582).
+            "server/table/place.ts",
             // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
             "campaign/last-choices.ts",
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).
@@ -102,4 +105,74 @@ describe("architecture", () => {
         const touching = sources.filter((path) => /from "node:fs(\/promises)?"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));
         expect(touching.sort()).toEqual(allowed.sort());
     });
+
+    it("stops a process tree and reads lines in one place", () => {
+        const holding = codeFiles().filter((path) => /taskkill|from "node:readline"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));
+        expect(holding).toEqual(["core/process.ts"]);
+    });
+
+    it("starts processes only where the list says", () => {
+        const allowed = [
+            // The engine's own: a process that speaks by lines, and stopping what any of these started.
+            "core/process.ts",
+            // git, for the campaign's commits and pushes.
+            "git/git.ts",
+            // npm, to read and install packages.
+            "packages/npm.ts",
+            // The AI programs that work outside the chat: Antigravity's agy, Claude Code, Codex and OpenCode.
+            "helpers/antigravity.ts",
+            "helpers/claude.ts",
+            "helpers/codex.ts",
+            "helpers/opencode.ts",
+            // Finding, installing and signing in Codex and Claude Code, and queueing a message in Codex.
+            "helpers/programs.ts",
+            // The system's own window that asks the player.
+            "confirm/confirm.ts",
+            // Windows' own reader of text in pictures, through PowerShell.
+            "documents/ocr.ts",
+            // The engine itself, apart, to read the player's library.
+            "commands/shared/books/library-reader.ts",
+            // The engine itself, apart, to run an import.
+            "server/context.ts",
+        ];
+        const starting = codeFiles().filter((path) => /from "node:child_process"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));
+        expect(starting.sort()).toEqual(allowed.sort());
+    });
+
+    it("names an AI host only in the registry and in the files named after a host", () => {
+        const names = new Set<string>(hostIds.flatMap((id) => [id, hosts[id].client, hosts[id].hook]));
+        // The files that still name a host by hand, each for its reason: a list meant to shrink.
+        const exceptions = [
+            // The hook's answers, by host.
+            "server/bell/listener.ts",
+            // The programs the engine runs outside the chat, named codex and claude: another vocabulary, until the registry joins the code that starts the hosts.
+            "core/context.ts",
+            "helpers/programs.ts",
+            "commands/install.ts",
+            "server/dashboard/index.ts",
+            // The values of the campaign's setting of who makes the pictures, kept in campaigns' files.
+            "campaign/settings.ts",
+            "helpers/chosen.ts",
+            "commands/config/dashboard.ts",
+            // Each host's own folders and files, in a campaign and on the computer.
+            "campaign/host-files.ts",
+        ];
+        const found = codeFiles().filter((path) => {
+            const base = posix.basename(path).replace(/\.tsx?$/, "");
+
+            if (path === "core/hosts.ts" || names.has(base)) {
+                return false;
+            }
+
+            const source = readFileSync(new URL(path, sourceFolder), "utf8");
+            return [...source.matchAll(/"([^"\n]*)"/g)].some(([, text]) => names.has(text));
+        });
+        expect(found.sort()).toEqual(exceptions.sort());
+    });
 });
+
+/** Every file of code under src/, the dashboard's page included, by its path from src/. */
+function codeFiles(): string[]
+{
+    return (readdirSync(sourceFolder, { recursive: true }) as string[]).map((path) => path.replaceAll("\\", "/")).filter((path) => /\.tsx?$/.test(path));
+}

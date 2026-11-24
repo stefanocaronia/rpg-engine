@@ -5,7 +5,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import type { HelperLogin, HelperName, Helpers, HelperState, PicturesReady } from "../core/context.ts";
-import { stopTree } from "./stop.ts";
+import { stopTree } from "../core/process.ts";
 
 // The npm package of each program.
 const packages: Record<HelperName, string> = { codex: "@openai/codex", claude: "@anthropic-ai/claude-code" };
@@ -30,7 +30,7 @@ const states = new Map<HelperName, HelperState>();
 let changes = 0;
 
 // A sign-in still waiting goes with the server: its own timer would never come.
-process.once("exit", () => logins.forEach((run) => run.child !== undefined && run.login.state === "waiting" && stopTree(run.child)));
+process.once("exit", () => logins.forEach((run) => run.child !== undefined && run.login.state === "waiting" && stopTree(run.child.pid)));
 
 /** Codex and Claude Code on this computer, the engine's own folder in `folder`. */
 export function computerHelpers(folder = toolsFolder()): Helpers
@@ -255,7 +255,7 @@ export function startLogin(name: HelperName, line: string, wait = linkWait): Pro
     };
 
     const timer = setTimeout(() => {
-        stopTree(child);
+        stopTree(child.pid);
         end({ state: "failed", why: "the sign-in waited ten minutes, and the player did not finish it" });
     }, loginWait);
 
@@ -328,7 +328,7 @@ export function queueInCodex(thread: string, message: string, folder = toolsFold
             return;
         }
 
-        const timer = setTimeout(() => stopTree(child), queueWait).unref();
+        const timer = setTimeout(() => stopTree(child.pid), queueWait).unref();
         child.on("error", () => done(false));
         child.on("exit", (code) => {
             clearTimeout(timer);
@@ -364,7 +364,7 @@ function installHelper(name: HelperName, folder: string): Promise<string | undef
             stdio: ["ignore", "ignore", "pipe"],
         });
         let errors = "";
-        const timer = setTimeout(() => stopTree(child), installWait);
+        const timer = setTimeout(() => stopTree(child.pid), installWait);
         child.stderr.setEncoding("utf8");
         child.stderr.on("data", (chunk: string) => (errors += chunk));
         child.on("error", () => undefined);

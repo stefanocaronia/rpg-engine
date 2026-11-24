@@ -1,5 +1,6 @@
-// The game master's instructions, read from this package wherever it is installed (D-97). Depends on nothing else in rpg-engine.
+// The game master's instructions, read from this package wherever it is installed (D-97). Depends only on the core's list of hosts.
 import { readFileSync } from "node:fs";
+import type { HostId } from "../core/hosts.ts";
 
 /** A part of the instructions as a layer gives it: its text, and whether it takes the place of the layers below instead of adding to them (D-121). */
 export interface PartLayer
@@ -20,14 +21,11 @@ export function hostInstructions(): { start: string; character: string; }
     return { start: startInstructions(), character: readInstructions("character.md") };
 }
 
-/** A host that has the character agent (D-490, D-580). */
-export type VoicesHost = "claudeCode" | "openCode" | "codex" | "antigravity";
-
 // The host's own lines on calling the agent, after voices.md; Claude Code needs none.
-const hostVoices: Partial<Record<VoicesHost, string>> = { openCode: "voices-opencode.md", codex: "voices-codex.md", antigravity: "voices-antigravity.md" };
+const hostVoices: Partial<Record<HostId, string>> = { openCode: "voices-opencode.md", codex: "voices-codex.md", antigravity: "voices-antigravity.md" };
 
 /** When and how the master calls the character agent, in play, where the host has it (D-490), with the host's own way of calling it (D-580). */
-export function voicesInstructions(way: string, host: VoicesHost): string
+export function voicesInstructions(way: string, host: HostId): string
 {
     const own = hostVoices[host];
     // Always for the main characters, or for everyone, as the player chose, on top of the key moments (D-490).

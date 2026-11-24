@@ -1,7 +1,8 @@
 // The pictures as the campaign chose, else by the chat in use (D-390, D-572): Codex where chosen, the chat in use where it cannot; the SVG cleaned from a white list (D-342).
 import { describe, expect, it } from "vitest";
 import type { DocumentReader, PictureMaker, PicturesReady, PictureSubject } from "../src/core/context.ts";
-import { antigravityClient, cleanSvg, hostPictures, hostReader, svgBrief, svgIn } from "../src/helpers/index.ts";
+import { hosts } from "../src/core/hosts.ts";
+import { cleanSvg, hostPictures, hostReader, svgBrief, svgIn } from "../src/helpers/index.ts";
 import { approval } from "../src/server/approver.ts";
 
 /** A maker that says whether it is ready and records what it was asked to make. */
@@ -90,7 +91,7 @@ describe("who makes the pictures, as the campaign chose, else by the chat in use
         await pictures.make(bridge);
         expect(painter.made).toEqual([bridge]);
         // In Antigravity, the chat paints it itself: the painter is never started.
-        const inAntigravity = hostPictures(() => antigravityClient, () => "antigravity", codex, claude, painter);
+        const inAntigravity = hostPictures(() => hosts.antigravity.client, () => "antigravity", codex, claude, painter);
         expect(inAntigravity.ready()).toEqual({ ready: true, maker: "Antigravity" });
         expect(inAntigravity.brief?.(bridge)).toMatch(/^Make exactly one new image from the brief below/);
         expect(await inAntigravity.make(bridge)).toEqual({ refused: "Antigravity makes its pictures in its own chat" });
@@ -150,7 +151,7 @@ describe("who makes the pictures, as the campaign chose, else by the chat in use
 
     it("in Antigravity has the chat paint it itself from the brief, and starts nothing", async () => {
         const codex = maker({ ready: true, maker: "Codex" });
-        const pictures = hostPictures(() => antigravityClient, () => undefined, codex, maker({ ready: true, maker: "Claude" }));
+        const pictures = hostPictures(() => hosts.antigravity.client, () => undefined, codex, maker({ ready: true, maker: "Claude" }));
         expect(pictures.ready()).toEqual({ ready: true, maker: "Antigravity" });
         const brief = pictures.brief?.(bridge) ?? "";
         expect(brief).toMatch(/^Make exactly one new image from the brief below with your own image generation tool/);
@@ -161,7 +162,7 @@ describe("who makes the pictures, as the campaign chose, else by the chat in use
         expect(hostPictures(() => "claude-code", () => undefined, codex).brief?.(bridge)).toBeUndefined();
         // Codex chosen and not ready: the chat paints it in its place.
         const away = maker({ ready: false, why: "Codex is not installed on this computer" });
-        expect(hostPictures(() => antigravityClient, () => "codex", away).brief?.(bridge)).toContain("Ponte, as adventurers see it arriving");
+        expect(hostPictures(() => hosts.antigravity.client, () => "codex", away).brief?.(bridge)).toContain("Ponte, as adventurers see it arriving");
         expect(codex.made).toEqual([]);
         // Its tool fails or it has none: it draws the SVG instead, in one more line.
         expect(brief.split("\n").at(-1)).toMatch(/^If your image tool fails or you have none, draw it as SVG code instead: .* call image again for the same page with svg holding the code\.$/);
@@ -173,7 +174,7 @@ describe("who makes the pictures, as the campaign chose, else by the chat in use
         const claude = maker({ ready: true, maker: "Claude" });
         const ready = (client: string | undefined): PicturesReady => hostPictures(() => client, () => undefined, codex, claude).ready();
         expect(ready("codex-mcp-client")).toEqual({ ready: true, maker: "Codex" });
-        expect(ready(antigravityClient)).toEqual({ ready: true, maker: "Antigravity" });
+        expect(ready(hosts.antigravity.client)).toEqual({ ready: true, maker: "Antigravity" });
         expect(ready("claude-code")).toEqual({ ready: true, maker: "Claude" });
         expect(ready("claude-ai")).toEqual({ ready: true, maker: "Claude" });
         expect(ready(undefined)).toEqual({ ready: true, maker: "Claude" });

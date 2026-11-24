@@ -5,6 +5,7 @@
 // D-580); Antigravity's and OpenCode's, each with the rpg server and the doorbell (D-578). Gemini CLI is no longer set up (D-493): a campaign's .gemini/ stays as it is.
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { type HostId, hostIds } from "../core/hosts.ts";
 import { files } from "../core/store.ts";
 import { refuseCampaignLinks } from "./find-campaign.ts";
 import { efforts, readTextSetting } from "./settings.ts";
@@ -104,9 +105,9 @@ export function writeEffortFiles(root: string, platform: string, cleared = false
  * Whether the campaign has the character agent in each host that has agents (D-490, D-580): looked at as the MCP server starts, before it writes its host
  * files, it says whether the chat found the agent, as the hosts read their agents only when a chat starts.
  */
-export function hasCharacterAgent(root: string): Record<AgentHost, boolean>
+export function hasCharacterAgent(root: string): Record<HostId, boolean>
 {
-    return Object.fromEntries(agentHosts.map((host) => [host, files().fresh(characterAgentPath(root, host)) !== undefined])) as Record<AgentHost, boolean>;
+    return Object.fromEntries(hostIds.map((host) => [host, files().fresh(characterAgentPath(root, host)) !== undefined])) as Record<HostId, boolean>;
 }
 
 function hostFiles(root: string, instructions: HostInstructions, platform: string): (() => HostFile | undefined)[]
@@ -115,7 +116,7 @@ function hostFiles(root: string, instructions: HostInstructions, platform: strin
         () => agentsFile(root, instructions.start),
         () => claudeFile(root),
         () => claudeSettingsFile(root),
-        ...agentHosts.map((host) => () => characterAgentFile(root, host, instructions.character)),
+        ...hostIds.map((host) => () => characterAgentFile(root, host, instructions.character)),
         () => codexConfigFile(root, platform),
         () => antigravityServerFile(root, platform),
         () => antigravityHooksFile(root),
@@ -263,15 +264,12 @@ function agentsFile(root: string, startLines: string): HostFile | undefined
     return updated === lines ? undefined : { path, text: text.includes("\r\n") ? updated.replace(/\n/g, "\r\n") : updated };
 }
 
-/** The hosts whose campaign has the character agent as one of its agents (D-490, D-580). */
-export type AgentHost = "claudeCode" | "openCode" | "codex" | "antigravity";
-
 // What every host's file of the character agent says of itself.
 const agentHeader = "# Written by rpg, which writes it again as the game starts: a change made here does not last.";
 const agentDescription = "Voices one character of the campaign at a key moment, knowing only what they know. Begin with their name, then the moment, as Voices says.";
 
 /** Each host's file of the character agent: where it goes in a campaign, and its text with the agent's instructions. */
-const characterAgents: Record<AgentHost, { path: string[]; text: (instructions: string) => string; }> = {
+const characterAgents: Record<HostId, { path: string[]; text: (instructions: string) => string; }> = {
     // Claude Code's: it reads only its character's view, and not the campaign's CLAUDE.md, the master's instructions.
     claudeCode: {
         path: [".claude", "agents", "rpg-character.md"],
@@ -358,15 +356,13 @@ const characterAgents: Record<AgentHost, { path: string[]; text: (instructions: 
     },
 };
 
-const agentHosts = Object.keys(characterAgents) as AgentHost[];
-
-function characterAgentPath(root: string, host: AgentHost): string
+function characterAgentPath(root: string, host: HostId): string
 {
     return join(root, ...characterAgents[host].path);
 }
 
 /** The character agent in a host's format (D-490): the engine's, rewritten when it changed, and taken away when the player wants the master to voice every character. */
-function characterAgentFile(root: string, host: AgentHost, instructions: string): HostFile | undefined
+function characterAgentFile(root: string, host: HostId, instructions: string): HostFile | undefined
 {
     const path = characterAgentPath(root, host);
 
