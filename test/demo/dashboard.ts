@@ -3,7 +3,7 @@
 // the engine's own system; with --system 5e, the 5e of its repository beside this one, for its cards. With --ask, the demo asks the page a check, a choice,
 // the dice of a rest or an attempt on a lock again and again, a few seconds after each answer, as the master does with ask (D-279), and rolls Lupa's bite,
 // which the player sees. With --chat, the page has the chat with a master of the demo's own, which answers each sentence with a prose of its own and shows the
-// other states by a word in the sentence (test/demo/master.ts). With --setup, the campaign is one just made, still in its setup, made anew at each start. With --launcher, the launcher's page is served too, by a launcher of the demo's own with a few campaigns in its list, or none with --empty (test/demo/launcher.ts): open its link, which is printed first. With --port, on that port alone, as `npm run demo` does on 5760 for the app's browser pane, apart from the dashboards of the chats;
+// other states by a word in the sentence (test/demo/master.ts); with --resumed, --taken-up or --taken-up-empty in its place, a chat the campaign takes up. With --setup, the campaign is one just made, still in its setup, made anew at each start. With --launcher, the launcher's page is served too, by a launcher of the demo's own with a few campaigns in its list, or none with --empty (test/demo/launcher.ts): open its link, which is printed first. With --port, on that port alone, as `npm run demo` does on 5760 for the app's browser pane, apart from the dashboards of the chats;
 // the PORT the app gives, when another chat's pane holds 5760, comes first. Not part of the tests.
 import { serveDemo } from "./demo.ts";
 
@@ -12,7 +12,7 @@ const port = process.env.PORT ?? (portAt === -1 ? undefined : process.argv[portA
 const systemAt = process.argv.indexOf("--system");
 const system = systemAt !== -1 && process.argv[systemAt + 1] === "5e" ? "5e" : "free";
 const dashboard = await serveDemo(port === undefined ? undefined : [Number(port)], system, {
-    chat: process.argv.includes("--resumed") ? "resumed" : process.argv.includes("--chat"),
+    chat: process.argv.includes("--resumed") ? "resumed" : process.argv.includes("--taken-up") ? "taken-up" : process.argv.includes("--taken-up-empty") ? "taken-up-empty" : process.argv.includes("--chat"),
     setup: process.argv.includes("--setup"),
     launcher: process.argv.includes("--launcher") ? (process.argv.includes("--empty") ? "empty" : true) : false,
 });

@@ -30,8 +30,11 @@ export type DemoSystem = "free" | "5e";
 /** What a demo is served with: the chat with a master of the demo's own, and a campaign still in its setup in place of the one in play. */
 export interface DemoOptions
 {
-    /** "resumed" for a chat the campaign has to take up, cut as the game was closed: the demo takes it up as the page comes. */
-    chat?: boolean | "resumed";
+    /**
+     * In place of true, a chat the campaign has to take up, which the demo takes up as the page comes: "resumed", cut as the game was closed;
+     * "taken-up", whole; "taken-up-empty", with no flow kept, as an old chat.
+     */
+    chat?: boolean | "resumed" | "taken-up" | "taken-up-empty";
     setup?: boolean;
     /** With the demo's own launcher beside it, listing some campaigns, or none ("empty"): the campaign's page has the chat too, as at a table. */
     launcher?: boolean | "empty";
@@ -215,7 +218,7 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
     const session = new SessionStore({ systemFolders: [...context.systemFolders, join(`${folder}-home`, "systems")] });
     const home = `${folder}-home`;
     const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty", page);
-    const master = chat !== false || fake !== undefined ? demoMaster({ resumed: chat === "resumed" }) : undefined;
+    const master = chat !== false || fake !== undefined ? demoMaster({ takes: chat === "resumed" ? "cut" : chat === "taken-up" ? "whole" : chat === "taken-up-empty" ? "empty" : undefined }) : undefined;
     const dashboard = await startDashboard({ ...context, files: session }, session, {
         ports,
         ...(page === undefined ? {} : { page }),

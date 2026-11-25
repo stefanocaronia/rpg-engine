@@ -857,7 +857,7 @@ describe("the table's own chat with the master", () => {
         const page = await openPage(next.url);
         await until(() => masters.length === 2, "the last chat taken up");
         const shown = JSON.parse((await get(next.url, "/api/master")).body) as { chat: object; messages: object[]; };
-        expect(shown.chat).toEqual({ host: "claudeCode", model: "sonnet", state: "idle" });
+        expect(shown.chat).toEqual({ host: "claudeCode", model: "sonnet", takenUp: true, state: "idle" });
         expect(shown.messages).toEqual([{ id: 1, from: "player", text: "Hello" }, { id: 2, from: "master", text: "Welcome." }]);
         const other = await openPage(next.url);
         await ticks(10);

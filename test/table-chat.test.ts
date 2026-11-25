@@ -545,6 +545,12 @@ describe("the campaign's last chat", () => {
         expect(chat.open(choice)).toBeUndefined();
         expect(masters[1].options.session).toBe("session-1");
         expect(chat.shown().messages).toHaveLength(1);
+        // Taken up, with nothing said in it yet: the page offers to ask where the story stands, until the player says something.
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", takenUp: true, state: "idle" });
+        chat.say("Where were we?");
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", state: "turn" });
+        masters[1].emit({ type: "turnEnd", reason: "done" });
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", state: "idle" });
         chat.close();
 
         expect(chat.open({ ...choice, fresh: true })).toBeUndefined();
@@ -858,7 +864,7 @@ describe("the last chat taken up by itself", () => {
         expect(masters).toHaveLength(1);
         expect(masters[0].options).toMatchObject({ model: "sonnet", effort: "low", session: "session-1" });
         expect(masters[0].sent).toEqual([]);
-        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", effort: "low", state: "idle" });
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", effort: "low", takenUp: true, state: "idle" });
         chat.release();
         chat.listened();
         expect(masters).toHaveLength(1);

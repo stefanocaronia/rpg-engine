@@ -46,7 +46,7 @@ export interface ChatShown extends PageChat
 {
     hosts: HostOffered[];
     last?: { host: HostId; model: string; effort?: string; resumable: boolean; };
-    chat?: { host: HostId; model: string; effort?: string; runs?: string; cutShort?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
+    chat?: { host: HostId; model: string; effort?: string; runs?: string; cutShort?: true; takenUp?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
     messages: ChatMessage[];
     /** A chat opened by hand sits at the table: the table's own cannot open. */
     elsewhere: boolean;
@@ -105,6 +105,8 @@ interface OpenChat
     /** Whether it takes up a chat of the host's, and whether the host said its session yet. */
     resumed: boolean;
     sessionTold: boolean;
+    /** Whether the player said anything in it yet, since it was opened. */
+    said: boolean;
 }
 
 /** A host's program on this computer. */
@@ -386,6 +388,7 @@ export function tableChat(options: TableChatOptions): TableChat
             state: "idle",
             resumed: session !== undefined,
             sessionTold: false,
+            said: false,
         };
         chat = opened;
         master.onEvent((event) => heard(opened, event));
@@ -486,8 +489,9 @@ export function tableChat(options: TableChatOptions): TableChat
                 return "busy";
             }
 
-            // A new turn: the chat is no longer one cut short.
+            // A new turn: the chat is no longer one cut short, nor one just taken up.
             cutShort = false;
+            current.said = true;
             write(sent.ended ? [said, turnEnded] : [said]);
             options.changed();
             return "sent";
@@ -556,6 +560,8 @@ function chatShown(chat: OpenChat, cutShort: boolean): NonNullable<ChatShown["ch
         ...(chat.effort === undefined ? {} : { effort: chat.effort }),
         ...(chat.runs === undefined ? {} : { runs: chat.runs }),
         ...(cutShort ? { cutShort: true as const } : {}),
+        // Taken up from the host's own chat, with nothing said in it yet: the page offers to ask the master where the story stands.
+        ...(!cutShort && chat.resumed && !chat.said ? { takenUp: true as const } : {}),
         state: chat.state,
         ...(chat.why === undefined ? {} : { why: chat.why }),
         ...(chat.tool === undefined ? {} : { tool: chat.tool }),

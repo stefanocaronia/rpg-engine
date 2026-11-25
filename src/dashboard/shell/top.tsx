@@ -5,7 +5,7 @@
 // while the chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
 import { type ComponentChildren, Fragment, type RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { chatPage, menuPages, packagePages, type Section, sectionAddress, sectionLabel, sections } from "../address.ts";
+import { chatPage, menuPages, packagePages, type Section, sectionAddress, sectionLabel, type sections, sectionTabs } from "../address.ts";
 import type { CalendarDay, Moment, Mood } from "../data.ts";
 import { type NavPage, ownKey } from "../packages/page-code.tsx";
 import { Drawn, WidgetChips } from "../packages/widgets.tsx";
@@ -44,7 +44,7 @@ interface TopOf
     ownShown?: string | undefined;
     /** Choices wait for the player (D-556): a dot on the Party's tab. */
     choices?: boolean;
-    /** The campaign's table keeps the chat with the master (D-582): its section after the others, with a dot while the master said something the player has not seen. */
+    /** The campaign's table keeps the chat with the master (D-582): its section after the party's, with a dot while the master said something the player has not seen. */
     chat?: "there" | "new" | undefined;
     /** At a campaign's table: the way back to the campaigns of this computer, the launcher's page, and whether it is being reached. */
     home?: HomeWay | undefined;
@@ -137,7 +137,7 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
     // While the scene goes by turns the Scene's name is in gold; on the player's turn, from another section, it pulses (D-315, D-349, D-351, D-444).
     const turns = fight === true && current !== "scene";
     const turn = yourTurn === true && current !== "scene";
-    const tabs = [...sections.map((section) => sectionTab(section, current)), ...(chat === undefined ? [] : [sectionTab(chatPage, current)]), ...ownPages.filter((page) => page.nav === "tab").map((page) => ownTab(page, ownShown))];
+    const tabs = [...sectionTabs(chat !== undefined).map((section) => sectionTab(section, current)), ...ownPages.filter((page) => page.nav === "tab").map((page) => ownTab(page, ownShown))];
     const inMenu = ownPages.filter((page) => page.nav === "menu");
     const row = useRef<HTMLDivElement>(null);
     const fitting = useFitting(row, tabs.length, `${tabs.map((tab) => tab.key).join()} ${turn} ${inMenu.length} ${home !== undefined}`);

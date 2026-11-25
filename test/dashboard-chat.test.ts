@@ -3,12 +3,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { readAddress, sectionAddress, sectionLabel } from "../src/dashboard/address.ts";
+import { readAddress, sectionAddress, sectionLabel, sectionTabs } from "../src/dashboard/address.ts";
 import { changeMaster, readMaster } from "../src/dashboard/api.ts";
 import {
     answerShown,
     atEnd,
     chatNews,
+    chatOffer,
     chatRoom,
     chatView,
     choiceLine,
@@ -258,9 +259,30 @@ describe("the chat with the master on the page (D-582)", () => {
         expect([answerShown([asked("waiting")], 0), answerShown([asked("left")], 0), answerShown([player("Hm.")], 0), answerShown([], 3)]).toEqual([undefined, undefined, undefined, undefined]);
     });
 
-    it("has its own address, #/chat, as a section", () => {
+    it("has its own address, #/chat, as a section, whose tab stands right after the party's", () => {
         expect(readAddress("#/chat")).toEqual({ section: "chat" });
         expect(sectionAddress("chat")).toBe("#/chat");
+        expect(sectionTabs(true)).toEqual(["party", "chat", "scene", "journal", "world"]);
+        expect(sectionTabs(false)).toEqual(["party", "scene", "journal", "world"]);
+    });
+
+    it("offers to begin in a new chat with nothing said, and nothing once there are words, in a turn or when it ended", () => {
+        const chat = { host: "claudeCode", model: "sonnet", state: "idle" as const };
+        const said: ChatMessage[] = [{ id: 1, from: "player", text: "I open the door." }, { id: 2, from: "master", text: "It creaks." }];
+        expect(chatOffer({ chat, messages: [] })).toBe("begin");
+        expect(chatOffer({ chat, messages: said })).toBeUndefined();
+        expect([chatOffer({ chat: { ...chat, state: "turn" }, messages: [] }), chatOffer({ chat: { ...chat, state: "ended" }, messages: [] }), chatOffer({ messages: [] })]).toEqual([undefined, undefined, undefined]);
+    });
+
+    it("offers to take up the story the master remembers, with the flow the campaign kept or with none, and to pick up one cut as the game was closed", () => {
+        const chat = { host: "claudeCode", model: "sonnet", state: "idle" as const };
+        const kept: ChatMessage[] = [{ id: 1, from: "player", text: "I open the door." }, { id: 2, from: "master", text: "It creaks." }];
+        expect(chatOffer({ chat: { ...chat, takenUp: true }, messages: kept })).toBe("take-up");
+        // An old chat, with no flow kept: taken up all the same, never begun anew.
+        expect(chatOffer({ chat: { ...chat, takenUp: true }, messages: [] })).toBe("take-up");
+        expect(chatOffer({ chat: { ...chat, cutShort: true }, messages: kept })).toBe("pick-up");
+        // Gone as a turn begins.
+        expect([chatOffer({ chat: { ...chat, takenUp: true, state: "turn" }, messages: kept }), chatOffer({ chat: { ...chat, cutShort: true, state: "turn" }, messages: kept })]).toEqual([undefined, undefined]);
     });
 
     it("is as tall as the window leaves it from where it starts; under the setup's questions, as the window less its title and what the page keeps clear at its foot", () => {

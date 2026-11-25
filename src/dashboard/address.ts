@@ -18,6 +18,12 @@ export const choicesPage = "choices" as const;
 /** The chat with the master, as #/chat: a section after the others, there only where the campaign's table keeps the chat (D-582). */
 export const chatPage = "chat" as const;
 
+/** The sections' tabs in their order: the chat's, where the page has it as a section, right after the party's, never last. */
+export function sectionTabs(chat: boolean): ((typeof sections)[number] | typeof chatPage)[]
+{
+    return chat ? [sections[0], chatPage, ...sections.slice(1)] : [...sections];
+}
+
 export type Section = (typeof sections)[number] | (typeof menuPages)[number] | typeof packagePages | typeof choicesPage | typeof chatPage;
 
 /** A place in the page: its section, for the sheet whom it shows, a page's tab, as #/packages/add, and what is open in the tab, as #/world/lore/Bertoldo. */

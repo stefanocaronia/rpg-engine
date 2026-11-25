@@ -52,12 +52,36 @@
         max-height: min(30vh, 320px);
     }
 
-    /* The open chat before its first words: what will fill it, at its foot. */
+    /* The open chat before its first words: what it offers, in the room of the messages. To begin is an invitation in its middle, the master's readiness
+       in the story's voice over the gold button of what the player does next; to take up a story, the table's word at its foot. */
     .chat-empty {
-        align-self: end;
-        margin: 0;
+        display: grid;
+        align-content: end;
+        min-height: 0;
         padding: 16px;
-        color: var(--muted);
+    }
+
+    .chat-empty:has(.chat-begin) {
+        align-content: center;
+    }
+
+    .chat-begin {
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+        text-align: center;
+    }
+
+    .chat-begin p {
+        margin: 0;
+        color: color-mix(in srgb, var(--ink) 88%, transparent);
+        font-family: var(--serif);
+        font-size: 1.25rem;
+    }
+
+    .chat-begin .button {
+        min-width: 8rem;
+        min-height: 44px;
     }
 
     /* Few messages stand at the list's foot, by the player's words. */
@@ -169,25 +193,26 @@
         color: var(--low);
     }
 
-    /* The game was closed in the middle of the story: a word of the table's that is no trouble, on a quiet ground, with what asks the master to go on. */
-    .chat-message.from-table.cut-short {
+    /* What the chat offers in place of writing, to take up a story or to pick up one cut as the game was closed: a word of the table's that is no trouble,
+       on a quiet ground, with the button that asks the master. With no message over it, it stands alone at the chat's foot. */
+    .chat-message.from-table.offering {
         border-color: var(--rule);
         background: color-mix(in srgb, var(--ink) 4%, var(--panel));
         font-weight: 400;
     }
 
-    .chat-message.from-table.cut-short svg.icon {
+    .chat-message.from-table.offering svg.icon {
         color: var(--accent);
     }
 
-    .chat-cut-short {
+    .chat-offering {
         display: grid;
         justify-items: start;
         gap: 8px;
         min-width: 0;
     }
 
-    .chat-cut-short p {
+    .chat-offering p {
         margin: 0;
     }
 

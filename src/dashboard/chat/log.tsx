@@ -1,8 +1,9 @@
 // The messages of the chat with the master, in order: the player's words at the end side, the master's as the text they write, a word of the table's as a
 // notice, a question of the master's where it was asked, with its buttons while it waits, and the rolls the player may see as the Rolls card draws them.
 // Words out of the game, the master's and the player's, stand apart from the story's, in a quieter look, without their brackets. The list follows what
-// comes while its end is in sight; farther up the player is reading, and it stays, with a button that leads back to the end. A chat taken up after the
-// game was closed in the middle of the story ends with a notice that says so, and asks the master to go on.
+// comes while its end is in sight; farther up the player is reading, and it stays, with a button that leads back to the end. What the chat offers the
+// player, as to take up the story, stands at the list's end.
+import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { ChatMessage, ChatSaid, Member } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
@@ -21,13 +22,13 @@ export interface ChatGame
     campaign?: string | undefined;
 }
 
-export function ChatLog({ messages, asking, game, cutShort }: {
+export function ChatLog({ messages, asking, game, foot }: {
     messages: ChatMessage[];
     /** The question that waits, as the page is asked it now. */
     asking?: ChatAsking | undefined;
     game: ChatGame;
-    /** The chat taken up was cut as the game was closed: what asks the master to go on, and whether something is on its way. */
-    cutShort?: { busy: boolean; onResume(): void; } | undefined;
+    /** What stands at the list's end, an item of it: what the chat offers the player. */
+    foot?: ComponentChildren;
 })
 {
     const list = useRef<HTMLDivElement>(null);
@@ -65,7 +66,7 @@ export function ChatLog({ messages, asking, game, cutShort }: {
         } else {
             setBelow(true);
         }
-    }, [messages.length, last?.id, last?.text.length, questions, asking?.asked.id, asking?.here, cutShort !== undefined]);
+    }, [messages.length, last?.id, last?.text.length, questions, asking?.asked.id, asking?.here, foot !== undefined && foot !== null && foot !== false]);
 
     // The list's own room changes, as the window does or the player's words grow under it: its end stays in sight for who was there.
     useEffect(() => {
@@ -112,17 +113,7 @@ export function ChatLog({ messages, asking, game, cutShort }: {
                             ? <RollLine key={message.id} roll={message.roll} party={game.party} several={game.several} campaign={game.campaign} className="chat-message from-roll" />
                             : <Said key={message.id} message={message} />
                     )}
-                    {/* The game was closed in the middle of the story: a word of the table's at the list's end, with what asks the master to go on. */}
-                    {cutShort !== undefined && (
-                        <li class="chat-message from-table cut-short">
-                            <span class="visually-hidden">{speaker("table")}</span>
-                            <Icon name="info" />
-                            <div class="chat-cut-short">
-                                <p>{t("The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.")}</p>
-                                <button type="button" class="button" aria-disabled={cutShort.busy} onClick={() => !cutShort.busy && cutShort.onResume()}>{t("Pick up from here")}</button>
-                            </div>
-                        </li>
-                    )}
+                    {foot}
                 </ol>
             </div>
             {below && (

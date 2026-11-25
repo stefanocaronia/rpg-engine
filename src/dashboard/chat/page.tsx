@@ -8,8 +8,9 @@ import type { MasterShown } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { t } from "../text.ts";
-import { chatNews, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, turnWords, waitingQuestion } from "./chat.ts";
+import { chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, turnWords, waitingQuestion } from "./chat.ts";
 import { type ChatGame, ChatLog } from "./log.tsx";
+import { ChatOffering } from "./offer.tsx";
 import type { ChatAsking } from "./question.tsx";
 import type { MasterChat } from "./sending.ts";
 import { ChatStart } from "./start.tsx";
@@ -92,6 +93,10 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
     }
 
     const turn = turnWords(shown.chat, waitingQuestion(shown.messages) !== undefined);
+    // What the open chat offers in place of writing; with messages it stands at their end, with none in their place.
+    const offer = view === "open" ? chatOffer(shown) : undefined;
+    const some = shown.messages.length > 0;
+    const offering = offer === undefined ? undefined : <ChatOffering offer={offer} busy={chat.sending} alone={!some} onSend={(words) => void chat.say(words)} />;
     return (
         <section
             ref={root}
@@ -113,18 +118,8 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
             </div>
             <p class="visually-hidden" role="status">{told}</p>
             <div class="card chat-box">
-                {shown.messages.length > 0 && (
-                    <ChatLog
-                        messages={shown.messages}
-                        asking={asking}
-                        game={game}
-                        cutShort={view === "open" && shown.chat?.cutShort === true
-                            // Asked as the player's own words, out of the game, in the page's language.
-                            ? { busy: chat.sending || shown.chat.state !== "idle", onResume: () => void chat.say(t("[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]")) }
-                            : undefined}
-                    />
-                )}
-                {shown.messages.length === 0 && view === "open" && <p class="chat-empty">{t("Write to the master to begin: their answer comes here.")}</p>}
+                {some && <ChatLog messages={shown.messages} asking={asking} game={game} foot={offering} />}
+                {!some && view === "open" && <div class="chat-empty">{offering}</div>}
                 {turn !== undefined && (
                     <p class="chat-turn">
                         <Icon name="hourglass" />

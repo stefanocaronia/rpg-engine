@@ -9,8 +9,9 @@
 //   codex      a second app to choose, or none again
 //   ask        the master asks the player the demo's first question, as with the ask command, and waits for the answer; then goes on. With a number,
 //              as ask 3, that question of the demo's. Stop leaves it without an answer
-//   (with `resumed`, the campaign has a chat to take up, cut as the game was closed: its flow as it was written, a question left without an answer at
-//   its end; the demo takes it up by itself as the first page listens, as the table does, and it is cut short until the next turn begins)
+//   (with `takes`, the campaign has a chat to take up, which the demo takes up by itself as the first page listens, as the table does: "cut", cut as
+//   the game was closed, its flow as it was written with a question left without an answer at its end, cut short until the next turn begins; "whole",
+//   its flow ending with the master's words, taken up until the player says something; "empty", taken up with no flow kept, as an old chat)
 //   ooc        an answer with words out of the game, a paragraph of them and some among the story's, and brackets that are the story's
 // A question the demo asks, by the chat or by its own means (look.ts --ask), and the rolls the player may see stand among its messages, as the table's
 // chat keeps them: a question waits, then is answered or left; the player's words in the chat answer the one that takes them. In the middle of an answer
@@ -103,8 +104,8 @@ const flowBefore: (Omit<Words, "id"> | Omit<AskedMessage, "id"> | Omit<Extract<M
     { from: "asked", text: "L'oste aspetta una risposta: che cosa gli dici?", title: "Scelta", options: ["La verità", "Una mezza verità", "Niente"], state: "left" },
 ];
 
-/** The demo's master: a chat kept in this process's memory alone; with `resumed`, one to take up, cut as the game was closed. */
-export function demoMaster({ resumed = false }: { resumed?: boolean; } = {}): DemoMaster
+/** The demo's master: a chat kept in this process's memory alone; with `takes`, one to take up: cut as the game was closed, whole, or with no flow kept. */
+export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | undefined; } = {}): DemoMaster
 {
     const messages: Message[] = [];
     const timers = new Set<NodeJS.Timeout>();
@@ -120,6 +121,7 @@ export function demoMaster({ resumed = false }: { resumed?: boolean; } = {}): De
     // Whether a page listened yet, and whether the chat taken up is still as the closing cut it.
     let pageCame = false;
     let cutShort = false;
+    let takenUp = false;
     let elsewhere = false;
     let missing = false;
     let second = false;
@@ -132,9 +134,10 @@ export function demoMaster({ resumed = false }: { resumed?: boolean; } = {}): De
 
     const isOpen = (): boolean => chat !== undefined && chat.state !== "ended";
 
-    if (resumed) {
+    if (takes !== undefined) {
         last = { host: "claudeCode", model: "sonnet", effort: "medium" };
-        flowBefore.forEach((message) => messages.push({ ...message, id: ++lastId } as Message));
+        // Whole, the flow ends with the master's words: the question that was waiting is the cut one's.
+        (takes === "empty" ? [] : takes === "whole" ? flowBefore.slice(0, -1) : flowBefore).forEach((message) => messages.push({ ...message, id: ++lastId } as Message));
     }
 
     const later = (delay: number, does: () => void): void => {
@@ -244,7 +247,9 @@ export function demoMaster({ resumed = false }: { resumed?: boolean; } = {}): De
                 ...hostsNotReady,
             ],
             ...(last === undefined ? {} : { last: { ...last, resumable: true } }),
-            ...(chat === undefined ? {} : { chat: { ...chat, ...(cutShort ? { cutShort: true as const } : {}), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
+            ...(chat === undefined
+                ? {}
+                : { chat: { ...chat, ...(cutShort ? { cutShort: true as const } : {}), ...(takenUp ? { takenUp: true as const } : {}), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
             messages: messages.map((message) => ({ ...message })),
             elsewhere,
         }),
@@ -268,6 +273,7 @@ export function demoMaster({ resumed = false }: { resumed?: boolean; } = {}): De
 
             halt();
             cutShort = false;
+            takenUp = false;
             last = { host: choice.host, model: choice.model, ...(choice.effort === undefined ? {} : { effort: choice.effort }) };
             chat = { ...last, state: "idle" };
             changed();
@@ -296,6 +302,7 @@ export function demoMaster({ resumed = false }: { resumed?: boolean; } = {}): De
 
             add("player", shown ?? text);
             cutShort = false;
+            takenUp = false;
             open.state = "turn";
             heard(open, text);
             changed();
@@ -318,9 +325,10 @@ export function demoMaster({ resumed = false }: { resumed?: boolean; } = {}): De
         active: isOpen,
         // The campaign's last chat is taken up by itself as the first page listens, once.
         listened: () => {
-            if (!pageCame && resumed && chat === undefined && last !== undefined) {
+            if (!pageCame && takes !== undefined && chat === undefined && last !== undefined) {
                 chat = { ...last, runs: "claude-sonnet-5-5", state: "idle" };
-                cutShort = true;
+                cutShort = takes === "cut";
+                takenUp = takes !== "cut";
                 changed();
             }
 

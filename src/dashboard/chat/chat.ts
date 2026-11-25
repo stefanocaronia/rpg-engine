@@ -161,6 +161,32 @@ export function unseenWords(seen: number | undefined, heard: number, inChat: boo
     return seen === undefined || inChat || heard < seen ? { seen: heard, unseen: false } : { seen, unseen: heard > seen };
 }
 
+/**
+ * What the open chat offers the player in place of writing: to pick up a story cut as the game was closed, to take up one the master remembers, or to
+ * begin a new one.
+ */
+export type ChatOffer = "pick-up" | "take-up" | "begin";
+
+/**
+ * What the chat offers now: only while it is open and still, never in a turn nor once it ended. To pick up, where the chat taken up was cut short; to
+ * take up, where the master remembers a story and the player has said nothing yet, whatever of it the campaign kept; to begin, where nothing was said
+ * at all. With words there and nothing to take up, nothing.
+ */
+export function chatOffer(shown: Pick<MasterShown, "chat" | "messages">): ChatOffer | undefined
+{
+    const chat = shown.chat;
+
+    if (chat?.state !== "idle") {
+        return undefined;
+    }
+
+    if (chat.cutShort === true) {
+        return "pick-up";
+    }
+
+    return chat.takenUp === true ? "take-up" : shown.messages.length === 0 ? "begin" : undefined;
+}
+
 /** The master's question that waits in the chat: one at a time, the last asked. */
 export function waitingQuestion(messages: ChatMessage[]): ChatAsked | undefined
 {
