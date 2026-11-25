@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { HostId } from "../src/core/hosts.ts";
-import type { MasterChat, MasterDriver, MasterEvent, MasterOptions } from "../src/master/index.ts";
+import type { MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions } from "../src/master/index.ts";
 import { type ChatShown, type TableChat, tableChat, type TableChatOptions } from "../src/server/table/chat.ts";
 import { readLastChat, writeLastChat } from "../src/server/table/last-chat.ts";
 import { tableFile } from "../src/server/table/place.ts";
@@ -54,6 +54,10 @@ const driver: MasterDriver = {
     missing: () => missing,
     program: () => ({ command: "claude-program", args: [] }),
     environment: (environment) => ({ ...environment, DRIVER: "yes" }),
+    models: (options) => {
+        asked.push(options);
+        return Promise.resolve(listed);
+    },
     model: "sonnet",
     efforts: ["low", "high"],
 };
@@ -69,6 +73,9 @@ let logged: string[];
 let tokens: number;
 let missing: string | undefined;
 let left: string[];
+// The models the host lists, and every ask of them.
+let listed: MasterModel[];
+let asked: ModelsOptions[];
 
 beforeEach(() => {
     root = makeTempFolder();
@@ -82,6 +89,8 @@ beforeEach(() => {
     tokens = 0;
     missing = undefined;
     left = [];
+    listed = [];
+    asked = [];
 });
 
 function chatWith(overrides: Partial<TableChatOptions> = {}): TableChat
@@ -128,7 +137,17 @@ function shownWithout(chat: TableChat, ...left: (keyof ChatShown)[]): Partial<Ch
 
 describe("the table's chat with the master", () => {
     it("shows the hosts with a driver, whether each is on this computer, its model and efforts, and no chat before one opens", () => {
-        expect(chatWith().shown()).toEqual({ hosts: [{ id: "claudeCode", name: "Claude Code", found: true, model: "sonnet", efforts: ["low", "high"] }], messages: [], elsewhere: false });
+        const notReady = (id: string, name: string): object => ({ id, name, ready: false, found: false, model: "", efforts: [], models: [] });
+        expect(chatWith().shown()).toEqual({
+            hosts: [
+                { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: ["low", "high"], models: [] },
+                notReady("codex", "Codex"),
+                notReady("antigravity", "Antigravity"),
+                notReady("openCode", "OpenCode"),
+            ],
+            messages: [],
+            elsewhere: false,
+        });
         found = false;
         expect(chatWith().shown().hosts[0].found).toBe(false);
         expect(chatWith({ npmProgram: (host) => (host === "claudeCode" ? { command: "node", args: ["cli.js"] } : undefined) }).shown().hosts[0].found).toBe(true);
@@ -466,5 +485,42 @@ describe("the campaign's last chat", () => {
         writeFileSync(file, "");
         expect(() => writeLastChat(file, root, { root, host: "claudeCode", model: "sonnet" })).not.toThrow();
         expect(readLastChat(file, root)).toBeUndefined();
+    });
+});
+
+describe("the models a host offers at the table", () => {
+    const sonnet = { id: "sonnet", name: "Sonnet 5.5", about: "Most efficient for simpler tasks", efforts: ["low", "medium", "high"] };
+    const haiku = { id: "haiku", name: "Haiku 4.5", efforts: [] };
+
+    it("asks the host in the campaign's folder, with the driver's environment, and shows its models once they arrive", async () => {
+        listed = [sonnet, haiku];
+        const chat = chatWith();
+        expect(chat.shown().hosts[0].models).toEqual([]);
+        await new Promise((resolve) => setImmediate(resolve));
+        expect(asked).toEqual([{ folder: root, program: { command: "claude-program", args: [] }, environment: { PATH: "/bin", DRIVER: "yes" } }]);
+        expect(changes).toBe(1);
+        expect(chat.shown().hosts[0].models).toEqual([sonnet, haiku]);
+        expect(asked).toHaveLength(1);
+    });
+
+    it("asks no host that is not on this computer", async () => {
+        found = false;
+        expect(chatWith().shown().hosts[0].models).toEqual([]);
+        await new Promise((resolve) => setImmediate(resolve));
+        expect(asked).toEqual([]);
+    });
+
+    it("takes an effort of the model chosen, refuses one it does not take naming its own, and takes a model the host did not list", async () => {
+        listed = [sonnet, haiku];
+        const chat = chatWith();
+        chat.shown();
+        await new Promise((resolve) => setImmediate(resolve));
+        expect(chat.open({ ...choice, effort: "max" })).toBe("Sonnet 5.5 takes no effort max in Claude Code: choose one of low, medium, high.");
+        expect(chat.open({ ...choice, model: "haiku", effort: "low" })).toBe("Haiku 4.5 takes no effort in Claude Code: leave the effort to the host.");
+        expect(masters).toEqual([]);
+        expect(chat.open({ ...choice, effort: "medium" })).toBeUndefined();
+        chat.close();
+        expect(chat.open({ ...choice, model: "claude-sonnet-6", effort: "high" })).toBeUndefined();
+        expect(masters.map((master) => [master.options.model, master.options.effort])).toEqual([["sonnet", "medium"], ["claude-sonnet-6", "high"]]);
     });
 });

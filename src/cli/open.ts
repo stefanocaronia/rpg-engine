@@ -30,6 +30,13 @@ export interface Said
     exitCode: number;
 }
 
+/** Where a command line writes: its output and its errors. */
+export interface Streams
+{
+    out: NodeJS.WritableStream;
+    err: NodeJS.WritableStream;
+}
+
 /**
  * `rpg open`: the launcher reached, started apart where none of this engine answers, then its page opened in a window; what happened in one line, with the
  * link for a terminal where no browser started. In a terminal, it asks once a machine about the icon. A failure is also written to open.log in the data
@@ -71,6 +78,15 @@ export async function runIcon(args: string[], where: OpenWhere = thisComputer())
 
     const made = await iconsMade(where);
     return { output: made.said, exitCode: made.failed ? 1 : 0 };
+}
+
+/**
+ * Writes what `rpg open` or `rpg icon` said, to the output or, for a failure, the errors, then ends the process with its exit code once it is out: the icon
+ * runs it in a console nobody reads or closes, where anything left open would keep it alive.
+ */
+export function sayAndEnd(said: Said, streams: Streams = { out: process.stdout, err: process.stderr }, exit: (code: number) => void = process.exit): void
+{
+    (said.exitCode === 0 ? streams.out : streams.err).write(`${said.output}\n`, () => exit(said.exitCode));
 }
 
 function thisComputer(): OpenWhere

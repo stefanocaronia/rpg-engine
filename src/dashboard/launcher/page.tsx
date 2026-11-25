@@ -142,9 +142,9 @@ export function Launcher({ asked }: { asked?: string | undefined; })
         }
     }, [launcher !== undefined]);
 
-    /** A folder the player chooses in the system's window; none when they chose none, or it could not be asked, which is said. */
-    const pick = async (): Promise<string | undefined> => {
-        const picked = await pickFolder();
+    /** A folder the player chooses in the system's window, titled with `words`; none when they chose none, or it could not be asked, which is said. */
+    const pick = async (words: string): Promise<string | undefined> => {
+        const picked = await pickFolder(words, launcher?.folder);
 
         if ("error" in picked) {
             setProblem({ text: picked.error });
@@ -156,7 +156,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
     /** A folder that holds a campaign: chosen, listed, then opened. */
     const openFolder = async (): Promise<void> => {
         start({ what: "adding", words: "" });
-        const folder = await pick();
+        const folder = await pick(t("Open a folder…"));
         const added = folder === undefined ? undefined : await addCampaign(folder);
 
         if (folder === undefined || added === undefined) {

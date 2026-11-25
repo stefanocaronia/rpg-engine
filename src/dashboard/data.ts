@@ -100,14 +100,28 @@ export interface ActsShown
     bell: boolean;
 }
 
-/** An AI app the table's chat with the master may open in: whether it is on this computer, the model it proposes and the efforts it knows. */
+/** A model an AI app offers the master: its name in the app's own words, what the app says of it, and the efforts it takes, none for one that takes none. */
+export interface ChatModel
+{
+    id: string;
+    name: string;
+    about?: string;
+    efforts: string[];
+}
+
+/**
+ * An AI app the table's chat with the master may open in: whether the page can drive it yet, whether it is on this computer, the model it proposes, the
+ * efforts it knows, and the models it offers, none until it has answered.
+ */
 export interface ChatHost
 {
     id: string;
     name: string;
+    ready: boolean;
     found: boolean;
     model: string;
     efforts: string[];
+    models: ChatModel[];
 }
 
 /** A message of the table's chat with the master: the player's words, the master's, as markdown, growing while they answer, or a word of the table itself. */

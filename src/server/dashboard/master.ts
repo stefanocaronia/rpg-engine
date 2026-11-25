@@ -24,7 +24,7 @@ export interface PageMaster
  */
 export interface PageChat
 {
-    hosts: { id: string; name: string; found: boolean; model: string; efforts: string[]; }[];
+    hosts: { id: string; name: string; ready: boolean; found: boolean; model: string; efforts: string[]; models: { id: string; name: string; about?: string; efforts: string[]; }[]; }[];
     last?: { host: string; model: string; effort?: string; resumable: boolean; };
     chat?: { host: string; model: string; effort?: string; state: "idle" | "turn" | "ended"; why?: string; tool?: string; };
     messages: { id: number; from: "player" | "master" | "table"; text: string; }[];

@@ -744,6 +744,7 @@ describe("the table's own chat with the master", () => {
             missing: () => undefined,
             program: () => ({ command: "claude-program", args: [] }),
             environment: (given) => given,
+            models: () => Promise.resolve([]),
             model: "sonnet",
             efforts: ["low"],
         };

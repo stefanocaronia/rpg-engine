@@ -2,6 +2,12 @@
 import { statSync } from "node:fs";
 import { join } from "node:path";
 
+/** The arguments that make the program speak stream-json by lines, without a terminal. */
+export const streamArguments = ["-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose"];
+
+/** The arguments that keep the program to the campaign's own settings, with no MCP server but those given. */
+export const settingArguments = ["--setting-sources", "project,local", "--strict-mcp-config"];
+
 /** Claude Code's own program: the first found in a folder of the PATH, then in its own folder of the player's home; never a shim that needs a shell. */
 export function claudeProgram(environment: NodeJS.ProcessEnv, platform: string, home: string): { command: string; args: string[]; } | undefined
 {

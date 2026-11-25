@@ -5,7 +5,7 @@ import { join, win32 } from "node:path";
 import type { Context } from "../../core/context.ts";
 import { type HostId, hostIds, hosts } from "../../core/hosts.ts";
 import { files, FileStore, withFiles } from "../../core/store.ts";
-import { isHostName, type MasterDriver, masterDriver } from "../../master/index.ts";
+import { effortRefused, isHostName, type MasterDriver, masterDriver, type MasterModel } from "../../master/index.ts";
 import { writeLastChat } from "../table/index.ts";
 import { campaignsFolder, rememberCampaign } from "./campaigns.ts";
 import { openCampaign, type TableStarter } from "./open.ts";
@@ -22,20 +22,21 @@ export interface CampaignWish
     effort?: string;
 }
 
-/** What making a campaign takes: where new ones go, the context `rpg init` runs with, the clock, the hosts' drivers, and how its table starts. */
+/** What making a campaign takes: where new ones go, the context `rpg init` runs with, the clock, the hosts' drivers and the models known of each, and how its table starts. */
 export interface MakeWhere
 {
     userHome: string;
     context: Context;
     now: () => Date;
     driver?: (host: HostId) => MasterDriver | undefined;
+    models?: (host: HostId) => MasterModel[];
     tables: TableStarter;
 }
 
 /** Makes the campaign, remembers it and opens it: its page's link and its folder; a refusal in words, with its folder once it was made. */
 export async function makeCampaign(wish: CampaignWish, where: MakeWhere): Promise<{ url: string; root: string; } | { error: string; root?: string; }>
 {
-    const chat = chatOf(wish, where.driver ?? masterDriver);
+    const chat = chatOf(wish, where.driver ?? masterDriver, where.models ?? (() => []));
 
     if (typeof chat === "string") {
         return { error: chat };
@@ -72,7 +73,11 @@ export async function makeCampaign(wish: CampaignWish, where: MakeWhere): Promis
 }
 
 /** The first chat's host, model and effort, after the checks its table makes as it opens one; none where no host is asked; a refusal in words. */
-function chatOf(wish: CampaignWish, driverOf: (host: HostId) => MasterDriver | undefined): { host: HostId; model: string; effort?: string; } | string | undefined
+function chatOf(
+    wish: CampaignWish,
+    driverOf: (host: HostId) => MasterDriver | undefined,
+    models: (host: HostId) => MasterModel[],
+): { host: HostId; model: string; effort?: string; } | string | undefined
 {
     if (wish.host === undefined) {
         return wish.model === undefined && wish.effort === undefined ? undefined : "Choose the host first, then its model and effort.";
@@ -91,8 +96,10 @@ function chatOf(wish: CampaignWish, driverOf: (host: HostId) => MasterDriver | u
         return `That is no name of a model: ${model}. Choose one of the models the page lists for ${hosts[host].name}, or leave it to the host.`;
     }
 
-    if (wish.effort !== undefined && !driver.efforts.includes(wish.effort)) {
-        return `${hosts[host].name} knows no effort ${wish.effort}: choose one of ${driver.efforts.join(", ")}.`;
+    const refused = effortRefused(host, driver, models(host), model, wish.effort);
+
+    if (refused !== undefined) {
+        return refused;
     }
 
     return { host, model, ...(wish.effort === undefined ? {} : { effort: wish.effort }) };

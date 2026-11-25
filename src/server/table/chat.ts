@@ -2,7 +2,7 @@
 // last choice in the player's data folder, so that the next chat takes it up.
 import { randomBytes } from "node:crypto";
 import { type HostId, hosts } from "../../core/hosts.ts";
-import { type HostOffered, hostProgram, hostsOffered, isHostName, type MasterChat, type MasterDriver, masterDriver, type MasterEvent, masterHosts, openMaster } from "../../master/index.ts";
+import { askModels, effortRefused, type HostOffered, hostProgram, hostsOffered, isHostName, type MasterChat, type MasterDriver, masterDriver, type MasterEvent, masterHosts, modelKeeper, openMaster } from "../../master/index.ts";
 import type { PageChat, PageMaster } from "../dashboard/index.ts";
 import { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
 
@@ -70,7 +70,7 @@ export interface TableChatOptions
     npmProgram?: (host: HostId) => { command: string; args: string[]; } | undefined;
     /** Whether a chat opened by hand sits at the table. */
     elsewhere: () => boolean;
-    /** Something the page shows of the chat changed; a turn ended. */
+    /** Something the page shows of the chat changed, as the models a host offers; a turn ended. */
     changed: () => void;
     idle: () => void;
     /** A chat closed or ended: its server, which says hello with this token, leaves the table. */
@@ -128,6 +128,8 @@ export function tableChat(options: TableChatOptions): TableChat
     const tokens = new Set<string>();
 
     const programOf = (host: HostId): Program | undefined => hostProgram(host, options, driverOf);
+    // The models each host offers, asked of it in the campaign's folder.
+    const models = modelKeeper({ ask: (host) => askModels(host, { ...options, folder: options.root }, driverOf), changed: () => options.changed(), now });
 
     const add = (from: ChatMessage["from"], text: string): ChatMessage => {
         const message = { id: ++lastId, from, text: text.slice(0, mostText) };
@@ -233,11 +235,7 @@ export function tableChat(options: TableChatOptions): TableChat
             return `That is no name of a model: ${choice.model}.`;
         }
 
-        if (choice.effort !== undefined && !driver.efforts.includes(choice.effort)) {
-            return `${name} knows no effort ${choice.effort}: choose one of ${driver.efforts.join(", ")}.`;
-        }
-
-        return driver.missing(options.root) ?? { driver, program };
+        return effortRefused(choice.host, driver, models.known(choice.host), choice.model, choice.effort) ?? driver.missing(options.root) ?? { driver, program };
     };
 
     // The host's chat opened, or why not in words, as where its program does not start.
@@ -269,7 +267,7 @@ export function tableChat(options: TableChatOptions): TableChat
 
             const known = found.hosts;
             return {
-                hosts: hostsOffered((id) => known.get(id) === true, driverOf),
+                hosts: hostsOffered((id) => known.get(id) === true, driverOf, (id) => models.models(id)),
                 ...(last === undefined ? {} : { last: { host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }), resumable: last.session !== undefined } }),
                 ...(chat === undefined ? {} : { chat: chatShown(chat) }),
                 messages: messages.map((message) => ({ ...message })),

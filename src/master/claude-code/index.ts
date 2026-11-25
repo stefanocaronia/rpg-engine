@@ -2,7 +2,8 @@
 import { join } from "node:path";
 import { startLineProcess } from "../../core/process.ts";
 import { EventQueue, isHostName, laterByTimer, type MasterChat, type MasterDriver, type MasterOptions, warnFailed } from "../chat.ts";
-import { claudeEnvironment, claudeProgram, isFile } from "./program.ts";
+import { claudeModels } from "./models.ts";
+import { claudeEnvironment, claudeProgram, isFile, settingArguments, streamArguments } from "./program.ts";
 import { builtInTools, userMessage } from "./protocol.ts";
 import { readLine } from "./read.ts";
 import { askModel, askToStop, cancelWaits, endTurn, keepError, newTurn, processEnded, type State, write } from "./state.ts";
@@ -16,6 +17,7 @@ export const claudeCode: MasterDriver = {
             : "This campaign has no .mcp.json, which tells Claude Code how to start the game's server: run rpg init in the campaign's folder, then try again.",
     program: claudeProgram,
     environment: claudeEnvironment,
+    models: claudeModels,
     model: "sonnet",
     efforts: ["low", "medium", "high", "xhigh", "max"],
 };
@@ -61,21 +63,14 @@ function programArguments(options: MasterOptions): string[]
 {
     const tools = builtInTools.filter((tool) => options.allowed.includes(tool.kind)).map((tool) => tool.name);
     return [
-        "-p",
-        "--input-format",
-        "stream-json",
-        "--output-format",
-        "stream-json",
-        "--verbose",
+        ...streamArguments,
         "--include-partial-messages",
         "--permission-prompt-tool",
         "stdio",
         "--model",
         options.model,
         ...(options.effort === undefined ? [] : ["--effort", options.effort]),
-        "--setting-sources",
-        "project,local",
-        "--strict-mcp-config",
+        ...settingArguments,
         "--mcp-config",
         join(options.folder, ".mcp.json"),
         "--disable-slash-commands",

@@ -33,6 +33,8 @@ export interface DemoOptions
     setup?: boolean;
     /** With the demo's own launcher beside it, listing some campaigns, or none ("empty"): the campaign's page has the chat too, as at a table. */
     launcher?: boolean | "empty";
+    /** The folder of a page built apart, served in place of the one `npm run build` makes: to look at a change without building over a page that is being played. */
+    page?: string;
 }
 
 /** The folder of each demo campaign; the one still in its setup has its own. */
@@ -149,7 +151,7 @@ export interface DemoDashboard extends Dashboard
  * anew each time it is served, as a campaign leaves its setup as its questions are answered. With `launcher`, a launcher of the demo's own is served too
  * (test/demo/launcher.ts), which opens this campaign's page, and the page finds it as a table's page finds the real one.
  */
-export async function serveDemo(ports?: number[], system: DemoSystem = "free", { chat = false, setup = false, launcher = false }: DemoOptions = {}): Promise<DemoDashboard>
+export async function serveDemo(ports?: number[], system: DemoSystem = "free", { chat = false, setup = false, launcher = false, page }: DemoOptions = {}): Promise<DemoDashboard>
 {
     const folder = demoFolderOf(system, setup);
     const missing = system === "5e" ? fifthEditionMissing() : undefined;
@@ -210,10 +212,11 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
     // The game systems, and what this computer translated of them, as the MCP server keeps them (D-539).
     const session = new SessionStore({ systemFolders: [...context.systemFolders, join(`${folder}-home`, "systems")] });
     const home = `${folder}-home`;
-    const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty");
+    const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty", page);
     const master = chat || fake !== undefined ? demoMaster() : undefined;
     const dashboard = await startDashboard({ ...context, files: session }, session, {
         ports,
+        ...(page === undefined ? {} : { page }),
         ...(master === undefined ? {} : { master }),
         ...(fake === undefined ? {} : { launcher: { find: () => Promise.resolve({ url: fake.url }), reach: () => Promise.resolve({ url: fake.url }), open: () => Promise.resolve(false) } }),
     });

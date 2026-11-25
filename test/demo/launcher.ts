@@ -9,6 +9,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { join } from "node:path";
 import { builtPage, fromOwnPage, launcherHtml, pageFile, pagePolicy, pageWrites, readBody, securityHeaders, send, sendFile, sendJson, vendorModule } from "../../src/server/page/index.ts";
+import { demoModels, hostsNotReady } from "./master.ts";
 
 /** The demo's launcher: its page's link, the campaign's page it opens once that is served, and its end. */
 export interface DemoLauncher
@@ -40,7 +41,7 @@ const version = "0.0.0-demo";
 const day = 86_400_000;
 
 /** Serves the demo's launcher on a free port: `campaign` is the folder of the demo's own campaign, the first of its list; `empty`, with no campaign at all. */
-export async function serveDemoLauncher(campaign: string, empty = false): Promise<DemoLauncher>
+export async function serveDemoLauncher(campaign: string, empty = false, page = builtPage): Promise<DemoLauncher>
 {
     const home = join(campaign, "..");
     const folder = join(home, "RPG Engine");
@@ -66,13 +67,11 @@ export async function serveDemoLauncher(campaign: string, empty = false): Promis
         version,
         folder,
         campaigns,
-        hosts: [{ id: "claudeCode", name: "Claude Code", found: true, model: "sonnet", efforts: ["low", "medium", "high", "xhigh", "max"] }, {
-            id: "codex",
-            name: "Codex",
-            found: false,
-            model: "gpt-codex",
-            efforts: ["low", "medium", "high"],
-        }],
+        hosts: [
+            { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: ["low", "medium", "high", "xhigh", "max"], models: demoModels },
+            { id: "codex", name: "Codex", ready: false, found: false, model: "", efforts: [], models: [] },
+            ...hostsNotReady,
+        ],
         systems: [{ name: "free", title: "Free play, without a game system" }, { name: "5e", title: "The fifth edition, from the SRD 5.1" }],
         languages: ["en", "ar", "de", "es", "fr", "he", "it", "ja", "pt", "zh"],
     });
@@ -151,7 +150,7 @@ export async function serveDemoLauncher(campaign: string, empty = false): Promis
         } else if (path.startsWith("/vendor/")) {
             sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response);
         } else {
-            sendFile(pageFile(builtPage, path), path, request, response);
+            sendFile(pageFile(page, path), path, request, response);
         }
     });
 

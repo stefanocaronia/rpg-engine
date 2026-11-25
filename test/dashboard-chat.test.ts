@@ -5,15 +5,46 @@ import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { readAddress, sectionAddress, sectionLabel } from "../src/dashboard/address.ts";
 import { changeMaster, readMaster } from "../src/dashboard/api.ts";
-import { atEnd, chatNews, chatRoom, chatView, choiceLine, choiceOf, endedWords, firstChoice, hostsFound, lastHeard, resumes, sendsWords, speaker, turnWords, unseenWords, wordsToSend } from "../src/dashboard/chat/chat.ts";
+import {
+    atEnd,
+    chatNews,
+    chatRoom,
+    chatView,
+    choiceLine,
+    choiceOf,
+    effortsOf,
+    endedWords,
+    firstChoice,
+    hostsFound,
+    lastHeard,
+    listedModel,
+    resumes,
+    sendsWords,
+    settledChoice,
+    speaker,
+    turnWords,
+    unseenWords,
+    withModel,
+    wordsToSend,
+} from "../src/dashboard/chat/chat.ts";
 import type { MasterShown } from "../src/dashboard/data.ts";
+import { nextOn } from "../src/dashboard/parts/choosing.ts";
 import { setLanguage } from "../src/dashboard/text.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 
 const italian = (): Promise<Record<string, string>> => Promise.resolve(JSON.parse(readFileSync(join(pageFolder, "i18n", "it.json"), "utf8")) as Record<string, string>);
 
-const claude = { id: "claudeCode", name: "Claude Code", found: true, model: "sonnet", efforts: ["low", "medium", "high", "xhigh", "max"] };
-const codex = { id: "codex", name: "Codex", found: true, model: "gpt", efforts: ["low", "high"] };
+const claude = { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: ["low", "medium", "high", "xhigh", "max"], models: [] };
+const codex = { id: "codex", name: "Codex", ready: true, found: true, model: "gpt", efforts: ["low", "high"], models: [] };
+// Claude Code once it has answered with its models: one of them takes no effort, and the one it proposes is among them.
+const listing = {
+    ...claude,
+    models: [
+        { id: "opus", name: "Opus 5.5", about: "For complex work", efforts: ["low", "high", "max"] },
+        { id: "sonnet", name: "Sonnet 5.5", efforts: ["low", "high"] },
+        { id: "haiku", name: "Haiku 4.5", about: "Fastest", efforts: [] },
+    ],
+};
 
 /** A chat as the table shows it, closed and empty unless told. */
 function shown(changes: Partial<MasterShown> = {}): MasterShown
@@ -44,7 +75,7 @@ describe("the chat with the master on the page (D-582)", () => {
         // The last app gone from this computer: the first one found, with its own model, never the other's.
         const gone = shown({ hosts: [{ ...claude, found: false }, codex], last: { host: "claudeCode", model: "claude-sonnet-5", effort: "max", resumable: true } });
         expect(firstChoice(gone)).toEqual({ host: "codex", model: "gpt" });
-        expect(hostsFound(gone)).toEqual({ found: [codex], missing: [{ ...claude, found: false }] });
+        expect(hostsFound(gone)).toEqual({ found: [codex], missing: [{ ...claude, found: false }], later: [] });
         expect(firstChoice(shown({ hosts: [{ ...claude, found: false }] }))).toBeUndefined();
         expect(firstChoice(shown({ hosts: [] }))).toBeUndefined();
     });
@@ -58,6 +89,55 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(resumes(shown({ last: { host: "claudeCode", model: "opus", resumable: false } }), "claudeCode")).toBe(false);
     });
 
+    it("opens only in an app the page can drive that is on this computer: one that is not there is missing, one the page cannot drive yet comes later, wherever it is", () => {
+        const later = { ...codex, ready: false };
+        const absent = { ...codex, id: "openCode", name: "OpenCode", ready: false, found: false };
+        const all = shown({ hosts: [claude, later, { ...listing, id: "other", found: false }, absent] });
+        expect(hostsFound(all)).toEqual({ found: [claude], missing: [{ ...listing, id: "other", found: false }], later: [later, absent] });
+        // The campaign's last app, which the page can no longer drive: the first it can.
+        expect(firstChoice({ hosts: [later, claude], last: { host: "codex", model: "gpt", resumable: true } })).toEqual({ host: "claudeCode", model: "sonnet" });
+        expect(firstChoice({ hosts: [later, absent] })).toBeUndefined();
+    });
+
+    it("chooses a model of the app's list: the last used when the list has it, else the one the app proposes, else its first; with no list yet, the last or the proposed", () => {
+        expect([listedModel(listing, "opus"), listedModel(listing, "claude-sonnet-5"), listedModel(listing, undefined)]).toEqual(["opus", "sonnet", "sonnet"]);
+        expect(listedModel({ ...listing, model: "gone" }, "claude-sonnet-5")).toBe("opus");
+        expect([listedModel(claude, "claude-sonnet-5"), listedModel(claude, undefined)]).toEqual(["claude-sonnet-5", "sonnet"]);
+        const last = shown({ hosts: [listing], last: { host: "claudeCode", model: "opus", effort: "max", resumable: true } });
+        expect(firstChoice(last)).toEqual({ host: "claudeCode", model: "opus", effort: "max" });
+        // The last model gone from the list: the proposed one, and the last effort only if that one takes it.
+        expect(choiceOf({ hosts: [listing], last: { host: "claudeCode", model: "claude-sonnet-5", effort: "max", resumable: true } }, "claudeCode")).toEqual({ host: "claudeCode", model: "sonnet" });
+        expect(choiceOf({ hosts: [listing], last: { host: "claudeCode", model: "claude-sonnet-5", effort: "high", resumable: true } }, "claudeCode")).toEqual({ host: "claudeCode", model: "sonnet", effort: "high" });
+    });
+
+    it("offers the efforts of the model chosen, none for one that takes none, the app's for a name written by hand; an effort goes when the model does not take it", () => {
+        expect([effortsOf(listing, "opus"), effortsOf(listing, "haiku"), effortsOf(listing, "my-model"), effortsOf(claude, "sonnet")]).toEqual([["low", "high", "max"], [], claude.efforts, claude.efforts]);
+        const chosen = { host: "claudeCode", model: "opus", effort: "max" };
+        expect(withModel(listing, chosen, "sonnet")).toEqual({ host: "claudeCode", model: "sonnet" });
+        expect(withModel(listing, { ...chosen, effort: "high" }, "sonnet")).toEqual({ host: "claudeCode", model: "sonnet", effort: "high" });
+        expect(withModel(listing, chosen, "haiku")).toEqual({ host: "claudeCode", model: "haiku" });
+        // Other: no name yet, the app's own efforts.
+        expect(withModel(listing, chosen, "")).toEqual({ host: "claudeCode", model: "", effort: "max" });
+    });
+
+    it("follows the app's list as it arrives after the form: a model it has stays, a name the player wrote stays, any other gives way to the list's choice", () => {
+        // Before the list, the form holds the last model, or the proposed one: neither written by the player.
+        expect(settledChoice(listing, { host: "claudeCode", model: "claude-sonnet-5", effort: "max" }, false)).toEqual({ host: "claudeCode", model: "sonnet" });
+        expect(settledChoice(listing, { host: "claudeCode", model: "sonnet", effort: "high" }, false)).toEqual({ host: "claudeCode", model: "sonnet", effort: "high" });
+        expect(settledChoice(listing, { host: "claudeCode", model: "opus" }, false)).toEqual({ host: "claudeCode", model: "opus" });
+        // A name written by hand, even an empty one being written, is the player's.
+        expect(settledChoice(listing, { host: "claudeCode", model: "my-model", effort: "xhigh" }, true)).toEqual({ host: "claudeCode", model: "my-model", effort: "xhigh" });
+        expect(settledChoice(listing, { host: "claudeCode", model: "" }, true)).toEqual({ host: "claudeCode", model: "" });
+        // No list yet: nothing to follow.
+        expect(settledChoice(claude, { host: "claudeCode", model: "claude-sonnet-5", effort: "max" }, false)).toEqual({ host: "claudeCode", model: "claude-sonnet-5", effort: "max" });
+    });
+
+    it("moves along a choice's values past those that cannot be chosen, round the ends, and stays where no other can", () => {
+        const apps = [{}, { off: true }, { off: true }, {}];
+        expect([nextOn(apps, 0, 1), nextOn(apps, 3, 1), nextOn(apps, 0, -1), nextOn(apps, 3, -1)]).toEqual([3, 0, 3, 0]);
+        expect([nextOn([{}, { off: true }], 0, 1), nextOn([{ off: true }, { off: true }], 0, 1), nextOn([{}, {}, {}], 2, 1)]).toEqual([undefined, undefined, 0]);
+    });
+
     it("says what the master does in their turn, the command they use when the table tells one, whose words a message is and what a chat plays with, in Italian too", async () => {
         await setLanguage("en");
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn" })).toBe("The master is answering…");
@@ -66,6 +146,8 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(turnWords(undefined)).toBeUndefined();
         expect(choiceLine(shown(), { host: "claudeCode", model: "sonnet", effort: "high" })).toBe("Claude Code · sonnet · high");
         expect(choiceLine(shown(), { host: "other", model: "m" })).toBe("other · m");
+        // A model the app lists, by the name it lists it with.
+        expect(choiceLine(shown({ hosts: [listing] }), { host: "claudeCode", model: "opus", effort: "max" })).toBe("Claude Code · Opus 5.5 · max");
         await setLanguage("it", italian);
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn" })).toBe("Il master sta rispondendo…");
         expect([speaker("player"), speaker("master"), speaker("table")]).toEqual(["Tu", "Il master", "Il tavolo"]);

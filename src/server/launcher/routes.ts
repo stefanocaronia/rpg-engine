@@ -3,7 +3,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
-import type { ChosenFolder } from "../../confirm/index.ts";
+import type { ChosenFolder, FolderAsked } from "../../confirm/index.ts";
 import { files, FileStore, withFiles } from "../../core/store.ts";
 import type { WindowOpener } from "../../desktop/index.ts";
 import type { HostOffered } from "../../master/index.ts";
@@ -29,7 +29,8 @@ export interface LauncherServed
     pages: Set<ServerResponse>;
     campaigns(): Promise<CampaignShown[]>;
     hosts(): HostOffered[];
-    pick(): Promise<ChosenFolder>;
+    /** The system's window that chooses a folder, with the page's title and the folder it opens in. */
+    pick(asked: FolderAsked): Promise<ChosenFolder>;
     /** Whether the window to choose a folder is open now: one at a time. */
     picking: boolean;
     /** Whether the launcher looked for one started beside it and kept its place: until then, who looks for the launcher reads that it is starting. */
@@ -129,20 +130,29 @@ const createAsked = z.object({
     effort: word("the effort").optional(),
 }).strict();
 const quitAsked = z.object({ token: z.string().max(200) }).strict();
+// The folder window: its title, in the page's words, and the folder it opens in; or true, the system's own of both.
+const windowAsked = z.object({
+    title: z.string()
+        .refine((title) => title.length >= 1 && title.length <= 120, "Give the window's title in 1 to 120 characters.")
+        .refine((title) => !/[\u0000-\u001f\u007f]/.test(title), "Give the window's title on one line, without tabs or other control characters.")
+        .optional(),
+    start: folderPath.optional(),
+}).strict();
+const pickAsked = z.union([z.literal(true), windowAsked]);
 
 const asked = z.union([
     z.object({ open: openAsked }).strict(),
     z.object({ create: createAsked }).strict(),
     z.object({ add: openAsked }).strict(),
-    z.object({ pick: z.literal(true) }).strict(),
+    z.object({ pick: pickAsked }).strict(),
     z.object({ forget: openAsked }).strict(),
     z.object({ quit: quitAsked }).strict(),
 ]);
 
 // Each part a body may have, to say what is wrong in one of the right shape.
-const parts: Record<string, z.ZodType> = { open: openAsked, create: createAsked, add: openAsked, pick: z.literal(true), forget: openAsked, quit: quitAsked };
+const parts: Record<string, z.ZodType> = { open: openAsked, create: createAsked, add: openAsked, pick: windowAsked, forget: openAsked, quit: quitAsked };
 
-const shapes = "Send one of { open: { root } }, { create: { name, folder?, language, system, host?, model?, effort? } }, { add: { root } }, { pick: true }, "
+const shapes = "Send one of { open: { root } }, { create: { name, folder?, language, system, host?, model?, effort? } }, { add: { root } }, { pick: true | { title?, start? } }, "
     + "{ forget: { root } } or { quit: { token } }.";
 
 /** What the page shows: the launcher's engine, the folder of new campaigns, the campaigns, and what a new one may be made with. */
@@ -194,7 +204,7 @@ async function changeLauncher(request: IncomingMessage, response: ServerResponse
     } else if ("add" in wish) {
         await addCampaign(wish.add.root, response, served);
     } else if ("pick" in wish) {
-        await pickFolder(response, served);
+        await pickFolder(wish.pick === true ? {} : wish.pick, response, served);
     } else if ("forget" in wish) {
         forgetCampaign(served.home, wish.forget.root);
         served.notify();
@@ -233,7 +243,7 @@ async function addCampaign(root: string, response: ServerResponse, served: Launc
 }
 
 /** The system's window to choose a folder, one at a time: the folder chosen, a cancel, or why there is no window. */
-async function pickFolder(response: ServerResponse, served: LauncherServed): Promise<void>
+async function pickFolder(asked: FolderAsked, response: ServerResponse, served: LauncherServed): Promise<void>
 {
     if (served.picking) {
         sendJson(response, 409, { error: "The window to choose a folder is open already: choose the folder there, or close it first." });
@@ -243,7 +253,7 @@ async function pickFolder(response: ServerResponse, served: LauncherServed): Pro
     served.picking = true;
 
     try {
-        const chosen = await served.pick();
+        const chosen = await served.pick(asked);
         sendJson(response, chosen !== undefined && typeof chosen === "object" ? 409 : 200, chosen === undefined ? { cancelled: true } : typeof chosen === "string" ? { folder: chosen } : { error: chosen.refused });
     } finally {
         served.picking = false;

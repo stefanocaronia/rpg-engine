@@ -7,8 +7,8 @@ import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { offerIcon, type Terminal } from "../src/cli/icon.ts";
-import { type OpenWhere, runIcon, runOpen } from "../src/cli/open.ts";
-import { chooseFolder, folderCommands } from "../src/confirm/index.ts";
+import { type OpenWhere, runIcon, runOpen, sayAndEnd } from "../src/cli/open.ts";
+import { chooseFolder, dialogCommands, folderCommands } from "../src/confirm/index.ts";
 import type { Context } from "../src/core/context.ts";
 import { readLog } from "../src/core/log.ts";
 import { isPageAddress } from "../src/core/page-address.ts";
@@ -35,7 +35,7 @@ import {
     windowPlace,
     windowTitles,
 } from "../src/desktop/index.ts";
-import type { HostOffered, MasterDriver } from "../src/master/index.ts";
+import type { HostOffered, MasterDriver, MasterModel } from "../src/master/index.ts";
 import { type Dashboard, type LauncherWay, startDashboard } from "../src/server/dashboard/index.ts";
 import {
     campaignsFolder,
@@ -217,6 +217,7 @@ describe("a campaign made from the launcher", () => {
                 missing: () => undefined,
                 program: () => undefined,
                 environment: (given) => given,
+                models: () => Promise.resolve([]),
                 model: "sonnet",
                 efforts: ["low", "high"],
             }
@@ -278,13 +279,30 @@ describe("a campaign made from the launcher", () => {
         expect(await makeCampaign({ name: "Altra", language: "it", system: "nowhere" }, where(opening()))).toEqual({ error: expect.stringContaining("is not an installed system") });
         expect(existsSync(join(campaignsFolder(userHome), "Altra", "campaign.yaml"))).toBe(false);
     });
+
+    it("takes an effort of the model chosen as its host listed it, refuses one it does not take naming its own, and takes a model the host did not list", async () => {
+        const models = (host: string): MasterModel[] => (host === "claudeCode" ? [{ id: "haiku", name: "Haiku 4.5", efforts: [] }, { id: "opus", name: "Opus 5.5", efforts: ["low", "max"] }] : []);
+        const listed = (tables: TableStarter): Parameters<typeof makeCampaign>[1] => ({ ...where(tables), models });
+        const wish = { name: "Rocca", language: "it", system: "fake", host: "claudeCode" };
+
+        expect(await makeCampaign({ ...wish, model: "opus", effort: "high" }, listed(opening()))).toEqual({ error: "Opus 5.5 takes no effort high in Claude Code: choose one of low, max." });
+        expect(await makeCampaign({ ...wish, model: "haiku", effort: "low" }, listed(opening()))).toEqual({ error: "Haiku 4.5 takes no effort in Claude Code: leave the effort to the host." });
+        const made = await makeCampaign({ ...wish, model: "opus", effort: "max" }, listed(opening()));
+        const root = "root" in made ? made.root ?? "" : "";
+        expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "opus", effort: "max" });
+        const typed = await makeCampaign({ ...wish, name: "Altra", model: "claude-opus-6", effort: "high" }, listed(opening()));
+        expect(readLastChat(home, "root" in typed ? typed.root ?? "" : "")).toMatchObject({ model: "claude-opus-6", effort: "high" });
+    });
 });
 
 /** The options of a launcher in the test's folders, with fake tables, hosts and folder window. */
 function launcherOptions(options: Partial<LauncherOptions> = {}): LauncherOptions
 {
     const tables = fakeTables({ made: { version, seated: false } }, (root) => placeOf(root, version, "made"));
-    const hosts: HostOffered[] = [{ id: "claudeCode", name: "Claude Code", found: true, model: "sonnet", efforts: ["low", "medium", "high"] }];
+    const hosts: HostOffered[] = [
+        { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: ["low", "medium", "high"], models: [{ id: "opus", name: "Opus 5.5", efforts: ["low", "high"] }] },
+        { id: "codex", name: "Codex", ready: false, found: false, model: "", efforts: [], models: [] },
+    ];
     return {
         home,
         userHome,
@@ -353,7 +371,10 @@ describe("the launcher's server", () => {
             version,
             folder: campaignsFolder(userHome),
             campaigns: [{ root: kept, name: "Rocca", system: "fake", language: "it", open: false, missing: false }],
-            hosts: [{ id: "claudeCode", name: "Claude Code", found: true, model: "sonnet", efforts: ["low", "medium", "high"] }],
+            hosts: [
+                { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: ["low", "medium", "high"], models: [{ id: "opus", name: "Opus 5.5", efforts: ["low", "high"] }] },
+                { id: "codex", name: "Codex", ready: false, found: false, model: "", efforts: [], models: [] },
+            ],
             systems: expect.arrayContaining([{ name: "fake", title: expect.any(String) }, { name: "free", title: expect.any(String) }]),
             languages: expect.arrayContaining(["en", "it", "ja", "ar"]),
         });
@@ -445,6 +466,51 @@ describe("the launcher's server", () => {
         expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 200, body: { folder: join(userHome, "Chosen") } });
         expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 200, body: { cancelled: true } });
         expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 409, body: { error: "no window here" } });
+    });
+
+    it("gives the folder window the page's title and the folder it opens in, a whole path; refuses a title it cannot show and a path that is not whole", async () => {
+        const asked: unknown[] = [];
+        const launcher = await startLauncher({
+            pick: (wish) => {
+                asked.push(wish);
+                return Promise.resolve(undefined);
+            },
+        });
+        const start = join(userHome, "RPG Engine");
+
+        expect(await call(launcher.url, "POST", "/api/launcher", { pick: { title: "Apri una cartella", start } })).toMatchObject({ status: 200, body: { cancelled: true } });
+        expect(await call(launcher.url, "POST", "/api/launcher", { pick: {} })).toMatchObject({ status: 200 });
+        expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 200 });
+        expect(asked).toEqual([{ title: "Apri una cartella", start }, {}, {}]);
+
+        for (const bad of [{ title: "" }, { title: "x".repeat(121) }, { title: "Two\nlines" }, { start: "RPG Engine" }, { title: "Ok", other: 1 }, false]) {
+            expect(await call(launcher.url, "POST", "/api/launcher", { pick: bad })).toMatchObject({ status: 400 });
+        }
+
+        expect(asked).toHaveLength(3);
+        expect((await call(launcher.url, "POST", "/api/launcher", { pick: { title: "Two\nlines" } })).body).toEqual({ error: expect.stringContaining("on one line") });
+    });
+
+    it("opens one folder window at a time: a second ask while it is open is refused, and one after it closed opens again", async () => {
+        let close: (folder: string | undefined) => void = () => undefined;
+        let opened = 0;
+        const launcher = await startLauncher({
+            pick: () => {
+                opened++;
+                return new Promise((done) => (close = done));
+            },
+        });
+
+        const first = call(launcher.url, "POST", "/api/launcher", { pick: { title: "Apri una cartella" } });
+        await vi.waitFor(() => expect(opened).toBe(1));
+
+        expect(await call(launcher.url, "POST", "/api/launcher", { pick: true })).toMatchObject({ status: 409, body: { error: expect.stringContaining("open already") } });
+        close(undefined);
+        expect(await first).toMatchObject({ status: 200, body: { cancelled: true } });
+        const again = call(launcher.url, "POST", "/api/launcher", { pick: true });
+        await vi.waitFor(() => expect(opened).toBe(2));
+        close(join(userHome, "Chosen"));
+        expect(await again).toMatchObject({ status: 200, body: { folder: join(userHome, "Chosen") } });
     });
 
     it("refuses a body of another shape in one sentence naming the shapes", async () => {
@@ -629,33 +695,70 @@ describe("the way back from a campaign's page", () => {
 });
 
 describe("the folder window", () => {
-    it("is Windows' own folder window through PowerShell, its title in the environment, never in the script", () => {
-        const [command] = folderCommands("win32", { SystemRoot: "C:\\Windows" }, "Choose a folder; Remove-Item *");
+    it("is Explorer's own folder window on Windows, through PowerShell run hidden, its script on the input, its title and folder in the environment", () => {
+        const [command] = folderCommands("win32", { SystemRoot: "C:\\Windows" }, { title: "Choose a folder; Remove-Item *\n", start: "C:\\Users\\ann\\RPG Engine" });
 
         expect(command?.file).toBe("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
-        expect(command?.args.at(-1)).toContain("FolderBrowserDialog");
-        expect(command?.args.at(-1)).not.toContain("Remove-Item");
-        expect(command?.env).toEqual({ RPG_FOLDER_TITLE: "Choose a folder; Remove-Item *" });
+        expect(command?.args).toEqual(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Sta", "-Command", "-"]);
+        expect(command?.hidden).toBe(true);
+        expect(command?.input).toContain("FileOpenDialog");
+        expect(command?.input).toContain("pickFolders | forceFileSystem | pathMustExist");
+        expect(command?.input).not.toContain("FolderBrowserDialog");
+        expect(command?.input).not.toContain("Remove-Item");
+        expect(command?.input).not.toContain('RPG Engine"');
+        // Plain ASCII, one block that ends with the empty line PowerShell waits for.
+        expect(command?.input).toMatch(/^& \{\n[\x20-\x7e\n]*\n\}\n\n$/);
+        expect(command?.env).toEqual({ RPG_FOLDER_TITLE: "Choose a folder; Remove-Item *", RPG_FOLDER_START: "C:\\Users\\ann\\RPG Engine" });
+        expect(folderCommands("win32", {})[0]?.env).toEqual({ RPG_FOLDER_TITLE: "", RPG_FOLDER_START: "" });
+    });
+
+    it("leaves the yes and no window of a package as it was: its PowerShell shown, its script on the command line, nothing on its input", () => {
+        const [command] = dialogCommands("win32", { SystemRoot: "C:\\Windows" }, "Title", "Text");
+
+        expect(command?.hidden).toBeUndefined();
+        expect(command?.input).toBeUndefined();
+        expect(command?.args.at(-2)).toBe("-Command");
     });
 
     it("reads the folder chosen, a cancel, and no desktop on Windows", async () => {
         const answers = [{ code: 0, out: "C:\\Giochi\\Città\r\n" }, { code: 11, out: "" }, { code: 12, out: "" }];
         const run = (): Promise<{ code: number; out: string; }> => Promise.resolve(answers.shift() ?? { code: 1, out: "" });
 
-        expect(await chooseFolder("win32", {}, "Choose", run)).toBe("C:\\Giochi\\Città");
-        expect(await chooseFolder("win32", {}, "Choose", run)).toBeUndefined();
-        expect(await chooseFolder("win32", {}, "Choose", run)).toEqual({ refused: expect.stringContaining("could not open") });
+        expect(await chooseFolder("win32", {}, { title: "Choose" }, run)).toBe("C:\\Giochi\\Città");
+        expect(await chooseFolder("win32", {}, { title: "Choose" }, run)).toBeUndefined();
+        expect(await chooseFolder("win32", {}, { title: "Choose" }, run)).toEqual({ refused: expect.stringContaining("could not open") });
     });
 
-    it("is osascript's choose folder on macOS, its prompt an argument; Escape is a cancel", async () => {
-        const [command] = folderCommands("darwin", {}, "Choose");
+    it("says why the window did not open on Windows, as PowerShell wrote it, and that PowerShell is missing", async () => {
+        const failed = (): Promise<{ code: number; out: string; err: string; }> => Promise.resolve({ code: 1, out: "", err: "Add-Type failed\r\n" });
+
+        expect(await chooseFolder("win32", {}, {}, failed)).toEqual({ refused: "The window to choose a folder could not open: Add-Type failed. Write the folder's path instead." });
+        expect(await chooseFolder("win32", {}, {}, () => Promise.resolve("missing"))).toEqual({ refused: expect.stringContaining("no window to choose a folder") });
+    });
+
+    it("is osascript's choose folder on macOS, its prompt and its folder arguments, each the system's own when empty; Escape is a cancel", async () => {
+        const [command] = folderCommands("darwin", {}, { title: "Choose", start: "/Users/ann/RPG Engine" });
         const answers = [{ code: 0, out: "/Users/ann/Giochi/\n" }, { code: 1, out: "", err: "execution error: User canceled. (-128)" }];
         const run = (): Promise<{ code: number; out: string; err?: string; }> => Promise.resolve(answers.shift() ?? { code: 1, out: "" });
 
         expect(command?.file).toBe("/usr/bin/osascript");
-        expect(command?.args.at(-1)).toBe("Choose");
-        expect(await chooseFolder("darwin", {}, "Choose", run)).toBe("/Users/ann/Giochi");
-        expect(await chooseFolder("darwin", {}, "Choose", run)).toBeUndefined();
+        expect(command?.args.slice(-2)).toEqual(["Choose", "/Users/ann/RPG Engine"]);
+        expect(command?.args.join(" ")).not.toContain('RPG Engine"');
+        expect(command?.args.join(" ")).toContain("default location (POSIX file startFolder)");
+        expect(folderCommands("darwin", {})[0]?.args.slice(-2)).toEqual(["", ""]);
+        expect(await chooseFolder("darwin", {}, { title: "Choose" }, run)).toBe("/Users/ann/Giochi");
+        expect(await chooseFolder("darwin", {}, { title: "Choose" }, run)).toBeUndefined();
+    });
+
+    it("gives zenity and kdialog the title and the folder as arguments, and nothing of either where none is given", () => {
+        const [zenity, kdialog] = folderCommands("linux", { DISPLAY: ":0", HOME: "/home/ann" }, { title: "Scegli; rm -rf ~", start: "/home/ann/RPG Engine" });
+
+        expect(zenity?.args).toEqual(["--file-selection", "--directory", "--title=Scegli; rm -rf ~", "--filename=/home/ann/RPG Engine/"]);
+        expect(kdialog?.args).toEqual(["--getexistingdirectory", "/home/ann/RPG Engine", "--title", "Scegli; rm -rf ~"]);
+        expect(folderCommands("linux", { DISPLAY: ":0", HOME: "/home/ann" }).map((command) => command.args)).toEqual([
+            ["--file-selection", "--directory"],
+            ["--getexistingdirectory", "/home/ann"],
+        ]);
     });
 
     it("is zenity on a Linux desktop, else kdialog, else a refusal; none at all with no desktop", async () => {
@@ -666,12 +769,12 @@ describe("the folder window", () => {
             return Promise.resolve(command.file === "zenity" ? "missing" : { code: 0, out: "/home/ann/Giochi\n" });
         };
 
-        expect(folderCommands("linux", { DISPLAY: ":0" }, "Choose").map((command) => command.file)).toEqual(["zenity", "kdialog"]);
-        expect(await chooseFolder("linux", { DISPLAY: ":0" }, "Choose", zenityMissing)).toBe("/home/ann/Giochi");
+        expect(folderCommands("linux", { DISPLAY: ":0" }, { title: "Choose" }).map((command) => command.file)).toEqual(["zenity", "kdialog"]);
+        expect(await chooseFolder("linux", { DISPLAY: ":0" }, { title: "Choose" }, zenityMissing)).toBe("/home/ann/Giochi");
         expect(tried).toEqual(["zenity", "kdialog"]);
-        expect(await chooseFolder("linux", { DISPLAY: ":0" }, "Choose", () => Promise.resolve({ code: 1, out: "" }))).toBeUndefined();
-        expect(await chooseFolder("linux", { DISPLAY: ":0" }, "Choose", () => Promise.resolve("missing"))).toEqual({ refused: expect.stringContaining("zenity or kdialog") });
-        expect(await chooseFolder("linux", {}, "Choose", () => Promise.reject(new Error("never run")))).toEqual({ refused: expect.any(String) });
+        expect(await chooseFolder("linux", { DISPLAY: ":0" }, { title: "Choose" }, () => Promise.resolve({ code: 1, out: "" }))).toBeUndefined();
+        expect(await chooseFolder("linux", { DISPLAY: ":0" }, { title: "Choose" }, () => Promise.resolve("missing"))).toEqual({ refused: expect.stringContaining("zenity or kdialog") });
+        expect(await chooseFolder("linux", {}, { title: "Choose" }, () => Promise.reject(new Error("never run")))).toEqual({ refused: expect.any(String) });
     });
 });
 
@@ -1029,6 +1132,25 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         expect(await runOpen([], where())).toEqual({ output: "RPG Engine's campaigns are open in a window: http://127.0.0.1:5750", exitCode: 0 });
         expect((await runOpen([], where({ browser: () => Promise.resolve("none") }))).output).toBe("RPG Engine's campaigns are at http://127.0.0.1:5750: open that link in your browser.");
         expect(await runOpen(["now"], where())).toEqual({ output: "rpg open takes no options: now.", exitCode: 1 });
+    });
+
+    it("ends the process once its line is out, with its exit code, whatever is left open, as under the icon's console nobody reads; the command line ends so", async () => {
+        const [out, err] = [new PassThrough(), new PassThrough()];
+        const ended: number[] = [];
+        // Something left open, which alone would keep the process alive.
+        const left = setInterval(() => undefined, 1000);
+
+        try {
+            sayAndEnd({ output: "open", exitCode: 0 }, { out, err }, (code) => ended.push(code));
+            sayAndEnd({ output: "failed", exitCode: 1 }, { out, err }, (code) => ended.push(code));
+            await vi.waitFor(() => expect(ended).toEqual([0, 1]));
+        } finally {
+            clearInterval(left);
+        }
+
+        expect(String(out.read())).toBe("open\n");
+        expect(String(err.read())).toBe("failed\n");
+        expect(readFileSync(join(import.meta.dirname, "..", "src", "cli", "cli.ts"), "utf8")).toMatch(/sayAndEnd\(await \(args\[0\] === "open" \? runOpen : runIcon\)/);
     });
 
     it("writes why it failed to open.log, the last time alone, for the icon that has no console", async () => {

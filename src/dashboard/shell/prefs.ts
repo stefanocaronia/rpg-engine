@@ -34,9 +34,6 @@ export const conditionsPref: Choice = { key: "rpg-engine.token-conditions", init
 /** Where the chat with the master stands (D-582): in its own section ("tab"), or beside the page at the window's left or right; none until the player chooses. */
 export const chatSidePref: Choice = { key: "rpg-engine.chat-side", initial: "", values: ["tab", "left", "right"] };
 
-/** Whether the chat beside the page is folded into its tab. */
-export const chatFoldedPref: Pref = { key: "rpg-engine.chat-folded", on: false };
-
 /** Where the browser keeps how wide the chat beside the page is, in pixels. */
 export const chatWidthKey = "rpg-engine.chat-width";
 

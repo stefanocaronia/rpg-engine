@@ -67,9 +67,30 @@ export interface MasterDriver
     program(environment: NodeJS.ProcessEnv, platform: string, home: string): { command: string; args: string[]; } | undefined;
     /** The environment the host's process gets, from the table's own. */
     environment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv;
+    /** The models the host offers on this computer, asked of the host itself; an empty list where it does not say. Never throws, never hangs. */
+    models(options: ModelsOptions): Promise<MasterModel[]>;
     /** The model a new chat proposes, and the efforts the host knows, lowest first. */
     model: string;
     efforts: string[];
+}
+
+/** A model a host offers: `id` is what `MasterOptions.model` takes; its efforts lowest first, none where it takes no effort. */
+export interface MasterModel
+{
+    id: string;
+    name: string;
+    about?: string;
+    efforts: string[];
+}
+
+/** What asking a host its models takes: where its program runs, the program, its environment; the start and the clock injected in tests. */
+export interface ModelsOptions
+{
+    folder: string;
+    program: { command: string; args: string[]; };
+    environment: NodeJS.ProcessEnv;
+    start?: typeof startLineProcess;
+    later?: (ms: number, run: () => void) => () => void;
 }
 
 /**

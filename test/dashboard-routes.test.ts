@@ -89,6 +89,7 @@ describe("the dashboard's routes", () => {
             page: pageFolder,
             tables,
             pick: () => Promise.reject(new Error("no window in a test")),
+            hosts: () => [],
         });
         expect(launcherRoutes.map((route) => route.path)).toEqual(["/api/launcher", "/api/ping"]);
 
@@ -140,7 +141,15 @@ describe("the chat with the master in the page", () => {
             },
             driver: (host) =>
                 host === "claudeCode"
-                    ? { open: () => masters[0], missing: () => undefined, program: () => ({ command: "claude-program", args: [] }), environment: (given) => given, model: "sonnet", efforts: ["low", "high"] }
+                    ? {
+                        open: () => masters[0],
+                        missing: () => undefined,
+                        program: () => ({ command: "claude-program", args: [] }),
+                        environment: (given) => given,
+                        models: () => Promise.resolve(hostModels),
+                        model: "sonnet",
+                        efforts: ["low", "high"],
+                    }
                     : undefined,
             elsewhere: () => false,
             changed: () => withMaster.chatChanged(),
@@ -155,6 +164,9 @@ describe("the chat with the master in the page", () => {
 
         withMaster = started;
         masterPort = Number(new URL(started.url).port);
+        // The host's models asked once and known, as after the page's first read.
+        master.shown();
+        await new Promise((resolve) => setImmediate(resolve));
     });
 
     afterEach(async () => {
@@ -189,7 +201,17 @@ describe("the chat with the master in the page", () => {
         return fake;
     }
 
-    const hostsShown = [{ id: "claudeCode", name: "Claude Code", found: true, model: "sonnet", efforts: ["low", "high"] }];
+    const hostModels = [
+        { id: "opus", name: "Opus 5.5", about: "For complex work and everyday tasks", efforts: ["low", "medium", "high", "xhigh", "max"] },
+        { id: "claude-haiku-4-5-20251001", name: "Haiku 4.5", about: "Fastest for quick answers", efforts: [] },
+    ];
+    const notReady = (id: string, name: string): object => ({ id, name, ready: false, found: false, model: "", efforts: [], models: [] });
+    const hostsShown = [
+        { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: ["low", "high"], models: hostModels },
+        notReady("codex", "Codex"),
+        notReady("antigravity", "Antigravity"),
+        notReady("openCode", "OpenCode"),
+    ];
 
     it("says there is no table where none keeps a chat, and refuses every write saying how to start one", async () => {
         expect(await json("GET", port)).toEqual({ status: 200, body: { table: false } });
@@ -349,7 +371,10 @@ describe("the table's chat over the real driver of Claude Code, its host a fake 
                 hosts.push(played);
                 return openMaster(host, { ...options, start: played.start, later: clock.later });
             },
-            driver: (host) => (host === "claudeCode" && claudeCode !== undefined ? { ...claudeCode, program: () => ({ command: "claude-program", args: [] }), missing: () => undefined } : undefined),
+            driver: (host) =>
+                host === "claudeCode" && claudeCode !== undefined
+                    ? { ...claudeCode, program: () => ({ command: "claude-program", args: [] }), missing: () => undefined, models: () => Promise.resolve([]) }
+                    : undefined,
             elsewhere: () => false,
             changed: () => withMaster.chatChanged(),
             idle: () => withMaster.deliver(),

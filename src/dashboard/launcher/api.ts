@@ -83,10 +83,20 @@ export function addCampaign(root: string): Promise<{ campaigns: ListedCampaign[]
     return ask({ add: { root } });
 }
 
-/** Has the player choose a folder in the system's own window: the folder, or that they chose none. */
-export function pickFolder(): Promise<{ folder: string; } | { cancelled: true; } | Refused>
+/**
+ * Has the player choose a folder in the system's own window, titled with the words of the control they clicked and open in `start`: the folder, or that
+ * they chose none.
+ */
+export function pickFolder(words: string, start?: string): Promise<{ folder: string; } | { cancelled: true; } | Refused>
 {
-    return ask({ pick: true });
+    return ask({ pick: { title: windowTitle(words), ...(start === undefined ? {} : { start }) } });
+}
+
+/** The words of a control as the title of the window it opens: without the ellipsis that says it opens one, and as long as the launcher takes. */
+export function windowTitle(words: string): string
+{
+    const title = words.replace(/\s*(?:…|\.\.\.)\s*$/u, "").trim();
+    return (title === "" ? words.trim() : title).slice(0, 120);
 }
 
 /** Takes a campaign off the list, never a file of it: the campaigns after it. */

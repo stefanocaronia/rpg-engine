@@ -18,8 +18,8 @@ export function NewCampaignForm({ launcher, busy, problem, onCreate, onBack, onP
     problem: string | undefined;
     onCreate(wish: CampaignWish): void;
     onBack(): void;
-    /** Has the player choose a folder: the folder, or none. */
-    onPick(): Promise<string | undefined>;
+    /** Has the player choose a folder in a window titled with these words: the folder, or none. */
+    onPick(words: string): Promise<string | undefined>;
 })
 {
     const [form, setForm] = useState(() => firstForm(launcher, browserLanguage() ?? "en"));
@@ -33,7 +33,7 @@ export function NewCampaignForm({ launcher, busy, problem, onCreate, onBack, onP
 
     const pick = async (): Promise<void> => {
         setPicking(true);
-        const folder = await onPick();
+        const folder = await onPick(t("Choose another folder…"));
         setPicking(false);
 
         if (folder !== undefined) {
@@ -107,9 +107,9 @@ export function NewCampaignForm({ launcher, busy, problem, onCreate, onBack, onP
                 <details class="launcher-master">
                     <summary>{t("The master")}</summary>
                     <ChoiceFields
-                        shown={{ hosts: launcher.hosts, messages: [], elsewhere: false }}
+                        shown={{ hosts: launcher.hosts }}
                         choice={form.chat}
-                        onChoice={(chat) => setForm({ ...form, chat })}
+                        onChoice={(chat) => setForm((before) => ({ ...before, chat }))}
                     />
                 </details>
             )}

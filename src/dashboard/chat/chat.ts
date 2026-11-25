@@ -1,6 +1,6 @@
 // The table's chat with the master as the page reads it (D-582): what its place shows, the choice a chat opens with, what is told as it changes, and when its
 // list follows what comes. No drawing here: the page's parts draw what these say.
-import type { ChatChoice, ChatHost, ChatMessage, MasterShown } from "../data.ts";
+import type { ChatChoice, ChatHost, ChatMessage, ChatModel, MasterShown } from "../data.ts";
 import { t } from "../text.ts";
 
 /** What the chat's place shows: where a chat is opened, a chat opened by hand in its place, the open chat, or one whose program ended. */
@@ -33,27 +33,80 @@ export function chatView(shown: MasterShown): ChatView
     return shown.chat === undefined ? "start" : "ended";
 }
 
-/** The apps a chat can open in, those on this computer, and the others, which the page only names. */
-export function hostsFound(shown: MasterShown): { found: ChatHost[]; missing: ChatHost[]; }
+/**
+ * The apps of a chat: those it can open in, which the page drives and are on this computer; those the page drives that are not on this computer; and those
+ * the page cannot drive yet, wherever they are.
+ */
+export function hostsFound(shown: Pick<MasterShown, "hosts">): { found: ChatHost[]; missing: ChatHost[]; later: ChatHost[]; }
 {
-    return { found: shown.hosts.filter((host) => host.found), missing: shown.hosts.filter((host) => !host.found) };
+    const ready = shown.hosts.filter((host) => host.ready);
+    return { found: ready.filter((host) => host.found), missing: ready.filter((host) => !host.found), later: shown.hosts.filter((host) => !host.ready) };
+}
+
+/** A model of an app's list, by its id; none for a name the list does not have, or while the app has not answered. */
+export function modelOf(host: ChatHost, id: string): ChatModel | undefined
+{
+    return host.models.find((model) => model.id === id);
+}
+
+/**
+ * The model chosen before the player chooses: the one wanted, as the campaign's last, when the app lists it; else the one the app proposes, when it lists
+ * it; else its first. While the app has not answered there is no list: the one wanted, else the one it proposes.
+ */
+export function listedModel(host: ChatHost, wanted: string | undefined): string
+{
+    if (host.models.length === 0) {
+        return wanted ?? host.model;
+    }
+
+    return [wanted, host.model].find((id) => id !== undefined && modelOf(host, id) !== undefined) ?? host.models[0].id;
+}
+
+/** The efforts a model takes: its own, none for one that takes none; the app's for a model its list does not have, as a name written by hand. */
+export function effortsOf(host: ChatHost, model: string): string[]
+{
+    return modelOf(host, model)?.efforts ?? host.efforts;
+}
+
+/** A choice with another model of the same app: the effort stays only while that model takes it. */
+export function withModel(host: ChatHost, choice: ChatChoice, model: string): ChatChoice
+{
+    const effort = choice.effort !== undefined && effortsOf(host, model).includes(choice.effort) ? choice.effort : undefined;
+    return { host: choice.host, model, ...(effort === undefined ? {} : { effort }) };
+}
+
+/**
+ * The choice as the app's list of models arrives, or changes, after the form: a model the list has stays, and so does a name the player wrote by hand
+ * (`written`); any other gives way to the one the list chooses. The effort stays only while the model takes it.
+ */
+export function settledChoice(host: ChatHost, choice: ChatChoice, written: boolean): ChatChoice
+{
+    const stays = host.models.length === 0 || written || modelOf(host, choice.model) !== undefined;
+    return withModel(host, choice, stays ? choice.model : listedModel(host, choice.model));
 }
 
 /** The choice a chat opens with before the player changes it: the campaign's last, when its app is on this computer, else the first app found; none with no app. */
-export function firstChoice(shown: MasterShown): ChatChoice | undefined
+export function firstChoice(shown: Pick<MasterShown, "hosts" | "last">): ChatChoice | undefined
 {
     const { found } = hostsFound(shown);
     const host = found.find((one) => one.id === shown.last?.host) ?? found[0];
     return host === undefined ? undefined : choiceOf(shown, host.id);
 }
 
-/** The choice as an app is picked: the model and effort the campaign last played with in it, else the model it proposes and its own effort. */
-export function choiceOf(shown: MasterShown, id: string): ChatChoice
+/**
+ * The choice as an app is picked: the model the campaign last played with in it, when the app still lists it, else the one it proposes, else its first; and
+ * the effort it last played with, while that model takes it.
+ */
+export function choiceOf(shown: Pick<MasterShown, "hosts" | "last">, id: string): ChatChoice
 {
     const host = shown.hosts.find((one) => one.id === id);
     const last = shown.last?.host === id ? shown.last : undefined;
-    const effort = last?.effort !== undefined && host?.efforts.includes(last.effort) === true ? last.effort : undefined;
-    return { host: id, model: last?.model ?? host?.model ?? "", ...(effort === undefined ? {} : { effort }) };
+
+    if (host === undefined) {
+        return { host: id, model: last?.model ?? "" };
+    }
+
+    return withModel(host, { host: id, model: "", ...(last?.effort === undefined ? {} : { effort: last.effort }) }, listedModel(host, last?.model));
 }
 
 /** Whether a chat in this app takes up the campaign's last one. */
@@ -103,8 +156,10 @@ export function speaker(from: ChatMessage["from"]): string
 /** The app, model and effort of a chat in one line, as its foot says them. */
 export function choiceLine(shown: MasterShown, choice: ChatChoice): string
 {
-    const name = shown.hosts.find((host) => host.id === choice.host)?.name ?? choice.host;
-    return [name, choice.model, ...(choice.effort === undefined ? [] : [choice.effort])].join(" · ");
+    const host = shown.hosts.find((one) => one.id === choice.host);
+    // The model by the name its app lists it with, where it does.
+    const model = host === undefined ? choice.model : modelOf(host, choice.model)?.name ?? choice.model;
+    return [host?.name ?? choice.host, model, ...(choice.effort === undefined ? [] : [choice.effort])].join(" · ");
 }
 
 /**

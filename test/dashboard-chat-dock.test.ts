@@ -20,9 +20,9 @@ describe("the chat beside the page (D-582)", () => {
         expect([dockWidth(480, 1120), dockWidth(480, 1119), dockWidth(360, 800)]).toEqual([360, undefined, undefined]);
     });
 
-    it("keeps the page's own table beside the page only while the page has 900 pixels left; a folded panel takes its tab's width alone", () => {
+    it("keeps the page's own table beside the page only while the page has 900 pixels left", () => {
         expect([tableFits(1280, 480), tableFits(1380, 480), tableFits(1600, 480), tableFits(1920, 800)]).toEqual([false, true, true, true]);
-        expect([tableFits(1280, dockWidths.folded), tableFits(923, dockWidths.folded), tableFits(1280, 0), tableFits(899, 0)]).toEqual([true, false, true, false]);
+        expect([tableFits(1260, dockWidths.least), tableFits(1259, dockWidths.least), tableFits(1280, 0), tableFits(899, 0)]).toEqual([true, false, true, false]);
     });
 
     it("follows a pointer on its inner edge from the side it stands at, and the arrows the way they point, Home and End to its least and most", () => {

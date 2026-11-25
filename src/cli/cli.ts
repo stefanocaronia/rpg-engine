@@ -39,16 +39,9 @@ if (args.length === 1 && args[0] === "mcp" && process.env.RPG_HELPER === "1") {
     const { runLauncher } = await import("../server/launcher/index.ts");
     process.exit(await runLauncher());
 } else if (args[0] === "open" || args[0] === "icon") {
-    const { runIcon, runOpen } = await import("./open.ts");
-    const { output, exitCode } = await (args[0] === "open" ? runOpen : runIcon)(args.slice(1));
-
-    if (exitCode === 0) {
-        console.log(output);
-    } else {
-        console.error(output);
-    }
-
-    process.exitCode = exitCode;
+    const { runIcon, runOpen, sayAndEnd } = await import("./open.ts");
+    // The icon runs it in a console nobody reads: it ends once its line is out, whatever was left open.
+    sayAndEnd(await (args[0] === "open" ? runOpen : runIcon)(args.slice(1)));
 } else if (args[0] === "--read-library") {
     const { readLibraryHere } = await import("../commands/shared/books/library-reader.ts");
     await readLibraryHere();

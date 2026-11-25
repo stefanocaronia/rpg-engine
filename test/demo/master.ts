@@ -37,6 +37,17 @@ interface Chat
 const elsewhereFor = 15_000;
 const pieceEvery = 60;
 const efforts = ["low", "medium", "high", "xhigh", "max"];
+// The models the demo's Claude Code offers, as the host lists them; the hosts with no driver yet.
+export const demoModels = [
+    { id: "opus", name: "Opus 5.5", about: "For complex work and everyday tasks", efforts },
+    { id: "claude-fable-5-2", name: "Fable 5.2", about: "For your toughest challenges", efforts },
+    { id: "sonnet", name: "Sonnet 5.5", about: "Most efficient for simpler tasks", efforts },
+    { id: "claude-haiku-4-5-20251001", name: "Haiku 4.5", about: "Fastest for quick answers", efforts: [] },
+];
+export const hostsNotReady = [
+    { id: "antigravity", name: "Antigravity", ready: false, found: false, model: "", efforts: [], models: [] },
+    { id: "openCode", name: "OpenCode", ready: false, found: false, model: "", efforts: [], models: [] },
+];
 
 const answer = [
     "La porta della locanda cigola, e il vento del guado entra prima di te: sa di *fango e di legna bagnata*.",
@@ -153,8 +164,9 @@ export function demoMaster(): DemoMaster
         onChange: (listener) => (changed = listener),
         shown: () => ({
             hosts: [
-                { id: "claudeCode", name: "Claude Code", found: !missing, model: "sonnet", efforts },
-                ...(second ? [{ id: "codex", name: "Codex", found: true, model: "gpt-codex", efforts: efforts.slice(0, 4) }] : []),
+                { id: "claudeCode", name: "Claude Code", ready: true, found: !missing, model: "sonnet", efforts, models: missing ? [] : demoModels },
+                { id: "codex", name: "Codex", ready: second, found: second, model: second ? "gpt-codex" : "", efforts: second ? efforts.slice(0, 4) : [], models: [] },
+                ...hostsNotReady,
             ],
             ...(last === undefined ? {} : { last: { ...last, resumable: true } }),
             ...(chat === undefined ? {} : { chat: { ...chat } }),

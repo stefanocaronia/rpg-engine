@@ -1,6 +1,6 @@
 // The launcher's campaigns as its page reads them: how each stands, when it was last opened in the reader's words, and the new campaign as its form holds it.
 // No drawing here: the page's parts draw what these say.
-import { hostsFound } from "../chat/chat.ts";
+import { effortsOf, firstChoice, hostsFound, listedModel } from "../chat/chat.ts";
 import type { ChatChoice, ChatHost } from "../data.ts";
 import type { CampaignWish, LauncherNow, ListedCampaign } from "./api.ts";
 
@@ -83,15 +83,18 @@ export interface NewCampaign
     chat?: ChatChoice;
 }
 
-/** The form as it opens: the page's own language where the launcher offers it, else English; the first game system; the first app found, with its model. */
+/**
+ * The form as it opens: the page's own language where the launcher offers it, else English; the first game system; the first app the page can open a chat
+ * in, with the model it proposes among those it offers.
+ */
 export function firstForm(launcher: Pick<LauncherNow, "languages" | "systems" | "hosts">, pageLanguage: string): NewCampaign
 {
-    const host = hostsFound({ hosts: launcher.hosts, messages: [], elsewhere: false }).found[0];
+    const chat = firstChoice({ hosts: launcher.hosts });
     return {
         name: "",
         language: launcher.languages.includes(pageLanguage) ? pageLanguage : launcher.languages.includes("en") ? "en" : launcher.languages[0] ?? "en",
         system: launcher.systems[0]?.name ?? "",
-        ...(host === undefined ? {} : { chat: { host: host.id, model: host.model } }),
+        ...(chat === undefined ? {} : { chat }),
     };
 }
 
@@ -102,8 +105,8 @@ export function inUsualFolder(form: NewCampaign): NewCampaign
 }
 
 /**
- * What the form asks of the launcher: nothing while it has no name or no game system. The chat's app goes only when it is on this computer, with the model
- * it proposes where the player left none.
+ * What the form asks of the launcher: nothing while it has no name or no game system. The chat's app goes only when the page can open a chat in it, with
+ * the model it proposes where the player left none, and the effort only where that model takes it.
  */
 export function wishOf(form: NewCampaign, hosts: ChatHost[]): CampaignWish | undefined
 {
@@ -113,14 +116,15 @@ export function wishOf(form: NewCampaign, hosts: ChatHost[]): CampaignWish | und
         return undefined;
     }
 
-    const host = hosts.find((one) => one.found && one.id === form.chat?.host);
-    const model = form.chat?.model.trim() ?? "";
+    const host = hostsFound({ hosts }).found.find((one) => one.id === form.chat?.host);
+    const written = form.chat?.model.trim() ?? "";
+    const model = host === undefined ? "" : written === "" ? listedModel(host, undefined) : written;
     const effort = form.chat?.effort;
     return {
         name,
         ...(form.folder === undefined ? {} : { folder: form.folder }),
         language: form.language,
         system: form.system,
-        ...(host === undefined ? {} : { host: host.id, model: model === "" ? host.model : model, ...(effort !== undefined && host.efforts.includes(effort) ? { effort } : {}) }),
+        ...(host === undefined ? {} : { host: host.id, model, ...(effort !== undefined && effortsOf(host, model).includes(effort) ? { effort } : {}) }),
     };
 }

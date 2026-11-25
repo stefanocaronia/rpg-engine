@@ -6,9 +6,9 @@ export type ChatSide = "tab" | "left" | "right";
 
 /**
  * The panel's widths, in pixels: its least and most, the one it has until the player drags it, and a key's step; the least the page keeps beside it, under
- * which there is no panel; and the least the page needs to keep its own table beside it too. A folded panel is its tab's width.
+ * which there is no panel; and the least the page needs to keep its own table beside it too.
  */
-export const dockWidths = { least: 360, first: 480, most: 800, step: 24, page: 760, table: 900, folded: 24 } as const;
+export const dockWidths = { least: 360, first: 480, most: 800, step: 24, page: 760, table: 900 } as const;
 
 /** The narrowest window with a panel: under it the chat stays in its section, whatever the player chose. */
 export const dockFrom = dockWidths.page + dockWidths.least;

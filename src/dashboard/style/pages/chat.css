@@ -292,6 +292,33 @@
         font-weight: 600;
     }
 
+    /* A choice with something under it: the model's list, the name written by hand, what the app says of the model. */
+    .chat-choice {
+        display: grid;
+        justify-items: start;
+        gap: 6px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .chat-hint {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+    }
+
+    .chat-hint:empty,
+    .chat-notes:empty {
+        display: none;
+    }
+
+    /* Which apps cannot be chosen, and why, under the choices. */
+    .chat-notes {
+        display: grid;
+        gap: 6px;
+    }
+
     .chat-model {
         width: min(100%, 22rem);
         height: 38px;
@@ -385,6 +412,37 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
+    /* The panel's line goes up to the line under the page's top, through the row of where the party is, which keeps to the page's side of it; down the
+       page that row is folded away, and the panel starts at the top's own line. */
+    .page:is(.dock-start, .dock-end) .top-place {
+        position: relative;
+    }
+
+    .page.dock-start .top-place {
+        padding-inline-start: calc(16px + var(--dock-start));
+    }
+
+    .page.dock-end .top-place {
+        padding-inline-end: calc(16px + var(--dock-end));
+    }
+
+    .page:is(.dock-start, .dock-end) .top-place::after {
+        content: "";
+        position: absolute;
+        top: -1px;
+        bottom: 0;
+        width: 1px;
+        background: var(--rule);
+    }
+
+    .page.dock-start .top-place::after {
+        inset-inline-start: calc(var(--dock-start) - 1px);
+    }
+
+    .page.dock-end .top-place::after {
+        inset-inline-end: calc(var(--dock-end) - 1px);
+    }
+
     .chat-panel {
         position: fixed;
         top: var(--dock-top, calc(var(--top-space) + var(--gap)));
@@ -463,16 +521,9 @@
         padding: 0 7px;
     }
 
-    .chat-places svg.icon,
-    .chat-fold svg.icon {
+    .chat-places svg.icon {
         width: 18px;
         height: 18px;
-    }
-
-    .chat-fold {
-        flex: none;
-        width: 36px;
-        height: 36px;
     }
 
     /* The panel's inner edge, which a pointer drags and the arrows move: a strip over the panel's line, lit in the accent under a pointer and while dragged. */
@@ -512,46 +563,6 @@
     /* While the edge is dragged nothing of the page is selected. */
     .page:has(.chat-panel.dragging) {
         user-select: none;
-    }
-
-    /* Folded: a tab on the window's edge, as the table's, a third of the way down, with a dot while the master said something new. */
-    .chat-tab {
-        position: fixed;
-        top: 33%;
-        z-index: 17;
-        display: grid;
-        place-items: center;
-        width: 24px;
-        height: 56px;
-        padding: 0;
-        border: 1px solid var(--rule);
-        background: var(--float);
-        color: var(--muted);
-        translate: 0 -50%;
-        cursor: pointer;
-    }
-
-    .chat-tab.side-left {
-        left: 0;
-        border-left: 0;
-        border-radius: 0 var(--radius-m) var(--radius-m) 0;
-    }
-
-    .chat-tab.side-right {
-        right: 0;
-        border-right: 0;
-        border-radius: var(--radius-m) 0 0 var(--radius-m);
-    }
-
-    .chat-tab svg.icon {
-        width: 16px;
-        height: 16px;
-    }
-
-    .chat-tab .chat-dot {
-        top: 6px;
-        inset-inline-end: 3px;
-        box-shadow: 0 0 0 2px var(--float);
     }
 
     @media (pointer: coarse) {

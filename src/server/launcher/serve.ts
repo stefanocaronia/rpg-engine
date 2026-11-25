@@ -3,14 +3,15 @@
 import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { homedir } from "node:os";
-import { chooseFolder, type ChosenFolder } from "../../confirm/index.ts";
+import { chooseFolder, type ChosenFolder, type FolderAsked } from "../../confirm/index.ts";
 import { type Context, defaultContext, userDataFolder } from "../../core/context.ts";
+import type { HostId } from "../../core/hosts.ts";
 import { guardProcess } from "../../core/process.ts";
 import { getVersion } from "../../core/version.ts";
 import { lookUntil } from "../../core/wait.ts";
 import { oneWindowAtATime, openWindow, type WindowOpener } from "../../desktop/index.ts";
 import { hostCommand } from "../../helpers/index.ts";
-import { type HostOffered, hostProgram, hostsOffered } from "../../master/index.ts";
+import { askModels, type HostOffered, hostProgram, hostsOffered, modelKeeper } from "../../master/index.ts";
 import { answers, builtPage, sendJson } from "../page/index.ts";
 import { probeTable, type TablePlace } from "../table/index.ts";
 import { type CampaignShown, listCampaigns } from "./campaigns.ts";
@@ -58,7 +59,7 @@ export interface LauncherOptions
     /** How a campaign's folder is reached, for the list: settled once its disk answered. */
     reach?: (root: string) => Promise<unknown>;
     /** The system's window that chooses a folder. */
-    pick?: () => Promise<ChosenFolder>;
+    pick?: (asked: FolderAsked) => Promise<ChosenFolder>;
     /** The hosts a campaign's first chat may open in. */
     hosts?: () => HostOffered[];
     /** Asks a launcher at a place which engine it runs. */
@@ -239,6 +240,10 @@ function atWork(server: Server, port: number, options: LauncherOptions): Launche
     let ending: Promise<void> | undefined;
     let markEnded: () => void = () => undefined;
     const ended = new Promise<void>((done) => (markEnded = done));
+    const places = { environment, platform: options.platform, userHome: options.userHome, npmProgram: (host: HostId) => hostCommand(host, environment) };
+    const notify = (): void => pages.forEach((page) => page.write("event: changed\ndata: {}\n\n"));
+    // The models each host offers, asked of it in the engine's data folder, which is no campaign's.
+    const models = modelKeeper({ ask: (host) => askModels(host, { ...places, folder: options.home }), changed: notify, now });
     // A campaign being opened stops looking for its table once the launcher quits.
     const tables: TableStarter = { home: options.home, version: options.version, quitting: () => ending !== undefined, ...options.tables };
 
@@ -272,13 +277,13 @@ function atWork(server: Server, port: number, options: LauncherOptions): Launche
                 answers: options.answers ?? (async (table) => typeof await probeTable(table, options.version, listProbeWait) === "object"),
                 ...(options.reach === undefined ? {} : { reach: options.reach }),
             }),
-        hosts: options.hosts ?? (() => hostsOffered((host) => hostProgram(host, { environment, platform: options.platform, userHome: options.userHome, npmProgram: (one) => hostCommand(one, environment) }) !== undefined)),
-        pick: options.pick ?? (() => chooseFolder(options.platform, environment, "Choose a folder for RPG Engine")),
+        hosts: options.hosts ?? (() => hostsOffered((host) => hostProgram(host, places) !== undefined, undefined, (host) => models.models(host))),
+        pick: options.pick ?? ((asked) => chooseFolder(options.platform, environment, asked)),
         picking: false,
         settled: false,
-        making: { userHome: options.userHome, context: options.context, now: () => new Date(now()), tables },
+        making: { userHome: options.userHome, context: options.context, now: () => new Date(now()), models: (host) => models.known(host), tables },
         openWindow: oneWindowAtATime(options.openWindow ?? (async (address, kind) => (await openWindow(address, kind, options.platform)).opened === "window")),
-        notify: () => pages.forEach((page) => page.write("event: changed\ndata: {}\n\n")),
+        notify,
         quit: () => void end("asked to quit"),
     };
 

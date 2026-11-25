@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { addCampaign, createCampaign, forgetCampaign, type ListedCampaign, openCampaign, pickFolder, readLauncher } from "../src/dashboard/launcher/api.ts";
+import { addCampaign, createCampaign, forgetCampaign, type ListedCampaign, openCampaign, pickFolder, readLauncher, windowTitle } from "../src/dashboard/launcher/api.ts";
 import { campaignMeta, campaignState, firstForm, folderName, inUsualFolder, listedAt, openedLabel, opens, wishOf } from "../src/dashboard/launcher/campaigns.ts";
 import { reachHome, readHome, reopenAddress } from "../src/dashboard/shell/home.ts";
 import { addressAsks, braveSize, markedAddress, windowPlace } from "../src/dashboard/shell/window.ts";
@@ -12,8 +12,8 @@ import { pageFolder } from "./i18n/phrases.ts";
 
 const italian = (): Promise<Record<string, string>> => Promise.resolve(JSON.parse(readFileSync(join(pageFolder, "i18n", "it.json"), "utf8")) as Record<string, string>);
 
-const claude = { id: "claudeCode", name: "Claude Code", found: true, model: "sonnet", efforts: ["low", "medium", "high"] };
-const codex = { id: "codex", name: "Codex", found: false, model: "gpt", efforts: ["low", "high"] };
+const claude = { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: ["low", "medium", "high"], models: [] };
+const codex = { id: "codex", name: "Codex", ready: true, found: false, model: "gpt", efforts: ["low", "high"], models: [] };
 
 /** A campaign as the launcher lists it, ready to open unless told. */
 function listed(changes: Partial<ListedCampaign> = {}): ListedCampaign
@@ -128,6 +128,12 @@ describe("the campaigns as the launcher's page lists them (D-582)", () => {
         expect(wishOf({ ...form, chat: { host: "codex", model: "gpt" } }, hosts)).toEqual({ name: "La Brughiera", language: "it", system: "free" });
         expect(wishOf({ name: "Guado", language: "en", system: "5e" }, [])).toEqual({ name: "Guado", language: "en", system: "5e" });
         expect([wishOf({ ...form, name: "  " }, hosts), wishOf({ ...form, system: "" }, hosts)]).toEqual([undefined, undefined]);
+        // An app with its list of models: the effort goes only where the model takes it, and a name left empty is the list's choice; an app the page cannot drive yet, no chat.
+        const listing = { ...claude, models: [{ id: "opus", name: "Opus 5.5", efforts: ["high"] }, { id: "haiku", name: "Haiku 4.5", efforts: [] }] };
+        expect(wishOf({ ...form, chat: { host: "claudeCode", model: "haiku", effort: "high" } }, [listing])).toEqual({ name: "La Brughiera", language: "it", system: "free", host: "claudeCode", model: "haiku" });
+        expect(wishOf({ ...form, chat: { host: "claudeCode", model: "", effort: "high" } }, [listing])).toEqual({ name: "La Brughiera", language: "it", system: "free", host: "claudeCode", model: "opus", effort: "high" });
+        expect(firstForm({ languages: ["en"], systems: [], hosts: [listing] }, "en").chat).toEqual({ host: "claudeCode", model: "opus" });
+        expect(wishOf(form, [{ ...claude, ready: false }])).toEqual({ name: "La Brughiera", language: "it", system: "free" });
     });
 });
 
@@ -171,14 +177,25 @@ describe("what the pages ask of the launcher and of the way back to it (D-582)",
         expect(await openCampaign(root)).toMatchObject({ url: "http://127.0.0.1:4747" });
         expect(await createCampaign({ name: "Guadoscuro", language: "it", system: "free" })).toMatchObject({ url: "http://127.0.0.1:4747", root });
         expect(await addCampaign(root)).toMatchObject({ campaigns: [listed()] });
-        expect(await pickFolder()).toMatchObject({ folder: root });
+        expect(await pickFolder("Open a folder…", "C:\\Users\\ada\\RPG Engine")).toMatchObject({ folder: root });
         expect(await forgetCampaign(root)).toMatchObject({ campaigns: [listed()] });
-        expect(sent.map((one) => one.body)).toEqual([{ open: { root } }, { create: { name: "Guadoscuro", language: "it", system: "free" } }, { add: { root } }, { pick: true }, { forget: { root } }]);
+        expect(sent.map((one) => one.body)).toEqual([{ open: { root } }, { create: { name: "Guadoscuro", language: "it", system: "free" } }, { add: { root } }, { pick: { title: "Open a folder", start: "C:\\Users\\ada\\RPG Engine" } }, {
+            forget: { root },
+        }]);
         expect(sent.every((one) => one.address === "/api/launcher" && one.method === "POST")).toBe(true);
         answering({ "POST /api/launcher": { status: 409, body: { error: "The table did not start within fifteen seconds.", root } } });
         expect(await createCampaign({ name: "Guadoscuro", language: "it", system: "free" })).toEqual({ error: "The table did not start within fifteen seconds.", root });
-        answering({ "POST /api/launcher": { status: 200, body: { cancelled: true } } });
-        expect(await pickFolder()).toEqual({ cancelled: true });
+        const cancelled = answering({ "POST /api/launcher": { status: 200, body: { cancelled: true } } });
+        expect(await pickFolder("Scegli un'altra cartella…")).toEqual({ cancelled: true });
+        expect(cancelled.sent.at(-1)?.body).toEqual({ pick: { title: "Scegli un'altra cartella" } });
+    });
+
+    it("titles the folder window with the words of the control the player clicked, without the ellipsis, as long as the launcher takes", () => {
+        expect(windowTitle("Open a folder…")).toBe("Open a folder");
+        expect(windowTitle("Choose another folder...")).toBe("Choose another folder");
+        expect(windowTitle("フォルダーを開く…")).toBe("フォルダーを開く");
+        expect(windowTitle("…")).toBe("…");
+        expect(windowTitle("x".repeat(200))).toHaveLength(120);
     });
 
     it("knows the launcher's link while it answers and the campaign's own folder, and starts the launcher from the page where none answers", async () => {

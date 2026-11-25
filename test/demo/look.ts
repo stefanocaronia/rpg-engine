@@ -6,7 +6,7 @@
 // --chat gives the page the chat with a master of the demo's own (test/demo/master.ts), which answers each sentence typed; --section opens the page at a
 // section, as --chat --section chat, or --section world/lore; --setup serves a campaign just made, still in its setup, anew each time;
 // --launcher opens the launcher's page, served by a launcher of the demo's own (test/demo/launcher.ts) with a few campaigns, or none with --empty: opening
-// one leads to the demo's campaign, whose page leads back; --query adds what the address asks, as --query "opened=1"; --locale sets the browser's language, which the launcher's page writes in, as --locale it-IT.
+// one leads to the demo's campaign, whose page leads back; --query adds what the address asks, as --query "opened=1"; --locale sets the browser's language, which the launcher's page writes in, as --locale it-IT; --page serves a page built apart, in that folder, in place of dist/dashboard.
 // Without --url it serves the demo campaign of tmp/dashboard-demo on a free port, of free play, or with --system 5e the 5e's of tmp/dashboard-demo-5e, with
 // the 5e's repository beside this one. It uses the Chrome installed. Not part of the tests.
 import { mkdirSync } from "node:fs";
@@ -37,6 +37,7 @@ const { values, tokens } = parseArgs({
         empty: { type: "boolean" },
         query: { type: "string" },
         locale: { type: "string" },
+        page: { type: "string" },
         section: { type: "string" },
     },
     tokens: true,
@@ -44,7 +45,12 @@ const { values, tokens } = parseArgs({
 
 const steps = tokens.flatMap((token) => (token.kind === "option" && ["click", "press", "type", "wait"].includes(token.name) ? [{ name: token.name, value: token.value ?? "" }] : []));
 const demo = values.url === undefined
-    ? await serveDemo([0], values.system === "5e" ? "5e" : "free", { chat: values.chat === true, setup: values.setup === true, launcher: values.launcher === true ? (values.empty === true ? "empty" : true) : false })
+    ? await serveDemo([0], values.system === "5e" ? "5e" : "free", {
+        chat: values.chat === true,
+        setup: values.setup === true,
+        launcher: values.launcher === true ? (values.empty === true ? "empty" : true) : false,
+        ...(values.page === undefined ? {} : { page: resolve(values.page) }),
+    })
     : undefined;
 const browser = await chromium.launch({ channel: "chrome" });
 

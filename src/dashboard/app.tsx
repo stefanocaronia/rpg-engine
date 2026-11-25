@@ -10,9 +10,9 @@ import { ActStrip } from "./acts/strip.tsx";
 import { type Address, readAddress, redirectCombat, sectionAddress } from "./address.ts";
 import { answer, closeCard, readActs, readAsked, readChoices, readGameTheme, readModules, readView, readWidgets, sendSeen } from "./api.ts";
 import { chatView, lastHeard, unseenWords } from "./chat/chat.ts";
-import { type ChatSide, dockWidths, logicalSide, tableFits } from "./chat/dock.ts";
+import { type ChatSide, logicalSide, tableFits } from "./chat/dock.ts";
 import { ChatPage } from "./chat/page.tsx";
-import { ChatPanel, ChatPlaces, ChatTab, useChatDock } from "./chat/panel.tsx";
+import { ChatPanel, ChatPlaces, useChatDock } from "./chat/panel.tsx";
 import { useMasterChat } from "./chat/sending.ts";
 import type { Asked, AskedNow, Member, Moment, ShownModule, ShownRoll, ShownWidget } from "./data.ts";
 import { flies } from "./dice/pool.ts";
@@ -633,17 +633,15 @@ function App()
     // The setup has no sections: where a table keeps the chat, it stands beside the questions on a wide screen, under them on a narrow one (D-582).
     const setupChat = inSetup && master.table === true;
     const chatBeside = useMedia(chatBesideSetup);
-    // The chat beside the page (D-582), at a campaign's table, out of the setup and in a window wide enough: at the side the player has it, open or folded.
+    // The chat beside the page (D-582), at a campaign's table, out of the setup and in a window wide enough: at the side the player has it.
     const dock = useChatDock(master.table === true && setup !== undefined && !inSetup);
     const dockSide = dock.docked && dock.side !== "tab" ? dock.side : undefined;
-    const dockOpen = dockSide !== undefined && !dock.folded;
-    const dockRoom = dockSide === undefined ? 0 : dock.folded ? dockWidths.folded : dock.width ?? 0;
-    // Whether the player has just folded or opened the panel: the focus goes to its tab, or to what folds it.
-    const [dockMoved, setDockMoved] = useState(false);
+    const dockOpen = dockSide !== undefined;
+    const dockRoom = dockSide === undefined ? 0 : dock.width ?? 0;
     // Beside the chat the page keeps its own table beside it only while both fit: else its cards go back into the page, as on a narrow screen.
     const wide = wideWindow && tableFits(dock.windowWidth, dockRoom);
     const table = wide && !tableAway;
-    // What the master said while the player could not see the chat, in another section or with its panel folded: a dot on its tab, until they see it.
+    // What the master said while the player was in another section, the chat in its own: a dot on its tab, until they go there.
     const seenWords = useRef<number | undefined>(undefined);
     const words = unseenWords(master.shown === undefined ? undefined : seenWords.current, lastHeard(master.shown), address.section === "chat" || dockOpen);
     seenWords.current = master.shown === undefined ? undefined : words.seen;
@@ -659,10 +657,9 @@ function App()
         window.setTimeout(() => document.querySelector<HTMLElement>(`.chat-places button[data-side="${side}"]`)?.focus(), 80);
     };
 
-    // Beside the page the chat has no section: its address opens its panel, with the focus in it, and leads to the party.
+    // Beside the page the chat has no section: its address gives its panel the focus, and leads to the party.
     useEffect(() => {
         if (dockSide !== undefined && address.section === "chat") {
-            dock.setFolded(false);
             window.location.replace(sectionAddress("party"));
             window.setTimeout(() => document.querySelector<HTMLElement>(".chat-panel #chat-words, .chat-panel .chat-start .button.gold")?.focus(), 80);
         }
@@ -1011,34 +1008,8 @@ function App()
                                     onSayAgain={(id) => void sayAgain(id)}
                                     onDismiss={dismissAct}
                                 />
-                                {/* The chat beside the page, at the side the player has it: its panel, or its tab while folded (D-582). */}
-                                {dockSide !== undefined && dock.width !== undefined && (dock.folded
-                                    ? (
-                                        <ChatTab
-                                            side={dockSide}
-                                            unseen={words.unseen}
-                                            focused={dockMoved}
-                                            onOpen={() => {
-                                                setDockMoved(true);
-                                                dock.setFolded(false);
-                                            }}
-                                        />
-                                    )
-                                    : (
-                                        <ChatPanel
-                                            chat={master}
-                                            side={dockSide}
-                                            width={dock.width}
-                                            windowWidth={dock.windowWidth}
-                                            focused={dockMoved}
-                                            onSide={placeChat}
-                                            onWidth={dock.setWidth}
-                                            onFold={() => {
-                                                setDockMoved(true);
-                                                dock.setFolded(true);
-                                            }}
-                                        />
-                                    ))}
+                                {/* The chat beside the page, at the side the player has it (D-582). */}
+                                {dockSide !== undefined && dock.width !== undefined && <ChatPanel chat={master} side={dockSide} width={dock.width} windowWidth={dock.windowWidth} onSide={placeChat} onWidth={dock.setWidth} />}
                             </div>
                         </PlayerActsContext.Provider>
                     </WidgetsContext.Provider>
