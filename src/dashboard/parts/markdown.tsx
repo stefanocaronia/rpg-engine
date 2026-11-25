@@ -1,6 +1,6 @@
 // A page's text as the player may read it, from its markdown (D-275): headings, paragraphs, lists, quotes, a secret discovered as a note of its own, bold and
 // italics, links as their names, or as links where the page reading it says where they lead. Never HTML: every piece is text, so nothing in a page can run in
-// the dashboard.
+// the dashboard. A place may draw parts of a line its own way, as the chat the marks its master writes in brackets.
 import { type ComponentChildren, Fragment } from "preact";
 import { foldedText, listText, t } from "../text.ts";
 import { linkedName } from "../world/known.ts";
@@ -11,16 +11,25 @@ export type LinkTo = (name: string) => string | undefined;
 /** Who of the player characters found out a secret, by the title the text gives it, when not all of them did (VIEW-12); none when they all did. */
 export type SecretKnowers = (title: string) => string[] | undefined;
 
-/** A text; with `lines`, a paragraph keeps its line breaks, as words written line by line in a chat: a page's own are joined, as markdown reads them. */
-export function Markdown({ text, link, secretKnowers, lines = false }: { text: string; link?: LinkTo; secretKnowers?: SecretKnowers | undefined; lines?: boolean; })
+/**
+ * What a place draws of its own within a line: the line's words in pieces, each words for the text to go on reading, or what the place draws in their
+ * stead. Bold or italics around one drawn piece alone are left out.
+ */
+export type OwnParts = (words: string) => (string | { drawn: ComponentChildren; })[];
+
+/**
+ * A text; with `lines`, a paragraph keeps its line breaks, as words written line by line in a chat: a page's own are joined, as markdown reads them. With
+ * `own`, what the place draws its own way within the lines.
+ */
+export function Markdown({ text, link, secretKnowers, lines = false, own }: { text: string; link?: LinkTo; secretKnowers?: SecretKnowers | undefined; lines?: boolean; own?: OwnParts | undefined; })
 {
-    return <div class="markdown">{blocks(text, link, true, secretKnowers, lines).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
+    return <div class="markdown">{blocks(text, link, true, secretKnowers, lines, own).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
 }
 
 /** A line of a page that is not a whole text, as a value of its fields: its links and its bold and italics, as the text reads them. */
-export function InlineText({ text, link }: { text: string; link?: LinkTo | undefined; })
+export function InlineText({ text, link, own }: { text: string; link?: LinkTo | undefined; own?: OwnParts | undefined; })
 {
-    return <>{inline(text, link)}</>;
+    return <>{inline(text, link, own)}</>;
 }
 
 /** Who found out each secret, from what the view gives of a page: its secrets that only some of the player characters discovered; none when it gives none. */
@@ -69,7 +78,7 @@ const secretStart = /^[ \t]*\[!secret\][-+]?[ \t]*(.*)$/i;
 const pictureFile = /\.(?:png|jpe?g|gif|webp|avif|bmp|svg)$/i;
 
 /** The blocks of a text; `outer` for the text itself, where alone a quote may be a secret, as for the engine. */
-function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?: SecretKnowers, lines = false): ComponentChildren[]
+function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?: SecretKnowers, lines = false, own?: OwnParts): ComponentChildren[]
 {
     const shown: ComponentChildren[] = [];
     let paragraph: string[] = [];
@@ -86,15 +95,15 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?
 
     const close = (): void => {
         if (paragraph.length > 0) {
-            show(<p dir="auto" class={lines ? "md-lines" : undefined}>{inline(paragraph.map((line) => line.trim()).join(lines ? "\n" : " "), link)}</p>);
+            show(<p dir="auto" class={lines ? "md-lines" : undefined}>{inline(paragraph.map((line) => line.trim()).join(lines ? "\n" : " "), link, own)}</p>);
         }
 
         if (list.length > 0) {
-            show(<ul>{list.map((item, index) => <li key={index} dir="auto">{inline(item, link)}</li>)}</ul>);
+            show(<ul>{list.map((item, index) => <li key={index} dir="auto">{inline(item, link, own)}</li>)}</ul>);
         }
 
         if (quote.length > 0) {
-            show(<Quote lines={quote} link={link} outer={outer} knowers={knowers} kept={lines} />);
+            show(<Quote lines={quote} link={link} outer={outer} knowers={knowers} kept={lines} own={own} />);
         }
 
         paragraph = [];
@@ -142,7 +151,7 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?
             close();
             // A page's own headings sit below the sheet's: the first level is a box's, and its sections come after.
             const level = Math.max(2, title[1].length);
-            headings = [...headings.filter((one) => one.level < level), { level, shown: level === 2 ? <h4 dir="auto">{inline(title[2], link)}</h4> : <h5 dir="auto">{inline(title[2], link)}</h5> }];
+            headings = [...headings.filter((one) => one.level < level), { level, shown: level === 2 ? <h4 dir="auto">{inline(title[2], link, own)}</h4> : <h5 dir="auto">{inline(title[2], link, own)}</h5> }];
         } else if (item !== null) {
             if (paragraph.length > 0 || quote.length > 0) {
                 close();
@@ -172,19 +181,19 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?
  * A quote; at the text's own level, a secret the character discovered, written as a callout: a note of its own with its title, and who found it out, by name,
  * when not all the player characters did (D-480 (7)).
  */
-function Quote({ lines, link, outer, knowers, kept }: { lines: string[]; link: LinkTo | undefined; outer: boolean; knowers: SecretKnowers | undefined; kept: boolean; })
+function Quote({ lines, link, outer, knowers, kept, own }: { lines: string[]; link: LinkTo | undefined; outer: boolean; knowers: SecretKnowers | undefined; kept: boolean; own: OwnParts | undefined; })
 {
     const secret = outer ? secretStart.exec(lines[0]) : null;
 
     if (secret === null) {
-        return <blockquote>{blocks(lines.join("\n"), link, false, undefined, kept)}</blockquote>;
+        return <blockquote>{blocks(lines.join("\n"), link, false, undefined, kept, own)}</blockquote>;
     }
 
     const title = secret[1].trim();
     return (
         <aside class="md-secret">
             <p class="eyebrow" dir="auto">{[foundOut(knowers?.(title) ?? []), title].filter((part) => part !== "").join(" · ")}</p>
-            {blocks(lines.slice(1).join("\n"), link, false)}
+            {blocks(lines.slice(1).join("\n"), link, false, undefined, false, own)}
         </aside>
     );
 }
@@ -197,15 +206,15 @@ function foundOut(who: string[]): string
 
 /**
  * Links, and pages embedded, as their words; a link where the page says where it leads and its words do not hide whom: none, or the page's own name. A picture
- * embedded is left out. Then bold and italics.
+ * embedded is left out. Then bold and italics, and within them what the place draws its own way.
  */
-function inline(text: string, link: LinkTo | undefined): ComponentChildren[]
+function inline(text: string, link: LinkTo | undefined, own?: OwnParts): ComponentChildren[]
 {
     return text.split(/(!?\[\[[^\]]*\]\])/).filter((piece) => piece !== "").flatMap((piece, index) => {
         const found = /^(!?)\[\[([^\]|]*)(?:\|([^\]]*))?\]\]$/.exec(piece);
 
         if (found === null) {
-            return emphasis(piece, index);
+            return emphasis(piece, index, own);
         }
 
         const [, embed, target, said] = found;
@@ -218,29 +227,34 @@ function inline(text: string, link: LinkTo | undefined): ComponentChildren[]
         const words = said?.trim() || targetWords(target);
         const plain = said === undefined || foldedText(said.trim()) === foldedText(name);
         const address = name === "" || !plain ? undefined : link?.(name);
-        return address === undefined ? emphasis(words, index) : [<a key={index} class="md-link" href={address}>{words}</a>];
+        return address === undefined ? emphasis(words, index, own) : [<a key={index} class="md-link" href={address}>{words}</a>];
     });
 }
 
-/** Bold and italics. */
-function emphasis(text: string, at: number): ComponentChildren[]
+/** Bold and italics; within them, and around them, what the place draws its own way, which bold or italics around it alone do not hold. */
+function emphasis(text: string, at: number, own?: OwnParts): ComponentChildren[]
 {
-    return text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/).filter((piece) => piece !== "").map((piece, index) => {
+    return text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/).filter((piece) => piece !== "").flatMap((piece, index): ComponentChildren[] => {
         const key = `${at}-${index}`;
+        const marks = /^\*\*\*.+\*\*\*$/.test(piece) ? 3 : /^\*\*.+\*\*$/.test(piece) ? 2 : /^([*_]).+\1$/.test(piece) ? 1 : 0;
+        const words = marks === 0 ? piece : piece.slice(marks, -marks);
+        const parts = own?.(words) ?? [words];
+        const drawn = parts.map((part, place) => (typeof part === "string" ? part : <Fragment key={`${key}-${place}`}>{part.drawn}</Fragment>));
 
-        if (/^\*\*\*.+\*\*\*$/.test(piece)) {
-            return (
+        // Plain words, or one piece of the place's own with emphasis around it alone.
+        if (marks === 0 || (parts.length === 1 && typeof parts[0] !== "string")) {
+            return drawn;
+        }
+
+        if (marks === 3) {
+            return [
                 <strong key={key}>
-                    <em>{piece.slice(3, -3)}</em>
-                </strong>
-            );
+                    <em>{drawn}</em>
+                </strong>,
+            ];
         }
 
-        if (/^\*\*.+\*\*$/.test(piece)) {
-            return <strong key={key}>{piece.slice(2, -2)}</strong>;
-        }
-
-        return /^([*_]).+\1$/.test(piece) ? <em key={key}>{piece.slice(1, -1)}</em> : piece;
+        return [marks === 2 ? <strong key={key}>{drawn}</strong> : <em key={key}>{drawn}</em>];
     });
 }
 

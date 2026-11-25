@@ -39,10 +39,13 @@ export function buttonsInstructions(physicalDice: boolean): string
     return readInstructions(physicalDice ? "buttons-physical-dice.md" : "buttons.md");
 }
 
-/** The dashboard at its link, which the game is played with, and how the player uses it, for the master to offer it and help them (D-404). */
-export function dashboardInstructions(link: string): string
+/**
+ * The dashboard at its link, which the game is played with, and how the player uses it, for the master to offer it and help them (D-404); at the table, whose
+ * chat is part of the page, without the link.
+ */
+export function dashboardInstructions(link: string, atTable = false): string
 {
-    return readInstructions("dashboard.md").replace("{link}", link);
+    return atTable ? readInstructions("dashboard-table.md") : readInstructions("dashboard.md").replace("{link}", link);
 }
 
 /** The game master's full instructions, as the `instructions` command gives them. */

@@ -8,7 +8,7 @@ import type { MasterShown } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { t } from "../text.ts";
-import { chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, turnWords, waitingQuestion } from "./chat.ts";
+import { chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, turnDoing, turnWords, waitingQuestion } from "./chat.ts";
 import { type ChatGame, ChatLog } from "./log.tsx";
 import { ChatOffering } from "./offer.tsx";
 import type { ChatAsking } from "./question.tsx";
@@ -92,7 +92,9 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
         return <PageHead section="chat" id="chat-title" />;
     }
 
-    const turn = turnWords(shown.chat, waitingQuestion(shown.messages) !== undefined);
+    const waiting = waitingQuestion(shown.messages) !== undefined;
+    const turn = turnWords(shown.chat, waiting);
+    const waits = turnDoing(shown.chat, waiting) === "asks";
     // What the open chat offers in place of writing; with messages it stands at their end, with none in their place.
     const offer = view === "open" ? chatOffer(shown) : undefined;
     const some = shown.messages.length > 0;
@@ -121,8 +123,9 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
                 {some && <ChatLog messages={shown.messages} asking={asking} game={game} foot={offering} />}
                 {!some && view === "open" && <div class="chat-empty">{offering}</div>}
                 {turn !== undefined && (
-                    <p class="chat-turn">
-                        <Icon name="hourglass" />
+                    <p class={waits ? "chat-turn waits" : "chat-turn"}>
+                        {/* The master at work, a die that turns; the master waiting for the player, a still light that breathes now and then. */}
+                        {waits ? <span class="chat-waits" aria-hidden="true" /> : <Icon name="dieTurning" />}
                         <span class="chat-turn-words">{turn}</span>
                     </p>
                 )}

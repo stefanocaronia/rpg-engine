@@ -1,26 +1,30 @@
-// The messages of the chat with the master, in order: the player's words at the end side, the master's as the text they write, a word of the table's as a
-// notice, a question of the master's where it was asked, with its buttons while it waits, and the rolls the player may see as the Rolls card draws them.
-// Words out of the game, the master's and the player's, stand apart from the story's, in a quieter look, without their brackets. The list follows what
-// comes while its end is in sight; farther up the player is reading, and it stays, with a button that leads back to the end. What the chat offers the
-// player, as to take up the story, stands at the list's end.
+// The messages of the chat with the master, in order: the player's words at the end side, the master's as the text they write, with what they put in
+// brackets drawn as marks, a word of the table's as a notice, a question of the master's where it was asked, with its buttons while it waits, and the
+// rolls the player may see, a line each. Words out of the game, the master's and the player's, stand apart from the story's, in a quieter look, without
+// their brackets. The list scrolls with no bar in sight, a shade at its top or its foot where there is more; it follows what comes while its end is in
+// sight; farther up the player is reading, and it stays, with a pill that leads back to now. What the chat offers the player, as to take up the story,
+// stands at the list's end.
 import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { ChatMessage, ChatSaid, Member } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
 import { InlineText, Markdown } from "../parts/markdown.tsx";
-import { RollLine } from "../play/rolls.tsx";
 import { t } from "../text.ts";
 import { answerShown, atEnd, speaker } from "./chat.ts";
+import { drawMarks } from "./drawn-marks.tsx";
 import { type ChatRun, masterBlocks, playerRuns } from "./ooc.ts";
 import { type ChatAsking, ChatQuestion } from "./question.tsx";
+import { ChatRollLine } from "./roll.tsx";
 
-/** What the chat draws of the game: the party, for whom a roll is for, whether more than one player character plays, and the campaign, for the master's dice. */
+/** What the chat draws of the game: the party, for whom a roll is for, and whether more than one player character plays. */
 export interface ChatGame
 {
     party: Member[];
     several: boolean;
-    campaign?: string | undefined;
 }
+
+// How near its top or its end, in pixels, the list still counts as there: no shade for a pixel or two left.
+const edge = 4;
 
 export function ChatLog({ messages, asking, game, foot }: {
     messages: ChatMessage[];
@@ -32,14 +36,28 @@ export function ChatLog({ messages, asking, game, foot }: {
 })
 {
     const list = useRef<HTMLDivElement>(null);
-    // Whether the list shows its end, and so follows; and whether words came under what is in sight.
+    // Whether the list shows its end, and so follows.
     const following = useRef(true);
     // The list's height when it was last brought to its end.
     const room = useRef(0);
-    const [below, setBelow] = useState(false);
+    // What the player sees of where they are: more over what is in sight, more under it, far enough from the end for the way back to now, and whether
+    // something came there meanwhile.
+    const [where, setWhere] = useState({ above: false, below: false, away: false });
+    const [came, setCame] = useState(false);
     const last = messages.at(-1);
     // How the questions stand, each drawn anew as it is answered or left.
     const questions = messages.map((message) => (message.from === "asked" ? message.state[0] : "")).join("");
+
+    // Where the list stands, told again only when it changed.
+    const look = (): void => {
+        const element = list.current;
+
+        if (element !== null) {
+            const under = element.scrollHeight - element.scrollTop - element.clientHeight;
+            const now = { above: element.scrollTop > edge, below: under > edge, away: !atEnd(element) };
+            setWhere((before) => (before.above === now.above && before.below === now.below && before.away === now.away ? before : now));
+        }
+    };
 
     // At once, never smoothly: the end moves while the master writes, and a scroll on its way there would stop short of it.
     const toEnd = (): void => {
@@ -48,13 +66,16 @@ export function ChatLog({ messages, asking, game, foot }: {
         if (element !== null) {
             element.scrollTop = element.scrollHeight;
             room.current = element.clientHeight;
+            look();
         }
     };
 
+    // Back to now, by the pill: the list follows again, and the keyboard goes on from the list itself, as the pill goes.
     const follow = (): void => {
         following.current = true;
-        setBelow(false);
+        setCame(false);
         toEnd();
+        list.current?.focus({ preventScroll: true });
     };
 
     // A message comes, the last one grows, a question gets its buttons or ends: the player's own words always show, and so does a question that waits for
@@ -64,7 +85,8 @@ export function ChatLog({ messages, asking, game, foot }: {
             following.current = true;
             toEnd();
         } else {
-            setBelow(true);
+            setCame(true);
+            look();
         }
     }, [messages.length, last?.id, last?.text.length, questions, asking?.asked.id, asking?.here, foot !== undefined && foot !== null && foot !== false]);
 
@@ -79,6 +101,8 @@ export function ChatLog({ messages, asking, game, foot }: {
         const sizes = new ResizeObserver(() => {
             if (following.current) {
                 toEnd();
+            } else {
+                look();
             }
         });
         sizes.observe(element);
@@ -95,14 +119,15 @@ export function ChatLog({ messages, asking, game, foot }: {
         }
 
         following.current = element === null || atEnd(element);
+        look();
 
         if (following.current) {
-            setBelow(false);
+            setCame(false);
         }
     };
 
     return (
-        <div class="chat-log-frame">
+        <div class={["chat-log-frame", where.above ? "more-above" : "", where.below ? "more-below" : ""].filter((name) => name !== "").join(" ")}>
             {/* No live region: a screen reader hears once that the master answered, then reads the words here. */}
             <div ref={list} class="chat-log" role="log" aria-live="off" aria-label={t("Chat with the master")} tabIndex={0} onScroll={scrolled}>
                 <ol class="chat-messages">
@@ -110,15 +135,17 @@ export function ChatLog({ messages, asking, game, foot }: {
                         message.from === "asked"
                             ? <ChatQuestion key={message.id} message={message} asking={message.state === "waiting" ? asking : undefined} answer={answerShown(messages, index)} />
                             : message.from === "roll"
-                            ? <RollLine key={message.id} roll={message.roll} party={game.party} several={game.several} campaign={game.campaign} className="chat-message from-roll" />
+                            ? <ChatRollLine key={message.id} roll={message.roll} party={game.party} several={game.several} />
                             : <Said key={message.id} message={message} />
                     )}
                     {foot}
                 </ol>
             </div>
-            {below && (
-                <button type="button" class="icon-button tonal chat-to-end" aria-label={t("Go to the last words")} data-tip={t("Go to the last words")} onClick={follow}>
-                    <Icon name="more" />
+            {/* Away from the end: the way back to now, in the middle of the list's foot, with a dot when something came there meanwhile. */}
+            {where.away && (
+                <button type="button" class={came ? "chat-to-now came" : "chat-to-now"} onClick={follow}>
+                    <Icon name="arrowDown" />
+                    {t("Go to now")}
                 </button>
             )}
         </div>
@@ -135,7 +162,7 @@ function Said({ message }: { message: ChatSaid; })
                 <div class="chat-prose" dir="auto">
                     {masterBlocks(message.text).map((block, index) =>
                         block.kind === "text"
-                            ? <Markdown key={index} text={block.text} lines />
+                            ? <Markdown key={index} text={block.text} lines own={drawMarks} />
                             : block.kind === "ooc"
                             ? (
                                 <p key={index} class="chat-ooc" dir="auto">
@@ -182,7 +209,7 @@ function Runs({ runs, markdown = false }: { runs: ChatRun[]; markdown?: boolean;
                         </span>
                     )
                     : markdown
-                    ? <InlineText key={index} text={run.text} />
+                    ? <InlineText key={index} text={run.text} own={drawMarks} />
                     : run.text
             )}
         </>

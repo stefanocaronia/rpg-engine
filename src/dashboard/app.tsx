@@ -670,7 +670,7 @@ function App()
     const asking: ChatAsking | undefined = live && waiting !== undefined && chatWaits
         ? { asked: waiting, here: askedAt === "chat", who: asker, answered: answering === waiting.id, words: waiting.forced !== true, onAnswered: () => void read() }
         : undefined;
-    const chatGame: ChatGame = { party: shown.party, several, campaign: shown.campaign };
+    const chatGame: ChatGame = { party: shown.party, several };
 
     // The chat's place as the player picks it: back in its tab, the page shows its section; the focus stays on the button picked, wherever the chat went.
     const placeChat = (side: ChatSide): void => {

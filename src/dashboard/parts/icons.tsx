@@ -22,6 +22,9 @@ const iconPaths = {
     minus: "M6 12h12",
     // What stops the master's turn, where the player's words are sent from.
     stop: "M7.5 7.5h9v9h-9Z",
+    // The master at work in the chat: a d20 seen from a face, the same at each third of a turn, which the chat turns. And the way down to now.
+    dieTurning: "M12 2.5 20.2 7.25v9.5L12 21.5l-8.2-4.75v-9.5Z M12 7 16.6 15H7.4Z M12 2.5V7 M20.2 16.75 16.6 15 M3.8 16.75 7.4 15",
+    arrowDown: "M12 5v13 M6.5 12.5l5.5 5.5 5.5-5.5",
     plus: "M12 6v12 M6 12h12",
     // The world map's tools and ways (D-318).
     locate: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10Z M12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z",
@@ -81,6 +84,9 @@ const iconPaths = {
     unverified: "M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6Z M12 8v5 M12 16v.3",
     offline: "M3 3l18 18 M8.5 16.5a5 5 0 0 1 7 0 M5 12.5a10 10 0 0 1 4.5-2.4 M14.5 10.2A10 10 0 0 1 19 12.5 M2 8.8a15 15 0 0 1 4.3-2.6 M10.5 5.1A15 15 0 0 1 22 8.8 M12 20h.01",
     terminal: "M3.5 4.5h17v15h-17Z M7 9l3 3-3 3 M12.5 15H17",
+    // Whether the page hears the game: a plug and its socket as one, or apart, the plug's two pins bare.
+    plugged: "M2 12h4 M12 6v12h-1a5 5 0 0 1-5-5v-2a5 5 0 0 1 5-5Z M12 6h1a5 5 0 0 1 5 5v2a5 5 0 0 1-5 5h-1 M18 12h4",
+    unplugged: "M2 12h2 M9 6v12H8a4 4 0 0 1-4-4v-4a4 4 0 0 1 4-4Z M9 9.5h3 M9 14.5h3 M15 6h1a4 4 0 0 1 4 4v4a4 4 0 0 1-4 4h-1Z M20 12h2",
     // RPG Engine itself: the master's robot, its head and antenna.
     engine: "M7 8.5h10a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7.5a2 2 0 0 1 2-2Z M12 8.5V5.5 M12 3.5v.01 M9.5 13.5v1 M14.5 13.5v1 M3 13v3 M21 13v3",
     // The campaign shared as an adventure (D-483): out of the box.

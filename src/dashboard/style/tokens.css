@@ -107,6 +107,7 @@
         --radius-xl: 16px;
         --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
         --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+        --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
         /* The hooks of the game's style (D-528), the page of today until a theme gives them; the titles' and the big numbers' faces only when it gives them. */
         --title-case: none;
         --title-variant: normal;

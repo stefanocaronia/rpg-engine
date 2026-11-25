@@ -235,6 +235,8 @@ export interface ChatState
     beforeCall?: () => void;
     afterCall?: () => void;
     dashboardOffered?: boolean;
+    /** The chat is the table's own, inside the dashboard's page: the player needs no link to it. */
+    atTable?: boolean;
 }
 
 /** Codex and Claude Code on this computer (D-424, D-425): how each stands, installing one in the engine's own folder, and the player's sign-in. */

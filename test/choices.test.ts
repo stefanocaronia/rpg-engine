@@ -63,6 +63,13 @@ describe("the choices command", () => {
         expect(await ok("status")).toContain("Waiting on the dashboard since 2026-10-02: Ennio's choices, Livello 2; the player knows: leave them to them.");
     });
 
+    it("gives no link to the table's own chat, which is part of the dashboard's page", async () => {
+        context = { ...context, chat: { calls: 0, atTable: true } };
+        const output = await ok("choices", "--title", "Livello 2", "--items", JSON.stringify(level));
+        expect(output).toContain("Tell the player so in one line, out of the story, without listing them. Then go on with the story");
+        expect(output).not.toContain("http://127.0.0.1:5760");
+    });
+
     it("refuses what the player could not answer, and prepares nothing", async () => {
         expect((await prepare([{ question: "Oggetto", options: ["Una corda"] }])).output).toContain("Una corda: that is no choice; write it yourself and tell the player");
         expect((await prepare([{ question: "Oggetto", options: ["Corda", "corda"] }])).output).toContain("gives corda twice");

@@ -64,6 +64,8 @@ export const hostsNotReady = [
 const answer = [
     "La porta della locanda cigola, e il vento del guado entra prima di te: sa di *fango e di legna bagnata*.",
     "Dietro il banco l'oste alza appena gli occhi dal boccale che sta asciugando.\n«Si chiude al tramonto» dice. «**Dopo, il guado non perdona.**»",
+    // What a master writes in brackets, each their own way: a roll, with bold around it, a clock, and the order of the turns.
+    "Un'ombra scatta verso la porta sul retro. **[Scatto 2d6: 5 (4+1)]** Lupa le taglia la strada, ma l'ombra è svelta: [Fuga 1/4]. Da adesso si va a turni: [Ettore → Ombra → Lupa].",
     "Tre cose attirano il tuo sguardo:\n\n- un mantello fradicio appeso accanto al fuoco, che nessuno reclama;\n- una mappa inchiodata alla trave, con un segno rosso sulla Torre;\n- la botola della cantina, socchiusa.\n\nChe cosa fai?",
 ];
 
@@ -98,7 +100,7 @@ const flowBefore: (Omit<Words, "id"> | Omit<AskedMessage, "id"> | Omit<Extract<M
     { from: "player", text: "Entro nella locanda." },
     { from: "master", text: answer.slice(0, 2).join("\n\n") },
     { from: "roll", text: "Lupa: 1d6 = 5 [5]", roll: { id: "demo-before", at: "2026-11-25T18:00:00.000Z", by: "master", who: "Lupa", check: "Fiuto", notation: "1d6", total: 5, text: "1d6 = 5 [5]", dice: [{ sides: 6, value: 5 }] } },
-    { from: "master", text: answer[2] },
+    { from: "master", text: answer.slice(2).join("\n\n") },
     { from: "player", text: "Mi avvicino al banco e poso il sigillo spezzato davanti all'oste." },
     { from: "master", text: "L'oste guarda la cera rossa, poi te. Posa il boccale.\n\n«Dove l'hai trovato?»" },
     { from: "asked", text: "L'oste aspetta una risposta: che cosa gli dici?", title: "Scelta", options: ["La verità", "Una mezza verità", "Niente"], state: "left" },

@@ -190,6 +190,8 @@ export const status = defineCommand({
             dashboardHeld: context.dashboardHeld === true,
             // The chat's first status opens with the dashboard, for the master to offer it in their first answer (D-353).
             offerDashboard: offerDashboard(context),
+            // The table's own chat is part of the dashboard's page: the player needs no link to it.
+            atTable: context.chat?.atTable === true,
             // Whether to ask for the places' pictures, or to have this one made (D-308).
             pictures: picturesNote(root, context, world, followed[0] === undefined ? undefined : nearestPlace(followed[0])),
             // The player's document being made an adventure, or ready to install (D-489).
@@ -267,7 +269,7 @@ export const status = defineCommand({
             result.orders.length === 0
                 ? ""
                 : `Standing orders, the player's to the companions (they follow them as their pages allow, and break one only in the open): ${quotedOrders(result.orders)}.`,
-            result.dashboard === undefined || result.offerDashboard || result.dashboardHeld ? "" : `Dashboard: ${result.dashboard}.`,
+            result.dashboard === undefined || result.offerDashboard || result.dashboardHeld || result.atTable ? "" : `Dashboard: ${result.dashboard}.`,
             result.pictures ?? "",
             result.importing,
             result.translation ?? "",
@@ -462,10 +464,10 @@ function namesLine(label: string, names: string[], more: string, separator = " Â
     return names.length > shownNames ? `${label}: ${shown}, and ${names.length - shownNames} more: ${more}` : `${label}: ${shown}`;
 }
 
-/** Whether this status is the chat's first with a dashboard, which has the master offer it; the next ones only give its link (D-353). */
+/** Whether this status is the chat's first with a dashboard, which has the master offer it; the next ones only give its link (D-353). Never at the table. */
 function offerDashboard(context: Context): boolean
 {
-    const first = context.dashboard !== undefined && context.chat?.dashboardOffered !== true;
+    const first = context.dashboard !== undefined && context.chat?.dashboardOffered !== true && context.chat?.atTable !== true;
 
     // In the chat's own state, which each call's copy of the context shares.
     if (first && context.chat !== undefined) {

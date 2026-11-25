@@ -63,6 +63,8 @@ export function createMcpServer(context: Context = defaultContext(), environment
     context.chat ??= { calls: 0 };
     // The host's own name for the chat, for the doorbell's hook to find its server (D-495).
     context.chat.session ??= environment.CLAUDE_CODE_SESSION_ID;
+    // A chat the table opened itself carries its token: it is a panel of the dashboard's page.
+    context.chat.atTable ??= environment.RPG_TABLE_MASTER !== undefined;
     // What came after a call answered, as a picture made in its place or none, for the next (D-572).
     context.later ??= laterLines();
     // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4).

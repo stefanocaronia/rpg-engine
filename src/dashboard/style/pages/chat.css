@@ -40,11 +40,44 @@
         min-height: 0;
     }
 
+    /* The messages scroll with the wheel, a finger and the keys, with no bar in sight: a shade at the list's top or foot says there is more that way. */
     .chat-log {
         min-height: 0;
         padding: 16px;
         overflow-y: auto;
         overscroll-behavior: contain;
+        scrollbar-width: none;
+    }
+
+    .chat-log::-webkit-scrollbar {
+        display: none;
+    }
+
+    .chat-log-frame::before,
+    .chat-log-frame::after {
+        content: "";
+        position: absolute;
+        inset-inline: 0;
+        z-index: 1;
+        height: 36px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--short) linear;
+    }
+
+    .chat-log-frame::before {
+        top: 0;
+        background: linear-gradient(to bottom, var(--panel), transparent);
+    }
+
+    .chat-log-frame::after {
+        bottom: 0;
+        background: linear-gradient(to top, var(--panel), transparent);
+    }
+
+    .chat-log-frame.more-above::before,
+    .chat-log-frame.more-below::after {
+        opacity: 1;
     }
 
     /* A chat that is not open shows its last messages over where one is opened, which stays in sight under them. */
@@ -316,13 +349,113 @@
         font-size: 0.85rem;
     }
 
-    /* A roll the player may see, as its row of the Rolls card (parts/rolls.css): the player's at the end side, as their words; the master's at the start. */
+    /* A roll the player may see, in one line: who rolled, small, the player's character by their portrait and the master by the robot; the die; for whom
+       and what; and the result in a pill, the total in evidence. The player's at the end side, as their words; the master's at the start. No colour
+       of success or failure: the engine does not know it. */
     .chat-message.from-roll {
-        width: min(100%, 22rem);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: fit-content;
+        max-width: 100%;
+        font-size: 0.9rem;
     }
 
     .chat-message.from-roll.by-player {
         justify-self: end;
+    }
+
+    .chat-message.from-roll .token {
+        --size: 22px;
+    }
+
+    .chat-roll-robot {
+        flex: none;
+        width: 22px;
+        height: 22px;
+    }
+
+    .chat-message.from-roll svg:is(.die, .icon) {
+        width: 16px;
+        height: 16px;
+        color: var(--muted);
+    }
+
+    .chat-roll-what {
+        min-width: 0;
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    .chat-roll-result {
+        flex: none;
+        min-width: 1.75rem;
+        padding: 1px 8px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        background: var(--float);
+        color: var(--ink);
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    /* What the master writes in plain brackets among the story's words: a pill in the line, in the fixed-width letters, on a tone above the card. A roll
+       has its die before it and its total in evidence; a clock the clock's picture and its steps as dots, done in the accent, to do as rings; any
+       other is the pill alone. Pictures and dots are in --muted: the words are the mark. */
+    .chat-mark {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px 6px;
+        margin-inline: 1px;
+        padding: 0 7px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--ink) 5%, var(--panel));
+        font-family: var(--mono);
+        font-size: 0.82em;
+        font-style: normal;
+        font-weight: 350;
+        line-height: 1.6;
+        vertical-align: baseline;
+    }
+
+    .chat-mark svg:is(.die, .icon) {
+        width: 14px;
+        height: 14px;
+        color: var(--muted);
+    }
+
+    .chat-mark-dice,
+    .chat-mark-rest {
+        color: var(--muted);
+    }
+
+    .chat-mark-total {
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    .chat-mark-count {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .chat-mark-steps {
+        display: inline-flex;
+        gap: 3px;
+    }
+
+    .chat-mark-steps i {
+        width: 7px;
+        height: 7px;
+        border: 1px solid var(--muted);
+        border-radius: 50%;
+    }
+
+    .chat-mark-steps i.done {
+        border-color: var(--accent);
+        background: var(--accent);
     }
 
     /* Words out of the game, the master's and the player's: apart from the story's by their look, smaller, dimmed and in italics in a dashed edge, without
@@ -394,13 +527,46 @@
         margin-top: 8px;
     }
 
-    /* Words came under what is in sight: the way back to the end, over the list's foot. */
-    .chat-to-end {
+    /* Away from the list's end: the way back to now, a pill in the middle of its foot, over the shade, with its arrow down; a dot of the accent on its
+       corner when something came there meanwhile. */
+    .chat-to-now {
         position: absolute;
-        inset-inline-end: 16px;
-        bottom: 12px;
-        width: 40px;
-        height: 40px;
+        bottom: 10px;
+        left: 50%;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 32px;
+        padding: 0 14px 0 10px;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        background: var(--float);
+        box-shadow: var(--overlay);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        translate: -50% 0;
+    }
+
+    .chat-to-now svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .chat-to-now.came::before {
+        content: "";
+        position: absolute;
+        top: -3px;
+        inset-inline-end: -3px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 2px var(--panel);
     }
 
     /* What the master is doing in their turn; what stops them is in the field of the player's words. */
@@ -417,10 +583,75 @@
         font-weight: 600;
     }
 
+    /* The master at work: a die that turns, a third of a turn at a time, still for who asks for less motion. */
     .chat-turn svg.icon {
         flex: none;
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
+        color: var(--accent);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .chat-turn svg.icon {
+            animation: chat-die-turns 1.8s var(--ease) infinite;
+        }
+    }
+
+    @keyframes chat-die-turns {
+        0% {
+            rotate: 0deg;
+        }
+
+        33% {
+            rotate: 120deg;
+        }
+
+        66% {
+            rotate: 240deg;
+        }
+
+        100% {
+            rotate: 360deg;
+        }
+    }
+
+    /* The master waits for the player: no work under way, so nothing turns. A still light in the gold of what is the player's to do, with a ring that
+       breathes out once in a while; still for who asks for less motion. The words are the player's, not a note. */
+    .chat-turn.waits {
+        color: var(--ink);
+    }
+
+    .chat-waits {
+        position: relative;
+        flex: none;
+        width: 10px;
+        height: 10px;
+        margin-inline: 4px;
+        border-radius: 50%;
+        background: var(--gold);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--on-gold) 35%, transparent);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .chat-waits::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 var(--gold);
+            animation: chat-waits-breathes 3.2s ease-out infinite;
+        }
+    }
+
+    @keyframes chat-waits-breathes {
+        0%,
+        55% {
+            box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 70%, transparent);
+        }
+
+        100% {
+            box-shadow: 0 0 0 8px transparent;
+        }
     }
 
     .chat-turn-words {
@@ -849,7 +1080,8 @@
         height: 18px;
     }
 
-    /* The panel's inner edge, which a pointer drags and the arrows move: a strip over the panel's line, lit in the accent under a pointer and while dragged. */
+    /* The panel's inner edge, which a pointer drags and the arrows move: a strip over the panel's line, with a grip at its middle, lit in the accent under a
+       pointer and while dragged. */
     .chat-edge {
         position: absolute;
         top: 0;
@@ -881,6 +1113,26 @@
     .chat-edge:focus-visible::before,
     .chat-panel.dragging .chat-edge::before {
         opacity: 1;
+    }
+
+    /* Its grip, always in sight at the middle of the line: what says the line can be moved. */
+    .chat-edge::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 44px;
+        border-radius: var(--radius-xs);
+        background: var(--muted);
+        translate: -50% -50%;
+        transition: background-color var(--quick) linear;
+    }
+
+    .chat-edge:hover::after,
+    .chat-edge:focus-visible::after,
+    .chat-panel.dragging .chat-edge::after {
+        background: var(--accent);
     }
 
     /* While the edge is dragged nothing of the page is selected. */

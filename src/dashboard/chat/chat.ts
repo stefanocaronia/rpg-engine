@@ -1,6 +1,7 @@
 // The table's chat with the master as the page reads it (D-582): what its place shows, the choice a chat opens with, what is told as it changes, and when its
 // list follows what comes. No drawing here: the page's parts draw what these say.
-import type { ChatAsked, ChatChoice, ChatHost, ChatMessage, ChatModel, ChatSaid, MasterShown } from "../data.ts";
+import type { ChatAsked, ChatChoice, ChatHost, ChatMessage, ChatModel, ChatSaid, MasterShown, ShownRoll } from "../data.ts";
+import { rollText } from "../parts/labels.ts";
 import { t } from "../text.ts";
 
 /** What the chat's place shows: where a chat is opened, a chat opened by hand in its place, the open chat, or one whose program ended. */
@@ -185,6 +186,16 @@ export function chatOffer(shown: Pick<MasterShown, "chat" | "messages">): ChatOf
     }
 
     return chat.takenUp === true ? "take-up" : shown.messages.length === 0 ? "begin" : undefined;
+}
+
+/**
+ * A roll the player may see, in one line of the chat: for whom and what it is, as "Ettore · Athletics"; its result, the total unless its faces say
+ * something else, as an extension's words or a toss's coins (`toss`, in words); and the whole of it, for a tooltip and a screen reader.
+ */
+export function rollLine(roll: Pick<ShownRoll, "check" | "total" | "says" | "text">, name: string, toss?: string): { what: string; result: string; detail: string; }
+{
+    const what = [name, roll.check ?? ""].filter((part) => part !== "").join(" · ");
+    return { what, result: toss ?? roll.says ?? String(roll.total), detail: toss ?? rollText(roll.text) };
 }
 
 /** The master's question that waits in the chat: one at a time, the last asked. */
