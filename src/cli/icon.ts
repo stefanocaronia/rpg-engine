@@ -9,7 +9,13 @@ export interface Terminal
     readonly input: NodeJS.ReadableStream & { readonly isTTY?: boolean; };
     readonly output: NodeJS.WritableStream & { readonly isTTY?: boolean; };
     readonly env: NodeJS.ProcessEnv;
+    /** How long the question waits for an answer, a minute by default. */
+    readonly answerWait?: number;
 }
+
+// The icon runs `rpg open` in a console nobody sees, which is a terminal all the same: there the question is never answered, and a process that waited
+// for it would never end. A minute, then it is asked again another time.
+const answerWait = 60_000;
 
 /** Where the icon is noted and what it runs in: the engine's data folder, the player's home, the system; and, in the tests, the folders it goes in. */
 export interface IconWhere
@@ -22,7 +28,8 @@ export interface IconWhere
 
 /**
  * Asks once a machine, in a terminal on a screen, whether to put the icon on the desktop and in the menu, and puts it there on a yes: what to tell the
- * player, if anything. Once asked, an icon made by another Node or script is made again, without a word.
+ * player, if anything; with no answer within its wait, nothing, and it asks again another time. Once asked, an icon made by another Node or script is
+ * made again, without a word.
  */
 export async function offerIcon(where: IconWhere, terminal: Terminal = processTerminal()): Promise<string | undefined>
 {
@@ -40,7 +47,13 @@ export async function offerIcon(where: IconWhere, terminal: Terminal = processTe
 
     const words = wordsFor(where.platform);
     const reader = createInterface({ input: terminal.input, output: terminal.output });
-    const answer = await reader.question(words.question).finally(() => reader.close());
+    const signal = AbortSignal.timeout(terminal.answerWait ?? answerWait);
+    const answer = await reader.question(words.question, { signal }).catch(() => undefined).finally(() => reader.close());
+
+    if (answer === undefined) {
+        return undefined;
+    }
+
     noteIconAsked(where.home);
     return yes(answer) ? (await iconsMade(where)).said : words.later;
 }

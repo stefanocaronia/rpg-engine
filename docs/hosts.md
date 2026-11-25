@@ -11,9 +11,9 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 | The dashboard starts with the chat, and the master gives its link | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> |
 | A click on the dashboard reaches the chat | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Writing in the chat, or stopping it, while the master waits for a click | ✅ | ✅ | ✅ <sup>12</sup> | ✅ | ✅ | ✅ <sup>12</sup> | ✅ | 🟡 <sup>2</sup> | ✅ <sup>12</sup> | ✅ | ✅ | ✅ <sup>12</sup> |
-| Pictures made by the chat in use | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ <sup>3</sup> | ✅ <sup>3</sup> | ❔ | ✅ <sup>4</sup> | ✅ <sup>4</sup> | ❔ |
+| Pictures made by the chat in use | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ <sup>15</sup> | ✅ <sup>3</sup> | ✅ <sup>3</sup> | ✅ <sup>3</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> |
 | Importing an adventure from a document | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
-| The dashboard translated into a language that is not shipped | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
+| The dashboard translated into a language that is not shipped | ✅ | ✅ | ✅ <sup>14</sup> | ✅ | ✅ | ✅ <sup>14</sup> | ✅ | ✅ | ✅ <sup>14</sup> | ✅ | ✅ | ✅ <sup>14</sup> |
 | A system's rules translated as you read them | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
 | Characters voiced by an agent of their own | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ✅ <sup>6</sup> | ✅ <sup>6</sup> | 🟡 <sup>13</sup> |
 | The agent's own memory of past chats turned off | ✅ | ✅ | ✅ | ✅ | ✅ | ❔ | ❌ <sup>7</sup> | ❌ <sup>7</sup> | ❌ <sup>7</sup> | ❔ | ❔ | ❔ |
@@ -34,4 +34,6 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 10. The chat is in the dashboard itself: there is no link to give.
 11. Chosen beside the model, as the chat opens.
 12. A message written while the master waits for a click goes through, and the question is left; stopping while a question waits is not tried yet.
-13. Tried with a free model only: the character's agent runs, but its answer did not reach the story.
+13. The character's agent runs, but its answer does not reach the story yet.
+14. Tried with no chat open: the translation is made outside the chat, by the AI app the engine finds on this computer.
+15. Codex paints the picture and hands it to the game at medium effort; at low effort a small model paints it and forgets to hand it over.

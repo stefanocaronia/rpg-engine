@@ -361,6 +361,43 @@ describe("the table's chat with the master", () => {
         ]);
     });
 
+    it("runs a turn the host begins by itself: its words a new message, the player's refused meanwhile, and its end never said empty nor followed", () => {
+        const { chat, master } = opened();
+        chat.say("Ask Bertoldo");
+        master.emit({ type: "text", block: 0, text: "You ask him." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        master.emit({ type: "turnStart", by: "host" });
+        expect(chat.inTurn()).toBe(true);
+        expect(chat.shown().chat?.state).toBe("turn");
+        expect(chat.say("And?")).toBe("busy");
+        master.emit({ type: "text", block: 0, text: "Bertoldo shrugs." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.inTurn()).toBe(false);
+        expect(idles).toBe(2);
+
+        // One with no words, even after a tool it was refused: nothing for the page, nothing to the master.
+        master.emit({ type: "turnStart", by: "host" });
+        master.emit({ type: "permission", name: "run_command", kind: "shell", allowed: false });
+        chat.stop();
+        expect(master.interrupted).toBe(1);
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(master.sent).toEqual(["Ask Bertoldo"]);
+        expect(idles).toBe(3);
+        expect(chat.shown().messages).toEqual([
+            { id: 1, from: "player", text: "Ask Bertoldo" },
+            { id: 2, from: "master", text: "You ask him." },
+            { id: 3, from: "master", text: "Bertoldo shrugs." },
+        ]);
+        const folder = join(root, "sessions", "table-chats");
+        const lines = readFileSync(join(folder, readdirSync(folder)[0]), "utf8").trim().split("\n");
+        expect(lines.map((line) => JSON.parse(line) as Record<string, unknown>).map((line) => line.from ?? line.turn)).toEqual(["player", "master", "ended", "master", "ended", "ended"]);
+
+        // The player's next turn is followed and said empty as ever.
+        chat.say("Again");
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.shown().messages.at(-1)).toEqual({ id: 5, from: "table", text: "The master ended its turn without writing anything. Write to it again." });
+    });
+
     it("keeps the turn a host fails while the words are sent", () => {
         const { chat, master } = opened();
 
@@ -1063,6 +1100,20 @@ describe("the player's rolls the master has not told in its words yet", () => {
         master.emit({ type: "text", block: 0, text: " It holds." });
         expect(chat.untold()).toEqual({ id: "3cbdb056", check: "Shield" });
         master.emit({ type: "text", block: 0, text: " The club slides off the rim and the brigand stumbles past you." });
+        expect(chat.untold()).toBeUndefined();
+    });
+
+    it("keeps a roll owed through a turn the host begins by itself, which goes on the player's turn", () => {
+        const { chat, master } = opened();
+        chat.say("I raise my shield.");
+        chat.rolled("Ettore, Shield: 2d6 = 4", roll);
+        chat.owed("3cbdb056");
+        master.emit({ type: "text", block: 0, text: "The blow falls." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.untold()).toBeUndefined();
+        master.emit({ type: "turnStart", by: "host" });
+        expect(chat.untold()).toEqual({ id: "3cbdb056", check: "Shield" });
+        master.emit({ type: "text", block: 0, text: "Your shield holds and the brigand stumbles past you [roll 3cbdb056]" });
         expect(chat.untold()).toBeUndefined();
     });
 

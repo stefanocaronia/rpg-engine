@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { hostIds } from "../src/core/hosts.ts";
-import { isHostName, type MasterChat, masterDriver, type MasterEvent, masterHosts, type MasterOptions, openMaster } from "../src/master/index.ts";
+import { isHostName, type MasterChat, masterDriver, type MasterEvent, masterHosts, type MasterOptions, openMaster, type ToolKind } from "../src/master/index.ts";
 import { checklist, type Scenario } from "./master/checklist.ts";
 import { type FakeHost, fakeHost, type FakeOptions, type FlowEntry, isModelRequest, isPlayerWords, listen, loadFlow, manualClock, playerWords, sessionOf, ticksUntil, turnEnds, wholeTexts } from "./master/fake-host.ts";
 import { makeTempFolder } from "./support.ts";
@@ -59,9 +59,21 @@ describe("the master in Claude Code", () => {
                 "--disable-slash-commands",
                 "--tools",
                 "Read,Glob,Grep,WebSearch,WebFetch,Task,Bash,PowerShell,Write,Edit,NotebookEdit",
+                "--settings",
+                JSON.stringify({ permissions: { ask: ["Agent"] } }),
                 "--resume",
                 "a-session",
             ]);
+        });
+
+        it("makes the host ask before any subagent starts only where the master may start one", () => {
+            const settings = (allowed: ToolKind[]): string[] => {
+                const args = open([], { allowed }).host.started?.args ?? [];
+                return args.flatMap((arg, index) => (arg === "--settings" ? [args[index + 1] ?? ""] : []));
+            };
+
+            expect(settings(["rpg", "agent"])).toEqual(['{"permissions":{"ask":["Agent"]}}']);
+            expect(settings(["rpg", "read", "shell"])).toEqual([]);
         });
 
         it("lists only the kinds allowed: searching the web is not fetching from it", () => {

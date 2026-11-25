@@ -2,8 +2,9 @@
 // Its answer holds the account too: nothing of it but the models is read.
 import { type LineProcess, startLineProcess } from "../../core/process.ts";
 import { isHostName, laterByTimer, type MasterModel, type ModelsOptions } from "../chat.ts";
+import { isObject } from "../lines.ts";
 import { settingArguments, streamArguments } from "./program.ts";
-import { controlRequest, isObject } from "./protocol.ts";
+import { controlRequest } from "./protocol.ts";
 
 // How long the program has to answer, the id of the request, and how many models are kept.
 const answerWait = 10_000;

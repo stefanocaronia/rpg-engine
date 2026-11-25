@@ -113,6 +113,8 @@ interface OpenChat
     spoke?: boolean;
     refused?: string;
     nudged?: boolean;
+    /** Whether the turn that runs is one the host began by itself: the player's turn goes on, its rolls still owed. */
+    byHost?: boolean;
 }
 
 /** A host's program on this computer. */
@@ -242,6 +244,9 @@ export function tableChat(options: TableChatOptions): TableChat
             opened.runs = event.model;
             opened.sessionTold = true;
             remember({ session: event.session });
+        } else if (event.type === "turnStart") {
+            // The host goes on by itself, as OpenCode tells a subagent's answer: what the master writes now is a new message, as after every turn's end.
+            Object.assign(opened, { state: "turn", tool: undefined, spoke: undefined, refused: undefined, byHost: true });
         } else if (event.type === "text") {
             prose(opened, event.block, event.text);
         } else if (event.type === "tool") {
@@ -254,7 +259,10 @@ export function tableChat(options: TableChatOptions): TableChat
 
             return;
         } else if (event.type === "turnEnd") {
-            if (goOn(opened, event)) {
+            // A turn the host began by itself answers no words of the player's: it is never followed, nor said empty.
+            const byHost = opened.byHost === true;
+
+            if (!byHost && goOn(opened, event)) {
                 return;
             }
 
@@ -263,12 +271,12 @@ export function tableChat(options: TableChatOptions): TableChat
 
             if (event.reason === "failed") {
                 add("table", event.why ?? "The master's turn failed.");
-            } else if (event.reason === "done" && opened.spoke !== true) {
+            } else if (event.reason === "done" && opened.spoke !== true && !byHost) {
                 // A turn that ends with nothing for the player to read, as some hosts end one after a tool they were refused: the page says so.
                 add("table", opened.refused === undefined ? silentTurn : `${silentTurn} ${refusedTool(opened.refused)}`);
             }
 
-            Object.assign(opened, { spoke: undefined, refused: undefined, nudged: undefined });
+            Object.assign(opened, { spoke: undefined, refused: undefined, nudged: undefined, byHost: undefined });
 
             // The turn's end follows the player's words that began it, in the file too.
             if (sending === undefined) {

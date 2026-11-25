@@ -1,9 +1,9 @@
 // The script that places a window on Windows, run for real as the engine runs it, with a browser of the test's own (test/desktop/fake-browser.cs, compiled
 // here): small windows that take no focus and close by themselves within seconds. Never a real browser, never a window of the player's.
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { lookUntil } from "../src/core/wait.ts";
 import { placeCommand, readPlaced, realSystem, type WindowKind, type WindowPlace, windowTitles } from "../src/desktop/index.ts";
 import { makeTempFolder } from "./support.ts";
@@ -13,18 +13,27 @@ const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
 const compiler = ["Framework64", "Framework"].map((folder) => join(systemRoot, "Microsoft.NET", folder, "v4.0.30319", "csc.exe")).find((path) => existsSync(path));
 const address = "http://127.0.0.1:5750/";
 let browser = "";
+let browserFolder = "";
 
 beforeAll(async () => {
     if (!onWindows) {
         return;
     }
 
-    const folder = join(makeTempFolder(), "Fake Browser");
+    browserFolder = makeTempFolder();
+    const folder = join(browserFolder, "Fake Browser");
     mkdirSync(folder);
     browser = join(folder, "fake-browser.exe");
     const compiled = await run(compiler ?? "csc.exe", ["/nologo", "/target:winexe", `/out:${browser}`, join(import.meta.dirname, "desktop", "fake-browser.cs")]);
     expect(existsSync(browser), compiled).toBe(true);
 }, 60_000);
+
+// The last browsers end as their logs are written: Windows holds their program a moment after, and an antivirus may too, so its folder goes with a few tries.
+afterAll(() => {
+    if (browserFolder !== "") {
+        rmSync(browserFolder, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+    }
+});
 
 describe.runIf(onWindows)("the window script on Windows, with a browser of the test's own", () => {
     it("compiles and runs, and says it opened a window it did not place where the browser shows none", async () => {
@@ -64,8 +73,12 @@ describe.runIf(onWindows)("the window script on Windows, with a browser of the t
     }, 60_000);
 });
 
-/** The engine's script run as the engine runs it, the fake browser in place of the browser, for a window of a kind at the address of a launcher. */
-async function place(kind: WindowKind, args: string[], wait = 8000): Promise<WindowPlace | "opened" | undefined>
+/**
+ * The engine's script run as the engine runs it, the fake browser in place of the browser, for a window of a kind at the address of a launcher. Its turn is
+ * the whole computer's: a launcher opening a window holds it while it waits for its browser, eight seconds at most, and another run of these tests a few;
+ * a wait of eight seconds, the engine's, would fail the test then.
+ */
+async function place(kind: WindowKind, args: string[], wait = 20_000): Promise<WindowPlace | "opened" | undefined>
 {
     const command = placeCommand(browser, args, kind, systemRoot, windowTitles(kind, address));
     const ran = await realSystem.run(command.file, command.args, { ...command.env, RPG_WINDOW_WAIT: String(wait) }, command.input);
