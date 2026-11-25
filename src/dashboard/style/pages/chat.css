@@ -1,0 +1,428 @@
+/* The Chat section: the table's chat with the master, its messages, the player's words, and where a chat is opened. */
+@layer pages {
+    /* The master said something while the player was in another section: a dot on the chat's tab, as the one of the choices that wait. */
+    .section-mark:has(.chat-dot) {
+        position: relative;
+    }
+
+    .chat-dot {
+        position: absolute;
+        top: -2px;
+        inset-inline-end: -4px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 2px var(--paper);
+    }
+
+    .chat-page {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--gap);
+    }
+
+    /* One card: the messages, what the master is doing, then the player's words or where a chat is opened. Open, it is as tall as the window leaves it
+       (--chat-room, measured by the page), its messages scrolling inside; closed, as tall as what it holds. */
+    .chat-box {
+        grid-template-rows: minmax(0, 1fr);
+        grid-auto-rows: auto;
+        overflow: hidden;
+    }
+
+    .chat-page.view-open .chat-box {
+        height: var(--chat-room, 60vh);
+    }
+
+    .chat-log-frame {
+        position: relative;
+        display: grid;
+        min-height: 0;
+    }
+
+    .chat-log {
+        min-height: 0;
+        padding: 16px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    /* A chat that is not open shows its last messages over where one is opened, which stays in sight under them. */
+    .chat-page:not(.view-open) .chat-log {
+        max-height: min(30vh, 320px);
+    }
+
+    /* The open chat before its first words: what will fill it, at its foot. */
+    .chat-empty {
+        align-self: end;
+        margin: 0;
+        padding: 16px;
+        color: var(--muted);
+    }
+
+    /* Few messages stand at the list's foot, by the player's words. */
+    .chat-messages {
+        display: grid;
+        align-content: end;
+        gap: 12px;
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .chat-message {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    /* The master's words, as text: lines of 65 characters at most. */
+    .chat-prose {
+        max-width: 65ch;
+    }
+
+    .chat-prose .markdown > :last-child {
+        margin-bottom: 0;
+    }
+
+    /* The master's lists are lists of their own, not lists inside the list of messages. */
+    .chat-prose ul {
+        list-style: disc;
+    }
+
+    .chat-text {
+        margin: 0;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    /* The player's words at the end side, on a tone above the card: told from the master's by their place and their ground, with no colour that means
+       something else, as the accent, which on the dark page is the gold of what is chosen. */
+    .chat-message.from-player {
+        justify-self: end;
+        max-width: min(85%, 60ch);
+        padding: 8px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: color-mix(in srgb, var(--ink) 7%, var(--panel));
+    }
+
+    /* A word of the table's, as a turn that failed: a notice among the messages, with its icon. */
+    .chat-message.from-table {
+        display: flex;
+        align-items: start;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1px solid color-mix(in srgb, var(--low) 45%, var(--rule));
+        border-radius: var(--radius-l);
+        background: color-mix(in srgb, var(--low) 10%, var(--panel));
+        font-weight: 600;
+    }
+
+    .chat-message.from-table svg.icon {
+        flex: none;
+        width: 20px;
+        height: 20px;
+        color: var(--low);
+    }
+
+    /* Words came under what is in sight: the way back to the end, over the list's foot. */
+    .chat-to-end {
+        position: absolute;
+        inset-inline-end: 16px;
+        bottom: 12px;
+        width: 40px;
+        height: 40px;
+    }
+
+    /* What the master is doing in their turn, and Stop at its end. */
+    .chat-turn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        margin: 0;
+        padding: 4px 16px;
+        border-top: 1px solid var(--rule);
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .chat-turn svg.icon {
+        flex: none;
+        width: 16px;
+        height: 16px;
+    }
+
+    .chat-turn-words {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .chat-turn .button {
+        flex: none;
+    }
+
+    /* A line that says how things stand: a chat opened by hand, an app that is not on this computer; in red with its icon, that the chat ended. */
+    .chat-note {
+        display: flex;
+        align-items: start;
+        gap: 8px;
+        margin: 0;
+        padding: 12px 16px 0;
+        color: var(--muted);
+    }
+
+    .chat-note svg.icon {
+        flex: none;
+        width: 20px;
+        height: 20px;
+    }
+
+    .chat-box > .chat-note:last-child {
+        padding-bottom: 16px;
+    }
+
+    .chat-log-frame + .chat-note {
+        border-top: 1px solid var(--rule);
+    }
+
+    .chat-note.problem {
+        color: var(--ink);
+        font-weight: 600;
+    }
+
+    .chat-note.problem svg.icon {
+        color: var(--low);
+    }
+
+    .chat-problem {
+        margin: 0;
+        padding: 8px 16px 0;
+        color: var(--low);
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* The player's words: their label, the field, then what the chat plays with, Close and Send. */
+    .chat-words {
+        display: grid;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--rule);
+    }
+
+    .chat-words-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .chat-words-label svg.icon {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* The field grows with the words, from two lines to six, where the browser can. */
+    .chat-field {
+        field-sizing: content;
+        width: 100%;
+        min-height: calc(2lh + 18px);
+        max-height: calc(6lh + 18px);
+        padding: 8px 12px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--paper);
+        color: var(--ink);
+        font: inherit;
+        line-height: 1.4;
+        resize: none;
+    }
+
+    .chat-foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .chat-plays {
+        flex: 1 1 8rem;
+        min-width: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+        overflow-wrap: anywhere;
+        text-align: start;
+    }
+
+    /* Where a chat is opened: what it is, each choice its label before its control, then the buttons at the end. */
+    .chat-start {
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .chat-log-frame ~ .chat-start {
+        border-top: 1px solid var(--rule);
+    }
+
+    .chat-note + .chat-start,
+    .chat-problem + .chat-start {
+        border-top: 0;
+    }
+
+    .chat-about {
+        max-width: 65ch;
+        margin: 0;
+        color: var(--muted);
+    }
+
+    .chat-fields {
+        display: grid;
+        grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr);
+        align-items: center;
+        justify-items: start;
+        gap: 10px 16px;
+    }
+
+    .chat-label {
+        font-weight: 600;
+    }
+
+    .chat-model {
+        width: min(100%, 22rem);
+        height: 38px;
+        padding: 0 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+        color: var(--ink);
+        font: inherit;
+    }
+
+    .chat-start .chat-note {
+        padding: 0;
+    }
+
+    .chat-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    /* Brought into sight with the focus, they stop over the dice's button, as the page's foot leaves it its room; on a phone the page itself keeps that room. */
+    .chat-buttons .button {
+        scroll-margin-block-end: 96px;
+    }
+
+    /* With no table beside the page the dice's button stands over the chat's lower corner at the end: the buttons under the words leave it its room. */
+    .body:not(:has(> .play-table)) .chat-page.view-open .chat-foot {
+        padding-inline-end: 72px;
+    }
+
+    /* In the setup, which has no sections, the chat stands with the questions where a table keeps it: under them, in their column, the room for the
+       dice's button after it; from 1100 px beside them, in sight as they scroll, under the corner that keeps the top. */
+    .setup-with-chat {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--gap);
+        padding-bottom: 96px;
+    }
+
+    .setup-with-chat .setup {
+        width: 100%;
+        padding-bottom: 0;
+    }
+
+    .setup-with-chat .chat-page {
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
+        scroll-margin-top: var(--gap);
+    }
+
+    .setup-with-chat .chat-page.view-open .chat-foot {
+        padding-inline-end: 72px;
+    }
+
+    @media (min-width: 1100px) {
+        .setup-with-chat {
+            grid-template-columns: minmax(0, 640px) minmax(360px, 560px);
+            justify-content: center;
+            align-items: start;
+            column-gap: 32px;
+            padding-bottom: 0;
+        }
+
+        .setup-with-chat .setup {
+            padding-bottom: 96px;
+        }
+
+        .setup-with-chat .chat-page {
+            position: sticky;
+            top: var(--gap);
+            margin: 56px 0 0;
+        }
+    }
+
+    @media (pointer: coarse) {
+        .chat-model {
+            height: var(--target);
+        }
+    }
+
+    /* On a phone each choice under its label, and the buttons the row's width. */
+    @media (max-width: 600px) {
+        .chat-fields {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 4px;
+        }
+
+        .chat-fields > .chat-label:not(:first-child) {
+            margin-top: 8px;
+        }
+
+        .chat-log {
+            padding: 12px;
+        }
+
+        .chat-message.from-player {
+            max-width: 92%;
+        }
+
+        /* The room is the messages': the field's label is for a screen reader alone, what the chat plays with is left out, and Close stands across from Send. */
+        .chat-words-label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
+
+        .chat-plays {
+            display: none;
+        }
+
+        .chat-buttons .button {
+            scroll-margin-block-end: 0;
+        }
+
+        .chat-foot {
+            justify-content: space-between;
+        }
+
+        .body:not(:has(> .play-table)) .chat-page.view-open .chat-foot {
+            padding-inline-end: 56px;
+        }
+
+        /* Under the setup's questions the chat stands whole over the dice's button. */
+        .setup-with-chat .chat-page.view-open .chat-foot {
+            padding-inline-end: 0;
+        }
+    }
+}

@@ -72,6 +72,10 @@ describe("architecture", () => {
             "server/route/notes.ts",
             // Where each campaign's table is found, in the player's data folder (D-582).
             "server/table/place.ts",
+            // The campaign's last chat with the master at its table, beside the table's place.
+            "server/table/last-chat.ts",
+            // Claude Code's own program, looked for in the folders of the PATH and the player's home, for the table's chat with the master.
+            "master/claude-code/program.ts",
             // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
             "campaign/last-choices.ts",
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).
@@ -139,7 +143,7 @@ describe("architecture", () => {
         expect(starting.sort()).toEqual(allowed.sort());
     });
 
-    it("names an AI host only in the registry and in the files named after a host", () => {
+    it("names an AI host only in the registry and in the files named after a host, or in a folder named after one", () => {
         const names = new Set<string>(hostIds.flatMap((id) => [id, hosts[id].client, hosts[id].hook]));
         // The files that still name a host by hand, each for its reason: a list meant to shrink.
         const exceptions = [
@@ -158,14 +162,15 @@ describe("architecture", () => {
             "campaign/host-files.ts",
         ];
         const found = codeFiles().filter((path) => {
-            const base = posix.basename(path).replace(/\.tsx?$/, "");
+            const parts = path.replace(/\.tsx?$/, "").split("/");
 
-            if (path === "core/hosts.ts" || names.has(base)) {
+            if (path === "core/hosts.ts" || parts.some((part) => names.has(part))) {
                 return false;
             }
 
+            // A whole literal in double or single quotes, or in backticks with nothing put in it; each looked for apart, as an apostrophe opens no literal.
             const source = readFileSync(new URL(path, sourceFolder), "utf8");
-            return [...source.matchAll(/"([^"\n]*)"/g)].some(([, text]) => names.has(text));
+            return [/"([^"\n]*)"/g, /'([^'\n]*)'/g, /`([^`]*)`/g].some((literal) => [...source.matchAll(literal)].some(([, text]) => names.has(text)));
         });
         expect(found.sort()).toEqual(exceptions.sort());
     });

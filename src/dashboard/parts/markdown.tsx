@@ -11,9 +11,10 @@ export type LinkTo = (name: string) => string | undefined;
 /** Who of the player characters found out a secret, by the title the text gives it, when not all of them did (VIEW-12); none when they all did. */
 export type SecretKnowers = (title: string) => string[] | undefined;
 
-export function Markdown({ text, link, secretKnowers }: { text: string; link?: LinkTo; secretKnowers?: SecretKnowers | undefined; })
+/** A text; with `lines`, a paragraph keeps its line breaks, as words written line by line in a chat: a page's own are joined, as markdown reads them. */
+export function Markdown({ text, link, secretKnowers, lines = false }: { text: string; link?: LinkTo; secretKnowers?: SecretKnowers | undefined; lines?: boolean; })
 {
-    return <div class="markdown">{blocks(text, link, true, secretKnowers).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
+    return <div class="markdown">{blocks(text, link, true, secretKnowers, lines).map((block, index) => <Fragment key={index}>{block}</Fragment>)}</div>;
 }
 
 /** A line of a page that is not a whole text, as a value of its fields: its links and its bold and italics, as the text reads them. */
@@ -68,7 +69,7 @@ const secretStart = /^[ \t]*\[!secret\][-+]?[ \t]*(.*)$/i;
 const pictureFile = /\.(?:png|jpe?g|gif|webp|avif|bmp|svg)$/i;
 
 /** The blocks of a text; `outer` for the text itself, where alone a quote may be a secret, as for the engine. */
-function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?: SecretKnowers): ComponentChildren[]
+function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?: SecretKnowers, lines = false): ComponentChildren[]
 {
     const shown: ComponentChildren[] = [];
     let paragraph: string[] = [];
@@ -85,7 +86,7 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?
 
     const close = (): void => {
         if (paragraph.length > 0) {
-            show(<p dir="auto">{inline(paragraph.map((line) => line.trim()).join(" "), link)}</p>);
+            show(<p dir="auto" class={lines ? "md-lines" : undefined}>{inline(paragraph.map((line) => line.trim()).join(lines ? "\n" : " "), link)}</p>);
         }
 
         if (list.length > 0) {
@@ -93,7 +94,7 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?
         }
 
         if (quote.length > 0) {
-            show(<Quote lines={quote} link={link} outer={outer} knowers={knowers} />);
+            show(<Quote lines={quote} link={link} outer={outer} knowers={knowers} kept={lines} />);
         }
 
         paragraph = [];
@@ -171,12 +172,12 @@ function blocks(text: string, link: LinkTo | undefined, outer: boolean, knowers?
  * A quote; at the text's own level, a secret the character discovered, written as a callout: a note of its own with its title, and who found it out, by name,
  * when not all the player characters did (D-480 (7)).
  */
-function Quote({ lines, link, outer, knowers }: { lines: string[]; link: LinkTo | undefined; outer: boolean; knowers: SecretKnowers | undefined; })
+function Quote({ lines, link, outer, knowers, kept }: { lines: string[]; link: LinkTo | undefined; outer: boolean; knowers: SecretKnowers | undefined; kept: boolean; })
 {
     const secret = outer ? secretStart.exec(lines[0]) : null;
 
     if (secret === null) {
-        return <blockquote>{blocks(lines.join("\n"), link, false)}</blockquote>;
+        return <blockquote>{blocks(lines.join("\n"), link, false, undefined, kept)}</blockquote>;
     }
 
     const title = secret[1].trim();

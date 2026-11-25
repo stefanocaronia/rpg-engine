@@ -48,13 +48,24 @@ export function readPlace(home: string, root: string): TablePlace | undefined
 /** Writes a table's place, its token for the player alone to read: the folder and the file are only theirs where the system has modes. */
 export function writePlace(home: string, place: TablePlace): void
 {
+    writeTableFile(home, placeFile(home, place.root), place);
+}
+
+/** A file of a campaign's table beside its place, by what ends its name, as ".chat.json". */
+export function tableFile(home: string, root: string, ending: string): string
+{
+    return join(tablesFolder(home), `${tableKey(root)}${ending}`);
+}
+
+/** Writes a file of the tables' folder as JSON: the folder and the file are only the player's where the system has modes. */
+export function writeTableFile(home: string, file: string, content: unknown): void
+{
     const folder = tablesFolder(home);
-    const file = placeFile(home, place.root);
     mkdirSync(folder, { recursive: true, mode: 0o700 });
     chmodSync(folder, 0o700);
     // A new file, so that its mode is the one given.
     rmSync(file, { force: true });
-    writeFileSync(file, `${JSON.stringify(place, null, 2)}\n`, { mode: 0o600 });
+    writeFileSync(file, `${JSON.stringify(content, null, 2)}\n`, { mode: 0o600 });
 }
 
 /** Takes a table's place away, only while it is the one with this token: a table started since keeps its own. */
@@ -102,7 +113,7 @@ function tablesFolder(home: string): string
 
 function placeFile(home: string, root: string): string
 {
-    return join(tablesFolder(home), `${tableKey(root)}.json`);
+    return tableFile(home, root, ".json");
 }
 
 /** A campaign's key, from its folder as its ports read it: the same however the path is written. */

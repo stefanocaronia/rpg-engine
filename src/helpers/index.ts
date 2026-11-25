@@ -7,5 +7,5 @@ export { chatDrawing, hostPictures, hostReader, hostWriter } from "./chosen.ts";
 export { claudeSays } from "./claude.ts";
 export { codexPictures, codexSays } from "./codex.ts";
 export { openCodeReader, openCodeWriter, readerRules } from "./opencode.ts";
-export { computerHelpers, helperChanges, helperCommand, queueInCodex } from "./programs.ts";
+export { computerHelpers, helperChanges, helperCommand, hostCommand, queueInCodex } from "./programs.ts";
 export { cleanSvg, svgIn } from "./svg.ts";

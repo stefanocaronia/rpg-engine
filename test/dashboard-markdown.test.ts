@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': this one is loaded by its address, with its functions' types.
 const { InlineText, Markdown, plainLine } = await import(new URL("../src/dashboard/parts/markdown.tsx", import.meta.url).href) as {
     InlineText: (props: { text: string; link?: (name: string) => string | undefined; }) => ComponentChildren;
-    Markdown: (props: { text: string; link?: (name: string) => string | undefined; secretKnowers?: (title: string) => string[] | undefined; }) => ComponentChildren;
+    Markdown: (props: { text: string; link?: (name: string) => string | undefined; secretKnowers?: (title: string) => string[] | undefined; lines?: boolean; }) => ComponentChildren;
     plainLine: (text: string) => string | undefined;
 };
 
@@ -70,6 +70,14 @@ describe("a page's text on the dashboard (D-275)", () => {
     it("leaves out a heading with nothing under it, and keeps the one over its sections", () => {
         expect(shown("## Vuota\n## Piena\ntesto")).toBe("<h4>Piena</h4><p>testo</p>");
         expect(shown("## Storia\n### Infanzia\ntesto\n### Vuota")).toBe("<h4>Storia</h4><h5>Infanzia</h5><p>testo</p>");
+    });
+
+    it("joins the lines of a page's paragraph, and keeps them where asked, as the master's words in the chat, in a quote too", () => {
+        const said = "L'oste alza gli occhi.\n«Si chiude al tramonto» dice.\n\n1. Entri.\n2. Resti fuori.\n\n> Una voce,\n> poi niente.";
+        expect(shown(said)).toBe("<p>L'oste alza gli occhi. «Si chiude al tramonto» dice.</p><p>1. Entri. 2. Resti fuori.</p><blockquote><p>Una voce, poi niente.</p></blockquote>");
+        expect(html(Markdown({ text: said, lines: true })).replace(/^<div>|<\/div>$/g, "")).toBe(
+            "<p>L'oste alza gli occhi.\n«Si chiude al tramonto» dice.</p><p>1. Entri.\n2. Resti fuori.</p><blockquote><p>Una voce,\npoi niente.</p></blockquote>",
+        );
     });
 });
 

@@ -9,6 +9,9 @@ import { ActSheet } from "./acts/sheet.tsx";
 import { ActStrip } from "./acts/strip.tsx";
 import { type Address, readAddress, redirectCombat, sectionAddress } from "./address.ts";
 import { answer, closeCard, readActs, readAsked, readChoices, readGameTheme, readModules, readView, readWidgets, sendSeen } from "./api.ts";
+import { chatView, lastHeard, unseenWords } from "./chat/chat.ts";
+import { ChatPage } from "./chat/page.tsx";
+import { useMasterChat } from "./chat/sending.ts";
 import type { Asked, AskedNow, Member, Moment, ShownModule, ShownRoll, ShownWidget } from "./data.ts";
 import { flies } from "./dice/pool.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
@@ -57,6 +60,9 @@ const productName = "RPG Engine";
 
 // How many of the last rolls the page reads at first, and how many more each time the player asks for older ones (D-302).
 const firstRolls = 20;
+
+// From this width the chat stands beside the setup's questions, as in the style sheet; under it, after them.
+const chatBesideSetup = "(min-width: 1100px)";
 
 // How long at most what a roll from a card or a die of a rest changed waits for its dice, when they never land.
 const longestHold = 15_000;
@@ -162,6 +168,8 @@ function App()
             setModules((before) => (JSON.stringify(before) === JSON.stringify(read) ? before : read));
             setModulesRead(true);
         }, () => undefined);
+        // The table's chat with the master, where a table keeps one (D-582).
+        void master.read();
 
         try {
             const [first, askedNow, actsNow, choicesNow] = await Promise.all([
@@ -510,6 +518,8 @@ function App()
         document.addEventListener("visibilitychange", tellSeen);
 
         events.addEventListener("changed", () => void read());
+        // The master's prose as it comes: the chat alone is read again.
+        events.addEventListener("chat", () => void master.read());
         events.onerror = () => setLive(false);
 
         const followAddress = (): void => {
@@ -553,6 +563,21 @@ function App()
         member,
         several,
     });
+    // The table's chat with the master (D-582); read() reads it again, by a function that never changes what it does.
+    const master = useMasterChat();
+
+    // Its address where no table keeps a chat leads to the party, as an address the page does not know.
+    useEffect(() => {
+        if (master.table === false && address.section === "chat") {
+            window.location.replace(sectionAddress("party"));
+        }
+    }, [master.table, address.section]);
+
+    // What the master said while the player was in another section: a dot on the chat's tab, until they go there.
+    const seenWords = useRef<number | undefined>(undefined);
+    const words = unseenWords(master.shown === undefined ? undefined : seenWords.current, lastHeard(master.shown), address.section === "chat");
+    seenWords.current = master.shown === undefined ? undefined : words.seen;
+
     // A number of a sheet thrown for fun, each a throw of its own (D-280).
     const throwFromSheet: FreeRoll = (roll, label, who) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label, ...(who === undefined ? {} : { who }) }));
 
@@ -609,6 +634,31 @@ function App()
     const pageWidgets = useMemo(() => (packWidget === undefined ? widgets : widgets.filter((widget) => widget.id !== packWidget)), [widgets, packWidget]);
     // While the campaign is in its setup, the page is its first configuration, as a portal's (D-370).
     const inSetup = setup?.mode === "setup";
+    // The setup has no sections: where a table keeps the chat, it stands beside the questions on a wide screen, under them on a narrow one (D-582).
+    const setupChat = inSetup && master.table === true;
+    const chatBeside = useMedia(chatBesideSetup);
+    const inChat = master.table === true && (address.section === "chat" || inSetup);
+    const chatOpen = master.shown !== undefined && chatView(master.shown) === "open";
+    const leftSetup = useRef(false);
+    // The page led to the chat's section as the setup ended: the player's words take the focus there, which went with the setup.
+    const ledToChat = useRef(false);
+
+    // The setup ends while the player talks with the master beside it: the page that comes shows the chat they were in, in its section.
+    useEffect(() => {
+        if (setupChat) {
+            leftSetup.current = chatOpen;
+        } else if (setup !== undefined && leftSetup.current) {
+            leftSetup.current = false;
+            ledToChat.current = true;
+            window.location.replace(sectionAddress("chat"));
+        }
+    }, [setupChat, chatOpen, setup?.mode]);
+
+    useEffect(() => {
+        if (address.section !== "chat") {
+            ledToChat.current = false;
+        }
+    }, [address.section]);
     const engineNotice = useEngineNotice(address.section);
 
     // The page's own messages, over it (D-298): a problem, the game away, a word to know; a newer RPG Engine last (T-219).
@@ -667,6 +717,7 @@ function App()
                                         asleep={!live && shown.readAt !== undefined}
                                         section={address.section === "choices" ? "party" : address.section}
                                         choices={(shown.choices?.sets ?? []).some(waits)}
+                                        chat={master.table !== true ? undefined : words.unseen ? "new" : "there"}
                                         fight={fight}
                                         yourTurn={yourTurn}
                                         turnName={turnName}
@@ -720,7 +771,14 @@ function App()
                                     />
                                 )}
                                 {inSetup
-                                    ? <SetupView setup={setup} />
+                                    ? setupChat
+                                        ? (
+                                            <div class="setup-with-chat">
+                                                <SetupView setup={setup} />
+                                                <ChatPage chat={master} place={chatBeside ? "beside" : "under"} />
+                                            </div>
+                                        )
+                                        : <SetupView setup={setup} />
                                     : (
                                         <>
                                             {
@@ -754,6 +812,7 @@ function App()
                                                 <main>
                                                     {address.section === "about" && <About product={productName} system={shown.system} />}
                                                     {address.section === "help" && <Help />}
+                                                    {address.section === "chat" && master.table === true && <ChatPage chat={master} entering={ledToChat.current} />}
                                                     {/* The quest the player follows, small, where the story goes on (D-367), when the table does not hold it. */}
                                                     {!table && address.section === "scene" && <FollowedQuests version={shown.version} campaign={shown.campaign} />}
                                                     {address.section === "scene" && (
@@ -895,8 +954,9 @@ function App()
                                         onClose={closeAct}
                                     />
                                 )}
+                                {/* In the chat a sentence the master heard is there as a message: its line here would only cover the player's words. */}
                                 <ActStrip
-                                    entries={strip}
+                                    entries={inChat ? strip.filter((entry) => entry.state !== "heard") : strip}
                                     problem={actProblem}
                                     onWithdraw={(id) => void withdraw(id)}
                                     bell={actsBell}

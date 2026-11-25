@@ -28,6 +28,11 @@
         line-height: 1.5;
     }
 
+    /* A paragraph that keeps its line breaks, as the master's words in the chat. */
+    .md-lines {
+        white-space: pre-line;
+    }
+
     /* A link of a page's text to a page the character knows. */
     .md-link {
         color: var(--accent);

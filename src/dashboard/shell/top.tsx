@@ -5,7 +5,7 @@
 // while the chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
 import { type ComponentChildren, Fragment, type RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { menuPages, packagePages, type Section, sectionAddress, sectionLabel, sections } from "../address.ts";
+import { chatPage, menuPages, packagePages, type Section, sectionAddress, sectionLabel, sections } from "../address.ts";
 import type { CalendarDay, Moment, Mood } from "../data.ts";
 import { type NavPage, ownKey } from "../packages/page-code.tsx";
 import { Drawn, WidgetChips } from "../packages/widgets.tsx";
@@ -45,6 +45,8 @@ interface TopOf
     ownShown?: string | undefined;
     /** Choices wait for the player (D-556): a dot on the Party's tab. */
     choices?: boolean;
+    /** The campaign's table keeps the chat with the master (D-582): its section after the others, with a dot while the master said something the player has not seen. */
+    chat?: "there" | "new" | undefined;
 }
 
 // What the row of the sections leaves between a link and the next, between the sections and the pages after them, and for the menu's button.
@@ -97,6 +99,7 @@ export function Top(top: TopOf)
                     ownPages={top.ownPages ?? []}
                     ownShown={top.ownShown}
                     choices={top.choices}
+                    chat={top.chat}
                 />
                 {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
@@ -110,7 +113,7 @@ export function Top(top: TopOf)
  * settings, the packages and About as icons at the row's end (D-333, D-409), the packages a menu of the packages' other pages when they have some: what does
  * not fit goes into the menu, those icons first, then the tabs from the last.
  */
-function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, choices }: {
+function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, choices, chat }: {
     current: Section;
     fight?: boolean | undefined;
     yourTurn?: boolean | undefined;
@@ -118,12 +121,13 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
     ownPages: NavPage[];
     ownShown?: string | undefined;
     choices?: boolean | undefined;
+    chat?: "there" | "new" | undefined;
 })
 {
     // While the scene goes by turns the Scene's name is in gold; on the player's turn, from another section, it pulses (D-315, D-349, D-351, D-444).
     const turns = fight === true && current !== "scene";
     const turn = yourTurn === true && current !== "scene";
-    const tabs = [...sections.map((section) => sectionTab(section, current)), ...ownPages.filter((page) => page.nav === "tab").map((page) => ownTab(page, ownShown))];
+    const tabs = [...sections.map((section) => sectionTab(section, current)), ...(chat === undefined ? [] : [sectionTab(chatPage, current)]), ...ownPages.filter((page) => page.nav === "tab").map((page) => ownTab(page, ownShown))];
     const inMenu = ownPages.filter((page) => page.nav === "menu");
     const row = useRef<HTMLDivElement>(null);
     const fitting = useFitting(row, tabs.length, `${tabs.map((tab) => tab.key).join()} ${turn} ${inMenu.length}`);
@@ -140,6 +144,8 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
                         ? `${tab.label}, ${turnName === undefined ? t("your turn") : t("It's {name}'s turn", { name: turnName })}`
                         : tab.key === "party" && choices === true
                         ? t("Party, choices waiting")
+                        : tab.key === chatPage && chat === "new"
+                        ? t("Chat, new words from the master")
                         : undefined;
                     return (
                         <a
@@ -154,6 +160,7 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
                             <span class="section-mark">
                                 {tab.icon}
                                 {tab.key === "party" && choices === true && <span class="choices-dot" aria-hidden="true" />}
+                                {tab.key === chatPage && chat === "new" && <span class="chat-dot" aria-hidden="true" />}
                             </span>
                             <span class="section-name" dir="auto">{tab.label}</span>
                         </a>
@@ -199,7 +206,7 @@ interface Tab
     own: boolean;
 }
 
-function sectionTab(section: (typeof sections)[number], current: Section): Tab
+function sectionTab(section: (typeof sections)[number] | typeof chatPage, current: Section): Tab
 {
     return { key: section, href: sectionAddress(section), label: sectionLabel(section), icon: <Icon name={section} />, current: section === current, own: false };
 }

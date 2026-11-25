@@ -6,11 +6,14 @@ import { findCampaign } from "../../campaign/index.ts";
 import { chatFolders as hostChatFolders } from "../../chats/index.ts";
 import { type ChatFolders, type Context, forgetChat, userDataFolder } from "../../core/context.ts";
 import type { SessionStore } from "../../core/session-store.ts";
-import { getVersion, isNewerVersion } from "../../core/version.ts";
+import { getVersion } from "../../core/version.ts";
+import { hostCommand } from "../../helpers/index.ts";
 import { type ChatSide, servedContext } from "../context.ts";
 import { type Dashboard, type DashboardOptions, startDashboard } from "../dashboard/index.ts";
 import { showPage } from "../dashboard/opener.ts";
-import { answerLine, firstLine, type Hello, probeTable, readHello, type Refusal } from "./hello.ts";
+import { type TableChat, tableChat, type TableChatOptions } from "./chat.ts";
+import { type Door, welcome } from "./door.ts";
+import { probeTable } from "./hello.ts";
 import { knock, newToken, readPlace, removePlace, removeSocketFile, type TablePlace, tableSocket, writePlace } from "./place.ts";
 import { type Seat, tableSeat } from "./seat.ts";
 
@@ -22,6 +25,8 @@ export interface Table
     /** Done once the table ended, its page closed and its place gone. */
     ended: Promise<void>;
     end(why: string): Promise<void>;
+    /** Closes the table's own chat with the master at once, its host's process with it, as before the process exits. */
+    closeChat(): void;
 }
 
 export interface TableOptions
@@ -46,6 +51,8 @@ export interface TableOptions
     chatFolders?: (environment: Record<string, string>) => ChatFolders | undefined;
     /** What the table does, a line at a time. */
     log?: (line: string) => void;
+    /** What the table's chat with the master takes from outside, the tests' own: the hosts' programs and how they open, the environment, the player's home. */
+    master?: Partial<Pick<TableChatOptions, "open" | "driver" | "npmProgram" | "environment" | "userHome" | "newToken">>;
 }
 
 /** What `rpg table` may be given besides its folder: the table's options, and how the process exits on an error nothing caught; the tests give their own. */
@@ -54,7 +61,7 @@ export type RunOptions = Partial<Omit<TableOptions, "folder">> & { exit?: (code:
 /** A table opened, the link of one there already, or why it could not start. */
 export type Opened = Table | { running: string; } | { refused: string; };
 
-/** What a table is made of once its page serves: its context and files, its page, and its seat. */
+/** What a table is made of once its page serves: its context and files, its page, its seat, and its own chat with the master. */
 interface Parts
 {
     root: string;
@@ -62,13 +69,12 @@ interface Parts
     session: SessionStore;
     dashboard: Dashboard;
     seat: Seat;
+    chat: TableChat;
 }
 
 const idle = 5 * 60_000;
 const idleEvery = 15_000;
 const helloWait = 2000;
-// A hello carries a few names of the chat's environment: a few kilobytes at most.
-const mostHello = 1024 * 1024;
 // How long a table already there may take to answer a knock, and a probe.
 const knockWait = 1000;
 // How long a table that could not start looks for one that started beside it, and how often.
@@ -173,16 +179,39 @@ async function tableAfterAll(options: TableOptions, root: string): Promise<{ run
     return there;
 }
 
-/** The table's context, its page and its seat; where its page does not start, the table that serves it after all, or why not. */
+/** The table's context, its page, its seat and its own chat; where its page does not start, the table that serves it after all, or why not. */
 async function openParts(options: TableOptions, root: string): Promise<Parts | { running: string; } | { refused: string; }>
 {
-    // The chat at the table names the host and gives its environment, once there is a seat.
+    // The chat at the table names the host and gives its environment, once there is a seat; the table's own chat and its page tell each other, once both are.
     let seat: Seat | undefined;
+    let dashboard: Dashboard | undefined;
     const made = options.served ?? ((chat: ChatSide) => servedContext(chat, options.folder));
     const { context, session } = await made({ host: () => seat?.host(), environment: () => seat?.environment() ?? {} });
     // As no chat has sat yet: each chat's server makes its own.
     forgetChat(context);
-    const dashboard = await startDashboard(context, session, options.dashboard ?? {});
+    const environment = options.master?.environment ?? process.env;
+    const chat: TableChat = tableChat({
+        root,
+        home: options.home,
+        environment,
+        platform: options.platform,
+        userHome: homedir(),
+        npmProgram: (host) => hostCommand(host, environment),
+        ...options.master,
+        // A chat sits that the table's own never gave a token: one opened by hand.
+        elsewhere: () => seat?.taken() === true && !chat.gave(seat.environment()),
+        changed: () => dashboard?.chatChanged(),
+        switched: () => dashboard?.notify(),
+        idle: () => dashboard?.deliver(),
+        // The table's chat closed or ended: its server, still seated, leaves at once.
+        left: (token) => {
+            if (seat?.environment().RPG_TABLE_MASTER === token) {
+                void seat.clear();
+            }
+        },
+        ...(options.log === undefined ? {} : { log: options.log }),
+    });
+    dashboard = await startDashboard(context, session, { ...options.dashboard, master: chat });
 
     if (dashboard === undefined) {
         session.close();
@@ -194,13 +223,13 @@ async function openParts(options: TableOptions, root: string): Promise<Parts | {
 
     showPage(context, dashboard);
     seat = tableSeat(context, dashboard, options.chatFolders ?? ((environment) => hostChatFolders(environment, homedir())));
-    return { root, context, session, dashboard, seat };
+    return { root, context, session, dashboard, seat, chat };
 }
 
 /** The table at work once its page serves: its socket listening and its place written, its door open, its watch for when to end. */
 async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
 {
-    const { root, context, session, dashboard, seat } = parts;
+    const { root, context, session, dashboard, seat, chat } = parts;
     const socket = tableSocket(options.home, root, options.platform);
     const place: TablePlace = { root, pid: process.pid, version: options.version, socket, token: newToken(), url: dashboard.url };
     const log = options.log ?? (() => undefined);
@@ -216,6 +245,7 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
     const end = (why: string): Promise<void> => {
         ending ??= (async () => {
             clearInterval(looking);
+            chat.close();
             listener.close();
             await seat.clear();
             knocking.forEach((knocked) => knocked.destroy());
@@ -228,7 +258,7 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
         return ending;
     };
 
-    const door: Door = { place, version: options.version, seat, helloWait: options.helloWait ?? helloWait, log, end, ending: () => ending !== undefined };
+    const door: Door = { place, version: options.version, seat, chat, helloWait: options.helloWait ?? helloWait, log, end, ending: () => ending !== undefined };
     const listener = createServer((knocked) => {
         knocking.add(knocked);
         knocked.once("close", () => knocking.delete(knocked));
@@ -256,11 +286,25 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
 
     listener.on("error", () => undefined);
     writePlace(options.home, place);
-    // The code of a package changed on disk since the table loaded it: the next start loads it, once no call runs.
+    // The code of a package changed on disk since the table loaded it: the next start loads it, once no call and no turn of its own chat runs.
     context.codeOutdated = () => (outdated = true);
     const idleFor = options.idle ?? idle;
+    // The table's own chat with no page for as long: its turn is stopped, and the wait starts again; out of a turn it is closed, its seat frees, and the
+    // table's own end follows.
+    let chatBusy = now();
     const looking = setInterval(() => {
-        if (outdated && (context.chat?.calls ?? 0) === 0) {
+        if (!chat.active() || dashboard.pages() > 0) {
+            chatBusy = now();
+        } else if (now() - chatBusy >= idleFor && chat.inTurn()) {
+            chatBusy = now();
+            chat.stop();
+            log(`The table stopped its chat's turn: no page for ${Math.round(idleFor / 1000)} s.`);
+        } else if (now() - chatBusy >= idleFor) {
+            chat.close();
+            log(`The table closed its chat with the master: no turn and no page for ${Math.round(idleFor / 1000)} s.`);
+        }
+
+        if (outdated && (context.chat?.calls ?? 0) === 0 && !chat.inTurn()) {
             void end("the code of a package of the campaign changed on disk since the table loaded it");
         } else if (seat.taken() || dashboard.pages() > 0) {
             lastBusy = now();
@@ -270,82 +314,7 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
     }, options.idleEvery ?? idleEvery);
 
     log(`The table of ${root} serves its page at ${dashboard.url}; its chats come through ${socket}.`);
-    return { url: dashboard.url, place, ended, end };
-}
-
-/** What the table's door knows of the table: its place and engine, its seat, how long a hello may take, its log and its end. */
-interface Door
-{
-    place: TablePlace;
-    version: string;
-    seat: Seat;
-    helloWait: number;
-    log: (line: string) => void;
-    end: (why: string) => Promise<void>;
-    ending: () => boolean;
-}
-
-/**
- * A knock at the table: a chat that says hello with the place's token and the table's engine sits, while the seat is free and the table not ending; any other
- * is told why not, and what says no hello is closed without a word; a probe is told the table's engine and whether a chat sits. A newer engine's chat ends a
- * table no chat sits at, so that it can start its own. Whether a chat sat, once it left.
- */
-async function welcome(socket: Socket, door: Door): Promise<boolean>
-{
-    socket.on("error", () => undefined);
-    const first = await firstLine(socket, door.helloWait, mostHello);
-    const hello = first === undefined ? undefined : readHello(first.line);
-
-    if (first === undefined || hello === undefined) {
-        socket.destroy();
-        return false;
-    }
-
-    const refused = refusal(hello, door);
-
-    if (refused !== undefined) {
-        socket.end(answerLine({ refused }));
-        door.log(`A chat was refused (${refused}${refused === "version" ? `: it runs RPG Engine ${hello.version}, the table ${door.version}` : ""}).`);
-
-        if (refused === "version" && isNewerVersion(hello.version, door.version) && !door.seat.taken()) {
-            void door.end(`a chat of the newer RPG Engine ${hello.version} came`);
-        }
-
-        return false;
-    }
-
-    if (hello.probe) {
-        socket.end(answerLine({ table: { version: door.version, seated: door.seat.taken() } }));
-        return false;
-    }
-
-    socket.write(answerLine({ ok: true }));
-    door.log("A chat sat at the table.");
-    await door.seat.sit(socket, first.rest, hello.environment);
-    door.log("The chat left the table.");
-    return true;
-}
-
-/** Why a hello may not sit, if it may not: a probe is answered whatever its engine and whoever sits. */
-function refusal(hello: Hello, door: Door): Refusal | undefined
-{
-    if (hello.token !== door.place.token) {
-        return "token";
-    }
-
-    if (door.ending()) {
-        return "ending";
-    }
-
-    if (hello.probe) {
-        return undefined;
-    }
-
-    if (hello.version !== door.version) {
-        return "version";
-    }
-
-    return door.seat.taken() ? "busy" : undefined;
+    return { url: dashboard.url, place, ended, end, closeChat: () => chat.close() };
 }
 
 /**
@@ -388,8 +357,8 @@ function listening(server: Server, path: string): Promise<string | undefined>
 }
 
 /**
- * In `rpg table` alone: a promise that failed with nobody to catch it is logged, and the table goes on; an exception nobody caught is logged, the place taken
- * away, and the process ends with 1. What takes the guard away.
+ * In `rpg table` alone: a promise that failed with nobody to catch it is logged, and the table goes on; an exception nobody caught is logged, the table's chat
+ * closed with its host's process, the place taken away, and the process ends with 1. What takes the guard away.
  */
 function guardProcess(table: Table, options: TableOptions, exit: (code: number) => void): () => void
 {
@@ -398,6 +367,7 @@ function guardProcess(table: Table, options: TableOptions, exit: (code: number) 
 
     const thrown = (error: unknown): void => {
         options.log?.(`rpg table: an error nobody caught; the table ends. ${said(error)}`);
+        table.closeChat();
         removePlace(options.home, table.place.root, table.place.token);
         exit(1);
     };

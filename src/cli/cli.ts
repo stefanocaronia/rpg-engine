@@ -33,6 +33,9 @@ if (args.length === 1 && args[0] === "mcp" && process.env.RPG_HELPER === "1") {
 } else if (args[0] === "--read-library") {
     const { readLibraryHere } = await import("../commands/shared/books/library-reader.ts");
     await readLibraryHere();
+} else if (args[0] === "--listen" && process.env.RPG_TABLE_MASTER !== undefined) {
+    // In a chat the table opened, what the player does on the page reaches the master as a message the table sends: the hook has nothing to wait for.
+    process.exitCode = 0;
 } else if (args[0] === "--listen" && args.length <= 2) {
     const { listen, listeningHosts } = await import("../server/bell/index.ts");
     const host = listeningHosts.find((one) => one === (args[1] ?? hosts.claudeCode.hook));

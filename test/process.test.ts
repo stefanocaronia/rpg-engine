@@ -1,7 +1,13 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { type LineProcess, startLineProcess, stopTree, whenEnded } from "../src/core/process.ts";
+
+// spawnSync watched, as taskkill runs through it on Windows; everything else as it is.
+vi.mock("node:child_process", async (original) => {
+    const real = await original<typeof import("node:child_process")>();
+    return { ...real, spawnSync: vi.fn(real.spawnSync) };
+});
 
 // Every process a test started, stopped after it whatever happened.
 const started: (number | undefined)[] = [];
@@ -47,6 +53,45 @@ describe("process", () => {
         await until(() => !isAlive(child.pid));
         await pause(300);
         expect(ends).toEqual([]);
+    }, 15_000);
+
+    it("stops nothing once its exit was seen: its pid may be another program's by then", async () => {
+        const child = node("process.exit(3);");
+        const ends: string[] = [];
+        child.onEnd((reason) => ends.push(reason));
+        await until(() => ends.length > 0);
+        vi.mocked(spawnSync).mockClear();
+        const killed = vi.spyOn(process, "kill");
+
+        try {
+            child.stop();
+            expect(vi.mocked(spawnSync)).not.toHaveBeenCalled();
+            expect(killed).not.toHaveBeenCalled();
+        } finally {
+            killed.mockRestore();
+        }
+    }, 15_000);
+
+    it.skipIf(process.platform === "win32")("kills a process that does not end at SIGTERM a few seconds after", async () => {
+        const child = node("process.on('SIGTERM', () => undefined); console.log('ready'); setInterval(() => undefined, 1000);");
+        const lines: string[] = [];
+        child.onLine((line) => lines.push(line));
+        await until(() => lines.length > 0);
+        child.stop();
+        await pause(1000);
+        expect(isAlive(child.pid)).toBe(true);
+        await until(() => !isAlive(child.pid));
+    }, 15_000);
+
+    it("reads its errors by lines when asked, and tells its end once they are read", async () => {
+        const errors: string[] = [];
+        const child = startLineProcess(process.execPath, ["-e", "process.stderr.write('first\\nsecond\\n', () => process.exit(1));"], { cwd: tmpdir(), env: process.env, errors: (line) => errors.push(line) });
+        started.push(child.pid);
+        const ends: string[] = [];
+        child.onEnd((reason) => ends.push(`${reason} after ${errors.length}`));
+        await until(() => ends.length > 0);
+        expect(errors).toEqual(["first", "second"]);
+        expect(ends).toEqual(["exit code 1 after 2"]);
     }, 15_000);
 
     it("tells an end that came before its listener as soon as the listener is set", async () => {

@@ -207,6 +207,18 @@ describe("the doorbell's answer in each host (D-578)", () => {
         expect(ran.code).toBe(1);
         expect(ran.stderr).toContain("rpg --listen does not know the host gemini: give one of claude, codex, antigravity, opencode, or none for Claude Code.");
     }, 30_000);
+
+    it("exits at once with 0 in a chat the campaign's table opened, its input never read", async () => {
+        const cli = join(import.meta.dirname, "..", "src", "cli", "cli.ts");
+        const child = spawn(process.execPath, ["--no-warnings", cli, "--listen"], { cwd: temporary(), env: { ...process.env, RPG_TABLE_MASTER: "a-token" } });
+        let output = "";
+        child.stdout.on("data", (chunk: Buffer) => (output += String(chunk)));
+        child.stderr.on("data", (chunk: Buffer) => (output += String(chunk)));
+        // Its input stays open: a hook that read it would wait for its end.
+        const code = await new Promise<number | null>((done) => child.on("exit", done));
+        expect(code).toBe(0);
+        expect(output).toBe("");
+    }, 30_000);
 });
 
 describe("the engine's plugin for OpenCode (D-578)", () => {

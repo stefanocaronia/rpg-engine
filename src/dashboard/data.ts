@@ -100,6 +100,48 @@ export interface ActsShown
     bell: boolean;
 }
 
+/** An AI app the table's chat with the master may open in: whether it is on this computer, the model it proposes and the efforts it knows. */
+export interface ChatHost
+{
+    id: string;
+    name: string;
+    found: boolean;
+    model: string;
+    efforts: string[];
+}
+
+/** A message of the table's chat with the master: the player's words, the master's, as markdown, growing while they answer, or a word of the table itself. */
+export interface ChatMessage
+{
+    id: number;
+    from: "player" | "master" | "table";
+    text: string;
+}
+
+/** The app, model and effort a chat with the master plays with. */
+export interface ChatChoice
+{
+    host: string;
+    model: string;
+    effort?: string;
+}
+
+/**
+ * The table's chat with the master as the page shows it: the apps it may open in, the campaign's last choice and whether a chat of it can be taken up, the
+ * open chat with how its turn stands, why it ended and the command the master uses now, its messages, and whether a chat opened by hand plays the campaign.
+ */
+export interface MasterShown
+{
+    hosts: ChatHost[];
+    last?: ChatChoice & { resumable: boolean; };
+    chat?: ChatChoice & { state: "idle" | "turn" | "ended"; why?: string; tool?: string; };
+    messages: ChatMessage[];
+    elsewhere: boolean;
+}
+
+/** What the page reads of the master's chat: nothing of it where no table keeps one, as when a chat serves the page. */
+export type MasterNow = { table: false; } | ({ table: true; } & MasterShown);
+
 /** Where the page puts the groups of a sheet: those of its rail, in order, and the order of the others (D-295); those at hand in a fight (D-315). */
 export interface SheetCards
 {

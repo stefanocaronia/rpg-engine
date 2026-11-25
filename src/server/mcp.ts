@@ -127,12 +127,21 @@ export function createMcpServer(context: Context = defaultContext(), environment
         const installing = (): void => void installer.install().then(afterCall).catch(() => undefined);
 
         if (context.files instanceof SessionStore) {
-            // The campaign's page too, as the chat starts, never waiting for the player's first words (D-577).
-            setTimeout(() =>
-                void preload(context, context.files as SessionStore).then(() => {
-                    void beforeCall?.().catch(() => undefined);
-                    installing();
-                }), preloadAfter);
+            // The campaign's page too, as the chat starts, never waiting for the player's first words (D-577). A chat that left a table meanwhile, whose
+            // context the table gave the next one, starts nothing.
+            const chat = context.chat;
+            setTimeout(() => {
+                if (context.chat !== chat) {
+                    return;
+                }
+
+                void preload(context, context.files as SessionStore, chat).then((preloaded) => {
+                    if (preloaded) {
+                        void beforeCall?.().catch(() => undefined);
+                        installing();
+                    }
+                });
+            }, preloadAfter);
         } else {
             installing();
         }
@@ -175,12 +184,18 @@ export function toolDescriptions(context: Context): Record<string, string>
 
 /**
  * Reads the campaign of the server's folder, if there is one, before the first call needs it; a campaign that does not read waits for that call to say why.
- * Its start lines in AGENTS.md follow the engine, as after an update (D-97).
+ * Its start lines in AGENTS.md follow the engine, as after an update (D-97). Nothing is written once `chat` is no longer the context's, as after it left a
+ * table: whether it was still the context's.
  */
-async function preload(context: Context, session: SessionStore): Promise<void>
+async function preload(context: Context, session: SessionStore, chat: Context["chat"]): Promise<boolean>
 {
     try {
         await session.ready(true);
+
+        if (context.chat !== chat) {
+            return false;
+        }
+
         withFiles(session, () => {
             const root = findCampaign(context.folder);
 
@@ -202,6 +217,8 @@ async function preload(context: Context, session: SessionStore): Promise<void>
     } catch {
         // The call that needs the campaign reads it again, and says what is wrong.
     }
+
+    return true;
 }
 
 // The first loading of each server's extension tools, which the server started for a host waits for.

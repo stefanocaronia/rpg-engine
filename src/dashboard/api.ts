@@ -1,5 +1,5 @@
 // What the page asks the dashboard's server: view, how the numbers of a group are made (FOR-8), and what the master asks, which a click answers (D-279).
-import type { ActsShown, AskedNow, ChoicesNow, PlayerSetting, ResetPoint, ShownModule, ShownTheme, ShownWidget, View, WorldMap } from "./data.ts";
+import type { ActsShown, AskedNow, ChatChoice, ChoicesNow, MasterNow, PlayerSetting, ResetPoint, ShownModule, ShownTheme, ShownWidget, View, WorldMap } from "./data.ts";
 import { refusalText, type Refused } from "./parts/refusals.ts";
 import { t } from "./text.ts";
 
@@ -662,6 +662,31 @@ export async function withdrawAct(id: string): Promise<ActsShown | "heard" | und
         return response.status === 409 ? "heard" : response.ok ? await response.json() as ActsShown : undefined;
     } catch {
         return undefined;
+    }
+}
+
+/** The table's chat with the master as it is now (D-582); no table where the server keeps none, or knows no such address. */
+export async function readMaster(): Promise<MasterNow>
+{
+    const response = await fetch("/api/master");
+    return response.ok ? await response.json() as MasterNow : { table: false };
+}
+
+/** What the page asks of the table's chat with the master: to open one, taking up the last unless fresh, the player's words, to stop the turn, to close it. */
+export type MasterWish = { open: ChatChoice & { fresh: boolean; }; } | { say: string; } | { stop: true; } | { close: true; };
+
+/** Asks it of the chat: the chat as it is after, and, when the table refuses or the game is away, why. */
+export async function changeMaster(wish: MasterWish): Promise<{ shown?: MasterNow; error?: string; }>
+{
+    try {
+        const response = await fetch("/api/master", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(wish) });
+        const { error, ...shown } = await response.json().catch(() => ({})) as Partial<MasterNow> & { error?: string; };
+        return {
+            ...(shown.table === undefined ? {} : { shown: shown as MasterNow }),
+            ...(response.ok ? {} : { error: error ?? t("It did not reach the game: try again.") }),
+        };
+    } catch {
+        return { error: t("It did not reach the game: try again.") };
     }
 }
 

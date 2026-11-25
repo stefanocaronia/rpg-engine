@@ -274,14 +274,19 @@ export async function act(request: IncomingMessage, response: ServerResponse, se
 }
 
 /**
- * Brings the sentences waiting to the master while no call of theirs runs, which would take them at its head (D-495): into Codex's queue, as the player's own
- * messages, else by Claude Code's doorbell. Every ring comes from a sentence the player said, never from time.
+ * Brings the sentences waiting to the master while no call of theirs runs, which would take them at its head (D-495): to the table's own chat with the master,
+ * one a turn; into Codex's queue, as the player's own messages; else by Claude Code's doorbell. Every ring comes from a sentence the player said, never from time.
  */
 export function deliverActs(served: Served): void
 {
     const chat = served.context.chat;
 
     if (served.acts.pending.length === 0 || (chat?.calls ?? 0) > 0) {
+        return;
+    }
+
+    if (served.master?.active() === true) {
+        sayToMaster(served, served.master);
         return;
     }
 
@@ -299,6 +304,21 @@ export function deliverActs(served: Served): void
     if (served.chat.bell !== undefined) {
         ringBell(served, served.chat.bell, served.chat.bellWords === true);
         served.chat.bell = undefined;
+        served.notify();
+    }
+}
+
+/**
+ * Says the first sentence waiting to the table's chat with the master, with what the character knows of its thing, the page keeping the sentence alone: heard
+ * once sent; while a turn runs, it waits for its end.
+ */
+function sayToMaster(served: Served, master: NonNullable<Served["master"]>): void
+{
+    const one = served.acts.pending[0];
+    const known = one.item === undefined ? undefined : knownOfThing(served, one.item);
+
+    if (master.say(known === undefined ? one.text : `${one.text}\n\n${known}`, one.text) === "sent") {
+        markHeard(served.acts, [one.id]);
         served.notify();
     }
 }
@@ -492,12 +512,12 @@ function actsShown(served: Served): { pending: Acts["pending"]; heard: string[];
 }
 
 /**
- * Whether a sentence said on the page reaches the master at once (D-495): Claude Code's doorbell came in this chat, and its last hook did not go away without
- * a ring; or Codex named its thread.
+ * Whether a sentence said on the page reaches the master at once (D-495): the table's own chat with the master is open; Claude Code's doorbell came in this
+ * chat, and its last hook did not go away without a ring; or Codex named its thread.
  */
 function hasBell(served: Served): boolean
 {
-    return (served.chat.belled === true && served.chat.bellGone !== true) || (inCodex(served) && served.context.chat?.thread !== undefined && served.chat.queueBroken !== true && served.queue.ready());
+    return served.master?.active() === true || (served.chat.belled === true && served.chat.bellGone !== true) || (inCodex(served) && served.context.chat?.thread !== undefined && served.chat.queueBroken !== true && served.queue.ready());
 }
 
 function inCodex(served: Served): boolean

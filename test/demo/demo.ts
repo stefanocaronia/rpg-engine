@@ -1,7 +1,7 @@
 // The demo campaigns of the dashboard (D-272), made the first time, then kept, so that rpg can change them from their folder. Not part of the tests. One plays
 // free, the engine's own system, in tmp/dashboard-demo; the other the 5e of its repository beside this one, in tmp/dashboard-demo-5e, for the 5e's cards:
 // the death saves and the hit dice (D-513 (1)).
-import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseDocument } from "yaml";
 import { chosenPictureMaker } from "../../src/campaign/index.ts";
@@ -19,14 +19,22 @@ import { npmPackages } from "../../src/packages/index.ts";
 import { type Dashboard, startDashboard } from "../../src/server/dashboard/index.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { inPlay } from "../support.ts";
+import { demoMaster } from "./master.ts";
 
 /** The game systems a demo plays: free, which the engine brings, or the 5e of its repository. */
 export type DemoSystem = "free" | "5e";
 
-/** The folder of each demo campaign. */
-export function demoFolderOf(system: DemoSystem): string
+/** What a demo is served with: the chat with a master of the demo's own, and a campaign still in its setup in place of the one in play. */
+export interface DemoOptions
 {
-    return join(import.meta.dirname, "..", "..", "tmp", system === "free" ? "dashboard-demo" : "dashboard-demo-5e");
+    chat?: boolean;
+    setup?: boolean;
+}
+
+/** The folder of each demo campaign; the one still in its setup has its own. */
+export function demoFolderOf(system: DemoSystem, setup = false): string
+{
+    return join(import.meta.dirname, "..", "..", "tmp", setup ? "dashboard-demo-setup" : system === "free" ? "dashboard-demo" : "dashboard-demo-5e");
 }
 
 /** The demo of free, the engine's own system. */
@@ -128,11 +136,13 @@ export interface DemoDashboard extends Dashboard
 
 /**
  * Serves the built dashboard of a demo campaign, free's unless the 5e is asked, making the campaign first when it is not there; on the dashboard's ports unless
- * others are given. The 5e's demo needs its repository beside the engine, built.
+ * others are given. The 5e's demo needs its repository beside the engine, built. With `chat`, the page has the chat with a master of the demo's own (D-582), as where a
+ * campaign's table keeps it: no program started, nothing spent. With `setup`, the campaign is one just made, still in its setup, with no game system yet: made
+ * anew each time it is served, as a campaign leaves its setup as its questions are answered.
  */
-export async function serveDemo(ports?: number[], system: DemoSystem = "free"): Promise<DemoDashboard>
+export async function serveDemo(ports?: number[], system: DemoSystem = "free", { chat = false, setup = false }: DemoOptions = {}): Promise<DemoDashboard>
 {
-    const folder = demoFolderOf(system);
+    const folder = demoFolderOf(system, setup);
     const missing = system === "5e" ? fifthEditionMissing() : undefined;
 
     if (missing !== undefined) {
@@ -164,7 +174,15 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
         readLibrary: () => void readLibraryHere(join(`${folder}-home`, "library")),
     };
 
-    if (!existsSync(join(folder, "campaign.yaml"))) {
+    if (setup) {
+        rmSync(folder, { recursive: true, force: true });
+        mkdirSync(folder, { recursive: true });
+        const made = await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it"], context);
+
+        if (made.exitCode !== 0) {
+            throw new Error(`rpg init: ${made.output}`);
+        }
+    } else if (!existsSync(join(folder, "campaign.yaml"))) {
         // The 5e's code works out the sheet as Ettore is written.
         context.systemCode = await loadSystemCode(context.systemFolders);
         await makeDemo(context, folder, system);
@@ -182,7 +200,8 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
 
     // The game systems, and what this computer translated of them, as the MCP server keeps them (D-539).
     const session = new SessionStore({ systemFolders: [...context.systemFolders, join(`${folder}-home`, "systems")] });
-    const dashboard = await startDashboard({ ...context, files: session }, session, { ports });
+    const master = chat ? demoMaster() : undefined;
+    const dashboard = await startDashboard({ ...context, files: session }, session, { ports, ...(master === undefined ? {} : { master }) });
 
     if (dashboard === undefined) {
         throw new Error(
@@ -191,6 +210,8 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
                 : `The demo cannot have port ${ports.join(", ")}: another program has it, or Windows keeps it (netsh int ipv4 show excludedportrange protocol=tcp). Give another with --port.`,
         );
     }
+
+    master?.onChange(() => dashboard.chatChanged());
 
     return {
         ...dashboard,

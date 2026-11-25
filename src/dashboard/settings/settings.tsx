@@ -12,12 +12,13 @@ import { CardHead } from "../parts/card.tsx";
 import { CoinFace } from "../parts/faces.tsx";
 import { cardIcons, DieSwatch, Icon, iconPath } from "../parts/icons.tsx";
 import { customLabel, itemLabel, leveledItemLabel, phraseLabel, rateParts, settingLabel, valueLabel } from "../parts/labels.ts";
+import { type Option, Segmented } from "../parts/segmented.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { byHandPref, conditionsPref, readChoice, soundPref, tokenSymbolsPref, useChoice, usePref, usePrefChange, writeChoice } from "../shell/prefs.ts";
 import { applyGameStyle, gameStyle, installedStyle, systemStylePref } from "../shell/system-style.ts";
 import { PageTabs } from "../shell/tabs.tsx";
 import { pickTheme, shownTheme } from "../shell/theme.ts";
-import { arrowStep, t } from "../text.ts";
+import { t } from "../text.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
 import { Confirm } from "./saves.tsx";
 import { type SettingsTab, settingsTab, settingsTabLabel, settingsTabs } from "./tabs.ts";
@@ -967,61 +968,6 @@ function SetSwatch({ value }: { value: string; })
 {
     const look = diceLook(value);
     return <DieSwatch body={look.swatch ?? look.body} ink={look.ink} picture={look.finish.texture === undefined ? undefined : texturePath(look.finish.texture)} />;
-}
-
-/** A value to choose, with what it means when chosen, and a picture before its name. */
-interface Option
-{
-    value: string;
-    label: string;
-    means?: string;
-    picture?: ComponentChildren;
-}
-
-/** Values to choose one of, as a radio group: the arrows move among them and choose, one stop of Tab; the chosen one in gold. */
-function Segmented({ label, described, options, value, onPick }: {
-    label: string;
-    described: string;
-    options: Option[];
-    value?: string;
-    onPick(value: string, byKey: boolean): void;
-})
-{
-    const at = options.findIndex((option) => option.value === value);
-
-    const move = (event: KeyboardEvent): void => {
-        const step = arrowStep(event.key);
-
-        if (step === 0) {
-            return;
-        }
-
-        event.preventDefault();
-        // From the value the focus is on, which a quick key reaches before the page draws the last choice.
-        const buttons = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>("button")];
-        const from = buttons.indexOf(event.target as HTMLElement);
-        const next = ((from >= 0 ? from : Math.max(at, 0)) + step + options.length) % options.length;
-        onPick(options[next].value, true);
-        buttons[next]?.focus();
-    };
-
-    return (
-        <span class="segmented" role="radiogroup" aria-labelledby={label} aria-describedby={described} onKeyDown={move}>
-            {options.map((option, index) => (
-                <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={option.value === value}
-                    tabIndex={index === Math.max(at, 0) ? 0 : -1}
-                    onClick={() => option.value !== value && onPick(option.value, false)}
-                >
-                    {option.picture}
-                    {option.label}
-                </button>
-            ))}
-        </span>
-    );
 }
 
 /** A card of the campaign's settings by its place, in the page's language. */

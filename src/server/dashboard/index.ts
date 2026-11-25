@@ -18,12 +18,14 @@ import { type Acts, newActs } from "../player-acts.ts";
 import { choicesNews } from "./choices.ts";
 import type { EngineAsked } from "./engine.ts";
 import { builtPage, send } from "./files.ts";
+import type { PageMaster } from "./master.ts";
 import { callBegins, deliverActs, pageNews } from "./news.ts";
 import { type Asked, pagePlayer, type ShownCard } from "./player.ts";
 import { answers, campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
 import { answer } from "./routes.ts";
 import type { PackageAction, PackagePhase } from "./writes.ts";
 
+export type { PageMaster } from "./master.ts";
 export { answers, campaignPorts, dashboardAt, dashboardPorts } from "./ports.ts";
 export { pageRoutes } from "./routes.ts";
 
@@ -45,6 +47,12 @@ export interface Dashboard
      * queue, and the next chat hears the problems again; what the player did waits for it.
      */
     chatEnded(): void;
+    /** Tells the pages that something changed, and each reads all again. */
+    notify(): void;
+    /** Tells the pages that the table's chat with the master changed, and each reads that alone. */
+    chatChanged(): void;
+    /** Brings the player's sentences waiting to the master, as at a call's end. */
+    deliver(): void;
     close(): Promise<void>;
 }
 
@@ -63,6 +71,8 @@ export interface DashboardOptions
     queue?: CodexQueue;
     /** How long sentences given to a hook that speaks them wait for the master's next call before they are given back, in ms (D-578). */
     heldFor?: number;
+    /** The campaign's table's own chat with the master, which the page shows and speaks to. */
+    master?: PageMaster;
     /** The tests' look at the state the page is served with. */
     served?: (served: Served) => void;
 }
@@ -152,6 +162,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 chat: {},
                 queue: options.queue ?? codexQueue(),
                 heldFor: options.heldFor ?? heldFor,
+                ...(options.master === undefined ? {} : { master: options.master }),
             };
             options.served?.(served);
             return serve(server, served);
@@ -259,6 +270,8 @@ export interface Served
     queueing?: Promise<void>;
     /** The problems of the campaign's files the page last showed the player (playtest 05). */
     problemsShown?: number;
+    /** The campaign's table's own chat with the master, where the table keeps one. */
+    master?: PageMaster;
 }
 
 /** What the page keeps of the chat it serves, all of it: a campaign's table forgets it as that chat leaves (D-582). */
@@ -300,11 +313,20 @@ function listen(server: Server, port: number): Promise<number | undefined>
 function serve(server: Server, served: Served): Dashboard
 {
     let notice: NodeJS.Timeout | undefined;
+    let chatNotice: NodeJS.Timeout | undefined;
 
     served.notify = () => {
         notice ??= setTimeout(() => {
             notice = undefined;
             served.pages.forEach((page) => page.write("event: changed\ndata: {}\n\n"));
+        }, noticeDelay).unref();
+    };
+
+    // The master's prose comes in many pieces: the pages read the chat alone, once for pieces that come together.
+    const chatChanged = (): void => {
+        chatNotice ??= setTimeout(() => {
+            chatNotice = undefined;
+            served.pages.forEach((page) => page.write("event: chat\ndata: {}\n\n"));
         }, noticeDelay).unref();
     };
 
@@ -367,11 +389,15 @@ function serve(server: Server, served: Served): Dashboard
             hookChat();
             served.notify();
         },
+        notify: () => served.notify(),
+        chatChanged,
+        deliver: () => deliverActs(served),
         close: () =>
             new Promise((done) => {
                 stopListening();
                 clearInterval(importLook);
                 clearTimeout(notice);
+                clearTimeout(chatNotice);
                 served.asked?.settle("absent");
                 served.chat.bell?.end("gone");
 

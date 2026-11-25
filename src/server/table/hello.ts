@@ -4,8 +4,11 @@
 import type { Socket } from "node:net";
 import { knock, type TablePlace } from "./place.ts";
 
-/** The names of a chat's environment its server reads, the only ones its hello carries: Claude Code's id of the chat and how it was started, where Claude Code and Codex keep their chats. */
-export const chatEnvironmentNames = ["CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CONFIG_DIR", "CODEX_HOME"];
+/**
+ * The names of a chat's environment its server reads, the only ones its hello carries: Claude Code's id of the chat and how it was started, where Claude Code
+ * and Codex keep their chats, and the token of a chat the table itself opened.
+ */
+export const chatEnvironmentNames = ["CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "RPG_TABLE_MASTER"];
 
 /** A chat's hello: the token of the table's place, the chat's engine, and what the table reads of the environment its `rpg mcp` started in; or a probe. */
 export interface Hello

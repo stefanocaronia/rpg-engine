@@ -31,6 +31,7 @@ import {
     vendorModule,
 } from "./files.ts";
 import type { Served } from "./index.ts";
+import { changeMaster, masterNow } from "./master.ts";
 import { act, keepProblems, listenForBell, notes, setupWord, story } from "./news.ts";
 import { givePicture } from "./pictures.ts";
 import { answerAsked, closeCard, listenForChanges, pageSeen, rollNamesOf, spendShown } from "./player.ts";
@@ -90,6 +91,8 @@ const routes: Record<string, Route> = {
     "/api/answer": { post: ({ request, response, served }) => answerAsked(request, response, served) },
     "/api/choices": { get: ({ request, response, served }) => choicesRequest(request, response, served), post: ({ request, response, served }) => choicesRequest(request, response, served) },
     "/api/act": { get: ({ request, response, served }) => act(request, response, served), post: ({ request, response, served }) => act(request, response, served) },
+    // The table's own chat with the master, in the page.
+    "/api/master": { get: ({ response, served }) => masterNow(response, served), post: ({ request, response, served }) => changeMaster(request, response, served) },
     // Claude Code's hook waits here for the player's next sentence, from this computer (D-495).
     "/api/bell": { get: ({ request, response, served, url }) => listenForBell(request, response, served, url.searchParams) },
     "/api/card": { post: ({ request, response, served }) => closeCard(request, response, served) },

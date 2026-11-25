@@ -11,6 +11,7 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import { type Context, userDataFolder } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { getVersion } from "../src/core/version.ts";
+import type { MasterChat, MasterDriver, MasterEvent } from "../src/master/index.ts";
 import { type ChatSide, importEnvironment } from "../src/server/context.ts";
 import type { Served } from "../src/server/dashboard/index.ts";
 import { chatEnvironmentNames } from "../src/server/table/hello.ts";
@@ -424,6 +425,23 @@ describe("the table of a campaign", () => {
         expect(pictured()).toEqual(before);
     });
 
+    it("lets a chat that leaves at once, before its late start, give nothing to the next: half a second after, the context is as before it", async () => {
+        let served: Served | undefined;
+        const table = await open({ dashboard: { ports: [0], page: pageFolder, served: (state) => (served = state) } });
+        const context = contexts[0];
+        const pictured = (): unknown => ({
+            context: picture({ ...context, files: undefined }),
+            served: picture({ ...served, context: undefined, session: undefined }),
+        });
+        const before = pictured();
+
+        const chat = await sit(table.place);
+        await chat.leave();
+        await until(() => chats[0].host() === undefined, "the seat empty");
+        await new Promise((done) => setTimeout(done, 500));
+        expect(pictured()).toEqual(before);
+    });
+
     it("refuses a wrong token, and closes without a word on what is no hello, or on silence", async () => {
         const table = await open({ helloWait: 300 });
         const wrong = await knock(table.place, hello(table.place, {}, { token: "0".repeat(32) }));
@@ -551,11 +569,11 @@ describe("what the table keeps from going wrong", () => {
     it("says hello with no more of the chat's environment than the table reads, and the import starts with the server's own (defect 3)", async () => {
         const place = placeOf();
         const heard = await listenerAt(place, (socket) => socket.destroy());
-        const environment = { SECRET_KEY: "hunter2", PATH: "/bin", CLAUDE_CODE_SESSION_ID: "chat-1", CLAUDE_CODE_ENTRYPOINT: "cli", CLAUDE_CONFIG_DIR: "/c", CODEX_HOME: "/x" };
+        const environment = { SECRET_KEY: "hunter2", PATH: "/bin", CLAUDE_CODE_SESSION_ID: "chat-1", CLAUDE_CODE_ENTRYPOINT: "cli", CLAUDE_CONFIG_DIR: "/c", CODEX_HOME: "/x", RPG_TABLE_MASTER: "token" };
         expect(await pipeToTable(folder, new PassThrough(), new PassThrough(), { home, version, environment })).toBeUndefined();
         await until(() => heard.length > 0, "the hello heard");
         const said = JSON.parse(heard[0]) as { environment: Record<string, string>; };
-        expect(said.environment).toEqual({ CLAUDE_CODE_SESSION_ID: "chat-1", CLAUDE_CODE_ENTRYPOINT: "cli", CLAUDE_CONFIG_DIR: "/c", CODEX_HOME: "/x" });
+        expect(said.environment).toEqual({ CLAUDE_CODE_SESSION_ID: "chat-1", CLAUDE_CODE_ENTRYPOINT: "cli", CLAUDE_CONFIG_DIR: "/c", CODEX_HOME: "/x", RPG_TABLE_MASTER: "token" });
         expect(Object.keys(said.environment).sort()).toEqual([...chatEnvironmentNames].sort());
 
         const own = { PATH: "/bin", HOME: "/home/player" };
@@ -699,6 +717,179 @@ describe("what the table keeps from going wrong", () => {
 
         expect(process.listeners("unhandledRejection")).toEqual(before.rejected);
         expect(process.listeners("uncaughtException")).toEqual(before.thrown);
+    });
+});
+
+describe("the table's own chat with the master", () => {
+    /** A host the test drives: whether it was closed, and the events it tells. */
+    interface FakeMaster extends MasterChat
+    {
+        closed: boolean;
+        interrupted: number;
+        emit(event: MasterEvent): void;
+    }
+
+    let masters: FakeMaster[];
+
+    beforeEach(() => {
+        masters = [];
+    });
+
+    /** What the table's chat takes in the test: a host the test drives, found on this computer, and the tokens token-1, token-2… */
+    function withMaster(options: Partial<TableOptions> = {}): Partial<TableOptions>
+    {
+        let tokens = 0;
+        const driver: MasterDriver = {
+            open: () => masters[0],
+            missing: () => undefined,
+            program: () => ({ command: "claude-program", args: [] }),
+            environment: (given) => given,
+            model: "sonnet",
+            efforts: ["low"],
+        };
+        return {
+            master: {
+                open: () => {
+                    let listener: ((event: MasterEvent) => void) | undefined;
+                    const fake: FakeMaster = {
+                        closed: false,
+                        interrupted: 0,
+                        send: () => true,
+                        onEvent: (given) => (listener = given),
+                        interrupt: () => fake.interrupted++,
+                        close: () => (fake.closed = true),
+                        emit: (event) => listener?.(event),
+                    };
+                    masters.push(fake);
+                    return fake;
+                },
+                driver: (host) => (host === "claudeCode" ? driver : undefined),
+                environment: {},
+                newToken: () => `token-${++tokens}`,
+            },
+            ...options,
+        };
+    }
+
+    async function openChat(table: Table): Promise<{ status: number; body: string; }>
+    {
+        return await get(table.url, "/api/master", "POST", { open: { host: "claudeCode", model: "sonnet" } });
+    }
+
+    it("seats only its own server while it is open: a chat opened by hand is refused busy", async () => {
+        const table = await open(withMaster());
+        expect((await openChat(table)).status).toBe(200);
+        const byHand = await knock(table.place, hello(table.place));
+        expect(JSON.parse(await byHand.line("{"))).toEqual({ refused: "busy" });
+        const stale = await knock(table.place, hello(table.place, { RPG_TABLE_MASTER: "token-0" }));
+        expect(JSON.parse(await stale.line("{"))).toEqual({ refused: "busy" });
+
+        const own = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        expect(await call(own, 2, "status")).toContain("Rocca");
+        expect(chats[0].environment()).toEqual({ RPG_TABLE_MASTER: "token-1" });
+    });
+
+    it("does not open while a chat opened by hand sits", async () => {
+        const table = await open(withMaster());
+        const byHand = await sit(table.place);
+        const refused = await openChat(table);
+        expect(refused.status).toBe(409);
+        expect(JSON.parse(refused.body)).toMatchObject({ error: "A chat opened by hand plays this campaign: close it, then open the chat here.", elsewhere: true });
+        expect(masters).toEqual([]);
+
+        await byHand.leave();
+        await until(() => chats[0].host() === undefined, "the seat empty");
+        expect((await openChat(table)).status).toBe(200);
+    });
+
+    it("never takes its own server, still seated once its chat closed or ended, for a chat opened by hand: the seat is cleared at once", async () => {
+        const table = await open(withMaster());
+        await openChat(table);
+        const own = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        const closed = await get(table.url, "/api/master", "POST", { close: true });
+        expect(JSON.parse(closed.body)).toMatchObject({ elsewhere: false });
+        await until(() => own.closed(), "its server sent away");
+        expect((await openChat(table)).status).toBe(200);
+
+        const next = await sit(table.place, { RPG_TABLE_MASTER: "token-2" });
+        masters[1].emit({ type: "ended", why: "the host's program ended (exit code 1)" });
+        expect(JSON.parse((await get(table.url, "/api/master")).body)).toMatchObject({ elsewhere: false, chat: { state: "ended" } });
+        await until(() => next.closed(), "its server sent away");
+        await until(() => chats[0].host() === undefined, "the seat empty");
+        expect((await openChat(table)).status).toBe(200);
+    });
+
+    it("rpg table: closes its chat before it exits on an exception nobody caught", async () => {
+        const exit = vi.fn();
+        const written = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        const before = process.listeners("uncaughtException");
+        const time = clock();
+        const running = runTable(folder, { ...tableOptions(withMaster({ idle: 1000, idleEvery: 10, now: time.now, log: () => undefined })), exit });
+
+        try {
+            await until(() => readPlace(home, folder) !== undefined, "the table's place");
+            const url = readPlace(home, folder)?.url ?? "";
+            expect((await get(url, "/api/master", "POST", { open: { host: "claudeCode", model: "sonnet" } })).status).toBe(200);
+            const thrown = process.listeners("uncaughtException").find((one) => !before.includes(one));
+            thrown?.(new Error("an error of nobody's"), "uncaughtException");
+            expect(masters[0].closed).toBe(true);
+            expect(exit).toHaveBeenCalledWith(1);
+        } finally {
+            time.pass(2000);
+            expect(await running).toBe(0);
+            written.mockRestore();
+        }
+    });
+
+    it("closes its chat as the table ends", async () => {
+        const table = await open(withMaster());
+        await openChat(table);
+        await table.end("the test ends it");
+        expect(masters[0].closed).toBe(true);
+    });
+
+    it("after the idle time with no page stops its chat's turn, then closes the chat out of a turn; the table's own end follows", async () => {
+        const time = clock();
+        const table = await open(withMaster({ idle: 60_000, idleEvery: 10, now: time.now }));
+        const ended = settled(table.ended);
+        await openChat(table);
+        const own = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        expect((await get(table.url, "/api/master", "POST", { say: "Hello" })).status).toBe(202);
+        time.pass(59_000);
+        await ticks(10);
+        expect(masters[0].interrupted).toBe(0);
+        time.pass(1000);
+        await until(() => masters[0].interrupted === 1, "the turn stopped");
+        await ticks(10);
+        expect(masters[0].interrupted).toBe(1);
+        expect(masters[0].closed).toBe(false);
+
+        masters[0].emit({ type: "turnEnd", reason: "interrupted" });
+        await ticks(10);
+        expect(masters[0].closed).toBe(false);
+        time.pass(60_000);
+        await until(() => masters[0].closed, "the chat closed");
+        expect(ended()).toBe(false);
+
+        // Its server, sent away as the chat closed.
+        await until(() => own.closed(), "its server sent away");
+        await until(() => chats[0].host() === undefined, "the seat empty");
+        time.pass(60_000);
+        await until(ended, "the table ended");
+    });
+
+    it("waits for its chat's turn to end before it ends for outdated code", async () => {
+        const table = await open(withMaster({ idleEvery: 10 }));
+        const ended = settled(table.ended);
+        await openChat(table);
+        expect((await get(table.url, "/api/master", "POST", { say: "Hello" })).status).toBe(202);
+        contexts[0].codeOutdated?.();
+        await ticks(10);
+        expect(ended()).toBe(false);
+
+        masters[0].emit({ type: "turnEnd", reason: "done" });
+        await until(ended, "the table ended");
+        expect(masters[0].closed).toBe(true);
     });
 });
 

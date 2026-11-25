@@ -15,7 +15,10 @@ export const packagePages = "pkg" as const;
 /** The choices the master prepared for one of the party, as #/choices/Bruna, with an option's page open, as #/choices/Bruna/Sonno (D-556): the Party's own. */
 export const choicesPage = "choices" as const;
 
-export type Section = (typeof sections)[number] | (typeof menuPages)[number] | typeof packagePages | typeof choicesPage;
+/** The chat with the master, as #/chat: a section after the others, there only where the campaign's table keeps the chat (D-582). */
+export const chatPage = "chat" as const;
+
+export type Section = (typeof sections)[number] | (typeof menuPages)[number] | typeof packagePages | typeof choicesPage | typeof chatPage;
 
 /** A place in the page: its section, for the sheet whom it shows, a page's tab, as #/packages/add, and what is open in the tab, as #/world/lore/Bertoldo. */
 export interface Address
@@ -30,7 +33,7 @@ export function readAddress(hash: string): Address
 {
     const [, written = "", ...rest] = hash.replace(/^#/, "").split("/");
     const first = written === "combat" ? "scene" : written;
-    const section = [...sections, ...menuPages, packagePages, choicesPage].find((candidate) => candidate === first) ?? "party";
+    const section = [...sections, ...menuPages, packagePages, choicesPage, chatPage].find((candidate) => candidate === first) ?? "party";
     const sheet = first === "party" || first === "character";
     const known = section === first;
     const tab = sheet || !known ? "" : decoded(rest[0] ?? "");
@@ -65,6 +68,7 @@ export function sectionLabel(section: Section): string
         about: t("About"),
         pkg: t("Packages"),
         choices: t("Party"),
+        chat: t("Chat"),
     };
     return labels[section];
 }

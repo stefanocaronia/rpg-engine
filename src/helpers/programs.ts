@@ -5,6 +5,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import type { HelperLogin, HelperName, Helpers, HelperState, PicturesReady } from "../core/context.ts";
+import type { HostId } from "../core/hosts.ts";
 import { stopTree } from "../core/process.ts";
 
 // The npm package of each program.
@@ -292,9 +293,11 @@ export function installedLine(name: HelperName, folder: string): string | undefi
  * A program as it starts without a shell, for words the player wrote that no shell may read (D-495): node and its package's script, or the program itself;
  * from the engine's folder, else from npm's beside a folder of the PATH. Undefined where neither has it.
  */
-export function helperCommand(name: HelperName, folder = toolsFolder()): { command: string; args: string[]; } | undefined
+export function helperCommand(name: HelperName, folder = toolsFolder(), environment: NodeJS.ProcessEnv = process.env): { command: string; args: string[]; } | undefined
 {
-    const folders = (process.env.PATH ?? "").split(delimiter).filter((one) => one !== "");
+    // PATH whatever the case of its name, as Windows writes Path.
+    const path = Object.entries(environment).find(([key]) => key.toUpperCase() === "PATH")?.[1];
+    const folders = (path ?? "").split(delimiter).filter((one) => one !== "");
     const roots = [join(folder, "node_modules"), ...folders.flatMap((one) => [join(one, "node_modules"), join(one, "..", "lib", "node_modules")])];
 
     for (const root of roots) {
@@ -306,6 +309,17 @@ export function helperCommand(name: HelperName, folder = toolsFolder()): { comma
     }
 
     return undefined;
+}
+
+/**
+ * The program of an AI host installed with npm, as helperCommand finds it in the folders of the environment's PATH: Claude Code's and Codex's; undefined for
+ * another host, or where it is not there.
+ */
+export function hostCommand(host: HostId, environment: NodeJS.ProcessEnv = process.env, folder = toolsFolder()): { command: string; args: string[]; } | undefined
+{
+    const helper: Partial<Record<HostId, HelperName>> = { claudeCode: "claude", codex: "codex" };
+    const name = helper[host];
+    return name === undefined ? undefined : helperCommand(name, folder, environment);
 }
 
 /** Queues a message in a Codex thread, as the player's own (D-495): whether Codex took it, in fifteen seconds at most. */
