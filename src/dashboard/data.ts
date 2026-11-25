@@ -124,12 +124,42 @@ export interface ChatHost
     models: ChatModel[];
 }
 
-/** A message of the table's chat with the master: the player's words, the master's, as markdown, growing while they answer, or a word of the table itself. */
-export interface ChatMessage
+/**
+ * A message of the table's chat with the master: the player's words, the master's, as markdown, growing while they answer, or a word of the table itself; a
+ * question of the master's and how it ended; a roll the player may see, as the Rolls card gets it.
+ */
+export type ChatMessage = ChatSaid | ChatAsked | ChatRoll;
+
+/** Words of the player's, the master's or the table's. */
+export interface ChatSaid
 {
     id: number;
     from: "player" | "master" | "table";
     text: string;
+}
+
+/**
+ * A question of the master's in the chat: its text, the word for a roll or a choice when it has one, its answers as the buttons word them; waiting, answered
+ * with the answer in words, or left without one. The one that waits is what the page is asked now, with all the rest of it.
+ */
+export interface ChatAsked
+{
+    id: number;
+    from: "asked";
+    text: string;
+    title?: string;
+    options: string[];
+    state: "waiting" | "answered" | "left";
+    answer?: string;
+}
+
+/** A roll the player may see, in the chat: in words, and as the Rolls card gets it. */
+export interface ChatRoll
+{
+    id: number;
+    from: "roll";
+    text: string;
+    roll: ShownRoll;
 }
 
 /** The app, model and effort a chat with the master plays with. */
@@ -142,13 +172,14 @@ export interface ChatChoice
 
 /**
  * The table's chat with the master as the page shows it: the apps it may open in, the campaign's last choice and whether a chat of it can be taken up, the
- * open chat with how its turn stands, why it ended and the command the master uses now, its messages, and whether a chat opened by hand plays the campaign.
+ * open chat with how its turn stands, why it ended, the command the master uses now and whether the player's words now answer the question that waits, its
+ * messages, and whether a chat opened by hand plays the campaign.
  */
 export interface MasterShown
 {
     hosts: ChatHost[];
     last?: ChatChoice & { resumable: boolean; };
-    chat?: ChatChoice & { state: "idle" | "turn" | "ended"; why?: string; tool?: string; };
+    chat?: ChatChoice & { state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
     messages: ChatMessage[];
     elsewhere: boolean;
 }

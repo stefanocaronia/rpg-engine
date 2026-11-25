@@ -20,6 +20,8 @@ const iconPaths = {
     soundOn: "M4 9.5h3.5L12 5.5v13l-4.5-4H4Z M15.5 9a4 4 0 0 1 0 6 M18 6.5a7.5 7.5 0 0 1 0 11",
     soundOff: "M4 9.5h3.5L12 5.5v13l-4.5-4H4Z M16 9.5l5 5 M21 9.5l-5 5",
     minus: "M6 12h12",
+    // What stops the master's turn, where the player's words are sent from.
+    stop: "M7.5 7.5h9v9h-9Z",
     plus: "M12 6v12 M6 12h12",
     // The world map's tools and ways (D-318).
     locate: "M12 3v3 M12 18v3 M3 12h3 M18 12h3 M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10Z M12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z",

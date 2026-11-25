@@ -1,7 +1,8 @@
 // The rolls the player may see (D-279), the newest first: theirs with their character's token, the master's shown ones with the robot and for whom; hidden
 // rolls never come here. The player's free rolls come in too, dashed and dimmed, from this browser alone (D-330 (4)). A card like the sheet's, which shows the
 // newest roll while it is closed (D-284), on the table beside the sheet too. Those of the last half hour, older ones at a click at the end of the
-// list; Clear starts the list again, the log untouched, and forgets the free rolls; Restore brings the log back, never them (D-302, D-304).
+// list; Clear starts the list again, the log untouched, and forgets the free rolls; Restore brings the log back, never them (D-302, D-304). A roll's row is
+// drawn once: the chat with the master shows its rolls with the same.
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, ShownRoll } from "../data.ts";
 import { coinOf, type DiceLook, mastersDice } from "../dice/sets.ts";
@@ -125,26 +126,38 @@ export function RollLog(
 }
 
 /**
+ * A roll as its row of the Rolls card, out of the card, as among the chat's messages: whom it is for, by the party; `className` is its place's own. Never
+ * new there: what marks a new roll is the card's, and so is the row the tray's dice fly to.
+ */
+export function RollLine({ roll, party, several = false, campaign, className }: { roll: ShownRoll; party: Member[]; several?: boolean; campaign?: string | undefined; className?: string; })
+{
+    const of: Whose = { lead: party.find((member) => member.role === "pc"), nobody: several };
+    return <RollRow roll={roll} name={nameOf(roll, of)} token={tokenOf(roll, party, of)} coins={coinsOf(roll, party, campaign)} fresh={false} several={several} {...(className === undefined ? {} : { className })} />;
+}
+
+/**
  * One roll, in three lines (D-292): whom it is for, by their token and name; what it is; its dice as chips and the number added. Its total on the right; in
  * its tooltip the whole roll, which the lines may cut, with the notation in words; the chat's text for a screen reader. A new one first opens its place, then
  * appears in it, with a yellow corner for a while (D-303): as it first shows, whatever the readings after, and once.
  */
-function RollRow({ roll, name, token, coins, fresh, greeted, several }: {
+function RollRow({ roll, name, token, coins, fresh, greeted, several, className }: {
     roll: ShownRoll;
     name: string;
     token?: Tokened | "die";
     /** The look of the master's coins, for a toss of theirs (D-526 (3)); left out, the player's. */
     coins?: DiceLook | undefined;
     fresh: boolean;
-    greeted: Set<string>;
+    /** The rolls the card has drawn already; none out of the card. */
+    greeted?: Set<string>;
     several: boolean;
+    className?: string;
 })
 {
-    const [entering] = useState(() => fresh && !greeted.has(roll.id));
+    const [entering] = useState(() => fresh && greeted?.has(roll.id) !== true);
     const [marked, setMarked] = useState(entering);
 
     useEffect(() => {
-        greeted.add(roll.id);
+        greeted?.add(roll.id);
 
         if (!entering) {
             return;
@@ -162,7 +175,7 @@ function RollRow({ roll, name, token, coins, fresh, greeted, several }: {
         .filter((line) => line !== undefined && line !== "")
         .join("\n");
     return (
-        <li class={["roll", player ? "by-player" : "by-master", free ? "free" : "", entering ? "entering" : ""].filter((part) => part !== "").join(" ")} data-roll={roll.id} title={said}>
+        <li class={[className ?? "", "roll", player ? "by-player" : "by-master", free ? "free" : "", entering ? "entering" : ""].filter((part) => part !== "").join(" ")} data-roll={greeted === undefined ? undefined : roll.id} title={said}>
             {marked && <span class="roll-flag" aria-hidden="true">!</span>}
             {token === undefined
                 ? <img class="roll-robot" src="/assets/favicon.svg" alt="" />

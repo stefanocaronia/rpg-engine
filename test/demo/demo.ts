@@ -9,6 +9,7 @@ import { runCommandLine } from "../../src/cli/command-line.ts";
 import { ask } from "../../src/commands/ask.ts";
 import { readLibraryHere } from "../../src/commands/shared/books/library-reader.ts";
 import { makeSave } from "../../src/commands/shared/campaign/saves.ts";
+import { view } from "../../src/commands/view/view.ts";
 import { systemConfirm } from "../../src/confirm/index.ts";
 import { type Context, defaultContext } from "../../src/core/context.ts";
 import { downloadBytes } from "../../src/core/download.ts";
@@ -239,35 +240,63 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
         fake.setCampaign(dashboard.url);
     }
 
+    const questions = demoQuestions[system].filter((question) => !("lock" in question) || lockpicking);
+
+    // The rolls the player may see made since the last look, told to the demo's master as the page's server tells the table's chat; the first look only
+    // notes where the log stands.
+    let seenRoll: string | undefined;
+
+    const tellRolls = async (): Promise<void> => {
+        const result = await withFiles(session, () => view.run(view.input.parse({ rolls: "5" }), { ...context, files: session }));
+        const rolls = result.kind === "overview" ? result.rolls : [];
+        const fresh = seenRoll === undefined ? [] : rolls.slice(rolls.findIndex((roll) => roll.id === seenRoll) + 1);
+        seenRoll = rolls.at(-1)?.id ?? "";
+        fresh.forEach((roll) => master?.rolled(roll.who === undefined ? roll.text : `${roll.who}: ${roll.text}`, roll));
+    };
+
+    const askPage = async (asked: DemoQuestion, signal?: AbortSignal): Promise<string> => {
+        await session.ready();
+
+        if ("lock" in asked) {
+            return lockpicking ? pickDemoLock(asked, { ...context, files: session, page: dashboard.player, ...(signal === undefined ? {} : { signal }) }) : "The demo has no lockpicking: nothing asked.";
+        }
+
+        // Each rest of the demo starts from the same hit dice and hit points, so that it can be asked again and again.
+        if ("recipe" in asked) {
+            await runCommandLine(["change", "Ettore", "hit-dice-d8", "--to", "2"], { ...context, files: session });
+            await runCommandLine(["change", "Ettore", "hp", "--to", "14"], { ...context, files: session });
+        }
+
+        const answered = await withFiles(session, async () => ask.format(await ask.run(ask.input.parse(asked), { ...context, files: session, page: dashboard.player, ...(signal === undefined ? {} : { signal }) })));
+        await tellRolls();
+        return answered;
+    };
+
+    const rollAsMaster = async (...args: string[]): Promise<string> => {
+        await session.ready();
+        const rolled = (await runCommandLine(["roll", ...args], { ...context, files: session })).output;
+        await tellRolls();
+        return rolled;
+    };
+
+    // The demo's master asks the page one of the demo's questions, as a master does with ask, and rolls for Lupa where the player may see.
+    master?.onAsk((question, stopped) => askPage(questions[question % questions.length], stopped));
+    master?.onRoll(() => rollAsMaster(system === "5e" ? "1d20+4" : "1d6", "--who", "Lupa", "--check", "Fiuto", "--why", "il fiuto di Lupa"));
+    await session.ready();
+    await tellRolls();
+
     return {
         ...dashboard,
         folder,
         system,
         ...(fake === undefined ? {} : { launcher: fake.url }),
-        questions: demoQuestions[system].filter((question) => !("lock" in question) || lockpicking),
-        ask: async (asked) => {
-            await session.ready();
-
-            if ("lock" in asked) {
-                return lockpicking ? pickDemoLock(asked, { ...context, files: session, page: dashboard.player }) : "The demo has no lockpicking: nothing asked.";
-            }
-
-            // Each rest of the demo starts from the same hit dice and hit points, so that it can be asked again and again.
-            if ("recipe" in asked) {
-                await runCommandLine(["change", "Ettore", "hit-dice-d8", "--to", "2"], { ...context, files: session });
-                await runCommandLine(["change", "Ettore", "hp", "--to", "14"], { ...context, files: session });
-            }
-
-            return withFiles(session, async () => ask.format(await ask.run(ask.input.parse(asked), { ...context, files: session, page: dashboard.player })));
-        },
+        questions,
+        ask: askPage,
         askSquare: async (question) => {
             await session.ready();
             return withFiles(session, async () => ask.format(await ask.run(ask.input.parse({ question, square: true }), { ...context, files: session, page: dashboard.player })));
         },
-        roll: async (...args) => {
-            await session.ready();
-            return (await runCommandLine(["roll", ...args], { ...context, files: session })).output;
-        },
+        roll: rollAsMaster,
         endTable: () => dashboard.close(),
         close: async () => {
             removeLauncher(home, token);

@@ -7,21 +7,28 @@
 //   elsewhere  the chat closes, and for a while a chat opened by hand plays the campaign
 //   missing    the chat closes, and the app is no longer on this computer; said again in a new chat, it is back
 //   codex      a second app to choose, or none again
+//   ask        the master asks the player the demo's first question, as with the ask command, and waits for the answer; then goes on. With a number,
+//              as ask 3, that question of the demo's. Stop leaves it without an answer
+//   ooc        an answer with words out of the game, a paragraph of them and some among the story's, and brackets that are the story's
+// A question the demo asks, by the chat or by its own means (look.ts --ask), and the rolls the player may see stand among its messages, as the table's
+// chat keeps them: a question waits, then is answered or left; the player's words in the chat answer the one that takes them. In the middle of an answer
+// the master rolls where the player may see, where the demo gives it the means.
 // Not part of the tests.
-import type { PageMaster } from "../../src/server/dashboard/index.ts";
+import type { PageMaster, PageMessage } from "../../src/server/dashboard/index.ts";
 
 /** The demo's master, which tells whoever listens that the chat changed. */
 export interface DemoMaster extends PageMaster
 {
     onChange(changed: () => void): void;
+    /** What asks the player one of the demo's questions, by its number from 0, as the ask command does: it ends when the player has answered, or `stopped` says to leave it. */
+    onAsk(asker: (question: number, stopped: AbortSignal) => Promise<unknown>): void;
+    /** What rolls for the demo's master where the player may see it. */
+    onRoll(roller: () => Promise<unknown>): void;
 }
 
-interface Message
-{
-    id: number;
-    from: "player" | "master" | "table";
-    text: string;
-}
+type Message = PageMessage;
+type Words = Extract<Message, { from: "player" | "master" | "table"; }>;
+type AskedMessage = Extract<Message, { from: "asked"; }>;
 
 interface Chat
 {
@@ -55,6 +62,17 @@ const answer = [
     "Tre cose attirano il tuo sguardo:\n\n- un mantello fradicio appeso accanto al fuoco, che nessuno reclama;\n- una mappa inchiodata alla trave, con un segno rosso sulla Torre;\n- la botola della cantina, socchiusa.\n\nChe cosa fai?",
 ];
 
+const offGame = [
+    "*[OOC: prima di andare avanti: vuoi che i tiri dei mostri li faccia io di nascosto, o li vuoi vedere?]*",
+    "La pioggia batte sulle imposte. L'oste ti guarda le mani *[OOC: qui serve una prova, te la chiedo fra un attimo]* e poi torna al suo boccale, come se niente fosse.",
+    "Sulla trave qualcuno ha inciso [non entrare], con la punta di un coltello.\n\nChe cosa fai?",
+];
+
+const afterAsking = [
+    "L'acqua ti arriva al ginocchio e tira forte, ma il piede trova la pietra.",
+    "Dall'altra riva la lanterna del traghettatore si ferma, come se qualcuno ti avesse visto.\n\nChe cosa fai?",
+];
+
 const longAnswer = [
     ...answer.slice(0, 2),
     "La pioggia batte sulle imposte per tutta la sera. I pellegrini al tavolo lungo parlano a bassa voce di *luci viste sulla Torre*, e tacciono quando ti avvicini.",
@@ -76,6 +94,11 @@ export function demoMaster(): DemoMaster
     const messages: Message[] = [];
     const timers = new Set<NodeJS.Timeout>();
     let changed = (): void => undefined;
+    let asker: ((question: number, stopped: AbortSignal) => Promise<unknown>) | undefined;
+    let roller: (() => Promise<unknown>) | undefined;
+    // The question that waits, with what answers it in the player's own words where it takes them; and what stops the one the master asked.
+    let waiting: { id: string; message: AskedMessage; answer?: (words: string) => void; } | undefined;
+    let asking: AbortController | undefined;
     let lastId = 0;
     let chat: Chat | undefined;
     let last: { host: string; model: string; effort?: string; } | undefined;
@@ -83,11 +106,13 @@ export function demoMaster(): DemoMaster
     let missing = false;
     let second = false;
 
-    const add = (from: Message["from"], text: string): Message => {
+    const add = (from: Words["from"], text: string): Words => {
         const message = { id: ++lastId, from, text };
         messages.push(message);
         return message;
     };
+
+    const isOpen = (): boolean => chat !== undefined && chat.state !== "ended";
 
     const later = (delay: number, does: () => void): void => {
         const timer = setTimeout(() => {
@@ -98,35 +123,46 @@ export function demoMaster(): DemoMaster
         timers.add(timer);
     };
 
+    // The answer stops where it is, and so does the question the master asked, which is left.
     const halt = (): void => {
         timers.forEach((timer) => clearTimeout(timer));
         timers.clear();
+        asking?.abort();
+        asking = undefined;
     };
 
-    // The answer in pieces of a few words, each paragraph a block of its own, through a command at its start and one in its middle.
+    // The answer in pieces of a few words, each paragraph a block of its own, through a command at its start; with more than one paragraph the master
+    // rolls between two of them, about halfway, and what they write after the roll is a message of its own, as at the table.
     const tell = (open: Chat, paragraphs: string[]): void => {
-        const pieces = paragraphs.flatMap((paragraph, index) => (paragraph.match(/\S+\s*/g) ?? []).map((word, at) => `${index > 0 && at === 0 ? "\n\n" : ""}${word}`));
-        const roll = Math.floor(pieces.length / 2);
+        const rollBefore = paragraphs.length > 1 ? Math.ceil(paragraphs.length / 2) : -1;
         let at = 900;
-        let reply: Message | undefined;
+        let reply: Words | undefined;
         open.tool = "view";
         later(at, () => (open.tool = undefined));
 
-        for (let index = 0; index < pieces.length; index += 3) {
-            if (index >= roll && index < roll + 3) {
-                later(at += pieceEvery, () => (open.tool = "roll"));
+        paragraphs.forEach((paragraph, index) => {
+            if (index === rollBefore) {
+                later(at += pieceEvery, () => {
+                    open.tool = "roll";
+                    reply = undefined;
+                    void roller?.();
+                });
                 later(at += 600, () => (open.tool = undefined));
             }
 
-            const piece = pieces.slice(index, index + 3).join("");
-            later(at += pieceEvery, () => {
-                if (reply === undefined) {
-                    reply = add("master", piece);
-                } else {
-                    reply.text += piece;
-                }
-            });
-        }
+            const words = paragraph.match(/\S+\s*/g) ?? [];
+
+            for (let from = 0; from < words.length; from += 3) {
+                const piece = words.slice(from, from + 3).join("");
+                later(at += pieceEvery, () => {
+                    if (reply === undefined) {
+                        reply = add("master", piece);
+                    } else {
+                        reply.text += from === 0 ? `\n\n${piece}` : piece;
+                    }
+                });
+            }
+        });
 
         later(at + pieceEvery, () => (open.state = "idle"));
     };
@@ -152,6 +188,20 @@ export function demoMaster(): DemoMaster
                 chat = undefined;
                 missing = !missing;
             });
+        } else if (/\bask\b/.test(said) && asker !== undefined) {
+            // The master asks and waits, as long as the player takes; then goes on from the answer, unless the turn was stopped meanwhile.
+            const stopped = new AbortController();
+            asking = stopped;
+            open.tool = "ask";
+            void asker(Math.max(0, Number(/\bask (\d+)/.exec(said)?.[1] ?? 1) - 1), stopped.signal).then(() => {
+                if (chat === open && open.state === "turn" && !stopped.signal.aborted) {
+                    asking = undefined;
+                    tell(open, afterAsking);
+                    changed();
+                }
+            });
+        } else if (/\booc\b/.test(said)) {
+            tell(open, offGame);
         } else if (/\bcodex\b/.test(said)) {
             second = !second;
             tell(open, [second ? "Ora puoi scegliere anche *Codex*, quando la chat è chiusa." : "Ora c'è di nuovo una sola app."]);
@@ -162,6 +212,8 @@ export function demoMaster(): DemoMaster
 
     return {
         onChange: (listener) => (changed = listener),
+        onAsk: (asks) => (asker = asks),
+        onRoll: (rolls) => (roller = rolls),
         shown: () => ({
             hosts: [
                 { id: "claudeCode", name: "Claude Code", ready: true, found: !missing, model: "sonnet", efforts, models: missing ? [] : demoModels },
@@ -169,7 +221,7 @@ export function demoMaster(): DemoMaster
                 ...hostsNotReady,
             ],
             ...(last === undefined ? {} : { last: { ...last, resumable: true } }),
-            ...(chat === undefined ? {} : { chat: { ...chat } }),
+            ...(chat === undefined ? {} : { chat: { ...chat, ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
             messages: messages.map((message) => ({ ...message })),
             elsewhere,
         }),
@@ -188,6 +240,7 @@ export function demoMaster(): DemoMaster
 
             if (choice.fresh === true || last?.host !== choice.host) {
                 messages.length = 0;
+                waiting = undefined;
             }
 
             halt();
@@ -201,6 +254,16 @@ export function demoMaster(): DemoMaster
 
             if (open === undefined || open.state === "ended") {
                 return "closed";
+            }
+
+            // A question waits that takes the player's own words: these answer it, and the master's turn goes on.
+            const answer = waiting?.answer;
+
+            if (answer !== undefined) {
+                add("player", shown ?? text);
+                answer(text);
+                changed();
+                return "sent";
             }
 
             if (open.state === "turn") {
@@ -227,6 +290,36 @@ export function demoMaster(): DemoMaster
                 changed();
             }
         },
-        active: () => chat !== undefined && chat.state !== "ended",
+        active: isOpen,
+        askBegins: (question, answer) => {
+            if (!isOpen()) {
+                return;
+            }
+
+            // One question at a time: one left waiting ended with no answer.
+            if (waiting !== undefined) {
+                waiting.message.state = "left";
+            }
+
+            const message: AskedMessage = { id: ++lastId, from: "asked", text: question.text, ...(question.title === undefined ? {} : { title: question.title }), options: [...question.options], state: "waiting" };
+            messages.push(message);
+            waiting = { id: question.id, message, ...(answer === undefined ? {} : { answer }) };
+            changed();
+        },
+        askEnds: (id, answer) => {
+            if (waiting?.id !== id) {
+                return;
+            }
+
+            Object.assign(waiting.message, answer === undefined ? { state: "left" } : { state: "answered", answer });
+            waiting = undefined;
+            changed();
+        },
+        rolled: (text, roll) => {
+            if (isOpen()) {
+                messages.push({ id: ++lastId, from: "roll", text, roll });
+                changed();
+            }
+        },
     };
 }

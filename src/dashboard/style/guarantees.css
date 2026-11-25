@@ -63,6 +63,16 @@
         outline: none !important;
     }
 
+    /* The chat's words stand in a box with what sends them: the ring is the box's. */
+    .chat-field:focus-visible {
+        outline: none !important;
+    }
+
+    .chat-field-box:has(.chat-field:focus-visible) {
+        outline: 2px solid var(--guard-accent) !important;
+        outline-offset: 2px !important;
+    }
+
     .tracked-what:focus-visible {
         outline: 2px solid var(--guard-accent) !important;
         outline-offset: 3px !important;

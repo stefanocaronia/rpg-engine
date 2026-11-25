@@ -3,7 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { type HostId, hosts } from "../../core/hosts.ts";
 import { askModels, effortRefused, type HostOffered, hostProgram, hostsOffered, isHostName, type MasterChat, type MasterDriver, masterDriver, type MasterEvent, masterHosts, modelKeeper, openMaster } from "../../master/index.ts";
-import type { PageChat, PageMaster } from "../dashboard/index.ts";
+import type { ChatQuestion, PageChat, PageMaster, PageMessage } from "../dashboard/index.ts";
 import { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
 
 /** The table's chat with the master, one at a time. */
@@ -41,18 +41,17 @@ export interface ChatShown extends PageChat
 {
     hosts: HostOffered[];
     last?: { host: HostId; model: string; effort?: string; resumable: boolean; };
-    chat?: { host: HostId; model: string; effort?: string; state: "idle" | "turn" | "ended"; why?: string; tool?: string; };
+    chat?: { host: HostId; model: string; effort?: string; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
     messages: ChatMessage[];
     /** A chat opened by hand sits at the table: the table's own cannot open. */
     elsewhere: boolean;
 }
 
-export interface ChatMessage
-{
-    id: number;
-    from: "player" | "master" | "table";
-    text: string;
-}
+export type ChatMessage = PageMessage;
+
+/** Words of the player's, the master's or the table's. */
+type Words = Extract<ChatMessage, { from: "player" | "master" | "table"; }>;
+type AskedMessage = Extract<ChatMessage, { from: "asked"; }>;
 
 /** What the table's chat takes from outside. */
 export interface TableChatOptions
@@ -94,7 +93,7 @@ interface OpenChat
     why?: string;
     tool?: string;
     /** The master's message of this turn, and the block of text it ends with. */
-    reply?: ChatMessage;
+    reply?: Words;
     block?: number;
     /** Whether it takes up a chat of the host's, and whether the host said its session yet. */
     resumed: boolean;
@@ -123,6 +122,8 @@ export function tableChat(options: TableChatOptions): TableChat
     let lastId = 0;
     let last = readLastChat(options.home, options.root);
     let chat: OpenChat | undefined;
+    // The master's question that waits for the player, and what answers it with the player's own words, where it takes them.
+    let waiting: { id: string; message: AskedMessage; answer?: (words: string) => void; } | undefined;
     let found: { at: number; hosts: Map<HostId, boolean>; } | undefined;
     // Every token given to a host in this process.
     const tokens = new Set<string>();
@@ -131,11 +132,21 @@ export function tableChat(options: TableChatOptions): TableChat
     // The models each host offers, asked of it in the campaign's folder.
     const models = modelKeeper({ ask: (host) => askModels(host, { ...options, folder: options.root }, driverOf), changed: () => options.changed(), now });
 
-    const add = (from: ChatMessage["from"], text: string): ChatMessage => {
-        const message = { id: ++lastId, from, text: text.slice(0, mostText) };
+    const keep = <Kept extends ChatMessage>(message: Kept): Kept => {
         messages.push(message);
         messages.splice(0, Math.max(0, messages.length - mostMessages));
         return message;
+    };
+
+    const add = (from: Words["from"], text: string): Words => keep({ id: ++lastId, from, text: text.slice(0, mostText) });
+
+    const isOpen = (): boolean => chat !== undefined && chat.state !== "ended";
+
+    // What the engine tells comes between the master's words: their reply in course closes, and what they write after it starts a new message.
+    const between = (): void => {
+        if (chat !== undefined) {
+            Object.assign(chat, { reply: undefined, block: undefined });
+        }
     };
 
     const remember = (changes: Partial<LastChat>): void => {
@@ -269,7 +280,7 @@ export function tableChat(options: TableChatOptions): TableChat
             return {
                 hosts: hostsOffered((id) => known.get(id) === true, driverOf, (id) => models.models(id)),
                 ...(last === undefined ? {} : { last: { host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }), resumable: last.session !== undefined } }),
-                ...(chat === undefined ? {} : { chat: chatShown(chat) }),
+                ...(chat === undefined ? {} : { chat: { ...chatShown(chat), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
                 messages: messages.map((message) => ({ ...message })),
                 elsewhere: options.elsewhere(),
             };
@@ -294,6 +305,7 @@ export function tableChat(options: TableChatOptions): TableChat
 
             if (!again) {
                 messages.length = 0;
+                waiting = undefined;
             }
 
             last = { root: options.root, host, model: choice.model, ...(choice.effort === undefined ? {} : { effort: choice.effort }), ...(session === undefined ? {} : { session }) };
@@ -319,6 +331,16 @@ export function tableChat(options: TableChatOptions): TableChat
 
             if (current === undefined || current.state === "ended") {
                 return "closed";
+            }
+
+            // A question of the master's waits that takes the player's own words: these answer it, as on the page's bar; the master's turn goes on.
+            const answer = waiting?.answer;
+
+            if (answer !== undefined) {
+                add("player", shown ?? text);
+                answer(text);
+                options.changed();
+                return "sent";
             }
 
             if (current.state === "turn") {
@@ -355,11 +377,50 @@ export function tableChat(options: TableChatOptions): TableChat
                 options.switched?.();
             }
         },
-        active: () => chat !== undefined && chat.state !== "ended",
+        active: isOpen,
         inTurn: () => chat?.state === "turn",
         owns: (environment) => chat !== undefined && chat.state !== "ended" && environment.RPG_TABLE_MASTER === chat.token,
         gave: (environment) => environment.RPG_TABLE_MASTER !== undefined && tokens.has(environment.RPG_TABLE_MASTER),
+        askBegins: (question, answer) => {
+            if (!isOpen()) {
+                return;
+            }
+
+            // One question at a time: one left waiting ended with no answer.
+            if (waiting !== undefined) {
+                waiting.message.state = "left";
+            }
+
+            between();
+            const message = keep<AskedMessage>({ id: ++lastId, from: "asked", ...askedText(question), options: [...question.options], state: "waiting" });
+            waiting = { id: question.id, message, ...(answer === undefined ? {} : { answer }) };
+            options.changed();
+        },
+        askEnds: (id, answer) => {
+            if (waiting?.id !== id) {
+                return;
+            }
+
+            Object.assign(waiting.message, answer === undefined ? { state: "left" } : { state: "answered", answer: answer.slice(0, mostText) });
+            waiting = undefined;
+            options.changed();
+        },
+        rolled: (text, roll) => {
+            if (!isOpen()) {
+                return;
+            }
+
+            between();
+            keep({ id: ++lastId, from: "roll", text: text.slice(0, mostText), roll });
+            options.changed();
+        },
     };
+}
+
+/** A question's text and title as the chat keeps them, each cut as any text of it. */
+function askedText(question: ChatQuestion): { text: string; title?: string; }
+{
+    return { text: question.text.slice(0, mostText), ...(question.title === undefined ? {} : { title: question.title.slice(0, mostText) }) };
 }
 
 function chatShown(chat: OpenChat): NonNullable<ChatShown["chat"]>

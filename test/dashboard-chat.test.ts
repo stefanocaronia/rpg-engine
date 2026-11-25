@@ -6,6 +6,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { readAddress, sectionAddress, sectionLabel } from "../src/dashboard/address.ts";
 import { changeMaster, readMaster } from "../src/dashboard/api.ts";
 import {
+    answerShown,
     atEnd,
     chatNews,
     chatRoom,
@@ -18,16 +19,19 @@ import {
     hostsFound,
     lastHeard,
     listedModel,
+    questionPlace,
     resumes,
     sendsWords,
     settledChoice,
     speaker,
+    turnDoing,
     turnWords,
     unseenWords,
+    waitingQuestion,
     withModel,
     wordsToSend,
 } from "../src/dashboard/chat/chat.ts";
-import type { MasterShown } from "../src/dashboard/data.ts";
+import type { ChatMessage, MasterShown } from "../src/dashboard/data.ts";
 import { nextOn } from "../src/dashboard/parts/choosing.ts";
 import { setLanguage } from "../src/dashboard/text.ts";
 import { pageFolder } from "./i18n/phrases.ts";
@@ -138,10 +142,27 @@ describe("the chat with the master on the page (D-582)", () => {
         expect([nextOn([{}, { off: true }], 0, 1), nextOn([{ off: true }, { off: true }], 0, 1), nextOn([{}, {}, {}], 2, 1)]).toEqual([undefined, undefined, 0]);
     });
 
-    it("says what the master does in their turn, the command they use when the table tells one, whose words a message is and what a chat plays with, in Italian too", async () => {
+    it("says what the master does in their turn in the player's words, never a command's name, whose words a message is and what a chat plays with, in Italian too", async () => {
         await setLanguage("en");
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn" })).toBe("The master is answering…");
-        expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "roll" })).toBe("The master is using roll…");
+        expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "roll" })).toBe("The master is rolling the dice…");
+        expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "ask" })).toBe("The master is waiting for your answer…");
+        // Any other command is the master answering: its name is never shown.
+        expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "view" })).toBe("The master is answering…");
+        // A command by its own name, whatever a host puts before it; one that only holds the name is another.
+        const doing = (tool?: string): string | undefined => turnDoing({ host: "claudeCode", model: "sonnet", state: "turn", ...(tool === undefined ? {} : { tool }) });
+        expect([doing(), doing("ask"), doing("mcp__rpg__ask"), doing("rpg.roll"), doing("rpg ask"), doing("Roll"), doing("task"), doing("reroll"), doing("")]).toEqual([
+            "answers",
+            "asks",
+            "asks",
+            "rolls",
+            "asks",
+            "rolls",
+            "answers",
+            "answers",
+            "answers",
+        ]);
+        expect([turnDoing({ host: "claudeCode", model: "sonnet", state: "idle", tool: "ask" }), turnDoing({ host: "claudeCode", model: "sonnet", state: "ended" }), turnDoing(undefined)]).toEqual([undefined, undefined, undefined]);
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "idle", tool: "roll" })).toBeUndefined();
         expect(turnWords(undefined)).toBeUndefined();
         expect(choiceLine(shown(), { host: "claudeCode", model: "sonnet", effort: "high" })).toBe("Claude Code · sonnet · high");
@@ -150,6 +171,8 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(choiceLine(shown({ hosts: [listing] }), { host: "claudeCode", model: "opus", effort: "max" })).toBe("Claude Code · Opus 5.5 · max");
         await setLanguage("it", italian);
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn" })).toBe("Il master sta rispondendo…");
+        expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "ask" })).toBe("Il master aspetta la tua risposta…");
+        expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "roll" })).toBe("Il master sta tirando i dadi…");
         expect([speaker("player"), speaker("master"), speaker("table")]).toEqual(["Tu", "Il master", "Il tavolo"]);
         expect([endedWords(undefined), endedWords("  "), endedWords("It closed.")]).toEqual(["La chat si è chiusa.", "La chat si è chiusa.", "La chat si è chiusa: It closed."]);
         expect(sectionLabel("chat")).toBe("Chat");
@@ -192,6 +215,43 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(sendsWords({ key: "a", shiftKey: false, isComposing: false })).toBe(false);
         expect(wordsToSend("  I open the door.\n", "idle")).toBe("I open the door.");
         expect([wordsToSend(" \n ", "idle"), wordsToSend("Wait.", "turn"), wordsToSend("Wait.", "ended"), wordsToSend("Wait.", undefined)]).toEqual([undefined, undefined, undefined, undefined]);
+        // In the master's turn they go only while they answer the question that waits.
+        expect([wordsToSend(" I jump. ", "turn", true), wordsToSend("  ", "turn", true), wordsToSend("I jump.", "idle", true), wordsToSend("I jump.", "ended", true)]).toEqual(["I jump.", undefined, "I jump.", undefined]);
+    });
+
+    it("finds the master's question that waits, the last asked, and says the master asks while it does", () => {
+        const asked = (id: number, state: "waiting" | "answered" | "left", answer?: string): ChatMessage => ({ id, from: "asked", text: "Which way?", options: ["Left", "Right"], state, ...(answer === undefined ? {} : { answer }) });
+        const words = (id: number, from: "player" | "master" | "table", text: string): ChatMessage => ({ id, from, text });
+        expect(waitingQuestion([])).toBeUndefined();
+        expect(waitingQuestion([words(1, "master", "A door."), asked(2, "waiting")])?.id).toBe(2);
+        expect(waitingQuestion([asked(1, "left"), words(2, "master", "Then."), asked(3, "waiting"), words(4, "player", "Hm.")])?.id).toBe(3);
+        expect(waitingQuestion([asked(1, "answered", "Left")])).toBeUndefined();
+        // One at a time: an older one still marked waiting under a newer that ended does not wait.
+        expect(waitingQuestion([asked(1, "waiting"), asked(2, "left")])).toBeUndefined();
+        const turn = { host: "claudeCode", model: "sonnet", state: "turn" as const };
+        expect([turnDoing(turn, true), turnDoing({ ...turn, tool: "view" }, true), turnDoing({ ...turn, tool: "roll" }, false), turnDoing({ ...turn, state: "idle" }, true)]).toEqual(["asks", "asks", "rolls", undefined]);
+        expect(turnWords(turn, true)).toBe("The master is waiting for your answer…");
+    });
+
+    it("answers the question that waits in one place alone: the chat when it keeps it and is in sight, a notice from another section, else the page", () => {
+        const chat = { own: false, kept: true };
+        expect([questionPlace(chat, "shown"), questionPlace(chat, "tab"), questionPlace(chat, "away")]).toEqual(["chat", "notice", "page"]);
+        // No chat of the table's keeps it, as when a chat opened by hand asks, or the page is served by a chat: on the page, as ever.
+        expect([questionPlace({ own: false, kept: false }, "shown"), questionPlace({ own: false, kept: false }, "tab"), questionPlace({ own: false, kept: false }, "away")]).toEqual(["page", "page", "page"]);
+        // The dice of a rest, a package's card and a square of the map keep their own place, whatever the chat.
+        expect([questionPlace({ own: true, kept: true }, "shown"), questionPlace({ own: true, kept: true }, "tab"), questionPlace({ own: true, kept: false }, "away")]).toEqual(["page", "page", "page"]);
+    });
+
+    it("shows what a question was answered with, unless the player's own words right after it say it", () => {
+        const asked = (state: "waiting" | "answered" | "left", answer?: string): ChatMessage => ({ id: 1, from: "asked", text: "Which way?", options: ["Left"], state, ...(answer === undefined ? {} : { answer }) });
+        const player = (text: string): ChatMessage => ({ id: 2, from: "player", text });
+        expect(answerShown([asked("answered", "Left")], 0)).toBe("Left");
+        expect(answerShown([asked("answered", "Left"), { id: 2, from: "master", text: "You go left." }], 0)).toBe("Left");
+        expect(answerShown([asked("answered", "I climb the wall."), player("I climb the wall.")], 0)).toBeUndefined();
+        expect(answerShown([asked("answered", "I climb the wall."), player("  I climb the wall.\n")], 0)).toBeUndefined();
+        // A button's answer, then other words of the player's: both show.
+        expect(answerShown([asked("answered", "Left"), player("And then I run.")], 0)).toBe("Left");
+        expect([answerShown([asked("waiting")], 0), answerShown([asked("left")], 0), answerShown([player("Hm.")], 0), answerShown([], 3)]).toEqual([undefined, undefined, undefined, undefined]);
     });
 
     it("has its own address, #/chat, as a section", () => {

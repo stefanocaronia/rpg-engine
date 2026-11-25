@@ -1,23 +1,33 @@
-// The Chat section (D-582), there only where the campaign's table keeps the chat with the master: its messages, then, while a chat is open, what the master
-// is doing with Stop and the player's words; with none open, where one is opened, or the line that says a chat opened by hand plays the campaign. Bare: its
-// place in the page is this section, and in the setup, which has no sections, beside its questions or under them, until the page is laid out around it.
+// The Chat section (D-582), there only where the campaign's table keeps the chat with the master: its messages, with the master's questions and the rolls
+// among them, then, while a chat is open, what the master is doing and the player's words, with what sends them or stops the master; with none open, where
+// one is opened, or the line that says a chat opened by hand plays the campaign. Its place in the page is this section, the panel beside the page, and in
+// the setup, which has no sections, beside its questions or under them.
 import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { MasterShown } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { t } from "../text.ts";
-import { chatNews, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, turnWords } from "./chat.ts";
-import { ChatLog } from "./log.tsx";
+import { chatNews, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, turnWords, waitingQuestion } from "./chat.ts";
+import { type ChatGame, ChatLog } from "./log.tsx";
+import type { ChatAsking } from "./question.tsx";
 import type { MasterChat } from "./sending.ts";
 import { ChatStart } from "./start.tsx";
 import { ChatWords } from "./words.tsx";
 
 /**
  * The chat in its place; `entering` when the page itself led here, as when the setup ends under an open chat: then the player's words take the focus.
- * `tools` are the place's own controls, at the end of the chat's head: where the chat stands, and what folds its panel.
+ * `tools` are the place's own controls, at the end of the chat's head: where the chat stands. `asking` is the question the page is asked now and where it
+ * is answered, for the one that waits among the messages; `game` what the rolls among them are drawn with.
  */
-export function ChatPage({ chat, place = "section", entering = false, tools }: { chat: MasterChat; place?: ChatPlace; entering?: boolean; tools?: ComponentChildren; })
+export function ChatPage({ chat, place = "section", entering = false, tools, asking, game }: {
+    chat: MasterChat;
+    place?: ChatPlace;
+    entering?: boolean;
+    tools?: ComponentChildren;
+    asking?: ChatAsking | undefined;
+    game: ChatGame;
+})
 {
     const shown = chat.shown;
     const root = useRef<HTMLElement>(null);
@@ -81,7 +91,7 @@ export function ChatPage({ chat, place = "section", entering = false, tools }: {
         return <PageHead section="chat" id="chat-title" />;
     }
 
-    const turn = turnWords(shown.chat);
+    const turn = turnWords(shown.chat, waitingQuestion(shown.messages) !== undefined);
     return (
         <section
             ref={root}
@@ -103,13 +113,12 @@ export function ChatPage({ chat, place = "section", entering = false, tools }: {
             </div>
             <p class="visually-hidden" role="status">{told}</p>
             <div class="card chat-box">
-                {shown.messages.length > 0 && <ChatLog messages={shown.messages} />}
+                {shown.messages.length > 0 && <ChatLog messages={shown.messages} asking={asking} game={game} />}
                 {shown.messages.length === 0 && view === "open" && <p class="chat-empty">{t("Write to the master to begin: their answer comes here.")}</p>}
                 {turn !== undefined && (
                     <p class="chat-turn">
                         <Icon name="hourglass" />
                         <span class="chat-turn-words">{turn}</span>
-                        <button type="button" class="button" onClick={() => void chat.stop()}>{t("Stop")}</button>
                     </p>
                 )}
                 {view === "ended" && (
@@ -129,6 +138,7 @@ export function ChatPage({ chat, place = "section", entering = false, tools }: {
                     <ChatWords
                         text={chat.draft}
                         state={shown.chat.state}
+                        answers={shown.chat.answers === true && asking?.words !== false}
                         sending={chat.sending}
                         plays={choiceLine(shown, shown.chat)}
                         onText={chat.setDraft}
@@ -138,6 +148,7 @@ export function ChatPage({ chat, place = "section", entering = false, tools }: {
                                 root.current?.querySelector<HTMLElement>("#chat-words")?.focus();
                             }
                         }}
+                        onStop={() => void chat.stop()}
                         onClose={() => void chat.close()}
                     />
                 )}

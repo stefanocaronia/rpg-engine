@@ -1,6 +1,6 @@
 // The table's chat with the master as the page reads it (D-582): what its place shows, the choice a chat opens with, what is told as it changes, and when its
 // list follows what comes. No drawing here: the page's parts draw what these say.
-import type { ChatChoice, ChatHost, ChatMessage, ChatModel, MasterShown } from "../data.ts";
+import type { ChatAsked, ChatChoice, ChatHost, ChatMessage, ChatModel, ChatSaid, MasterShown } from "../data.ts";
 import { t } from "../text.ts";
 
 /** What the chat's place shows: where a chat is opened, a chat opened by hand in its place, the open chat, or one whose program ended. */
@@ -115,14 +115,28 @@ export function resumes(shown: MasterShown, host: string): boolean
     return shown.last?.resumable === true && shown.last.host === host;
 }
 
-/** What the master does in their turn, in words: the command they use now, when the table tells one; nothing out of a turn. */
-export function turnWords(chat: MasterShown["chat"]): string | undefined
+/** What the master is doing in their turn, as the player sees it: asking them something, which they answer on the page; rolling the dice; or answering. */
+export type TurnDoing = "asks" | "rolls" | "answers";
+
+/**
+ * What the master is doing in their turn: asking, while a question of theirs waits (`waiting`) or the command they use now is `ask`; rolling, with `roll`;
+ * with any other command, and none, answering. A command is told by its own name, whatever a host puts before it. Nothing out of a turn.
+ */
+export function turnDoing(chat: MasterShown["chat"], waiting = false): TurnDoing | undefined
 {
     if (chat?.state !== "turn") {
         return undefined;
     }
 
-    return chat.tool === undefined ? t("The master is answering…") : t("The master is using {tool}…", { tool: chat.tool });
+    const command = chat.tool?.toLowerCase().split(/__|[.:/\s]/).at(-1);
+    return waiting || command === "ask" ? "asks" : command === "roll" ? "rolls" : "answers";
+}
+
+/** What the master does in their turn, in the player's words, never a command's name; nothing out of a turn. */
+export function turnWords(chat: MasterShown["chat"], waiting = false): string | undefined
+{
+    const doing = turnDoing(chat, waiting);
+    return doing === undefined ? undefined : doing === "asks" ? t("The master is waiting for your answer…") : doing === "rolls" ? t("The master is rolling the dice…") : t("The master is answering…");
 }
 
 // How far a message's own length counts in the mark of what was heard: under a million characters, as the table keeps far fewer.
@@ -147,8 +161,48 @@ export function unseenWords(seen: number | undefined, heard: number, inChat: boo
     return seen === undefined || inChat || heard < seen ? { seen: heard, unseen: false } : { seen, unseen: heard > seen };
 }
 
+/** The master's question that waits in the chat: one at a time, the last asked. */
+export function waitingQuestion(messages: ChatMessage[]): ChatAsked | undefined
+{
+    const last = messages.findLast((message) => message.from === "asked");
+    return last?.from === "asked" && last.state === "waiting" ? last : undefined;
+}
+
+/** Where the page shows the question that waits: over the page as a bar or a card, in the chat with its buttons, or as a notice that leads to the chat. */
+export type QuestionPlace = "page" | "chat" | "notice";
+
+/**
+ * Where the question that waits is answered, in one place alone. On the page, as ever, with no chat of the table's that keeps it (`kept`), as when a chat
+ * opened by hand asks, and when the question has a place of its own (`own`): the dice of a rest, a package's card, a square of the map. Else in the chat
+ * when it is in sight; when it is in its tab and another section shows, a notice leads there; and on the page where nothing leads to the chat.
+ */
+export function questionPlace(question: { own: boolean; kept: boolean; }, chat: "shown" | "tab" | "away"): QuestionPlace
+{
+    if (question.own || !question.kept || chat === "away") {
+        return "page";
+    }
+
+    return chat === "shown" ? "chat" : "notice";
+}
+
+/**
+ * The answer a question of the chat shows once it has one: none when the player's own words are the answer and stand right after it, as their message says
+ * them already.
+ */
+export function answerShown(messages: ChatMessage[], index: number): string | undefined
+{
+    const asked = messages[index];
+    const next = messages[index + 1];
+
+    if (asked?.from !== "asked" || asked.state !== "answered" || asked.answer === undefined) {
+        return undefined;
+    }
+
+    return next?.from === "player" && next.text.trim() === asked.answer.trim() ? undefined : asked.answer;
+}
+
 /** Whose words a message is, for whoever cannot see where it stands. */
-export function speaker(from: ChatMessage["from"]): string
+export function speaker(from: ChatSaid["from"]): string
 {
     return from === "player" ? t("You") : from === "master" ? t("The master") : t("The table");
 }
@@ -218,9 +272,12 @@ export function sendsWords(event: { key: string; shiftKey: boolean; isComposing:
     return event.key === "Enter" && !event.shiftKey && !event.isComposing;
 }
 
-/** The player's words as they go: trimmed, none when they are empty or the master cannot take them now. */
-export function wordsToSend(text: string, state: "idle" | "turn" | "ended" | undefined): string | undefined
+/**
+ * The player's words as they go: trimmed, none when they are empty or the master cannot take them now. In the master's turn they go only while they answer
+ * the question that waits (`answers`).
+ */
+export function wordsToSend(text: string, state: "idle" | "turn" | "ended" | undefined, answers = false): string | undefined
 {
     const words = text.trim();
-    return words === "" || state !== "idle" ? undefined : words;
+    return words === "" || !(state === "idle" || (state === "turn" && answers)) ? undefined : words;
 }

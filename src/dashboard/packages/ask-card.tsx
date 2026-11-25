@@ -12,10 +12,14 @@ import { cardLayout, type CardRoll, labelKey, type PackCard, type TrackChange, t
 import { type CardButton, deepQuery, ExtensionRoot, figureSize, type PageModule, pagePropsOf, usePageModule } from "./page-code.tsx";
 import { Drawn, OwnerContext, Part, Text, textOf, Track, Who } from "./widgets.tsx";
 
-/** The card; `name`, with more than one player character, whom it asks; `widget`, whose card it is, its title for a card the page saw no question of. */
-export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
+/**
+ * The card; `name`, with more than one player character, whom it asks; `widget`, whose card it is, its title for a card the page saw no question of;
+ * `ownWords` false where the chat takes the player's own words in the card's place.
+ */
+export function AskCard({ card, name, widget, ownWords = true, onAnswer, onWords, onClose }: {
     card: PackCard;
     name?: string | undefined;
+    ownWords?: boolean;
     widget?: ShownWidget | undefined;
     /** A button pressed, by its place among the question's. */
     onAnswer(index: number): void;
@@ -61,7 +65,7 @@ export function AskCard({ card, name, widget, onAnswer, onWords, onClose }: {
     const [problem, setProblem] = useState<string>();
     const busy = card.sent !== undefined || saying;
     // The player's own words take no forced roll's place, nor a rest's dice (D-507, ASK-14).
-    const takesWords = asked !== undefined && asked.forced !== true && rest === undefined;
+    const takesWords = ownWords && asked !== undefined && asked.forced !== true && rest === undefined;
 
     // While it stays in sight, the rolls beside the sheet stay in sight under it, as under the master's question (D-291); once it scrolls with the page, not.
     useEffect(() => {

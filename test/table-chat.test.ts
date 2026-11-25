@@ -399,6 +399,118 @@ describe("the table's chat with the master", () => {
     });
 });
 
+describe("what the engine tells the table's chat between the master's words", () => {
+    const question = { id: "q1", text: "Do you open the door?", title: "The door", options: ["Yes", "No"] };
+    const roll = { id: "r1", at: "2026-11-25T10:00:00.000Z", by: "player" as const, who: "Ettore", notation: "1d20", total: 12, text: "1d20 = 12", dice: [] };
+
+    it("keeps a question after the master's words so far, what they write after it a new message, and how it ended: answered, or left", () => {
+        const { chat, master } = opened();
+        chat.say("I knock.");
+        master.emit({ type: "text", block: 0, text: "Someone answers." });
+        const before = changes;
+        chat.askBegins(question);
+        expect(changes).toBe(before + 1);
+        expect(chat.shown().messages.at(-1)).toEqual({ id: 3, from: "asked", text: "Do you open the door?", title: "The door", options: ["Yes", "No"], state: "waiting" });
+        master.emit({ type: "text", block: 0, text: "The handle turns." });
+        const after = changes;
+        chat.askEnds("other", "Yes");
+        expect(changes).toBe(after);
+        chat.askEnds("q1", "Yes");
+        expect(changes).toBe(after + 1);
+        chat.askBegins({ id: "q2", text: "Which square?", options: [] });
+        chat.askEnds("q2");
+        expect(chat.shown().messages).toEqual([
+            { id: 1, from: "player", text: "I knock." },
+            { id: 2, from: "master", text: "Someone answers." },
+            { id: 3, from: "asked", text: "Do you open the door?", title: "The door", options: ["Yes", "No"], state: "answered", answer: "Yes" },
+            { id: 4, from: "master", text: "The handle turns." },
+            { id: 5, from: "asked", text: "Which square?", options: [], state: "left" },
+        ]);
+    });
+
+    it("leaves a question still waiting when another takes its place", () => {
+        const { chat } = opened();
+        chat.askBegins(question);
+        chat.askBegins({ ...question, id: "q2" });
+        expect(chat.shown().messages.map((message) => message.from === "asked" && message.state)).toEqual(["left", "waiting"]);
+    });
+
+    it("keeps a roll the player may see as it is given, between the master's words", () => {
+        const { chat, master } = opened();
+        chat.say("I attack.");
+        master.emit({ type: "text", block: 0, text: "Roll it." });
+        chat.rolled("Ettore: 1d20 = 12", roll);
+        master.emit({ type: "text", block: 0, text: "A hit." });
+        expect(chat.shown().messages.slice(1)).toEqual([
+            { id: 2, from: "master", text: "Roll it." },
+            { id: 3, from: "roll", text: "Ettore: 1d20 = 12", roll },
+            { id: 4, from: "master", text: "A hit." },
+        ]);
+    });
+
+    it("keeps nothing with no chat open, and empties them with the rest on a chat opened anew, keeps them on one taken up", () => {
+        const chat = chatWith();
+        chat.askBegins(question);
+        chat.rolled("Ettore: 1d20 = 12", roll);
+        expect(chat.shown().messages).toEqual([]);
+        expect(chat.open(choice)).toBeUndefined();
+        masters[0].emit({ type: "session", session: "s1", model: "sonnet" });
+        chat.rolled("Ettore: 1d20 = 12", roll);
+        chat.close();
+        expect(chat.open(choice)).toBeUndefined();
+        expect(chat.shown().messages.map((message) => message.from)).toEqual(["roll"]);
+        chat.close();
+        expect(chat.open({ ...choice, fresh: true })).toBeUndefined();
+        expect(chat.shown().messages).toEqual([]);
+    });
+
+    it("answers a question that takes words with the player's words, during the master's turn; one that takes none keeps them busy", () => {
+        const { chat, master } = opened();
+        const answered: string[] = [];
+        chat.say("I knock.");
+        chat.askBegins(question, (words) => {
+            answered.push(words);
+            chat.askEnds("q1", words);
+        });
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", state: "turn", answers: true });
+        expect(chat.say("I wait a moment.\n\nWhat the character knows.", "I wait a moment.")).toBe("sent");
+        expect(answered).toEqual(["I wait a moment.\n\nWhat the character knows."]);
+        expect(master.sent).toEqual(["I knock."]);
+        expect(chat.inTurn()).toBe(true);
+        expect(chat.shown().chat?.answers).toBeUndefined();
+        expect(chat.shown().messages.slice(1)).toEqual([
+            { id: 2, from: "asked", text: "Do you open the door?", title: "The door", options: ["Yes", "No"], state: "answered", answer: "I wait a moment.\n\nWhat the character knows." },
+            { id: 3, from: "player", text: "I wait a moment." },
+        ]);
+
+        chat.askBegins({ id: "q2", text: "Spend your dice.", options: ["Done"] });
+        expect(chat.shown().chat?.answers).toBeUndefined();
+        expect(chat.say("Words")).toBe("busy");
+        chat.askEnds("q2", "Done");
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.say("Hello")).toBe("sent");
+        expect(master.sent).toEqual(["I knock.", "Hello"]);
+    });
+
+    it("holds the limits for them too: 200 messages, each text cut at 200,000 characters, the roll kept whole", () => {
+        const { chat } = opened();
+
+        for (let count = 0; count < 210; count++) {
+            chat.rolled(`Roll ${count}`, roll);
+        }
+
+        chat.askBegins({ id: "q", text: "q".repeat(250_000), title: "t".repeat(250_000), options: ["Yes"] });
+        chat.askEnds("q", "a".repeat(250_000));
+        chat.rolled("r".repeat(250_000), roll);
+        const messages = chat.shown().messages;
+        expect(messages).toHaveLength(200);
+        const [asked, rolled] = messages.slice(-2);
+        expect(asked).toMatchObject({ from: "asked", state: "answered" });
+        expect(asked.from === "asked" && [asked.text.length, asked.title?.length, asked.answer?.length]).toEqual([200_000, 200_000, 200_000]);
+        expect(rolled).toEqual({ id: 212, from: "roll", text: "r".repeat(200_000), roll });
+    });
+});
+
 describe("the campaign's last chat", () => {
     it("forgets the session of a chat taken up that ends before the host says it: the next chat starts new, with the same host, model and effort", () => {
         writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", effort: "low", session: "gone-session" });

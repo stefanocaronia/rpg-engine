@@ -55,6 +55,12 @@ export function shownRoll(
     };
 }
 
+/** "Ettore: 1d20+5 = 17": a roll the player may see in one line, as the diary tells it. */
+export function rollLine(roll: ShownRoll): string
+{
+    return roll.who === undefined ? roll.text : `${nameText(roll.who, true)}: ${roll.text}`;
+}
+
 /** How many rolls the dashboard asks for: a whole number from 1. */
 export function rollCount(asked: string | undefined): number
 {

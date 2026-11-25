@@ -82,11 +82,22 @@ export async function runIcon(args: string[], where: OpenWhere = thisComputer())
 
 /**
  * Writes what `rpg open` or `rpg icon` said, to the output or, for a failure, the errors, then ends the process with its exit code once it is out: the icon
- * runs it in a console nobody reads or closes, where anything left open would keep it alive.
+ * runs it in a console nobody reads or closes, where anything left open would keep it alive. There the write may never say it is done: the process ends
+ * anyway `wait` ms later.
  */
-export function sayAndEnd(said: Said, streams: Streams = { out: process.stdout, err: process.stderr }, exit: (code: number) => void = process.exit): void
+export function sayAndEnd(said: Said, streams: Streams = { out: process.stdout, err: process.stderr }, exit: (code: number) => void = process.exit, wait = 500): void
 {
-    (said.exitCode === 0 ? streams.out : streams.err).write(`${said.output}\n`, () => exit(said.exitCode));
+    let ended = false;
+
+    const end = (): void => {
+        if (!ended) {
+            ended = true;
+            exit(said.exitCode);
+        }
+    };
+
+    setTimeout(end, wait);
+    (said.exitCode === 0 ? streams.out : streams.err).write(`${said.output}\n`, end);
 }
 
 function thisComputer(): OpenWhere

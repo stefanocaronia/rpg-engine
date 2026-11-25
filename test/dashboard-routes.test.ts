@@ -5,10 +5,11 @@ import { request } from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
+import { ask } from "../src/commands/ask.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { type MasterChat, masterDriver, type MasterEvent, openMaster } from "../src/master/index.ts";
-import { type Dashboard, pageRoutes, startDashboard } from "../src/server/dashboard/index.ts";
+import { type Dashboard, pageRoutes, type Served, startDashboard } from "../src/server/dashboard/index.ts";
 import { launcherRoutes, openLauncher } from "../src/server/launcher/index.ts";
 import { tableChat } from "../src/server/table/chat.ts";
 import { pageFolder } from "./i18n/phrases.ts";
@@ -430,6 +431,190 @@ describe("the table's chat over the real driver of Claude Code, its host a fake 
             expect(hosts[0].stopped).toBe(true);
         });
     }
+});
+
+describe("what the engine tells the table's chat: the master's questions on the page and the rolls the player may see", () => {
+    let withMaster: Dashboard;
+    let masterPort: number;
+    let table: Context;
+    let served: Served | undefined;
+    let sent: string[];
+
+    const wall = { question: "Scavalcare il muro prima della ronda", options: ["Atletica 1d20+5", "Acrobazia 1d20-1"], who: "Ettore" };
+
+    beforeEach(async () => {
+        const ok = async (...args: string[]): Promise<void> => {
+            const result = await runCommandLine(args, context);
+            expect(result.exitCode, result.output).toBe(0);
+        };
+
+        await ok("write", "Locanda", "--type", "place");
+        await ok("write", "Ettore", "--type", "character", ...["role=pc", "vocations=[[Warden]] 3", "might=5", "grace=3", "wit=4", "grit=10/16"].flatMap((field) => ["--set", field]));
+        await ok("write", "Locanda", "--add", "contains=[[Ettore]]");
+        sent = [];
+        let turn = false;
+        const host: MasterChat = {
+            send: (text) => {
+                turn = true;
+                sent.push(text);
+                return true;
+            },
+            onEvent: () => undefined,
+            interrupt: () => undefined,
+            close: () => undefined,
+        };
+        const master = tableChat({
+            root: folder,
+            home: makeTempFolder(),
+            environment: {},
+            platform: process.platform,
+            userHome: makeTempFolder(),
+            open: () => host,
+            driver: (id) =>
+                id === "claudeCode"
+                    ? {
+                        open: () => host,
+                        missing: () => undefined,
+                        program: () => ({ command: "claude-program", args: [] }),
+                        environment: (given) => given,
+                        models: () => Promise.resolve([]),
+                        model: "sonnet",
+                        efforts: [],
+                    }
+                    : undefined,
+            elsewhere: () => false,
+            changed: () => withMaster.chatChanged(),
+            idle: () => withMaster.deliver(),
+        });
+        // The table's context, a chat at it whose calls end as the MCP server's do.
+        const fresh = new SessionStore({ systemFolders: context.systemFolders, watchFolder: () => ({ close: () => undefined }) });
+        table = { ...context, files: fresh, chat: { calls: 0 } };
+        const started = await startDashboard(table, fresh, { ports: [0], master, served: (given) => (served = given) });
+
+        if (started === undefined) {
+            throw new Error("The dashboard with a master did not start.");
+        }
+
+        withMaster = started;
+        masterPort = Number(new URL(started.url).port);
+        table.page = started.player;
+        expect((await json("POST", masterPort, { open: { host: "claudeCode", model: "sonnet" } })).status).toBe(200);
+        expect((await json("POST", masterPort, { say: "Scavalco il muro." })).status).toBe(202);
+        expect(turn).toBe(true);
+    });
+
+    afterEach(async () => {
+        await withMaster.close();
+    });
+
+    type Shown = { chat?: { state: string; answers?: true; }; messages: { id: number; from: string; text: string; state?: string; answer?: string; roll?: unknown; }[]; };
+
+    const shown = async (): Promise<Shown> => (await json("GET", masterPort)).body as Shown;
+
+    /** The question the page shows now, once there is one. */
+    async function waitAsked(): Promise<{ id: string; labels: string[]; }>
+    {
+        let asked: { id: string; labels: string[]; } | null = null;
+        await until(async () => {
+            asked = ((await json("GET", masterPort, undefined, "/api/asked")).body as { asked: { id: string; labels: string[]; } | null; }).asked;
+            return asked !== null;
+        });
+        return asked as unknown as { id: string; labels: string[]; };
+    }
+
+    /** A call of the master's ends, and the look at the rolls it made is done. */
+    async function callEnds(): Promise<void>
+    {
+        table.chat?.afterCall?.();
+        await served?.tellRolls();
+    }
+
+    it("keeps a question asked on the page, waiting then answered with the button's label; the roll it made, as the Rolls card gets it", async () => {
+        const page = await listenTo(masterPort);
+
+        try {
+            const asking = ask.run(ask.input.parse(wall), table);
+            const asked = await waitAsked();
+            const waiting = await shown();
+            expect(waiting.chat?.answers).toBe(true);
+            expect(waiting.messages).toEqual([
+                { id: 1, from: "player", text: "Scavalco il muro." },
+                { id: 2, from: "asked", text: wall.question, title: "Tiro", options: asked.labels, state: "waiting" },
+            ]);
+            expect((await json("POST", masterPort, { asked: asked.id, choice: 0 }, "/api/answer")).status).toBe(202);
+            await asking;
+            await callEnds();
+            const after = await shown();
+            expect(after.chat?.answers).toBeUndefined();
+            const rolls = ((await json("GET", masterPort, undefined, "/api/view?rolls=1")).body as { rolls: unknown[]; }).rolls;
+            expect(rolls).toHaveLength(1);
+            expect(after.messages.slice(1)).toEqual([
+                { id: 2, from: "asked", text: wall.question, title: "Tiro", options: asked.labels, state: "answered", answer: asked.labels[0] },
+                { id: 3, from: "roll", text: expect.stringMatching(/^Ettore: /) as unknown, roll: rolls[0] },
+            ]);
+        } finally {
+            page.close();
+        }
+    });
+
+    it("never tells a hidden roll, nor the rolls made before, nor any with no chat open", async () => {
+        const hidden = await runCommandLine(["roll", "1d20", "--who", "Ettore", "--hidden"], table);
+        expect(hidden.exitCode, hidden.output).toBe(0);
+        expect(readFileSync(join(folder, "log.jsonl"), "utf8")).toContain('"visibility":"hidden"');
+        await callEnds();
+        expect((await shown()).messages.map((message) => message.from)).toEqual(["player"]);
+        await json("POST", masterPort, { close: true });
+        expect((await runCommandLine(["roll", "1d20", "--who", "Ettore"], table)).exitCode).toBe(0);
+        await callEnds();
+        expect((await shown()).messages.map((message) => message.from)).toEqual(["player"]);
+        // Taken up again, the chat hears no roll made before.
+        expect((await json("POST", masterPort, { open: { host: "claudeCode", model: "sonnet" } })).status).toBe(200);
+        await callEnds();
+        expect((await shown()).messages.map((message) => message.from)).toEqual(["player"]);
+    });
+
+    it("answers the question waiting with the player's words said in the chat, as the bar's own; leaves one that ended with no answer", async () => {
+        const page = await listenTo(masterPort);
+
+        try {
+            const asking = ask.run(ask.input.parse(wall), table);
+            await waitAsked();
+            const said = await json("POST", masterPort, { say: "Aspetto che la ronda passi." });
+            expect(said.status).toBe(202);
+            expect(ask.format(await asking)).toContain("Aspetto che la ronda passi.");
+            expect(sent).toEqual(["Scavalco il muro."]);
+            expect((await shown()).messages.slice(1)).toEqual([
+                { id: 2, from: "asked", text: wall.question, title: "Tiro", options: expect.any(Array) as unknown, state: "answered", answer: "Aspetto che la ronda passi." },
+                { id: 3, from: "player", text: "Aspetto che la ronda passi." },
+            ]);
+
+            const stopped = new AbortController();
+            const again = ask.run(ask.input.parse(wall), { ...table, signal: stopped.signal });
+            await waitAsked();
+            stopped.abort();
+            await Promise.resolve(again).catch(() => undefined);
+            const left = (await shown()).messages.at(-1);
+            expect(left).toMatchObject({ id: 4, from: "asked", state: "left" });
+            expect(left).not.toHaveProperty("answer");
+        } finally {
+            page.close();
+        }
+    });
+
+    it("refuses the player's words while a question that takes none waits, saying to answer from its buttons", async () => {
+        const page = await listenTo(masterPort);
+
+        try {
+            const asking = ask.run(ask.input.parse({ question: "Una sosta: quanti dadi spendi?", recipe: "breather" }), table);
+            const asked = await waitAsked();
+            expect((await shown()).chat?.answers).toBeUndefined();
+            expect(await json("POST", masterPort, { say: "Riposo." })).toMatchObject({ status: 409, body: { error: "The master asks a question its buttons answer: answer it there." } });
+            expect((await json("POST", masterPort, { asked: asked.id, choice: 0 }, "/api/answer")).status).toBe(202);
+            await asking;
+        } finally {
+            page.close();
+        }
+    });
 });
 
 /** Waits until a condition read from the server holds, looking every 20 ms; fails after ten seconds. */

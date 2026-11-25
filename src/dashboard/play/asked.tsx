@@ -1,19 +1,15 @@
 // What the master asks the player (D-279): the question, and a button for each check or answer; the click goes to the engine, which rolls the check and gives
 // the master its result. Or the player's own words, in place of a button (ASK-10). A banner over the page, which never changes section by itself (D-276). By
-// hand, as the player may choose for this browser, a check has no button: it is rolled from its row of the sheet or with the tray's dice (D-330).
-import { Fragment } from "preact";
+// hand, as the player may choose for this browser, a check has no button: it is rolled from its row of the sheet or with the tray's dice (D-330). Its
+// buttons, note and switch are those of play/answers.tsx, which the question in the chat draws too.
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { answer } from "../api.ts";
 import type { Asked, Member, ShownGrid } from "../data.ts";
-import { trayThrows } from "../dice/pool.ts";
-import { CoinFace } from "../parts/faces.tsx";
-import { notationLabel } from "../parts/game-words.ts";
-import { Icon, NotationIcons } from "../parts/icons.tsx";
-import { checkOf, notationModifier, sameDice, signed } from "../parts/labels.ts";
+import { Icon } from "../parts/icons.tsx";
 import { MapSheet } from "../place/sheet.tsx";
-import { sheetAddress, sideOf, Token } from "../sheet/party.tsx";
-import { byHandPref, usePref } from "../shell/prefs.ts";
-import { t, tParts } from "../text.ts";
+import { sideOf, Token } from "../sheet/party.tsx";
+import { t } from "../text.ts";
+import { asksRoll, shownAnswers } from "./answering.ts";
+import { AnswerButtons, HandNote, HandSwitch, useAnswering, useByHand } from "./answers.tsx";
 import { turnWords } from "./turns.tsx";
 
 // How far below the top the banner stays, as in the style sheet; how many characters the player's own words may have, as the server takes them.
@@ -37,8 +33,9 @@ const scrollKeys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home"
 /**
  * The master's question. `yourTurn` when it is asked on the turn of whom it asks; `who`, with more than one player character, the one it asks, whose portrait
  * takes the robot's place, the robot small on its edge, and whose name it says (D-480 (7)); `turnName`, then, whose turn it is, for a question that names no one.
+ * `ownWords` false where the chat takes the player's own words in the banner's place.
  */
-export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answered, onAnswered }: {
+export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answered, ownWords = true, onAnswered }: {
     asked: Asked;
     yourTurn?: boolean;
     who?: Member | undefined;
@@ -46,6 +43,7 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
     map?: ShownGrid;
     place?: string;
     answered?: boolean;
+    ownWords?: boolean;
     onAnswered(): void;
 })
 {
@@ -65,14 +63,12 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
     const before = useRef<number | undefined>(undefined);
     const kept = useRef<{ height: number; margin: number; } | undefined>(undefined);
     const moving = useRef(false);
-    const [sent, setSent] = useState<number | "words" | "square">();
-    const [byHand, setByHand] = usePref(byHandPref);
+    const answering = useAnswering(asked, answered, onAnswered);
+    const [byHand, setByHand] = useByHand();
     const [picking, setPicking] = useState(false);
-    const [problem, setProblem] = useState<string>();
     const [words, setWords] = useState("");
     const banner = useRef<HTMLElement>(null);
-    const checks = asked.labels.map((label) => checkOf(label, asked.title));
-    const roll = checks.some((check) => check !== undefined);
+    const roll = asksRoll(asked);
     // Folded, every answer stays in the bar while they all fit in a line beside the question; else only the checks. Their width, measured while all shown.
     const [roomy, setRoomy] = useState(true);
     const needed = useRef(0);
@@ -105,10 +101,8 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
         observer.observe(element);
         return () => observer.disconnect();
     }, [folded, asked.id, roomy]);
-    // By hand, the note names the checks the sheet or the tray answer; the others keep their buttons (D-380).
-    const named = checks.flatMap((check, index) => (check !== undefined && byHandAnswers(asked, index) ? [check] : []));
-    // Answered from the sheet or the tray, the banner folds away as after a click.
-    const gone = sent !== undefined || answered === true;
+    // Answered here, or from the sheet or the tray, the banner folds away.
+    const gone = answering.gone;
 
     // While the banner is there, the rolls beside the sheet stay in sight under it, as tall as it is, even as it folds away (D-291); folding to its bar or
     // opening, once it has its new height, as the page restyles itself at each change.
@@ -134,8 +128,6 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
     useEffect(() => {
         opened.current = false;
         travel.current = { from: window.scrollY, last: window.scrollY };
-        setSent(undefined);
-        setProblem(undefined);
         setWords("");
         setPicking(false);
         setFolded(false);
@@ -359,59 +351,12 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
         setFolded(now ? "hand" : false);
     };
 
-    // A button by its place, the player's own words, or a square of the map.
-    const reply = async (given: number | string | { square: string; }): Promise<void> => {
-        setSent(typeof given === "number" ? given : typeof given === "string" ? "words" : "square");
-        setPicking(false);
-        setProblem(undefined);
-
-        try {
-            // A click that comes too late counts for nothing: the page reads what the master asks now. One the game refuses can be given again.
-            if (!await answer(asked.id, given)) {
-                setSent(undefined);
-                setProblem(t("The answer did not reach the game: try again."));
-            }
-        } catch {
-            setSent(undefined);
-            setProblem(t("The answer did not reach the game: try again."));
-        }
-
-        onAnswered();
-    };
-
     const own = (event: Event): void => {
         event.preventDefault();
 
         if (words.trim() !== "") {
-            void reply(words.trim());
+            void answering.reply(words.trim());
         }
-    };
-
-    // A check's button, or an answer's; by hand a check has none, as its row of the sheet and the tray's dice answer it, unless neither does.
-    const answerButton = (label: string, index: number, onlyChecks = false) => {
-        const check = checks[index];
-        const kind = check !== undefined ? "asked-check" : roll ? "asked-other" : "asked-answer";
-
-        if ((check !== undefined && byHand && byHandAnswers(asked, index)) || (onlyChecks && check === undefined)) {
-            return null;
-        }
-
-        return (
-            <button
-                key={label}
-                type="button"
-                class={sent === index ? `${kind} sent` : kind}
-                disabled={gone}
-                title={asked.toss === true ? undefined : notationLabel(asked.words?.[index] ?? undefined)}
-                onClick={() => void reply(index)}
-            >
-                {check === undefined
-                    ? label
-                    : asked.toss === true
-                    ? <TossLabel words={check.check} coins={Number(/^(\d+)d2$/.exec(check.dice)?.[1] ?? 1)} />
-                    : <CheckLabel check={check.check} dice={check.dice} name={asked.names?.[index] ?? keptName(check.dice)} />}
-            </button>
-        );
     };
 
     const classes = ["asked", roll ? "asked-roll" : "", gone ? "leaving" : "", folded === false ? "" : "folded", motion].filter((name) => name !== "").join(" ");
@@ -430,7 +375,7 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
 
     if (folded !== false) {
         // Folded, a bar the whole width: the question in a line, its answers when they fit or else the checks' buttons, and the button that opens it again.
-        const shown = asked.labels.map((label, index) => answerButton(label, index, !roomy)).filter((button) => button !== null);
+        const shown = shownAnswers(asked, byHand, !roomy);
         return (
             <section ref={banner} class={classes} aria-label={t("What the master asks")}>
                 {who === undefined ? <img class="asked-robot" src="/assets/favicon.svg" alt="" /> : <AskedWho member={who} />}
@@ -443,7 +388,11 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
                     )}
                     {asked.question}
                 </p>
-                {shown.length > 0 && <div class="asked-buttons">{shown}</div>}
+                {shown.length > 0 && (
+                    <div class="asked-buttons">
+                        <AnswerButtons asked={asked} answering={answering} byHand={byHand} onlyChecks={!roomy} />
+                    </div>
+                )}
                 {toggle}
             </section>
         );
@@ -462,68 +411,53 @@ export function AskedBanner({ asked, yourTurn, who, turnName, map, place, answer
                     {who !== undefined && <span class="visually-hidden">{`${who.name}: `}</span>}
                     {asked.question}
                 </p>
-                {/* By hand, as a master says it: which check, with its dice as pictures; its number the player finds on the sheet. */}
-                {named.length > 0 && byHand && (
-                    <p class="asked-hand-note">
-                        <Icon name="hand" />
-                        <span>
-                            {tParts("Roll {checks} yourself, on {sheet} or with the dice.", {
-                                checks: named.map((check, index) => (
-                                    <Fragment key={check.check}>
-                                        {index > 0 && (index === named.length - 1 ? ` ${t("or")} ` : ", ")}
-                                        <a class="asked-hand-check" href={sheetAddress(asked.who ?? "")} onClick={() => showRow(asked.fields?.[asked.labels.findIndex((label) => checkOf(label, asked.title)?.check === check.check)])}>
-                                            <NotationIcons notation={check.dice} />
-                                            {check.check}
-                                        </a>
-                                    </Fragment>
-                                )),
-                                sheet: <a href={sheetAddress(asked.who ?? "")}>{who === undefined ? t("your sheet") : t("{name}'s sheet", { name: who.name })}</a>,
-                            }).map((part, index) => <Fragment key={index}>{part}</Fragment>)}
-                        </span>
-                    </p>
-                )}
+                {byHand && <HandNote asked={asked} who={who} />}
                 <div class="asked-buttons">
                     {/* Where to go is chosen on the map, over the whole page (ASK-11). */}
                     {asked.square && map !== undefined && (
-                        <button type="button" class={sent === "square" ? "asked-check sent" : "asked-check"} disabled={gone} onClick={() => setPicking(true)}>
+                        <button type="button" class={answering.sent === "square" ? "asked-check sent" : "asked-check"} disabled={gone} onClick={() => setPicking(true)}>
                             <Icon name="world" />
                             <span class="asked-check-name">{t("Choose on the map")}</span>
                         </button>
                     )}
-                    {asked.labels.map((label, index) => answerButton(label, index))}
+                    <AnswerButtons asked={asked} answering={answering} byHand={byHand} />
                 </div>
-                {/* The player's words, and in the banner's corner the switch to roll by hand. */}
-                <div class="asked-foot">
-                    <form class="asked-own" onSubmit={own}>
-                        <input
-                            type="text"
-                            value={words}
-                            maxLength={mostWords}
-                            placeholder={t("Or write what you do…")}
-                            aria-label={t("Or write what you do")}
-                            disabled={gone}
-                            onInput={(event) => setWords(event.currentTarget.value)}
-                        />
-                        <button type="submit" class="icon-button" aria-label={t("Send")} data-tip={t("Send")} disabled={gone || words.trim() === ""}>
-                            <Icon name="send" />
-                        </button>
-                    </form>
-                    {roll && (
-                        <label class="asked-hand">
-                            <input
-                                type="checkbox"
-                                role="switch"
-                                checked={byHand}
-                                onChange={(event) => setByHand(event.currentTarget.checked)}
-                            />
-                            <Icon name="hand" />
-                            {t("By hand")}
-                        </label>
-                    )}
-                </div>
-                {problem && <p class="asked-problem" role="alert">{problem}</p>}
+                {/* The player's words, where no chat takes them, and in the banner's corner the switch to roll by hand. */}
+                {(ownWords || roll) && (
+                    <div class="asked-foot">
+                        {ownWords && (
+                            <form class="asked-own" onSubmit={own}>
+                                <input
+                                    type="text"
+                                    value={words}
+                                    maxLength={mostWords}
+                                    placeholder={t("Or write what you do…")}
+                                    aria-label={t("Or write what you do")}
+                                    disabled={gone}
+                                    onInput={(event) => setWords(event.currentTarget.value)}
+                                />
+                                <button type="submit" class="icon-button" aria-label={t("Send")} data-tip={t("Send")} disabled={gone || words.trim() === ""}>
+                                    <Icon name="send" />
+                                </button>
+                            </form>
+                        )}
+                        {roll && <HandSwitch byHand={byHand} onChange={setByHand} />}
+                    </div>
+                )}
+                {answering.problem && <p class="asked-problem" role="alert">{answering.problem}</p>}
             </div>
-            {picking && map !== undefined && <MapSheet map={map} place={place ?? ""} question={asked.question} onPick={(square) => void reply({ square })} onClose={() => setPicking(false)} />}
+            {picking && map !== undefined && (
+                <MapSheet
+                    map={map}
+                    place={place ?? ""}
+                    question={asked.question}
+                    onPick={(square) => {
+                        setPicking(false);
+                        void answering.reply({ square });
+                    }}
+                    onClose={() => setPicking(false)}
+                />
+            )}
         </section>
     );
 }
@@ -571,80 +505,4 @@ function freePage(): void
 {
     document.documentElement.style.removeProperty("overflow-anchor");
     document.body.style.removeProperty("overflow-anchor");
-}
-
-/** Whether a check can be answered by hand: a field of the sheet it alone names, whose row lights, or dice the tray can throw and tells from the other checks'. */
-function byHandAnswers(asked: Asked, index: number): boolean
-{
-    const field = asked.fields?.[index] ?? null;
-    const ownRow = field !== null && asked.fields?.filter((other) => other === field).length === 1;
-    const dice = checkOf(asked.labels[index], asked.title)?.dice;
-    const ownDice = dice !== undefined && trayThrows(dice) && asked.labels.filter((label) => {
-                const other = checkOf(label, asked.title)?.dice;
-                return other !== undefined && sameDice(other, dice);
-            }).length === 1;
-    return ownRow || ownDice;
-}
-
-/** Sets the row of the sheet a check names in the middle of the window, with the focus on it, once the sheet the link leads to is drawn. */
-function showRow(field: string | null | undefined): void
-{
-    if (field === null || field === undefined) {
-        return;
-    }
-
-    const started = Date.now();
-
-    const find = (): void => {
-        const row = document.querySelector<HTMLElement>(`[data-field="${CSS.escape(field)}"]`);
-
-        if (row !== null) {
-            row.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-            row.focus({ preventScroll: true });
-        } else if (Date.now() - started < 2000) {
-            requestAnimationFrame(find);
-        }
-    };
-
-    requestAnimationFrame(find);
-}
-
-/**
- * A check's button (D-297): its dice as pictures, one of two faded when only one counts, its name, the number added and what kind of roll it is in words, as
- * "with advantage" (D-399); the notation is in the tooltip.
- */
-export function CheckLabel({ check, dice, name }: { check: string; dice: string; name: string | undefined; })
-{
-    const modifier = notationModifier(dice);
-    return (
-        <>
-            <NotationIcons notation={dice} />
-            <span class="asked-check-name">{check}</span>
-            {modifier !== 0 && <span class="asked-dice">{signed(modifier)}</span>}
-            {name !== undefined && <span class="asked-roll-name">{name}</span>}
-            <span class="visually-hidden">{dice}</span>
-        </>
-    );
-}
-
-/** A toss's button (ASK-15): its coins as they are, one before the other, at most three, and its words, which say how many. */
-function TossLabel({ words, coins }: { words: string; coins: number; })
-{
-    return (
-        <>
-            <span class="die-icons">{Array.from({ length: coins }, (_, index) => <CoinFace key={index} side="heads" />)}</span>
-            <span class="asked-check-name">{words}</span>
-        </>
-    );
-}
-
-/** A roll that keeps one die of several, in words any game reads, when its game gives it no name: "highest of 2", "lowest of 3" (D-399); undefined for any other. */
-function keptName(dice: string): string | undefined
-{
-    const kept = /^(\d+)d(?:\d+|%)(kh1?|kl1?|dl1|dh1)(?:[+-]\d+)*$/.exec(dice.toLowerCase().replace(/\s+/g, "").replaceAll("−", "-"));
-    const count = Number(kept?.[1] ?? 0);
-    const rule = kept?.[2] ?? "";
-    const highest = rule.startsWith("kh") || (rule === "dl1" && count === 2);
-    const lowest = rule.startsWith("kl") || (rule === "dh1" && count === 2);
-    return count < 2 ? undefined : highest ? t("highest of {count}", { count }) : lowest ? t("lowest of {count}", { count }) : undefined;
 }

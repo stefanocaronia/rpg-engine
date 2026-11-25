@@ -18,14 +18,14 @@ import { answers, builtPage, send } from "../page/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
 import { choicesNews } from "./choices.ts";
 import type { EngineAsked } from "./engine.ts";
-import type { PageMaster } from "./master.ts";
+import { type PageMaster, rollTeller } from "./master.ts";
 import { callBegins, deliverActs, pageNews } from "./news.ts";
 import { type Asked, pagePlayer, type ShownCard } from "./player.ts";
 import { campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
 import { answer } from "./routes.ts";
 import type { PackageAction, PackagePhase } from "./writes.ts";
 
-export type { PageChat, PageMaster } from "./master.ts";
+export type { ChatQuestion, PageChat, PageMaster, PageMessage } from "./master.ts";
 export { showPage } from "./opener.ts";
 export { campaignPorts, dashboardAt, dashboardPorts } from "./ports.ts";
 export { pageRoutes } from "./routes.ts";
@@ -169,6 +169,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 stories: new Map(),
                 shared: new Map<string, string>(),
                 notify: () => undefined,
+                tellRolls: () => Promise.resolve(),
                 words: pageTranslator(context, options.page ?? builtPage, () => served.notify()),
                 texts: systemTexts(context, () => served.notify()),
                 acts: newActs(),
@@ -287,6 +288,8 @@ export interface Served
     problemsShown?: number;
     /** The campaign's table's own chat with the master, where the table keeps one. */
     master?: PageMaster;
+    /** Tells the table's chat the rolls the player may see made since it last looked; done once that look is. */
+    tellRolls(): Promise<void>;
     /** At a campaign's table: the way back to the launcher. */
     launcher?: LauncherWay;
 }
@@ -357,11 +360,19 @@ function serve(server: Server, served: Served): Dashboard
 
         if (chat !== undefined) {
             chat.beforeCall = () => callBegins(served);
-            chat.afterCall = () => deliverActs(served);
+
+            // And the rolls the call made that the player may see go to the table's chat.
+            chat.afterCall = () => {
+                deliverActs(served);
+                void served.tellRolls();
+            };
         }
     };
 
     hookChat();
+    // Where the log stands, before any call: the rolls made before are not the chat's.
+    served.tellRolls = rollTeller(served);
+    void served.tellRolls();
 
     // An import works in another process, or in the call the master waits on, writing where the session does not watch: its state is looked at now and then,
     // and the pages hear when it changes (D-491 (11)).

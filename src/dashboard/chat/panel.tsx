@@ -6,7 +6,9 @@ import { Icon, type IconName } from "../parts/icons.tsx";
 import { chatSidePref, chatWidthKey, useChoice, useKeptText } from "../shell/prefs.ts";
 import { pageDirection, t } from "../text.ts";
 import { type ChatSide, chatSide, dockWidth, dockWidths, keptWidth, widthAfterKey, widthAtPointer } from "./dock.ts";
+import type { ChatGame } from "./log.tsx";
 import { ChatPage } from "./page.tsx";
+import type { ChatAsking } from "./question.tsx";
 import type { MasterChat } from "./sending.ts";
 
 /** Where the chat stands and how, as the player left it in this browser and as the window allows. */
@@ -88,8 +90,11 @@ export function ChatPlaces({ side, onSide }: { side: ChatSide; onSide(side: Chat
 }
 
 /** The chat's panel at a side of the window. */
-export function ChatPanel({ chat, side, width, windowWidth, onSide, onWidth }: {
+export function ChatPanel({ chat, side, width, windowWidth, asking, game, onSide, onWidth }: {
     chat: MasterChat;
+    /** The question the page is asked now, and what the chat's rolls are drawn with. */
+    asking?: ChatAsking | undefined;
+    game: ChatGame;
     side: "left" | "right";
     width: number;
     windowWidth: number;
@@ -119,6 +124,8 @@ export function ChatPanel({ chat, side, width, windowWidth, onSide, onWidth }: {
             <ChatPage
                 chat={chat}
                 place="dock"
+                asking={asking}
+                game={game}
                 tools={<ChatPlaces side={side} onSide={onSide} />}
             />
             <div

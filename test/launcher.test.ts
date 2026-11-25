@@ -1150,6 +1150,14 @@ describe("rpg open, rpg icon and rpg launcher", () => {
 
         expect(String(out.read())).toBe("open\n");
         expect(String(err.read())).toBe("failed\n");
+
+        // A console that never says the line is out, as the icon's: the process ends all the same, once.
+        const silent = { write: (): boolean => true } as unknown as NodeJS.WritableStream;
+        const late: number[] = [];
+        sayAndEnd({ output: "open", exitCode: 0 }, { out: silent, err: silent }, (code) => late.push(code), 20);
+        await vi.waitFor(() => expect(late).toEqual([0]));
+        await new Promise((done) => setTimeout(done, 60));
+        expect(late).toEqual([0]);
         expect(readFileSync(join(import.meta.dirname, "..", "src", "cli", "cli.ts"), "utf8")).toMatch(/sayAndEnd\(await \(args\[0\] === "open" \? runOpen : runIcon\)/);
     });
 
