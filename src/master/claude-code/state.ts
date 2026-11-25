@@ -6,9 +6,6 @@ import { controlRequest, type Message, userMessage } from "./protocol.ts";
 // How long the host may take to confirm the model, and to stop a turn once asked.
 const modelWait = 30_000;
 const interruptWait = 10_000;
-// How many of the host's last lines on its stderr say why it ended, and how long each may be.
-const lastErrors = 5;
-const errorLength = 300;
 
 export interface State
 {
@@ -124,15 +121,6 @@ export function processEnded(state: State, reason: string): void
     const said = state.errors.length === 0 ? "" : `: ${state.errors.join(" | ")}`;
     const why = `the host's program ended (${reason})${said}`;
     endChat(state, why, "failed", why, false);
-}
-
-/** Keeps a line the host wrote on its stderr among its last ones. */
-export function keepError(errors: string[], line: string): void
-{
-    if (line.trim() !== "") {
-        errors.push(line.trim().slice(0, errorLength));
-        errors.splice(0, Math.max(0, errors.length - lastErrors));
-    }
 }
 
 /** The chat ends: its turn in course ends as given, its process is stopped unless it is gone already, and `ended` says why. */

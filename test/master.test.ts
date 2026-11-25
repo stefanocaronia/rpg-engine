@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { hostIds } from "../src/core/hosts.ts";
 import { isHostName, type MasterChat, masterDriver, type MasterEvent, masterHosts, type MasterOptions, openMaster } from "../src/master/index.ts";
 import { checklist, type Scenario } from "./master/checklist.ts";
 import { type FakeHost, fakeHost, type FakeOptions, type FlowEntry, isModelRequest, isPlayerWords, listen, loadFlow, manualClock, playerWords, sessionOf, ticksUntil, turnEnds, wholeTexts } from "./master/fake-host.ts";
@@ -75,9 +76,9 @@ describe("the master in Claude Code", () => {
             }
         });
 
-        it("is the one host with a driver", () => {
-            expect(masterHosts()).toEqual(["claudeCode"]);
-            expect(openMaster("codex", options(fakeHost([])))).toBeUndefined();
+        it("is a host with a driver, as every host of the registry is, in its order", () => {
+            expect(masterHosts()).toEqual(hostIds);
+            expect(masterHosts()).toEqual(["claudeCode", "codex", "antigravity", "openCode"]);
         });
     });
 
@@ -574,10 +575,9 @@ describe("Claude Code as the table drives it", () => {
         return made;
     }
 
-    it("proposes sonnet, knows its efforts lowest first, and no other host has a driver", () => {
-        expect(driver.model).toBe("sonnet");
+    it("proposes opus and knows its efforts lowest first", () => {
+        expect(driver.model).toBe("opus");
         expect(driver.efforts).toEqual(["low", "medium", "high", "xhigh", "max"]);
-        expect(masterDriver("codex")).toBeUndefined();
     });
 
     it("finds its own program in a folder of the PATH, whatever the case of the name, before the one in the home's .local/bin", () => {

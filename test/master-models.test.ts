@@ -270,9 +270,9 @@ describe("the hosts the page offers", () => {
         const offered = hostsOffered(() => false, undefined, () => expect.fail("no models of a host not found"));
         expect(offered.map((host) => [host.id, host.ready, host.found, host.models])).toEqual([
             ["claudeCode", true, false, []],
-            ["codex", false, false, []],
-            ["antigravity", false, false, []],
-            ["openCode", false, false, []],
+            ["codex", true, false, []],
+            ["antigravity", true, false, []],
+            ["openCode", true, false, []],
         ]);
     });
 });

@@ -445,7 +445,7 @@ function codexConfigFile(root: string, platform: string, effort = chosenEffort(r
             "mcp_servers.rpg",
             `command = ${JSON.stringify(server.command)}\nargs = [${
                 server.args.map((arg) => JSON.stringify(arg)).join(", ")
-            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME", "SSH_AUTH_SOCK", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy"]`,
+            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME", "RPG_TABLE_MASTER", "SSH_AUTH_SOCK", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy"]`,
         ],
         ["memories", "generate_memories = false\nuse_memories = false"],
     ];

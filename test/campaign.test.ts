@@ -291,7 +291,7 @@ ${playLine}`);
         expect(readFileSync(join(folder, "nuova", ".codex", "config.toml"), "utf8")).toBe(
             `hide_agent_reasoning = true\n\n[mcp_servers.rpg]\ncommand = "${rpg.command}"\nargs = [${
                 rpg.args.map((arg) => `"${arg}"`).join(", ")
-            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME", "SSH_AUTH_SOCK", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy"]\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
+            }]\ntool_timeout_sec = 1800\ndefault_tools_approval_mode = "approve"\nenv_vars = ["CODEX_HOME", "RPG_TABLE_MASTER", "SSH_AUTH_SOCK", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "https_proxy", "http_proxy", "no_proxy"]\n\n[memories]\ngenerate_memories = false\nuse_memories = false\n`,
         );
         expect(existsSync(join(folder, "nuova", ".gemini"))).toBe(false);
         // Antigravity: the rpg server, the hook that lets its tools run without asking, and the doorbell.

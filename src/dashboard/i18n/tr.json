@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "oyun yöneticisi {tool} ile yapar",
   "The master makes them with {tool}.": "Oyun yöneticisi {tool} ile yapar.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "oyun yöneticisi yapay zekâ uygulamana bağlı ElevenLabs ile yapar, ElevenLabs planını kullanır",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "Oyun yöneticisi en iyi performansı en yetenekli modellerden biriyle gösterir: daha hafif modeller hikâyenin bazı bölümlerini atlayabilir.",
   "The master plays in {language}, and the page is written in it too.": "Oyun yöneticisi {language} dilinde oynar, sayfa da bu dilde yazılır.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "Oyun yöneticisi {language} dilinde oynuyor; sayfa İngilizce kalıyor: yapay zekâ uygulaman sayfayı bu bilgisayarda çevirebilirdi ama şu an çeviremiyor.",
   "The master plays in {language}; the page stays in English.": "Oyun yöneticisi {language} dilinde oynar; sayfa İngilizce kalır.",

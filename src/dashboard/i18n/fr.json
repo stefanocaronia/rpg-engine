@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "le MJ les crée avec {tool}",
   "The master makes them with {tool}.": "Le MJ les crée avec {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "le MJ les crée avec ElevenLabs, connecté à ton appli d'IA, avec ton forfait ElevenLabs",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "L'MJ joue mieux avec l'un des modèles les plus performants : les modèles plus légers sautent parfois des passages de l'histoire.",
   "The master plays in {language}, and the page is written in it too.": "Le MJ joue en {language}, et la page est aussi écrite dans cette langue.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "Le MJ joue en {language} ; la page reste en anglais : ton appli d'IA la traduirait sur cet ordinateur, mais aucune ne le peut pour l'instant.",
   "The master plays in {language}; the page stays in English.": "Le MJ joue en {language} ; la page reste en anglais.",

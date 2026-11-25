@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "由主持人用 {tool} 生成",
   "The master makes them with {tool}.": "由主持人用 {tool} 生成。",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "由主持人用已连接到你的 AI 应用的 ElevenLabs 生成，使用你的 ElevenLabs 套餐",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "使用最强的模型之一时，主持人的表现最好：较轻量的模型有时会漏掉部分剧情。",
   "The master plays in {language}, and the page is written in it too.": "主持人使用{language}进行游戏，页面也使用这种语言。",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "主持人使用{language}进行游戏，页面仍为英文：你的 AI 应用本可以在这台电脑上翻译页面，但现在无法使用。",
   "The master plays in {language}; the page stays in English.": "主持人使用{language}进行游戏，页面仍为英文。",

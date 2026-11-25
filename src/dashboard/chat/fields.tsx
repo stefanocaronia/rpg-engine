@@ -14,7 +14,8 @@ const mostModel = 100;
 /**
  * The app, the model and the effort, each its label before its control. Every app is there to see: one that is not on this computer, or that the page cannot
  * open yet, is dimmed, with a line that says which and why. The model is one of the app's list, with what the app says of it, or Other, a name written by
- * hand, as it is while the app has not answered with its list. The effort's row is there only for a model that takes one.
+ * hand, as it is while the app has not answered with its list; under it, always, the page's advice to play with a capable one. The effort's row is there
+ * only for a model that takes one.
  */
 export function ChoiceFields({ shown, choice, onChoice }: { shown: Pick<MasterShown, "hosts" | "last">; choice: ChatChoice | undefined; onChoice(choice: ChatChoice): void; })
 {
@@ -74,7 +75,7 @@ export function ChoiceFields({ shown, choice, onChoice }: { shown: Pick<MasterSh
                                     <select
                                         id="chat-model"
                                         class="chat-model"
-                                        aria-describedby="chat-model-about"
+                                        aria-describedby="chat-model-about chat-model-advice"
                                         value={listed === undefined ? "" : choice.model}
                                         onChange={(event) => pick(event.currentTarget.value)}
                                     >
@@ -90,6 +91,7 @@ export function ChoiceFields({ shown, choice, onChoice }: { shown: Pick<MasterSh
                                         type="text"
                                         dir="ltr"
                                         aria-labelledby="chat-model-label"
+                                        aria-describedby={host.models.length > 0 ? undefined : "chat-model-advice"}
                                         value={choice.model}
                                         maxLength={mostModel}
                                         spellcheck={false}
@@ -104,6 +106,11 @@ export function ChoiceFields({ shown, choice, onChoice }: { shown: Pick<MasterSh
                                 {/* What the app says of the model, in its own words. */}
                                 <p id="chat-model-about" class="chat-hint" dir="auto">{listed?.about ?? ""}</p>
                             </div>
+                            {/* The page's own advice, whatever the app and the model: a master's craft asks for a capable one. */}
+                            <p id="chat-model-advice" class="chat-note chat-advice">
+                                <Icon name="info" />
+                                {t("The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.")}
+                            </p>
                             {efforts.length > 0 && (
                                 <>
                                     <span id="chat-effort-label" class="chat-label">{t("Master's thinking")}</span>

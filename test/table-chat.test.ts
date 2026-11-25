@@ -198,7 +198,8 @@ describe("the table's chat with the master", () => {
         elsewhere = true;
         expect(chat.open(choice)).toBe("A chat opened by hand plays this campaign: close it, then open the chat here.");
         elsewhere = false;
-        expect(chat.open({ host: "codex", model: "gpt" })).toBe("The page cannot open a chat with Codex yet: choose Claude Code.");
+        // Every host of the registry has a driver: this one is left out by the drivers the test gives, while the hosts offered are still the registry's.
+        expect(chat.open({ host: "codex", model: "gpt" })).toBe("The page cannot open a chat with Codex yet: choose Claude Code or Codex or Antigravity or OpenCode.");
         found = false;
         expect(chat.open(choice)).toBe("Claude Code is not on this computer: install it, then try again.");
         found = true;

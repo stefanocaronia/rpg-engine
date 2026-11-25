@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "GMが{tool}で作成",
   "The master makes them with {tool}.": "GMが{tool}で作成します。",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "お使いのAIアプリに接続したElevenLabsで、GMがElevenLabsのプランを使って作成",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "GMは最高性能クラスのモデルで最も力を発揮します。軽量なモデルでは、物語の一部が飛ばされることがあります。",
   "The master plays in {language}, and the page is written in it too.": "GMは{language}でプレイし、ページも同じ言語で表示されます。",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "GMは{language}で進行します。ページは英語のままです。AIアプリがこのコンピューターで翻訳できますが、現在は利用できるものがありません。",
   "The master plays in {language}; the page stays in English.": "GMは{language}でプレイしますが、ページは英語のままです。",

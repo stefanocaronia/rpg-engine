@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "sögumaður býr þær til með {tool}",
   "The master makes them with {tool}.": "Sögumaður býr þær til með {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "sögumaður býr þær til með ElevenLabs, tengdu við gervigreindarforritið þitt, út frá ElevenLabs-áskriftinni þinni",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "Sögumaðurinn spilar best með einu af öflugustu módelunum: léttari módel sleppa stundum hlutum af sögunni.",
   "The master plays in {language}, and the page is written in it too.": "Sögumaður spilar á {language} og síðan er líka á því tungumáli.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "Sögumaðurinn spilar á {language}; síðan helst á ensku: gervigreindarforritið þitt myndi þýða hana á þessari tölvu, en ekkert getur það núna.",
   "The master plays in {language}; the page stays in English.": "Sögumaður spilar á {language}; síðan helst á ensku.",

@@ -85,8 +85,8 @@ describe("architecture", () => {
             "desktop/icon/macos.ts",
             // Why rpg open could not reach the launcher, in the player's data folder, for the icon that has no console.
             "cli/open.ts",
-            // Claude Code's own program, looked for in the folders of the PATH and the player's home, for the table's chat with the master.
-            "master/claude-code/program.ts",
+            // The hosts' own programs, looked for in the folders of the PATH, the player's home and npm's packages, for the table's chat with the master.
+            "master/program.ts",
             // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
             "campaign/last-choices.ts",
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).

@@ -865,6 +865,13 @@
         padding: 0;
     }
 
+    /* The page's advice on a choice: a line under it, in the choices' column. */
+    .chat-fields > .chat-advice {
+        grid-column-end: -1;
+        padding: 0;
+        text-wrap: pretty;
+    }
+
     .chat-buttons {
         display: flex;
         flex-wrap: wrap;
@@ -1047,6 +1054,10 @@
         margin-top: 8px;
     }
 
+    .chat-page.chat-dock .chat-fields > .chat-advice {
+        margin-top: 4px;
+    }
+
     /* The chat's head: its title, then its place's own controls at the end. */
     .chat-head {
         display: flex;
@@ -1157,6 +1168,10 @@
 
         .chat-fields > .chat-label:not(:first-child) {
             margin-top: 8px;
+        }
+
+        .chat-fields > .chat-advice {
+            margin-top: 4px;
         }
 
         .chat-log {

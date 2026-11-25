@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "a mesélő készíti őket a következővel: {tool}",
   "The master makes them with {tool}.": "A mesélő készíti őket a következővel: {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "a mesélő készíti őket az ElevenLabs segítségével, amely az AI-appodhoz van kapcsolva, az ElevenLabs-csomagodból",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "A mesélő a legerősebb modellek egyikével játszik a legjobban: a könnyebbek néha kihagynak részeket a történetből.",
   "The master plays in {language}, and the page is written in it too.": "A mesélő {language} nyelven mesél, és az oldal is ezen a nyelven van.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "A mesélő {language} nyelven játszik; az oldal angol marad: az AI-appod lefordítaná ezen a számítógépen, de most egyik sem tudja.",
   "The master plays in {language}; the page stays in English.": "A mesélő {language} nyelven mesél; az oldal angol marad.",

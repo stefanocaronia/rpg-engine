@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "die Spielleitung erstellt sie mit {tool}",
   "The master makes them with {tool}.": "Die Spielleitung erstellt sie mit {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "die Spielleitung erstellt sie mit ElevenLabs, verbunden mit deiner KI-App, über deinen ElevenLabs-Tarif",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "Die Spielleitung spielt am besten mit einem der leistungsfähigsten Modelle: Leichtere Modelle überspringen manchmal Teile der Geschichte.",
   "The master plays in {language}, and the page is written in it too.": "Die Spielleitung spielt auf {language}, und die Seite ist ebenfalls in dieser Sprache.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "Die Spielleitung spielt auf {language}; die Seite bleibt auf Englisch: Deine KI-App würde sie auf diesem Computer übersetzen, kann es aber gerade nicht.",
   "The master plays in {language}; the page stays in English.": "Die Spielleitung spielt auf {language}; die Seite bleibt auf Englisch.",

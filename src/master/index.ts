@@ -1,7 +1,10 @@
 // The master: a chat with the AI host's own program, driven by its protocol so that the table can show it.
 import { type HostId, hostIds, hosts } from "../core/hosts.ts";
+import { antigravity } from "./antigravity/index.ts";
 import type { MasterChat, MasterDriver, MasterModel, MasterOptions } from "./chat.ts";
 import { claudeCode } from "./claude-code/index.ts";
+import { codex } from "./codex/index.ts";
+import { openCode } from "./opencode/index.ts";
 
 export { isHostName } from "./chat.ts";
 export type { MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions, ToolKind } from "./chat.ts";
@@ -38,8 +41,8 @@ export interface HostOffered
     models: MasterModel[];
 }
 
-// The hosts that have a driver.
-const drivers: Partial<Record<HostId, MasterDriver>> = { claudeCode };
+// The hosts that have a driver, in the registry's order.
+const drivers: Partial<Record<HostId, MasterDriver>> = { claudeCode, codex, antigravity, openCode };
 
 /** Opens a chat with the master in a host, or takes one up again; undefined for a host that has no driver yet. */
 export function openMaster(host: HostId, options: MasterOptions): MasterChat | undefined

@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "GM이 {tool}(으)로 만들어요",
   "The master makes them with {tool}.": "GM이 {tool}(으)로 만들어요.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "GM이 AI 앱에 연결된 ElevenLabs로, ElevenLabs 요금제를 사용해 만들어요",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "GM은 성능이 가장 뛰어난 모델 중 하나를 쓸 때 가장 잘 진행해요. 가벼운 모델은 이야기의 일부를 건너뛰기도 해요.",
   "The master plays in {language}, and the page is written in it too.": "GM이 {language}(으)로 진행하고, 페이지도 같은 언어로 표시돼요.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "GM은 {language}(으)로 진행해요. 페이지는 영어로 유지돼요. AI 앱이 이 컴퓨터에서 번역할 수 있지만, 지금은 사용할 수 없어요.",
   "The master plays in {language}; the page stays in English.": "GM이 {language}(으)로 진행해요. 페이지는 영어로 유지돼요.",

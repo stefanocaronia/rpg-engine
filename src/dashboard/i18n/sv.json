@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "spelledaren gör dem med {tool}",
   "The master makes them with {tool}.": "Spelledaren gör dem med {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "spelledaren gör dem med ElevenLabs, kopplat till din AI-app, med din ElevenLabs-plan",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "Spelledaren spelar bäst med en av de mest kapabla modellerna: lättare modeller hoppar ibland över delar av berättelsen.",
   "The master plays in {language}, and the page is written in it too.": "Spelledaren spelar på {language}, och sidan skrivs också på det språket.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "Spelledaren spelar på {language}; sidan förblir på engelska: din AI-app skulle kunna översätta den på den här datorn, men ingen kan det just nu.",
   "The master plays in {language}; the page stays in English.": "Spelledaren spelar på {language}; sidan förblir på engelska.",

@@ -1,12 +1,13 @@
 // The master in Claude Code: its program started with no terminal, spoken to by its stream-json protocol, one JSON object a line each way.
 import { join } from "node:path";
 import { startLineProcess } from "../../core/process.ts";
-import { EventQueue, isHostName, laterByTimer, type MasterChat, type MasterDriver, type MasterOptions, warnFailed } from "../chat.ts";
+import { EventQueue, isHostName, keepError, laterByTimer, type MasterChat, type MasterDriver, type MasterOptions, warnFailed } from "../chat.ts";
+import { isFile } from "../program.ts";
 import { claudeModels } from "./models.ts";
-import { claudeEnvironment, claudeProgram, isFile, settingArguments, streamArguments } from "./program.ts";
+import { claudeEnvironment, claudeProgram, settingArguments, streamArguments } from "./program.ts";
 import { builtInTools, userMessage } from "./protocol.ts";
 import { readLine } from "./read.ts";
-import { askModel, askToStop, cancelWaits, endTurn, keepError, newTurn, processEnded, type State, write } from "./state.ts";
+import { askModel, askToStop, cancelWaits, endTurn, newTurn, processEnded, type State, write } from "./state.ts";
 
 /** Claude Code as the table drives it. */
 export const claudeCode: MasterDriver = {
@@ -18,7 +19,7 @@ export const claudeCode: MasterDriver = {
     program: claudeProgram,
     environment: claudeEnvironment,
     models: claudeModels,
-    model: "sonnet",
+    model: "opus",
     efforts: ["low", "medium", "high", "xhigh", "max"],
 };
 

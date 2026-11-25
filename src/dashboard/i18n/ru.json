@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "мастер создаёт их с помощью {tool}",
   "The master makes them with {tool}.": "Мастер создаёт их с помощью {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "мастер создаёт их с помощью ElevenLabs, подключённого к твоему ИИ-приложению, по твоему тарифу ElevenLabs",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "Мастер лучше всего играет на одной из самых мощных моделей: более лёгкие иногда пропускают части истории.",
   "The master plays in {language}, and the page is written in it too.": "Мастер играет на языке: {language}, и страница тоже написана на нём.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "Мастер играет на языке: {language}; страница остаётся на английском: твоё ИИ-приложение могло бы перевести её на этом компьютере, но сейчас ни одно не доступно.",
   "The master plays in {language}; the page stays in English.": "Мастер играет на языке: {language}; страница остаётся на английском.",

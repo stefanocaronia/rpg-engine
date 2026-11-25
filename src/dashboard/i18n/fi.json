@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "pelinjohtaja tekee ne työkalulla {tool}",
   "The master makes them with {tool}.": "Pelinjohtaja tekee ne työkalulla {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "pelinjohtaja tekee ne ElevenLabsilla, joka on yhdistetty tekoälysovellukseesi, ElevenLabs-tilauksellasi",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "Pelinjohtaja pelaa parhaiten jollakin kyvykkäimmistä malleista: kevyemmät jättävät joskus osia tarinasta väliin.",
   "The master plays in {language}, and the page is written in it too.": "Pelinjohtaja pelaa kielellä {language}, ja sivu on kirjoitettu sillä myös.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "Pelinjohtaja pelaa kielellä {language}, mutta sivu pysyy englanniksi: tekoälysovelluksesi kääntäisi sen tällä tietokoneella, mutta mikään ei pysty siihen nyt.",
   "The master plays in {language}; the page stays in English.": "Pelinjohtaja pelaa kielellä {language}; sivu pysyy englanniksi.",

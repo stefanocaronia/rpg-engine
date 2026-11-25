@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "maestrul de joc le creează cu {tool}",
   "The master makes them with {tool}.": "Maestrul de joc le creează cu {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "maestrul de joc le creează cu ElevenLabs, conectat la aplicația ta de AI, din planul tău ElevenLabs",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "Maestrul de joc se descurcă cel mai bine cu unul dintre cele mai capabile modele: cele mai ușoare omit uneori părți din poveste.",
   "The master plays in {language}, and the page is written in it too.": "Maestrul de joc joacă în {language}, iar pagina este scrisă tot în această limbă.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "Maestrul de joc joacă în {language}; pagina rămâne în engleză: aplicația ta AI ar traduce-o pe acest computer, dar acum nu poate nici una.",
   "The master plays in {language}; the page stays in English.": "Maestrul de joc joacă în {language}; pagina rămâne în engleză.",

@@ -173,6 +173,19 @@ export function warnFailed(error: unknown): void
     process.emitWarning(error instanceof Error ? error : String(error));
 }
 
+// How many of the host's last lines on its stderr say why it ended, and how long each may be.
+const lastErrors = 5;
+const errorLength = 300;
+
+/** Keeps a line the host wrote on its stderr among its last ones. */
+export function keepError(errors: string[], line: string): void
+{
+    if (line.trim() !== "") {
+        errors.push(line.trim().slice(0, errorLength));
+        errors.splice(0, Math.max(0, errors.length - lastErrors));
+    }
+}
+
 /** The default clock of the waits: a timer that keeps no process alive. */
 export function laterByTimer(ms: number, run: () => void): () => void
 {

@@ -87,7 +87,7 @@ export function checklist(driver: ChecklistDriver): void
             expect(opened.host.problems).toEqual([]);
         });
 
-        it("has the model confirmed before it writes the player's words", async () => {
+        it("has the model asked, and confirmed, before it writes the player's words", async () => {
             const opened = driver.open("prose");
             const { until } = listen(opened.chat);
             opened.chat.send(opened.turns[0]);
@@ -95,7 +95,7 @@ export function checklist(driver: ChecklistDriver): void
             await until((all) => turnEnds(all).length === 1);
             const asked = opened.host.written.findIndex(driver.isModelRequest);
             const words = opened.host.written.findIndex(driver.isPlayerWords);
-            expect(asked).toBe(0);
+            expect(asked).toBeGreaterThanOrEqual(0);
             expect(words).toBeGreaterThan(asked);
             expect(opened.host.problems).toEqual([]);
         });

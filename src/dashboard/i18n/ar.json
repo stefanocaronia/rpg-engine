@@ -1135,6 +1135,7 @@
   "the master makes them with {tool}": "ينشئها مدير اللعبة باستخدام {tool}",
   "The master makes them with {tool}.": "ينشئها مدير اللعبة باستخدام {tool}.",
   "the master makes them with ElevenLabs, connected to your AI app, from your ElevenLabs plan": "ينشئها مدير اللعبة باستخدام ElevenLabs المرتبط بتطبيق الذكاء الاصطناعي لديك، بحسب خطة ElevenLabs لديك",
+  "The master plays best with one of the most capable models: lighter ones sometimes skip parts of the story.": "يؤدي مدير اللعبة أفضل أداء مع أحد النماذج الأكثر قدرة، فالنماذج الأخف تتخطى أحيانًا أجزاءً من القصة.",
   "The master plays in {language}, and the page is written in it too.": "يلعب مدير اللعبة بلغة {language}، والصفحة مكتوبة بها أيضًا.",
   "The master plays in {language}; the page stays in English: your AI app would translate it on this computer, but none can now.": "يلعب مدير اللعبة باللغة {language}، وتبقى الصفحة بالإنجليزية: كان تطبيق الذكاء الاصطناعي سيترجمها على هذا الكمبيوتر، لكن لا يوجد تطبيق قادر على ذلك الآن.",
   "The master plays in {language}; the page stays in English.": "يلعب مدير اللعبة بلغة {language}؛ وتبقى الصفحة بالإنجليزية.",
