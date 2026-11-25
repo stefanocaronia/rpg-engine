@@ -8,7 +8,8 @@ import { campaignSystem } from "../../commands/shared/campaign/world.ts";
 import { type CardAsked, type Picked, type Player, playerWait, type Rows, type Said, type SpendAsked, type Spending } from "../../core/context.ts";
 import { withFiles } from "../../core/store.ts";
 import { rollName } from "../../systems/index.ts";
-import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
+import { readBody, securityHeaders, sendJson } from "../page/index.ts";
+import { mostSaid } from "./files.ts";
 import type { Served } from "./index.ts";
 
 /** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */

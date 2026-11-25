@@ -6,8 +6,11 @@ import { t } from "../text.ts";
 /** What the chat's place shows: where a chat is opened, a chat opened by hand in its place, the open chat, or one whose program ended. */
 export type ChatView = "start" | "elsewhere" | "open" | "ended";
 
-/** Where the chat stands: its own section, from the page's top; beside the setup's questions, in sight as they scroll; or under them, far down the page. */
-export type ChatPlace = "section" | "beside" | "under";
+/**
+ * Where the chat stands: its own section, from the page's top; beside the setup's questions, in sight as they scroll; under them, far down the page; or in
+ * its panel beside the page, which gives it its room.
+ */
+export type ChatPlace = "section" | "beside" | "under" | "dock";
 
 // The least room the open chat takes, however little the window leaves it, and the room it leaves under itself.
 const leastRoom = 320;
@@ -69,14 +72,21 @@ export function turnWords(chat: MasterShown["chat"]): string | undefined
     return chat.tool === undefined ? t("The master is answering…") : t("The master is using {tool}…", { tool: chat.tool });
 }
 
-/** The last message that is not the player's own, by its number: what the master or the table said last; 0 with none. */
+// How far a message's own length counts in the mark of what was heard: under a million characters, as the table keeps far fewer.
+const mostLength = 1_000_000;
+
+/**
+ * How far what the master or the table said has come, as one number that only grows: the last message that is not the player's own, by its number, and
+ * within it by how long it is, as the master's message grows while they answer; 0 with none.
+ */
 export function lastHeard(shown: MasterShown | undefined): number
 {
-    return shown?.messages.findLast((message) => message.from !== "player")?.id ?? 0;
+    const last = shown?.messages.findLast((message) => message.from !== "player");
+    return last === undefined ? 0 : last.id * mostLength + Math.min(last.text.length, mostLength - 1);
 }
 
 /**
- * Whether the master said something the player has not seen: a message newer than the last one seen in the chat's own section. The messages there when the
+ * Whether the master said something the player has not seen: more than they had said when the player last saw the chat. The messages there when the
  * page is opened count as seen, and so does everything when their numbers start again, as with a table started anew.
  */
 export function unseenWords(seen: number | undefined, heard: number, inChat: boolean): { seen: number; unseen: boolean; }

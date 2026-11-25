@@ -1,10 +1,12 @@
 // Where a campaign's table is found (D-582): a small file for each campaign in the engine's data folder on this computer, never in a campaign, with the
 // socket the chats knock at and the token they knock with. A place nobody answers at is stale: whoever finds it takes it away.
 import { createHash, randomBytes } from "node:crypto";
-import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { connect, type Socket } from "node:net";
 import { join } from "node:path";
-import { samePath } from "../../library/index.ts";
+import { readDataFile, removeDataFile, writeDataFile } from "../../core/data-file.ts";
+import { isPageAddress } from "../../core/page-address.ts";
+import { samePath } from "../../core/paths.ts";
 
 /** A table as its place file says it: its campaign, its process and engine, the socket and token a chat knocks with, its page's link. */
 export interface TablePlace
@@ -31,18 +33,14 @@ export function newToken(): string
 }
 
 /**
- * The place of a campaign's table; undefined where there is none, it does not read, or it is another campaign's, whose folder differs only by case where the
- * case counts.
+ * The place of a campaign's table; undefined where there is none, it does not read, its link is no page of this computer's, or it is another campaign's,
+ * whose folder differs only by case where the case counts.
  */
 export function readPlace(home: string, root: string): TablePlace | undefined
 {
-    try {
-        const read = JSON.parse(readFileSync(placeFile(home, root), "utf8")) as Partial<TablePlace>;
-        const texts = [read.root, read.version, read.socket, read.token, read.url].every((one) => typeof one === "string");
-        return texts && typeof read.pid === "number" && samePath(read.root as string, root) ? read as TablePlace : undefined;
-    } catch {
-        return undefined;
-    }
+    const read = (readDataFile(placeFile(home, root)) ?? {}) as Partial<TablePlace>;
+    const texts = [read.root, read.version, read.socket, read.token, read.url].every((one) => typeof one === "string");
+    return texts && typeof read.pid === "number" && isPageAddress(read.url as string) && samePath(read.root as string, root) ? read as TablePlace : undefined;
 }
 
 /** Writes a table's place, its token for the player alone to read: the folder and the file are only theirs where the system has modes. */
@@ -63,16 +61,25 @@ export function writeTableFile(home: string, file: string, content: unknown): vo
     const folder = tablesFolder(home);
     mkdirSync(folder, { recursive: true, mode: 0o700 });
     chmodSync(folder, 0o700);
-    // A new file, so that its mode is the one given.
-    rmSync(file, { force: true });
-    writeFileSync(file, `${JSON.stringify(content, null, 2)}\n`, { mode: 0o600 });
+    writeDataFile(file, content);
+}
+
+/** The places of every table this computer has, as their files say them, those that read: tables on or left by one that ended without its cleanup. */
+export function tablePlaces(home: string): TablePlace[]
+{
+    const names = existsSync(tablesFolder(home)) ? readdirSync(tablesFolder(home)) : [];
+    return names.filter((name) => /^[0-9a-f]{16}\.json$/.test(name)).flatMap((name) => {
+        const root = (readDataFile(join(tablesFolder(home), name)) as { root?: unknown; } | null | undefined)?.root;
+        const place = typeof root === "string" ? readPlace(home, root) : undefined;
+        return place === undefined ? [] : [place];
+    });
 }
 
 /** Takes a table's place away, only while it is the one with this token: a table started since keeps its own. */
 export function removePlace(home: string, root: string, token: string): void
 {
     if (readPlace(home, root)?.token === token) {
-        rmSync(placeFile(home, root), { force: true });
+        removeDataFile(placeFile(home, root));
     }
 }
 

@@ -232,7 +232,7 @@
         padding: 0 10px;
     }
 
-    .sections :is(a, .packages-menu).away {
+    .sections :is(a, .packages-menu, .home-link).away {
         position: absolute;
         visibility: hidden;
         pointer-events: none;
@@ -245,13 +245,22 @@
         text-overflow: ellipsis;
     }
 
-    /* The packages' icon as the menu of their other pages (D-512): a page's icon that opens, lit while one of them or Packages is shown. */
-    .sections .packages-menu {
+    /* The packages' icon as the menu of their other pages (D-512): a page's icon that opens, lit while one of them or Packages is shown. After the pages, at a
+       campaign's table, the way back to the campaigns of this computer: a page's icon that leaves the campaign, a little apart. */
+    .sections :is(.packages-menu, .home-link) {
         position: relative;
         display: inline-flex;
     }
 
-    .packages-menu-button {
+    .sections .home-link {
+        margin-inline-start: 8px;
+    }
+
+    .home-button[aria-busy="true"] {
+        cursor: progress;
+    }
+
+    :is(.packages-menu-button, .home-button) {
         display: inline-flex;
         align-items: center;
         height: 40px;
@@ -269,7 +278,7 @@
         color: var(--accent);
     }
 
-    .packages-menu-button svg.icon {
+    :is(.packages-menu-button, .home-button) svg.icon {
         width: 20px;
         height: 20px;
     }

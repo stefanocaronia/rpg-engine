@@ -15,6 +15,9 @@ export interface MasterChat
     problem: string | undefined;
     /** Something the player asked is on its way. */
     sending: boolean;
+    /** The player's words as they write them, kept while the chat changes place in the page. */
+    draft: string;
+    setDraft(text: string): void;
     read(): Promise<void>;
     /** Lets go of what went wrong, as when the chat has moved on. */
     forget(): void;
@@ -30,6 +33,7 @@ export function useMasterChat(): MasterChat
     const [now, setNow] = useState<MasterNow>();
     const [problem, setProblem] = useState<string>();
     const [sending, setSending] = useState(false);
+    const [draft, setDraft] = useState("");
     // The readings and the requests in the order they left: an answer older than the one shown says nothing new.
     const order = useRef({ asked: 0, shown: 0 });
 
@@ -57,6 +61,8 @@ export function useMasterChat(): MasterChat
         shown: now?.table === true ? now : undefined,
         problem,
         sending,
+        draft,
+        setDraft,
         read: async () => {
             const number = ++order.current.asked;
             take(number, await readMaster().catch(() => undefined));

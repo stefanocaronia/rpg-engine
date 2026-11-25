@@ -17,8 +17,10 @@ import { withFiles } from "../../src/core/store.ts";
 import { hostPictures, hostWriter } from "../../src/helpers/index.ts";
 import { npmPackages } from "../../src/packages/index.ts";
 import { type Dashboard, startDashboard } from "../../src/server/dashboard/index.ts";
+import { removeLauncher, writeLauncher } from "../../src/server/launcher/place.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { inPlay } from "../support.ts";
+import { serveDemoLauncher } from "./launcher.ts";
 import { demoMaster } from "./master.ts";
 
 /** The game systems a demo plays: free, which the engine brings, or the 5e of its repository. */
@@ -29,6 +31,8 @@ export interface DemoOptions
 {
     chat?: boolean;
     setup?: boolean;
+    /** With the demo's own launcher beside it, listing some campaigns, or none ("empty"): the campaign's page has the chat too, as at a table. */
+    launcher?: boolean | "empty";
 }
 
 /** The folder of each demo campaign; the one still in its setup has its own. */
@@ -132,15 +136,20 @@ export interface DemoDashboard extends Dashboard
     ask(asked: DemoQuestion): Promise<string>;
     askSquare(question: string): Promise<string>;
     roll(...args: string[]): Promise<string>;
+    /** The link of the demo's launcher, when it was asked for. */
+    launcher?: string;
+    /** Ends the campaign's own server, as a table that ends by itself, the demo's launcher staying: its page then offers to have it opened again. */
+    endTable(): Promise<void>;
 }
 
 /**
  * Serves the built dashboard of a demo campaign, free's unless the 5e is asked, making the campaign first when it is not there; on the dashboard's ports unless
  * others are given. The 5e's demo needs its repository beside the engine, built. With `chat`, the page has the chat with a master of the demo's own (D-582), as where a
  * campaign's table keeps it: no program started, nothing spent. With `setup`, the campaign is one just made, still in its setup, with no game system yet: made
- * anew each time it is served, as a campaign leaves its setup as its questions are answered.
+ * anew each time it is served, as a campaign leaves its setup as its questions are answered. With `launcher`, a launcher of the demo's own is served too
+ * (test/demo/launcher.ts), which opens this campaign's page, and the page finds it as a table's page finds the real one.
  */
-export async function serveDemo(ports?: number[], system: DemoSystem = "free", { chat = false, setup = false }: DemoOptions = {}): Promise<DemoDashboard>
+export async function serveDemo(ports?: number[], system: DemoSystem = "free", { chat = false, setup = false, launcher = false }: DemoOptions = {}): Promise<DemoDashboard>
 {
     const folder = demoFolderOf(system, setup);
     const missing = system === "5e" ? fifthEditionMissing() : undefined;
@@ -200,8 +209,14 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
 
     // The game systems, and what this computer translated of them, as the MCP server keeps them (D-539).
     const session = new SessionStore({ systemFolders: [...context.systemFolders, join(`${folder}-home`, "systems")] });
-    const master = chat ? demoMaster() : undefined;
-    const dashboard = await startDashboard({ ...context, files: session }, session, { ports, ...(master === undefined ? {} : { master }) });
+    const home = `${folder}-home`;
+    const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty");
+    const master = chat || fake !== undefined ? demoMaster() : undefined;
+    const dashboard = await startDashboard({ ...context, files: session }, session, {
+        ports,
+        ...(master === undefined ? {} : { master }),
+        ...(fake === undefined ? {} : { launcher: { find: () => Promise.resolve({ url: fake.url }), reach: () => Promise.resolve({ url: fake.url }), open: () => Promise.resolve(false) } }),
+    });
 
     if (dashboard === undefined) {
         throw new Error(
@@ -212,11 +227,20 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
     }
 
     master?.onChange(() => dashboard.chatChanged());
+    // The demo's launcher at its place in the demo's own data folder, where the page's server looks for it.
+    const token = "demo";
+
+    if (fake !== undefined) {
+        mkdirSync(home, { recursive: true });
+        writeLauncher(home, { pid: process.pid, version: fake.version, url: fake.url, token });
+        fake.setCampaign(dashboard.url);
+    }
 
     return {
         ...dashboard,
         folder,
         system,
+        ...(fake === undefined ? {} : { launcher: fake.url }),
         questions: demoQuestions[system].filter((question) => !("lock" in question) || lockpicking),
         ask: async (asked) => {
             await session.ready();
@@ -241,7 +265,10 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
             await session.ready();
             return (await runCommandLine(["roll", ...args], { ...context, files: session })).output;
         },
+        endTable: () => dashboard.close(),
         close: async () => {
+            removeLauncher(home, token);
+            await fake?.close();
             await dashboard.close();
             session.close();
         },

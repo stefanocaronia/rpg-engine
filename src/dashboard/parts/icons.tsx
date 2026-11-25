@@ -115,6 +115,13 @@ const iconPaths = {
     levelUp: "M6 12.5l6-6 6 6 M6 18.5l6-6 6 6",
     up: "M6 15l6-6 6 6",
     read: "M6.5 3H14l4 4v14H6.5Z M14 3v4h4 M9.5 11h5 M9.5 14.5h5 M9.5 18h3",
+    // Where the chat stands (D-582): a tab of the page, or a panel at the window's left or right, as the window is, never turned; and what folds a panel
+    // away to its side.
+    dockTab: "M3.5 9h17v10.5h-17Z M3.5 9V5.5h7V9",
+    dockLeft: "M3.5 5h17v14h-17Z M10 5v14 M5.8 8.5h2 M5.8 11.5h2",
+    dockRight: "M3.5 5h17v14h-17Z M14 5v14 M16.2 8.5h2 M16.2 11.5h2",
+    toLeft: "M18 6l-6 6 6 6 M12 6l-6 6 6 6",
+    toRight: "M6 6l6 6-6 6 M12 6l6 6-6 6",
 };
 
 /**

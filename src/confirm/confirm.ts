@@ -111,7 +111,7 @@ export function plainText(text: string, most: number): string
 }
 
 /** Runs a window's program: how it ended and what it wrote; "missing" when it is not on this computer. Closed when the call is stopped, or after half an hour. */
-function runDialog(command: DialogCommand, signal?: AbortSignal): Promise<{ code: number | null; out: string; err?: string; } | "missing">
+export function runDialog(command: DialogCommand, signal?: AbortSignal): Promise<{ code: number | null; out: string; err?: string; } | "missing">
 {
     return new Promise((done) => {
         const child = spawn(command.file, command.args, { env: { ...process.env, ...command.env }, stdio: ["ignore", "pipe", "pipe"], windowsHide: false });

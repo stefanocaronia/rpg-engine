@@ -1,10 +1,8 @@
-// What the dashboard serves: its page, the modules it imports from packages, a package's page code, the theme's files, the pictures and the page's words,
-// each only from its own folder; and what every route of the server uses to read a request and to send its answer.
+// What the dashboard serves besides the page's own files: a package's page code, the theme's files, the pictures and the page's words, each only from its
+// own folder.
 import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createRequire } from "node:module";
 import { dirname, extname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { findCampaign } from "../../campaign/index.ts";
 import { imageFolders } from "../../commands/shared/campaign/images.ts";
@@ -18,21 +16,10 @@ import { files, isInside, withFiles } from "../../core/store.ts";
 import { findHiddenImage, findImage } from "../../images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "../../languages/index.ts";
 import { drawnOrnament, drawnTexture, isThemeId, readTheme, type Theme, themeCss, themeFile } from "../../themes/index.ts";
+import { decoded, picturePolicy, readBody, securityHeaders, send, sendJson, sendTagged } from "../page/index.ts";
 import type { Served } from "./index.ts";
 
 const imageTypes: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
-const pageTypes: Record<string, string> = {
-    ".js": "text/javascript; charset=utf-8",
-    ".mjs": "text/javascript; charset=utf-8",
-    ".css": "text/css; charset=utf-8",
-    ".svg": "image/svg+xml",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".glb": "model/gltf-binary",
-    ".json": "application/json; charset=utf-8",
-    ".md": "text/markdown; charset=utf-8",
-    ".wav": "audio/wav",
-};
 
 // Where the page finds the theme's files, the system's and those installed on their own by their id, and what they may be: faces and pictures.
 export const themeAddress = "/theme";
@@ -41,65 +28,8 @@ const themeTypes: Record<string, string> = { ...imageTypes, ".woff2": "font/woff
 // A theme's own style sheet, served only as the one its theme.yaml names.
 const styleType = "text/css; charset=utf-8";
 
-// A picture runs nothing, even an SVG opened by itself.
-const picturePolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
-
-// From src/ and from dist/ alike, the built page is in dist/dashboard, one level up.
-export const builtPage = fileURLToPath(new URL("../../../dist/dashboard/", import.meta.url));
-
-// The modules the page imports from packages, by the names the import map gives them: a package, and a file in it. three.module.js imports three.core.js
-// beside it; three's loader of the dice's models imports two of its utilities beside it; the room the metal dice mirror is three's too; Rapier's module
-// moves the dice.
-const vendorModules: Record<string, [string, string]> = {
-    "preact.js": ["preact", "dist/preact.mjs"],
-    "hooks.js": ["preact", "hooks/dist/hooks.mjs"],
-    "jsx-runtime.js": ["preact", "jsx-runtime/dist/jsxRuntime.mjs"],
-    "three.module.js": ["three", "build/three.module.js"],
-    "three.core.js": ["three", "build/three.core.js"],
-    "three/addons/loaders/GLTFLoader.js": ["three", "examples/jsm/loaders/GLTFLoader.js"],
-    "three/addons/utils/BufferGeometryUtils.js": ["three", "examples/jsm/utils/BufferGeometryUtils.js"],
-    "three/addons/utils/SkeletonUtils.js": ["three", "examples/jsm/utils/SkeletonUtils.js"],
-    "three/addons/environments/RoomEnvironment.js": ["three", "examples/jsm/environments/RoomEnvironment.js"],
-    "rapier.mjs": ["@dimforge/rapier3d-compat", "dist/rapier.mjs"],
-};
-const importMap = JSON.stringify({
-    imports: {
-        "preact": "/vendor/preact.js",
-        "preact/hooks": "/vendor/hooks.js",
-        "preact/jsx-runtime": "/vendor/jsx-runtime.js",
-        "three": "/vendor/three.module.js",
-        "three/addons/": "/vendor/three/addons/",
-        "@dimforge/rapier3d-compat": "/vendor/rapier.mjs",
-        // The kit the extensions' page code is drawn with (D-510).
-        "rpg-engine/page": "/kit.js",
-    },
-});
-
-// The page runs only its own files and the import map written in it, known by its hash; and the physics of the dice, which Rapier's module carries as
-// WebAssembly and compiles. No page frames it: a second guard behind the refusal of a frame's request (T-170).
-export const pagePolicy = `default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-${createHash("sha256").update(importMap).digest("base64")}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
-
-export const pageHtml = [
-    "<!doctype html>",
-    '<html lang="en">',
-    '<meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    '<meta name="color-scheme" content="light dark">',
-    "<title>RPG Engine</title>",
-    '<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">',
-    '<link rel="icon" href="/assets/icon-32.png" sizes="32x32">',
-    '<link rel="apple-touch-icon" href="/assets/icon-180.png">',
-    '<link rel="stylesheet" href="/style.css">',
-    `<script type="importmap">${importMap}</script>`,
-    '<script type="module" src="/app.js"></script>',
-    '<div id="app"></div>',
-    "",
-].join("\n");
-
 // How many characters the player's own words may have, in place of a button (ASK-10).
 export const mostSaid = 500;
-
-export const securityHeaders = { "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "Content-Security-Policy": "default-src 'self'" };
 
 /**
  * A language package's phrases over those the page ships, or its Guide, for a language one is installed for (D-485 (3)); false where none is, and the
@@ -128,43 +58,6 @@ export function sendPacked(path: string, response: ServerResponse, served: Serve
 
     send(response, 200, "text/markdown; charset=utf-8", guide);
     return true;
-}
-
-/** A file of the built page, by its path in the address: only a script, a style sheet or a picture inside its folder, such as its logo. */
-export function pageFile(folder: string, path: string): string | undefined
-{
-    const relative = decoded(path);
-    const file = relative === undefined ? undefined : resolve(folder, `.${relative}`);
-    return file !== undefined && isInside(folder, file) && pageTypes[extname(file)] !== undefined ? file : undefined;
-}
-
-/** A module the page imports from a package, as a file of the package; undefined for another name, or when the package is missing. */
-export function vendorModule(name: string): string | undefined
-{
-    const module = vendorModules[name];
-
-    try {
-        // The package's folder, from where its main file is: node_modules/<package>.
-        const main = module === undefined ? undefined : createRequire(import.meta.url).resolve(module[0]);
-        const folder = main === undefined || module === undefined ? undefined : main.slice(0, main.lastIndexOf(join("node_modules", module[0])) + join("node_modules", module[0]).length);
-        return folder === undefined || module === undefined ? undefined : join(folder, module[1]);
-    } catch {
-        return undefined;
-    }
-}
-
-/** A script, a style sheet or a picture of the page, as it is on the disk. */
-export function sendFile(file: string | undefined, path: string, request: IncomingMessage, response: ServerResponse, served: Served): void
-{
-    const type = file === undefined ? undefined : pageTypes[extname(file)];
-    const bytes = file === undefined ? undefined : withFiles(served.session, () => files().bytes(file));
-
-    if (bytes === undefined || type === undefined) {
-        send(response, 404, "text/plain; charset=utf-8", `Nothing at ${path}.`);
-        return;
-    }
-
-    sendTagged(request, response, bytes, { "Content-Type": type, "Content-Security-Policy": type.startsWith("image/") ? picturePolicy : securityHeaders["Content-Security-Policy"] });
 }
 
 /**
@@ -381,84 +274,4 @@ export async function pageWords(request: IncomingMessage, response: ServerRespon
         return found === undefined ? undefined : { name: found.name, folder: found.folder };
     });
     sendJson(response, 200, withFiles(served.session, () => served.words.read(language.toLowerCase(), system)));
-}
-
-/** A request's body as bytes, up to `most`; undefined when it is more. */
-export async function readBytes(request: IncomingMessage, most: number): Promise<Uint8Array | undefined>
-{
-    const chunks: Buffer[] = [];
-    let size = 0;
-
-    for await (const chunk of request) {
-        size += (chunk as Buffer).length;
-
-        if (size > most) {
-            return undefined;
-        }
-
-        chunks.push(chunk as Buffer);
-    }
-
-    return Buffer.concat(chunks);
-}
-
-/** A request's body as JSON, up to `most` characters; undefined when it is more, or no JSON. */
-export async function readBody(request: IncomingMessage, most = 4096): Promise<unknown>
-{
-    let text = "";
-    // Whole characters, never a letter cut in two between the pieces of a long body.
-    request.setEncoding("utf8");
-
-    for await (const chunk of request) {
-        text += String(chunk);
-
-        if (text.length > most) {
-            return undefined;
-        }
-    }
-
-    try {
-        return JSON.parse(text);
-    } catch {
-        return undefined;
-    }
-}
-
-export function sendJson(response: ServerResponse, status: number, body: unknown): void
-{
-    send(response, status, "application/json; charset=utf-8", JSON.stringify(body));
-}
-
-export function send(response: ServerResponse, status: number, type: string, body: string, policy = securityHeaders["Content-Security-Policy"]): void
-{
-    if (response.headersSent) {
-        response.end();
-        return;
-    }
-
-    response.writeHead(status, { ...securityHeaders, "Content-Security-Policy": policy, "Content-Type": type, "Cache-Control": "no-store" }).end(body);
-}
-
-/** A part of an address as written, without its percent signs; undefined when they do not decode. */
-export function decoded(part: string): string | undefined
-{
-    try {
-        return decodeURIComponent(part);
-    } catch {
-        return undefined;
-    }
-}
-
-/** Bytes with a tag of what they hold, read again at each load: the same bytes come back as not modified, as three.js and the dice after the first load. */
-function sendTagged(request: IncomingMessage, response: ServerResponse, bytes: Uint8Array, headers: Record<string, string>): void
-{
-    const tag = `"${createHash("sha1").update(bytes).digest("base64url")}"`;
-    const all = { ...securityHeaders, ...headers, "Cache-Control": "no-cache", "ETag": tag };
-
-    if (request.headers["if-none-match"] === tag) {
-        response.writeHead(304, all).end();
-        return;
-    }
-
-    response.writeHead(200, all).end(request.method === "HEAD" ? undefined : bytes);
 }

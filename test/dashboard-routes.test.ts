@@ -9,7 +9,9 @@ import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { type MasterChat, masterDriver, type MasterEvent, openMaster } from "../src/master/index.ts";
 import { type Dashboard, pageRoutes, startDashboard } from "../src/server/dashboard/index.ts";
+import { launcherRoutes, openLauncher } from "../src/server/launcher/index.ts";
 import { tableChat } from "../src/server/table/chat.ts";
+import { pageFolder } from "./i18n/phrases.ts";
 import { type FakeHost, fakeHost, type FakeOptions, type FlowEntry, loadFlow, manualClock, playerWords, ticksUntil, wholeTexts } from "./master/fake-host.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
 
@@ -71,6 +73,43 @@ describe("the dashboard's routes", () => {
 
         expect(campaignFiles()).toEqual(before);
     }, 30_000);
+
+    it("refuses the same on every route of the launcher's page", async () => {
+        const home = makeTempFolder();
+        // No table starts and no window opens, whatever a route is asked.
+        const tables = { start: () => expect.fail("no table starts in this test"), probe: () => Promise.resolve("nobody" as const) };
+        const launcher = await openLauncher({
+            home,
+            userHome: makeTempFolder(),
+            platform: "linux",
+            version: "1.0.0",
+            context,
+            ports: [0],
+            lookAgainFor: 0,
+            page: pageFolder,
+            tables,
+            pick: () => Promise.reject(new Error("no window in a test")),
+        });
+        expect(launcherRoutes.map((route) => route.path)).toEqual(["/api/launcher", "/api/ping"]);
+
+        if (!("url" in launcher)) {
+            throw new Error("The launcher did not start.");
+        }
+
+        const at = Number(new URL(launcher.url).port);
+
+        try {
+            for (const route of launcherRoutes) {
+                expect((await status("POST", route.path, {}, at)).status, `${route.path} without origin`).toBe(405);
+                expect((await status("POST", route.path, { origin: "http://evil.example" }, at)).status, `${route.path} from another site`).toBe(403);
+                expect((await status("GET", route.path, { host: "evil.example" }, at)).status, `${route.path} at another host`).toBe(403);
+                expect((await status("PUT", route.path, { origin: launcher.url }, at)).status, `${route.path} put`).toBe(405);
+            }
+        } finally {
+            await launcher.end("the test is over");
+            removeFolder(home);
+        }
+    });
 });
 
 describe("the chat with the master in the page", () => {
@@ -418,10 +457,10 @@ function json(method: string, at: number, body?: unknown, path = "/api/master"):
 }
 
 /** The status of a request with an empty body. */
-function status(method: string, path: string, headers: Record<string, string> = {}): Promise<{ status: number; }>
+function status(method: string, path: string, headers: Record<string, string> = {}, at = port): Promise<{ status: number; }>
 {
     return new Promise((done, fail) => {
-        request({ host: "127.0.0.1", port, path, method, headers }, (response) => {
+        request({ host: "127.0.0.1", port: at, path, method, headers }, (response) => {
             response.resume();
             response.on("end", () => done({ status: response.statusCode ?? 0 }));
         }).on("error", fail).end();

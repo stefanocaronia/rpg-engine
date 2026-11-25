@@ -2,8 +2,10 @@
 // The table itself, with the MCP server and the page, loads only when asked for: a chat's pipe starts without them.
 import type { Opened, RunOptions, TableOptions } from "./serve.ts";
 
+export { type Probed, probeTable } from "./hello.ts";
+export { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
 export { pipeHere, type PipeOptions, pipeToTable, tableEnded } from "./pipe.ts";
-export { readPlace, type TablePlace } from "./place.ts";
+export { readPlace, removePlace, type TablePlace, tablePlaces } from "./place.ts";
 export type { Opened, RunOptions, Table, TableOptions } from "./serve.ts";
 
 /** `rpg table` in the process's folder, as serve.ts says it. */

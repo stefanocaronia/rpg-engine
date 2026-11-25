@@ -1,6 +1,7 @@
 // The Chat section (D-582), there only where the campaign's table keeps the chat with the master: its messages, then, while a chat is open, what the master
 // is doing with Stop and the player's words; with none open, where one is opened, or the line that says a chat opened by hand plays the campaign. Bare: its
 // place in the page is this section, and in the setup, which has no sections, beside its questions or under them, until the page is laid out around it.
+import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { MasterShown } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
@@ -12,13 +13,14 @@ import type { MasterChat } from "./sending.ts";
 import { ChatStart } from "./start.tsx";
 import { ChatWords } from "./words.tsx";
 
-/** The chat in its place; `entering` when the page itself led here, as when the setup ends under an open chat: then the player's words take the focus. */
-export function ChatPage({ chat, place = "section", entering = false }: { chat: MasterChat; place?: ChatPlace; entering?: boolean; })
+/**
+ * The chat in its place; `entering` when the page itself led here, as when the setup ends under an open chat: then the player's words take the focus.
+ * `tools` are the place's own controls, at the end of the chat's head: where the chat stands, and what folds its panel.
+ */
+export function ChatPage({ chat, place = "section", entering = false, tools }: { chat: MasterChat; place?: ChatPlace; entering?: boolean; tools?: ComponentChildren; })
 {
     const shown = chat.shown;
     const root = useRef<HTMLElement>(null);
-    // The player's words, kept while the chat's place changes under them, as when its program ends.
-    const [text, setText] = useState("");
     // What a screen reader is told, once, as the chat changes.
     const [told, setTold] = useState("");
     const before = useRef<MasterShown | undefined>(undefined);
@@ -27,7 +29,7 @@ export function ChatPage({ chat, place = "section", entering = false }: { chat: 
     const view = shown === undefined ? undefined : chatView(shown);
     const state = shown?.chat?.state;
     const viewBefore = useRef<ChatView | undefined>(undefined);
-    useRoom(root, view === "open", place);
+    useRoom(root, view === "open" && place !== "dock", place);
 
     // The open chat of the section fills the window from the page's top: reached from a section read far down, the page goes back there. Under the setup's
     // questions it takes the window once the player opens it, never by itself as the page is read.
@@ -95,7 +97,10 @@ export function ChatPage({ chat, place = "section", entering = false }: { chat: 
                 }
             }}
         >
-            <PageHead section="chat" id="chat-title" />
+            <div class="chat-head">
+                <PageHead section="chat" id="chat-title" />
+                {tools}
+            </div>
             <p class="visually-hidden" role="status">{told}</p>
             <div class="card chat-box">
                 {shown.messages.length > 0 && <ChatLog messages={shown.messages} />}
@@ -122,14 +127,14 @@ export function ChatPage({ chat, place = "section", entering = false }: { chat: 
                 {chat.problem !== undefined && <p class="chat-problem" role="alert" dir="auto">{chat.problem}</p>}
                 {view === "open" && shown.chat !== undefined && (
                     <ChatWords
-                        text={text}
+                        text={chat.draft}
                         state={shown.chat.state}
                         sending={chat.sending}
                         plays={choiceLine(shown, shown.chat)}
-                        onText={setText}
+                        onText={chat.setDraft}
                         onSend={async (words) => {
                             if (await chat.say(words)) {
-                                setText("");
+                                chat.setDraft("");
                                 root.current?.querySelector<HTMLElement>("#chat-words")?.focus();
                             }
                         }}

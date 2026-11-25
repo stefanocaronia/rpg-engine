@@ -9,7 +9,8 @@ import { Refusal, refusalBody } from "../../core/refusal.ts";
 import { withFiles } from "../../core/store.ts";
 import { imageOfBytes, largestImage } from "../../images/index.ts";
 import { pageNamed } from "../../pages/index.ts";
-import { decoded, mostSaid, readBytes, sendJson } from "./files.ts";
+import { decoded, readBytes, sendJson } from "../page/index.ts";
+import { mostSaid } from "./files.ts";
 import type { Served } from "./index.ts";
 
 /**

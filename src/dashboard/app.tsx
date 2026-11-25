@@ -10,7 +10,9 @@ import { ActStrip } from "./acts/strip.tsx";
 import { type Address, readAddress, redirectCombat, sectionAddress } from "./address.ts";
 import { answer, closeCard, readActs, readAsked, readChoices, readGameTheme, readModules, readView, readWidgets, sendSeen } from "./api.ts";
 import { chatView, lastHeard, unseenWords } from "./chat/chat.ts";
+import { type ChatSide, dockWidths, logicalSide, tableFits } from "./chat/dock.ts";
 import { ChatPage } from "./chat/page.tsx";
+import { ChatPanel, ChatPlaces, ChatTab, useChatDock } from "./chat/panel.tsx";
 import { useMasterChat } from "./chat/sending.ts";
 import type { Asked, AskedNow, Member, Moment, ShownModule, ShownRoll, ShownWidget } from "./data.ts";
 import { flies } from "./dice/pool.ts";
@@ -44,19 +46,19 @@ import { SetupView, useSetup } from "./settings/setup.tsx";
 import { PartyStrip, type Tokened } from "./sheet/party.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet/sheet.tsx";
 import { PageFoot } from "./shell/footer.tsx";
+import { useHome } from "./shell/home.ts";
 import { gameNotices, importNotices, type Notice, Notices } from "./shell/notices.tsx";
 import { About } from "./shell/pages.tsx";
+import { productName } from "./shell/product.ts";
 import { calledOf, playerNamed, type Shown, turnKey, withHeld } from "./shell/shown.ts";
 import { gameStyleChanged, takeSystemStyle } from "./shell/system-style.ts";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./shell/table.tsx";
 import { restoreTheme } from "./shell/theme.ts";
 import { startTooltips } from "./shell/tooltip.ts";
 import { SetupCorner, Top } from "./shell/top.tsx";
+import { fitOpenedWindow } from "./shell/window.ts";
 import { browserLanguage, pageDirection, pageLocale, setLanguage, setSystemWords, t } from "./text.ts";
 import { WorldView } from "./world/world.tsx";
-
-/** The product's name, as the page writes it: here only (D-276). */
-const productName = "RPG Engine";
 
 // How many of the last rolls the page reads at first, and how many more each time the player asks for older ones (D-302).
 const firstRolls = 20;
@@ -100,9 +102,8 @@ function App()
     const [free, setFree] = useState<PageRoll[]>([]);
     // On a wide screen the table stands beside the page, unless the player folded it; folded, or under that width, the turns and the followed quest go back to
     // the page.
-    const wide = useMedia(tableBeside);
+    const wideWindow = useMedia(tableBeside);
     const [tableAway, setTableAway] = useTableAway();
-    const table = wide && !tableAway;
     // Whether the player has just opened or folded the table, which slides it in and gives the focus to what folds it, or to its tab; at the first reading it
     // is simply there.
     const [tableMoved, setTableMoved] = useState(false);
@@ -573,11 +574,6 @@ function App()
         }
     }, [master.table, address.section]);
 
-    // What the master said while the player was in another section: a dot on the chat's tab, until they go there.
-    const seenWords = useRef<number | undefined>(undefined);
-    const words = unseenWords(master.shown === undefined ? undefined : seenWords.current, lastHeard(master.shown), address.section === "chat");
-    seenWords.current = master.shown === undefined ? undefined : words.seen;
-
     // A number of a sheet thrown for fun, each a throw of its own (D-280).
     const throwFromSheet: FreeRoll = (roll, label, who) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label, ...(who === undefined ? {} : { who }) }));
 
@@ -637,7 +633,42 @@ function App()
     // The setup has no sections: where a table keeps the chat, it stands beside the questions on a wide screen, under them on a narrow one (D-582).
     const setupChat = inSetup && master.table === true;
     const chatBeside = useMedia(chatBesideSetup);
-    const inChat = master.table === true && (address.section === "chat" || inSetup);
+    // The chat beside the page (D-582), at a campaign's table, out of the setup and in a window wide enough: at the side the player has it, open or folded.
+    const dock = useChatDock(master.table === true && setup !== undefined && !inSetup);
+    const dockSide = dock.docked && dock.side !== "tab" ? dock.side : undefined;
+    const dockOpen = dockSide !== undefined && !dock.folded;
+    const dockRoom = dockSide === undefined ? 0 : dock.folded ? dockWidths.folded : dock.width ?? 0;
+    // Whether the player has just folded or opened the panel: the focus goes to its tab, or to what folds it.
+    const [dockMoved, setDockMoved] = useState(false);
+    // Beside the chat the page keeps its own table beside it only while both fit: else its cards go back into the page, as on a narrow screen.
+    const wide = wideWindow && tableFits(dock.windowWidth, dockRoom);
+    const table = wide && !tableAway;
+    // What the master said while the player could not see the chat, in another section or with its panel folded: a dot on its tab, until they see it.
+    const seenWords = useRef<number | undefined>(undefined);
+    const words = unseenWords(master.shown === undefined ? undefined : seenWords.current, lastHeard(master.shown), address.section === "chat" || dockOpen);
+    seenWords.current = master.shown === undefined ? undefined : words.seen;
+
+    // The chat's place as the player picks it: back in its tab, the page shows its section; the focus stays on the button picked, wherever the chat went.
+    const placeChat = (side: ChatSide): void => {
+        dock.setSide(side);
+
+        if (side === "tab") {
+            window.location.assign(sectionAddress("chat"));
+        }
+
+        window.setTimeout(() => document.querySelector<HTMLElement>(`.chat-places button[data-side="${side}"]`)?.focus(), 80);
+    };
+
+    // Beside the page the chat has no section: its address opens its panel, with the focus in it, and leads to the party.
+    useEffect(() => {
+        if (dockSide !== undefined && address.section === "chat") {
+            dock.setFolded(false);
+            window.location.replace(sectionAddress("party"));
+            window.setTimeout(() => document.querySelector<HTMLElement>(".chat-panel #chat-words, .chat-panel .chat-start .button.gold")?.focus(), 80);
+        }
+    }, [dockSide, address.section]);
+
+    const inChat = master.table === true && (address.section === "chat" || inSetup || dockOpen);
     const chatOpen = master.shown !== undefined && chatView(master.shown) === "open";
     const leftSetup = useRef(false);
     // The page led to the chat's section as the setup ended: the player's words take the focus there, which went with the setup.
@@ -661,11 +692,21 @@ function App()
     }, [address.section]);
     const engineNotice = useEngineNotice(address.section);
 
+    // The way back to the campaigns of this computer, at a campaign's table alone; and, its table gone, the way to have the campaign opened again (D-582).
+    const home = useHome(master.table === true, live);
+    const homeWay = home === undefined ? undefined : { go: home.go, busy: home.busy };
     // The page's own messages, over it (D-298): a problem, the game away, a word to know; a newer RPG Engine last (T-219).
     const notices: Notice[] = [
         ...(shown.problem === undefined ? [] : [{ kind: "problem" as const, text: shown.problem }]),
+        ...(home?.problem === undefined ? [] : [{ kind: "problem" as const, text: home.problem }]),
         ...(!live && shown.readAt !== undefined
-            ? [{ kind: "away" as const, text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString(pageLocale(), { hour: "2-digit", minute: "2-digit" }) }) }]
+            ? [{
+                kind: "away" as const,
+                key: "away",
+                text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString(pageLocale(), { hour: "2-digit", minute: "2-digit" }) }),
+                // A table that ended does not come back by itself: the launcher opens the campaign again.
+                ...(home?.reopen === undefined ? {} : { link: { href: home.reopen, text: t("Reopen the campaign") } }),
+            }]
             : []),
         ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: t("There is no player character yet: the sheet comes when the master writes one.") }] : []),
         ...gameNotices(shown.problems, shown.textsTranslating),
@@ -702,7 +743,10 @@ function App()
                 <RequestedRoll.Provider value={requested}>
                     <WidgetsContext.Provider value={pageWidgets}>
                         <PlayerActsContext.Provider value={playerActs}>
-                            <div class={live ? "page" : "page stale"}>
+                            <div
+                                class={[live ? "page" : "page stale", dockSide === undefined ? "" : `dock-${logicalSide(dockSide, pageDirection())}`, wideWindow && !wide ? "dock-tight" : ""].filter((name) => name !== "").join(" ")}
+                                style={dockSide === undefined ? undefined : { "--dock-width": `${dockRoom}px` }}
+                            >
                                 {!inSetup && (
                                     <Top
                                         campaign={shown.campaign}
@@ -717,7 +761,8 @@ function App()
                                         asleep={!live && shown.readAt !== undefined}
                                         section={address.section === "choices" ? "party" : address.section}
                                         choices={(shown.choices?.sets ?? []).some(waits)}
-                                        chat={master.table !== true ? undefined : words.unseen ? "new" : "there"}
+                                        chat={master.table !== true || dockSide !== undefined ? undefined : words.unseen ? "new" : "there"}
+                                        home={homeWay}
                                         fight={fight}
                                         yourTurn={yourTurn}
                                         turnName={turnName}
@@ -725,7 +770,7 @@ function App()
                                         ownShown={address.section === "pkg" && address.tab !== undefined && address.name !== undefined ? ownKey({ package: address.tab, name: address.name }) : undefined}
                                     />
                                 )}
-                                {inSetup && <SetupCorner live={live} />}
+                                {inSetup && <SetupCorner live={live} home={homeWay} />}
                                 <Notices notices={notices} />
                                 {live && shown.pack !== undefined && (
                                     <AskCard
@@ -812,7 +857,9 @@ function App()
                                                 <main>
                                                     {address.section === "about" && <About product={productName} system={shown.system} />}
                                                     {address.section === "help" && <Help />}
-                                                    {address.section === "chat" && master.table === true && <ChatPage chat={master} entering={ledToChat.current} />}
+                                                    {address.section === "chat" && master.table === true && dockSide === undefined && (
+                                                        <ChatPage chat={master} entering={ledToChat.current} tools={dock.width === undefined ? undefined : <ChatPlaces side="tab" onSide={placeChat} />} />
+                                                    )}
                                                     {/* The quest the player follows, small, where the story goes on (D-367), when the table does not hold it. */}
                                                     {!table && address.section === "scene" && <FollowedQuests version={shown.version} campaign={shown.campaign} />}
                                                     {address.section === "scene" && (
@@ -964,6 +1011,34 @@ function App()
                                     onSayAgain={(id) => void sayAgain(id)}
                                     onDismiss={dismissAct}
                                 />
+                                {/* The chat beside the page, at the side the player has it: its panel, or its tab while folded (D-582). */}
+                                {dockSide !== undefined && dock.width !== undefined && (dock.folded
+                                    ? (
+                                        <ChatTab
+                                            side={dockSide}
+                                            unseen={words.unseen}
+                                            focused={dockMoved}
+                                            onOpen={() => {
+                                                setDockMoved(true);
+                                                dock.setFolded(false);
+                                            }}
+                                        />
+                                    )
+                                    : (
+                                        <ChatPanel
+                                            chat={master}
+                                            side={dockSide}
+                                            width={dock.width}
+                                            windowWidth={dock.windowWidth}
+                                            focused={dockMoved}
+                                            onSide={placeChat}
+                                            onWidth={dock.setWidth}
+                                            onFold={() => {
+                                                setDockMoved(true);
+                                                dock.setFolded(true);
+                                            }}
+                                        />
+                                    ))}
                             </div>
                         </PlayerActsContext.Provider>
                     </WidgetsContext.Provider>
@@ -973,7 +1048,8 @@ function App()
     );
 }
 
-// The theme the player picked before, from the start (D-300); the tooltips over everything (T-228).
+// The theme the player picked before, from the start (D-300); the tooltips over everything (T-228); the window the launcher sent here, large and centred.
+fitOpenedWindow("campaign");
 restoreTheme();
 startTooltips();
 

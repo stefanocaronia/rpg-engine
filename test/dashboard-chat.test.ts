@@ -133,7 +133,11 @@ describe("the chat with the master on the page (D-582)", () => {
 
     it("marks the chat's tab when the master said something new while the player was in another section, never for the player's own words nor what was there at first", () => {
         const told = shown({ messages: [{ id: 3, from: "player", text: "I open the door." }, { id: 4, from: "master", text: "It creaks." }, { id: 5, from: "player", text: "I go in." }] });
-        expect([lastHeard(told), lastHeard(shown()), lastHeard(undefined)]).toEqual([4, 0, 0]);
+        expect([lastHeard(told), lastHeard(shown()), lastHeard(undefined)]).toEqual([4_000_010, 0, 0]);
+        // The same message, grown as the master answers, is more heard; a newer one, however short, more still.
+        const grown = shown({ messages: [{ id: 4, from: "master", text: "It creaks, and opens." }] });
+        expect(lastHeard(grown)).toBeGreaterThan(lastHeard(told));
+        expect(lastHeard(shown({ messages: [{ id: 5, from: "table", text: "" }] }))).toBeGreaterThan(lastHeard(grown));
         // What the page finds as it opens is seen; then a newer message of the master's, or of the table's, is not, until the player is in the chat.
         expect(unseenWords(undefined, 4, false)).toEqual({ seen: 4, unseen: false });
         expect(unseenWords(4, 4, false)).toEqual({ seen: 4, unseen: false });

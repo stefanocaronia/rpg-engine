@@ -13,8 +13,9 @@ import { withFiles } from "../../core/store.ts";
 import { comparableText } from "../../core/text.ts";
 import { playerCharacters } from "../../pages/index.ts";
 import { type Note, readNotes, removeNote, writeNote } from "../../player-notes/index.ts";
+import { readBody, securityHeaders, sendJson } from "../page/index.ts";
 import { type Acts, actText, giveBackAct, giveBackHeld, hearHeld, holdActs, markHeard, markRung, takeActs, takeHeld, withdrawAct } from "../player-acts.ts";
-import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
+import { mostSaid } from "./files.ts";
 import type { Served } from "./index.ts";
 
 // What the master reads after a note the player shares (D-378), tried against injection: what the player thinks, never a fact

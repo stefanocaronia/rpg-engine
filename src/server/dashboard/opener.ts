@@ -3,8 +3,9 @@ import { findCampaign } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import type { SessionStore } from "../../core/session-store.ts";
 import { withFiles } from "../../core/store.ts";
+import { answers } from "../page/index.ts";
 import { campaignPageElsewhere, type Dashboard, isCampaignPage, startDashboard } from "./index.ts";
-import { answers, campaignPorts, dashboardAt } from "./ports.ts";
+import { campaignPorts, dashboardAt } from "./ports.ts";
 
 // How often a chat asks after its campaign's page, which another chat serves, to serve it once that one closes (D-577).
 const heldAskEvery = 3000;

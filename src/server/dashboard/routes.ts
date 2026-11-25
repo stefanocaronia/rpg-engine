@@ -9,27 +9,10 @@ import { view } from "../../commands/view/view.ts";
 import { type Command, isBoolean } from "../../core/registry.ts";
 import { withFiles } from "../../core/store.ts";
 import { notationParts } from "../../dice/index.ts";
+import { fromOwnPage, pageFile, pageHtml, pagePolicy, pageWrites, refusedAt, securityHeaders, send, sendFile, sendJson, vendorModule } from "../page/index.ts";
 import { choicesRequest } from "./choices.ts";
-import {
-    packagePageFile,
-    pageFile,
-    pageHtml,
-    pageModulesOf,
-    pagePolicy,
-    pageWords,
-    securityHeaders,
-    send,
-    sendFile,
-    sendImage,
-    sendInstalledThemeFile,
-    sendJson,
-    sendPacked,
-    sendThemeFile,
-    themeAddress,
-    themeNow,
-    themesAddress,
-    vendorModule,
-} from "./files.ts";
+import { packagePageFile, pageModulesOf, pageWords, sendImage, sendInstalledThemeFile, sendPacked, sendThemeFile, themeAddress, themeNow, themesAddress } from "./files.ts";
+import { homeNow, startHome } from "./home.ts";
 import type { Served } from "./index.ts";
 import { changeMaster, masterNow } from "./master.ts";
 import { act, keepProblems, listenForBell, notes, setupWord, story } from "./news.ts";
@@ -45,8 +28,8 @@ export async function answer(request: IncomingMessage, response: ServerResponse,
     const url = URL.parse(request.url ?? "/", base) ?? new URL("/404", base);
     const path = url.pathname;
 
-    if (!fromOwnPage(request, path, served)) {
-        send(response, 403, "text/plain; charset=utf-8", `The dashboard answers only its own page, at http://localhost:${served.port}.`);
+    if (!fromOwnPage(request, path, served.port)) {
+        send(response, 403, "text/plain; charset=utf-8", refusedAt("The dashboard", served.port));
         return;
     }
 
@@ -56,7 +39,7 @@ export async function answer(request: IncomingMessage, response: ServerResponse,
     const reads = request.method === "GET" || request.method === "HEAD";
 
     // The page writes only from itself, which says its origin, already checked as ours.
-    if (request.method === "POST" && request.headers.origin !== undefined && route?.post !== undefined) {
+    if (pageWrites(request) && route?.post !== undefined) {
         await route.post(call);
     } else if (reads && route?.get !== undefined) {
         await route.get(call);
@@ -93,6 +76,8 @@ const routes: Record<string, Route> = {
     "/api/act": { get: ({ request, response, served }) => act(request, response, served), post: ({ request, response, served }) => act(request, response, served) },
     // The table's own chat with the master, in the page.
     "/api/master": { get: ({ response, served }) => masterNow(response, served), post: ({ request, response, served }) => changeMaster(request, response, served) },
+    // The launcher, the way back to the campaigns of this computer; started from the page at a table alone.
+    "/api/home": { get: ({ response, served }) => homeNow(response, served), post: ({ request, response, served }) => startHome(request, response, served) },
     // Claude Code's hook waits here for the player's next sentence, from this computer (D-495).
     "/api/bell": { get: ({ request, response, served, url }) => listenForBell(request, response, served, url.searchParams) },
     "/api/card": { post: ({ request, response, served }) => closeCard(request, response, served) },
@@ -161,28 +146,12 @@ async function answerPage({ request, response, served, url }: PageCall): Promise
     } else if (path.startsWith(`${themeAddress}/`)) {
         await sendThemeFile(path.slice(themeAddress.length + 1), url.searchParams, request, response, served);
     } else if (path.startsWith("/vendor/")) {
-        sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response, served);
+        sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response, served.session);
     } else if (path.startsWith("/pkg/")) {
-        sendFile(packagePageFile(path.slice("/pkg/".length), served), path, request, response, served);
+        sendFile(packagePageFile(path.slice("/pkg/".length), served), path, request, response, served.session);
     } else {
-        sendFile(pageFile(served.page, path), path, request, response, served);
+        sendFile(pageFile(served.page, path), path, request, response, served.session);
     }
-}
-
-/**
- * Whether a request comes from the dashboard's own page, at its own address: no other site may read what the player sees, nor a name that leads elsewhere
- * (D-272).
- */
-function fromOwnPage(request: IncomingMessage, path: string, served: Served): boolean
-{
-    const own = [`http://localhost:${served.port}`, `http://127.0.0.1:${served.port}`];
-    const origin = request.headers.origin;
-    // A request another site makes the browser send, as an image's, which carries no origin, says so in Sec-Fetch-Site: never ours, nor the hook's, which sends none.
-    // Another program's page on this computer, at another port, is the same site: it may only open the page itself, as a link does, never the API, the bell or a frame.
-    const site = request.headers["sec-fetch-site"];
-    const visit = request.headers["sec-fetch-mode"] === "navigate" && request.headers["sec-fetch-dest"] === "document" && path === "/";
-    const foreign = site === "cross-site" || (site === "same-site" && !visit);
-    return own.includes(`http://${request.headers.host ?? ""}`) && (origin === undefined || own.includes(origin)) && !foreign;
 }
 
 /** The master's question as the page shows it, with its buttons' dice and names; or how the card of a package's last question was left. */

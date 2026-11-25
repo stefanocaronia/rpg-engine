@@ -369,6 +369,191 @@
         }
     }
 
+    /* The chat beside the page (D-582): a panel at the window's left or right, the window's own sides as the player names them, under the page's top and as
+       tall as the window, the chat in it as in its section. The page keeps clear of it: its width is --dock-width, on the page, which the page's own rules
+       read as --dock-start or --dock-end, by the way the page is written. */
+    .page.dock-start {
+        --dock-start: var(--dock-width, 0px);
+    }
+
+    .page.dock-end {
+        --dock-end: var(--dock-width, 0px);
+    }
+
+    /* Beside the panel the page has no room for its own table too: its cards are in the page, in one column, as on a narrow screen. */
+    .page.dock-tight .body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .chat-panel {
+        position: fixed;
+        top: var(--dock-top, calc(var(--top-space) + var(--gap)));
+        bottom: 0;
+        z-index: 16;
+        width: var(--dock-width);
+        padding: 12px var(--gap) var(--gap);
+    }
+
+    .chat-panel.side-left {
+        left: 0;
+        border-right: 1px solid var(--rule);
+    }
+
+    .chat-panel.side-right {
+        right: 0;
+        border-left: 1px solid var(--rule);
+    }
+
+    /* The chat fills its panel: its head, then its card to the panel's foot, the messages scrolling inside; with no chat open, the card as tall as what it
+       holds, scrolling when the panel is lower. */
+    .chat-page.chat-dock {
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 10px;
+        height: 100%;
+    }
+
+    .chat-page.chat-dock.view-open .chat-box {
+        height: auto;
+        min-height: 0;
+    }
+
+    .chat-page.chat-dock:not(.view-open) .chat-box {
+        align-self: start;
+        max-height: 100%;
+        overflow-y: auto;
+    }
+
+    /* In the panel, as on a phone, each choice of a chat stands under its label. */
+    .chat-page.chat-dock .chat-fields {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+    }
+
+    .chat-page.chat-dock .chat-fields > .chat-label:not(:first-child) {
+        margin-top: 8px;
+    }
+
+    /* The chat's head: its title, then its place's own controls at the end. */
+    .chat-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .chat-head .page-head {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .chat-page.chat-dock .page-head h2 {
+        font-size: 1.125rem;
+    }
+
+    /* Where the chat stands: three small pictures of the window, one among them, never mirrored. */
+    .chat-places {
+        flex: none;
+        flex-wrap: nowrap;
+    }
+
+    .chat-places button {
+        display: inline-grid;
+        place-items: center;
+        min-height: 30px;
+        padding: 0 7px;
+    }
+
+    .chat-places svg.icon,
+    .chat-fold svg.icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .chat-fold {
+        flex: none;
+        width: 36px;
+        height: 36px;
+    }
+
+    /* The panel's inner edge, which a pointer drags and the arrows move: a strip over the panel's line, lit in the accent under a pointer and while dragged. */
+    .chat-edge {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 9px;
+        cursor: col-resize;
+        touch-action: none;
+    }
+
+    .chat-panel.side-left .chat-edge {
+        right: -5px;
+    }
+
+    .chat-panel.side-right .chat-edge {
+        left: -5px;
+    }
+
+    .chat-edge::before {
+        content: "";
+        position: absolute;
+        inset-block: 0;
+        inset-inline: 3px;
+        background: var(--accent);
+        opacity: 0;
+        transition: opacity var(--quick) linear;
+    }
+
+    .chat-edge:hover::before,
+    .chat-edge:focus-visible::before,
+    .chat-panel.dragging .chat-edge::before {
+        opacity: 1;
+    }
+
+    /* While the edge is dragged nothing of the page is selected. */
+    .page:has(.chat-panel.dragging) {
+        user-select: none;
+    }
+
+    /* Folded: a tab on the window's edge, as the table's, a third of the way down, with a dot while the master said something new. */
+    .chat-tab {
+        position: fixed;
+        top: 33%;
+        z-index: 17;
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 56px;
+        padding: 0;
+        border: 1px solid var(--rule);
+        background: var(--float);
+        color: var(--muted);
+        translate: 0 -50%;
+        cursor: pointer;
+    }
+
+    .chat-tab.side-left {
+        left: 0;
+        border-left: 0;
+        border-radius: 0 var(--radius-m) var(--radius-m) 0;
+    }
+
+    .chat-tab.side-right {
+        right: 0;
+        border-right: 0;
+        border-radius: var(--radius-m) 0 0 var(--radius-m);
+    }
+
+    .chat-tab svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .chat-tab .chat-dot {
+        top: 6px;
+        inset-inline-end: 3px;
+        box-shadow: 0 0 0 2px var(--float);
+    }
+
     @media (pointer: coarse) {
         .chat-model {
             height: var(--target);

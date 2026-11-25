@@ -45,6 +45,7 @@
 @import "pages/packages.css";
 @import "pages/choices.css";
 @import "pages/chat.css";
+@import "pages/launcher.css";
 
 /* The colours the guarantees draw with, registered here, outside every layer, as among @property rules the last layer wins and a style sheet without a layer
    over them all: no @property of a theme's own style sheet gives them another syntax, which would make them invalid and put out the ring and the tooltip. */

@@ -14,19 +14,20 @@ import { withFiles } from "../../core/store.ts";
 import { helperCommand, queueInCodex } from "../../helpers/index.ts";
 import { samePath } from "../../library/index.ts";
 import { loadSystemCode } from "../../systems/index.ts";
+import { answers, builtPage, send } from "../page/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
 import { choicesNews } from "./choices.ts";
 import type { EngineAsked } from "./engine.ts";
-import { builtPage, send } from "./files.ts";
 import type { PageMaster } from "./master.ts";
 import { callBegins, deliverActs, pageNews } from "./news.ts";
 import { type Asked, pagePlayer, type ShownCard } from "./player.ts";
-import { answers, campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
+import { campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
 import { answer } from "./routes.ts";
 import type { PackageAction, PackagePhase } from "./writes.ts";
 
-export type { PageMaster } from "./master.ts";
-export { answers, campaignPorts, dashboardAt, dashboardPorts } from "./ports.ts";
+export type { PageChat, PageMaster } from "./master.ts";
+export { showPage } from "./opener.ts";
+export { campaignPorts, dashboardAt, dashboardPorts } from "./ports.ts";
 export { pageRoutes } from "./routes.ts";
 
 /** A dashboard that is running: its link, and how to stop it. */
@@ -73,8 +74,21 @@ export interface DashboardOptions
     heldFor?: number;
     /** The campaign's table's own chat with the master, which the page shows and speaks to. */
     master?: PageMaster;
+    /** At a campaign's table: the way back to the launcher, which the table is given from outside; absent for a chat's own server. */
+    launcher?: LauncherWay;
     /** The tests' look at the state the page is served with. */
     served?: (served: Served) => void;
+}
+
+/**
+ * The way from a campaign's page back to the launcher: its link where one answers now, the launcher reached, started first where none answers, and its
+ * page opened in an application window of its own: whether one opened.
+ */
+export interface LauncherWay
+{
+    find(): Promise<{ url: string; } | undefined>;
+    reach(): Promise<{ url: string; } | { error: string; }>;
+    open(url: string): Promise<boolean>;
 }
 
 /** Codex's queue: whether this computer has the command, and a message queued in a thread, as the player's own (D-495). */
@@ -163,6 +177,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 queue: options.queue ?? codexQueue(),
                 heldFor: options.heldFor ?? heldFor,
                 ...(options.master === undefined ? {} : { master: options.master }),
+                ...(options.launcher === undefined ? {} : { launcher: options.launcher }),
             };
             options.served?.(served);
             return serve(server, served);
@@ -272,6 +287,8 @@ export interface Served
     problemsShown?: number;
     /** The campaign's table's own chat with the master, where the table keeps one. */
     master?: PageMaster;
+    /** At a campaign's table: the way back to the launcher. */
+    launcher?: LauncherWay;
 }
 
 /** What the page keeps of the chat it serves, all of it: a campaign's table forgets it as that chat leaves (D-582). */

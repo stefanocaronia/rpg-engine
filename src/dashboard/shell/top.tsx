@@ -13,8 +13,7 @@ import { calendarDayLabel, gameDateLabel } from "../parts/game-words.ts";
 import { Icon } from "../parts/icons.tsx";
 import { listText, t } from "../text.ts";
 import { Master } from "./master.tsx";
-import { usePrefChange } from "./prefs.ts";
-import { pickTheme, shownTheme } from "./theme.ts";
+import { ThemeCorner, useTheme } from "./theme-switch.tsx";
 
 /** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live; the master's mood and moment. */
 interface TopOf
@@ -47,6 +46,15 @@ interface TopOf
     choices?: boolean;
     /** The campaign's table keeps the chat with the master (D-582): its section after the others, with a dot while the master said something the player has not seen. */
     chat?: "there" | "new" | undefined;
+    /** At a campaign's table: the way back to the campaigns of this computer, the launcher's page, and whether it is being reached. */
+    home?: HomeWay | undefined;
+}
+
+/** The way back to the campaigns: what goes there, and whether it is on its way. */
+export interface HomeWay
+{
+    go(): void;
+    busy: boolean;
 }
 
 // What the row of the sections leaves between a link and the next, between the sections and the pages after them, and for the menu's button.
@@ -100,6 +108,7 @@ export function Top(top: TopOf)
                     ownShown={top.ownShown}
                     choices={top.choices}
                     chat={top.chat}
+                    home={top.home}
                 />
                 {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
             </header>
@@ -113,7 +122,7 @@ export function Top(top: TopOf)
  * settings, the packages and About as icons at the row's end (D-333, D-409), the packages a menu of the packages' other pages when they have some: what does
  * not fit goes into the menu, those icons first, then the tabs from the last.
  */
-function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, choices, chat }: {
+function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, choices, chat, home }: {
     current: Section;
     fight?: boolean | undefined;
     yourTurn?: boolean | undefined;
@@ -122,6 +131,7 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
     ownShown?: string | undefined;
     choices?: boolean | undefined;
     chat?: "there" | "new" | undefined;
+    home?: HomeWay | undefined;
 })
 {
     // While the scene goes by turns the Scene's name is in gold; on the player's turn, from another section, it pulses (D-315, D-349, D-351, D-444).
@@ -130,7 +140,7 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
     const tabs = [...sections.map((section) => sectionTab(section, current)), ...(chat === undefined ? [] : [sectionTab(chatPage, current)]), ...ownPages.filter((page) => page.nav === "tab").map((page) => ownTab(page, ownShown))];
     const inMenu = ownPages.filter((page) => page.nav === "menu");
     const row = useRef<HTMLDivElement>(null);
-    const fitting = useFitting(row, tabs.length, `${tabs.map((tab) => tab.key).join()} ${turn} ${inMenu.length}`);
+    const fitting = useFitting(row, tabs.length, `${tabs.map((tab) => tab.key).join()} ${turn} ${inMenu.length} ${home !== undefined}`);
     const awayTabs = tabs.slice(fitting.sections);
     const awayPages = fitting.pages ? [] : menuPages;
     return (
@@ -189,8 +199,14 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
                             </a>
                         );
                 })}
+                {/* After the pages, what leaves the campaign: the campaigns of this computer, at a campaign's table alone (D-582). */}
+                {home !== undefined && (
+                    <div class={fitting.pages ? "home-link page-link tip-below" : "home-link page-link tip-below away"} aria-hidden={fitting.pages ? undefined : true}>
+                        <HomeButton home={home} kind="home-button" hidden={!fitting.pages} />
+                    </div>
+                )}
             </nav>
-            <Menu current={current} awayTabs={awayTabs} awayPages={awayPages} ownMenu={inMenu} ownShown={ownShown} />
+            <Menu current={current} awayTabs={awayTabs} awayPages={awayPages} ownMenu={inMenu} ownShown={ownShown} home={home} />
         </div>
     );
 }
@@ -343,7 +359,7 @@ function useFitting(row: RefObject<HTMLElement | null>, count: number, shape: st
 
         // Every link stays in the row, what does not fit unseen, so that each can be measured.
         const measure = (): void => {
-            const widths = [...element.querySelectorAll<HTMLElement>("nav > a, nav > .packages-menu")].map((link) => link.offsetWidth + linkGap);
+            const widths = [...element.querySelectorAll<HTMLElement>("nav > a, nav > .packages-menu, nav > .home-link")].map((link) => link.offsetWidth + linkGap);
             const total = (from: number, to?: number): number => widths.slice(from, to).reduce((sum, width) => sum + width, 0);
             const room = element.clientWidth;
             const left = phone.matches ? Infinity : room - menuRoom;
@@ -370,12 +386,13 @@ function useFitting(row: RefObject<HTMLElement | null>, count: number, shape: st
  * The menu (D-309, D-333): what does not fit in the row, the tabs and the pages at its end, the packages' pages that are no tabs after Packages (D-512); on a
  * phone the theme too, which has no switch of its own there; none when all fits.
  */
-function Menu({ current, awayTabs, awayPages, ownMenu, ownShown }: {
+function Menu({ current, awayTabs, awayPages, ownMenu, ownShown, home }: {
     current: Section;
     awayTabs: Tab[];
     awayPages: readonly (typeof menuPages)[number][];
     ownMenu: NavPage[];
     ownShown?: string | undefined;
+    home?: HomeWay | undefined;
 })
 {
     const [open, setOpen] = useState(false);
@@ -421,6 +438,20 @@ function Menu({ current, awayTabs, awayPages, ownMenu, ownShown }: {
                             )}
                         </Fragment>
                     ))}
+                    {home !== undefined && (
+                        <button
+                            type="button"
+                            class="menu-home"
+                            aria-busy={home.busy}
+                            onClick={() => {
+                                setOpen(false);
+                                home.go();
+                            }}
+                        >
+                            <Icon name="house" />
+                            {t("Campaigns")}
+                        </button>
+                    )}
                     <button type="button" class="menu-theme" onClick={flip}>
                         <Icon name={theme.next === "dark" ? "moon" : "sun"} />
                         {theme.name}
@@ -463,12 +494,13 @@ function useClosing(holder: RefObject<HTMLDivElement | null>, open: boolean, set
 }
 
 /** In the setup, which has no sections (D-379): whether the game is live and the switch of the theme, small at the top right. */
-export function SetupCorner({ live }: { live: boolean; })
+export function SetupCorner({ live, home }: { live: boolean; home?: HomeWay | undefined; })
 {
     const [theme, flip] = useTheme();
     return (
         <div class="setup-corner">
             <StatusChips live={live} />
+            {home !== undefined && <HomeButton home={home} kind="icon-button tonal tip-left" />}
             <button type="button" class="icon-button tonal tip-left" aria-label={theme.name} data-tip={theme.name} onClick={flip}>
                 <Icon name={theme.next === "dark" ? "moon" : "sun"} />
             </button>
@@ -476,25 +508,16 @@ export function SetupCorner({ live }: { live: boolean; })
     );
 }
 
-/** The switch between the light and the dark theme (D-300, D-310): the window's corner, with the theme it goes to. */
-function ThemeCorner()
+/** The button that leads back to the campaigns of this computer: an icon, named in its tooltip and for a screen reader; pressed, it waits while the launcher is reached. */
+function HomeButton({ home, kind, hidden = false }: { home: HomeWay; kind: string; hidden?: boolean; })
 {
-    const [theme, flip] = useTheme();
     return (
-        <button type="button" class="theme-corner tip-left" aria-label={theme.name} data-tip={theme.name} onClick={flip}>
-            <Icon name={theme.next === "dark" ? "moon" : "sun"} />
+        <button type="button" class={kind} aria-label={t("Campaigns")} data-tip={t("Campaigns")} aria-busy={home.busy} tabIndex={hidden ? -1 : undefined} onClick={home.go}>
+            <span class="section-mark">
+                <Icon name="house" />
+            </span>
         </button>
     );
-}
-
-/** The theme the switch goes to, with its name, and what switches to it; read again at each drawing, as the menu and the switch both change it. */
-function useTheme(): [{ next: "light" | "dark"; name: string; }, () => void]
-{
-    usePrefChange();
-    const next = shownTheme() === "dark" ? "light" : "dark";
-    const flip = (): void => pickTheme(next);
-
-    return [{ next, name: next === "dark" ? t("Dark mode") : t("Light mode") }, flip];
 }
 
 /** Where the party is (D-333), from the largest place that holds it to its own, which stays whole when the line is short; its own leads to the scene (D-309). */

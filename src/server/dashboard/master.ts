@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import { type HostId, hostIds } from "../../core/hosts.ts";
 import { isHostName } from "../../master/index.ts";
-import { readBody, sendJson } from "./files.ts";
+import { readBody, sendJson } from "../page/index.ts";
 import type { Served } from "./index.ts";
 
 /** What the page needs of the table's chat with the master. */

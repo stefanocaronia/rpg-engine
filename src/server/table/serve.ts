@@ -5,12 +5,13 @@ import { homedir } from "node:os";
 import { findCampaign } from "../../campaign/index.ts";
 import { chatFolders as hostChatFolders } from "../../chats/index.ts";
 import { type ChatFolders, type Context, forgetChat, userDataFolder } from "../../core/context.ts";
+import { guardProcess } from "../../core/process.ts";
 import type { SessionStore } from "../../core/session-store.ts";
 import { getVersion } from "../../core/version.ts";
+import { lookUntil } from "../../core/wait.ts";
 import { hostCommand } from "../../helpers/index.ts";
 import { type ChatSide, servedContext } from "../context.ts";
-import { type Dashboard, type DashboardOptions, startDashboard } from "../dashboard/index.ts";
-import { showPage } from "../dashboard/opener.ts";
+import { type Dashboard, type DashboardOptions, type LauncherWay, showPage, startDashboard } from "../dashboard/index.ts";
 import { type TableChat, tableChat, type TableChatOptions } from "./chat.ts";
 import { type Door, welcome } from "./door.ts";
 import { probeTable } from "./hello.ts";
@@ -51,6 +52,8 @@ export interface TableOptions
     chatFolders?: (environment: Record<string, string>) => ChatFolders | undefined;
     /** What the table does, a line at a time. */
     log?: (line: string) => void;
+    /** The way back from the page to the launcher, which `rpg table` is given by the command line; none in the tests, unless they give their own. */
+    launcher?: LauncherWay;
     /** What the table's chat with the master takes from outside, the tests' own: the hosts' programs and how they open, the environment, the player's home. */
     master?: Partial<Pick<TableChatOptions, "open" | "driver" | "npmProgram" | "environment" | "userHome" | "newToken">>;
 }
@@ -103,7 +106,13 @@ export async function runTable(folder = process.cwd(), given: RunOptions = {}): 
 
     process.stdout.write(`${opened.url}\n`);
     const stop = (): void => void opened.end("stopped");
-    const unguard = guardProcess(opened, options, given.exit ?? ((code) => process.exit(code)));
+
+    const cleanup = (): void => {
+        opened.closeChat();
+        removePlace(options.home, opened.place.root, opened.place.token);
+    };
+
+    const unguard = guardProcess("rpg table", "the table", (line) => options.log?.(line), cleanup, given.exit ?? ((code) => process.exit(code)));
     process.once("SIGINT", stop);
     process.once("SIGTERM", stop);
     await opened.ended;
@@ -167,16 +176,14 @@ async function tableThere(options: TableOptions, root: string): Promise<{ runnin
  */
 async function tableAfterAll(options: TableOptions, root: string): Promise<{ running: string; } | { refused: string; } | undefined>
 {
-    const now = options.now ?? Date.now;
-    const until = now() + lookAgainFor;
-    let there = await tableThere(options, root);
+    let last: { running: string; } | { refused: string; } | undefined;
 
-    while ((there === undefined || !("running" in there)) && now() < until) {
-        await new Promise((done) => setTimeout(done, lookAgainEvery));
-        there = await tableThere(options, root);
-    }
+    const look = async (): Promise<{ running: string; } | undefined> => {
+        last = await tableThere(options, root);
+        return last !== undefined && "running" in last ? last : undefined;
+    };
 
-    return there;
+    return lookUntil(look, () => last, { within: lookAgainFor, every: lookAgainEvery, now: options.now });
 }
 
 /** The table's context, its page, its seat and its own chat; where its page does not start, the table that serves it after all, or why not. */
@@ -211,7 +218,9 @@ async function openParts(options: TableOptions, root: string): Promise<Parts | {
         },
         ...(options.log === undefined ? {} : { log: options.log }),
     });
-    dashboard = await startDashboard(context, session, { ...options.dashboard, master: chat });
+    // The way back to the campaigns: the launcher, started from the page where none answers.
+    const launcher = options.launcher === undefined ? {} : { launcher: options.launcher };
+    dashboard = await startDashboard(context, session, { ...launcher, ...options.dashboard, master: chat });
 
     if (dashboard === undefined) {
         session.close();
@@ -354,29 +363,4 @@ function listening(server: Server, path: string): Promise<string | undefined>
             done(undefined);
         });
     });
-}
-
-/**
- * In `rpg table` alone: a promise that failed with nobody to catch it is logged, and the table goes on; an exception nobody caught is logged, the table's chat
- * closed with its host's process, the place taken away, and the process ends with 1. What takes the guard away.
- */
-function guardProcess(table: Table, options: TableOptions, exit: (code: number) => void): () => void
-{
-    const said = (error: unknown): string => (error instanceof Error ? error.stack ?? error.message : String(error));
-    const rejected = (reason: unknown): void => options.log?.(`rpg table: a promise failed with nobody to catch it; the table goes on. ${said(reason)}`);
-
-    const thrown = (error: unknown): void => {
-        options.log?.(`rpg table: an error nobody caught; the table ends. ${said(error)}`);
-        table.closeChat();
-        removePlace(options.home, table.place.root, table.place.token);
-        exit(1);
-    };
-
-    process.on("unhandledRejection", rejected);
-    process.on("uncaughtException", thrown);
-
-    return () => {
-        process.off("unhandledRejection", rejected);
-        process.off("uncaughtException", thrown);
-    };
 }

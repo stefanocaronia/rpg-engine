@@ -1,7 +1,6 @@
 // The ports of the dashboard, apart from its server, so that the doorbell reads them without loading the server and its commands (D-495); and how to ask
-// a port whose dashboard answers there, and whether any program does.
+// a port whose dashboard answers there.
 import { get } from "node:http";
-import { connect } from "node:net";
 import { savedPort } from "../../campaign/index.ts";
 
 /**
@@ -75,23 +74,4 @@ export function askDashboard(port: number, path: string, wait?: number): Promise
 
         request.on("error", () => done(undefined));
     });
-}
-
-/** Whether a program answers at a port of this machine, on 127.0.0.1 or on ::1. */
-export async function answers(port: number): Promise<boolean>
-{
-    const answersAt = (host: string): Promise<boolean> =>
-        new Promise((done) => {
-            const socket = connect({ host, port });
-
-            const end = (answered: boolean): void => {
-                socket.destroy();
-                done(answered);
-            };
-
-            socket.setTimeout(300, () => end(false));
-            socket.once("connect", () => end(true));
-            socket.once("error", () => end(false));
-        });
-    return (await Promise.all(["127.0.0.1", "::1"].map(answersAt))).some((answer) => answer);
 }

@@ -27,9 +27,9 @@ import {
 } from "../api.ts";
 import type { ShownLayer } from "../data.ts";
 import { CardHead } from "../parts/card.tsx";
+import { Confirm } from "../parts/confirm.tsx";
 import { Icon, iconPath } from "../parts/icons.tsx";
 import { phraseLabel } from "../parts/labels.ts";
-import { Confirm } from "../settings/saves.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { shownInstalledTheme } from "../shell/system-style.ts";
 import { PageTabs } from "../shell/tabs.tsx";

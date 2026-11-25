@@ -2,8 +2,8 @@
 // last choice in the player's data folder, so that the next chat takes it up.
 import { randomBytes } from "node:crypto";
 import { type HostId, hosts } from "../../core/hosts.ts";
-import { isHostName, type MasterChat, type MasterDriver, masterDriver, type MasterEvent, masterHosts, openMaster } from "../../master/index.ts";
-import type { PageChat, PageMaster } from "../dashboard/master.ts";
+import { type HostOffered, hostProgram, hostsOffered, isHostName, type MasterChat, type MasterDriver, masterDriver, type MasterEvent, masterHosts, openMaster } from "../../master/index.ts";
+import type { PageChat, PageMaster } from "../dashboard/index.ts";
 import { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
 
 /** The table's chat with the master, one at a time. */
@@ -39,7 +39,7 @@ export interface ChatChoice
 
 export interface ChatShown extends PageChat
 {
-    hosts: { id: HostId; name: string; found: boolean; model: string; efforts: string[]; }[];
+    hosts: HostOffered[];
     last?: { host: HostId; model: string; effort?: string; resumable: boolean; };
     chat?: { host: HostId; model: string; effort?: string; state: "idle" | "turn" | "ended"; why?: string; tool?: string; };
     messages: ChatMessage[];
@@ -127,7 +127,7 @@ export function tableChat(options: TableChatOptions): TableChat
     // Every token given to a host in this process.
     const tokens = new Set<string>();
 
-    const programOf = (host: HostId): Program | undefined => driverOf(host)?.program(options.environment, options.platform, options.userHome) ?? options.npmProgram?.(host);
+    const programOf = (host: HostId): Program | undefined => hostProgram(host, options, driverOf);
 
     const add = (from: ChatMessage["from"], text: string): ChatMessage => {
         const message = { id: ++lastId, from, text: text.slice(0, mostText) };
@@ -269,10 +269,7 @@ export function tableChat(options: TableChatOptions): TableChat
 
             const known = found.hosts;
             return {
-                hosts: masterHosts().flatMap((id) => {
-                    const driver = driverOf(id);
-                    return driver === undefined ? [] : [{ id, name: hosts[id].name, found: known.get(id) === true, model: driver.model, efforts: driver.efforts }];
-                }),
+                hosts: hostsOffered((id) => known.get(id) === true, driverOf),
                 ...(last === undefined ? {} : { last: { host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }), resumable: last.session !== undefined } }),
                 ...(chat === undefined ? {} : { chat: chatShown(chat) }),
                 messages: messages.map((message) => ({ ...message })),

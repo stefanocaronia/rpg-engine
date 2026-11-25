@@ -1,4 +1,5 @@
-// The processes the engine starts: stopped with every process they started, their output read by lines.
+// The processes the engine starts: stopped with every process they started, their output read by lines; whether one still runs; and the guard of the
+// engine's own processes that last.
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
@@ -81,6 +82,60 @@ export function readLines(input: Readable, onLine: (line: string) => void, onClo
     if (onClose !== undefined) {
         lines.on("close", onClose);
     }
+}
+
+/**
+ * Starts a process apart from this one, which it outlives: its own group, no console, nothing of this one's input or output. A start that fails throws
+ * nothing: whoever started it finds out by waiting for what it does.
+ */
+export function startApart(command: string, args: string[], options: { cwd: string; env?: NodeJS.ProcessEnv; }): void
+{
+    try {
+        const child = spawn(command, args, { cwd: options.cwd, env: options.env ?? process.env, detached: true, stdio: "ignore", windowsHide: true });
+        child.on("error", () => undefined);
+        child.unref();
+    } catch {
+        // A command that cannot even be spawned: nothing answers, which the caller's wait finds.
+    }
+}
+
+/** Whether a process of this computer still runs: one of another user, which may not be asked, runs too. */
+export function isRunning(pid: number): boolean
+{
+    if (!Number.isInteger(pid) || pid <= 0) {
+        return false;
+    }
+
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch (error) {
+        return (error as NodeJS.ErrnoException).code === "EPERM";
+    }
+}
+
+/**
+ * In a process of the engine that lasts, as `rpg table` (`command`), which the log calls `name` (the table): a promise that failed with nobody to catch it is
+ * logged, and the process goes on; an exception nobody caught is logged, `cleanup` runs, and the process ends with 1. What takes the guard away.
+ */
+export function guardProcess(command: string, name: string, log: (line: string) => void, cleanup: () => void, exit: (code: number) => void): () => void
+{
+    const said = (error: unknown): string => (error instanceof Error ? error.stack ?? error.message : String(error));
+    const rejected = (reason: unknown): void => log(`${command}: a promise failed with nobody to catch it; ${name} goes on. ${said(reason)}`);
+
+    const thrown = (error: unknown): void => {
+        log(`${command}: an error nobody caught; ${name} ends. ${said(error)}`);
+        cleanup();
+        exit(1);
+    };
+
+    process.on("unhandledRejection", rejected);
+    process.on("uncaughtException", thrown);
+
+    return () => {
+        process.off("unhandledRejection", rejected);
+        process.off("uncaughtException", thrown);
+    };
 }
 
 /**

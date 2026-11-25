@@ -9,6 +9,7 @@ import type { PlayerSetting, ShownWidget, WidgetPage, WidgetSpot } from "../data
 import { coinDesignPref, coinDesigns, coinLook, coinMetals, coinPref, diceEdgesPref, diceLook, diceSetPref, diceSets, texturePath } from "../dice/sets.ts";
 import { WidgetsContext } from "../packages/widgets.tsx";
 import { CardHead } from "../parts/card.tsx";
+import { Confirm } from "../parts/confirm.tsx";
 import { CoinFace } from "../parts/faces.tsx";
 import { cardIcons, DieSwatch, Icon, iconPath } from "../parts/icons.tsx";
 import { customLabel, itemLabel, leveledItemLabel, phraseLabel, rateParts, settingLabel, valueLabel } from "../parts/labels.ts";
@@ -20,7 +21,6 @@ import { PageTabs } from "../shell/tabs.tsx";
 import { pickTheme, shownTheme } from "../shell/theme.ts";
 import { t } from "../text.ts";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
-import { Confirm } from "./saves.tsx";
 import { type SettingsTab, settingsTab, settingsTabLabel, settingsTabs } from "./tabs.ts";
 
 // The cards of the campaign's settings, in the order groupTitle names them: each in its tab, with its picture and its settings in order. A setting the game

@@ -72,8 +72,19 @@ describe("architecture", () => {
             "server/route/notes.ts",
             // Where each campaign's table is found, in the player's data folder (D-582).
             "server/table/place.ts",
-            // The campaign's last chat with the master at its table, beside the table's place.
-            "server/table/last-chat.ts",
+            // Whether the folder of each campaign the launcher lists answers, asked without blocking, as a network share may not.
+            "server/launcher/campaigns.ts",
+            // The engine's own files in the player's data folder, written whole or not at all: the places of the tables and the launcher, the campaigns it
+            // remembers, a campaign's last chat, the icon's notes.
+            "core/data-file.ts",
+            // The browsers installed, looked for by their files, for the launcher's window.
+            "desktop/browser.ts",
+            // The icon on the desktop and in the menu.
+            "desktop/icon/index.ts",
+            "desktop/icon/linux.ts",
+            "desktop/icon/macos.ts",
+            // Why rpg open could not reach the launcher, in the player's data folder, for the icon that has no console.
+            "cli/open.ts",
             // Claude Code's own program, looked for in the folders of the PATH and the player's home, for the table's chat with the master.
             "master/claude-code/program.ts",
             // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
@@ -138,6 +149,11 @@ describe("architecture", () => {
             "commands/shared/books/library-reader.ts",
             // The engine itself, apart, to run an import.
             "server/context.ts",
+            // The player's browser, asked which it is and started apart, for the launcher's window.
+            "desktop/browser.ts",
+            // PowerShell, which makes the icon's shortcuts on Windows; gio, which marks it trusted on a Linux desktop.
+            "desktop/icon/windows.ts",
+            "desktop/icon/linux.ts",
         ];
         const starting = codeFiles().filter((path) => /from "node:child_process"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));
         expect(starting.sort()).toEqual(allowed.sort());
@@ -174,7 +190,62 @@ describe("architecture", () => {
         });
         expect(found.sort()).toEqual(exceptions.sort());
     });
+
+    it("keeps the servers of the page, the table, the launcher and the dashboard in one direction, each reached through its index", () => {
+        // Who may import whom: the launcher the table and the page; the table the dashboard and the page; the dashboard the page; the page none of them.
+        const mayImport: Record<string, string[]> = {
+            "server/page": [],
+            "server/dashboard": ["server/page"],
+            "server/table": ["server/dashboard", "server/page"],
+            "server/launcher": ["server/table", "server/page"],
+        };
+        const checked: string[] = [];
+
+        for (const [folder, allowed] of Object.entries(mayImport)) {
+            for (const path of codeFiles().filter((one) => one.startsWith(`${folder}/`))) {
+                checked.push(path);
+
+                for (const imported of importsOf(path)) {
+                    const other = Object.keys(mayImport).find((one) => imported.startsWith(`${one}/`) && one !== folder);
+
+                    if (other !== undefined) {
+                        expect(allowed.includes(other), `${path} imports ${imported}`).toBe(true);
+                        expect(imported, `${path} imports ${imported}, not its index`).toBe(`${other}/index.ts`);
+                    }
+                }
+            }
+        }
+
+        expect(checked).toEqual(expect.arrayContaining(["server/launcher/serve.ts", "server/table/serve.ts", "server/page/index.ts"]));
+    });
+
+    it("starts the launcher without the commands: none is reached from it by a static import", () => {
+        const reached = new Set<string>();
+        const waiting = codeFiles().filter((path) => path.startsWith("server/launcher/"));
+
+        while (waiting.length > 0) {
+            const path = waiting.pop() ?? "";
+
+            if (!reached.has(path)) {
+                reached.add(path);
+                waiting.push(...importsOf(path, "static").filter((imported) => codeFiles().includes(imported)));
+            }
+        }
+
+        expect([...reached].filter((path) => path.startsWith("commands/"))).toEqual([]);
+        expect(reached).toContain("server/table/index.ts");
+    });
 });
+
+/** The files of src/ a file imports, by their path from src/: every import, or only those loaded with it, not types alone nor those loaded when asked. */
+function importsOf(path: string, which: "all" | "static" = "all"): string[]
+{
+    const source = readFileSync(new URL(path, sourceFolder), "utf8");
+    const imported = which === "all"
+        ? [...source.matchAll(/(?:from|import)\s*\(?\s*"(\.[^"]+)"/g)].map(([, one]) => one)
+        : [...source.matchAll(/^(?:import|export)(\s+type)?\b[^;]*?(?:from\s+)?"(\.[^"]+)";/gms)].filter(([, typesAlone]) => typesAlone === undefined).map(([, , one]) => one);
+    return imported.map((one) => posix.join(posix.dirname(path), one ?? ""));
+}
 
 /** Every file of code under src/, the dashboard's page included, by its path from src/. */
 function codeFiles(): string[]

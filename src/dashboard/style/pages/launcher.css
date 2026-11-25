@@ -1,0 +1,368 @@
+/* The launcher: the campaigns of this computer and what starts one, in a small window of its own. */
+@layer pages {
+    /* Two panes that fill the window: the campaigns at the start side, on a card's ground, their list scrolling inside; beside them the robot, the product
+       and what starts a campaign, in the middle of what room is left. */
+    .launcher {
+        display: grid;
+        grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+        height: 100vh;
+    }
+
+    .launcher-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        padding: 20px 12px 16px;
+        border-inline-end: 1px solid var(--rule);
+        background: var(--panel);
+        overflow-y: auto;
+    }
+
+    .launcher-list h2 {
+        margin: 0;
+        padding-inline: 10px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .launcher-rows {
+        display: grid;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    /* A campaign: the button that opens it, the row's width, then what takes it off the list; what went wrong with it under both. */
+    .launcher-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 2px;
+    }
+
+    .launcher-row {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+        padding: 8px 10px;
+        padding-inline-start: 7px;
+        border: 0;
+        border-inline-start: 3px solid transparent;
+        border-radius: var(--radius-m);
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .launcher-row[aria-disabled="true"] {
+        cursor: default;
+    }
+
+    /* The one being opened: a bar of the accent at its start, as what is open in a list; never a tint, which on the light page reads as off. */
+    .launcher-row[aria-busy="true"] {
+        border-inline-start-color: var(--accent);
+        cursor: progress;
+    }
+
+    /* One whose folder is gone, or that does not read: no button, its name quiet. */
+    .launcher-row.unusable {
+        cursor: default;
+    }
+
+    .launcher-row.unusable .launcher-name {
+        color: var(--muted);
+    }
+
+    .launcher-name {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2px 10px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    /* Its table answers now: a dot of the party's side and the words, never the colour alone. */
+    .launcher-open {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .launcher-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--ally);
+    }
+
+    .launcher-meta {
+        display: flex;
+        align-items: start;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+    }
+
+    .launcher-meta svg.icon {
+        flex: none;
+        width: 16px;
+        height: 16px;
+        margin-top: 2px;
+        color: var(--low);
+    }
+
+    .launcher-item:is(.state-missing, .state-unreadable) .launcher-meta {
+        color: var(--ink);
+    }
+
+    /* Where it is: its folder as the system writes it, left to right, on the row's start side. */
+    .launcher-where {
+        color: var(--muted);
+        font-size: 0.8rem;
+        overflow-wrap: anywhere;
+    }
+
+    .launcher-remove {
+        width: 32px;
+        height: 32px;
+    }
+
+    .launcher-remove svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .launcher-remove[aria-disabled="true"] {
+        cursor: default;
+    }
+
+    .launcher-problem {
+        grid-column: 1 / -1;
+        margin: 0;
+        color: var(--low);
+        font-size: 0.85rem;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .launcher-item .launcher-problem {
+        padding: 0 10px 8px;
+    }
+
+    .launcher-empty,
+    .launcher-busy {
+        margin: 0;
+        padding-inline: 10px;
+        color: var(--muted);
+    }
+
+    .launcher-busy:empty {
+        display: none;
+    }
+
+    /* Beside the list: its one thing in the middle, a form taller than the window scrolling whole. */
+    .launcher-side {
+        display: flex;
+        min-width: 0;
+        padding: 24px;
+        overflow-y: auto;
+    }
+
+    .launcher-side > * {
+        margin: auto;
+    }
+
+    .launcher-home {
+        display: grid;
+        justify-items: center;
+        gap: 6px;
+        width: min(100%, 320px);
+        text-align: center;
+    }
+
+    .launcher-robot .master {
+        width: 120px;
+        height: 120px;
+    }
+
+    /* The product's name as the page's top writes a campaign's. */
+    .launcher-home h1 {
+        margin: 8px 0 0;
+        font-family: var(--serif);
+        font-size: 2rem;
+        font-variant: small-caps;
+        letter-spacing: 0.04em;
+        line-height: 1.1;
+    }
+
+    .launcher-version {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .launcher-actions {
+        display: grid;
+        gap: 6px;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .launcher-actions .launcher-hint {
+        margin-bottom: 10px;
+    }
+
+    .launcher-hint {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+    }
+
+    .launcher-home .launcher-problem,
+    .launcher-form .launcher-problem {
+        padding: 0;
+    }
+
+    /* A new campaign: each thing its label before its control; the master's part folded under them; Back and Create at the ends. */
+    .launcher-form {
+        display: grid;
+        gap: 14px;
+        width: min(100%, 520px);
+    }
+
+    .launcher-form h2 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .launcher-fields {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        align-items: start;
+        gap: 12px 16px;
+    }
+
+    .launcher-label {
+        padding-top: 8px;
+        font-weight: 600;
+    }
+
+    .launcher-field {
+        width: 100%;
+        height: 38px;
+        padding: 0 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+        color: var(--ink);
+        font: inherit;
+    }
+
+    .launcher-choice {
+        display: grid;
+        justify-items: start;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .launcher-choice > .launcher-hint {
+        padding-top: 8px;
+    }
+
+    .launcher-choice > .segmented + .launcher-hint {
+        padding-top: 0;
+    }
+
+    .launcher-folder-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-inline-start: -14px;
+    }
+
+    .launcher-master summary {
+        width: fit-content;
+        padding: 6px 8px;
+        border-radius: var(--radius-m);
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .launcher-master[open] summary {
+        margin-bottom: 10px;
+    }
+
+    .launcher-master .chat-note {
+        padding: 10px 0 0;
+    }
+
+    .launcher-form .launcher-busy {
+        padding: 0;
+    }
+
+    .launcher-buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    @media (pointer: coarse) {
+        .launcher-field {
+            height: var(--target);
+        }
+
+        .launcher-remove {
+            width: var(--target);
+            height: var(--target);
+        }
+    }
+
+    /* A narrow window: one column, what starts a campaign first, the robot small, then the campaigns, the page scrolling whole. */
+    @media (max-width: 640px) {
+        .launcher {
+            grid-template-columns: minmax(0, 1fr);
+            height: auto;
+            min-height: 100vh;
+            align-content: start;
+        }
+
+        .launcher-side {
+            order: -1;
+            padding: 20px 16px;
+            overflow-y: visible;
+        }
+
+        .launcher-list {
+            border-inline-end: 0;
+            border-top: 1px solid var(--rule);
+            overflow-y: visible;
+        }
+
+        .launcher-robot .master {
+            width: 72px;
+            height: 72px;
+        }
+
+        .launcher-fields {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 4px;
+        }
+
+        .launcher-label:not(:first-child) {
+            padding-top: 10px;
+        }
+    }
+}
