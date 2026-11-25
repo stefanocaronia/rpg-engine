@@ -258,6 +258,20 @@ export function readTheme(folder: string): ThemeReading
     return problems.length === 0 ? { theme, problems } : { problems };
 }
 
+/** Every key a theme.yaml may give, by its path, as cards.texture.fit or light.paper: what a theme's template must show. */
+export function themeKeys(): string[]
+{
+    return keysOf(themeSchema, "");
+}
+
+/** The keys of a part of the schema and of the parts inside it, each written from the top. */
+function keysOf(schema: z.ZodType, before: string): string[]
+{
+    const inner = schema instanceof z.ZodOptional ? schema.unwrap() : schema;
+    const object = inner instanceof z.ZodArray ? inner.element : inner;
+    return object instanceof z.ZodObject ? Object.entries(object.shape as Record<string, z.ZodType>).flatMap(([key, value]) => [`${before}${key}`, ...keysOf(value, `${before}${key}.`)]) : [];
+}
+
 /** The real path of a file of a theme's folder, only when it is one and inside it, links resolved: what the dashboard serves. */
 export function themeFile(folder: string, name: string): string | undefined
 {

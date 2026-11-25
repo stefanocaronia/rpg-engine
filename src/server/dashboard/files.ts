@@ -17,7 +17,7 @@ import { realPath } from "../../core/files.ts";
 import { files, isInside, withFiles } from "../../core/store.ts";
 import { findHiddenImage, findImage } from "../../images/index.ts";
 import { languagePackFor, packGuide, packPhrases } from "../../languages/index.ts";
-import { drawnOrnament, drawnTexture, isThemeId, readTheme, type Theme, themeCss, themeFile } from "../../themes/index.ts";
+import { drawnOrnament, drawnTexture, folderPrint, installedTheme, isThemeId, type Theme, themeCss, themeFile } from "../../themes/index.ts";
 import type { Served } from "./index.ts";
 
 const imageTypes: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
@@ -227,10 +227,12 @@ export async function themeNow(response: ServerResponse, served: Served): Promis
     await served.session.ready();
     const system = root === undefined ? undefined : withFiles(served.session, () => campaignSystem(root, served.context));
     const reading = root === undefined ? undefined : withFiles(served.session, () => campaignTheme(root, served.context));
-    const installed = withFiles(
-        served.session,
-        () => themesHere(served.context).flatMap(({ id, theme }) => theme === undefined ? [] : [{ id, name: theme.name, css: themeCss(theme, `${themesAddress}/${id}`), icons: theme.icons, ...styleOf(theme, `${themesAddress}/${id}`) }]),
-    );
+    const installed = withFiles(served.session, () =>
+        themesHere(served.context).flatMap(({ id, theme, linked }) => {
+            // A linked theme's address changes with its files, so that the page takes a picture or a face its author changed, not the one it holds.
+            const address = linked === true && theme !== undefined ? `${themesAddress}/${id}.${folderPrint([theme.folder])}` : `${themesAddress}/${id}`;
+            return theme === undefined ? [] : [{ id, name: theme.name, css: themeCss(theme, address), icons: theme.icons, ...styleOf(theme, address) }];
+        }));
     const themes = installed.length === 0 ? {} : { themes: installed };
 
     if (system === undefined) {
@@ -261,15 +263,16 @@ export async function sendThemeFile(name: string, query: URLSearchParams, reques
 
 /**
  * A file of a theme installed on its own, at themes/<id>/<path>, as the system's theme sends its files: only from its folder, by real paths, and only while it
- * passes its checks; a picture runs nothing, whoever made it.
+ * passes its checks; a picture runs nothing, whoever made it. A linked theme's id may carry a print of its files after a dot, themes/<id>.<print>/<path>.
  */
 export async function sendInstalledThemeFile(path: string, query: URLSearchParams, request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
-    const [id, ...rest] = path.split("/");
+    const [named, ...rest] = path.split("/");
+    const id = named.split(".")[0];
     const themes = themesFolder(served.context);
     await served.session.ready();
-    const theme = themes === undefined || !isThemeId(id) ? undefined : withFiles(served.session, () => readTheme(join(themes, id)).theme);
-    sendFileOfTheme(theme, rest.join("/"), `${themesAddress}/${id}`, query, request, response, served);
+    const theme = themes === undefined || !isThemeId(id) ? undefined : withFiles(served.session, () => installedTheme(themes, id)?.theme);
+    sendFileOfTheme(theme, rest.join("/"), `${themesAddress}/${named}`, query, request, response, served);
 }
 
 /**

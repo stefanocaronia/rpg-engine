@@ -9,6 +9,7 @@ import { systemTexts } from "../../commands/shared/books/system-texts.ts";
 import { type PageTranslator, pageTranslator } from "../../commands/shared/books/words.ts";
 import type { Catalog } from "../../commands/shared/packages/catalog.ts";
 import { loadCampaignCode } from "../../commands/shared/packages/code.ts";
+import { themesFolder } from "../../commands/shared/packages/unpacked.ts";
 import { campaignWidgets, packageWidget } from "../../commands/shared/packages/widgets.ts";
 import { view } from "../../commands/view/view.ts";
 import type { Context, Player, SystemTexts } from "../../core/context.ts";
@@ -19,6 +20,7 @@ import { notationParts } from "../../dice/index.ts";
 import { helperCommand, queueInCodex } from "../../helpers/index.ts";
 import { samePath } from "../../library/index.ts";
 import { loadSystemCode } from "../../systems/index.ts";
+import { folderPrint, linkedThemeFolders } from "../../themes/index.ts";
 import { type Acts, newActs } from "../player-acts.ts";
 import { choicesNews, choicesRequest } from "./choices.ts";
 import type { EngineAsked } from "./engine.ts";
@@ -125,6 +127,9 @@ const heldFor = 60_000;
 
 // How often the server looks at an import under way, for the pages to tell how far it is (D-491 (11)).
 const importLookEvery = 2000;
+
+// How often the server looks at the folders of the themes linked for their authors, for the pages to show each change (one second).
+const themesLookEvery = 1000;
 
 /**
  * Serves the dashboard of the campaign of context.folder, on 127.0.0.1 only, at the first of the ports that is free, which campaign.yaml then keeps; undefined
@@ -357,6 +362,19 @@ function serve(server: Server, served: Served): Dashboard
     }, importLookEvery);
     importLook.unref();
 
+    // A theme linked for its author is written in a folder of theirs, which the session does not watch: a print of its files is taken now and then, and the
+    // pages hear when it changes, to take the theme again.
+    let themesSeen = linkedThemesNow(served);
+    const themesLook = setInterval(() => {
+        const now = linkedThemesNow(served);
+
+        if (now !== themesSeen) {
+            themesSeen = now;
+            served.notify();
+        }
+    }, themesLookEvery);
+    themesLook.unref();
+
     server.on("request", (request: IncomingMessage, response: ServerResponse) => {
         answer(request, response, served).catch((error: unknown) => {
             send(response, 500, "text/plain; charset=utf-8", error instanceof Error ? error.message : String(error));
@@ -384,6 +402,7 @@ function serve(server: Server, served: Served): Dashboard
             new Promise((done) => {
                 stopListening();
                 clearInterval(importLook);
+                clearInterval(themesLook);
                 clearTimeout(notice);
                 served.asked?.settle("absent");
                 served.bell?.end("gone");
@@ -405,6 +424,18 @@ function importNow(served: Served): string
     try {
         const root = withFiles(served.session, () => findCampaign(served.context.folder));
         return root === undefined ? "" : JSON.stringify(importShown(root) ?? null);
+    } catch {
+        return "";
+    }
+}
+
+/** A print of the files of the themes linked on this computer, read as they are now; empty when none is linked. */
+function linkedThemesNow(served: Served): string
+{
+    const themes = themesFolder(served.context);
+
+    try {
+        return themes === undefined ? "" : folderPrint(linkedThemeFolders(themes));
     } catch {
         return "";
     }

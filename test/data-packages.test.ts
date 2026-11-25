@@ -206,6 +206,109 @@ describe("a theme as a package of its own", () => {
     });
 });
 
+describe("a theme linked for its author", () => {
+    const listing = (path: string): string[] => readdirSync(path, { recursive: true }).map(String).map((one) => one.replaceAll("\\", "/")).sort();
+
+    it("is read from the author's folder, never copied: its folder among the installed ones holds only where it is", async () => {
+        const author = folderOf(themeFiles(versioned("0.3.0")));
+        const linked = await rpg("package", "install", author, "--link");
+        expect(linked.output).toBe(
+            `Linked the theme Ledger 0.3.0, read from ${author}: it shows in the dashboard of any campaign on this computer, chosen in Settings, and the dashboard shows each change by itself.`,
+        );
+        expect(themesThere()).toEqual(["ledger"]);
+        expect(listing(join(unpacked, "themes", "ledger"))).toEqual([".link", ".source"]);
+        expect(readFileSync(join(unpacked, "themes", "ledger", ".link"), "utf8")).toBe(`${author}\n`);
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "package-installed", data: { package: "ledger", version: "0.3.0", kind: "theme" } });
+        expect((await rpg("package", "list")).output).toContain(`Themes of the dashboard, which the player chooses in Settings: Ledger 0.3.0, linked from ${author}.`);
+
+        // What the author changes is what the engine reads, at once.
+        writeFileSync(join(author, "theme.yaml"), versioned("0.4.0")(readFileSync(join(fakeTheme, "theme.yaml"), "utf8")));
+        expect((await rpg("package", "list")).output).toContain("Ledger 0.4.0, linked from");
+    });
+
+    it("never takes the author's folder away: an uninstall, a copy or a link over it leave its files as they were", async () => {
+        const author = folderOf(themeFiles());
+        const before = listing(author);
+        await rpg("package", "install", author, "--link");
+        expect((await rpg("package", "uninstall", "theme:ledger")).output).toBe("Ledger is off this computer.");
+        expect(themesThere()).toEqual([]);
+        expect(listing(author)).toEqual(before);
+
+        await rpg("package", "install", author, "--link");
+        expect((await rpg("package", "install", zipOf(themeFiles(versioned("1.0.0"))))).output).toContain("It takes the place of Ledger.");
+        expect(listing(join(unpacked, "themes", "ledger"))).toContain("theme.yaml");
+        expect(listing(author)).toEqual(before);
+
+        expect((await rpg("package", "install", author, "--link")).output).toContain("It takes the place of Ledger 1.0.0.");
+        await rpg("package", "install", author, "--link");
+        await rpg("package", "uninstall", "Ledger");
+        expect(listing(author)).toEqual(before);
+        expect(readFileSync(join(author, "theme.yaml"), "utf8")).toBe(themeFiles()["theme.yaml"]);
+    });
+
+    it("links one that fails its checks, saying why it is not offered; one with no name by its folder's", async () => {
+        const dim = folderOf(themeFiles((yaml) => yaml.replace('muted: "#a9b3a0"', 'muted: "#4a5245"')));
+        expect((await rpg("package", "install", dim, "--link")).output).toContain("It is not offered until it passes its checks: dark: muted #4a5245 does not read");
+        expect((await rpg("package", "list")).output).toContain(`ledger, linked from ${dim} (not offered: dark: muted #4a5245 does not read`);
+
+        const nameless = join(makeTempFolder(), "My Draft");
+        mkdirSync(nameless);
+        writeFileSync(join(nameless, "theme.yaml"), "light: [\n");
+        expect((await rpg("package", "install", nameless, "--link")).output).toContain("Linked the theme My Draft, read from");
+        expect(themesThere()).toEqual(["ledger", "my-draft"]);
+
+        rmSync(nameless, { recursive: true });
+        expect((await rpg("package", "list")).output).toContain(`my-draft, linked from ${nameless} (not offered: the folder it is linked to, ${nameless}, is gone: link it again`);
+        expect((await rpg("package", "uninstall", "theme:my-draft")).output).toBe("my-draft is off this computer.");
+    });
+
+    it("links only a theme's folder of this computer, and only on install", async () => {
+        const adventure = folderOf({ "adventure.yaml": "title: X\n", "theme.yaml": "name: X\n" });
+
+        for (const given of [zipOf(themeFiles()), "https://github.com/ada/ledger", "weather", adventure, folderOf(germanFiles({}))]) {
+            await expect(packageCommand.run({ action: "install", name: given, link: true }, context), given).rejects.toMatchObject({ code: "not-linkable", values: { name: given } });
+        }
+
+        await expect(packageCommand.run({ action: "uninstall", name: "ledger", link: true }, context)).rejects.toMatchObject({ code: "not-linkable" });
+        expect(themesThere()).toEqual([]);
+    });
+
+    it("is made new from the template, in a folder of its name where the command runs, and linked", async () => {
+        const here = makeTempFolder();
+        const made = await packageCommand.run({ action: "new", name: "Old Parchment" }, { ...context, folder: here });
+        const author = join(here, "old-parchment");
+        expect(packageCommand.format(made)).toBe(
+            `Made the theme Old Parchment 0.1.0 in ${author} and linked it: choose it in Settings, in the dashboard of any campaign on this computer. `
+                + "Change its theme.yaml there: the dashboard shows each change by itself.",
+        );
+        expect(readdirSync(author).sort()).toEqual(["README.md", "style.css", "theme.yaml"]);
+        expect(readFileSync(join(unpacked, "themes", "old-parchment", ".link"), "utf8")).toBe(`${author}\n`);
+
+        const elsewhere = join(makeTempFolder(), "deep", "sea");
+        expect(packageCommand.format(await packageCommand.run({ action: "new", name: "Sea", folder: elsewhere }, context))).toContain(`in ${elsewhere} and linked it`);
+
+        await expect(packageCommand.run({ action: "new", name: "Old Parchment" }, { ...context, folder: makeTempFolder() })).rejects.toMatchObject({ code: "theme-here", values: { name: "old-parchment" } });
+        await expect(packageCommand.run({ action: "new", name: "Other", folder: author }, context)).rejects.toMatchObject({ code: "folder-not-empty", values: { name: author } });
+        expect(themesThere()).toEqual(["old-parchment", "sea"]);
+    });
+
+    it("works outside a campaign: new, a link, list and an uninstall of a theme, and nothing else", async () => {
+        const nowhere = { ...context, folder: makeTempFolder() };
+        const lines = readLogFile(folder).length;
+        const out = (...args: string[]) => runCommandLine(args, nowhere);
+        expect((await out("package", "new", "Moss")).output).toContain("Made the theme Moss 0.1.0");
+        expect((await out("package", "install", folderOf(themeFiles()), "--link")).output).toContain("Linked the theme Ledger");
+        expect((await out("package", "list")).output).toContain(`Themes of the dashboard, which the player chooses in Settings: Ledger, linked from`);
+        expect((await out("package", "uninstall", "Moss")).output).toBe("Moss is off this computer.");
+        expect(existsSync(join(nowhere.folder, "moss", "theme.yaml"))).toBe(true);
+        expect(readLogFile(folder)).toHaveLength(lines);
+
+        for (const args of [["install", zipOf(themeFiles())], ["available"], ["uninstall", "weather"], ["export"]]) {
+            expect((await out("package", ...args)).output, args.join(" ")).toContain("There is no campaign here");
+        }
+    });
+});
+
 describe("a language as a package of data alone", () => {
     it("installs one from a .zip into its own folder, read as the page's language, its version from language.yaml", async () => {
         const installed = await rpg("package", "install", zipOf(germanFiles({ "{count} failures": "{count} Fehlschläge" }), "lingua-de-main/"));
@@ -366,6 +469,53 @@ describe("the themes on the dashboard", () => {
         for (const refused of ["ledger/theme.yaml", "ledger/../../campaign.yaml", "ledger/%2e%2e/%2e%2e/campaign.yaml", "ledger/..%5C..%5Ccampaign.yaml", "Ledger/images/ruled.svg", "other/images/ruled.svg", "ledger"]) {
             expect((await send("GET", `/themes/${refused}`)).status, refused).toBe(404);
         }
+    });
+
+    it("serves a linked theme from its author's folder, at an address that changes with its files, and tells the page when they change", async () => {
+        // The server looks for linked themes now and then: one linked after it started is seen too.
+        const received: string[] = [];
+        const events = request({ host: "127.0.0.1", port, path: "/events" });
+        const connected = new Promise<void>((done) => {
+            events.on("response", (response) => {
+                response.setEncoding("utf8");
+                response.on("data", (chunk: string) => received.push(chunk));
+                done();
+            });
+        });
+        events.end();
+        await connected;
+
+        const changed = async (): Promise<boolean> => {
+            const count = received.filter((chunk) => chunk.includes("event: changed")).length;
+
+            for (let tried = 0; tried < 40; tried++) {
+                await new Promise((done) => setTimeout(done, 100));
+
+                if (received.filter((chunk) => chunk.includes("event: changed")).length > count) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        const author = folderOf(themeFiles());
+        await runCommandLine(["package", "install", author, "--link"], { ...context, files: session });
+        expect(await changed()).toBe(true);
+
+        const css = async (): Promise<string> => (JSON.parse((await send("GET", "/api/theme")).body) as { themes: { css: string; }[]; }).themes[0].css;
+        const first = await css();
+        const address = /url\("(\/themes\/ledger\.[\w-]+)\/images\/ruled\.svg"\)/.exec(first)?.[1];
+        expect(address).toBeDefined();
+        expect(await send("GET", `${address}/images/ruled.svg`)).toMatchObject({ status: 200, body: themeFiles()["images/ruled.svg"] });
+
+        // A picture changed, the same CSS but for its address: the page takes the new one.
+        writeFileSync(join(author, "images", "ruled.svg"), '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><path d="M0 4h8"/></svg>');
+        expect(await changed()).toBe(true);
+        const second = await css();
+        expect(second).not.toBe(first);
+        expect(second.replace(/ledger\.[\w-]+/g, "ledger")).toBe(first.replace(/ledger\.[\w-]+/g, "ledger"));
+        events.destroy();
     });
 });
 

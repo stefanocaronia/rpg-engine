@@ -250,8 +250,8 @@ function adventureEntry(repository: Repository, manifest: AdventureManifest, her
 }
 
 /**
- * A theme GitHub has, by the name, version and engine its theme.yaml gives; here only when it was installed from this repository. Its checks are made as it is
- * installed.
+ * A theme GitHub has, by the name, version and engine its theme.yaml gives; here only when it was installed from this repository, never one linked for its
+ * author, which nothing updates. Its checks are made as it is installed.
  */
 function themeEntry(repository: Repository, text: string, here: Here): CatalogEntry | undefined
 {
@@ -262,7 +262,7 @@ function themeEntry(repository: Repository, text: string, here: Here): CatalogEn
     }
 
     const name = read.name;
-    const found = here.themes.find((one) => isSameSource(unpackedSource(one.folder), repository.html_url));
+    const found = here.themes.find((one) => one.linked !== true && isSameSource(unpackedSource(one.entry), repository.html_url));
     return readableEntry(githubEntry("theme", repository, name, versionOf(read.version), found === undefined ? undefined : (found.theme?.version ?? "")), read.engine);
 }
 

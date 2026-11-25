@@ -11,7 +11,15 @@ export type PackageResult =
     | { kind: "uninstalled"; name: string; wasUsed: boolean; extension: boolean; }
     | { kind: "system-installed"; system: InstalledSystem; plays?: string; loaded?: { runs: true; } | { why: string; }; }
     | { kind: "language-installed"; language: InstalledLanguage; replaced?: string; missing: number; }
-    | { kind: "theme-installed"; theme: { id: string; name: string; version?: string; }; replaced?: { name: string; version?: string; }; }
+    | {
+        kind: "theme-installed";
+        theme: { id: string; name: string; version?: string; };
+        replaced?: { name: string; version?: string; };
+        /** The author's folder a linked theme is read from, with what keeps it from being offered, and whether package new just made it. */
+        linked?: string;
+        problems?: string[];
+        made?: true;
+    }
     | ({ kind: "adventure-installed"; } & AdventureInstalled)
     | ({ kind: "adventure-removed"; } & AdventureRemoved)
     | ({ kind: "exported"; } & AdventureExported);
@@ -36,11 +44,12 @@ export interface Available
     newer?: { version: string; engine?: string; };
 }
 
-/** A theme of the dashboard on this computer, for every campaign: its id, its name, and why it is not offered while it fails a check. */
+/** A theme of the dashboard on this computer, for every campaign: its id, its name, the folder a linked one is read from, and why it is not offered while it fails a check. */
 export interface ListedTheme
 {
     id: string;
     name: string;
     version?: string;
+    linked?: string;
     problems?: string[];
 }

@@ -43,7 +43,7 @@ Where things are in the repository, what each module depends on, and where new c
 | `packages` | npm for every package, game systems and the engine included: install, update, a `.tgz` read |
 | `adventures` | Adventures as packages of content: their manifest, a `.zip` or folder checked whole, the `.zip` an export writes |
 | `languages` | Languages as packages, from npm or of data alone: the dashboard's phrases, its Guide and a system's words, translated by hand |
-| `themes` | A game system's theme of the dashboard, and those installed on their own: read, checked, written as CSS |
+| `themes` | A game system's theme of the dashboard, and those installed on their own, copied or linked: read, checked, written as CSS; a new theme's template |
 | `dice` | Dice notation, digital or physical faces, proofs for hidden rolls, random tables, the yes/no oracle |
 | `counters` | Counters such as `5/12` |
 | `money` | Coins and amounts, paying with change |

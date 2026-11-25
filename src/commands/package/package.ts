@@ -1,8 +1,10 @@
 // The package command: lists, asks npm, installs from npm or as data alone, removes, uninstalls and exports, and says what it did
+import { resolve } from "node:path";
 import { z } from "zod";
-import { requireCampaign } from "../../campaign/index.ts";
+import { findCampaign, requireCampaign } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { readsApi } from "../../core/packages/declarations.ts";
+import { Refusal } from "../../core/refusal.ts";
 import { defineCommand } from "../../core/registry.ts";
 import { comparableText } from "../../core/text.ts";
 import { isNewerVersion } from "../../core/version.ts";
@@ -15,7 +17,7 @@ import { installDataPackage, isDataSpec, readDataSpec } from "./data.ts";
 import { issuesOf, languagesHere, systemsHere, usable } from "./here.ts";
 import { installed } from "./install.ts";
 import type { Available, Installed, ListedTheme, PackageResult } from "./result.ts";
-import { themesListed } from "./theme.ts";
+import { isThemeFolder, themeLinked, themeMade, themesListed } from "./theme.ts";
 import { removed, uninstalled } from "./uninstall.ts";
 
 export const packageCommand = defineCommand({
@@ -25,54 +27,75 @@ export const packageCommand = defineCommand({
         + "list says those on this computer and those the campaign uses; available, those npm has, and updates; RPG Engine itself is updated by the player on the dashboard's Packages page, never by you. install adds or updates one, on this computer and in the campaign, "
         + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked in the host's form, or in a window of their computer. "
         + "An adventure is installed when you bring its hook into the story, once the player wants it as the next. "
-        + "remove takes one out of the campaign; uninstall takes it off this computer; export writes the campaign's world, as it was at its start, as an adventure. "
+        + "remove takes one out of the campaign; uninstall takes it off this computer; export writes the campaign's world, as it was at its start, as an adventure; "
+        + "new makes a theme for its author. "
         + "Example: package install weather.",
     group: "campaign",
     positionals: ["action", "name"],
     slow: true,
     input: z.object({
-        action: z.enum(["list", "available", "install", "remove", "uninstall", "export"]).describe("list, available, install, remove, uninstall or export"),
+        action: z.enum(["list", "available", "install", "remove", "uninstall", "export", "new"]).describe("list, available, install, remove, uninstall, export or new"),
         name: z.string().optional().describe(
             "the package: its name alone for one of ours, such as weather; another's npm name with its scope, or npm:name without one, its version if wanted; a folder or a .tgz "
                 + "file on this computer; an adventure's, a theme's or a language's .zip, folder or https link; an adventure's title to remove it; a theme's or a language's name to uninstall it, or theme:<id> and language:<code> when an npm package has that name too",
         ),
         author: z.string().min(1).optional().describe("export: who wrote the adventure, as the player wants it credited"),
         license: z.string().min(1).optional().describe("export: the licence the player gives it, such as CC BY 4.0; without one, all rights are reserved"),
+        link: z.boolean().optional().describe("install, a theme's folder: read where it is instead of copied, for its author to see each change on the dashboard"),
+        folder: z.string().min(1).optional().describe("new: where to make the theme; else a folder of its name here"),
     }),
 
     async run(input, context): Promise<PackageResult>
     {
-        const root = requireCampaign(context.folder);
+        // A theme's author works anywhere: new, a link, a theme's uninstall and list need no campaign, and log in one only when there is one.
+        const root = findCampaign(context.folder) === undefined ? undefined : requireCampaign(context.folder);
+        const name = input.name?.trim();
+
+        if (input.link === true && input.action !== "install") {
+            throw new Refusal(`link goes with install of a theme's folder, as package install <folder> --link; not with ${input.action}. Nothing changed.`, "not-linkable", { name: name ?? "" });
+        }
 
         if (input.action === "list") {
             return listed(root, context);
         }
+
+        if (input.action === "new" || input.link === true) {
+            if (name === undefined || name === "") {
+                throw new Error(input.action === "new" ? 'Give the new theme\'s name, such as package new "Old Parchment".' : "Give the theme's folder to link, such as package install ../my-theme --link.");
+            }
+
+            return input.action === "new" ? themeMade(root, context, name, input.folder) : themeLinked(root, context, linkableFolder(context, name));
+        }
+
+        if (root === undefined && input.action === "uninstall" && name !== undefined && name !== "") {
+            return await uninstalled(undefined, context, name);
+        }
+
+        const campaign = root ?? requireCampaign(context.folder);
 
         if (input.action === "available") {
             return await available(context);
         }
 
         if (input.action === "export") {
-            return { kind: "exported", ...exportAdventure(root, context, { author: input.author, license: input.license }) };
+            return { kind: "exported", ...exportAdventure(campaign, context, { author: input.author, license: input.license }) };
         }
-
-        const name = input.name?.trim();
 
         if (name === undefined || name === "") {
             throw new Error(`Give the package to ${input.action}, such as package ${input.action} weather.`);
         }
 
         if (input.action === "install") {
-            return isDataSpec(name) ? await installDataPackage(root, context, await readDataSpec(name, context), name) : await installed(root, context, name);
+            return isDataSpec(name) ? await installDataPackage(campaign, context, await readDataSpec(name, context), name) : await installed(campaign, context, name);
         }
 
-        const adventure = installedAdventures(root).find((one) => comparableText(one.title) === comparableText(name));
+        const adventure = installedAdventures(campaign).find((one) => comparableText(one.title) === comparableText(name));
 
         if (input.action === "remove" && adventure !== undefined) {
-            return { kind: "adventure-removed", ...removeAdventure(root, context, adventure) };
+            return { kind: "adventure-removed", ...removeAdventure(campaign, context, adventure) };
         }
 
-        return input.action === "remove" ? removed(root, context, name) : await uninstalled(root, context, name);
+        return input.action === "remove" ? removed(campaign, context, name) : await uninstalled(campaign, context, name);
     },
 
     format(result)
@@ -99,9 +122,7 @@ export const packageCommand = defineCommand({
         }
 
         if (result.kind === "theme-installed") {
-            const { theme, replaced } = result;
-            const was = replaced === undefined ? "" : ` It takes the place of ${replaced.name}${replaced.version === undefined ? "" : ` ${replaced.version}`}.`;
-            return `Installed the theme ${theme.name}${theme.version === undefined ? "" : ` ${theme.version}`} for every campaign on this computer: the player chooses it in Settings.${was}`;
+            return themeInstalledText(result);
         }
 
         if (result.kind === "system-installed") {
@@ -232,10 +253,10 @@ function typedPages(pages: LayeredPage[]): string
     return pages.map((one) => (one.type === undefined ? one.page : `${one.page} (${one.type})`)).join(", ");
 }
 
-/** The packages on this computer, and those the campaign lists and does not find there: at once, without npm (D-442). */
-function listed(root: string, context: Context): PackageResult
+/** The packages on this computer, and those the campaign lists and does not find there: at once, without npm (D-442); outside a campaign, those on this computer. */
+function listed(root: string | undefined, context: Context): PackageResult
 {
-    const used = Object.keys(listedExtensions(root));
+    const used = root === undefined ? [] : Object.keys(listedExtensions(root));
     const here = installedExtensions(context.extensionFolders ?? []).map((found): Installed => {
         const issues = issuesOf(found.folder);
 
@@ -255,8 +276,11 @@ function listed(root: string, context: Context): PackageResult
             return { name: shortName(found.package), package: found.package, broken: error instanceof Error ? error.message : String(error), ...issues };
         }
     });
-    const adventures = installedAdventures(root).map((one) => ({ title: one.title, version: one.version, ...(one.since === undefined ? {} : { since: one.since }), removable: storyTouching(root, one) === undefined }));
-    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)), adventures, systems: systemsHere(root, context), languages: languagesHere(context), themes: themesListed(context) };
+    const adventures = root === undefined
+        ? []
+        : installedAdventures(root).map((one) => ({ title: one.title, version: one.version, ...(one.since === undefined ? {} : { since: one.since }), removable: storyTouching(root, one) === undefined }));
+    const systems = systemsHere(root ?? context.folder, context);
+    return { kind: "list", installed: here, missing: used.filter((name) => !here.some((one) => one.package === name)), adventures, systems, languages: languagesHere(context), themes: themesListed(context) };
 }
 
 /** The extensions npm has for this rpg-engine's API, ours first, each with the version installed here and whether npm has a newer one (D-442). */
@@ -295,11 +319,45 @@ function codeText(loaded: { runs: true; } | { why: string; } | undefined): strin
     return loaded === undefined ? "Its code runs from the next start of the game's server." : "runs" in loaded ? "Its code runs from now." : `Its code does not run: ${loaded.why.replace(/\.$/, "")}.`;
 }
 
-/** A theme as list says it: with its version, and why it is not offered while it fails a check. */
+/** A theme as list says it: with its version, the folder a linked one is read from, and why it is not offered while it fails a check. */
 function themeLine(theme: ListedTheme): string
 {
-    const version = theme.version === undefined ? "" : ` ${theme.version}`;
-    return theme.problems === undefined ? `${theme.name}${version}` : `${theme.name}${version} (not offered: ${theme.problems[0]})`;
+    const named = `${theme.name}${theme.version === undefined ? "" : ` ${theme.version}`}${theme.linked === undefined ? "" : `, linked from ${theme.linked}`}`;
+    return theme.problems === undefined ? named : `${named} (not offered: ${theme.problems[0]})`;
+}
+
+/** What install says of a theme: copied, linked from its author's folder, or made from the template and linked, with what keeps it from being offered. */
+function themeInstalledText(result: Extract<PackageResult, { kind: "theme-installed"; }>): string
+{
+    const { theme, replaced, linked, problems } = result;
+    const named = `${theme.name}${theme.version === undefined ? "" : ` ${theme.version}`}`;
+    const was = replaced === undefined ? "" : ` It takes the place of ${replaced.name}${replaced.version === undefined ? "" : ` ${replaced.version}`}.`;
+    const refused = problems === undefined ? "" : ` It is not offered until it passes its checks: ${problems.join("; ")}.`;
+
+    if (linked === undefined) {
+        return `Installed the theme ${named} for every campaign on this computer: the player chooses it in Settings.${was}`;
+    }
+
+    const said = result.made === true
+        ? `Made the theme ${named} in ${linked} and linked it: choose it in Settings, in the dashboard of any campaign on this computer. Change its theme.yaml there: the dashboard shows each change by itself.`
+        : `Linked the theme ${named}, read from ${linked}: it shows in the dashboard of any campaign on this computer, chosen in Settings, and the dashboard shows each change by itself.`;
+    return `${said}${was}${refused}`;
+}
+
+/** The folder of this computer package install links, a theme's: refused when it is a .zip, a link, an npm name or a folder with no theme.yaml at its top. */
+function linkableFolder(context: Context, name: string): string
+{
+    const folder = resolve(context.folder, name);
+
+    if (/\.zip$/i.test(name) || /^https?:\/\//i.test(name) || !isThemeFolder(folder)) {
+        throw new Refusal(
+            `${name} cannot be linked: link takes a theme's folder on this computer, with theme.yaml at its top. Give that folder, or install without link to copy a package. Nothing changed.`,
+            "not-linkable",
+            { name },
+        );
+    }
+
+    return folder;
 }
 
 /** What the master hears of an export (ADV-7, ADV-8): the file, what it came from, the layers it carries and what stayed out. */

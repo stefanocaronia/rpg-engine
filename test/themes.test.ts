@@ -9,7 +9,7 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { startDashboard } from "../src/server/dashboard/index.ts";
-import { contrast, drawnOrnament, drawnTexture, readTheme, themeCss, themeFile, themeFilesNamed, themeIconNames } from "../src/themes/index.ts";
+import { contrast, drawnOrnament, drawnTexture, folderPrint, readTheme, themeCss, themeFile, themeFilesNamed, themeIconNames, themeKeys, themeTemplate } from "../src/themes/index.ts";
 import { inPlay, makeTempFolder, testContext } from "./support.ts";
 
 const fake = fileURLToPath(new URL("./systems/fake", import.meta.url));
@@ -408,6 +408,54 @@ describe("the hooks a theme may give beyond colours and faces (D-575)", () => {
         expect(drawnTexture(grain, "#123456")).toContain('<path d="M0 0h1v1H0Z" fill="#123456"/>');
         expect(drawnTexture('<svg viewBox="0 0 4 4"><path d="M0 0h1"/></svg>', "#123456")).toBe('<svg fill="#123456" viewBox="0 0 4 4"><path d="M0 0h1"/></svg>');
         expect(drawnTexture('<svg fill="none" viewBox="0 0 4 4"><path d="M0 0h1" stroke="currentColor"/></svg>', "#123456")).toBe('<svg fill="none" viewBox="0 0 4 4"><path d="M0 0h1" stroke="#123456"/></svg>');
+    });
+});
+
+describe("a new theme's template", () => {
+    /** The template's files written in a new folder; the folder. */
+    function made(name: string): string
+    {
+        const folder = join(makeTempFolder(), "made");
+
+        for (const [path, text] of themeTemplate(name, "0.24.1")) {
+            mkdirSync(join(folder, path, ".."), { recursive: true });
+            writeFileSync(join(folder, path), text);
+        }
+
+        return folder;
+    }
+
+    it("passes every check in both modes, its version and this engine's major and minor set", () => {
+        const reading = readTheme(made("Old Parchment"));
+        expect(reading.problems).toEqual([]);
+        expect(reading.theme).toMatchObject({ name: "Old Parchment", version: "0.1.0" });
+        expect(readFileSync(join(made("x"), "theme.yaml"), "utf8")).toContain('engine: "0.24"');
+        // A name YAML would read as something else stays a name.
+        expect(readTheme(made("yes: 1 # no")).theme?.name).toBe("yes: 1 # no");
+    });
+
+    it("shows every key a theme may give, set or in a comment, each mode's in its own block", () => {
+        const yaml = themeTemplate("Ledger", "0.24.1").find(([path]) => path === "theme.yaml")?.[1] ?? "";
+        const [top, modes] = [yaml.slice(0, yaml.indexOf("\nlight:")), yaml.slice(yaml.indexOf("\nlight:"))];
+        const blocks = { light: modes.slice(0, modes.indexOf("\ndark:")), dark: modes.slice(modes.indexOf("\ndark:")) };
+        const shown = (text: string, key: string): boolean => new RegExp(`(^|[\\s{,#-])${key}:`, "m").test(text);
+        const missing = themeKeys().filter((path) => {
+            const [first, ...rest] = path.split(".");
+            const block = first === "light" || first === "dark" ? blocks[first] : top;
+            return rest.length === 0 && (first === "light" || first === "dark") ? !shown(modes, first) : !shown(block, path.split(".").at(-1) ?? path);
+        });
+        expect(themeKeys()).toEqual(expect.arrayContaining(["cards.texture.fit", "light.portrait-frame", "dark.paper", "fonts.license"]));
+        expect(missing).toEqual([]);
+        expect(themeTemplate("Ledger", "0.24.1").map(([path]) => path)).toEqual(["theme.yaml", "style.css", "README.md"]);
+    });
+
+    it("gives a print of a folder's files that changes when one is written or added, and nothing for no folder", () => {
+        const folder = made("Print");
+        const before = folderPrint([folder]);
+        expect(folderPrint([folder])).toBe(before);
+        writeFileSync(join(folder, "added.svg"), "<svg/>");
+        expect(folderPrint([folder])).not.toBe(before);
+        expect(folderPrint([])).toBe("");
     });
 });
 

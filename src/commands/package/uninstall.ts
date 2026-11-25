@@ -1,6 +1,6 @@
 // Takes a package out of the campaign, or off this computer
 import { join } from "node:path";
-import { changeExtensions } from "../../campaign/index.ts";
+import { changeExtensions, requireCampaign } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { appendLogEntry } from "../../core/log.ts";
 import { Refusal } from "../../core/refusal.ts";
@@ -35,14 +35,15 @@ export function removed(root: string, context: Context, name: string): PackageRe
 
 /**
  * Takes a package off this computer with npm, and out of the campaign when it uses it (D-442); other campaigns that list it ask to install it again. A theme
- * or a language of data alone goes by its folder, when no npm package has its name: theme:<id> and language:<code> name them alone.
+ * or a language of data alone goes by its folder, when no npm package has its name: theme:<id> and language:<code> name them alone. Outside a campaign, only a
+ * theme goes.
  */
-export async function uninstalled(root: string, context: Context, name: string): Promise<PackageResult>
+export async function uninstalled(campaign: string | undefined, context: Context, name: string): Promise<PackageResult>
 {
     const packages = context.packages;
     const npmName = name.startsWith("npm:") ? name.slice(4) : name;
     const unpacked = findUnpacked(context, name);
-    const system = systemsHere(root, context).find((one) => one.package !== undefined && (one.package === npmName || comparableText(one.name) === comparableText(npmName)));
+    const system = systemsHere(campaign ?? context.folder, context).find((one) => one.package !== undefined && (one.package === npmName || comparableText(one.name) === comparableText(npmName)));
     const other = system?.package
         ?? languagesHere(context).find((one) => one.unpacked !== true && (one.package === npmName || comparableText(one.code) === comparableText(npmName)))?.package;
     const found = other === undefined
@@ -64,8 +65,14 @@ export async function uninstalled(root: string, context: Context, name: string):
         );
     }
 
+    if (unpacked?.kind === "theme") {
+        return themeUninstalled(campaign, context, unpacked.theme);
+    }
+
+    const root = campaign ?? requireCampaign(context.folder);
+
     if (unpacked !== undefined) {
-        return unpacked.kind === "theme" ? themeUninstalled(root, context, unpacked.theme) : dataLanguageUninstalled(root, context, unpacked.pack);
+        return dataLanguageUninstalled(root, context, unpacked.pack);
     }
 
     if (system?.used === true) {

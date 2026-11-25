@@ -1,8 +1,9 @@
 // A picture of the player's own for a page they see (D-572 (3)): a file of their computer, sent to the game, which makes it the page's picture in place of the
 // one it has. Over the corner of a page's pictures, a small square on the veil, seen under the pointer and with the keyboard, always on touch (PictureSpot for a
-// coin, a .picture-host for a picture that fills its box); as words in the open page of the World. Its look is this file's and picture.css's alone.
+// coin, a .picture-host for a picture that fills its box); as words in the open page of the World. Its look is this file's and picture.css's alone. A picture
+// pasted with Ctrl+V goes to the control with the focus, else to the one of the picture under the pointer (T-235).
 import type { ComponentChildren } from "preact";
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { givePicture } from "../api.ts";
 import { t } from "../text.ts";
 import { Icon } from "./icons.tsx";
@@ -12,6 +13,10 @@ const pictureTypes = "image/png,image/jpeg,image/webp,image/svg+xml";
 
 // How long a picture stays darkened, at most, waiting for the new one to reach the page.
 const longestWait = 8000;
+
+// The event a pasted picture reaches its control with, from the page's one listener of paste.
+const pastedEvent = "picture-pasted";
+let listening = false;
 
 /** A page's picture as a coin, with the control that gives it one of the player's own on its rim, across from the pip of its side. */
 export function PictureSpot({ page, has = true, children, class: extra }: { page: string; has?: boolean; children: ComponentChildren; class?: string; })
@@ -36,6 +41,8 @@ export function PictureButton({ page, has, icon = false, rim = false, row = fals
     const [sending, setSending] = useState(false);
     const [problem, setProblem] = useState<string>();
     const [said, setSaid] = useState("");
+    // With a keyboard at hand, the words say a picture can be pasted too.
+    const paste = typeof matchMedia === "function" && matchMedia("(any-pointer: fine)").matches ? t("Or paste one with Ctrl+V (⌘V on a Mac).") : undefined;
     const words = has ? t("Change the picture…") : t("Add a picture…");
     const named = has ? t("Change the picture: {page}", { page }) : t("Add a picture: {page}", { page });
 
@@ -71,6 +78,24 @@ export function PictureButton({ page, has, icon = false, rim = false, row = fals
         setSending(false);
     };
 
+    useEffect(() => {
+        const control = own.current;
+
+        if (!listening) {
+            listening = true;
+            document.addEventListener("paste", (event) => pastePicture(event, document));
+        }
+
+        const pasted = (event: Event): void => {
+            if (!sending) {
+                void send((event as CustomEvent<File>).detail);
+            }
+        };
+
+        control?.addEventListener(pastedEvent, pasted);
+        return () => control?.removeEventListener(pastedEvent, pasted);
+    });
+
     const choose = (event: MouseEvent): void => {
         // Over a picture that opens something, the click is the control's alone.
         event.preventDefault();
@@ -89,7 +114,8 @@ export function PictureButton({ page, has, icon = false, rim = false, row = fals
                 type="button"
                 class={icon ? (rim || row ? "icon-button" : "icon-button tip-left") : "button package-button"}
                 aria-label={named}
-                data-tip={icon ? (sending ? t("Sending…") : words) : undefined}
+                aria-description={paste}
+                data-tip={icon ? (sending ? t("Sending…") : paste === undefined ? words : `${words} ${paste}`) : undefined}
                 aria-busy={sending}
                 aria-disabled={sending ? "true" : undefined}
                 tabIndex={row ? -1 : undefined}
@@ -102,6 +128,49 @@ export function PictureButton({ page, has, icon = false, rim = false, row = fals
             <span class="visually-hidden" role="status">{said}</span>
         </span>
     );
+}
+
+/**
+ * Gives a pasted picture, of the types the game takes, to the control with the focus, else to the one of the picture under the pointer; a text field keeps its
+ * paste, and a paste with no picture or no control is left to the browser.
+ */
+export function pastePicture(event: ClipboardEvent, root: Pick<Document, "activeElement" | "querySelectorAll">): void
+{
+    const focused = deepestFocus(root.activeElement);
+
+    if (focused !== null && typesText(focused)) {
+        return;
+    }
+
+    const taken = pictureTypes.split(",");
+    const file = Array.from(event.clipboardData?.files ?? []).find((one) => taken.includes(one.type));
+    const hovered = Array.from(root.querySelectorAll(".picture-host:hover, .picture-spot:hover")).at(-1);
+    const control = focused?.closest(".picture-give") ?? hovered?.querySelector(":scope > .picture-give") ?? null;
+
+    if (file === undefined || control === null) {
+        return;
+    }
+
+    event.preventDefault();
+    control.dispatchEvent(new CustomEvent(pastedEvent, { detail: file }));
+}
+
+/** The element with the focus, inside the shadow roots it is in. */
+function deepestFocus(active: Element | null): Element | null
+{
+    let focused = active;
+
+    while (focused?.shadowRoot?.activeElement != null) {
+        focused = focused.shadowRoot.activeElement;
+    }
+
+    return focused;
+}
+
+/** Whether a paste there is text for the field. */
+function typesText(element: Element): boolean
+{
+    return ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName) || (element as HTMLElement).isContentEditable === true;
 }
 
 /** The ring that turns while the picture is sent, in place of the icon. */

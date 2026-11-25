@@ -2229,3 +2229,49 @@ describe("what the master asks, on the page (D-279; ASK-1, ASK-3, ASK-8, ASK-9)"
         expect(JSON.stringify(rolls)).not.toContain("mugnaio");
     });
 });
+
+describe("a picture pasted with Ctrl+V (T-235)", () => {
+    type Fake = { tagName: string; isContentEditable?: boolean; shadowRoot: null; closest: (selector: string) => Fake | null; querySelector: (selector: string) => Fake | null; dispatchEvent: (event: Event) => boolean; };
+
+    /** An element of a fake page: a control over a picture records what reaches it. */
+    function element(tagName: string, control?: Fake, got?: File[]): Fake
+    {
+        return {
+            tagName,
+            shadowRoot: null,
+            closest: (selector) => (selector === ".picture-give" && got !== undefined ? control ?? null : null),
+            querySelector: (selector) => (selector === ":scope > .picture-give" ? control ?? null : null),
+            dispatchEvent: (event) => (got?.push((event as CustomEvent<File>).detail), true),
+        };
+    }
+
+    it("goes to the control with the focus, else to the picture under the pointer; never from a text field, never without a picture of the types the game takes", async () => {
+        // The page's .tsx modules are typed by the page's own tsconfig, which has JSX: loaded by their address, with the function's type.
+        const { pastePicture } = await import(new URL("../src/dashboard/parts/picture.tsx", import.meta.url).href) as {
+            pastePicture: (event: ClipboardEvent, root: { activeElement: unknown; querySelectorAll: (selector: string) => unknown[]; }) => void;
+        };
+        const got: File[] = [];
+        const control = element("SPAN", undefined, got);
+        const button = element("BUTTON", control, got);
+        const host = element("DIV", control);
+        const png = new File(["png"], "image.png", { type: "image/png" });
+
+        const paste = (active: Fake, files: File[], hovered: Fake[] = []) => {
+            let prevented = false;
+            pastePicture({ clipboardData: { files }, preventDefault: () => void (prevented = true) } as unknown as ClipboardEvent, { activeElement: active, querySelectorAll: () => hovered });
+            return prevented;
+        };
+
+        expect(paste(button, [png])).toBe(true);
+        expect(got).toEqual([png]);
+        expect(paste(element("BODY"), [png], [host])).toBe(true);
+        expect(got).toEqual([png, png]);
+        // A text field keeps its paste, a paste without a picture is the browser's, and with nothing focused or under the pointer nothing happens.
+        expect(paste(element("TEXTAREA"), [png], [host])).toBe(false);
+        expect(paste({ ...element("DIV"), isContentEditable: true }, [png], [host])).toBe(false);
+        expect(paste(button, [new File(["gif"], "image.gif", { type: "image/gif" })])).toBe(false);
+        expect(paste(button, [])).toBe(false);
+        expect(paste(element("BODY"), [png])).toBe(false);
+        expect(got).toEqual([png, png]);
+    });
+});
