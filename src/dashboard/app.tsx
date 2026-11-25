@@ -75,6 +75,8 @@ function App()
 {
     const [shown, setShown] = useState<Shown>({ party: [], sheet: [], text: "", rolls: [], rollsTotal: 0, version: 0 });
     const [live, setLive] = useState(false);
+    // Whether the page has listened to the server's events once: from then on it reads the table's chat.
+    const listening = useRef(false);
     // The section the address names, and whose sheet (D-276, D-309).
     const [address, setAddress] = useState<Address>(() => readAddress(window.location.hash));
     const reading = useRef(0);
@@ -171,8 +173,12 @@ function App()
             setModules((before) => (JSON.stringify(before) === JSON.stringify(read) ? before : read));
             setModulesRead(true);
         }, () => undefined);
-        // The table's chat with the master, where a table keeps one (D-582).
-        void master.read();
+
+        // The table's chat with the master, where a table keeps one (D-582): read once the page listens, as the table takes up the campaign's last chat when
+        // its first page does, and a reading before that would show where a chat is opened for a moment.
+        if (listening.current) {
+            void master.read();
+        }
 
         try {
             const [first, askedNow, actsNow, choicesNow] = await Promise.all([
@@ -513,6 +519,7 @@ function App()
         const tellSeen = (): void => void sendSeen(pageId, document.visibilityState === "visible");
 
         events.onopen = () => {
+            listening.current = true;
             setLive(true);
             tellSeen();
             void read();

@@ -272,6 +272,8 @@ export function listenForChanges(request: IncomingMessage, response: ServerRespo
             served.returning = setTimeout(() => served.pages.size === 0 && served.asked === asked && asked.settle("absent"), served.pageReturn).unref();
         }
     });
+    // The table's chat takes up the campaign's last one as its first page comes.
+    served.master?.listened?.();
 }
 
 /** How the player answered a question, in words: the button's label, their own words or the square; none when it ended without an answer. */

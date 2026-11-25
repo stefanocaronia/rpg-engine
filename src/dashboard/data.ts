@@ -173,13 +173,14 @@ export interface ChatChoice
 /**
  * The table's chat with the master as the page shows it: the apps it may open in, the campaign's last choice and whether a chat of it can be taken up, the
  * open chat with how its turn stands, why it ended, the command the master uses now and whether the player's words now answer the question that waits, its
- * messages, and whether a chat opened by hand plays the campaign.
+ * messages, and whether a chat opened by hand plays the campaign. The open chat's model is the one the player chose, `runs` the app's own name for the one
+ * it runs, once the app said it; `cutShort` while the chat taken up was cut as the game was closed, until the next turn begins.
  */
 export interface MasterShown
 {
     hosts: ChatHost[];
     last?: ChatChoice & { resumable: boolean; };
-    chat?: ChatChoice & { state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
+    chat?: ChatChoice & { runs?: string; cutShort?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
     messages: ChatMessage[];
     elsewhere: boolean;
 }

@@ -9,6 +9,8 @@
 //   codex      a second app to choose, or none again
 //   ask        the master asks the player the demo's first question, as with the ask command, and waits for the answer; then goes on. With a number,
 //              as ask 3, that question of the demo's. Stop leaves it without an answer
+//   (with `resumed`, the campaign has a chat to take up, cut as the game was closed: its flow as it was written, a question left without an answer at
+//   its end; the demo takes it up by itself as the first page listens, as the table does, and it is cut short until the next turn begins)
 //   ooc        an answer with words out of the game, a paragraph of them and some among the story's, and brackets that are the story's
 // A question the demo asks, by the chat or by its own means (look.ts --ask), and the rolls the player may see stand among its messages, as the table's
 // chat keeps them: a question waits, then is answered or left; the player's words in the chat answer the one that takes them. In the middle of an answer
@@ -35,6 +37,8 @@ interface Chat
     host: string;
     model: string;
     effort?: string;
+    /** The app's own name for the model it runs. */
+    runs?: string;
     state: "idle" | "turn" | "ended";
     why?: string;
     tool?: string;
@@ -88,8 +92,19 @@ const longAnswer = [
     "Hai ancora una torcia accesa e la notte davanti.\n\nChe cosa fai?",
 ];
 
-/** The demo's master: a chat kept in this process's memory alone. */
-export function demoMaster(): DemoMaster
+// The flow of a chat cut as the game was closed, as the campaign kept it: the story so far, a roll, and a question that was waiting, left.
+const flowBefore: (Omit<Words, "id"> | Omit<AskedMessage, "id"> | Omit<Extract<Message, { from: "roll"; }>, "id">)[] = [
+    { from: "player", text: "Entro nella locanda." },
+    { from: "master", text: answer.slice(0, 2).join("\n\n") },
+    { from: "roll", text: "Lupa: 1d6 = 5 [5]", roll: { id: "demo-before", at: "2026-11-25T18:00:00.000Z", by: "master", who: "Lupa", check: "Fiuto", notation: "1d6", total: 5, text: "1d6 = 5 [5]", dice: [{ sides: 6, value: 5 }] } },
+    { from: "master", text: answer[2] },
+    { from: "player", text: "Mi avvicino al banco e poso il sigillo spezzato davanti all'oste." },
+    { from: "master", text: "L'oste guarda la cera rossa, poi te. Posa il boccale.\n\n«Dove l'hai trovato?»" },
+    { from: "asked", text: "L'oste aspetta una risposta: che cosa gli dici?", title: "Scelta", options: ["La verità", "Una mezza verità", "Niente"], state: "left" },
+];
+
+/** The demo's master: a chat kept in this process's memory alone; with `resumed`, one to take up, cut as the game was closed. */
+export function demoMaster({ resumed = false }: { resumed?: boolean; } = {}): DemoMaster
 {
     const messages: Message[] = [];
     const timers = new Set<NodeJS.Timeout>();
@@ -102,6 +117,9 @@ export function demoMaster(): DemoMaster
     let lastId = 0;
     let chat: Chat | undefined;
     let last: { host: string; model: string; effort?: string; } | undefined;
+    // Whether a page listened yet, and whether the chat taken up is still as the closing cut it.
+    let pageCame = false;
+    let cutShort = false;
     let elsewhere = false;
     let missing = false;
     let second = false;
@@ -113,6 +131,11 @@ export function demoMaster(): DemoMaster
     };
 
     const isOpen = (): boolean => chat !== undefined && chat.state !== "ended";
+
+    if (resumed) {
+        last = { host: "claudeCode", model: "sonnet", effort: "medium" };
+        flowBefore.forEach((message) => messages.push({ ...message, id: ++lastId } as Message));
+    }
 
     const later = (delay: number, does: () => void): void => {
         const timer = setTimeout(() => {
@@ -221,7 +244,7 @@ export function demoMaster(): DemoMaster
                 ...hostsNotReady,
             ],
             ...(last === undefined ? {} : { last: { ...last, resumable: true } }),
-            ...(chat === undefined ? {} : { chat: { ...chat, ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
+            ...(chat === undefined ? {} : { chat: { ...chat, ...(cutShort ? { cutShort: true as const } : {}), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
             messages: messages.map((message) => ({ ...message })),
             elsewhere,
         }),
@@ -244,6 +267,7 @@ export function demoMaster(): DemoMaster
             }
 
             halt();
+            cutShort = false;
             last = { host: choice.host, model: choice.model, ...(choice.effort === undefined ? {} : { effort: choice.effort }) };
             chat = { ...last, state: "idle" };
             changed();
@@ -271,6 +295,7 @@ export function demoMaster(): DemoMaster
             }
 
             add("player", shown ?? text);
+            cutShort = false;
             open.state = "turn";
             heard(open, text);
             changed();
@@ -291,6 +316,16 @@ export function demoMaster(): DemoMaster
             }
         },
         active: isOpen,
+        // The campaign's last chat is taken up by itself as the first page listens, once.
+        listened: () => {
+            if (!pageCame && resumed && chat === undefined && last !== undefined) {
+                chat = { ...last, runs: "claude-sonnet-5-5", state: "idle" };
+                cutShort = true;
+                changed();
+            }
+
+            pageCame = true;
+        },
         askBegins: (question, answer) => {
             if (!isOpen()) {
                 return;

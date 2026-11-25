@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "„{title}“ je přečteno: Pán jeskyně se tě zeptá, kde začít",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: hra se zavřela v půli: pokračuj tam, kde jsme byli, a polož mi znovu otázku, která zůstala bez odpovědi]",
   "{by} makes them meanwhile.": "{by} je mezitím vytváří.",
   "{count} being read": "{count} se čte",
   "{count} books read": "{count} knih přečteno",
@@ -838,6 +839,7 @@
   "Permadeath": "Trvalá smrt",
   "Person": "Osoba",
   "Physical": "Fyzické",
+  "Pick up from here": "Pokračovat odtud",
   "Pictures": "Obrázky",
   "Pictures and language": "Obrázky a jazyk",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Obrázky potřebují Codex, který na tomto počítači zatím není. Jak ho získat:\n1. Otevři terminál: ve Windows klikni na Start a napiš Terminal.\n2. Vlož `npm install -g @openai/codex` a stiskni Enter.\n3. Vlož `codex login` a přihlas se svým účtem ChatGPT v prohlížeči, který se otevře.\nCodex je vytváří z tvého plánu ChatGPT, nikdy se neplatí za jednotlivý obrázek.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "hra se ukládá na konci každé scény, ale nikdy se nevrací: co se stane, zůstane. Kampaň můžeš jen začít znovu.",
   "the game system gives": "herní systém dává",
   "The game system is on this computer, for a new campaign.": "Herní systém je v tomto počítači, pro novou kampaň.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "Hra se zavřela uprostřed příběhu: požádej Pána jeskyně, aby odtud pokračoval, nebo mu napiš vlastními slovy.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "Hra se vrátila k {save}, ale chat, ve kterém probíhala, pamatuje i to, co už neplatí: Pán jeskyně může pokračovat jen v novém (/clear v Claude Code, jinde nová konverzace). Až bude otevřený, stiskni tady, nebo to řekni Pánu jeskyně tam.",
   "The game's": "Hry",
   "The import of “{title}” is paused: the master takes it up again": "Import „{title}“ je pozastaven: Pán jeskyně na něm naváže",

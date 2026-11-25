@@ -30,7 +30,8 @@ export type DemoSystem = "free" | "5e";
 /** What a demo is served with: the chat with a master of the demo's own, and a campaign still in its setup in place of the one in play. */
 export interface DemoOptions
 {
-    chat?: boolean;
+    /** "resumed" for a chat the campaign has to take up, cut as the game was closed: the demo takes it up as the page comes. */
+    chat?: boolean | "resumed";
     setup?: boolean;
     /** With the demo's own launcher beside it, listing some campaigns, or none ("empty"): the campaign's page has the chat too, as at a table. */
     launcher?: boolean | "empty";
@@ -214,7 +215,7 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
     const session = new SessionStore({ systemFolders: [...context.systemFolders, join(`${folder}-home`, "systems")] });
     const home = `${folder}-home`;
     const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty", page);
-    const master = chat || fake !== undefined ? demoMaster() : undefined;
+    const master = chat !== false || fake !== undefined ? demoMaster({ resumed: chat === "resumed" }) : undefined;
     const dashboard = await startDashboard({ ...context, files: session }, session, {
         ports,
         ...(page === undefined ? {} : { page }),

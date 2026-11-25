@@ -12,6 +12,7 @@ import { chooseFolder, dialogCommands, folderCommands } from "../src/confirm/ind
 import type { Context } from "../src/core/context.ts";
 import { readLog } from "../src/core/log.ts";
 import { isPageAddress } from "../src/core/page-address.ts";
+import { stopTree } from "../src/core/process.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { FileStore, withFiles } from "../src/core/store.ts";
 import { productName } from "../src/dashboard/shell/product.ts";
@@ -32,6 +33,7 @@ import {
     pageTitle,
     placeCommand,
     readPlaced,
+    realSystem,
     windowPlace,
     windowTitles,
 } from "../src/desktop/index.ts";
@@ -933,6 +935,28 @@ describe("the launcher's window", () => {
         expect(readPlaced("")).toBeUndefined();
         expect(readPlaced("Exception calling Start")).toBeUndefined();
         expect(placeCommand("C:\\B\\b.exe", ["--a", "--b=c d"], "launcher", "C:\\Windows", windowTitles("launcher", "http://127.0.0.1:5750")).env.RPG_WINDOW_ARGUMENTS).toBe("--a\n--b=c d");
+    });
+
+    it("ends with the program it ran, not with one that program started and left holding its output", async () => {
+        const held =
+            `const child = require("node:child_process").spawn(process.execPath, ["-e", "setTimeout(() => undefined, 9000)"], { detached: true, stdio: ["ignore", "inherit", "ignore"], windowsHide: true }); console.log(child.pid); child.unref();`;
+        const began = Date.now();
+        const ran = await realSystem.run(process.execPath, ["-e", held], {}, "");
+        const waited = Date.now() - began;
+        const left = Number(ran.printed.trim());
+
+        try {
+            expect(ran.ended).toBe(true);
+            expect(Number.isInteger(left) && left > 1).toBe(true);
+            // Two seconds after its end at most, where the output is held: never the nine of the one it left.
+            expect(waited).toBeLessThan(6000);
+        } finally {
+            stopTree(left, "SIGKILL");
+        }
+    }, 20_000);
+
+    it("says a program that is not there ended, with nothing printed", async () => {
+        expect(await realSystem.run(join(makeTempFolder(), "no-such-program"), [], {}, "")).toEqual({ printed: "", ended: true });
     });
 });
 

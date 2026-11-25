@@ -113,7 +113,17 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
             </div>
             <p class="visually-hidden" role="status">{told}</p>
             <div class="card chat-box">
-                {shown.messages.length > 0 && <ChatLog messages={shown.messages} asking={asking} game={game} />}
+                {shown.messages.length > 0 && (
+                    <ChatLog
+                        messages={shown.messages}
+                        asking={asking}
+                        game={game}
+                        cutShort={view === "open" && shown.chat?.cutShort === true
+                            // Asked as the player's own words, out of the game, in the page's language.
+                            ? { busy: chat.sending || shown.chat.state !== "idle", onResume: () => void chat.say(t("[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]")) }
+                            : undefined}
+                    />
+                )}
                 {shown.messages.length === 0 && view === "open" && <p class="chat-empty">{t("Write to the master to begin: their answer comes here.")}</p>}
                 {turn !== undefined && (
                     <p class="chat-turn">

@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "“{title}”已读完：主持人会问你从哪里开始",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC：游戏中途被关闭了：请从中断的地方继续，如果之前有问题还没得到我的回答，请再问我一次]",
   "{by} makes them meanwhile.": "期间由 {by} 生成。",
   "{count} being read": "{count} 本读取中",
   "{count} books read": "已读取 {count} 本书",
@@ -838,6 +839,7 @@
   "Permadeath": "永久死亡",
   "Person": "人物",
   "Physical": "实体",
+  "Pick up from here": "从这里继续",
   "Pictures": "图片",
   "Pictures and language": "图片与语言",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "图片需要 Codex，但这台电脑上还没有安装。安装方法：\n1. 打开终端：在 Windows 中点击开始，然后输入“终端”。\n2. 粘贴 `npm install -g @openai/codex` 并按回车。\n3. 粘贴 `codex login`，并在弹出的浏览器中登录你的 ChatGPT 账号。\nCodex 使用你的 ChatGPT 套餐生成图片，无需按张付费。",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "游戏会在每个场景结束时存档，但不会回档：发生的一切都会保留。你只能重新开始战役。",
   "the game system gives": "游戏系统给出",
   "The game system is on this computer, for a new campaign.": "游戏系统已在本机，可用于新战役。",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "游戏在故事进行到一半时关闭了：可以让主持人从这里继续，也可以自己给主持人留言。",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "游戏已回到{save}，而你一直在玩的聊天仍记着已经消失的内容：主持人只能在新的聊天中继续（在 Claude Code 中用 /clear，其他地方请新建对话）。打开后，点这里，或直接在那边告诉主持人。",
   "The game's": "游戏的",
   "The import of “{title}” is paused: the master takes it up again": "“{title}”的导入已暂停：主持人会继续导入",

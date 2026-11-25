@@ -234,8 +234,8 @@ describe("the chat with the master in the page", () => {
             body: {
                 table: true,
                 hosts: hostsShown,
-                last: { host: "claudeCode", model: "claude-sonnet-5", effort: "high", resumable: true },
-                chat: { host: "claudeCode", model: "claude-sonnet-5", effort: "high", state: "turn", tool: "roll" },
+                last: { host: "claudeCode", model: "sonnet", effort: "high", resumable: true },
+                chat: { host: "claudeCode", model: "sonnet", effort: "high", runs: "claude-sonnet-5", state: "turn", tool: "roll" },
                 messages: [{ id: 1, from: "player", text: "I open the door." }, { id: 2, from: "master", text: "The door creaks open." }],
                 elsewhere: false,
             },
@@ -248,8 +248,8 @@ describe("the chat with the master in the page", () => {
             body: {
                 table: true,
                 hosts: hostsShown,
-                last: { host: "claudeCode", model: "claude-sonnet-5", effort: "high", resumable: true },
-                chat: { host: "claudeCode", model: "claude-sonnet-5", effort: "high", state: "ended", why: "Claude Code ended (code 1)." },
+                last: { host: "claudeCode", model: "sonnet", effort: "high", resumable: true },
+                chat: { host: "claudeCode", model: "sonnet", effort: "high", runs: "claude-sonnet-5", state: "ended", why: "Claude Code ended (code 1)." },
                 messages: [
                     { id: 1, from: "player", text: "I open the door." },
                     { id: 2, from: "master", text: "The door creaks open." },

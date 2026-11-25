@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "„{title}” beolvasva: a mesélő megkérdezi, hol kezdjétek",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: a játék félbeszakadt: folytasd onnan, ahol abbahagytuk, és ha volt megválaszolatlan kérdésed, tedd fel újra]",
   "{by} makes them meanwhile.": "Addig {by} készíti őket.",
   "{count} being read": "{count} beolvasás alatt",
   "{count} books read": "{count} könyv beolvasva",
@@ -838,6 +839,7 @@
   "Permadeath": "Végleges halál",
   "Person": "Személy",
   "Physical": "Fizikai",
+  "Pick up from here": "Folytatás innen",
   "Pictures": "Képek",
   "Pictures and language": "Képek és nyelv",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "A képekhez Codex kell, de ezen a számítógépen még nincs. Így lesz:\n1. Nyiss egy terminált: Windowson Start, majd írd be: Terminal.\n2. Illeszd be: `npm install -g @openai/codex`, és nyomj Entert.\n3. Illeszd be: `codex login`, és jelentkezz be a ChatGPT-fiókoddal a megnyíló böngészőben.\nA Codex a ChatGPT-előfizetéseddel készíti őket, képenkénti fizetés nélkül.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "a játék minden jelenet végén ment, de soha nem lép vissza: ami megtörténik, megmarad. Csak a kampányt kezdheted újra.",
   "the game system gives": "a játékrendszer ennyit ad",
   "The game system is on this computer, for a new campaign.": "A játékrendszer a számítógépen van, új kampányhoz.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "A játék a történet közepén zárult be: kérd meg a mesélőt, hogy innen folytassa, vagy írj neki te magad.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "A játék visszatért ide: {save}, a csevegés viszont, amelyben játszottál, még emlékszik arra, ami eltűnt: a mesélő csak egy újban folytatja (/clear a Claude Code-ban, máshol új beszélgetés). Ha megnyílt, nyomd meg ezt a gombot, vagy told el a mesélőnek ott.",
   "The game's": "A játéké",
   "The import of “{title}” is paused: the master takes it up again": "„{title}” importálása szünetel: a mesélő folytatja",

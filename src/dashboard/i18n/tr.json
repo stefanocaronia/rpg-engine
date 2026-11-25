@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "“{title}” okundu: oyun yöneticisi nereden başlayacağını soruyor",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: Oyun yarıda kapanmıştı: kaldığımız yerden devam et ve yanıtlamamı beklediğin bir sorun varsa tekrar sor]",
   "{by} makes them meanwhile.": "Bu arada {by} yapıyor.",
   "{count} being read": "{count} kitap okunuyor",
   "{count} books read": "{count} kitap okundu",
@@ -838,6 +839,7 @@
   "Permadeath": "Kalıcı ölüm",
   "Person": "Kişi",
   "Physical": "Fiziksel",
+  "Pick up from here": "Buradan devam et",
   "Pictures": "Görseller",
   "Pictures and language": "Görseller ve dil",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Görseller için Codex gerekir, ama bu bilgisayarda henüz yok. Kurmak için:\n1. Bir terminal aç: Windows'ta Başlat'a tıkla, sonra Terminal yaz.\n2. `npm install -g @openai/codex` komutunu yapıştır ve Enter'a bas.\n3. `codex login` komutunu yapıştır ve açılan tarayıcıda ChatGPT hesabınla oturum aç.\nCodex görselleri ChatGPT planınla üretir, görsel başına asla ödeme yapmazsın.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "oyun her sahnenin sonunda kaydeder ama asla geri dönmez: olanlar kalır. Yalnızca kampanyayı baştan başlatabilirsin.",
   "the game system gives": "oyun sisteminin verdiği",
   "The game system is on this computer, for a new campaign.": "Oyun sistemi bu bilgisayarda, yeni bir kampanya için.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "Oyun hikâyenin ortasında kapanmıştı: oyun yöneticisinden buradan devam etmesini iste ya da kendin yaz.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "Oyun şu kayda döndü: {save}. Oynadığın sohbet ise silinenleri hâlâ hatırlıyor: oyun yöneticisi ancak yeni bir sohbette devam eder (Claude Code'da /clear, başka yerlerde yeni bir konuşma). Açtıktan sonra buraya bas ya da oyun yöneticisine orada söyle.",
   "The game's": "Oyunun",
   "The import of “{title}” is paused: the master takes it up again": "“{title}” içe aktarımı duraklatıldı: oyun yöneticisi yeniden devam edecek",

@@ -842,6 +842,30 @@ describe("the table's own chat with the master", () => {
         }
     });
 
+    it("keeps its chat's flow in the campaign, and the next table takes the chat up by itself as its first page listens, once", async () => {
+        const first = await open(withMaster());
+        await openChat(first);
+        expect((await get(first.url, "/api/master", "POST", { say: "Hello" })).status).toBe(202);
+        masters[0].emit({ type: "session", session: "session-1", model: "claude-sonnet-5" });
+        masters[0].emit({ type: "text", block: 0, text: "Welcome." });
+        masters[0].emit({ type: "turnEnd", reason: "done" });
+        await first.end("the test ends it");
+        expect(readdirSync(join(folder, "sessions", "table-chats"))).toHaveLength(1);
+
+        const next = await open(withMaster());
+        expect(masters).toHaveLength(1);
+        const page = await openPage(next.url);
+        await until(() => masters.length === 2, "the last chat taken up");
+        const shown = JSON.parse((await get(next.url, "/api/master")).body) as { chat: object; messages: object[]; };
+        expect(shown.chat).toEqual({ host: "claudeCode", model: "sonnet", state: "idle" });
+        expect(shown.messages).toEqual([{ id: 1, from: "player", text: "Hello" }, { id: 2, from: "master", text: "Welcome." }]);
+        const other = await openPage(next.url);
+        await ticks(10);
+        expect(masters).toHaveLength(2);
+        page.close();
+        other.close();
+    });
+
     it("closes its chat as the table ends", async () => {
         const table = await open(withMaster());
         await openChat(table);

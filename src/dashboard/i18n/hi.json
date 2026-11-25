@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "“{title}” पढ़ लिया गया: गेम मास्टर आपसे पूछता है कि कहाँ से शुरू करें",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: गेम बीच में ही बंद हो गया था: जहाँ हम रुके थे वहीं से आगे बढ़ें, और अगर आपने कोई सवाल पूछा था जिसका जवाब बाकी रह गया, तो मुझसे दोबारा पूछें]",
   "{by} makes them meanwhile.": "तब तक {by} इन्हें बनाता है।",
   "{count} being read": "{count} पढ़ी जा रही हैं",
   "{count} books read": "{count} किताबें पढ़ी गईं",
@@ -838,6 +839,7 @@
   "Permadeath": "स्थायी मृत्यु",
   "Person": "व्यक्ति",
   "Physical": "असली",
+  "Pick up from here": "यहीं से आगे बढ़ाएँ",
   "Pictures": "चित्र",
   "Pictures and language": "चित्र और भाषा",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "चित्रों के लिए Codex चाहिए, जो अभी इस कंप्यूटर पर नहीं है। इन्हें पाने के लिए:\n1. टर्मिनल खोलें: Windows में Start दबाएँ, फिर Terminal लिखें।\n2. `npm install -g @openai/codex` पेस्ट करें और Enter दबाएँ।\n3. `codex login` पेस्ट करें और खुलने वाले ब्राउज़र में अपने ChatGPT खाते से साइन इन करें।\nCodex इन्हें आपके ChatGPT प्लान से बनाता है, प्रति चित्र कोई भुगतान नहीं।",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "गेम हर दृश्य के अंत में सेव करता है, पर कभी पीछे नहीं लौटता: जो होता है, वह रहता है। आप केवल कैंपेन फिर से शुरू कर सकते हैं।",
   "the game system gives": "गेम सिस्टम देता है",
   "The game system is on this computer, for a new campaign.": "गेम सिस्टम इस कंप्यूटर पर है, नए कैंपेन के लिए।",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "गेम बीच कहानी में बंद हो गया था: गेम मास्टर से यहीं से आगे बढ़ाने को कहें, या खुद लिखकर बताएँ।",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "गेम {save} पर लौट गया है, और जिस चैट में आप खेल रहे थे, उसे वह सब याद है जो अब मिट चुका है: गेम मास्टर नई चैट में ही आगे बढ़ेगा (Claude Code में /clear, कहीं और नई बातचीत)। नई चैट खुलने पर यहाँ दबाएँ, या वहीं गेम मास्टर को बता दें।",
   "The game's": "खेल की",
   "The import of “{title}” is paused: the master takes it up again": "“{title}” का इम्पोर्ट रुका हुआ है: गेम मास्टर इसे फिर से शुरू करेगा",

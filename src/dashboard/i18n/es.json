@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "«{title}» ya está leído: el máster te pregunta por dónde empezar",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: el juego se cerró a medias: retoma desde donde estábamos y vuelve a hacerme cualquier pregunta que hayas dejado pendiente]",
   "{by} makes them meanwhile.": "Mientras tanto las hace {by}.",
   "{count} being read": "{count} en lectura",
   "{count} books read": "{count} libros leídos",
@@ -838,6 +839,7 @@
   "Permadeath": "Muerte permanente",
   "Person": "Persona",
   "Physical": "Físicos",
+  "Pick up from here": "Continuar desde aquí",
   "Pictures": "Imágenes",
   "Pictures and language": "Imágenes e idioma",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Las imágenes requieren Codex, que todavía no está en este equipo. Para tenerlas:\n1. Abre una terminal: en Windows, Inicio y escribe Terminal.\n2. Pega `npm install -g @openai/codex` y pulsa Intro.\n3. Pega `codex login` e inicia sesión con tu cuenta de ChatGPT en el navegador que se abre.\nCodex las crea con tu plan de ChatGPT, sin pagar nunca por imagen.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "el juego guarda al final de cada escena, pero nunca retrocede: lo que ocurre se queda. Solo puedes empezar la campaña de nuevo.",
   "the game system gives": "el sistema de juego da",
   "The game system is on this computer, for a new campaign.": "El sistema de juego está en este equipo, para una campaña nueva.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "El juego se cerró a mitad de la historia: pídele al máster que continúe desde aquí o escríbele tú.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "El juego volvió a {save}, y el chat en el que jugabas recuerda lo que ya no existe: el máster solo continúa en uno nuevo (/clear en Claude Code, una conversación nueva en otros sitios). Cuando esté abierto, pulsa aquí o díselo al máster allí.",
   "The game's": "El del juego",
   "The import of “{title}” is paused: the master takes it up again": "La importación de «{title}» está en pausa: el máster la retoma",

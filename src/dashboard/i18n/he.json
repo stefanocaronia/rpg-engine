@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "הקריאה של “{title}” הסתיימה: המנחה שואל מאיפה להתחיל",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: המשחק נסגר באמצע: להמשיך מהמקום שבו עצרנו, ואם נשארה שאלה פתוחה, לשאול אותי אותה שוב]",
   "{by} makes them meanwhile.": "בינתיים {by} יוצר אותן.",
   "{count} being read": "{count} בקריאה",
   "{count} books read": "{count} ספרים נקראו",
@@ -838,6 +839,7 @@
   "Permadeath": "מוות קבוע",
   "Person": "אדם",
   "Physical": "פיזיות",
+  "Pick up from here": "להמשיך מכאן",
   "Pictures": "תמונות",
   "Pictures and language": "תמונות ושפה",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "התמונות דורשות Codex, שעדיין לא מותקן במחשב הזה. כדי לקבל אותן:\n1. לפתוח טרמינל: ב-Windows, התחל, ואז להקליד Terminal.\n2. להדביק `npm install -g @openai/codex` וללחוץ Enter.\n3. להדביק `codex login` ולהתחבר עם חשבון ה-ChatGPT בדפדפן שייפתח.\nCodex יוצר אותן מתוך מסלול ה-ChatGPT, בלי תשלום לפי תמונה.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "המשחק שומר בסוף כל סצנה, אבל אף פעם לא חוזר אחורה: מה שקורה נשאר. אפשר רק להתחיל את הקמפיין מחדש.",
   "the game system gives": "מערכת המשחק נותנת",
   "The game system is on this computer, for a new campaign.": "מערכת המשחק נמצאת במחשב הזה, לקמפיין חדש.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "המשחק נסגר באמצע הסיפור: אפשר לבקש מהמנחה להמשיך מכאן, או לכתוב למנחה בעצמך.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "המשחק חזר אל {save}, והצ'אט שבו שיחקת עדיין זוכר את מה שנעלם: המנחה ממשיך רק בצ'אט חדש (/clear ב-Claude Code, שיחה חדשה בכל מקום אחר). אחרי שהצ'אט נפתח, ללחוץ כאן, או לומר זאת למנחה שם.",
   "The game's": "של המשחק",
   "The import of “{title}” is paused: the master takes it up again": "הייבוא של “{title}” מושהה: המנחה ימשיך בו",

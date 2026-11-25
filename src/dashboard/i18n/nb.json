@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "«{title}» er lest: spilleder spør deg hvor du vil begynne",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: spillet ble lukket midt i det hele: fortsett fra der vi var, og still meg på nytt eventuelle spørsmål du hadde åpne]",
   "{by} makes them meanwhile.": "{by} lager dem i mellomtiden.",
   "{count} being read": "{count} under lesing",
   "{count} books read": "{count} bøker lest",
@@ -838,6 +839,7 @@
   "Permadeath": "Permanent død",
   "Person": "Person",
   "Physical": "Fysiske",
+  "Pick up from here": "Fortsett herfra",
   "Pictures": "Bilder",
   "Pictures and language": "Bilder og språk",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Bilder krever Codex, som ikke er på denne datamaskinen ennå. Slik får du dem:\n1. Åpne en terminal: på Windows, trykk Start og skriv Terminal.\n2. Lim inn `npm install -g @openai/codex` og trykk Enter.\n3. Lim inn `codex login` og logg inn med ChatGPT-kontoen din i nettleseren som åpnes.\nCodex lager dem med ChatGPT-abonnementet ditt, uten betaling per bilde.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "spillet lagres på slutten av hver scene, men går aldri tilbake: det som skjer, blir stående. Du kan bare starte kampanjen på nytt.",
   "the game system gives": "spillsystemet gir",
   "The game system is on this computer, for a new campaign.": "Spillsystemet ligger på denne datamaskinen, for en ny kampanje.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "Spillet ble lukket midt i historien: be spilleder om å fortsette herfra, eller skriv selv til spilleder.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "Spillet gikk tilbake til {save}, og chatten du spilte i, husker det som er borte: spilleder kan bare fortsette i en ny chat (/clear i Claude Code, en ny samtale andre steder). Når den er åpen, trykk her, eller si det til spilleder der.",
   "The game's": "Spillets",
   "The import of “{title}” is paused: the master takes it up again": "Importen av «{title}» er satt på pause: spilleder tar den opp igjen",

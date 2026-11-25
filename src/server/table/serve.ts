@@ -254,7 +254,7 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
     const end = (why: string): Promise<void> => {
         ending ??= (async () => {
             clearInterval(looking);
-            chat.close();
+            chat.release();
             listener.close();
             await seat.clear();
             knocking.forEach((knocked) => knocked.destroy());
@@ -309,7 +309,7 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
             chat.stop();
             log(`The table stopped its chat's turn: no page for ${Math.round(idleFor / 1000)} s.`);
         } else if (now() - chatBusy >= idleFor) {
-            chat.close();
+            chat.release();
             log(`The table closed its chat with the master: no turn and no page for ${Math.round(idleFor / 1000)} s.`);
         }
 
@@ -323,7 +323,7 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
     }, options.idleEvery ?? idleEvery);
 
     log(`The table of ${root} serves its page at ${dashboard.url}; its chats come through ${socket}.`);
-    return { url: dashboard.url, place, ended, end, closeChat: () => chat.close() };
+    return { url: dashboard.url, place, ended, end, closeChat: () => chat.release() };
 }
 
 /**

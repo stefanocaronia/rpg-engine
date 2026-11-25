@@ -3,7 +3,8 @@
 //   node --experimental-strip-types test/demo/look.ts --system 5e --width 360 --theme light --click "text=Combat" --click ".rows >> text=insight" --out tmp/look/combat.png
 // --click takes a Playwright selector, --press a key (Tab, ArrowRight), --type words for what has the focus, --wait milliseconds, in the order given; --full takes the whole page, --still reduces
 // motion; --ask 1 has the demo ask the page the first of its questions (D-279), as with --ask 1 --click ".asked-check" --wait 900 for a die in the air.
-// --chat gives the page the chat with a master of the demo's own (test/demo/master.ts), which answers each sentence typed; --section opens the page at a
+// --chat gives the page the chat with a master of the demo's own (test/demo/master.ts), which answers each sentence typed; --resumed, a chat the campaign
+// takes up, cut as the game was closed; --section opens the page at a
 // section, as --chat --section chat, or --section world/lore; --setup serves a campaign just made, still in its setup, anew each time;
 // --launcher opens the launcher's page, served by a launcher of the demo's own (test/demo/launcher.ts) with a few campaigns, or none with --empty: opening
 // one leads to the demo's campaign, whose page leads back; --query adds what the address asks, as --query "opened=1"; --locale sets the browser's language, which the launcher's page writes in, as --locale it-IT; --page serves a page built apart, in that folder, in place of dist/dashboard.
@@ -32,6 +33,7 @@ const { values, tokens } = parseArgs({
         ask: { type: "string" },
         system: { type: "string", default: "free" },
         chat: { type: "boolean" },
+        resumed: { type: "boolean" },
         setup: { type: "boolean" },
         launcher: { type: "boolean" },
         empty: { type: "boolean" },
@@ -46,7 +48,7 @@ const { values, tokens } = parseArgs({
 const steps = tokens.flatMap((token) => (token.kind === "option" && ["click", "press", "type", "wait"].includes(token.name) ? [{ name: token.name, value: token.value ?? "" }] : []));
 const demo = values.url === undefined
     ? await serveDemo([0], values.system === "5e" ? "5e" : "free", {
-        chat: values.chat === true,
+        chat: values.resumed === true ? "resumed" : values.chat === true,
         setup: values.setup === true,
         launcher: values.launcher === true ? (values.empty === true ? "empty" : true) : false,
         ...(values.page === undefined ? {} : { page: resolve(values.page) }),

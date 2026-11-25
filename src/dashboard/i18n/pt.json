@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "“{title}” foi lido: o mestre vai perguntar por onde começar",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: o jogo foi fechado no meio: retome de onde paramos e, se havia deixado alguma pergunta em aberto, faça-a de novo]",
   "{by} makes them meanwhile.": "{by} faz enquanto isso.",
   "{count} being read": "{count} em leitura",
   "{count} books read": "{count} livros lidos",
@@ -838,6 +839,7 @@
   "Permadeath": "Morte permanente",
   "Person": "Pessoa",
   "Physical": "Físicos",
+  "Pick up from here": "Continuar daqui",
   "Pictures": "Imagens",
   "Pictures and language": "Imagens e idioma",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "As imagens exigem o Codex, que ainda não está neste computador. Para tê-las:\n1. Abra um terminal: no Windows, Iniciar e digite Terminal.\n2. Cole `npm install -g @openai/codex` e pressione Enter.\n3. Cole `codex login` e entre com a sua conta do ChatGPT no navegador que abrir.\nO Codex as cria com o seu plano do ChatGPT, sem nunca cobrar por imagem.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "o jogo salva no fim de cada cena, mas nunca volta atrás: o que acontece fica. Você só pode recomeçar a campanha.",
   "the game system gives": "o sistema de jogo dá",
   "The game system is on this computer, for a new campaign.": "O sistema de jogo está neste computador, para uma nova campanha.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "O jogo foi fechado no meio da história: peça ao mestre para continuar daqui ou escreva você mesmo.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "O jogo voltou a {save}, e o chat em que você jogava lembra o que ficou para trás: o mestre só continua em um novo (/clear no Claude Code, uma nova conversa nos outros lugares). Com ele aberto, clique aqui, ou avise o mestre por lá.",
   "The game's": "O do jogo",
   "The import of “{title}” is paused: the master takes it up again": "A importação de “{title}” está em pausa: o mestre vai retomá-la",

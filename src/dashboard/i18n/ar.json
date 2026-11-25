@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "تمت قراءة «{title}»: يسألك مدير اللعبة من أين تريد أن تبدأ",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[خارج اللعبة: أُغلقت اللعبة في منتصفها. تابع من حيث توقفنا، وأعد طرح أي سؤال كنت قد تركته مفتوحًا]",
   "{by} makes them meanwhile.": "ينشئها {by} في الأثناء.",
   "{count} being read": "{count} قيد القراءة",
   "{count} books read": "قُرئت {count} كتب",
@@ -838,6 +839,7 @@
   "Permadeath": "موت دائم",
   "Person": "شخص",
   "Physical": "فعلي",
+  "Pick up from here": "المتابعة من هنا",
   "Pictures": "الصور",
   "Pictures and language": "الصور واللغة",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "تحتاج الصور إلى Codex، وهو غير موجود على هذا الحاسوب بعد. للحصول عليها:\n1. افتح الطرفية: في Windows اضغط ابدأ ثم اكتب Terminal.\n2. الصق `npm install -g @openai/codex` ثم اضغط Enter.\n3. الصق `codex login` وسجّل الدخول بحساب ChatGPT في المتصفح الذي سيُفتح.\nينشئها Codex عبر خطة ChatGPT الخاصة بك، دون أي دفع عن كل صورة.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "تحفظ اللعبة في نهاية كل مشهد، لكنها لا تعود أبدًا إلى الوراء: ما يحدث يبقى. يمكنك فقط البدء من جديد في الحملة.",
   "the game system gives": "نظام اللعبة يمنح",
   "The game system is on this computer, for a new campaign.": "نظام اللعبة على هذا الحاسوب، لحملة جديدة.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "أُغلقت اللعبة في منتصف القصة: اطلب من مدير اللعبة المتابعة من هنا، أو اكتب له بنفسك.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "عادت اللعبة إلى {save}، والمحادثة التي كنت تلعب فيها ما زالت تتذكر ما اختفى: لا يواصل مدير اللعبة إلا في محادثة جديدة (/clear في Claude Code، أو محادثة جديدة في غيره). متى فتحتها، اضغط هنا، أو أخبر مدير اللعبة بذلك هناك.",
   "The game's": "اللعبة",
   "The import of “{title}” is paused: the master takes it up again": "استيراد «{title}» متوقف مؤقتًا: سيستأنفه مدير اللعبة",

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { HostId } from "../src/core/hosts.ts";
@@ -519,7 +519,7 @@ describe("the campaign's last chat", () => {
         expect(masters[0].options.session).toBe("gone-session");
         masters[0].emit({ type: "ended", why: "the host's program ended (exit code 1): No conversation found" });
         expect(chat.shown().last).toEqual({ host: "claudeCode", model: "sonnet", effort: "low", resumable: false });
-        expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "sonnet", effort: "low" });
+        expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "sonnet", effort: "low", flow: expect.any(String) as unknown });
         chat.open({ ...choice, effort: "low" });
         expect(masters[1].options.session).toBeUndefined();
     });
@@ -538,8 +538,8 @@ describe("the campaign's last chat", () => {
         chat.say("Hello");
         master.emit({ type: "session", session: "session-1", model: "claude-sonnet-5" });
         master.emit({ type: "turnEnd", reason: "done" });
-        expect(chat.shown().last).toEqual({ host: "claudeCode", model: "claude-sonnet-5", resumable: true });
-        expect(chat.shown().chat?.model).toBe("claude-sonnet-5");
+        expect(chat.shown().last).toEqual({ host: "claudeCode", model: "sonnet", resumable: true });
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", runs: "claude-sonnet-5", state: "idle" });
         chat.close();
 
         expect(chat.open(choice)).toBeUndefined();
@@ -559,10 +559,10 @@ describe("the campaign's last chat", () => {
         first.chat.close();
 
         const next = chatWith();
-        expect(next.shown().last).toEqual({ host: "claudeCode", model: "claude-sonnet-5", resumable: true });
+        expect(next.shown().last).toEqual({ host: "claudeCode", model: "sonnet", resumable: true });
         next.open({ ...choice, effort: "low" });
         expect(masters[1].options.session).toBe("session-1");
-        expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "sonnet", effort: "low", session: "session-1" });
+        expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "sonnet", effort: "low", session: "session-1", flow: expect.any(String) as unknown });
 
         writeLastChat(home, root, { root, host: "codex", model: "gpt", session: "codex-thread" });
         const third = chatWith();
@@ -634,5 +634,290 @@ describe("the models a host offers at the table", () => {
         chat.close();
         expect(chat.open({ ...choice, model: "claude-sonnet-6", effort: "high" })).toBeUndefined();
         expect(masters.map((master) => [master.options.model, master.options.effort])).toEqual([["sonnet", "medium"], ["claude-sonnet-6", "high"]]);
+    });
+});
+
+describe("the chat's flow in the campaign", () => {
+    const question = { id: "q1", text: "Do you open the door?", title: "The door", options: ["Yes", "No"] };
+    const roll = { id: "r1", at: "2026-11-25T10:00:00.000Z", by: "player" as const, who: "Ettore", notation: "1d20", total: 12, text: "1d20 = 12", dice: [] };
+    const flowFolder = (): string => join(root, "sessions", "table-chats");
+    const flowFiles = (): string[] => readdirSync(flowFolder()).sort();
+    const flowLines = (name: string): Record<string, unknown>[] => readFileSync(join(flowFolder(), name), "utf8").trim().split("\n").map((line) => JSON.parse(line) as Record<string, unknown>);
+
+    it("writes each message once complete, a question as it begins and as it ends, and is read back in order by the next table's chat", () => {
+        const { chat, master } = opened();
+        chat.say("I knock.");
+        master.emit({ type: "session", session: "session-1", model: "claude-sonnet-5" });
+        master.emit({ type: "text", block: 0, text: "Someone " });
+        master.emit({ type: "text", block: 0, text: "answers." });
+        const [name] = flowFiles();
+        expect(name).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.jsonl$/);
+        expect(flowLines(name).map((line) => line.id)).toEqual([1]);
+        chat.askBegins(question);
+        master.emit({ type: "text", block: 0, text: "The handle turns." });
+        chat.askEnds("q1", "Yes");
+        chat.rolled("Ettore: 1d20 = 12", roll);
+        master.emit({ type: "text", block: 0, text: "A hit." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        chat.say("Go in");
+        master.emit({ type: "text", block: 0, text: "Inside, " });
+        chat.release();
+        expect(flowLines(name).map((line) => [line.id, line.from])).toEqual([
+            [1, "player"],
+            [2, "master"],
+            [3, "asked"],
+            [3, "asked"],
+            [4, "master"],
+            [5, "roll"],
+            [6, "master"],
+            [undefined, undefined],
+            [7, "player"],
+            [8, "master"],
+        ]);
+        expect(flowLines(name)[7]).toMatchObject({ turn: "ended" });
+        expect(flowLines(name)[0]).toEqual({ at: expect.stringMatching(/^\d{4}-.*Z$/) as unknown, id: 1, from: "player", text: "I knock." });
+        expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "sonnet", session: "session-1", flow: name });
+
+        const next = chatWith();
+        expect(next.shown().messages).toEqual([]);
+        next.listened();
+        expect(masters[1].options.session).toBe("session-1");
+        expect(next.shown().messages).toEqual([
+            { id: 1, from: "player", text: "I knock." },
+            { id: 2, from: "master", text: "Someone answers." },
+            { id: 3, from: "asked", text: "Do you open the door?", title: "The door", options: ["Yes", "No"], state: "answered", answer: "Yes" },
+            { id: 4, from: "master", text: "The handle turns." },
+            { id: 5, from: "roll", text: "Ettore: 1d20 = 12", roll },
+            { id: 6, from: "master", text: "A hit." },
+            { id: 7, from: "player", text: "Go in" },
+            { id: 8, from: "master", text: "Inside, " },
+        ]);
+        // The table ended in the middle of the turn that "Go in" began.
+        expect(next.shown().chat?.cutShort).toBe(true);
+        next.say("Look around");
+        expect(next.shown().chat?.cutShort).toBeUndefined();
+        expect(next.shown().messages.at(-1)).toEqual({ id: 9, from: "player", text: "Look around" });
+        expect(flowFiles()).toEqual([name]);
+        expect(flowLines(name).at(-1)).toMatchObject({ id: 9, from: "player" });
+    });
+
+    it("keeps what the master wrote so far as the chat ends, and the player's words only once said", () => {
+        const { chat, master } = opened();
+        master.refuses = true;
+        chat.say("Refused");
+        master.refuses = false;
+        chat.say("Hello");
+        master.emit({ type: "text", block: 0, text: "Wel" });
+        master.emit({ type: "ended", why: "gone" });
+        expect(flowLines(flowFiles()[0]).map((line) => line.text)).toEqual(["Hello", "Wel"]);
+    });
+
+    it("starts a new file for a chat opened anew, the old one left as it was", () => {
+        const { chat } = opened();
+        chat.say("First chat");
+        chat.close();
+        const [first] = flowFiles();
+        const before = readFileSync(join(flowFolder(), first), "utf8");
+        expect(chat.open({ ...choice, fresh: true })).toBeUndefined();
+        chat.say("Second chat");
+        expect(flowFiles()).toHaveLength(2);
+        expect(readFileSync(join(flowFolder(), first), "utf8")).toBe(before);
+        const second = flowFiles().find((name) => name !== first) ?? "";
+        expect(flowLines(second).map((line) => line.text)).toEqual(["Second chat"]);
+        expect(readLastChat(home, root)?.flow).toBe(second);
+    });
+
+    it("skips a line that does not read, and shows a question still waiting as left", () => {
+        mkdirSync(flowFolder(), { recursive: true });
+        const lines = [
+            JSON.stringify({ at: "x", id: 1, from: "player", text: "Hello" }),
+            "{ not json",
+            JSON.stringify({ id: 2, from: "someone", text: "?" }),
+            JSON.stringify({ id: 3, from: "asked", text: "Which way?", options: [1], state: "waiting" }),
+            JSON.stringify({ id: 4, from: "roll", text: "no roll" }),
+            JSON.stringify({ id: 5, from: "asked", text: "Left or right?", options: ["Left"], state: "waiting" }),
+            "",
+        ];
+        writeFileSync(join(flowFolder(), "2026-11-20 10-00-00.jsonl"), lines.join("\n"));
+        writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", session: "s", flow: "2026-11-20 10-00-00.jsonl" });
+        const chat = chatWith();
+        expect(chat.open(choice)).toBeUndefined();
+        expect(chat.shown().messages).toEqual([
+            { id: 1, from: "player", text: "Hello" },
+            { id: 5, from: "asked", text: "Left or right?", options: ["Left"], state: "left" },
+        ]);
+        chat.say("Next");
+        expect(chat.shown().messages.at(-1)?.id).toBe(6);
+    });
+
+    /** A chat taken up by a new table from a file of `lines`; the last choice names it, with a session. */
+    function takenUp(lines: string): TableChat
+    {
+        mkdirSync(flowFolder(), { recursive: true });
+        writeFileSync(join(flowFolder(), "2026-11-20 10-00-00.jsonl"), lines);
+        writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", session: "s", flow: "2026-11-20 10-00-00.jsonl" });
+        const chat = chatWith();
+        chat.listened();
+        return chat;
+    }
+
+    const said = JSON.stringify({ id: 1, from: "player", text: "I open the chest." });
+    const answered = JSON.stringify({ id: 2, from: "master", text: "It is empty." });
+    const ended = JSON.stringify({ turn: "ended" });
+
+    it("is not cut short where every turn ended, nor with no words of the player", () => {
+        expect(takenUp(`${said}\n${answered}\n${ended}\n`).shown().chat?.cutShort).toBeUndefined();
+        expect(takenUp(`${answered}\n`).shown().chat?.cutShort).toBeUndefined();
+        expect(takenUp("").shown().chat?.cutShort).toBeUndefined();
+    });
+
+    it("is cut short where the player's last words have no end of a turn after them, even with some of the master's", () => {
+        expect(takenUp(`${said}\n${answered}\n${ended}\n${JSON.stringify({ id: 3, from: "player", text: "Again." })}\n`).shown().chat).toMatchObject({ cutShort: true });
+        expect(takenUp(`${said}\n${answered}\n`).shown().chat).toMatchObject({ cutShort: true });
+    });
+
+    it("is cut short where a question was left waiting: read as left, and written so the next time the file is written", () => {
+        const question = JSON.stringify({ id: 2, from: "asked", text: "Which door?", options: ["Left", "Right"], state: "waiting" });
+        const chat = takenUp(`${said}\n${question}\n`);
+        expect(chat.shown().chat?.cutShort).toBe(true);
+        expect(chat.shown().messages[1]).toEqual({ id: 2, from: "asked", text: "Which door?", options: ["Left", "Right"], state: "left" });
+        expect(flowLines("2026-11-20 10-00-00.jsonl")).toHaveLength(2);
+        chat.say("The left one.");
+        expect(flowLines("2026-11-20 10-00-00.jsonl").slice(2)).toEqual([
+            expect.objectContaining({ id: 2, from: "asked", state: "left" }),
+            expect.objectContaining({ id: 3, from: "player", text: "The left one." }),
+        ]);
+        expect(chat.shown().chat?.cutShort).toBeUndefined();
+    });
+
+    it("is safe to cut anywhere: a last line torn in the middle is skipped, and the next line is written on a line of its own", () => {
+        const whole = `${said}\n${answered}\n${ended}\n`;
+        const torn = JSON.stringify({ id: 3, from: "player", text: "I climb the stairs." });
+        const chat = takenUp(`${whole}${torn.slice(0, torn.length / 2)}`);
+        expect(chat.shown().messages.map((message) => message.id)).toEqual([1, 2]);
+        expect(chat.shown().chat?.cutShort).toBeUndefined();
+        chat.say("I climb.");
+        const text = readFileSync(join(flowFolder(), "2026-11-20 10-00-00.jsonl"), "utf8");
+        expect(text.startsWith(whole)).toBe(true);
+        expect(text.split("\n").at(-2)).toContain('"text":"I climb."');
+        chat.release();
+        expect(takenUp(text).shown().messages.map((message) => message.id)).toEqual([1, 2, 3]);
+    });
+
+    it("writes the turn's end after the player's words even where the host ends the turn while they are sent", () => {
+        const { chat, master } = opened();
+
+        master.send = () => {
+            master.emit({ type: "turnEnd", reason: "failed", why: "No model" });
+            return true;
+        };
+
+        chat.say("Hello");
+        expect(flowLines(flowFiles()[0]).map((line) => line.text ?? line.turn)).toEqual(["No model", "Hello", "ended"]);
+    });
+
+    it("gives the page the last 200 messages of a longer file, which keeps them all", () => {
+        mkdirSync(flowFolder(), { recursive: true });
+        const lines = Array.from({ length: 250 }, (_, index) => JSON.stringify({ id: index + 1, from: index % 2 === 0 ? "player" : "master", text: `Line ${index + 1}` }));
+        writeFileSync(join(flowFolder(), "2026-11-20 10-00-00.jsonl"), `${lines.join("\n")}\n`);
+        writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", session: "s", flow: "2026-11-20 10-00-00.jsonl" });
+        const chat = chatWith();
+        chat.open(choice);
+        const messages = chat.shown().messages;
+        expect(messages).toHaveLength(200);
+        expect(messages[0]).toEqual({ id: 51, from: "player", text: "Line 51" });
+        chat.say("More");
+        expect(flowLines("2026-11-20 10-00-00.jsonl")).toHaveLength(251);
+    });
+
+    it("starts anew where the last chat's file is gone, and goes on where a message cannot be written", () => {
+        writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", session: "s", flow: "2026-11-20 10-00-00.jsonl" });
+        const chat = chatWith();
+        chat.open(choice);
+        expect(chat.shown().messages).toEqual([]);
+        chat.close();
+
+        // A folder where the file would be: nothing is written, the chat goes on.
+        mkdirSync(join(flowFolder(), "2026-11-20 10-00-00.jsonl"), { recursive: true });
+        chat.open(choice);
+        expect(chat.say("Hello")).toBe("sent");
+        expect(chat.shown().messages).toEqual([{ id: 1, from: "player", text: "Hello" }]);
+        expect(logged.some((line) => line.startsWith("The table could not keep a message of its chat in the campaign:"))).toBe(true);
+    });
+});
+
+describe("the last chat taken up by itself", () => {
+    beforeEach(() => {
+        writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", effort: "low", session: "session-1" });
+    });
+
+    it("opens as the first page listens, with the last choice and its session, once a table, and sends the host nothing", () => {
+        const chat = chatWith();
+        expect(masters).toEqual([]);
+        chat.listened();
+        expect(masters).toHaveLength(1);
+        expect(masters[0].options).toMatchObject({ model: "sonnet", effort: "low", session: "session-1" });
+        expect(masters[0].sent).toEqual([]);
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", effort: "low", state: "idle" });
+        chat.release();
+        chat.listened();
+        expect(masters).toHaveLength(1);
+    });
+
+    it("stays closed once the player closed it, at this table and the next, until they open one", () => {
+        const chat = chatWith();
+        chat.listened();
+        chat.close();
+        expect(readLastChat(home, root)).toMatchObject({ session: "session-1", closed: true });
+        expect(chat.shown().last).toEqual({ host: "claudeCode", model: "sonnet", effort: "low", resumable: true });
+
+        const next = chatWith();
+        next.listened();
+        expect(masters).toHaveLength(1);
+        expect(next.open({ ...choice, effort: "low" })).toBeUndefined();
+        expect(readLastChat(home, root)?.closed).toBeUndefined();
+        next.release();
+        chatWith().listened();
+        expect(masters).toHaveLength(3);
+    });
+
+    it("opens nothing with a chat opened by hand, a program not found, or no session to take up; a host that refuses is logged", () => {
+        elsewhere = true;
+        chatWith().listened();
+        elsewhere = false;
+        found = false;
+        chatWith().listened();
+        found = true;
+        expect(masters).toEqual([]);
+        expect(logged).toEqual(["The table did not take up the campaign's last chat: Claude Code is not on this computer: install it, then try again."]);
+
+        writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet" });
+        chatWith().listened();
+        expect(masters).toEqual([]);
+    });
+
+    it("shows the chat ended and the form again where the host's session is gone, and does not try again", () => {
+        const chat = chatWith();
+        chat.listened();
+        masters[0].emit({ type: "ended", why: "the host's program ended (exit code 1): No conversation found" });
+        expect(chat.shown().chat?.state).toBe("ended");
+        expect(chat.shown().last?.resumable).toBe(false);
+        chat.listened();
+        expect(masters).toHaveLength(1);
+    });
+});
+
+describe("the last choice's file", () => {
+    it("reads back its flow and whether the player closed it, an older file without them, and leaves out a flow that is no name of ours", () => {
+        const file = tableFile(home, root, ".chat.json");
+        writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", session: "s", flow: "2026-11-25 21-04-17.jsonl", closed: true });
+        expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "sonnet", session: "s", flow: "2026-11-25 21-04-17.jsonl", closed: true });
+        writeFileSync(file, JSON.stringify({ root, host: "claudeCode", model: "sonnet", effort: "low", session: "s" }));
+        expect(readLastChat(home, root)).toEqual({ root, host: "claudeCode", model: "sonnet", effort: "low", session: "s" });
+
+        for (const flow of ["../escape.jsonl", "a/b.jsonl", "notes.md", 7, ".jsonl"]) {
+            writeFileSync(file, JSON.stringify({ root, host: "claudeCode", model: "sonnet", flow, closed: "yes" }));
+            expect(readLastChat(home, root), String(flow)).toEqual({ root, host: "claudeCode", model: "sonnet" });
+        }
     });
 });

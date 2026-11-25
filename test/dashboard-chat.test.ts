@@ -169,6 +169,10 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(choiceLine(shown(), { host: "other", model: "m" })).toBe("other · m");
         // A model the app lists, by the name it lists it with.
         expect(choiceLine(shown({ hosts: [listing] }), { host: "claudeCode", model: "opus", effort: "max" })).toBe("Claude Code · Opus 5.5 · max");
+        // The app's own name for the model it runs, once it said it, only where its list has no name for the one chosen.
+        expect(choiceLine(shown(), { host: "claudeCode", model: "sonnet", runs: "claude-sonnet-5-5", effort: "high" })).toBe("Claude Code · claude-sonnet-5-5 · high");
+        expect(choiceLine(shown({ hosts: [listing] }), { host: "claudeCode", model: "sonnet", runs: "claude-sonnet-5-5" })).toBe("Claude Code · Sonnet 5.5");
+        expect(choiceLine(shown(), { host: "other", model: "m", runs: "m-2" })).toBe("other · m-2");
         await setLanguage("it", italian);
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn" })).toBe("Il master sta rispondendo…");
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "ask" })).toBe("Il master aspetta la tua risposta…");

@@ -207,12 +207,14 @@ export function speaker(from: ChatSaid["from"]): string
     return from === "player" ? t("You") : from === "master" ? t("The master") : t("The table");
 }
 
-/** The app, model and effort of a chat in one line, as its foot says them. */
-export function choiceLine(shown: MasterShown, choice: ChatChoice): string
+/**
+ * The app, model and effort of a chat in one line, as its foot says them: the model by the name its app lists it with; with none in the list, by the
+ * app's own name for the one it runs (`runs`), once it said it; else as it was chosen.
+ */
+export function choiceLine(shown: MasterShown, choice: ChatChoice & { runs?: string; }): string
 {
     const host = shown.hosts.find((one) => one.id === choice.host);
-    // The model by the name its app lists it with, where it does.
-    const model = host === undefined ? choice.model : modelOf(host, choice.model)?.name ?? choice.model;
+    const model = (host === undefined ? undefined : modelOf(host, choice.model)?.name) ?? choice.runs ?? choice.model;
     return [host?.name ?? choice.host, model, ...(choice.effort === undefined ? [] : [choice.effort])].join(" · ");
 }
 

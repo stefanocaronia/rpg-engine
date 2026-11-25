@@ -169,6 +169,28 @@
         color: var(--low);
     }
 
+    /* The game was closed in the middle of the story: a word of the table's that is no trouble, on a quiet ground, with what asks the master to go on. */
+    .chat-message.from-table.cut-short {
+        border-color: var(--rule);
+        background: color-mix(in srgb, var(--ink) 4%, var(--panel));
+        font-weight: 400;
+    }
+
+    .chat-message.from-table.cut-short svg.icon {
+        color: var(--accent);
+    }
+
+    .chat-cut-short {
+        display: grid;
+        justify-items: start;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .chat-cut-short p {
+        margin: 0;
+    }
+
     /* A question of the master's among the messages. While it waits here it is the question over the page in small, its ground and its edge, with the same
        buttons (parts/asked.css), which only get the room of the chat; one answered at its own place on the page, and one that ended, are its text and what
        became of it, quiet. */
@@ -291,12 +313,42 @@
     }
 
     p.chat-ooc {
+        position: relative;
         width: fit-content;
+        min-width: 4.5rem;
         max-width: 100%;
         margin: 0;
-        padding: 6px 10px;
+        padding: 9px 10px 6px;
         border-radius: var(--radius-m);
         line-height: 1.45;
+    }
+
+    /* A whole block out of the game has its mark on its dashed edge, at the start corner, as a fieldset's legend: OOC in small capitals, upright, in
+       --muted on the card's ground, which breaks the edge under it. Words out of the game among the story's have the dashed edge alone. */
+    .chat-ooc-mark {
+        position: absolute;
+        top: -1px;
+        left: 8px;
+        padding: 0 4px;
+        background: var(--panel);
+        color: var(--muted);
+        font-size: 0.62rem;
+        font-style: normal;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        translate: 0 -50%;
+    }
+
+    /* Its own letters are written from the left, whatever its block: the start corner is the block's, by the way the block is written. */
+    :dir(rtl) > .chat-ooc-mark {
+        right: 8px;
+        left: auto;
+    }
+
+    /* After the story's words the mark keeps clear of them. */
+    .chat-prose > p.chat-ooc:not(:first-child) {
+        margin-top: 12px;
     }
 
     span.chat-ooc {
@@ -307,6 +359,8 @@
     }
 
     .chat-message.from-player.off-game {
+        min-width: 4.5rem;
+        padding-top: 10px;
         background: transparent;
     }
 

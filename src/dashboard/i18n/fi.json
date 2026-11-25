@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "“{title}” on luettu: pelinjohtaja kysyy, mistä aloitetaan",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: peli sulkeutui kesken: jatka siitä, mihin jäimme, ja kysy minulta uudelleen kaikki avoimiksi jääneet kysymykset]",
   "{by} makes them meanwhile.": "{by} tekee ne sillä välin.",
   "{count} being read": "{count} luetaan",
   "{count} books read": "{count} kirjaa luettu",
@@ -838,6 +839,7 @@
   "Permadeath": "Pysyvä kuolema",
   "Person": "Henkilö",
   "Physical": "Fyysiset",
+  "Pick up from here": "Jatka tästä",
   "Pictures": "Kuvat",
   "Pictures and language": "Kuvat ja kieli",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Kuvat vaativat Codexin, jota ei vielä ole tällä tietokoneella. Näin saat kuvat:\n1. Avaa pääte: Windowsissa paina Käynnistä ja kirjoita Terminal.\n2. Liitä `npm install -g @openai/codex` ja paina Enter.\n3. Liitä `codex login` ja kirjaudu ChatGPT-tililläsi avautuvassa selaimessa.\nCodex tekee kuvat ChatGPT-tilauksellasi, eikä niistä makseta kuvakohtaisesti.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "peli tallentaa jokaisen kohtauksen lopussa, mutta ei koskaan palaa taaksepäin: tapahtunut jää voimaan. Voit vain aloittaa kampanjan alusta.",
   "the game system gives": "pelijärjestelmä antaa",
   "The game system is on this computer, for a new campaign.": "Pelijärjestelmä on tällä tietokoneella uutta kampanjaa varten.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "Peli suljettiin kesken tarinan: pyydä pelinjohtajaa jatkamaan tästä tai kirjoita itse.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "Peli palasi tallennukseen {save}, ja keskustelu, jossa pelasit, muistaa sen, mikä on poissa: pelinjohtaja jatkaa vain uudessa (/clear Claude Codessa, muualla uusi keskustelu). Kun se on auki, paina tästä tai kerro asiasta pelinjohtajalle siellä.",
   "The game's": "Pelin",
   "The import of “{title}” is paused: the master takes it up again": "Tuonti “{title}” on tauolla: pelinjohtaja jatkaa sitä",

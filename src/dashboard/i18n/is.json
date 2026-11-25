@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "„{title}“ hefur verið lesið: sögumaðurinn spyr þig hvar eigi að byrja",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: leiknum var lokað í miðjum klíðum: haltu áfram þar sem frá var horfið og spurðu mig aftur ef þú áttir ósvaraða spurningu]",
   "{by} makes them meanwhile.": "{by} býr þær til á meðan.",
   "{count} being read": "{count} í lestri",
   "{count} books read": "{count} bækur lesnar",
@@ -838,6 +839,7 @@
   "Permadeath": "Varanlegur dauði",
   "Person": "Manneskja",
   "Physical": "Raunverulegir",
+  "Pick up from here": "Halda áfram héðan",
   "Pictures": "Myndir",
   "Pictures and language": "Myndir og tungumál",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Myndir krefjast Codex, sem er ekki enn á þessari tölvu. Svona færðu þær:\n1. Opnaðu skipanalínu: í Windows ýtirðu á Start og skrifar Terminal.\n2. Límdu inn `npm install -g @openai/codex` og ýttu á Enter.\n3. Límdu inn `codex login` og skráðu þig inn með ChatGPT-reikningnum þínum í vafranum sem opnast.\nCodex býr þær til með ChatGPT-áskriftinni þinni, án þess að greitt sé fyrir hverja mynd.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "leikurinn vistar í lok hvers atriðis en fer aldrei til baka: það sem gerist stendur. Þú getur aðeins byrjað herferðina upp á nýtt.",
   "the game system gives": "leikjakerfið gefur",
   "The game system is on this computer, for a new campaign.": "Leikjakerfið er á þessari tölvu, fyrir nýja herferð.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "Leiknum var lokað í miðri sögu: biddu sögumanninn að halda áfram héðan eða skrifaðu sjálf/ur til hans.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "Leikurinn fór aftur í {save} og spjallið sem þú spilaðir í man það sem er horfið: sögumaðurinn heldur aðeins áfram í nýju spjalli (/clear í Claude Code, nýtt samtal annars staðar). Þegar það er opið skaltu ýta hér eða segja sögumanninum það þar.",
   "The game's": "Leiksins",
   "The import of “{title}” is paused: the master takes it up again": "Innflutningur á „{title}“ er í bið: sögumaðurinn tekur hann upp aftur",

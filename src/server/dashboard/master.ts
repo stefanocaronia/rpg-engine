@@ -22,6 +22,8 @@ export interface PageMaster
     stop(): void;
     close(): void;
     active(): boolean;
+    /** A page listens to the server's events, as `/events` opens. */
+    listened?(): void;
     /** A question of the master's waits on the page: the chat keeps it after what the master wrote so far; `answer` settles it with the player's own words, where it takes them. */
     askBegins(question: ChatQuestion, answer?: (words: string) => void): void;
     /** The question `id` ended: answered, with the answer in words, or left without one. */
@@ -40,14 +42,15 @@ export interface ChatQuestion
 }
 
 /**
- * The chat as the page reads it: the hosts it may open in, the campaign's last choice and whether a chat of it can be taken up, the open chat with how its
- * turn stands and whether the player's words now answer the question that waits, its messages, and whether a chat opened by hand plays the campaign.
+ * The chat as the page reads it: the hosts it may open in, the campaign's last choice and whether a chat of it can be taken up, the open chat with the model
+ * chosen and the host's own name for the one it runs, whether it was cut short as the table that wrote it ended, how its turn stands and whether the player's words now answer the question that waits, its messages,
+ * and whether a chat opened by hand plays the campaign.
  */
 export interface PageChat
 {
     hosts: { id: string; name: string; ready: boolean; found: boolean; model: string; efforts: string[]; models: { id: string; name: string; about?: string; efforts: string[]; }[]; }[];
     last?: { host: string; model: string; effort?: string; resumable: boolean; };
-    chat?: { host: string; model: string; effort?: string; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
+    chat?: { host: string; model: string; effort?: string; runs?: string; cutShort?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
     messages: PageMessage[];
     elsewhere: boolean;
 }

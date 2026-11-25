@@ -5,6 +5,7 @@ import { execFile, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { posix, win32 } from "node:path";
 import { isPageAddress } from "../core/page-address.ts";
+import { whenEnded } from "../core/process.ts";
 import { placeCommand, readPlaced, type WindowKind, windowTitles } from "./window/index.ts";
 
 /** What the search for a browser asks of the system: whether a file is there, what a command prints (nothing when it fails), and a program started apart. */
@@ -218,11 +219,29 @@ export const realSystem: BrowserSystem = {
         }),
     run: (command, args, env, input) =>
         new Promise((done) => {
-            const running = execFile(command, args, { env: { ...process.env, ...env }, windowsHide: true, timeout: runWait }, (error, printed) => {
-                done({ printed: String(printed), ended: error?.killed !== true });
-            });
+            const running = spawn(command, args, { env: { ...process.env, ...env }, windowsHide: true, stdio: ["pipe", "pipe", "ignore"] });
+            let printed = "";
+            let cut = false;
+
+            // The program alone, never what it started: the browser it opened stays.
+            const timer = setTimeout(() => {
+                cut = true;
+                running.kill();
+            }, runWait);
+
+            running.stdout.setEncoding("utf8").on("data", (chunk: string) => (printed += chunk));
+
+            const end = (): void => {
+                clearTimeout(timer);
+                done({ printed, ended: !cut });
+            };
+
+            // A program that did not start has no end to wait for.
+            running.on("error", end);
+            // Its end, not the close of its output: the browser it started may hold that open for as long as it lives, and this process would wait with it.
+            whenEnded(running, end);
             // A program that ends before it read all of it closes its input: nothing to say then.
-            running.stdin?.on("error", () => undefined);
-            running.stdin?.end(input);
+            running.stdin.on("error", () => undefined);
+            running.stdin.end(input);
         }),
 };

@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "“{title}” is gelezen: de spelleider vraagt je waar je wilt beginnen",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: het spel werd halverwege afgesloten: ga verder waar we waren gebleven en stel me opnieuw de vraag als je er nog een openstond]",
   "{by} makes them meanwhile.": "{by} maakt ze intussen.",
   "{count} being read": "{count} worden gelezen",
   "{count} books read": "{count} boeken gelezen",
@@ -838,6 +839,7 @@
   "Permadeath": "Permanente dood",
   "Person": "Persoon",
   "Physical": "Fysiek",
+  "Pick up from here": "Verdergaan vanaf hier",
   "Pictures": "Afbeeldingen",
   "Pictures and language": "Beelden en taal",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Voor afbeeldingen is Codex nodig, en dat staat nog niet op deze computer. Zo krijg je ze:\n1. Open een terminal: op Windows klik je op Start en typ je Terminal.\n2. Plak `npm install -g @openai/codex` en druk op Enter.\n3. Plak `codex login` en log in met je ChatGPT-account in de browser die opent.\nCodex maakt ze met je ChatGPT-abonnement, zonder per afbeelding te betalen.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "het spel slaat op aan het eind van elke scène, maar gaat nooit terug: wat gebeurt, blijft. Je kunt alleen de campagne opnieuw beginnen.",
   "the game system gives": "het spelsysteem geeft",
   "The game system is on this computer, for a new campaign.": "Het spelsysteem staat op deze computer, voor een nieuwe campagne.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "Het spel was midden in het verhaal gesloten: vraag de spelleider om vanaf hier verder te gaan, of schrijf zelf iets.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "Het spel is teruggegaan naar {save}, en de chat waarin je speelde herinnert zich wat er niet meer is: de spelleider gaat alleen verder in een nieuwe (/clear in Claude Code, elders een nieuw gesprek). Zodra die open is, druk je hier, of zeg je het daar tegen de spelleider.",
   "The game's": "Van het spel",
   "The import of “{title}” is paused: the master takes it up again": "Het importeren van “{title}” is gepauzeerd: de spelleider pakt het weer op",

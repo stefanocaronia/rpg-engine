@@ -1,9 +1,10 @@
-// The table's own chat with the master: opened from the page in the host the player chose, its messages kept for the page in this process's memory, its
-// last choice in the player's data folder, so that the next chat takes it up.
+// The table's own chat with the master: opened from the page in the host the player chose, its messages kept for the page in this process's memory and in
+// the campaign, its last choice in the player's data folder, so that the next chat takes it up, by itself as the next table's first page comes.
 import { randomBytes } from "node:crypto";
 import { type HostId, hosts } from "../../core/hosts.ts";
 import { askModels, effortRefused, type HostOffered, hostProgram, hostsOffered, isHostName, type MasterChat, type MasterDriver, masterDriver, type MasterEvent, masterHosts, modelKeeper, openMaster } from "../../master/index.ts";
 import type { ChatQuestion, PageChat, PageMaster, PageMessage } from "../dashboard/index.ts";
+import { newFlowName, readFlow, turnEnded, writeFlow } from "./flow.ts";
 import { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
 
 /** The table's chat with the master, one at a time. */
@@ -17,8 +18,12 @@ export interface TableChat extends PageMaster
     say(text: string, shown?: string): "sent" | "busy" | "closed";
     /** Stops the master's turn. */
     stop(): void;
-    /** Closes the chat; the campaign's last choice stays for the next. */
+    /** Closes the chat at the player's word; the campaign's last choice stays for the next, which the next table no longer takes up by itself. */
     close(): void;
+    /** Closes the chat as the table ends, or as no page is there: the next table takes it up again. */
+    release(): void;
+    /** A page listens to the table's events: the first takes up the campaign's last chat, where it can be and the player did not close it. */
+    listened(): void;
     /** Whether a chat is open, and whether its turn runs. */
     active(): boolean;
     inTurn(): boolean;
@@ -41,7 +46,7 @@ export interface ChatShown extends PageChat
 {
     hosts: HostOffered[];
     last?: { host: HostId; model: string; effort?: string; resumable: boolean; };
-    chat?: { host: HostId; model: string; effort?: string; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
+    chat?: { host: HostId; model: string; effort?: string; runs?: string; cutShort?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
     messages: ChatMessage[];
     /** A chat opened by hand sits at the table: the table's own cannot open. */
     elsewhere: boolean;
@@ -56,7 +61,7 @@ type AskedMessage = Extract<ChatMessage, { from: "asked"; }>;
 /** What the table's chat takes from outside. */
 export interface TableChatOptions
 {
-    /** The campaign's folder, where the host runs, and the engine's data folder, where the last choice is kept. */
+    /** The campaign's folder, where the host runs and the chat's flow is kept, and the engine's data folder, where the last choice is kept. */
     root: string;
     home: string;
     /** The table's own environment and platform, and the player's home, where a host's program is looked for. */
@@ -87,6 +92,8 @@ interface OpenChat
     host: HostId;
     model: string;
     effort?: string;
+    /** The host's own name for the model it runs, once it said it. */
+    runs?: string;
     token: string;
     master: MasterChat;
     state: "idle" | "turn" | "ended";
@@ -127,25 +134,67 @@ export function tableChat(options: TableChatOptions): TableChat
     let found: { at: number; hosts: Map<HostId, boolean>; } | undefined;
     // Every token given to a host in this process.
     const tokens = new Set<string>();
+    // The campaign's file of the chat whose messages these are, and whether a page came yet, the first of which takes up the last chat.
+    let flow: string | undefined;
+    let pageCame = false;
+    // What the next write brings to the file first: a new line after a torn one, the questions it left waiting now left. Whether the chat taken up was cut
+    // short as its table ended, until the next turn begins; and whether the player's words are being sent, a turn that ends meanwhile told after them.
+    let mend = false;
+    let corrected: ChatMessage[] = [];
+    let cutShort = false;
+    let sending: { ended: boolean; } | undefined;
 
     const programOf = (host: HostId): Program | undefined => hostProgram(host, options, driverOf);
     // The models each host offers, asked of it in the campaign's folder.
     const models = modelKeeper({ ask: (host) => askModels(host, { ...options, folder: options.root }, driverOf), changed: () => options.changed(), now });
 
-    const keep = <Kept extends ChatMessage>(message: Kept): Kept => {
+    // Lines at the end of the chat's file in the campaign, in one write; what cannot be written is logged, and the chat goes on.
+    const write = (lines: (ChatMessage | typeof turnEnded)[]): void => {
+        if (flow === undefined) {
+            return;
+        }
+
+        try {
+            writeFlow(options.root, flow, [...corrected, ...lines], now(), mend);
+            mend = false;
+            corrected = [];
+        } catch (error) {
+            options.log?.(`The table could not keep a message of its chat in the campaign: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    };
+
+    // A message as it is now, at the end of the chat's file.
+    const save = (message: ChatMessage): void => write([message]);
+
+    // A message for the page, and in the campaign unless it is not complete yet, as the master's words of a turn.
+    const keep = <Kept extends ChatMessage>(message: Kept, complete = true): Kept => {
         messages.push(message);
         messages.splice(0, Math.max(0, messages.length - mostMessages));
+
+        if (complete) {
+            save(message);
+        }
+
         return message;
     };
 
-    const add = (from: Words["from"], text: string): Words => keep({ id: ++lastId, from, text: text.slice(0, mostText) });
+    const add = (from: Words["from"], text: string, complete = true): Words => keep({ id: ++lastId, from, text: text.slice(0, mostText) }, complete);
 
     const isOpen = (): boolean => chat !== undefined && chat.state !== "ended";
+
+    // The master's message of this turn is complete: kept in the campaign, and what they write after it starts a new one.
+    const replyDone = (opened: OpenChat): void => {
+        if (opened.reply !== undefined) {
+            save(opened.reply);
+        }
+
+        Object.assign(opened, { reply: undefined, block: undefined });
+    };
 
     // What the engine tells comes between the master's words: their reply in course closes, and what they write after it starts a new message.
     const between = (): void => {
         if (chat !== undefined) {
-            Object.assign(chat, { reply: undefined, block: undefined });
+            replyDone(chat);
         }
     };
 
@@ -159,7 +208,8 @@ export function tableChat(options: TableChatOptions): TableChat
     // A chat taken up that ended before the host said its session: that session is not taken up again, and the next chat starts new.
     const forgetLostSession = (opened: OpenChat): void => {
         if (opened.resumed && !opened.sessionTold && last !== undefined) {
-            last = { root: last.root, host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }) };
+            last = { ...last };
+            delete last.session;
             writeLastChat(options.home, options.root, last);
         }
     };
@@ -170,9 +220,10 @@ export function tableChat(options: TableChatOptions): TableChat
         }
 
         if (event.type === "session") {
-            opened.model = event.model;
+            // The model chosen stays the choice; the host's own name for it is shown apart.
+            opened.runs = event.model;
             opened.sessionTold = true;
-            remember({ session: event.session, model: event.model });
+            remember({ session: event.session });
         } else if (event.type === "text") {
             prose(opened, event.block, event.text);
         } else if (event.type === "tool") {
@@ -184,17 +235,26 @@ export function tableChat(options: TableChatOptions): TableChat
 
             return;
         } else if (event.type === "turnEnd") {
-            Object.assign(opened, { state: "idle", tool: undefined, reply: undefined, block: undefined });
+            replyDone(opened);
+            Object.assign(opened, { state: "idle", tool: undefined });
 
             if (event.reason === "failed") {
                 add("table", event.why ?? "The master's turn failed.");
+            }
+
+            // The turn's end follows the player's words that began it, in the file too.
+            if (sending === undefined) {
+                write([turnEnded]);
+            } else {
+                sending.ended = true;
             }
 
             options.changed();
             options.idle();
             return;
         } else {
-            Object.assign(opened, { state: "ended", why: event.why, tool: undefined, reply: undefined, block: undefined });
+            replyDone(opened);
+            Object.assign(opened, { state: "ended", why: event.why, tool: undefined });
             forgetLostSession(opened);
             options.left?.(opened.token);
             options.switched?.();
@@ -206,7 +266,7 @@ export function tableChat(options: TableChatOptions): TableChat
     // A piece of the master's prose joins their message of this turn; a new block of text, a new paragraph.
     const prose = (opened: OpenChat, block: number, text: string): void => {
         if (opened.reply === undefined) {
-            opened.reply = add("master", text);
+            opened.reply = add("master", text, false);
         } else {
             const joined = opened.block === block ? text : `\n\n${text}`;
             opened.reply.text = `${opened.reply.text}${joined}`.slice(0, mostText);
@@ -270,6 +330,110 @@ export function tableChat(options: TableChatOptions): TableChat
         }
     };
 
+    // The messages of the chat's file, the one the campaign's last chat writes where it is taken up, else a new one: read back where they are not here yet.
+    const takeFlow = (again: boolean): void => {
+        const taken = again && last?.flow !== undefined ? last.flow : newFlowName(options.root, now());
+
+        if (taken === flow) {
+            return;
+        }
+
+        messages.length = 0;
+        waiting = undefined;
+        flow = taken;
+        const read = again ? readFlow(options.root, taken, mostMessages) : undefined;
+        messages.push(...(read?.messages ?? []));
+        lastId = Math.max(lastId, ...messages.map((message) => message.id));
+        mend = read?.torn === true;
+        cutShort = read?.cutShort === true;
+        corrected = read?.left ?? [];
+    };
+
+    const openChat = (choice: ChatChoice): string | undefined => {
+        const ready = startable(choice);
+
+        if (typeof ready === "string") {
+            return ready;
+        }
+
+        const host = choice.host;
+        const again = choice.fresh !== true && last?.host === host;
+        const session = again ? last?.session : undefined;
+        const token = newToken();
+        tokens.add(token);
+        const master = start(choice, ready.driver, ready.program, token, session);
+
+        if (typeof master === "string") {
+            return master;
+        }
+
+        takeFlow(again);
+        last = {
+            root: options.root,
+            host,
+            model: choice.model,
+            ...(choice.effort === undefined ? {} : { effort: choice.effort }),
+            ...(session === undefined ? {} : { session }),
+            ...(flow === undefined ? {} : { flow }),
+        };
+        writeLastChat(options.home, options.root, last);
+        const opened: OpenChat = {
+            host,
+            model: choice.model,
+            ...(choice.effort === undefined ? {} : { effort: choice.effort }),
+            token,
+            master,
+            state: "idle",
+            resumed: session !== undefined,
+            sessionTold: false,
+        };
+        chat = opened;
+        master.onEvent((event) => heard(opened, event));
+        options.changed();
+        options.switched?.();
+        return undefined;
+    };
+
+    // Closes the chat; what the master wrote of their message so far is kept. Closed by the player, the next table does not take it up by itself.
+    const closeChat = (byPlayer: boolean): void => {
+        const closing = chat;
+
+        if (closing === undefined) {
+            return;
+        }
+
+        replyDone(closing);
+        closing.master.close();
+        chat = undefined;
+
+        if (byPlayer) {
+            remember({ closed: true });
+        }
+
+        options.left?.(closing.token);
+        options.changed();
+        options.switched?.();
+    };
+
+    // The campaign's last chat, taken up by itself as the table's first page comes, once: where its host's session is known and the player did not close it.
+    const takeUpLast = (): void => {
+        if (pageCame) {
+            return;
+        }
+
+        pageCame = true;
+
+        if (last?.session === undefined || last.closed === true || chat !== undefined || options.elsewhere()) {
+            return;
+        }
+
+        const refused = openChat({ host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }) });
+
+        if (refused !== undefined) {
+            options.log?.(`The table did not take up the campaign's last chat: ${refused}`);
+        }
+    };
+
     return {
         shown: () => {
             if (found === undefined || now() - found.at >= foundFor) {
@@ -280,52 +444,12 @@ export function tableChat(options: TableChatOptions): TableChat
             return {
                 hosts: hostsOffered((id) => known.get(id) === true, driverOf, (id) => models.models(id)),
                 ...(last === undefined ? {} : { last: { host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }), resumable: last.session !== undefined } }),
-                ...(chat === undefined ? {} : { chat: { ...chatShown(chat), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
+                ...(chat === undefined ? {} : { chat: { ...chatShown(chat, cutShort), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
                 messages: messages.map((message) => ({ ...message })),
                 elsewhere: options.elsewhere(),
             };
         },
-        open: (choice) => {
-            const ready = startable(choice);
-
-            if (typeof ready === "string") {
-                return ready;
-            }
-
-            const host = choice.host;
-            const again = choice.fresh !== true && last?.host === host;
-            const session = again ? last?.session : undefined;
-            const token = newToken();
-            tokens.add(token);
-            const master = start(choice, ready.driver, ready.program, token, session);
-
-            if (typeof master === "string") {
-                return master;
-            }
-
-            if (!again) {
-                messages.length = 0;
-                waiting = undefined;
-            }
-
-            last = { root: options.root, host, model: choice.model, ...(choice.effort === undefined ? {} : { effort: choice.effort }), ...(session === undefined ? {} : { session }) };
-            writeLastChat(options.home, options.root, last);
-            const opened: OpenChat = {
-                host,
-                model: choice.model,
-                ...(choice.effort === undefined ? {} : { effort: choice.effort }),
-                token,
-                master,
-                state: "idle",
-                resumed: session !== undefined,
-                sessionTold: false,
-            };
-            chat = opened;
-            master.onEvent((event) => heard(opened, event));
-            options.changed();
-            options.switched?.();
-            return undefined;
-        },
+        open: openChat,
         say: (text, shown) => {
             const current = chat;
 
@@ -347,17 +471,24 @@ export function tableChat(options: TableChatOptions): TableChat
                 return "busy";
             }
 
-            // The player's words and the turn first: a host that fails the turn at once tells it while it is sent.
-            add("player", shown ?? text);
+            // The player's words and the turn first: a host that fails the turn at once tells it while it is sent. They go in the campaign once said.
+            const said = add("player", shown ?? text, false);
             Object.assign(current, { state: "turn", reply: undefined, block: undefined });
+            const sent = { ended: false };
+            sending = sent;
+            const accepted = current.master.send(text);
+            sending = undefined;
 
-            if (!current.master.send(text)) {
+            if (!accepted) {
                 // The words just added, the last message: never said.
                 messages.pop();
                 current.state = "idle";
                 return "busy";
             }
 
+            // A new turn: the chat is no longer one cut short.
+            cutShort = false;
+            write(sent.ended ? [said, turnEnded] : [said]);
             options.changed();
             return "sent";
         },
@@ -366,17 +497,9 @@ export function tableChat(options: TableChatOptions): TableChat
                 chat.master.interrupt();
             }
         },
-        close: () => {
-            const closing = chat;
-
-            if (closing !== undefined) {
-                closing.master.close();
-                chat = undefined;
-                options.left?.(closing.token);
-                options.changed();
-                options.switched?.();
-            }
-        },
+        close: () => closeChat(true),
+        release: () => closeChat(false),
+        listened: takeUpLast,
         active: isOpen,
         inTurn: () => chat?.state === "turn",
         owns: (environment) => chat !== undefined && chat.state !== "ended" && environment.RPG_TABLE_MASTER === chat.token,
@@ -389,6 +512,7 @@ export function tableChat(options: TableChatOptions): TableChat
             // One question at a time: one left waiting ended with no answer.
             if (waiting !== undefined) {
                 waiting.message.state = "left";
+                save(waiting.message);
             }
 
             between();
@@ -402,6 +526,7 @@ export function tableChat(options: TableChatOptions): TableChat
             }
 
             Object.assign(waiting.message, answer === undefined ? { state: "left" } : { state: "answered", answer: answer.slice(0, mostText) });
+            save(waiting.message);
             waiting = undefined;
             options.changed();
         },
@@ -423,12 +548,14 @@ function askedText(question: ChatQuestion): { text: string; title?: string; }
     return { text: question.text.slice(0, mostText), ...(question.title === undefined ? {} : { title: question.title.slice(0, mostText) }) };
 }
 
-function chatShown(chat: OpenChat): NonNullable<ChatShown["chat"]>
+function chatShown(chat: OpenChat, cutShort: boolean): NonNullable<ChatShown["chat"]>
 {
     return {
         host: chat.host,
         model: chat.model,
         ...(chat.effort === undefined ? {} : { effort: chat.effort }),
+        ...(chat.runs === undefined ? {} : { runs: chat.runs }),
+        ...(cutShort ? { cutShort: true as const } : {}),
         state: chat.state,
         ...(chat.why === undefined ? {} : { why: chat.why }),
         ...(chat.tool === undefined ? {} : { tool: chat.tool }),

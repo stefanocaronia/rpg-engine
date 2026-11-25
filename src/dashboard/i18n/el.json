@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "Η ανάγνωση του «{title}» ολοκληρώθηκε: ο αφηγητής σε ρωτά από πού να ξεκινήσετε",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: το παιχνίδι είχε κλείσει στη μέση: συνέχισε από εκεί που είχαμε μείνει και ρώτα με ξανά αν είχες αφήσει κάποια ερώτηση ανοιχτή]",
   "{by} makes them meanwhile.": "Στο μεταξύ τις δημιουργεί το {by}.",
   "{count} being read": "{count} σε ανάγνωση",
   "{count} books read": "{count} βιβλία διαβασμένα",
@@ -838,6 +839,7 @@
   "Permadeath": "Μόνιμος θάνατος",
   "Person": "Πρόσωπο",
   "Physical": "Φυσικά",
+  "Pick up from here": "Συνέχεια από εδώ",
   "Pictures": "Εικόνες",
   "Pictures and language": "Εικόνες και γλώσσα",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Οι εικόνες χρειάζονται το Codex, που δεν υπάρχει ακόμα σε αυτόν τον υπολογιστή. Για να τις έχεις:\n1. Άνοιξε ένα τερματικό: στα Windows, Έναρξη και μετά πληκτρολόγησε Terminal.\n2. Επικόλλησε `npm install -g @openai/codex` και πάτα Enter.\n3. Επικόλλησε `codex login` και συνδέσου με τον λογαριασμό σου στο ChatGPT στο πρόγραμμα περιήγησης που ανοίγει.\nΤο Codex τις δημιουργεί με το πλάνο σου στο ChatGPT, χωρίς ποτέ πληρωμή ανά εικόνα.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "το παιχνίδι αποθηκεύει στο τέλος κάθε σκηνής, αλλά δεν γυρίζει ποτέ πίσω: ό,τι γίνεται μένει. Μπορείς μόνο να ξεκινήσεις την καμπάνια από την αρχή.",
   "the game system gives": "το σύστημα παιχνιδιού δίνει",
   "The game system is on this computer, for a new campaign.": "Το σύστημα παιχνιδιού είναι σε αυτόν τον υπολογιστή, για νέα καμπάνια.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "Το παιχνίδι έκλεισε στη μέση της ιστορίας: ζήτα από τον αφηγητή να συνεχίσει από εδώ ή γράψε εσύ στον αφηγητή.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "Το παιχνίδι γύρισε στο {save}, και η συνομιλία όπου έπαιζες θυμάται ό,τι έχει σβηστεί: ο αφηγητής συνεχίζει μόνο σε μια νέα (/clear στο Claude Code, νέα συνομιλία αλλού). Μόλις ανοίξει, πάτα εδώ ή πες το στον αφηγητή εκεί.",
   "The game's": "Του παιχνιδιού",
   "The import of “{title}” is paused: the master takes it up again": "Η εισαγωγή του «{title}» είναι σε παύση: ο αφηγητής τη συνεχίζει",

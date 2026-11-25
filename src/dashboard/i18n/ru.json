@@ -1,5 +1,6 @@
 {
   "“{title}” is read: the master asks you where to start": "«{title}» прочитан: мастер спросит, с чего начать",
+  "[OOC: the game was closed halfway: pick up from where we were, and ask me again any question you had left open]": "[OOC: игра прервалась на середине: продолжай с того места, где мы остановились, и повтори вопрос, если он остался без ответа]",
   "{by} makes them meanwhile.": "Пока их создаёт {by}.",
   "{count} being read": "Читается: {count}",
   "{count} books read": "Прочитано книг: {count}",
@@ -838,6 +839,7 @@
   "Permadeath": "Вечная смерть",
   "Person": "Человек",
   "Physical": "Настоящие",
+  "Pick up from here": "Продолжить отсюда",
   "Pictures": "Картинки",
   "Pictures and language": "Изображения и язык",
   "Pictures need Codex, which is not on this computer yet. To have them:\n1. Open a terminal: on Windows, Start, then type Terminal.\n2. Paste `npm install -g @openai/codex` and press Enter.\n3. Paste `codex login` and sign in with your ChatGPT account in the browser that opens.\nCodex makes them with your ChatGPT plan, never paying by the picture.": "Для изображений нужен Codex, которого на этом компьютере пока нет. Чтобы они появились:\n1. Открой терминал: в Windows нажми «Пуск» и введи Terminal.\n2. Вставь `npm install -g @openai/codex` и нажми Enter.\n3. Вставь `codex login` и войди в свой аккаунт ChatGPT в открывшемся браузере.\nCodex создаёт их по твоему плану ChatGPT, без оплаты за каждое изображение.",
@@ -1093,6 +1095,7 @@
   "the game saves at the end of each scene, but never goes back: what happens stays. You can only start the campaign over.": "игра сохраняется в конце каждой сцены, но никогда не откатывается: что случилось, то случилось. Можно только начать кампанию заново.",
   "the game system gives": "игровая система даёт",
   "The game system is on this computer, for a new campaign.": "Игровая система есть на этом компьютере, для новой кампании.",
+  "The game was closed in the middle of the story: ask the master to pick up from here, or write to them yourself.": "Игра закрылась посреди истории: попроси мастера продолжить с этого места или напиши ему сам.",
   "The game went back to {save}, and the chat you were playing in remembers what is gone: the master goes on only in a new one (/clear in Claude Code, a new conversation elsewhere). Once it is open, press here, or tell the master there.": "Игра вернулась к {save}, а чат, в котором ты играл, помнит то, чего уже нет: мастер продолжит только в новом чате (/clear в Claude Code, новый разговор в других местах). Когда он откроется, нажми здесь или скажи об этом мастеру там.",
   "The game's": "Игры",
   "The import of “{title}” is paused: the master takes it up again": "Импорт «{title}» приостановлен: мастер возобновит его",

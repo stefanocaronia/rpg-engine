@@ -12,7 +12,7 @@ const port = process.env.PORT ?? (portAt === -1 ? undefined : process.argv[portA
 const systemAt = process.argv.indexOf("--system");
 const system = systemAt !== -1 && process.argv[systemAt + 1] === "5e" ? "5e" : "free";
 const dashboard = await serveDemo(port === undefined ? undefined : [Number(port)], system, {
-    chat: process.argv.includes("--chat"),
+    chat: process.argv.includes("--resumed") ? "resumed" : process.argv.includes("--chat"),
     setup: process.argv.includes("--setup"),
     launcher: process.argv.includes("--launcher") ? (process.argv.includes("--empty") ? "empty" : true) : false,
 });
