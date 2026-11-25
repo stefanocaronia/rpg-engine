@@ -30,6 +30,13 @@ export interface PageMaster
     askEnds(id: string, answer?: string): void;
     /** A roll the player may see was made: the chat keeps it, in words and as the Rolls card gets it. */
     rolled(text: string, roll: ShownRoll): void;
+    /**
+     * The first roll of the player's in the turn that runs whose mark, [roll id], was handed to the master and its words do not hold yet. Given a fourth time,
+     * it is nothing instead, and that roll is no longer owed: a master that cannot write the mark is never refused for ever.
+     */
+    untold?(): { id: string; check?: string; } | undefined;
+    /** A command handed the master the mark of the player's roll `id`: from then on the roll is the master's to tell in this turn. */
+    owed?(id: string): void;
 }
 
 /** A question of the master's as the page's bar shows it: its text and title, and its buttons. */

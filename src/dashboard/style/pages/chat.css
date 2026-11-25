@@ -400,9 +400,8 @@
         text-align: center;
     }
 
-    /* What the master writes in plain brackets among the story's words: a pill in the line, in the fixed-width letters, on a tone above the card. A roll
-       has its die before it and its total in evidence; a clock the clock's picture and its steps as dots, done in the accent, to do as rings; any
-       other is the pill alone. Pictures and dots are in --muted: the words are the mark. */
+    /* A roll where the master's words tell it, by the engine's mark: a pill in the line, on a tone above the card, with the roll's die, what it is and
+       its total in evidence, in the accent. No token, which is its line's, and no colour of success or failure. */
     .chat-mark {
         display: inline-flex;
         flex-wrap: wrap;
@@ -413,11 +412,10 @@
         border: 1px solid var(--rule);
         border-radius: var(--radius-s);
         background: color-mix(in srgb, var(--ink) 5%, var(--panel));
-        font-family: var(--mono);
-        font-size: 0.82em;
+        font-size: 0.88em;
         font-style: normal;
-        font-weight: 350;
-        line-height: 1.6;
+        font-weight: 600;
+        line-height: 1.55;
         vertical-align: baseline;
     }
 
@@ -427,35 +425,14 @@
         color: var(--muted);
     }
 
-    .chat-mark-dice,
-    .chat-mark-rest {
+    .chat-mark > span:not(.visually-hidden) {
         color: var(--muted);
     }
 
     .chat-mark-total {
         color: var(--accent);
-        font-weight: 700;
-    }
-
-    .chat-mark-count {
         font-variant-numeric: tabular-nums;
-    }
-
-    .chat-mark-steps {
-        display: inline-flex;
-        gap: 3px;
-    }
-
-    .chat-mark-steps i {
-        width: 7px;
-        height: 7px;
-        border: 1px solid var(--muted);
-        border-radius: 50%;
-    }
-
-    .chat-mark-steps i.done {
-        border-color: var(--accent);
-        background: var(--accent);
+        font-weight: 700;
     }
 
     /* Words out of the game, the master's and the player's: apart from the story's by their look, smaller, dimmed and in italics in a dashed edge, without
@@ -950,7 +927,7 @@
         }
     }
 
-    /* The chat beside the page (D-582): a panel at the window's left or right, the window's own sides as the player names them, under the page's top and as
+    /* The chat beside the page (D-582): a panel at the window's left or right, the window's own sides as the player names them, under the page's top or as
        tall as the window, the chat in it as in its section. The page keeps clear of it: its width is --dock-width, on the page, which the page's own rules
        read as --dock-start or --dock-end, by the way the page is written. */
     .page.dock-start {
@@ -966,10 +943,39 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    /* The panel's line goes up to the line under the page's top, through the row of where the party is, which keeps to the page's side of it; down the
-       page that row is folded away, and the panel starts at the top's own line. */
-    .page:is(.dock-start, .dock-end) .top-place {
-        position: relative;
+    /* Under the page's top, the panel starts at the line under the sections, in the row of where the party is, which keeps to the page's side of it: the
+       top's ground leaves the panel's room under that line (--dock-top, measured), and what is in that room of the top lets the pointer through to it. */
+    .page:has(.chat-panel:not(.tall)) .top {
+        background: none;
+        box-shadow: none;
+        pointer-events: none;
+    }
+
+    .page:has(.chat-panel:not(.tall)) :is(.top > *, .top-place > *) {
+        pointer-events: auto;
+    }
+
+    .page:has(.chat-panel:not(.tall)) .top > .top-place {
+        pointer-events: none;
+    }
+
+    .page:has(.chat-panel:not(.tall)) .top::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        background: var(--top-ground);
+        box-shadow: var(--top-edge);
+        pointer-events: none;
+        transition: box-shadow var(--short) var(--ease);
+    }
+
+    .page:is(.dock-end:not(:dir(rtl)), .dock-start:dir(rtl)):has(.chat-panel:not(.tall)) .top::after {
+        clip-path: polygon(0 0, 100% 0, 100% var(--dock-top), calc(100% - var(--dock-width)) var(--dock-top), calc(100% - var(--dock-width)) calc(100% + 48px), 0 calc(100% + 48px));
+    }
+
+    .page:is(.dock-start:not(:dir(rtl)), .dock-end:dir(rtl)):has(.chat-panel:not(.tall)) .top::after {
+        clip-path: polygon(0 0, 100% 0, 100% calc(100% + 48px), var(--dock-width) calc(100% + 48px), var(--dock-width) var(--dock-top), 0 var(--dock-top));
     }
 
     .page.dock-start .top-place {
@@ -980,21 +986,13 @@
         padding-inline-end: calc(16px + var(--dock-end));
     }
 
-    .page:is(.dock-start, .dock-end) .top-place::after {
-        content: "";
-        position: absolute;
-        top: -1px;
-        bottom: 0;
-        width: 1px;
-        background: var(--rule);
+    /* As tall as the window, as the player switches it: the page's top and the theme's corner keep to the page's side of it, as the page does. */
+    .page.dock-start:has(.chat-panel.tall) .top {
+        inset-inline-start: var(--dock-start);
     }
 
-    .page.dock-start .top-place::after {
-        inset-inline-start: calc(var(--dock-start) - 1px);
-    }
-
-    .page.dock-end .top-place::after {
-        inset-inline-end: calc(var(--dock-end) - 1px);
+    .page.dock-end:has(.chat-panel.tall) :is(.top, .theme-corner) {
+        inset-inline-end: var(--dock-end);
     }
 
     .chat-panel {
@@ -1004,6 +1002,10 @@
         z-index: 16;
         width: var(--dock-width);
         padding: 12px var(--gap) var(--gap);
+    }
+
+    .chat-panel.tall {
+        top: 0;
     }
 
     .chat-panel.side-left {

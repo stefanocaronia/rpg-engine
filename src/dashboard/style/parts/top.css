@@ -56,18 +56,20 @@
         padding-block: var(--gap) 0;
         padding-inline: var(--gap);
         /* The game's texture of the bar under the page's veil, and its line under it (D-528). */
-        background:
+        --top-ground:
             linear-gradient(var(--texture-veil), var(--texture-veil)),
             var(--bar-texture) 0 0 / var(--bar-texture-size) var(--bar-texture-repeat),
             var(--paper);
-        box-shadow: 0 2px 0 var(--bar-edge);
+        --top-edge: 0 2px 0 var(--bar-edge);
+        background: var(--top-ground);
+        box-shadow: var(--top-edge);
     }
 
     /* Down the page, the same top drawn together (D-295): the master and the name smaller, the product and the place folded away, the sections and the chips
        still there, a line under it. */
     .top.compact {
         padding-block: 8px 0;
-        box-shadow: 0 1px 0 var(--rule), 0 2px 0 var(--bar-edge), var(--raise);
+        --top-edge: 0 1px 0 var(--rule), 0 2px 0 var(--bar-edge), var(--raise);
     }
 
     .top .master {
@@ -222,7 +224,7 @@
         min-width: 0;
     }
 
-    .sections a.pages-start {
+    .sections .pages-start {
         margin-inline-start: auto;
     }
 
@@ -245,15 +247,11 @@
         text-overflow: ellipsis;
     }
 
-    /* The packages' icon as the menu of their other pages (D-512): a page's icon that opens, lit while one of them or Packages is shown. After the pages, at a
-       campaign's table, the way back to the campaigns of this computer: a page's icon that leaves the campaign, a little apart. */
+    /* The packages' icon as the menu of their other pages (D-512): a page's icon that opens, lit while one of them or Packages is shown. Before the pages, at a
+       campaign's table, the way back to the campaigns of this computer: an icon as theirs, as far from them as they are from each other. */
     .sections :is(.packages-menu, .home-link) {
         position: relative;
         display: inline-flex;
-    }
-
-    .sections .home-link {
-        margin-inline-start: 8px;
     }
 
     .home-button[aria-busy="true"] {
@@ -548,21 +546,25 @@
         color: var(--accent);
     }
 
-    .status-chip .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--muted);
+    /* Whether the game is live: a square chip, its plug alone; the words are its name and its tip. */
+    .status-chip.live {
+        justify-content: center;
+        aspect-ratio: 1;
+        padding: 0;
+    }
+
+    .status-chip.live svg.icon {
+        width: 20px;
+        height: 20px;
+        color: var(--muted);
     }
 
     .status-chip.live.on {
         border-color: color-mix(in srgb, var(--ally) 45%, var(--rule));
-        color: var(--ally);
     }
 
-    .status-chip.live.on .dot {
-        background: var(--ally);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--ally) 25%, transparent);
+    .status-chip.live.on svg.icon {
+        color: var(--ally);
     }
 
     /* The switch of the theme (D-300, D-310): the window's top right corner, folded like a page's, with the theme it goes to; on a phone, in the menu. */
@@ -797,17 +799,9 @@
             font-size: 1.2rem;
         }
 
-        /* A phone keeps only whether the game is live, as its dot; the word stays for a screen reader. */
+        /* A phone keeps only whether the game is live. */
         .status-chip:not(.live) {
             display: none;
-        }
-
-        .top .status-chip.live {
-            justify-content: center;
-            width: 34px;
-            padding: 0;
-            gap: 0;
-            font-size: 0;
         }
 
         .top {

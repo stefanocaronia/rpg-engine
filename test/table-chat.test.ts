@@ -927,3 +927,113 @@ describe("the last choice's file", () => {
         }
     });
 });
+
+describe("the player's rolls the master has not told in its words yet", () => {
+    const roll = { id: "3cbdb056", at: "2026-11-25T10:00:00.000Z", by: "player" as const, who: "Ettore", check: "Shield", notation: "2d6", total: 4, text: "2d6 = 4", dice: [] };
+
+    it("knows a roll of the player's untold, once its mark was handed out, until the master's words, written or being written, hold its mark", () => {
+        const { chat, master } = opened();
+        chat.say("I raise my shield.");
+        master.emit({ type: "text", block: 0, text: "The blow falls." });
+        expect(chat.untold()).toBeUndefined();
+        chat.rolled("Ettore, Shield: 2d6 = 4", roll);
+        chat.owed("3cbdb056");
+        master.emit({ type: "text", block: 0, text: " The shield shakes, 4 on the dice." });
+        expect(chat.untold()).toEqual({ id: "3cbdb056", check: "Shield" });
+        master.emit({ type: "text", block: 0, text: " It holds [roll 3cbdb056]" });
+        expect(chat.untold()).toBeUndefined();
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.untold()).toBeUndefined();
+    });
+
+    it("never counts a roll of the player's whose mark no command handed the master, as the dice of a rest or a package's roll", () => {
+        const { chat } = opened();
+        chat.say("We rest.");
+        chat.rolled("Ettore, Stamina: 1d6 = 4", roll);
+        expect(chat.untold()).toBeUndefined();
+        chat.owed("aaaa0009");
+        expect(chat.untold()).toBeUndefined();
+    });
+
+    it("gives the first untold, without a check where the roll has none, and never counts the master's own rolls", () => {
+        const { chat, master } = opened();
+        chat.say("I attack.");
+        chat.rolled("Wolf: 1d20 = 15", { ...roll, id: "aaaa0001", by: "master", check: "Bite" });
+        chat.owed("aaaa0001");
+        expect(chat.untold()).toBeUndefined();
+        const { check: _check, ...unnamed } = roll;
+        chat.rolled("Ettore: 2d6 = 4", { ...unnamed, id: "aaaa0002" });
+        chat.rolled("Ettore: 2d6 = 4", { ...roll, id: "aaaa0003" });
+        chat.owed("aaaa0002");
+        chat.owed("aaaa0003");
+        expect(chat.untold()).toEqual({ id: "aaaa0002" });
+        master.emit({ type: "text", block: 0, text: "The first blow glances off your shield [roll aaaa0002], then" });
+        expect(chat.untold()).toEqual({ id: "aaaa0003", check: "Shield" });
+    });
+
+    it("gives the same roll three times at most: the fourth time it gives nothing, and the roll is no longer owed", () => {
+        const { chat } = opened();
+        chat.say("I attack.");
+        chat.rolled("Ettore, Shield: 2d6 = 4", roll);
+        chat.rolled("Ettore: 2d6 = 4", { ...roll, id: "aaaa0002" });
+        chat.owed("3cbdb056");
+        chat.owed("aaaa0002");
+        expect([chat.untold(), chat.untold(), chat.untold()]).toEqual(Array(3).fill({ id: "3cbdb056", check: "Shield" }));
+        expect(chat.untold()).toBeUndefined();
+        expect([chat.untold(), chat.untold(), chat.untold()]).toEqual(Array(3).fill({ id: "aaaa0002", check: "Shield" }));
+        expect(chat.untold()).toBeUndefined();
+        expect(chat.untold()).toBeUndefined();
+    });
+
+    it("reads the mark whatever its case and spaces, with a colon after roll or a backslash before each bracket", () => {
+        for (
+            const text of [
+                "The blow lands and your shield holds \\[roll 3cbdb056\\]",
+                "The blow lands and your shield holds [roll: 3cbdb056]",
+                "The blow lands and your shield holds [Roll  3cbdb056 ]",
+                "The blow lands and your shield holds [ROLL:3cbdb056]",
+            ]
+        ) {
+            const { chat, master } = opened();
+            chat.say("I raise my shield.");
+            chat.rolled("Ettore, Shield: 2d6 = 4", roll);
+            chat.owed("3cbdb056");
+            master.emit({ type: "text", block: 0, text });
+            expect(chat.untold(), text).toBeUndefined();
+        }
+
+        const { chat, master } = opened();
+        chat.say("I raise my shield.");
+        chat.rolled("Ettore, Shield: 2d6 = 4", roll);
+        chat.owed("3cbdb056");
+        master.emit({ type: "text", block: 0, text: "It holds [roll 3cbdb05] [roll3cbdb056]" });
+        expect(chat.untold()).toEqual({ id: "3cbdb056", check: "Shield" });
+    });
+
+    it("takes no mark alone for a roll told: the message that holds it has a few words of story too", () => {
+        const { chat, master } = opened();
+        chat.say("I raise my shield.");
+        chat.rolled("Ettore, Shield: 2d6 = 4", roll);
+        chat.owed("3cbdb056");
+        master.emit({ type: "text", block: 0, text: "[roll 3cbdb056]" });
+        expect(chat.untold()).toEqual({ id: "3cbdb056", check: "Shield" });
+        master.emit({ type: "text", block: 0, text: " It holds." });
+        expect(chat.untold()).toEqual({ id: "3cbdb056", check: "Shield" });
+        master.emit({ type: "text", block: 0, text: " The club slides off the rim and the brigand stumbles past you." });
+        expect(chat.untold()).toBeUndefined();
+    });
+
+    it("forgets the rolls of the turns before as the player speaks again, and knows none with no turn running or no chat", () => {
+        const { chat, master } = opened();
+        chat.say("I raise my shield.");
+        chat.rolled("Ettore, Shield: 2d6 = 4", roll);
+        chat.owed("3cbdb056");
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.untold()).toBeUndefined();
+        chat.say("And now?");
+        expect(chat.untold()).toBeUndefined();
+        chat.close();
+        expect(chat.untold()).toBeUndefined();
+        expect(chatWith().untold()).toBeUndefined();
+    });
+});

@@ -180,7 +180,7 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(turnWords({ host: "claudeCode", model: "sonnet", state: "turn", tool: "roll" })).toBe("Il master sta tirando i dadi…");
         expect([speaker("player"), speaker("master"), speaker("table")]).toEqual(["Tu", "Il master", "Il tavolo"]);
         expect([endedWords(undefined), endedWords("  "), endedWords("It closed.")]).toEqual(["La chat si è chiusa.", "La chat si è chiusa.", "La chat si è chiusa: It closed."]);
-        expect(sectionLabel("chat")).toBe("Chat");
+        expect(sectionLabel("chat")).toBe("Gioco");
     });
 
     it("tells a screen reader once that the master answers, that they answered, the table's word when the turn failed, and that the chat ended; nothing while the words grow", async () => {

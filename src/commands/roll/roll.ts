@@ -51,6 +51,8 @@ type RollOutput =
         note?: string;
         kept?: string;
         real?: string;
+        /** Rolled in the table's own chat, whose page draws a shown roll where the master marks it. */
+        atTable?: true;
     }
     | { kind: "reveal"; id: string; text: string; proof: string; sha256: string; fingerprint: string; };
 
@@ -187,9 +189,16 @@ export const roll = defineCommand({
         }
 
         const label = [output.who, output.check, output.why].filter(Boolean).join(", ");
-        return `${output.id} ${label ? label + ": " : ""}${output.text}${output.physical ? " (physical dice)" : ""}${note}`;
+        const mark = output.atTable === true ? `\n${rollMarkNote(output.id)}` : "";
+        return `${output.id} ${label ? label + ": " : ""}${output.text}${output.physical ? " (physical dice)" : ""}${mark}${note}`;
     },
 });
+
+/** At the table, what the master writes for a roll the player sees: its mark, where the page draws it. */
+export function rollMarkNote(id: string): string
+{
+    return `In the story write [roll ${id}] where it decides: the page shows the roll there, so never write its numbers yourself.`;
+}
 
 /** The dice a game system rolls a number of its sheet with, for an example: that field's, else its first; 2d6 without them (D-280, D-514). */
 export function sheetDiceOf(system: GameSystem | undefined, field?: string): string
@@ -255,9 +264,13 @@ export function withSheetValues(notation: string, roller: { world: World; page: 
     return { notation: replaced, taken };
 }
 
-/** A roll with what to say when the player asks whether a roll was real, once in a chat, as the core's rule left the instructions for it (D-530). */
-function withRealNote(context: Context, output: Extract<RollOutput, { kind: "roll"; }>): RollOutput
+/**
+ * A roll with whether it was rolled at the table, and what to say when the player asks whether a roll was real, once in a chat, as the core's rule left the
+ * instructions for it (D-530).
+ */
+function withRealNote(context: Context, given: Extract<RollOutput, { kind: "roll"; }>): RollOutput
 {
+    const output = context.chat?.atTable === true ? { ...given, atTable: true as const } : given;
     return firstInChat(context, "roll-real")
         ? { ...output, real: "Asked whether a roll was real: for a shown one, its numbers and reason; for a hidden one, its fingerprint. Never claim physical dice you did not roll." }
         : output;

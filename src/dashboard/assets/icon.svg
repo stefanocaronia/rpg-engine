@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img">
+  <title>Robot game master</title>
+  <g class="robot-antenna" fill="#DCAA32"><rect x="28" y="2" width="1" height="9"/><circle cx="28.5" cy="1.7" r="1.5"/></g>
+  <g class="robot-ears" fill="#DCAA32"><rect x="2" y="9.5" width="5" height="8" rx="1.6"/><rect x="25" y="9.5" width="5" height="8" rx="1.6"/></g>
+  <rect class="robot-housing" x="5" y="3" width="22" height="21" rx="4" fill="#F4C84C"/>
+  <rect class="robot-display" x="7.5" y="7" width="17" height="13" rx="3" fill="#192D4D"/>
+  <g class="robot-eyes" fill="#FFF4D5"><rect x="11" y="10.5" width="3" height="3" rx="0.8"/><rect x="18" y="10.5" width="3" height="3" rx="0.8"/></g>
+  <path class="robot-screen-side" fill="#29477F" d="M0.9 14.6Q0 14.3 0 15.4V27.4Q0 28 0.7 28.5L7 32H25L31.3 28.5Q32 28 32 27.4V15.4Q32 14.3 31.1 14.6L25 17H7Z"/>
+  <path class="robot-screen-front" fill="#4268B2" d="M7 17H25V32H7Z"/>
+  <path class="robot-die" fill="#29477F" d="M16 19.7L20.16 22.1V26.9L16 29.3L11.84 26.9V22.1Z"/>
+</svg>

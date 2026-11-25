@@ -11,17 +11,17 @@ describe("the chat beside the page (D-582)", () => {
         expect([logicalSide("left", "ltr"), logicalSide("right", "ltr"), logicalSide("left", "rtl"), logicalSide("right", "rtl")]).toEqual(["start", "end", "end", "start"]);
     });
 
-    it("is 480 pixels wide until the player drags it, between 360 and 800, and never so wide that the page keeps less than 760; under 1120 there is no panel", () => {
+    it("is 480 pixels wide until the player drags it, between 360 and 1200, and never so wide that the page keeps less than 600; under 1120 there is no panel", () => {
         expect(dockFrom).toBe(1120);
         expect([keptWidth(undefined), keptWidth(""), keptWidth("wide"), keptWidth("512")]).toEqual([480, 480, 480, 512]);
         expect([dockWidth(480, 1280), dockWidth(480, 1600), dockWidth(480, 1920)]).toEqual([480, 480, 480]);
-        expect([dockWidth(100, 1600), dockWidth(2000, 1920), dockWidth(700, 1280), dockWidth(480.4, 1600)]).toEqual([360, 800, 520, 480]);
-        // The narrowest window with a panel has it at its least; a pixel under, none, whatever was chosen.
-        expect([dockWidth(480, 1120), dockWidth(480, 1119), dockWidth(360, 800)]).toEqual([360, undefined, undefined]);
+        expect([dockWidth(100, 1600), dockWidth(2000, 1920), dockWidth(2000, 1600), dockWidth(700, 1280), dockWidth(480.4, 1600)]).toEqual([360, 1200, 1000, 680, 480]);
+        // The narrowest window with a panel leaves the page its least; a pixel under, none, whatever was chosen.
+        expect([dockWidth(480, 1120), dockWidth(2000, 1120), dockWidth(480, 1119), dockWidth(360, 800)]).toEqual([480, 520, undefined, undefined]);
     });
 
     it("keeps the page's own table beside the page only while the page has 900 pixels left", () => {
-        expect([tableFits(1280, 480), tableFits(1380, 480), tableFits(1600, 480), tableFits(1920, 800)]).toEqual([false, true, true, true]);
+        expect([tableFits(1280, 480), tableFits(1380, 480), tableFits(1600, 480), tableFits(1920, 800), tableFits(1920, 1200)]).toEqual([false, true, true, true, false]);
         expect([tableFits(1260, dockWidths.least), tableFits(1259, dockWidths.least), tableFits(1280, 0), tableFits(899, 0)]).toEqual([true, false, true, false]);
     });
 
@@ -30,9 +30,9 @@ describe("the chat beside the page (D-582)", () => {
         // On the left the right arrow widens it; on the right it narrows it.
         expect([widthAfterKey("ArrowRight", 480, "left", 1600), widthAfterKey("ArrowLeft", 480, "left", 1600)]).toEqual([504, 456]);
         expect([widthAfterKey("ArrowRight", 480, "right", 1600), widthAfterKey("ArrowLeft", 480, "right", 1600)]).toEqual([456, 504]);
-        expect([widthAfterKey("Home", 480, "left", 1600), widthAfterKey("End", 480, "right", 1600), widthAfterKey("End", 480, "right", 1280)]).toEqual([360, 800, 520]);
+        expect([widthAfterKey("Home", 480, "left", 1600), widthAfterKey("End", 480, "right", 1920), widthAfterKey("End", 480, "right", 1280)]).toEqual([360, 1200, 680]);
         // At its ends it stays; another key is not the edge's.
-        expect([widthAfterKey("ArrowLeft", 360, "left", 1600), widthAfterKey("ArrowLeft", 520, "right", 1280)]).toEqual([360, 520]);
+        expect([widthAfterKey("ArrowLeft", 360, "left", 1600), widthAfterKey("ArrowLeft", 680, "right", 1280)]).toEqual([360, 680]);
         expect([widthAfterKey("Enter", 480, "left", 1600), widthAfterKey("ArrowUp", 480, "left", 1600)]).toEqual([undefined, undefined]);
     });
 });

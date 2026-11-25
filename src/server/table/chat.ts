@@ -31,6 +31,8 @@ export interface TableChat extends PageMaster
     owns(environment: Record<string, string>): boolean;
     /** Whether a chat's hello carries a token this table's chat gave a host, open or not: its server, never a chat opened by hand. */
     gave(environment: Record<string, string>): boolean;
+    untold(): { id: string; check?: string; } | undefined;
+    owed(id: string): void;
 }
 
 /** The host, model and effort the player chose for a chat, and whether it starts anew. */
@@ -145,6 +147,11 @@ export function tableChat(options: TableChatOptions): TableChat
     let corrected: ChatMessage[] = [];
     let cutShort = false;
     let sending: { ended: boolean; } | undefined;
+    // The id of the player's words that began the turn that runs: the rolls and the master's words after it are the turn's.
+    let turnFrom: number | undefined;
+    // The player's rolls of the turn whose mark a command handed the master, and how many times each was given as untold.
+    const owedRolls = new Set<string>();
+    const untoldTimes = new Map<string, number>();
 
     const programOf = (host: HostId): Program | undefined => hostProgram(host, options, driverOf);
     // The models each host offers, asked of it in the campaign's folder.
@@ -489,8 +496,11 @@ export function tableChat(options: TableChatOptions): TableChat
                 return "busy";
             }
 
-            // A new turn: the chat is no longer one cut short, nor one just taken up.
+            // A new turn: the chat is no longer one cut short, nor one just taken up; the rolls of the turns before are no longer the master's to tell.
             cutShort = false;
+            turnFrom = said.id;
+            owedRolls.clear();
+            untoldTimes.clear();
             current.said = true;
             write(sent.ended ? [said, turnEnded] : [said]);
             options.changed();
@@ -543,7 +553,56 @@ export function tableChat(options: TableChatOptions): TableChat
             keep({ id: ++lastId, from: "roll", text: text.slice(0, mostText), roll });
             options.changed();
         },
+        untold: () => {
+            const roll = chat?.state === "turn" && turnFrom !== undefined ? untoldRoll(messages, turnFrom, owedRolls) : undefined;
+
+            if (roll === undefined) {
+                return undefined;
+            }
+
+            // Given that many times already: the master cannot write the mark, so the question goes through and the roll keeps only its own line.
+            const times = (untoldTimes.get(roll.id) ?? 0) + 1;
+            untoldTimes.set(roll.id, times);
+
+            if (times > mostUntold) {
+                owedRolls.delete(roll.id);
+                return undefined;
+            }
+
+            return roll;
+        },
+        owed: (id) => {
+            owedRolls.add(id);
+        },
     };
+}
+
+// How many times the same roll is given as untold before the question goes through: a master that cannot write its mark is not refused for ever.
+const mostUntold = 3;
+
+/**
+ * The first roll of the player's after the message `from`, among those whose mark a command handed the master, that no words of the master's after `from`
+ * hold, the message being written included: a roll's id is new, so no mark of it comes before it.
+ */
+function untoldRoll(messages: ChatMessage[], from: number, owed: Set<string>): { id: string; check?: string; } | undefined
+{
+    const turn = messages.filter((message) => message.id > from);
+    const told = turn.filter((message) => message.from === "master").map((message) => message.text);
+    // The mark whatever its case and spaces, a colon after roll, or a backslash before each bracket, as \[roll id\]; and never alone: a mark with no
+    // words of story around it, in the same message, tells the player nothing.
+    const mark = (id: string): RegExp => new RegExp(`\\\\?\\[\\s*roll(?:\\s*:\\s*|\\s+)${id.replace(/[^\w-]/g, "")}\\s*\\\\?\\]`, "i");
+    const marked = (id: string): boolean => told.some((text) => mark(id).test(text) && storyWords(text) >= leastStory);
+    const roll = turn.find((message) => message.from === "roll" && message.roll.by === "player" && owed.has(message.roll.id) && !marked(message.roll.id));
+    return roll?.from === "roll" ? { id: roll.roll.id, ...(roll.roll.check === undefined ? {} : { check: roll.roll.check }) } : undefined;
+}
+
+// How many words of story a message holds at least, beside its brackets, for the mark in it to tell a roll.
+const leastStory = 6;
+
+/** The words of a text that are story: those with a letter, outside any pair of square brackets. */
+function storyWords(text: string): number
+{
+    return text.replace(/\\?\[[^[\]\n]*\\?\]/g, " ").split(/\s+/).filter((word) => /\p{L}/u.test(word)).length;
 }
 
 /** A question's text and title as the chat keeps them, each cut as any text of it. */

@@ -405,6 +405,10 @@ export interface Player
     asking?(): boolean;
     /** As the call whose questions were asked in a card ends: the card as it is after the last dice (D-507). */
     cardEnded?(card: CardAsked): void;
+    /** The roll of the player's the master has not told in its words yet, where the surface knows, as the table's chat does; the same roll a few times at most. */
+    untold?(): { id: string; check?: string; } | undefined;
+    /** A command handed the master the mark of the player's roll `id`, [roll id]: the surface may then ask the master to tell it. */
+    owed?(id: string): void;
 }
 
 export function defaultContext(folder = process.cwd()): Context

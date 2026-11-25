@@ -15,7 +15,7 @@
 //   ooc        an answer with words out of the game, a paragraph of them and some among the story's, and brackets that are the story's
 // A question the demo asks, by the chat or by its own means (look.ts --ask), and the rolls the player may see stand among its messages, as the table's
 // chat keeps them: a question waits, then is answered or left; the player's words in the chat answer the one that takes them. In the middle of an answer
-// the master rolls where the player may see, where the demo gives it the means.
+// the master rolls where the player may see, where the demo gives it the means, and its words after hold the engine's mark of that roll, [roll <id>].
 // Not part of the tests.
 import type { PageMaster, PageMessage } from "../../src/server/dashboard/index.ts";
 
@@ -64,8 +64,9 @@ export const hostsNotReady = [
 const answer = [
     "La porta della locanda cigola, e il vento del guado entra prima di te: sa di *fango e di legna bagnata*.",
     "Dietro il banco l'oste alza appena gli occhi dal boccale che sta asciugando.\n«Si chiude al tramonto» dice. «**Dopo, il guado non perdona.**»",
-    // What a master writes in brackets, each their own way: a roll, with bold around it, a clock, and the order of the turns.
-    "Un'ombra scatta verso la porta sul retro. **[Scatto 2d6: 5 (4+1)]** Lupa le taglia la strada, ma l'ombra è svelta: [Fuga 1/4]. Da adesso si va a turni: [Ettore → Ombra → Lupa].",
+    // The engine's mark of the roll just made, {roll} its id, with bold around it; brackets of the master's own, which stay as written; and the mark of a
+    // roll the chat does not have, which shows nothing.
+    "Un'ombra scatta verso la porta sul retro, e Lupa le taglia la strada **[roll {roll}]** ma l'ombra è svelta: [Fuga 1/4]. Qui c'è il segno di un tiro che la chat non ha, e non si vede [roll 0badf00d].",
     "Tre cose attirano il tuo sguardo:\n\n- un mantello fradicio appeso accanto al fuoco, che nessuno reclama;\n- una mappa inchiodata alla trave, con un segno rosso sulla Torre;\n- la botola della cantina, socchiusa.\n\nChe cosa fai?",
 ];
 
@@ -76,7 +77,8 @@ const offGame = [
 ];
 
 const afterAsking = [
-    "L'acqua ti arriva al ginocchio e tira forte, ma il piede trova la pietra.",
+    // The mark of the player's roll, which the question's answer made; the master's roll that follows has none, and keeps its line.
+    "L'acqua ti arriva al ginocchio e tira forte [roll {roll}], ma il piede trova la pietra.",
     "Dall'altra riva la lanterna del traghettatore si ferma, come se qualcuno ti avesse visto.\n\nChe cosa fai?",
 ];
 
@@ -99,8 +101,8 @@ const longAnswer = [
 const flowBefore: (Omit<Words, "id"> | Omit<AskedMessage, "id"> | Omit<Extract<Message, { from: "roll"; }>, "id">)[] = [
     { from: "player", text: "Entro nella locanda." },
     { from: "master", text: answer.slice(0, 2).join("\n\n") },
-    { from: "roll", text: "Lupa: 1d6 = 5 [5]", roll: { id: "demo-before", at: "2026-11-25T18:00:00.000Z", by: "master", who: "Lupa", check: "Fiuto", notation: "1d6", total: 5, text: "1d6 = 5 [5]", dice: [{ sides: 6, value: 5 }] } },
-    { from: "master", text: answer.slice(2).join("\n\n") },
+    { from: "roll", text: "Lupa: 1d6 = 5 [5]", roll: { id: "0ddba11d", at: "2026-11-25T18:00:00.000Z", by: "master", who: "Lupa", check: "Fiuto", notation: "1d6", total: 5, text: "1d6 = 5 [5]", dice: [{ sides: 6, value: 5 }] } },
+    { from: "master", text: answer.slice(2).join("\n\n").replaceAll("{roll}", "0ddba11d") },
     { from: "player", text: "Mi avvicino al banco e poso il sigillo spezzato davanti all'oste." },
     { from: "master", text: "L'oste guarda la cera rossa, poi te. Posa il boccale.\n\n«Dove l'hai trovato?»" },
     { from: "asked", text: "L'oste aspetta una risposta: che cosa gli dici?", title: "Scelta", options: ["La verità", "Una mezza verità", "Niente"], state: "left" },
@@ -122,6 +124,8 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
     let last: { host: string; model: string; effort?: string; } | undefined;
     // Whether a page listened yet, and whether the chat taken up is still as the closing cut it.
     let pageCame = false;
+    // The id of the last roll told, which the master's words mark.
+    let lastRoll: string | undefined;
     let cutShort = false;
     let takenUp = false;
     let elsewhere = false;
@@ -183,10 +187,13 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
             for (let from = 0; from < words.length; from += 3) {
                 const piece = words.slice(from, from + 3).join("");
                 later(at += pieceEvery, () => {
+                    // The mark of the last roll made, by its id as it is known now.
+                    const written = piece.replaceAll("{roll}", lastRoll ?? "00000000");
+
                     if (reply === undefined) {
-                        reply = add("master", piece);
+                        reply = add("master", written);
                     } else {
-                        reply.text += from === 0 ? `\n\n${piece}` : piece;
+                        reply.text += from === 0 ? `\n\n${written}` : written;
                     }
                 });
             }
@@ -363,6 +370,7 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
         rolled: (text, roll) => {
             if (isOpen()) {
                 messages.push({ id: ++lastId, from: "roll", text, roll });
+                lastRoll = roll.id;
                 changed();
             }
         },

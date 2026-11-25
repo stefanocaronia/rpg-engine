@@ -1,17 +1,18 @@
-// The messages of the chat with the master, in order: the player's words at the end side, the master's as the text they write, with what they put in
-// brackets drawn as marks, a word of the table's as a notice, a question of the master's where it was asked, with its buttons while it waits, and the
-// rolls the player may see, a line each. Words out of the game, the master's and the player's, stand apart from the story's, in a quieter look, without
+// The messages of the chat with the master, in order: the player's words at the end side, the master's as the text they write, with the engine's marks
+// in them drawn, as a roll where the story tells it, a word of the table's as a notice, a question of the master's where it was asked, with its buttons
+// while it waits, and the rolls the player may see, a line each until the master's words tell them. Words out of the game, the master's and the player's, stand apart from the story's, in a quieter look, without
 // their brackets. The list scrolls with no bar in sight, a shade at its top or its foot where there is more; it follows what comes while its end is in
 // sight; farther up the player is reading, and it stays, with a pill that leads back to now. What the chat offers the player, as to take up the story,
 // stands at the list's end.
 import type { ComponentChildren } from "preact";
-import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import type { ChatMessage, ChatSaid, Member } from "../data.ts";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { ChatMessage, ChatSaid, Member, ShownRoll } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
-import { InlineText, Markdown } from "../parts/markdown.tsx";
+import { InlineText, Markdown, type OwnParts } from "../parts/markdown.tsx";
 import { t } from "../text.ts";
 import { answerShown, atEnd, speaker } from "./chat.ts";
-import { drawMarks } from "./drawn-marks.tsx";
+import { marksDrawer } from "./drawn-marks.tsx";
+import { rollsTold } from "./marks.ts";
 import { type ChatRun, masterBlocks, playerRuns } from "./ooc.ts";
 import { type ChatAsking, ChatQuestion } from "./question.tsx";
 import { ChatRollLine } from "./roll.tsx";
@@ -45,6 +46,9 @@ export function ChatLog({ messages, asking, game, foot }: {
     const [where, setWhere] = useState({ above: false, below: false, away: false });
     const [came, setCame] = useState(false);
     const last = messages.at(-1);
+    // The chat's rolls by their id, for the marks the master's words hold of them; and those the words tell already, whose own line goes.
+    const marks = useMemo(() => marksDrawer(new Map(messages.flatMap((message): [string, ShownRoll][] => (message.from === "roll" ? [[message.roll.id.toLowerCase(), message.roll]] : [])))), [messages]);
+    const told = useMemo(() => rollsTold(messages), [messages]);
     // How the questions stand, each drawn anew as it is answered or left.
     const questions = messages.map((message) => (message.from === "asked" ? message.state[0] : "")).join("");
 
@@ -135,8 +139,8 @@ export function ChatLog({ messages, asking, game, foot }: {
                         message.from === "asked"
                             ? <ChatQuestion key={message.id} message={message} asking={message.state === "waiting" ? asking : undefined} answer={answerShown(messages, index)} />
                             : message.from === "roll"
-                            ? <ChatRollLine key={message.id} roll={message.roll} party={game.party} several={game.several} />
-                            : <Said key={message.id} message={message} />
+                            ? !told.has(message.roll.id.toLowerCase()) && <ChatRollLine key={message.id} roll={message.roll} party={game.party} several={game.several} />
+                            : <Said key={message.id} message={message} marks={marks} />
                     )}
                     {foot}
                 </ol>
@@ -152,8 +156,11 @@ export function ChatLog({ messages, asking, game, foot }: {
     );
 }
 
-/** Words: the player's, the master's text in its blocks, or a word of the table's with its icon; what is out of the game apart in each. */
-function Said({ message }: { message: ChatSaid; })
+/**
+ * Words: the player's, the master's text in its blocks, with the engine's marks in it drawn by `marks`, or a word of the table's with its icon; what is out
+ * of the game apart in each.
+ */
+function Said({ message, marks }: { message: ChatSaid; marks: OwnParts; })
 {
     if (message.from === "master") {
         return (
@@ -162,7 +169,7 @@ function Said({ message }: { message: ChatSaid; })
                 <div class="chat-prose" dir="auto">
                     {masterBlocks(message.text).map((block, index) =>
                         block.kind === "text"
-                            ? <Markdown key={index} text={block.text} lines own={drawMarks} />
+                            ? <Markdown key={index} text={block.text} lines own={marks} />
                             : block.kind === "ooc"
                             ? (
                                 <p key={index} class="chat-ooc" dir="auto">
@@ -173,7 +180,7 @@ function Said({ message }: { message: ChatSaid; })
                             : (
                                 <div key={index} class="markdown">
                                     <p class="md-lines" dir="auto">
-                                        <Runs runs={block.runs} markdown />
+                                        <Runs runs={block.runs} marks={marks} />
                                     </p>
                                 </div>
                             )
@@ -196,9 +203,13 @@ function Said({ message }: { message: ChatSaid; })
     );
 }
 
-/** The runs of a line: the story's words as they are, the master's with their bold and italics; those out of the game in their own look. */
-function Runs({ runs, markdown = false }: { runs: ChatRun[]; markdown?: boolean; })
+/**
+ * The runs of a line: the story's words as they are, the master's, which come with what draws their marks, with their bold and italics too; those out of the
+ * game in their own look.
+ */
+function Runs({ runs, marks }: { runs: ChatRun[]; marks?: OwnParts; })
 {
+    const markdown = marks !== undefined;
     return (
         <>
             {runs.map((run, index) =>
@@ -209,7 +220,7 @@ function Runs({ runs, markdown = false }: { runs: ChatRun[]; markdown?: boolean;
                         </span>
                     )
                     : markdown
-                    ? <InlineText key={index} text={run.text} own={drawMarks} />
+                    ? <InlineText key={index} text={run.text} own={marks} />
                     : run.text
             )}
         </>

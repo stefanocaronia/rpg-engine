@@ -1,6 +1,7 @@
-// Makes the icon's images from the page's logo, the robot of src/dashboard/assets/favicon.svg: icon.png at 512, icon.ico with seven sizes for Windows and
-// icon.icns with three for macOS, beside it. It draws the logo with the Chrome installed, through Playwright, and writes the two containers by hand: each is
-// a small header around PNG data. Run it again when the logo changes:
+// Makes the icon's images from its two drawings in src/dashboard/assets, the robot behind the master's screen as the page's logo has it: icon.svg, and
+// icon-small.svg, the same with fewer parts and no die on a grid of 16, for 16 and 24 pixels. It writes icon.png at 512, icon.ico with seven sizes for Windows and
+// icon.icns with three for macOS, beside them. It draws with the Chrome installed, through Playwright, and writes the two containers by hand: each is a
+// small header around PNG data. Run it again when a drawing changes:
 //   node --experimental-strip-types test/demo/icons.ts
 // Not part of the tests.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -8,7 +9,9 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
 
 const assets = fileURLToPath(new URL("../../src/dashboard/assets/", import.meta.url));
-const logo = readFileSync(`${assets}favicon.svg`, "utf8");
+const drawing = readFileSync(`${assets}icon.svg`, "utf8");
+const smallDrawing = readFileSync(`${assets}icon-small.svg`, "utf8");
+const smallUpTo = 24;
 const icoSizes = [16, 24, 32, 48, 64, 128, 256];
 const icnsSizes: [string, number][] = [["ic07", 128], ["ic08", 256], ["ic09", 512]];
 
@@ -31,11 +34,11 @@ try {
     await browser.close();
 }
 
-/** The logo drawn at a size, square, on a clear background, as PNG. */
+/** The icon drawn at a size, square, on a clear background, as PNG: the small drawing up to 24 pixels. */
 async function draw(page: import("playwright-core").Page, size: number): Promise<Buffer>
 {
     await page.setViewportSize({ width: size, height: size });
-    const sized = logo.replace("<svg ", `<svg width="${size}" height="${size}" `);
+    const sized = (size <= smallUpTo ? smallDrawing : drawing).replace("<svg ", `<svg width="${size}" height="${size}" `);
     await page.setContent(`<!doctype html><html><body style="margin:0;background:transparent">${sized}</body></html>`);
     return await page.screenshot({ omitBackground: true, clip: { x: 0, y: 0, width: size, height: size } });
 }

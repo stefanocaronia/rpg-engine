@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 // The page's .tsx modules are typed by the page's own tsconfig, which has JSX, not by the tests': this one is loaded by its address, with its functions' types.
 const { InlineText, Markdown, plainLine } = await import(new URL("../src/dashboard/parts/markdown.tsx", import.meta.url).href) as {
     InlineText: (props: { text: string; link?: (name: string) => string | undefined; }) => ComponentChildren;
-    Markdown: (props: { text: string; link?: (name: string) => string | undefined; secretKnowers?: (title: string) => string[] | undefined; lines?: boolean; }) => ComponentChildren;
+    Markdown: (
+        props: { text: string; link?: (name: string) => string | undefined; secretKnowers?: (title: string) => string[] | undefined; lines?: boolean; own?: (words: string) => (string | { drawn: ComponentChildren; })[]; },
+    ) => ComponentChildren;
     plainLine: (text: string) => string | undefined;
 };
 
@@ -78,6 +80,20 @@ describe("a page's text on the dashboard (D-275)", () => {
         expect(html(Markdown({ text: said, lines: true })).replace(/^<div>|<\/div>$/g, "")).toBe(
             "<p>L'oste alza gli occhi.\n«Si chiude al tramonto» dice.</p><p>1. Entri.\n2. Resti fuori.</p><blockquote><p>Una voce,\npoi niente.</p></blockquote>",
         );
+    });
+
+    it("lets a place draw parts of a line its own way, in bold and italics too, which around one such part alone are left out", () => {
+        const own = (words: string): (string | { drawn: ComponentChildren; })[] =>
+            words.split(/(\[die\]|\[none\])/).filter((part) => part !== "").map((part) => (part === "[die]" ? { drawn: "⚄" } : part === "[none]" ? { drawn: null } : part));
+        const drawn = (text: string): string => html(Markdown({ text, own })).replace(/^<div>|<\/div>$/g, "");
+        expect(drawn("She rolls [die] and waits.")).toBe("<p>She rolls ⚄ and waits.</p>");
+        expect(drawn("**[die]** and *[die]* and ***[die]***")).toBe("<p>⚄ and ⚄ and ⚄</p>");
+        expect(drawn("**a [die] in bold**")).toBe("<p><strong>a ⚄ in bold</strong></p>");
+        // A part that draws nothing leaves nothing, nor its bold.
+        expect(drawn("Nothing here **[none]**.")).toBe("<p>Nothing here .</p>");
+        expect(drawn("- an item [die]\n\n> quoted [die]")).toBe("<ul><li>an item ⚄</li></ul><blockquote><p>quoted ⚄</p></blockquote>");
+        // With no such place, the words as they are.
+        expect(shown("She rolls [die].")).toBe("<p>She rolls [die].</p>");
     });
 });
 

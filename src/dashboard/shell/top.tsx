@@ -176,10 +176,16 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
                         </a>
                     );
                 })}
+                {/* First at the row's end, what leaves the campaign: the campaigns of this computer, at a campaign's table alone (D-582); an icon as the pages'. */}
+                {home !== undefined && (
+                    <div class={fitting.pages ? "home-link page-link pages-start tip-below" : "home-link page-link pages-start tip-below away"} aria-hidden={fitting.pages ? undefined : true}>
+                        <HomeButton home={home} kind="home-button tip-below" hidden={!fitting.pages} />
+                    </div>
+                )}
                 {/* The pages at the row's end are icons, their names in a tooltip under them and for a screen reader (D-409). */}
                 {menuPages.map((page, index) => {
                     const gone = !fitting.pages;
-                    const kinds = ["page-link tip-below", index === 0 ? "pages-start" : "", gone ? "away" : ""].filter((kind) => kind !== "").join(" ");
+                    const kinds = ["page-link tip-below", index === 0 && home === undefined ? "pages-start" : "", gone ? "away" : ""].filter((kind) => kind !== "").join(" ");
                     return page === "packages" && inMenu.length > 0
                         ? <PackagesMenu key={page} pages={inMenu} current={current} ownShown={ownShown} kinds={kinds} gone={gone} />
                         : (
@@ -199,12 +205,6 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
                             </a>
                         );
                 })}
-                {/* After the pages, what leaves the campaign: the campaigns of this computer, at a campaign's table alone (D-582). */}
-                {home !== undefined && (
-                    <div class={fitting.pages ? "home-link page-link tip-below" : "home-link page-link tip-below away"} aria-hidden={fitting.pages ? undefined : true}>
-                        <HomeButton home={home} kind="home-button" hidden={!fitting.pages} />
-                    </div>
-                )}
             </nav>
             <Menu current={current} awayTabs={awayTabs} awayPages={awayPages} ownMenu={inMenu} ownShown={ownShown} home={home} />
         </div>
@@ -425,19 +425,6 @@ function Menu({ current, awayTabs, awayPages, ownMenu, ownShown, home }: {
                             {tab.label}
                         </a>
                     ))}
-                    {awayPages.map((page) => (
-                        <Fragment key={page}>
-                            <a href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} onClick={() => setOpen(false)}>
-                                <Icon name={page} />
-                                {sectionLabel(page)}
-                            </a>
-                            {page === "packages" && ownMenu.length > 0 && (
-                                <div class="menu-sub">
-                                    <OwnPageLinks pages={ownMenu} ownShown={ownShown} onPick={() => setOpen(false)} />
-                                </div>
-                            )}
-                        </Fragment>
-                    ))}
                     {home !== undefined && (
                         <button
                             type="button"
@@ -452,6 +439,19 @@ function Menu({ current, awayTabs, awayPages, ownMenu, ownShown, home }: {
                             {t("Campaigns")}
                         </button>
                     )}
+                    {awayPages.map((page) => (
+                        <Fragment key={page}>
+                            <a href={sectionAddress(page)} aria-current={page === current ? "page" : undefined} onClick={() => setOpen(false)}>
+                                <Icon name={page} />
+                                {sectionLabel(page)}
+                            </a>
+                            {page === "packages" && ownMenu.length > 0 && (
+                                <div class="menu-sub">
+                                    <OwnPageLinks pages={ownMenu} ownShown={ownShown} onPick={() => setOpen(false)} />
+                                </div>
+                            )}
+                        </Fragment>
+                    ))}
                     <button type="button" class="menu-theme" onClick={flip}>
                         <Icon name={theme.next === "dark" ? "moon" : "sun"} />
                         {theme.name}
@@ -546,17 +546,17 @@ function MasterHome({ top, poke, onHome }: { top: Pick<TopOf, "mood" | "moment" 
     );
 }
 
-/** The game's time, its day of the calendar, and whether the game is live, each a chip. */
+/** The game's time and its day of the calendar, each a chip, and whether the game is live: a plug in its socket or out of it, the words in its tip. */
 function StatusChips({ now, calendar, live }: { now?: string; calendar?: CalendarDay; live: boolean; })
 {
     const row = useRef<HTMLDivElement>(null);
     useWrapped(row);
+    const said = live ? t("live") : t("waiting for the game");
     // Live first and the time after, drawn the other way round: where the row is short, the time goes first (D-355), and before it the extensions'.
     return (
         <div ref={row} class="status-chips">
-            <span class={live ? "status-chip live on" : "status-chip live"}>
-                <span class="dot" />
-                {live ? t("live") : t("waiting for the game")}
+            <span class={live ? "status-chip live on tip-below" : "status-chip live tip-below"} role="img" aria-label={said} data-tip={said}>
+                <Icon name={live ? "plugged" : "unplugged"} />
             </span>
             {now && (
                 <span class="status-chip">

@@ -74,7 +74,7 @@ export function sectionLabel(section: Section): string
         about: t("About"),
         pkg: t("Packages"),
         choices: t("Party"),
-        chat: t("Chat"),
+        chat: t("Roleplay"),
     };
     return labels[section];
 }

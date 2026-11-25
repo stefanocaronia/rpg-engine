@@ -442,3 +442,61 @@ describe("coins the player tosses (ASK-15, D-525)", () => {
         expect(await refused({ ...rope, toss: 0 })).toBe("Toss one, two or three coins, not 0.");
     });
 });
+
+describe("at the table's own chat, the player's roll told with its mark before the next question", () => {
+    const atTable = (): Context => ({ ...context, chat: { calls: 0, atTable: true } });
+
+    /** A page that clicks the first button, with the roll of the player's the master has not told yet, if any. */
+    function pageWith(untold: { id: string; check?: string; } | undefined): Player
+    {
+        return { choose: async () => 0, untold: () => untold };
+    }
+
+    it("has the master tell the roll now with [roll id], never its numbers; elsewhere the words stay", async () => {
+        const told = ask.format(await ask.run(ask.input.parse(wall), { ...atTable(), page: pageWith(undefined) }));
+        expect(told).toBe(
+            "id4 Bruna, Atletica: 1d20+5 = 9 [4] + 5, rolled by the player. Tell the outcome in the story now, before you ask anything else, with [roll id4] right after the moment it decides: the page shows the roll there, so never write its numbers yourself.",
+        );
+        expect(await asked(wall, 0)).toContain("Tell the outcome in the story, with the roll in brackets right after the moment it decides;");
+    });
+
+    it("gives coins tossed at the table their mark too", async () => {
+        const told = ask.format(await ask.run(ask.input.parse({ question: "La corda regge?", toss: 1 }), { ...atTable(), page: pageWith(undefined) }));
+        expect(told).toMatch(/^(\S+) Bruna, Lancia la moneta: .*, rolled by the player\. Tell the outcome in the story now, before you ask anything else, with \[roll \1\] /);
+    });
+
+    it("refuses every question while a roll of the player's is untold, and asks once it is told", async () => {
+        const untold = { ...atTable(), page: pageWith({ id: "3cbdb056", check: "Atletica" }) };
+        const expected = "Not asked. The player has read nothing of what Atletica decided: what you think never reaches them, only what you write as your message. "
+            + "Write it in the story now, with [roll 3cbdb056] right after the moment it decides, then call ask again.";
+        await expect(ask.run(ask.input.parse(wall), untold)).rejects.toThrow(expected);
+        await expect(ask.run(ask.input.parse({ question: "Apri la porta?", options: ["Sì", "No"] }), untold)).rejects.toThrow(expected);
+        await expect(ask.run(ask.input.parse({ question: "La corda regge?", toss: 1 }), untold)).rejects.toThrow(expected);
+        const unnamed = { ...atTable(), page: pageWith({ id: "3cbdb056" }) };
+        await expect(ask.run(ask.input.parse(wall), unnamed)).rejects.toThrow("The player has read nothing of what their last roll decided: what you think never reaches them");
+        expect(readLogFile(folder).filter((entry) => entry.type === "roll" || entry.type === "asked")).toHaveLength(0);
+        expect(await ask.run(ask.input.parse({ question: "Apri la porta?", options: ["Sì", "No"] }), { ...atTable(), page: pageWith(undefined) })).toEqual({ kind: "chose", answer: "Sì" });
+    });
+
+    it("names to the page the rolls whose mark it handed the master, at the table only, and never the dice of a rest", async () => {
+        const owed: string[] = [];
+        const page: Player = { ...pageWith(undefined), owed: (id) => owed.push(id) };
+        const checked = await ask.run(ask.input.parse(wall), { ...atTable(), page });
+        const tossed = await ask.run(ask.input.parse({ question: "La corda regge?", toss: 1 }), { ...atTable(), page });
+        expect(owed).toEqual([checked, tossed].map((result) => (result.kind === "roll" ? result.id : "none")));
+        await ask.run(ask.input.parse(wall), { ...context, page });
+        expect(owed).toHaveLength(2);
+
+        await rpg("write", "Bruna", "--set", "vocations=[[Warden]] 3", "--set", "might=7", "--set", "grit=5/17");
+        const resting: Player = {
+            ...page,
+            spendDice: async (_question, _title, _done, spending) => {
+                spending.spend("stamina-d6");
+                return 0;
+            },
+        };
+        const rest = { question: "Riposo breve sotto il mulino: quanti dadi vita spendi?", recipe: "breather", who: "Bruna" };
+        expect(ask.format(await ask.run(ask.input.parse(rest), { ...atTable(), page: resting }))).toContain("The player spent 1 of Bruna's dice");
+        expect(owed).toHaveLength(2);
+    });
+});

@@ -180,3 +180,20 @@ describe("rpg", () => {
         expect((await runCommandLine(["roll", "1d6", "--loud"], context)).exitCode).toBe(1);
     });
 });
+
+describe("rpg roll at the table's own chat", () => {
+    const atTable = (): Context => ({ ...context, chat: { calls: 0, atTable: true } });
+
+    it("has the master write a shown roll's mark, never its numbers; a hidden roll and a roll elsewhere get no such words", async () => {
+        writeFileSync(join(folder, "campaign.yaml"), "name: Test\nmaster-rolls: in view\n");
+        const shown = await runCommandLine(["roll", "2d6+1", "--why", "damage", "--who", "Lena"], atTable());
+        expect(shown.output.split("\n").slice(0, 2)).toEqual([
+            "id1 Lena, damage: 2d6+1 = 9 [4, 4] + 1",
+            "In the story write [roll id1] where it decides: the page shows the roll there, so never write its numbers yourself.",
+        ]);
+        const coins = await runCommandLine(["roll", "--toss", "1", "--why", "does the rope hold?", "--who", "Lena"], atTable());
+        expect(coins.output).toMatch(/^(\S+) .*\nIn the story write \[roll \1\] where it decides/);
+        expect((await runCommandLine(["roll", "1d20", "--why", "notice", "--hidden"], atTable())).output).not.toContain("[roll ");
+        expect((await runCommandLine(["roll", "2d6", "--why", "damage", "--who", "Lena"], context)).output).not.toContain("[roll ");
+    });
+});

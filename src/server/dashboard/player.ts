@@ -151,6 +151,8 @@ export function pagePlayer(served: Served): Player
 
             return chosen === 0 || chosen === "absent" ? chosen : undefined;
         },
+        untold: () => served.master?.untold?.(),
+        owed: (id) => served.master?.owed?.(id),
     };
 }
 

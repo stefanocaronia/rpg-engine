@@ -5,13 +5,13 @@
 export type ChatSide = "tab" | "left" | "right";
 
 /**
- * The panel's widths, in pixels: its least and most, the one it has until the player drags it, and a key's step; the least the page keeps beside it, under
- * which there is no panel; and the least the page needs to keep its own table beside it too.
+ * The panel's widths, in pixels: its least and most, the one it has until the player drags it, and a key's step; the least the page keeps beside it, however
+ * far the edge is dragged; the narrowest window with a panel; and the least the page needs to keep its own table beside it too.
  */
-export const dockWidths = { least: 360, first: 480, most: 800, step: 24, page: 760, table: 900 } as const;
+export const dockWidths = { least: 360, first: 480, most: 1200, step: 24, page: 600, window: 1120, table: 900 } as const;
 
 /** The narrowest window with a panel: under it the chat stays in its section, whatever the player chose. */
-export const dockFrom = dockWidths.page + dockWidths.least;
+export const dockFrom = dockWidths.window;
 
 /**
  * Where the chat stands: as the player chose; until they choose, beside the page at its end side, where the page's own table is and where the chat stands

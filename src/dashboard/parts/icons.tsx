@@ -127,6 +127,7 @@ const iconPaths = {
     dockTab: "M3.5 9h17v10.5h-17Z M3.5 9V5.5h7V9",
     dockLeft: "M3.5 5h17v14h-17Z M10 5v14 M5.8 8.5h2 M5.8 11.5h2",
     dockRight: "M3.5 5h17v14h-17Z M14 5v14 M16.2 8.5h2 M16.2 11.5h2",
+    dockTall: "M5 3h14 M5 21h14 M12 6v12 M9 9l3-3 3 3 M9 15l3 3 3-3",
 };
 
 /**

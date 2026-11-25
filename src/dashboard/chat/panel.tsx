@@ -1,9 +1,9 @@
-// The chat beside the page (D-582): a panel at the window's left or right, under the page's top, as tall as the window, with the chat in it as it is in its
-// section; its inner edge is dragged, or moved with the arrows, to make it wider or narrower. Three small buttons in the chat's head say where the chat
-// stands: in its tab, on the left, on the right; who wants it out of the way puts it back in its tab.
+// The chat beside the page (D-582): a panel at the window's left or right, under the page's top or, as the player switches it, as tall as the window, the
+// page's top beside it; with the chat in it as it is in its section; its inner edge is dragged, or moved with the arrows, to make it wider or narrower.
+// Three small buttons in the chat's head say where the chat stands: in its tab, on the left, on the right; who wants it out of the way puts it back in its tab.
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { Icon, type IconName } from "../parts/icons.tsx";
-import { chatSidePref, chatWidthKey, useChoice, useKeptText } from "../shell/prefs.ts";
+import { chatSidePref, chatTallPref, chatWidthKey, useChoice, useKeptText, usePref } from "../shell/prefs.ts";
 import { pageDirection, t } from "../text.ts";
 import { type ChatSide, chatSide, dockWidth, dockWidths, keptWidth, widthAfterKey, widthAtPointer } from "./dock.ts";
 import type { ChatGame } from "./log.tsx";
@@ -105,7 +105,9 @@ export function ChatPanel({ chat, side, width, windowWidth, asking, game, onSide
 {
     const panel = useRef<HTMLDivElement>(null);
     const [dragging, setDragging] = useState(false);
-    useTopEdge(panel);
+    const [tall, setTall] = usePref(chatTallPref);
+    useTopEdge(panel, tall);
+    const tallName = t("As tall as the window");
 
     // The width as the pointer drags the edge: on the page itself until the pointer lets go, so that nothing but the panel and the page's room are drawn anew.
     const drag = (event: PointerEvent): number | undefined => {
@@ -120,13 +122,22 @@ export function ChatPanel({ chat, side, width, windowWidth, asking, game, onSide
     };
 
     return (
-        <div ref={panel} class={dragging ? `chat-panel side-${side} dragging` : `chat-panel side-${side}`}>
+        <div ref={panel} class={["chat-panel", `side-${side}`, tall && "tall", dragging && "dragging"].filter(Boolean).join(" ")}>
             <ChatPage
                 chat={chat}
                 place="dock"
                 asking={asking}
                 game={game}
-                tools={<ChatPlaces side={side} onSide={onSide} />}
+                tools={
+                    <>
+                        <ChatPlaces side={side} onSide={onSide} />
+                        <span class="segmented chat-places chat-tall">
+                            <button type="button" class="tip-below" aria-pressed={tall} aria-label={tallName} data-tip={tallName} onClick={() => setTall(!tall)}>
+                                <Icon name="dockTall" />
+                            </button>
+                        </span>
+                    </>
+                }
             />
             <div
                 class="chat-edge"
@@ -166,23 +177,35 @@ export function ChatPanel({ chat, side, width, windowWidth, asking, game, onSide
     );
 }
 
-/** The panel's top under the page's top, which is taller at the page's start and draws itself together down the page: measured as it changes, never as the page scrolls. */
-function useTopEdge(panel: { current: HTMLElement | null; }): void
+/**
+ * The panel's top at the line under the page's sections, where the row of where the party is starts, on the page for the top too: the top is taller at the
+ * page's start and draws itself together down the page, measured as it changes, never as the page scrolls; none for the tall panel.
+ */
+function useTopEdge(panel: { current: HTMLElement | null; }, tall: boolean): void
 {
     useLayoutEffect(() => {
         const top = document.querySelector<HTMLElement>("header.top");
-        const element = panel.current;
+        const page = panel.current?.closest<HTMLElement>(".page");
 
-        if (top === null || element === null) {
+        if (top === null || top === undefined || page === null || page === undefined || tall) {
             return;
         }
 
-        const measure = (): void => element.style.setProperty("--dock-top", `${Math.round(top.getBoundingClientRect().bottom)}px`);
+        const measure = (): void => {
+            const place = top.querySelector<HTMLElement>(".top-place");
+            const edge = place === null ? top.getBoundingClientRect().bottom : place.getBoundingClientRect().top + place.clientTop;
+            page.style.setProperty("--dock-top", `${Math.round(edge)}px`);
+        };
+
         const sizes = new ResizeObserver(measure);
         sizes.observe(top);
         measure();
-        return () => sizes.disconnect();
-    }, []);
+
+        return () => {
+            sizes.disconnect();
+            page.style.removeProperty("--dock-top");
+        };
+    }, [tall]);
 }
 
 /** The window's width, as it changes. */
