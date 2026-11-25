@@ -8,9 +8,12 @@ export function inside(path: string, folder: string): boolean
         return false;
     }
 
-    const fold = (text: string): string => (process.platform === "win32" ? text.toLowerCase() : text);
+    const windows = process.platform === "win32";
+    const fold = (text: string): string => (windows ? text.toLowerCase() : text);
+    // A host may name a file as a URL's path does, /F:/campaign/page.md: on Windows no file is named so, and it is the path after the slash.
+    const named = windows && /^[\\/][a-zA-Z]:[\\/]/.test(path) ? path.slice(1) : path;
     const base = fold(resolve(folder));
-    const target = fold(resolve(base, path));
+    const target = fold(resolve(base, named));
     return target === base || target.startsWith(base.endsWith(sep) ? base : `${base}${sep}`);
 }
 
