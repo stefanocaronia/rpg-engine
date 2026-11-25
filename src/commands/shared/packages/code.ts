@@ -203,7 +203,7 @@ export function loadedCode(code: CodePackage, context: Context): PackageCode | s
         return undefined;
     }
 
-    return left !== undefined ? `is left out (${left}): validate says how to fix it` : ready.get(url) ?? "is not loaded yet: start the MCP server again (/mcp in Claude Code), or open a new chat";
+    return left !== undefined ? `is left out (${left}): validate says how to fix it` : ready.get(url) ?? `is not loaded yet: ${loadAgain(context)}`;
 }
 
 /**
@@ -636,23 +636,40 @@ function systemCode(code: CodePackage, context: Context): PackageCode | string |
     }
 
     const loaded = context.systemCode?.[code.name];
-    const again = "start the MCP server again (/mcp in Claude Code), or open a new chat";
 
     if (loaded === undefined) {
-        return `is not loaded: ${again}`;
+        return `is not loaded: ${loadAgain(context)}`;
     }
 
     if (loaded.version !== undefined && loaded.version !== code.version) {
-        return `is loaded at version ${loaded.version}, and ${code.version} is installed now: ${again}`;
+        return `is loaded at version ${loaded.version}, and ${code.version} is installed now: ${loadAgain(context)}`;
     }
 
     if ("refused" in loaded) {
         return loaded.refused;
     }
 
-    return "problem" in loaded
-        ? `cannot load (${loaded.problem}): install it again with package install ${code.name}, or run npm run build in its repository, then start the MCP server again`
-        : (loaded.code as PackageCode);
+    if (!("problem" in loaded)) {
+        return loaded.code as PackageCode;
+    }
+
+    // A table does not end for code that cannot load: started again before the fix, it would end again.
+    const again = context.codeOutdated === undefined ? "start the MCP server again" : "start the campaign's table again once it ended, as it does after a while with no chat and no page";
+    return `cannot load (${loaded.problem}): install it again with package install ${code.name}, or run npm run build in its repository, then ${again}`;
+}
+
+/**
+ * What loads a package's code again, the code on disk being another than the one this process loaded: a new server, as for a new chat; at a campaign's table,
+ * which keeps its code for every chat, the table started again, which it is told so that it ends once no call runs (D-582).
+ */
+function loadAgain(context: Context): string
+{
+    if (context.codeOutdated === undefined) {
+        return "start the MCP server again (/mcp in Claude Code), or open a new chat";
+    }
+
+    context.codeOutdated();
+    return "the campaign's table ends by itself once no call is running: start it again (rpg table in the campaign's folder), then open a new chat";
 }
 
 /** The address an extension's code is imported from, for its version and the installs so far; undefined when its code does not run. */

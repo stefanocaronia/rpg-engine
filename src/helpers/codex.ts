@@ -6,9 +6,9 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DocumentReader, MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
+import { stopTree } from "../core/process.ts";
 import { paintedBrief } from "./briefs.ts";
 import { helperEnvironment, helperState, knownReady } from "./programs.ts";
-import { stopTree } from "./stop.ts";
 
 // How long a picture may take before the engine gives it up (D-308): the probe's took 31 to 45 seconds.
 const longest = 3 * 60 * 1000;
@@ -89,7 +89,7 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "pipe", "pipe"] });
         let output = "";
         let errors = "";
-        const timer = setTimeout(() => stopTree(child), longest);
+        const timer = setTimeout(() => stopTree(child.pid), longest);
         child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
         child.stderr.on("data", (chunk: Buffer) => (errors += chunk.toString()));
         child.stdin.on("error", () => undefined);
@@ -139,7 +139,7 @@ function write(brief: string): Promise<string | undefined>
 
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "ignore"] });
-        const timer = setTimeout(() => stopTree(child), longest);
+        const timer = setTimeout(() => stopTree(child.pid), longest);
         child.stdin.on("error", () => undefined);
         child.on("error", () => undefined);
         child.on("close", () => {
@@ -162,10 +162,10 @@ function read(folder: string, brief: string, _writable: string[], signal?: Abort
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "pipe"] });
         // Dropped while it runs: the helper stops with all it started.
-        const stop = (): void => stopTree(child);
+        const stop = (): void => stopTree(child.pid);
         signal?.addEventListener("abort", stop, { once: true });
         let errors = "";
-        const timer = setTimeout(() => stopTree(child), longestReading);
+        const timer = setTimeout(() => stopTree(child.pid), longestReading);
         child.stderr.on("data", (chunk: Buffer) => (errors += chunk.toString()));
         child.stdin.on("error", () => undefined);
         child.on("error", () => undefined);

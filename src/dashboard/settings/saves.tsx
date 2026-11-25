@@ -1,11 +1,11 @@
 // The Saves section (D-359): the campaign's saves as a video game shows them, newest first, each with the picture of the place the party was in, the place and
 // when it was made; saving now, going back to a save and starting the campaign over, from the start of play or from before session zero (D-361), as the mode
 // of saves allows, each confirmed; then a new chat with the master, since the one going on remembers what is gone.
-import type { ComponentChildren } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { sectionAddress } from "../address.ts";
 import { changeSaves, readSaves, type SavesChange, type SavesView as Saves } from "../api.ts";
 import type { ResetPoint, ShownSave } from "../data.ts";
+import { Confirm } from "../parts/confirm.tsx";
 import { gameDateLabel } from "../parts/game-words.ts";
 import { Icon } from "../parts/icons.tsx";
 import { phraseLabel, realTimeLabel, valueLabel } from "../parts/labels.ts";
@@ -321,23 +321,6 @@ function StartOver({ saves, points, campaign, busy, onClose, onConfirm }: {
                 </form>
             )}
         </Confirm>
-    );
-}
-
-/** A modal question over the whole page, the dice too, which Escape closes. */
-export function Confirm({ title, onClose, children }: { title: string; onClose(): void; children: ComponentChildren; })
-{
-    const dialog = useRef<HTMLDialogElement>(null);
-
-    useEffect(() => {
-        dialog.current?.showModal();
-    }, []);
-
-    return (
-        <dialog ref={dialog} class="confirm" aria-labelledby="confirm-title" onClose={onClose}>
-            <h2 id="confirm-title">{title}</h2>
-            {children}
-        </dialog>
     );
 }
 

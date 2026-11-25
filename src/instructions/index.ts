@@ -1,5 +1,6 @@
-// The game master's instructions, read from this package wherever it is installed (D-97). Depends on nothing else in rpg-engine.
+// The game master's instructions, read from this package wherever it is installed (D-97). Depends only on the core's list of hosts.
 import { readFileSync } from "node:fs";
+import type { HostId } from "../core/hosts.ts";
 
 /** A part of the instructions as a layer gives it: its text, and whether it takes the place of the layers below instead of adding to them (D-121). */
 export interface PartLayer
@@ -20,14 +21,11 @@ export function hostInstructions(): { start: string; character: string; }
     return { start: startInstructions(), character: readInstructions("character.md") };
 }
 
-/** A host that has the character agent (D-490, D-580). */
-export type VoicesHost = "claudeCode" | "openCode" | "codex" | "antigravity";
-
 // The host's own lines on calling the agent, after voices.md; Claude Code needs none.
-const hostVoices: Partial<Record<VoicesHost, string>> = { openCode: "voices-opencode.md", codex: "voices-codex.md", antigravity: "voices-antigravity.md" };
+const hostVoices: Partial<Record<HostId, string>> = { openCode: "voices-opencode.md", codex: "voices-codex.md", antigravity: "voices-antigravity.md" };
 
 /** When and how the master calls the character agent, in play, where the host has it (D-490), with the host's own way of calling it (D-580). */
-export function voicesInstructions(way: string, host: VoicesHost): string
+export function voicesInstructions(way: string, host: HostId): string
 {
     const own = hostVoices[host];
     // Always for the main characters, or for everyone, as the player chose, on top of the key moments (D-490).
@@ -41,10 +39,13 @@ export function buttonsInstructions(physicalDice: boolean): string
     return readInstructions(physicalDice ? "buttons-physical-dice.md" : "buttons.md");
 }
 
-/** The dashboard at its link, which the game is played with, and how the player uses it, for the master to offer it and help them (D-404). */
-export function dashboardInstructions(link: string): string
+/**
+ * The dashboard at its link, which the game is played with, and how the player uses it, for the master to offer it and help them (D-404); at the table, whose
+ * chat is part of the page, without the link.
+ */
+export function dashboardInstructions(link: string, atTable = false): string
 {
-    return readInstructions("dashboard.md").replace("{link}", link);
+    return atTable ? readInstructions("dashboard-table.md") : readInstructions("dashboard.md").replace("{link}", link);
 }
 
 /** The game master's full instructions, as the `instructions` command gives them. */

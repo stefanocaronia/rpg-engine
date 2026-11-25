@@ -1185,6 +1185,11 @@
         }
     }
 
+    /* The master's question, from another section than the chat's: what it asks, lighter than who asks. */
+    .asked-notice-question {
+        font-weight: 400;
+    }
+
     .turn-notice-go {
         margin-inline-start: auto;
         padding: 4px 12px;

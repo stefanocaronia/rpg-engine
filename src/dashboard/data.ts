@@ -100,6 +100,95 @@ export interface ActsShown
     bell: boolean;
 }
 
+/** A model an AI app offers the master: its name in the app's own words, what the app says of it, and the efforts it takes, none for one that takes none. */
+export interface ChatModel
+{
+    id: string;
+    name: string;
+    about?: string;
+    efforts: string[];
+}
+
+/**
+ * An AI app the table's chat with the master may open in: whether the page can drive it yet, whether it is on this computer, the model it proposes, the
+ * efforts it knows, and the models it offers, none until it has answered.
+ */
+export interface ChatHost
+{
+    id: string;
+    name: string;
+    ready: boolean;
+    found: boolean;
+    model: string;
+    efforts: string[];
+    models: ChatModel[];
+}
+
+/**
+ * A message of the table's chat with the master: the player's words, the master's, as markdown, growing while they answer, or a word of the table itself; a
+ * question of the master's and how it ended; a roll the player may see, as the Rolls card gets it.
+ */
+export type ChatMessage = ChatSaid | ChatAsked | ChatRoll;
+
+/** Words of the player's, the master's or the table's. */
+export interface ChatSaid
+{
+    id: number;
+    from: "player" | "master" | "table";
+    text: string;
+}
+
+/**
+ * A question of the master's in the chat: its text, the word for a roll or a choice when it has one, its answers as the buttons word them; waiting, answered
+ * with the answer in words, or left without one. The one that waits is what the page is asked now, with all the rest of it.
+ */
+export interface ChatAsked
+{
+    id: number;
+    from: "asked";
+    text: string;
+    title?: string;
+    options: string[];
+    state: "waiting" | "answered" | "left";
+    answer?: string;
+}
+
+/** A roll the player may see, in the chat: in words, and as the Rolls card gets it. */
+export interface ChatRoll
+{
+    id: number;
+    from: "roll";
+    text: string;
+    roll: ShownRoll;
+}
+
+/** The app, model and effort a chat with the master plays with. */
+export interface ChatChoice
+{
+    host: string;
+    model: string;
+    effort?: string;
+}
+
+/**
+ * The table's chat with the master as the page shows it: the apps it may open in, the campaign's last choice and whether a chat of it can be taken up, the
+ * open chat with how its turn stands, why it ended, the command the master uses now and whether the player's words now answer the question that waits, its
+ * messages, and whether a chat opened by hand plays the campaign. The open chat's model is the one the player chose, `runs` the app's own name for the one
+ * it runs, once the app said it; `cutShort` while the chat taken up was cut as the game was closed, until the next turn begins; `takenUp` while a chat
+ * taken up from the app's own session has no words of the player's yet, never with `cutShort`.
+ */
+export interface MasterShown
+{
+    hosts: ChatHost[];
+    last?: ChatChoice & { resumable: boolean; };
+    chat?: ChatChoice & { runs?: string; cutShort?: true; takenUp?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
+    messages: ChatMessage[];
+    elsewhere: boolean;
+}
+
+/** What the page reads of the master's chat: nothing of it where no table keeps one, as when a chat serves the page. */
+export type MasterNow = { table: false; } | ({ table: true; } & MasterShown);
+
 /** Where the page puts the groups of a sheet: those of its rail, in order, and the order of the others (D-295); those at hand in a fight (D-315). */
 export interface SheetCards
 {

@@ -8,7 +8,8 @@ import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DocumentReader, PictureSubject, TextWriter } from "../src/core/context.ts";
-import { type AgySettings, antigravityClient, antigravityPainter, antigravityReader, antigravitySays, antigravityWriter, hostReader, hostWriter, openCodeClient, painterSettings, playerModel, sealedSettings } from "../src/helpers/index.ts";
+import { hosts } from "../src/core/hosts.ts";
+import { type AgySettings, antigravityPainter, antigravityReader, antigravitySays, antigravityWriter, hostReader, hostWriter, painterSettings, playerModel, sealedSettings } from "../src/helpers/index.ts";
 import { readImage } from "../src/images/index.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
@@ -189,7 +190,7 @@ describe("Antigravity's writer (D-406, D-579 (1))", () => {
     it("is marked as the engine's helper, and gets nothing of the chat that names the campaign", async () => {
         const line = fakeAgy({});
         const saved = { host: process.env.RPG_HOST, place: process.env.AGY_TEST_PLACE };
-        process.env.RPG_HOST = antigravityClient;
+        process.env.RPG_HOST = hosts.antigravity.client;
         process.env.AGY_TEST_PLACE = join(process.cwd(), "campaign");
 
         try {
@@ -409,16 +410,16 @@ describe("who works outside the chat in Antigravity (D-579 (1))", () => {
     const reader = (name: "Codex" | "Claude Code" | "OpenCode" | "Antigravity", ready: boolean): DocumentReader => ({ ready: () => ready, program: () => name, read: () => Promise.resolve({ said: name }) });
 
     it("takes Antigravity's agy first in its own chat, then Codex and Claude Code; never elsewhere", async () => {
-        expect(await hostWriter(() => antigravityClient, writer("codex", true), writer("claude", true), writer("opencode", true), writer("antigravity", true)).write("b")).toBe("antigravity");
-        expect(await hostWriter(() => antigravityClient, writer("codex", true), writer("claude", true), writer("opencode", true), writer("antigravity", false)).write("b")).toBe("codex");
-        expect(await hostWriter(() => antigravityClient, writer("codex", false), writer("claude", true), writer("opencode", true), writer("antigravity", false)).write("b")).toBe("claude");
-        expect(await hostWriter(() => openCodeClient, writer("codex", true), writer("claude", true), writer("opencode", true), writer("antigravity", true)).write("b")).toBe("opencode");
+        expect(await hostWriter(() => hosts.antigravity.client, writer("codex", true), writer("claude", true), writer("opencode", true), writer("antigravity", true)).write("b")).toBe("antigravity");
+        expect(await hostWriter(() => hosts.antigravity.client, writer("codex", true), writer("claude", true), writer("opencode", true), writer("antigravity", false)).write("b")).toBe("codex");
+        expect(await hostWriter(() => hosts.antigravity.client, writer("codex", false), writer("claude", true), writer("opencode", true), writer("antigravity", false)).write("b")).toBe("claude");
+        expect(await hostWriter(() => hosts.openCode.client, writer("codex", true), writer("claude", true), writer("opencode", true), writer("antigravity", true)).write("b")).toBe("opencode");
         expect(await hostWriter(() => "claude-code", writer("codex", true), writer("claude", true), writer("opencode", true), writer("antigravity", true)).write("b")).toBe("codex");
         expect(hostWriter(() => "codex-mcp-client", writer("codex", false), writer("claude", true), writer("opencode", true), writer("antigravity", true)).ready()).toBe(false);
     });
 
     it("reads with Antigravity's agy first in its own chat, then Claude Code and Codex; never elsewhere", () => {
-        const all = (antigravity: boolean, claude = true): DocumentReader => hostReader(() => antigravityClient, reader("Codex", true), reader("Claude Code", claude), reader("OpenCode", true), reader("Antigravity", antigravity));
+        const all = (antigravity: boolean, claude = true): DocumentReader => hostReader(() => hosts.antigravity.client, reader("Codex", true), reader("Claude Code", claude), reader("OpenCode", true), reader("Antigravity", antigravity));
         expect(all(true).program?.()).toBe("Antigravity");
         expect(all(false).program?.()).toBe("Claude Code");
         expect(all(false, false).program?.()).toBe("Codex");

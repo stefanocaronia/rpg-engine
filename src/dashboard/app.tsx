@@ -9,6 +9,13 @@ import { ActSheet } from "./acts/sheet.tsx";
 import { ActStrip } from "./acts/strip.tsx";
 import { type Address, readAddress, redirectCombat, sectionAddress } from "./address.ts";
 import { answer, closeCard, readActs, readAsked, readChoices, readGameTheme, readModules, readView, readWidgets, sendSeen } from "./api.ts";
+import { chatView, lastHeard, questionPlace, unseenWords, waitingQuestion } from "./chat/chat.ts";
+import { type ChatSide, logicalSide, tableFits } from "./chat/dock.ts";
+import type { ChatGame } from "./chat/log.tsx";
+import { ChatPage } from "./chat/page.tsx";
+import { ChatPanel, ChatPlaces, useChatDock } from "./chat/panel.tsx";
+import type { ChatAsking } from "./chat/question.tsx";
+import { useMasterChat } from "./chat/sending.ts";
 import type { Asked, AskedNow, Member, Moment, ShownModule, ShownRoll, ShownWidget } from "./data.ts";
 import { flies } from "./dice/pool.ts";
 import { DiceTray, type SheetThrow } from "./dice/tray.tsx";
@@ -41,22 +48,25 @@ import { SetupView, useSetup } from "./settings/setup.tsx";
 import { PartyStrip, type Tokened } from "./sheet/party.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet/sheet.tsx";
 import { PageFoot } from "./shell/footer.tsx";
+import { useHome } from "./shell/home.ts";
 import { gameNotices, importNotices, type Notice, Notices } from "./shell/notices.tsx";
 import { About } from "./shell/pages.tsx";
+import { productName } from "./shell/product.ts";
 import { calledOf, playerNamed, type Shown, turnKey, withHeld } from "./shell/shown.ts";
 import { gameStyleChanged, takeSystemStyle } from "./shell/system-style.ts";
 import { PlayTable, tableBeside, TableTab, useTableAway } from "./shell/table.tsx";
 import { restoreTheme } from "./shell/theme.ts";
 import { startTooltips } from "./shell/tooltip.ts";
 import { SetupCorner, Top } from "./shell/top.tsx";
+import { fitOpenedWindow } from "./shell/window.ts";
 import { browserLanguage, pageDirection, pageLocale, setLanguage, setSystemWords, t } from "./text.ts";
 import { WorldView } from "./world/world.tsx";
 
-/** The product's name, as the page writes it: here only (D-276). */
-const productName = "RPG Engine";
-
 // How many of the last rolls the page reads at first, and how many more each time the player asks for older ones (D-302).
 const firstRolls = 20;
+
+// From this width the chat stands beside the setup's questions, as in the style sheet; under it, after them.
+const chatBesideSetup = "(min-width: 1100px)";
 
 // How long at most what a roll from a card or a die of a rest changed waits for its dice, when they never land.
 const longestHold = 15_000;
@@ -65,6 +75,8 @@ function App()
 {
     const [shown, setShown] = useState<Shown>({ party: [], sheet: [], text: "", rolls: [], rollsTotal: 0, version: 0 });
     const [live, setLive] = useState(false);
+    // Whether the page has listened to the server's events once: from then on it reads the table's chat.
+    const listening = useRef(false);
     // The section the address names, and whose sheet (D-276, D-309).
     const [address, setAddress] = useState<Address>(() => readAddress(window.location.hash));
     const reading = useRef(0);
@@ -94,9 +106,8 @@ function App()
     const [free, setFree] = useState<PageRoll[]>([]);
     // On a wide screen the table stands beside the page, unless the player folded it; folded, or under that width, the turns and the followed quest go back to
     // the page.
-    const wide = useMedia(tableBeside);
+    const wideWindow = useMedia(tableBeside);
     const [tableAway, setTableAway] = useTableAway();
-    const table = wide && !tableAway;
     // Whether the player has just opened or folded the table, which slides it in and gives the focus to what folds it, or to its tab; at the first reading it
     // is simply there.
     const [tableMoved, setTableMoved] = useState(false);
@@ -162,6 +173,12 @@ function App()
             setModules((before) => (JSON.stringify(before) === JSON.stringify(read) ? before : read));
             setModulesRead(true);
         }, () => undefined);
+
+        // The table's chat with the master, where a table keeps one (D-582): read once the page listens, as the table takes up the campaign's last chat when
+        // its first page does, and a reading before that would show where a chat is opened for a moment.
+        if (listening.current) {
+            void master.read();
+        }
 
         try {
             const [first, askedNow, actsNow, choicesNow] = await Promise.all([
@@ -502,6 +519,7 @@ function App()
         const tellSeen = (): void => void sendSeen(pageId, document.visibilityState === "visible");
 
         events.onopen = () => {
+            listening.current = true;
             setLive(true);
             tellSeen();
             void read();
@@ -510,6 +528,8 @@ function App()
         document.addEventListener("visibilitychange", tellSeen);
 
         events.addEventListener("changed", () => void read());
+        // The master's prose as it comes: the chat alone is read again.
+        events.addEventListener("chat", () => void master.read());
         events.onerror = () => setLive(false);
 
         const followAddress = (): void => {
@@ -553,6 +573,16 @@ function App()
         member,
         several,
     });
+    // The table's chat with the master (D-582); read() reads it again, by a function that never changes what it does.
+    const master = useMasterChat();
+
+    // Its address where no table keeps a chat leads to the party, as an address the page does not know.
+    useEffect(() => {
+        if (master.table === false && address.section === "chat") {
+            window.location.replace(sectionAddress("party"));
+        }
+    }, [master.table, address.section]);
+
     // A number of a sheet thrown for fun, each a throw of its own (D-280).
     const throwFromSheet: FreeRoll = (roll, label, who) => setSheetThrow((before) => ({ number: (before?.number ?? 0) + 1, roll, label, ...(who === undefined ? {} : { who }) }));
 
@@ -609,13 +639,97 @@ function App()
     const pageWidgets = useMemo(() => (packWidget === undefined ? widgets : widgets.filter((widget) => widget.id !== packWidget)), [widgets, packWidget]);
     // While the campaign is in its setup, the page is its first configuration, as a portal's (D-370).
     const inSetup = setup?.mode === "setup";
+    // The setup has no sections: where a table keeps the chat, it stands beside the questions on a wide screen, under them on a narrow one (D-582).
+    const setupChat = inSetup && master.table === true;
+    const chatBeside = useMedia(chatBesideSetup);
+    // The chat beside the page (D-582), at a campaign's table, out of the setup and in a window wide enough: at the side the player has it.
+    const dock = useChatDock(master.table === true && setup !== undefined && !inSetup);
+    const dockSide = dock.docked && dock.side !== "tab" ? dock.side : undefined;
+    const dockOpen = dockSide !== undefined;
+    const dockRoom = dockSide === undefined ? 0 : dock.width ?? 0;
+    // Beside the chat the page keeps its own table beside it only while both fit: else its cards go back into the page, as on a narrow screen.
+    const wide = wideWindow && tableFits(dock.windowWidth, dockRoom);
+    const table = wide && !tableAway;
+    // What the master said while the player was in another section, the chat in its own: a dot on its tab, until they go there.
+    const seenWords = useRef<number | undefined>(undefined);
+    const words = unseenWords(master.shown === undefined ? undefined : seenWords.current, lastHeard(master.shown), address.section === "chat" || dockOpen);
+    seenWords.current = master.shown === undefined ? undefined : words.seen;
+
+    // The master's question that waits is answered in one place alone (D-582): in the table's chat while it keeps it and is in sight; from another section,
+    // the chat in its tab, a notice leads there; on the page as ever with no such chat, and for the dice of a rest, a package's card and a square of the map.
+    const waiting = shown.asked ?? shown.pack?.asked;
+    const chatWaits = master.shown !== undefined && waitingQuestion(master.shown.messages) !== undefined;
+    const chatShown = dockOpen || (inSetup ? setupChat && chatBeside : master.table === true && address.section === "chat");
+    const askedAt = questionPlace(
+        { own: shown.pack !== undefined || shown.asked?.spend !== undefined || shown.asked?.square === true || inCard(shown.asked), kept: chatWaits },
+        chatShown ? "shown" : master.table === true && !inSetup ? "tab" : "away",
+    );
+    // The player's own words are written in the chat's field, where it is in sight and takes them: never in two places.
+    const wordsInChat = chatWaits && chatShown && master.shown?.chat?.answers === true && waiting?.forced !== true;
+    // What the chat draws of it, and of the game for its rolls.
+    const asking: ChatAsking | undefined = live && waiting !== undefined && chatWaits
+        ? { asked: waiting, here: askedAt === "chat", who: asker, answered: answering === waiting.id, words: waiting.forced !== true, onAnswered: () => void read() }
+        : undefined;
+    const chatGame: ChatGame = { party: shown.party, several };
+
+    // The chat's place as the player picks it: back in its tab, the page shows its section; the focus stays on the button picked, wherever the chat went.
+    const placeChat = (side: ChatSide): void => {
+        dock.setSide(side);
+
+        if (side === "tab") {
+            window.location.assign(sectionAddress("chat"));
+        }
+
+        window.setTimeout(() => document.querySelector<HTMLElement>(`.chat-places button[data-side="${side}"]`)?.focus(), 80);
+    };
+
+    // Beside the page the chat has no section: its address gives its panel the focus, and leads to the party.
+    useEffect(() => {
+        if (dockSide !== undefined && address.section === "chat") {
+            window.location.replace(sectionAddress("party"));
+            window.setTimeout(() => document.querySelector<HTMLElement>(".chat-panel #chat-words, .chat-panel .chat-start .button.gold")?.focus(), 80);
+        }
+    }, [dockSide, address.section]);
+
+    const inChat = master.table === true && (address.section === "chat" || inSetup || dockOpen);
+    const chatOpen = master.shown !== undefined && chatView(master.shown) === "open";
+    const leftSetup = useRef(false);
+    // The page led to the chat's section as the setup ended: the player's words take the focus there, which went with the setup.
+    const ledToChat = useRef(false);
+
+    // The setup ends while the player talks with the master beside it: the page that comes shows the chat they were in, in its section.
+    useEffect(() => {
+        if (setupChat) {
+            leftSetup.current = chatOpen;
+        } else if (setup !== undefined && leftSetup.current) {
+            leftSetup.current = false;
+            ledToChat.current = true;
+            window.location.replace(sectionAddress("chat"));
+        }
+    }, [setupChat, chatOpen, setup?.mode]);
+
+    useEffect(() => {
+        if (address.section !== "chat") {
+            ledToChat.current = false;
+        }
+    }, [address.section]);
     const engineNotice = useEngineNotice(address.section);
 
+    // The way back to the campaigns of this computer, at a campaign's table alone; and, its table gone, the way to have the campaign opened again (D-582).
+    const home = useHome(master.table === true, live);
+    const homeWay = home === undefined ? undefined : { go: home.go, busy: home.busy };
     // The page's own messages, over it (D-298): a problem, the game away, a word to know; a newer RPG Engine last (T-219).
     const notices: Notice[] = [
         ...(shown.problem === undefined ? [] : [{ kind: "problem" as const, text: shown.problem }]),
+        ...(home?.problem === undefined ? [] : [{ kind: "problem" as const, text: home.problem }]),
         ...(!live && shown.readAt !== undefined
-            ? [{ kind: "away" as const, text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString(pageLocale(), { hour: "2-digit", minute: "2-digit" }) }) }]
+            ? [{
+                kind: "away" as const,
+                key: "away",
+                text: t("Not connected: the sheet as of {time}. It comes back when the game does.", { time: shown.readAt.toLocaleTimeString(pageLocale(), { hour: "2-digit", minute: "2-digit" }) }),
+                // A table that ended does not come back by itself: the launcher opens the campaign again.
+                ...(home?.reopen === undefined ? {} : { link: { href: home.reopen, text: t("Reopen the campaign") } }),
+            }]
             : []),
         ...(shown.noCharacter && !inSetup ? [{ kind: "info" as const, text: t("There is no player character yet: the sheet comes when the master writes one.") }] : []),
         ...gameNotices(shown.problems, shown.textsTranslating),
@@ -652,7 +766,10 @@ function App()
                 <RequestedRoll.Provider value={requested}>
                     <WidgetsContext.Provider value={pageWidgets}>
                         <PlayerActsContext.Provider value={playerActs}>
-                            <div class={live ? "page" : "page stale"}>
+                            <div
+                                class={[live ? "page" : "page stale", dockSide === undefined ? "" : `dock-${logicalSide(dockSide, pageDirection())}`, wideWindow && !wide ? "dock-tight" : ""].filter((name) => name !== "").join(" ")}
+                                style={dockSide === undefined ? undefined : { "--dock-width": `${dockRoom}px` }}
+                            >
                                 {!inSetup && (
                                     <Top
                                         campaign={shown.campaign}
@@ -667,6 +784,8 @@ function App()
                                         asleep={!live && shown.readAt !== undefined}
                                         section={address.section === "choices" ? "party" : address.section}
                                         choices={(shown.choices?.sets ?? []).some(waits)}
+                                        chat={master.table !== true || dockSide !== undefined ? undefined : words.unseen ? "new" : "there"}
+                                        home={homeWay}
                                         fight={fight}
                                         yourTurn={yourTurn}
                                         turnName={turnName}
@@ -674,7 +793,7 @@ function App()
                                         ownShown={address.section === "pkg" && address.tab !== undefined && address.name !== undefined ? ownKey({ package: address.tab, name: address.name }) : undefined}
                                     />
                                 )}
-                                {inSetup && <SetupCorner live={live} />}
+                                {inSetup && <SetupCorner live={live} home={homeWay} />}
                                 <Notices notices={notices} />
                                 {live && shown.pack !== undefined && (
                                     <AskCard
@@ -682,6 +801,7 @@ function App()
                                         card={shown.pack}
                                         name={several ? playerNamed(shown.party, shown.pack.asked?.who)?.name ?? turnName : undefined}
                                         widget={widgets.find((widget) => widget.id === shown.pack?.widget)}
+                                        ownWords={!wordsInChat}
                                         onAnswer={(index) => void answerPack(index)}
                                         onWords={sayPack}
                                         onClose={closePack}
@@ -707,7 +827,7 @@ function App()
                                         }}
                                     />
                                 )}
-                                {live && shown.pack === undefined && shown.asked && shown.asked.spend === undefined && !inCard(shown.asked) && (
+                                {live && shown.pack === undefined && shown.asked && shown.asked.spend === undefined && !inCard(shown.asked) && askedAt === "page" && (
                                     <AskedBanner
                                         asked={shown.asked}
                                         yourTurn={yourTurn && (asker === undefined || asker.name === turnOf?.name)}
@@ -716,11 +836,19 @@ function App()
                                         map={shown.place?.map}
                                         place={shown.place?.name}
                                         answered={answering === shown.asked.id}
+                                        ownWords={!wordsInChat}
                                         onAnswered={() => void read()}
                                     />
                                 )}
                                 {inSetup
-                                    ? <SetupView setup={setup} />
+                                    ? setupChat
+                                        ? (
+                                            <div class="setup-with-chat">
+                                                <SetupView setup={setup} />
+                                                <ChatPage chat={master} place={chatBeside ? "beside" : "under"} asking={asking} game={chatGame} />
+                                            </div>
+                                        )
+                                        : <SetupView setup={setup} />
                                     : (
                                         <>
                                             {
@@ -736,6 +864,17 @@ function App()
                                                         {shown.openScene?.round !== undefined && <span class="turn-notice-round">{` · ${t("Round {round}", { round: shown.openScene.round })}`}</span>}
                                                     </span>
                                                     <span class="turn-notice-go">{t("Go to the scene")}</span>
+                                                </a>
+                                            )}
+                                            {/* The master's question, the chat in its tab and another section in sight: a notice that leads to the chat, never the bar (D-582). */}
+                                            {live && askedAt === "notice" && shown.asked !== undefined && (
+                                                <a class="turn-notice asked-notice" href={sectionAddress("chat")}>
+                                                    <Icon name="chat" />
+                                                    <span>
+                                                        {t("The master asks you")}
+                                                        <span class="asked-notice-question" dir="auto">{` · ${shown.asked.question}`}</span>
+                                                    </span>
+                                                    <span class="turn-notice-go">{t("Go to the chat")}</span>
                                                 </a>
                                             )}
                                             <Notices notices={importing} />
@@ -754,6 +893,9 @@ function App()
                                                 <main>
                                                     {address.section === "about" && <About product={productName} system={shown.system} />}
                                                     {address.section === "help" && <Help />}
+                                                    {address.section === "chat" && master.table === true && dockSide === undefined && (
+                                                        <ChatPage chat={master} entering={ledToChat.current} asking={asking} game={chatGame} tools={dock.width === undefined ? undefined : <ChatPlaces side="tab" onSide={placeChat} />} />
+                                                    )}
                                                     {/* The quest the player follows, small, where the story goes on (D-367), when the table does not hold it. */}
                                                     {!table && address.section === "scene" && <FollowedQuests version={shown.version} campaign={shown.campaign} />}
                                                     {address.section === "scene" && (
@@ -895,8 +1037,9 @@ function App()
                                         onClose={closeAct}
                                     />
                                 )}
+                                {/* In the chat a sentence the master heard is there as a message: its line here would only cover the player's words. */}
                                 <ActStrip
-                                    entries={strip}
+                                    entries={inChat ? strip.filter((entry) => entry.state !== "heard") : strip}
                                     problem={actProblem}
                                     onWithdraw={(id) => void withdraw(id)}
                                     bell={actsBell}
@@ -904,6 +1047,10 @@ function App()
                                     onSayAgain={(id) => void sayAgain(id)}
                                     onDismiss={dismissAct}
                                 />
+                                {/* The chat beside the page, at the side the player has it (D-582). */}
+                                {dockSide !== undefined && dock.width !== undefined && (
+                                    <ChatPanel chat={master} asking={asking} game={chatGame} side={dockSide} width={dock.width} windowWidth={dock.windowWidth} onSide={placeChat} onWidth={dock.setWidth} />
+                                )}
                             </div>
                         </PlayerActsContext.Provider>
                     </WidgetsContext.Provider>
@@ -913,7 +1060,8 @@ function App()
     );
 }
 
-// The theme the player picked before, from the start (D-300); the tooltips over everything (T-228).
+// The theme the player picked before, from the start (D-300); the tooltips over everything (T-228); the window the launcher sent here, large and centred.
+fitOpenedWindow("campaign");
 restoreTheme();
 startTooltips();
 

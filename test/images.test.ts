@@ -4,9 +4,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, PictureMaker } from "../src/core/context.ts";
+import { hosts } from "../src/core/hosts.ts";
 import { FileStore, withFiles } from "../src/core/store.ts";
 import type { PlayerSetting } from "../src/dashboard/data.ts";
-import { antigravityClient, hostPictures, paintedBrief } from "../src/helpers/index.ts";
+import { hostPictures, paintedBrief } from "../src/helpers/index.ts";
 import { imageFileName, readImage } from "../src/images/index.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext } from "./support.ts";
 
@@ -319,7 +320,7 @@ describe("pictures of places, quests, the party and those met made from words (D
     it("in Antigravity gives the master the brief to paint the picture itself, and changes nothing", async () => {
         await ok("config", "pictures", "new places");
         await ok("config", "lines", "--add", "ragni");
-        context = { ...context, pictures: hostPictures(() => antigravityClient, () => undefined, maker(true, picture("made.png", png))) };
+        context = { ...context, pictures: hostPictures(() => hosts.antigravity.client, () => undefined, maker(true, picture("made.png", png))) };
         const said = await ok("image", "Guado", "--describe", "Un guado di pietre");
         expect(said).toMatch(/^Make Guado's picture yourself with your own image tool, from this brief, then give it with image, page Guado, file and its full path, or url and its https address/);
         expect(said).toContain("Primary request: Guado, as adventurers see it arriving: Un guado di pietre");

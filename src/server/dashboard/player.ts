@@ -8,7 +8,8 @@ import { campaignSystem } from "../../commands/shared/campaign/world.ts";
 import { type CardAsked, type Picked, type Player, playerWait, type Rows, type Said, type SpendAsked, type Spending } from "../../core/context.ts";
 import { withFiles } from "../../core/store.ts";
 import { rollName } from "../../systems/index.ts";
-import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
+import { readBody, securityHeaders, sendJson } from "../page/index.ts";
+import { mostSaid } from "./files.ts";
 import type { Served } from "./index.ts";
 
 /** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */
@@ -62,6 +63,7 @@ export function pagePlayer(served: Served): Player
         served.card = undefined;
         return new Promise((done) => {
             const timer = setTimeout(() => settle(undefined), playerWait).unref();
+            let settled = false;
 
             const settle = (choice: number | Said | Picked | undefined | "absent"): void => {
                 clearTimeout(timer);
@@ -72,12 +74,28 @@ export function pagePlayer(served: Served): Player
                     served.notify();
                 }
 
+                // The table's chat hears once how it ended.
+                if (!settled) {
+                    settled = true;
+                    served.master?.askEnds(asked.id, answerWords(choice, labels));
+                }
+
                 done(choice);
             };
 
             const stop = (): void => settle(undefined);
             const asked: Asked = { id: randomUUID(), question, title, labels, ...more, settle };
             served.asked = asked;
+            // The table's chat keeps it too; the player's words said there answer it as the bar's own, unless it takes none: the dice of a rest (ASK-14), and
+            // a roll that must be made, whose card offers no words either.
+            const words = more.spending === undefined && more.rows?.forced !== true
+                ? (said: string): void => {
+                    if (served.asked === asked) {
+                        settle({ said });
+                    }
+                }
+                : undefined;
+            served.master?.askBegins({ id: asked.id, text: question, ...(title === "" ? {} : { title }), options: labels }, words);
             questions += 1;
             cardKey = more.rows?.card?.key ?? cardKey;
             readCard(served, more.rows?.card, (card) => {
@@ -133,6 +151,8 @@ export function pagePlayer(served: Served): Player
 
             return chosen === 0 || chosen === "absent" ? chosen : undefined;
         },
+        untold: () => served.master?.untold?.(),
+        owed: (id) => served.master?.owed?.(id),
     };
 }
 
@@ -254,6 +274,18 @@ export function listenForChanges(request: IncomingMessage, response: ServerRespo
             served.returning = setTimeout(() => served.pages.size === 0 && served.asked === asked && asked.settle("absent"), served.pageReturn).unref();
         }
     });
+    // The table's chat takes up the campaign's last one as its first page comes.
+    served.master?.listened?.();
+}
+
+/** How the player answered a question, in words: the button's label, their own words or the square; none when it ended without an answer. */
+function answerWords(choice: number | Said | Picked | undefined | "absent", labels: string[]): string | undefined
+{
+    if (typeof choice === "number") {
+        return labels[choice];
+    }
+
+    return typeof choice === "object" ? ("said" in choice ? choice.said : choice.square) : undefined;
 }
 
 /** Reads what a package's card shows, never in the way of its question: given once it answers, with nothing to show when it fails or is late (D-507). */

@@ -5,9 +5,9 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DocumentReader, MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
+import { stopTree } from "../core/process.ts";
 import { svgBrief } from "./briefs.ts";
 import { helperEnvironment, helperState, knownReady } from "./programs.ts";
-import { stopTree } from "./stop.ts";
 import { cleanSvg, svgIn } from "./svg.ts";
 
 // How long a picture may take before the engine gives it up: the probe's took 18 to 74 seconds.
@@ -78,7 +78,7 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
         // Out of time, the drawing goes whole and the answer is given at once; what comes after counts for nothing.
         const timer = setTimeout(() => {
             settled = true;
-            stopTree(child);
+            stopTree(child.pid);
             clean();
             done({ refused: "no picture came in three minutes" });
         }, longest);
@@ -121,7 +121,7 @@ function write(brief: string): Promise<string | undefined>
     return new Promise((done) => {
         const child = spawn(writing(claude), { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "ignore"] });
         let output = "";
-        const timer = setTimeout(() => stopTree(child), longest);
+        const timer = setTimeout(() => stopTree(child.pid), longest);
         child.stdout.setEncoding("utf8");
         child.stdout.on("data", (chunk: string) => (output += chunk));
         child.stdin.on("error", () => undefined);
@@ -150,11 +150,11 @@ function read(folder: string, brief: string, writable: string[], signal?: AbortS
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "pipe"] });
         // Dropped while it runs: the helper stops with all it started.
-        const stop = (): void => stopTree(child);
+        const stop = (): void => stopTree(child.pid);
         signal?.addEventListener("abort", stop, { once: true });
         let output = "";
         let errors = "";
-        const timer = setTimeout(() => stopTree(child), longestReading);
+        const timer = setTimeout(() => stopTree(child.pid), longestReading);
         child.stdout.setEncoding("utf8");
         child.stderr.setEncoding("utf8");
         child.stdout.on("data", (chunk: string) => (output += chunk));

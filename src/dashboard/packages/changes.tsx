@@ -6,10 +6,10 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { putPageBack } from "../api.ts";
 import type { ShownLayer } from "../data.ts";
 import { changedItem } from "../parts/changed.tsx";
+import { Confirm } from "../parts/confirm.tsx";
 import { Icon } from "../parts/icons.tsx";
 import { fieldLabel, phraseLabel, shownText } from "../parts/labels.ts";
 import { InlineText } from "../parts/markdown.tsx";
-import { Confirm } from "../settings/saves.tsx";
 import { isolated, listText, t } from "../text.ts";
 import { SaidNote } from "./rows.tsx";
 

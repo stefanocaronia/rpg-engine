@@ -475,7 +475,7 @@
 
     .dice-fab {
         position: fixed;
-        inset-inline-end: 20px;
+        inset-inline-end: calc(20px + var(--dock-end, 0px));
         bottom: 20px;
         z-index: 22;
         display: flex;
@@ -518,7 +518,7 @@
     /* The free tray: a column of dice over the button, as on a virtual tabletop, the d20 nearest to the thumb; it counts for nothing (D-279, D-284). */
     .dice-tray {
         position: fixed;
-        inset-inline-end: 20px;
+        inset-inline-end: calc(20px + var(--dock-end, 0px));
         bottom: 88px;
         z-index: 22;
         display: grid;

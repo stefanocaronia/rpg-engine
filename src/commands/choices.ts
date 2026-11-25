@@ -27,7 +27,7 @@ const itemInput = z.object({
 
 /** What the call did: the set prepared, with how many answers it kept from the one it replaced and whether the player had confirmed that; or the set taken away. */
 export type ChoicesResult =
-    | { kind: "prepared"; who: string; title: string; replaced: boolean; reopened: boolean; kept: number; dashboard: string; }
+    | { kind: "prepared"; who: string; title: string; replaced: boolean; reopened: boolean; kept: number; dashboard: string; atTable: boolean; }
     | { kind: "cancelled"; who: string; title: string; };
 
 export const choices = defineCommand({
@@ -90,7 +90,7 @@ export const choices = defineCommand({
         };
         writeChoices(root, index === -1 ? [...sets, set] : sets.map((other, at) => (at === index ? set : other)));
         appendLogEntry(root, newDatedLogEntry(root, context, "choices", "public", { who, title, items: items.map((item) => item.question) }));
-        return { kind: "prepared", who, title, replaced: before !== undefined, reopened: before?.confirmed !== undefined, kept, dashboard: context.dashboard };
+        return { kind: "prepared", who, title, replaced: before !== undefined, reopened: before?.confirmed !== undefined, kept, dashboard: context.dashboard, atTable: context.chat?.atTable === true };
     },
 
     format(result)
@@ -102,8 +102,10 @@ export const choices = defineCommand({
         const kept = result.replaced
             ? ` They take the place of the set of the same title, keeping ${result.kept} of the player's answers${result.reopened ? "; the player had confirmed it, and it waits for them again" : ""}.`
             : "";
-        return `The choices of ${result.who}, ${result.title}, wait on the player's dashboard.${kept} Tell the player so in one line, out of the story, without listing them, `
-            + `with the dashboard's link if they do not have it open: ${result.dashboard}. Then go on with the story; their answers reach you at the head of a later call. `
+        // At the table the chat is part of the dashboard's page: no link to give.
+        const link = result.atTable ? "" : `, with the dashboard's link if they do not have it open: ${result.dashboard}`;
+        return `The choices of ${result.who}, ${result.title}, wait on the player's dashboard.${kept} Tell the player so in one line, out of the story, without listing them${link}. `
+            + "Then go on with the story; their answers reach you at the head of a later call. "
             + "Called again with this title, choices takes the place of this set, keeping the answers of the items that stay the same.";
     },
 });

@@ -8,13 +8,14 @@ import { playerChangeNews } from "../../commands/config/news.ts";
 import { campaignWorld } from "../../commands/shared/campaign/world.ts";
 import { knownText, playerKnowledge, playerStory } from "../../commands/shared/characters/knowledge.ts";
 import { knownNamedPage } from "../../commands/view/page.ts";
+import { hosts } from "../../core/hosts.ts";
 import { withFiles } from "../../core/store.ts";
 import { comparableText } from "../../core/text.ts";
-import { codexClient } from "../../helpers/index.ts";
 import { playerCharacters } from "../../pages/index.ts";
 import { type Note, readNotes, removeNote, writeNote } from "../../player-notes/index.ts";
+import { readBody, securityHeaders, sendJson } from "../page/index.ts";
 import { type Acts, actText, giveBackAct, giveBackHeld, hearHeld, holdActs, markHeard, markRung, takeActs, takeHeld, withdrawAct } from "../player-acts.ts";
-import { mostSaid, readBody, securityHeaders, sendJson } from "./files.ts";
+import { mostSaid } from "./files.ts";
 import type { Served } from "./index.ts";
 
 // What the master reads after a note the player shares (D-378), tried against injection: what the player thinks, never a fact
@@ -274,8 +275,8 @@ export async function act(request: IncomingMessage, response: ServerResponse, se
 }
 
 /**
- * Brings the sentences waiting to the master while no call of theirs runs, which would take them at its head (D-495): into Codex's queue, as the player's own
- * messages, else by Claude Code's doorbell. Every ring comes from a sentence the player said, never from time.
+ * Brings the sentences waiting to the master while no call of theirs runs, which would take them at its head (D-495): to the table's own chat with the master,
+ * one a turn; into Codex's queue, as the player's own messages; else by Claude Code's doorbell. Every ring comes from a sentence the player said, never from time.
  */
 export function deliverActs(served: Served): void
 {
@@ -285,9 +286,14 @@ export function deliverActs(served: Served): void
         return;
     }
 
+    if (served.master?.active() === true) {
+        sayToMaster(served, served.master);
+        return;
+    }
+
     const thread = chat?.thread;
 
-    if (inCodex(served) && thread !== undefined && served.queueBroken !== true) {
+    if (inCodex(served) && thread !== undefined && served.chat.queueBroken !== true) {
         // One said while the queue works goes after it.
         served.queueing ??= queueActs(served, thread).finally(() => {
             served.queueing = undefined;
@@ -296,9 +302,24 @@ export function deliverActs(served: Served): void
         return;
     }
 
-    if (served.bell !== undefined) {
-        ringBell(served, served.bell, served.bellWords === true);
-        served.bell = undefined;
+    if (served.chat.bell !== undefined) {
+        ringBell(served, served.chat.bell, served.chat.bellWords === true);
+        served.chat.bell = undefined;
+        served.notify();
+    }
+}
+
+/**
+ * Says the first sentence waiting to the table's chat with the master, with what the character knows of its thing, the page keeping the sentence alone: heard
+ * once sent; while a turn runs, it waits for its end.
+ */
+function sayToMaster(served: Served, master: NonNullable<Served["master"]>): void
+{
+    const one = served.acts.pending[0];
+    const known = one.item === undefined ? undefined : knownOfThing(served, one.item);
+
+    if (master.say(known === undefined ? one.text : `${one.text}\n\n${known}`, one.text) === "sent") {
+        markHeard(served.acts, [one.id]);
         served.notify();
     }
 }
@@ -341,9 +362,9 @@ function ringBell(served: Served, response: ServerResponse, words: boolean): voi
 /** As a call of the master begins: the sentences held for it are heard, and the chat listens again, whatever its last hook did. */
 export function callBegins(served: Served): void
 {
-    const changed = served.acts.held.length > 0 || served.bellGone === true;
+    const changed = served.acts.held.length > 0 || served.chat.bellGone === true;
     hearHeld(served.acts);
-    served.bellGone = false;
+    served.chat.bellGone = false;
 
     if (changed) {
         served.notify();
@@ -373,7 +394,7 @@ export function listenForBell(request: IncomingMessage, response: ServerResponse
 
         const others = [...served.others.keys()];
         const root = withFiles(served.session, () => findCampaign(served.context.folder)) ?? null;
-        sendJson(response, 200, { session: process.env.CLAUDE_CODE_SESSION_ID ?? null, root, others });
+        sendJson(response, 200, { session: served.context.chat?.session ?? null, root, others });
         return;
     }
 
@@ -388,9 +409,9 @@ export function listenForBell(request: IncomingMessage, response: ServerResponse
         return;
     }
 
-    if (served.belled !== true || served.bellGone === true) {
-        served.belled = true;
-        served.bellGone = false;
+    if (served.chat.belled !== true || served.chat.bellGone === true) {
+        served.chat.belled = true;
+        served.chat.bellGone = false;
         served.notify();
     }
 
@@ -402,14 +423,14 @@ export function listenForBell(request: IncomingMessage, response: ServerResponse
         return;
     }
 
-    served.bell?.end("dismissed");
-    served.bell = response;
-    served.bellWords = words;
+    served.chat.bell?.end("dismissed");
+    served.chat.bell = response;
+    served.chat.bellWords = words;
     // A hook that goes away without a ring, as when the chat was stopped, leaves nobody to call the master: the page offers to copy the sentence instead.
     request.on("close", () => {
-        if (served.bell === response) {
-            served.bell = undefined;
-            served.bellGone = true;
+        if (served.chat.bell === response) {
+            served.chat.bell = undefined;
+            served.chat.bellGone = true;
             served.notify();
         }
     });
@@ -492,22 +513,25 @@ function actsShown(served: Served): { pending: Acts["pending"]; heard: string[];
 }
 
 /**
- * Whether a sentence said on the page reaches the master at once (D-495): Claude Code's doorbell came in this chat, and its last hook did not go away without
- * a ring; or Codex named its thread.
+ * Whether a sentence said on the page reaches the master at once (D-495): the table's own chat with the master is open; Claude Code's doorbell came in this
+ * chat, and its last hook did not go away without a ring; or Codex named its thread.
  */
 function hasBell(served: Served): boolean
 {
-    return (served.belled === true && served.bellGone !== true) || (inCodex(served) && served.context.chat?.thread !== undefined && served.queueBroken !== true && served.queue.ready());
+    return served.master?.active() === true || (served.chat.belled === true && served.chat.bellGone !== true) || (inCodex(served) && served.context.chat?.thread !== undefined && served.chat.queueBroken !== true && served.queue.ready());
 }
 
 function inCodex(served: Served): boolean
 {
-    return served.context.host?.() === codexClient;
+    return served.context.host?.() === hosts.codex.client;
 }
 
 /** Puts the sentences waiting in Codex's queue, one at a time; one Codex refuses stays for the master's next call, and the queue is tried no more. */
 async function queueActs(served: Served, thread: string): Promise<void>
 {
+    // The chat that began queueing, which a table's next chat never inherits (D-582).
+    const chat = served.chat;
+
     for (const one of [...served.acts.pending]) {
         // Taken back, or heard by a call that began meanwhile.
         if (!served.acts.pending.includes(one) || (served.context.chat?.calls ?? 0) > 0) {
@@ -529,7 +553,7 @@ ${known}`,
             ).catch(() => false))
         ) {
             giveBackAct(served.acts, one);
-            served.queueBroken = true;
+            chat.queueBroken = true;
             served.notify();
             return;
         }
@@ -587,8 +611,9 @@ function giveBack(served: Served, taken: [string, PlayerSetting][]): void
 function problemNews(served: Served): { lines: string[]; restore(): void; }
 {
     const shown = served.problemsShown ?? 0;
-    const told = served.problemsTold;
-    served.problemsTold = shown;
+    const chat = served.chat;
+    const told = chat.problemsTold;
+    chat.problemsTold = shown;
 
     if (shown === 0 || shown === told) {
         return { lines: [], restore: () => undefined };
@@ -597,6 +622,6 @@ function problemNews(served: Served): { lines: string[]; restore(): void; }
     const what = shown === 1 ? "a problem" : `${shown} problems`;
     return {
         lines: [`The player's dashboard shows that the campaign's files have ${what}, and tells them you fix it: call validate and fix them now, behind the scenes.`],
-        restore: () => (served.problemsTold = told),
+        restore: () => (chat.problemsTold = told),
     };
 }

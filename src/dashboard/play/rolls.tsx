@@ -1,7 +1,8 @@
 // The rolls the player may see (D-279), the newest first: theirs with their character's token, the master's shown ones with the robot and for whom; hidden
 // rolls never come here. The player's free rolls come in too, dashed and dimmed, from this browser alone (D-330 (4)). A card like the sheet's, which shows the
 // newest roll while it is closed (D-284), on the table beside the sheet too. Those of the last half hour, older ones at a click at the end of the
-// list; Clear starts the list again, the log untouched, and forgets the free rolls; Restore brings the log back, never them (D-302, D-304).
+// list; Clear starts the list again, the log untouched, and forgets the free rolls; Restore brings the log back, never them (D-302, D-304). The chat with
+// the master says the same rolls in a line each, with whom they are for as here (rollWho).
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Member, ShownRoll } from "../data.ts";
 import { coinOf, type DiceLook, mastersDice } from "../dice/sets.ts";
@@ -122,6 +123,13 @@ export function RollLog(
             </details>
         </aside>
     );
+}
+
+/** Whom a roll is for, by name and by token, as the party has them: for whoever says a roll elsewhere than in this card, as the chat with the master. */
+export function rollWho(roll: ShownRoll, party: Member[], several: boolean): { name: string; token: Tokened | "die" | undefined; }
+{
+    const of: Whose = { lead: party.find((member) => member.role === "pc"), nobody: several };
+    return { name: nameOf(roll, of), token: tokenOf(roll, party, of) };
 }
 
 /**

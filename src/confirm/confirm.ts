@@ -9,6 +9,10 @@ export interface DialogCommand
     env: Record<string, string>;
     /** How this program says yes: an exit code, or what it writes. */
     yes: { code?: number; out?: string; };
+    /** What it reads on its standard input, as a script too long for its command line. */
+    input?: string;
+    /** Whether it runs hidden: a program whose own window would open beside the one it shows, as PowerShell's console. */
+    hidden?: boolean;
 }
 
 // The longest text a window shows: what the package says of itself is cut there.
@@ -111,10 +115,11 @@ export function plainText(text: string, most: number): string
 }
 
 /** Runs a window's program: how it ended and what it wrote; "missing" when it is not on this computer. Closed when the call is stopped, or after half an hour. */
-function runDialog(command: DialogCommand, signal?: AbortSignal): Promise<{ code: number | null; out: string; err?: string; } | "missing">
+export function runDialog(command: DialogCommand, signal?: AbortSignal): Promise<{ code: number | null; out: string; err?: string; } | "missing">
 {
     return new Promise((done) => {
-        const child = spawn(command.file, command.args, { env: { ...process.env, ...command.env }, stdio: ["ignore", "pipe", "pipe"], windowsHide: false });
+        const options = { env: { ...process.env, ...command.env }, windowsHide: command.hidden === true };
+        const child = command.input === undefined ? spawn(command.file, command.args, { ...options, stdio: ["ignore", "pipe", "pipe"] }) : spawn(command.file, command.args, { ...options, stdio: ["pipe", "pipe", "pipe"] });
         let [out, err] = ["", ""];
 
         const stop = (): void => {
@@ -127,6 +132,9 @@ function runDialog(command: DialogCommand, signal?: AbortSignal): Promise<{ code
         child.stdout.on("data", (chunk: string) => (out += chunk));
         child.stderr.setEncoding("utf8");
         child.stderr.on("data", (chunk: string) => (err += chunk));
+        // A program that ends before it read all of its input closes it: nothing to say then.
+        child.stdin?.on("error", () => undefined);
+        child.stdin?.end(command.input);
         child.on("error", (error: NodeJS.ErrnoException) => {
             clearTimeout(timer);
             done(error.code === "ENOENT" ? "missing" : { code: null, out, err });

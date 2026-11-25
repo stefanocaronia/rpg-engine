@@ -1,7 +1,7 @@
 // The demo campaigns of the dashboard (D-272), made the first time, then kept, so that rpg can change them from their folder. Not part of the tests. One plays
 // free, the engine's own system, in tmp/dashboard-demo; the other the 5e of its repository beside this one, in tmp/dashboard-demo-5e, for the 5e's cards:
 // the death saves and the hit dice (D-513 (1)).
-import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmdirSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseDocument } from "yaml";
 import { chosenPictureMaker } from "../../src/campaign/index.ts";
@@ -9,6 +9,7 @@ import { runCommandLine } from "../../src/cli/command-line.ts";
 import { ask } from "../../src/commands/ask.ts";
 import { readLibraryHere } from "../../src/commands/shared/books/library-reader.ts";
 import { makeSave } from "../../src/commands/shared/campaign/saves.ts";
+import { view } from "../../src/commands/view/view.ts";
 import { systemConfirm } from "../../src/confirm/index.ts";
 import { type Context, defaultContext } from "../../src/core/context.ts";
 import { downloadBytes } from "../../src/core/download.ts";
@@ -17,16 +18,34 @@ import { withFiles } from "../../src/core/store.ts";
 import { hostPictures, hostWriter } from "../../src/helpers/index.ts";
 import { npmPackages } from "../../src/packages/index.ts";
 import { type Dashboard, startDashboard } from "../../src/server/dashboard/index.ts";
+import { removeLauncher, writeLauncher } from "../../src/server/launcher/place.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { inPlay } from "../support.ts";
+import { serveDemoLauncher } from "./launcher.ts";
+import { demoMaster } from "./master.ts";
 
 /** The game systems a demo plays: free, which the engine brings, or the 5e of its repository. */
 export type DemoSystem = "free" | "5e";
 
-/** The folder of each demo campaign. */
-export function demoFolderOf(system: DemoSystem): string
+/** What a demo is served with: the chat with a master of the demo's own, and a campaign still in its setup in place of the one in play. */
+export interface DemoOptions
 {
-    return join(import.meta.dirname, "..", "..", "tmp", system === "free" ? "dashboard-demo" : "dashboard-demo-5e");
+    /**
+     * In place of true, a chat the campaign has to take up, which the demo takes up as the page comes: "resumed", cut as the game was closed;
+     * "taken-up", whole; "taken-up-empty", with no flow kept, as an old chat.
+     */
+    chat?: boolean | "resumed" | "taken-up" | "taken-up-empty";
+    setup?: boolean;
+    /** With the demo's own launcher beside it, listing some campaigns, or none ("empty"): the campaign's page has the chat too, as at a table. */
+    launcher?: boolean | "empty";
+    /** The folder of a page built apart, served in place of the one `npm run build` makes: to look at a change without building over a page that is being played. */
+    page?: string;
+}
+
+/** The folder of each demo campaign; the one still in its setup has its own. */
+export function demoFolderOf(system: DemoSystem, setup = false): string
+{
+    return join(import.meta.dirname, "..", "..", "tmp", setup ? "dashboard-demo-setup" : system === "free" ? "dashboard-demo" : "dashboard-demo-5e");
 }
 
 /** The demo of free, the engine's own system. */
@@ -124,15 +143,22 @@ export interface DemoDashboard extends Dashboard
     ask(asked: DemoQuestion): Promise<string>;
     askSquare(question: string): Promise<string>;
     roll(...args: string[]): Promise<string>;
+    /** The link of the demo's launcher, when it was asked for. */
+    launcher?: string;
+    /** Ends the campaign's own server, as a table that ends by itself, the demo's launcher staying: its page then offers to have it opened again. */
+    endTable(): Promise<void>;
 }
 
 /**
  * Serves the built dashboard of a demo campaign, free's unless the 5e is asked, making the campaign first when it is not there; on the dashboard's ports unless
- * others are given. The 5e's demo needs its repository beside the engine, built.
+ * others are given. The 5e's demo needs its repository beside the engine, built. With `chat`, the page has the chat with a master of the demo's own (D-582), as where a
+ * campaign's table keeps it: no program started, nothing spent. With `setup`, the campaign is one just made, still in its setup, with no game system yet: made
+ * anew each time it is served, as a campaign leaves its setup as its questions are answered. With `launcher`, a launcher of the demo's own is served too
+ * (test/demo/launcher.ts), which opens this campaign's page, and the page finds it as a table's page finds the real one.
  */
-export async function serveDemo(ports?: number[], system: DemoSystem = "free"): Promise<DemoDashboard>
+export async function serveDemo(ports?: number[], system: DemoSystem = "free", { chat = false, setup = false, launcher = false, page }: DemoOptions = {}): Promise<DemoDashboard>
 {
-    const folder = demoFolderOf(system);
+    const folder = demoFolderOf(system, setup);
     const missing = system === "5e" ? fifthEditionMissing() : undefined;
 
     if (missing !== undefined) {
@@ -164,7 +190,15 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
         readLibrary: () => void readLibraryHere(join(`${folder}-home`, "library")),
     };
 
-    if (!existsSync(join(folder, "campaign.yaml"))) {
+    if (setup) {
+        rmSync(folder, { recursive: true, force: true });
+        mkdirSync(folder, { recursive: true });
+        const made = await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it"], context);
+
+        if (made.exitCode !== 0) {
+            throw new Error(`rpg init: ${made.output}`);
+        }
+    } else if (!existsSync(join(folder, "campaign.yaml"))) {
         // The 5e's code works out the sheet as Ettore is written.
         context.systemCode = await loadSystemCode(context.systemFolders);
         await makeDemo(context, folder, system);
@@ -182,7 +216,15 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
 
     // The game systems, and what this computer translated of them, as the MCP server keeps them (D-539).
     const session = new SessionStore({ systemFolders: [...context.systemFolders, join(`${folder}-home`, "systems")] });
-    const dashboard = await startDashboard({ ...context, files: session }, session, { ports });
+    const home = `${folder}-home`;
+    const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty", page);
+    const master = chat !== false || fake !== undefined ? demoMaster({ takes: chat === "resumed" ? "cut" : chat === "taken-up" ? "whole" : chat === "taken-up-empty" ? "empty" : undefined }) : undefined;
+    const dashboard = await startDashboard({ ...context, files: session }, session, {
+        ports,
+        ...(page === undefined ? {} : { page }),
+        ...(master === undefined ? {} : { master }),
+        ...(fake === undefined ? {} : { launcher: { find: () => Promise.resolve({ url: fake.url }), reach: () => Promise.resolve({ url: fake.url }), open: () => Promise.resolve(false) } }),
+    });
 
     if (dashboard === undefined) {
         throw new Error(
@@ -192,35 +234,77 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free"): 
         );
     }
 
+    master?.onChange(() => dashboard.chatChanged());
+    // The demo's launcher at its place in the demo's own data folder, where the page's server looks for it.
+    const token = "demo";
+
+    if (fake !== undefined) {
+        mkdirSync(home, { recursive: true });
+        writeLauncher(home, { pid: process.pid, version: fake.version, url: fake.url, token });
+        fake.setCampaign(dashboard.url);
+    }
+
+    const questions = demoQuestions[system].filter((question) => !("lock" in question) || lockpicking);
+
+    // The rolls the player may see made since the last look, told to the demo's master as the page's server tells the table's chat; the first look only
+    // notes where the log stands.
+    let seenRoll: string | undefined;
+
+    const tellRolls = async (): Promise<void> => {
+        const result = await withFiles(session, () => view.run(view.input.parse({ rolls: "5" }), { ...context, files: session }));
+        const rolls = result.kind === "overview" ? result.rolls : [];
+        const fresh = seenRoll === undefined ? [] : rolls.slice(rolls.findIndex((roll) => roll.id === seenRoll) + 1);
+        seenRoll = rolls.at(-1)?.id ?? "";
+        fresh.forEach((roll) => master?.rolled(roll.who === undefined ? roll.text : `${roll.who}: ${roll.text}`, roll));
+    };
+
+    const askPage = async (asked: DemoQuestion, signal?: AbortSignal): Promise<string> => {
+        await session.ready();
+
+        if ("lock" in asked) {
+            return lockpicking ? pickDemoLock(asked, { ...context, files: session, page: dashboard.player, ...(signal === undefined ? {} : { signal }) }) : "The demo has no lockpicking: nothing asked.";
+        }
+
+        // Each rest of the demo starts from the same hit dice and hit points, so that it can be asked again and again.
+        if ("recipe" in asked) {
+            await runCommandLine(["change", "Ettore", "hit-dice-d8", "--to", "2"], { ...context, files: session });
+            await runCommandLine(["change", "Ettore", "hp", "--to", "14"], { ...context, files: session });
+        }
+
+        const answered = await withFiles(session, async () => ask.format(await ask.run(ask.input.parse(asked), { ...context, files: session, page: dashboard.player, ...(signal === undefined ? {} : { signal }) })));
+        await tellRolls();
+        return answered;
+    };
+
+    const rollAsMaster = async (...args: string[]): Promise<string> => {
+        await session.ready();
+        const rolled = (await runCommandLine(["roll", ...args], { ...context, files: session })).output;
+        await tellRolls();
+        return rolled;
+    };
+
+    // The demo's master asks the page one of the demo's questions, as a master does with ask, and rolls for Lupa where the player may see.
+    master?.onAsk((question, stopped) => askPage(questions[question % questions.length], stopped));
+    master?.onRoll(() => rollAsMaster(system === "5e" ? "1d20+4" : "1d6", "--who", "Lupa", "--check", "Fiuto", "--why", "il fiuto di Lupa"));
+    await session.ready();
+    await tellRolls();
+
     return {
         ...dashboard,
         folder,
         system,
-        questions: demoQuestions[system].filter((question) => !("lock" in question) || lockpicking),
-        ask: async (asked) => {
-            await session.ready();
-
-            if ("lock" in asked) {
-                return lockpicking ? pickDemoLock(asked, { ...context, files: session, page: dashboard.player }) : "The demo has no lockpicking: nothing asked.";
-            }
-
-            // Each rest of the demo starts from the same hit dice and hit points, so that it can be asked again and again.
-            if ("recipe" in asked) {
-                await runCommandLine(["change", "Ettore", "hit-dice-d8", "--to", "2"], { ...context, files: session });
-                await runCommandLine(["change", "Ettore", "hp", "--to", "14"], { ...context, files: session });
-            }
-
-            return withFiles(session, async () => ask.format(await ask.run(ask.input.parse(asked), { ...context, files: session, page: dashboard.player })));
-        },
+        ...(fake === undefined ? {} : { launcher: fake.url }),
+        questions,
+        ask: askPage,
         askSquare: async (question) => {
             await session.ready();
             return withFiles(session, async () => ask.format(await ask.run(ask.input.parse({ question, square: true }), { ...context, files: session, page: dashboard.player })));
         },
-        roll: async (...args) => {
-            await session.ready();
-            return (await runCommandLine(["roll", ...args], { ...context, files: session })).output;
-        },
+        roll: rollAsMaster,
+        endTable: () => dashboard.close(),
         close: async () => {
+            removeLauncher(home, token);
+            await fake?.close();
             await dashboard.close();
             session.close();
         },

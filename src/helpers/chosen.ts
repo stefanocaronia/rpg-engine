@@ -5,20 +5,12 @@
 // brief as Antigravity's. Without any, the page shows its own picture all the same (D-389). The text and the import outside the chat are Codex's and Claude's;
 // in OpenCode, OpenCode's first, in Antigravity, its agy's first (D-579 (1)).
 import type { DocumentReader, MadePicture, PictureFallback, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
+import { hostOfClient, hosts } from "../core/hosts.ts";
 import { antigravityPainter, antigravityReader, antigravityWriter } from "./antigravity.ts";
 import { antigravityBrief, chatBrief, drawnBrief } from "./briefs.ts";
 import { claudePictures, claudeReader, claudeWriter } from "./claude.ts";
 import { codexPictures, codexReader, codexWriter } from "./codex.ts";
 import { openCodeReader, openCodeWriter } from "./opencode.ts";
-
-/** The chat whose own pictures are Codex's, as its MCP client names itself. */
-export const codexClient = "codex-mcp-client";
-
-/** Antigravity's chat, as its MCP client names itself: it makes its pictures itself. */
-export const antigravityClient = "antigravity-client";
-
-/** OpenCode's chat, as its MCP client names itself: its master draws the pictures, and OpenCode does the work outside the chat there, and nowhere else (D-578 (3)). */
-export const openCodeClient = "opencode";
 
 /**
  * The pictures of this computer, by the campaign's choice, which `choice` reads when a picture is asked: unset or chat, the chat `host` names, by its own
@@ -36,8 +28,8 @@ export function hostPictures(
 {
     // The makers the campaign may choose apart from the chat in use, by their values: each with its name, its own chat, and its refusal remembered.
     const makersApart: Record<string, Apart> = {
-        [codexChoice]: { maker: codex, name: "Codex", chat: codexClient },
-        [antigravityChoice]: { maker: antigravity, name: "Antigravity", chat: antigravityClient },
+        [codexChoice]: { maker: codex, name: "Codex", chat: hosts.codex.client },
+        [antigravityChoice]: { maker: antigravity, name: "Antigravity", chat: hosts.antigravity.client },
     };
     let lastChoice: string | undefined;
 
@@ -49,7 +41,7 @@ export function hostPictures(
             return claude;
         }
 
-        return name === codexClient ? codex : name === antigravityClient ? antigravityPictures : chatDrawing(chatNames[name] ?? name);
+        return name === hosts.codex.client ? codex : name === hosts.antigravity.client ? antigravityPictures : chatDrawing(hostName(name));
     };
 
     // The maker the campaign chose, and the maker apart it is, which leaves the picture to the chat in use where it cannot; in its own chat, the chat's own.
@@ -190,9 +182,6 @@ const antigravityPictures: PictureMaker = {
     brief: antigravityBrief,
 };
 
-// The chats' names for the player, by the names their MCP clients give themselves; any other is shown as it comes.
-const chatNames: Record<string, string> = { [openCodeClient]: "OpenCode" };
-
 /** A chat that draws its pictures itself as SVG code (D-572), as OpenCode: from the SVG brief image gives it, handed back with image, svg; the engine starts nothing. */
 export function chatDrawing(name: string): PictureMaker
 {
@@ -231,7 +220,7 @@ export function hostWriter(
 {
     const writers = (): TextWriter[] => {
         const chat = host();
-        return chat === codexClient ? [codex] : chat === openCodeClient ? [openCode, codex, claude] : chat === antigravityClient ? [antigravity, codex, claude] : [codex, claude];
+        return chat === hosts.codex.client ? [codex] : chat === hosts.openCode.client ? [openCode, codex, claude] : chat === hosts.antigravity.client ? [antigravity, codex, claude] : [codex, claude];
     };
 
     return {
@@ -254,7 +243,7 @@ export function hostReader(
 {
     const readers = (): DocumentReader[] => {
         const chat = host();
-        return chat === codexClient ? [codex] : chat === openCodeClient ? [openCode, claude, codex] : chat === antigravityClient ? [antigravity, claude, codex] : [claude, codex];
+        return chat === hosts.codex.client ? [codex] : chat === hosts.openCode.client ? [openCode, claude, codex] : chat === hosts.antigravity.client ? [antigravity, claude, codex] : [claude, codex];
     };
 
     return {
@@ -264,4 +253,11 @@ export function hostReader(
         clean: () => [codex, claude, openCode, antigravity].forEach((reader) => reader.clean?.()),
         read: (folder, brief, writable, signal) => (readers().find((reader) => reader.ready()) ?? claude).read(folder, brief, writable, signal),
     };
+}
+
+/** A chat's name for the player, by the name its MCP client gives itself; any other is shown as it comes. */
+function hostName(client: string): string
+{
+    const host = hostOfClient(client);
+    return host === undefined ? client : hosts[host].name;
 }

@@ -38,6 +38,11 @@
         outline-offset: -2px !important;
     }
 
+    /* The chat's messages scroll inside their card, which would cut a ring drawn around them. */
+    .chat-log:focus-visible {
+        outline-offset: -2px !important;
+    }
+
     .quest-cover-top :focus-visible {
         outline-color: #f3f4fa !important;
     }
@@ -56,6 +61,16 @@
 
     .story-box textarea:focus-visible {
         outline: none !important;
+    }
+
+    /* The chat's words stand in a box with what sends them: the ring is the box's. */
+    .chat-field:focus-visible {
+        outline: none !important;
+    }
+
+    .chat-field-box:has(.chat-field:focus-visible) {
+        outline: 2px solid var(--guard-accent) !important;
+        outline-offset: 2px !important;
     }
 
     .tracked-what:focus-visible {

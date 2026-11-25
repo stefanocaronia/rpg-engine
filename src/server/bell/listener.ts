@@ -2,6 +2,7 @@
 // OpenCode's plugin runs too, waits at the dashboard of its own chat and, when the player says a sentence, tells the chat to call status, the sentence
 // reaching the master in that call; in OpenCode, whose plugin speaks as the player, it brings the sentence itself, as Codex's queue does.
 import { findCampaign } from "../../campaign/index.ts";
+import { type HostId, hostIds, hosts } from "../../core/hosts.ts";
 import { samePath } from "../../library/index.ts";
 import { askDashboard, campaignPorts, type DashboardAt, dashboardAt } from "../dashboard/ports.ts";
 import { isSubagentConversation, watchNewTurn } from "./antigravity.ts";
@@ -10,16 +11,16 @@ import { isSubagentConversation, watchNewTurn } from "./antigravity.ts";
 export const bellLine = "The player acted on the dashboard: call status to read what they did.";
 
 /** The hosts whose hook runs `rpg --listen`, as its argument names them: Claude Code with none; OpenCode through the campaign's plugin. */
-export const listeningHosts = ["claude", "codex", "antigravity", "opencode"] as const;
+export const listeningHosts = hostIds.map((id) => hosts[id].hook);
 
-export type ListeningHost = (typeof listeningHosts)[number];
+export type ListeningHost = (typeof hosts)[HostId]["hook"];
 
 /**
  * Reads the hook's input, waits for the doorbell, and ends the process as the host reads it: for Claude Code's asyncRewake, 2 with the line on stderr; for
  * Codex's and Antigravity's Stop hooks, 0 with their answer on stdout; for OpenCode's plugin, 0 with the player's words, or the line, on stdout, which it sends to the chat. Else 0.
  * Antigravity's hook holds the chat: it lets it go, without the bell, as soon as the player writes in the chat or stops it; OpenCode's, once OpenCode is gone.
  */
-export async function listen(host: ListeningHost = "claude"): Promise<void>
+export async function listen(host: ListeningHost = hosts.claudeCode.hook): Promise<void>
 {
     let input = "";
 

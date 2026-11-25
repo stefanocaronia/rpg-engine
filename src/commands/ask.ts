@@ -65,7 +65,7 @@ type InWords = { kind: "unanswered" | "unavailable" | "absent" | "physical" | "d
 
 /** What the player answered, or the question to ask them in words. */
 export type AskResult =
-    | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; faces: number[]; knowledge?: string; notes?: string[]; }
+    | { kind: "roll"; id: string; who: string; check: string; text: string; total: number; faces: number[]; knowledge?: string; notes?: string[]; atTable?: true; }
     | { kind: "changed"; }
     | { kind: "chose"; answer: string; }
     | { kind: "said"; words: string; }
@@ -85,7 +85,8 @@ export const ask = defineCommand({
         + "square, without options, once the player says their character moves on the map of its place but not to which square: the engine moves them to the square the player touches and gives you the way. "
         + "recipe, without options, when change with a rest's recipe says so: the player spends their character's dice one at a time, and you get what they gave. "
         + "toss, without options, for one to three coins the player tosses, as roll's toss: the engine tosses them at the click, logs them as the player's roll, and gives you the faces. "
-        + "Write nothing before the call: the question carries what is at stake, and the story goes on after the click. "
+        + "Before the call write only story the player has not read yet, what just happened and how things stand, never the stakes: the question carries them, once, "
+        + "and the story goes on after the click. "
         + 'Example: question "Scavalcare il muro prima della ronda: se fallisci, cadi e ti sentono", options ["{{check}}", "{{otherCheck}}"], who Bruna.',
     group: "game",
     needsPlayer: true,
@@ -114,6 +115,8 @@ export const ask = defineCommand({
         if (question === "") {
             throw new Error("Give the question: for a roll, what is at stake either way; for a choice, what the player chooses.");
         }
+
+        refuseWhileUntold(context);
 
         if (input.toss !== undefined) {
             if (input.options !== undefined || input.square === true || input.recipe !== undefined) {
@@ -166,7 +169,7 @@ export const ask = defineCommand({
     {
         switch (result.kind) {
             case "roll":
-                return `${result.id} ${result.who}, ${result.check}: ${result.text}, rolled by the player. Tell the outcome in the story, with the roll in brackets right after the moment it decides; write nothing until your message is ready.${
+                return `${result.id} ${result.who}, ${result.check}: ${result.text}, rolled by the player. ${tellRoll(result)}${
                     [result.knowledge, ...(result.notes ?? [])].filter((line) => line !== undefined).map((line) => `\n${line}`).join("")
                 }`;
             case "changed":
@@ -242,6 +245,28 @@ export function tonesOf(given: unknown[] | undefined, faces: number[]): { tones?
     return given === undefined || !Array.isArray(given) || given.length !== faces.length || !given.every(known) || given.every((tone) => tone === undefined || tone === null)
         ? {}
         : { tones: given.map((tone) => (tone === "good" || tone === "bad" ? tone : null)) };
+}
+
+/** How the master tells the player's roll: at the table with its mark, where the page draws it, before anything else is asked. */
+function tellRoll(result: { id: string; atTable?: true; }): string
+{
+    return result.atTable === true
+        ? `Tell the outcome in the story now, before you ask anything else, with [roll ${result.id}] right after the moment it decides: the page shows the roll there, so never write its numbers yourself.`
+        : "Tell the outcome in the story, with the roll in brackets right after the moment it decides; write nothing until your message is ready.";
+}
+
+/** Refused while a roll of the player's waits for the master to tell it, where the page knows: a new question would leave it untold. */
+function refuseWhileUntold(context: Context): void
+{
+    const untold = context.page?.untold?.();
+
+    if (untold !== undefined) {
+        const what = untold.check === undefined ? "what their last roll decided" : `what ${untold.check} decided`;
+        throw new Error(
+            `Not asked. The player has read nothing of ${what}: what you think never reaches them, only what you write as your message. `
+                + `Write it in the story now, with [roll ${untold.id}] right after the moment it decides, then call ask again.`,
+        );
+    }
 }
 
 /** Whether a text is the dice of a check, as 1d20+5 or 1d20+athletics (ASK-2, ASK-12). */
@@ -352,7 +377,19 @@ async function rollChosen(root: string, context: Context, question: string, chec
         faces: diceRoll.faces,
         ...(knowledge === undefined ? {} : { knowledge }),
         ...(notes.length === 0 ? {} : { notes }),
+        ...atTable(context, entry.id),
     };
+}
+
+/** Whether the call came from the table's own chat, whose page draws the player's roll where the master marks it; there, the roll's mark is owed. */
+function atTable(context: Context, id: string): { atTable?: true; }
+{
+    if (context.chat?.atTable !== true) {
+        return {};
+    }
+
+    context.page?.owed?.(id);
+    return { atTable: true };
 }
 
 /**
@@ -400,7 +437,7 @@ async function coinsTossed(root: string, context: Context, question: string, cou
     const data = { notation: toss.roll.notation, total: toss.heads, result: toss.text, toss: toss.sides, why: `${label}: ${question}`, check: label, who, physical: false, dice: toss.roll.dice };
     const entry = newDatedLogEntry(root, { ...context, actor: "player" }, "roll", "public", data);
     appendLogEntry(root, entry);
-    return { kind: "roll", id: entry.id, who, check: label, text: toss.text, total: toss.heads, faces: toss.roll.faces };
+    return { kind: "roll", id: entry.id, who, check: label, text: toss.text, total: toss.heads, faces: toss.roll.faces, ...atTable(context, entry.id) };
 }
 
 /**

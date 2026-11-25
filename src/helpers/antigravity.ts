@@ -11,9 +11,9 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DocumentReader, PictureMaker, PicturesReady, TextWriter } from "../core/context.ts";
 import { isAlive } from "../core/process-mark.ts";
+import { stopTree, whenEnded } from "../core/process.ts";
 import { chatBrief } from "./briefs.ts";
 import { chatEnvironment, isOwn, knownReady } from "./programs.ts";
-import { stopProcess, stopTree, whenEnded } from "./stop.ts";
 
 // The same limits as Claude's: a brief in three minutes, a run of the importer in thirty.
 const longest = 3 * 60 * 1000;
@@ -398,12 +398,7 @@ function runOnce(program: string, run: RunFolder, brief: string, limit: number, 
 
         const stop = (): void => {
             stopped = true;
-
-            if (process.platform === "win32" || child.pid === undefined) {
-                stopTree(child);
-            } else {
-                stopProcess(child.pid);
-            }
+            stopTree(child.pid);
         };
 
         signal?.addEventListener("abort", stop, { once: true });
@@ -513,7 +508,7 @@ async function sweepOne(root: string): Promise<void>
         }
 
         if (owner?.agy !== undefined && isAlive(owner.agy)) {
-            stopProcess(owner.agy);
+            stopTree(owner.agy);
         }
 
         await removeFolder(root);

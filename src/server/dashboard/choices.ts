@@ -13,8 +13,9 @@ import { withFiles } from "../../core/store.ts";
 import { firstSentence } from "../../core/text.ts";
 import { rollDice } from "../../dice/index.ts";
 import { findPage, introductionText, withoutComments, type World } from "../../pages/index.ts";
+import { readBody, sendJson } from "../page/index.ts";
 import { actText } from "../player-acts.ts";
-import { mostSaid, readBody, sendJson } from "./files.ts";
+import { mostSaid } from "./files.ts";
 import type { Served } from "./index.ts";
 import { deliverActs } from "./news.ts";
 

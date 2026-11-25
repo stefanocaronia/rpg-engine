@@ -8,8 +8,8 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import type { DocumentReader, PicturesReady, TextWriter } from "../core/context.ts";
 import { isAlive } from "../core/process-mark.ts";
+import { stopTree, whenEnded } from "../core/process.ts";
 import { chatEnvironment, isOwn, knownReady } from "./programs.ts";
-import { stopProcess, stopTree, whenEnded } from "./stop.ts";
 
 // The same limits as Claude's: a brief in three minutes, a run of the importer in thirty.
 const longest = 3 * 60 * 1000;
@@ -212,12 +212,7 @@ function runAgent(program: string, model: string, folder: string, agent: Agent, 
         // Dropped while it runs: OpenCode stops with its own server.
         const stop = (): void => {
             stopped = true;
-
-            if (process.platform === "win32" || child.pid === undefined) {
-                stopTree(child);
-            } else {
-                stopProcess(child.pid);
-            }
+            stopTree(child.pid);
         };
 
         signal?.addEventListener("abort", stop, { once: true });
@@ -254,7 +249,7 @@ function deleteSession(program: string, session: string): Promise<void>
 {
     return new Promise((done) => {
         const child = spawn(`${program} session delete ${session} --standalone`, { shell: true, windowsHide: true, cwd: tmpdir(), env: openCodeEnvironment(), stdio: "ignore" });
-        const timer = setTimeout(() => stopTree(child), deleteWait);
+        const timer = setTimeout(() => stopTree(child.pid), deleteWait);
         child.on("error", () => undefined);
         child.on("close", () => {
             clearTimeout(timer);
@@ -333,7 +328,7 @@ async function sweepRun(program: string, file: string, mark: RunMark): Promise<v
     }
 
     if (mark.child !== undefined && isAlive(mark.child)) {
-        stopProcess(mark.child);
+        stopTree(mark.child);
     }
 
     await deleteSession(program, basename(file, ".json"));

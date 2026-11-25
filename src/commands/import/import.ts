@@ -4,11 +4,11 @@ import { adventureFolderName, isAdventureFolder, readAdventureZip } from "../../
 import { changeSetting, readSettings, requireCampaign, storyWays } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { appendLogEntry } from "../../core/log.ts";
+import { stopTree } from "../../core/process.ts";
 import { Refusal } from "../../core/refusal.ts";
 import { defineCommand } from "../../core/registry.ts";
 import { files } from "../../core/store.ts";
 import { documentAt, readDocument } from "../../documents/index.ts";
-import { stopProcess } from "../../helpers/index.ts";
 import {
     beginOpening,
     clearOpening,
@@ -459,7 +459,7 @@ async function stopRunner(folder: string): Promise<void>
         return;
     }
 
-    stopProcess(pid);
+    stopTree(pid);
 
     for (let waited = 0; waited < 15_000 && runElsewhere(folder) !== undefined; waited += 200) {
         await new Promise((done) => setTimeout(done, 200));

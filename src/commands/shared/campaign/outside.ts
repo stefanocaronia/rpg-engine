@@ -64,10 +64,12 @@ export function outsideNews(root: string, context: Context, changes: OutsideChan
 
 /**
  * The files changed while no chat was open (OUT-4): those of world, rules and campaign.yaml written after the log's last line and before the chat `began`, as by
- * hand in Obsidian. Named only, with a hidden line in the log: no earlier copy of them is kept.
+ * hand in Obsidian, but those in `told`, which the session saw change and outsideNews tells with what changed. Named only, with a hidden line in the log: no
+ * earlier copy of them is kept.
  */
-export function whileClosedNews(root: string, context: Context, began: number): string[]
+export function whileClosedNews(root: string, context: Context, began: number, told: string[] = []): string[]
 {
+    const seen = new Set(told.map((path) => fileOf(root, path)));
     const last = readLog(root).at(-1);
     const since = last === undefined ? Number.NaN : Date.parse(last.at) + writeSlack;
 
@@ -77,7 +79,8 @@ export function whileClosedNews(root: string, context: Context, began: number): 
 
     const changed = [...filesIn(join(root, worldFolderName), () => true), ...filesIn(join(root, "rules"), () => true), join(root, campaignFileName)]
         .filter((path) => isToldFile(root, path) && (files().modified(path) ?? 0) > since && (files().modified(path) ?? 0) < began)
-        .map((path) => relative(root, path).split(sep).join("/"));
+        .map((path) => fileOf(root, path))
+        .filter((file) => !seen.has(file));
 
     if (changed.length === 0) {
         return [];

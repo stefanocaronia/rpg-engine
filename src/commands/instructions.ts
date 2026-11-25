@@ -46,7 +46,7 @@ export const instructions = defineCommand({
             sceneText(context.folder, context),
             buttons ? buttonsInstructions(physicalDice(context.folder)) : "",
             // The dashboard, where the MCP server serves one, so that the master can tell the player how to use it (D-404).
-            context.dashboard === undefined ? "" : dashboardInstructions(context.dashboard),
+            context.dashboard === undefined ? "" : dashboardInstructions(context.dashboard, context.chat?.atTable === true),
             // The opening of an evening, said to the player while the master read the game, reached them (playtest 15).
             "Now read where the game stands, writing nothing.",
         ];

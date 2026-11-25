@@ -1,24 +1,24 @@
 # Hosts
 
-The master is an AI agent that works in the campaign's folder. Four are supported, each from its terminal and from its desktop app: Claude Code, Codex, Antigravity and OpenCode. `rpg init` sets a campaign up for all four. This page says what works in each today; where a cell is not green, the note under the table says what you will see.
+The master is an AI agent that works in the campaign's folder. Four are supported, each from its terminal, from its desktop app and from the chat inside the dashboard: Claude Code, Codex, Antigravity and OpenCode. `rpg init` sets a campaign up for all four. This page says what works in each today; where a cell is not green, the note under the table says what you will see.
 
 Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ not tried yet
 
-| | Claude Code<br>terminal | Claude Code<br>app | Codex<br>terminal | Codex<br>app | Antigravity<br>terminal | Antigravity<br>app | OpenCode<br>terminal | OpenCode<br>app |
-|---|---|---|---|---|---|---|---|---|
-| The campaign and its tools from the first message | ✅ | ✅ | ✅ | 🟡 <sup>1</sup> | ✅ | ✅ | ✅ | ✅ |
-| The game's tools run without asking permission | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| The dashboard starts with the chat, and the master gives its link | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| A click on the dashboard reaches the chat | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Writing in the chat, or stopping it, while the master waits for a click | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 <sup>2</sup> | ✅ | ✅ |
-| Pictures made by the chat in use | ✅ | ✅ | ✅ | ✅ | ✅ <sup>3</sup> | ✅ <sup>3</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> |
-| Importing an adventure from a document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| The dashboard translated into a language that is not shipped | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| A system's rules translated as you read them | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Characters voiced by an agent of their own | ✅ | ✅ | ✅ | ✅ | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ✅ <sup>6</sup> | ✅ <sup>6</sup> |
-| The agent's own memory of past chats turned off | ✅ | ✅ | ✅ | ✅ | ❌ <sup>7</sup> | ❌ <sup>7</sup> | ❔ | ❔ |
-| The master never writes the campaign's files by hand | ✅ | ✅ | ❔ | ❔ | 🟡 <sup>8</sup> | ❔ | ✅ | ✅ |
-| The master's effort chosen in Settings | ✅ | ✅ | ✅ | ✅ | ❌ <sup>9</sup> | ❌ <sup>9</sup> | ❌ <sup>9</sup> | ❌ <sup>9</sup> |
+| | Claude Code<br>terminal | Claude Code<br>app | Claude Code<br>dashboard | Codex<br>terminal | Codex<br>app | Codex<br>dashboard | Antigravity<br>terminal | Antigravity<br>app | Antigravity<br>dashboard | OpenCode<br>terminal | OpenCode<br>app | OpenCode<br>dashboard |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| The campaign and its tools from the first message | ✅ | ✅ | ✅ | ✅ | 🟡 <sup>1</sup> | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| The game's tools run without asking permission | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| The dashboard starts with the chat, and the master gives its link | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> |
+| A click on the dashboard reaches the chat | ✅ | ✅ | ✅ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
+| Writing in the chat, or stopping it, while the master waits for a click | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | 🟡 <sup>2</sup> | ❔ | ✅ | ✅ | ❔ |
+| Pictures made by the chat in use | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ <sup>3</sup> | ✅ <sup>3</sup> | ❔ | ✅ <sup>4</sup> | ✅ <sup>4</sup> | ❔ |
+| Importing an adventure from a document | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
+| The dashboard translated into a language that is not shipped | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
+| A system's rules translated as you read them | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
+| Characters voiced by an agent of their own | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ❔ | ✅ <sup>6</sup> | ✅ <sup>6</sup> | ❔ |
+| The agent's own memory of past chats turned off | ✅ | ✅ | ✅ | ✅ | ✅ | ❔ | ❌ <sup>7</sup> | ❌ <sup>7</sup> | ❌ <sup>7</sup> | ❔ | ❔ | ❔ |
+| The master never writes the campaign's files by hand | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | 🟡 <sup>8</sup> | ❔ | ❔ | ✅ | ✅ | ❔ |
+| The master's effort chosen in Settings | ✅ | ✅ | ✅ <sup>11</sup> | ✅ | ✅ | ✅ <sup>11</sup> | ❌ <sup>9</sup> | ❌ <sup>9</sup> | ❔ | ❌ <sup>9</sup> | ❌ <sup>9</sup> | ❔ |
 
 ## Notes
 
@@ -31,3 +31,5 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 7. Antigravity's memory cannot be turned off for one folder; the master is told not to read it.
 8. Any tool outside the game asks you first, but in a run without a screen the master ran commands that only read.
 9. Set the effort in the agent itself.
+10. The chat is in the dashboard itself: there is no link to give.
+11. Chosen beside the model, as the chat opens.

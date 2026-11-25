@@ -1,31 +1,56 @@
 #!/usr/bin/env node
+import { hosts } from "../core/hosts.ts";
 import { runCommandLine } from "./command-line.ts";
 
 const args = process.argv.slice(2);
 
-// "rpg mcp" turns the process into a server for an AI host; "rpg --read-library" reads the player's books apart, as rules starts it (LIB-3); "rpg --listen"
-// is the doorbell for the player's sentences on the dashboard (D-495), Claude Code's, or with its host's name another's (D-578); "rpg --approve" is
-// Antigravity's hook that lets the rpg tools run, "rpg --fence" the hook that fences Antigravity's importer; everything else is a command.
+// "rpg mcp" turns the process into a server for an AI host, or, where its campaign's table is on, a pipe to it; "rpg table" is that table, which serves
+// the campaign's page with no chat open and runs its chats' commands (D-582); "rpg --read-library" reads the player's books apart, as rules starts it (LIB-3);
+// "rpg --listen" is the doorbell for the player's sentences on the dashboard (D-495), Claude Code's, or with its host's name another's (D-578);
+// "rpg --approve" is Antigravity's hook that lets the rpg tools run, "rpg --fence" the hook that fences Antigravity's importer; everything else is a command.
 if (args.length === 1 && args[0] === "mcp" && process.env.RPG_HELPER === "1") {
     // A run of the engine's helper gets no rpg server, not even one with no tools, which would empty its host's tool cache (D-579 (1)).
     console.error("rpg mcp: not started, this is a run of RPG Engine's own helper (RPG_HELPER=1)");
     process.exitCode = 0;
 } else if (args.length === 1 && args[0] === "mcp") {
-    // The server and its SDK load only here: every other command starts faster without them (D-194).
-    const { startMcpServer } = await import("../server/mcp.ts");
     const { serverInput } = await import("../server/route/index.ts");
-    // Outside a campaign the router serves (D-578), through children, for Antigravity's app; in one, the server as always.
+    const { pipeHere } = await import("../server/table/index.ts");
+    // Outside a campaign the router serves (D-578), through children, for Antigravity's app; in one, its table when it is on (D-582), else the server as always.
     const input = serverInput();
+    const piped = input === undefined ? undefined : await pipeHere(input);
 
-    if (input !== undefined) {
+    if (piped !== undefined) {
+        // The chat left the table, or the table ended: this process goes with it, once what it wrote is out.
+        process.stdout.write("", () => process.exit(piped));
+    } else if (input !== undefined) {
+        // The server and its SDK load only here: every other command, and a chat's pipe to its table, start faster without them (D-194).
+        const { startMcpServer } = await import("../server/mcp.ts");
         await startMcpServer(input);
     }
+} else if (args.length === 1 && args[0] === "table") {
+    // The table finds and starts the launcher through what the launcher gives here: neither the table nor its page imports the launcher.
+    const { runTable } = await import("../server/table/index.ts");
+    const { launcherWay } = await import("../server/launcher/index.ts");
+    const { userDataFolder } = await import("../core/context.ts");
+    const { getVersion } = await import("../core/version.ts");
+    process.exit(await runTable(undefined, { launcher: launcherWay(userDataFolder(), getVersion()) }));
+} else if (args.length === 1 && args[0] === "launcher") {
+    // The launcher, which lists the campaigns of this computer and opens them; "rpg open" shows its page in a window, "rpg icon" puts that on the desktop.
+    const { runLauncher } = await import("../server/launcher/index.ts");
+    process.exit(await runLauncher());
+} else if (args[0] === "open" || args[0] === "icon") {
+    const { runIcon, runOpen, sayAndEnd } = await import("./open.ts");
+    // The icon runs it in a console nobody reads: it ends once its line is out, whatever was left open.
+    sayAndEnd(await (args[0] === "open" ? runOpen : runIcon)(args.slice(1)));
 } else if (args[0] === "--read-library") {
     const { readLibraryHere } = await import("../commands/shared/books/library-reader.ts");
     await readLibraryHere();
+} else if (args[0] === "--listen" && process.env.RPG_TABLE_MASTER !== undefined) {
+    // In a chat the table opened, what the player does on the page reaches the master as a message the table sends: the hook has nothing to wait for.
+    process.exitCode = 0;
 } else if (args[0] === "--listen" && args.length <= 2) {
     const { listen, listeningHosts } = await import("../server/bell/index.ts");
-    const host = listeningHosts.find((one) => one === (args[1] ?? "claude"));
+    const host = listeningHosts.find((one) => one === (args[1] ?? hosts.claudeCode.hook));
 
     if (host === undefined) {
         console.error(`rpg --listen does not know the host ${args[1]}: give one of ${listeningHosts.join(", ")}, or none for Claude Code.`);

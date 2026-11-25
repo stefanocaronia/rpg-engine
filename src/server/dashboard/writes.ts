@@ -27,8 +27,9 @@ import { getVersion, isNewerVersion } from "../../core/version.ts";
 import { extensionWords, findExtension } from "../../extensions/index.ts";
 import { samePath } from "../../library/index.ts";
 import { readableSystems } from "../../systems/index.ts";
+import { decoded, readBody, readBytes, securityHeaders, send, sendJson } from "../page/index.ts";
 import { askLatest, knownLatest } from "./engine.ts";
-import { decoded, mostSaid, readBody, readBytes, securityHeaders, send, sendJson } from "./files.ts";
+import { mostSaid } from "./files.ts";
 import type { Served } from "./index.ts";
 
 /** What the player does with a package on the page (D-475), or with the library (D-491 (13)). */
@@ -88,6 +89,8 @@ export async function runForPlayer(request: IncomingMessage, response: ServerRes
 
         served.events.push(`The player, on the dashboard, ran ${parsed.data.command}: it is already done, do not run it again. It said, as its package's words:\n${quoted}`);
         served.notify();
+        // A roll it made that the player may see goes to the table's chat too.
+        void served.tellRolls();
         sendJson(response, 200, { text });
     } catch (error) {
         sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });

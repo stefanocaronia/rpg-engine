@@ -8,7 +8,8 @@ import { tmpdir } from "node:os";
 import { delimiter, join, sep } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DocumentReader, TextWriter } from "../src/core/context.ts";
-import { hostReader, hostWriter, openCodeClient, openCodeReader, openCodeWriter } from "../src/helpers/index.ts";
+import { hosts } from "../src/core/hosts.ts";
+import { hostReader, hostWriter, openCodeReader, openCodeWriter } from "../src/helpers/index.ts";
 import { chatEnvironment } from "../src/helpers/programs.ts";
 import { makeTempFolder, removeFolder } from "./support.ts";
 
@@ -123,7 +124,7 @@ describe("OpenCode's writer (D-406, D-578 (3))", () => {
     it("passes the model's variant the player chose, and nothing of the chat that names the campaign", async () => {
         const line = fakeOpenCode({ models: listed, run: "two" }, { recent: [{ providerID: "deepseek", modelID: "deepseek-v4-pro" }], variant: { "deepseek/deepseek-v4-pro": "high" } });
         const saved = { host: process.env.RPG_HOST, folder: process.env.RPG_TEST_FOLDER };
-        process.env.RPG_HOST = openCodeClient;
+        process.env.RPG_HOST = hosts.openCode.client;
         process.env.RPG_TEST_FOLDER = join(process.cwd(), "campaign");
 
         try {
@@ -160,7 +161,7 @@ describe("OpenCode's importer (D-489 (1), D-578 (3))", () => {
         expect(reader.program?.()).toBe("OpenCode");
         // The model it reads with, which the player is told (D-579 (2)).
         expect(reader.model?.()).toBe("ollama/gpt-oss:20b");
-        expect(hostReader(() => openCodeClient, reader, reader, reader).model?.()).toBe("ollama/gpt-oss:20b");
+        expect(hostReader(() => hosts.openCode.client, reader, reader, reader).model?.()).toBe("ollama/gpt-oss:20b");
         expect(await reader.read(work, "Read the source", ["adventure", "notes"])).toEqual({ said: "the last answer" });
         // Its own repository, so that the campaign's above is not the one OpenCode lets it read; nothing where git is missing.
         expect(readdirSync(work).filter((name) => name !== ".git")).toEqual([]);
@@ -247,19 +248,19 @@ describe("who does the work outside the chat, by the chat in use (D-578 (3))", (
     const reader = (name: "Codex" | "Claude Code" | "OpenCode", ready: boolean): DocumentReader => ({ ready: () => ready, program: () => name, read: () => Promise.resolve({ said: name }) });
 
     it("takes OpenCode first in its own chat, then Codex and Claude Code; never elsewhere", async () => {
-        expect(await hostWriter(() => openCodeClient, writer("codex", true), writer("claude", true), writer("opencode", true)).write("brief")).toBe("opencode");
-        expect(await hostWriter(() => openCodeClient, writer("codex", true), writer("claude", true), writer("opencode", false)).write("brief")).toBe("codex");
-        expect(await hostWriter(() => openCodeClient, writer("codex", false), writer("claude", true), writer("opencode", false)).write("brief")).toBe("claude");
+        expect(await hostWriter(() => hosts.openCode.client, writer("codex", true), writer("claude", true), writer("opencode", true)).write("brief")).toBe("opencode");
+        expect(await hostWriter(() => hosts.openCode.client, writer("codex", true), writer("claude", true), writer("opencode", false)).write("brief")).toBe("codex");
+        expect(await hostWriter(() => hosts.openCode.client, writer("codex", false), writer("claude", true), writer("opencode", false)).write("brief")).toBe("claude");
         expect(await hostWriter(() => "claude-code", writer("codex", true), writer("claude", true), writer("opencode", true)).write("brief")).toBe("codex");
         expect(await hostWriter(() => "codex-mcp-client", writer("codex", false), writer("claude", true), writer("opencode", true)).ready()).toBe(false);
         expect(hostWriter(() => "antigravity-client", writer("codex", false), writer("claude", false), writer("opencode", true), writer("antigravity", false)).ready()).toBe(false);
 
-        expect(hostReader(() => openCodeClient, reader("Codex", true), reader("Claude Code", true), reader("OpenCode", true)).program?.()).toBe("OpenCode");
-        expect(hostReader(() => openCodeClient, reader("Codex", true), reader("Claude Code", true), reader("OpenCode", false)).program?.()).toBe("Claude Code");
-        expect(hostReader(() => openCodeClient, reader("Codex", true), reader("Claude Code", false), reader("OpenCode", false)).program?.()).toBe("Codex");
+        expect(hostReader(() => hosts.openCode.client, reader("Codex", true), reader("Claude Code", true), reader("OpenCode", true)).program?.()).toBe("OpenCode");
+        expect(hostReader(() => hosts.openCode.client, reader("Codex", true), reader("Claude Code", true), reader("OpenCode", false)).program?.()).toBe("Claude Code");
+        expect(hostReader(() => hosts.openCode.client, reader("Codex", true), reader("Claude Code", false), reader("OpenCode", false)).program?.()).toBe("Codex");
         expect(hostReader(() => "claude-code", reader("Codex", true), reader("Claude Code", true), reader("OpenCode", true)).program?.()).toBe("Claude Code");
         expect(hostReader(() => undefined, reader("Codex", false), reader("Claude Code", false), reader("OpenCode", true)).ready()).toBe(false);
-        expect(await hostReader(() => openCodeClient, reader("Codex", true), reader("Claude Code", true), reader("OpenCode", true)).read(folder, "brief", [])).toEqual({ said: "OpenCode" });
+        expect(await hostReader(() => hosts.openCode.client, reader("Codex", true), reader("Claude Code", true), reader("OpenCode", true)).read(folder, "brief", [])).toEqual({ said: "OpenCode" });
     });
 });
 

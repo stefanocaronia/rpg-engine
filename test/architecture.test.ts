@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { posix } from "node:path";
 import { describe, expect, it } from "vitest";
+import { hostIds, hosts } from "../src/core/hosts.ts";
 
 const sourceFolder = new URL("../src/", import.meta.url);
 
@@ -69,6 +70,23 @@ describe("architecture", () => {
             "server/fence.ts",
             // Which campaign each conversation of Antigravity's app plays, in the player's data folder, for the router (D-578).
             "server/route/notes.ts",
+            // Where each campaign's table is found, in the player's data folder (D-582).
+            "server/table/place.ts",
+            // Whether the folder of each campaign the launcher lists answers, asked without blocking, as a network share may not.
+            "server/launcher/campaigns.ts",
+            // The engine's own files in the player's data folder, written whole or not at all: the places of the tables and the launcher, the campaigns it
+            // remembers, a campaign's last chat, the icon's notes.
+            "core/data-file.ts",
+            // The browsers installed, looked for by their files, for the launcher's window.
+            "desktop/browser.ts",
+            // The icon on the desktop and in the menu.
+            "desktop/icon/index.ts",
+            "desktop/icon/linux.ts",
+            "desktop/icon/macos.ts",
+            // Why rpg open could not reach the launcher, in the player's data folder, for the icon that has no console.
+            "cli/open.ts",
+            // The hosts' own programs, looked for in the folders of the PATH, the player's home and npm's packages, for the table's chat with the master.
+            "master/program.ts",
             // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
             "campaign/last-choices.ts",
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).
@@ -102,4 +120,135 @@ describe("architecture", () => {
         const touching = sources.filter((path) => /from "node:fs(\/promises)?"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));
         expect(touching.sort()).toEqual(allowed.sort());
     });
+
+    it("stops a process tree and reads lines in one place", () => {
+        const holding = codeFiles().filter((path) => /taskkill|from "node:readline"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));
+        expect(holding).toEqual(["core/process.ts"]);
+    });
+
+    it("starts processes only where the list says", () => {
+        const allowed = [
+            // The engine's own: a process that speaks by lines, and stopping what any of these started.
+            "core/process.ts",
+            // git, for the campaign's commits and pushes.
+            "git/git.ts",
+            // npm, to read and install packages.
+            "packages/npm.ts",
+            // The AI programs that work outside the chat: Antigravity's agy, Claude Code, Codex and OpenCode.
+            "helpers/antigravity.ts",
+            "helpers/claude.ts",
+            "helpers/codex.ts",
+            "helpers/opencode.ts",
+            // Finding, installing and signing in Codex and Claude Code, and queueing a message in Codex.
+            "helpers/programs.ts",
+            // The system's own window that asks the player.
+            "confirm/confirm.ts",
+            // Windows' own reader of text in pictures, through PowerShell.
+            "documents/ocr.ts",
+            // The engine itself, apart, to read the player's library.
+            "commands/shared/books/library-reader.ts",
+            // The engine itself, apart, to run an import.
+            "server/context.ts",
+            // The player's browser, asked which it is and started apart, for the launcher's window.
+            "desktop/browser.ts",
+            // PowerShell, which makes the icon's shortcuts on Windows; gio, which marks it trusted on a Linux desktop.
+            "desktop/icon/windows.ts",
+            "desktop/icon/linux.ts",
+        ];
+        const starting = codeFiles().filter((path) => /from "node:child_process"/.test(readFileSync(new URL(path, sourceFolder), "utf8")));
+        expect(starting.sort()).toEqual(allowed.sort());
+    });
+
+    it("names an AI host only in the registry and in the files named after a host, or in a folder named after one", () => {
+        const names = new Set<string>(hostIds.flatMap((id) => [id, hosts[id].client, hosts[id].hook]));
+        // The files that still name a host by hand, each for its reason: a list meant to shrink.
+        const exceptions = [
+            // The hook's answers, by host.
+            "server/bell/listener.ts",
+            // The programs the engine runs outside the chat, named codex and claude: another vocabulary, until the registry joins the code that starts the hosts.
+            "core/context.ts",
+            "helpers/programs.ts",
+            "commands/install.ts",
+            "server/dashboard/index.ts",
+            // The values of the campaign's setting of who makes the pictures, kept in campaigns' files.
+            "campaign/settings.ts",
+            "helpers/chosen.ts",
+            "commands/config/dashboard.ts",
+            // Each host's own folders and files, in a campaign and on the computer.
+            "campaign/host-files.ts",
+        ];
+        const found = codeFiles().filter((path) => {
+            const parts = path.replace(/\.tsx?$/, "").split("/");
+
+            if (path === "core/hosts.ts" || parts.some((part) => names.has(part))) {
+                return false;
+            }
+
+            // A whole literal in double or single quotes, or in backticks with nothing put in it; each looked for apart, as an apostrophe opens no literal.
+            const source = readFileSync(new URL(path, sourceFolder), "utf8");
+            return [/"([^"\n]*)"/g, /'([^'\n]*)'/g, /`([^`]*)`/g].some((literal) => [...source.matchAll(literal)].some(([, text]) => names.has(text)));
+        });
+        expect(found.sort()).toEqual(exceptions.sort());
+    });
+
+    it("keeps the servers of the page, the table, the launcher and the dashboard in one direction, each reached through its index", () => {
+        // Who may import whom: the launcher the table and the page; the table the dashboard and the page; the dashboard the page; the page none of them.
+        const mayImport: Record<string, string[]> = {
+            "server/page": [],
+            "server/dashboard": ["server/page"],
+            "server/table": ["server/dashboard", "server/page"],
+            "server/launcher": ["server/table", "server/page"],
+        };
+        const checked: string[] = [];
+
+        for (const [folder, allowed] of Object.entries(mayImport)) {
+            for (const path of codeFiles().filter((one) => one.startsWith(`${folder}/`))) {
+                checked.push(path);
+
+                for (const imported of importsOf(path)) {
+                    const other = Object.keys(mayImport).find((one) => imported.startsWith(`${one}/`) && one !== folder);
+
+                    if (other !== undefined) {
+                        expect(allowed.includes(other), `${path} imports ${imported}`).toBe(true);
+                        expect(imported, `${path} imports ${imported}, not its index`).toBe(`${other}/index.ts`);
+                    }
+                }
+            }
+        }
+
+        expect(checked).toEqual(expect.arrayContaining(["server/launcher/serve.ts", "server/table/serve.ts", "server/page/index.ts"]));
+    });
+
+    it("starts the launcher without the commands: none is reached from it by a static import", () => {
+        const reached = new Set<string>();
+        const waiting = codeFiles().filter((path) => path.startsWith("server/launcher/"));
+
+        while (waiting.length > 0) {
+            const path = waiting.pop() ?? "";
+
+            if (!reached.has(path)) {
+                reached.add(path);
+                waiting.push(...importsOf(path, "static").filter((imported) => codeFiles().includes(imported)));
+            }
+        }
+
+        expect([...reached].filter((path) => path.startsWith("commands/"))).toEqual([]);
+        expect(reached).toContain("server/table/index.ts");
+    });
 });
+
+/** The files of src/ a file imports, by their path from src/: every import, or only those loaded with it, not types alone nor those loaded when asked. */
+function importsOf(path: string, which: "all" | "static" = "all"): string[]
+{
+    const source = readFileSync(new URL(path, sourceFolder), "utf8");
+    const imported = which === "all"
+        ? [...source.matchAll(/(?:from|import)\s*\(?\s*"(\.[^"]+)"/g)].map(([, one]) => one)
+        : [...source.matchAll(/^(?:import|export)(\s+type)?\b[^;]*?(?:from\s+)?"(\.[^"]+)";/gms)].filter(([, typesAlone]) => typesAlone === undefined).map(([, , one]) => one);
+    return imported.map((one) => posix.join(posix.dirname(path), one ?? ""));
+}
+
+/** Every file of code under src/, the dashboard's page included, by its path from src/. */
+function codeFiles(): string[]
+{
+    return (readdirSync(sourceFolder, { recursive: true }) as string[]).map((path) => path.replaceAll("\\", "/")).filter((path) => /\.tsx?$/.test(path));
+}

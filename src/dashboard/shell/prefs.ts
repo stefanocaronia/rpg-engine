@@ -31,6 +31,15 @@ export const tokenSymbolsPref: Pref = { key: "rpg-engine.token-symbols", on: tru
 /** When the tokens show the pip of their state, the conditions on them and who is down (D-419): always, only under the mouse, or never. */
 export const conditionsPref: Choice = { key: "rpg-engine.token-conditions", initial: "always", values: ["always", "hover", "never"] };
 
+/** Where the chat with the master stands (D-582): in its own section ("tab"), or beside the page at the window's left or right; none until the player chooses. */
+export const chatSidePref: Choice = { key: "rpg-engine.chat-side", initial: "", values: ["tab", "left", "right"] };
+
+/** Whether the chat beside the page is as tall as the window, the page's top beside it, or starts under the page's top. */
+export const chatTallPref: Pref = { key: "rpg-engine.chat-tall", on: false };
+
+/** Where the browser keeps how wide the chat beside the page is, in pixels. */
+export const chatWidthKey = "rpg-engine.chat-width";
+
 // The event that tells the page a preference changed.
 const changed = "rpg-engine:pref";
 

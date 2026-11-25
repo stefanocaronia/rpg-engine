@@ -12,6 +12,7 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { ViewResult } from "../src/commands/view/result.ts";
 import type { Context, PicturesReady, Player } from "../src/core/context.ts";
+import { hosts } from "../src/core/hosts.ts";
 import { SessionStore, type WatchFolder } from "../src/core/session-store.ts";
 import { choicesAddress, readAddress, sectionAddress } from "../src/dashboard/address.ts";
 import { explanations } from "../src/dashboard/api.ts";
@@ -21,11 +22,12 @@ import { checkOf, customLabel, diceIn, drawnDiceOf, drawnDie, fieldLabel, groupL
 import { arrangedGroups, columnsByHeight, endedQuests, equippedFirst, followedQuests, groupLayout, keptFollowed, orderedValues, progressShare, rollWindow, trackPlaces, widgetOf } from "../src/dashboard/parts/layout.ts";
 import { settingsTab, settingsTabs } from "../src/dashboard/settings/tabs.ts";
 import { setLanguage, setSystemWords } from "../src/dashboard/text.ts";
-import { antigravityClient, antigravitySays } from "../src/helpers/index.ts";
+import { antigravitySays } from "../src/helpers/index.ts";
 import { unpackFiles } from "../src/saves/index.ts";
 import type { ShownChoices as ServerChoices } from "../src/server/dashboard/choices.ts";
 import { campaignPorts, type Dashboard, dashboardPorts, startDashboard } from "../src/server/dashboard/index.ts";
-import { createMcpServer, dashboardOpener } from "../src/server/mcp.ts";
+import { dashboardOpener } from "../src/server/dashboard/opener.ts";
+import { createMcpServer } from "../src/server/mcp.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { inPlay, makeTempFolder, readLogFile, removeFolder, testContext, testSystemFolders } from "./support.ts";
 
@@ -299,7 +301,7 @@ describe("view as data (VIEW-1, D-272)", () => {
         expect(await pictures({ ready: true, maker: "Antigravity" })).toEqual({ text: "Antigravity paints them on this computer, from your Google plan." });
         const inAntigravityChat = await runCommandLine(["view", "--settings", "--json"], {
             ...context,
-            host: () => antigravityClient,
+            host: () => hosts.antigravity.client,
             pictures: { ready: () => ({ ready: true, maker: "Antigravity" }), make: () => Promise.resolve({ refused: "no" }) },
         });
         expect((JSON.parse(inAntigravityChat.output) as { settings: PlayerSetting[]; }).settings.find((setting) => setting.name === "pictures")?.note?.text).toBe("Antigravity makes them in your chat, from your Google plan.");
@@ -324,7 +326,7 @@ describe("view as data (VIEW-1, D-272)", () => {
             choices: [expect.objectContaining({ value: "chat" }), expect.objectContaining({ value: "antigravity" }), expect.objectContaining({ value: "elevenlabs" }), expect.objectContaining({ value: "other" })],
         });
         await ok("config", "pictures-by", "antigravity");
-        const inAntigravity = JSON.parse((await runCommandLine(["view", "--settings", "--json"], { ...context, host: () => antigravityClient })).output) as { settings: PlayerSetting[]; };
+        const inAntigravity = JSON.parse((await runCommandLine(["view", "--settings", "--json"], { ...context, host: () => hosts.antigravity.client })).output) as { settings: PlayerSetting[]; };
         expect(inAntigravity.settings.find((setting) => setting.name === "pictures-by")).toMatchObject({
             value: "chat",
             choices: [expect.objectContaining({ value: "chat" }), expect.objectContaining({ value: "codex" }), expect.objectContaining({ value: "elevenlabs" }), expect.objectContaining({ value: "other" })],

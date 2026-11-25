@@ -267,6 +267,21 @@ describe("what the player changed on the dashboard (D-341)", () => {
         await plain.close();
     });
 
+    it("knows the table's own chat by the token the table gave its host, and never has the master give it the dashboard's link", async () => {
+        await runCommandLine(["init", "--name", "Rocca"], testContext(folder));
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer({ ...testContext(folder), dashboard: "http://localhost:4747" }, { RPG_TABLE_MASTER: "table-token" }).connect(serverTransport);
+        const plain = new Client({ name: "plain", version: "1.0.0" });
+        await plain.connect(clientTransport);
+        const text = async (name: string): Promise<string> => ((await plain.callTool({ name, arguments: {} })).content as { text: string; }[])[0].text;
+        expect(await text("status")).not.toContain("http://localhost:4747");
+        expect(await text("status")).not.toContain("http://localhost:4747");
+        const instructions = await text("instructions");
+        expect(instructions).toContain("this chat is part of it");
+        expect(instructions).not.toContain("http://localhost:4747");
+        await plain.close();
+    });
+
     it("takes in what the player changed while the call waited for them", async () => {
         await runCommandLine(["init", "--name", "Rocca", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], testContext(folder));
         await runCommandLine(["write", "Bruna", "--type", "character", "--set", "role=pc"], testContext(folder));
@@ -371,7 +386,7 @@ describe("a host that shows forms (D-148, ASK-1)", () => {
         const forms = await formClient({ action: "accept", content: { choice: "Acrobazia · d20 +3" } }, shown);
         expect((await forms.listTools()).tools.map((tool) => tool.name)).toContain("ask");
         expect(((await forms.callTool({ name: "instructions", arguments: {} })).content as { text: string; }[])[0].text).toMatch(
-            /call `ask` instead of stopping in words; a hidden roll stays yours. Never speak of buttons to the player: if one does not show, ask in words\.\n\nNow read where the game stands/,
+            /never in the story as well; a hidden roll stays yours. Never speak of buttons to the player: if one does not show, ask in words\.\n\nNow read where the game stands/,
         );
 
         const result = await forms.callTool({ name: "ask", arguments: wall });

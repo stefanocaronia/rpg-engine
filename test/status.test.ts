@@ -39,6 +39,26 @@ describe("rpg status", () => {
         expect((await rpg("instructions")).output).toBe(`${file("core.md")}\n\n${file("setup.md")}\n\n${openingLine}`);
     });
 
+    it("gives the dashboard's link to a chat beside it, and none to the table's own chat, which is part of the page", async () => {
+        const file = (name: string): string => readFileSync(new URL(`../instructions/${name}`, import.meta.url), "utf8").replace(/\r\n/g, "\n").trim();
+        const link = "http://127.0.0.1:4747";
+        const beside = { ...context, dashboard: link, chat: { calls: 0 } };
+        expect((await runCommandLine(["status"], beside)).output).toMatch(/^Offer the player their dashboard's link in your first answer: http:\/\/127\.0\.0\.1:4747\.\n/);
+        expect((await runCommandLine(["status"], beside)).output).toContain(`Dashboard: ${link}.`);
+        expect((await runCommandLine(["instructions"], beside)).output).toContain(file("dashboard.md").replace("{link}", link));
+
+        const atTable = { ...context, dashboard: link, chat: { calls: 0, atTable: true } };
+
+        for (const call of [1, 2]) {
+            expect((await runCommandLine(["status"], atTable)).output, `status ${call}`).not.toContain(link);
+        }
+
+        const instructions = (await runCommandLine(["instructions"], atTable)).output;
+        expect(instructions).toContain(file("dashboard-table.md"));
+        expect(instructions).not.toContain(link);
+        expect(instructions).not.toContain(file("dashboard.md").split(",")[0]);
+    });
+
     it("shows the party, where they are, their counters and who is with them", async () => {
         inPlay(folder);
         await rpg("config", "language", "it");

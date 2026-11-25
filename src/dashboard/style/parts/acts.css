@@ -4,7 +4,7 @@
     /* The player's sentences after they go (D-495), low at the side of the dice wherever the page is: the sentence in quotes, how it stands in words and a sign. */
     .act-strip {
         position: fixed;
-        inset-inline: 20px 96px;
+        inset-inline: calc(20px + var(--dock-start, 0px)) calc(96px + var(--dock-end, 0px));
         bottom: 20px;
         z-index: 21;
         display: grid;

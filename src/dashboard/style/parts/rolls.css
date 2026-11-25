@@ -137,7 +137,7 @@
     .table-away {
         position: fixed;
         top: 50%;
-        inset-inline-end: 0;
+        inset-inline-end: var(--dock-end, 0px);
         z-index: 17;
         translate: 0 -50%;
     }
@@ -145,7 +145,7 @@
     .table-fold {
         position: fixed;
         top: 50%;
-        inset-inline-end: 0;
+        inset-inline-end: var(--dock-end, 0px);
         z-index: 17;
         display: grid;
         place-items: center;
@@ -171,12 +171,12 @@
 
     @media (min-width: 900px) {
         .page:has(.play-table) {
-            padding-inline-end: calc(var(--gap) + 16px);
+            padding-inline-end: calc(var(--gap) + 16px + var(--dock-end, 0px));
         }
 
         /* Folded, the tab's width, so that it never covers the page's right edge. */
         .page:has(.table-away) {
-            padding-inline-end: calc(var(--gap) + 40px);
+            padding-inline-end: calc(var(--gap) + 40px + var(--dock-end, 0px));
         }
     }
 
