@@ -2,14 +2,16 @@
 // in through a local socket; it ends by itself once no chat and no page has been there for a while, or once the packages' code it loaded changed on disk.
 import { createServer, type Server, type Socket } from "node:net";
 import { homedir } from "node:os";
-import { findCampaign } from "../../campaign/index.ts";
+import { findCampaign, refreshHostFiles } from "../../campaign/index.ts";
 import { chatFolders as hostChatFolders } from "../../chats/index.ts";
 import { type ChatFolders, type Context, forgetChat, userDataFolder } from "../../core/context.ts";
 import { guardProcess } from "../../core/process.ts";
 import type { SessionStore } from "../../core/session-store.ts";
+import { withFiles } from "../../core/store.ts";
 import { getVersion } from "../../core/version.ts";
 import { lookUntil } from "../../core/wait.ts";
 import { hostCommand } from "../../helpers/index.ts";
+import { hostInstructions } from "../../instructions/index.ts";
 import { type ChatSide, servedContext } from "../context.ts";
 import { type Dashboard, type DashboardOptions, type LauncherWay, showPage, startDashboard } from "../dashboard/index.ts";
 import { type TableChat, tableChat, type TableChatOptions } from "./chat.ts";
@@ -196,6 +198,8 @@ async function openParts(options: TableOptions, root: string): Promise<Parts | {
     const { context, session } = await made({ host: () => seat?.host(), environment: () => seat?.environment() ?? {} });
     // As no chat has sat yet: each chat's server makes its own.
     forgetChat(context);
+    // The hosts' files as this engine writes them, before a chat opens: a host reads them as it starts, and a campaign an older engine made lacks what the table needs.
+    withFiles(session, () => refreshHostFiles(root, hostInstructions(), context.platform));
     const environment = options.master?.environment ?? process.env;
     const chat: TableChat = tableChat({
         root,

@@ -170,7 +170,7 @@ describe("the table's chat with the master", () => {
             folder: root,
             program: { command: "claude-program", args: [] },
             model: "sonnet",
-            allowed: ["rpg", "read", "web", "agent"],
+            allowed: ["rpg", "read", "web", "agent", "image"],
             environment: { PATH: "/bin", DRIVER: "yes", RPG_TABLE_MASTER: "token-1" },
             failed: expect.any(Function) as unknown,
         });
@@ -272,7 +272,49 @@ describe("the table's chat with the master", () => {
         master.refuses = true;
         expect(chat.say("Refused")).toBe("busy");
         expect(chat.inTurn()).toBe(false);
-        expect(chat.shown().messages).toEqual([{ id: 1, from: "player", text: "Open the door" }]);
+        // A turn that ends with nothing written says so on the page.
+        expect(chat.shown().messages).toEqual([
+            { id: 1, from: "player", text: "Open the door" },
+            { id: 2, from: "table", text: "The master ended its turn without writing anything. Write to it again." },
+        ]);
+    });
+
+    it("writes to the master once to go on, where its turn ends without a word after a tool it was refused, the player's turn going on, unseen", () => {
+        const { chat, master } = opened();
+        chat.say("Climb the wall");
+        master.emit({ type: "permission", name: "run_command", kind: "shell", allowed: false });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(master.sent).toEqual(["Climb the wall", "The table refused run_command: you cannot use it here. Go on with the game's commands, and answer the player."]);
+        expect(chat.inTurn()).toBe(true);
+        expect(idles).toBe(0);
+        expect(chat.shown().messages).toEqual([{ id: 1, from: "player", text: "Climb the wall" }]);
+        master.emit({ type: "text", block: 0, text: "The wall is slick." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.inTurn()).toBe(false);
+        expect(chat.shown().messages).toEqual([{ id: 1, from: "player", text: "Climb the wall" }, { id: 2, from: "master", text: "The wall is slick." }]);
+        // In the campaign's file, the player's turn ends once, after the master's words.
+        const folder = join(root, "sessions", "table-chats");
+        const lines = readFileSync(join(folder, readdirSync(folder)[0]), "utf8").trim().split("\n");
+        expect(lines.map((line) => JSON.parse(line) as Record<string, unknown>).map((line) => line.from ?? line.turn)).toEqual(["player", "master", "ended"]);
+    });
+
+    it("says which tool the master was refused, where its turn ends without a word after it once more; nothing where it wrote", () => {
+        const { chat, master } = opened();
+        chat.say("Climb the wall");
+        master.emit({ type: "permission", name: "run_command", kind: "shell", allowed: false });
+        master.emit({ type: "turnEnd", reason: "done" });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(master.sent).toHaveLength(2);
+        expect(chat.shown().messages.at(-1)).toEqual({
+            id: 2,
+            from: "table",
+            text: "The master ended its turn without writing anything. Write to it again. It tried to use run_command, which the master may not use here.",
+        });
+
+        chat.say("Again");
+        master.emit({ type: "text", block: 0, text: "You climb." });
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(chat.shown().messages.at(-1)).toEqual({ id: 4, from: "master", text: "You climb." });
     });
 
     it("joins the master's prose of a turn in one message, a new block a new paragraph, and shows the tool in use until it is done or failed", () => {
@@ -545,7 +587,7 @@ describe("the campaign's last chat", () => {
 
         expect(chat.open(choice)).toBeUndefined();
         expect(masters[1].options.session).toBe("session-1");
-        expect(chat.shown().messages).toHaveLength(1);
+        expect(chat.shown().messages).toHaveLength(2);
         // Taken up, with nothing said in it yet: the page offers to ask where the story stands, until the player says something.
         expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", takenUp: true, state: "idle" });
         chat.say("Where were we?");

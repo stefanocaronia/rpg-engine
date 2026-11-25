@@ -42,6 +42,7 @@ function openCodex(options: MasterOptions): MasterChat
         model: { asked: options.model, ...(options.effort === undefined ? {} : { effort: options.effort }) },
         ready: false,
         errors,
+        agents: new Set(),
         closed: false,
         ended: false,
     };

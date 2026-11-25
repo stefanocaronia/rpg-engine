@@ -46,7 +46,12 @@ if (args.length === 1 && args[0] === "mcp" && process.env.RPG_HELPER === "1") {
     const { readLibraryHere } = await import("../commands/shared/books/library-reader.ts");
     await readLibraryHere();
 } else if (args[0] === "--listen" && process.env.RPG_TABLE_MASTER !== undefined) {
-    // In a chat the table opened, what the player does on the page reaches the master as a message the table sends: the hook has nothing to wait for.
+    // In a chat the table opened, what the player does on the page reaches the master as a message the table sends: the hook has nothing to wait for, and
+    // lets the turn end with its host's answer of no ring, Antigravity's empty one.
+    const { hookAnswer, listeningHosts } = await import("../server/bell/index.ts");
+    const host = listeningHosts.find((one) => one === args[1]);
+    const answer = host === undefined ? undefined : hookAnswer(host, false);
+    process.stdout.write(answer === undefined ? "" : `${answer}\n`);
     process.exitCode = 0;
 } else if (args[0] === "--listen" && args.length <= 2) {
     const { listen, listeningHosts } = await import("../server/bell/index.ts");

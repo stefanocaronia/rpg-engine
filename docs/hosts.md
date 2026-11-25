@@ -9,15 +9,15 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 | The campaign and its tools from the first message | ✅ | ✅ | ✅ | ✅ | 🟡 <sup>1</sup> | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | The game's tools run without asking permission | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | The dashboard starts with the chat, and the master gives its link | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> |
-| A click on the dashboard reaches the chat | ✅ | ✅ | ✅ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
-| Writing in the chat, or stopping it, while the master waits for a click | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | 🟡 <sup>2</sup> | ❔ | ✅ | ✅ | ❔ |
+| A click on the dashboard reaches the chat | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Writing in the chat, or stopping it, while the master waits for a click | ✅ | ✅ | ✅ <sup>12</sup> | ✅ | ✅ | ✅ <sup>12</sup> | ✅ | 🟡 <sup>2</sup> | ✅ <sup>12</sup> | ✅ | ✅ | ✅ <sup>12</sup> |
 | Pictures made by the chat in use | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ <sup>3</sup> | ✅ <sup>3</sup> | ❔ | ✅ <sup>4</sup> | ✅ <sup>4</sup> | ❔ |
 | Importing an adventure from a document | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
 | The dashboard translated into a language that is not shipped | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
 | A system's rules translated as you read them | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
-| Characters voiced by an agent of their own | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ❔ | ✅ <sup>6</sup> | ✅ <sup>6</sup> | ❔ |
+| Characters voiced by an agent of their own | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ✅ <sup>6</sup> | ✅ <sup>6</sup> | 🟡 <sup>13</sup> |
 | The agent's own memory of past chats turned off | ✅ | ✅ | ✅ | ✅ | ✅ | ❔ | ❌ <sup>7</sup> | ❌ <sup>7</sup> | ❌ <sup>7</sup> | ❔ | ❔ | ❔ |
-| The master never writes the campaign's files by hand | ✅ | ✅ | ❔ | ❔ | ❔ | ❔ | 🟡 <sup>8</sup> | ❔ | ❔ | ✅ | ✅ | ❔ |
+| The master never writes the campaign's files by hand | ✅ | ✅ | ✅ | ❔ | ❔ | ✅ | 🟡 <sup>8</sup> | ❔ | ✅ | ✅ | ✅ | ✅ |
 | The master's effort chosen in Settings | ✅ | ✅ | ✅ <sup>11</sup> | ✅ | ✅ | ✅ <sup>11</sup> | ❌ <sup>9</sup> | ❌ <sup>9</sup> | ❔ | ❌ <sup>9</sup> | ❌ <sup>9</sup> | ❔ |
 
 ## Notes
@@ -33,3 +33,5 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 9. Set the effort in the agent itself.
 10. The chat is in the dashboard itself: there is no link to give.
 11. Chosen beside the model, as the chat opens.
+12. A message written while the master waits for a click goes through, and the question is left; stopping while a question waits is not tried yet.
+13. Tried with a free model only: the character's agent runs, but its answer did not reach the story.

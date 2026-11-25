@@ -30,6 +30,8 @@ export interface State
     /** The thread and model last told. */
     told?: { session: string; model: string; };
     turn?: Turn;
+    /** The subagents' threads whose role the chat asked Codex: each asked once. */
+    agents: Set<string>;
     cancelInterruptWait?: () => void;
     /** Closed by close(); ended when its process is gone. */
     closed: boolean;

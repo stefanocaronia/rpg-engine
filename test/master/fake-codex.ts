@@ -13,6 +13,8 @@ export interface FakeCodexOptions
     /** Methods Codex never answers, and those it answers with an error. */
     ignore?: string[];
     failing?: string[];
+    /** The role of each subagent's thread, as thread/read answers it; none by default. */
+    roles?: Record<string, string>;
 }
 
 // How many of Codex's lines it writes in a tick, so that the driver reads them as a stream.
@@ -84,6 +86,10 @@ export function fakeCodex(flow: FlowEntry[], options: FakeCodexOptions = {}): Fa
             answerThread(message);
         } else if (method === "turn/interrupt") {
             interrupted(message);
+        } else if (method === "thread/read") {
+            // As Codex 0.166.0 answers it for a subagent's thread, which the recordings asked apart.
+            const thread = String((message.params as Message).threadId);
+            say({ id: message.id, result: { thread: { id: thread, threadSource: "subagent", agentRole: options.roles?.[thread] ?? null }, readState: null } });
         } else {
             matchClientLine(message);
         }

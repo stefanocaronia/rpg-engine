@@ -219,6 +219,19 @@ describe("the doorbell's answer in each host (D-578)", () => {
         expect(code).toBe(0);
         expect(output).toBe("");
     }, 30_000);
+
+    it("answers Antigravity's Stop hook at once with its empty answer, and OpenCode's plugin with nothing, in a chat the table opened", async () => {
+        const cli = join(import.meta.dirname, "..", "src", "cli", "cli.ts");
+
+        for (const [host, said] of [["antigravity", "{}\n"], ["opencode", ""], ["codex", ""]]) {
+            const child = spawn(process.execPath, ["--no-warnings", cli, "--listen", host], { cwd: temporary(), env: { ...process.env, RPG_TABLE_MASTER: "a-token" } });
+            let output = "";
+            child.stdout.on("data", (chunk: Buffer) => (output += String(chunk)));
+            child.stderr.on("data", (chunk: Buffer) => (output += String(chunk)));
+            const code = await new Promise<number | null>((done) => child.on("exit", done));
+            expect([host, code, output]).toEqual([host, 0, said]);
+        }
+    }, 60_000);
 });
 
 describe("the engine's plugin for OpenCode (D-578)", () => {

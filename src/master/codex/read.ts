@@ -2,8 +2,8 @@
 import { inside } from "../paths.ts";
 import { error, isObject, type Message, result } from "./protocol.ts";
 import { turnCompleted } from "./setup.ts";
-import { askToStop, sendInterrupt, type State, tell, type Turn, write } from "./state.ts";
-import { approvalAnswer, type CodexTool, toolOfItem, toolOfRequest } from "./tools.ts";
+import { ask, askToStop, sendInterrupt, type State, tell, type Turn, write } from "./state.ts";
+import { agentThreads, approvalAnswer, type CodexTool, isCharacterAgent, toolOfItem, toolOfRequest } from "./tools.ts";
 
 /** One line of Codex: whatever it holds, reading it never throws; what the chat's listener throws its queue takes. */
 export function readLine(state: State, line: string): void
@@ -38,6 +38,9 @@ function readMessage(state: State, message: Message): void
         readRequest(state, message.method, message.id, isObject(message.params) ? message.params : {});
     } else if (isObject(message.params) && (state.thread === undefined || message.params.threadId === state.thread)) {
         readNotification(state, message.method, message.params);
+    } else if (isObject(message.params) && (message.method === "item/started" || message.method === "item/completed")) {
+        // An item of another thread, a subagent's: never the master's prose nor its tools, but held to its limits.
+        readItem(state, message.params.item, message.method === "item/completed", false);
     }
 }
 
@@ -62,7 +65,7 @@ function readRequest(state: State, method: string, id: unknown, params: Message)
     const refusal = outside === undefined
         ? `The table does not let the master use ${tool.name}: it plays with the rpg commands.`
         : `The table lets the master read only the campaign's folder: ${tool.name} asked for ${outside}.`;
-    write(state, result(id, approvalAnswer(method, params, allowed, refusal)));
+    write(state, result(id, approvalAnswer(method, tool, allowed, refusal)));
 
     if (allowed && item !== undefined) {
         turn?.approved.add(item);
@@ -105,8 +108,11 @@ function readDelta(state: State, params: Message): void
     tellText(state, turn, params.itemId, params.delta);
 }
 
-/** An item of the turn: a message of the master, whose whole text is told only where none of it came in pieces; or a tool, told started, then done or failed. */
-function readItem(state: State, item: unknown, completed: boolean): void
+/**
+ * An item of the turn: a message of the master, whose whole text is told only where none of it came in pieces; or a tool, told started, then done or
+ * failed. An item of a subagent's thread, not `own`, is never told: only its tools' ends are held to the table's limits.
+ */
+function readItem(state: State, item: unknown, completed: boolean, own = true): void
 {
     const turn = playing(state);
 
@@ -115,7 +121,7 @@ function readItem(state: State, item: unknown, completed: boolean): void
     }
 
     if (item.type === "agentMessage") {
-        if (completed && typeof item.text === "string" && item.text !== "" && !turn.told.has(item.id)) {
+        if (own && completed && typeof item.text === "string" && item.text !== "" && !turn.told.has(item.id)) {
             tellText(state, turn, item.id, item.text);
         }
 
@@ -129,26 +135,76 @@ function readItem(state: State, item: unknown, completed: boolean): void
         return;
     }
 
+    agentThreads(item).forEach((thread) => askRole(state, turn, thread));
+
     if (!turn.tools.has(id)) {
         turn.tools.set(id, tool);
-        turn.toolSince = true;
-        tell(state, { type: "tool", id, name: tool.name, kind: tool.kind, state: "started" });
+
+        if (own) {
+            turn.toolSince = true;
+            tell(state, { type: "tool", id, name: tool.name, kind: tool.kind, state: "started" });
+        }
     }
 
     if (completed) {
-        toolEnded(state, turn, id, tool, item.status === undefined || item.status === "completed");
+        toolEnded(state, turn, id, tool, itemRan(item), own);
     }
 }
 
-/** A tool's end; one that ran, which the table does not allow and was never asked, stops the turn, which fails saying so. */
-function toolEnded(state: State, turn: Turn, id: string, tool: CodexTool, ran: boolean): void
+/** Asks Codex once which agent a subagent's thread is: one that is not the character's fails the turn, as a tool the table does not allow. */
+function askRole(state: State, turn: Turn, thread: unknown): void
+{
+    if (typeof thread !== "string") {
+        failTurn(state, turn, "the host ran a tool without asking: the table does not know which agent the master started");
+        return;
+    }
+
+    if (state.agents.has(thread)) {
+        return;
+    }
+
+    state.agents.add(thread);
+    ask(state, "thread/read", { threadId: thread, includeTurns: false }, (answer) => {
+        if (!isCharacterAgent(answer) && playing(state) === turn) {
+            failTurn(state, turn, "the host ran a tool without asking: the table lets the master start only the agent that plays a character");
+        }
+    });
+}
+
+function failTurn(state: State, turn: Turn, why: string): void
+{
+    if (turn.failure === undefined) {
+        turn.failure = why;
+        askToStop(state, turn);
+    }
+}
+
+/** Whether a tool's item ended having run: a picture's status is Codex's own words, and only its failure says it did not. */
+function itemRan(item: Message): boolean
+{
+    if (item.type === "imageGeneration") {
+        return item.failure === undefined || item.failure === null;
+    }
+
+    return item.status === undefined || item.status === "completed";
+}
+
+/** A tool's end, told where it is the master's own; one that ran, which the table does not allow and was never asked, stops the turn, which fails saying so. */
+function toolEnded(state: State, turn: Turn, id: string, tool: CodexTool, ran: boolean, own: boolean): void
 {
     turn.ended.add(id);
-    tell(state, { type: "tool", id, name: tool.name, kind: tool.kind, state: ran ? "done" : "failed" });
+
+    if (own) {
+        tell(state, { type: "tool", id, name: tool.name, kind: tool.kind, state: ran ? "done" : "failed" });
+    }
+
     const mayUse = state.allowed.includes(tool.kind) && (tool.kind !== "read" || pathOutside(state, tool) === undefined);
 
     if (ran && !mayUse && !turn.approved.has(id) && turn.failure === undefined) {
-        turn.failure = `the host ran ${tool.name} without asking, and the table does not let the master use it`;
+        const outside = state.allowed.includes(tool.kind) ? pathOutside(state, tool) : undefined;
+        turn.failure = outside === undefined
+            ? `the host ran a tool without asking: the table does not let the master use ${tool.name}`
+            : `the host ran a tool without asking: ${tool.name} read ${outside}, and the table lets the master read only the campaign's folder`;
         askToStop(state, turn);
     }
 }

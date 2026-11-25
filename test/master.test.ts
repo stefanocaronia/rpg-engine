@@ -22,7 +22,8 @@ checklist({
     open: (scenario) => {
         const flow = loadFlow(`claude-code/${recorded[scenario]}`);
         const session = scenario === "resumed" ? sessionOf(flow) : undefined;
-        const { chat, host } = open(flow, { allowed: scenario === "refused" ? ["read"] : ["rpg", "read"], session });
+        // The second turn of three-turns runs a command without asking, as the recording's settings let it: the table here allows the shell.
+        const { chat, host } = open(flow, { allowed: scenario === "refused" ? ["read"] : ["rpg", "read", "shell"], session });
         return { chat, host, turns: playerWords(flow), texts: wholeTexts(flow), session, interruptTurn: 2 };
     },
     isModelRequest,
@@ -214,8 +215,8 @@ describe("the master in Claude Code", () => {
 
     describe("tools and permissions", () => {
         it("tells each tool once, done or failed, with its kind; a result for a tool never started is ignored", async () => {
-            const uses = whole([toolUse("t1", "Read"), toolUse("t2", "Bash"), toolUse("t3", "Skill")]);
-            const { chat, events, until } = play(turn("Hello", uses, uses, toolResult("t0"), toolResult("t1"), toolResult("t1"), toolResult("t2", true), toolResult("t3")));
+            const uses = whole([toolUse("t1", "Read", { file_path: join(folder, "a.md") }), toolUse("t2", "Bash"), toolUse("t3", "Skill")]);
+            const { chat, events, until } = play(turn("Hello", uses, uses, toolResult("t0"), toolResult("t1"), toolResult("t1"), toolResult("t2", true), toolResult("t3", true)), { allowed: ["read"] });
             chat.send("Hello");
             await until((all) => turnEnds(all).length === 1);
             expect(events.filter((event) => event.type === "tool").map((event) => `${event.name} ${event.kind} ${event.state}`)).toEqual([
@@ -224,8 +225,41 @@ describe("the master in Claude Code", () => {
                 "Skill other started",
                 "Read read done",
                 "Bash shell failed",
-                "Skill other done",
+                "Skill other failed",
             ]);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "done" }]);
+        });
+
+        it("stops the turn, failed, where a tool the table does not allow, or a read outside the folder, ran without asking; the tool search never", async () => {
+            const ran = async (use: Message): Promise<MasterEvent[]> => {
+                const { chat, host, events, until } = play(turn("Hello", whole([toolUse("t0", "ToolSearch", { query: "rpg" }), use]), toolResult("t0"), toolResult("t1"), whole([text("leaked")], "m2")), {
+                    allowed: ["rpg", "read", "agent"],
+                });
+                chat.send("Hello");
+                await until((all) => turnEnds(all).length === 1);
+                expect(host.written.some((line) => (line.request as Message | undefined)?.subtype === "interrupt")).toBe(true);
+                expect(texts(events)).toEqual([]);
+                return turnEnds(events);
+            };
+
+            expect(await ran(toolUse("t1", "Bash", { command: "curl example.com" }))).toEqual([
+                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use Bash" },
+            ]);
+            expect(await ran(toolUse("t1", "Read", { file_path: "/home/player/.ssh/id_rsa" }))).toEqual([
+                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: Read read /home/player/.ssh/id_rsa, and the table lets the master read only the campaign's folder" },
+            ]);
+            expect(await ran(toolUse("t1", "Agent", { subagent_type: "general-purpose", prompt: "look around" }))).toEqual([
+                { type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use Agent" },
+            ]);
+        });
+
+        it("reads the subagent tool by its new name, Agent, as by Task: the character's runs without asking where the table allows it", async () => {
+            const character = { subagent_type: "rpg-character", prompt: "Speak as the innkeeper." };
+            const { chat, events, until } = play(turn("Hello", whole([toolUse("a1", "Agent", character)]), toolResult("a1"), whole([text("The innkeeper nods.")], "m2")), { allowed: ["agent"] });
+            chat.send("Hello");
+            await until((all) => turnEnds(all).length === 1);
+            expect(events.filter((event) => event.type === "tool").map((event) => [event.kind, event.state])).toEqual([["agent", "started"], ["agent", "done"]]);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "done" }]);
         });
 
         it("allows a tool of a kind allowed with its input as received, and tells it by the command's name", async () => {
@@ -522,7 +556,7 @@ describe("the master in Claude Code over a real process and pipe", () => {
         it(`gives the recorded flows' texts as the fake host does, its lines ended by ${JSON.stringify(ends)}`, async () => {
             for (const name of ["three-turns", "denied", "resumed"]) {
                 const flow = loadFlow(`claude-code/${name}`);
-                const { chat, events } = openReal({ FLOW: flowFile(name), ...(ends === "\r\n" ? { CRLF: "1" } : {}) }, name === "denied" ? ["read"] : ["rpg", "read"]);
+                const { chat, events } = openReal({ FLOW: flowFile(name), ...(ends === "\r\n" ? { CRLF: "1" } : {}) }, name === "denied" ? ["read"] : ["rpg", "read", "shell"]);
                 const words = playerWords(flow);
                 // The last turn of three-turns is the one stopped in the recording.
                 const turns = name === "three-turns" ? 2 : words.length;

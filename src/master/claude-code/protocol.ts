@@ -18,9 +18,13 @@ export const builtInTools: { name: string; kind: ToolKind; }[] = [
     { name: "NotebookEdit", kind: "write" },
 ];
 
-// The rpg server's tools, and the one subagent the master may start: a character played apart.
+/** The host's tools that only load the others, which it runs without asking: never a reason to stop a turn. */
+export const toolLoaders = ["ToolSearch"];
+
+// The rpg server's tools, and the one subagent the master may start: a character played apart, by the subagent tool's names old and new.
 const rpgPrefix = "mcp__rpg__";
 const characterAgent = "rpg-character";
+const agentTools = ["Task", "Agent"];
 
 /** A tool's name for the table and its kind: a command of the rpg server by its own name; a subagent is the master's only when it plays a character. */
 export function toolOf(name: string, input: unknown): { name: string; kind: ToolKind; }
@@ -29,7 +33,7 @@ export function toolOf(name: string, input: unknown): { name: string; kind: Tool
         return { name: name.slice(rpgPrefix.length), kind: "rpg" };
     }
 
-    if (name === "Task") {
+    if (agentTools.includes(name)) {
         return { name, kind: isObject(input) && input.subagent_type === characterAgent ? "agent" : "other" };
     }
 

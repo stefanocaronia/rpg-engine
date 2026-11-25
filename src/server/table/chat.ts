@@ -109,6 +109,10 @@ interface OpenChat
     sessionTold: boolean;
     /** Whether the player said anything in it yet, since it was opened. */
     said: boolean;
+    /** Whether the master wrote anything in this turn, and the tool the table refused it in it; whether the table wrote to it once in this turn of the player's. */
+    spoke?: boolean;
+    refused?: string;
+    nudged?: boolean;
 }
 
 /** A host's program on this computer. */
@@ -119,8 +123,13 @@ const mostMessages = 200;
 const mostText = 200_000;
 // How long whether a host is on this computer stays known.
 const foundFor = 5000;
+// What the page says of a turn the master ended without a word, and of the tool it was refused in it.
+const silentTurn = "The master ended its turn without writing anything. Write to it again.";
+const refusedTool = (name: string): string => `It tried to use ${name.slice(0, 60)}, which the master may not use here.`;
+// What the table writes to the master, once in a turn of the player's, where the host ended a turn without a word after a tool it was refused.
+const goOnLine = (name: string): string => `The table refused ${name.slice(0, 60)}: you cannot use it here. Go on with the game's commands, and answer the player.`;
 // The kinds of tools the master may use at the table.
-const allowed = ["rpg", "read", "web", "agent"] as const;
+const allowed = ["rpg", "read", "web", "agent", "image"] as const;
 
 /** The table's chat with the master, for the campaign at `options.root`. */
 export function tableChat(options: TableChatOptions): TableChat
@@ -240,16 +249,26 @@ export function tableChat(options: TableChatOptions): TableChat
         } else if (event.type === "permission") {
             if (!event.allowed) {
                 options.log?.(`The master asked for ${event.name} (${event.kind}), which the table does not give it.`);
+                opened.refused = event.name;
             }
 
             return;
         } else if (event.type === "turnEnd") {
+            if (goOn(opened, event)) {
+                return;
+            }
+
             replyDone(opened);
             Object.assign(opened, { state: "idle", tool: undefined });
 
             if (event.reason === "failed") {
                 add("table", event.why ?? "The master's turn failed.");
+            } else if (event.reason === "done" && opened.spoke !== true) {
+                // A turn that ends with nothing for the player to read, as some hosts end one after a tool they were refused: the page says so.
+                add("table", opened.refused === undefined ? silentTurn : `${silentTurn} ${refusedTool(opened.refused)}`);
             }
+
+            Object.assign(opened, { spoke: undefined, refused: undefined, nudged: undefined });
 
             // The turn's end follows the player's words that began it, in the file too.
             if (sending === undefined) {
@@ -272,8 +291,28 @@ export function tableChat(options: TableChatOptions): TableChat
         options.changed();
     };
 
+    // A turn the host ended without a word after a tool the table refused, as Antigravity ends one by itself: once in the player's turn, the table writes
+    // to the master to go on, and the player's turn goes on with the master's next; their page shows nothing of it.
+    const goOn = (opened: OpenChat, end: Extract<MasterEvent, { type: "turnEnd"; }>): boolean => {
+        if (end.reason !== "done" || opened.spoke === true || opened.refused === undefined || opened.nudged === true) {
+            return false;
+        }
+
+        opened.nudged = true;
+        opened.tool = undefined;
+        const sent = opened.master.send(goOnLine(opened.refused));
+
+        if (sent) {
+            options.changed();
+        }
+
+        return sent;
+    };
+
     // A piece of the master's prose joins their message of this turn; a new block of text, a new paragraph.
     const prose = (opened: OpenChat, block: number, text: string): void => {
+        opened.spoke = true;
+
         if (opened.reply === undefined) {
             opened.reply = add("master", text, false);
         } else {
@@ -483,7 +522,7 @@ export function tableChat(options: TableChatOptions): TableChat
 
             // The player's words and the turn first: a host that fails the turn at once tells it while it is sent. They go in the campaign once said.
             const said = add("player", shown ?? text, false);
-            Object.assign(current, { state: "turn", reply: undefined, block: undefined });
+            Object.assign(current, { state: "turn", reply: undefined, block: undefined, spoke: undefined, refused: undefined, nudged: undefined });
             const sent = { ended: false };
             sending = sent;
             const accepted = current.master.send(text);

@@ -25,6 +25,15 @@ describe("process", () => {
         expect(lines).toEqual(["hello", "world"]);
     }, 15_000);
 
+    it("tells a line of megabytes whole, as Codex writes a picture it painted, and the line after it", async () => {
+        const child = node("process.stdout.write(JSON.stringify({ result: 'A'.repeat(4_000_000) }) + '\\n' + 'after\\n');");
+        const lines: string[] = [];
+        child.onLine((line) => lines.push(line));
+        await until(() => lines.length === 2);
+        expect(lines.map((line) => line.length)).toEqual([4_000_013, 5]);
+        expect((JSON.parse(lines[0]) as { result: string; }).result).toHaveLength(4_000_000);
+    }, 15_000);
+
     it("writes lines to the process", async () => {
         const child = node("require('node:readline').createInterface({ input: process.stdin }).on('line', (line) => console.log('heard ' + line));");
         const lines: string[] = [];
