@@ -11,7 +11,7 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 | The dashboard starts with the chat, and the master gives its link | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> | ✅ | ✅ | ✅ <sup>10</sup> |
 | A click on the dashboard reaches the chat | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Writing in the chat, or stopping it, while the master waits for a click | ✅ | ✅ | ✅ <sup>12</sup> | ✅ | ✅ | ✅ <sup>12</sup> | ✅ | 🟡 <sup>2</sup> | ✅ <sup>12</sup> | ✅ | ✅ | ✅ <sup>12</sup> |
-| Pictures made by the chat in use | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ <sup>14</sup> | ✅ <sup>3</sup> | ✅ <sup>3</sup> | ✅ <sup>3</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> |
+| Pictures made by the chat in use | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ <sup>14</sup> | ✅ <sup>3</sup> | ✅ <sup>3</sup> | 🟡 <sup>18</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> |
 | Importing an adventure from a document | ✅ | ✅ | ✅ <sup>15</sup> | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
 | The dashboard translated into a language that is not shipped | ✅ | ✅ | ✅ <sup>13</sup> | ✅ | ✅ | ✅ <sup>13</sup> | ✅ | ✅ | ✅ <sup>13</sup> | ✅ | ✅ | ✅ <sup>13</sup> |
 | A system's rules translated as you read them | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
@@ -39,3 +39,4 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 15. Tried from a chat that sat at the table by hand; Claude Code read the document.
 16. OpenCode keeps no memory between chats.
 17. Only for the model the agent would play by itself; any other plays at the agent's own effort.
+18. Antigravity waits for its painter with a timer of its own, which the dashboard's chat does not let the master use yet: the turn fails and the picture does not come.
