@@ -32,6 +32,9 @@ const statusWait = 15_000;
 // How long Codex may take to queue a message: the probe's took well under a second.
 const queueWait = 15_000;
 
+// Off Windows a line of the shell leads a group of its own: stopped, the program the shell started goes with it, where the shell alone would go and leave it.
+const ownGroup = process.platform !== "win32";
+
 // The sign-ins under way, or failed and not yet told, by program; the installations under way; how each program stood when last asked; how many times one
 // came ready here, after which the makers of pictures ask again; and how many installations run here, which hold the computer's mark.
 const logins = new Map<HelperName, LoginRun>();
@@ -301,7 +304,7 @@ export function startLogin(name: HelperName, line: string, wait = linkWait, ende
         free = undefined;
     };
 
-    const child = spawn(`${line} ${name === "codex" ? "login" : "auth login"}`, { shell: true, windowsHide: true, cwd: tmpdir(), env: helperEnvironment(name), stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn(`${line} ${name === "codex" ? "login" : "auth login"}`, { shell: true, detached: ownGroup, windowsHide: true, cwd: tmpdir(), env: helperEnvironment(name), stdio: ["pipe", "pipe", "pipe"] });
     const run: LoginRun = { login: { state: "waiting" }, child, heard: ended === undefined ? [] : [ended] };
     let said = "";
     let answer: ((login: HelperLogin) => void) | undefined;
@@ -497,6 +500,7 @@ function installHelper(name: HelperName, folder: string): Promise<string | undef
     return new Promise((done) => {
         const child = spawn(`npm install --prefix "${folder}" ${packages[name]} --no-audit --no-fund --loglevel=error`, {
             shell: true,
+            detached: ownGroup,
             windowsHide: true,
             cwd: tmpdir(),
             env: { ...process.env, NoDefaultCurrentDirectoryInExePath: "1" },
@@ -610,7 +614,7 @@ function runLine(name: HelperName, line: string, wait: number): Promise<{ ended:
         let child: ChildProcess;
 
         try {
-            child = spawn(line, { shell: true, windowsHide: true, cwd: tmpdir(), env: helperEnvironment(name), stdio: ["ignore", "pipe", "pipe"] });
+            child = spawn(line, { shell: true, detached: ownGroup, windowsHide: true, cwd: tmpdir(), env: helperEnvironment(name), stdio: ["ignore", "pipe", "pipe"] });
         } catch {
             done({ ended: false, code: null, stdout, stderr });
             return;
