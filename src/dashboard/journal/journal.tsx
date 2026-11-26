@@ -213,7 +213,7 @@ function QuestTracker({ quests, onUnfollow }: { quests: ShownQuest[]; onUnfollow
                     {quests.map((quest) => <TrackedQuest key={quest.name} quest={quest} onUnfollow={() => onUnfollow(quest.name)} />)}
                 </ul>
             </details>
-            <a class="icon-button tracker-journal tip-left" href={sectionAddress("journal")} aria-label={t("Journal")} data-tip={t("Journal")}>
+            <a class="icon-button tracker-journal tip-left" href={sectionAddress("journal", "quests")} aria-label={t("Quests")} data-tip={t("Quests")}>
                 <Icon name="journal" />
             </a>
         </section>
@@ -276,7 +276,7 @@ function FollowedStrip({ quest, onUnfollow }: { quest: ShownQuest; onUnfollow():
                 <Star />
             </button>
             <QuestFace quest={quest} small />
-            <a class="followed-what" href={sectionAddress("journal")}>
+            <a class="followed-what" href={sectionAddress("journal", "quests")}>
                 <span class="followed-name">{quest.name}</span>
                 {next !== undefined && <span class="followed-next" dir="auto" title={plainText(next.text)}>{plainText(next.text)}</span>}
             </a>

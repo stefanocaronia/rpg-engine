@@ -492,10 +492,13 @@ const pairs: Pair[] = [
 const tabPairs: Pair[] = [{ ink: "accent", ground: "tab", least: 4.5, change: "accent" }];
 const grainPairs: Pair[] = ["ink", "muted", "accent", "gold-ink", "ally", "low", "warn"].map((ink) => ({ ink, ground: "grain", least: 4.5, change: "card-grain" }));
 
+// The chat's words on its own ground, which is the chat's panel too: the paper with a little gold in the light mode, near black in the dark one (chat.css).
+const chatPairs: Pair[] = ["ink", "muted", "accent", "gold-ink", "ally", "low", "warn"].map((ink) => ({ ink, ground: "chat", least: 4.5, change: ink }));
+
 /** The pairs a theme's colours must pass, with those of the hooks it uses. */
 function pairsOf(hooks: Hooks): Pair[]
 {
-    return [...pairs, ...(hooks.tabs === "underline" ? [] : tabPairs), ...(hooks.grain ? grainPairs : [])];
+    return [...pairs, ...chatPairs, ...(hooks.tabs === "underline" ? [] : tabPairs), ...(hooks.grain ? grainPairs : [])];
 }
 
 /**
@@ -505,15 +508,15 @@ function pairsOf(hooks: Hooks): Pair[]
 function legibilityProblems(mode: ThemeModeName, given: ThemeMode, hooks: Hooks): string[]
 {
     const all = pairsOf(hooks);
-    const written: Record<string, string> = { ...given.colours, "card-edge": given.cardEdge, "card-grain": given.cardGrain };
-    const shown = measured(written);
+    const written: Record<string, string> = { ...given.colours, "card-edge": given.cardEdge, "card-grain": given.cardGrain, black: "#000000" };
+    const shown = measured(written, mode);
     const failing = all.filter((pair) => !reads(pair, shown));
     const problems = [...new Set(failing.map((pair) => pair.change))].map((change) => {
         const own = failing.filter((pair) => pair.change === change);
         const fails = own.map((pair) => `${pair.ink === change ? "" : `${pair.ink} `}on ${pair.ground} ${shown[pair.ground]} is ${ratioText(shown[pair.ink], shown[pair.ground])}:1`);
         const said = `${mode}: ${change} ${written[change]} does not read: ${fails.join(", ")}, the page needs ${own[0].least}:1`;
-        const offered = readingColour(written, change, all);
-        const others = [...new Set(all.filter((pair) => pair.change === change).flatMap((pair) => madeOf(pair.ground === change ? pair.ink : pair.ground)))].filter((name) => name !== change);
+        const offered = readingColour(written, change, all, mode);
+        const others = [...new Set(all.filter((pair) => pair.change === change).flatMap((pair) => madeOf(pair.ground === change ? pair.ink : pair.ground, mode)))].filter((name) => name !== change);
         return offered === undefined ? `${said}; no one colour reads on ${others.join(" and ")} as they are: change one of those` : `${said}; ${offered} would do`;
     });
 
@@ -579,17 +582,24 @@ const mixes: Record<string, [string, string, number]> = {
     grain: ["card-grain", "panel", 0.3],
 };
 
-/** The colours as the page shows them, those it mixes included. */
-function measured(written: Record<string, string>): Record<string, string>
+// What the page mixes otherwise in each mode: the chat's ground.
+const modeMixes: Record<ThemeModeName, Record<string, [string, string, number]>> = {
+    light: { chat: ["paper", "gold", 0.88] },
+    dark: { chat: ["paper", "black", 0.45] },
+};
+
+/** The colours as the page shows them in a mode, those it mixes included. */
+function measured(written: Record<string, string>, mode: ThemeModeName): Record<string, string>
 {
-    return { ...written, ...Object.fromEntries(Object.entries(mixes).map(([name, [first, second, share]]) => [name, mix(written[first], written[second], share)])) };
+    const all = { ...mixes, ...modeMixes[mode] };
+    return { ...written, ...Object.fromEntries(Object.entries(all).map(([name, [first, second, share]]) => [name, mix(written[first], written[second], share)])) };
 }
 
 /** The theme's colours a colour the page shows is made of: itself, or the two it mixes, which a message can name. */
-function madeOf(name: string): string[]
+function madeOf(name: string, mode: ThemeModeName): string[]
 {
-    const mixed = mixes[name];
-    return mixed === undefined ? [name] : [mixed[0], mixed[1]];
+    const mixed = mixes[name] ?? modeMixes[mode][name];
+    return mixed === undefined ? [name] : [mixed[0], mixed[1]].filter((colour) => colour !== "black");
 }
 
 /** Whether friends and foes look apart. */
@@ -613,16 +623,16 @@ function ratioText(first: string, second: string): string
  * The colour nearest to the one written, toward white or toward black, that makes every pair it is in read, no pair that read stop reading, and friends and foes
  * that looked apart still look so; undefined when there is none.
  */
-function readingColour(written: Record<string, string>, change: string, pairs: Pair[]): string | undefined
+function readingColour(written: Record<string, string>, change: string, pairs: Pair[], mode: ThemeModeName): string | undefined
 {
-    const before = measured(written);
+    const before = measured(written, mode);
     const readBefore = pairs.filter((pair) => reads(pair, before));
     const apartBefore = apart(written);
 
     for (let step = 1; step <= 100; step++) {
         for (const toward of ["#000000", "#ffffff"]) {
             const tried = { ...written, [change]: mix(toward, written[change], step / 100) };
-            const shown = measured(tried);
+            const shown = measured(tried, mode);
             const readsNow = pairs.filter((pair) => pair.change === change).every((pair) => reads(pair, shown)) && readBefore.every((pair) => reads(pair, shown));
 
             if (readsNow && (!apartBefore || apart(tried))) {

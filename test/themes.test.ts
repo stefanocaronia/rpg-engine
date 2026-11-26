@@ -161,8 +161,9 @@ describe("a theme as the engine reads it", () => {
             [
                 "muted text that does not read on the cards",
                 (yaml) => yaml.replace('muted: "#a9b3a0"', 'muted: "#4a5245"'),
-                "dark: muted #4a5245 does not read: on panel #18201a is 2.05:1, on cell #252c26 is 1.76:1, chip-muted on chip #354337 is 2.60:1, the page needs 4.5:1; ",
+                "dark: muted #4a5245 does not read: on panel #18201a is 2.05:1, on cell #252c26 is 1.76:1, chip-muted on chip #354337 is 2.60:1, on chat #070907 is 2.45:1, the page needs 4.5:1; ",
             ],
+            ["muted text that reads on the cards but not on the chat's ground", (yaml) => yaml.replace('muted: "#55604f"', 'muted: "#666666"'), "light: muted #666666 does not read: on chat #d8dcd1 is 4.12:1"],
             ["a focus ring that does not show on the page", (yaml) => yaml.replace('accent: "#2d5a3a"', 'accent: "#c9d3c0"'), "light: accent #c9d3c0 does not read: on panel"],
             ["friends and foes alike", (yaml) => yaml.replace('low: "#ff9a80"', 'low: "#9fd3a9"'), "dark: ally #9fd3a8 and low #9fd3a9 are too alike; friends and foes must not look the same"],
         ];
