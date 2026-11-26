@@ -6,6 +6,7 @@ import { connect, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readDataFile, removeDataFile, writeDataFile } from "../../core/data-file.ts";
+import { realPath } from "../../core/files.ts";
 import { isPageAddress } from "../../core/page-address.ts";
 import { samePath } from "../../core/paths.ts";
 
@@ -53,7 +54,7 @@ export function readPlace(home: string, root: string): TablePlace | undefined
 {
     const read = (readDataFile(placeFile(home, root)) ?? {}) as Partial<TablePlace>;
     const texts = [read.root, read.version, read.socket, read.token, read.url].every((one) => typeof one === "string");
-    return texts && typeof read.pid === "number" && isPageAddress(read.url as string) && samePath(read.root as string, root) ? read as TablePlace : undefined;
+    return texts && typeof read.pid === "number" && isPageAddress(read.url as string) && samePath(realPath(read.root as string), realPath(root)) ? read as TablePlace : undefined;
 }
 
 /** Writes a table's place, its token for the player alone to read: the folder and the file are only theirs where the system has modes. */
@@ -142,8 +143,11 @@ function placeFile(home: string, root: string): string
     return tableFile(home, root, ".json");
 }
 
-/** A campaign's key, from its folder as its ports read it: the same however the path is written. */
+/**
+ * A campaign's key, from its folder as its ports read it: the same however the path is written, through a link too, as where a chat's process says its
+ * folder by its real path (macOS, /var for /private/var) and the table was started by the other.
+ */
 function tableKey(root: string): string
 {
-    return createHash("sha256").update(root.replaceAll("\\", "/").toLowerCase()).digest("hex").slice(0, 16);
+    return createHash("sha256").update(realPath(root).replaceAll("\\", "/").toLowerCase()).digest("hex").slice(0, 16);
 }
