@@ -84,6 +84,9 @@ namespace RpgEngine
         [StructLayout(LayoutKind.Sequential)]
         struct MonitorInfo { public int Size; public Rect Monitor; public Rect Work; public uint Flags; }
 
+        [StructLayout(LayoutKind.Sequential)]
+        struct Point { public int X, Y; }
+
         delegate bool EachWindow(IntPtr window, IntPtr data);
 
         [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
@@ -97,6 +100,9 @@ namespace RpgEngine
         [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr window);
         [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr window, uint flags);
         [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+        [DllImport("user32.dll")] static extern bool GetCursorPos(out Point point);
+        [DllImport("user32.dll")] static extern IntPtr MonitorFromPoint(Point point, uint flags);
+        [DllImport("shcore.dll")] static extern int GetDpiForMonitor(IntPtr monitor, int kind, out uint dpiX, out uint dpiY);
         [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr window, out Rect rect);
         [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr window);
         [DllImport("user32.dll")] static extern bool IsIconic(IntPtr window);
@@ -119,6 +125,7 @@ namespace RpgEngine
             BeAware();
             Mutex turn = Turn();
             bool held = false;
+            string started = arguments + "\\n" + Asked(width, height, share);
 
             try
             {
@@ -126,12 +133,12 @@ namespace RpgEngine
 
                 if (!held)
                 {
-                    Start(browser, arguments);
+                    Start(browser, started);
                     return "opened";
                 }
 
                 HashSet<IntPtr> before = new HashSet<IntPtr>(BrowserWindows(browser));
-                Start(browser, arguments);
+                Start(browser, started);
 
                 try
                 {
@@ -263,19 +270,53 @@ namespace RpgEngine
             return IntPtr.Zero;
         }
 
+        // Where the window goes and how large it is, asked of the browser as it starts, on the screen the pointer is on, where the player clicked: the frame
+        // centred there, Windows 11's invisible border added around it but at its top, in device-independent pixels. Nothing where the screen does not read.
+        static string Asked(int width, int height, double share)
+        {
+            try
+            {
+                Point pointer;
+                GetCursorPos(out pointer);
+                IntPtr screen = MonitorFromPoint(pointer, nearestMonitor);
+                uint dpiX, dpiY;
+                double scale = GetDpiForMonitor(screen, 0, out dpiX, out dpiY) == 0 ? Math.Max(dpiX, 96u) / 96.0 : 1.0;
+                Rect frame = FrameOn(screen, width, height, share, scale);
+                int border = (int)Math.Round(7 * scale);
+                Func<int, int> dip = (pixels) => (int)Math.Round(pixels / scale);
+                return "--window-position=" + dip(frame.Left - border) + "," + dip(frame.Top) + "\\n--window-size=" + dip(frame.Right - frame.Left + 2 * border) + "," + dip(frame.Bottom - frame.Top + border);
+            }
+            catch (Exception)
+            {
+                return "";
+            }
+        }
+
+        // The frame of a window of this size and share, centred in the free room of a screen, in physical pixels.
+        static Rect FrameOn(IntPtr screen, int width, int height, double share, double scale)
+        {
+            MonitorInfo monitor = new MonitorInfo();
+            monitor.Size = Marshal.SizeOf(typeof(MonitorInfo));
+            GetMonitorInfo(screen, ref monitor);
+            Rect work = monitor.Work;
+            int roomWidth = work.Right - work.Left, roomHeight = work.Bottom - work.Top;
+            int frameWidth = Math.Min(Math.Min((int)Math.Round(width * scale), (int)Math.Round(roomWidth * share)), roomWidth);
+            int frameHeight = Math.Min(Math.Min((int)Math.Round(height * scale), (int)Math.Round(roomHeight * share)), roomHeight);
+            Rect frame = new Rect();
+            frame.Left = work.Left + (roomWidth - frameWidth) / 2;
+            frame.Top = work.Top + (roomHeight - frameHeight) / 2;
+            frame.Right = frame.Left + frameWidth;
+            frame.Bottom = frame.Top + frameHeight;
+            return frame;
+        }
+
         static string Place(IntPtr window, int width, int height, double share)
         {
             if (IsZoomed(window) || IsIconic(window)) ShowWindow(window, restore);
 
             double scale = Math.Max(GetDpiForWindow(window), 96u) / 96.0;
-            MonitorInfo monitor = new MonitorInfo();
-            monitor.Size = Marshal.SizeOf(typeof(MonitorInfo));
-            GetMonitorInfo(MonitorFromWindow(window, nearestMonitor), ref monitor);
-            Rect work = monitor.Work;
-            int roomWidth = work.Right - work.Left, roomHeight = work.Bottom - work.Top;
-            int frameWidth = Math.Min(Math.Min((int)Math.Round(width * scale), (int)Math.Round(roomWidth * share)), roomWidth);
-            int frameHeight = Math.Min(Math.Min((int)Math.Round(height * scale), (int)Math.Round(roomHeight * share)), roomHeight);
-            int left = work.Left + (roomWidth - frameWidth) / 2, top = work.Top + (roomHeight - frameHeight) / 2;
+            Rect wanted = FrameOn(MonitorFromWindow(window, nearestMonitor), width, height, share, scale);
+            int left = wanted.Left, top = wanted.Top, frameWidth = wanted.Right - wanted.Left, frameHeight = wanted.Bottom - wanted.Top;
 
             // Twice: a browser may give the window the place it remembers just after showing it.
             for (int time = 0; time < 2; time++)

@@ -1012,7 +1012,14 @@ describe("the launcher's window", () => {
         expect(`${asked?.command ?? ""} ${asked?.args.join(" ") ?? ""}`.length).toBeLessThan(200);
         expect(asked?.env).toEqual({
             RPG_WINDOW_BROWSER: chrome,
-            RPG_WINDOW_ARGUMENTS: "--app=http://127.0.0.1:5750/",
+            // A browser's profile of the engine's own for each kind of window, which then opens at its place at once (T-309).
+            RPG_WINDOW_ARGUMENTS: [
+                "--user-data-dir=C:\\Users\\ann\\AppData\\Local\\rpg-engine\\windows\\chrome-campaign",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-features=Translate",
+                "--app=http://127.0.0.1:5750/",
+            ].join("\n"),
             RPG_WINDOW_WIDTH: "1920",
             RPG_WINDOW_HEIGHT: "1200",
             RPG_WINDOW_SHARE: "0.9",

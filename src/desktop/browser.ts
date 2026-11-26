@@ -61,7 +61,7 @@ export async function openWindow(url: string, kind: WindowKind, platform: string
     }
 
     if (platform === "win32") {
-        const command = placeCommand(browser, [`--app=${url}`], kind, env.SystemRoot ?? "C:\\Windows", windowTitles(kind, url));
+        const command = placeCommand(browser, [...windowProfile(browser, kind, env), `--app=${url}`], kind, env.SystemRoot ?? "C:\\Windows", windowTitles(kind, url));
         const ran = await system.run(command.file, command.args, command.env, command.input);
         const read = readPlaced(ran.printed);
 
@@ -72,6 +72,23 @@ export async function openWindow(url: string, kind: WindowKind, platform: string
     }
 
     return { opened: await system.start(browser, [`--app=${openedAddress(url)}`]) ? "window" : "none", placed: false };
+}
+
+/**
+ * The browser's profile of the engine's own for a kind of window, in the player's local data: a Chromium reads where a window goes and how large it is only
+ * from the command line it started with, so a browser of its own for each kind opens every window of it at its place at once, never one moved after. None
+ * where Windows gives no local data folder: the window is then placed once it is there.
+ */
+export function windowProfile(browser: string, kind: WindowKind, env: NodeJS.ProcessEnv): string[]
+{
+    if (env.LOCALAPPDATA === undefined || env.LOCALAPPDATA === "") {
+        return [];
+    }
+
+    const name = win32.basename(browser).replace(/\.exe$/i, "").toLowerCase();
+    // The page speaks the player's language already: the browser never offers to translate it.
+    const profile = win32.join(env.LOCALAPPDATA, "rpg-engine", "windows", `${name}-${kind}`);
+    return [`--user-data-dir=${profile}`, "--no-first-run", "--no-default-browser-check", "--disable-features=Translate"];
 }
 
 /** The address of the window, marked so that the page sizes it as it opens. */
