@@ -79,6 +79,8 @@ if (args.length === 1 && args[0] === "mcp" && process.env.RPG_HELPER === "1") {
     const { fenceHere } = await import("../server/fence.ts");
     await fenceHere(args[1]);
 } else {
+    const { endProgramsAtInterrupt } = await import("../core/process.ts");
+    endProgramsAtInterrupt();
     const { output, exitCode } = await runCommandLine(args);
 
     if (exitCode === 0) {

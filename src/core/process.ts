@@ -364,6 +364,19 @@ export function startLineProcess(command: string, args: string[], options: { cwd
     };
 }
 
+/** Off Windows, Ctrl+C on a command asks the programs it started to end with it: each runs in its own group, which the terminal's Ctrl+C does not reach. */
+export function endProgramsAtInterrupt(): void
+{
+    if (process.platform === "win32") {
+        return;
+    }
+
+    process.once("SIGINT", () => {
+        atWork.forEach((program) => ask(program, stopTree, process.platform));
+        process.exit(130);
+    });
+}
+
 /** Asks a program to end as it understands it: its input closed and, off Windows, SIGTERM to its group, which no program can be sent on Windows. */
 function ask(program: Ending, signal: NonNullable<Patience["signal"]>, platform: NodeJS.Platform): void
 {

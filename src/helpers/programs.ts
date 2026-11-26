@@ -38,6 +38,8 @@ const ownGroup = process.platform !== "win32";
 // The sign-ins under way, or failed and not yet told, by program; the installations under way; how each program stood when last asked; how many times one
 // came ready here, after which the makers of pictures ask again; and how many installations run here, which hold the computer's mark.
 const logins = new Map<HelperName, LoginRun>();
+// The programs whose sign-in program still runs, cancelled or out of time ones too, as it ends gently: another started meanwhile would write the same sign-in.
+const signingIn = new Map<HelperName, ChildProcess>();
 const installs = new Map<HelperName, Promise<string | undefined>>();
 const states = new Map<HelperName, HelperState>();
 let changes = 0;
@@ -85,6 +87,10 @@ export function computerHelpers(folder = toolsFolder(), environment: NodeJS.Proc
             if (run?.login.state === "failed") {
                 logins.delete(name);
                 return run.login;
+            }
+
+            if (signingIn.has(name)) {
+                return { state: "failed", why: `the sign-in to ${programNames[name]} just stopped is still ending: try again in a few seconds` };
             }
 
             // Found without starting anything, so that the sign-in starts in this very call, where a cancel at once reaches it.
@@ -291,21 +297,33 @@ export function chatEnvironment(dropped: RegExp, campaign = process.cwd()): Node
     return { ...Object.fromEntries(kept), NoDefaultCurrentDirectoryInExePath: "1" };
 }
 
+/** Whether a sign-in program of this one still runs here, as one cancelled ends gently. */
+export function signInRuns(name: HelperName): boolean
+{
+    return signingIn.has(name);
+}
+
 /**
  * The player's sign-in, started once and kept alive until it ends or ten minutes pass. It answers once the program printed its link, for a browser that did
- * not open, or ended, or after a few seconds; how it ends later is told by the next call. `released` is called once as it ends or is cancelled.
+ * not open, or ended, or after a few seconds; how it ends later is told by the next call. `released` is called once as its program is gone.
  */
 export function startLogin(name: HelperName, line: string, wait = linkWait, ended?: (login: HelperLogin) => void, released?: () => void): Promise<HelperLogin>
 {
     let free = released;
 
+    // Only this sign-in's own program frees it: an older one that ends later never frees a newer one.
     const release = (): void => {
+        if (signingIn.get(name) === child) {
+            signingIn.delete(name);
+        }
+
         free?.();
         free = undefined;
     };
 
     const child = spawn(`${line} ${name === "codex" ? "login" : "auth login"}`, { shell: true, detached: ownGroup, windowsHide: true, cwd: tmpdir(), env: helperEnvironment(name), stdio: ["pipe", "pipe", "pipe"] });
     const ending = endingOf(child);
+    signingIn.set(name, child);
     const run: LoginRun = { login: { state: "waiting" }, child, heard: ended === undefined ? [] : [ended] };
     let said = "";
     let answer: ((login: HelperLogin) => void) | undefined;
@@ -318,7 +336,6 @@ export function startLogin(name: HelperName, line: string, wait = linkWait, ende
 
     const end = (login: HelperLogin): void => {
         clearTimeout(timer);
-        release();
 
         if (logins.get(name) !== run) {
             return;
@@ -356,7 +373,6 @@ export function startLogin(name: HelperName, line: string, wait = linkWait, ende
     run.stop = () => {
         clearTimeout(timer);
         void stopGently(ending);
-        release();
     };
 
     child.stdout.setEncoding("utf8");
@@ -365,7 +381,10 @@ export function startLogin(name: HelperName, line: string, wait = linkWait, ende
     child.stderr.on("data", hear);
     child.stdin.on("error", () => undefined);
     child.on("error", () => undefined);
+    // Free for another sign-in only once this program is gone: one ending gently may still be saving the player's sign-in.
+    child.once("exit", release);
     child.on("close", (code) => {
+        release();
         const last = said.trim().split("\n").filter((one) => one.trim() !== "").at(-1)?.trim();
         end(code === 0 ? { state: "done" } : { state: "failed", why: last === undefined ? "the sign-in stopped" : `it said: ${last}` });
     });

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context, HelperLogin, HelperName, Helpers, HelperState } from "../src/core/context.ts";
 import { accessKeeper } from "../src/helpers/access.ts";
-import { cancelLogin, computerHelpers, heldBack, helperChanges, helperLine, helperState, installedLine, lookAtHelper, startLogin } from "../src/helpers/programs.ts";
+import { cancelLogin, computerHelpers, heldBack, helperChanges, helperLine, helperState, installedLine, lookAtHelper, signInRuns, startLogin } from "../src/helpers/programs.ts";
 import { makeTempFolder, readLogFile, testContext } from "./support.ts";
 
 let folder: string;
@@ -137,11 +137,14 @@ describe("the programs in the engine's folder (D-425)", () => {
         const pidFile = join(folder, "pid");
         writeFileSync(script, `require('fs').writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); console.error('Go to https://auth.example/wait'); setTimeout(() => {}, 60000);`);
         const ended: HelperLogin[] = [];
-        expect(await startLogin("claude", `"${process.execPath}" "${script}"`, 5000, (login) => ended.push(login))).toMatchObject({ state: "waiting" });
+        let released = false;
+        expect(await startLogin("claude", `"${process.execPath}" "${script}"`, 5000, (login) => ended.push(login), () => (released = true))).toMatchObject({ state: "waiting" });
         const pid = Number(readFileSync(pidFile, "utf8"));
 
         cancelLogin("claude");
-        await vi.waitFor(() => expect(alive(pid)).toBe(false), { timeout: 5000 });
+        // Three seconds of grace first (T-301), on a loaded machine longer; free for another sign-in only once its program is gone.
+        await vi.waitFor(() => expect(alive(pid)).toBe(false), { timeout: 8000 });
+        await vi.waitFor(() => expect(released).toBe(true), { timeout: 8000 });
         await new Promise((done) => setTimeout(done, 200));
         expect(ended).toEqual([]);
     });
@@ -155,6 +158,21 @@ describe("the programs in the engine's folder (D-425)", () => {
         // Stopped after the few seconds it has to end by itself, as one saving the player's sign-in (T-301).
         await vi.waitFor(() => expect(fake.started().filter((one) => one.asked === "auth login" && alive(one.pid))).toEqual([]), { timeout: 8000 });
     }, 15_000);
+
+    it("starts no second sign-in of a program while the one cancelled still ends, as two would write the same sign-in (T-301)", async () => {
+        const fake = fakeProgram("claude", "if (asked === 'auth login') { console.error('Go to https://auth.example/now'); setTimeout(() => {}, 60000); }");
+        const helpers = computerHelpers(fake.tools, { PATH: "" });
+        expect(await helpers.login("claude")).toMatchObject({ state: "waiting" });
+        helpers.cancel("claude");
+        expect(await helpers.login("claude")).toEqual({ state: "failed", why: "the sign-in to Claude Code just stopped is still ending: try again in a few seconds" });
+        expect(fake.started().filter((one) => one.asked === "auth login")).toHaveLength(1);
+        // Once it is gone, the next sign-in starts.
+        await vi.waitFor(() => expect(fake.started().filter((one) => one.asked === "auth login" && alive(one.pid))).toEqual([]), { timeout: 8000 });
+        await vi.waitFor(() => expect(signInRuns("claude")).toBe(false), { timeout: 8000 });
+        expect(await helpers.login("claude")).toMatchObject({ state: "waiting" });
+        helpers.cancel("claude");
+        await vi.waitFor(() => expect(signInRuns("claude")).toBe(false), { timeout: 8000 });
+    }, 30_000);
 });
 
 describe("one sign-in and one installation on this computer, whatever window of the engine asks", () => {

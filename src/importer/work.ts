@@ -189,7 +189,8 @@ export function importStarts(folder: string): ImportStart[]
         return [];
     }
 
-    return readFileSync(file, "utf8").replace(/\r\n/g, "\n").split(/^## /m).slice(1).flatMap((block) => {
+    // A helper's shell may write it with a byte order mark, as Codex does on Windows, which would hide its first start.
+    return readFileSync(file, "utf8").replace(/^﻿/, "").replace(/\r\n/g, "\n").split(/^## /m).slice(1).flatMap((block) => {
         const [heading = "", ...rest] = block.split("\n");
         const match = /^(\d+)\.?\s*(.*)$/.exec(heading.trim());
         return match === null ? [] : [{ number: Number(match[1]), title: (match[2] ?? "").trim(), text: rest.join("\n").trim() }];

@@ -10,7 +10,7 @@ import { importShown } from "../src/commands/import/import.ts";
 import type { Context, DocumentReader } from "../src/core/context.ts";
 import { FileStore } from "../src/core/store.ts";
 import { type ExtensionWords, wordIn } from "../src/extensions/index.ts";
-import { finishAdventure, openLicense } from "../src/importer/index.ts";
+import { finishAdventure, importStarts, openLicense } from "../src/importer/index.ts";
 import { tinyPdf } from "./pdf-fixture.ts";
 import { makeTempFolder, readLogFile, testContext } from "./support.ts";
 
@@ -274,6 +274,13 @@ describe("an import that goes wrong (D-489, Matteo's review of 20 October)", () 
         expect((await rpg("import", book(), "--title", "The King")).output).toContain(
             "stopped: the reading gave no starting points (notes/starts.md): call import to read the last piece again.",
         );
+    });
+
+    it("reads the starting points a helper wrote with a byte order mark, as Codex's shell does on Windows", () => {
+        const folder = makeTempFolder();
+        mkdirSync(join(folder, "notes"));
+        writeFileSync(join(folder, "notes", "starts.md"), "﻿## 1. At the inn\r\n\r\nBack cover: rain.\r\n\r\n## 2. At the shrine\r\n\r\nBack cover: dawn.\r\n");
+        expect(importStarts(folder).map((start) => start.title)).toEqual(["At the inn", "At the shrine"]);
     });
 
     it("stops a run that ended well and wrote nothing, with the first line of what the helper said, and logs why it stopped", async () => {
