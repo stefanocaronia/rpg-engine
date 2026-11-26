@@ -7,7 +7,7 @@ import { delimiter, dirname, join } from "node:path";
 import type { HelperLogin, HelperName, Helpers, HelperState, PicturesReady } from "../core/context.ts";
 import type { HostId } from "../core/hosts.ts";
 import { claimMark, releaseMark } from "../core/process-mark.ts";
-import { stopTree, whenEnded } from "../core/process.ts";
+import { endingOf, stopGently, stopTree, whenEnded } from "../core/process.ts";
 
 // The npm package of each program, and its name for the player.
 const packages: Record<HelperName, string> = { codex: "@openai/codex", claude: "@anthropic-ai/claude-code" };
@@ -305,6 +305,7 @@ export function startLogin(name: HelperName, line: string, wait = linkWait, ende
     };
 
     const child = spawn(`${line} ${name === "codex" ? "login" : "auth login"}`, { shell: true, detached: ownGroup, windowsHide: true, cwd: tmpdir(), env: helperEnvironment(name), stdio: ["pipe", "pipe", "pipe"] });
+    const ending = endingOf(child);
     const run: LoginRun = { login: { state: "waiting" }, child, heard: ended === undefined ? [] : [ended] };
     let said = "";
     let answer: ((login: HelperLogin) => void) | undefined;
@@ -345,15 +346,16 @@ export function startLogin(name: HelperName, line: string, wait = linkWait, ende
         }
     };
 
+    // Out of time or cancelled, the program ends gently first: it may be saving the player's sign-in (T-301).
     const timer = setTimeout(() => {
-        stopTree(child.pid);
+        void stopGently(ending);
         end({ state: "failed", why: "the sign-in waited ten minutes, and the player did not finish it" });
     }, loginWait);
 
     // Cancelled: forgotten already, so its close tells nobody; the first answer still comes, as it stood.
     run.stop = () => {
         clearTimeout(timer);
-        stopTree(child.pid);
+        void stopGently(ending);
         release();
     };
 
@@ -432,13 +434,15 @@ export function queueInCodex(thread: string, message: string, folder = toolsFold
 
         try {
             // The message joined to its option, so that one that begins with a dash is never read as another.
-            child = spawn(codex.command, [...codex.args, "queue", "--thread", thread, `--message=${message}`], { windowsHide: true, cwd: tmpdir(), env: helperEnvironment("codex"), stdio: "ignore" });
+            child = spawn(codex.command, [...codex.args, "queue", "--thread", thread, `--message=${message}`], { detached: ownGroup, windowsHide: true, cwd: tmpdir(), env: helperEnvironment("codex"), stdio: "ignore" });
         } catch {
             done(false);
             return;
         }
 
-        const timer = setTimeout(() => stopTree(child.pid), queueWait).unref();
+        // Out of time, Codex ends gently first (T-301).
+        const ending = endingOf(child);
+        const timer = setTimeout(() => void stopGently(ending), queueWait).unref();
         child.on("error", () => done(false));
         child.on("exit", (code) => {
             clearTimeout(timer);
@@ -628,8 +632,10 @@ function runLine(name: HelperName, line: string, wait: number): Promise<{ ended:
             }
         };
 
+        // Out of time, told at once; the program ends gently first, as one at work on the player's sign-in (T-301).
+        const ending = endingOf(child);
         const timer = setTimeout(() => {
-            stopTree(child.pid);
+            void stopGently(ending);
             tell(false, null);
         }, wait);
         child.stdout?.setEncoding("utf8");

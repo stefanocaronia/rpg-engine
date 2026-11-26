@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { childrenEnded, guardProcess, type LineProcess, startLineProcess, stopTree, whenEnded } from "../src/core/process.ts";
+import { childrenEnded, type Ending, endingOf, guardProcess, type LineProcess, startLineProcess, stopGently, stopTree, whenEnded } from "../src/core/process.ts";
 
 // spawnSync watched, as taskkill runs through it on Windows; everything else as it is.
 vi.mock("node:child_process", async (original) => {
@@ -230,6 +230,103 @@ describe("process", () => {
         await until(() => codes.length > 0);
         await pause(300);
         expect(codes).toEqual([2]);
+    }, 15_000);
+});
+
+describe("a program ended gently (T-301)", () => {
+    /** A program that ends `after` ms of the clock once asked, or never; what was done to it, and the patience with the clock and the signals. */
+    function fakeProgram(after: number | undefined): { program: Ending; done: string[]; patience: { now: () => number; pause: (ms: number) => Promise<void>; signal: (pid: number | undefined, signal: string) => void; }; }
+    {
+        let clock = 0;
+        let askedAt: number | undefined;
+        const done: string[] = [];
+        const program: Ending = {
+            pid: 4242,
+            ended: () => askedAt !== undefined && after !== undefined && clock >= askedAt + after,
+            closeInput: () => {
+                done.push("input closed");
+                askedAt ??= clock;
+            },
+        };
+        const patience = {
+            now: () => clock,
+            pause: (ms: number) => {
+                clock += ms;
+                return Promise.resolve();
+            },
+            signal: (pid: number | undefined, signal: string) => done.push(`${signal} to ${String(pid)} at ${String(clock)}`),
+        };
+        return { program, done, patience };
+    }
+
+    it("closes its input and, off Windows, sends SIGTERM: one that ends within the wait is never killed", async () => {
+        const { program, done, patience } = fakeProgram(1200);
+        expect(await stopGently(program, { ...patience, platform: "linux" })).toBe(true);
+        expect(done).toEqual(["input closed", "SIGTERM to 4242 at 0"]);
+    });
+
+    it("on Windows only closes its input, as no signal asks a program there, and waits", async () => {
+        const { program, done, patience } = fakeProgram(2900);
+        expect(await stopGently(program, { ...patience, platform: "win32" })).toBe(true);
+        expect(done).toEqual(["input closed"]);
+    });
+
+    it("stops one still there after the wait, with all it started, and only then", async () => {
+        const { program, done, patience } = fakeProgram(undefined);
+        expect(await stopGently(program, { ...patience, platform: "win32", wait: 5000 })).toBe(false);
+        expect(done).toEqual(["input closed", "SIGKILL to 4242 at 5000"]);
+    });
+
+    it("does nothing to one that ended already", async () => {
+        const { program, done, patience } = fakeProgram(0);
+        program.closeInput?.();
+        done.length = 0;
+        expect(await stopGently(program, { ...patience, platform: "linux" })).toBe(true);
+        expect(done).toEqual([]);
+    });
+
+    it("lets a real program that reads its input until it ends finish by itself, never stopped", async () => {
+        const script = `process.stdin.resume(); process.stdin.on('end', () => setTimeout(() => process.exit(0), 300)); console.log('ready');`;
+        const child = spawn(process.execPath, ["-e", script], { stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
+        started.push(child.pid);
+        await new Promise((ready) => child.stdout.once("data", ready));
+        const signals: string[] = [];
+
+        // SIGTERM is let through, as a program asked to end; a SIGKILL would be the force.
+        const signal = (pid: number | undefined, sent: "SIGTERM" | "SIGKILL"): void => {
+            signals.push(sent);
+
+            if (sent === "SIGTERM" && process.platform !== "win32") {
+                stopTree(pid, sent);
+            }
+        };
+
+        expect(await stopGently(endingOf(child), { signal, wait: 5000 })).toBe(true);
+        expect(signals).not.toContain("SIGKILL");
+    }, 15_000);
+
+    it("asks the programs still at work to end when an error nobody caught ends the process", async () => {
+        const script = `process.stdin.resume(); process.stdin.on('end', () => process.exit(0)); console.log('ready');`;
+        const child = spawn(process.execPath, ["-e", script], { stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
+        started.push(child.pid);
+        endingOf(child);
+        await new Promise((ready) => child.stdout.once("data", ready));
+        const ended = new Promise<string>((done) => child.once("exit", (code, signal) => done(signal ?? String(code))));
+        const logged: string[] = [];
+        const exits: number[] = [];
+        const before = process.listeners("uncaughtException");
+        const unguard = guardProcess("rpg table", "the table", (line) => logged.push(line), () => undefined, (code) => exits.push(code), 10_000);
+
+        try {
+            const thrown = process.listeners("uncaughtException").find((one) => !before.includes(one));
+            thrown?.(new Error("broken"), "uncaughtException");
+            // Its input closed; off Windows SIGTERM too, which may come first.
+            expect(await ended).toMatch(/^(0|SIGTERM)$/);
+            await until(() => exits.length > 0);
+            expect(logged[1]).toMatch(/The programs the table started ended by themselves/);
+        } finally {
+            unguard();
+        }
     }, 15_000);
 });
 

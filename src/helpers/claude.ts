@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DocumentReader, MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
-import { stopTree } from "../core/process.ts";
+import { endingOf, stopGently } from "../core/process.ts";
 import { svgBrief } from "./briefs.ts";
 import { helperEnvironment, helperState, knownReady } from "./programs.ts";
 import { cleanSvg, svgIn } from "./svg.ts";
@@ -14,6 +14,8 @@ import { cleanSvg, svgIn } from "./svg.ts";
 const longest = 3 * 60 * 1000;
 // How long a run of the importer may take: Elena's probe read sixteen pages in about four minutes (D-489).
 const longestReading = 30 * 60 * 1000;
+// Off Windows a line of the shell leads a group of its own: stopped, Claude Code goes with it, where the shell alone would go and leave it.
+const ownGroup = process.platform !== "win32";
 
 // Claude Code without the chat's own settings, tools, memory or session, Sonnet at low effort: only the brief, and what the system prompt asks as its answer.
 const briefOnly = (claude: string, prompt: string): string =>
@@ -70,16 +72,22 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
     const clean = (): void => rmSync(folder, { recursive: true, force: true });
 
     return new Promise((done) => {
-        const child = spawn(drawing(claude), { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "pipe"] });
+        const child = spawn(drawing(claude), { shell: true, detached: ownGroup, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "pipe"] });
+        const ending = endingOf(child);
         let output = "";
         let errors = "";
         let settled = false;
 
-        // Out of time, the drawing goes whole and the answer is given at once; what comes after counts for nothing.
+        // Out of time, the answer is given at once and the drawing ends, gently first (T-301), its folder gone after; what comes after counts for nothing.
         const timer = setTimeout(() => {
             settled = true;
-            stopTree(child.pid);
-            clean();
+            void stopGently(ending).then(() => {
+                try {
+                    clean();
+                } catch {
+                    // Held a moment longer by what it started: a folder of the temporary one, left.
+                }
+            });
             done({ refused: "no picture came in three minutes" });
         }, longest);
 
@@ -119,9 +127,10 @@ function write(brief: string): Promise<string | undefined>
     const folder = mkdtempSync(join(tmpdir(), "rpg-writing-"));
 
     return new Promise((done) => {
-        const child = spawn(writing(claude), { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "ignore"] });
+        const child = spawn(writing(claude), { shell: true, detached: ownGroup, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "ignore"] });
+        const ending = endingOf(child);
         let output = "";
-        const timer = setTimeout(() => stopTree(child.pid), longest);
+        const timer = setTimeout(() => void stopGently(ending), longest);
         child.stdout.setEncoding("utf8");
         child.stdout.on("data", (chunk: string) => (output += chunk));
         child.stdin.on("error", () => undefined);
@@ -148,13 +157,14 @@ function read(folder: string, brief: string, writable: string[], signal?: AbortS
         + `--system-prompt "You read a player's documents and write a tabletop adventure from them, as files in this folder."`;
 
     return new Promise((done) => {
-        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "pipe"] });
-        // Dropped while it runs: the helper stops with all it started.
-        const stop = (): void => stopTree(child.pid);
+        const child = spawn(line, { shell: true, detached: ownGroup, windowsHide: true, cwd: folder, env: helperEnvironment("claude"), stdio: ["pipe", "pipe", "pipe"] });
+        // Dropped while it runs, or out of time: the helper ends with all it started, gently first (T-301).
+        const ending = endingOf(child);
+        const stop = (): void => void stopGently(ending);
         signal?.addEventListener("abort", stop, { once: true });
         let output = "";
         let errors = "";
-        const timer = setTimeout(() => stopTree(child.pid), longestReading);
+        const timer = setTimeout(stop, longestReading);
         child.stdout.setEncoding("utf8");
         child.stderr.setEncoding("utf8");
         child.stdout.on("data", (chunk: string) => (output += chunk));

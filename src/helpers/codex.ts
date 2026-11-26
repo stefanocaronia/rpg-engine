@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DocumentReader, MadePicture, PictureMaker, PicturesReady, PictureSubject, TextWriter } from "../core/context.ts";
-import { stopTree } from "../core/process.ts";
+import { endingOf, stopGently } from "../core/process.ts";
 import { paintedBrief } from "./briefs.ts";
 import { helperEnvironment, helperState, knownReady } from "./programs.ts";
 
@@ -14,6 +14,8 @@ import { helperEnvironment, helperState, knownReady } from "./programs.ts";
 const longest = 3 * 60 * 1000;
 // How long a run of the importer may take (D-489).
 const longestReading = 30 * 60 * 1000;
+// Off Windows a line of the shell leads a group of its own: stopped, Codex goes with it, where the shell alone would go and leave it.
+const ownGroup = process.platform !== "win32";
 
 /** Why Codex makes no pictures, for the master, and how the player has them, which the dashboard writes in its language (D-308). */
 export const codexSays = {
@@ -112,10 +114,12 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
     const line = paintingLine(codex, folder, last);
 
     return new Promise((done) => {
-        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "pipe", "pipe"] });
+        const child = spawn(line, { shell: true, detached: ownGroup, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "pipe", "pipe"] });
+        const ending = endingOf(child);
         let output = "";
         let errors = "";
-        const timer = setTimeout(() => stopTree(child.pid), longest);
+        // Out of time, it ends gently first (T-301).
+        const timer = setTimeout(() => void stopGently(ending), longest);
         child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
         child.stderr.on("data", (chunk: Buffer) => (errors += chunk.toString()));
         child.stdin.on("error", () => undefined);
@@ -164,8 +168,9 @@ function write(brief: string): Promise<string | undefined>
     const line = writingLine(codex, folder, last);
 
     return new Promise((done) => {
-        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "ignore"] });
-        const timer = setTimeout(() => stopTree(child.pid), longest);
+        const child = spawn(line, { shell: true, detached: ownGroup, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "ignore"] });
+        const ending = endingOf(child);
+        const timer = setTimeout(() => void stopGently(ending), longest);
         child.stdin.on("error", () => undefined);
         child.on("error", () => undefined);
         child.on("close", () => {
@@ -185,12 +190,13 @@ function read(folder: string, brief: string, _writable: string[], signal?: Abort
     const line = readingLine(codex, process.platform);
 
     return new Promise((done) => {
-        const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "pipe"] });
-        // Dropped while it runs: the helper stops with all it started.
-        const stop = (): void => stopTree(child.pid);
+        const child = spawn(line, { shell: true, detached: ownGroup, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "pipe"] });
+        // Dropped while it runs, or out of time: the helper ends with all it started, gently first (T-301).
+        const ending = endingOf(child);
+        const stop = (): void => void stopGently(ending);
         signal?.addEventListener("abort", stop, { once: true });
         let errors = "";
-        const timer = setTimeout(() => stopTree(child.pid), longestReading);
+        const timer = setTimeout(stop, longestReading);
         child.stderr.on("data", (chunk: Buffer) => (errors += chunk.toString()));
         child.stdin.on("error", () => undefined);
         child.on("error", () => undefined);

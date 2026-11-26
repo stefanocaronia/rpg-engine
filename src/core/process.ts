@@ -3,14 +3,35 @@
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
-import { lookUntil } from "./wait.ts";
+import { lookUntil, pauseFor } from "./wait.ts";
 
 // How long a child's output may stay open after it exited, held by a process it started, before what was heard is taken as all.
 const outputWait = 2000;
-// How long a process stopped off Windows has to end at SIGTERM before it is killed.
+// How long a process stopped off Windows has to end at SIGTERM before it is killed; and one stopped gently, after it was asked.
 const killAfter = 3000;
 // The processes started by lines that have not exited, by pid, with their program's name, for the log of an exit that stops them.
 const lineProcesses = new Map<number, string>();
+// The programs this process started that still work, which an error nobody caught asks to end before its exit stops them.
+const atWork = new Set<Ending>();
+
+/** A program as stopGently ends it: its pid, whether it ended, and, for one this process started, how its input is closed. */
+export interface Ending
+{
+    pid: number | undefined;
+    ended(): boolean;
+    closeInput?(): void;
+}
+
+/** How long stopGently waits, how often it looks, its clock, and how it signals a process: what the tests give. */
+export interface Patience
+{
+    wait?: number;
+    every?: number;
+    now?: () => number;
+    pause?: (milliseconds: number) => Promise<void>;
+    signal?: (pid: number | undefined, signal: "SIGTERM" | "SIGKILL") => void;
+    platform?: NodeJS.Platform;
+}
 
 /** A process that speaks by lines on its input and output. */
 export interface LineProcess
@@ -55,6 +76,55 @@ export function stopTree(pid: number | undefined, signal: "SIGTERM" | "SIGKILL" 
             // Gone already.
         }
     }
+}
+
+/**
+ * Ends a program as it ends by itself first, so that one at work on the player's sign-in finishes it (T-301): its input closed and, off Windows, its group
+ * sent SIGTERM; stopped with all it started only where it is still there after `wait` ms, three seconds. Whether it ended by itself. Never throws.
+ */
+export async function stopGently(program: Ending, patience: Patience = {}): Promise<boolean>
+{
+    if (program.ended()) {
+        return true;
+    }
+
+    const signal = patience.signal ?? stopTree;
+    ask(program, signal, patience.platform ?? process.platform);
+    const looking = { within: patience.wait ?? killAfter, every: patience.every ?? 100, now: patience.now, wait: patience.pause ?? pauseFor };
+    const gone = await lookUntil(() => Promise.resolve(program.ended() ? true : undefined), () => false, looking);
+
+    if (!gone) {
+        signal(program.pid, "SIGKILL");
+    }
+
+    return gone;
+}
+
+/** A child as stopGently ends it, among the programs at work until it exits: those an error nobody caught asks to end. */
+export function endingOf(child: ChildProcess): Ending
+{
+    const ending: Ending = {
+        pid: child.pid,
+        ended: () => child.pid === undefined || child.exitCode !== null || child.signalCode !== null,
+        closeInput: () => {
+            if (child.stdin?.writable === true) {
+                child.stdin.end();
+            }
+        },
+    };
+
+    if (!ending.ended()) {
+        atWork.add(ending);
+        child.once("exit", () => atWork.delete(ending));
+    }
+
+    return ending;
+}
+
+/** A process known by its pid alone, as one a gone engine left, as stopGently ends it. */
+export function endingOfPid(pid: number): Ending
+{
+    return { pid, ended: () => !isRunning(pid) };
 }
 
 /** Calls `ended` once with a child's exit code: at its close, or two seconds after its exit where a process it started holds its output open. */
@@ -147,8 +217,8 @@ export async function childrenEnded(name: string, within: number, log: (line: st
 
 /**
  * In a process of the engine that lasts, as `rpg table` (`command`), which the log calls `name` (the table): a promise that failed with nobody to catch it is
- * logged, and the process goes on; an exception nobody caught is logged, `cleanup` runs, the processes it started have `programsWait` ms to end by
- * themselves, as childrenEnded, and the process ends with 1. What takes the guard away.
+ * logged, and the process goes on; an exception nobody caught is logged, `cleanup` runs, the programs it started still at work are asked to end, as
+ * stopGently asks, and have `programsWait` ms to, as childrenEnded, and the process ends with 1. What takes the guard away.
  */
 export function guardProcess(command: string, name: string, log: (line: string) => void, cleanup: () => void, exit: (code: number) => void, programsWait: number): () => void
 {
@@ -173,6 +243,8 @@ export function guardProcess(command: string, name: string, log: (line: string) 
             log(`${command}: ${name} could not clean up after the error. ${said(failed)}`);
         }
 
+        // Each program still at work asked to end first, as one saving the player's sign-in: on Windows the exit would stop it at once.
+        atWork.forEach((program) => ask(program, stopTree, process.platform));
         void childrenEnded(name, programsWait, log).then(() => exit(1), () => exit(1));
     };
 
@@ -241,6 +313,8 @@ export function startLineProcess(command: string, args: string[], options: { cwd
     }
 
     const pid = child.pid;
+    // Among the programs at work, which an error nobody caught asks to end.
+    endingOf(child);
 
     if (pid !== undefined) {
         lineProcesses.set(pid, programName(command, args));
@@ -288,6 +362,20 @@ export function startLineProcess(command: string, args: string[], options: { cwd
             }
         },
     };
+}
+
+/** Asks a program to end as it understands it: its input closed and, off Windows, SIGTERM to its group, which no program can be sent on Windows. */
+function ask(program: Ending, signal: NonNullable<Patience["signal"]>, platform: NodeJS.Platform): void
+{
+    try {
+        program.closeInput?.();
+    } catch {
+        // Its input gone already: the signal, or the wait, does the rest.
+    }
+
+    if (platform !== "win32") {
+        signal(program.pid, "SIGTERM");
+    }
 }
 
 /** The name of a program for the log: its file's, and the script node runs, as a host installed with npm. */

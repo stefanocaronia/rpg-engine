@@ -11,7 +11,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DocumentReader, PictureMaker, PicturesReady, TextWriter } from "../core/context.ts";
 import { isAlive } from "../core/process-mark.ts";
-import { stopTree, whenEnded } from "../core/process.ts";
+import { endingOf, endingOfPid, stopGently, whenEnded } from "../core/process.ts";
 import { chatBrief } from "./briefs.ts";
 import { chatEnvironment, isOwn, knownReady } from "./programs.ts";
 
@@ -390,15 +390,17 @@ function runOnce(program: string, run: RunFolder, brief: string, limit: number, 
     return new Promise((done) => {
         // Off Windows it leads a group of its own: the shell alone, stopped, would leave agy running with the output held open.
         const child = spawn(line, { shell: true, windowsHide: true, cwd: run.work, env: agyEnvironment(run.home), stdio: ["pipe", "pipe", "pipe"], detached: process.platform !== "win32" });
+        const ending = endingOf(child);
         let stopped = false;
 
         if (child.pid !== undefined) {
             writeOwner(run.root, { engine: process.pid, agy: child.pid });
         }
 
+        // Dropped while it runs, or out of time: its input closed, as agy then ends by itself; stopped only where it does not (T-301).
         const stop = (): void => {
             stopped = true;
-            stopTree(child.pid);
+            void stopGently(ending);
         };
 
         signal?.addEventListener("abort", stop, { once: true });
@@ -508,7 +510,7 @@ async function sweepOne(root: string): Promise<void>
         }
 
         if (owner?.agy !== undefined && isAlive(owner.agy)) {
-            stopTree(owner.agy);
+            await stopGently(endingOfPid(owner.agy));
         }
 
         await removeFolder(root);

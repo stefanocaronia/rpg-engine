@@ -152,9 +152,9 @@ describe("the programs in the engine's folder (D-425)", () => {
         const login = helpers.login("claude");
         helpers.cancel("claude");
         await login;
-        await new Promise((done) => setTimeout(done, 1500));
-        expect(fake.started().filter((one) => one.asked === "auth login" && alive(one.pid))).toEqual([]);
-    });
+        // Stopped after the few seconds it has to end by itself, as one saving the player's sign-in (T-301).
+        await vi.waitFor(() => expect(fake.started().filter((one) => one.asked === "auth login" && alive(one.pid))).toEqual([]), { timeout: 8000 });
+    }, 15_000);
 });
 
 describe("one sign-in and one installation on this computer, whatever window of the engine asks", () => {

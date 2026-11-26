@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import type { DocumentReader, PicturesReady, TextWriter } from "../core/context.ts";
 import { isAlive } from "../core/process-mark.ts";
-import { stopTree, whenEnded } from "../core/process.ts";
+import { endingOf, endingOfPid, stopGently, whenEnded } from "../core/process.ts";
 import { chatEnvironment, isOwn, knownReady } from "./programs.ts";
 
 // The same limits as Claude's: a brief in three minutes, a run of the importer in thirty.
@@ -203,16 +203,17 @@ function runAgent(program: string, model: string, folder: string, agent: Agent, 
     return new Promise((done) => {
         // Off Windows it leads a group of its own: the shell alone, stopped, would leave OpenCode running with the output held open.
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: environment, stdio: ["pipe", "pipe", "pipe"], detached: process.platform !== "win32" });
+        const ending = endingOf(child);
         let stopped = false;
 
         if (child.pid !== undefined) {
             markRun(session, { engine: process.pid, child: child.pid, program });
         }
 
-        // Dropped while it runs: OpenCode stops with its own server.
+        // Dropped while it runs, or out of time: OpenCode ends with its own server, gently first (T-301).
         const stop = (): void => {
             stopped = true;
-            stopTree(child.pid);
+            void stopGently(ending);
         };
 
         signal?.addEventListener("abort", stop, { once: true });
@@ -249,7 +250,8 @@ function deleteSession(program: string, session: string): Promise<void>
 {
     return new Promise((done) => {
         const child = spawn(`${program} session delete ${session} --standalone`, { shell: true, windowsHide: true, cwd: tmpdir(), env: openCodeEnvironment(), stdio: "ignore" });
-        const timer = setTimeout(() => stopTree(child.pid), deleteWait);
+        const ending = endingOf(child);
+        const timer = setTimeout(() => void stopGently(ending), deleteWait);
         child.on("error", () => undefined);
         child.on("close", () => {
             clearTimeout(timer);
@@ -328,7 +330,7 @@ async function sweepRun(program: string, file: string, mark: RunMark): Promise<v
     }
 
     if (mark.child !== undefined && isAlive(mark.child)) {
-        stopTree(mark.child);
+        await stopGently(endingOfPid(mark.child));
     }
 
     await deleteSession(program, basename(file, ".json"));

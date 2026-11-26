@@ -191,7 +191,8 @@ export function npmError(ran: NpmRun): string
 export function runNpm(args: string): Promise<NpmRun>
 {
     return new Promise((done) => {
-        const child = spawn(`npm ${args}`, { shell: true, windowsHide: true, cwd: tmpdir(), env: { ...process.env, NoDefaultCurrentDirectoryInExePath: "1" }, stdio: ["ignore", "pipe", "pipe"] });
+        // Off Windows the shell leads a group of its own: stopped, npm goes with it, where the shell alone would go and leave it.
+        const child = spawn(`npm ${args}`, { shell: true, detached: process.platform !== "win32", windowsHide: true, cwd: tmpdir(), env: { ...process.env, NoDefaultCurrentDirectoryInExePath: "1" }, stdio: ["ignore", "pipe", "pipe"] });
         let [out, errors] = ["", ""];
         const timer = setTimeout(() => stopTree(child.pid, "SIGKILL"), installWait);
         child.stdout.setEncoding("utf8").on("data", (chunk: string) => (out += chunk));

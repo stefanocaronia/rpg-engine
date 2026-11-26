@@ -347,6 +347,8 @@ describe("Antigravity's importer (D-489 (1), D-579 (1))", () => {
         await waitFor(() => calls(line).some((call) => call.hanging === true));
         stop.abort();
         expect(await reading).toEqual({ failed: "Antigravity stopped without an answer" });
+        // Asked first, by its input closing, it ended by itself: never killed, as one saving the player's sign-in (T-301).
+        expect(calls(line).some((call) => call.closed === true)).toBe(true);
         const [run] = runs(line);
         expect(await gone([String(run.cwd), String(run.settingsFile), String(run.home)])).toBe(true);
     }, 20_000);
