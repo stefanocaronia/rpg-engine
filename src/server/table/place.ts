@@ -58,10 +58,16 @@ export function tableFile(home: string, root: string, ending: string): string
 /** Writes a file of the tables' folder as JSON: the folder and the file are only the player's where the system has modes. */
 export function writeTableFile(home: string, file: string, content: unknown): void
 {
+    makeTablesFolder(home);
+    writeDataFile(file, content);
+}
+
+/** Makes the tables' folder, the player's alone where the system has modes: a table's socket lives there off Windows, so it is there before the table listens. */
+export function makeTablesFolder(home: string): void
+{
     const folder = tablesFolder(home);
     mkdirSync(folder, { recursive: true, mode: 0o700 });
     chmodSync(folder, 0o700);
-    writeDataFile(file, content);
 }
 
 /** The places of every table this computer has, as their files say them, those that read: tables on or left by one that ended without its cleanup. */

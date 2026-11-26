@@ -18,7 +18,7 @@ import { type Dashboard, type DashboardOptions, type LauncherWay, showPage, star
 import { type TableChat, tableChat, type TableChatOptions } from "./chat.ts";
 import { type Door, welcome } from "./door.ts";
 import { probeTable } from "./hello.ts";
-import { knock, newToken, readPlace, removePlace, removeSocketFile, type TablePlace, tableSocket, writePlace } from "./place.ts";
+import { knock, makeTablesFolder, newToken, readPlace, removePlace, removeSocketFile, type TablePlace, tableSocket, writePlace } from "./place.ts";
 import { type Seat, tableSeat } from "./seat.ts";
 import { programsWait, turnStopWait } from "./stop.ts";
 
@@ -301,6 +301,8 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
         });
     });
 
+    // Off Windows the socket is a file of the tables' folder, which a computer that never had a table lacks.
+    makeTablesFolder(options.home);
     const listened = await listenAt(listener, socket, options.platform);
 
     if (listened !== undefined) {
