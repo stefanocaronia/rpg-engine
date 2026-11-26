@@ -1,6 +1,6 @@
 // Makes the icon's images from its two drawings in src/dashboard/assets, the robot behind the master's screen as the page's logo has it: icon.svg, and
-// icon-small.svg, the same with fewer parts and no die on a grid of 16, for 16 and 24 pixels. It writes icon.png at 512, icon.ico with seven sizes for Windows and
-// icon.icns with three for macOS, beside them. It draws with the Chrome installed, through Playwright, and writes the two containers by hand: each is a
+// icon-small.svg, the same with fewer parts and no die on a grid of 16, for 16 and 24 pixels. It writes icon.png at 512, the page's icon-16.png, icon-32.png and
+// icon-180.png, icon.ico with seven sizes for Windows and icon.icns with three for macOS, beside them. It draws with the Chrome installed, through Playwright, and writes the two containers by hand: each is a
 // small header around PNG data. Run it again when a drawing changes:
 //   node --experimental-strip-types test/demo/icons.ts
 // Not part of the tests.
@@ -27,9 +27,15 @@ try {
 
     const at = (size: number): Buffer => drawn.get(size) ?? Buffer.alloc(0);
     writeFileSync(`${assets}icon.png`, at(512));
+
+    // The page's own icons, which the window and its button in the taskbar show: 16 and 32 for the browser, 180 for a phone's home screen.
+    for (const size of [16, 32, 180]) {
+        writeFileSync(`${assets}icon-${size}.png`, drawn.get(size) ?? (await draw(page, size)));
+    }
+
     writeFileSync(`${assets}icon.ico`, ico(icoSizes.map((size) => ({ size, png: at(size) }))));
     writeFileSync(`${assets}icon.icns`, icns(icnsSizes.map(([type, size]) => ({ type, png: at(size) }))));
-    console.log(`Wrote icon.png, icon.ico and icon.icns in ${assets}`);
+    console.log(`Wrote icon.png, icon-16.png, icon-32.png, icon-180.png, icon.ico and icon.icns in ${assets}`);
 } finally {
     await browser.close();
 }

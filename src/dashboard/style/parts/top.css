@@ -1,7 +1,7 @@
 /* The top: the master, the campaign's name, the sections and the menu, the chips, the theme's corner, the foot, the robot and its moods. */
 @layer parts {
-    /* The top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below, and the time and whether the game is live
-       as chips, clear of the theme's corner; under the name the sections and the pages, the menu at the row's end (D-309); under them all, where the party is. */
+    /* The top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below, and the extensions' chips;
+       under the name the sections and the pages, the menu at the row's end (D-309); under them all, the row of the world: where the party is, the time. */
     /* The title first, never wrapped; the chips in what is left of its line (D-355). */
     /* The top's room in the page, as tall as the top whole (top.tsx), with the two marks that tell the top to draw itself together and to open again. */
     /* How tall the top is drawn together, which what stays on top under it, the master's question and the rolls, keeps clear of. */
@@ -12,6 +12,13 @@
     @media (max-width: 600px) {
         :root {
             --top-space: 52px;
+        }
+    }
+
+    /* Out of a phone the row of the world stays in the top drawn together, under it: what sticks under the top sticks under that row. */
+    @media (min-width: 601px) {
+        :root:has(.top > .top-place) {
+            --top-space: calc(87px + 42px);
         }
     }
 
@@ -65,8 +72,8 @@
         box-shadow: var(--top-edge);
     }
 
-    /* Down the page, the same top drawn together (D-295): the master and the name smaller, the product and the place folded away, the sections and the chips
-       still there, a line under it. */
+    /* Down the page, the same top drawn together (D-295): the master and the name smaller, the product folded away, the sections, the chips and the row
+       of the world still there, a line under it. */
     .top.compact {
         padding-block: 8px 0;
         --top-edge: 0 1px 0 var(--rule), 0 2px 0 var(--bar-edge), var(--raise);
@@ -85,11 +92,6 @@
         transition-property: max-height, margin, opacity;
     }
 
-    .top .top-place {
-        max-height: 3em;
-        transition-property: max-height, padding, margin, opacity, border-color;
-    }
-
     .top :is(.status-chip, .sections a) {
         transition-property: height;
     }
@@ -103,7 +105,7 @@
         font-size: 1.6rem;
     }
 
-    .top.compact :is(.product, .top-place) {
+    .top.compact .product {
         max-height: 0;
         margin-block: 0;
         padding-block: 0;
@@ -129,7 +131,7 @@
             transition: padding var(--short) var(--ease), box-shadow var(--short) var(--ease);
         }
 
-        .top :is(.master, .titles h1, .product, .top-place, .status-chip, .sections a) {
+        .top :is(.master, .titles h1, .product, .status-chip, .sections a) {
             transition-duration: var(--short);
             transition-timing-function: var(--ease);
         }
@@ -171,8 +173,6 @@
         grid-area: chips;
         min-width: min-content;
         margin: 0;
-        /* Clear of the theme's corner, whose button is wider than its triangle. */
-        margin-inline-end: 40px;
     }
 
     .top > .nav-row {
@@ -232,6 +232,11 @@
     .sections a.page-link {
         gap: 0;
         padding: 0 10px;
+    }
+
+    /* The last of them draws its icon at the row's end, in line with the cards under it: its own room beyond the edge. */
+    .sections > .page-link:last-child:not(.away) {
+        margin-inline-end: -10px;
     }
 
     .sections :is(a, .packages-menu, .home-link).away {
@@ -303,21 +308,49 @@
         padding-block: 6px;
     }
 
-    /* Where the party is (D-333): from the largest place to its own, which stays whole while the others give way; it leads to Scene. */
+    /* The row of the game's world: where the party is (D-333), from the largest place to its own, which stays whole while the others give way and leads to
+       Scene; at its end the game's time and day, then the switch of the column beside the page. */
     .top-place {
         grid-area: place;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 16px;
         min-width: 0;
+        min-height: 32px;
         margin-block: -4px 0;
         margin-inline: -16px;
-        padding-block: 10px 0;
+        padding-block: 5px 4px;
         padding-inline: 16px;
         border-top: 1px solid var(--rule);
         color: var(--muted);
         font-size: 0.85rem;
         text-decoration: none;
+    }
+
+    .top-path {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .top-world {
+        display: flex;
+        flex: none;
+        align-items: center;
+        gap: 14px;
+        /* As tall as the switch, so that the row keeps its height on a page without the column. */
+        min-height: 32px;
+        margin-inline-start: auto;
+    }
+
+    .top-time {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--ink);
+        font-weight: 600;
+        white-space: nowrap;
     }
 
     .top-place svg.icon {
@@ -367,6 +400,25 @@
 
     .top-place a::after {
         display: none;
+    }
+
+    /* The switch of the column beside the page: one of the chat's places, pressed in gold while the column is shown; small, in the row's height. */
+    .column-switch {
+        flex: none;
+        padding: 2px;
+    }
+
+    .top-place .column-switch button {
+        display: inline-grid;
+        place-items: center;
+        min-height: 24px;
+        padding: 0 6px;
+    }
+
+    .top-place .column-switch svg.icon {
+        width: 18px;
+        height: 18px;
+        color: inherit;
     }
 
     /* The sections (D-309): links with their pictures, the one shown in the accent with a bar under it, drawn as a background since ::after is the state layer;
@@ -546,7 +598,7 @@
         color: var(--accent);
     }
 
-    /* Whether the game is live: a square chip, its plug alone; the words are its name and its tip. */
+    /* Whether the game is live, a square chip of its plug alone, is not drawn for now (top.tsx): its rules wait here.
     .status-chip.live {
         justify-content: center;
         aspect-ratio: 1;
@@ -566,8 +618,10 @@
     .status-chip.live.on svg.icon {
         color: var(--ally);
     }
+    */
 
-    /* The switch of the theme (D-300, D-310): the window's top right corner, folded like a page's, with the theme it goes to; on a phone, in the menu. */
+    /* The switch of the theme where the page has no settings, the campaigns' (D-300, D-310): the window's top right corner, folded like a page's, with the
+       theme it goes to. A campaign's page has it in its settings, and on a phone in the menu too. */
     .theme-corner {
         position: fixed;
         top: 0;
@@ -585,16 +639,6 @@
 
     .theme-corner::after {
         clip-path: polygon(0 0, 100% 0, 100% 100%);
-    }
-
-    /* Down the page the top drawn together keeps the chips to its edge: the corner waits at the top of the page. */
-    .theme-corner {
-        transition: opacity var(--short) var(--ease), visibility var(--short);
-    }
-
-    .top.compact ~ .theme-corner {
-        opacity: 0;
-        visibility: hidden;
     }
 
     .theme-corner svg.icon {
@@ -799,8 +843,8 @@
             font-size: 1.2rem;
         }
 
-        /* A phone keeps only whether the game is live. */
-        .status-chip:not(.live) {
+        /* A phone keeps none of the extensions' chips; the game's time is under the campaign's name. */
+        .status-chip {
             display: none;
         }
 

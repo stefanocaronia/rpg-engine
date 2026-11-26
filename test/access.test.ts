@@ -69,13 +69,13 @@ describe("each host's account", () => {
         expect(notices()).toBe(1);
     });
 
-    it("looks again when asked, a host or every one, at most once a minute each, and tells only what changed", async () => {
+    it("looks again when asked, a host or every one, at most every fifteen seconds each, and tells only what changed", async () => {
         const helpers = drivenHelpers({ claude: "logged out", codex: "logged out" }, true);
         const { keeper, notices, clock } = keeperOver(helpers);
         keeper.access("claudeCode");
         await settle();
 
-        // Asked again and again, as each time the page's window comes back to the front: nothing within the minute.
+        // Asked again and again, as each time the page's window comes back to the front: nothing within the fifteen seconds.
         for (let times = 0; times < 10; times++) {
             clock.now += 300;
             keeper.lookAgain();
@@ -84,7 +84,7 @@ describe("each host's account", () => {
 
         expect(helpers.asked).toEqual(["look claude", "look codex"]);
 
-        clock.now = 61_000;
+        clock.now = 16_000;
         helpers.states.claude = "ready";
         keeper.lookAgain("claudeCode");
         keeper.lookAgain("claudeCode");
@@ -92,6 +92,28 @@ describe("each host's account", () => {
         expect(helpers.asked).toEqual(["look claude", "look codex", "look claude"]);
         expect(keeper.access("claudeCode").account).toBe("in");
         expect(notices()).toBe(3);
+    });
+
+    it("sees a player signed out outside the page, in a terminal, once the page asks again as its window comes back: the app is no longer shown ready", async () => {
+        const helpers = drivenHelpers({ claude: "ready", codex: "ready" }, true);
+        const { keeper, notices, clock } = keeperOver(helpers);
+        keeper.access("claudeCode");
+        keeper.access("codex");
+        await settle();
+        expect(keeper.known("codex").account).toBe("in");
+
+        // Signed out since, the page still open: read as often as it may, nothing says so until it asks.
+        helpers.states.codex = "logged out";
+        keeper.access("codex");
+        await settle();
+        expect(keeper.known("codex").account).toBe("in");
+
+        clock.now = 16_000;
+        const before = notices();
+        keeper.lookAgain();
+        await settle();
+        expect(keeper.known("codex")).toMatchObject({ account: "out", signIn: "page" });
+        expect(notices()).toBe(before + 1);
     });
 
     it("never looks while a chat of the host is open, keeping the last known; the other hosts it does", async () => {

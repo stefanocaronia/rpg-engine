@@ -1,35 +1,32 @@
-// The list of an app's models (T-290), one for the whole page: where a chat is opened, in the launcher's form and under the open chat's words. A button
-// that says the model chosen, and opens over the page the list to choose from: a search where it is long, the advised first, each provider's apart, what
-// is paid apart marked, a name written by hand, and at its foot how much the master thinks. A combobox with its listbox: the arrows move, Enter chooses,
+// The list of an app's models (T-290, T-307), one for the whole page: where a chat is opened, in the launcher's form and under the open chat's words. A
+// button as wide as its form, which says the model chosen, and opens over the page the list to choose from: every model the app lists, each provider's
+// under its title, none marked as advised; a search over it where the models are more than fit in sight; and at its foot how much the master thinks,
+// always a level of the model's own. The list alone scrolls, with no bar, a shade at its edge where there is more. The arrows move, Enter chooses,
 // Escape closes, and the focus goes back to the button.
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { ChatHost, ChatModel } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
 import { Segmented } from "../parts/segmented.tsx";
 import { t } from "../text.ts";
-import { effortName, effortsOf, modelOf, modelSearchAt, modelSections } from "./chat.ts";
+import { effortsOf, modelOf, modelSearchAt, modelSections } from "./chat.ts";
+import { useShades } from "./shades.ts";
 
 // How far from its button the list stands, and from the window's edges; the least width it takes; under this width it is a sheet from the window's foot.
 const gap = 6;
 const margin = 8;
 const leastWidth = 288;
 const sheetUnder = 600;
-// The id of the choice of a name written by hand.
-const otherId = "\u0000other";
 
 /**
- * The button and its list. `model` and `effort` are those chosen, `written` when the model is a name written by hand. `onPick` has a model of the list,
- * or "" for one to write; `onEffort` a level of thinking, "" for the default. `foot`, the small one under the open chat's words; `off`, why it cannot
- * be opened now, as in the master's turn. `efforts`, the model's levels where the app said them once it was chosen, in place of its list's; `fallback`,
- * whether Default is among them, which an open chat no longer offers once a level was chosen in it, as its app keeps that level.
+ * The button and its list. `model` and `effort` are those chosen. `onPick` has a model of the list; `onEffort` a level of thinking. `foot`, the small
+ * one under the open chat's words; `off`, why it cannot be opened now, as in the master's turn. `efforts`, the model's levels where the app said them
+ * once it was chosen, in place of its list's.
  */
-export function ModelPicker({ host, model, effort, efforts: told, fallback = true, written = false, id, labelledBy, describedBy, foot = false, off, onPick, onEffort }: {
+export function ModelPicker({ host, model, effort, efforts: told, id, labelledBy, describedBy, foot = false, off, onPick, onEffort }: {
     host: ChatHost;
     model: string;
     effort: string | undefined;
     efforts?: string[] | undefined;
-    fallback?: boolean;
-    written?: boolean;
     id: string;
     labelledBy?: string;
     describedBy?: string;
@@ -45,15 +42,15 @@ export function ModelPicker({ host, model, effort, efforts: told, fallback = tru
     const button = useRef<HTMLButtonElement>(null);
     const pop = useRef<HTMLDivElement>(null);
     const search = useRef<HTMLInputElement>(null);
-    const listed = written ? undefined : modelOf(host, model);
+    const list = useRef<HTMLDivElement>(null);
+    const listed = modelOf(host, model);
     const sections = modelSections(host.models, query);
-    const choices = [...sections.flatMap((section) => section.models.map((one) => one.id)), ...(foot ? [] : [otherId])];
-    const more = sections.reduce((sum, section) => sum + section.more, 0);
+    const choices = sections.flatMap((section) => section.models.map((one) => one.id));
     const searching = host.models.length > modelSearchAt;
     const efforts = told ?? effortsOf(host, model);
     const listId = `${id}-list`;
     const optionId = (choice: string): string => `${id}-option-${choices.indexOf(choice)}`;
-    const shownName = listed?.name ?? (written || model === "" ? t("Another model, by name…") : model);
+    const shades = useShades(list, `${open}${query}${host.models.length}`);
 
     const close = (focus: boolean): void => {
         setOpen(false);
@@ -69,13 +66,13 @@ export function ModelPicker({ host, model, effort, efforts: told, fallback = tru
             return;
         }
 
-        setActive(listed?.id ?? (written ? otherId : choices[0]));
+        setActive(listed?.id ?? choices[0]);
         setOpen(true);
     };
 
     const choose = (choice: string): void => {
-        onPick(choice === otherId ? "" : choice);
-        close(choice !== otherId);
+        onPick(choice);
+        close(true);
     };
 
     usePlace(open, button, pop);
@@ -126,8 +123,10 @@ export function ModelPicker({ host, model, effort, efforts: told, fallback = tru
 
         const at = active === undefined ? -1 : choices.indexOf(active);
         const moves: Record<string, number> = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: choices.length - 1, PageDown: at + 8, PageUp: at - 8 };
+        // In the search, Home and End move in the words written.
+        const inWords = event.currentTarget === search.current && (event.key === "Home" || event.key === "End");
 
-        if (event.key in moves && choices.length > 0) {
+        if (event.key in moves && choices.length > 0 && !inWords) {
             event.preventDefault();
             setActive(choices[Math.min(choices.length - 1, Math.max(0, moves[event.key]))]);
         } else if (event.key === "Enter" && active !== undefined && choices.includes(active)) {
@@ -140,130 +139,134 @@ export function ModelPicker({ host, model, effort, efforts: told, fallback = tru
         }
     };
 
+    const activeId = open && active !== undefined && choices.includes(active) ? optionId(active) : undefined;
     return (
         <>
+            {/* With a search the button only opens the list, and the search is the combobox; with none, the button is. */}
             <button
                 ref={button}
                 id={id}
                 type="button"
-                role="combobox"
+                role={searching ? undefined : "combobox"}
                 class={foot ? "model-switch" : "model-button"}
                 aria-haspopup="listbox"
                 aria-expanded={open}
                 aria-controls={listId}
                 aria-labelledby={labelledBy === undefined ? undefined : `${labelledBy} ${id}`}
                 aria-describedby={describedBy}
-                aria-activedescendant={open && !searching && active !== undefined ? optionId(active) : undefined}
+                aria-activedescendant={searching ? undefined : activeId}
                 aria-disabled={off === undefined ? undefined : true}
                 data-tip={off}
                 onClick={() => (open ? close(true) : show())}
                 onKeyDown={keys}
             >
-                <span class="model-name" dir="auto">{shownName}</span>
-                {/* Under the chat's words, how much the master thinks: what gives way first where the line is short; kept while the app takes another model. */}
-                {foot && (efforts.length > 0 || effort !== undefined) && <span class="model-effort">· {effortName(effort)}</span>}
+                <span class="model-name" dir="auto">{listed?.name ?? model}</span>
+                {
+                    /* After the model, always, how much the master thinks, where a level is chosen: nothing of the choice is left unsaid. Under the chat's words
+                    it is what gives way first where the line is short; kept while the app takes another model. */
+                }
+                {effort !== undefined && <span class="model-effort">· {effort}</span>}
                 {!foot && listed !== undefined && <ModelTags model={listed} />}
                 <Icon name="more" />
             </button>
             <div ref={pop} class={foot ? "model-pop at-foot" : "model-pop"} popover="manual" onKeyDown={(event) => event.key === "Escape" && keys(event)}>
                 {searching && (
-                    <input
-                        ref={search}
-                        type="search"
-                        class="search model-search"
-                        dir="auto"
-                        value={query}
-                        placeholder={t("Search a model")}
-                        aria-label={t("Search a model")}
-                        aria-controls={listId}
-                        aria-activedescendant={open && active !== undefined && choices.includes(active) ? optionId(active) : undefined}
-                        autocomplete="off"
-                        spellcheck={false}
-                        onInput={(event) => {
-                            const next = event.currentTarget.value;
-                            setQuery(next);
-                            setActive(modelSections(host.models, next)[0]?.models[0]?.id ?? (foot ? undefined : otherId));
-                        }}
-                        onKeyDown={keys}
-                    />
+                    <label class="model-find">
+                        <Icon name="search" />
+                        <input
+                            ref={search}
+                            type="text"
+                            role="combobox"
+                            dir="auto"
+                            value={query}
+                            placeholder={t("Search a model")}
+                            aria-label={t("Search a model")}
+                            aria-expanded={open}
+                            aria-autocomplete="list"
+                            aria-controls={listId}
+                            aria-activedescendant={activeId}
+                            autocomplete="off"
+                            spellcheck={false}
+                            onInput={(event) => {
+                                const next = event.currentTarget.value;
+                                setQuery(next);
+                                setActive(modelSections(host.models, next)[0]?.models[0]?.id);
+                            }}
+                            onKeyDown={keys}
+                        />
+                        {/* How many the search found, said quietly as it changes. */}
+                        <span class="model-count" role="status">{query.trim() === "" ? "" : t("{found} of {all}", { found: String(choices.length), all: String(host.models.length) })}</span>
+                    </label>
                 )}
-                <div id={listId} class="model-list" role="listbox" aria-label={t("Model")}>
-                    {sections.map((section, index) => (
-                        <div key={section.title ?? index} role="group" aria-labelledby={section.title === undefined ? undefined : `${id}-group-${index}`}>
-                            {section.title !== undefined && <div id={`${id}-group-${index}`} class="model-group" role="presentation" dir="auto">{section.title}</div>}
-                            {section.models.map((one) => (
-                                <ModelOption
-                                    key={one.id}
-                                    id={optionId(one.id)}
-                                    model={one}
-                                    chosen={listed?.id === one.id}
-                                    active={active === one.id}
-                                    onHover={() => setActive(one.id)}
-                                    onChoose={() => choose(one.id)}
-                                />
-                            ))}
-                        </div>
-                    ))}
-                    {!foot && (
-                        <div
-                            id={optionId(otherId)}
-                            role="option"
-                            class={active === otherId ? "model-other active" : "model-other"}
-                            aria-selected={written}
-                            onPointerMove={() => setActive(otherId)}
-                            onClick={() => choose(otherId)}
-                        >
-                            {t("Another model, by name…")}
-                        </div>
-                    )}
+                <div class={`model-list-frame ${shades}`}>
+                    <div ref={list} id={listId} class="model-list" role="listbox" aria-label={t("Model")}>
+                        {sections.map((section, index) => (
+                            <div key={section.title ?? index} role="group" aria-labelledby={section.title === undefined ? undefined : `${id}-group-${index}`}>
+                                {section.title !== undefined && (
+                                    <div id={`${id}-group-${index}`} class="model-group" role="presentation" dir="auto">
+                                        {section.title}
+                                        {/* Paid apart, said once on the provider's title, never on each of its models. */}
+                                        {section.metered && <span class="model-group-note">· {t("Pay per use")}</span>}
+                                    </div>
+                                )}
+                                {section.models.map((one) => (
+                                    <ModelOption
+                                        key={one.id}
+                                        id={optionId(one.id)}
+                                        model={one}
+                                        paid={!section.metered}
+                                        chosen={listed?.id === one.id}
+                                        active={active === one.id}
+                                        onHover={() => setActive(one.id)}
+                                        onChoose={() => choose(one.id)}
+                                    />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                {more > 0 && <p class="model-more">{t("…and {count} more: search them by name.", { count: String(more) })}</p>}
                 {sections.length === 0 && <p class="model-more">{t("No model by that name.")}</p>}
                 {host.models.some((one) => one.metered === true) && <p class="model-more">{t("Pay per use: it may cost extra; whoever provides the model decides.")}</p>}
-                {efforts.length > 0 && <Thinking id={id} efforts={efforts} effort={effort} fallback={fallback} onEffort={onEffort} />}
+                {efforts.length > 0 && <Thinking id={id} efforts={efforts} effort={effort} onEffort={onEffort} />}
             </div>
         </>
     );
 }
 
-/** Advised, and paid apart for each answer: two quiet words after a model's name, never the accent, which is the gold of what is chosen; in the list the advised stand under their own title. */
-export function ModelTags({ model, advised = true }: { model: ChatModel; advised?: boolean; })
+/** Paid apart for each answer: quiet words after a model's name, never the accent, which is the gold of what is chosen. */
+export function ModelTags({ model }: { model: ChatModel; })
 {
-    return (
-        <>
-            {advised && model.advised === true && <span class="model-tag">{t("Recommended")}</span>}
-            {model.metered === true && <span class="model-tag">{t("Pay per use")}</span>}
-        </>
-    );
+    return model.metered === true ? <span class="model-tag">{t("Pay per use")}</span> : null;
 }
 
-/** How much the master thinks, at the list's foot: Default, where it is offered, and the model's own levels, with what changes. */
-function Thinking({ id, efforts, effort, fallback, onEffort }: { id: string; efforts: string[]; effort: string | undefined; fallback: boolean; onEffort(effort: string): void; })
+/** How much the master thinks, at the list's foot: the model's own levels, one of them always chosen where the player or the page chose one. */
+function Thinking({ id, efforts, effort, onEffort }: { id: string; efforts: string[]; effort: string | undefined; onEffort(effort: string): void; })
 {
     return (
         <div class="model-thinking">
             <span id={`${id}-thinking`} class="chat-label">{t("Master's thinking")}</span>
-            <Segmented
-                label={`${id}-thinking`}
-                described={`${id}-thinking-is`}
-                options={[...(fallback ? [{ value: "", label: t("Default") }] : []), ...efforts.map((one) => ({ value: one, label: one }))]}
-                value={effort ?? ""}
-                onPick={onEffort}
-            />
-            <p id={`${id}-thinking-is`} class="chat-hint">{fallback ? t("More is slower and uses more of your plan; Default is fine.") : t("More is slower and uses more of your plan.")}</p>
+            <Segmented label={`${id}-thinking`} described={`${id}-thinking-is`} options={efforts.map((one) => ({ value: one, label: one }))} value={effort} onPick={onEffort} />
+            <p id={`${id}-thinking-is`} class="chat-hint">{t("More is slower and uses more of your plan.")}</p>
         </div>
     );
 }
 
-function ModelOption({ id, model, chosen, active, onHover, onChoose }: { id: string; model: ChatModel; chosen: boolean; active: boolean; onHover(): void; onChoose(): void; })
+function ModelOption({ id, model, paid, chosen, active, onHover, onChoose }: {
+    id: string;
+    model: ChatModel;
+    /** Whether the row says it is paid apart: not where its provider's title does. */
+    paid: boolean;
+    chosen: boolean;
+    active: boolean;
+    onHover(): void;
+    onChoose(): void;
+})
 {
     return (
         <div id={id} role="option" class={active ? "model-option active" : "model-option"} aria-selected={chosen} onPointerMove={onHover} onClick={onChoose}>
             {chosen ? <Icon name="check" /> : <span aria-hidden="true" />}
             <span class="model-option-name" dir="auto">{model.name}</span>
-            <span class="model-option-tags">
-                <ModelTags model={model} advised={false} />
-            </span>
+            <span class="model-option-tags">{paid && <ModelTags model={model} />}</span>
         </div>
     );
 }

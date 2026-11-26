@@ -6,10 +6,12 @@
 //   add      a folder whose name starts with a capital B is a campaign; another is refused
 //   forget   takes one off the list
 //   signIn, install, hosts   what the page asks of an app (test/demo/hosts.ts), answered with the apps after it
+// Guadoscuro has its player character's portrait, the demo's Ettore, at /portraits/; Le Isole del Sale a theme's dice and a character without one.
 // Not part of the tests.
+import { readFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { join } from "node:path";
-import { builtPage, fromOwnPage, launcherHtml, pageFile, pagePolicy, pageWrites, readBody, securityHeaders, send, sendFile, sendJson, vendorModule } from "../../src/server/page/index.ts";
+import { builtPage, fromOwnPage, launcherHtml, pageFile, pagePolicy, pageWrites, picturePolicy, readBody, securityHeaders, send, sendFile, sendJson, vendorModule } from "../../src/server/page/index.ts";
 import { type DemoHosts, demoHosts, type DemoHostWish } from "./hosts.ts";
 
 /** The demo's launcher: its page's link, the campaign's page it opens once that is served, and its end. */
@@ -33,6 +35,8 @@ interface Listed
     open: boolean;
     missing: boolean;
     problem?: string;
+    colours?: { light: { body: string; ink: string; }; dark: { body: string; ink: string; }; };
+    character?: { name: string; portrait?: string; };
 }
 
 // How long the demo's launcher takes to open a campaign, to make one and to have a folder chosen.
@@ -40,6 +44,7 @@ const openTime = 1500;
 const pickTime = 600;
 const version = "0.0.0-demo";
 const day = 86_400_000;
+const portrait = "/portraits/ettore";
 
 /**
  * Serves the demo's launcher on a free port: `campaign` is the folder of the demo's own campaign, the first of its list; `empty`, with no campaign at all;
@@ -52,8 +57,18 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
     const ago = (days: number): string => new Date(Date.now() - days * day).toISOString();
     const tower = join(folder, "La Torre Rotta");
     let campaigns: Listed[] = empty ? [] : [
-        { root: campaign, name: "Guadoscuro", system: "free", language: "it", opened: ago(0), open: true, missing: false },
-        { root: join(folder, "Le Isole del Sale"), name: "Le Isole del Sale", system: "5e", language: "it", opened: ago(3), open: false, missing: false },
+        { root: campaign, name: "Guadoscuro", system: "free", language: "it", opened: ago(0), open: true, missing: false, character: { name: "Ettore", portrait: `${portrait}?v=1` } },
+        {
+            root: join(folder, "Le Isole del Sale"),
+            name: "Le Isole del Sale",
+            system: "5e",
+            language: "it",
+            opened: ago(3),
+            open: false,
+            missing: false,
+            colours: { light: { body: "#2d5a3a", ink: "#ffffff" }, dark: { body: "#9fd3a8", ink: "#0f1410" } },
+            character: { name: "Mira" },
+        },
         { root: tower, name: "La Torre Rotta", system: "free", language: "en", opened: ago(16), open: false, missing: false },
         { root: join(home, "Vecchie", "Il Passo del Corvo"), name: "Il Passo del Corvo", opened: ago(140), open: false, missing: true },
         { root: join(folder, "Cripta"), name: "Cripta", open: false, missing: false, problem: "campaign.yaml does not read: bad indentation of a mapping entry at line 3." },
@@ -160,6 +175,8 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
             response.write(": listening\n\n");
             pages.add(response);
             response.on("close", () => pages.delete(response));
+        } else if (path === portrait) {
+            response.writeHead(200, { ...securityHeaders, "Content-Type": "image/webp", "Content-Security-Policy": picturePolicy }).end(readFileSync(join(campaign, "images", "Ettore.webp")));
         } else if (path.startsWith("/vendor/")) {
             sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response);
         } else {

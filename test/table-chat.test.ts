@@ -803,7 +803,7 @@ describe("the chat's flow in the campaign", () => {
     const flowFiles = (): string[] => readdirSync(flowFolder()).sort();
     const flowLines = (name: string): Record<string, unknown>[] => readFileSync(join(flowFolder(), name), "utf8").trim().split("\n").map((line) => JSON.parse(line) as Record<string, unknown>);
 
-    it("writes each message once complete, a question as it begins and as it ends, and is read back in order by the next table's chat", () => {
+    it("writes each message once complete, a question as it begins and as it ends, and is read back in order by the next table's chat", async () => {
         const { chat, master } = opened();
         chat.say("I knock.");
         master.emit({ type: "session", session: "session-1", model: "claude-sonnet-5" });
@@ -839,7 +839,7 @@ describe("the chat's flow in the campaign", () => {
 
         const next = chatWith();
         expect(next.shown().messages).toEqual([]);
-        next.listened();
+        await listen(next);
         expect(masters[1].options.session).toBe("session-1");
         expect(next.shown().messages).toEqual([
             { id: 1, from: "player", text: "I knock." },
@@ -910,13 +910,13 @@ describe("the chat's flow in the campaign", () => {
     });
 
     /** A chat taken up by a new table from a file of `lines`; the last choice names it, with a session. */
-    function takenUp(lines: string): TableChat
+    async function takenUp(lines: string): Promise<TableChat>
     {
         mkdirSync(flowFolder(), { recursive: true });
         writeFileSync(join(flowFolder(), "2026-11-20 10-00-00.jsonl"), lines);
         writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", session: "s", flow: "2026-11-20 10-00-00.jsonl" });
         const chat = chatWith();
-        chat.listened();
+        await listen(chat);
         return chat;
     }
 
@@ -924,20 +924,20 @@ describe("the chat's flow in the campaign", () => {
     const answered = JSON.stringify({ id: 2, from: "master", text: "It is empty." });
     const ended = JSON.stringify({ turn: "ended" });
 
-    it("is not cut short where every turn ended, nor with no words of the player", () => {
-        expect(takenUp(`${said}\n${answered}\n${ended}\n`).shown().chat?.cutShort).toBeUndefined();
-        expect(takenUp(`${answered}\n`).shown().chat?.cutShort).toBeUndefined();
-        expect(takenUp("").shown().chat?.cutShort).toBeUndefined();
+    it("is not cut short where every turn ended, nor with no words of the player", async () => {
+        expect((await takenUp(`${said}\n${answered}\n${ended}\n`)).shown().chat?.cutShort).toBeUndefined();
+        expect((await takenUp(`${answered}\n`)).shown().chat?.cutShort).toBeUndefined();
+        expect((await takenUp("")).shown().chat?.cutShort).toBeUndefined();
     });
 
-    it("is cut short where the player's last words have no end of a turn after them, even with some of the master's", () => {
-        expect(takenUp(`${said}\n${answered}\n${ended}\n${JSON.stringify({ id: 3, from: "player", text: "Again." })}\n`).shown().chat).toMatchObject({ cutShort: true });
-        expect(takenUp(`${said}\n${answered}\n`).shown().chat).toMatchObject({ cutShort: true });
+    it("is cut short where the player's last words have no end of a turn after them, even with some of the master's", async () => {
+        expect((await takenUp(`${said}\n${answered}\n${ended}\n${JSON.stringify({ id: 3, from: "player", text: "Again." })}\n`)).shown().chat).toMatchObject({ cutShort: true });
+        expect((await takenUp(`${said}\n${answered}\n`)).shown().chat).toMatchObject({ cutShort: true });
     });
 
-    it("is cut short where a question was left waiting: read as left, and written so the next time the file is written", () => {
+    it("is cut short where a question was left waiting: read as left, and written so the next time the file is written", async () => {
         const question = JSON.stringify({ id: 2, from: "asked", text: "Which door?", options: ["Left", "Right"], state: "waiting" });
-        const chat = takenUp(`${said}\n${question}\n`);
+        const chat = await takenUp(`${said}\n${question}\n`);
         expect(chat.shown().chat?.cutShort).toBe(true);
         expect(chat.shown().messages[1]).toEqual({ id: 2, from: "asked", text: "Which door?", options: ["Left", "Right"], state: "left" });
         expect(flowLines("2026-11-20 10-00-00.jsonl")).toHaveLength(2);
@@ -949,10 +949,10 @@ describe("the chat's flow in the campaign", () => {
         expect(chat.shown().chat?.cutShort).toBeUndefined();
     });
 
-    it("is safe to cut anywhere: a last line torn in the middle is skipped, and the next line is written on a line of its own", () => {
+    it("is safe to cut anywhere: a last line torn in the middle is skipped, and the next line is written on a line of its own", async () => {
         const whole = `${said}\n${answered}\n${ended}\n`;
         const torn = JSON.stringify({ id: 3, from: "player", text: "I climb the stairs." });
-        const chat = takenUp(`${whole}${torn.slice(0, torn.length / 2)}`);
+        const chat = await takenUp(`${whole}${torn.slice(0, torn.length / 2)}`);
         expect(chat.shown().messages.map((message) => message.id)).toEqual([1, 2]);
         expect(chat.shown().chat?.cutShort).toBeUndefined();
         chat.say("I climb.");
@@ -960,7 +960,7 @@ describe("the chat's flow in the campaign", () => {
         expect(text.startsWith(whole)).toBe(true);
         expect(text.split("\n").at(-2)).toContain('"text":"I climb."');
         chat.release();
-        expect(takenUp(text).shown().messages.map((message) => message.id)).toEqual([1, 2, 3]);
+        expect((await takenUp(text)).shown().messages.map((message) => message.id)).toEqual([1, 2, 3]);
     });
 
     it("writes the turn's end after the player's words even where the host ends the turn while they are sent", () => {
@@ -1010,22 +1010,99 @@ describe("the last chat taken up by itself", () => {
         writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", effort: "low", session: "session-1" });
     });
 
-    it("opens as the first page listens, with the last choice and its session, once a table, and sends the host nothing", () => {
+    it("opens as the first page listens, with the last choice and its session, once a table, and sends the host nothing", async () => {
         const chat = chatWith();
         expect(masters).toEqual([]);
-        chat.listened();
+        await listen(chat);
         expect(masters).toHaveLength(1);
         expect(masters[0].options).toMatchObject({ model: "sonnet", effort: "low", session: "session-1" });
         expect(masters[0].sent).toEqual([]);
         expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", effort: "low", takenUp: true, state: "idle" });
         chat.release();
-        chat.listened();
+        await listen(chat);
         expect(masters).toHaveLength(1);
     });
 
-    it("stays closed once the player closed it, at this table and the next, until they open one", () => {
+    it("asks its host's models first where none are known, opens once they came, failed or empty too, and the page has them", async () => {
+        const sonnet = { id: "sonnet", name: "Sonnet 5.5", efforts: ["low", "high"] };
+        let answer: (models: MasterModel[]) => void = () => expect.fail("the models were not asked");
+        const waited: MasterDriver = {
+            ...driver,
+            models: (options) => {
+                asked.push(options);
+                return new Promise((resolve) => (answer = resolve));
+            },
+        };
+        const chat = chatWith({ driver: (host) => (host === "claudeCode" ? waited : undefined) });
+        await listen(chat);
+        expect(asked).toHaveLength(1);
+        expect(masters).toEqual([]);
+        // The page looks meanwhile: the models are not asked twice.
+        chat.shown();
+        expect(asked).toHaveLength(1);
+        answer([sonnet]);
+        await settle();
+        expect(masters).toHaveLength(1);
+        expect(masters[0].options).toMatchObject({ model: "sonnet", session: "session-1" });
+        expect(chat.shown().hosts[0].models).toEqual([sonnet]);
+        expect(asked).toHaveLength(1);
+
+        // An answer that fails opens it as well.
+        const failing = { ...driver, models: () => Promise.reject(new Error("the host failed")) };
+        chat.release();
+        const next = chatWith({ driver: (host) => (host === "claudeCode" ? failing : undefined) });
+        await listen(next);
+        expect(masters).toHaveLength(2);
+
+        // Models known already, as the page looked before it listened: it opens at once, asking nothing more.
+        listed = [sonnet];
+        next.release();
+        const knowing = chatWith();
+        knowing.shown();
+        await settle();
+        asked = [];
+        knowing.listened();
+        expect(masters).toHaveLength(3);
+        expect(asked).toEqual([]);
+    });
+
+    it("is not taken up where the player opened or closed a chat, or the table let it go, while its host's models were asked", async () => {
+        let answers: ((models: MasterModel[]) => void)[] = [];
+        const waited = { ...driver, models: () => new Promise<MasterModel[]>((resolve) => answers.push(resolve)) };
+        const waiting = (): TableChat => chatWith({ driver: (host) => (host === "claudeCode" ? waited : undefined) });
+
+        const opening = waiting();
+        opening.listened();
+        expect(opening.open({ ...choice, fresh: true })).toBeUndefined();
+        answers.forEach((answer) => answer([]));
+        await settle();
+        expect(masters).toHaveLength(1);
+        expect(masters[0].options.session).toBeUndefined();
+        opening.close();
+
+        // Let go by the table, as it ends, while the models were asked.
+        answers = [];
+        writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet", session: "session-1" });
+        const released = waiting();
+        released.listened();
+        released.release();
+        answers.forEach((answer) => answer([]));
+        await settle();
+        expect(masters).toHaveLength(1);
+
+        // A chat opened by hand sat at the table meanwhile.
+        answers = [];
+        const byHand = waiting();
+        byHand.listened();
+        elsewhere = true;
+        answers.forEach((answer) => answer([]));
+        await settle();
+        expect(masters).toHaveLength(1);
+    });
+
+    it("stays closed once the player closed it, at this table and the next, until they open one", async () => {
         const chat = chatWith();
-        chat.listened();
+        await listen(chat);
         chat.close();
         // The player's close lets its program end by itself too, as the table's own: one saving the player's login is never stopped at once.
         expect(masters[0]).toMatchObject({ closed: true, gently: true });
@@ -1039,32 +1116,32 @@ describe("the last chat taken up by itself", () => {
         expect(readLastChat(home, root)?.closed).toBeUndefined();
         next.release();
         expect(masters[1]).toMatchObject({ closed: true, gently: true });
-        chatWith().listened();
+        await listen(chatWith());
         expect(masters).toHaveLength(3);
     });
 
-    it("opens nothing with a chat opened by hand, a program not found, or no session to take up; a host that refuses is logged", () => {
+    it("opens nothing with a chat opened by hand, a program not found, or no session to take up; a host that refuses is logged", async () => {
         elsewhere = true;
-        chatWith().listened();
+        await listen(chatWith());
         elsewhere = false;
         found = false;
-        chatWith().listened();
+        await listen(chatWith());
         found = true;
         expect(masters).toEqual([]);
         expect(logged).toEqual(["The table did not take up the campaign's last chat: Claude Code is not on this computer: install it, then try again."]);
 
         writeLastChat(home, root, { root, host: "claudeCode", model: "sonnet" });
-        chatWith().listened();
+        await listen(chatWith());
         expect(masters).toEqual([]);
     });
 
-    it("shows the chat ended and the form again where the host's session is gone, and does not try again", () => {
+    it("shows the chat ended and the form again where the host's session is gone, and does not try again", async () => {
         const chat = chatWith();
-        chat.listened();
+        await listen(chat);
         masters[0].emit({ type: "ended", why: "the host's program ended (exit code 1): No conversation found" });
         expect(chat.shown().chat?.state).toBe("ended");
         expect(chat.shown().last?.resumable).toBe(false);
-        chat.listened();
+        await listen(chat);
         expect(masters).toHaveLength(1);
     });
 });
@@ -1212,6 +1289,13 @@ describe("the player's rolls the master has not told in its words yet", () => {
 async function settle(): Promise<void>
 {
     await new Promise((done) => setTimeout(done, 0));
+}
+
+/** The first page listens, and the chat it takes up opens once its host's models came. */
+async function listen(chat: TableChat): Promise<void>
+{
+    chat.listened();
+    await settle();
 }
 
 describe("the hosts' accounts at the table", () => {
@@ -1395,7 +1479,7 @@ describe("another model in the open chat", () => {
 
         // The chat taken up by the next table opens with the model changed.
         chat.release();
-        chatWith().listened();
+        await listen(chatWith());
         expect(masters.at(-1)?.options).toMatchObject({ model: "haiku", session: "s-1" });
     });
 

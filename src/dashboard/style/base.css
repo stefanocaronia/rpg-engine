@@ -4,9 +4,10 @@
         box-sizing: border-box;
     }
 
-    /* The room of the scrollbar kept: a card opened that makes the page scroll moves nothing sideways (D-383). */
+    /* The window scrolls with no bar drawn, as every part of the page: a card opened that makes the page scroll moves nothing sideways (D-383), and what
+       is fixed at the window's end edge, as the theme's corner, reaches it. */
     html {
-        scrollbar-gutter: stable;
+        scrollbar-width: none;
     }
 
     body {

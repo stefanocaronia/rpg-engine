@@ -128,6 +128,8 @@ const iconPaths = {
     dockLeft: "M3.5 5h17v14h-17Z M10 5v14 M5.8 8.5h2 M5.8 11.5h2",
     dockRight: "M3.5 5h17v14h-17Z M14 5v14 M16.2 8.5h2 M16.2 11.5h2",
     dockTall: "M5 3h14 M5 21h14 M12 6v12 M9 9l3-3 3 3 M9 15l3 3 3-3",
+    // The column beside the page, its cards in it at the end the page is written to: which it turns.
+    sideColumn: "M3.5 5h17v14h-17Z M14.5 5v14 M16.5 8h2v3h-2Z M16.5 13h2v3h-2Z",
 };
 
 /**
@@ -156,7 +158,7 @@ export const cardIcons = {
 export type IconName = keyof typeof iconPaths;
 
 // The icons that point a way, which turn in a language written from right to left.
-const turning = new Set<IconName>(["send", "undo", "aside", "fold"]);
+const turning = new Set<IconName>(["send", "undo", "aside", "fold", "sideColumn"]);
 
 /** A die's picture, by its sides; nothing for a die the page does not draw. */
 export function DieIcon({ sides, faded }: { sides: number | "F"; faded?: boolean; })

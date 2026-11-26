@@ -54,7 +54,7 @@ import { About } from "./shell/pages.tsx";
 import { productName } from "./shell/product.ts";
 import { calledOf, playerNamed, type Shown, turnKey, withHeld } from "./shell/shown.ts";
 import { gameStyleChanged, takeSystemStyle } from "./shell/system-style.ts";
-import { PlayTable, tableBeside, TableTab, useTableAway } from "./shell/table.tsx";
+import { foldTable, PlayTable, tableBeside, useTableAway } from "./shell/table.tsx";
 import { restoreTheme } from "./shell/theme.ts";
 import { startTooltips } from "./shell/tooltip.ts";
 import { SetupCorner, Top } from "./shell/top.tsx";
@@ -535,7 +535,15 @@ function App()
         const followAddress = (): void => {
             opened.current = undefined;
             redirectCombat();
-            setAddress(readAddress(window.location.hash));
+            const next = readAddress(window.location.hash);
+            // Another page or another of its tabs starts at its top, as a new page does: the reader is never left halfway down where they were.
+            setAddress((before) => {
+                if (before.section !== next.section || before.tab !== next.tab) {
+                    window.scrollTo({ top: 0, behavior: "instant" });
+                }
+
+                return next;
+            });
             void read();
         };
 
@@ -786,6 +794,20 @@ function App()
                                         choices={(shown.choices?.sets ?? []).some(waits)}
                                         chat={master.table !== true || dockSide !== undefined ? undefined : words.unseen ? "new" : "there"}
                                         home={homeWay}
+                                        column={wide
+                                            ? {
+                                                shown: table,
+                                                turn: () => {
+                                                    setTableMoved(true);
+
+                                                    if (table) {
+                                                        foldTable(() => setTableAway(true));
+                                                    } else {
+                                                        setTableAway(false);
+                                                    }
+                                                },
+                                            }
+                                            : undefined}
                                         fight={fight}
                                         yourTurn={yourTurn}
                                         turnName={turnName}
@@ -968,13 +990,7 @@ function App()
                                                 </main>
                                                 {table
                                                     ? (
-                                                        <PlayTable
-                                                            entering={tableMoved}
-                                                            onFold={() => {
-                                                                setTableMoved(true);
-                                                                setTableAway(true);
-                                                            }}
-                                                        >
+                                                        <PlayTable entering={tableMoved}>
                                                             {fight && <TurnsCard scene={shown.openScene} party={shown.party} several={several} beside />}
                                                             <QuestEndings version={shown.version} campaign={shown.campaign} beside />
                                                             <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
@@ -983,16 +999,7 @@ function App()
                                                         </PlayTable>
                                                     )
                                                     : wide
-                                                    ? (
-                                                        <TableTab
-                                                            fight={fight}
-                                                            focused={tableMoved}
-                                                            onOpen={() => {
-                                                                setTableMoved(true);
-                                                                setTableAway(false);
-                                                            }}
-                                                        />
-                                                    )
+                                                    ? null
                                                     : (
                                                         <>
                                                             <WidgetCards place="side" />

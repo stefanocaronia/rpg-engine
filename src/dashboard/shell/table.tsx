@@ -1,10 +1,8 @@
 // The table, beside the page on a wide screen: what changes while the game goes on, always in sight as the page scrolls. The order of the turns while a fight is
-// open, the quests the player follows, and the rolls, up to twelve before their list scrolls inside; each card closes to its header. The whole table folds into
-// a tab on the window's edge, and opens again from it, as the browser remembers (D-293).
+// open, the quests the player follows, and the rolls, up to twelve before their list scrolls inside; each card closes to its header. The whole table folds away
+// by a switch at the end of the top's row of the world, and opens again from it, as the browser remembers (D-293).
 import type { ComponentChildren } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
-import { cardIcons, Icon, iconPath } from "../parts/icons.tsx";
-import { t } from "../text.ts";
+import { useEffect, useState } from "preact/hooks";
 
 // The gap between the table and the window's foot; how many rolls the list shows before it scrolls inside. Where the browser remembers that the player folded
 // the table, as it did the rolls.
@@ -22,63 +20,36 @@ const awayKey = "rpg-engine.rolls-away";
 /** Whether the table stands beside the page: from this width, as in the style sheet; under it what it holds goes back to the page. */
 export const tableBeside = "(min-width: 900px)";
 
-/** The table, with the tab on the window's edge that folds it; `entering` when the player opened it, which slides it in and gives that tab the focus. */
-export function PlayTable({ children, entering = false, onFold }: { children: ComponentChildren; entering?: boolean; onFold(): void; })
+/** The table; `entering` when the player opened it, which slides it in. */
+export function PlayTable({ children, entering = false }: { children: ComponentChildren; entering?: boolean; })
 {
     const [track, setTrack] = useState<HTMLElement | null>(null);
-    const tab = useRef<HTMLButtonElement>(null);
     useTableFit(track);
 
     useEffect(() => {
         if (entering && track !== null) {
-            tab.current?.focus();
             void slide(track, true);
         }
     }, [track]);
 
-    // It slides out, then the page takes its room.
-    const fold = (): void => {
-        if (track === null) {
-            onFold();
-            return;
-        }
-
-        slide(track, false).then(onFold, onFold);
-    };
-
-    // The tab stands apart from the table, which moves as it slides.
     return (
-        <>
-            <button ref={tab} type="button" class="table-fold tip-left" aria-label={t("Hide the panel")} aria-controls="play-table" aria-expanded={true} data-tip={t("Hide the panel")} onClick={fold}>
-                <Icon name="aside" />
-            </button>
-            <div class="play-table" id="play-table" ref={setTrack}>
-                <div class="play-table-stick">{children}</div>
-            </div>
-        </>
+        <div class="play-table" id="play-table" ref={setTrack}>
+            <div class="play-table-stick">{children}</div>
+        </div>
     );
 }
 
-/** The table folded: a tab on the window's edge with the marks of what it holds, which opens it again; with the focus when the player has just folded it. */
-export function TableTab({ fight, focused = false, onOpen }: { fight: boolean; focused?: boolean; onOpen(): void; })
+/** The table slides out, then `folded` gives the page its room; at once where it is not there. */
+export function foldTable(folded: () => void): void
 {
-    const button = useRef<HTMLButtonElement>(null);
+    const track = document.querySelector<HTMLElement>("#play-table");
 
-    useEffect(() => {
-        if (focused) {
-            button.current?.focus();
-        }
-    }, []);
+    if (track === null) {
+        folded();
+        return;
+    }
 
-    return (
-        <div class="table-away">
-            <button ref={button} type="button" class="rolls-tab tip-left" aria-label={t("Show the panel")} aria-expanded={false} data-tip={t("Show the panel")} onClick={onOpen}>
-                {fight && <TabMark path={iconPath("list")} />}
-                <TabMark path={iconPath("journal")} />
-                <TabMark path={cardIcons.rolls} />
-            </button>
-        </div>
-    );
+    slide(track, false).then(folded, folded);
 }
 
 /** Whether the player folded the table (D-293), as this browser remembers it, and how to change it. */
@@ -105,15 +76,6 @@ function slide(table: HTMLElement, entering: boolean): Promise<unknown>
     const away = { transform: `translateX(${document.documentElement.dir === "rtl" ? "-" : ""}${slideWay}px)`, opacity: 0 };
     const here = { transform: "none", opacity: 1 };
     return table.animate(entering ? [away, here] : [here, away], { duration: slideTime, easing: entering ? easeOut : easeIn, fill: entering ? "none" : "forwards" }).finished;
-}
-
-function TabMark({ path }: { path: string; })
-{
-    return (
-        <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d={path} />
-        </svg>
-    );
 }
 
 /**

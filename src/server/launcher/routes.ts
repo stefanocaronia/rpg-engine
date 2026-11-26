@@ -8,10 +8,11 @@ import { type HostId, hostIds, hosts } from "../../core/hosts.ts";
 import { files, FileStore, withFiles } from "../../core/store.ts";
 import type { WindowOpener } from "../../desktop/index.ts";
 import type { AccessKeeper, HostAccess } from "../../helpers/index.ts";
+import { type ImageExtension, readImage } from "../../images/index.ts";
 import type { HostOffered } from "../../master/index.ts";
 import { readableSystems } from "../../systems/index.ts";
-import { fromOwnPage, launcherHtml, pageFile, pagePolicy, pageWrites, readBody, refusedAt, securityHeaders, send, sendFile, sendJson, vendorModule } from "../page/index.ts";
-import { campaignsFolder, type CampaignShown, forgetCampaign, holdsCampaign, rememberCampaign } from "./campaigns.ts";
+import { fromOwnPage, launcherHtml, pageFile, pagePolicy, pageWrites, picturePolicy, readBody, refusedAt, securityHeaders, send, sendFile, sendJson, sendTagged, vendorModule } from "../page/index.ts";
+import { campaignsFolder, type CampaignShown, forgetCampaign, holdsCampaign, portraitsAddress, rememberCampaign } from "./campaigns.ts";
 import { makeCampaign, type MakeWhere, windowsNameProblem } from "./make.ts";
 import { openCampaign } from "./open.ts";
 
@@ -30,6 +31,8 @@ export interface LauncherServed
     /** The pages open, which wait for notices. */
     pages: Set<ServerResponse>;
     campaigns(): Promise<CampaignShown[]>;
+    /** The portraits of the campaigns listed, by the names their addresses give them: the files they stand for. */
+    portraits: Map<string, string>;
     hosts(): HostShown[];
     /** Each host's account, its sign-in and its installation; none where the launcher was given no programs to ask. */
     access?: AccessKeeper;
@@ -96,6 +99,8 @@ export async function answerLauncher(request: IncomingMessage, response: ServerR
         response.writeHead(204, securityHeaders).end();
     } else if (path === "/events") {
         listen(response, served);
+    } else if (path.startsWith(portraitsAddress)) {
+        sendPortrait(path.slice(portraitsAddress.length), request, response, served);
     } else if (path.startsWith("/vendor/")) {
         sendFile(vendorModule(path.slice("/vendor/".length)), path, request, response);
     } else {
@@ -317,6 +322,25 @@ async function pickFolder(asked: FolderAsked, response: ServerResponse, served: 
         served.picking = false;
     }
 }
+
+/**
+ * The portrait of a listed campaign's player character, by the name its address gives it: only a file the list named, read as a picture by what its bytes
+ * are, and running nothing, even an SVG opened by itself.
+ */
+function sendPortrait(name: string, request: IncomingMessage, response: ServerResponse, served: LauncherServed): void
+{
+    const file = served.portraits.get(name);
+    const picture = file === undefined ? undefined : withFiles(new FileStore(), () => readImage(file));
+
+    if (picture === undefined || "problem" in picture) {
+        send(response, 404, "text/plain; charset=utf-8", "There is no such portrait: the list names the portraits of its campaigns.");
+        return;
+    }
+
+    sendTagged(request, response, Buffer.from(picture.bytes), { "Content-Type": pictureTypes[picture.extension], "Content-Security-Policy": picturePolicy });
+}
+
+const pictureTypes: Record<ImageExtension, string> = { png: "image/png", jpg: "image/jpeg", webp: "image/webp", svg: "image/svg+xml" };
 
 /** A page that listens for the list's changes, until it closes. */
 function listen(response: ServerResponse, served: LauncherServed): void

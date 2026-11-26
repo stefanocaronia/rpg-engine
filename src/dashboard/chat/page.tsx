@@ -1,14 +1,14 @@
 // The Chat section (D-582), there only where the campaign's table keeps the chat with the master: its messages, with the master's questions and the rolls
 // among them, then, while a chat is open, what the master is doing and the player's words, with what sends them or stops the master; with none open, where
-// one is opened, or the line that says a chat opened by hand plays the campaign. Its place in the page is this section, the panel beside the page, and in
-// the setup, which has no sections, beside its questions or under them.
+// one is opened, or the line that says a chat opened by hand plays the campaign: never the messages of a chat that is not open (T-307). Its place in
+// the page is this section, the panel beside the page, and in the setup, which has no sections, beside its questions or under them.
 import type { ComponentChildren } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { MasterShown } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { t } from "../text.ts";
-import { chatApp, chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, expiredHost, firstAnswerDue, turnDoing, turnWords, waitingQuestion } from "./chat.ts";
+import { chatApp, chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, effortsOf, endedWords, expiredHost, firstAnswerDue, proposedEffort, turnDoing, turnWords, waitingQuestion } from "./chat.ts";
 import { type ChatGame, ChatLog } from "./log.tsx";
 import { ModelPicker } from "./models.tsx";
 import { ChatOffering } from "./offer.tsx";
@@ -104,8 +104,8 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
     const open = view === "open" ? shown.chat : undefined;
     const playing = open === undefined ? undefined : shown.hosts.find((one) => one.id === open.host);
     // The model of the open chat changes from under its words, where the app lets it, between two turns: its levels of thinking as the app said them once
-    // it was chosen, else as its list says. Another model is asked without a level: the table keeps the one chosen where that model takes it, and says so
-    // in a line where it does not. Default stands only while no level holds.
+    // it was chosen, else as its list says. Another model is asked with its level: the one chosen where that model takes it, else the one proposed for it;
+    // with none where its levels are not known until it is chosen.
     const switcher = open?.changes === true && playing !== undefined && playing.models.length > 0
         ? (
             <ModelPicker
@@ -115,10 +115,9 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
                 model={open.model}
                 effort={open.effort}
                 efforts={open.efforts}
-                fallback={open.effort === undefined}
                 off={open.state === "turn" ? t("You can change it when the master has answered.") : undefined}
-                onPick={(model) => model !== "" && model !== open.model && void chat.switchModel(model, undefined)}
-                onEffort={(effort) => effort !== (open.effort ?? "") && void chat.switchModel(open.model, effort === "" ? undefined : effort)}
+                onPick={(model) => model !== open.model && void chat.switchModel(model, proposedEffort(effortsOf(playing, model), open.effort))}
+                onEffort={(effort) => effort !== open.effort && void chat.switchModel(open.model, effort)}
             />
         )
         : undefined;
@@ -143,7 +142,8 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
             </div>
             <p class="visually-hidden" role="status">{told}</p>
             <div class="card chat-box">
-                {some && <ChatLog messages={shown.messages} asking={asking} game={game} app={chatApp(shown)} foot={offering} />}
+                {/* The messages are the open chat's alone: a chat closed, ended or played elsewhere shows none. */}
+                {some && view === "open" && <ChatLog messages={shown.messages} asking={asking} game={game} app={chatApp(shown)} foot={offering} />}
                 {!some && view === "open" && <div class="chat-empty">{offering}</div>}
                 {turn !== undefined && (
                     <p class={waits ? "chat-turn waits" : "chat-turn"}>
@@ -186,7 +186,7 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
                         onClose={() => void chat.close()}
                     />
                 )}
-                {(view === "start" || view === "ended") && <ChatStart shown={shown} sending={chat.sending} onOpen={(choice, fresh) => chat.open(choice, fresh)} onWish={(wish) => void chat.wish(wish)} />}
+                {(view === "start" || view === "ended") && <ChatStart shown={shown} sending={chat.sending} closed={view === "start" && some} onOpen={(choice, fresh) => chat.open(choice, fresh)} onWish={(wish) => void chat.wish(wish)} />}
             </div>
         </section>
     );

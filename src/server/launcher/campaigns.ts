@@ -13,6 +13,9 @@ import { type TablePlace, tablePlaces } from "../table/index.ts";
 /** The name of the folder in the player's home where new campaigns go, made when the first needs it. */
 export const campaignsFolderName = "RPG Engine";
 
+/** The address the launcher serves the portraits of its campaigns at, each by a name, made from its file's path, that tells nothing of it. */
+export const portraitsAddress = "/portraits/";
+
 /** A campaign as the launcher shows it. */
 export interface CampaignShown
 {
@@ -28,7 +31,21 @@ export interface CampaignShown
     missing: boolean;
     /** Why its campaign file does not read, or why the folder cannot be read now, where it does not. */
     problem?: string;
+    /** The colours of its theme's dice, in each look of the page, where its game system has a theme (D-528). */
+    colours?: { light: DieColours; dark: DieColours; };
+    /** Its player character, the first living one, and the address of their portrait where they have one. */
+    character?: { name: string; portrait?: string; };
 }
+
+/** A die's body and the ink of its numbers. */
+export interface DieColours
+{
+    body: string;
+    ink: string;
+}
+
+/** What tells a campaign apart in the list: its theme's colours and its player character. */
+export type CampaignFace = Pick<CampaignShown, "colours" | "character">;
 
 /**
  * Where the list looks: the engine's data folder, the player's home, and whether a table answers at its place; how a campaign's folder is reached, which
@@ -40,6 +57,8 @@ export interface CampaignsWhere
     userHome: string;
     answers: (place: TablePlace) => Promise<boolean>;
     reach?: (root: string) => Promise<unknown>;
+    /** What tells a campaign that reads apart, read with its files; none without it. */
+    face?: (root: string) => CampaignFace;
 }
 
 // How long a campaign's folder may take to answer whether it is there before the list says it cannot be reached now.
@@ -68,7 +87,7 @@ export async function listCampaigns(where: CampaignsWhere): Promise<CampaignShow
         return listed;
     });
     const reached = await Promise.all(roots.map((one) => answersWithin(one.root, where.reach ?? stat)));
-    const found = withFiles(new FileStore(), () => roots.map((one, index) => (reached[index] === true ? campaignShown(one.root, one.opened) : unreached(one.root, one.opened))));
+    const found = withFiles(new FileStore(), () => roots.map((one, index) => (reached[index] === true ? campaignShown(one.root, one.opened, where.face) : unreached(one.root, one.opened))));
     const open = await Promise.all(found.map(async (campaign) => {
         const place = places.find((one) => samePath(one.root, campaign.root));
         return place === undefined ? false : await where.answers(place).catch(() => false);
@@ -112,8 +131,11 @@ interface Kept
     forgotten: string[];
 }
 
-/** A campaign as its files say it now: its name, system and language, or why its file does not read; missing where it is gone; why not where it cannot be read. */
-function campaignShown(root: string, opened: string | undefined): Omit<CampaignShown, "open">
+/**
+ * A campaign as its files say it now: its name, system and language, with its face where it reads, or why its file does not read; missing where it is gone;
+ * why not where it cannot be read.
+ */
+function campaignShown(root: string, opened: string | undefined, face?: (root: string) => CampaignFace): Omit<CampaignShown, "open">
 {
     const when = opened === undefined ? {} : { opened };
 
@@ -127,7 +149,7 @@ function campaignShown(root: string, opened: string | undefined): Omit<CampaignS
 
         try {
             readSettings(root);
-            return known;
+            return { ...known, ...face?.(root) };
         } catch (error) {
             return { ...known, name: basename(root), problem: error instanceof Error ? error.message : String(error) };
         }

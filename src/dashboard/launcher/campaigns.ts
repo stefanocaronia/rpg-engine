@@ -1,7 +1,8 @@
 // The launcher's campaigns as its page reads them: how each stands, when it was last opened in the reader's words, and the new campaign as its form holds it.
 // No drawing here: the page's parts draw what these say.
-import { effortsOf, firstChoice, hostsFound, listedModel } from "../chat/chat.ts";
+import { effortsOf, firstChoice, hostsFound, listedModel, proposedEffort } from "../chat/chat.ts";
 import type { ChatChoice, ChatHost } from "../data.ts";
+import { languageName } from "../settings/languages.ts";
 import type { CampaignWish, LauncherNow, ListedCampaign } from "./api.ts";
 
 /** How a listed campaign stands: its folder gone, its file unreadable, its table answering, or ready to open. */
@@ -47,10 +48,12 @@ export function openedLabel(opened: string | undefined, now: Date, locale: strin
     return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }) }).format(date);
 }
 
-/** What a row says under a campaign's name: its game system, then when it was last opened. */
-export function campaignMeta(campaign: ListedCampaign, now: Date, locale: string): string
+/** The chips of a campaign's card: its game system, then its language, named in the reader's language with a capital, else by its code. */
+export function campaignChips(campaign: ListedCampaign, locale: string): string[]
 {
-    return [campaign.system, openedLabel(campaign.opened, now, locale)].filter((part) => part !== undefined && part !== "").join(" · ");
+    const language = campaign.language === undefined ? undefined : languageName(campaign.language, locale) ?? campaign.language;
+    const named = language === undefined ? undefined : language.charAt(0).toLocaleUpperCase(locale) + language.slice(1);
+    return [campaign.system, named].filter((chip): chip is string => chip !== undefined && chip !== "");
 }
 
 /** A folder's own name, the last part of its path, as either system writes it. */
@@ -106,7 +109,8 @@ export function inUsualFolder(form: NewCampaign): NewCampaign
 
 /**
  * What the form asks of the launcher: nothing while it has no name or no game system. The chat's app goes only when the page can open a chat in it, with
- * the model it proposes where the player left none, and the effort only where that model takes it.
+ * the model it proposes where the player left none, and always a level of thinking the model takes: the one chosen, else the one proposed for it; none
+ * for a model that lists no level.
  */
 export function wishOf(form: NewCampaign, hosts: ChatHost[]): CampaignWish | undefined
 {
@@ -119,12 +123,12 @@ export function wishOf(form: NewCampaign, hosts: ChatHost[]): CampaignWish | und
     const host = hostsFound({ hosts }).found.find((one) => one.id === form.chat?.host);
     const written = form.chat?.model.trim() ?? "";
     const model = host === undefined ? "" : written === "" ? listedModel(host, undefined) : written;
-    const effort = form.chat?.effort;
+    const effort = host === undefined ? undefined : proposedEffort(effortsOf(host, model), form.chat?.effort);
     return {
         name,
         ...(form.folder === undefined ? {} : { folder: form.folder }),
         language: form.language,
         system: form.system,
-        ...(host === undefined ? {} : { host: host.id, model, ...(effort !== undefined && effortsOf(host, model).includes(effort) ? { effort } : {}) }),
+        ...(host === undefined ? {} : { host: host.id, model, ...(effort === undefined ? {} : { effort }) }),
     };
 }

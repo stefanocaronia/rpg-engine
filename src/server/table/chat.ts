@@ -204,6 +204,8 @@ export function tableChat(options: TableChatOptions): TableChat
     // The campaign's file of the chat whose messages these are, and whether a page came yet, the first of which takes up the last chat.
     let flow: string | undefined;
     let pageCame = false;
+    // The last chat while it waits for its host's models before it is taken up.
+    let takingUp: LastChat | undefined;
     // What the next write brings to the file first: a new line after a torn one, the questions it left waiting now left. Whether the chat taken up was cut
     // short as its table ended, until the next turn begins; and whether the player's words are being sent, a turn that ends meanwhile told after them.
     let mend = false;
@@ -661,6 +663,8 @@ export function tableChat(options: TableChatOptions): TableChat
     // Closes the chat; what the master wrote of their message so far is kept. Closed by the player, the next table does not take it up by itself.
     const closeChat = (byPlayer: boolean): void => {
         const closing = chat;
+        // The last chat waiting for its host's models is not taken up.
+        takingUp = undefined;
 
         if (closing === undefined) {
             return;
@@ -681,22 +685,41 @@ export function tableChat(options: TableChatOptions): TableChat
     };
 
     // The campaign's last chat, taken up by itself as the table's first page comes, once: where its host's session is known and the player did not close it.
+    // Its host's models are asked first where none are known, and the chat opens once they came, as none is asked beside the chat's own program; it does
+    // not open where the player opened or closed a chat meanwhile, a chat opened by hand sits at the table, or the table let its chat go.
     const takeUpLast = (): void => {
         if (pageCame) {
             return;
         }
 
         pageCame = true;
+        const taking = last;
 
-        if (last?.session === undefined || last.closed === true || chat !== undefined || options.elsewhere()) {
+        if (taking?.session === undefined || taking.closed === true || chat !== undefined || options.elsewhere()) {
             return;
         }
 
-        const refused = openChat({ host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }) });
+        const takeUp = (): void => {
+            if (last !== taking || takingUp !== taking || chat !== undefined || options.elsewhere()) {
+                return;
+            }
 
-        if (refused !== undefined) {
-            options.log?.(`The table did not take up the campaign's last chat: ${typeof refused === "string" ? refused : refused.error}`);
+            takingUp = undefined;
+            const refused = openChat({ host: taking.host, model: taking.model, ...(taking.effort === undefined ? {} : { effort: taking.effort }) });
+
+            if (refused !== undefined) {
+                options.log?.(`The table did not take up the campaign's last chat: ${typeof refused === "string" ? refused : refused.error}`);
+            }
+        };
+
+        takingUp = taking;
+
+        if (models.known(taking.host).length > 0) {
+            takeUp();
+            return;
         }
+
+        void models.ready(taking.host).then(takeUp);
     };
 
     // What the page asks of an AI app: a host already on this computer is never installed again.

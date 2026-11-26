@@ -169,49 +169,67 @@ export function listedModel(host: ChatHost, wanted: string | undefined): string
     return (pool.find((model) => model.advised === true) ?? pool.find((model) => model.id === host.model) ?? pool[0]).id;
 }
 
-/** How many models a list shows before it offers to search them, and how many of each group it shows before it says how many more there are. */
-export const modelSearchAt = 12;
-const mostInGroup = 8;
+/** How many models a list shows whole: with more it scrolls, and offers a search. */
+export const modelSearchAt = 8;
 
-/** A part of the list of models: the advised ones, those of one provider, or the others; `more`, how many of it the list leaves to a search. */
+/** A part of the list of models: those of one provider, or the rest. `metered`, every model of the provider is paid apart. */
 export interface ModelSection
 {
-    kind: "advised" | "group" | "others";
     title?: string;
+    metered: boolean;
     models: ChatModel[];
-    more: number;
 }
 
 /**
- * The list of models in its parts, as the player looks for one: those matching what they wrote, by name, id or provider; the advised first, then each
- * provider's in the order the app lists them, then the rest, titled only where there is more than one part. A long list without a search shows the first
- * of each part, and says how many more.
+ * The list of models in its parts, as the player looks for one: those matching what they wrote, by name, id or provider; each provider's under its title,
+ * in the order the app lists them, then the rest, titled only after a provider's. Every model the app lists is there, and none is marked as advised.
  */
 export function modelSections(models: ChatModel[], query = ""): ModelSection[]
 {
     const wanted = query.trim().toLocaleLowerCase();
     const matching = wanted === "" ? models : models.filter((model) => [model.name, model.id, model.group ?? ""].some((word) => word.toLocaleLowerCase().includes(wanted)));
-    const advised = matching.filter((model) => model.advised === true);
-    const rest = matching.filter((model) => model.advised !== true);
-    const groups = [...new Set(rest.flatMap((model) => (model.group === undefined ? [] : [model.group])))];
-    const others = rest.filter((model) => model.group === undefined);
-    const parts: [ModelSection["kind"], string, ChatModel[]][] = [
-        ["advised", t("Recommended for the master"), advised],
-        ...groups.map((group): [ModelSection["kind"], string, ChatModel[]] => ["group", group, rest.filter((model) => model.group === group)]),
-        ["others", t("Other models"), others],
+    const groups = [...new Set(matching.flatMap((model) => (model.group === undefined ? [] : [model.group])))];
+    const others = matching.filter((model) => model.group === undefined);
+    // Said once on a provider's title, whatever the search leaves of it: all it offers is paid apart.
+    const paid = (group: string): boolean => models.filter((model) => model.group === group).every((model) => model.metered === true);
+    const parts: ModelSection[] = [
+        ...groups.map((group) => ({ title: group, metered: paid(group), models: matching.filter((model) => model.group === group) })),
+        { ...(groups.length > 0 ? { title: t("Other models") } : {}), metered: false, models: others },
     ];
-    const shown = parts.filter(([, , list]) => list.length > 0);
-    const cut = wanted === "" && models.length > modelSearchAt;
-    return shown.map(([kind, title, list]) => {
-        const kept = cut && kind !== "advised" ? list.slice(0, mostInGroup) : list;
-        return { kind, ...(shown.length > 1 ? { title } : {}), models: kept, more: list.length - kept.length };
-    });
+    return parts.filter((part) => part.models.length > 0);
 }
 
-/** What a level of the master's thinking is called: the app's own word, or Default for none. */
-export function effortName(effort: string | undefined): string
+// The level of thinking proposed where the player chose none a model takes.
+const usualEffort = "medium";
+
+/**
+ * The level of thinking a model is played with before the player chooses: the one wanted, as the last they chose, where the model takes it; else medium
+ * where it lists it; else the middle one of its list, the lower of two. None for a model that lists no level: none is shown, and none is sent.
+ */
+export function proposedEffort(efforts: string[], wanted: string | undefined): string | undefined
 {
-    return effort === undefined || effort === "" ? t("Default") : effort;
+    if (wanted !== undefined && efforts.includes(wanted)) {
+        return wanted;
+    }
+
+    return efforts.includes(usualEffort) ? usualEffort : efforts[Math.floor((efforts.length - 1) / 2)];
+}
+
+/**
+ * The campaign's last chat, to go back to as it was, with its app, model and effort: where it can be taken up, its app is ready, and what is chosen now
+ * is not the same, as then the button that takes the chat up goes back to it.
+ */
+export function chatBefore(shown: Pick<MasterShown, "hosts" | "last">, choice: ChatChoice | undefined): ChatChoice | undefined
+{
+    const last = shown.last;
+    const host = shown.hosts.find((one) => one.id === last?.host);
+
+    if (last === undefined || !last.resumable || host === undefined || !hostReady(host)) {
+        return undefined;
+    }
+
+    const same = choice !== undefined && choice.host === last.host && choice.model === last.model && choice.effort === last.effort;
+    return same ? undefined : { host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }) };
 }
 
 /** The efforts a model takes: its own, none for one that takes none; the app's for a model its list does not have, as a name written by hand. */
@@ -220,17 +238,11 @@ export function effortsOf(host: ChatHost, model: string): string[]
     return modelOf(host, model)?.efforts ?? host.efforts;
 }
 
-/** A choice with another model of the same app: the effort stays only while that model takes it. */
+/** A choice with another model of the same app: the level of thinking stays while that model takes it, else the one proposed for it; never none where it lists some. */
 export function withModel(host: ChatHost, choice: ChatChoice, model: string): ChatChoice
 {
-    const effort = keptEffort(host, model, choice.effort);
+    const effort = proposedEffort(effortsOf(host, model), choice.effort);
     return { host: choice.host, model, ...(effort === undefined ? {} : { effort }) };
-}
-
-/** The effort that goes on with another model of the app: the one chosen, where that model's list has it; else none, which leaves it to the app. */
-export function keptEffort(host: ChatHost, model: string, effort: string | undefined): string | undefined
-{
-    return effort !== undefined && effortsOf(host, model).includes(effort) ? effort : undefined;
 }
 
 /**

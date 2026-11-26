@@ -1,6 +1,6 @@
-// The page's top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below it, and as chips the game's time and
-// whether the game is live; under the name the sections, then the saves, the settings and About at the row's end, what does not fit in a menu there; under them
-// all, where the party is. It stays on top: down the page it draws itself together, the master and the name smaller, the product and the place folded away,
+// The page's top (D-276, D-293, D-333): the master large, the campaign's name with the product's and the system's below it, and the extensions' chips; under
+// the name the sections, then the saves, the settings and About at the row's end, what does not fit in a menu there; under them all, the row of the world:
+// where the party is, and at its end the game's time and the switch of the column beside the page. It stays on top: down the page it draws itself together, the master and the name smaller, the product and the place folded away,
 // the sections still there (D-295); what the master asks and the rolls stay in sight under it. The robot shows the master's mood, a moment's face, and sleeps
 // while the chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
 import { type ComponentChildren, Fragment, type RefObject } from "preact";
@@ -13,7 +13,7 @@ import { calendarDayLabel, gameDateLabel } from "../parts/game-words.ts";
 import { Icon } from "../parts/icons.tsx";
 import { listText, t } from "../text.ts";
 import { Master } from "./master.tsx";
-import { ThemeCorner, useTheme } from "./theme-switch.tsx";
+import { useTheme } from "./theme-switch.tsx";
 
 /** What the top says: the campaign, the product, the system's name, the game's time and place, and whether the game is live; the master's mood and moment. */
 interface TopOf
@@ -48,6 +48,15 @@ interface TopOf
     chat?: "there" | "new" | undefined;
     /** At a campaign's table: the way back to the campaigns of this computer, the launcher's page, and whether it is being reached. */
     home?: HomeWay | undefined;
+    /** Where the page has its column beside it: whether it is shown, and what shows or hides it. */
+    column?: ColumnSwitch | undefined;
+}
+
+/** The switch of the column beside the page: whether it is shown, and what turns it. */
+export interface ColumnSwitch
+{
+    shown: boolean;
+    turn(): void;
 }
 
 /** The way back to the campaigns: what goes there, and whether it is on its way. */
@@ -98,7 +107,7 @@ export function Top(top: TopOf)
                     {/* On a phone, where the chips leave no room, the game's time under the title in the product's place (D-276). */}
                     {top.campaign !== undefined && top.now !== undefined && <p class="product-time">{gameDateLabel(top.now)}</p>}
                 </div>
-                <StatusChips now={top.now} calendar={top.calendar} live={top.live} />
+                <StatusChips />
                 <Navigation
                     current={top.section}
                     fight={top.fight}
@@ -110,9 +119,8 @@ export function Top(top: TopOf)
                     chat={top.chat}
                     home={top.home}
                 />
-                {top.path !== undefined && top.path.length > 0 && <PlacePath path={top.path} />}
+                {((top.path !== undefined && top.path.length > 0) || top.now !== undefined || top.column !== undefined) && <PlaceRow path={top.path ?? []} now={top.now} calendar={top.calendar} column={top.column} />}
             </header>
-            <ThemeCorner />
         </>
     );
 }
@@ -493,13 +501,13 @@ function useClosing(holder: RefObject<HTMLDivElement | null>, open: boolean, set
     }, [open]);
 }
 
-/** In the setup, which has no sections (D-379): whether the game is live and the switch of the theme, small at the top right. */
-export function SetupCorner({ live, home }: { live: boolean; home?: HomeWay | undefined; })
+/** In the setup, which has no sections (D-379): the extensions' chips and the switch of the theme, small at the top right; `live` waits for the plug's chip. */
+export function SetupCorner({ home }: { live: boolean; home?: HomeWay | undefined; })
 {
     const [theme, flip] = useTheme();
     return (
         <div class="setup-corner">
-            <StatusChips live={live} />
+            <StatusChips />
             {home !== undefined && <HomeButton home={home} kind="icon-button tonal tip-left" />}
             <button type="button" class="icon-button tonal tip-left" aria-label={theme.name} data-tip={theme.name} onClick={flip}>
                 <Icon name={theme.next === "dark" ? "moon" : "sun"} />
@@ -520,16 +528,51 @@ function HomeButton({ home, kind, hidden = false }: { home: HomeWay; kind: strin
     );
 }
 
-/** Where the party is (D-333), from the largest place that holds it to its own, which stays whole when the line is short; its own leads to the scene (D-309). */
-function PlacePath({ path }: { path: string[]; })
+/**
+ * The row of the game's world under the sections: where the party is (D-333), from the largest place that holds it to its own, which stays whole when the
+ * line is short and leads to the scene (D-309); at its end the game's time and its day of the calendar, then the switch of the column beside the page.
+ */
+function PlaceRow({ path, now, calendar, column }: { path: string[]; now?: string | undefined; calendar?: CalendarDay | undefined; column?: ColumnSwitch | undefined; })
 {
     return (
-        <nav class="top-place" aria-label={t("Where the party is")}>
-            <Icon name="place" />
-            <ol>
-                {path.map((name, index) => <li key={index}>{index === path.length - 1 ? <a href={sectionAddress("scene")}>{name}</a> : name}</li>)}
-            </ol>
-        </nav>
+        <div class="top-place">
+            {path.length > 0 && (
+                <nav class="top-path" aria-label={t("Where the party is")}>
+                    <Icon name="place" />
+                    <ol>
+                        {path.map((name, index) => <li key={index}>{index === path.length - 1 ? <a href={sectionAddress("scene")}>{name}</a> : name}</li>)}
+                    </ol>
+                </nav>
+            )}
+            <div class="top-world">
+                {now !== undefined && (
+                    <span class="top-time">
+                        <Icon name="clock" />
+                        {gameDateLabel(now)}
+                    </span>
+                )}
+                {now !== undefined && calendar !== undefined && (
+                    <span class="top-time">
+                        <Icon name="calendar" />
+                        {calendarDayLabel(calendar)}
+                    </span>
+                )}
+                {column !== undefined && <ColumnButton column={column} />}
+            </div>
+        </div>
+    );
+}
+
+/** The switch of the column beside the page, an icon pressed in gold while it is shown, as the chat's places are drawn; its name in its tip and for a screen reader. */
+function ColumnButton({ column }: { column: ColumnSwitch; })
+{
+    const name = t("Side column");
+    return (
+        <span class="segmented column-switch">
+            <button type="button" class="tip-below tip-left" aria-pressed={column.shown} aria-controls={column.shown ? "play-table" : undefined} aria-label={name} data-tip={name} onClick={column.turn}>
+                <Icon name="sideColumn" />
+            </button>
+        </span>
     );
 }
 
@@ -546,31 +589,20 @@ function MasterHome({ top, poke, onHome }: { top: Pick<TopOf, "mood" | "moment" 
     );
 }
 
-/** The game's time and its day of the calendar, each a chip, and whether the game is live: a plug in its socket or out of it, the words in its tip. */
-function StatusChips({ now, calendar, live }: { now?: string; calendar?: CalendarDay; live: boolean; })
+/** The extensions' chips (D-502); the game's time and day are in the row of the world, under the sections. */
+function StatusChips()
 {
     const row = useRef<HTMLDivElement>(null);
     useWrapped(row);
-    const said = live ? t("live") : t("waiting for the game");
-    // Live first and the time after, drawn the other way round: where the row is short, the time goes first (D-355), and before it the extensions'.
+    // Whether the game is live, a plug in its socket or out of it, is not drawn: at the table the page and the chat run in one process, and a table that is
+    // missing is told by the notice «Not connected… Reopen the campaign» (app.tsx). Kept here, to take back if it is needed (Stefano Caronia, 26 Nov).
+    // const said = live ? t("live") : t("waiting for the game");
+    // <span class={live ? "status-chip live on tip-below" : "status-chip live tip-below"} role="img" aria-label={said} data-tip={said}>
+    //     <Icon name={live ? "plugged" : "unplugged"} />
+    // </span>
+    // Drawn from the end: where the row is short, the first ones go (D-502).
     return (
         <div ref={row} class="status-chips">
-            <span class={live ? "status-chip live on tip-below" : "status-chip live tip-below"} role="img" aria-label={said} data-tip={said}>
-                <Icon name={live ? "plugged" : "unplugged"} />
-            </span>
-            {now && (
-                <span class="status-chip">
-                    <Icon name="clock" />
-                    {gameDateLabel(now)}
-                </span>
-            )}
-            {now && calendar && (
-                <span class="status-chip">
-                    <Icon name="calendar" />
-                    {calendarDayLabel(calendar)}
-                </span>
-            )}
-            {/* The extensions' chips after the time: where the row is short, they go first (D-502). */}
             <WidgetChips />
         </div>
     );

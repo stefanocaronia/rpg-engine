@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { addCampaign, createCampaign, forgetCampaign, type ListedCampaign, openCampaign, pickFolder, readLauncher, windowTitle } from "../src/dashboard/launcher/api.ts";
-import { campaignMeta, campaignState, firstForm, folderName, inUsualFolder, listedAt, openedLabel, opens, wishOf } from "../src/dashboard/launcher/campaigns.ts";
+import { campaignChips, campaignState, firstForm, folderName, inUsualFolder, listedAt, openedLabel, opens, wishOf } from "../src/dashboard/launcher/campaigns.ts";
 import { reachHome, readHome, reopenAddress } from "../src/dashboard/shell/home.ts";
 import { addressAsks, braveSize, markedAddress, windowPlace } from "../src/dashboard/shell/window.ts";
 import { setLanguage } from "../src/dashboard/text.ts";
@@ -87,11 +87,10 @@ describe("the campaigns as the launcher's page lists them (D-582)", () => {
         expect([openedLabel(undefined, now, "en"), openedLabel("soon", now, "en"), openedLabel(at(2026, 10, 27), now, "en")]).toEqual([undefined, undefined, "today"]);
     });
 
-    it("writes under a campaign's name its game system and when it was last opened, whichever it has; and a folder's own name from either system's path", () => {
-        const now = new Date(2026, 10, 25, 9, 30);
-        const opened = new Date(2026, 10, 22, 12).toISOString();
-        expect(campaignMeta(listed({ system: "free", opened }), now, "en")).toBe("free · 3 days ago");
-        expect([campaignMeta(listed({ system: "5e" }), now, "en"), campaignMeta(listed({ opened }), now, "en"), campaignMeta(listed(), now, "en")]).toEqual(["5e", "3 days ago", ""]);
+    it("gives a campaign's card its game system and its language as chips, whichever it has; and a folder's own name from either system's path", () => {
+        expect(campaignChips(listed({ system: "free", language: "it" }), "en")).toEqual(["free", "Italian"]);
+        expect(campaignChips(listed({ system: "5e", language: "de" }), "it")).toEqual(["5e", "Tedesco"]);
+        expect([campaignChips(listed({ system: "5e" }), "en"), campaignChips(listed({ language: "xx-zz" }), "en"), campaignChips(listed(), "en")]).toEqual([["5e"], [expect.any(String)], []]);
         expect([folderName("C:\\Users\\ada\\RPG Engine\\Guadoscuro"), folderName("/home/ada/RPG Engine/Guado/"), folderName("Guado")]).toEqual(["Guadoscuro", "Guado", "Guado"]);
     });
 
@@ -111,7 +110,7 @@ describe("the campaigns as the launcher's page lists them (D-582)", () => {
 
     it("opens the form of a new campaign in the page's language where the launcher offers it, with the first game system and the first app on this computer", () => {
         const launcher = { languages: ["en", "de", "it"], systems: [{ name: "free", title: "Free play" }, { name: "5e", title: "The fifth edition" }], hosts: [codex, claude] };
-        expect(firstForm(launcher, "it")).toEqual({ name: "", language: "it", system: "free", chat: { host: "claudeCode", model: "sonnet" } });
+        expect(firstForm(launcher, "it")).toEqual({ name: "", language: "it", system: "free", chat: { host: "claudeCode", model: "sonnet", effort: "medium" } });
         expect(firstForm(launcher, "ja").language).toBe("en");
         expect(firstForm({ languages: ["de"], systems: [], hosts: [codex] }, "it")).toEqual({ name: "", language: "de", system: "" });
     });
@@ -122,17 +121,17 @@ describe("the campaigns as the launcher's page lists them (D-582)", () => {
         expect(wishOf(form, hosts)).toEqual({ name: "La Brughiera", language: "it", system: "free", host: "claudeCode", model: "opus", effort: "high" });
         expect(wishOf({ ...form, folder: "D:\\Giochi\\Brughiera" }, hosts)).toMatchObject({ folder: "D:\\Giochi\\Brughiera" });
         expect(inUsualFolder({ ...form, folder: "D:\\Giochi\\Brughiera" })).toEqual(form);
-        // The model left empty: the one the app proposes; an effort the app does not know, none.
-        expect(wishOf({ ...form, chat: { host: "claudeCode", model: " ", effort: "max" } }, hosts)).toEqual({ name: "La Brughiera", language: "it", system: "free", host: "claudeCode", model: "sonnet" });
+        // The model left empty: the one the app proposes; an effort the app does not know, the one proposed in its place.
+        expect(wishOf({ ...form, chat: { host: "claudeCode", model: " ", effort: "ultra" } }, hosts)).toEqual({ name: "La Brughiera", language: "it", system: "free", host: "claudeCode", model: "sonnet", effort: "medium" });
         // An app that is not on this computer, or none chosen: the campaign with no chat proposed.
         expect(wishOf({ ...form, chat: { host: "codex", model: "gpt" } }, hosts)).toEqual({ name: "La Brughiera", language: "it", system: "free" });
         expect(wishOf({ name: "Guado", language: "en", system: "5e" }, [])).toEqual({ name: "Guado", language: "en", system: "5e" });
         expect([wishOf({ ...form, name: "  " }, hosts), wishOf({ ...form, system: "" }, hosts)]).toEqual([undefined, undefined]);
-        // An app with its list of models: the effort goes only where the model takes it, and a name left empty is the list's choice; an app the page cannot drive yet, no chat.
+        // An app with its list of models: a model that takes no effort goes with none, and a name left empty is the list's choice; an app the page cannot drive yet, no chat.
         const listing = { ...claude, models: [{ id: "opus", name: "Opus 5.5", efforts: ["high"] }, { id: "haiku", name: "Haiku 4.5", efforts: [] }] };
         expect(wishOf({ ...form, chat: { host: "claudeCode", model: "haiku", effort: "high" } }, [listing])).toEqual({ name: "La Brughiera", language: "it", system: "free", host: "claudeCode", model: "haiku" });
         expect(wishOf({ ...form, chat: { host: "claudeCode", model: "", effort: "high" } }, [listing])).toEqual({ name: "La Brughiera", language: "it", system: "free", host: "claudeCode", model: "opus", effort: "high" });
-        expect(firstForm({ languages: ["en"], systems: [], hosts: [listing] }, "en").chat).toEqual({ host: "claudeCode", model: "opus" });
+        expect(firstForm({ languages: ["en"], systems: [], hosts: [listing] }, "en").chat).toEqual({ host: "claudeCode", model: "opus", effort: "high" });
         expect(wishOf(form, [{ ...claude, ready: false }])).toEqual({ name: "La Brughiera", language: "it", system: "free" });
     });
 });

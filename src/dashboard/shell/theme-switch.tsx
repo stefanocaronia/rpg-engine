@@ -1,4 +1,5 @@
-// The switch between the light and the dark mode (D-300, D-310): the window's corner, and the theme it goes to for whatever else switches it.
+// The switch between the light and the dark mode (D-300, D-310): the window's corner, for the campaigns' page, which has no settings, and the theme it goes
+// to for whatever else switches it.
 import { Icon } from "../parts/icons.tsx";
 import { t } from "../text.ts";
 import { usePrefChange } from "./prefs.ts";

@@ -240,7 +240,7 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
 
             // The roll's line comes into the rolls only now, as its dice go (D-300); a free throw's into this browser's rolls (D-330 (4)). The plate waits for
             // its place to open, then flies into it, wherever the rolls are, out of the window on a phone; into the rolls' title when their card is closed, or
-            // their tab when they are put away (D-281, D-303, D-366). It fades with reduced motion.
+            // the switch of their column when it is put away (D-281, D-303, D-366). It fades with reduced motion.
             if (shown.roll !== undefined) {
                 onShown?.(shown.roll);
             }
@@ -259,7 +259,7 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
                     return;
                 }
 
-                const row = [line === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(line)}"]`), document.querySelector(".rolls-card > summary"), document.querySelector(".rolls-tab")]
+                const row = [line === undefined ? null : document.querySelector(`[data-roll="${CSS.escape(line)}"]`), document.querySelector(".rolls-card > summary"), document.querySelector(".column-switch button")]
                     .find((target) => target !== null && target.getBoundingClientRect().height > 0);
                 setFading(true);
 

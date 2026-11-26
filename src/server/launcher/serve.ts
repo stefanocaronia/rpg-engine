@@ -247,6 +247,8 @@ function atWork(server: Server, port: number, options: LauncherOptions): Launche
     const place: LauncherPlace = { pid: process.pid, version: options.version, url, token: randomBytes(16).toString("hex") };
     const environment = process.env;
     const pages = new Set<ServerResponse>();
+    // The portraits of the campaigns listed, by the names of their addresses: the only pictures the launcher serves.
+    const portraits = new Map<string, string>();
     let lastBusy = now();
     let ending: Promise<void> | undefined;
     let markEnded: () => void = () => undefined;
@@ -286,13 +288,18 @@ function atWork(server: Server, port: number, options: LauncherOptions): Launche
         userHome: options.userHome,
         home: options.home,
         pages,
-        campaigns: (): Promise<CampaignShown[]> =>
-            listCampaigns({
+        campaigns: async (): Promise<CampaignShown[]> => {
+            const { faceReader } = await import("./faces.ts");
+            const face = await faceReader(options.context, portraits);
+            return listCampaigns({
                 home: options.home,
                 userHome: options.userHome,
                 answers: options.answers ?? (async (table) => typeof await probeTable(table, options.version, listProbeWait) === "object"),
                 ...(options.reach === undefined ? {} : { reach: options.reach }),
-            }),
+                face,
+            });
+        },
+        portraits,
         hosts: () => offered().map((host) => (access === undefined ? host : { ...host, ...access.access(host.id) })),
         ...(access === undefined ? {} : { access }),
         pick: options.pick ?? ((asked) => chooseFolder(options.platform, environment, asked)),

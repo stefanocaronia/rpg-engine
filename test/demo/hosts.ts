@@ -73,9 +73,11 @@ export const demoModels = [
     { id: "claude-haiku-4-5-20251001", name: "Haiku 4.5", about: "Fastest for quick answers", efforts: [] },
 ];
 
-// OpenCode's long list: its own free models, then those of providers, paid apart for each answer; the efforts of none known until it is chosen.
+// OpenCode's long list, two hundred models: its own free ones, then those of providers, paid apart for each answer; the efforts of none known until
+// it is chosen.
 const openCodeModels: DemoHost["models"] = [
-    ...["Big Pickle", "Grok Code Fast", "Qwen3 Coder", "Kimi K2"].map((name) => ({ id: `opencode/${slug(name)}`, name, efforts: [], group: "OpenCode Zen" })),
+    ...["Big Pickle", "Grok Code Fast", "Qwen3 Coder", "Kimi K2", "Beam Free", "DeepSeek V4.1 Flash Free", "Flint 40B Free", "Hy4 Flash Free", "Tidepool Alpha Free", "Nova Mini Free", "Larch Free", "Pebble 12B Free", "Mica Free"]
+        .map((name) => ({ id: `opencode/${slug(name)}`, name, efforts: [], group: "OpenCode Zen" })),
     { id: "anthropic/claude-opus-5-5", name: "Claude Opus 5.5", about: "Anthropic's most capable model", efforts: [], advised: true, metered: true, group: "Anthropic" },
     ...["Claude Sonnet 5.5", "Claude Haiku 4.5", "Claude Fable 5.2"].map((name) => ({ id: `anthropic/${slug(name)}`, name, efforts: [], metered: true as const, group: "Anthropic" })),
     ...["GPT-5.5", "GPT-5.5 mini", "GPT-5.5 nano", "o5", "o5 mini", "GPT-4.1", "GPT-4.1 mini", "GPT-4o", "GPT-4o mini", "o3", "o4 mini"].map((name) => ({
@@ -86,7 +88,45 @@ const openCodeModels: DemoHost["models"] = [
         group: "OpenAI",
     })),
     ...["Gemini 3 Pro", "Gemini 3 Flash", "Gemini 2.5 Pro", "Gemini 2.5 Flash"].map((name) => ({ id: `google/${slug(name)}`, name, efforts: [], metered: true as const, group: "Google" })),
+    ...paidModels("DeepSeek", ["DeepSeek V4 Pro", "DeepSeek V4.1 Flash", "DeepSeek V4 Reasoner", "DeepSeek V3.5", "DeepSeek Coder 3"]),
+    ...paidModels("Mistral", ["Mistral Large 3", "Mistral Medium 4", "Mistral Small 4", "Codestral 3", "Devstral 2", "Pixtral Large 2", "Ministral 8B", "Magistral Medium"]),
+    ...paidModels("xAI", ["Grok 5", "Grok 5 Fast", "Grok Code Fast 2", "Grok 4.5", "Grok 4.5 Mini"]),
+    ...paidModels("Groq", madeNames(12, 0)),
+    ...paidModels("Together", madeNames(28, 5)),
+    ...paidModels("Fireworks", madeNames(24, 9)),
+    ...paidModels("OpenRouter", madeNames(86, 2)),
 ];
+
+/** A provider's models, each paid apart. */
+function paidModels(group: string, names: string[]): DemoHost["models"]
+{
+    return names.map((name) => ({ id: `${group.toLowerCase()}/${slug(name)}`, name, efforts: [], metered: true as const, group }));
+}
+
+/** So many names of models, made of a family and a kind, each once. */
+function madeNames(count: number, from: number): string[]
+{
+    const families = [
+        "Llama 5 70B",
+        "Qwen3 Coder 32B",
+        "DeepSeek V4",
+        "Gemma 4 27B",
+        "Mistral Large 3",
+        "Kimi K2",
+        "GLM 5",
+        "Hermes 5",
+        "Phi 5",
+        "Command R3",
+        "Nemotron 2",
+        "Granite 4",
+        "Yi Lightning",
+        "MiniMax M3",
+        "Sonar Pro",
+        "WizardLM 3",
+    ];
+    const kinds = ["", " Turbo", " Instruct", " Fast", " Mini", " Thinking", " Preview"];
+    return Array.from({ length: count }, (_, index) => families[(index + from) % families.length] + kinds[Math.floor((index + from) / families.length) % kinds.length]);
+}
 
 // The efforts OpenCode says of a model once it is chosen, none for the others.
 const openCodeEfforts: Record<string, string[]> = {
@@ -329,9 +369,12 @@ function antigravityModels(): DemoHost["models"]
 
 function codexModels(): DemoHost["models"]
 {
+    // Ten models, as Codex lists them: more than the list shows whole, so it has its search.
+    const levels = [...efforts, "ultra"];
     return [
-        { id: "gpt-5.5", name: "GPT-5.5", about: "Latest frontier agentic coding model.", efforts: efforts.slice(0, 4), advised: true },
+        { id: "gpt-5.5", name: "GPT-5.5", about: "Latest frontier agentic coding model.", efforts: levels, advised: true },
         { id: "gpt-5.5-mini", name: "GPT-5.5 mini", about: "Smaller and faster.", efforts: efforts.slice(0, 3) },
+        ...["GPT-6.2-Sol", "GPT-6.2-Astra", "GPT-6.1 Terra", "GPT-6.1-Sol", "GPT-6-Astra", "GPT-6-Sol", "GPT-6-Luna", "GPT-5.6-Sol"].map((name) => ({ id: slug(name), name, efforts: levels })),
     ];
 }
 

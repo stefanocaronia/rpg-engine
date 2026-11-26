@@ -19,6 +19,10 @@ export interface ListedCampaign
     missing: boolean;
     /** Why its file does not read, where it does not. */
     problem?: string;
+    /** The colours of its theme's dice, the body and the ink of the numbers, in each look of the page, where its game system has a theme. */
+    colours?: { light: { body: string; ink: string; }; dark: { body: string; ink: string; }; };
+    /** Its player character, and the address of their portrait where they have one. */
+    character?: { name: string; portrait?: string; };
 }
 
 /** What the launcher's page shows: the engine, the folder new campaigns go in, the campaigns in their order, and what a new one may be made with. */

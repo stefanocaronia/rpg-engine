@@ -1,9 +1,11 @@
-// The campaigns of this computer, as rows: each one a button the row's width that opens it, its name over its game system and when it was last opened, then
-// where it is; the one whose table answers says so. One whose folder is gone, or that does not read, says it and can only be taken off the list.
+// The campaigns of this computer, as cards: each one a button the card's size that opens it, its d20 in its colours with its player character's portrait,
+// its name in the serif, with whom it is played, its game system and language as chips and when it was last opened, then where it is; the one whose table
+// answers says so. One whose folder is gone, or that does not read, is greyed, says why and can only be taken off the list.
 import { Icon } from "../parts/icons.tsx";
 import { pageLocale, t } from "../text.ts";
 import type { ListedCampaign } from "./api.ts";
-import { campaignMeta, campaignState, opens } from "./campaigns.ts";
+import { campaignChips, campaignState, openedLabel, opens } from "./campaigns.ts";
+import { CampaignDie } from "./die.tsx";
 
 /** What the list is doing with a campaign, and what went wrong with one, each by its folder. */
 export interface ListStanding
@@ -44,7 +46,8 @@ export function CampaignList({ campaigns, standing, now, onOpen, onRemove }: {
                     key={campaign.root}
                     id={`launcher-campaign-${index}`}
                     campaign={campaign}
-                    meta={campaignMeta(campaign, now, pageLocale())}
+                    chips={campaignChips(campaign, pageLocale())}
+                    opened={openedLabel(campaign.opened, now, pageLocale())}
                     opening={standing.opening?.root === campaign.root ? standing.opening.words : undefined}
                     busy={standing.busy}
                     problem={standing.problem?.root === campaign.root ? standing.problem.text : undefined}
@@ -56,10 +59,11 @@ export function CampaignList({ campaigns, standing, now, onOpen, onRemove }: {
     );
 }
 
-function CampaignRow({ id, campaign, meta, opening, busy, problem, onOpen, onRemove }: {
+function CampaignRow({ id, campaign, chips, opened, opening, busy, problem, onOpen, onRemove }: {
     id: string;
     campaign: ListedCampaign;
-    meta: string;
+    chips: string[];
+    opened: string | undefined;
     opening: string | undefined;
     busy: boolean;
     problem: string | undefined;
@@ -69,8 +73,10 @@ function CampaignRow({ id, campaign, meta, opening, busy, problem, onOpen, onRem
 {
     const state = campaignState(campaign);
     const remove = t("Remove {name} from the list…", { name: campaign.name });
+    const character = campaign.character;
     const words = (
         <>
+            <CampaignDie campaign={campaign} />
             <span class="launcher-name">
                 <bdi id={`${id}-name`}>{campaign.name}</bdi>
                 {state === "open" && (
@@ -80,10 +86,20 @@ function CampaignRow({ id, campaign, meta, opening, busy, problem, onOpen, onRem
                     </span>
                 )}
             </span>
+            {character !== undefined && opens(campaign) && <span id={`${id}-with`} class="launcher-with">{t("Playing {name}", { name: character.name })}</span>}
             <span id={`${id}-meta`} class="launcher-meta">
                 {state === "missing" && <Icon name="alert" />}
                 {state === "unreadable" && <Icon name="alert" />}
-                {opening ?? (state === "missing" ? t("Folder not found") : state === "unreadable" ? t("Cannot be read: {why}", { why: campaign.problem ?? "" }) : <bdi>{meta}</bdi>)}
+                {opening ?? (state === "missing"
+                    ? t("Folder not found")
+                    : state === "unreadable"
+                    ? t("Cannot be read: {why}", { why: campaign.problem ?? "" })
+                    : (
+                        <>
+                            {chips.map((chip) => <bdi key={chip} class="launcher-chip">{chip}</bdi>)}
+                            {opened !== undefined && <span class="launcher-opened">{opened}</span>}
+                        </>
+                    ))}
             </span>
             <span id={`${id}-where`} class="launcher-where">
                 <bdi dir="ltr">{campaign.root}</bdi>
@@ -91,14 +107,14 @@ function CampaignRow({ id, campaign, meta, opening, busy, problem, onOpen, onRem
         </>
     );
     return (
-        <li class={`launcher-item state-${state}`}>
+        <li class={`launcher-item launcher-card state-${state}`}>
             {opens(campaign)
                 ? (
                     <button
                         type="button"
                         class="launcher-row"
                         aria-labelledby={state === "open" ? `${id}-name ${id}-open` : `${id}-name`}
-                        aria-describedby={`${id}-meta ${id}-where`}
+                        aria-describedby={`${character === undefined ? "" : `${id}-with `}${id}-meta ${id}-where`}
                         aria-busy={opening !== undefined}
                         aria-disabled={busy}
                         onClick={() => !busy && onOpen()}

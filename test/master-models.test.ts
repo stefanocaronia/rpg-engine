@@ -310,6 +310,26 @@ describe("the keeper of the models", () => {
         expect(asks).toHaveLength(4);
     });
 
+    it("gives a host's models once its answer came, the ask that runs or a new one; failed, the list known; at once where none is asked", async () => {
+        const { keeper, asks, move } = keeping();
+        keeper.models("claudeCode");
+        const first = keeper.ready("claudeCode");
+        expect(asks).toHaveLength(1);
+        await asks[0].answer(opus);
+        await expect(first).resolves.toEqual(opus);
+        await expect(keeper.ready("claudeCode")).resolves.toEqual(opus);
+        expect(asks).toHaveLength(1);
+
+        move(10 * 60_000);
+        const again = keeper.ready("claudeCode");
+        expect(asks).toHaveLength(2);
+        await asks[1].answer(new Error("the host failed"));
+        await expect(again).resolves.toEqual(opus);
+        const codex = keeper.ready("codex");
+        await asks[2].answer([]);
+        await expect(codex).resolves.toEqual([]);
+    });
+
     it("takes an ask that throws at once for one that failed", async () => {
         let asked = 0;
         const keeper = modelKeeper({

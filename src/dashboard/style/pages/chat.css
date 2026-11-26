@@ -702,6 +702,7 @@
     }
 
     .chat-field-box {
+        position: relative;
         display: flex;
         align-items: flex-end;
         gap: 2px;
@@ -726,6 +727,24 @@
         font: inherit;
         line-height: 1.4;
         resize: none;
+        scrollbar-width: none;
+    }
+
+    /* Past its eight lines the words scroll with no bar: a shade at the field's edge, clear of what sends them, says there is more that way. */
+    .chat-words .chat-field-box::before,
+    .chat-words .chat-field-box::after {
+        inset-inline: 12px 48px;
+        height: 16px;
+    }
+
+    .chat-words .chat-field-box::before {
+        top: 3px;
+        background: linear-gradient(to bottom, var(--paper), transparent);
+    }
+
+    .chat-words .chat-field-box::after {
+        bottom: 3px;
+        background: linear-gradient(to top, var(--paper), transparent);
     }
 
     .chat-field::placeholder {
@@ -802,11 +821,69 @@
         color: var(--ink);
     }
 
-    /* Where a chat is opened: what it is, each choice its label before its control, then the buttons at the end. */
+    /* Where a chat is opened: what it is, each choice its label before its control, then the buttons at the end. It scrolls in its frame where the
+       frame is lower than it, with no bar: a shade at the frame's edge says there is more that way. */
+    .chat-start-frame {
+        position: relative;
+        display: grid;
+        grid-template-rows: minmax(0, 1fr);
+        min-height: 0;
+    }
+
     .chat-start {
         display: grid;
+        align-content: start;
         gap: 12px;
+        min-height: 0;
         padding: 16px;
+        overflow-y: auto;
+        scrollbar-width: none;
+    }
+
+    .chat-start::-webkit-scrollbar,
+    .chat-field::-webkit-scrollbar {
+        display: none;
+    }
+
+    .chat-start-frame::before,
+    .chat-start-frame::after,
+    .chat-field-box::before,
+    .chat-field-box::after {
+        content: "";
+        position: absolute;
+        inset-inline: 0;
+        z-index: 1;
+        height: 36px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--short) linear;
+    }
+
+    .chat-start-frame::before {
+        top: 0;
+        background: linear-gradient(to bottom, var(--panel), transparent);
+    }
+
+    .chat-start-frame::after {
+        bottom: 0;
+        background: linear-gradient(to top, var(--panel), transparent);
+    }
+
+    :is(.chat-start-frame, .chat-field-box).more-above::before,
+    :is(.chat-start-frame, .chat-field-box).more-below::after {
+        opacity: 1;
+    }
+
+    /* Back to the last chat as it was: a quiet command under the buttons, at their end. */
+    .chat-back {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: -4px;
+    }
+
+    .chat-back .chat-close[aria-disabled="true"] {
+        opacity: 0.55;
+        cursor: default;
     }
 
     .chat-log-frame ~ .chat-start {
@@ -1003,20 +1080,20 @@
         clip-path: polygon(0 0, 100% 0, 100% calc(100% + 48px), var(--dock-width) calc(100% + 48px), var(--dock-width) var(--dock-top), 0 var(--dock-top));
     }
 
-    .page.dock-start .top-place {
+    .page.dock-start:not(:has(.chat-panel.tall)) .top-place {
         padding-inline-start: calc(16px + var(--dock-start));
     }
 
-    .page.dock-end .top-place {
+    .page.dock-end:not(:has(.chat-panel.tall)) .top-place {
         padding-inline-end: calc(16px + var(--dock-end));
     }
 
-    /* As tall as the window, as the player switches it: the page's top and the theme's corner keep to the page's side of it, as the page does. */
+    /* As tall as the window, as the player switches it: the page's top keeps to the page's side of it, as the page does. */
     .page.dock-start:has(.chat-panel.tall) .top {
         inset-inline-start: var(--dock-start);
     }
 
-    .page.dock-end:has(.chat-panel.tall) :is(.top, .theme-corner) {
+    .page.dock-end:has(.chat-panel.tall) .top {
         inset-inline-end: var(--dock-end);
     }
 
@@ -1056,10 +1133,20 @@
         min-height: 0;
     }
 
+    /* With no chat open the card is as tall as what it holds; where the panel is lower, where a chat is opened scrolls in it, with no bar. */
     .chat-page.chat-dock:not(.view-open) .chat-box {
+        display: flex;
+        flex-direction: column;
         align-self: start;
         max-height: 100%;
-        overflow-y: auto;
+    }
+
+    .chat-page.chat-dock:not(.view-open) .chat-box > * {
+        flex: none;
+    }
+
+    .chat-page.chat-dock:not(.view-open) .chat-box > .chat-start-frame {
+        flex: 0 1 auto;
     }
 
     /* In the panel, as on a phone, each choice of a chat stands under its label. */
@@ -1219,9 +1306,8 @@
         }
     }
 
-    /* How an app stands, in two quiet words after its name (T-290): never a sign alone, which read as paid. Ready has none, but Pay per use on an API
-       key. The two words go to the next line together where they fit there, never one each. */
-    .segmented .host-state,
+    /* How an app stands, in quiet words (T-290): never a sign alone, which read as paid. Ready has none, but Pay per use on an API key. In a list of
+       the apps to install they follow the name; where one is chosen they stand at its row's end. */
     .chat-app-name .host-state {
         display: inline-block;
         margin-inline-start: 6px;
@@ -1230,13 +1316,92 @@
         font-weight: 600;
     }
 
-    .segmented button[aria-checked="true"] .host-state {
-        color: inherit;
-        opacity: 0.8;
+    /* The apps to choose one of (T-307): a row each, as wide as the form, its name at the start and how it stands at its end, in words out of any
+       button's shape. The chosen one has the gold in its radio and a tone of it on its ground, edged so that it stands out on light paper too. */
+    .app-choice {
+        display: grid;
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
     }
 
-    .segmented button[aria-disabled="true"] .host-state {
-        color: inherit;
+    .app-row {
+        display: grid;
+        grid-template-columns: 16px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 40px;
+        padding: 4px 12px;
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 650;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .app-row + .app-row {
+        border-top: 1px solid var(--rule);
+    }
+
+    .app-row:focus-visible {
+        outline-offset: -2px;
+    }
+
+    .app-row:hover:not([aria-checked="true"], [aria-disabled="true"]) {
+        background: color-mix(in srgb, var(--ink) 4%, transparent);
+    }
+
+    .app-radio {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--muted);
+        border-radius: 50%;
+    }
+
+    .app-row[aria-checked="true"] {
+        background: color-mix(in srgb, var(--gold) 20%, var(--float));
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 55%, var(--rule));
+    }
+
+    .app-row[aria-checked="true"] .app-radio {
+        border-color: color-mix(in srgb, var(--gold), var(--ink) 35%);
+        background: radial-gradient(circle, var(--gold) 0 4.5px, var(--float) 5px);
+    }
+
+    .app-name {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .app-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .app-state .chat-waits {
+        width: 8px;
+        height: 8px;
+        margin: 0;
+    }
+
+    /* One the page cannot open yet stays in sight, dimmed. */
+    .app-row[aria-disabled="true"] {
+        color: color-mix(in srgb, var(--muted) 70%, transparent);
+        cursor: default;
+    }
+
+    /* Beside the rows, where each label stands before its control, the label is at their top. */
+    .chat-fields > .chat-label:has(+ .app-choice) {
+        align-self: start;
+        padding-top: 9px;
     }
 
     /* Where an app is chosen to open a chat in, in place of the model while it is not ready: what it needs, then what does it. */
@@ -1435,13 +1600,13 @@
         text-align: start;
     }
 
-    /* The model: one button as the list's box, its name, and Recommended or Pay per use after it, quiet. */
+    /* The model: one button as the list's box, as wide as its form, its name, and Pay per use after it, quiet. */
     .model-button {
-        display: inline-flex;
+        display: flex;
         align-items: center;
         gap: 8px;
-        width: min(100%, 22rem);
-        /* A long name gives way, never the card: with two tags, the name's whole width would widen it. */
+        width: 100%;
+        /* A long name gives way, never the card. */
         min-width: 0;
         height: 38px;
         padding: 0 10px;
@@ -1465,6 +1630,18 @@
 
     .model-switch .model-name {
         flex: none;
+    }
+
+    /* In the bar the level follows the model's name, and takes the room up to what stands at the bar's end; a long name gives way, never the level. */
+    .model-button .model-name:has(+ .model-effort) {
+        flex: 0 1 auto;
+    }
+
+    .model-button .model-effort {
+        flex: 1 0 auto;
+        /* The bar's gap is the tags': the level stands as close to the name as a word. */
+        margin-inline-start: -4px;
+        white-space: nowrap;
     }
 
     .model-switch .model-effort {
@@ -1500,7 +1677,8 @@
         white-space: nowrap;
     }
 
-    /* The list it opens, in the top layer beside its button: a search when long, the groups, the thinking at its foot. */
+    /* The list it opens, in the top layer beside its button: a search when long, the groups, the thinking at its foot. The list alone scrolls: the
+       search over it and the thinking under it stay. */
     .model-pop {
         position: fixed;
         inset: auto;
@@ -1510,7 +1688,7 @@
         max-height: var(--pop-room, 70vh);
         margin: 0;
         padding: 6px;
-        overflow-y: auto;
+        overflow: hidden;
         border: 1px solid var(--rule);
         border-radius: var(--radius-l);
         background: var(--float);
@@ -1525,19 +1703,40 @@
     }
 
     .model-pop:popover-open {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        align-content: start;
+        display: flex;
+        flex-direction: column;
         gap: 4px;
     }
 
-    .model-pop .model-search {
-        position: sticky;
-        top: -6px;
-        z-index: 1;
-        width: 100%;
+    .model-pop > * {
+        flex: none;
+    }
+
+    /* The search: the field is the whole box, so that its focus ring is the box's; its icon and how many it found stand over its ends. */
+    .model-find {
+        position: relative;
+        display: block;
         height: 36px;
-        padding: 0 10px;
+        /* The room of the field's ring, which the list's own edge would cut. */
+        margin: 2px;
+    }
+
+    .model-find svg.icon {
+        position: absolute;
+        top: 50%;
+        inset-inline-start: 10px;
+        width: 16px;
+        height: 16px;
+        color: var(--muted);
+        pointer-events: none;
+        translate: 0 -50%;
+    }
+
+    .model-find input {
+        width: 100%;
+        height: 100%;
+        padding-block: 0;
+        padding-inline: 34px 72px;
         border: 1px solid var(--rule);
         border-radius: var(--radius-m);
         background: var(--panel-2);
@@ -1545,17 +1744,99 @@
         font: inherit;
     }
 
-    .model-list {
-        display: grid;
+    .model-find input::placeholder {
+        color: var(--muted);
+        opacity: 1;
     }
 
+    .model-count {
+        position: absolute;
+        top: 50%;
+        inset-inline-end: 10px;
+        color: var(--muted);
+        pointer-events: none;
+        translate: 0 -50%;
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* The list's frame gives way where the window is low; the list scrolls in it, eight rows and a half in sight at most, so that the cut row says there
+       is more, with no bar: a shade at the edge where there is more that way, as the chat's messages have. */
+    .model-pop > .model-list-frame {
+        position: relative;
+        display: grid;
+        flex: 0 1 auto;
+        grid-template-rows: minmax(0, 1fr);
+        min-height: 0;
+    }
+
+    .model-list {
+        display: grid;
+        align-content: start;
+        max-height: 289px;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+    }
+
+    .model-list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .model-list-frame::before,
+    .model-list-frame::after {
+        content: "";
+        position: absolute;
+        inset-inline: 0;
+        z-index: 2;
+        height: 32px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--short) linear;
+    }
+
+    .model-list-frame::before {
+        top: 0;
+        background: linear-gradient(to bottom, var(--float), transparent);
+    }
+
+    .model-list-frame::after {
+        bottom: 0;
+        background: linear-gradient(to top, var(--float), transparent);
+    }
+
+    /* Under a provider's title, which stays at the list's top, the shade starts under it. */
+    .model-list-frame:has(.model-group)::before {
+        top: 26px;
+    }
+
+    .model-list-frame.more-above::before,
+    .model-list-frame.more-below::after {
+        opacity: 1;
+    }
+
+    /* A provider's title stays at the list's top while its models scroll under it; that they are paid apart is said on it, once. */
     .model-group {
-        padding: 8px 10px 2px;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        padding: 8px 10px 4px;
+        background: var(--float);
         color: var(--muted);
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
+    }
+
+    .model-group-note {
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
     }
 
     .model-option {
@@ -1585,19 +1866,8 @@
         gap: 4px;
     }
 
-    .model-option.active,
-    .model-other.active {
+    .model-option.active {
         background: color-mix(in srgb, var(--accent) 10%, transparent);
-    }
-
-    .model-other {
-        margin-top: 4px;
-        padding: 8px 10px;
-        border-radius: var(--radius-m);
-        /* Not the accent: in the dark that is the gold of what is chosen. */
-        color: var(--ink);
-        font-weight: 650;
-        cursor: pointer;
     }
 
     .model-more {
@@ -1682,20 +1952,8 @@
         font-size: 0.8rem;
     }
 
-    /* In the panel, and on a phone, the four apps two by two, never three and one; on a phone the list is a sheet from the window's foot. */
-    .chat-page.chat-dock .chat-fields > .segmented {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        width: 100%;
-    }
-
+    /* On a phone the list is a sheet from the window's foot. */
     @media (max-width: 600px) {
-        .chat-fields > .segmented {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            width: 100%;
-        }
-
         .model-pop {
             top: auto;
             bottom: 0;

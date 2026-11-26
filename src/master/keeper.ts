@@ -10,6 +10,8 @@ export interface ModelKeeper
     models(host: HostId): MasterModel[];
     /** The models known of a host, asking nothing. */
     known(host: HostId): MasterModel[];
+    /** The models of a host once its answer came, asked as `models` asks; failed or empty, the list known; at once where none is asked. */
+    ready(host: HostId): Promise<MasterModel[]>;
     /** The host's account changed, as the player signed in or installed it: the next `models` asks it again, the list known kept meanwhile; tells nothing. */
     forget(host: HostId): void;
 }
@@ -62,7 +64,7 @@ export function modelKeeper(options: KeeperOptions): ModelKeeper
         };
 
         // An ask that throws at once fails as one that rejects.
-        new Promise<MasterModel[]>((resolve) => resolve(options.ask(host))).then(heard, () => heard([]));
+        one.answer = new Promise<MasterModel[]>((resolve) => resolve(options.ask(host))).then(heard, () => heard([]));
     };
 
     return {
@@ -71,6 +73,12 @@ export function modelKeeper(options: KeeperOptions): ModelKeeper
             return entry(host).models;
         },
         known: (host) => kept.get(host)?.models ?? [],
+        ready: (host) => {
+            ask(host);
+            const one = entry(host);
+            const given = (): MasterModel[] => one.models;
+            return one.asking && one.answer !== undefined ? one.answer.then(given, given) : Promise.resolve(one.models);
+        },
         forget: (host) => {
             const one = entry(host);
             delete one.until;
@@ -82,11 +90,12 @@ export function modelKeeper(options: KeeperOptions): ModelKeeper
     };
 }
 
-/** What the keeper holds of a host: its list, until when it stands, whether it is being asked, and whether it was forgotten meanwhile. */
+/** What the keeper holds of a host: its list, until when it stands, whether it is being asked and its answer, and whether it was forgotten meanwhile. */
 interface Kept
 {
     models: MasterModel[];
     until?: number;
     asking: boolean;
+    answer?: Promise<void>;
     forgotten?: true;
 }

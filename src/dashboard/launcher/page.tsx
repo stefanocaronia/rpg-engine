@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { HostWish } from "../api.ts";
 import { HostRows, Independent } from "../chat/apps.tsx";
-import { anyHostReady, hostState } from "../chat/chat.ts";
+import { anyHostReady } from "../chat/chat.ts";
 import { useLookAgain } from "../chat/start.tsx";
 import { Confirm } from "../parts/confirm.tsx";
 import { Master } from "../shell/master.tsx";
@@ -223,7 +223,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
     };
 
     const hosts = launcher?.hosts ?? [];
-    useLookAgain(hosts.some((one) => !["ready", "later"].includes(hostState(one))), (asked) => void wish(asked));
+    useLookAgain((asked) => void wish(asked));
     // Until an app is ready the master cannot play: the apps come first, in the gold of what the player does next.
     const appsFirst = launcher !== undefined && hosts.length > 0 && !anyHostReady(hosts);
     const campaigns = launcher?.campaigns ?? [];

@@ -1,9 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" role="img">
   <title>Robot game master</title>
   <path class="robot-antenna" fill="#DCAA32" d="M11 0H13V3H11Z"/>
+  <g class="robot-ears" fill="#DCAA32"><rect x="0" y="5" width="3" height="4" rx="0.8"/><rect x="13" y="5" width="3" height="4" rx="0.8"/></g>
   <rect class="robot-housing" x="2" y="2" width="12" height="10" rx="2" fill="#F4C84C"/>
-  <rect class="robot-display" x="4" y="4" width="8" height="6" rx="1.2" fill="#192D4D"/>
+  <rect class="robot-display" x="4" y="4" width="8" height="7" rx="1.2" fill="#192D4D"/>
   <g class="robot-eyes" fill="#FFF4D5"><rect x="5" y="6" width="2" height="2" rx="0.4"/><rect x="9" y="6" width="2" height="2" rx="0.4"/></g>
-  <path class="robot-screen-side" fill="#29477F" d="M0 7.5L3 9V16L0 14ZM16 7.5L13 9V16L16 14Z"/>
-  <path class="robot-screen-front" fill="#4268B2" d="M3 9H13V16H3Z"/>
+  <path class="robot-screen-side" fill="#29477F" d="M0 8L4 10V16H0ZM16 8L12 10V16H16Z"/>
+  <path class="robot-screen-front" fill="#4268B2" d="M4 10H12V16H4Z"/>
 </svg>

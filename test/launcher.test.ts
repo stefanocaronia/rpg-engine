@@ -389,6 +389,31 @@ describe("the launcher's server", () => {
         expect((await call(launcher.url, "PUT", "/api/launcher")).status).toBe(405);
     });
 
+    it("gives each campaign its theme's dice colours and its player character, with their portrait at an address of its own, the only picture it serves", async () => {
+        const kept = await campaignIn(join(campaignsFolder(userHome), "Rocca"), "Rocca");
+        const bare = await campaignIn(join(campaignsFolder(userHome), "Abbazia"), "Abbazia");
+        const png = Buffer.from("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d4944415478da63f8cfc0f01f0005000201a5b2b1d60000000049454e44ae426082", "hex");
+        mkdirSync(join(kept, "images"), { recursive: true });
+        writeFileSync(join(kept, "images", "ettore.png"), png);
+        writeFileSync(join(kept, "world", "characters", "Ettore.md"), '---\nrole: pc\nimage: "[[ettore.png]]"\n---\n\n# Ettore\n');
+        writeFileSync(join(bare, "world", "characters", "Mira.md"), "---\nrole: pc\n---\n\n# Mira\n");
+        const launcher = await startLauncher();
+        const read = await call(launcher.url, "GET", "/api/launcher");
+        const campaigns = (read.body as { campaigns: { name: string; colours?: unknown; character?: { name: string; portrait?: string; }; }[]; }).campaigns;
+        const rocca = campaigns.find((one) => one.name === "Rocca");
+
+        expect(rocca).toMatchObject({
+            colours: { light: { body: "#2d5a3a", ink: "#ffffff" }, dark: { body: "#9fd3a8", ink: "#0f1410" } },
+            character: { name: "Ettore", portrait: expect.stringMatching(/^\/portraits\/[0-9a-f]{24}\?v=\d+$/) },
+        });
+        expect(campaigns.find((one) => one.name === "Abbazia")?.character).toEqual({ name: "Mira" });
+        const portrait = await call(launcher.url, "GET", rocca?.character?.portrait ?? "");
+        expect(portrait).toMatchObject({ status: 200, type: "image/png" });
+        expect((await call(launcher.url, "GET", "/portraits/000000000000000000000000")).status).toBe(404);
+        expect((await call(launcher.url, "GET", "/portraits/..%2Fcampaign.yaml")).status).toBe(404);
+        expect((await call(launcher.url, "GET", "/images/ettore.png")).status).toBe(404);
+    });
+
     it("serves its page, its entry and the page's files, with the dashboard's policy", async () => {
         const launcher = await startLauncher();
         const page = await call(launcher.url, "GET", "/");

@@ -28,8 +28,9 @@ export interface HostAccess
 }
 
 /**
- * The hosts' accounts, kept, and what the page asks of them. A program's status is asked once, at the first request of a page, then only when the player asks
- * again, a sign-in or installation started here ends, or a chat ends signed out: never on a timer, never while a chat of that host is open or its sign-in runs.
+ * The hosts' accounts, kept, and what the page asks of them. A program's status is asked once, at the first request of a page, then only when the page asks
+ * again, as it shows the apps or the player comes back to its window, a sign-in or installation started here ends, or a chat ends signed out: never on a
+ * timer, never while a chat of that host is open or its sign-in runs.
  */
 export interface AccessKeeper
 {
@@ -37,7 +38,7 @@ export interface AccessKeeper
     access(host: HostId): HostAccess;
     /** How a host stands as last known, looking at nothing. */
     known(host: HostId): HostAccess;
-    /** Looks again, in the background, at a host or every host that can tell: at most once a minute each, and not while its chat is open. */
+    /** Looks again, in the background, at a host or every host that can tell: at most every fifteen seconds each, and not while its chat is open. */
     lookAgain(host?: HostId): void;
     /** Starts the player's sign-in to a host, once however often it is asked: why not, in the player's words, else undefined. */
     signIn(host: HostId): string | undefined;
@@ -75,8 +76,8 @@ const ownSignIn: Partial<Record<HostId, string>> = {
     openCode: "OpenCode plays without signing in. To use an account of a provider, sign in from OpenCode itself, then look again.",
 };
 
-// The least time between two looks at a program the page asks for.
-const askedEvery = 60_000;
+// The least time between two looks at a program the page asks for: short, as a player who signed out or in outside the page comes back to it at once.
+const askedEvery = 15_000;
 
 // The host behind each program.
 const helperHost = new Map(Object.entries(hostHelper).map(([host, name]) => [name, host as HostId]));

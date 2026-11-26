@@ -128,74 +128,9 @@
         cursor: pointer;
     }
 
-    /* The table folds into a tab on the window's edge (D-293), the marks of what it holds in it; open, a narrow tab in the same place folds it, in a margin of the
-       page kept for it. */
-    .body:has(> .table-away) {
+    /* The table folded away (D-293), by its switch in the page's top: the page takes the whole width, nothing at the window's edge. */
+    .body:not(:has(> .play-table)) {
         grid-template-columns: minmax(0, 1fr);
-    }
-
-    .table-away {
-        position: fixed;
-        top: 50%;
-        inset-inline-end: var(--dock-end, 0px);
-        z-index: 17;
-        translate: 0 -50%;
-    }
-
-    .table-fold {
-        position: fixed;
-        top: 50%;
-        inset-inline-end: var(--dock-end, 0px);
-        z-index: 17;
-        display: grid;
-        place-items: center;
-        width: 24px;
-        height: 56px;
-        padding: 0;
-        border: 1px solid var(--rule);
-        border-inline-end: 0;
-        border-start-start-radius: var(--radius-m);
-        border-start-end-radius: 0;
-        border-end-end-radius: 0;
-        border-end-start-radius: var(--radius-m);
-        background: var(--float);
-        color: var(--muted);
-        translate: 0 -50%;
-        cursor: pointer;
-    }
-
-    .table-fold svg.icon {
-        width: 16px;
-        height: 16px;
-    }
-
-    @media (min-width: 900px) {
-        .page:has(.play-table) {
-            padding-inline-end: calc(var(--gap) + 16px + var(--dock-end, 0px));
-        }
-
-        /* Folded, the tab's width, so that it never covers the page's right edge. */
-        .page:has(.table-away) {
-            padding-inline-end: calc(var(--gap) + 40px + var(--dock-end, 0px));
-        }
-    }
-
-    .rolls-tab {
-        display: grid;
-        justify-items: center;
-        gap: 8px;
-        padding: 12px 8px;
-        border: 1px solid var(--rule);
-        border-inline-end: 0;
-        border-start-start-radius: var(--radius-l);
-        border-start-end-radius: 0;
-        border-end-end-radius: 0;
-        border-end-start-radius: var(--radius-l);
-        background: var(--float);
-        box-shadow: var(--overlay);
-        color: var(--ink);
-        font-weight: 700;
-        cursor: pointer;
     }
 
     .rolls-none {

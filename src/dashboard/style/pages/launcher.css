@@ -1,6 +1,6 @@
 /* The launcher: the campaigns of this computer and what starts one, in a small window of its own. */
 @layer pages {
-    /* Two panes that fill the window: the campaigns at the start side, on a card's ground, their list scrolling inside; beside them the robot, the product
+    /* Two panes that fill the window: the campaigns at the start side, as cards on the page's ground, their list scrolling inside; beside them the robot, the product
        and what starts a campaign, in the middle of what room is left. */
     .launcher {
         display: grid;
@@ -15,7 +15,7 @@
         min-width: 0;
         padding: 20px 12px 16px;
         border-inline-end: 1px solid var(--rule);
-        background: var(--panel);
+        background: var(--paper);
         overflow-y: auto;
     }
 
@@ -31,29 +31,46 @@
 
     .launcher-rows {
         display: grid;
-        gap: 2px;
+        gap: 8px;
         margin: 0;
         padding: 0;
         list-style: none;
     }
 
-    /* A campaign: the button that opens it, the row's width, then what takes it off the list; what went wrong with it under both. */
-    .launcher-item {
+    /* A campaign, as a card: the button that opens it, the card's size, its focus ring round the card; over it at its top end what takes it off the list;
+       what went wrong with it under both. */
+    .launcher-card {
+        position: relative;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        column-gap: 2px;
+        grid-template-columns: minmax(0, 1fr);
+        border: 1px solid var(--card-edge);
+        border-radius: var(--radius-l);
+        background: var(--panel);
+        box-shadow: var(--lift), var(--raise);
+        transition: border-color var(--quick) var(--ease);
     }
 
+    .launcher-card:has(> button.launcher-row:hover) {
+        border-color: color-mix(in srgb, var(--accent) 45%, var(--card-edge));
+    }
+
+    /* The one being opened: its edge in the accent, as what is chosen; never a tint, which on the light page reads as off. */
+    .launcher-card:has(> .launcher-row[aria-busy="true"]) {
+        border-color: var(--accent);
+    }
+
+    /* Its d20 at the start, as tall as its first lines; beside it the name, with whom it is played, the chips and when, then where it is. */
     .launcher-row {
         display: grid;
-        gap: 2px;
+        grid-template-columns: 32px minmax(0, 1fr);
+        grid-template-areas: "die name" "die with" "die meta" "die where";
+        align-content: start;
+        gap: 2px 12px;
         min-width: 0;
-        padding: 8px 10px;
-        padding-inline-start: 7px;
+        padding: 12px;
+        padding-inline-end: 44px;
         border: 0;
-        border-inline-start: 3px solid transparent;
-        border-radius: var(--radius-m);
+        border-radius: var(--radius-l);
         background: transparent;
         color: var(--ink);
         font: inherit;
@@ -65,13 +82,11 @@
         cursor: default;
     }
 
-    /* The one being opened: a bar of the accent at its start, as what is open in a list; never a tint, which on the light page reads as off. */
     .launcher-row[aria-busy="true"] {
-        border-inline-start-color: var(--accent);
         cursor: progress;
     }
 
-    /* One whose folder is gone, or that does not read: no button, its name quiet. */
+    /* One whose folder is gone, or that does not read: no button, its name quiet, its die grey. */
     .launcher-row.unusable {
         cursor: default;
     }
@@ -80,12 +95,22 @@
         color: var(--muted);
     }
 
+    .launcher-row.unusable .launcher-die {
+        filter: grayscale(1);
+        opacity: 0.5;
+    }
+
+    /* The campaign is the card's point: its name in the serif of a campaign's name, at a title's size. */
     .launcher-name {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
+        grid-area: name;
         gap: 2px 10px;
+        font-family: var(--serif);
+        font-size: 1.125rem;
         font-weight: 700;
+        line-height: 1.25;
         overflow-wrap: anywhere;
     }
 
@@ -94,6 +119,7 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
+        font-family: var(--font);
         font-size: 0.8rem;
         font-weight: 600;
         white-space: nowrap;
@@ -106,35 +132,109 @@
         background: var(--ally);
     }
 
-    .launcher-meta {
-        display: flex;
-        align-items: start;
-        gap: 6px;
+    .launcher-with {
+        grid-area: with;
         color: var(--muted);
         font-size: 0.85rem;
         overflow-wrap: anywhere;
+    }
+
+    .launcher-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        grid-area: meta;
+        gap: 4px 6px;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+    }
+
+    .launcher-chip {
+        padding: 1px 7px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--accent) 11%, var(--panel));
+        color: var(--ink);
+        font-size: 0.8rem;
+        font-weight: 600;
     }
 
     .launcher-meta svg.icon {
         flex: none;
         width: 16px;
         height: 16px;
-        margin-top: 2px;
         color: var(--low);
     }
 
     .launcher-item:is(.state-missing, .state-unreadable) .launcher-meta {
+        align-items: start;
+        flex-wrap: nowrap;
         color: var(--ink);
     }
 
-    /* Where it is: its folder as the system writes it, left to right, on the row's start side. */
+    .launcher-item:is(.state-missing, .state-unreadable) .launcher-meta svg.icon {
+        margin-top: 2px;
+    }
+
+    /* Where it is: its folder as the system writes it, left to right, on the card's start side. */
     .launcher-where {
+        grid-area: where;
+        margin-top: 2px;
         color: var(--muted);
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         overflow-wrap: anywhere;
     }
 
+    /* The d20, flat as an icon: its body in the theme's strong colour (`--die-body`), else the page's gold; its edges a darker shade of it. */
+    .launcher-die {
+        position: relative;
+        grid-area: die;
+        width: 32px;
+        height: 32px;
+        margin-top: 2px;
+    }
+
+    .launcher-die svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .die-body {
+        fill: var(--die-body, var(--gold));
+    }
+
+    .die-lines,
+    .die-body {
+        stroke: color-mix(in srgb, var(--die-body, var(--gold)) 35%, #1a1a1a);
+        stroke-width: 5;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
+
+    .die-lines {
+        fill: none;
+        stroke-width: 4;
+    }
+
+    /* The player character's portrait on the d20's bottom corner, small and round, ringed in the card's ground: a sign, never the card's point. */
+    .launcher-portrait {
+        position: absolute;
+        inset-inline-end: -5px;
+        bottom: -5px;
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--panel);
+        border-radius: 50%;
+        background: var(--panel-2);
+        object-fit: cover;
+    }
+
     .launcher-remove {
+        position: absolute;
+        top: 6px;
+        inset-inline-end: 6px;
         width: 32px;
         height: 32px;
     }
@@ -158,7 +258,7 @@
     }
 
     .launcher-item .launcher-problem {
-        padding: 0 10px 8px;
+        padding: 0 12px 10px;
     }
 
     .launcher-empty,
@@ -327,6 +427,10 @@
         .launcher-remove {
             width: var(--target);
             height: var(--target);
+        }
+
+        .launcher-row {
+            padding-inline-end: calc(var(--target) + 10px);
         }
     }
 
