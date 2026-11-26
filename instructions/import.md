@@ -10,6 +10,6 @@ You turn the player's document into an adventure that a game master will run: a 
 - An event never decides what a character who may be played does, chooses or suffers, their death included: it says what the world does around them, and what they intend is a secret on their page.
 - The weather the story gives, a storm, the heat, snow on a pass, goes on the event or the place it belongs to, with how long it lasts.
 - Every page gets `source:`, how a reader finds it in the document: `"{title}, p. 36"`, the part's label.
-- A picture that shows a place or a character of a page is that page's image; never a page's decoration.
+- A picture that shows a place or a character of a page is that page's image; never a page's decoration. Where you cannot look at it, go by the text around its mark, a caption or the passage it stands in, and leave out one the text does not place.
 - Numbers only where play needs them, from the game system's pages; a central foe may have them now, everyone else when play needs them.
 - A module keeps its own structure and its own start. Keep a list of the gaps you filled, so the player can be told.
