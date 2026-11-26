@@ -8,6 +8,8 @@ import { samePath } from "../../library/index.ts";
 export interface ChildServer
 {
     write(line: string): void;
+    /** Closes its input, as a client that goes: a server then ends by itself. */
+    closeInput(): void;
     onLine(listener: (line: string) => void): void;
     onEnd(listener: (reason: string) => void): void;
     stop(): void;
@@ -27,13 +29,15 @@ export interface RouterOptions
     noteLooks?: { every: number; times: number; };
     /** A line about what the router does, for the player who looks at its stderr. */
     log?: (line: string) => void;
+    /** How long, in ms, a child whose input closed has to end by itself before it is stopped. */
+    patience?: number;
 }
 
 /** The client's meta key that names Antigravity's conversation in every call. */
 export const conversationKey = "antigravity.google/conversation_id";
 
-/** A router between the client and its children: give it each line the client writes, in order; `stop` ends every child, as the client goes. */
-export function mcpRouter(options: RouterOptions): { fromClient(line: string): Promise<void>; stop(): void; }
+/** A router between the client and its children: give it each line the client writes, in order; `stop` ends every child, as the client goes, closing its input first. */
+export function mcpRouter(options: RouterOptions): { fromClient(line: string): Promise<void>; stop(): Promise<void>; }
 {
     const looks = options.noteLooks ?? { every: 200, times: 10 };
     const log = options.log ?? (() => undefined);
@@ -55,10 +59,14 @@ export function mcpRouter(options: RouterOptions): { fromClient(line: string): P
     };
 
     const startChild = (folder: string): Child => {
-        const child: Child = { folder, pending: new Map(), server: options.start(folder) };
+        const child: Child = { folder, pending: new Map(), server: options.start(folder), over: false };
         children.push(child);
         child.server.onLine((line) => fromChild(child, line));
-        child.server.onEnd((reason) => ended(child, reason));
+        child.server.onEnd((reason) => {
+            child.over = true;
+            child.whenOver?.();
+            ended(child, reason);
+        });
 
         // A child started after the handshake gets it again; its answer to initialize is its own, the client had one.
         if (handshake.initialize !== undefined) {
@@ -248,18 +256,41 @@ export function mcpRouter(options: RouterOptions): { fromClient(line: string): P
             queue = queue.then(() => route(line)).catch(() => undefined);
             return queue;
         },
-        stop: () => {
-            for (const child of children.splice(0)) {
-                child.server.stop();
-            }
+        // Each child is asked to end as a server is, by its input closing; one still there after a while is stopped.
+        stop: async () => {
+            const leaving = children.splice(0);
+            await Promise.all(leaving.map((child) => endGently(child, options.patience ?? 3000)));
         },
     };
+}
+
+async function endGently(child: Child, patience: number): Promise<void>
+{
+    if (child.over) {
+        return;
+    }
+
+    let timer: NodeJS.Timeout | undefined;
+    const over = new Promise<void>((resolve) => {
+        child.whenOver = resolve;
+        timer = setTimeout(resolve, patience);
+    });
+    child.server.closeInput();
+    await over;
+    clearTimeout(timer);
+
+    if (!child.over) {
+        child.server.stop();
+    }
 }
 
 interface Child
 {
     folder: string;
     server: ChildServer;
+    /** It ended, and what to tell when it does. */
+    over: boolean;
+    whenOver?: () => void;
     /** The client's requests it has not answered yet, by id. */
     pending: Map<unknown, Pending>;
     /** The id of the initialize replayed to it, whose answer stays with the router. */

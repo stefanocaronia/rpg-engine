@@ -39,8 +39,7 @@ function route(input: Readable, folder: string): void
     log(`rpg mcp router: serving from ${folder}, outside any campaign; the campaigns of the app's conversations are noted in ${notesFolder(home)}`);
     // The client is gone: every child ends with it.
     readLines(input, (line) => void router.fromClient(line), () => {
-        router.stop();
-        process.exit(0);
+        void router.stop().finally(() => process.exit(0));
     });
 }
 

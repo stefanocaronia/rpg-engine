@@ -13,6 +13,9 @@ class FakeChild implements ChildServer
     readonly given: string[] = [];
     readonly folder: string;
     stopped = false;
+    inputClosed = false;
+    /** What it does when its input closes; by default it stays, as a server that hangs. */
+    closing: () => void = () => undefined;
     private listener: (line: string) => void = () => undefined;
     private endListener: (reason: string) => void = () => undefined;
 
@@ -24,6 +27,12 @@ class FakeChild implements ChildServer
     write(line: string): void
     {
         this.given.push(line);
+    }
+
+    closeInput(): void
+    {
+        this.inputClosed = true;
+        this.closing();
     }
 
     onLine(listener: (line: string) => void): void
@@ -88,6 +97,7 @@ describe("the router of rpg mcp outside a campaign", () => {
             toClient: (line) => toClient.push(line),
             noteLooks: looks,
             log: (line) => logged.push(line),
+            patience: 20,
         });
     }
 
@@ -265,8 +275,11 @@ describe("the router of rpg mcp outside a campaign", () => {
         await routed.fromClient(call(1, "uno"));
         await routed.fromClient(call(2, "tre"));
         expect(children).toHaveLength(2);
-        routed.stop();
-        expect(children.every((one) => one.stopped)).toBe(true);
+        // Each child's input closes first: the one that ends by itself is never stopped, the one still there after a while is.
+        children[0].closing = () => children[0].die("exit code 0");
+        await routed.stop();
+        expect(children.every((one) => one.inputClosed)).toBe(true);
+        expect(children.map((one) => one.stopped)).toEqual([false, true]);
     });
 
     it("waits a moment for a note that comes after the call, once per conversation", async () => {
