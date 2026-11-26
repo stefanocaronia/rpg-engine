@@ -28,15 +28,31 @@ checklist({
     isPlayerWords: isPrompt,
 });
 
+// What the table's OpenCode may not do by itself: read files, and reach any folder outside the campaign.
+// The kinds of tools the table allows.
+const tableKinds: MasterOptions["allowed"] = ["rpg", "web", "fetch", "agent", "image"];
+const denied = { read: "deny", glob: "deny", grep: "deny", list: "deny", external_directory: "deny" };
+
 describe("the master in OpenCode", () => {
     describe("its program", () => {
-        it("starts as opencode acp after its own arguments, in the campaign's folder, which PWD names too", () => {
+        it("starts as opencode acp after its own arguments, in the campaign's folder, which PWD names too, its reading tools and any folder outside denied", () => {
             const host = fakeAgent([]);
             openMaster("openCode", { ...options(host), environment: { HOME: "/home/player", pwd: "/elsewhere" } });
             expect(host.started?.command).toBe("opencode-program");
             expect(host.started?.args).toEqual(["--first", "acp"]);
             expect(host.started?.options.cwd).toBe(folder);
-            expect(host.started?.options.env).toEqual({ HOME: "/home/player", PWD: folder });
+            expect(host.started?.options.env).toEqual({ HOME: "/home/player", PWD: folder, OPENCODE_CONFIG_CONTENT: JSON.stringify({ permission: denied }) });
+        });
+
+        it("denies its reading tools only where the kinds allowed hold no read, and any folder outside the campaign always, in this process alone", () => {
+            const given = (allowed: MasterOptions["allowed"]): unknown => {
+                const host = fakeAgent([]);
+                openMaster("openCode", { ...options(host), allowed });
+                return JSON.parse(String(host.started?.options.env?.OPENCODE_CONFIG_CONTENT));
+            };
+
+            expect(given(tableKinds)).toEqual({ permission: denied });
+            expect(given(["rpg", "read"])).toEqual({ permission: { external_directory: "deny" } });
         });
 
         it("begins the protocol, then opens a new session in the campaign's folder with no MCP server of the table's", async () => {
@@ -328,9 +344,6 @@ describe("the master in OpenCode", () => {
     });
 
     describe("a subagent's session", () => {
-        // The table's own kinds: the character's agent is allowed.
-        const tableKinds: MasterOptions["allowed"] = ["rpg", "read", "web", "fetch", "agent", "image"];
-
         /** The master's own words of a recorded flow, all its turns joined: never those of a subagent's session. */
         function masterWords(flow: FlowEntry[]): string
         {
@@ -396,15 +409,14 @@ describe("the master in OpenCode", () => {
             return turnEnds(events);
         }
 
-        it("holds a tool the subagent ran without asking to the master's limits: a shell, or a read outside the campaign, fails the turn", async () => {
+        it("holds a tool the subagent ran without asking to the master's limits: a shell, or any read of a file, fails the turn", async () => {
             const character = { agent: "rpg-character", prompt: "Bertoldo" };
             expect(await childRuns(character, { name: "execute", rawInput: { code: "return await tools.rpg.view({ as: 'Bertoldo' });" } })).toEqual([{ type: "turnEnd", reason: "done" }]);
             expect(await childRuns(character, { name: "bash", rawInput: { command: "dir" } })).toEqual([{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use bash" }]);
-            expect(await childRuns(character, { name: "read", rawInput: { filePath: "/home/player/.ssh/id_rsa" } })).toEqual([{
-                type: "turnEnd",
-                reason: "failed",
-                why: "the host ran a tool without asking: read read /home/player/.ssh/id_rsa, and the table lets the master read only the campaign's folder",
-            }]);
+            const read = (path: string): Promise<MasterEvent[]> => childRuns(character, { name: "read", rawInput: { filePath: path } });
+            const refused = [{ type: "turnEnd", reason: "failed", why: "the host ran a tool without asking: the table does not let the master use read" }];
+            expect(await read("/home/player/.ssh/id_rsa")).toEqual(refused);
+            expect(await read(join(folder, "world", "a.md"))).toEqual(refused);
         });
 
         it("fails the turn for a session no subagent the table allows started", async () => {
@@ -432,7 +444,6 @@ describe("the master in OpenCode", () => {
     });
 
     describe("a turn the host begins by itself", () => {
-        const tableKinds: MasterOptions["allowed"] = ["rpg", "read", "web", "fetch", "agent", "image"];
         const child = { "opencode/child-session": { id: "ses_child", parentID: "ses_1", depth: 1, title: "Bertoldo" } };
         const hostTurn = { type: "turnStart", by: "host" };
         const silence = 20_000;

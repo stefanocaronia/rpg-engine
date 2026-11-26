@@ -1,7 +1,7 @@
 // The importer (D-483 (10), D-484, D-489): the player's document read by a helper outside the chat piece after piece, the starts proposed, the world set at the
 // one chosen, the pictures its pages show and the license the document gives kept, and an adventure that package install takes.
 import { zipSync } from "fflate";
-import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { parse } from "yaml";
@@ -18,6 +18,8 @@ let folder: string;
 let context: Context;
 const rpg = (...args: string[]) => runCommandLine(args, context);
 const work = () => join(folder, ".imports", "The King");
+// The master's context, the player allowing in a window each document it gives from outside the campaign (D-589 (2)).
+const masterContext = (at: string): Context => ({ ...testContext(at), confirm: { ask: () => Promise.resolve("yes") } });
 
 /**
  * A helper that writes what each brief asks, as a model would, and keeps the briefs; it fails once, writes a manifest the check refuses (once or always), or
@@ -87,7 +89,7 @@ function book(): string
 
 beforeEach(async () => {
     folder = makeTempFolder();
-    context = testContext(folder);
+    context = masterContext(folder);
     await rpg("init", "--name", "Prova", "--language", "it", "--system", "fake");
 });
 
@@ -258,9 +260,9 @@ describe("an import that goes wrong (D-489, Matteo's review of 20 October)", () 
         expect(reader.briefs.at(-1)).toContain("The adventure you wrote failed the engine's check");
 
         const stubborn = join(makeTempFolder(), "c");
-        context = testContext(stubborn);
+        context = masterContext(stubborn);
         await rpg("init", stubborn, "--name", "Prova", "--language", "it", "--system", "fake");
-        context = testContext(stubborn);
+        context = masterContext(stubborn);
         context.reader = fakeReader({ starts: 1, badManifest: "always" });
         const stopped = await rpg("import", book(), "--title", "The King");
         expect(stopped.output).toContain("stopped: the adventure is not right: ");
@@ -382,6 +384,73 @@ describe("the narration as the book is told (Stefano, 21 October)", () => {
     });
 });
 
+describe("a document outside the campaign, read only as the player chose it (D-589 (2))", () => {
+    /** A window of the player's computer that answers `answer` and keeps each question; none at all for "none". */
+    function window(answer: "yes" | "no" | "none"): string[]
+    {
+        const questions: string[] = [];
+        const { confirm: _, ...rest } = context;
+        context = answer === "none" ? rest : { ...rest, confirm: { ask: (title, text) => Promise.resolve((questions.push(`${title}: ${text}`), answer)) } };
+        return questions;
+    }
+
+    /** A folder of notes outside the campaign, as a document the engine reads. */
+    function notes(): string
+    {
+        const notesFolder = join(makeTempFolder(), "Notes");
+        mkdirSync(notesFolder);
+        writeFileSync(join(notesFolder, "notes.md"), `# The pass\n\n${"word ".repeat(300)}`);
+        return notesFolder;
+    }
+
+    it("imports a document in the campaign's inbox with no question", async () => {
+        const questions = window("no");
+        mkdirSync(join(folder, "inbox"), { recursive: true });
+        const inInbox = join(folder, "inbox", "king.pdf");
+        writeFileSync(inInbox, readFileSync(book()));
+        const done = await rpg("import", inInbox, "--title", "The King");
+        expect(done.exitCode).toBe(0);
+        expect(questions).toEqual([]);
+        expect(existsSync(work())).toBe(true);
+    });
+
+    it("asks the player in a window for one elsewhere, and imports it only on their yes", async () => {
+        const document = book();
+        const questions = window("yes");
+        expect((await rpg("import", document, "--title", "The King")).exitCode).toBe(0);
+        expect(questions).toEqual([`A document for the game master: RPG Engine asks to read ${document}, to make an adventure from it, for the game master of Prova. Nothing there is ever changed. Allow it?`]);
+        expect(existsSync(work())).toBe(true);
+    });
+
+    it("reads nothing on the player's no, nor where no window can be shown, and says how the player gives it instead", async () => {
+        const document = book();
+        window("no");
+        const refused = await rpg("import", document, "--title", "The King");
+        expect(refused.output).toContain(`The player did not allow reading ${document}. Nothing changed`);
+        window("none");
+        const unseen = await rpg("import", document, "--title", "The King");
+        expect(unseen.output).toContain(`Only the player can let the engine read ${document}, outside the campaign, in a window of their computer, and none can be shown here: `);
+        expect(unseen.output).toContain(`they can put it in the campaign's inbox folder, for you to import it from there, or type rpg import "${document}" in their terminal`);
+        expect(existsSync(join(folder, ".imports"))).toBe(false);
+    });
+
+    it("asks for a folder reached through a link inside the campaign, by where it really is", async () => {
+        const questions = window("no");
+        const link = join(folder, "inbox", "Notes");
+        mkdirSync(dirname(link), { recursive: true });
+        symlinkSync(notes(), link, "junction");
+        expect((await rpg("import", link)).output).toContain("The player did not allow reading");
+        expect(questions).toHaveLength(1);
+    });
+
+    it("never asks the player for what they typed in their own terminal", async () => {
+        const questions = window("no");
+        context = { ...context, terminal: true };
+        expect((await rpg("import", notes())).exitCode).toBe(0);
+        expect(questions).toEqual([]);
+    });
+});
+
 describe("the import as the dashboard tells it (D-491 (11))", () => {
     it("tells the document being opened and its pages read from their pictures while the master waits, then advises text", async () => {
         context.reader = fakeReader();
@@ -454,9 +523,9 @@ describe("the import as the dashboard tells it (D-491 (11))", () => {
 describe("free play, without a game system (D-307, D-489 (7))", () => {
     it("keeps a sheet of words, with no number to check", async () => {
         const free = makeTempFolder();
-        context = testContext(free);
+        context = masterContext(free);
         await rpg("init", "--name", "Libero", "--language", "it", "--system", "free");
-        context = testContext(free);
+        context = masterContext(free);
         await rpg("write", "Ettore", "--type", "character", "--set", "role=pc", "--set", "concept=un marinaio senza nave", "--set", "abilities=[vela, il coltello lungo]");
         expect((await rpg("show", "Ettore")).output).toContain("Character: concept un marinaio senza nave · abilities vela, il coltello lungo");
         expect((await rpg("validate")).output).toBe("No problems.");

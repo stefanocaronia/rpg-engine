@@ -75,7 +75,8 @@ function setDay(day: number): void
 
 beforeEach(async () => {
     folder = makeTempFolder();
-    context = testContext(folder);
+    // The player allows in a window each adventure the master installs from outside the campaign (D-589 (2)).
+    context = { ...testContext(folder), confirm: { ask: () => Promise.resolve("yes") } };
     await rpg("init", "--name", "Prova", "--language", "en", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
     inPlay(folder);
 });
@@ -296,7 +297,7 @@ describe("the layers an adventure carries over its game system (ADV-8, SYS-11)",
     async function otherCampaign(played: boolean): Promise<{ root: string; run: (...args: string[]) => ReturnType<typeof runCommandLine>; }>
     {
         const root = makeTempFolder();
-        const own = testContext(root);
+        const own: Context = { ...testContext(root), confirm: { ask: () => Promise.resolve("yes") } };
         const run = (...args: string[]) => runCommandLine(args, own);
         await run("init", "--name", "Altrove", "--language", "en", "--system", "fake", "--difficulty", "normal", "--lethality", "dice");
 

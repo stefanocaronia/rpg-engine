@@ -67,3 +67,20 @@ export async function playerYes(context: Context, name: string, pack: string, lo
         "no-window",
     );
 }
+
+/**
+ * The player's yes in a window of their computer alone, for what the master cannot allow (D-478, D-589 (2)): it throws with `declined` where they say no, and
+ * with `noWindow`, which says what the player can do instead, where none can be shown.
+ */
+export async function windowYes(context: Context, title: string, question: string, declined: string, noWindow: string): Promise<void>
+{
+    const answer = context.confirm === undefined ? "none" : await context.confirm.ask(title, question, context.signal, { yes: "Allow", no: "Do not allow" });
+
+    if (answer === "no") {
+        throw new YesRefused(declined, "declined");
+    }
+
+    if (answer === "none") {
+        throw new YesRefused(noWindow, "no-window");
+    }
+}

@@ -9,7 +9,7 @@ import { documentAt, documentKinds } from "../../../documents/index.ts";
 import { dropUnlisted, foldersIn, isWithin, type LibraryBook, libraryFolders, libraryReader, type LibraryScope, type LibraryState, libraryState, mostBooks, samePath, saveLibraryFolders } from "../../../library/index.ts";
 import { bookHeadings, findPages, hasAllWords, pageExcerpt, type PageFinding, pageTitle, type SearchedBook } from "../../../rules/index.ts";
 import { layeredSystemWords, systemContentFolders } from "../../../systems/index.ts";
-import { YesRefused } from "../../package/consent.ts";
+import { windowYes } from "../../package/consent.ts";
 import { languageName } from "../campaign/world.ts";
 
 /** What rules shows of the player's books (LIB-7). */
@@ -514,19 +514,14 @@ async function playerAllows(root: string, context: Context, entries: string[]): 
     const campaign = readTextSetting(root, "name") ?? basename(root);
     const question = `RPG Engine asks to read the documents in ${entries.join(", ")}, to search your books for the rules: for the game master of ${campaign}, `
         + "and of each campaign where you turn them on. Their text stays on this computer, in RPG Engine's own folder, and nothing in those folders is ever changed. Allow it?";
-    const answer = context.confirm === undefined ? "none" : await context.confirm.ask("Your books for the game master", question, context.signal, { yes: "Allow", no: "Do not allow" });
-
-    if (answer === "no") {
-        throw new YesRefused("The player did not allow it. Nothing changed: ask again only if they bring it up.", "declined");
-    }
-
-    if (answer === "none") {
-        throw new YesRefused(
-            "Only the player can add a folder to the library, in a window of their computer, and none can be shown here: they can add it in their terminal, "
-                + `in the campaign's folder, with rpg config library ${entries.map((entry) => `--add "${entry}"`).join(" ")}. Nothing changed.`,
-            "no-window",
-        );
-    }
+    await windowYes(
+        context,
+        "Your books for the game master",
+        question,
+        "The player did not allow it. Nothing changed: ask again only if they bring it up.",
+        "Only the player can add a folder to the library, in a window of their computer, and none can be shown here: they can add it in their terminal, "
+            + `in the campaign's folder, with rpg config library ${entries.map((entry) => `--add "${entry}"`).join(" ")}. Nothing changed.`,
+    );
 }
 
 /** Why a book was skipped, without its name, which config gives: "asks for a password to open". */

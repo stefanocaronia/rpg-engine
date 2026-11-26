@@ -179,8 +179,8 @@ const silentTurn = "The master ended its turn without writing anything. Write to
 const refusedTool = (name: string): string => `It tried to use ${name.slice(0, 60)}, which the master may not use here.`;
 // What the table writes to the master, once in a turn of the player's, where the host ended a turn without a word after a tool it was refused.
 const goOnLine = (name: string): string => `The table refused ${name.slice(0, 60)}: you cannot use it here. Go on with the game's commands, and answer the player.`;
-// The kinds of tools the master may use at the table: a page of the web read too, never the shell nor a write.
-const allowed = ["rpg", "read", "web", "fetch", "agent", "image"] as const;
+// The kinds of tools the master may use at the table: the game's commands and the web, never a file read, written or run by the host's own tools (D-589).
+const allowed = ["rpg", "web", "fetch", "agent", "image"] as const;
 // What the page reads where the table was given no programs to ask, as a table a test started; and of another model asked while the master answers.
 const noAccess = "This table cannot sign in to the AI apps or install them: start it again with rpg table in the campaign's folder, then try again.";
 const answering = "The master is answering: change the model once they have finished.";

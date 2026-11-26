@@ -1,7 +1,7 @@
 import { basename, extname, join, relative, resolve, sep } from "node:path";
 import { z } from "zod";
 import { adventureFolderName, isAdventureFolder, readAdventureZip } from "../../adventures/index.ts";
-import { changeSetting, readSettings, requireCampaign, storyWays } from "../../campaign/index.ts";
+import { changeSetting, inboxFolderName, readSettings, requireCampaign, storyWays } from "../../campaign/index.ts";
 import type { Context } from "../../core/context.ts";
 import { appendLogEntry } from "../../core/log.ts";
 import { stopTree } from "../../core/process.ts";
@@ -36,6 +36,7 @@ import {
     writeImportState,
 } from "../../importer/index.ts";
 import { installedAdventures } from "../shared/books/adventures.ts";
+import { readChosen } from "../shared/campaign/chosen.ts";
 import { campaignMode } from "../shared/campaign/mode.ts";
 import { situationPart } from "../shared/campaign/parts.ts";
 import { campaignSystem, campaignWorld } from "../shared/campaign/world.ts";
@@ -71,7 +72,9 @@ export const importCommand = defineCommand({
         + "or a folder of them; text, or a PDF whose text can be selected, reads best: a scan is read from its pictures, on Windows only, slowly and with mistakes. "
         + "A helper on this computer reads it outside the chat, piece after piece, and writes the pages; it takes minutes, and goes on by itself. "
         + "From a book it proposes three or four starting points: ask the player whether they have read it, let them choose, then give start; the world is then written "
-        + "as it stands there. When it is done, install it with package install. Where no helper is on this computer, it gives you the document a piece at each call, to write its pages with write. Call import alone to see how far it is. Example: document C:\\Users\\me\\Books\\novel.pdf.",
+        + "as it stands there. When it is done, install it with package install. Where no helper is on this computer, it gives you the document a piece at each call, to write its pages with write. Call import alone to see how far it is. "
+        + "A document in the campaign, as in its inbox folder, where the player puts theirs, is read at once; one elsewhere only once the player allows it in a window of their computer. "
+        + "Example: document inbox/novel.pdf.",
     group: "game",
     positionals: ["document"],
     input: z.object({
@@ -298,6 +301,12 @@ async function startImport(root: string, context: Context, document: string, tit
     if (hasImport(folder)) {
         throw new Error(`An import called ${name} is already in the campaign: give another title. Nothing changed.`);
     }
+
+    await readChosen(root, context, document, {
+        title: "A document for the game master",
+        purpose: "to make an adventure from it",
+        instead: `put it in the campaign's ${inboxFolderName} folder, for you to import it from there, or type rpg import "${document}" in their terminal, in the campaign's folder`,
+    });
 
     // The dashboard tells the player the document is being opened, and how far its pages are read from their pictures, while the master waits (D-491 (11)).
     if (!beginOpening(root, name)) {

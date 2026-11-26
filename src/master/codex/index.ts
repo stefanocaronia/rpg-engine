@@ -28,7 +28,7 @@ export const codex: MasterDriver = {
 /** Opens a chat with the master in Codex, or takes one up again by its thread; the player's words wait until the model is confirmed. */
 function openCodex(options: MasterOptions): MasterChat
 {
-    const shared = startHost(options, hosts.codex.name, serverArguments(options.folder));
+    const shared = startHost(options, hosts.codex.name, serverArguments(options.folder, options.allowed));
     const state: State = {
         ...shared,
         requests: new Requests((line) => shared.process.write(line)),

@@ -14,7 +14,7 @@ const folder = "/campaigns/test";
 const model = "gpt-6-luna";
 const thread = "thr_1";
 // The kinds of tools the table allows.
-const tableKinds: MasterOptions["allowed"] = ["rpg", "read", "web", "fetch", "agent", "image"];
+const tableKinds: MasterOptions["allowed"] = ["rpg", "web", "fetch", "agent", "image"];
 // The flows of codex-cli 0.171.0 (24 Nov): a new chat of two turns that runs rpg's commands without asking, as the campaign's configuration lets them.
 // Codex asked no approval and took no thread up in those runs: the refused flow is the first turn with each command asking its approval as an MCP form of
 // the shape guessed, and the resumed one the same turn on thread/resume.
@@ -38,7 +38,22 @@ describe("the master in Codex", () => {
             const host = fakeCodex([]);
             codex.open({ ...options(host), environment: { HOME: "/home/player" } });
             expect(host.started?.command).toBe("codex-program");
-            expect(host.started?.args).toEqual(["--first", "app-server", "-c", `projects.${folder}.trust_level="trusted"`, "-c", "check_for_update_on_startup=false", "-c", "features.apps=false", "-c", "features.plugins=false"]);
+            expect(host.started?.args).toEqual([
+                "--first",
+                "app-server",
+                "-c",
+                `projects.${folder}.trust_level="trusted"`,
+                "-c",
+                "check_for_update_on_startup=false",
+                "-c",
+                "features.apps=false",
+                "-c",
+                "features.plugins=false",
+                "-c",
+                "features.shell_tool=false",
+                "-c",
+                "features.view_image=false",
+            ]);
             expect(host.started?.options.cwd).toBe(folder);
             expect(host.started?.options.env).toEqual({ HOME: "/home/player" });
         });
@@ -57,7 +72,23 @@ describe("the master in Codex", () => {
                 "features.apps=false",
                 "-c",
                 "features.plugins=false",
+                "-c",
+                "features.shell_tool=false",
+                "-c",
+                "features.view_image=false",
             ]);
+        });
+
+        it("keeps its shell and its look at a picture only where the kinds allowed hold them: never at the table, which allows neither", () => {
+            const started = (allowed: MasterOptions["allowed"]): string[] => {
+                const host = fakeCodex([]);
+                codex.open({ ...options(host), allowed });
+                return (host.started?.args ?? []).filter((arg) => arg.startsWith("features.shell_tool") || arg.startsWith("features.view_image"));
+            };
+
+            expect(started(tableKinds)).toEqual(["features.shell_tool=false", "features.view_image=false"]);
+            expect(started(["rpg", "shell"])).toEqual(["features.view_image=false"]);
+            expect(started(["rpg", "read"])).toEqual(["features.shell_tool=false"]);
         });
 
         it("begins the protocol as the table, reads its configuration and the account, then opens a thread with the model, the effort, its approvals, its sandbox and no web search", async () => {

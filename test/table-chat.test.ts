@@ -197,13 +197,13 @@ describe("the table's chat with the master", () => {
         expect(chat.shown().hosts[0].found).toBe(false);
     });
 
-    it("opens the host's program in the campaign, with the tools of the table, the driver's environment and a token of its own", () => {
+    it("opens the host's program in the campaign, with the tools of the table, none that reads a file, the driver's environment and a token of its own", () => {
         const { chat, master } = opened();
         expect(master.options).toEqual({
             folder: root,
             program: { command: "claude-program", args: [] },
             model: "sonnet",
-            allowed: ["rpg", "read", "web", "fetch", "agent", "image"],
+            allowed: ["rpg", "web", "fetch", "agent", "image"],
             environment: { PATH: "/bin", DRIVER: "yes", RPG_TABLE_MASTER: "token-1" },
             failed: expect.any(Function) as unknown,
             log: expect.any(Function) as unknown,

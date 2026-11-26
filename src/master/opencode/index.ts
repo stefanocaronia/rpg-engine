@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { acpModels, openAcp } from "../acp/index.ts";
 import type { MasterDriver } from "../chat.ts";
 import { isFile } from "../program.ts";
-import { inFolder, openCodeEnvironment, openCodeProgram } from "./program.ts";
+import { inFolder, masterEnvironment, openCodeEnvironment, openCodeProgram } from "./program.ts";
 import { openCodeAcp } from "./tools.ts";
 
 /** OpenCode as the table drives it: the model a new chat proposes is the first OpenCode lists, the one it would play itself. */
 export const openCode: MasterDriver = {
-    open: (options) => openAcp({ ...options, environment: inFolder(options.environment, options.folder) }, openCodeAcp),
+    open: (options) => openAcp({ ...options, environment: masterEnvironment(inFolder(options.environment, options.folder), options.allowed) }, openCodeAcp),
     missing: (folder) =>
         isFile(join(folder, "opencode.json"))
             ? undefined

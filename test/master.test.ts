@@ -81,6 +81,11 @@ describe("the master in Claude Code", () => {
             expect(args.slice(args.indexOf("--tools"))).toEqual(["--tools", "WebFetch,Task", "--settings", '{"permissions":{"ask":["Agent"]}}']);
         });
 
+        it("gives the table's master no tool that reads, writes or runs on the computer: the web and the subagent alone, beside the rpg server", () => {
+            const args = open([], { allowed: ["rpg", "web", "fetch", "agent", "image"] }).host.started?.args ?? [];
+            expect(args[args.indexOf("--tools") + 1]).toBe("WebSearch,WebFetch,Task");
+        });
+
         it("lists only the kinds allowed: searching the web is not fetching from it", () => {
             const { host } = open([], { allowed: ["read", "web"] });
             expect(host.started?.args.at(-1)).toBe("Read,Glob,Grep,WebSearch");

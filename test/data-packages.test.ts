@@ -89,7 +89,7 @@ const themesThere = (): string[] => (existsSync(join(unpacked, "themes")) ? read
 beforeEach(async () => {
     folder = makeTempFolder();
     unpacked = join(makeTempFolder(), "unpacked");
-    context = { ...testContext(folder), unpacked, pageFolder: fileURLToPath(new URL("../src/dashboard/", import.meta.url)) };
+    context = { ...testContext(folder), unpacked, pageFolder: fileURLToPath(new URL("../src/dashboard/", import.meta.url)), confirm: { ask: () => Promise.resolve("yes") } };
     const made = await rpg("init", "--name", "Prova", "--language", "en", "--system", "free", "--difficulty", "normal", "--lethality", "dice");
     expect(made.exitCode, made.output).toBe(0);
     inPlay(folder);
@@ -125,6 +125,25 @@ describe("a theme as a package of its own", () => {
         expect(asked).toEqual(["https://codeload.github.com/ada/ledger/zip/HEAD"]);
         expect(themesThere()).toEqual(["ledger"]);
         expect(readFileSync(join(unpacked, "themes", "ledger", ".source"), "utf8")).toBe("https://github.com/ada/ledger\n");
+    });
+
+    it("asks the player in a window for a .zip or a folder outside the campaign, never for one inside it (D-589 (2))", async () => {
+        const questions: string[] = [];
+        context = { ...context, confirm: { ask: (title, text) => Promise.resolve((questions.push(`${title}: ${text}`), "no")) } };
+        const zip = zipOf(themeFiles());
+        expect((await rpg("package", "install", zip)).output).toContain(`The player did not allow reading ${zip}. Nothing changed`);
+        expect(questions).toEqual([`A package for the game: RPG Engine asks to read ${zip}, a package of this computer, to install it, for the game master of Prova. Nothing there is ever changed. Allow it?`]);
+        expect(themesThere()).toEqual([]);
+
+        const author = folderOf(themeFiles());
+        expect((await rpg("package", "install", author, "--link")).output).toContain(`The player did not allow reading ${author}. Nothing changed`);
+        expect(themesThere()).toEqual([]);
+
+        const inside = join(folder, "inbox", "ledger.zip");
+        mkdirSync(join(folder, "inbox"), { recursive: true });
+        cpSync(zip, inside);
+        expect((await rpg("package", "install", inside)).output).toContain("Installed the theme Ledger for every campaign");
+        expect(questions).toHaveLength(2);
     });
 
     it("reads a link's branch or tag as codeload names it, each part written as an address writes it", () => {

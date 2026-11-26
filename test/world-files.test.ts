@@ -11,7 +11,8 @@ let context: Context;
 
 beforeEach(async () => {
     folder = makeTempFolder();
-    context = testContext(folder);
+    // The player allows in a window each package the master installs from outside the campaign (D-589 (2)).
+    context = { ...testContext(folder), confirm: { ask: () => Promise.resolve("yes") } };
     await runCommandLine(["init", "--name", "Guadoscuro", "--language", "it", "--system", "fake", "--difficulty", "normal", "--lethality", "dice"], context);
 });
 

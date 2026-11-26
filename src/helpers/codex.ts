@@ -67,8 +67,25 @@ export function readingLine(program: string, platform: NodeJS.Platform): string
     // --ignore-user-config drops [windows] sandbox too, and without it Codex runs workspace-write as read-only, refusing every command (Elena, 26 November).
     const sandbox = platform === "win32" ? " -c windows.sandbox=unelevated" : "";
     // The folder is the working one, never in the line: the shell would read a title's $(…) or %…% (Matteo's review, D-489).
-    return `${program} exec --ephemeral --skip-git-repo-check -s workspace-write${sandbox} -c shell_environment_policy.inherit=core -o .last.txt --ignore-user-config --ignore-rules -`;
+    return `${program} exec --ephemeral --skip-git-repo-check -s workspace-write${sandbox} -c shell_environment_policy.inherit=core ${offTheWeb} -o .last.txt --ignore-user-config --ignore-rules -`;
 }
+
+/** The line that makes one picture in `folder`, its last words in `last`: the image tool alone, with no shell, no look at the computer's pictures and no web. */
+export function paintingLine(program: string, folder: string, last: string): string
+{
+    return `${program} exec --ephemeral --skip-git-repo-check -s read-only ${closed} -C "${folder}" --json -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
+}
+
+/** The line that writes one brief's answer in `folder`, in `last`: no tool at all of those that reach the computer or the web. */
+export function writingLine(program: string, folder: string, last: string): string
+{
+    return `${program} exec --ephemeral --skip-git-repo-check -s read-only ${closed} -C "${folder}" -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
+}
+
+// A helper off the web (D-589 (3)): no search, and its commands with no network, as its sandbox has by default; and one that needs no command, closed whole,
+// as its shell would read the whole computer, which a sandbox lets it.
+const offTheWeb = '-c web_search="disabled" -c sandbox_workspace_write.network_access=false';
+const closed = `-c features.shell_tool=false -c features.view_image=false ${offTheWeb}`;
 
 /** Whether Codex is there and logged in with ChatGPT: asked in about a second, without spending anything. */
 function codexReady(): PicturesReady
@@ -92,7 +109,7 @@ function make(subject: PictureSubject): Promise<MadePicture | { refused: string;
 {
     const folder = mkdtempSync(join(tmpdir(), "rpg-picture-"));
     const last = join(folder, "last.txt");
-    const line = `${codex} exec --ephemeral --skip-git-repo-check -s read-only -C "${folder}" --json -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
+    const line = paintingLine(codex, folder, last);
 
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "pipe", "pipe"] });
@@ -144,7 +161,7 @@ function write(brief: string): Promise<string | undefined>
 {
     const folder = mkdtempSync(join(tmpdir(), "rpg-writing-"));
     const last = join(folder, "last.txt");
-    const line = `${codex} exec --ephemeral --skip-git-repo-check -s read-only -C "${folder}" -o "${last}" --ignore-user-config --ignore-rules -c model_reasoning_effort="low" -`;
+    const line = writingLine(codex, folder, last);
 
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "ignore"] });

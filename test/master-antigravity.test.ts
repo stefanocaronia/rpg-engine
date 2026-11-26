@@ -130,7 +130,7 @@ describe("the master in Antigravity", () => {
 
     describe("recorded turns (agy 1.5.17, gemini-3.8-flash)", () => {
         // The table's own kinds.
-        const tableKinds: MasterOptions["allowed"] = ["rpg", "read", "web", "fetch", "agent", "image"];
+        const tableKinds: MasterOptions["allowed"] = ["rpg", "web", "fetch", "agent", "image"];
 
         function playRecorded(name: string): ReturnType<typeof play> & { flow: FlowEntry[]; }
         {

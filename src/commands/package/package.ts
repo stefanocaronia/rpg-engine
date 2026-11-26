@@ -12,6 +12,7 @@ import { installedExtensions, readExtension, shortName } from "../../extensions/
 import { isVerified } from "../../packages/index.ts";
 import type { LayeredPage, LayerLeftOut, LayersInstalled } from "../shared/books/adventure-layers.ts";
 import { type AdventureExported, type AdventureInstalled, type AdventureRemoved, exportAdventure, installedAdventures, removeAdventure, storyTouching } from "../shared/books/adventures.ts";
+import { readChosen } from "../shared/campaign/chosen.ts";
 import { listedExtensions } from "../shared/packages/extensions.ts";
 import { installDataPackage, isDataSpec, readDataSpec } from "./data.ts";
 import { issuesOf, languagesHere, systemsHere, usable } from "./here.ts";
@@ -25,7 +26,8 @@ export const packageCommand = defineCommand({
     description: "The packages of the campaign: extensions such as weather, from npm; adventures, dashboard themes and languages, as a .zip, a folder or a GitHub link "
         + "with adventure.yaml, theme.yaml or language.yaml; a theme or a language serves every campaign on this computer. "
         + "list says those on this computer and those the campaign uses; available, those npm has, and updates; RPG Engine itself is updated by the player on the dashboard's Packages page, never by you. install adds or updates one, on this computer and in the campaign, "
-        + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked in the host's form, or in a window of their computer. "
+        + "only once the player wants it; one not published by RPG Engine (@rpgengine/…) is someone else's: the player is asked in the host's form, or in a window of their computer; "
+        + "a .zip or a folder outside the campaign is read only once the player allows it in a window. "
         + "An adventure is installed when you bring its hook into the story, once the player wants it as the next. "
         + "remove takes one out of the campaign; uninstall takes it off this computer; export writes the campaign's world, as it was at its start, as an adventure; "
         + "new makes a theme for its author. "
@@ -64,7 +66,13 @@ export const packageCommand = defineCommand({
                 throw new Error(input.action === "new" ? 'Give the new theme\'s name, such as package new "Old Parchment".' : "Give the theme's folder to link, such as package install ../my-theme --link.");
             }
 
-            return input.action === "new" ? themeMade(root, context, name, input.folder) : themeLinked(root, context, linkableFolder(context, name));
+            if (input.action === "new") {
+                return themeMade(root, context, name, input.folder);
+            }
+
+            const folder = linkableFolder(context, name);
+            await readChosen(root, context, folder, packageRead);
+            return themeLinked(root, context, folder);
         }
 
         if (root === undefined && input.action === "uninstall" && name !== undefined && name !== "") {
@@ -85,8 +93,17 @@ export const packageCommand = defineCommand({
             throw new Error(`Give the package to ${input.action}, such as package ${input.action} weather.`);
         }
 
+        if (input.action === "install" && isDataSpec(name)) {
+            // A .zip or a folder of this computer, by the path readDataSpec reads; a link is the web's, free.
+            if (!/^https:\/\//i.test(name)) {
+                await readChosen(campaign, context, resolve(name), packageRead);
+            }
+
+            return await installDataPackage(campaign, context, await readDataSpec(name, context), name);
+        }
+
         if (input.action === "install") {
-            return isDataSpec(name) ? await installDataPackage(campaign, context, await readDataSpec(name, context), name) : await installed(campaign, context, name);
+            return await installed(campaign, context, name);
         }
 
         const adventure = installedAdventures(campaign).find((one) => comparableText(one.title) === comparableText(name));
@@ -343,6 +360,13 @@ function themeInstalledText(result: Extract<PackageResult, { kind: "theme-instal
         : `Linked the theme ${named}, read from ${linked}: it shows in the dashboard of any campaign on this computer, chosen in Settings, and the dashboard shows each change by itself.`;
     return `${said}${was}${refused}`;
 }
+
+// What the player's window says of a package of this computer, outside the campaign, and how they give it instead (D-589 (2)).
+const packageRead = {
+    title: "A package for the game",
+    purpose: "a package of this computer, to install it",
+    instead: "add it on the dashboard's Packages page, or type the same package install in their terminal, in the campaign's folder",
+};
 
 /** The folder of this computer package install links, a theme's: refused when it is a .zip, a link, an npm name or a folder with no theme.yaml at its top. */
 function linkableFolder(context: Context, name: string): string
