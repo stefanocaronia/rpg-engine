@@ -7,7 +7,7 @@ import { campaignFileName, readOneSetting, readTextSetting } from "../../../camp
 import type { Context } from "../../../core/context.ts";
 import type { CardTint, PackageCode, Track, Widget, WidgetText, WidgetValue } from "../../../core/packages/api.ts";
 import { type CardPage, cardPages, type FigureSize } from "../../../core/packages/api.ts";
-import { type DeclaredWidget, type WidgetPlace, widgetPlaces } from "../../../core/packages/declarations.ts";
+import { type ChipRow, type DeclaredWidget, type WidgetPlace, widgetPlaces } from "../../../core/packages/declarations.ts";
 import type { Problem } from "../../../core/problem.ts";
 import { files } from "../../../core/store.ts";
 import { comparableText } from "../../../core/text.ts";
@@ -37,6 +37,8 @@ export interface ShownWidget extends WidgetSpot
     from: string;
     title: string;
     own: WidgetSpot;
+    /** Where its chip stands, as its package says: in the row of the world, unless it says the top. */
+    where?: ChipRow;
     /** The path of its icon. */
     icon?: string;
     /** What it shows now; none while it has nothing to show, or is off. */
@@ -119,6 +121,7 @@ export async function campaignWidgets(root: string, context: Context): Promise<S
                 title: wordIn(words.read, widget.title),
                 ...spot,
                 own,
+                ...(widget.where === undefined ? {} : { where: widget.where }),
                 ...(widget.icon === undefined ? {} : { icon: extension.icons[widget.icon] }),
                 ...(words.problem === undefined ? {} : { problem: words.problem }),
                 ...pageOf(extension),

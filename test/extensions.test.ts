@@ -159,10 +159,11 @@ describe("a campaign's extensions", () => {
 describe("a campaign's widgets on the dashboard (D-502)", () => {
     it("stand where their extension puts them, show what their hook gives, checked, and never the state", async () => {
         await campaign("free", { "@rpgengine/omens": "1.2.0" });
-        expect((await campaignWidgets(folder, context)).map((widget) => [widget.id, widget.place, widget.page, widget.order, widget.shows === undefined])).toEqual([
-            ["omens.last", "side", undefined, 2, true],
-            ["omens.every", "page", "journal", 0, false],
-            ["omens.broken", "top", undefined, 0, true],
+        expect((await campaignWidgets(folder, context)).map((widget) => [widget.id, widget.place, widget.page, widget.order, widget.shows === undefined, widget.where])).toEqual([
+            ["omens.last", "side", undefined, 2, true, undefined],
+            ["omens.every", "page", "journal", 0, false, undefined],
+            // A chip says where it stands: the top, for the table's own; else the row of the world.
+            ["omens.broken", "top", undefined, 0, true, "top"],
         ]);
 
         await rpg("omens", "--question", "will the bridge hold");
@@ -583,19 +584,19 @@ describe("the API 3 of an extension's code (D-505)", () => {
         expect(readLogFile(folder)).toHaveLength(lines);
     });
 
-    it("read packages made for the API 1 to 9, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
-        expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, true, true, true, true, false, false, false]);
+    it("read packages made for the API 1 to 10, as omens, skies, wards and charms, and refuse one made for a newer, with what to install (D-515)", () => {
+        expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 2.5, undefined].map((api) => readsApi(api, "extension"))).toEqual([false, true, true, true, true, true, true, true, true, true, true, false, false, false]);
         // A game system's first API is 5, the one contract (D-514).
-        expect([1, 4, 5, 6, 7, 8, 9, 10].map((api) => readsApi(api, "system"))).toEqual([false, false, true, true, true, true, true, false]);
+        expect([1, 4, 5, 6, 7, 8, 9, 10, 11].map((api) => readsApi(api, "system"))).toEqual([false, false, true, true, true, true, true, true, false]);
         expect(findExtension(testExtensionFolders, "omens")?.adds).toEqual({});
         expect(findExtension(testExtensionFolders, "skies")?.name).toBe("skies");
         expect(findExtension(testExtensionFolders, "wards")?.adds.counters).toEqual({ "ward-charges": { max: "wit-bonus + 1" }, nerve: { min: -6, max: 8 } });
 
         const newer = join(folder, "newer");
         cpSync(join(testExtensionFolders[0], "wards"), newer, { recursive: true });
-        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 10 } }));
+        writeFileSync(join(newer, "package.json"), JSON.stringify({ name: "@rpgengine/wards", version: "9.0.0", "rpg-engine": { kind: "extension", api: 11 } }));
         expect(() => readExtension(newer)).toThrow(
-            "The extension @rpgengine/wards cannot be used, because it is made for the API 10, and this rpg-engine reads the API 1 to 9 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
+            "The extension @rpgengine/wards cannot be used, because it is made for the API 11, and this rpg-engine reads the API 1 to 10 for an extension: rpg-engine must be updated first: ask the player to update it on the Packages page of their dashboard, or as they installed it, then open a new chat.",
         );
     });
 });

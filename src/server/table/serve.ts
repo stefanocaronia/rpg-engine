@@ -46,6 +46,8 @@ export interface TableOptions
     /** How long the table waits with no chat and no page before it ends, and how often it looks, in ms. */
     idle?: number;
     idleEvery?: number;
+    /** How long it waits once its last page went, never longer than `idle`, in ms. */
+    gone?: number;
     /** How long a knock may take to say hello, in ms. */
     helloWait?: number;
     now?: () => number;
@@ -85,8 +87,10 @@ interface Parts
     chat: TableChat;
 }
 
-const idle = 5 * 60_000;
-const idleEvery = 15_000;
+// A table ends as its last window closes, the few seconds a page takes to load again aside; one whose page never came, half a minute after it started.
+const idle = 30_000;
+const gone = 3000;
+const idleEvery = 1000;
 const helloWait = 2000;
 // How long a table already there may take to answer a knock, and a probe.
 const knockWait = 1000;
@@ -319,28 +323,31 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
     writePlace(options.home, place);
     // The code of a package changed on disk since the table loaded it: the next start loads it, once no call and no turn of its own chat runs.
     context.codeOutdated = () => (outdated = true);
-    const idleFor = options.idle ?? idle;
-    // The table's own chat with no page for as long: its turn is stopped, and the wait starts again; out of a turn it is closed, its seat frees, and the
-    // table's own end follows.
+    // How long the table waits with no page: a moment once a page came and left, longer while its first has not come.
+    let paged = false;
+    const idleFor = (): number => (paged ? options.gone ?? Math.min(gone, options.idle ?? idle) : options.idle ?? idle);
+    // The table's own chat with no page for as long: its turn is stopped; out of a turn it is closed, its seat frees, and the table's own end follows.
     let chatBusy = now();
     const looking = setInterval(() => {
+        paged ||= dashboard.pages() > 0;
+
         if (!chat.active() || dashboard.pages() > 0) {
             chatBusy = now();
-        } else if (now() - chatBusy >= idleFor && chat.inTurn()) {
+        } else if (now() - chatBusy >= idleFor() && chat.inTurn()) {
             chatBusy = now();
             chat.stop();
-            log(`The table stopped its chat's turn: no page for ${Math.round(idleFor / 1000)} s.`);
-        } else if (now() - chatBusy >= idleFor) {
+            log(`The table stopped its chat's turn: its page went.`);
+        } else if (now() - chatBusy >= idleFor()) {
             chat.release();
-            log(`The table closed its chat with the master: no turn and no page for ${Math.round(idleFor / 1000)} s.`);
+            log(`The table closed its chat with the master: no turn and no page.`);
         }
 
         if (outdated && (context.chat?.calls ?? 0) === 0 && !chat.inTurn()) {
             void end("the code of a package of the campaign changed on disk since the table loaded it");
         } else if (seat.taken() || dashboard.pages() > 0) {
             lastBusy = now();
-        } else if (now() - lastBusy >= idleFor) {
-            void end(`no chat and no page for ${Math.round(idleFor / 1000)} s`);
+        } else if (now() - lastBusy >= idleFor()) {
+            void end(paged ? "its last page went, with no chat" : `no chat and no page for ${Math.round(idleFor() / 1000)} s`);
         }
     }, options.idleEvery ?? idleEvery);
 

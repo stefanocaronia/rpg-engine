@@ -1,4 +1,4 @@
-// The widgets of the campaign's extensions (D-502), drawn with the page's own parts: a chip in the top, cards in the table's column and at the end of a page.
+// The widgets of the campaign's extensions (D-502), drawn with the page's own parts: a chip in a row of the top, cards in the table's column and at the end of a page.
 // What they show comes from the server, in the campaign's language, checked; the page writes their values in its own language, isolated right to left.
 import { type ComponentChildren, createContext } from "preact";
 import { useContext, useEffect, useRef } from "preact/hooks";
@@ -33,13 +33,16 @@ const pageSections: Record<WidgetPage, Section> = { scene: "scene", sheet: "part
 // The card a chip in the top has just led to, which brings itself into view as it is drawn.
 let wanted: string | undefined;
 
-/** The chips of the widgets in the top, after the time: each its icon and its few words, its whole sentence in its tip and for a screen reader. */
-export function WidgetChips()
+/**
+ * The chips of the widgets in a row of the top: the row of the world, after the game's time, by default; the top beside the campaign's name where their package
+ * says. Each its icon and its few words, its whole sentence in its tip and for a screen reader.
+ */
+export function WidgetChips({ where }: { where: "row" | "top"; })
 {
     const widgets = useContext(WidgetsContext);
     return (
         <>
-            {inPlace(widgets, "top").filter((widget) => widget.shows !== undefined).map((widget) => <WidgetChip key={widget.id} widget={widget} card={cardOf(widgets, widget)} />)}
+            {inPlace(widgets, "top").filter((widget) => widget.shows !== undefined && (widget.where ?? "row") === where).map((widget) => <WidgetChip key={widget.id} widget={widget} card={cardOf(widgets, widget)} />)}
         </>
     );
 }

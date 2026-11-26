@@ -48,6 +48,8 @@ export interface LauncherOptions
     /** How long the launcher waits with no page and no request before it ends, and how often it looks, in ms. */
     idle?: number;
     idleEvery?: number;
+    /** How long it waits once its last page went, never longer than `idle`, in ms. */
+    gone?: number;
     /** How long a launcher just started looks for another started beside it, in ms. */
     lookAgainFor?: number;
     now?: () => number;
@@ -81,8 +83,10 @@ export type LauncherRunOptions = Partial<LauncherOptions> & { exit?: (code: numb
 
 // The launcher's ports: a few of its own, then any the system gives.
 const launcherPorts = [5750, 5751, 5752, 5753, 5754, 5755, 5756, 5757, 5758, 5759, 0];
-const idle = 10 * 60_000;
-const idleEvery = 30_000;
+// A launcher ends as its last window closes, the few seconds a page takes to load again aside; one whose page never came, half a minute after it started.
+const idle = 30_000;
+const gone = 3000;
+const idleEvery = 1000;
 // How long a table may take to answer whether it is there, for the list.
 const listProbeWait = 500;
 // How long a launcher just started looks for one started beside it, as two double clicks start them, and how often.
@@ -320,11 +324,17 @@ function atWork(server: Server, port: number, options: LauncherOptions): Launche
         });
     });
 
+    // How long it waits with no page: a moment once a page came and left, longer while its first has not come.
+    let paged = false;
+
     const looking = setInterval(() => {
+        const waitFor = paged ? options.gone ?? Math.min(gone, options.idle ?? idle) : options.idle ?? idle;
+
         if (pages.size > 0) {
+            paged = true;
             lastBusy = now();
-        } else if (now() - lastBusy >= (options.idle ?? idle)) {
-            void end(`no page and no request for ${Math.round((options.idle ?? idle) / 1000)} s`);
+        } else if (now() - lastBusy >= waitFor) {
+            void end(paged ? "its last page went" : `no page and no request for ${Math.round(waitFor / 1000)} s`);
         }
     }, options.idleEvery ?? idleEvery);
     looking.unref();

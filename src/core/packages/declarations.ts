@@ -10,9 +10,9 @@ export type { CardPage, FigureSize };
  * The version of the API a package is made for, which its package.json names as rpg-engine.api: the contract its code is given and what its extension.yaml or
  * system.yaml may declare. It goes up with every addition an older engine would refuse or misread, and the engine reads a range (D-515, D-549): 2 added the widgets, 3 an extension's
  * additions to the game system and asking the player, 4 the code in the dashboard's page, 5 one contract for every kind of package, 6 the fields of
- * knowledge of a game system (sheet-knowledge), 7 what a page carries and the pictures of the dashboard's states, 8 where a game system's oracle says yes, 9 a game system's dawn.
+ * knowledge of a game system (sheet-knowledge), 7 what a page carries and the pictures of the dashboard's states, 8 where a game system's oracle says yes, 9 a game system's dawn, 10 where a chip stands.
  */
-export const packageApi = 9;
+export const packageApi = 10;
 
 /**
  * Our game systems (D-513): the name a campaign gives each, which package install takes alone, its package, and what it is; the setup offers them even when
@@ -60,6 +60,11 @@ export const widgetPlaces = ["top", "side", "page", "person", "card"] as const;
 
 export type WidgetPlace = (typeof widgetPlaces)[number];
 
+/** Where a chip stands (D-502): in the row of the game's world under the sections, as by default, or in the top beside the campaign's name, for the table's own. */
+export const chipRows = ["row", "top"] as const;
+
+export type ChipRow = (typeof chipRows)[number];
+
 /** A widget as a package declares it (D-502): its name, which its code's hook has, its title, its icon, and where it stands, among the cards in order. */
 export interface DeclaredWidget
 {
@@ -67,6 +72,8 @@ export interface DeclaredWidget
     title: string;
     icon?: string;
     place: WidgetPlace;
+    /** Where a chip stands, when its widget says. */
+    where?: ChipRow;
     /** The page of a card that stands in one. */
     page?: CardPage;
     /** Its order among the cards of its place, the lowest first. */
@@ -86,10 +93,13 @@ const widgetSchema = z.object({
     title: z.string().trim().min(1).max(40),
     icon: ownName.optional(),
     place: z.enum(widgetPlaces, { error: `a widget's place is ${widgetPlaces.join(", ")}` }),
+    where: z.enum(chipRows, { error: `a chip's where is ${chipRows.join(" or ")}` }).optional(),
     page: z.enum(cardPages, { error: `a card's page is ${cardPages.join(", ")}` }).optional(),
     order: z.int().min(-100).max(100).optional(),
 }).strict().refine((widget) => (widget.place === "page") === (widget.page !== undefined), {
     error: "a widget in place page names its page (scene, sheet, world or journal), and only one in a page does",
+}).refine((widget) => widget.where === undefined || widget.place === "top", {
+    error: "only a chip, a widget in place top, says where it stands: row or top",
 });
 
 /** The keys of extension.yaml and system.yaml that declare a package's icons, widgets and figures (D-502, D-510). */

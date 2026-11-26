@@ -9,8 +9,8 @@
       <g class="robot-mouth" fill="#FFF4D5"><rect x="242" y="232" width="28" height="12" rx="6"/></g>
     </g>
     <g class="robot-mood robot-mood-happy" display="none">
-      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
-      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M240 232Q256 251 272 232"/></g>
+      <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><ellipse cx="224" cy="204" rx="16" ry="13"/><ellipse cx="288" cy="204" rx="16" ry="13"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M230 233Q256 249 282 233"/></g>
     </g>
     <g class="robot-mood robot-mood-surprised" display="none">
       <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="208" r="16"/><circle cx="288" cy="208" r="16"/></g>
@@ -38,8 +38,8 @@
       <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M240 234Q257 250 274 230"/></g>
     </g>
     <g class="robot-mood robot-mood-delighted" display="none">
-      <g class="robot-eyes" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M208 215Q224 187 240 215M272 215Q288 187 304 215"/></g>
-      <g class="robot-mouth" fill="#FFF4D5"><path d="M240 232H272Q272 254 256 254Q240 254 240 232Z"/></g>
+      <g class="robot-eyes" fill="#FFF4D5"><path d="M208 210A16 16 0 0 1 240 210Q224 202 208 210Z"/><path d="M272 210A16 16 0 0 1 304 210Q288 202 272 210Z"/></g>
+      <g class="robot-mouth" fill="none" stroke="#FFF4D5" stroke-width="12" stroke-linecap="round"><path d="M230 233Q256 249 282 233"/></g>
     </g>
     <g class="robot-mood robot-mood-determined" display="none">
       <g class="robot-eyes robot-can-blink" fill="#FFF4D5"><circle cx="224" cy="210" r="15"/><circle cx="288" cy="210" r="15"/></g>

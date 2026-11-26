@@ -139,6 +139,22 @@ describe("what a system.yaml declares for the dashboard (D-514)", () => {
         expect(() => findSystem([systems], "nopage")).toThrow(/widgets\.luck: a widget in place page names its page/);
         expect(() => findSystem([systems], "many")).toThrow(/is not valid: a game system declares at most 40 icons, 8 widgets and 8 figures\.$/);
     });
+
+    it("lets a chip say where it stands, the row of the world by default or the top, and only a chip", () => {
+        const systems = makeTempFolder();
+
+        const write = (name: string, parts: string): void => {
+            mkdirSync(join(systems, name));
+            writeFileSync(join(systems, name, "system.yaml"), `title: ${name}\nlanguage: en\n${parts}`);
+        };
+
+        write("chips", "widgets:\n  luck: {title: Luck, place: top, where: top}\n  omen: {title: Omen, place: top}\n  sky: {title: Sky, place: top, where: row}\n");
+        write("cardwhere", "widgets:\n  luck: {title: Luck, place: side, where: top}\n");
+        write("badwhere", "widgets:\n  luck: {title: Luck, place: top, where: corner}\n");
+        expect(findSystem([systems], "chips")?.widgets.map((widget) => [widget.name, widget.where])).toEqual([["luck", "top"], ["omen", undefined], ["sky", "row"]]);
+        expect(() => findSystem([systems], "cardwhere")).toThrow(/widgets\.luck: only a chip, a widget in place top, says where it stands: row or top/);
+        expect(() => findSystem([systems], "badwhere")).toThrow(/widgets\.luck\.where: a chip's where is row or top/);
+    });
 });
 
 /** A folder of packages with the extension @rpgengine/<name>, whose code is given, made for this API or the one given; the campaign lists it. */

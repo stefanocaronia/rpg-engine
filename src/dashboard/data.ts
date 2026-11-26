@@ -878,6 +878,8 @@ export interface ShownWidget extends WidgetSpot
     from: string;
     title: string;
     own: WidgetSpot;
+    /** Where its chip stands: in the row of the world under the sections, unless its package says the top. */
+    where?: "row" | "top";
     icon?: string;
     shows?: WidgetShows;
     /** In place person, what it shows on each of the party, by their name: only those it shows something on (D-514). */

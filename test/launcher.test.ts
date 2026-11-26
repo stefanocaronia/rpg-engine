@@ -54,7 +54,10 @@ import {
     readLauncher,
     rememberCampaign,
     runLauncher,
+    serveWaitingPage,
     type TableStarter,
+    type WaitingPage,
+    waitingWords,
 } from "../src/server/launcher/index.ts";
 import { launcherHtml, pageHtml } from "../src/server/page/index.ts";
 import { type Probed, readLastChat, type TablePlace } from "../src/server/table/index.ts";
@@ -577,7 +580,7 @@ describe("the launcher's server", () => {
         expect(readLauncher(home)).toBeUndefined();
     });
 
-    it("ends by itself once no page has listened and nothing has asked for ten minutes, by its clock", async () => {
+    it("ends by itself three seconds after its last page went, by its clock, and half a minute after it started where none came", async () => {
         let now = 0;
         const launcher = await startLauncher({ now: () => now, idleEvery: 20 });
         const heard = listenTo(launcher.url);
@@ -586,13 +589,23 @@ describe("the launcher's server", () => {
         await new Promise((done) => setTimeout(done, 100));
         expect(readLauncher(home)).toBeDefined();
 
-        // Once the page has gone, ten more minutes by its clock end it.
+        // The page goes: two seconds later it is still there, for a page loading again; three end it.
         heard.close();
-        await vi.waitFor(() => {
-            now += 11 * 60_000;
-            expect(readLauncher(home)).toBeUndefined();
-        });
+        await new Promise((done) => setTimeout(done, 100));
+        now += 2000;
+        await new Promise((done) => setTimeout(done, 100));
+        expect(readLauncher(home)).toBeDefined();
+        now += 1000;
         await launcher.ended;
+
+        // One whose page never came waits half a minute.
+        now = 0;
+        const alone = await startLauncher({ now: () => now, idleEvery: 20 });
+        now = 29_000;
+        await new Promise((done) => setTimeout(done, 100));
+        expect(readLauncher(home)).toBeDefined();
+        now = 30_000;
+        await alone.ended;
     });
 
     it("gives the link of the launcher of this engine already there, and says one of another engine", async () => {
@@ -1334,6 +1347,7 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         version,
         reach: () => Promise.resolve({ url: "http://127.0.0.1:5750" }),
         browser: () => Promise.resolve("window"),
+        waiting: () => Promise.resolve({ url: "http://127.0.0.1:5799/", reached: () => undefined, ended: Promise.resolve() }),
         terminal: fakeTerminal("n", { tty: false }).terminal,
         now: () => new Date("2026-11-25T08:00:00Z"),
         ...own,
@@ -1370,6 +1384,81 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         await new Promise((done) => setTimeout(done, 60));
         expect(late).toEqual([0]);
         expect(readFileSync(join(import.meta.dirname, "..", "src", "cli", "cli.ts"), "utf8")).toMatch(/sayAndEnd\(await \(args\[0\] === "open" \? runOpen : runIcon\)/);
+    });
+
+    it("opens one window at a time: a second rpg open while the first waits, as from clicks on the icon, ends at once and opens none", async () => {
+        let opened = 0;
+        let arrive = (): void => undefined;
+        const slow = where({
+            reach: () => new Promise((done) => (arrive = () => done({ url: "http://127.0.0.1:5750" }))),
+            browser: () => {
+                opened++;
+                return Promise.resolve("window");
+            },
+        });
+        const first = runOpen([], slow);
+        await vi.waitFor(() => expect(existsSync(join(home, "opening"))).toBe(true));
+
+        expect(await runOpen([], slow)).toEqual({ output: "RPG Engine is opening already: its window comes in a moment.", exitCode: 0 });
+        arrive();
+        expect((await first).exitCode).toBe(0);
+        expect(opened).toBe(1);
+        expect(existsSync(join(home, "opening"))).toBe(false);
+
+        // Once its window is there, a question nobody answers, as under the icon, holds nothing.
+        const input = Object.assign(new PassThrough(), { isTTY: true });
+        const output = Object.assign(new PassThrough(), { isTTY: true });
+        const asking = runOpen([], where({ terminal: { input, output, env: { DISPLAY: ":0" }, answerWait: 2000 } }));
+        await vi.waitFor(() => expect(String(output.read() ?? "")).toContain("[Y/n]"));
+        expect(existsSync(join(home, "opening"))).toBe(false);
+        expect((await runOpen([], where())).output).toBe("RPG Engine's campaigns are open in a window: http://127.0.0.1:5750");
+        await asking;
+
+        // A mark left by a process that is gone, or older than half a minute, holds nothing.
+        writeFileSync(join(home, "opening"), `999999999 ${String(new Date("2026-11-25T08:00:00Z").getTime())}`);
+        expect((await runOpen([], where())).exitCode).toBe(0);
+        writeFileSync(join(home, "opening"), `${String(process.pid)} ${String(new Date("2026-11-25T07:59:00Z").getTime())}`);
+        expect((await runOpen([], where())).output).toBe("RPG Engine's campaigns are open in a window: http://127.0.0.1:5750");
+    });
+
+    it("opens the window at once on a page of the wait, which goes to the launcher once it answers, or says why it did not", async () => {
+        const opened: string[] = [];
+        const told: unknown[] = [];
+        const waiting = (): Promise<WaitingPage> => Promise.resolve({ url: "http://127.0.0.1:5799/", reached: (answer) => told.push(answer), ended: Promise.resolve() });
+
+        const browser = (url: string): Promise<"window"> => {
+            opened.push(url);
+            return Promise.resolve("window");
+        };
+
+        expect((await runOpen([], where({ waiting, browser }))).exitCode).toBe(0);
+        expect(opened).toEqual(["http://127.0.0.1:5799/"]);
+        expect(told).toEqual([{ url: "http://127.0.0.1:5750" }]);
+
+        const failing = where({ waiting, browser, reach: () => Promise.resolve({ error: "It did not start." }) });
+        expect(await runOpen([], failing)).toEqual({ output: "It did not start.", exitCode: 1 });
+        expect(told.at(-1)).toEqual({ error: "It did not start." });
+
+        // Where the page of the wait cannot be served, the window opens on the launcher once it is there.
+        opened.length = 0;
+        expect((await runOpen([], where({ browser, waiting: () => Promise.reject(new Error("no port")) }))).exitCode).toBe(0);
+        expect(opened).toEqual(["http://127.0.0.1:5750"]);
+    });
+
+    it("serves the page of the wait in the computer's language, with a rolling die, until the window took where to go", async () => {
+        expect(waitingWords("it-IT")).toEqual({ text: "Apro RPG Engine: può volerci qualche secondo…", language: "it" });
+        expect(waitingWords("xx")).toEqual({ text: "Opening RPG Engine: it can take a few seconds…", language: "en" });
+
+        const page = await serveWaitingPage("it", 5000);
+        const html = await (await fetch(page.url)).text();
+        expect(html).toContain("Apro RPG Engine");
+        expect(html).toContain('class="die"');
+        expect(await (await fetch(`${page.url}ready`)).json()).toEqual({ waiting: true });
+
+        page.reached({ url: "http://127.0.0.1:5750" });
+        expect(await (await fetch(`${page.url}ready`)).json()).toEqual({ url: "http://127.0.0.1:5750" });
+        await page.ended;
+        await expect(fetch(page.url)).rejects.toThrow();
     });
 
     it("writes why it failed to open.log, the last time alone, for the icon that has no console", async () => {

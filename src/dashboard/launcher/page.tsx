@@ -272,7 +272,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
                     : (
                         <div class="launcher-home">
                             <div class="launcher-robot">
-                                <Master mood="happy" />
+                                <Master />
                             </div>
                             <h1 id="launcher-title">{productName}</h1>
                             {launcher !== undefined && <p class="launcher-version" dir="ltr">{launcher.version}</p>}

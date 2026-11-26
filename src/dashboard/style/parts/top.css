@@ -336,8 +336,9 @@
 
     .top-world {
         display: flex;
-        flex: none;
+        flex: 0 1 auto;
         align-items: center;
+        min-width: 0;
         gap: 14px;
         /* As tall as the switch, so that the row keeps its height on a page without the column. */
         min-height: 32px;
@@ -346,6 +347,7 @@
 
     .top-time {
         display: inline-flex;
+        flex: none;
         align-items: center;
         gap: 6px;
         color: var(--ink);
@@ -400,6 +402,30 @@
 
     .top-place a::after {
         display: none;
+    }
+
+    /* The extensions' chips of the row of the world, after the time and as its words are: an icon in the accent and words, no box. Where the row is short they
+       give way first, as in the top, those that do not fit marked wrapped and unseen; the place's own name stays whole. */
+    .top-world > .status-chips {
+        flex: 0 100 auto;
+        /* In the order their packages declare them, at the row's end: the last ones go to the unseen line first. */
+        flex-direction: row;
+        justify-content: flex-end;
+        gap: 14px;
+        height: 24px;
+        margin-inline-start: 0;
+    }
+
+    .top .top-world .status-chip {
+        gap: 6px;
+        height: 24px;
+        padding: 0;
+        border: 0;
+        background: none;
+        box-shadow: none;
+        color: var(--ink);
+        font-size: inherit;
+        text-decoration: none;
     }
 
     /* The switch of the column beside the page: one of the chat's places, pressed in gold while the column is shown; small, in the row's height. */

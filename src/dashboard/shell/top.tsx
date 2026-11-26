@@ -107,7 +107,7 @@ export function Top(top: TopOf)
                     {/* On a phone, where the chips leave no room, the game's time under the title in the product's place (D-276). */}
                     {top.campaign !== undefined && top.now !== undefined && <p class="product-time">{gameDateLabel(top.now)}</p>}
                 </div>
-                <StatusChips />
+                <StatusChips where="top" />
                 <Navigation
                     current={top.section}
                     fight={top.fight}
@@ -501,13 +501,13 @@ function useClosing(holder: RefObject<HTMLDivElement | null>, open: boolean, set
     }, [open]);
 }
 
-/** In the setup, which has no sections (D-379): the extensions' chips and the switch of the theme, small at the top right; `live` waits for the plug's chip. */
+/** In the setup, which has no sections (D-379): every extension's chip and the switch of the theme, small at the top right; `live` waits for the plug's chip. */
 export function SetupCorner({ home }: { live: boolean; home?: HomeWay | undefined; })
 {
     const [theme, flip] = useTheme();
     return (
         <div class="setup-corner">
-            <StatusChips />
+            <StatusChips where="both" />
             {home !== undefined && <HomeButton home={home} kind="icon-button tonal tip-left" />}
             <button type="button" class="icon-button tonal tip-left" aria-label={theme.name} data-tip={theme.name} onClick={flip}>
                 <Icon name={theme.next === "dark" ? "moon" : "sun"} />
@@ -557,6 +557,7 @@ function PlaceRow({ path, now, calendar, column }: { path: string[]; now?: strin
                         {calendarDayLabel(calendar)}
                     </span>
                 )}
+                <StatusChips where="row" />
                 {column !== undefined && <ColumnButton column={column} />}
             </div>
         </div>
@@ -589,8 +590,11 @@ function MasterHome({ top, poke, onHome }: { top: Pick<TopOf, "mood" | "moment" 
     );
 }
 
-/** The extensions' chips (D-502); the game's time and day are in the row of the world, under the sections. */
-function StatusChips()
+/**
+ * The extensions' chips (D-502), those of the row of the world after the game's time, or those of the top beside the campaign's name; both in the setup's
+ * corner, which has no such row.
+ */
+function StatusChips({ where }: { where: "row" | "top" | "both"; })
 {
     const row = useRef<HTMLDivElement>(null);
     useWrapped(row);
@@ -603,13 +607,14 @@ function StatusChips()
     // Drawn from the end: where the row is short, the first ones go (D-502).
     return (
         <div ref={row} class="status-chips">
-            <WidgetChips />
+            {where !== "row" && <WidgetChips where="top" />}
+            {where !== "top" && <WidgetChips where="row" />}
         </div>
     );
 }
 
 /**
- * The chips a short row puts on its second line, which is never seen, marked so: unseen, still read by a screen reader. The row does not clip, so that a chip's
+ * The chips a short row puts on its second line, or past its start, which are never seen, marked so: unseen, still read by a screen reader. The row does not clip, so that a chip's
  * tooltip shows under it (D-502).
  */
 function useWrapped(row: RefObject<HTMLElement | null>): void
@@ -624,7 +629,15 @@ function useWrapped(row: RefObject<HTMLElement | null>): void
         const mark = (): void => {
             const chips = [...element.children] as HTMLElement[];
             const first = chips[0]?.offsetTop ?? 0;
-            chips.forEach((chip) => chip.classList.toggle("wrapped", chip.offsetTop > first));
+            // One alone wider than the row stays on its first line, past the row's start: it is out too.
+            const row = element.getBoundingClientRect();
+
+            const out = (chip: HTMLElement): boolean => {
+                const box = chip.getBoundingClientRect();
+                return chip.offsetTop > first || box.left < row.left - 1 || box.right > row.right + 1;
+            };
+
+            chips.forEach((chip) => chip.classList.toggle("wrapped", out(chip)));
         };
 
         const sizes = new ResizeObserver(mark);

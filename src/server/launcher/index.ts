@@ -9,6 +9,7 @@ export { type LauncherPlace, readLauncher, removeLauncher, writeLauncher } from 
 export { launcherRoutes } from "./routes.ts";
 export type { Launcher, LauncherOpened, LauncherOptions, LauncherRunOptions } from "./serve.ts";
 export { findLauncher, type LauncherProbed, type LauncherStarter, type LauncherThere, launcherWay, probeLauncher, reachLauncher } from "./start.ts";
+export { serveWaitingPage, type WaitingPage, waitingWords } from "./waiting.ts";
 
 /** `rpg launcher`, as serve.ts says it. */
 export async function runLauncher(given?: LauncherRunOptions): Promise<number>
