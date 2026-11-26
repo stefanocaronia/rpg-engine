@@ -8,7 +8,8 @@ import { lookUntil } from "../src/core/wait.ts";
 import { placeCommand, readPlaced, realSystem, type WindowKind, type WindowPlace, windowTitles } from "../src/desktop/index.ts";
 import { makeTempFolder } from "./support.ts";
 
-const onWindows = process.platform === "win32";
+// Its windows show on the screen in use: run in CI, and on a desk only when asked (RPG_REAL_WINDOW=1).
+const windowsShown = process.platform === "win32" && (process.env.CI !== undefined || process.env.RPG_REAL_WINDOW === "1");
 const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
 const compiler = ["Framework64", "Framework"].map((folder) => join(systemRoot, "Microsoft.NET", folder, "v4.0.30319", "csc.exe")).find((path) => existsSync(path));
 const address = "http://127.0.0.1:5750/";
@@ -16,7 +17,7 @@ let browser = "";
 let browserFolder = "";
 
 beforeAll(async () => {
-    if (!onWindows) {
+    if (!windowsShown) {
         return;
     }
 
@@ -35,7 +36,7 @@ afterAll(() => {
     }
 });
 
-describe.runIf(onWindows)("the window script on Windows, with a browser of the test's own", () => {
+describe.runIf(windowsShown)("the window script on Windows, with a browser of the test's own", () => {
     it("compiles and runs, and says it opened a window it did not place where the browser shows none", async () => {
         expect(await place("launcher", ["--life=300"], 1500)).toBe("opened");
     }, 60_000);
