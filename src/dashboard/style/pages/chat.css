@@ -1377,6 +1377,26 @@
         overflow-wrap: anywhere;
     }
 
+    /* An app still on trial at the table: a quiet word after its name, edged so that it reads as a mark and not as the name; neither gold nor red. */
+    .host-trial {
+        display: inline-block;
+        margin-inline-start: 8px;
+        padding: 0 6px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-s);
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.5;
+        white-space: nowrap;
+        vertical-align: 1px;
+    }
+
+    .chat-app-trial {
+        display: block;
+        margin-top: 2px;
+    }
+
     .app-state {
         display: inline-flex;
         align-items: center;

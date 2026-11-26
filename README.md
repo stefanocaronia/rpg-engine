@@ -45,26 +45,24 @@ A game comes as a game system, a package the master installs when you set up a c
 
 **Node.js 24** or newer, a web browser, and an AI agent to be the master: an AI app that can work with the files on your computer, such as Claude Code, Codex, Antigravity or OpenCode. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer.
 
-RPG Engine is tied to no AI company: any agent that supports MCP tools can be the master, local ones included. We play and test it with **Claude Code**; **Codex**, **Antigravity** and **OpenCode** are connected and checked, from the terminal and from their desktop apps, but no whole campaign has been played with them yet: [what works in each](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/hosts.md) is a table of its own; [the guide](https://github.com/stefanocaronia/rpg-engine/blob/main/src/dashboard/guide/en.md#24-connect-your-ai) says how to connect any other agent. Give the master the largest model you have: a small one is easier to talk into revealing secrets or bending the rules.
+RPG Engine is tied to no AI company: any agent that supports MCP tools can be the master, local ones included. We play and test it with **Claude Code**; **Codex** and **OpenCode** play in the dashboard's chat too, though no whole campaign has been played with them yet; **Antigravity** is on trial there, as it sometimes steps out of the game: [what works in each](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/hosts.md) is a table of its own; [the guide](https://github.com/stefanocaronia/rpg-engine/blob/main/src/dashboard/guide/en.md#24-connect-your-ai) says how to connect any other agent. Give the master the largest model you have: a small one is easier to talk into revealing secrets or bending the rules.
 
 RPG Engine is free: the master runs on your agent's own plan (for Claude Code, a paid Claude plan; for Codex, a ChatGPT account; for Antigravity, a Google account; for OpenCode, the model you choose in it), or on your computer with a local model. RPG Engine itself never asks for an API key nor keeps one: where your agent lets you choose, sign it in with your account rather than with a key, which is paid by the call. You do not need to know how to program, and once your agent is installed, you are playing in a few minutes.
 
 ## Quick start
 
-Open a terminal in the folder where you keep your games, and type:
+Open a terminal, once, and type:
 
 ```text
 npm install -g rpg-engine
-rpg init "The Salt Isles"
-cd "The Salt Isles"
-claude
+rpg open
 ```
 
 If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer yes and try again.
 
-With Codex write `codex`, with Antigravity `agy`, with OpenCode `opencode`; with another agent, start it in that folder (the guide says how to connect it). Each of the four has a desktop app too: open the campaign folder in it. When it asks whether you trust the folder, say yes; careful, in Claude Code the answer already selected is *No, exit*. If you install an agent after you made the campaign, write `rpg init` in the campaign folder once, and open a new chat.
+`rpg open` offers to put RPG Engine's icon on your desktop and in your menu: from then on you start it from there, with no terminal. It opens a window with your campaigns: make a new one, and its dashboard opens in a window of its own, with the chat with the master beside it. There you choose your AI app and its model; if the app is missing or signed out, the page installs it and signs you in. Then press *Begin*: the master asks how you want to play, a few questions at a time, then you make your character together, and the story begins.
 
-Then write *Hi! Let's start.* The master answers with the link to your dashboard: open it beside the chat. It asks how you want to play, a few questions at a time, then you make your character together, and the story begins.
+You can still play in your AI app's own chat, from a terminal or its desktop app: `rpg init "The Salt Isles"` makes a campaign in a folder of that name; start your app there (`claude`, `codex`, `opencode`, `agy`), say yes when it asks whether you trust the folder, and write *Hi! Let's start.*
 
 **[The complete guide](https://github.com/stefanocaronia/rpg-engine/blob/main/src/dashboard/guide/en.md)** ([in Italian](https://github.com/stefanocaronia/rpg-engine/blob/main/src/dashboard/guide/it.md)) explains every step, and then how to play; the dashboard shows it in its Help.
 

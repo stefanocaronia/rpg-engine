@@ -98,6 +98,8 @@ export interface HostFacts
     needs: string;
     plans: string;
     terms?: string;
+    /** An app still on trial at the table: why, and what to play with instead; the page marks it wherever it is chosen. */
+    trial?: string;
 }
 
 /** The facts of an app, by its id; none for an app the page does not know, which has no line. */
@@ -116,7 +118,12 @@ export function hostFacts(id: string): HostFacts | undefined
             plans: "https://learn.chatgpt.com/docs/pricing",
             terms: "https://openai.com/policies/",
         }),
-        antigravity: () => ({ maker: "Google", needs: t("With a Google account; free use has weekly limits."), plans: "https://antigravity.google/docs/plans.md" }),
+        antigravity: () => ({
+            maker: "Google",
+            needs: t("With a Google account; free use has weekly limits."),
+            plans: "https://antigravity.google/docs/plans.md",
+            trial: t("On trial: it can step out of the game and ask questions its own way. To play, Claude Code, Codex or OpenCode are better."),
+        }),
         openCode: () => ({
             maker: t("the OpenCode team"),
             needs: t("Some free models for a limited time, or your own provider's."),

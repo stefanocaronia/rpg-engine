@@ -4,7 +4,7 @@
 import type { ChatHost } from "../data.ts";
 import { nextOn } from "../parts/choosing.ts";
 import { arrowStep } from "../text.ts";
-import { StateWords } from "./apps.tsx";
+import { StateWords, TrialMark } from "./apps.tsx";
 import { type HostState, hostState } from "./chat.ts";
 
 /** The rows. `value` is the app chosen; named, and described, by the ids given. */
@@ -54,7 +54,10 @@ export function AppChoice({ hosts, value, label, described, onPick }: {
                         onClick={() => host.id !== value && state !== "later" && onPick(host.id)}
                     >
                         <span class="app-radio" aria-hidden="true" />
-                        <span class="app-name">{host.name}</span>
+                        <span class="app-name">
+                            {host.name}
+                            <TrialMark id={host.id} />
+                        </span>
                         <span class="app-state">
                             {(state === "installing" || state === "signingIn") && <span class="chat-waits" aria-hidden="true" />}
                             <StateWords state={state} metered={host.metered === true} />

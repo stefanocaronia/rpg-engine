@@ -10,7 +10,7 @@ import { Segmented } from "../parts/segmented.tsx";
 import { listText, t } from "../text.ts";
 import { AppChoice } from "./app-choice.tsx";
 import { ChatNeed, HostRows, Independent } from "./apps.tsx";
-import { choiceOf, effortsOf, type HostState, hostState, modelOf, settledChoice, withModel } from "./chat.ts";
+import { choiceOf, effortsOf, hostFacts, type HostState, hostState, modelOf, settledChoice, withModel } from "./chat.ts";
 import { ModelPicker } from "./models.tsx";
 
 // How long a model's name may be, as the table takes it.
@@ -66,11 +66,19 @@ export function ChoiceFields({ shown, choice, onChoice, onWish }: {
 
     const listed = host !== undefined && choice !== undefined ? modelOf(host, choice.model) : undefined;
     const efforts = host !== undefined && choice !== undefined ? effortsOf(host, choice.model) : [];
+    const trial = host === undefined ? undefined : hostFacts(host.id)?.trial;
     return (
         <div class="chat-fields">
             <span id="chat-host-label" class="chat-label">{t("Your AI app")}</span>
             <AppChoice hosts={shown.hosts} value={host?.id} label="chat-host-label" described="chat-host-notes" onPick={(value) => onChoice(choiceOf(shown, value))} />
             {host !== undefined && state !== "ready" && <ChatNeed host={host} onWish={onWish} />}
+            {/* An app on trial at the table, said as soon as it is chosen; while it is not ready, its needs say it already. */}
+            {trial !== undefined && state === "ready" && (
+                <p class="chat-note chat-trial">
+                    <Icon name="info" />
+                    {trial}
+                </p>
+            )}
             {/* Who pays each answer: an app on an API key in place of a plan, said as soon as it is chosen. */}
             {host?.metered === true && state === "ready" && (
                 <p class="chat-note chat-paid">

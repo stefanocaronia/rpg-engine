@@ -76,6 +76,7 @@ export function HostRows({ hosts, onWish }: { hosts: ChatHost[]; onWish(wish: Ho
                         <li key={host.id} class={`chat-app state-${state}`}>
                             <span class="chat-app-name">
                                 {host.name}
+                                <TrialMark id={host.id} />
                                 {/* Waiting, the row's own line says it, with its light. */}
                                 {state !== "installing" && state !== "signingIn" && <StateWords state={state} />}
                             </span>
@@ -139,8 +140,15 @@ export function HostNeeds({ id }: { id: string; })
     return facts === undefined ? null : (
         <span class="chat-app-needs">
             {facts.needs} <a href={facts.plans} target="_blank" rel="noopener noreferrer">{t("Plans and prices")}</a>
+            {facts.trial !== undefined && <span class="chat-app-trial">{facts.trial}</span>}
         </span>
     );
+}
+
+/** After an app's name, quiet: that it is still on trial at the table; nothing for the others. */
+export function TrialMark({ id }: { id: string; })
+{
+    return hostFacts(id)?.trial === undefined ? null : <span class="host-trial">{t("on trial")}</span>;
 }
 
 /** Once, under the apps: that the project is no maker's. */
