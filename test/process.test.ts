@@ -259,10 +259,16 @@ describe("a program ended gently (T-301)", () => {
         return { program, done, patience };
     }
 
-    it("closes its input and, off Windows, sends SIGTERM: one that ends within the wait is never killed", async () => {
+    it("closes its input and waits: one that ends within the wait gets no signal, as one saving the sign-in at its input's end (T-301)", async () => {
         const { program, done, patience } = fakeProgram(1200);
         expect(await stopGently(program, { ...patience, platform: "linux" })).toBe(true);
-        expect(done).toEqual(["input closed", "SIGTERM to 4242 at 0"]);
+        expect(done).toEqual(["input closed"]);
+    });
+
+    it("off Windows sends SIGTERM only after the wait, and kills only after as long again", async () => {
+        const { program, done, patience } = fakeProgram(undefined);
+        expect(await stopGently(program, { ...patience, platform: "linux", wait: 3000 })).toBe(false);
+        expect(done).toEqual(["input closed", "SIGTERM to 4242 at 3000", "SIGKILL to 4242 at 6000"]);
     });
 
     it("on Windows only closes its input, as no signal asks a program there, and waits", async () => {
@@ -320,8 +326,8 @@ describe("a program ended gently (T-301)", () => {
         try {
             const thrown = process.listeners("uncaughtException").find((one) => !before.includes(one));
             thrown?.(new Error("broken"), "uncaughtException");
-            // Its input closed; off Windows SIGTERM too, which may come first.
-            expect(await ended).toMatch(/^(0|SIGTERM)$/);
+            // Its input closed, and nothing else: it ends by itself.
+            expect(await ended).toBe("0");
             await until(() => exits.length > 0);
             expect(logged[1]).toMatch(/The programs the table started ended by themselves/);
         } finally {

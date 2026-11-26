@@ -79,8 +79,8 @@ export function stopTree(pid: number | undefined, signal: "SIGTERM" | "SIGKILL" 
 }
 
 /**
- * Ends a program as it ends by itself first, so that one at work on the player's sign-in finishes it (T-301): its input closed and, off Windows, its group
- * sent SIGTERM; stopped with all it started only where it is still there after `wait` ms, three seconds. Whether it ended by itself. Never throws.
+ * Ends a program as it ends by itself first, so that one at work on the player's sign-in finishes it (T-301): its input closed, and `wait` ms, three
+ * seconds, to end; off Windows then SIGTERM to its group and as long again; only then stopped with all it started. Whether it ended by itself. Never throws.
  */
 export async function stopGently(program: Ending, patience: Patience = {}): Promise<boolean>
 {
@@ -89,15 +89,24 @@ export async function stopGently(program: Ending, patience: Patience = {}): Prom
     }
 
     const signal = patience.signal ?? stopTree;
-    ask(program, signal, patience.platform ?? process.platform);
     const looking = { within: patience.wait ?? killAfter, every: patience.every ?? 100, now: patience.now, wait: patience.pause ?? pauseFor };
-    const gone = await lookUntil(() => Promise.resolve(program.ended() ? true : undefined), () => false, looking);
+    const ends = (): Promise<boolean> => lookUntil(() => Promise.resolve(program.ended() ? true : undefined), () => false, looking);
+    closeInputOf(program);
 
-    if (!gone) {
-        signal(program.pid, "SIGKILL");
+    if (await ends()) {
+        return true;
     }
 
-    return gone;
+    if ((patience.platform ?? process.platform) !== "win32") {
+        signal(program.pid, "SIGTERM");
+
+        if (await ends()) {
+            return false;
+        }
+    }
+
+    signal(program.pid, "SIGKILL");
+    return false;
 }
 
 /** A child as stopGently ends it, among the programs at work until it exits: those an error nobody caught asks to end. */
@@ -244,7 +253,7 @@ export function guardProcess(command: string, name: string, log: (line: string) 
         }
 
         // Each program still at work asked to end first, as one saving the player's sign-in: on Windows the exit would stop it at once.
-        atWork.forEach((program) => ask(program, stopTree, process.platform));
+        atWork.forEach(closeInputOf);
         void childrenEnded(name, programsWait, log).then(() => exit(1), () => exit(1));
     };
 
@@ -372,22 +381,21 @@ export function endProgramsAtInterrupt(): void
     }
 
     process.once("SIGINT", () => {
-        atWork.forEach((program) => ask(program, stopTree, process.platform));
+        atWork.forEach((program) => {
+            closeInputOf(program);
+            stopTree(program.pid, "SIGTERM");
+        });
         process.exit(130);
     });
 }
 
-/** Asks a program to end as it understands it: its input closed and, off Windows, SIGTERM to its group, which no program can be sent on Windows. */
-function ask(program: Ending, signal: NonNullable<Patience["signal"]>, platform: NodeJS.Platform): void
+/** Asks a program to end as a server's client does, by closing its input: one saving the player's sign-in then finishes before it goes. */
+function closeInputOf(program: Ending): void
 {
     try {
         program.closeInput?.();
     } catch {
-        // Its input gone already: the signal, or the wait, does the rest.
-    }
-
-    if (platform !== "win32") {
-        signal(program.pid, "SIGTERM");
+        // Its input gone already: the wait does the rest.
     }
 }
 
