@@ -444,6 +444,9 @@ function goOn(root: string, context: Context, folder: string): Promise<void>
         if (done?.phase === "done") {
             appendLogEntry(root, newDatedLogEntry(root, context, "import-done", "hidden", { title: state.title }));
             writeImportState(folder, { ...done, ...followBook(root, context, folder), ...followDate(root, context, folder) });
+        } else if (done?.failed !== undefined && !elsewhere) {
+            // The runner the MCP server starts apart has no terminal: why it stopped stays in the campaign's log.
+            appendLogEntry(root, newDatedLogEntry(root, context, "import-stopped", "hidden", { title: state.title, phase: done.phase, done: done.done, why: done.failed }));
         }
     });
     going.catch(() => undefined);

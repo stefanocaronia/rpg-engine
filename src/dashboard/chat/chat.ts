@@ -44,6 +44,105 @@ export function hostsFound(shown: Pick<MasterShown, "hosts">): { found: ChatHost
     return { found: ready.filter((host) => host.found), missing: ready.filter((host) => !host.found), later: shown.hosts.filter((host) => !host.ready) };
 }
 
+/**
+ * How an app stands for the player (T-290): ready to play; to sign in to, or waiting for the browser where the player signs in; to install, or being
+ * installed; or one the page cannot drive yet. An account not known counts as signed in: if it is not, opening the chat says so.
+ */
+export type HostState = "ready" | "signIn" | "signingIn" | "install" | "installing" | "later";
+
+export function hostState(host: ChatHost): HostState
+{
+    if (!host.ready) {
+        return "later";
+    }
+
+    if (!host.found) {
+        return host.installing === true ? "installing" : "install";
+    }
+
+    if (host.account === "out" && host.signIn !== undefined) {
+        return host.signingIn === true ? "signingIn" : "signIn";
+    }
+
+    return "ready";
+}
+
+/** Whether the player can play with an app now. */
+export function hostReady(host: ChatHost): boolean
+{
+    return hostState(host) === "ready";
+}
+
+/** An app's state in two words after its name, for the eye and a screen reader alike; none for one that is ready. */
+export function hostStateWords(state: HostState): string | undefined
+{
+    const words: Record<HostState, string | undefined> = {
+        ready: undefined,
+        signIn: t("to set up"),
+        signingIn: t("signing in…"),
+        install: t("to install"),
+        installing: t("installing…"),
+        later: t("not yet"),
+    };
+
+    return words[state];
+}
+
+/**
+ * What the page says of an app it knows, by its id, in its own words and never the app's: who makes it, what it needs, written to stay true, the page of
+ * its plans and prices, and the terms its maker sets.
+ */
+export interface HostFacts
+{
+    maker: string;
+    needs: string;
+    plans: string;
+    terms?: string;
+}
+
+/** The facts of an app, by its id; none for an app the page does not know, which has no line. */
+export function hostFacts(id: string): HostFacts | undefined
+{
+    const facts: Record<string, () => HostFacts> = {
+        claudeCode: () => ({
+            maker: "Anthropic",
+            needs: t("Needs a paid Claude plan (Pro or higher)."),
+            plans: "https://claude.com/pricing",
+            terms: "https://code.claude.com/docs/en/legal-and-compliance",
+        }),
+        codex: () => ({
+            maker: "OpenAI",
+            needs: t("With a ChatGPT account, free or paid; limits depend on the plan."),
+            plans: "https://learn.chatgpt.com/docs/pricing",
+            terms: "https://openai.com/policies/",
+        }),
+        antigravity: () => ({ maker: "Google", needs: t("With a Google account; free use has weekly limits."), plans: "https://antigravity.google/docs/plans.md" }),
+        openCode: () => ({
+            maker: t("the OpenCode team"),
+            needs: t("Some free models for a limited time, or your own provider's."),
+            plans: "https://opencode.ai/docs/zen/",
+            terms: "https://github.com/anomalyco/opencode",
+        }),
+    };
+
+    return Object.hasOwn(facts, id) ? facts[id]() : undefined;
+}
+
+/** What opens where the engine cannot install an app, said before the click: its maker's site, where the page knows the maker. */
+export function installSiteWords(host: Pick<ChatHost, "id" | "name">): string
+{
+    const maker = hostFacts(host.id)?.maker;
+    return maker === undefined
+        ? t("{name}'s site opens: install it from there, then come back here.", { name: host.name })
+        : t("{maker}'s site opens, in English: install {name} from there, then come back here.", { maker, name: host.name });
+}
+
+/** Whether any app is ready to play: until one is, the launcher puts the apps first. */
+export function anyHostReady(hosts: ChatHost[]): boolean
+{
+    return hosts.some(hostReady);
+}
+
 /** A model of an app's list, by its id; none for a name the list does not have, or while the app has not answered. */
 export function modelOf(host: ChatHost, id: string): ChatModel | undefined
 {
@@ -51,8 +150,9 @@ export function modelOf(host: ChatHost, id: string): ChatModel | undefined
 }
 
 /**
- * The model chosen before the player chooses: the one wanted, as the campaign's last, when the app lists it; else the one the app proposes, when it lists
- * it; else its first. While the app has not answered there is no list: the one wanted, else the one it proposes.
+ * The model chosen before the player chooses: the one wanted, as the campaign's last, when the app lists it; else the one the app advises; else the one it
+ * proposes; else its first. Never one paid apart for each answer while the list has another. While the app has not answered there is no list: the one
+ * wanted, else the one it proposes.
  */
 export function listedModel(host: ChatHost, wanted: string | undefined): string
 {
@@ -60,7 +160,58 @@ export function listedModel(host: ChatHost, wanted: string | undefined): string
         return wanted ?? host.model;
     }
 
-    return [wanted, host.model].find((id) => id !== undefined && modelOf(host, id) !== undefined) ?? host.models[0].id;
+    if (wanted !== undefined && modelOf(host, wanted) !== undefined) {
+        return wanted;
+    }
+
+    const free = host.models.filter((model) => model.metered !== true);
+    const pool = free.length > 0 ? free : host.models;
+    return (pool.find((model) => model.advised === true) ?? pool.find((model) => model.id === host.model) ?? pool[0]).id;
+}
+
+/** How many models a list shows before it offers to search them, and how many of each group it shows before it says how many more there are. */
+export const modelSearchAt = 12;
+const mostInGroup = 8;
+
+/** A part of the list of models: the advised ones, those of one provider, or the others; `more`, how many of it the list leaves to a search. */
+export interface ModelSection
+{
+    kind: "advised" | "group" | "others";
+    title?: string;
+    models: ChatModel[];
+    more: number;
+}
+
+/**
+ * The list of models in its parts, as the player looks for one: those matching what they wrote, by name, id or provider; the advised first, then each
+ * provider's in the order the app lists them, then the rest, titled only where there is more than one part. A long list without a search shows the first
+ * of each part, and says how many more.
+ */
+export function modelSections(models: ChatModel[], query = ""): ModelSection[]
+{
+    const wanted = query.trim().toLocaleLowerCase();
+    const matching = wanted === "" ? models : models.filter((model) => [model.name, model.id, model.group ?? ""].some((word) => word.toLocaleLowerCase().includes(wanted)));
+    const advised = matching.filter((model) => model.advised === true);
+    const rest = matching.filter((model) => model.advised !== true);
+    const groups = [...new Set(rest.flatMap((model) => (model.group === undefined ? [] : [model.group])))];
+    const others = rest.filter((model) => model.group === undefined);
+    const parts: [ModelSection["kind"], string, ChatModel[]][] = [
+        ["advised", t("Recommended for the master"), advised],
+        ...groups.map((group): [ModelSection["kind"], string, ChatModel[]] => ["group", group, rest.filter((model) => model.group === group)]),
+        ["others", t("Other models"), others],
+    ];
+    const shown = parts.filter(([, , list]) => list.length > 0);
+    const cut = wanted === "" && models.length > modelSearchAt;
+    return shown.map(([kind, title, list]) => {
+        const kept = cut && kind !== "advised" ? list.slice(0, mostInGroup) : list;
+        return { kind, ...(shown.length > 1 ? { title } : {}), models: kept, more: list.length - kept.length };
+    });
+}
+
+/** What a level of the master's thinking is called: the app's own word, or Default for none. */
+export function effortName(effort: string | undefined): string
+{
+    return effort === undefined || effort === "" ? t("Default") : effort;
 }
 
 /** The efforts a model takes: its own, none for one that takes none; the app's for a model its list does not have, as a name written by hand. */
@@ -72,8 +223,14 @@ export function effortsOf(host: ChatHost, model: string): string[]
 /** A choice with another model of the same app: the effort stays only while that model takes it. */
 export function withModel(host: ChatHost, choice: ChatChoice, model: string): ChatChoice
 {
-    const effort = choice.effort !== undefined && effortsOf(host, model).includes(choice.effort) ? choice.effort : undefined;
+    const effort = keptEffort(host, model, choice.effort);
     return { host: choice.host, model, ...(effort === undefined ? {} : { effort }) };
+}
+
+/** The effort that goes on with another model of the app: the one chosen, where that model's list has it; else none, which leaves it to the app. */
+export function keptEffort(host: ChatHost, model: string, effort: string | undefined): string | undefined
+{
+    return effort !== undefined && effortsOf(host, model).includes(effort) ? effort : undefined;
 }
 
 /**
@@ -86,11 +243,14 @@ export function settledChoice(host: ChatHost, choice: ChatChoice, written: boole
     return withModel(host, choice, stays ? choice.model : listedModel(host, choice.model));
 }
 
-/** The choice a chat opens with before the player changes it: the campaign's last, when its app is on this computer, else the first app found; none with no app. */
+/**
+ * The choice a chat opens with before the player changes it: the campaign's last app, when it is ready; else the first ready; else the first to sign in to.
+ * None while every app is still to install: the page lists them to install.
+ */
 export function firstChoice(shown: Pick<MasterShown, "hosts" | "last">): ChatChoice | undefined
 {
-    const { found } = hostsFound(shown);
-    const host = found.find((one) => one.id === shown.last?.host) ?? found[0];
+    const ready = shown.hosts.filter(hostReady);
+    const host = ready.find((one) => one.id === shown.last?.host) ?? ready[0] ?? shown.hosts.find((one) => ["signIn", "signingIn"].includes(hostState(one)));
     return host === undefined ? undefined : choiceOf(shown, host.id);
 }
 
@@ -245,6 +405,46 @@ export function speaker(from: ChatSaid["from"]): string
 }
 
 /**
+ * A word of the table's as the page says it: a line about the master's model in the page's own words, by its code; any other, or one whose code the page
+ * does not know, as the table wrote it. `app`, the name of the chat's app, which a change it did not take names.
+ */
+export function tableWords(message: ChatSaid, app: string | undefined): string
+{
+    const model = message.model;
+
+    if (message.code === "model" && model !== undefined) {
+        if (message.dropped === true) {
+            return message.effort === undefined
+                ? t("From now on the master plays with {model}, which does not take the level of thinking chosen: the app chooses its own.", { model })
+                : t("From now on the master plays with {model}, which did not take the level of thinking chosen: it stays {effort}.", { model, effort: message.effort });
+        }
+
+        return message.effort === undefined
+            ? t("From now on the master plays with {model}.", { model })
+            : t("From now on the master plays with {model}, thinking {effort}.", { model, effort: message.effort });
+    }
+
+    if (message.code === "model-kept" && model !== undefined && message.asked !== undefined && app !== undefined) {
+        return t("{name} did not take {asked}: the master goes on with {model}.", { name: app, asked: message.asked, model });
+    }
+
+    return message.text;
+}
+
+/** Whether a word of the table's only says what became of the master's model: no trouble, drawn quietly. */
+export function aboutModel(message: ChatSaid): boolean
+{
+    return message.from === "table" && (message.code === "model" || message.code === "model-kept");
+}
+
+/** The name of the app the chat plays in, open or ended; none before a chat. */
+export function chatApp(shown: MasterShown): string | undefined
+{
+    const host = shown.chat?.host;
+    return host === undefined ? undefined : (shown.hosts.find((one) => one.id === host)?.name ?? host);
+}
+
+/**
  * The app, model and effort of a chat in one line, as its foot says them: the model by the name its app lists it with; with none in the list, by the
  * app's own name for the one it runs (`runs`), once it said it; else as it was chosen.
  */
@@ -265,7 +465,7 @@ export function chatNews(before: MasterShown | undefined, now: MasterShown): str
     const state = now.chat?.state;
 
     if (state === "ended" && was !== "ended") {
-        return endedWords(now.chat?.why);
+        return endedWords(now.chat?.why, expiredHost(now));
     }
 
     if (state === "turn" && was !== "turn") {
@@ -275,16 +475,42 @@ export function chatNews(before: MasterShown | undefined, now: MasterShown): str
     if (was === "turn" && state === "idle") {
         const seen = Math.max(0, ...(before?.messages ?? []).map((message) => message.id));
         const told = now.messages.findLast((message) => message.from === "table" && message.id > seen);
-        return told?.text ?? t("The master answered.");
+        return told?.from === "table" ? tableWords(told, chatApp(now)) : t("The master answered.");
     }
 
     return undefined;
 }
 
-/** That the chat ended, with why when the table says it. */
-export function endedWords(why: string | undefined): string
+/** That the chat ended, with why when the table says it; where the app's sign-in ran out (`expired`, the app's name), what to do in the page's own words. */
+export function endedWords(why: string | undefined, expired?: string): string
 {
+    if (expired !== undefined) {
+        return expiredWords(expired);
+    }
+
     return why === undefined || why.trim() === "" ? t("The chat ended.") : t("The chat ended: {why}", { why });
+}
+
+/** That an app's sign-in ran out, and what to do. */
+export function expiredWords(name: string): string
+{
+    return t("Your access to {name} has expired: sign in again to continue.", { name });
+}
+
+/** The name of the app whose sign-in ended the chat; none for a chat that ended otherwise. */
+export function expiredHost(shown: Pick<MasterShown, "hosts" | "chat">): string | undefined
+{
+    const chat = shown.chat;
+    return chat?.code === "signin" ? shown.hosts.find((one) => one.id === chat.host)?.name ?? chat.host : undefined;
+}
+
+/**
+ * Whether the master is in the first turn of a chat with nothing of theirs said yet: the app is still starting and setting the scene, which can take a
+ * couple of minutes, and the page says that it is normal.
+ */
+export function firstAnswerDue(shown: Pick<MasterShown, "chat" | "messages">): boolean
+{
+    return shown.chat?.state === "turn" && !shown.messages.some((message) => message.from === "master");
 }
 
 /**

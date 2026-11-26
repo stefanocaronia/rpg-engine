@@ -8,6 +8,9 @@
 // section, as --chat --section chat, or --section world/lore; --setup serves a campaign just made, still in its setup, anew each time;
 // --launcher opens the launcher's page, served by a launcher of the demo's own (test/demo/launcher.ts) with a few campaigns, or none with --empty: opening
 // one leads to the demo's campaign, whose page leads back; --query adds what the address asks, as --query "opened=1"; --locale sets the browser's language, which the launcher's page writes in, as --locale it-IT; --page serves a page built apart, in that folder, in place of dist/dashboard.
+// --hosts none or --hosts out starts the AI apps not installed, or not signed in to (test/demo/hosts.ts), which the page installs and signs in to;
+// --hosts key, Claude Code signed in with an API key; --hosts busy, as none, with Claude Code's first install and sign-in under way in another window,
+// which looking again finds done.
 // Without --url it serves the demo campaign of tmp/dashboard-demo on a free port, of free play, or with --system 5e the 5e's of tmp/dashboard-demo-5e, with
 // the 5e's repository beside this one. It uses the Chrome installed. Not part of the tests.
 import { mkdirSync } from "node:fs";
@@ -15,6 +18,7 @@ import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { chromium } from "playwright-core";
 import { serveDemo } from "./demo.ts";
+import { hostsState } from "./hosts.ts";
 
 const { values, tokens } = parseArgs({
     options: {
@@ -43,6 +47,7 @@ const { values, tokens } = parseArgs({
         locale: { type: "string" },
         page: { type: "string" },
         section: { type: "string" },
+        hosts: { type: "string" },
     },
     tokens: true,
 });
@@ -54,6 +59,7 @@ const demo = values.url === undefined
         setup: values.setup === true,
         launcher: values.launcher === true ? (values.empty === true ? "empty" : true) : false,
         ...(values.page === undefined ? {} : { page: resolve(values.page) }),
+        hosts: hostsState(values.hosts),
     })
     : undefined;
 const browser = await chromium.launch({ channel: "chrome" });

@@ -1,7 +1,8 @@
 // The player's words to the master in the open chat, as an AI app has them: one rounded box with the words, which grows with them and then scrolls, and in
 // its corner what sends them; Enter sends, Shift+Enter starts a new line. While the master answers, what stops them stands there, and the words wait in
 // the field; while the master waits for an answer the player may give in words, the words are that answer, and go. Under the box, small, what the chat plays
-// with, and what closes it.
+// with, and what closes it; where the app lets the model change in an open chat, the model is a button that opens its list (T-290).
+import type { ComponentChildren } from "preact";
 import { Icon } from "../parts/icons.tsx";
 import { t } from "../text.ts";
 import { sendsWords, wordsToSend } from "./chat.ts";
@@ -9,7 +10,7 @@ import { sendsWords, wordsToSend } from "./chat.ts";
 // How many characters the player's words may have, as the table takes them.
 const mostWords = 20_000;
 
-export function ChatWords({ text, state, answers, sending, plays, onText, onSend, onStop, onClose }: {
+export function ChatWords({ text, state, answers, sending, plays, app, model, onText, onSend, onStop, onClose }: {
     text: string;
     state: "idle" | "turn" | "ended";
     /** The master waits for an answer the player's own words may give. */
@@ -17,6 +18,9 @@ export function ChatWords({ text, state, answers, sending, plays, onText, onSend
     sending: boolean;
     /** The app, model and effort the chat plays with, in a line. */
     plays: string;
+    /** Where the model can change: the app's name, and the model's button after it. */
+    app?: string | undefined;
+    model?: ComponentChildren;
     onText(text: string): void;
     onSend(words: string): void;
     onStop(): void;
@@ -70,7 +74,13 @@ export function ChatWords({ text, state, answers, sending, plays, onText, onSend
                 </div>
             </div>
             <div class="chat-foot">
-                <span class="chat-plays" dir="ltr" title={plays}>{plays}</span>
+                {model === undefined ? <span class="chat-plays" dir="ltr" title={plays}>{plays}</span> : (
+                    <span class="chat-plays changes" dir="ltr">
+                        <span class="chat-plays-app">{app}</span>
+                        <span aria-hidden="true">·</span>
+                        {model}
+                    </span>
+                )}
                 <button type="button" class="chat-close" onClick={onClose}>{t("Close the chat")}</button>
             </div>
         </form>

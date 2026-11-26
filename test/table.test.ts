@@ -3,21 +3,24 @@ import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { connect, createServer, type Server, type Socket } from "node:net";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { PassThrough } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { type Context, userDataFolder } from "../src/core/context.ts";
+import { stopTree } from "../src/core/process.ts";
 import { SessionStore } from "../src/core/session-store.ts";
 import { getVersion } from "../src/core/version.ts";
-import type { MasterChat, MasterDriver, MasterEvent } from "../src/master/index.ts";
+import { type MasterChat, type MasterDriver, masterDriver, type MasterEvent, openMaster } from "../src/master/index.ts";
 import { type ChatSide, importEnvironment } from "../src/server/context.ts";
 import type { Served } from "../src/server/dashboard/index.ts";
+import { subagentRefusal } from "../src/server/subagent.ts";
 import { chatEnvironmentNames } from "../src/server/table/hello.ts";
-import { openTable, pipeHere, pipeToTable, readPlace, runTable, type Table, tableEnded, type TableOptions, type TablePlace } from "../src/server/table/index.ts";
+import { openTable, pipeHere, pipeToTable, readPlace, runTable, runTableStop, stopTable, type Table, tableBusy, tableEnded, type TableOptions, type TablePlace } from "../src/server/table/index.ts";
 import { tableSocket, writePlace } from "../src/server/table/place.ts";
 import { pageFolder } from "./i18n/phrases.ts";
+import { type FakeHost, fakeHost, loadFlow, manualClock } from "./master/fake-host.ts";
 import { inPlay, makeTempFolder, testContext, testSystemCode, testSystemFolders } from "./support.ts";
 
 // The table of a campaign (D-582): `rpg table` serves its page with no chat open, and the chats of the campaign run their commands in it, one at a time.
@@ -71,6 +74,8 @@ function tableOptions(options: Partial<TableOptions> = {}, own: Partial<Context>
         },
         dashboard: { ports: [0], page: pageFolder },
         chatFolders: () => undefined,
+        // No host for the table's own chat unless the test gives one: the real ones are this computer's own, with the player's accounts.
+        master: { driver: () => undefined, environment: {} },
         ...options,
     };
 }
@@ -151,6 +156,19 @@ function hello(place: TablePlace, environment: Record<string, string> = {}, give
 function probe(place: TablePlace): string
 {
     return `${JSON.stringify({ token: place.token, version: "9.9.9", probe: true })}\n`;
+}
+
+/** What `rpg table --stop` says first, of another engine as it may be, with the place's token or another. */
+function stopLine(place: TablePlace, token = place.token): string
+{
+    return `${JSON.stringify({ token, version: "9.9.9", stop: true })}\n`;
+}
+
+/** Asks the test's table to end as `rpg table --stop` does: its process, the test's own, runs until the table ended. */
+function stopIt(table: Table, options: { within?: number; wait?: number; } = {}): ReturnType<typeof stopTable>
+{
+    const ended = settled(table.ended);
+    return stopTable(table.place.root, { home, version, every: 20, running: () => !ended(), ...options });
 }
 
 const initialize = { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: LATEST_PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: "test-host", version: "1" } } };
@@ -504,6 +522,89 @@ describe("the table of a campaign", () => {
     });
 });
 
+describe("rpg table --stop", () => {
+    it("ends the table with its place's token, of any engine, sending its chat away, and waits until its place and its process are gone", async () => {
+        const said: string[] = [];
+        const table = await open({ log: (line) => said.push(line) });
+        const chat = await sit(table.place);
+        expect(await stopIt(table)).toEqual({ stop: "ended", pid: process.pid });
+        expect(readPlace(home, table.place.root)).toBeUndefined();
+        await until(chat.closed, "the chat sent away");
+        expect(said).toContain("Asked to end, by rpg table --stop.");
+        expect(said).toContain(`The table of ${table.place.root} ended: asked to by rpg table --stop.`);
+    });
+
+    it("does not end for a wrong token: the table goes on", async () => {
+        const table = await open();
+        const ended = settled(table.ended);
+        const wrong = await knock(table.place, stopLine(table.place, "0".repeat(32)));
+        expect(JSON.parse(await wrong.line("{"))).toEqual({ refused: "token" });
+        await ticks(20);
+        expect(ended()).toBe(false);
+        expect(readPlace(home, table.place.root)).toEqual(table.place);
+        expect(JSON.parse(await (await knock(table.place, probe(table.place))).line("{"))).toMatchObject({ table: { version } });
+    });
+
+    it("asked twice, answers both and ends once", async () => {
+        const said: string[] = [];
+        const table = await open({ log: (line) => said.push(line) });
+        const stops = (await Promise.all([stopIt(table), stopIt(table)])).map((one) => one.stop);
+        // The second finds the table ending, closing its knock without a word, or its door closed already.
+        expect(stops).toContain("ended");
+        expect(stops.every((one) => one === "ended" || one === "none")).toBe(true);
+        expect(said.filter((line) => line.includes("ended: asked to by rpg table --stop"))).toHaveLength(1);
+        // Asked again once ended: none is there.
+        expect(await stopIt(table)).toEqual({ stop: "none" });
+    });
+
+    it("says there is no table where there is no place, or nothing listens at it, taking that place away", async () => {
+        expect(await stopTable(folder, { home, version })).toEqual({ stop: "none" });
+        placeOf();
+        expect(await stopTable(folder, { home, version })).toEqual({ stop: "none" });
+        expect(readPlace(home, folder)).toBeUndefined();
+    });
+
+    it("says a table that does not answer, or answers no end, is silent, and one still there after the wait is late, and never touches its place", async () => {
+        const place = placeOf();
+        const heard = await listenerAt(place, (socket, line) => {
+            if (line.includes('"stop":true') && heard.length > 1) {
+                socket.end(`${JSON.stringify({ ending: true })}\n`);
+            } else {
+                socket.end(`${JSON.stringify({ refused: "token" })}\n`);
+            }
+        });
+        expect(await stopTable(folder, { home, version, wait: 300 })).toEqual({ stop: "silent", pid: 4242 });
+        expect(await stopTable(folder, { home, version, wait: 300, within: 200, every: 20, running: () => true })).toEqual({ stop: "late", pid: 4242 });
+        expect(heard.map((line) => (JSON.parse(line) as { stop?: unknown; }).stop)).toEqual([true, true]);
+        expect(readPlace(home, folder)).toEqual(place);
+    });
+
+    it("the command: its line, on stdout with 0 where no table is left, on stderr with 1 and what to do where one is", async () => {
+        const out = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+        try {
+            const table = await open();
+            const ended = settled(table.ended);
+            expect(await runTableStop(folder, { home, version, every: 20, running: () => !ended() })).toBe(0);
+            expect(out).toHaveBeenLastCalledWith(`The table of ${table.place.root} ended.\n`);
+            expect(await runTableStop(folder, { home, version })).toBe(0);
+            expect(out).toHaveBeenLastCalledWith(`No table is on for ${table.place.root}.\n`);
+
+            await listenerAt(placeOf(), () => undefined);
+            expect(await runTableStop(folder, { home, version, wait: 200 })).toBe(1);
+            expect(err).toHaveBeenLastCalledWith(expect.stringMatching(/does not answer.*run rpg table --stop again.*end process 4242 yourself/));
+
+            const outside = makeTempFolder();
+            expect(await runTableStop(outside, { home, version })).toBe(1);
+            expect(err).toHaveBeenLastCalledWith(`rpg table --stop: ${outside} is no campaign. Run it in a campaign's folder.\n`);
+        } finally {
+            out.mockRestore();
+            err.mockRestore();
+        }
+    });
+});
+
 describe("what the table keeps from going wrong", () => {
     it("ends by itself once the code it loaded is not the code on disk, once no call runs, and tells the master to start it again (defect 1)", async () => {
         inPlay(folder);
@@ -694,7 +795,8 @@ describe("what the table keeps from going wrong", () => {
         const before = { rejected: process.listeners("unhandledRejection"), thrown: process.listeners("uncaughtException") };
         const time = clock();
         const options = tableOptions({ idle: 1000, idleEvery: 10, now: time.now, log: (line) => said.push(line) });
-        const running = runTable(folder, { ...options, exit });
+        // No host for its chat: the real ones are this computer's own, with the player's accounts.
+        const running = runTable(folder, { ...options, master: { driver: () => undefined, environment: {} }, exit, programsWait: 5000 });
 
         try {
             await until(() => readPlace(home, folder) !== undefined, "the table's place");
@@ -707,13 +809,20 @@ describe("what the table keeps from going wrong", () => {
 
             thrown?.(new Error("an error of nobody's"), "uncaughtException");
             expect(said.at(-1)).toContain("an error of nobody's");
-            expect(exit).toHaveBeenCalledWith(1);
             expect(readPlace(home, folder)).toBeUndefined();
+            // The exit comes once the programs it started ended, said with the time.
+            await until(() => exit.mock.calls.length > 0, "the exit");
+            expect(exit.mock.calls).toEqual([[1]]);
+            expect(said.at(-1)).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z The programs the table started ended by themselves in \d+ ms\.$/);
         } finally {
             time.pass(2000);
             expect(await running).toBe(0);
             written.mockRestore();
         }
+
+        // Its own end said too, after the table's.
+        expect(said.at(-2)).toContain("The table of");
+        expect(said.at(-1)).toMatch(/Z The programs the table started ended by themselves in \d+ ms\.$/);
 
         expect(process.listeners("unhandledRejection")).toEqual(before.rejected);
         expect(process.listeners("uncaughtException")).toEqual(before.thrown);
@@ -725,6 +834,8 @@ describe("the table's own chat with the master", () => {
     interface FakeMaster extends MasterChat
     {
         closed: boolean;
+        /** Whether it was closed gently, its program let go to end by itself. */
+        gently?: boolean;
         interrupted: number;
         emit(event: MasterEvent): void;
     }
@@ -758,7 +869,10 @@ describe("the table's own chat with the master", () => {
                         send: () => true,
                         onEvent: (given) => (listener = given),
                         interrupt: () => fake.interrupted++,
-                        close: () => (fake.closed = true),
+                        close: (gently) => {
+                            fake.closed = true;
+                            fake.gently = gently === true;
+                        },
                         emit: (event) => listener?.(event),
                     };
                     masters.push(fake);
@@ -788,6 +902,54 @@ describe("the table's own chat with the master", () => {
         const own = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
         expect(await call(own, 2, "status")).toContain("Rocca");
         expect(chats[0].environment()).toEqual({ RPG_TABLE_MASTER: "token-1" });
+    });
+
+    it("seats beside its own server another of the same chat, as a character's subagent's in Codex, which only looks, and whose leaving leaves the chat seated (D-588 (2))", async () => {
+        await runCommandLine(["write", "Mira", "--type", "character", "--text", "Una locandiera."], testContext(folder));
+        const said: string[] = [];
+        const table = await open(withMaster({ log: (line) => said.push(line) }));
+        await openChat(table);
+        const own = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        const seated = contexts[0].chat;
+        const subagent = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        expect(said).toContain("Another server of the chat sat at the table, as a character's subagent starts.");
+        expect(await call(subagent, 2, "status")).toBe(subagentRefusal);
+        expect(await call(subagent, 3, "view", { as: "Mira" })).toContain("Mira");
+
+        // Any other is still refused while the two sit: another token, or none.
+        expect(JSON.parse(await (await knock(table.place, hello(table.place, { RPG_TABLE_MASTER: "token-2" }))).line("{"))).toEqual({ refused: "busy" });
+        expect(JSON.parse(await (await knock(table.place, hello(table.place))).line("{"))).toEqual({ refused: "busy" });
+
+        await subagent.leave();
+        await until(() => said.includes("Another server of the chat left the table."), "the subagent's server gone");
+        expect(own.closed()).toBe(false);
+        expect(contexts[0].chat).toBe(seated);
+        expect(chats[0].host()).toBe("test-host");
+        expect(await call(own, 4, "status")).toContain("Rocca");
+        expect(masters[0].closed).toBe(false);
+    });
+
+    it("sends the other servers of its chat away with the chat's own", async () => {
+        const table = await open(withMaster());
+        await openChat(table);
+        const own = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        const subagent = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        await own.leave();
+        await until(() => subagent.closed(), "the subagent's server sent away");
+        await until(() => chats[0].host() === undefined, "the seat empty");
+        expect(await sit(table.place, { RPG_TABLE_MASTER: "token-1" })).toBeDefined();
+    });
+
+    it("rpg mcp: a chat refused as another sits does not serve the campaign by itself: it says so, and its server only looks (D-588 (2))", async () => {
+        const table = await open(withMaster());
+        await openChat(table);
+        await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        const said: string[] = [];
+        const input = new PassThrough();
+        input.write("waiting\n");
+        expect(await pipeToTable(table.place.root, input, new PassThrough(), { home, version, environment: {}, log: (line) => said.push(line) })).toBe("busy");
+        expect(said).toEqual([`rpg mcp: ${tableBusy}`]);
+        expect(String(input.read())).toBe("waiting\n");
     });
 
     it("does not open while a chat opened by hand sits", async () => {
@@ -825,7 +987,7 @@ describe("the table's own chat with the master", () => {
         const written = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
         const before = process.listeners("uncaughtException");
         const time = clock();
-        const running = runTable(folder, { ...tableOptions(withMaster({ idle: 1000, idleEvery: 10, now: time.now, log: () => undefined })), exit });
+        const running = runTable(folder, { ...tableOptions(withMaster({ idle: 1000, idleEvery: 10, now: time.now, log: () => undefined })), exit, programsWait: 5000 });
 
         try {
             await until(() => readPlace(home, folder) !== undefined, "the table's place");
@@ -833,7 +995,9 @@ describe("the table's own chat with the master", () => {
             expect((await get(url, "/api/master", "POST", { open: { host: "claudeCode", model: "sonnet" } })).status).toBe(200);
             const thrown = process.listeners("uncaughtException").find((one) => !before.includes(one));
             thrown?.(new Error("an error of nobody's"), "uncaughtException");
-            expect(masters[0].closed).toBe(true);
+            // Let go gently, its program's input closed: waiting for it to end would serve nothing otherwise.
+            expect(masters[0]).toMatchObject({ closed: true, gently: true });
+            await until(() => exit.mock.calls.length > 0, "the exit");
             expect(exit).toHaveBeenCalledWith(1);
         } finally {
             time.pass(2000);
@@ -870,8 +1034,140 @@ describe("the table's own chat with the master", () => {
         const table = await open(withMaster());
         await openChat(table);
         await table.end("the test ends it");
-        expect(masters[0].closed).toBe(true);
+        expect(masters[0]).toMatchObject({ closed: true, gently: true });
     });
+
+    it("rpg table --stop in a turn: the turn stopped as Stop does, then the chat let go gently and the table ended; asked again meanwhile, it goes on ending", async () => {
+        const said: string[] = [];
+        const table = await open(withMaster({ log: (line) => said.push(line) }));
+        await openChat(table);
+        const own = await sit(table.place, { RPG_TABLE_MASTER: "token-1" });
+        expect((await get(table.url, "/api/master", "POST", { say: "Hello" })).status).toBe(202);
+        const stopping = stopIt(table);
+        await until(() => masters[0].interrupted === 1, "the turn stopped");
+        await ticks(10);
+        expect(masters[0].closed).toBe(false);
+        expect(own.closed()).toBe(false);
+
+        const again = await knock(table.place, stopLine(table.place));
+        expect(JSON.parse(await again.line("{"))).toEqual({ ending: true });
+        expect(said).toContain("Asked again to end, by rpg table --stop: the table is ending.");
+        expect(JSON.parse(await (await knock(table.place, hello(table.place, { RPG_TABLE_MASTER: "token-1" }))).line("{"))).toEqual({ refused: "ending" });
+
+        masters[0].emit({ type: "turnEnd", reason: "interrupted" });
+        expect(await stopping).toEqual({ stop: "ended", pid: process.pid });
+        expect(masters[0]).toMatchObject({ closed: true, gently: true, interrupted: 1 });
+        await until(own.closed, "its server sent away");
+    });
+
+    it("rpg table --stop with Claude Code's own driver over a fake program: the program sees its input closed, and is stopped only after the grace", async () => {
+        const clock = manualClock();
+        const programs: FakeHost[] = [];
+        const claudeCode = masterDriver("claudeCode");
+        const table = await open({
+            master: {
+                open: (host, options) => {
+                    const played = fakeHost(loadFlow("claude-code/three-turns"));
+                    programs.push(played);
+                    return openMaster(host, { ...options, start: played.start, later: clock.later });
+                },
+                driver: (host) =>
+                    host === "claudeCode" && claudeCode !== undefined
+                        ? { ...claudeCode, program: () => ({ command: "claude-program", args: [] }), missing: () => undefined, models: () => Promise.resolve([]) }
+                        : undefined,
+                environment: {},
+            },
+        });
+        expect((await get(table.url, "/api/master", "POST", { open: { host: "claudeCode", model: "haiku" } })).status).toBe(200);
+        expect(await stopIt(table)).toEqual({ stop: "ended", pid: process.pid });
+        expect(programs).toHaveLength(1);
+        expect(programs[0]).toMatchObject({ inputClosed: true, stops: 0 });
+        clock.advance(10_000);
+        expect(programs[0].stops).toBe(1);
+    });
+
+    /**
+     * Claude Code's own driver over a program of the test's, a node script started as the host's would be, which writes its pid to `pidFile` and does `atEnd`
+     * once its input is closed; the grace before a stop never passes.
+     */
+    function fakeProgram(pidFile: string, atEnd: string): { master: TableOptions["master"]; script: string; }
+    {
+        const script = join(makeTempFolder(), "program.cjs");
+        writeFileSync(
+            script,
+            `require("node:fs").writeFileSync(${JSON.stringify(pidFile)}, String(process.pid)); setInterval(() => undefined, 1000); process.stdin.on("data", () => undefined); process.stdin.on("end", () => { ${atEnd} });`,
+        );
+        const claudeCode = masterDriver("claudeCode");
+        const grace = manualClock();
+        const master: TableOptions["master"] = {
+            open: (host, options) => openMaster(host, { ...options, later: grace.later }),
+            driver: (host) =>
+                host === "claudeCode" && claudeCode !== undefined
+                    ? { ...claudeCode, program: () => ({ command: process.execPath, args: [script] }), missing: () => undefined, models: () => Promise.resolve([]) }
+                    : undefined,
+            environment: { ...process.env },
+        };
+        return { master, script };
+    }
+
+    it("rpg table: on an exception nobody caught lets its chat's program end by itself, as one saving once its input closed, then exits with 1; the log says so, with the time", async () => {
+        const pidFile = join(makeTempFolder(), "pid");
+        const saved = join(makeTempFolder(), "saved.txt");
+        const { master } = fakeProgram(pidFile, `setTimeout(() => { require("node:fs").writeFileSync(${JSON.stringify(saved)}, "saved"); process.exit(0); }, 500);`);
+        const said: string[] = [];
+        const exit = vi.fn();
+        const written = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        const before = process.listeners("uncaughtException");
+        const time = clock();
+        const running = runTable(folder, { ...tableOptions({ idle: 1000, idleEvery: 10, now: time.now, log: (line) => said.push(line), master }), exit, programsWait: 10_000 });
+
+        try {
+            await until(() => readPlace(home, folder) !== undefined, "the table's place");
+            expect((await get(readPlace(home, folder)?.url ?? "", "/api/master", "POST", { open: { host: "claudeCode", model: "haiku" } })).status).toBe(200);
+            await until(() => existsSync(pidFile), "the program started");
+            const thrown = process.listeners("uncaughtException").find((one) => !before.includes(one));
+            thrown?.(new Error("an error of nobody's"), "uncaughtException");
+            // Another while it waits: logged, and nothing more.
+            thrown?.(new Error("another error of nobody's"), "uncaughtException");
+            expect(exit).not.toHaveBeenCalled();
+            await until(() => exit.mock.calls.length > 0, "the exit", 15_000);
+            expect(exit.mock.calls).toEqual([[1]]);
+            expect(readFileSync(saved, "utf8")).toBe("saved");
+            const ended = said.filter((line) => line.includes("ended by themselves"));
+            expect(ended).toEqual([expect.stringMatching(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z The programs the table started ended by themselves in \d+ ms\.$/)]);
+            expect(Number(/in (\d+) ms/.exec(ended[0])?.[1])).toBeGreaterThanOrEqual(400);
+            expect(said.filter((line) => line.includes("an error nobody caught"))).toHaveLength(2);
+        } finally {
+            time.pass(2000);
+            expect(await running).toBe(0);
+            written.mockRestore();
+            stopTree(Number(existsSync(pidFile) ? readFileSync(pidFile, "utf8") : undefined), "SIGKILL");
+        }
+    }, 30_000);
+
+    it("rpg table: its log says, with the time, how many programs it started its exit stops, still at work once the wait is over, and which", async () => {
+        const pidFile = join(makeTempFolder(), "pid");
+        const { master, script } = fakeProgram(pidFile, "");
+        const said: string[] = [];
+        const written = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        const time = clock();
+        const running = runTable(folder, { ...tableOptions({ idle: 1000, idleEvery: 10, now: time.now, log: (line) => said.push(line), master }), exit: vi.fn(), programsWait: 300 });
+
+        try {
+            await until(() => readPlace(home, folder) !== undefined, "the table's place");
+            expect((await get(readPlace(home, folder)?.url ?? "", "/api/master", "POST", { open: { host: "claudeCode", model: "haiku" } })).status).toBe(200);
+            await until(() => existsSync(pidFile), "the program started");
+            time.pass(2000);
+            expect(await running).toBe(0);
+            const pid = readFileSync(pidFile, "utf8");
+            const program = `${basename(process.execPath)} ${script} (process ${pid})`;
+            expect(said.at(-1)).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z The exit of the table stops 1 program it started, still at work after 300 ms: /);
+            expect(said.at(-1)?.endsWith(`: ${program}.`)).toBe(true);
+        } finally {
+            written.mockRestore();
+            stopTree(Number(existsSync(pidFile) ? readFileSync(pidFile, "utf8") : undefined), "SIGKILL");
+        }
+    }, 30_000);
 
     it("after the idle time with no page stops its chat's turn, then closes the chat out of a turn; the table's own end follows", async () => {
         const time = clock();
@@ -1014,5 +1310,33 @@ describe("rpg mcp at its campaign's table", () => {
         expect(alone.code).toBe(0);
         expect(alone.err).toContain("loaded the server");
         expect(alone.out).toContain('"name":"rpg"');
+    }, 60_000);
+
+    it("the command line: rpg mcp refused as another chat sits serves only looking, and says why (D-588 (2))", async () => {
+        const base = makeTempFolder();
+        const data = withEnvironment(dataFolderEnvironment(base), () => userDataFolder());
+        const said: string[] = [];
+        const table = await open({ home: data, version: getVersion(), log: (line) => said.push(line) });
+        const byHand = await knock(table.place, hello(table.place, {}, { version: getVersion() }));
+        expect(JSON.parse(await byHand.line("{"))).toEqual({ ok: true });
+        const cli = fileURLToPath(new URL("../src/cli/cli.ts", import.meta.url));
+        const child = spawn(process.execPath, ["--no-warnings", cli, "mcp"], { cwd: folder, env: { ...process.env, ...dataFolderEnvironment(base), CLAUDE_CODE_ENTRYPOINT: "" } });
+        let out = "";
+        let err = "";
+        child.stdout.setEncoding("utf8").on("data", (chunk: string) => (out += chunk));
+        child.stderr.setEncoding("utf8").on("data", (chunk: string) => (err += chunk));
+        const exited = new Promise<number | null>((done) => child.on("exit", done));
+        const send = (message: object): boolean => child.stdin.write(`${JSON.stringify(message)}\n`);
+        send(initialize);
+        await until(() => out.includes('"id":1'), "initialize answered", 30_000);
+        send({ jsonrpc: "2.0", method: "notifications/initialized" });
+        send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "status", arguments: {} } });
+        await until(() => out.includes('"id":2'), "status answered", 30_000);
+        child.stdin.end();
+        expect(await exited).toBe(0);
+        expect(said).toContain("A chat was refused (busy).");
+        expect(err).toContain(tableBusy);
+        expect(out).toContain(JSON.stringify(tableBusy).slice(1, -1));
+        expect(out).not.toContain("Rocca");
     }, 60_000);
 });

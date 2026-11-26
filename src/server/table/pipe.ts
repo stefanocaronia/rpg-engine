@@ -5,7 +5,7 @@ import type { Readable, Writable } from "node:stream";
 import { findCampaign } from "../../campaign/index.ts";
 import { userDataFolder } from "../../core/context.ts";
 import { getVersion } from "../../core/version.ts";
-import { firstLine, helloLine, seated } from "./hello.ts";
+import { busy, firstLine, helloLine, seated } from "./hello.ts";
 import { knock, readPlace, removePlace } from "./place.ts";
 
 export interface PipeOptions
@@ -25,6 +25,10 @@ export interface PipeOptions
 /** What the host's requests still waiting hear, and the player on stderr, when the table ends before the chat. */
 export const tableEnded = "The campaign's table ended: reconnect the rpg server (/mcp in Claude Code) or open a new chat, then look with status at what changed.";
 
+/** What every call but a character's view hears, and the player on stderr, in a chat the table sent away because another chat plays there (D-588 (2)). */
+export const tableBusy = "Another chat plays this campaign at its table now, in the campaign's page or opened by hand, and this one may only look, with view as a character: "
+    + "close the other chat, then reconnect the rpg server (/mcp in Claude Code) or open a new chat here.";
+
 // The table's answer is one short line.
 const mostAnswer = 1024;
 // After the host's input ended, how long the table may take to close its side.
@@ -32,9 +36,9 @@ const closeWait = 2000;
 
 /**
  * `rpg mcp` in the process's folder, at its campaign's table where one is on: once either side ended, the process's exit code, 0 when the host's input ended
- * first, 1 when the table did; undefined to serve as always.
+ * first, 1 when the table did; "busy" where the table sent it away because another chat sits, to serve only looking; undefined to serve as always.
  */
-export async function pipeHere(input: Readable, output: Writable = process.stdout, folder = process.cwd()): Promise<number | undefined>
+export async function pipeHere(input: Readable, output: Writable = process.stdout, folder = process.cwd()): Promise<number | "busy" | undefined>
 {
     try {
         const root = findCampaign(folder);
@@ -48,9 +52,10 @@ export async function pipeHere(input: Readable, output: Writable = process.stdou
 /**
  * Pipes a chat's input to the table of the campaign at `root` and its answers to `output`: the exit code once either side ended, as pipeHere gives it.
  * Undefined, at once, with `input` untouched, where there is no table, its place is stale (taken away then), or it refuses, is slow or fails: the caller then
- * serves the chat itself.
+ * serves the chat itself; "busy", said in the log, where it refuses because another chat sits: the caller then serves it only looking, so that one engine
+ * writes the campaign (D-588 (2)).
  */
-export async function pipeToTable(root: string, input: Readable, output: Writable, options: PipeOptions): Promise<number | undefined>
+export async function pipeToTable(root: string, input: Readable, output: Writable, options: PipeOptions): Promise<number | "busy" | undefined>
 {
     const place = readPlace(options.home, root);
 
@@ -76,12 +81,20 @@ export async function pipeToTable(root: string, input: Readable, output: Writabl
     knocked.write(helloLine(place.token, options.version, options.environment));
     const answer = await firstLine(knocked, Math.max(1, wait - (now() - started)), mostAnswer);
 
+    const log = options.log ?? (() => undefined);
+
     if (answer === undefined || !seated(answer.line)) {
         knocked.destroy();
+
+        if (answer !== undefined && busy(answer.line)) {
+            log(`rpg mcp: ${tableBusy}`);
+            return "busy";
+        }
+
         return undefined;
     }
 
-    return piped(knocked, answer.rest, input, output, options.log ?? (() => undefined));
+    return piped(knocked, answer.rest, input, output, log);
 }
 
 /**

@@ -3,11 +3,14 @@
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { createInterface } from "node:readline";
 import type { Readable } from "node:stream";
+import { lookUntil } from "./wait.ts";
 
 // How long a child's output may stay open after it exited, held by a process it started, before what was heard is taken as all.
 const outputWait = 2000;
 // How long a process stopped off Windows has to end at SIGTERM before it is killed.
 const killAfter = 3000;
+// The processes started by lines that have not exited, by pid, with their program's name, for the log of an exit that stops them.
+const lineProcesses = new Map<number, string>();
 
 /** A process that speaks by lines on its input and output. */
 export interface LineProcess
@@ -15,6 +18,8 @@ export interface LineProcess
     pid: number | undefined;
     /** Writes a line, adding its "\n"; nothing once its input is not writable. */
     write(line: string): void;
+    /** Closes its input, as a program that reads it until it ends takes for the end of its work; nothing more is written. */
+    closeInput(): void;
     /** Each line of its output. */
     onLine(listener: (line: string) => void): void;
     /** Told once: the error's message, the signal, or `exit code N`; never after stop(). */
@@ -115,18 +120,60 @@ export function isRunning(pid: number): boolean
 }
 
 /**
- * In a process of the engine that lasts, as `rpg table` (`command`), which the log calls `name` (the table): a promise that failed with nobody to catch it is
- * logged, and the process goes on; an exception nobody caught is logged, `cleanup` runs, and the process ends with 1. What takes the guard away.
+ * Waits until no process this one started still runs, at most `within` ms, and logs how it went, with the time: the programs `name` (the table) started
+ * ended by themselves, or how many its exit stops, those started by lines named. Whether none runs. Its exit would stop them at once, on Windows those not
+ * started apart, which the system ends with it; one started apart, which lives on by itself, is not waited for.
  */
-export function guardProcess(command: string, name: string, log: (line: string) => void, cleanup: () => void, exit: (code: number) => void): () => void
+export async function childrenEnded(name: string, within: number, log: (line: string) => void, looking: { every?: number; now?: () => number; } = {}): Promise<boolean>
+{
+    const now = looking.now ?? Date.now;
+    const started = now();
+    const running = (): number => process.getActiveResourcesInfo().filter((resource) => resource === "ProcessWrap").length;
+    const none = await lookUntil(() => Promise.resolve(running() === 0 ? true : undefined), () => false, { within, every: looking.every ?? 100, now });
+    const time = new Date(now()).toISOString();
+
+    if (none) {
+        log(`${time} The programs ${name} started ended by themselves in ${String(now() - started)} ms.`);
+        return true;
+    }
+
+    const count = running();
+    const named = [...lineProcesses].slice(0, count).map(([pid, program]) => `${program} (process ${String(pid)})`);
+    const others = count - named.length > 0 ? `${named.length > 0 ? " and " : ""}${String(count - named.length)} more` : "";
+    const programs = count === 1 ? "program" : "programs";
+    log(`${time} The exit of ${name} stops ${String(count)} ${programs} it started, still at work after ${String(within)} ms: ${named.join(", ")}${others}.`);
+    return false;
+}
+
+/**
+ * In a process of the engine that lasts, as `rpg table` (`command`), which the log calls `name` (the table): a promise that failed with nobody to catch it is
+ * logged, and the process goes on; an exception nobody caught is logged, `cleanup` runs, the processes it started have `programsWait` ms to end by
+ * themselves, as childrenEnded, and the process ends with 1. What takes the guard away.
+ */
+export function guardProcess(command: string, name: string, log: (line: string) => void, cleanup: () => void, exit: (code: number) => void, programsWait: number): () => void
 {
     const said = (error: unknown): string => (error instanceof Error ? error.stack ?? error.message : String(error));
     const rejected = (reason: unknown): void => log(`${command}: a promise failed with nobody to catch it; ${name} goes on. ${said(reason)}`);
+    let ending = false;
 
     const thrown = (error: unknown): void => {
         log(`${command}: an error nobody caught; ${name} ends. ${said(error)}`);
-        cleanup();
-        exit(1);
+
+        // Another while it waits for its programs: logged, and the wait goes on.
+        if (ending) {
+            return;
+        }
+
+        ending = true;
+
+        // A cleanup that fails too is logged: the programs are still waited for, and the exit still comes.
+        try {
+            cleanup();
+        } catch (failed) {
+            log(`${command}: ${name} could not clean up after the error. ${said(failed)}`);
+        }
+
+        void childrenEnded(name, programsWait, log).then(() => exit(1), () => exit(1));
     };
 
     process.on("unhandledRejection", rejected);
@@ -193,14 +240,28 @@ export function startLineProcess(command: string, args: string[], options: { cwd
         });
     }
 
+    const pid = child.pid;
+
+    if (pid !== undefined) {
+        lineProcesses.set(pid, programName(command, args));
+    }
+
     child.stdin.on("error", () => undefined);
     child.on("error", (error) => end(error.message));
-    child.on("exit", (code, signal) => exit(signal ?? `exit code ${String(code)}`));
+    child.on("exit", (code, signal) => {
+        lineProcesses.delete(pid ?? 0);
+        exit(signal ?? `exit code ${String(code)}`);
+    });
     return {
         pid: child.pid,
         write: (line) => {
             if (child.stdin.writable) {
                 child.stdin.write(`${line}\n`);
+            }
+        },
+        closeInput: () => {
+            if (child.stdin.writable) {
+                child.stdin.end();
             }
         },
         onLine: (listener) => readLines(child.stdout, listener),
@@ -227,4 +288,12 @@ export function startLineProcess(command: string, args: string[], options: { cwd
             }
         },
     };
+}
+
+/** The name of a program for the log: its file's, and the script node runs, as a host installed with npm. */
+function programName(command: string, args: string[]): string
+{
+    const file = command.split(/[\\/]/).at(-1) ?? command;
+    const script = args[0];
+    return script !== undefined && /\.[cm]?js$/i.test(script) ? `${file} ${script}` : file;
 }

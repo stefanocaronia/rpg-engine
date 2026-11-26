@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { createServer, request, type Server } from "node:http";
 import { join, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import { readDataFile } from "../src/core/data-file.ts";
 import { samePath } from "../src/core/paths.ts";
@@ -442,18 +442,20 @@ describe("the folder window and the launcher's end", () => {
 });
 
 describe("the guard of what nobody caught", () => {
-    it("lets a process go on after a failed promise, and ends it after an error, its place taken away first", () => {
+    it("lets a process go on after a failed promise, and ends it after an error, its place taken away first and its programs waited for", async () => {
         const logged: string[] = [];
         const done: string[] = [];
-        const unguard = guardProcess("rpg launcher", "the launcher", (line) => logged.push(line), () => done.push("cleaned"), (code) => done.push(`exit ${code}`));
+        const unguard = guardProcess("rpg launcher", "the launcher", (line) => logged.push(line), () => done.push("cleaned"), (code) => done.push(`exit ${code}`), 5000);
 
         try {
             process.emit("unhandledRejection", new Error("lost"), Promise.resolve());
             expect(done).toEqual([]);
             process.emit("uncaughtException", new Error("broken"));
-            expect(done).toEqual(["cleaned", "exit 1"]);
+            expect(done).toEqual(["cleaned"]);
+            await vi.waitFor(() => expect(done).toEqual(["cleaned", "exit 1"]), { timeout: 6000 });
             expect(logged[0]).toContain("rpg launcher: a promise failed with nobody to catch it; the launcher goes on.");
             expect(logged[1]).toContain("rpg launcher: an error nobody caught; the launcher ends.");
+            expect(logged[2]).toMatch(/Z The programs the launcher started ended by themselves in \d+ ms\.$/);
         } finally {
             unguard();
         }

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { masterDriver, type MasterEvent, type MasterOptions, openMaster, type ToolKind } from "../src/master/index.ts";
 import { checklist, type Scenario } from "./master/checklist.ts";
 import { fakeAgent, type FakeAgentOptions, isModelSetting, isPrompt, joinedTexts, promptWords } from "./master/fake-agent.ts";
-import { type FakeHost, type FlowEntry, listen, loadFlow, turnEnds } from "./master/fake-host.ts";
+import { type FakeHost, type FlowEntry, listen, loadFlow, manualClock, turnEnds } from "./master/fake-host.ts";
 import { makeTempFolder } from "./support.ts";
 
 type Message = Record<string, unknown>;
@@ -43,7 +43,7 @@ describe("the master in Antigravity", () => {
         await until(() => turnEnds(events).length === 1);
         expect(host.written.map((message) => message.method)).toEqual(["initialize", "session/new", "session/set_model", "session/prompt"]);
         expect(host.written[2].params).toEqual({ sessionId: session, modelId: model });
-        expect(events[0]).toEqual({ type: "session", session, model });
+        expect(events[0]).toEqual({ type: "session", session, model, efforts: [] });
         expect(host.problems).toEqual([]);
     });
 
@@ -130,7 +130,7 @@ describe("the master in Antigravity", () => {
 
     describe("recorded turns (agy 1.5.17, gemini-3.8-flash)", () => {
         // The table's own kinds.
-        const tableKinds: MasterOptions["allowed"] = ["rpg", "read", "web", "agent", "image"];
+        const tableKinds: MasterOptions["allowed"] = ["rpg", "read", "web", "fetch", "agent", "image"];
 
         function playRecorded(name: string): ReturnType<typeof play> & { flow: FlowEntry[]; }
         {
@@ -173,6 +173,55 @@ describe("the master in Antigravity", () => {
             expect(host.problems).toEqual([]);
         });
 
+        // The tool lines of a turn at the table (agy, 2026-11-26), the chat's words replaced: the master waits for the painter with a timer, then asks its task.
+        const waiting = loadFlow("antigravity/picture-waits-with-schedule");
+
+        /** The waiting flow in a turn, the timer's or the task's input as given; the tools that ended, and the turn's end. */
+        const waited = async (tool?: "schedule" | "manage_task", input?: Message): Promise<{ done: (string | ToolKind)[][]; ends: MasterEvent[]; }> => {
+            const flow = waiting.map((entry) => {
+                const update = (entry.msg.params as Message).update as Message;
+                return update.name === tool ? { ...entry, msg: { ...entry.msg, params: { sessionId: session, update: { ...update, rawInput: input } } } } : entry;
+            });
+            const { chat, events, until } = play([...handshake, ...newSession(), ...turn("Paint the inn", ...flow)], { model: "gemini-3.8-flash", allowed: tableKinds });
+            chat.send("Paint the inn");
+            await until(() => turnEnds(events).length === 1);
+            return { done: done(events).filter(([, kind]) => kind !== "rpg"), ends: turnEnds(events) };
+        };
+
+        it("lets the master wait for the painter with a timer that wakes it once, and look at its task", async () => {
+            expect(await waited()).toEqual({
+                done: [["invoke_subagent", "agent"], ["manage_subagents", "agent"], ["manage_subagents", "agent"], ["manage_task", "agent"], ["schedule", "agent"]],
+                ends: [{ type: "turnEnd", reason: "done" }],
+            });
+        });
+
+        it("keeps a turn it began by itself open while a timer of that turn runs, past the silence that ends one; then ends it after the silence", async () => {
+            const clock = manualClock();
+            const host = fakeAgent([...handshake, ...newSession(), ...turn("Paint the inn")]);
+            const chat = openMaster("antigravity", { folder, program: { command: "agy-program", args: [] }, model, allowed: tableKinds, environment: {}, start: host.start, later: clock.later })!;
+            const { events, until } = listen(chat);
+            chat.send("Paint the inn");
+            await until(() => turnEnds(events).length === 1);
+
+            const timer = { name: "schedule", kind: "other", title: "Run schedule", rawInput: { DurationSeconds: 60, Prompt: "Check if subagent has completed." } };
+            host.says(update({ sessionUpdate: "tool_call", toolCallId: "s1", status: "in_progress", ...timer }).msg);
+            await until((all) => all.some((event) => event.type === "turnStart"));
+            clock.advance(59_000);
+            expect(turnEnds(events)).toHaveLength(1);
+
+            host.says(update({ sessionUpdate: "tool_call_update", toolCallId: "s1", status: "completed", ...timer }).msg);
+            await until((all) => all.some((event) => event.type === "tool" && event.state === "done"));
+            clock.advance(20_000);
+            expect(turnEnds(events)).toEqual([{ type: "turnEnd", reason: "done" }, { type: "turnEnd", reason: "done" }]);
+        });
+
+        it("refuses a timer with any field beside its wait and its words, as one that repeats, and a look at a task by an action not seen", async () => {
+            const stopped = (name: string): MasterEvent[] => [{ type: "turnEnd", reason: "failed", why: `the host ran a tool without asking: the table does not let the master use ${name}` }];
+            expect((await waited("schedule", { DurationSeconds: 10, Prompt: "Check again.", Recurring: true })).ends).toEqual(stopped("schedule"));
+            expect((await waited("schedule", { DurationSeconds: "10", Prompt: "Check again." })).ends).toEqual(stopped("schedule"));
+            expect((await waited("manage_task", { Action: "cancel", TaskId: `${session}/task-40` })).ends).toEqual(stopped("manage_task"));
+        });
+
         it("holds what is not the chat's own to the table's limits: another chat's answers, another subagent, another server, another action", async () => {
             const answers = (chat: string): string => `/home/player/.gemini/antigravity-cli/brain/${chat}/.system_generated/steps/2/output.txt`;
             const tools = [
@@ -203,7 +252,11 @@ describe("the master in Antigravity", () => {
         ]);
         chat.send("Hello");
         await until(() => events.some((event) => event.type === "ended"));
-        expect(events.at(-1)).toEqual({ type: "ended", why: "the host did not open the chat: Authentication required: run agy in a terminal and sign in, then try again" });
+        expect(events.at(-1)).toEqual({
+            type: "ended",
+            why: "the host did not open the chat: Authentication required: open Antigravity on this computer and sign in there, then try again",
+            code: "signin",
+        });
     });
 
     it("answers a permission by the tool's kind, and a read by its paths", async () => {
@@ -217,6 +270,8 @@ describe("the master in Antigravity", () => {
 
         expect(await asked({ title: "rpg: roll", kind: "other", rawInput: {} }, "allow-once")).toEqual([{ type: "permission", name: "roll", kind: "rpg", allowed: true }]);
         expect(await asked({ title: "Run a command", kind: "execute", rawInput: { command: "dir" } }, "reject")).toEqual([{ type: "permission", name: "Run a command", kind: "shell", allowed: false }]);
+        // Its reading of a page of the web by its name, a fetch, which the table gives and this chat does not.
+        expect(await asked({ name: "read_url_content", kind: "other", rawInput: { Url: "https://example.com" } }, "reject")).toEqual([{ type: "permission", name: "read_url_content", kind: "fetch", allowed: false }]);
         expect(await asked({ title: "Read", kind: "read", locations: [{ path: join(folder, "state.yaml") }], rawInput: {} }, "allow-once")).toEqual([{ type: "permission", name: "Read", kind: "read", allowed: true }]);
         expect(await asked({ title: "Read", kind: "read", locations: [{ path: "/home/player/.ssh/id_rsa" }], rawInput: {} }, "reject")).toEqual([{ type: "permission", name: "Read", kind: "read", allowed: false }]);
     });
@@ -260,7 +315,7 @@ describe("Antigravity as the table drives it", () => {
     it("lists the models a new session gives, the one in play first, and leaves the session where the agent says no way to delete it", async () => {
         const host = fakeAgent([...handshake, ...newSession()]);
         const models = await driver.models({ folder, program: { command: "agy-program", args: [] }, environment: {}, start: host.start });
-        expect(models).toEqual([{ id: model, name: "Gemini 3 Pro", efforts: [] }, { id: "gemini-3-flash", name: "Gemini 3 Flash", about: "Fast", efforts: [] }]);
+        expect(models).toEqual([{ id: model, name: "Gemini 3 Pro", efforts: [], advised: true }, { id: "gemini-3-flash", name: "Gemini 3 Flash", about: "Fast", efforts: [] }]);
         expect(host.written.map((message) => message.method)).toEqual(["initialize", "session/new"]);
         expect(host.problems).toEqual([]);
     });

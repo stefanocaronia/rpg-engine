@@ -33,4 +33,5 @@ export {
     releaseImport,
     runElsewhere,
     writeImportState,
+    writtenMark,
 } from "./work.ts";

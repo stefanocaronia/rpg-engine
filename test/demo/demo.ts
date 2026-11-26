@@ -21,6 +21,7 @@ import { type Dashboard, startDashboard } from "../../src/server/dashboard/index
 import { removeLauncher, writeLauncher } from "../../src/server/launcher/place.ts";
 import { loadSystemCode } from "../../src/systems/index.ts";
 import { inPlay } from "../support.ts";
+import { demoHosts, type DemoHostsState } from "./hosts.ts";
 import { serveDemoLauncher } from "./launcher.ts";
 import { demoMaster } from "./master.ts";
 
@@ -40,6 +41,8 @@ export interface DemoOptions
     launcher?: boolean | "empty";
     /** The folder of a page built apart, served in place of the one `npm run build` makes: to look at a change without building over a page that is being played. */
     page?: string;
+    /** How the AI apps of the chat and the launcher start (test/demo/hosts.ts). */
+    hosts?: DemoHostsState;
 }
 
 /** The folder of each demo campaign; the one still in its setup has its own. */
@@ -156,7 +159,7 @@ export interface DemoDashboard extends Dashboard
  * anew each time it is served, as a campaign leaves its setup as its questions are answered. With `launcher`, a launcher of the demo's own is served too
  * (test/demo/launcher.ts), which opens this campaign's page, and the page finds it as a table's page finds the real one.
  */
-export async function serveDemo(ports?: number[], system: DemoSystem = "free", { chat = false, setup = false, launcher = false, page }: DemoOptions = {}): Promise<DemoDashboard>
+export async function serveDemo(ports?: number[], system: DemoSystem = "free", { chat = false, setup = false, launcher = false, page, hosts }: DemoOptions = {}): Promise<DemoDashboard>
 {
     const folder = demoFolderOf(system, setup);
     const missing = system === "5e" ? fifthEditionMissing() : undefined;
@@ -217,8 +220,9 @@ export async function serveDemo(ports?: number[], system: DemoSystem = "free", {
     // The game systems, and what this computer translated of them, as the MCP server keeps them (D-539).
     const session = new SessionStore({ systemFolders: [...context.systemFolders, join(`${folder}-home`, "systems")] });
     const home = `${folder}-home`;
-    const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty", page);
-    const master = chat !== false || fake !== undefined ? demoMaster({ takes: chat === "resumed" ? "cut" : chat === "taken-up" ? "whole" : chat === "taken-up-empty" ? "empty" : undefined }) : undefined;
+    const apps = demoHosts(hosts);
+    const fake = launcher === false ? undefined : await serveDemoLauncher(folder, launcher === "empty", page, apps);
+    const master = chat !== false || fake !== undefined ? demoMaster({ hosts: apps, takes: chat === "resumed" ? "cut" : chat === "taken-up" ? "whole" : chat === "taken-up-empty" ? "empty" : undefined }) : undefined;
     const dashboard = await startDashboard({ ...context, files: session }, session, {
         ports,
         ...(page === undefined ? {} : { page }),

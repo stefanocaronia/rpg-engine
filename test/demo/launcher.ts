@@ -5,11 +5,12 @@
 //   pick     in turn: a folder that holds a campaign, no folder chosen, a folder that holds none
 //   add      a folder whose name starts with a capital B is a campaign; another is refused
 //   forget   takes one off the list
+//   signIn, install, hosts   what the page asks of an app (test/demo/hosts.ts), answered with the apps after it
 // Not part of the tests.
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { join } from "node:path";
 import { builtPage, fromOwnPage, launcherHtml, pageFile, pagePolicy, pageWrites, readBody, securityHeaders, send, sendFile, sendJson, vendorModule } from "../../src/server/page/index.ts";
-import { demoModels, hostsNotReady } from "./master.ts";
+import { type DemoHosts, demoHosts, type DemoHostWish } from "./hosts.ts";
 
 /** The demo's launcher: its page's link, the campaign's page it opens once that is served, and its end. */
 export interface DemoLauncher
@@ -40,8 +41,11 @@ const pickTime = 600;
 const version = "0.0.0-demo";
 const day = 86_400_000;
 
-/** Serves the demo's launcher on a free port: `campaign` is the folder of the demo's own campaign, the first of its list; `empty`, with no campaign at all. */
-export async function serveDemoLauncher(campaign: string, empty = false, page = builtPage): Promise<DemoLauncher>
+/**
+ * Serves the demo's launcher on a free port: `campaign` is the folder of the demo's own campaign, the first of its list; `empty`, with no campaign at all;
+ * `hosts`, the apps, shared with the demo's chat.
+ */
+export async function serveDemoLauncher(campaign: string, empty = false, page = builtPage, hosts: DemoHosts = demoHosts()): Promise<DemoLauncher>
 {
     const home = join(campaign, "..");
     const folder = join(home, "RPG Engine");
@@ -60,6 +64,7 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
     let port = 0;
 
     const notify = (): void => pages.forEach((page) => page.write("event: changed\ndata: {}\n\n"));
+    hosts.onChange(notify);
     const later = (time: number): Promise<void> => new Promise((done) => setTimeout(done, time));
 
     const now = (): object => ({
@@ -67,11 +72,7 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
         version,
         folder,
         campaigns,
-        hosts: [
-            { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: ["low", "medium", "high", "xhigh", "max"], models: demoModels },
-            { id: "codex", name: "Codex", ready: false, found: false, model: "", efforts: [], models: [] },
-            ...hostsNotReady,
-        ],
+        hosts: hosts.list(),
         systems: [{ name: "free", title: "Free play, without a game system" }, { name: "5e", title: "The fifth edition, from the SRD 5.1" }],
         languages: ["en", "ar", "de", "es", "fr", "he", "it", "ja", "pt", "zh"],
     });
@@ -82,9 +83,21 @@ export async function serveDemoLauncher(campaign: string, empty = false, page = 
     };
 
     const change = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
-        const wish = await readBody(request, 16_000) as { open?: { root: string; }; create?: { name: string; folder?: string; system: string; language: string; }; add?: { root: string; }; pick?: true; forget?: { root: string; }; };
+        const wish = await readBody(request, 16_000) as {
+            open?: { root: string; };
+            create?: { name: string; folder?: string; system: string; language: string; };
+            add?: { root: string; };
+            pick?: true;
+            forget?: { root: string; };
+            signIn?: unknown;
+            install?: unknown;
+            hosts?: true;
+        };
 
-        if (wish.open !== undefined) {
+        if (wish.signIn !== undefined || wish.install !== undefined || wish.hosts !== undefined) {
+            const refused = hosts.wish(wish as DemoHostWish);
+            sendJson(response, refused === undefined ? 200 : 409, refused === undefined ? { hosts: hosts.list() } : { error: refused });
+        } else if (wish.open !== undefined) {
             await later(openTime);
             const listed = campaigns.find((one) => one.root === wish.open?.root);
 

@@ -1066,8 +1066,10 @@ describe("the page as the chat starts (D-577)", () => {
         let opened = 0;
         const files = new SessionStore({ systemFolders: context.systemFolders });
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-        await createMcpServer({ ...context, files }, {}, async () => {
-            opened++;
+        await createMcpServer({ ...context, files }, {}, {
+            beforeCall: async () => {
+                opened++;
+            },
         }).connect(serverTransport);
         const client = new Client({ name: "test", version: "1.0.0" });
 

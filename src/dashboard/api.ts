@@ -672,18 +672,27 @@ export async function readMaster(): Promise<MasterNow>
     return response.ok ? await response.json() as MasterNow : { table: false };
 }
 
-/** What the page asks of the table's chat with the master: to open one, taking up the last unless fresh, the player's words, to stop the turn, to close it. */
-export type MasterWish = { open: ChatChoice & { fresh: boolean; }; } | { say: string; } | { stop: true; } | { close: true; };
+/**
+ * What the page asks of an AI app, in the chat and in the launcher alike: to sign in to it, the browser opening its page, or to stop waiting for that; to
+ * install it; to look at the apps again, as when the player comes back to the window.
+ */
+export type HostWish = { signIn: { host: string; cancel?: true; }; } | { install: { host: string; }; } | { hosts: true; };
 
-/** Asks it of the chat: the chat as it is after, and, when the table refuses or the game is away, why. */
-export async function changeMaster(wish: MasterWish): Promise<{ shown?: MasterNow; error?: string; }>
+/**
+ * What the page asks of the table's chat with the master: to open one, taking up the last unless fresh, the player's words, to stop the turn, to close it,
+ * another model for the open chat between two turns; and what it asks of an app.
+ */
+export type MasterWish = { open: ChatChoice & { fresh: boolean; }; } | { say: string; } | { stop: true; } | { close: true; } | { model: { model: string; effort?: string; }; } | HostWish;
+
+/** Asks it of the chat: the chat as it is after, and, when the table refuses or the game is away, why, with its code where it has one. */
+export async function changeMaster(wish: MasterWish): Promise<{ shown?: MasterNow; error?: string; code?: string; }>
 {
     try {
         const response = await fetch("/api/master", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(wish) });
-        const { error, ...shown } = await response.json().catch(() => ({})) as Partial<MasterNow> & { error?: string; };
+        const { error, code, ...shown } = await response.json().catch(() => ({})) as Partial<MasterNow> & { error?: string; code?: string; };
         return {
             ...(shown.table === undefined ? {} : { shown: shown as MasterNow }),
-            ...(response.ok ? {} : { error: error ?? t("It did not reach the game: try again.") }),
+            ...(response.ok ? {} : { error: error ?? t("It did not reach the game: try again."), ...(code === undefined ? {} : { code }) }),
         };
     } catch {
         return { error: t("It did not reach the game: try again.") };

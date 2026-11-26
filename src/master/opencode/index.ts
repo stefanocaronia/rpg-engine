@@ -18,4 +18,5 @@ export const openCode: MasterDriver = {
     models: (options) => acpModels({ ...options, environment: inFolder(options.environment, options.folder) }, openCodeAcp),
     model: "",
     efforts: ["minimal", "low", "medium", "high", "xhigh", "max"],
+    effortsOnceChosen: true,
 };

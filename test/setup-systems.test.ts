@@ -170,7 +170,7 @@ describe("SYS-10: a campaign whose system is one of ours, not installed, opened 
         // In a session, as the game's server keeps its files, the install waits for the world read first (D-194).
         context = { ...context, packages, systemCode: {}, ...(session ? { files: new SessionStore({ systemFolders: context.systemFolders }) } : {}) };
         const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-        await createMcpServer(context, {}, beforeCall).connect(serverTransport);
+        await createMcpServer(context, {}, { beforeCall }).connect(serverTransport);
         const client = new Client({ name: "host", version: "1.0.0" });
         await client.connect(clientTransport);
         const call = async (name: string, signal?: AbortSignal, input: Record<string, unknown> = {}): Promise<string> =>

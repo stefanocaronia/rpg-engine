@@ -4,16 +4,16 @@ import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { homedir } from "node:os";
 import { chooseFolder, type ChosenFolder, type FolderAsked } from "../../confirm/index.ts";
-import { type Context, defaultContext, userDataFolder } from "../../core/context.ts";
+import { type Context, defaultContext, type Helpers, userDataFolder } from "../../core/context.ts";
 import type { HostId } from "../../core/hosts.ts";
-import { guardProcess } from "../../core/process.ts";
+import { childrenEnded, guardProcess } from "../../core/process.ts";
 import { getVersion } from "../../core/version.ts";
 import { lookUntil } from "../../core/wait.ts";
 import { oneWindowAtATime, openWindow, type WindowOpener } from "../../desktop/index.ts";
-import { hostCommand } from "../../helpers/index.ts";
+import { accessKeeper, hostCommand } from "../../helpers/index.ts";
 import { askModels, type HostOffered, hostProgram, hostsOffered, modelKeeper } from "../../master/index.ts";
 import { answers, builtPage, sendJson } from "../page/index.ts";
-import { probeTable, type TablePlace } from "../table/index.ts";
+import { probeTable, programsWait, type TablePlace } from "../table/index.ts";
 import { type CampaignShown, listCampaigns } from "./campaigns.ts";
 import type { TableStarter } from "./open.ts";
 import { type LauncherPlace, readLauncher, removeLauncher, writeLauncher } from "./place.ts";
@@ -62,6 +62,8 @@ export interface LauncherOptions
     pick?: (asked: FolderAsked) => Promise<ChosenFolder>;
     /** The hosts a campaign's first chat may open in. */
     hosts?: () => HostOffered[];
+    /** Codex and Claude Code on this computer: how each host's account stands, its sign-in and its installation; without them the page reads none. */
+    helpers?: Helpers;
     /** Asks a launcher at a place which engine it runs. */
     probe?: (place: LauncherPlace) => Promise<LauncherProbed>;
     /** Opens a campaign's page in an application window of its own: the browser's, placed and sized for a campaign. */
@@ -71,8 +73,11 @@ export interface LauncherOptions
 /** A launcher opened, the link of one of this engine there already, one of another engine there, or why it could not start. */
 export type LauncherOpened = Launcher | { running: string; } | { other: LauncherPlace & { answered: string; }; } | { refused: string; };
 
-/** What `rpg launcher` may be given besides this computer's own, and how the process exits on an error nothing caught; the tests give their own. */
-export type LauncherRunOptions = Partial<LauncherOptions> & { exit?: (code: number) => void; };
+/**
+ * What `rpg launcher` may be given besides this computer's own, how the process exits on an error nothing caught, and how long the programs it started have
+ * to end by themselves before it exits, in ms; the tests give their own.
+ */
+export type LauncherRunOptions = Partial<LauncherOptions> & { exit?: (code: number) => void; programsWait?: number; };
 
 // The launcher's ports: a few of its own, then any the system gives.
 const launcherPorts = [5750, 5751, 5752, 5753, 5754, 5755, 5756, 5757, 5758, 5759, 0];
@@ -90,12 +95,14 @@ const failedWords = "RPG Engine's launcher could not do that. Try again; if it h
 
 /**
  * `rpg launcher`: its link on stdout once it serves, or the link of the one of this engine already there; what happens on stderr. Its exit code: 0 once it
- * ended, as after a while with no page, or on Ctrl+C; 1 when it could not start, or one of another engine is there, or on an error nothing caught.
+ * ended, as after a while with no page, or on Ctrl+C; 1 when it could not start, or one of another engine is there, or on an error nothing caught. Either
+ * end waits for the programs it started to end by themselves, `programsWait` at most, and logs how they did.
  */
 export async function runLauncher(given: LauncherRunOptions = {}): Promise<number>
 {
     const log = (line: string): boolean => process.stderr.write(`${line}\n`);
     const userHome = given.userHome ?? homedir();
+    // The programs whose accounts the page reads, signs in and installs are the caller's to give: `rpg launcher` gives this computer's.
     const options: LauncherOptions = { home: userDataFolder(), userHome, platform: process.platform, version: getVersion(), context: defaultContext(userHome), log, ...given };
     const opened = await openLauncher(options);
 
@@ -117,12 +124,16 @@ export async function runLauncher(given: LauncherRunOptions = {}): Promise<numbe
     process.stdout.write(`${opened.url}\n`);
     const stop = (): void => void opened.end("stopped");
     const cleanup = (): void => removeLauncher(options.home, opened.place.token);
-    const unguard = guardProcess("rpg launcher", "the launcher", (line) => options.log?.(line), cleanup, given.exit ?? ((code) => process.exit(code)));
+    const said = (line: string): void => options.log?.(line);
+    const wait = given.programsWait ?? programsWait;
+    const unguard = guardProcess("rpg launcher", "the launcher", said, cleanup, given.exit ?? ((code) => process.exit(code)), wait);
     process.once("SIGINT", stop);
     process.once("SIGTERM", stop);
     await opened.ended;
     process.off("SIGINT", stop);
     process.off("SIGTERM", stop);
+    // As the table: the AI apps asked for their models or signing in end by themselves before this process's exit stops them.
+    await childrenEnded("the launcher", wait, said);
     unguard();
     return 0;
 }
@@ -243,7 +254,12 @@ function atWork(server: Server, port: number, options: LauncherOptions): Launche
     const places = { environment, platform: options.platform, userHome: options.userHome, npmProgram: (host: HostId) => hostCommand(host, environment) };
     const notify = (): void => pages.forEach((page) => page.write("event: changed\ndata: {}\n\n"));
     // The models each host offers, asked of it in the engine's data folder, which is no campaign's.
-    const models = modelKeeper({ ask: (host) => askModels(host, { ...places, folder: options.home }), changed: notify, now });
+    const models = modelKeeper({ ask: (host) => askModels(host, { ...places, folder: options.home, log }), changed: notify, now });
+    // Each host's account, looked at in the background: a page never waits for a program's status; once it changes, the host's models are asked again.
+    const access = options.helpers === undefined
+        ? undefined
+        : accessKeeper({ helpers: options.helpers, changed: notify, accountChanged: (host) => models.forget(host), log, now });
+    const offered = options.hosts ?? (() => hostsOffered((host) => hostProgram(host, places) !== undefined, undefined, (host) => models.models(host)));
     // A campaign being opened stops looking for its table once the launcher quits.
     const tables: TableStarter = { home: options.home, version: options.version, quitting: () => ending !== undefined, ...options.tables };
 
@@ -277,7 +293,8 @@ function atWork(server: Server, port: number, options: LauncherOptions): Launche
                 answers: options.answers ?? (async (table) => typeof await probeTable(table, options.version, listProbeWait) === "object"),
                 ...(options.reach === undefined ? {} : { reach: options.reach }),
             }),
-        hosts: options.hosts ?? (() => hostsOffered((host) => hostProgram(host, places) !== undefined, undefined, (host) => models.models(host))),
+        hosts: () => offered().map((host) => (access === undefined ? host : { ...host, ...access.access(host.id) })),
+        ...(access === undefined ? {} : { access }),
         pick: options.pick ?? ((asked) => chooseFolder(options.platform, environment, asked)),
         picking: false,
         settled: false,

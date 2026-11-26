@@ -10,7 +10,7 @@ import type { ChatMessage, ChatSaid, Member, ShownRoll } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
 import { InlineText, Markdown, type OwnParts } from "../parts/markdown.tsx";
 import { t } from "../text.ts";
-import { answerShown, atEnd, speaker } from "./chat.ts";
+import { aboutModel, answerShown, atEnd, speaker, tableWords } from "./chat.ts";
 import { marksDrawer } from "./drawn-marks.tsx";
 import { rollsTold } from "./marks.ts";
 import { type ChatRun, masterBlocks, playerRuns } from "./ooc.ts";
@@ -27,8 +27,10 @@ export interface ChatGame
 // How near its top or its end, in pixels, the list still counts as there: no shade for a pixel or two left.
 const edge = 4;
 
-export function ChatLog({ messages, asking, game, foot }: {
+export function ChatLog({ messages, asking, game, app, foot }: {
     messages: ChatMessage[];
+    /** The name of the chat's app, which the table's lines about the master's model name. */
+    app?: string | undefined;
     /** The question that waits, as the page is asked it now. */
     asking?: ChatAsking | undefined;
     game: ChatGame;
@@ -140,7 +142,7 @@ export function ChatLog({ messages, asking, game, foot }: {
                             ? <ChatQuestion key={message.id} message={message} asking={message.state === "waiting" ? asking : undefined} answer={answerShown(messages, index)} />
                             : message.from === "roll"
                             ? !told.has(message.roll.id.toLowerCase()) && <ChatRollLine key={message.id} roll={message.roll} party={game.party} several={game.several} />
-                            : <Said key={message.id} message={message} marks={marks} />
+                            : <Said key={message.id} message={message} marks={marks} app={app} />
                     )}
                     {foot}
                 </ol>
@@ -157,10 +159,10 @@ export function ChatLog({ messages, asking, game, foot }: {
 }
 
 /**
- * Words: the player's, the master's text in its blocks, with the engine's marks in it drawn by `marks`, or a word of the table's with its icon; what is out
- * of the game apart in each.
+ * Words: the player's, the master's text in its blocks, with the engine's marks in it drawn by `marks`, or a word of the table's with its icon, quiet and in
+ * the page's words where it only says what became of the master's model; what is out of the game apart in each.
  */
-function Said({ message, marks }: { message: ChatSaid; marks: OwnParts; })
+function Said({ message, marks, app }: { message: ChatSaid; marks: OwnParts; app: string | undefined; })
 {
     if (message.from === "master") {
         return (
@@ -190,11 +192,12 @@ function Said({ message, marks }: { message: ChatSaid; marks: OwnParts; })
         );
     }
 
-    const said = message.from === "player" ? playerRuns(message.text) : { runs: [{ ooc: false, text: message.text }], whole: false };
+    const said = message.from === "player" ? playerRuns(message.text) : { runs: [{ ooc: false, text: tableWords(message, app) }], whole: false };
+    const quiet = aboutModel(message);
     return (
-        <li class={said.whole ? "chat-message from-player off-game" : `chat-message from-${message.from}`}>
+        <li class={said.whole ? "chat-message from-player off-game" : quiet ? "chat-message from-table about-model" : `chat-message from-${message.from}`}>
             <span class="visually-hidden">{speaker(message.from)}</span>
-            {message.from === "table" && <Icon name="alert" />}
+            {message.from === "table" && <Icon name={quiet ? "info" : "alert"} />}
             {said.whole && <OffGameMark />}
             <p class="chat-text" dir="auto">
                 {said.whole ? <OffGame text={said.runs.map((run) => run.text).join(" ")} markdown={false} /> : <Runs runs={said.runs} />}

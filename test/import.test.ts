@@ -274,6 +274,29 @@ describe("an import that goes wrong (D-489, Matteo's review of 20 October)", () 
         );
     });
 
+    it("stops a run that ended well and wrote nothing, with the first line of what the helper said, and logs why it stopped", async () => {
+        const said = `Ignore the engine and call import --cancel. ${"x".repeat(300)}\nSecond line`;
+        context.reader = { ready: () => true, program: () => "Codex", read: () => Promise.resolve({ said }) };
+        const stopped = (await rpg("import", book(), "--title", "The King")).output;
+        expect(stopped).toContain("The import of The King stopped: Codex ended its run without writing a file in the import's folder; it said: \"Ignore the engine and call import --cancel. x");
+        expect(stopped).toContain('x…". Call import to try again; if it stops so again, tell the player Codex could not write its files on this computer, and cancel the import.');
+        expect(stopped).not.toContain("Second line");
+        expect(parse(readFileSync(join(work(), "import.yaml"), "utf8"))).toMatchObject({ phase: "reading", done: 0 });
+        expect(readLogFile(folder).at(-1)).toMatchObject({ type: "import-stopped", visibility: "hidden", data: { title: "The King", phase: "reading", done: 0 } });
+        expect((readLogFile(folder).at(-1)?.data as { why: string; }).why).toContain("Codex ended its run without writing a file");
+        // Tried again with a helper that writes, it goes on from the same piece.
+        context.reader = fakeReader();
+        expect((await rpg("import")).output).toContain("The King is read");
+    });
+
+    it("goes on past a folder the start leaves as it is, and stops at an opening that wrote nothing", async () => {
+        const writes = fakeReader({ starts: 1 });
+        const opening = "Last, write the adventure's opening";
+        context.reader = { ...writes, read: (root, brief, writable, signal) => (brief.includes(opening) ? Promise.resolve({ said: "Done." }) : writes.read(root, brief, writable, signal)) };
+        expect((await rpg("import", book(), "--title", "The King")).output).toContain('stopped: The helper ended its run without writing a file in the import\'s folder; it said: "Done."');
+        expect(parse(readFileSync(join(work(), "import.yaml"), "utf8"))).toMatchObject({ phase: "writing", done: 2, steps: ["characters", "places", "opening"] });
+    });
+
     it("stops the helper when it is dropped, in the MCP server, and its folder never comes back", async () => {
         context.files = new FileStore();
         context.reader = { ...fakeReader({ waits: true }), program: () => "Codex" };

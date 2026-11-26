@@ -4,8 +4,10 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import type { ChosenFolder, FolderAsked } from "../../confirm/index.ts";
+import { type HostId, hostIds, hosts } from "../../core/hosts.ts";
 import { files, FileStore, withFiles } from "../../core/store.ts";
 import type { WindowOpener } from "../../desktop/index.ts";
+import type { AccessKeeper, HostAccess } from "../../helpers/index.ts";
 import type { HostOffered } from "../../master/index.ts";
 import { readableSystems } from "../../systems/index.ts";
 import { fromOwnPage, launcherHtml, pageFile, pagePolicy, pageWrites, readBody, refusedAt, securityHeaders, send, sendFile, sendJson, vendorModule } from "../page/index.ts";
@@ -28,7 +30,9 @@ export interface LauncherServed
     /** The pages open, which wait for notices. */
     pages: Set<ServerResponse>;
     campaigns(): Promise<CampaignShown[]>;
-    hosts(): HostOffered[];
+    hosts(): HostShown[];
+    /** Each host's account, its sign-in and its installation; none where the launcher was given no programs to ask. */
+    access?: AccessKeeper;
     /** The system's window that chooses a folder, with the page's title and the folder it opens in. */
     pick(asked: FolderAsked): Promise<ChosenFolder>;
     /** Whether the window to choose a folder is open now: one at a time. */
@@ -42,6 +46,9 @@ export interface LauncherServed
     notify(): void;
     quit(): void;
 }
+
+/** A host as the page offers it: with its account, and how its sign-in and installation are reached, where the launcher knows them. */
+export type HostShown = HostOffered & Partial<HostAccess>;
 
 /** What an address of the launcher's API does when read, and when its page writes to it. */
 interface Route
@@ -139,6 +146,10 @@ const windowAsked = z.object({
     start: folderPath.optional(),
 }).strict();
 const pickAsked = z.union([z.literal(true), windowAsked]);
+// A host the engine knows, by its id.
+const hostAsked = z.custom<HostId>((host) => typeof host === "string" && (hostIds as string[]).includes(host), `Give a host the launcher knows: ${hostIds.join(", ")}.`);
+const signInAsked = z.object({ host: hostAsked, cancel: z.literal(true).optional() }).strict();
+const installAsked = z.object({ host: hostAsked }).strict();
 
 const asked = z.union([
     z.object({ open: openAsked }).strict(),
@@ -147,13 +158,28 @@ const asked = z.union([
     z.object({ pick: pickAsked }).strict(),
     z.object({ forget: openAsked }).strict(),
     z.object({ quit: quitAsked }).strict(),
+    z.object({ signIn: signInAsked }).strict(),
+    z.object({ install: installAsked }).strict(),
+    z.object({ hosts: z.literal(true) }).strict(),
 ]);
 
 // Each part a body may have, to say what is wrong in one of the right shape.
-const parts: Record<string, z.ZodType> = { open: openAsked, create: createAsked, add: openAsked, pick: windowAsked, forget: openAsked, quit: quitAsked };
+const parts: Record<string, z.ZodType> = {
+    open: openAsked,
+    create: createAsked,
+    add: openAsked,
+    pick: windowAsked,
+    forget: openAsked,
+    quit: quitAsked,
+    signIn: signInAsked,
+    install: installAsked,
+};
 
 const shapes = "Send one of { open: { root } }, { create: { name, folder?, language, system, host?, model?, effort? } }, { add: { root } }, { pick: true | { title?, start? } }, "
-    + "{ forget: { root } } or { quit: { token } }.";
+    + "{ forget: { root } }, { quit: { token } }, { signIn: { host, cancel? } }, { install: { host } } or { hosts: true }.";
+
+// What the page reads where the launcher was given no programs to ask, as a launcher started by a test.
+const noAccess = "This launcher cannot sign in to or install the AI apps: close it, start it again with rpg launcher, then try again.";
 
 /** What the page shows: the launcher's engine, the folder of new campaigns, the campaigns, and what a new one may be made with. */
 async function launcherNow(served: LauncherServed): Promise<object>
@@ -169,7 +195,7 @@ async function launcherNow(served: LauncherServed): Promise<object>
     };
 }
 
-/** What the page asks of the launcher: a campaign opened, made, added or forgotten, a folder chosen, or the launcher's end. */
+/** What the page asks of the launcher: a campaign opened, made, added or forgotten, a folder chosen, the launcher's end, or what the AI apps need. */
 async function changeLauncher(request: IncomingMessage, response: ServerResponse, served: LauncherServed): Promise<void>
 {
     const body = await readBody(request, 16_000);
@@ -209,12 +235,44 @@ async function changeLauncher(request: IncomingMessage, response: ServerResponse
         forgetCampaign(served.home, wish.forget.root);
         served.notify();
         sendJson(response, 200, { campaigns: await served.campaigns() });
-    } else if (wish.quit.token === served.token) {
-        sendJson(response, 200, {});
-        served.quit();
+    } else if ("quit" in wish) {
+        if (wish.quit.token === served.token) {
+            sendJson(response, 200, {});
+            served.quit();
+        } else {
+            sendJson(response, 403, { error: "Only who reads the launcher's place may ask it to quit." });
+        }
     } else {
-        sendJson(response, 403, { error: "Only who reads the launcher's place may ask it to quit." });
+        changeAccess(wish, response, served);
     }
+}
+
+/**
+ * What the page asks of the AI apps: a sign-in started or cancelled, an installation, or a look again at each one's account. Each answers at once with the
+ * hosts as they stand; how it goes on reaches the pages as a notice.
+ */
+function changeAccess(wish: { signIn: z.infer<typeof signInAsked>; } | { install: z.infer<typeof installAsked>; } | { hosts: true; }, response: ServerResponse, served: LauncherServed): void
+{
+    const access = served.access;
+
+    if (access === undefined) {
+        sendJson(response, 409, { error: noAccess });
+        return;
+    }
+
+    let refused: string | undefined;
+
+    if ("signIn" in wish) {
+        refused = wish.signIn.cancel === true ? access.cancelSignIn(wish.signIn.host) : access.signIn(wish.signIn.host);
+    } else if ("install" in wish) {
+        const host = wish.install.host;
+        const there = served.hosts().find((one) => one.id === host)?.found === true;
+        refused = there ? `${hosts[host].name} is on this computer already: choose it for a campaign, and play.` : access.install(host);
+    } else {
+        access.lookAgain();
+    }
+
+    sendJson(response, refused === undefined ? 200 : 409, refused === undefined ? { hosts: served.hosts() } : { error: refused });
 }
 
 /** Why a body was refused: what is wrong with a part of the right shape, else the shapes. */

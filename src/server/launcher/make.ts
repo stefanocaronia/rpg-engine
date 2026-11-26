@@ -5,7 +5,7 @@ import { join, win32 } from "node:path";
 import type { Context } from "../../core/context.ts";
 import { type HostId, hostIds, hosts } from "../../core/hosts.ts";
 import { files, FileStore, withFiles } from "../../core/store.ts";
-import { effortRefused, isHostName, type MasterDriver, masterDriver, type MasterModel } from "../../master/index.ts";
+import { effortRefused, isHostName, type MasterDriver, masterDriver, type MasterModel, proposedModel } from "../../master/index.ts";
 import { writeLastChat } from "../table/index.ts";
 import { campaignsFolder, rememberCampaign } from "./campaigns.ts";
 import { openCampaign, type TableStarter } from "./open.ts";
@@ -90,7 +90,7 @@ function chatOf(
         return `A chat with the master cannot open in ${wish.host} yet: choose another host, or none, and open the chat from the campaign's page later.`;
     }
 
-    const model = wish.model ?? driver.model;
+    const model = wish.model ?? proposedModel(driver, models(host));
 
     if (!isHostName(model)) {
         return `That is no name of a model: ${model}. Choose one of the models the page lists for ${hosts[host].name}, or leave it to the host.`;

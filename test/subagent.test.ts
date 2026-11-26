@@ -1,9 +1,10 @@
 // A character's subagent in Codex and Antigravity (D-580): known by the metadata of its calls, it may only look, and takes none of the master's lines.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCommandLine } from "../src/cli/command-line.ts";
 import type { Context } from "../src/core/context.ts";
+import { SessionStore } from "../src/core/session-store.ts";
 import { createMcpServer } from "../src/server/mcp.ts";
 import { fromSubagent, subagentRefusal } from "../src/server/subagent.ts";
 import { makeTempFolder, removeFolder, testContext } from "./support.ts";
@@ -80,6 +81,31 @@ describe("the server with a character's subagent (D-580)", () => {
 
         expect((await runCommandLine(["show", "Mira"], testContext(folder))).output).not.toContain("Altro.");
         expect(newsTaken).toBe(0);
+    });
+
+    it("a server that only looks (D-588 (2)): every call is a character's, refused with its sentence, and it starts nothing of the chat's", async () => {
+        const watched: string[] = [];
+        const session = new SessionStore({ watchFolder: (path) => (watched.push(path), { close: () => undefined }) });
+        const outside = vi.spyOn(session, "beforeOutsideChanges");
+        const looking = { ...testContext(folder), chat: { calls: 0 }, files: session };
+        const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+        await createMcpServer(looking, {}, { onlyLooks: "Another chat plays here." }).connect(serverTransport);
+        const host = new Client({ name: "codex-mcp-client", version: "1.0.0" }, { capabilities: { elicitation: {} } });
+        await host.connect(clientTransport);
+
+        try {
+            // Past the time the chat's own server reads the campaign and watches it, before any call.
+            await new Promise((done) => setTimeout(done, 500));
+            expect([watched, outside.mock.calls.length, looking.player]).toEqual([[], 0, undefined]);
+            const result = await host.callTool({ name: "write", arguments: { page: "Mira", text: "Altro." } });
+            expect([(result.content as { text: string; }[])[0].text, result.isError]).toEqual(["Another chat plays here.", true]);
+            const seen = await host.callTool({ name: "view", arguments: { as: "Mira" } });
+            expect(seen.isError).not.toBe(true);
+            expect(outside).not.toHaveBeenCalled();
+            expect((await runCommandLine(["show", "Mira"], testContext(folder))).output).not.toContain("Altro.");
+        } finally {
+            await host.close();
+        }
     });
 
     it("leaves the master's calls as they were", async () => {

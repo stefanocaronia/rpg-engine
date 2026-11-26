@@ -10,8 +10,10 @@ export interface State extends ChatState<Turn>
     /** The thread taken up, and the thread Codex opened. */
     resumed?: string;
     thread?: string;
-    /** The model and effort asked, and the model Codex confirmed. */
-    model: { asked: string; effort?: string; confirmed?: string; };
+    /** The MCP servers of the player's own configuration, which the thread opens turned off: every one but rpg. */
+    others: string[];
+    /** The model and effort asked, and the model Codex confirmed; for another asked in the open chat, those Codex ran before, until its settings confirm it. */
+    model: { asked: string; effort?: string; confirmed?: string; before?: { asked: string; effort?: string; confirmed?: string; }; };
     /** The subagents' threads whose role the chat asked Codex: each asked once. */
     agents: Set<string>;
 }

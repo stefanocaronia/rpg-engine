@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type { HostId } from "../src/core/hosts.ts";
 import type { MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions } from "../src/master/index.ts";
 import { type ChatShown, type TableChat, tableChat, type TableChatOptions } from "../src/server/table/chat.ts";
+import { readFlow } from "../src/server/table/flow.ts";
 import { readLastChat, writeLastChat } from "../src/server/table/last-chat.ts";
 import { tableFile } from "../src/server/table/place.ts";
+import { drivenHelpers } from "./fake-helpers.ts";
 import { makeTempFolder } from "./support.ts";
 
 // The table's own chat with the master, against a host the test drives: no process.
@@ -17,8 +19,12 @@ interface FakeMaster extends MasterChat
     sent: string[];
     interrupted: number;
     closed: boolean;
-    /** Whether send says no, as while the host's turn runs. */
+    /** Whether it was closed gently, its program let go to end by itself. */
+    gently?: boolean;
+    /** Whether send says no, as while the host's turn runs; the models asked in the open chat, and whether it takes them. */
     refuses: boolean;
+    changed: string[];
+    takesModels: boolean;
     emit(event: MasterEvent): void;
 }
 
@@ -31,6 +37,8 @@ function fakeMaster(options: MasterOptions): FakeMaster
         interrupted: 0,
         closed: false,
         refuses: false,
+        changed: [],
+        takesModels: true,
         send: (text) => {
             if (fake.refuses) {
                 return false;
@@ -41,8 +49,20 @@ function fakeMaster(options: MasterOptions): FakeMaster
         },
         onEvent: (given) => (listener = given),
         interrupt: () => fake.interrupted++,
-        close: () => (fake.closed = true),
+        close: (gently) => {
+            fake.closed = true;
+            fake.gently = gently === true;
+        },
         emit: (event) => listener?.(event),
+        // A driver whose model changes in an open chat, where the test says so.
+        ...(changing
+            ? {
+                setModel: (model: string, effort?: string): boolean => {
+                    fake.changed.push(`${model} ${effort ?? "-"}`);
+                    return fake.takesModels;
+                },
+            }
+            : {}),
     };
     return fake;
 }
@@ -76,6 +96,8 @@ let left: string[];
 // The models the host lists, and every ask of them.
 let listed: MasterModel[];
 let asked: ModelsOptions[];
+// Whether the fake masters change their model in an open chat.
+let changing: boolean;
 
 beforeEach(() => {
     root = makeTempFolder();
@@ -91,6 +113,7 @@ beforeEach(() => {
     left = [];
     listed = [];
     asked = [];
+    changing = false;
 });
 
 function chatWith(overrides: Partial<TableChatOptions> = {}): TableChat
@@ -124,6 +147,16 @@ const choice = { host: "claudeCode" as HostId, model: "sonnet" };
 function opened(overrides: Partial<TableChatOptions> = {}): { chat: TableChat; master: FakeMaster; }
 {
     const chat = chatWith(overrides);
+    expect(chat.open(choice)).toBeUndefined();
+    return { chat, master: masters.at(-1)! };
+}
+
+/** A chat opened once the page showed the hosts and their models arrived: the models of an open chat's host are never asked meanwhile. */
+async function openedKnowing(overrides: Partial<TableChatOptions> = {}): Promise<{ chat: TableChat; master: FakeMaster; }>
+{
+    const chat = chatWith(overrides);
+    chat.shown();
+    await settle();
     expect(chat.open(choice)).toBeUndefined();
     return { chat, master: masters.at(-1)! };
 }
@@ -170,9 +203,10 @@ describe("the table's chat with the master", () => {
             folder: root,
             program: { command: "claude-program", args: [] },
             model: "sonnet",
-            allowed: ["rpg", "read", "web", "agent", "image"],
+            allowed: ["rpg", "read", "web", "fetch", "agent", "image"],
             environment: { PATH: "/bin", DRIVER: "yes", RPG_TABLE_MASTER: "token-1" },
             failed: expect.any(Function) as unknown,
+            log: expect.any(Function) as unknown,
         });
         expect(changes).toBe(1);
         expect(chat.active()).toBe(true);
@@ -690,15 +724,54 @@ describe("the models a host offers at the table", () => {
     const sonnet = { id: "sonnet", name: "Sonnet 5.5", about: "Most efficient for simpler tasks", efforts: ["low", "medium", "high"] };
     const haiku = { id: "haiku", name: "Haiku 4.5", efforts: [] };
 
-    it("asks the host in the campaign's folder, with the driver's environment, and shows its models once they arrive", async () => {
+    it("asks the host in the campaign's folder, with the driver's environment and no rpg server of its own, and shows its models once they arrive", async () => {
         listed = [sonnet, haiku];
         const chat = chatWith();
         expect(chat.shown().hosts[0].models).toEqual([]);
         await new Promise((resolve) => setImmediate(resolve));
-        expect(asked).toEqual([{ folder: root, program: { command: "claude-program", args: [] }, environment: { PATH: "/bin", DRIVER: "yes" } }]);
+        expect(asked).toEqual([{ folder: root, program: { command: "claude-program", args: [] }, environment: { PATH: "/bin", DRIVER: "yes", RPG_HELPER: "1" }, log: expect.any(Function) as unknown }]);
         expect(changes).toBe(1);
         expect(chat.shown().hosts[0].models).toEqual([sonnet, haiku]);
         expect(asked).toHaveLength(1);
+
+        // What the host's program said of itself reaches the table's log with the time and the host's name.
+        asked[0].log?.("started for its models (process 42).");
+        expect(logged.at(-1)).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z Claude Code started for its models \(process 42\)\.$/);
+    });
+
+    it("asks a host's models again once its account changed, as after the player signed in: a list that came empty does not wait ten minutes", async () => {
+        const helpers = drivenHelpers({ claude: "logged out" }, true);
+        const chat = chatWith({ helpers });
+        chat.shown();
+        await settle();
+        chat.shown();
+        await settle();
+        expect(asked).toHaveLength(1);
+
+        listed = [{ id: "opus", name: "Opus 5.5", efforts: [] }];
+        expect(chat.hostWish({ signIn: { host: "claudeCode" } })).toBeUndefined();
+        helpers.states.claude = "ready";
+        helpers.endLogin("claude", { state: "done" });
+        await settle();
+        chat.shown();
+        await settle();
+        expect(asked).toHaveLength(2);
+        expect(chat.shown().hosts.find((host) => host.id === "claudeCode")?.models).toEqual(listed);
+    });
+
+    it("never asks the models of the host whose chat is open or opening, only those known; the other hosts' as always", async () => {
+        const codex: MasterDriver = { ...driver, program: () => ({ command: "codex-program", args: [] }) };
+        const chat = chatWith({ driver: (host) => (host === "claudeCode" ? driver : host === "codex" ? codex : undefined) });
+        expect(chat.open(choice)).toBeUndefined();
+        chat.shown();
+        await settle();
+        expect(asked.map((one) => one.program.command)).toEqual(["codex-program"]);
+
+        // Closed: the host's models are asked as always.
+        chat.close();
+        chat.shown();
+        await settle();
+        expect(asked.map((one) => one.program.command)).toEqual(["codex-program", "claude-program"]);
     });
 
     it("asks no host that is not on this computer", async () => {
@@ -954,6 +1027,8 @@ describe("the last chat taken up by itself", () => {
         const chat = chatWith();
         chat.listened();
         chat.close();
+        // The player's close lets its program end by itself too, as the table's own: one saving the player's login is never stopped at once.
+        expect(masters[0]).toMatchObject({ closed: true, gently: true });
         expect(readLastChat(home, root)).toMatchObject({ session: "session-1", closed: true });
         expect(chat.shown().last).toEqual({ host: "claudeCode", model: "sonnet", effort: "low", resumable: true });
 
@@ -963,6 +1038,7 @@ describe("the last chat taken up by itself", () => {
         expect(next.open({ ...choice, effort: "low" })).toBeUndefined();
         expect(readLastChat(home, root)?.closed).toBeUndefined();
         next.release();
+        expect(masters[1]).toMatchObject({ closed: true, gently: true });
         chatWith().listened();
         expect(masters).toHaveLength(3);
     });
@@ -1129,5 +1205,361 @@ describe("the player's rolls the master has not told in its words yet", () => {
         chat.close();
         expect(chat.untold()).toBeUndefined();
         expect(chatWith().untold()).toBeUndefined();
+    });
+});
+
+/** Lets the promises settled so far run their callbacks. */
+async function settle(): Promise<void>
+{
+    await new Promise((done) => setTimeout(done, 0));
+}
+
+describe("the hosts' accounts at the table", () => {
+    it("come with each host the page shows: its account, how it signs in and installs; none without the programs to ask", async () => {
+        const helpers = drivenHelpers({ claude: "logged out" }, true);
+        const chat = chatWith({ helpers });
+        chat.shown();
+        await settle();
+        const hosts = chat.shown().hosts;
+        expect(hosts.find((host) => host.id === "claudeCode")).toMatchObject({ found: true, account: "out", signIn: "page", install: { page: "https://code.claude.com/docs/en/setup", engine: true } });
+        expect(hosts.find((host) => host.id === "antigravity")).toMatchObject({ account: "unknown", install: { page: "https://antigravity.google/download" } });
+        expect(hosts.find((host) => host.id === "antigravity")).not.toHaveProperty("signIn");
+        expect(chatWith().shown().hosts.find((host) => host.id === "claudeCode")).not.toHaveProperty("account");
+    });
+
+    it("never starts a host the player is not signed in to: refused with the sign-in's code, and the accounts looked at again", async () => {
+        const helpers = drivenHelpers({ claude: "logged out" }, true);
+        let clock = 0;
+        const chat = chatWith({ helpers, now: () => clock });
+        chat.shown();
+        await settle();
+        const looks = helpers.asked.length;
+        // Signed in since, elsewhere, a minute after the last look: the first try is refused as it was known, and has the account looked at again.
+        helpers.states.claude = "ready";
+        clock = 61_000;
+
+        expect(chat.open(choice)).toEqual({ error: "Claude Code is not signed in on this computer: sign in here, then open the chat.", code: "signin" });
+        expect(masters).toEqual([]);
+        expect(helpers.asked.length).toBeGreaterThan(looks);
+        await settle();
+        expect(chat.open(choice)).toBeUndefined();
+        expect(masters).toHaveLength(1);
+    });
+
+    it("opens a chat signed out where its environment holds a key the account's status was asked without: the host says it, if it must", async () => {
+        const helpers = drivenHelpers({ claude: "logged out" }, true);
+        const chat = chatWith({ helpers, environment: { PATH: "/bin", ANTHROPIC_API_KEY: "a key" } });
+        chat.shown();
+        await settle();
+        expect(chat.open(choice)).toBeUndefined();
+        expect(masters[0].options.environment).toMatchObject({ ANTHROPIC_API_KEY: "a key" });
+    });
+
+    it("shows an app signed in with an API key as paid by the answer", async () => {
+        const chat = chatWith({ helpers: drivenHelpers({ claude: "api key" }, true) });
+        chat.shown();
+        await settle();
+        expect(chat.shown().hosts.find((host) => host.id === "claudeCode")).toMatchObject({ account: "in", metered: true });
+    });
+
+    it("names a trace to the chat where its environment asks one, never to the host's process nor to the host asked its models", async () => {
+        const trace = join(makeTempFolder(), "trace.jsonl");
+        const { master } = await openedKnowing({ environment: { PATH: "/bin", RPG_MASTER_TRACE: trace } });
+        expect(master.options.trace).toBe(trace);
+        expect(master.options.environment).not.toHaveProperty("RPG_MASTER_TRACE");
+        expect(asked.at(-1)?.environment).not.toHaveProperty("RPG_MASTER_TRACE");
+    });
+
+    it("opens a chat while the account is not known yet: the host says it, if it must", () => {
+        const chat = chatWith({ helpers: drivenHelpers({ claude: "logged out" }) });
+        expect(chat.open(choice)).toBeUndefined();
+    });
+
+    it("signs in, cancels, installs and looks again as the page asks; never installs a host that is here, and says so without the programs", async () => {
+        const helpers = drivenHelpers({ claude: "logged out" }, true);
+        let clock = 0;
+        const chat = chatWith({ helpers, now: () => clock });
+
+        expect(chat.hostWish({ signIn: { host: "claudeCode" } })).toBeUndefined();
+        await settle();
+        expect(chat.shown().hosts.find((host) => host.id === "claudeCode")).toMatchObject({ signingIn: true, signInLink: "https://auth.example/claude" });
+        expect(chat.hostWish({ signIn: { host: "claudeCode", cancel: true } })).toBeUndefined();
+        expect(chat.shown().hosts.find((host) => host.id === "claudeCode")).not.toHaveProperty("signInLink");
+        expect(chat.hostWish({ signIn: { host: "antigravity" } })).toMatch(/^Antigravity signs in from its own app/);
+
+        expect(chat.hostWish({ install: { host: "claudeCode" } })).toBe("Claude Code is on this computer already: choose it, and open the chat.");
+        found = false;
+        clock = 5000;
+        expect(chat.shown().hosts.find((host) => host.id === "claudeCode")?.found).toBe(false);
+        expect(chat.hostWish({ install: { host: "claudeCode" } })).toBeUndefined();
+        // Installed: whether it is here is looked at again at once, though the clock did not move.
+        found = true;
+        helpers.endInstall("claude", undefined);
+        await settle();
+        expect(chat.shown().hosts.find((host) => host.id === "claudeCode")?.found).toBe(true);
+
+        // Asked again by the page a minute after the last look.
+        clock = 70_000;
+        const before = helpers.asked.filter((one) => one.startsWith("look")).length;
+        expect(chat.hostWish({ hosts: true })).toBeUndefined();
+        expect(helpers.asked.filter((one) => one.startsWith("look")).length).toBeGreaterThan(before);
+        expect(helpers.asked).toEqual(expect.arrayContaining(["login claude", "cancel claude", "install claude"]));
+
+        expect(chatWith().hostWish({ hosts: true })).toBe("This table cannot sign in to the AI apps or install them: start it again with rpg table in the campaign's folder, then try again.");
+    });
+
+    it("keeps the sign-in's code of a chat that ended so, and looks at the accounts again", async () => {
+        const helpers = drivenHelpers({ claude: "ready" }, true);
+        const { chat, master } = opened({ helpers });
+        await settle();
+        const looks = helpers.asked.length;
+        chat.say("Hello");
+        master.emit({ type: "turnEnd", reason: "failed", why: "Claude Code is not signed in on this computer: sign in here, then open the chat", code: "signin" });
+        master.emit({ type: "ended", why: "Claude Code is not signed in on this computer: sign in here, then open the chat", code: "signin" });
+
+        expect(chat.shown().chat).toMatchObject({ state: "ended", code: "signin" });
+        expect(chat.shown().messages.at(-1)).toMatchObject({ from: "table", text: "Claude Code is not signed in on this computer: sign in here, then open the chat" });
+        expect(helpers.asked.length).toBeGreaterThan(looks);
+    });
+
+    it("never looks at the host's account as its chat opens nor while it is open, the other hosts' as the page asks: the chat tells by itself", async () => {
+        const helpers = drivenHelpers({ claude: "ready", codex: "ready" }, true);
+        let clock = 0;
+        const chat = chatWith({ helpers, now: () => clock });
+        expect(chat.open(choice)).toBeUndefined();
+        await settle();
+        expect(helpers.asked).toEqual([]);
+
+        clock = 120_000;
+        chat.shown();
+        expect(chat.hostWish({ hosts: true })).toBeUndefined();
+        await settle();
+        expect(helpers.asked).toEqual(["look codex"]);
+    });
+});
+
+describe("another model in the open chat", () => {
+    beforeEach(() => {
+        changing = true;
+        listed = [{ id: "opus", name: "Opus 5.5", efforts: ["low", "high"] }, { id: "haiku", name: "Haiku", efforts: [] }];
+    });
+
+    it("takes any effort for a model whose efforts the host says only once it is chosen; forgets one the host left out, and shows those it takes", async () => {
+        listed = [{ id: "opus", name: "Opus 5.5", efforts: [] }, { id: "haiku", name: "Haiku", efforts: [] }];
+        const chat = chatWith({ driver: (host) => (host === "claudeCode" ? { ...driver, effortsOnceChosen: true } : undefined) });
+        chat.shown();
+        await settle();
+        expect(chat.open({ ...choice, model: "opus", effort: "max" })).toBeUndefined();
+        const master = masters[0];
+        master.emit({ type: "session", session: "s-1", model: "opus", efforts: ["low", "high"] });
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "opus", runs: "opus", efforts: ["low", "high"], state: "idle", changes: true });
+        expect(readLastChat(home, root)).not.toHaveProperty("effort");
+
+        expect(chat.changeModel("haiku", "high")).toBeUndefined();
+        master.emit({ type: "session", session: "s-1", model: "haiku", efforts: ["high"] });
+        expect(chat.shown().chat).toMatchObject({ model: "opus", efforts: ["low", "high"] });
+        master.emit({ type: "changeTaken", model: "haiku" });
+        expect(chat.shown().chat).toMatchObject({ model: "haiku", effort: "high", efforts: ["high"] });
+        expect(readLastChat(home, root)).toMatchObject({ model: "haiku", effort: "high" });
+    });
+
+    it("is asked of the host between turns: the chat, the campaign's last choice and its flow follow, and the page reads that it changes", async () => {
+        const { chat, master } = await openedKnowing();
+        expect(chat.shown().chat).toMatchObject({ changes: true });
+        master.emit({ type: "session", session: "s-1", model: "claude-sonnet-5" });
+
+        expect(chat.changeModel("opus", "high")).toBeUndefined();
+        expect(master.changed).toEqual(["opus high"]);
+        // Until the host takes it, the chat, the campaign's last choice and the flow say the model it runs, never the one asked.
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", runs: "claude-sonnet-5", state: "idle", changes: true });
+        expect(readLastChat(home, root)).toMatchObject({ model: "sonnet", session: "s-1" });
+        const line = "From now on the master plays with Opus 5.5, effort high.";
+        expect(chat.shown().messages).toEqual([]);
+        master.emit({ type: "changeTaken", model: "opus" });
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "opus", effort: "high", state: "idle", changes: true });
+        expect(readLastChat(home, root)).toMatchObject({ model: "opus", effort: "high", session: "s-1" });
+        expect(chat.shown().messages.at(-1)).toMatchObject({ from: "table", text: line });
+        const flow = readLastChat(home, root)?.flow;
+        expect(flow === undefined ? [] : readFlow(root, flow, 50).messages.map((message) => message.text)).toContain(line);
+
+        // Its own name for it, once the host confirms it; then a model with no effort drops the effort.
+        master.emit({ type: "session", session: "s-1", model: "claude-opus-5" });
+        expect(chat.shown().chat?.runs).toBe("claude-opus-5");
+        expect(chat.changeModel("haiku")).toBeUndefined();
+        master.emit({ type: "changeTaken", model: "haiku" });
+        expect(chat.shown().chat).not.toHaveProperty("effort");
+        expect(readLastChat(home, root)).not.toHaveProperty("effort");
+        // The same again asks nothing.
+        expect(chat.changeModel("haiku")).toBeUndefined();
+        expect(master.changed).toEqual(["opus high", "haiku -"]);
+
+        // The chat taken up by the next table opens with the model changed.
+        chat.release();
+        chatWith().listened();
+        expect(masters.at(-1)?.options).toMatchObject({ model: "haiku", session: "s-1" });
+    });
+
+    it("is refused while the master answers, their own turn too, and while the host is not ready for it", () => {
+        const { chat, master } = opened();
+        chat.say("Hello");
+        expect(chat.changeModel("opus")).toBe("The master is answering: change the model once they have finished.");
+        master.emit({ type: "turnEnd", reason: "done" });
+        master.emit({ type: "turnStart", by: "host" });
+        expect(chat.changeModel("opus")).toBe("The master is answering: change the model once they have finished.");
+        master.emit({ type: "turnEnd", reason: "done" });
+        expect(master.changed).toEqual([]);
+
+        master.takesModels = false;
+        expect(chat.changeModel("opus")).toBe("The master is getting ready: change the model in a moment.");
+        expect(chat.shown().chat?.model).toBe("sonnet");
+    });
+
+    it("checks the model and its effort as the opening does, and says why", async () => {
+        const { chat, master } = await openedKnowing();
+        expect(chat.changeModel("--x")).toBe("That is no name of a model: --x.");
+        expect(chat.changeModel(" ")).toBe("Choose the model Claude Code plays the master with.");
+        expect(chat.changeModel("opus", "max")).toBe("Opus 5.5 takes no effort max in Claude Code: choose one of low, high.");
+        expect(chat.changeModel("haiku", "low")).toBe("Haiku takes no effort in Claude Code: leave the effort to the host.");
+        expect(master.changed).toEqual([]);
+
+        chat.close();
+        expect(chat.changeModel("opus")).toBe("No chat with the master is open: open one first.");
+    });
+
+    it("keeps the effort when none is given and the model takes it, or its efforts are not known yet; leaves it, saying so, where the model takes none", async () => {
+        listed = [...listed, { id: "fable", name: "Fable", efforts: ["low", "high"] }];
+        const { chat, master } = await openedKnowing();
+        expect(chat.changeModel("opus", "high")).toBeUndefined();
+
+        // Another model with no effort given: the one before goes with it, and the line marks it for the page.
+        expect(chat.changeModel("fable")).toBeUndefined();
+        expect(master.changed).toEqual(["opus high", "fable high"]);
+        // Asked twice before the host took either: only the one it took is said.
+        master.emit({ type: "changeTaken", model: "fable" });
+        expect(chat.shown().chat).toMatchObject({ model: "fable", effort: "high" });
+        expect(chat.shown().messages.filter((message) => message.from === "table")).toHaveLength(1);
+        expect(chat.shown().messages.at(-1)).toEqual({ id: expect.any(Number) as unknown, from: "table", text: "From now on the master plays with Fable, effort high.", code: "model", model: "Fable", effort: "high" });
+
+        // A model that takes no effort: it is left, and said so.
+        expect(chat.changeModel("haiku")).toBeUndefined();
+        expect(master.changed.at(-1)).toBe("haiku -");
+        master.emit({ type: "changeTaken", model: "haiku" });
+        expect(chat.shown().chat).not.toHaveProperty("effort");
+        expect(readLastChat(home, root)).not.toHaveProperty("effort");
+        expect(chat.shown().messages.at(-1)).toEqual({
+            id: expect.any(Number) as unknown,
+            from: "table",
+            text: "From now on the master plays with Haiku, which takes no effort high: the app chooses its own.",
+            code: "model",
+            model: "Haiku",
+            dropped: true,
+        });
+
+        // The marks stay in the campaign's file, for the next table's page.
+        const flow = readLastChat(home, root)?.flow;
+        expect(flow === undefined ? [] : readFlow(root, flow, 50).messages.filter((message) => message.from === "table")).toEqual(chat.shown().messages.filter((message) => message.from === "table"));
+    });
+
+    it("keeps the effort for a model whose efforts are not known until chosen, and leaves it, saying so, once the host says that model takes none such", async () => {
+        listed = [{ id: "opus", name: "Opus 5.5", efforts: [] }, { id: "haiku", name: "Haiku", efforts: [] }];
+        const chat = chatWith({ driver: (host) => (host === "claudeCode" ? { ...driver, effortsOnceChosen: true } : undefined) });
+        chat.shown();
+        await settle();
+        expect(chat.open({ ...choice, model: "opus", effort: "high" })).toBeUndefined();
+        const master = masters[0];
+        master.emit({ type: "session", session: "s-1", model: "opus", efforts: ["low", "high"] });
+
+        expect(chat.changeModel("haiku")).toBeUndefined();
+        expect(master.changed).toEqual(["haiku high"]);
+        master.emit({ type: "session", session: "s-1", model: "haiku", efforts: ["low"] });
+        master.emit({ type: "changeTaken", model: "haiku" });
+        expect(chat.shown().chat).not.toHaveProperty("effort");
+        expect(chat.shown().messages.filter((message) => message.from === "table")).toHaveLength(1);
+        expect(chat.shown().messages.at(-1)).toMatchObject({ from: "table", code: "model", model: "Haiku", dropped: true });
+    });
+
+    it("shows the model in play, its name and efforts, until the host takes the change or refuses it; never what the host said of the one asked meanwhile", async () => {
+        listed = [{ id: "opus", name: "Opus 5.5", efforts: [] }, { id: "haiku", name: "Haiku", efforts: [] }];
+        const chat = chatWith({ driver: (host) => (host === "claudeCode" ? { ...driver, effortsOnceChosen: true } : undefined) });
+        chat.shown();
+        await settle();
+        expect(chat.open({ ...choice, model: "opus", effort: "high" })).toBeUndefined();
+        const master = masters[0];
+        master.emit({ type: "session", session: "s-1", model: "claude-opus-5", efforts: ["low", "high"] });
+        const playing = { host: "claudeCode", model: "opus", effort: "high", runs: "claude-opus-5", efforts: ["low", "high"], state: "idle", changes: true };
+        expect(chat.shown().chat).toEqual(playing);
+
+        // Asked, then said by the host before it confirms it, as OpenCode does: the chat stays as it is.
+        expect(chat.changeModel("haiku")).toBeUndefined();
+        expect(chat.shown().chat).toEqual(playing);
+        master.emit({ type: "session", session: "s-1", model: "claude-haiku-4", efforts: ["low"] });
+        expect(chat.shown().chat).toEqual(playing);
+
+        // Refused: still as it was.
+        master.emit({ type: "changeRefused", asked: "haiku", model: "opus", effort: "high", why: "no such model" });
+        expect(chat.shown().chat).toEqual(playing);
+
+        // Taken, with what the host said of it meanwhile; the effort it does not take left.
+        expect(chat.changeModel("haiku")).toBeUndefined();
+        master.emit({ type: "session", session: "s-1", model: "claude-haiku-4", efforts: ["low"] });
+        expect(chat.shown().chat).toEqual(playing);
+        master.emit({ type: "changeTaken", model: "haiku" });
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "haiku", runs: "claude-haiku-4", efforts: ["low"], state: "idle", changes: true });
+
+        // Another model taken with nothing said of it: neither the name nor the efforts of the one before.
+        expect(chat.changeModel("opus")).toBeUndefined();
+        expect(chat.shown().chat).toMatchObject({ runs: "claude-haiku-4", efforts: ["low"] });
+        master.emit({ type: "changeTaken", model: "opus" });
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "opus", state: "idle", changes: true });
+    });
+
+    it("keeps the host's name of the model and its efforts when the effort alone changes", async () => {
+        listed = [{ id: "opus", name: "Opus 5.5", efforts: [] }];
+        const chat = chatWith({ driver: (host) => (host === "claudeCode" ? { ...driver, effortsOnceChosen: true } : undefined) });
+        chat.shown();
+        await settle();
+        expect(chat.open({ ...choice, model: "opus" })).toBeUndefined();
+        masters[0].emit({ type: "session", session: "s-1", model: "claude-opus-5", efforts: ["low", "high"] });
+
+        expect(chat.changeModel("opus", "high")).toBeUndefined();
+        masters[0].emit({ type: "changeTaken", model: "opus" });
+        expect(chat.shown().chat).toMatchObject({ model: "opus", effort: "high", runs: "claude-opus-5", efforts: ["low", "high"] });
+    });
+
+    it("goes back to the model the host ran when it does not take the one asked, and says so with its mark; an effort not taken is said with the model's", async () => {
+        const { chat, master } = await openedKnowing();
+        master.emit({ type: "session", session: "s-1", model: "claude-sonnet-5" });
+        expect(chat.changeModel("opus", "high")).toBeUndefined();
+        master.emit({ type: "changeRefused", asked: "opus", model: "sonnet", why: "the host did not take the model opus: no such model" });
+
+        expect(chat.shown().chat).toEqual({ host: "claudeCode", model: "sonnet", runs: "claude-sonnet-5", state: "idle", changes: true });
+        expect(readLastChat(home, root)).toMatchObject({ model: "sonnet" });
+        expect(readLastChat(home, root)).not.toHaveProperty("effort");
+        // Only the line of the model kept: none says the master plays with the one the host did not take, on the page or in the campaign.
+        const flow = readLastChat(home, root)?.flow;
+        expect(chat.shown().messages.filter((message) => message.from === "table")).toHaveLength(1);
+        expect(flow === undefined ? [] : readFlow(root, flow, 50).messages.map((message) => message.text).join("\n")).not.toContain("From now on");
+        expect(chat.shown().messages.at(-1)).toEqual({
+            id: expect.any(Number) as unknown,
+            from: "table",
+            text: "Claude Code did not take Opus 5.5: the master goes on with sonnet.",
+            code: "model-kept",
+            model: "sonnet",
+            asked: "Opus 5.5",
+        });
+        expect(logged.at(-1)).toBe("Claude Code did not take opus: the host did not take the model opus: no such model");
+
+        expect(chat.changeModel("opus", "high")).toBeUndefined();
+        master.emit({ type: "changeRefused", asked: "opus", model: "opus", why: "the host did not take the effort high: no" });
+        expect(chat.shown().chat).toMatchObject({ model: "opus" });
+        expect(chat.shown().chat).not.toHaveProperty("effort");
+        expect(chat.shown().messages.at(-1)).toMatchObject({ from: "table", code: "model", model: "Opus 5.5", dropped: true });
+    });
+
+    it("is refused, and never offered, where the host's driver cannot change it", () => {
+        changing = false;
+        const { chat } = opened();
+        expect(chat.shown().chat).not.toHaveProperty("changes");
+        expect(chat.changeModel("opus")).toBe("Claude Code cannot change its model in an open chat: close the chat, then open it with another model.");
     });
 });

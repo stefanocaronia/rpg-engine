@@ -8,8 +8,9 @@ import type { MasterShown } from "../data.ts";
 import { Icon } from "../parts/icons.tsx";
 import { PageHead } from "../shell/pages.tsx";
 import { t } from "../text.ts";
-import { chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, turnDoing, turnWords, waitingQuestion } from "./chat.ts";
+import { chatApp, chatNews, chatOffer, type ChatPlace, chatRoom, type ChatView, chatView, choiceLine, endedWords, expiredHost, firstAnswerDue, turnDoing, turnWords, waitingQuestion } from "./chat.ts";
 import { type ChatGame, ChatLog } from "./log.tsx";
+import { ModelPicker } from "./models.tsx";
 import { ChatOffering } from "./offer.tsx";
 import type { ChatAsking } from "./question.tsx";
 import type { MasterChat } from "./sending.ts";
@@ -75,7 +76,8 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
     // The chat moved on: what went wrong before says nothing of it now.
     useEffect(() => chat.forget(), [state]);
 
-    // What had the focus went away, as the button that opened the chat or Stop at the turn's end: the focus goes to the words, or to what opens a chat.
+    // What had the focus went away, as the button that opened the chat, Stop at the turn's end, or Open as the table said to sign in first: the focus goes
+    // to the words, or to what opens a chat or sets its app up. Looked at after every change, as an app's state changes neither the view nor the chat's.
     useEffect(() => {
         const gone = held.current !== null && !held.current.isConnected;
 
@@ -86,7 +88,7 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
             taking?.focus({ preventScroll: true });
             taking?.scrollIntoView({ block: "nearest" });
         }
-    }, [view, state]);
+    });
 
     if (shown === undefined || view === undefined) {
         return <PageHead section="chat" id="chat-title" />;
@@ -99,6 +101,27 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
     const offer = view === "open" ? chatOffer(shown) : undefined;
     const some = shown.messages.length > 0;
     const offering = offer === undefined ? undefined : <ChatOffering offer={offer} busy={chat.sending} alone={!some} onSend={(words) => void chat.say(words)} />;
+    const open = view === "open" ? shown.chat : undefined;
+    const playing = open === undefined ? undefined : shown.hosts.find((one) => one.id === open.host);
+    // The model of the open chat changes from under its words, where the app lets it, between two turns: its levels of thinking as the app said them once
+    // it was chosen, else as its list says. Another model is asked without a level: the table keeps the one chosen where that model takes it, and says so
+    // in a line where it does not. Default stands only while no level holds.
+    const switcher = open?.changes === true && playing !== undefined && playing.models.length > 0
+        ? (
+            <ModelPicker
+                host={playing}
+                id="chat-switch"
+                foot
+                model={open.model}
+                effort={open.effort}
+                efforts={open.efforts}
+                fallback={open.effort === undefined}
+                off={open.state === "turn" ? t("You can change it when the master has answered.") : undefined}
+                onPick={(model) => model !== "" && model !== open.model && void chat.switchModel(model, undefined)}
+                onEffort={(effort) => effort !== (open.effort ?? "") && void chat.switchModel(open.model, effort === "" ? undefined : effort)}
+            />
+        )
+        : undefined;
     return (
         <section
             ref={root}
@@ -120,7 +143,7 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
             </div>
             <p class="visually-hidden" role="status">{told}</p>
             <div class="card chat-box">
-                {some && <ChatLog messages={shown.messages} asking={asking} game={game} foot={offering} />}
+                {some && <ChatLog messages={shown.messages} asking={asking} game={game} app={chatApp(shown)} foot={offering} />}
                 {!some && view === "open" && <div class="chat-empty">{offering}</div>}
                 {turn !== undefined && (
                     <p class={waits ? "chat-turn waits" : "chat-turn"}>
@@ -129,10 +152,11 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
                         <span class="chat-turn-words">{turn}</span>
                     </p>
                 )}
+                <FirstAnswer due={firstAnswerDue(shown) && !waits} />
                 {view === "ended" && (
                     <p class="chat-note problem" dir="auto">
                         <Icon name="alert" />
-                        {endedWords(shown.chat?.why)}
+                        {endedWords(shown.chat?.why, expiredHost(shown))}
                     </p>
                 )}
                 {view === "elsewhere" && (
@@ -149,6 +173,8 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
                         answers={shown.chat.answers === true && asking?.words !== false}
                         sending={chat.sending}
                         plays={choiceLine(shown, shown.chat)}
+                        app={playing?.name}
+                        model={switcher}
                         onText={chat.setDraft}
                         onSend={async (words) => {
                             if (await chat.say(words)) {
@@ -160,10 +186,35 @@ export function ChatPage({ chat, place = "section", entering = false, tools, ask
                         onClose={() => void chat.close()}
                     />
                 )}
-                {(view === "start" || view === "ended") && <ChatStart shown={shown} sending={chat.sending} onOpen={(choice, fresh) => void chat.open(choice, fresh)} />}
+                {(view === "start" || view === "ended") && <ChatStart shown={shown} sending={chat.sending} onOpen={(choice, fresh) => chat.open(choice, fresh)} onWish={(wish) => void chat.wish(wish)} />}
             </div>
         </section>
     );
+}
+
+// How long the master's first answer takes before the page says that a long one is normal.
+const firstAnswerWait = 8000;
+
+/**
+ * While the master's first answer of a chat is due: after some seconds, a quiet line that says a long wait is normal, as the app starts and the master sets
+ * the scene. No count, no bar: the turn's line says the master is at work.
+ */
+function FirstAnswer({ due }: { due: boolean; })
+{
+    const [long, setLong] = useState(false);
+
+    useEffect(() => {
+        setLong(false);
+
+        if (!due) {
+            return;
+        }
+
+        const timer = setTimeout(() => setLong(true), firstAnswerWait);
+        return () => clearTimeout(timer);
+    }, [due]);
+
+    return due && long ? <p class="chat-turn-note">{t("The master is setting the scene: the first answer can take a couple of minutes.")}</p> : null;
 }
 
 /**

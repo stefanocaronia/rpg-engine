@@ -59,6 +59,7 @@ import {
 import { launcherHtml, pageHtml } from "../src/server/page/index.ts";
 import { type Probed, readLastChat, type TablePlace } from "../src/server/table/index.ts";
 import { writePlace } from "../src/server/table/place.ts";
+import { drivenHelpers } from "./fake-helpers.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { inPlay, makeTempFolder, testContext } from "./support.ts";
 
@@ -581,6 +582,160 @@ describe("the launcher's server", () => {
         const launcher = await startLauncher();
 
         expect(readLauncher(home)?.token).toBe(launcher.place.token);
+    });
+});
+
+describe("the AI apps from the launcher's page", () => {
+    /** Hosts as the launcher offers them, Codex found once `found.codex` says so. */
+    function appHosts(found: { codex: boolean; }): () => HostOffered[]
+    {
+        return () => [
+            { id: "claudeCode", name: "Claude Code", ready: true, found: true, model: "sonnet", efforts: [], models: [] },
+            { id: "codex", name: "Codex", ready: true, found: found.codex, model: "", efforts: [], models: [] },
+            { id: "openCode", name: "OpenCode", ready: true, found: true, model: "", efforts: [], models: [] },
+        ];
+    }
+
+    it("gives each host's account at once, never waiting for a program's status, and a notice once it is known", async () => {
+        const helpers = drivenHelpers({ claude: "ready", codex: "logged out" });
+        const launcher = await startLauncher({ helpers, hosts: appHosts({ codex: true }) });
+        const heard = listenTo(launcher.url);
+        await vi.waitFor(() => expect(heard.opened()).toBe(true));
+
+        // The looks wait for the test: the page reads what is known now.
+        const first = await call(launcher.url, "GET", "/api/launcher");
+        expect((first.body as { hosts: unknown[]; }).hosts).toEqual([
+            expect.objectContaining({ id: "claudeCode", found: true, account: "unknown", signIn: "page", install: { page: "https://code.claude.com/docs/en/setup", engine: true } }),
+            expect.objectContaining({ id: "codex", account: "unknown", signIn: "page", install: { page: "https://learn.chatgpt.com/docs/codex/cli", engine: true } }),
+            { id: "openCode", name: "OpenCode", ready: true, found: true, model: "", efforts: [], models: [], account: "unknown", install: { page: "https://opencode.ai/download" } },
+        ]);
+
+        helpers.answerLooks();
+        await vi.waitFor(() => expect(heard.count()).toBe(2));
+        const known = (await call(launcher.url, "GET", "/api/launcher")).body as { hosts: { account: string; }[]; };
+        expect(known.hosts.map((host) => host.account)).toEqual(["in", "out", "unknown"]);
+        heard.close();
+    });
+
+    it("starts a sign-in once, tells the pages while it waits and once it is done, and cancels one", async () => {
+        const helpers = drivenHelpers({ claude: "logged out", codex: "logged out" }, true);
+        const launcher = await startLauncher({ helpers, hosts: appHosts({ codex: true }) });
+        const heard = listenTo(launcher.url);
+        await vi.waitFor(() => expect(heard.opened()).toBe(true));
+        await call(launcher.url, "GET", "/api/launcher");
+        await vi.waitFor(() => expect(heard.count()).toBe(2));
+
+        const started = await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "codex" } });
+        expect(started.status).toBe(200);
+        expect((started.body as { hosts: unknown[]; }).hosts).toContainEqual(expect.objectContaining({ id: "codex", account: "out", signingIn: true }));
+        expect((await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "codex" } })).status).toBe(200);
+        expect(helpers.asked.filter((one) => one.startsWith("login"))).toEqual(["login codex"]);
+        // The sign-in's own link, for a browser that did not open, comes with its first answer: a notice of its own.
+        await vi.waitFor(() => expect(heard.count()).toBe(4));
+        expect((await call(launcher.url, "GET", "/api/launcher")).body).toMatchObject({ hosts: expect.arrayContaining([expect.objectContaining({ id: "codex", signInLink: "https://auth.example/codex" })]) as unknown });
+
+        helpers.states.codex = "ready";
+        helpers.endLogin("codex", { state: "done" });
+        await vi.waitFor(() => expect(heard.count()).toBe(6));
+        const done = (await call(launcher.url, "GET", "/api/launcher")).body as { hosts: { id: string; account: string; signingIn?: true; }[]; };
+        expect(done.hosts.find((host) => host.id === "codex")).toMatchObject({ account: "in" });
+        expect(done.hosts.find((host) => host.id === "codex")?.signingIn).toBeUndefined();
+        expect(done.hosts.find((host) => host.id === "codex")).not.toHaveProperty("signInLink");
+
+        await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "claudeCode" } });
+        const cancelled = await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "claudeCode", cancel: true } });
+        expect(cancelled.status).toBe(200);
+        expect(helpers.asked).toContain("cancel claude");
+        expect((cancelled.body as { hosts: { id: string; signingIn?: true; }[]; }).hosts.find((host) => host.id === "claudeCode")?.signingIn).toBeUndefined();
+        heard.close();
+    });
+
+    it("says why a sign-in failed", async () => {
+        const helpers = drivenHelpers({ claude: "logged out" }, true);
+        const launcher = await startLauncher({ helpers, hosts: appHosts({ codex: false }) });
+        await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "claudeCode" } });
+        helpers.endLogin("claude", { state: "failed", why: "it said: address already in use" });
+
+        await vi.waitFor(async () => {
+            const read = (await call(launcher.url, "GET", "/api/launcher")).body as { hosts: { id: string; signInWhy?: string; }[]; };
+            expect(read.hosts.find((host) => host.id === "claudeCode")?.signInWhy).toBe("it said: address already in use");
+        });
+    });
+
+    it("installs a host the computer lacks, once, and offers it found once it is there; says why one failed", async () => {
+        const found = { codex: false };
+        const helpers = drivenHelpers({}, true);
+        const launcher = await startLauncher({ helpers, hosts: appHosts(found) });
+
+        const started = await call(launcher.url, "POST", "/api/launcher", { install: { host: "codex" } });
+        expect((started.body as { hosts: unknown[]; }).hosts).toContainEqual(expect.objectContaining({ id: "codex", found: false, installing: true }));
+        await call(launcher.url, "POST", "/api/launcher", { install: { host: "codex" } });
+        expect(helpers.asked.filter((one) => one.startsWith("install"))).toEqual(["install codex"]);
+
+        found.codex = true;
+        helpers.states.codex = "logged out";
+        helpers.endInstall("codex", undefined);
+        await vi.waitFor(async () => {
+            const read = (await call(launcher.url, "GET", "/api/launcher")).body as { hosts: { id: string; }[]; };
+            expect(read.hosts.find((host) => host.id === "codex")).toMatchObject({ found: true, account: "out" });
+        });
+        expect(await call(launcher.url, "POST", "/api/launcher", { install: { host: "codex" } })).toMatchObject({
+            status: 409,
+            body: { error: "Codex is on this computer already: choose it for a campaign, and play." },
+        });
+
+        found.codex = false;
+        await call(launcher.url, "POST", "/api/launcher", { install: { host: "codex" } });
+        helpers.endInstall("codex", "npm said: EACCES");
+        await vi.waitFor(async () => {
+            const read = (await call(launcher.url, "GET", "/api/launcher")).body as { hosts: { id: string; installWhy?: string; }[]; };
+            expect(read.hosts.find((host) => host.id === "codex")?.installWhy).toBe("npm said: EACCES");
+        });
+    });
+
+    it("refuses in words a host that signs in or installs from its own app, a host it does not know, and a launcher given no programs", async () => {
+        const helpers = drivenHelpers({}, true);
+        const launcher = await startLauncher({ helpers, hosts: appHosts({ codex: false }) });
+
+        expect(await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "antigravity" } })).toMatchObject({
+            status: 409,
+            body: { error: expect.stringContaining("Antigravity signs in from its own app, not from here") },
+        });
+        expect(await call(launcher.url, "POST", "/api/launcher", { install: { host: "antigravity" } })).toMatchObject({
+            status: 409,
+            body: { error: "RPG Engine does not install Antigravity: install it from https://antigravity.google/download, then look again." },
+        });
+        expect(await call(launcher.url, "POST", "/api/launcher", { signIn: { host: "cursor" } })).toMatchObject({
+            status: 400,
+            body: { error: "Give a host the launcher knows: claudeCode, codex, antigravity, openCode." },
+        });
+        expect(helpers.asked.filter((one) => !one.startsWith("look"))).toEqual([]);
+
+        await launcher.end("a launcher given no programs comes next");
+        const bare = await startLauncher({ hosts: appHosts({ codex: false }) });
+        expect(await call(bare.url, "POST", "/api/launcher", { hosts: true })).toMatchObject({ status: 409, body: { error: expect.stringContaining("start it again with rpg launcher") } });
+    });
+
+    it("looks at every host again when the page asks, at most once a minute", async () => {
+        const helpers = drivenHelpers({ claude: "logged out", codex: "logged out" }, true);
+        let time = Date.now();
+        const launcher = await startLauncher({ helpers, hosts: appHosts({ codex: true }), now: () => time });
+        await call(launcher.url, "GET", "/api/launcher");
+        await vi.waitFor(() => expect(helpers.asked.length).toBe(2));
+
+        // As the page's window comes back to the front, again and again: nothing within the minute.
+        helpers.states.claude = "ready";
+        expect((await call(launcher.url, "POST", "/api/launcher", { hosts: true })).status).toBe(200);
+        expect((await call(launcher.url, "POST", "/api/launcher", { hosts: true })).status).toBe(200);
+        expect(helpers.asked).toHaveLength(2);
+
+        time += 61_000;
+        expect((await call(launcher.url, "POST", "/api/launcher", { hosts: true })).status).toBe(200);
+        await vi.waitFor(async () => {
+            const read = (await call(launcher.url, "GET", "/api/launcher")).body as { hosts: { id: string; account: string; }[]; };
+            expect(read.hosts.find((host) => host.id === "claudeCode")?.account).toBe("in");
+        });
+        expect(helpers.asked.filter((one) => one === "look claude")).toHaveLength(2);
     });
 });
 
@@ -1206,6 +1361,18 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         expect(existsSync(join(at.desktop, "rpg-engine.desktop"))).toBe(true);
     });
 
+    it("ends with no answer after its wait, as in the icon's console that nobody sees, and asks again another time", async () => {
+        const input = Object.assign(new PassThrough(), { isTTY: true });
+        const output = Object.assign(new PassThrough(), { isTTY: true });
+        const nobody: Terminal = { input, output, env: { DISPLAY: ":0" }, answerWait: 50 };
+        let shown = "";
+        output.on("data", (chunk: Buffer) => (shown += chunk.toString("utf8")));
+
+        expect(await runOpen([], where({ terminal: nobody }))).toEqual({ output: "RPG Engine's campaigns are open in a window: http://127.0.0.1:5750", exitCode: 0 });
+        expect(shown).toContain("[Y/n]");
+        expect(iconAsked(home)).toBe(false);
+    }, 5000);
+
     it("never asks with no terminal, or on a Linux with no desktop", async () => {
         expect(await offerIcon(where(), fakeTerminal("y", { tty: false }).terminal)).toBeUndefined();
         expect(await offerIcon(where(), fakeTerminal("y", { env: {} }).terminal)).toBeUndefined();
@@ -1224,10 +1391,32 @@ describe("rpg open, rpg icon and rpg launcher", () => {
         expect(await runIcon(["now"], where())).toMatchObject({ exitCode: 1 });
     });
 
+    it("runs with no programs of this computer unless the caller gives them: the page reads no account and cannot sign in", async () => {
+        const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        const said: string[] = [];
+        const given = { ...launcherOptions(), log: (line: string) => said.push(line), programsWait: 5000 };
+
+        try {
+            const running = runLauncher(given);
+            await vi.waitFor(() => expect(readLauncher(home)).toBeDefined());
+            const place = readLauncher(home);
+            const shown = await call(place?.url ?? "", "POST", "/api/launcher", { signIn: { host: "claudeCode" } });
+            expect(shown.status).toBe(409);
+            expect(JSON.stringify(shown.body)).toContain("cannot sign in");
+            await call(place?.url ?? "", "POST", "/api/launcher", { quit: { token: place?.token } });
+            expect(await running).toBe(0);
+            // How the programs it started ended, said with the time, after its own end.
+            expect(said.slice(-2)).toEqual(["The launcher ended: asked to quit.", expect.stringMatching(/^\d{4}-\d\d-\d\dT[\d:.]+Z The programs the launcher started ended by themselves in \d+ ms\.$/)]);
+        } finally {
+            write.mockRestore();
+        }
+    });
+
     it("runs the launcher in the foreground with rpg launcher: its link on stdout, 0 once it quits; the link of one there already; 1 for another engine's", async () => {
         const printed: string[] = [];
         const write = vi.spyOn(process.stdout, "write").mockImplementation((text) => printed.push(String(text)) > 0);
-        const given = { ...launcherOptions(), log: () => undefined };
+        // Driven programs: the real ones are this computer's own, with the player's accounts.
+        const given = { ...launcherOptions(), helpers: drivenHelpers(), log: () => undefined };
 
         try {
             const running = runLauncher(given);

@@ -8,10 +8,11 @@ import { runCommandLine } from "../src/cli/command-line.ts";
 import { ask } from "../src/commands/ask.ts";
 import type { Context } from "../src/core/context.ts";
 import { SessionStore } from "../src/core/session-store.ts";
-import { type MasterChat, masterDriver, type MasterEvent, openMaster } from "../src/master/index.ts";
+import { type MasterChat, type MasterDriver, masterDriver, type MasterEvent, openMaster } from "../src/master/index.ts";
 import { type Dashboard, pageRoutes, type Served, startDashboard } from "../src/server/dashboard/index.ts";
 import { launcherRoutes, openLauncher } from "../src/server/launcher/index.ts";
 import { tableChat } from "../src/server/table/chat.ts";
+import { type DrivenHelpers, drivenHelpers } from "./fake-helpers.ts";
 import { pageFolder } from "./i18n/phrases.ts";
 import { type FakeHost, fakeHost, type FakeOptions, type FlowEntry, loadFlow, manualClock, playerWords, ticksUntil, wholeTexts } from "./master/fake-host.ts";
 import { inPlay, makeTempFolder, removeFolder, testContext } from "./support.ts";
@@ -279,7 +280,7 @@ describe("the chat with the master in the page", () => {
         expect(await json("POST", masterPort, { say: "Hello" })).toMatchObject({ status: 409, body: { error: "No chat with the master is open." } });
     });
 
-    it("refuses a body of no shape it takes, saying the four", async () => {
+    it("refuses a body of no shape it takes, saying the eight", async () => {
         const bodies = [
             {},
             { say: "   " },
@@ -289,13 +290,20 @@ describe("the chat with the master in the page", () => {
             { open: { host: "elsewhere", model: "m" } },
             { open: { host: "claudeCode", model: "" } },
             { open: { host: "claudeCode", model: "m", extra: 1 } },
+            { model: { model: "--dangerously-skip-permissions" } },
+            { model: { model: "m", extra: 1 } },
+            { signIn: { host: "elsewhere" } },
+            { signIn: { host: "codex", cancel: false } },
+            { install: {} },
+            { hosts: false },
         ];
 
         for (const body of bodies) {
             const answer = await json("POST", masterPort, body);
             expect(answer.status, JSON.stringify(body).slice(0, 80)).toBe(400);
             expect((answer.body as { error: string; }).error).toBe(
-                "Send { say } with the player's words, up to 20000 characters, { stop: true }, { open: { host, model, effort?, fresh? } } or { close: true }.",
+                "Send { say } with the player's words, up to 20000 characters, { stop: true }, { open: { host, model, effort?, fresh? } }, { close: true }, "
+                    + "{ model: { model, effort? } }, { signIn: { host, cancel? } }, { install: { host } } or { hosts: true }.",
             );
         }
 
@@ -428,6 +436,9 @@ describe("the table's chat over the real driver of Claude Code, its host a fake 
             expect(acts.heard).toEqual([]);
             expect(((await json("GET", masterPort)).body as Shown).messages).toEqual([]);
             expect(hosts[0].written.filter((line) => line.type === "user")).toEqual([]);
+            // Let go to end by itself, as one saving the player's login: its input closed, stopped only after a grace.
+            expect(hosts[0].inputClosed).toBe(true);
+            clock.advance(10_000);
             expect(hosts[0].stopped).toBe(true);
         });
     }
@@ -653,6 +664,140 @@ async function listenTo(at: number): Promise<{ said(): string[]; until(holds: (s
 }
 
 /** A request to the page's API at a port, with the page's origin when it has a body: its status and its JSON. */
+describe("the AI apps and the open chat's model, asked from the campaign's page", () => {
+    interface ChangingMaster extends MasterChat
+    {
+        models: string[];
+        emit(event: MasterEvent): void;
+    }
+
+    let helpers: DrivenHelpers;
+    let page: Dashboard;
+    let at: number;
+    let fakes: ChangingMaster[];
+    let codexHere: boolean;
+
+    // A host that takes another model between turns, as the drivers do.
+    const changingMaster = (): ChangingMaster => {
+        let listener: ((event: MasterEvent) => void) | undefined;
+        let turn = false;
+        const fake: ChangingMaster = {
+            models: [],
+            send: () => (turn ? false : (turn = true)),
+            onEvent: (given) => (listener = given),
+            interrupt: () => undefined,
+            close: () => undefined,
+            setModel: (model, effort) => {
+                fake.models.push(`${model} ${effort ?? "-"}`);
+                return !turn;
+            },
+            emit: (event) => {
+                turn = turn && event.type !== "turnEnd";
+                listener?.(event);
+            },
+        };
+        return fake;
+    };
+
+    const driverOf = (host: string): MasterDriver | undefined =>
+        host === "claudeCode" || host === "codex"
+            ? {
+                open: () => fakes[0],
+                missing: () => undefined,
+                program: () => (host === "codex" && !codexHere ? undefined : { command: `${host}-program`, args: [] }),
+                environment: (given) => given,
+                models: () => Promise.resolve(host === "codex" ? [{ id: "gpt-a", name: "GPT A", efforts: ["low", "high"], advised: true as const }] : []),
+                model: "",
+                efforts: ["low", "high"],
+            }
+            : undefined;
+
+    beforeEach(async () => {
+        helpers = drivenHelpers({ claude: "logged out", codex: "ready" }, true);
+        fakes = [];
+        codexHere = true;
+        const master = tableChat({
+            root: folder,
+            home: makeTempFolder(),
+            environment: {},
+            platform: process.platform,
+            userHome: makeTempFolder(),
+            helpers,
+            open: () => {
+                const fake = changingMaster();
+                fakes.push(fake);
+                return fake;
+            },
+            driver: driverOf,
+            elsewhere: () => false,
+            changed: () => page.chatChanged(),
+            idle: () => page.deliver(),
+            newToken: () => "token",
+        });
+        const started = await startDashboard({ ...context, files: session }, session, { ports: [0], master });
+
+        if (started === undefined) {
+            throw new Error("The dashboard with a master did not start.");
+        }
+
+        page = started;
+        at = Number(new URL(started.url).port);
+        master.shown();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    afterEach(async () => {
+        await page.close();
+    });
+
+    type Shown = { hosts: { id: string; account?: string; signingIn?: true; installing?: true; }[]; chat?: { model: string; effort?: string; changes?: true; }; messages: { text: string; }[]; };
+
+    it("shows each app's account, and never opens one the player is not signed in to: refused with the sign-in's code", async () => {
+        const read = (await json("GET", at)).body as Shown;
+        expect(read.hosts.find((host) => host.id === "claudeCode")).toMatchObject({ account: "out", signIn: "page" });
+        expect(read.hosts.find((host) => host.id === "codex")).toMatchObject({ account: "in" });
+
+        const refused = await json("POST", at, { open: { host: "claudeCode", model: "opus" } });
+        expect(refused).toMatchObject({ status: 409, body: { error: "Claude Code is not signed in on this computer: sign in here, then open the chat.", code: "signin", table: true } });
+        expect(fakes).toEqual([]);
+    });
+
+    it("starts and cancels a sign-in, installs an app the computer lacks, looks again; refuses in words what it cannot", async () => {
+        const started = await json("POST", at, { signIn: { host: "claudeCode" } });
+        expect(started.status).toBe(200);
+        expect((started.body as Shown).hosts.find((host) => host.id === "claudeCode")).toMatchObject({ signingIn: true });
+        expect((await json("POST", at, { signIn: { host: "claudeCode", cancel: true } })).status).toBe(200);
+        expect(await json("POST", at, { signIn: { host: "antigravity" } })).toMatchObject({ status: 409, body: { error: expect.stringMatching(/^Antigravity signs in from its own app/) as unknown } });
+
+        expect(await json("POST", at, { install: { host: "codex" } })).toMatchObject({ status: 409, body: { error: "Codex is on this computer already: choose it, and open the chat." } });
+        codexHere = false;
+        const installing = await json("POST", at, { install: { host: "codex" } });
+        expect(installing.status).toBe(200);
+        expect((installing.body as Shown).hosts.find((host) => host.id === "codex")).toMatchObject({ installing: true });
+
+        expect((await json("POST", at, { hosts: true })).status).toBe(200);
+        expect(helpers.asked).toEqual(expect.arrayContaining(["login claude", "cancel claude", "install codex"]));
+    });
+
+    it("changes the open chat's model between turns, and refuses it while the master answers", async () => {
+        expect((await json("POST", at, { open: { host: "codex", model: "gpt-a" } })).status).toBe(200);
+        const changed = await json("POST", at, { model: { model: "gpt-a", effort: "high" } });
+        expect(changed.status).toBe(200);
+        expect(fakes[0].models).toEqual(["gpt-a high"]);
+        // The page shows the change once the host took it, never before.
+        expect((changed.body as Shown).chat).not.toHaveProperty("effort");
+        expect((changed.body as Shown).messages).toEqual([]);
+        fakes[0].emit({ type: "changeTaken", model: "gpt-a" });
+        const taken = (await json("GET", at)).body as Shown;
+        expect(taken.chat).toMatchObject({ model: "gpt-a", effort: "high", changes: true });
+        expect(taken.messages.at(-1)?.text).toBe("From now on the master plays with GPT A, effort high.");
+
+        await json("POST", at, { say: "Hello" });
+        expect(await json("POST", at, { model: { model: "gpt-a", effort: "low" } })).toMatchObject({ status: 409, body: { error: "The master is answering: change the model once they have finished." } });
+        expect(await json("POST", at, { model: { model: "gpt-a", effort: "max" } })).toMatchObject({ status: 409 });
+    });
+});
+
 function json(method: string, at: number, body?: unknown, path = "/api/master"): Promise<{ status: number; body: unknown; }>
 {
     const headers = body === undefined ? {} : { "origin": `http://127.0.0.1:${at}`, "content-type": "application/json" };

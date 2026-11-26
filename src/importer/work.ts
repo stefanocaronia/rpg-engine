@@ -1,5 +1,6 @@
 // The importer's folder in the campaign (D-489): the player's document as text in pieces with its pictures, the mark of how far it is, and what the helper
 // writes there, notes and the adventure. Another process writes in it, so it is read and written here, never through the campaign's store.
+import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { parse, stringify } from "yaml";
@@ -210,6 +211,19 @@ export function importedPages(folder: string): Record<string, string[]>
     }
 
     return pages;
+}
+
+/** A mark of what the helper has written, its notes and its adventure, file by file: two marks differ when a run added, changed or removed one. */
+export function writtenMark(folder: string): string
+{
+    return ["notes", "adventure"].flatMap((part) => {
+        const top = join(folder, part);
+        const entries = existsSync(top) ? readdirSync(top, { recursive: true, withFileTypes: true }) : [];
+        return entries.filter((entry) => entry.isFile()).map((entry) => {
+            const file = join(entry.parentPath, entry.name);
+            return `${file} ${createHash("sha1").update(readFileSync(file)).digest("hex")}`;
+        });
+    }).sort().join("\n");
 }
 
 /** How a novel or a story is told, as the reading wrote it in notes/style.yaml: its author, and how it is built; nothing for a module or notes. */

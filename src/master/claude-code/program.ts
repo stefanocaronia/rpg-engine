@@ -8,7 +8,7 @@ export const streamArguments = ["-p", "--input-format", "stream-json", "--output
 /** The arguments that keep the program to the campaign's own settings, with no MCP server but those given. */
 export const settingArguments = ["--setting-sources", "project,local", "--strict-mcp-config"];
 
-/** The arguments that make the program ask the table before any subagent starts, which it would start unasked: one that plays no character is refused before it runs. */
+/** The arguments that make the program ask the table before any subagent starts, which it would start unasked: one that neither plays a character nor reads a page of the web is refused before it runs. */
 export const agentArguments = ["--settings", JSON.stringify({ permissions: { ask: ["Agent"] } })];
 
 /** Claude Code's own program: the first found in a folder of the PATH, then in its own folder of the player's home; never a shim that needs a shell. */

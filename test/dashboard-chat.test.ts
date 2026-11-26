@@ -6,25 +6,39 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { readAddress, sectionAddress, sectionLabel, sectionTabs } from "../src/dashboard/address.ts";
 import { changeMaster, readMaster } from "../src/dashboard/api.ts";
 import {
+    aboutModel,
     answerShown,
+    anyHostReady,
     atEnd,
+    chatApp,
     chatNews,
     chatOffer,
     chatRoom,
     chatView,
     choiceLine,
     choiceOf,
+    effortName,
     effortsOf,
     endedWords,
+    expiredHost,
+    firstAnswerDue,
     firstChoice,
+    hostFacts,
     hostsFound,
+    hostState,
+    hostStateWords,
+    installSiteWords,
+    keptEffort,
     lastHeard,
     listedModel,
+    modelSearchAt,
+    modelSections,
     questionPlace,
     resumes,
     sendsWords,
     settledChoice,
     speaker,
+    tableWords,
     turnDoing,
     turnWords,
     unseenWords,
@@ -32,7 +46,7 @@ import {
     withModel,
     wordsToSend,
 } from "../src/dashboard/chat/chat.ts";
-import type { ChatMessage, MasterShown } from "../src/dashboard/data.ts";
+import type { ChatMessage, ChatSaid, MasterShown } from "../src/dashboard/data.ts";
 import { nextOn } from "../src/dashboard/parts/choosing.ts";
 import { setLanguage } from "../src/dashboard/text.ts";
 import { pageFolder } from "./i18n/phrases.ts";
@@ -123,6 +137,14 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(withModel(listing, chosen, "haiku")).toEqual({ host: "claudeCode", model: "haiku" });
         // Other: no name yet, the app's own efforts.
         expect(withModel(listing, chosen, "")).toEqual({ host: "claudeCode", model: "", effort: "max" });
+    });
+
+    it("keeps the open chat's effort with another model only where that model's list has it: none, never Default's word, leaves the app's (T-290)", () => {
+        expect([keptEffort(listing, "opus", "max"), keptEffort(listing, "sonnet", "max"), keptEffort(listing, "haiku", "low"), keptEffort(listing, "opus", undefined)])
+            .toEqual(["max", undefined, undefined, undefined]);
+        // An app that says a model's efforts only once it is chosen lists none: the effort is left to it.
+        const acp = { ...listing, id: "openCode", efforts: [], models: [{ id: "a/b", name: "B", efforts: [] }] };
+        expect(keptEffort(acp, "a/b", "high")).toBeUndefined();
     });
 
     it("follows the app's list as it arrives after the form: a model it has stays, a name the player wrote stays, any other gives way to the list's choice", () => {
@@ -370,5 +392,152 @@ describe("what the page asks the server of the chat (D-582)", () => {
         expect(await changeMaster({ say: "Again." })).toEqual({ error: "Non è arrivato al gioco: riprova." });
         vi.stubGlobal("fetch", () => Promise.reject(new TypeError("Failed to fetch")));
         expect(await changeMaster({ stop: true })).toEqual({ error: "Non è arrivato al gioco: riprova." });
+    });
+});
+
+describe("the first access to an app, and the model for who does not know them (T-290)", () => {
+    const signedOut = { ...codex, account: "out" as const, signIn: "page" as const };
+    const toInstall = { ...codex, id: "openCode", name: "OpenCode", found: false, install: { page: "https://example.org/opencode", engine: true as const } };
+    const later = { ...codex, id: "antigravity", name: "Antigravity", ready: false };
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    afterAll(async () => {
+        await setLanguage("en");
+    });
+
+    it("says how each app stands: ready, to set up or signing in, to install or installing, or not from here yet; an account not known is ready", () => {
+        expect(hostState(claude)).toBe("ready");
+        expect(hostState({ ...claude, account: "unknown" })).toBe("ready");
+        expect(hostState({ ...claude, account: "in", signIn: "page" })).toBe("ready");
+        expect(hostState(signedOut)).toBe("signIn");
+        expect(hostState({ ...signedOut, signingIn: true })).toBe("signingIn");
+        // Out, but with no way to sign in said: the page cannot help, and lets the chat say it.
+        expect(hostState({ ...claude, account: "out" })).toBe("ready");
+        expect(hostState(toInstall)).toBe("install");
+        expect(hostState({ ...toInstall, installing: true })).toBe("installing");
+        expect(hostState(later)).toBe("later");
+        expect(hostState({ ...later, found: false })).toBe("later");
+        expect([hostStateWords("ready"), hostStateWords("signIn"), hostStateWords("install")]).toEqual([undefined, "to set up", "to install"]);
+        expect([anyHostReady([signedOut, toInstall, later]), anyHostReady([signedOut, claude])]).toEqual([false, true]);
+    });
+
+    it("starts from the last app if ready, else the first ready, else the first to set up; none while every app is to install", () => {
+        const last = { host: "codex", model: "gpt", resumable: true };
+        expect(firstChoice({ hosts: [claude, codex], last })).toEqual({ host: "codex", model: "gpt" });
+        expect(firstChoice({ hosts: [claude, signedOut], last })).toEqual({ host: "claudeCode", model: "sonnet" });
+        expect(firstChoice({ hosts: [toInstall, signedOut, later] })).toEqual({ host: "codex", model: "gpt" });
+        expect(firstChoice({ hosts: [{ ...signedOut, signingIn: true }] })).toEqual({ host: "codex", model: "gpt" });
+        expect(firstChoice({ hosts: [toInstall, later] })).toBeUndefined();
+    });
+
+    it("chooses the advised model at first, never one paid apart while the list has another; the last used stays whatever it is", () => {
+        const advised = { ...listing, models: [...listing.models, { id: "fable", name: "Fable", efforts: [], advised: true as const }] };
+        expect(listedModel(advised, undefined)).toBe("fable");
+        expect(listedModel(advised, "haiku")).toBe("haiku");
+        const paid = { id: "zen", name: "Zen", efforts: [], metered: true as const };
+        const metered = { ...listing, model: "zen", models: [{ ...paid, advised: true as const }, ...listing.models.map((one) => ({ ...one, metered: true as const })), { id: "free", name: "Free", efforts: [] }] };
+        expect(listedModel(metered, undefined)).toBe("free");
+        expect(listedModel(metered, "zen")).toBe("zen");
+        // All paid apart: the advised one.
+        const allPaid = { ...listing, model: "opus", models: [{ ...paid, advised: true as const }, { ...paid, id: "opus" }] };
+        expect(listedModel(allPaid, undefined)).toBe("zen");
+        expect(firstChoice({ hosts: [metered] })).toEqual({ host: "claudeCode", model: "free" });
+    });
+
+    it("lists the advised first, then each provider's, then the rest, titled only with more than one part, cut where long, and finds by name, id or provider", () => {
+        expect(modelSections(listing.models)).toEqual([{ kind: "others", models: listing.models, more: 0 }]);
+        const opus = { ...listing.models[0], advised: true as const };
+        expect(modelSections([opus, ...listing.models.slice(1)]).map((section) => [section.kind, section.title, section.models.length])).toEqual([
+            ["advised", "Recommended for the master", 1],
+            ["others", "Other models", 2],
+        ]);
+        const many = Array.from({ length: 20 }, (_, index) => ({ id: `p/${index}`, name: `Model ${index}`, efforts: [], group: index < 12 ? "Paid" : "Zen", ...(index === 3 ? { advised: true as const } : {}) }));
+        expect(modelSections(many).map((section) => [section.kind, section.title, section.models.length, section.more])).toEqual([
+            ["advised", "Recommended for the master", 1, 0],
+            ["group", "Paid", 8, 3],
+            ["group", "Zen", 8, 0],
+        ]);
+        expect(modelSections(many, "zen").map((section) => [section.title, section.models.length])).toEqual([[undefined, 8]]);
+        expect(modelSections(many, "model 1").flatMap((section) => section.models.map((one) => one.id))).toEqual(["p/1", "p/10", "p/11", "p/12", "p/13", "p/14", "p/15", "p/16", "p/17", "p/18", "p/19"]);
+        expect(modelSections(many, "nothing")).toEqual([]);
+        expect(modelSearchAt).toBe(12);
+    });
+
+    it("says what each app needs with its plans, the maker's terms before an install and its site where the engine cannot install it; nothing for an app it does not know", async () => {
+        expect(hostFacts("codex")).toEqual({
+            maker: "OpenAI",
+            needs: "With a ChatGPT account, free or paid; limits depend on the plan.",
+            plans: "https://learn.chatgpt.com/docs/pricing",
+            terms: "https://openai.com/policies/",
+        });
+        expect(hostFacts("antigravity")?.terms).toBeUndefined();
+        expect(hostFacts("somethingElse")).toBeUndefined();
+        expect(hostFacts("toString")).toBeUndefined();
+        expect(installSiteWords({ id: "antigravity", name: "Antigravity" })).toBe("Google's site opens, in English: install Antigravity from there, then come back here.");
+        expect(installSiteWords({ id: "other", name: "Other" })).toBe("Other's site opens: install it from there, then come back here.");
+        await setLanguage("it", italian);
+        expect(hostStateWords("signIn")).toBe("da attivare");
+        expect(hostStateWords("install")).toBe("da installare");
+    });
+
+    it("says that the sign-in ran out in the page's words, and that the first answer is due until the master says something", async () => {
+        await setLanguage("en");
+        const ended = shown({ hosts: [codex], chat: { host: "codex", model: "gpt", state: "ended", why: "401 Unauthorized", code: "signin" } });
+        expect(expiredHost(ended)).toBe("Codex");
+        expect(expiredHost(shown({ chat: { host: "codex", model: "gpt", state: "ended", why: "It closed." } }))).toBeUndefined();
+        expect(endedWords("401 Unauthorized", "Codex")).toBe("Your access to Codex has expired: sign in again to continue.");
+        expect(chatNews(shown({ hosts: [codex], chat: { host: "codex", model: "gpt", state: "idle" } }), ended)).toBe("Your access to Codex has expired: sign in again to continue.");
+        const turn = { host: "claudeCode", model: "sonnet", state: "turn" as const };
+        expect(firstAnswerDue(shown({ chat: turn, messages: [{ id: 1, from: "player", text: "Begin." }] }))).toBe(true);
+        expect(firstAnswerDue(shown({ chat: turn, messages: [{ id: 1, from: "player", text: "Begin." }, { id: 2, from: "master", text: "The rain…" }] }))).toBe(false);
+        expect(firstAnswerDue(shown({ chat: { ...turn, state: "idle" } }))).toBe(false);
+        expect([effortName(undefined), effortName(""), effortName("high")]).toEqual(["Default", "Default", "high"]);
+    });
+
+    it("says the table's lines about the model in the page's words by their mark, quiet, and any other as the table wrote it", async () => {
+        await setLanguage("en");
+        const line = (mark: Partial<ChatSaid>): ChatSaid => ({ id: 9, from: "table", text: "The table's English.", ...mark });
+        expect(tableWords(line({ code: "model", model: "Opus 5.5" }), "Claude Code")).toBe("From now on the master plays with Opus 5.5.");
+        expect(tableWords(line({ code: "model", model: "Opus 5.5", effort: "high" }), "Claude Code")).toBe("From now on the master plays with Opus 5.5, thinking high.");
+        expect(tableWords(line({ code: "model", model: "Haiku 4.5", dropped: true }), "Claude Code")).toBe(
+            "From now on the master plays with Haiku 4.5, which does not take the level of thinking chosen: the app chooses its own.",
+        );
+        expect(tableWords(line({ code: "model", model: "Opus 5.5", effort: "high", dropped: true }), "Claude Code")).toBe(
+            "From now on the master plays with Opus 5.5, which did not take the level of thinking chosen: it stays high.",
+        );
+        expect(tableWords(line({ code: "model-kept", model: "Haiku 4.5", asked: "Fable 5.2" }), "Claude Code")).toBe("Claude Code did not take Fable 5.2: the master goes on with Haiku 4.5.");
+        // A mark the page does not know, or one with a part missing: the table's own words.
+        expect(tableWords(line({ code: "model-kept", model: "Haiku 4.5" }), "Claude Code")).toBe("The table's English.");
+        expect(tableWords(line({ code: "model-kept", model: "Haiku 4.5", asked: "Fable 5.2" }), undefined)).toBe("The table's English.");
+        expect(tableWords(line({ code: "other" as "model", model: "x" }), "Claude Code")).toBe("The table's English.");
+        expect([aboutModel(line({ code: "model", model: "x" })), aboutModel(line({ code: "model-kept" })), aboutModel(line({}))]).toEqual([true, true, false]);
+        const open = { host: "claudeCode", model: "opus", state: "turn" as const };
+        const changed = shown({ chat: { ...open, state: "idle" }, messages: [line({ code: "model", model: "Opus 5.5" })] });
+        expect(chatApp(changed)).toBe("Claude Code");
+        expect(chatNews(shown({ chat: open }), changed)).toBe("From now on the master plays with Opus 5.5.");
+        await setLanguage("it", italian);
+        expect(tableWords(line({ code: "model", model: "Opus 5.5", effort: "high" }), "Claude Code")).toBe("Da qui il master gioca con Opus 5.5, ragionamento high.");
+        expect(tableWords(line({ code: "model-kept", model: "Haiku 4.5", asked: "Fable 5.2" }), "Claude Code")).toBe("Claude Code non ha preso Fable 5.2: il master continua con Haiku 4.5.");
+        await setLanguage("en");
+    });
+
+    it("asks the server to sign in, to stop waiting, to install, to look at the apps again and to change the open chat's model, and gives a refusal's code", async () => {
+        const sent: unknown[] = [];
+        const answer = { table: true, hosts: [claude], messages: [], elsewhere: false };
+        vi.stubGlobal("fetch", (_address: string, request?: { body?: string; }) => {
+            sent.push(JSON.parse(request?.body ?? "null"));
+            return Promise.resolve(new Response(JSON.stringify(answer), { status: 200 }));
+        });
+        await changeMaster({ signIn: { host: "codex" } });
+        await changeMaster({ signIn: { host: "codex", cancel: true } });
+        await changeMaster({ install: { host: "openCode" } });
+        await changeMaster({ hosts: true });
+        expect(await changeMaster({ model: { model: "opus", effort: "high" } })).toEqual({ shown: answer });
+        expect(sent).toEqual([{ signIn: { host: "codex" } }, { signIn: { host: "codex", cancel: true } }, { install: { host: "openCode" } }, { hosts: true }, { model: { model: "opus", effort: "high" } }]);
+        vi.stubGlobal("fetch", () => Promise.resolve(new Response(JSON.stringify({ error: "Codex asks to sign in.", code: "signin", ...answer }), { status: 409 })));
+        expect(await changeMaster({ open: { host: "codex", model: "gpt", fresh: true } })).toEqual({ shown: answer, error: "Codex asks to sign in.", code: "signin" });
     });
 });

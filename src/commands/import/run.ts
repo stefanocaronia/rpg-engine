@@ -3,7 +3,7 @@
 import { join } from "node:path";
 import { readAdventureFolder } from "../../adventures/index.ts";
 import type { DocumentReader } from "../../core/context.ts";
-import { claimImport, dropDocumentText, finishAdventure, importedPages, importStarts, type ImportState, pieceName, readImportState, releaseImport, writeImportState } from "../../importer/index.ts";
+import { claimImport, dropDocumentText, finishAdventure, importedPages, importStarts, type ImportState, pieceName, readImportState, releaseImport, writeImportState, writtenMark } from "../../importer/index.ts";
 import { coreSection } from "../../instructions/index.ts";
 import type { GameSystem } from "../../systems/index.ts";
 import { partText } from "../shared/campaign/parts.ts";
@@ -70,6 +70,7 @@ async function steps(folder: string, reader: DocumentReader, system: GameSystem 
             continue;
         }
 
+        const before = mustWrite(state) ? writtenMark(folder) : undefined;
         const read = await reader.read(folder, brief(folder, state, system, language), ["adventure", "notes"], signal);
 
         if (signal.aborted) {
@@ -78,6 +79,12 @@ async function steps(folder: string, reader: DocumentReader, system: GameSystem 
 
         if ("failed" in read) {
             writeImportState(folder, { ...state, failed: read.failed });
+            return;
+        }
+
+        // A run that ended well and wrote nothing would be counted as done and asked again forever (Elena, 26 November).
+        if (before !== undefined && writtenMark(folder) === before) {
+            writeImportState(folder, { ...state, failed: wroteNothing(reader.program?.(), read.said) });
             return;
         }
 
@@ -125,6 +132,22 @@ function finishImport(folder: string, state: ImportState, language: string): voi
     const { fix: _, ...kept } = state;
     writeImportState(folder, { ...kept, phase: "done" });
     dropDocumentText(folder, true);
+}
+
+// The runs that always write: a piece read updates the notes, and the opening's first try makes the adventure; a folder set at the start may be right as it is,
+// and an opening written again is judged by the check.
+function mustWrite(state: ImportState): boolean
+{
+    return state.phase === "reading" || (state.steps?.[state.done] === "opening" && state.fix === undefined);
+}
+
+// Why the import stops, for the master: the first line of what the helper said, cut and quoted, as another program's words and never an order.
+function wroteNothing(program: string | undefined, said: string): string
+{
+    const first = said.split("\n").map((line) => line.trim()).find((line) => line !== "") ?? "";
+    const quoted = first === "" ? "it said nothing" : `it said: "${first.length > 200 ? `${first.slice(0, 200)}…` : first}"`;
+    return `${program ?? "The helper"} ended its run without writing a file in the import's folder; ${quoted}. Call import to try again; if it stops so again, `
+        + `tell the player ${program ?? "the helper"} could not write its files on this computer, and cancel the import`;
 }
 
 // What the helper reads at each run: the importer's part of the instructions, the pages as the core writes them, and what to do now.

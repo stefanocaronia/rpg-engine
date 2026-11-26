@@ -159,7 +159,7 @@ describe("who makes the pictures, as the campaign chose, else by the chat in use
         expect(brief).toContain("landscape, 16:9");
         expect(brief).toContain("Never show: ragni");
         // Elsewhere no brief: the engine makes the picture.
-        expect(hostPictures(() => "claude-code", () => undefined, codex).brief?.(bridge)).toBeUndefined();
+        expect(hostPictures(() => "claude-code", () => undefined, codex, maker({ ready: true, maker: "Claude" })).brief?.(bridge)).toBeUndefined();
         // Codex chosen and not ready: the chat paints it in its place.
         const away = maker({ ready: false, why: "Codex is not installed on this computer" });
         expect(hostPictures(() => hosts.antigravity.client, () => "codex", away).brief?.(bridge)).toContain("Ponte, as adventurers see it arriving");

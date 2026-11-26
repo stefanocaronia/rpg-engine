@@ -2,7 +2,7 @@
 import { error, isObject, type Message, result } from "../lines.ts";
 import { inside } from "../paths.ts";
 import { askToStop, nextBlock, playing, tell, write } from "../state.ts";
-import { turnCompleted } from "./setup.ts";
+import { changeSettled, turnCompleted } from "./setup.ts";
 import { sendInterrupt, type State, type Turn } from "./state.ts";
 import { agentThreads, approvalAnswer, type CodexTool, isCharacterAgent, toolOfItem, toolOfRequest } from "./tools.ts";
 
@@ -200,10 +200,14 @@ function readTurnStarted(state: State, params: Message): void
     }
 }
 
-/** The thread's settings changed: another model or effort than those confirmed fails the turn in course. */
+/** The thread's settings changed: they settle another model asked between turns; else another model or effort than those confirmed fails the turn in course. */
 function readSettings(state: State, settings: Message): void
 {
-    readModel(state, settings.model, settings.effort);
+    if (state.model.before !== undefined) {
+        changeSettled(state, settings.model, settings.effort);
+    } else {
+        readModel(state, settings.model, settings.effort);
+    }
 }
 
 function readModel(state: State, model: unknown, effort: unknown): void

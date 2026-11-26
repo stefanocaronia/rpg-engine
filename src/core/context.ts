@@ -242,11 +242,22 @@ export interface ChatState
 /** Codex and Claude Code on this computer (D-424, D-425): how each stands, installing one in the engine's own folder, and the player's sign-in. */
 export interface Helpers
 {
+    /** How a program stands; where its status says nothing, as last known, else signed out. */
     state(name: HelperName): HelperState;
-    /** Installs a program in the engine's folder: undefined once it answers there, else why not. */
+    /**
+     * How a program stands, asked without holding the process: for a server that must answer meanwhile. It fails where the program does not say, too slow,
+     * failed or not read: not knowing is never signed out.
+     */
+    look(name: HelperName): Promise<HelperState>;
+    /** Installs a program in the engine's folder, one installation on this computer at a time: undefined once it answers there, else why not. */
     install(name: HelperName): Promise<string | undefined>;
-    /** Starts the sign-in once, kept alive for ten minutes, and tells how it stands once it gave its link or ended, or after a few seconds. */
-    login(name: HelperName): Promise<HelperLogin>;
+    /**
+     * Starts the sign-in once, kept alive for ten minutes, and tells how it stands once it gave its link or ended, or after a few seconds; `ended` hears how it
+     * ends, done or failed, and a failure it heard is not told again. Failed at once where another process of the engine has one of that program under way.
+     */
+    login(name: HelperName, ended?: (login: HelperLogin) => void): Promise<HelperLogin>;
+    /** Stops the sign-in under way, its program and all it started; nothing where none is. */
+    cancel(name: HelperName): void;
 }
 
 /** What writes text from a brief outside the chat (D-406): whether it can now, and its answer, none when it gave none. */

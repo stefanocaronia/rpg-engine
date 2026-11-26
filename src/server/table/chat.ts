@@ -1,9 +1,28 @@
 // The table's own chat with the master: opened from the page in the host the player chose, its messages kept for the page in this process's memory and in
 // the campaign, its last choice in the player's data folder, so that the next chat takes it up, by itself as the next table's first page comes.
 import { randomBytes } from "node:crypto";
+import type { Helpers } from "../../core/context.ts";
 import { type HostId, hosts } from "../../core/hosts.ts";
-import { askModels, effortRefused, type HostOffered, hostProgram, hostsOffered, isHostName, type MasterChat, type MasterDriver, masterDriver, type MasterEvent, masterHosts, modelKeeper, openMaster } from "../../master/index.ts";
-import type { ChatQuestion, PageChat, PageMaster, PageMessage } from "../dashboard/index.ts";
+import { accessKeeper, heldBack, type HostAccess, hostHelper } from "../../helpers/index.ts";
+import {
+    askModels,
+    effortRefused,
+    type EndCode,
+    type HostOffered,
+    hostProgram,
+    hostsOffered,
+    isHostName,
+    type MasterChat,
+    type MasterDriver,
+    masterDriver,
+    type MasterEvent,
+    masterHosts,
+    modelKeeper,
+    openMaster,
+    traceVariable,
+    withoutTrace,
+} from "../../master/index.ts";
+import type { ChatQuestion, HostWish, MasterRefusal, ModelMark, PageChat, PageMaster, PageMessage } from "../dashboard/index.ts";
 import { newFlowName, readFlow, turnEnded, writeFlow } from "./flow.ts";
 import { type LastChat, readLastChat, writeLastChat } from "./last-chat.ts";
 
@@ -12,8 +31,12 @@ export interface TableChat extends PageMaster
 {
     /** What the page shows of the chat: the hosts, the last choice, the chat and its messages. */
     shown(): ChatShown;
-    /** Opens a chat with a host, taking up the campaign's last one in that host unless `fresh`; a refusal in words when it cannot. */
-    open(choice: ChatChoice): string | undefined;
+    /** Opens a chat with a host, taking up the campaign's last one in that host unless `fresh`; a refusal in words when it cannot, with its code where it has one. */
+    open(choice: ChatChoice): MasterRefusal | undefined;
+    /** What the page asks of an AI app: its sign-in started or cancelled, its installation, a look again at each one's account; why not, in words. */
+    hostWish(wish: HostWish): string | undefined;
+    /** Another model, and effort where given, for the open chat between two turns; why not, in words. */
+    changeModel(model: string, effort?: string): string | undefined;
     /** The player's words to the master; the message kept for the page is `shown` where given, as the sentence without what was added to it. */
     say(text: string, shown?: string): "sent" | "busy" | "closed";
     /** Stops the master's turn. */
@@ -46,9 +69,23 @@ export interface ChatChoice
 
 export interface ChatShown extends PageChat
 {
-    hosts: HostOffered[];
+    hosts: (HostOffered & Partial<HostAccess>)[];
     last?: { host: HostId; model: string; effort?: string; resumable: boolean; };
-    chat?: { host: HostId; model: string; effort?: string; runs?: string; cutShort?: true; takenUp?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
+    chat?: {
+        host: HostId;
+        model: string;
+        effort?: string;
+        runs?: string;
+        efforts?: string[];
+        cutShort?: true;
+        takenUp?: true;
+        state: "idle" | "turn" | "ended";
+        why?: string;
+        code?: EndCode;
+        tool?: string;
+        answers?: true;
+        changes?: true;
+    };
     messages: ChatMessage[];
     /** A chat opened by hand sits at the table: the table's own cannot open. */
     elsewhere: boolean;
@@ -74,6 +111,8 @@ export interface TableChatOptions
     driver?: typeof masterDriver;
     /** A host's program installed with npm, which its driver does not look for. */
     npmProgram?: (host: HostId) => { command: string; args: string[]; } | undefined;
+    /** Codex and Claude Code on this computer: each host's account, its sign-in and its installation; without them the page reads none. */
+    helpers?: Helpers;
     /** Whether a chat opened by hand sits at the table. */
     elsewhere: () => boolean;
     /** Something the page shows of the chat changed, as the models a host offers; a turn ended. */
@@ -94,12 +133,15 @@ interface OpenChat
     host: HostId;
     model: string;
     effort?: string;
-    /** The host's own name for the model it runs, once it said it. */
+    /** The host's own name for the model it runs, once it said it; the efforts that model takes, where the host says them only once it is chosen. */
     runs?: string;
+    efforts?: string[];
     token: string;
     master: MasterChat;
     state: "idle" | "turn" | "ended";
     why?: string;
+    /** Why it ended beside the words, as the player no longer signed in. */
+    code?: EndCode;
     tool?: string;
     /** The master's message of this turn, and the block of text it ends with. */
     reply?: Words;
@@ -115,6 +157,13 @@ interface OpenChat
     nudged?: boolean;
     /** Whether the turn that runs is one the host began by itself: the player's turn goes on, its rolls still owed. */
     byHost?: boolean;
+    /** Whether another model was asked between turns, until the next turn ends. */
+    changed?: true;
+    /**
+     * That change until the host takes it: the model and effort asked, which the chat and the campaign's last choice take only then, and the table's line
+     * for it, never written for a change the host did not take; and the host's name for it and its efforts, where the host said them before it took it.
+     */
+    pending?: { model: string; effort?: string; line: { text: string; mark: ModelMark; }; runs?: string; efforts?: string[]; };
 }
 
 /** A host's program on this computer. */
@@ -130,8 +179,11 @@ const silentTurn = "The master ended its turn without writing anything. Write to
 const refusedTool = (name: string): string => `It tried to use ${name.slice(0, 60)}, which the master may not use here.`;
 // What the table writes to the master, once in a turn of the player's, where the host ended a turn without a word after a tool it was refused.
 const goOnLine = (name: string): string => `The table refused ${name.slice(0, 60)}: you cannot use it here. Go on with the game's commands, and answer the player.`;
-// The kinds of tools the master may use at the table.
-const allowed = ["rpg", "read", "web", "agent", "image"] as const;
+// The kinds of tools the master may use at the table: a page of the web read too, never the shell nor a write.
+const allowed = ["rpg", "read", "web", "fetch", "agent", "image"] as const;
+// What the page reads where the table was given no programs to ask, as a table a test started; and of another model asked while the master answers.
+const noAccess = "This table cannot sign in to the AI apps or install them: start it again with rpg table in the campaign's folder, then try again.";
+const answering = "The master is answering: change the model once they have finished.";
 
 /** The table's chat with the master, for the campaign at `options.root`. */
 export function tableChat(options: TableChatOptions): TableChat
@@ -165,8 +217,26 @@ export function tableChat(options: TableChatOptions): TableChat
     const untoldTimes = new Map<string, number>();
 
     const programOf = (host: HostId): Program | undefined => hostProgram(host, options, driverOf);
+    // The file the host's lines are copied to, for whoever looks into a problem: none unless the table's environment names one.
+    const trace = options.environment[traceVariable]?.trim() || undefined;
+    // Whether a chat in this host is open, or opening: none of its programs is started meanwhile but the chat's own.
+    const chatIn = (host: HostId): boolean => chat !== undefined && chat.state !== "ended" && chat.host === host;
     // The models each host offers, asked of it in the campaign's folder.
     const models = modelKeeper({ ask: (host) => askModels(host, { ...options, folder: options.root }, driverOf), changed: () => options.changed(), now });
+    // Each host's account, looked at in the background; once it changes, as an installation ended, whether each host is on this computer is looked at again.
+    const access = options.helpers === undefined ? undefined : accessKeeper({
+        helpers: options.helpers,
+        changed: () => {
+            found = undefined;
+            options.changed();
+        },
+        // Never while the host's chat is open or opening: it tells by itself when the player is signed out.
+        busy: (host) => chatIn(host),
+        // Signed in or out, installed: the host's models are asked again, as a list asked before may have come empty.
+        accountChanged: (host) => models.forget(host),
+        ...(options.log === undefined ? {} : { log: options.log }),
+        now,
+    });
 
     // Lines at the end of the chat's file in the campaign, in one write; what cannot be written is logged, and the chat goes on.
     const write = (lines: (ChatMessage | typeof turnEnded)[]): void => {
@@ -240,10 +310,24 @@ export function tableChat(options: TableChatOptions): TableChat
         }
 
         if (event.type === "session") {
-            // The model chosen stays the choice; the host's own name for it is shown apart.
-            opened.runs = event.model;
             opened.sessionTold = true;
             remember({ session: event.session });
+            const pending = opened.pending;
+
+            // The model chosen stays the choice; the host's own name for it is shown apart, and for a change not taken yet only once it is.
+            if (pending === undefined) {
+                opened.runs = event.model;
+            } else {
+                pending.runs = event.model;
+            }
+
+            if (event.efforts !== undefined) {
+                tookEfforts(opened, event.efforts);
+            }
+        } else if (event.type === "changeRefused") {
+            changeRefused(opened, event);
+        } else if (event.type === "changeTaken") {
+            changeTaken(opened);
         } else if (event.type === "turnStart") {
             // The host goes on by itself, as OpenCode tells a subagent's answer: what the master writes now is a new message, as after every turn's end.
             Object.assign(opened, { state: "turn", tool: undefined, spoke: undefined, refused: undefined, byHost: true });
@@ -276,7 +360,7 @@ export function tableChat(options: TableChatOptions): TableChat
                 add("table", opened.refused === undefined ? silentTurn : `${silentTurn} ${refusedTool(opened.refused)}`);
             }
 
-            Object.assign(opened, { spoke: undefined, refused: undefined, nudged: undefined, byHost: undefined });
+            Object.assign(opened, { spoke: undefined, refused: undefined, nudged: undefined, byHost: undefined, changed: undefined, pending: undefined });
 
             // The turn's end follows the player's words that began it, in the file too.
             if (sending === undefined) {
@@ -290,13 +374,122 @@ export function tableChat(options: TableChatOptions): TableChat
             return;
         } else {
             replyDone(opened);
-            Object.assign(opened, { state: "ended", why: event.why, tool: undefined });
+            Object.assign(opened, { state: "ended", why: event.why, tool: undefined, ...(event.code === undefined ? {} : { code: event.code }) });
+
+            // The player is no longer signed in: the page reads the hosts' accounts anew, to offer the sign-in.
+            if (event.code === "signin") {
+                access?.lookAgain(opened.host);
+            }
+
             forgetLostSession(opened);
             options.left?.(opened.token);
             options.switched?.();
         }
 
         options.changed();
+    };
+
+    // The efforts the model in play takes, as the host says them once it is chosen: an effort it does not take was left out, and the choice forgets it.
+    // After another model asked between turns, the chat says so.
+    const tookEfforts = (opened: OpenChat, efforts: string[]): void => {
+        const pending = opened.pending;
+
+        // Said of a change not taken yet, as the host says them before it confirms it: shown once it is; the change leaves the effort, and its line says so.
+        if (pending !== undefined) {
+            pending.efforts = efforts;
+
+            if (pending.effort !== undefined && !efforts.includes(pending.effort)) {
+                pending.line = modelLine(shownModel(opened.host, pending.model), undefined, pending.effort);
+                delete pending.effort;
+            }
+
+            return;
+        }
+
+        opened.efforts = efforts;
+        const left = opened.effort;
+
+        if (left !== undefined && !efforts.includes(left)) {
+            chooseEffort(opened, undefined);
+
+            if (opened.changed === true) {
+                tableLine(modelLine(shownModel(opened.host, opened.model), undefined, left));
+            }
+        }
+    };
+
+    // The host took the change asked: the chat and the campaign's last choice follow it now, and the chat says so.
+    const changeTaken = (opened: OpenChat): void => {
+        const pending = opened.pending;
+
+        if (pending === undefined) {
+            return;
+        }
+
+        delete opened.pending;
+        takeShown(opened, pending.model, pending);
+        opened.model = pending.model;
+        chooseEffort(opened, pending.effort);
+        tableLine(pending.line);
+    };
+
+    // What the chat shows of the model it runs from now: another model's name and efforts as the host said them meanwhile, none where it did not; the same
+    // model keeps its own, but where the host said them again.
+    const takeShown = (opened: OpenChat, model: string, said: { runs?: string; efforts?: string[]; } | undefined): void => {
+        const same = model === opened.model;
+        Object.assign(opened, { runs: said?.runs ?? (same ? opened.runs : undefined), efforts: said?.efforts ?? (same ? opened.efforts : undefined) });
+    };
+
+    // The effort of the open chat, and of the campaign's last choice with its model: none, the host's own.
+    const chooseEffort = (opened: OpenChat, effort: string | undefined): void => {
+        if (effort === undefined) {
+            delete opened.effort;
+        } else {
+            opened.effort = effort;
+        }
+
+        if (last !== undefined) {
+            last = { ...last, model: opened.model };
+
+            if (effort === undefined) {
+                delete last.effort;
+            } else {
+                last.effort = effort;
+            }
+
+            writeLastChat(options.home, options.root, last);
+        }
+    };
+
+    // The host did not take the model or effort asked: the chat goes on as the host says, as it was where that is the model before, and the page reads why.
+    const changeRefused = (opened: OpenChat, refusal: Extract<MasterEvent, { type: "changeRefused"; }>): void => {
+        const name = hosts[opened.host].name;
+        const pending = opened.pending;
+        delete opened.pending;
+        options.log?.(`${name} did not take ${refusal.asked}: ${refusal.why}`);
+        takeShown(opened, refusal.model, pending?.model === refusal.model ? pending : undefined);
+        opened.model = refusal.model;
+        chooseEffort(opened, refusal.effort);
+        const kept = shownModel(opened.host, refusal.model);
+
+        if (refusal.asked === refusal.model) {
+            // The model was taken, not the effort asked with it: the one before stays, as `effort` says where there is one.
+            tableLine({
+                text: `${name} did not take that effort: the master plays with ${kept}, its effort as before.`,
+                mark: { code: "model", model: kept, ...(refusal.effort === undefined ? {} : { effort: refusal.effort }), dropped: true },
+            });
+        } else {
+            const asked = shownModel(opened.host, refusal.asked);
+            tableLine({ text: `${name} did not take ${asked}: the master goes on with ${kept}.`, mark: { code: "model-kept", model: kept, asked } });
+        }
+    };
+
+    // A model's name as the page shows it, else its id.
+    const shownModel = (host: HostId, model: string): string => models.known(host).find((one) => one.id === model)?.name ?? model;
+
+    // A line of the table, with its mark for a page that knows it.
+    const tableLine = (line: { text: string; mark: ModelMark; }): void => {
+        keep({ id: ++lastId, from: "table", text: line.text.slice(0, mostText), ...line.mark });
     };
 
     // A turn the host ended without a word after a tool the table refused, as Antigravity ends one by itself: once in the player's turn, the table writes
@@ -331,8 +524,8 @@ export function tableChat(options: TableChatOptions): TableChat
         opened.block = block;
     };
 
-    // The host's driver and program for a choice, or why the chat cannot open.
-    const startable = (choice: ChatChoice): { driver: MasterDriver; program: Program; } | string => {
+    // The host's driver and program for a choice, or why the chat cannot open; a host the player is not signed in to is never started.
+    const startable = (choice: ChatChoice): { driver: MasterDriver; program: Program; } | MasterRefusal => {
         const name = hosts[choice.host].name;
         const driver = driverOf(choice.host);
 
@@ -354,6 +547,12 @@ export function tableChat(options: TableChatOptions): TableChat
             return `${name} is not on this computer: install it, then try again.`;
         }
 
+        if (access?.known(choice.host).account === "out" && !keyHeldBack(choice.host, driver)) {
+            // Signed in since, elsewhere: the next try knows it.
+            access.lookAgain(choice.host);
+            return { error: `${name} is not signed in on this computer: sign in here, then open the chat.`, code: "signin" };
+        }
+
         if (choice.model.trim() === "") {
             return `Choose the model ${name} plays the master with.`;
         }
@@ -363,6 +562,12 @@ export function tableChat(options: TableChatOptions): TableChat
         }
 
         return effortRefused(choice.host, driver, models.known(choice.host), choice.model, choice.effort) ?? driver.missing(options.root) ?? { driver, program };
+    };
+
+    // Whether the chat's environment holds a key the host's status was asked without: its "out" then says nothing of the chat, which finds it by itself.
+    const keyHeldBack = (host: HostId, driver: MasterDriver): boolean => {
+        const helper = hostHelper[host];
+        return helper !== undefined && heldBack(helper, driver.environment(options.environment));
     };
 
     // The host's chat opened, or why not in words, as where its program does not start.
@@ -377,8 +582,10 @@ export function tableChat(options: TableChatOptions): TableChat
                 ...(choice.effort === undefined ? {} : { effort: choice.effort }),
                 ...(session === undefined ? {} : { session }),
                 allowed: [...allowed],
-                environment: { ...driver.environment(options.environment), RPG_TABLE_MASTER: token },
+                environment: { ...withoutTrace(driver.environment(options.environment)), RPG_TABLE_MASTER: token },
                 failed: (error) => options.log?.(`The table's chat failed while hearing the master: ${error instanceof Error ? error.message : String(error)}`),
+                ...(options.log === undefined ? {} : { log: options.log }),
+                ...(trace === undefined ? {} : { trace }),
             });
             return master ?? `The page cannot open a chat with ${name} yet.`;
         } catch (error) {
@@ -405,10 +612,10 @@ export function tableChat(options: TableChatOptions): TableChat
         corrected = read?.left ?? [];
     };
 
-    const openChat = (choice: ChatChoice): string | undefined => {
+    const openChat = (choice: ChatChoice): MasterRefusal | undefined => {
         const ready = startable(choice);
 
-        if (typeof ready === "string") {
+        if (typeof ready === "string" || "error" in ready) {
             return ready;
         }
 
@@ -460,7 +667,8 @@ export function tableChat(options: TableChatOptions): TableChat
         }
 
         replyDone(closing);
-        closing.master.close();
+        // Whoever closes it, its host's program ends by itself, as one that may be saving the player's login: the page is free at once, the program let go.
+        closing.master.close(true);
         chat = undefined;
 
         if (byPlayer) {
@@ -487,8 +695,87 @@ export function tableChat(options: TableChatOptions): TableChat
         const refused = openChat({ host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }) });
 
         if (refused !== undefined) {
-            options.log?.(`The table did not take up the campaign's last chat: ${refused}`);
+            options.log?.(`The table did not take up the campaign's last chat: ${typeof refused === "string" ? refused : refused.error}`);
         }
+    };
+
+    // What the page asks of an AI app: a host already on this computer is never installed again.
+    const hostWish = (wish: HostWish): string | undefined => {
+        if (access === undefined) {
+            return noAccess;
+        }
+
+        if ("signIn" in wish) {
+            return wish.signIn.cancel === true ? access.cancelSignIn(wish.signIn.host) : access.signIn(wish.signIn.host);
+        }
+
+        if ("install" in wish) {
+            const host = wish.install.host;
+            return programOf(host) === undefined ? access.install(host) : `${hosts[host].name} is on this computer already: choose it, and open the chat.`;
+        }
+
+        found = undefined;
+        access.lookAgain();
+        return undefined;
+    };
+
+    // Another model for the open chat, checked as at its opening, between two turns: the campaign's last choice follows, and the chat says so.
+    const changeModel = (model: string, effort?: string): string | undefined => {
+        const current = chat;
+
+        if (current === undefined || current.state === "ended") {
+            return "No chat with the master is open: open one first.";
+        }
+
+        if (current.state === "turn") {
+            return answering;
+        }
+
+        const name = hosts[current.host].name;
+        const driver = driverOf(current.host);
+
+        if (current.master.setModel === undefined || driver === undefined) {
+            return `${name} cannot change its model in an open chat: close the chat, then open it with another model.`;
+        }
+
+        if (model.trim() === "") {
+            return `Choose the model ${name} plays the master with.`;
+        }
+
+        if (!isHostName(model)) {
+            return `That is no name of a model: ${model}.`;
+        }
+
+        const known = models.known(current.host);
+        const refused = effortRefused(current.host, driver, known, model, effort);
+
+        if (refused !== undefined) {
+            return refused;
+        }
+
+        // An effort not given stays, where the model takes it or its efforts are not known yet; one it does not take is left, and the line says so. A change
+        // asked and not taken yet is the one the next starts from.
+        const was = current.pending ?? { model: current.model, effort: current.effort };
+        const before = was.effort;
+        const stays = effort === undefined && before !== undefined && effortRefused(current.host, driver, known, model, before) === undefined;
+        const asked = effort ?? (stays ? before : undefined);
+        const dropped = effort === undefined && before !== undefined && !stays ? before : undefined;
+
+        if (model === was.model && asked === was.effort) {
+            return undefined;
+        }
+
+        if (!current.master.setModel(model, asked)) {
+            return "The master is getting ready: change the model in a moment.";
+        }
+
+        current.changed = true;
+
+        // The chat shows the model it runs, with its name and efforts, until the host takes this one, and the line is written then: one it does not take
+        // has only its own line.
+        current.pending = { model, ...(asked === undefined ? {} : { effort: asked }), line: modelLine(shownModel(current.host, model), asked, dropped) };
+        options.changed();
+        return undefined;
     };
 
     return {
@@ -498,8 +785,10 @@ export function tableChat(options: TableChatOptions): TableChat
             }
 
             const known = found.hosts;
+            // The models of the host whose chat is open are those known: its program is never started beside the chat's.
+            const offered = hostsOffered((id) => known.get(id) === true, driverOf, (id) => (chatIn(id) ? models.known(id) : models.models(id)));
             return {
-                hosts: hostsOffered((id) => known.get(id) === true, driverOf, (id) => models.models(id)),
+                hosts: access === undefined ? offered : offered.map((host) => ({ ...host, ...access.access(host.id) })),
                 ...(last === undefined ? {} : { last: { host: last.host, model: last.model, ...(last.effort === undefined ? {} : { effort: last.effort }), resumable: last.session !== undefined } }),
                 ...(chat === undefined ? {} : { chat: { ...chatShown(chat, cutShort), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
                 messages: messages.map((message) => ({ ...message })),
@@ -507,6 +796,8 @@ export function tableChat(options: TableChatOptions): TableChat
             };
         },
         open: openChat,
+        hostWish,
+        changeModel,
         say: (text, shown) => {
             const current = chat;
 
@@ -658,6 +949,16 @@ function askedText(question: ChatQuestion): { text: string; title?: string; }
     return { text: question.text.slice(0, mostText), ...(question.title === undefined ? {} : { title: question.title.slice(0, mostText) }) };
 }
 
+/** The table's line for another model: with its effort, or with the effort before left where that model takes none such. */
+function modelLine(model: string, effort: string | undefined, dropped: string | undefined): { text: string; mark: ModelMark; }
+{
+    if (dropped !== undefined) {
+        return { text: `From now on the master plays with ${model}, which takes no effort ${dropped}: the app chooses its own.`, mark: { code: "model", model, dropped: true } };
+    }
+
+    return { text: `From now on the master plays with ${model}${effort === undefined ? "" : `, effort ${effort}`}.`, mark: { code: "model", model, ...(effort === undefined ? {} : { effort }) } };
+}
+
 function chatShown(chat: OpenChat, cutShort: boolean): NonNullable<ChatShown["chat"]>
 {
     return {
@@ -665,11 +966,15 @@ function chatShown(chat: OpenChat, cutShort: boolean): NonNullable<ChatShown["ch
         model: chat.model,
         ...(chat.effort === undefined ? {} : { effort: chat.effort }),
         ...(chat.runs === undefined ? {} : { runs: chat.runs }),
+        ...(chat.efforts === undefined ? {} : { efforts: [...chat.efforts] }),
         ...(cutShort ? { cutShort: true as const } : {}),
         // Taken up from the host's own chat, with nothing said in it yet: the page offers to ask the master where the story stands.
         ...(!cutShort && chat.resumed && !chat.said ? { takenUp: true as const } : {}),
         state: chat.state,
         ...(chat.why === undefined ? {} : { why: chat.why }),
+        ...(chat.code === undefined ? {} : { code: chat.code }),
         ...(chat.tool === undefined ? {} : { tool: chat.tool }),
+        // Its model changes between two turns, where its host's driver lets it.
+        ...(chat.state !== "ended" && chat.master.setModel !== undefined ? { changes: true as const } : {}),
     };
 }

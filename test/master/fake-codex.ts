@@ -15,6 +15,8 @@ export interface FakeCodexOptions
     failing?: string[];
     /** The role of each subagent's thread, as thread/read answers it; none by default. */
     roles?: Record<string, string>;
+    /** The MCP servers config/read names in the campaign's folder, under config.mcp_servers; rpg alone by default. */
+    servers?: Record<string, unknown>;
 }
 
 // How many of Codex's lines it writes in a tick, so that the driver reads them as a stream.
@@ -86,6 +88,8 @@ export function fakeCodex(flow: FlowEntry[], options: FakeCodexOptions = {}): Fa
             answerThread(message);
         } else if (method === "turn/interrupt") {
             interrupted(message);
+        } else if (method === "config/read") {
+            say({ id: message.id, result: { config: { mcp_servers: options.servers ?? { rpg: { command: "rpg", args: ["mcp"] } } } } });
         } else if (method === "thread/read") {
             // As Codex 0.166.0 answers it for a subagent's thread, which the recordings asked apart.
             const thread = String((message.params as Message).threadId);
@@ -191,6 +195,9 @@ export function fakeCodex(flow: FlowEntry[], options: FakeCodexOptions = {}): Fa
         onEnd: (listener) => {
             endListener = listener;
         },
+        closeInput: () => {
+            fake.inputClosed = true;
+        },
         stop: () => {
             fake.stops += 1;
             fake.stopped = true;
@@ -205,6 +212,7 @@ export function fakeCodex(flow: FlowEntry[], options: FakeCodexOptions = {}): Fa
         problems: [],
         stopped: false,
         stops: 0,
+        inputClosed: false,
         end: (reason) => {
             if (!fake.stopped) {
                 fake.stopped = true;

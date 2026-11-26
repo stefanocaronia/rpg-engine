@@ -1,6 +1,7 @@
 // The master in Antigravity: its program started with no terminal as `agy acp`, spoken to by the Agent Client Protocol, in the campaign's folder. The rpg
 // server comes from the campaign's .agents/mcp_config.json or the player's own, which rpg init both write: the table passes none of its own.
 import { join } from "node:path";
+import { hosts } from "../../core/hosts.ts";
 import { type AcpHost, acpModels, kindOfCall, openAcp, pathsOfCall } from "../acp/index.ts";
 import type { MasterDriver, ToolKind } from "../chat.ts";
 import { fileOnPath, type FoundProgram, isFile } from "../program.ts";
@@ -16,23 +17,31 @@ const actingKinds = ["execute", "edit", "delete", "move"];
 
 // Antigravity's own tools, by the names the table saw it give; write_to_file is from its other modes, and of a kind never allowed. Any other is read by the
 // protocol's kind. An MCP tool, a reading and the subagents are read from their input, by the name Antigravity gives, never by a title.
-const builtInKinds: Record<string, ToolKind> = { run_command: "shell", write_file: "write", write_to_file: "write" };
-const inputTools = ["call_mcp_tool", "invoke_subagent", "manage_subagents", "read_file"];
+// read_url_content, a page of the web read, is so named by its fields, never seen in a recorded turn: to be confirmed.
+const builtInKinds: Record<string, ToolKind> = { run_command: "shell", write_file: "write", write_to_file: "write", read_url_content: "fetch" };
+const inputTools = ["call_mcp_tool", "invoke_subagent", "manage_subagents", "manage_task", "schedule", "read_file"];
 
 // The subagents the master may start: a character played apart, and the painter of the pictures, Antigravity's way to make one; what it may do with them.
 const allowedAgents = ["rpg-character", "image-generator"];
 const agentActions = ["list", "kill"];
+// How the master waits for a subagent it started, as agy 1.5.17 was seen to: a timer that wakes it once, its fields those alone (one that repeats would
+// spend the player's quota by itself); and a look at a subagent's task, by the actions seen, which change nothing.
+const timerFields = ["DurationSeconds", "Prompt"];
+const taskActions = ["status"];
 
 // The description of an rpg tool, which Antigravity keeps in its own folder and reads before it calls one: as its hook reads it (src/server/approver.ts).
 const rpgDescription = /[\\/]antigravity-cli[\\/]mcp[\\/]rpg[\\/][\w-]+\.(?:json|md)$/i;
 
 /** Antigravity as the protocol's client reads it: a tool by its own name where the table knows it, else by the protocol's kind; a command of rpg by its name. */
 export const antigravityAcp: AcpHost = {
+    name: hosts.antigravity.name,
     args: ["acp"],
     toolOf: (call, session) => toolOf(call, session),
     pathsOf: pathsOfCall,
     innerTools: () => [],
-    login: "run agy in a terminal and sign in, then try again",
+    login: "open Antigravity on this computer and sign in there, then try again",
+    // Its own error for a player not signed in was never seen: words that say so are taken as it until it is.
+    signInWords: /authenticat/i,
 };
 
 /** Antigravity as the table drives it: the model a new chat proposes is the first Antigravity lists. */
@@ -47,6 +56,7 @@ export const antigravity: MasterDriver = {
     models: (options) => acpModels(options, antigravityAcp),
     model: "",
     efforts: [],
+    effortsOnceChosen: true,
 };
 
 /** Antigravity's own program, never a shim that needs a shell: the first found in a folder of the PATH, then where its installer puts it in the player's home. */
@@ -95,7 +105,8 @@ function toolOf(call: Record<string, unknown>, session: string | undefined): { n
 /**
  * A call of Antigravity's own read from its input, by the fields agy 1.5.17 gives: a tool of the rpg server is rpg's, any other server's of kind other;
  * reading a tool's description, or what a tool of this chat answered, which Antigravity keeps in its own folder, is rpg's; the subagents the table
- * allows, and listing or stopping them, are the agent's. Where its input names them otherwise, the call is of kind other, never allowed.
+ * allows, listing or stopping them, a timer that wakes the master once and a look at a subagent's task, are the agent's. Where its input names them
+ * otherwise, the call is of kind other, never allowed.
  */
 function toolOfInput(name: string, call: Record<string, unknown>, session: string | undefined): { name: string; kind: ToolKind; }
 {
@@ -114,7 +125,13 @@ function toolOfInput(name: string, call: Record<string, unknown>, session: strin
         return { name, kind: typeof input.TypeName === "string" && allowedAgents.includes(input.TypeName) ? "agent" : "other" };
     }
 
-    return { name, kind: typeof input.Action === "string" && agentActions.includes(input.Action) ? "agent" : "other" };
+    if (name === "schedule") {
+        const once = Object.keys(input).every((field) => timerFields.includes(field)) && typeof input.DurationSeconds === "number" && typeof input.Prompt === "string";
+        return { name, kind: once ? "agent" : "other" };
+    }
+
+    const actions = name === "manage_task" ? taskActions : agentActions;
+    return { name, kind: typeof input.Action === "string" && actions.includes(input.Action) ? "agent" : "other" };
 }
 
 /** Whether a path is where Antigravity keeps what a tool of the chat's session answered: .gemini/antigravity-cli/brain/<session>/.system_generated/steps/<n>/output.txt. */

@@ -100,18 +100,30 @@ export interface ActsShown
     bell: boolean;
 }
 
-/** A model an AI app offers the master: its name in the app's own words, what the app says of it, and the efforts it takes, none for one that takes none. */
+/**
+ * A model an AI app offers the master: its name in the app's own words, what the app says of it, and the efforts it takes, none for one that takes none;
+ * `advised`, the one the app advises for the master; `metered`, likely paid apart for each answer, as guessed from who gives it; `group`, who gives it, in
+ * an app that lists many.
+ */
 export interface ChatModel
 {
     id: string;
     name: string;
     about?: string;
     efforts: string[];
+    advised?: true;
+    metered?: true;
+    group?: string;
 }
 
 /**
  * An AI app the table's chat with the master may open in: whether the page can drive it yet, whether it is on this computer, the model it proposes, the
- * efforts it knows, and the models it offers, none until it has answered.
+ * efforts it knows, and the models it offers, none until it has answered. `account`, whether the player is signed in to it, unknown when not said;
+ * `signIn`, "page" where the page starts the sign-in, in the browser, none where the app signs in by itself; `signingIn` while a sign-in opened from the
+ * page waits for the browser, with its link (`signInLink`) for when the browser did not open, `signInWhy` why the last one failed. `install`, where it is
+ * installed from, `engine` when the engine installs it; `installing` while it does, `installWhy` why the last install failed. With the code `elsewhere`
+ * (`signInCode`, `installCode`) nothing failed: another window of RPG Engine has the sign-in or the install under way. `metered`, signed in with an
+ * API key in place of a plan: each answer is paid apart.
  */
 export interface ChatHost
 {
@@ -122,6 +134,18 @@ export interface ChatHost
     model: string;
     efforts: string[];
     models: ChatModel[];
+    account?: "in" | "out" | "unknown";
+    metered?: true;
+    signIn?: "page";
+    signingIn?: true;
+    signInWhy?: string;
+    signInCode?: "elsewhere";
+    /** The sign-in's own link, for when the browser did not open by itself. */
+    signInLink?: string;
+    install?: { page: string; engine?: true; };
+    installing?: true;
+    installWhy?: string;
+    installCode?: "elsewhere";
 }
 
 /**
@@ -130,12 +154,21 @@ export interface ChatHost
  */
 export type ChatMessage = ChatSaid | ChatAsked | ChatRoll;
 
-/** Words of the player's, the master's or the table's. */
+/**
+ * Words of the player's, the master's or the table's. A line of the table's about the master's model says it beside its English, for the page's own words:
+ * `model`, the model changed to, by the name to show, with the effort it plays with, or `dropped` where an effort asked or held before does not hold, the
+ * effort then the one still in force; `model-kept`, a change the app did not take, `asked` the model asked and `model` the one that stays.
+ */
 export interface ChatSaid
 {
     id: number;
     from: "player" | "master" | "table";
     text: string;
+    code?: "model" | "model-kept";
+    model?: string;
+    asked?: string;
+    effort?: string;
+    dropped?: true;
 }
 
 /**
@@ -175,13 +208,26 @@ export interface ChatChoice
  * open chat with how its turn stands, why it ended, the command the master uses now and whether the player's words now answer the question that waits, its
  * messages, and whether a chat opened by hand plays the campaign. The open chat's model is the one the player chose, `runs` the app's own name for the one
  * it runs, once the app said it; `cutShort` while the chat taken up was cut as the game was closed, until the next turn begins; `takenUp` while a chat
- * taken up from the app's own session has no words of the player's yet, never with `cutShort`.
+ * taken up from the app's own session has no words of the player's yet, never with `cutShort`. `changes` when its model can change while it is open;
+ * `efforts`, the levels of thinking of the model it runs, where the app says them only once that model is chosen; `code` "signin" beside `why` when it
+ * ended as the app's sign-in ran out.
  */
 export interface MasterShown
 {
     hosts: ChatHost[];
     last?: ChatChoice & { resumable: boolean; };
-    chat?: ChatChoice & { runs?: string; cutShort?: true; takenUp?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
+    chat?: ChatChoice & {
+        runs?: string;
+        efforts?: string[];
+        cutShort?: true;
+        takenUp?: true;
+        state: "idle" | "turn" | "ended";
+        why?: string;
+        code?: "signin";
+        tool?: string;
+        answers?: true;
+        changes?: true;
+    };
     messages: ChatMessage[];
     elsewhere: boolean;
 }

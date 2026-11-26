@@ -1,11 +1,12 @@
 // `rpg table` (D-582): a process for a campaign that serves its page with no chat open, and runs the commands of the chat at it, which its `rpg mcp` pipes
-// in through a local socket; it ends by itself once no chat and no page has been there for a while, or once the packages' code it loaded changed on disk.
+// in through a local socket; it ends by itself once no chat and no page has been there for a while, or once the packages' code it loaded changed on disk,
+// and when `rpg table --stop` asks it to.
 import { createServer, type Server, type Socket } from "node:net";
 import { homedir } from "node:os";
 import { findCampaign, refreshHostFiles } from "../../campaign/index.ts";
 import { chatFolders as hostChatFolders } from "../../chats/index.ts";
 import { type ChatFolders, type Context, forgetChat, userDataFolder } from "../../core/context.ts";
-import { guardProcess } from "../../core/process.ts";
+import { childrenEnded, guardProcess } from "../../core/process.ts";
 import type { SessionStore } from "../../core/session-store.ts";
 import { withFiles } from "../../core/store.ts";
 import { getVersion } from "../../core/version.ts";
@@ -19,6 +20,7 @@ import { type Door, welcome } from "./door.ts";
 import { probeTable } from "./hello.ts";
 import { knock, newToken, readPlace, removePlace, removeSocketFile, type TablePlace, tableSocket, writePlace } from "./place.ts";
 import { type Seat, tableSeat } from "./seat.ts";
+import { programsWait, turnStopWait } from "./stop.ts";
 
 /** A table at work: its page's link, its place, its end, and what ends it. */
 export interface Table
@@ -56,12 +58,18 @@ export interface TableOptions
     log?: (line: string) => void;
     /** The way back from the page to the launcher, which `rpg table` is given by the command line; none in the tests, unless they give their own. */
     launcher?: LauncherWay;
-    /** What the table's chat with the master takes from outside, the tests' own: the hosts' programs and how they open, the environment, the player's home. */
-    master?: Partial<Pick<TableChatOptions, "open" | "driver" | "npmProgram" | "environment" | "userHome" | "newToken">>;
+    /**
+     * What the table's chat with the master takes from outside, the tests' own: the hosts' programs and how they open, the environment, the player's home,
+     * the programs whose accounts it reads.
+     */
+    master?: Partial<Pick<TableChatOptions, "open" | "driver" | "npmProgram" | "environment" | "userHome" | "newToken" | "helpers">>;
 }
 
-/** What `rpg table` may be given besides its folder: the table's options, and how the process exits on an error nothing caught; the tests give their own. */
-export type RunOptions = Partial<Omit<TableOptions, "folder">> & { exit?: (code: number) => void; };
+/**
+ * What `rpg table` may be given besides its folder: the table's options, how the process exits on an error nothing caught, and how long the programs it
+ * started have to end by themselves before it exits, in ms; the tests give their own.
+ */
+export type RunOptions = Partial<Omit<TableOptions, "folder">> & { exit?: (code: number) => void; programsWait?: number; };
 
 /** A table opened, the link of one there already, or why it could not start. */
 export type Opened = Table | { running: string; } | { refused: string; };
@@ -88,12 +96,15 @@ const lookAgainEvery = 100;
 
 /**
  * `rpg table` in the process's folder: the table's link on stdout once it serves, or the link of the one already there; what happens on stderr. Its exit
- * code: 0 once it ended, as after a while with no chat and no page, or on Ctrl+C; 1 when it could not start, or on an error nothing caught.
+ * code: 0 once it ended, as after a while with no chat and no page, or on Ctrl+C; 1 when it could not start, or on an error nothing caught. Either end
+ * waits for the programs it started to end by themselves, `programsWait` at most, and logs how they did.
  */
 export async function runTable(folder = process.cwd(), given: RunOptions = {}): Promise<number>
 {
     const log = (line: string): boolean => process.stderr.write(`${line}\n`);
-    const options: TableOptions = { folder, home: userDataFolder(), platform: process.platform, version: getVersion(), log, ...given };
+    // What the chat takes from outside, the programs whose accounts the page reads included, is the caller's to give: `rpg table` gives this computer's.
+    const master = given.master ?? {};
+    const options: TableOptions = { folder, home: userDataFolder(), platform: process.platform, version: getVersion(), log, ...given, master };
     const opened = await openTable(options);
 
     if ("refused" in opened) {
@@ -114,12 +125,16 @@ export async function runTable(folder = process.cwd(), given: RunOptions = {}): 
         removePlace(options.home, opened.place.root, opened.place.token);
     };
 
-    const unguard = guardProcess("rpg table", "the table", (line) => options.log?.(line), cleanup, given.exit ?? ((code) => process.exit(code)));
+    const said = (line: string): void => options.log?.(line);
+    const wait = given.programsWait ?? programsWait;
+    const unguard = guardProcess("rpg table", "the table", said, cleanup, given.exit ?? ((code) => process.exit(code)), wait);
     process.once("SIGINT", stop);
     process.once("SIGTERM", stop);
     await opened.ended;
     process.off("SIGINT", stop);
     process.off("SIGTERM", stop);
+    // The AI apps the table let go end by themselves first, as one saving the player's sign-in: on Windows this process's exit would stop them at once.
+    await childrenEnded("the table", wait, said);
     unguard();
     return 0;
 }
@@ -258,6 +273,7 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
     const end = (why: string): Promise<void> => {
         ending ??= (async () => {
             clearInterval(looking);
+            await turnStopped(chat);
             chat.release();
             listener.close();
             await seat.clear();
@@ -328,6 +344,18 @@ async function atWork(options: TableOptions, parts: Parts): Promise<Opened>
 
     log(`The table of ${root} serves its page at ${dashboard.url}; its chats come through ${socket}.`);
     return { url: dashboard.url, place, ended, end, closeChat: () => chat.release() };
+}
+
+/**
+ * The chat's turn in course stopped, as the player's Stop does, and waited for: the host ends it, or the master ends the chat, within its own wait. By the
+ * real clock, as the host's.
+ */
+async function turnStopped(chat: TableChat): Promise<void>
+{
+    if (chat.inTurn()) {
+        chat.stop();
+        await lookUntil(() => Promise.resolve(chat.inTurn() ? undefined : true), () => false, { within: turnStopWait, every: 50 });
+    }
 }
 
 /**

@@ -228,7 +228,7 @@
 
     /* What the chat offers in place of writing, to take up a story or to pick up one cut as the game was closed: a word of the table's that is no trouble,
        on a quiet ground, with the button that asks the master. With no message over it, it stands alone at the chat's foot. */
-    .chat-message.from-table.offering {
+    .chat-message.from-table:is(.offering, .about-model) {
         border-color: var(--rule);
         background: color-mix(in srgb, var(--ink) 4%, var(--panel));
         font-weight: 400;
@@ -236,6 +236,19 @@
 
     .chat-message.from-table.offering svg.icon {
         color: var(--accent);
+    }
+
+    /* What became of the master's model: no trouble and nothing to do, a smaller line with the muted sign of a note. */
+    .chat-message.from-table.about-model {
+        padding-block: 6px;
+        font-size: 0.875rem;
+    }
+
+    .chat-message.from-table.about-model svg.icon {
+        width: 16px;
+        height: 16px;
+        margin-block-start: 2px;
+        color: var(--muted);
     }
 
     .chat-offering {
@@ -850,6 +863,11 @@
         gap: 6px;
     }
 
+    /* Among the choices the notes take the row's whole width, never the labels' column. */
+    .chat-fields > .chat-notes {
+        grid-column: 1 / -1;
+    }
+
     .chat-model {
         width: min(100%, 22rem);
         height: 38px;
@@ -1198,6 +1216,510 @@
         /* Under the setup's questions the chat stands whole over the dice's button. */
         .setup-with-chat .chat-page.view-open .chat-words {
             padding-inline-end: 12px;
+        }
+    }
+
+    /* How an app stands, in two quiet words after its name (T-290): never a sign alone, which read as paid. Ready has none, but Pay per use on an API
+       key. The two words go to the next line together where they fit there, never one each. */
+    .segmented .host-state,
+    .chat-app-name .host-state {
+        display: inline-block;
+        margin-inline-start: 6px;
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .segmented button[aria-checked="true"] .host-state {
+        color: inherit;
+        opacity: 0.8;
+    }
+
+    .segmented button[aria-disabled="true"] .host-state {
+        color: inherit;
+    }
+
+    /* Where an app is chosen to open a chat in, in place of the model while it is not ready: what it needs, then what does it. */
+    .chat-need {
+        display: grid;
+        justify-items: start;
+        gap: 10px;
+        grid-column: 1 / -1;
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--rule));
+        border-radius: var(--radius-l);
+        background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+    }
+
+    .chat-need p {
+        margin: 0;
+    }
+
+    .chat-need .chat-need-what {
+        font-weight: 600;
+    }
+
+    .chat-need-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chat-need-buttons .button svg.icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Waiting for the browser or the install: the light that waits for the player, as in the turn's line, and the words. */
+    .chat-need-wait {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .chat-need.problem {
+        border-color: color-mix(in srgb, var(--low) 45%, var(--rule));
+        background: color-mix(in srgb, var(--low) 8%, var(--panel));
+    }
+
+    .chat-need-said {
+        display: flex;
+        align-items: start;
+        gap: 8px;
+        margin: 0;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .chat-need-said svg.icon {
+        flex: none;
+        width: 20px;
+        height: 20px;
+        color: var(--low);
+    }
+
+    /* Nothing failed, another window of RPG Engine has it under way: a note, in the text's weight. */
+    .chat-need-said.calm {
+        font-weight: 400;
+    }
+
+    .chat-need-said.calm svg.icon {
+        color: var(--muted);
+    }
+
+    /* Looking at the apps again: the arrow turns while the button says it looks. */
+    .chat-look-again[aria-busy="true"] {
+        cursor: progress;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .chat-look-again[aria-busy="true"] svg.icon {
+            animation: chat-looks-again 1s var(--ease) infinite;
+        }
+    }
+
+    @keyframes chat-looks-again {
+        to {
+            rotate: 360deg;
+        }
+    }
+
+    /* Under a list of the apps, at its end, as the buttons of its rows. */
+    .chat-apps-again {
+        display: flex;
+        justify-content: end;
+    }
+
+    .chat-need .chat-app-needs {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    /* Signed in: a line with the ally's check, over the fields that come. */
+    .chat-signed {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        grid-column: 1 / -1;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .chat-signed svg.icon {
+        width: 20px;
+        height: 20px;
+        color: var(--ally);
+    }
+
+    /* With no app installed the fields are the apps to install, in one column. */
+    .chat-fields.alone {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: stretch;
+    }
+
+    /* The apps to install or set up: a row each, its name with how it stands, what it needs, and what does it at the row's end. */
+    .chat-apps {
+        display: grid;
+        margin: 0;
+        padding: 0;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        list-style: none;
+        text-align: start;
+    }
+
+    .chat-app {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 2px 12px;
+        padding: 10px 12px;
+    }
+
+    .chat-app + .chat-app {
+        border-top: 1px solid var(--rule);
+    }
+
+    .chat-app-name {
+        font-weight: 700;
+    }
+
+    .chat-app-needs {
+        grid-column: 1;
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+
+    .chat-app-act {
+        display: grid;
+        grid-row: 1 / span 2;
+        grid-column: 2;
+        justify-items: end;
+        gap: 4px;
+    }
+
+    /* What does it with lines under it, the terms before the install, the sign-in's words: the row's whole width, under the name. */
+    .chat-app:has(.chat-hint, .chat-need-said) .chat-app-act {
+        grid-row: auto;
+        grid-column: 1 / -1;
+        justify-items: start;
+        margin-top: 6px;
+    }
+
+    .chat-app-act .chat-need-wait {
+        font-size: 0.85rem;
+    }
+
+    .chat-app-act .chat-hint,
+    .chat-app-act .chat-need-said {
+        font-size: 0.8rem;
+    }
+
+    .chat-hint a,
+    .chat-app-needs a {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    /* Once, under the apps, small: that the project is no maker's. */
+    .chat-independent {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.75rem;
+        text-align: start;
+    }
+
+    /* The model: one button as the list's box, its name, and Recommended or Pay per use after it, quiet. */
+    .model-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: min(100%, 22rem);
+        /* A long name gives way, never the card: with two tags, the name's whole width would widen it. */
+        min-width: 0;
+        height: 38px;
+        padding: 0 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+        color: var(--ink);
+        font: inherit;
+        text-align: start;
+        cursor: pointer;
+    }
+
+    .model-button .model-name,
+    .model-switch .model-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .model-switch .model-name {
+        flex: none;
+    }
+
+    .model-switch .model-effort {
+        flex: 0 100 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .model-button > svg.icon,
+    .model-switch > svg.icon {
+        flex: none;
+        width: 16px;
+        height: 16px;
+        color: var(--muted);
+    }
+
+    .model-button[aria-expanded="true"] {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    /* Neutral, never the accent: in the dark that is the gold of what is chosen. */
+    .model-tag {
+        flex: none;
+        padding: 1px 6px;
+        border-radius: var(--radius-s);
+        background: color-mix(in srgb, var(--ink) 7%, transparent);
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* The list it opens, in the top layer beside its button: a search when long, the groups, the thinking at its foot. */
+    .model-pop {
+        position: fixed;
+        inset: auto;
+        top: var(--pop-top, 0);
+        left: var(--pop-left, 0);
+        width: var(--pop-width, 20rem);
+        max-height: var(--pop-room, 70vh);
+        margin: 0;
+        padding: 6px;
+        overflow-y: auto;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-l);
+        background: var(--float);
+        box-shadow: var(--overlay);
+        color: var(--ink);
+        /* Its own text, whatever its button stands in: the open chat's foot is small and on one line. */
+        font-size: 1rem;
+        line-height: 1.4;
+        text-align: start;
+        white-space: normal;
+        overscroll-behavior: contain;
+    }
+
+    .model-pop:popover-open {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
+        gap: 4px;
+    }
+
+    .model-pop .model-search {
+        position: sticky;
+        top: -6px;
+        z-index: 1;
+        width: 100%;
+        height: 36px;
+        padding: 0 10px;
+        border: 1px solid var(--rule);
+        border-radius: var(--radius-m);
+        background: var(--panel-2);
+        color: var(--ink);
+        font: inherit;
+    }
+
+    .model-list {
+        display: grid;
+    }
+
+    .model-group {
+        padding: 8px 10px 2px;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .model-option {
+        display: grid;
+        grid-template-columns: 18px minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 8px;
+        min-height: 34px;
+        padding: 4px 10px;
+        border-radius: var(--radius-m);
+        cursor: pointer;
+    }
+
+    .model-option > svg.icon {
+        width: 16px;
+        height: 16px;
+        color: var(--accent);
+    }
+
+    .model-option-name {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .model-option-tags {
+        display: flex;
+        gap: 4px;
+    }
+
+    .model-option.active,
+    .model-other.active {
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+
+    .model-other {
+        margin-top: 4px;
+        padding: 8px 10px;
+        border-radius: var(--radius-m);
+        /* Not the accent: in the dark that is the gold of what is chosen. */
+        color: var(--ink);
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .model-more {
+        margin: 0;
+        padding: 4px 10px;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    .model-thinking {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: start;
+        gap: 6px;
+        padding: 8px 10px 6px;
+        border-top: 1px solid var(--rule);
+    }
+
+    .model-thinking .segmented {
+        max-width: 100%;
+    }
+
+    .model-thinking .segmented button {
+        padding: 0 10px;
+    }
+
+    /* Under the open chat's words: the app, then the model as a small button that opens the same list. */
+    .chat-plays.changes {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        overflow: visible;
+    }
+
+    /* Where the line is short the app's name gives way; the model's name stays whole. */
+    .chat-plays-app {
+        flex: 0 10 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .model-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 28px;
+        padding: 0 6px;
+        border: 0;
+        border-radius: var(--radius-s);
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        cursor: pointer;
+    }
+
+    .model-switch > svg.icon {
+        width: 14px;
+        height: 14px;
+    }
+
+    .model-switch:hover {
+        color: var(--ink);
+    }
+
+    .model-switch[aria-disabled="true"] {
+        opacity: 0.55;
+        cursor: default;
+    }
+
+    /* That a long wait is normal: opening the chat, the master's first answer. Quiet, under what it is about. */
+    .chat-buttons .chat-opening {
+        flex: 1 1 12rem;
+        align-self: center;
+    }
+
+    .chat-turn-note {
+        margin: 0;
+        padding-block: 0 6px;
+        padding-inline: 42px 16px;
+        color: var(--muted);
+        font-size: 0.8rem;
+    }
+
+    /* In the panel, and on a phone, the four apps two by two, never three and one; on a phone the list is a sheet from the window's foot. */
+    .chat-page.chat-dock .chat-fields > .segmented {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    @media (max-width: 600px) {
+        .chat-fields > .segmented {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+        }
+
+        .model-pop {
+            top: auto;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            max-height: 75vh;
+            padding-bottom: max(6px, env(safe-area-inset-bottom));
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        }
+
+        /* On a phone the foot keeps the model's name whole; the thinking is in its list. */
+        .model-switch .model-effort {
+            display: none;
+        }
+
+        .chat-app {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .chat-app-act {
+            grid-row: auto;
+            grid-column: 1;
+            justify-items: start;
+            margin-top: 6px;
         }
     }
 }

@@ -4,7 +4,7 @@
 import { join } from "node:path";
 import { sessionsFolderName } from "../../campaign/index.ts";
 import { FileStore } from "../../core/store.ts";
-import type { PageMessage } from "../dashboard/index.ts";
+import type { ModelMark, PageMessage } from "../dashboard/index.ts";
 
 /** The folder of the campaign's `sessions/` where the table keeps its chats. */
 export const flowFolderName = "table-chats";
@@ -151,7 +151,24 @@ function flowMessage(line: string): PageMessage | undefined
         return isRecord(roll) && typeof roll.id === "string" && typeof roll.at === "string" ? { id, from, text, roll: roll as unknown as Extract<PageMessage, { from: "roll"; }>["roll"] } : undefined;
     }
 
-    return { id, from, text };
+    return from === "table" ? { id, from, text, ...modelMark(parsed) } : { id, from, text };
+}
+
+/** The mark of a line of the table about the master's model, as the file keeps it; none where it holds none, or one not well formed. */
+function modelMark(parsed: Record<string, unknown>): ModelMark
+{
+    const { code, model, asked, effort, dropped } = parsed;
+    const valid = (code === "model" || code === "model-kept") && typeof model === "string" && optionalText(asked) && optionalText(effort)
+        && (dropped === undefined || dropped === true);
+    return valid
+        ? {
+            code,
+            model,
+            ...(asked === undefined ? {} : { asked: asked as string }),
+            ...(effort === undefined ? {} : { effort: effort as string }),
+            ...(dropped === true ? { dropped } : {}),
+        }
+        : {};
 }
 
 function isRecord(value: unknown): value is Record<string, unknown>

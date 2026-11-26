@@ -76,6 +76,11 @@ describe("the master in Claude Code", () => {
             expect(settings(["rpg", "read", "shell"])).toEqual([]);
         });
 
+        it("gives the subagent tool, asked before each start, where the master may read a page of the web: a newer Claude Code reads one with a subagent", () => {
+            const args = open([], { allowed: ["rpg", "fetch"] }).host.started?.args ?? [];
+            expect(args.slice(args.indexOf("--tools"))).toEqual(["--tools", "WebFetch,Task", "--settings", '{"permissions":{"ask":["Agent"]}}']);
+        });
+
         it("lists only the kinds allowed: searching the web is not fetching from it", () => {
             const { host } = open([], { allowed: ["read", "web"] });
             expect(host.started?.args.at(-1)).toBe("Read,Glob,Grep,WebSearch");
@@ -119,7 +124,9 @@ describe("the master in Claude Code", () => {
             await until((all) => all.some((event) => event.type === "ended"));
             const why = "the host did not take the model haiku: no such model";
             expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
-            expect(host.stops).toBe(1);
+            // Let go to end by itself: its input closed, never stopped at once.
+            expect(host.inputClosed).toBe(true);
+            expect(host.stops).toBe(0);
             expect(chat.send("Again")).toBe(false);
             expect(host.written.filter(isPlayerWords)).toEqual([]);
             expect(host.problems).toEqual([]);
@@ -143,6 +150,9 @@ describe("the master in Claude Code", () => {
             clock.advance(1);
             const why = "the host did not confirm the model haiku within 30 seconds";
             expect(events).toEqual([{ type: "turnEnd", reason: "failed", why }, { type: "ended", why }]);
+            expect(host.inputClosed).toBe(true);
+            expect(host.stopped).toBe(false);
+            clock.advance(10_000);
             expect(host.stopped).toBe(true);
             expect(chat.send("Again")).toBe(false);
             expect(host.written.filter(isPlayerWords)).toEqual([]);
@@ -152,6 +162,8 @@ describe("the master in Claude Code", () => {
             const { chat, host, clock, events } = play([], {}, { ignore: ["set_model"] });
             clock.advance(30_000);
             expect(events).toEqual([{ type: "ended", why: "the host did not confirm the model haiku within 30 seconds" }]);
+            expect(host.inputClosed).toBe(true);
+            clock.advance(10_000);
             expect(host.stopped).toBe(true);
             expect(chat.send("Hello")).toBe(false);
         });
@@ -301,6 +313,20 @@ describe("the master in Claude Code", () => {
             expect(host.problems).toEqual([]);
         });
 
+        it("reads the host's subagent for a page of the web as a page read: allowed with fetch, never as a character's, and refused where the table gives no page", async () => {
+            const page = { subagent_type: "web-fetch", description: "Fetch a page", prompt: "Fetch https://example.com and tell its title." };
+
+            const asked = async (allowed: ToolKind[]): Promise<MasterEvent[]> => {
+                const { chat, events, until } = play(turn("Hello", whole([toolUse("a1", "Agent", page)]), asks("p1", "Agent", page), answered("p1")), { allowed });
+                chat.send("Hello");
+                await until((all) => turnEnds(all).length === 1);
+                return events.filter((event) => event.type === "permission");
+            };
+
+            expect(await asked(["rpg", "fetch"])).toEqual([{ type: "permission", name: "Agent", kind: "fetch", allowed: true }]);
+            expect(await asked(["rpg", "agent"])).toEqual([{ type: "permission", name: "Agent", kind: "fetch", allowed: false }]);
+        });
+
         it("lets a tool that reads read the campaign's folder alone: every path given, relative ones from the folder, and Glob's pattern", async () => {
             const inside = [
                 ["Read", { file_path: join(folder, "pages", "inn.md") }],
@@ -338,12 +364,14 @@ describe("the master in Claude Code", () => {
             expect(((host.written.at(-1)?.response as Message).response as Message).behavior).toBe("allow");
         });
 
-        it("never lets the master fetch from the web: a fetch is not a search", async () => {
-            const { chat, host, events, until } = play(turn("Look", asks("p1", "WebFetch", { url: "https://example.com/?q=secret" }), answered("p1")), { allowed: ["rpg", "read", "web", "agent"] });
-            chat.send("Look");
-            await until((all) => turnEnds(all).length === 1);
-            expect(events).toContainEqual({ type: "permission", name: "WebFetch", kind: "fetch", allowed: false });
-            expect(((host.written.at(-1)?.response as Message).response as Message).behavior).toBe("deny");
+        it("lets the master fetch a page of the web only where fetching is given: a fetch is not a search", async () => {
+            for (const [allowed, behavior] of [[["rpg", "read", "web", "agent"], "deny"], [["rpg", "read", "web", "fetch", "agent"], "allow"]] as const) {
+                const { chat, host, events, until } = play(turn("Look", asks("p1", "WebFetch", { url: "https://example.com/?q=secret" }), answered("p1")), { allowed: [...allowed] });
+                chat.send("Look");
+                await until((all) => turnEnds(all).length === 1);
+                expect(events).toContainEqual({ type: "permission", name: "WebFetch", kind: "fetch", allowed: behavior === "allow" });
+                expect(((host.written.at(-1)?.response as Message).response as Message).behavior).toBe(behavior);
+            }
         });
 
         it("refuses with an error any other request of the host, between turns too", async () => {

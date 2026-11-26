@@ -1,13 +1,14 @@
 // The master in Claude Code: its program started with no terminal, spoken to by its stream-json protocol, one JSON object a line each way.
 import { join } from "node:path";
+import { hosts } from "../../core/hosts.ts";
 import { isHostName, type MasterChat, type MasterDriver, type MasterOptions } from "../chat.ts";
 import { isFile } from "../program.ts";
 import { heldChat, startHost } from "../state.ts";
 import { claudeModels } from "./models.ts";
 import { agentArguments, claudeEnvironment, claudeProgram, settingArguments, streamArguments } from "./program.ts";
-import { builtInTools } from "./protocol.ts";
+import { builtInTools, subagentKinds, subagentTool } from "./protocol.ts";
 import { readMessage } from "./read.ts";
-import { askModel, newTurn, type State, writeStop, writeWords } from "./state.ts";
+import { askModel, changeModel, newTurn, type State, writeStop, writeWords } from "./state.ts";
 
 /** Claude Code as the table drives it. */
 export const claudeCode: MasterDriver = {
@@ -34,14 +35,16 @@ function openClaudeCode(options: MasterOptions): MasterChat
     }
 
     const state: State = {
-        ...startHost(options, programArguments(options)),
+        ...startHost(options, hosts.claudeCode.name, programArguments(options)),
         requests: 0,
         model: { asked: options.model, request: "" },
+        ...(options.effort === undefined ? {} : { effort: options.effort }),
         protocol: {
             newTurn,
             words: (turn, text) => writeWords(state, turn, text),
             stop: () => writeStop(state),
             read: (message) => readMessage(state, message),
+            change: (model, effort) => changeModel(state, model, effort),
         },
     };
     return heldChat(state, () => askModel(state));
@@ -53,7 +56,9 @@ function openClaudeCode(options: MasterOptions): MasterChat
  */
 function programArguments(options: MasterOptions): string[]
 {
-    const tools = builtInTools.filter((tool) => options.allowed.includes(tool.kind)).map((tool) => tool.name);
+    // The subagent tool serves a character played apart and a page of the web read: given where either is allowed, and each start asked of the table.
+    const subagents = subagentKinds.some((kind) => options.allowed.includes(kind));
+    const tools = builtInTools.filter((tool) => (tool.name === subagentTool ? subagents : options.allowed.includes(tool.kind))).map((tool) => tool.name);
     return [
         ...streamArguments,
         "--include-partial-messages",
@@ -68,7 +73,7 @@ function programArguments(options: MasterOptions): string[]
         "--disable-slash-commands",
         "--tools",
         tools.join(","),
-        ...(options.allowed.includes("agent") ? agentArguments : []),
+        ...(subagents ? agentArguments : []),
         ...(options.session === undefined ? [] : ["--resume", options.session]),
     ];
 }

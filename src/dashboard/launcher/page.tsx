@@ -3,13 +3,17 @@
 // launcher opens, and this one closes; where the launcher could open none, this window goes to its page, which sizes it. The launcher's own words are the
 // browser's language, where the page ships it.
 import { useEffect, useRef, useState } from "preact/hooks";
+import type { HostWish } from "../api.ts";
+import { HostRows, Independent } from "../chat/apps.tsx";
+import { anyHostReady, hostState } from "../chat/chat.ts";
+import { useLookAgain } from "../chat/start.tsx";
 import { Confirm } from "../parts/confirm.tsx";
 import { Master } from "../shell/master.tsx";
 import { productName } from "../shell/product.ts";
 import { ThemeCorner } from "../shell/theme-switch.tsx";
 import { markedAddress } from "../shell/window.ts";
 import { t } from "../text.ts";
-import { addCampaign, type CampaignWish, createCampaign, forgetCampaign, type LauncherNow, type ListedCampaign, openCampaign, pickFolder, readLauncher } from "./api.ts";
+import { addCampaign, type CampaignWish, changeHost, createCampaign, forgetCampaign, type LauncherNow, type ListedCampaign, openCampaign, pickFolder, readLauncher } from "./api.ts";
 import { folderName, listedAt } from "./campaigns.ts";
 import { NewCampaignForm } from "./create.tsx";
 import { CampaignList } from "./list.tsx";
@@ -204,6 +208,24 @@ export function Launcher({ asked }: { asked?: string | undefined; })
         }
     };
 
+    /** What the player asks of an AI app: the apps as the launcher says them after, else read again; what went wrong said beside. */
+    const wish = async (asked: HostWish): Promise<void> => {
+        const answer = await changeHost(asked);
+
+        if ("error" in answer) {
+            setProblem({ text: answer.error });
+        } else if (answer.hosts === undefined) {
+            read();
+        } else {
+            const hosts = answer.hosts;
+            setLauncher((before) => (before === undefined ? before : { ...before, hosts }));
+        }
+    };
+
+    const hosts = launcher?.hosts ?? [];
+    useLookAgain(hosts.some((one) => !["ready", "later"].includes(hostState(one))), (asked) => void wish(asked));
+    // Until an app is ready the master cannot play: the apps come first, in the gold of what the player does next.
+    const appsFirst = launcher !== undefined && hosts.length > 0 && !anyHostReady(hosts);
     const campaigns = launcher?.campaigns ?? [];
     const listed = (root: string | undefined): boolean => root !== undefined && campaigns.some((campaign) => campaign.root === root);
     const busy = doing !== undefined;
@@ -244,6 +266,7 @@ export function Launcher({ asked }: { asked?: string | undefined; })
                                 setView("list");
                             }}
                             onPick={pick}
+                            onWish={(asked) => void wish(asked)}
                         />
                     )
                     : (
@@ -253,11 +276,19 @@ export function Launcher({ asked }: { asked?: string | undefined; })
                             </div>
                             <h1 id="launcher-title">{productName}</h1>
                             {launcher !== undefined && <p class="launcher-version" dir="ltr">{launcher.version}</p>}
+                            {appsFirst && (
+                                <section class="launcher-apps" aria-labelledby="launcher-apps-title">
+                                    <h2 id="launcher-apps-title">{t("First you need an AI app")}</h2>
+                                    <p>{t("The master is an AI that plays in an app on your computer, with your account. RPG Engine works with these:")}</p>
+                                    <HostRows hosts={hosts} onWish={(asked) => void wish(asked)} />
+                                    <Independent />
+                                </section>
+                            )}
                             <div class="launcher-actions">
                                 <button
                                     ref={creates}
                                     type="button"
-                                    class="button gold"
+                                    class={appsFirst ? "button" : "button gold"}
                                     aria-describedby="launcher-create-is"
                                     aria-disabled={busy || launcher === undefined}
                                     onClick={() => {

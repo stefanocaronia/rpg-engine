@@ -1,5 +1,6 @@
 // OpenCode's tools as the table reads them. Its agent calls the rpg server's commands inside `execute`, a tool that runs code over the MCP servers'
 // tools, and names the commands it ran only at the end, in the update's metadata.
+import { hosts } from "../../core/hosts.ts";
 import { type AcpHost, pathsOfCall, patternOutside } from "../acp/index.ts";
 import type { ToolKind } from "../chat.ts";
 import { isObject } from "../lines.ts";
@@ -22,6 +23,10 @@ const builtInKinds: Record<string, ToolKind> = {
     multiedit: "write",
 };
 
+// The providers whose models cost the player nothing apart, in the order their models are kept and proposed before any other's: OpenCode's own, free
+// on the network, then the programs that run a model on this computer. OpenCode says nothing of cost, so a paid model of its own (opencode/…) is not marked.
+const unmetered = ["opencode", "ollama", "lmstudio", "llama.cpp"];
+
 // The tools that read the folder they run in where their input names no path.
 const folderTools = ["glob", "grep", "list"];
 
@@ -37,6 +42,7 @@ const toolLoaders = ["search"];
 
 /** OpenCode as the protocol's client reads it. */
 export const openCodeAcp: AcpHost = {
+    name: hosts.openCode.name,
     args: ["acp"],
     toolOf: (call) => toolOf(nameOf(call), isObject(call.rawInput) ? call.rawInput : {}, ranTools(call)),
     pathsOf: (call) => {
@@ -47,7 +53,17 @@ export const openCodeAcp: AcpHost = {
         const fromFolder = folderTools.includes(name) ? ["."] : [];
         return [...fromFolder, ...pathsOfCall(call), ...patterns.map((pattern) => (staysInside(pattern) ? "." : patternOutside(pattern)))];
     },
-    login: "run opencode auth login in a terminal, then try again",
+    login: "sign in from OpenCode itself, then try again",
+    modelMarks: (id) => {
+        const provider = providerOf(id);
+        return provider === undefined ? {} : { group: provider, ...(unmetered.includes(provider.toLowerCase()) ? {} : { metered: true as const }) };
+    },
+    // Those of the providers not paid apart by their order, then any other not paid apart, then those paid apart.
+    modelRank: (id) => {
+        const provider = providerOf(id)?.toLowerCase();
+        const free = provider === undefined ? -1 : unmetered.indexOf(provider);
+        return free >= 0 ? free : unmetered.length + (provider === undefined ? 0 : 1);
+    },
     innerTools: (call) => (ranTools(call) ?? []).filter((one) => !toolLoaders.includes(one.tool)).map((one) => ({ ...commandOf(one.tool), failed: one.failed })),
     // A subagent's work comes among the chat's updates, marked with its session; a mark with no id is a subagent all the same, never the master.
     childOf: (update) => {
@@ -111,6 +127,12 @@ function ranTools(call: Record<string, unknown>): { tool: string; failed: boolea
     const metadata = isObject(call.rawOutput) && isObject(call.rawOutput.metadata) ? call.rawOutput.metadata : {};
     const ran = Array.isArray(metadata.toolCalls) ? metadata.toolCalls.filter(isObject) : undefined;
     return ran?.map((one) => ({ tool: typeof one.tool === "string" ? one.tool : "", failed: one.status !== "completed" }));
+}
+
+/** A model's provider, as OpenCode names it before the first slash; undefined for a model named without one. */
+function providerOf(id: string): string | undefined
+{
+    return id.includes("/") ? id.slice(0, id.indexOf("/")) : undefined;
 }
 
 /** A call's tool name: OpenCode's own field, else the title it gives. */

@@ -51,10 +51,12 @@ export const masterScreenLine = "The text above lies behind the master's screen,
 /**
  * The MCP server: every command becomes a tool with the same name, description and parameters, and answers with the same text as the command line, closed by a line for the player's eyes (T-176). Its instructions send
  * the host to instructions, then status. The commands that ask the player appear for a host that shows forms, through which they ask (D-148), and wherever the
- * dashboard runs, whose page asks first (D-279).
+ * dashboard runs, whose page asks first (D-279). A server that `onlyLooks` starts nothing of a chat's and runs only `view` as a character, refusing every other
+ * call with that sentence: another server of a chat a table serves, or one the table sent away (D-588 (2)).
  */
-export function createMcpServer(context: Context = defaultContext(), environment: Record<string, string | undefined> = process.env, beforeCall?: () => Promise<void>): McpServer
+export function createMcpServer(context: Context = defaultContext(), environment: Record<string, string | undefined> = process.env, options: ServerOptions = {}): McpServer
 {
+    const { beforeCall, onlyLooks } = options;
     // The descriptions change together, after a call: hosts hear one list_changed for all of them.
     const server = new McpServer({ name: "rpg", version: getVersion() }, { instructions: startInstructions(), debouncedNotificationMethods: ["notifications/tools/list_changed"] });
     const askingTools: RegisteredTool[] = [];
@@ -67,8 +69,8 @@ export function createMcpServer(context: Context = defaultContext(), environment
     context.chat.atTable ??= environment.RPG_TABLE_MASTER !== undefined;
     // What came after a call answered, as a picture made in its place or none, for the next (D-572).
     context.later ??= laterLines();
-    // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4).
-    const outside = context.files instanceof SessionStore ? watchOutside(context, context.files) : { take: () => [], giveBack: () => undefined };
+    // What changed outside the chat's commands, at the head of each call (OUT-1–OUT-4); never for a server that only looks, whose watch would take the chat's.
+    const outside = context.files instanceof SessionStore && onlyLooks === undefined ? watchOutside(context, context.files) : { take: () => [], giveBack: () => undefined };
     // The campaign's game system, one of ours, installed by itself when it is not on this computer, and said once (SYS-10).
     const installer = systemInstaller(context);
 
@@ -86,8 +88,8 @@ export function createMcpServer(context: Context = defaultContext(), environment
     // The examples of the descriptions in the names of the campaign's system, read without the session's store before the host asks for the tools (D-518).
     const examples = { shown: examplesFor(context, new FileStore(context.systemFolders)) };
     const coreTools = new Map<AnyCommand, RegisteredTool>();
-    // The chats copied into the campaign, the first time as the server starts, once its world is read (T-225).
-    const keepChats = chatKeeper(context);
+    // The chats copied into the campaign, the first time as the server starts, once its world is read (T-225); by the chat's own server alone.
+    const keepChats = onlyLooks === undefined ? chatKeeper(context) : () => undefined;
 
     // After every call the descriptions follow the campaign's system, as after init or config system, and the extensions' tools follow campaign.yaml.
     const afterCall = (): Promise<void> => {
@@ -97,11 +99,12 @@ export function createMcpServer(context: Context = defaultContext(), environment
     };
 
     // The tools of the campaign's extensions, kept in step after every call, as one that installs an extension or makes the campaign (D-63).
-    const extensions = extensionTools(server, context, (command) => (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, installer, outside, examples).finally(afterCall));
+    const call = (command: AnyCommand) => (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, { prepare, installer, outside, examples, onlyLooks }).finally(afterCall);
+    const extensions = extensionTools(server, context, call);
     firstExtensions.set(server, extensions());
 
     for (const command of commands) {
-        const tool = server.registerTool(command.name, toolConfig(command, examples.shown), (input: unknown, extra: ToolExtra) => runTool(command, input, context, extra, prepare, installer, outside, examples).finally(afterCall));
+        const tool = server.registerTool(command.name, toolConfig(command, examples.shown), call(command));
         coreTools.set(command, tool);
 
         if (command.needsPlayer && context.player === undefined) {
@@ -111,6 +114,11 @@ export function createMcpServer(context: Context = defaultContext(), environment
     }
 
     server.server.oninitialized = () => {
+        // The chat's forms, its reading of the campaign and its commit are its own server's.
+        if (onlyLooks !== undefined) {
+            return;
+        }
+
         const hidesForms = entryPointsWithoutForms.includes(environment.CLAUDE_CODE_ENTRYPOINT ?? "");
 
         if (context.player === undefined && !hidesForms && showsForms(server.server.getClientCapabilities())) {
@@ -155,16 +163,24 @@ export function createMcpServer(context: Context = defaultContext(), environment
 /**
  * Serves the tools over standard input and output, as AI hosts expect, with the files kept for the whole session (D-137, D-193). It ends when the host
  * goes and its input closes: its watchers, or a player's form still waiting, never keep it alive. `input` is the process's own, or what the router passes on.
+ * One that `onlyLooks`, as where its campaign's table sent it away, opens no page either: the table's serves the campaign.
  */
-export async function startMcpServer(input: Readable = process.stdin): Promise<void>
+export async function startMcpServer(input: Readable = process.stdin, onlyLooks?: string): Promise<void>
 {
     const leave = (): never => process.exit(0);
     input.on("end", leave);
     input.on("close", leave);
     let server: ReturnType<typeof createMcpServer> | undefined;
     const { context, session } = await servedContext({ host: () => server?.server.getClientVersion()?.name, environment: () => process.env });
-    server = createMcpServer(context, process.env, dashboardOpener(context, session).open);
+    server = createMcpServer(context, process.env, onlyLooks === undefined ? { beforeCall: dashboardOpener(context, session).open } : { onlyLooks });
     await serveOver(server, new StdioServerTransport(input));
+}
+
+/** How a server serves its chat: what runs before each call, and the refusal of every call but a character's view, for a server that only looks. */
+export interface ServerOptions
+{
+    beforeCall?: () => Promise<void>;
+    onlyLooks?: string;
 }
 
 /** Connects a server to its chat once the extensions' tools are loaded, so that they are there in the first list the host asks for. */
@@ -369,23 +385,27 @@ function inputIssue(tool: string, issue: z.core.$ZodIssue, given: Record<string,
     return path === "" ? `${issue.message}.` : `${path}: ${issue.message}.`;
 }
 
-async function runTool(
-    command: AnyCommand,
-    input: unknown,
-    context: Context,
-    extra: ToolExtra,
-    prepare: () => Promise<void>,
-    installer: Installer,
-    outside: Told,
-    examples: { shown: Examples; },
-): Promise<CallToolResult>
+/** What a server gives each of its calls: its preparation, its system's installer, what changed outside, its examples, and its refusal if it only looks. */
+interface CallParts
 {
-    // A character's subagent only looks, and takes none of the master's lines (D-580).
-    if (fromSubagent(extra._meta)) {
+    prepare: () => Promise<void>;
+    installer: Installer;
+    outside: Told;
+    examples: { shown: Examples; };
+    onlyLooks?: string;
+}
+
+async function runTool(command: AnyCommand, input: unknown, context: Context, extra: ToolExtra, parts: CallParts): Promise<CallToolResult>
+{
+    const { prepare, installer, outside, examples } = parts;
+    // A character's subagent only looks, and takes none of the master's lines (D-580); so does every call of a server that only looks (D-588 (2)).
+    const looking = parts.onlyLooks ?? (fromSubagent(extra._meta) ? subagentRefusal : undefined);
+
+    if (looking !== undefined) {
         // Only view, and only as a character: without `as` it would be the player's own view, which is not theirs.
         const as = (input as { as?: unknown; } | null)?.as;
         const looks = command.name === "view" && typeof as === "string" && as.trim() !== "";
-        return looks ? subagentView(command, input, context, extra, prepare, examples) : { content: [{ type: "text", text: subagentRefusal }], isError: true };
+        return looks ? subagentView(command, input, context, extra, prepare, examples) : { content: [{ type: "text", text: looking }], isError: true };
     }
 
     const keepAlive = command.needsPlayer || command.waitsForPlayer

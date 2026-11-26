@@ -3,13 +3,17 @@ import type { ComponentChildren } from "preact";
 import { arrowStep } from "../text.ts";
 import { nextOn } from "./choosing.ts";
 
-/** A value to choose, with what it means when chosen, and a picture before its name; `off` for one that cannot be chosen now, which stays in sight, dimmed. */
+/**
+ * A value to choose, with what it means when chosen, a picture before its name and words after it, as how it stands; `off` for one that cannot be chosen
+ * now, which stays in sight, dimmed.
+ */
 export interface Option
 {
     value: string;
     label: string;
     means?: string;
     picture?: ComponentChildren;
+    after?: ComponentChildren;
     off?: boolean;
 }
 
@@ -60,6 +64,7 @@ export function Segmented({ label, described, options, value, onPick }: {
                 >
                     {option.picture}
                     {option.label}
+                    {option.after}
                 </button>
             ))}
         </span>

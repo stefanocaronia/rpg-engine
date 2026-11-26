@@ -12,7 +12,7 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 | A click on the dashboard reaches the chat | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Writing in the chat, or stopping it, while the master waits for a click | ✅ | ✅ | ✅ <sup>12</sup> | ✅ | ✅ | ✅ <sup>12</sup> | ✅ | 🟡 <sup>2</sup> | ✅ <sup>12</sup> | ✅ | ✅ | ✅ <sup>12</sup> |
 | Pictures made by the chat in use | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ <sup>14</sup> | ✅ <sup>3</sup> | ✅ <sup>3</sup> | 🟡 <sup>18</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> | ✅ <sup>4</sup> |
-| Importing an adventure from a document | ✅ | ✅ | ✅ <sup>15</sup> | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
+| Importing an adventure from a document | ✅ | ✅ | ✅ <sup>15</sup> | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 <sup>19</sup> | ✅ | ✅ | ✅ <sup>20</sup> |
 | The dashboard translated into a language that is not shipped | ✅ | ✅ | ✅ <sup>13</sup> | ✅ | ✅ | ✅ <sup>13</sup> | ✅ | ✅ | ✅ <sup>13</sup> | ✅ | ✅ | ✅ <sup>13</sup> |
 | A system's rules translated as you read them | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ | ✅ | ✅ | ❔ |
 | Characters voiced by an agent of their own | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ✅ <sup>5</sup> | ✅ <sup>6</sup> | ✅ <sup>6</sup> | ✅ <sup>5</sup> |
@@ -32,11 +32,13 @@ Tried on Windows only. ✅ works · 🟡 works in part · ❌ not there · ❔ n
 8. Any tool outside the game asks you first, but in a run without a screen the master ran commands that only read.
 9. Set the effort in the agent itself.
 10. The chat is in the dashboard itself: there is no link to give.
-11. Chosen beside the model, as the chat opens.
+11. Chosen beside the model, as the chat opens, and changed in the open chat between turns.
 12. A message written while the master waits for a click goes through, and the question is left; stopping while a question waits is not tried yet.
 13. Tried with no chat open: the translation is made outside the chat, by the AI app the engine finds on this computer.
 14. Codex paints the picture and hands it to the game at medium effort; at low effort a small model paints it and forgets to hand it over.
 15. Tried from a chat that sat at the table by hand; Claude Code read the document.
 16. OpenCode keeps no memory between chats.
-17. Only for the model the agent would play by itself; any other plays at the agent's own effort.
-18. Antigravity waits for its painter with a timer of its own, which the dashboard's chat does not let the master use yet: the turn fails and the picture does not come.
+17. For the models that take one, which the agent says once the model is chosen; any other plays at the agent's own effort.
+18. Antigravity makes the picture, but then reads its painter's own notes, outside the campaign, which the dashboard's chat does not let the master do: the turn fails and the picture does not come.
+19. The import runs to its end by itself, but as it starts the master's answer may be replaced by a line of the table's: Antigravity calls a tool of its own to wait, which the table refuses. Ask the master how the import stands.
+20. OpenCode reads the document with the last model you chose in it, at its effort: with a slow one a one-page document took 44 minutes. It goes on after the chat closes.

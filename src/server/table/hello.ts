@@ -1,6 +1,6 @@
 // What a chat and its campaign's table say first, a JSON line each (D-582): the chat's hello, with the table's token, its engine's version and the few names
 // of its environment the table reads for it, and the table's answer; after a yes the socket is the MCP conversation. A probe asks only whether the table is
-// there, and never sits.
+// there, and never sits; a stop, `rpg table --stop`, asks it to end.
 import type { Socket } from "node:net";
 import { knock, type TablePlace } from "./place.ts";
 
@@ -10,23 +10,32 @@ import { knock, type TablePlace } from "./place.ts";
  */
 export const chatEnvironmentNames = ["CLAUDE_CODE_SESSION_ID", "CLAUDE_CODE_ENTRYPOINT", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "RPG_TABLE_MASTER"];
 
-/** A chat's hello: the token of the table's place, the chat's engine, and what the table reads of the environment its `rpg mcp` started in; or a probe. */
+/**
+ * A chat's hello: the token of the table's place, the chat's engine, and what the table reads of the environment its `rpg mcp` started in; or a probe, or a
+ * stop, with the token and the engine alone. What it asks: a seat, whether the table is there, or its end.
+ */
 export interface Hello
 {
     token: string;
     version: string;
     environment: Record<string, string>;
-    probe: boolean;
+    asks: "seat" | "probe" | "stop";
 }
 
 /** Why a table does not let a chat sit: a wrong token, another engine, another chat sitting, or the table ending. */
 export type Refusal = "token" | "version" | "busy" | "ending";
 
-/** The table's answer: the chat sits, or why not; to a probe, the table's engine and whether a chat sits. After any but a yes the socket closes. */
-export type HelloAnswer = { ok: true; } | { refused: Refusal; } | { table: { version: string; seated: boolean; }; };
+/**
+ * The table's answer: the chat sits, or why not; to a probe, the table's engine and whether a chat sits; to a stop, that it ends. After any but a yes the
+ * socket closes.
+ */
+export type HelloAnswer = { ok: true; } | { refused: Refusal; } | { table: { version: string; seated: boolean; }; } | { ending: true; };
 
 /** A table as a probe finds it: its answer, `refused` with why, "nobody" where nothing listens, "silent" where what listens gives no answer in time. */
 export type Probed = { version: string; seated: boolean; } | { refused: Refusal; } | "nobody" | "silent";
+
+/** A table asked to end: "ending" where it said it ends, "nobody" where nothing listens, "silent" where what listens gives no such answer in time. */
+export type Asked = "ending" | "nobody" | "silent";
 
 // The table's answer is one short line.
 const mostAnswer = 1024;
@@ -36,17 +45,17 @@ export function helloLine(token: string, version: string, environment: Record<st
     return `${JSON.stringify({ token, version, environment: chatEnvironment(environment) })}\n`;
 }
 
-/** A hello as a chat sends it, or a probe; undefined for anything else, as a browser's request or noise. */
+/** A hello as a chat sends it, a probe or a stop; undefined for anything else, as a browser's request or noise. */
 export function readHello(line: string): Hello | undefined
 {
-    const read = parsed(line) as Partial<Hello> | undefined;
+    const read = parsed(line) as { token?: unknown; version?: unknown; environment?: unknown; probe?: unknown; stop?: unknown; } | undefined;
 
     if (typeof read?.token !== "string" || typeof read.version !== "string") {
         return undefined;
     }
 
-    if (read.probe === true) {
-        return { token: read.token, version: read.version, environment: {}, probe: true };
+    if (read.probe === true || read.stop === true) {
+        return { token: read.token, version: read.version, environment: {}, asks: read.probe === true ? "probe" : "stop" };
     }
 
     const environment = read.environment;
@@ -55,7 +64,7 @@ export function readHello(line: string): Hello | undefined
         return undefined;
     }
 
-    return { token: read.token, version: read.version, environment: chatEnvironment(environment), probe: false };
+    return { token: read.token, version: read.version, environment: chatEnvironment(environment), asks: "seat" };
 }
 
 export function answerLine(answer: HelloAnswer): string
@@ -69,26 +78,40 @@ export function seated(line: string): boolean
     return (parsed(line) as { ok?: unknown; } | undefined)?.ok === true;
 }
 
+/** Whether the table's answer sends the chat away because another chat sits. */
+export function busy(line: string): boolean
+{
+    return (parsed(line) as { refused?: unknown; } | undefined)?.refused === "busy";
+}
+
 /** Asks the table at a place whether it is there, within `wait` ms to answer the knock and as long to answer the probe; the probe never takes the seat. */
 export async function probeTable(place: TablePlace, version: string, wait: number): Promise<Probed>
 {
-    const knocked = await knock(place.socket, wait);
+    const answer = await askTable(place, { token: place.token, version, probe: true }, wait);
 
-    if (knocked === "nobody" || knocked === "slow") {
-        return knocked === "nobody" ? "nobody" : "silent";
+    if (answer === "nobody" || answer === "silent") {
+        return answer;
     }
 
-    knocked.on("error", () => undefined);
-    knocked.write(`${JSON.stringify({ token: place.token, version, probe: true })}\n`);
-    const answer = await firstLine(knocked, wait, mostAnswer);
-    knocked.destroy();
-    const read = answer === undefined ? undefined : parsed(answer.line) as Partial<{ table: { version?: unknown; seated?: unknown; }; refused: Refusal; }> | undefined;
+    const read = answer as Partial<{ table: { version?: unknown; seated?: unknown; }; refused: Refusal; }> | undefined;
 
     if (typeof read?.table?.version === "string" && typeof read.table.seated === "boolean") {
         return { version: read.table.version, seated: read.table.seated };
     }
 
     return typeof read?.refused === "string" ? { refused: read.refused } : "silent";
+}
+
+/** Asks the table at a place to end, with its token, within `wait` ms to answer the knock and as long to answer the stop: only whether it said it ends. */
+export async function askTableToEnd(place: TablePlace, version: string, wait: number): Promise<Asked>
+{
+    const answer = await askTable(place, { token: place.token, version, stop: true }, wait);
+
+    if (answer === "nobody" || answer === "silent") {
+        return answer;
+    }
+
+    return (answer as { ending?: unknown; } | undefined)?.ending === true ? "ending" : "silent";
 }
 
 /**
@@ -127,6 +150,22 @@ export function firstLine(socket: Socket, wait: number, most: number): Promise<{
         socket.once("end", none);
         socket.once("close", none);
     });
+}
+
+/** Says a line to the table at a place and reads its answer, as JSON: "nobody" where nothing listens, "silent" where it is slow to answer the knock or the line. */
+async function askTable(place: TablePlace, line: object, wait: number): Promise<unknown>
+{
+    const knocked = await knock(place.socket, wait);
+
+    if (knocked === "nobody" || knocked === "slow") {
+        return knocked === "nobody" ? "nobody" : "silent";
+    }
+
+    knocked.on("error", () => undefined);
+    knocked.write(`${JSON.stringify(line)}\n`);
+    const answer = await firstLine(knocked, wait, mostAnswer);
+    knocked.destroy();
+    return answer === undefined ? "silent" : parsed(answer.line);
 }
 
 /** The names of an environment the table reads for a chat, those that are text. */

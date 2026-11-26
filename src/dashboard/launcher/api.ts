@@ -1,4 +1,5 @@
 // What the launcher's page asks the launcher: the campaigns of this computer, and one opened, made, added or taken off the list.
+import type { HostWish } from "../api.ts";
 import type { ChatHost } from "../data.ts";
 import { t } from "../text.ts";
 
@@ -103,6 +104,12 @@ export function windowTitle(words: string): string
 export function forgetCampaign(root: string): Promise<{ campaigns: ListedCampaign[]; } | Refused>
 {
     return ask({ forget: { root } });
+}
+
+/** Asks the launcher something of an AI app (T-290): to install it, to sign in to it, to look at the apps again; the apps after it, where it says them. */
+export function changeHost(wish: HostWish): Promise<{ hosts?: ChatHost[]; } | Refused>
+{
+    return ask(wish);
 }
 
 /** Asks one thing of the launcher: what it answers, a refusal in its own words, or in the page's that it does not answer. */

@@ -8,15 +8,26 @@ import { view } from "../../commands/view/view.ts";
 import { type HostId, hostIds } from "../../core/hosts.ts";
 import { readLog } from "../../core/log.ts";
 import { withFiles } from "../../core/store.ts";
-import { isHostName } from "../../master/index.ts";
+import type { HostAccess } from "../../helpers/index.ts";
+import { type EndCode, isHostName } from "../../master/index.ts";
 import { readBody, sendJson } from "../page/index.ts";
 import type { Served } from "./index.ts";
+
+/** What the page asks of an AI app: its sign-in started, or cancelled; its installation; a look again at each one's account. */
+export type HostWish = { signIn: { host: HostId; cancel?: true; }; } | { install: { host: HostId; }; } | { hosts: true; };
+
+/** Why the chat did not open: in words, and with its code where the page does something of its own, as the sign-in for a host not signed in. */
+export type MasterRefusal = string | { error: string; code: EndCode; };
 
 /** What the page needs of the table's chat with the master. */
 export interface PageMaster
 {
     shown(): PageChat;
-    open(choice: { host: HostId; model: string; effort?: string; fresh?: boolean; }): string | undefined;
+    open(choice: { host: HostId; model: string; effort?: string; fresh?: boolean; }): MasterRefusal | undefined;
+    /** What the page asks of an AI app; why not, in words. Missing where the table cannot sign in or install. */
+    hostWish?(wish: HostWish): string | undefined;
+    /** Another model, and effort where given, for the open chat between two turns; why not, in words. */
+    changeModel?(model: string, effort?: string): string | undefined;
     /** The player's words to the master; the page keeps `shown` where given, as the sentence without what was added to it. */
     say(text: string, shown?: string): "sent" | "busy" | "closed";
     stop(): void;
@@ -52,41 +63,79 @@ export interface ChatQuestion
  * The chat as the page reads it: the hosts it may open in, the campaign's last choice and whether a chat of it can be taken up, the open chat with the model
  * chosen and the host's own name for the one it runs, whether it was cut short as the table that wrote it ended or was taken up with nothing said in it yet,
  * how its turn stands and whether the player's words now answer the question that waits, its messages, and whether a chat opened by hand plays the campaign.
+ * Each host comes with its account, its sign-in and its installation where the table knows them; the open chat says when its model changes between turns,
+ * the efforts of the model it runs where the host says them only once it is chosen, and the code of why it ended where it has one.
  */
 export interface PageChat
 {
-    hosts: { id: string; name: string; ready: boolean; found: boolean; model: string; efforts: string[]; models: { id: string; name: string; about?: string; efforts: string[]; }[]; }[];
+    hosts: ({
+        id: string;
+        name: string;
+        ready: boolean;
+        found: boolean;
+        model: string;
+        efforts: string[];
+        models: { id: string; name: string; about?: string; efforts: string[]; advised?: true; metered?: true; group?: string; }[];
+    } & Partial<HostAccess>)[];
     last?: { host: string; model: string; effort?: string; resumable: boolean; };
-    chat?: { host: string; model: string; effort?: string; runs?: string; cutShort?: true; takenUp?: true; state: "idle" | "turn" | "ended"; why?: string; tool?: string; answers?: true; };
+    chat?: {
+        host: string;
+        model: string;
+        effort?: string;
+        runs?: string;
+        efforts?: string[];
+        cutShort?: true;
+        takenUp?: true;
+        state: "idle" | "turn" | "ended";
+        why?: string;
+        code?: EndCode;
+        tool?: string;
+        answers?: true;
+        changes?: true;
+    };
     messages: PageMessage[];
     elsewhere: boolean;
 }
 
-/** A message of the chat: words of the player's, the master's or the table's; a question of the master's and how it ended; a roll the player may see. */
+/**
+ * A message of the chat: words of the player's, the master's or the table's, a line of the table about the master's model marked so; a question of the
+ * master's and how it ended; a roll the player may see.
+ */
 export type PageMessage =
-    | { id: number; from: "player" | "master" | "table"; text: string; }
+    | ({ id: number; from: "player" | "master" | "table"; text: string; } & ModelMark)
     | { id: number; from: "asked"; text: string; title?: string; options: string[]; state: "waiting" | "answered" | "left"; answer?: string; }
     | { id: number; from: "roll"; text: string; roll: ShownRoll; };
+
+/**
+ * What a line of the table about the master's model says beside its English, for a page that draws it quietly and in its own language: `model`, the
+ * model changed to, as the page names it, with its effort, or with `dropped` where the effort before was left as that model takes none such; `model-kept`,
+ * a change the app did not take, `asked` the model asked and `model` the one that stays.
+ */
+export type ModelMark = { code?: "model" | "model-kept"; model?: string; asked?: string; effort?: string; dropped?: true; };
 
 // How long the player's words may be, and a body that holds them, every character escaped.
 const mostWords = 20_000;
 const mostBody = mostWords * 6 + 1024;
 
 const noTable = "The chat with the master in the page needs the campaign's table: start it with rpg table in the campaign's folder.";
+const noAccess = "This page cannot sign in to the AI apps or install them: open the campaign from RPG Engine, then try again.";
+const noChange = "This page cannot change the model of an open chat: close the chat, then open it with another model.";
+
+// A host the engine knows, by its id; a model's name, blank for the table to refuse in words, else one the host's program may take.
+const hostAsked = z.enum(hostIds as [HostId, ...HostId[]]);
+const modelAsked = z.string().min(1).max(200).refine((model) => model.trim() === "" || isHostName(model));
 
 const asked = z.union([
     z.object({ say: z.string().transform((text) => text.trim()).pipe(z.string().min(1).max(mostWords)) }).strict(),
     z.object({ stop: z.literal(true) }).strict(),
     z.object({
-        open: z.object({
-            host: z.enum(hostIds as [HostId, ...HostId[]]),
-            // A model left blank is the table's to refuse, in words; any other must be a name the host's program may take.
-            model: z.string().min(1).max(200).refine((model) => model.trim() === "" || isHostName(model)),
-            effort: z.string().min(1).max(100).optional(),
-            fresh: z.boolean().optional(),
-        }).strict(),
+        open: z.object({ host: hostAsked, model: modelAsked, effort: z.string().min(1).max(100).optional(), fresh: z.boolean().optional() }).strict(),
     }).strict(),
     z.object({ close: z.literal(true) }).strict(),
+    z.object({ model: z.object({ model: modelAsked, effort: z.string().min(1).max(100).optional() }).strict() }).strict(),
+    z.object({ signIn: z.object({ host: hostAsked, cancel: z.literal(true).optional() }).strict() }).strict(),
+    z.object({ install: z.object({ host: hostAsked }).strict() }).strict(),
+    z.object({ hosts: z.literal(true) }).strict(),
 ]);
 
 /** The chat as the page shows it; `table: false` where no table keeps one. */
@@ -95,13 +144,19 @@ export function masterNow(response: ServerResponse, served: Served): void
     sendJson(response, 200, served.master === undefined ? { table: false } : shown(served.master));
 }
 
-/** What the page asks of the chat: the player's words, stop the turn, open a chat or close it; each answered with the chat as it is after it. */
+/**
+ * What the page asks of the chat: the player's words, stop the turn, open a chat or close it, another model for it; or of an AI app: its sign-in, its
+ * installation, a look again. Each answered with the chat as it is after it; how a sign-in or an installation goes on reaches the page as the chat's change.
+ */
 export async function changeMaster(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
 {
     const parsed = asked.safeParse(await readBody(request, mostBody));
 
     if (!parsed.success) {
-        sendJson(response, 400, { error: `Send { say } with the player's words, up to ${mostWords} characters, { stop: true }, { open: { host, model, effort?, fresh? } } or { close: true }.` });
+        sendJson(response, 400, {
+            error: `Send { say } with the player's words, up to ${mostWords} characters, { stop: true }, { open: { host, model, effort?, fresh? } }, { close: true }, `
+                + "{ model: { model, effort? } }, { signIn: { host, cancel? } }, { install: { host } } or { hosts: true }.",
+        });
         return;
     }
 
@@ -122,7 +177,12 @@ export async function changeMaster(request: IncomingMessage, response: ServerRes
         sendJson(response, said === "sent" ? 202 : 409, said === "sent" ? shown(master) : { error: refused[said], ...shown(master) });
     } else if ("open" in wish) {
         const refused = master.open(wish.open);
-        sendJson(response, refused === undefined ? 200 : 409, refused === undefined ? shown(master) : { error: refused, ...shown(master) });
+        const words = typeof refused === "string" || refused === undefined ? { error: refused } : refused;
+        sendJson(response, refused === undefined ? 200 : 409, refused === undefined ? shown(master) : { ...words, ...shown(master) });
+    } else if ("model" in wish) {
+        answered(response, master, master.changeModel === undefined ? noChange : master.changeModel(wish.model.model, wish.model.effort));
+    } else if ("signIn" in wish || "install" in wish || "hosts" in wish) {
+        answered(response, master, master.hostWish === undefined ? noAccess : master.hostWish(wish));
     } else {
         if ("stop" in wish) {
             master.stop();
@@ -159,6 +219,12 @@ export function rollTeller(served: Served): () => Promise<void>
 
         return looking;
     };
+}
+
+/** The chat as it is after a wish, or why the table refused it. */
+function answered(response: ServerResponse, master: PageMaster, refused: string | undefined): void
+{
+    sendJson(response, refused === undefined ? 200 : 409, refused === undefined ? shown(master) : { error: refused, ...shown(master) });
 }
 
 function shown(master: PageMaster): { table: true; } & PageChat

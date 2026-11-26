@@ -6,18 +6,25 @@
 //   long       a long answer, to read back while it comes
 //   elsewhere  the chat closes, and for a while a chat opened by hand plays the campaign
 //   missing    the chat closes, and the app is no longer on this computer; said again in a new chat, it is back
-//   codex      a second app to choose, or none again
+//   codex      Codex signed in, or out again
+//   expired    the chat ends as the app's sign-in ran out, which the page is told by its code; the app is to set up again
+//   signout    the chat closes, and the app's sign-in runs out unseen: the page still reads it signed in, and opening the chat again with it is refused
+//              with the code of the sign-in, as the table finds it out
 //   ask        the master asks the player the demo's first question, as with the ask command, and waits for the answer; then goes on. With a number,
 //              as ask 3, that question of the demo's. Stop leaves it without an answer
 //   (with `takes`, the campaign has a chat to take up, which the demo takes up by itself as the first page listens, as the table does: "cut", cut as
 //   the game was closed, its flow as it was written with a question left without an answer at its end, cut short until the next turn begins; "whole",
 //   its flow ending with the master's words, taken up until the player says something; "empty", taken up with no flow kept, as an old chat)
 //   ooc        an answer with words out of the game, a paragraph of them and some among the story's, and brackets that are the story's
+// The apps (test/demo/hosts.ts) are installed and signed in to from the page; the model of an open chat changes between two turns, in every app, and the
+// table's line says so, with its mark, once the app takes it half a second later: until then the chat shows the model before. Haiku 4.5 takes no effort,
+// and the one before is left. Claude Code does not take Fable 5.2, nor the effort max, and the table's one line says that in place of the change's. OpenCode says the efforts of a model a moment after it is chosen, as the host's session event.
 // A question the demo asks, by the chat or by its own means (look.ts --ask), and the rolls the player may see stand among its messages, as the table's
 // chat keeps them: a question waits, then is answered or left; the player's words in the chat answer the one that takes them. In the middle of an answer
 // the master rolls where the player may see, where the demo gives it the means, and its words after hold the engine's mark of that roll, [roll <id>].
 // Not part of the tests.
-import type { PageMaster, PageMessage } from "../../src/server/dashboard/index.ts";
+import type { ModelMark, PageChat, PageMaster, PageMessage } from "../../src/server/dashboard/index.ts";
+import { type DemoHosts, demoHosts, effortsOnceChosen } from "./hosts.ts";
 
 /** The demo's master, which tells whoever listens that the chat changed. */
 export interface DemoMaster extends PageMaster
@@ -38,28 +45,33 @@ interface Chat
     host: string;
     model: string;
     effort?: string;
-    /** The app's own name for the model it runs. */
+    /** The app's own name for the model it runs, and its efforts where the app says them only once it is chosen. */
     runs?: string;
+    efforts?: string[];
     state: "idle" | "turn" | "ended";
     why?: string;
+    code?: "signin";
     tool?: string;
+}
+
+/** A change of model asked of the open chat, before its app answers: what was asked, the chat before it, and the table's line once it is taken. */
+interface Pending
+{
+    model: string;
+    effort: string | undefined;
+    name: string;
+    before: { model: string; effort: string | undefined; runs: string | undefined; efforts: string[] | undefined; };
+    line: { text: string; mark: ModelMark; };
 }
 
 // How long a chat opened by hand sits at the demo's table, and the pause between the pieces of an answer.
 const elsewhereFor = 15_000;
 const pieceEvery = 60;
-const efforts = ["low", "medium", "high", "xhigh", "max"];
-// The models the demo's Claude Code offers, as the host lists them; the hosts with no driver yet.
-export const demoModels = [
-    { id: "opus", name: "Opus 5.5", about: "For complex work and everyday tasks", efforts },
-    { id: "claude-fable-5-2", name: "Fable 5.2", about: "For your toughest challenges", efforts },
-    { id: "sonnet", name: "Sonnet 5.5", about: "Most efficient for simpler tasks", efforts },
-    { id: "claude-haiku-4-5-20251001", name: "Haiku 4.5", about: "Fastest for quick answers", efforts: [] },
-];
-export const hostsNotReady = [
-    { id: "antigravity", name: "Antigravity", ready: false, found: false, model: "", efforts: [], models: [] },
-    { id: "openCode", name: "OpenCode", ready: false, found: false, model: "", efforts: [], models: [] },
-];
+// How long an app takes to say the model it runs, after the chat opens or its model changes.
+const sessionAfter = 500;
+// The model and the effort the demo's Claude Code does not take in an open chat.
+const refusedModel = "claude-fable-5-2";
+const refusedEffort = "max";
 
 const answer = [
     "La porta della locanda cigola, e il vento del guado entra prima di te: sa di *fango e di legna bagnata*.",
@@ -108,8 +120,11 @@ const flowBefore: (Omit<Words, "id"> | Omit<AskedMessage, "id"> | Omit<Extract<M
     { from: "asked", text: "L'oste aspetta una risposta: che cosa gli dici?", title: "Scelta", options: ["La verità", "Una mezza verità", "Niente"], state: "left" },
 ];
 
-/** The demo's master: a chat kept in this process's memory alone; with `takes`, one to take up: cut as the game was closed, whole, or with no flow kept. */
-export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | undefined; } = {}): DemoMaster
+/**
+ * The demo's master: a chat kept in this process's memory alone; with `takes`, one to take up: cut as the game was closed, whole, or with no flow kept;
+ * `hosts`, the apps it opens in, shared with the demo's launcher.
+ */
+export function demoMaster({ takes, hosts = demoHosts() }: { takes?: "cut" | "whole" | "empty" | undefined; hosts?: DemoHosts; } = {}): DemoMaster
 {
     const messages: Message[] = [];
     const timers = new Set<NodeJS.Timeout>();
@@ -130,7 +145,12 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
     let takenUp = false;
     let elsewhere = false;
     let missing = false;
-    let second = false;
+    // The app whose sign-in ran out while the page still reads it signed in.
+    let signedOut: string | undefined;
+    // The change of model asked of the open chat that its app has not answered yet.
+    let pending: Pending | undefined;
+
+    hosts.onChange(() => changed());
 
     const add = (from: Words["from"], text: string): Words => {
         const message = { id: ++lastId, from, text };
@@ -139,6 +159,92 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
     };
 
     const isOpen = (): boolean => chat !== undefined && chat.state !== "ended";
+
+    // The app says the model it runs, and its efforts where it says them only now: an effort the model does not take is left out, as the table does.
+    const sessionTold = (open: Chat): void => {
+        later(sessionAfter, () => {
+            if (chat !== open) {
+                return;
+            }
+
+            const efforts = effortsOnceChosen(open.host, open.model);
+            open.runs = open.model;
+
+            if (efforts !== undefined) {
+                open.efforts = efforts;
+
+                if (open.effort !== undefined && !efforts.includes(open.effort)) {
+                    delete open.effort;
+                }
+            }
+        });
+    };
+
+    // The open chat plays with that model and effort from now on, and so does the campaign's last chat.
+    const choose = (open: Chat, model: string, effort: string | undefined): void => {
+        if (model !== open.model) {
+            Object.assign(open, { runs: undefined, efforts: undefined });
+        }
+
+        open.model = model;
+
+        if (effort === undefined) {
+            delete open.effort;
+        } else {
+            open.effort = effort;
+        }
+
+        last = { host: open.host, model, ...(effort === undefined ? {} : { effort }) };
+    };
+
+    // A line of the table's about the master's model, with its mark, as the table writes it.
+    const tableLine = (text: string, mark: ModelMark): void => {
+        messages.push({ id: ++lastId, from: "table", text, ...mark });
+    };
+
+    // The app did not take what was asked, in one line: the model, and the one before stays with its effort, its name and efforts as the app said them;
+    // else the effort, and the model asked plays with the effort before.
+    const refused = (open: Chat, change: Pending): void => {
+        const { before, model, name } = change;
+        const app = hosts.find(open.host);
+        const kept = app?.models.find((one) => one.id === before.model)?.name ?? before.model;
+
+        if (model === refusedModel) {
+            choose(open, before.model, before.effort);
+            Object.assign(open, { runs: before.runs, efforts: before.efforts });
+            tableLine(`${app?.name ?? open.host} did not take ${name}: the master goes on with ${kept}.`, { code: "model-kept", model: kept, asked: name });
+            return;
+        }
+
+        choose(open, model, before.effort);
+        tableLine(`${app?.name ?? open.host} did not take that effort: the master plays with ${name}, its effort as before.`, {
+            code: "model",
+            model: name,
+            ...(before.effort === undefined ? {} : { effort: before.effort }),
+            dropped: true,
+        });
+        sessionTold(open);
+    };
+
+    // The app answers a change a moment after it is asked: until then the chat shows the model before, and the line is written as it takes it.
+    const answerChange = (open: Chat, change: Pending): void => {
+        later(sessionAfter, () => {
+            if (chat !== open || pending !== change) {
+                return;
+            }
+
+            pending = undefined;
+
+            if (open.host === "claudeCode" && (change.model === refusedModel || change.effort === refusedEffort)) {
+                refused(open, change);
+                return;
+            }
+
+            choose(open, change.model, change.effort);
+            tableLine(change.line.text, change.line.mark);
+            sessionTold(open);
+        });
+    };
 
     if (takes !== undefined) {
         last = { host: "claudeCode", model: "sonnet", effort: "medium" };
@@ -161,6 +267,7 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
         timers.clear();
         asking?.abort();
         asking = undefined;
+        pending = undefined;
     };
 
     // The answer in pieces of a few words, each paragraph a block of its own, through a command at its start; with more than one paragraph the master
@@ -238,8 +345,20 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
         } else if (/\booc\b/.test(said)) {
             tell(open, offGame);
         } else if (/\bcodex\b/.test(said)) {
-            second = !second;
-            tell(open, [second ? "Ora puoi scegliere anche *Codex*, quando la chat è chiusa." : "Ora c'è di nuovo una sola app."]);
+            const codex = hosts.find("codex");
+            const signed = codex?.account !== "in";
+            Object.assign(codex ?? {}, { account: signed ? "in" : "out" });
+            tell(open, [signed ? "Ora *Codex* è pronta, quando la chat è chiusa." : "Ora Codex è di nuovo da attivare."]);
+        } else if (/\bsignout\b/.test(said)) {
+            later(400, () => {
+                chat = undefined;
+                signedOut = open.host;
+            });
+        } else if (/\bexpired\b/.test(said)) {
+            later(900, () => {
+                Object.assign(open, { state: "ended", why: "the app answered 401 Unauthorized.", code: "signin" });
+                Object.assign(hosts.find(open.host) ?? {}, { account: "out" });
+            });
         } else {
             tell(open, /\blong\b/.test(said) ? longAnswer : answer);
         }
@@ -249,19 +368,74 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
         onChange: (listener) => (changed = listener),
         onAsk: (asks) => (asker = asks),
         onRoll: (rolls) => (roller = rolls),
-        shown: () => ({
-            hosts: [
-                { id: "claudeCode", name: "Claude Code", ready: true, found: !missing, model: "sonnet", efforts, models: missing ? [] : demoModels },
-                { id: "codex", name: "Codex", ready: second, found: second, model: second ? "gpt-codex" : "", efforts: second ? efforts.slice(0, 4) : [], models: [] },
-                ...hostsNotReady,
-            ],
-            ...(last === undefined ? {} : { last: { ...last, resumable: true } }),
-            ...(chat === undefined
-                ? {}
-                : { chat: { ...chat, ...(cutShort ? { cutShort: true as const } : {}), ...(takenUp ? { takenUp: true as const } : {}), ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}) } }),
-            messages: messages.map((message) => ({ ...message })),
-            elsewhere,
-        }),
+        hostWish: (wish) => hosts.wish(wish),
+        // Another model for the open chat between two turns, checked as the table does: an effort the model's list does not have is refused, unless
+        // the app says its efforts only once it is chosen; none keeps the one before where the model takes it, else leaves it, and the line says so. The
+        // table's line says the change with its mark. Claude Code does not take Fable 5.2, nor the effort max, a moment later, as an app refuses.
+        changeModel: (model, effort) => {
+            const open = chat;
+
+            if (open === undefined || open.state === "ended") {
+                return "No chat with the master is open: open one first.";
+            }
+
+            if (open.state === "turn") {
+                return "The master is answering: change the model once they have finished.";
+            }
+
+            const host = hosts.find(open.host);
+            const listed = host?.models.find((one) => one.id === model);
+            const efforts = listed?.efforts ?? host?.efforts ?? [];
+            const notKnown = effortsOnceChosen(open.host, model) !== undefined && listed !== undefined && listed.efforts.length === 0;
+            const takes = (one: string): boolean => notKnown || efforts.includes(one);
+            const name = listed?.name ?? model;
+
+            if (effort !== undefined && !takes(effort)) {
+                return efforts.length === 0
+                    ? `${name} takes no effort in ${host?.name ?? open.host}: leave the effort to the host.`
+                    : `${name} takes no effort ${effort} in ${host?.name ?? open.host}: choose one of ${efforts.join(", ")}.`;
+            }
+
+            // A change asked and not taken yet is the one the next starts from, as at the table.
+            const was = pending ?? { model: open.model, effort: open.effort };
+            const stays = effort === undefined && was.effort !== undefined && takes(was.effort);
+            const asked = effort ?? (stays ? was.effort : undefined);
+            const dropped = effort === undefined && was.effort !== undefined && !stays ? was.effort : undefined;
+
+            if (model === was.model && asked === was.effort) {
+                return undefined;
+            }
+
+            // Until the app confirms, the chat shows what it runs still, as at the table.
+            const before = pending?.before ?? { model: open.model, effort: open.effort, runs: open.runs, efforts: open.efforts };
+
+            const line = dropped === undefined
+                ? { text: `From now on the master plays with ${name}${asked === undefined ? "" : `, effort ${asked}`}.`, mark: { code: "model" as const, model: name, ...(asked === undefined ? {} : { effort: asked }) } }
+                : { text: `From now on the master plays with ${name}, which takes no effort ${dropped}: the app chooses its own.`, mark: { code: "model" as const, model: name, dropped: true as const } };
+            pending = { model, effort: asked, name, before, line };
+            answerChange(open, pending);
+            changed();
+            return undefined;
+        },
+        shown: () =>
+            ({
+                hosts: hosts.list().map((host) => (host.id === "claudeCode" && missing ? { ...host, found: false, models: [] } : host)),
+                ...(last === undefined ? {} : { last: { ...last, resumable: true } }),
+                ...(chat === undefined
+                    ? {}
+                    : {
+                        chat: {
+                            ...chat,
+                            ...(cutShort ? { cutShort: true as const } : {}),
+                            ...(takenUp ? { takenUp: true as const } : {}),
+                            ...(isOpen() && waiting?.answer !== undefined ? { answers: true as const } : {}),
+                            // Every app's driver changes the model of an open chat.
+                            ...(chat.state === "ended" ? {} : { changes: true as const }),
+                        },
+                    }),
+                messages: messages.map((message) => ({ ...message })),
+                elsewhere,
+            }) as PageChat,
         open: (choice) => {
             if (chat !== undefined && chat.state !== "ended") {
                 return "A chat with the master is open already: close it first.";
@@ -275,6 +449,16 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
                 return "Claude Code is not on this computer: install it, then try again.";
             }
 
+            const host = hosts.find(choice.host);
+
+            // A sign-in that ran out unseen: the table finds it out now, and the page reads the app to set up.
+            if (host !== undefined && (host.account === "out" || signedOut === choice.host)) {
+                signedOut = undefined;
+                host.account = "out";
+                changed();
+                return { error: `${host.name} is not signed in on this computer: sign in here, then open the chat.`, code: "signin" };
+            }
+
             if (choice.fresh === true || last?.host !== choice.host) {
                 messages.length = 0;
                 waiting = undefined;
@@ -285,6 +469,7 @@ export function demoMaster({ takes }: { takes?: "cut" | "whole" | "empty" | unde
             takenUp = false;
             last = { host: choice.host, model: choice.model, ...(choice.effort === undefined ? {} : { effort: choice.effort }) };
             chat = { ...last, state: "idle" };
+            sessionTold(chat);
             changed();
             return undefined;
         },

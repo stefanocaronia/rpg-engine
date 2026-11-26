@@ -1,13 +1,13 @@
 // The master: a chat with the AI host's own program, driven by its protocol so that the table can show it.
 import { type HostId, hostIds, hosts } from "../core/hosts.ts";
 import { antigravity } from "./antigravity/index.ts";
-import type { MasterChat, MasterDriver, MasterModel, MasterOptions } from "./chat.ts";
+import { type MasterChat, type MasterDriver, type MasterModel, type MasterOptions, withoutTrace } from "./chat.ts";
 import { claudeCode } from "./claude-code/index.ts";
 import { codex } from "./codex/index.ts";
 import { openCode } from "./opencode/index.ts";
 
-export { isHostName } from "./chat.ts";
-export type { MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions, ToolKind } from "./chat.ts";
+export { isHostName, traceVariable, withoutTrace } from "./chat.ts";
+export type { EndCode, MasterChat, MasterDriver, MasterEvent, MasterModel, MasterOptions, ModelsOptions, ToolKind } from "./chat.ts";
 export { type ModelKeeper, modelKeeper } from "./keeper.ts";
 
 /** A host's program on this computer: the command, and the arguments before the host's own. */
@@ -85,12 +85,33 @@ export function hostsOffered(
     });
 }
 
-/** Asks a host its models, its program running in `folder`; none for a host without a driver or a program on this computer. */
-export function askModels(host: HostId, places: ProgramPlaces & { folder: string; }, driverOf: (host: HostId) => MasterDriver | undefined = masterDriver): Promise<MasterModel[]>
+/**
+ * The model a chat opens with where the player named none: the one the host advises, else the first of its list as the driver orders it, never one paid
+ * apart for each answer; else the driver's own.
+ */
+export function proposedModel(driver: MasterDriver, models: MasterModel[]): string
+{
+    const free = models.filter((model) => model.metered !== true);
+    return (free.find((model) => model.advised === true) ?? free.at(0))?.id ?? driver.model;
+}
+
+/**
+ * Asks a host its models, its program running in `folder`; none for a host without a driver or a program on this computer. A session it opens to list them
+ * starts no rpg server, which would knock at the campaign's table. The log says, with the time and the host's name, when its program started and how it ended.
+ */
+export function askModels(
+    host: HostId,
+    places: ProgramPlaces & { folder: string; log?: (line: string) => void; },
+    driverOf: (host: HostId) => MasterDriver | undefined = masterDriver,
+): Promise<MasterModel[]>
 {
     const driver = driverOf(host);
     const program = hostProgram(host, places, driverOf);
-    return driver === undefined || program === undefined ? Promise.resolve([]) : driver.models({ folder: places.folder, program, environment: driver.environment(places.environment) });
+    const said = places.log;
+    const log = said === undefined ? {} : { log: (line: string) => said(`${new Date().toISOString()} ${hosts[host].name} ${line}`) };
+    return driver === undefined || program === undefined
+        ? Promise.resolve([])
+        : driver.models({ folder: places.folder, program, environment: { ...withoutTrace(driver.environment(places.environment)), RPG_HELPER: "1" }, ...log });
 }
 
 /**
@@ -101,8 +122,10 @@ export function effortRefused(host: HostId, driver: MasterDriver, known: MasterM
 {
     const listed = known.find((one) => one.id === model);
     const efforts = listed?.efforts ?? driver.efforts;
+    // Not known until the model is chosen: the driver sets the effort only where that model takes it.
+    const notKnown = driver.effortsOnceChosen === true && listed !== undefined && listed.efforts.length === 0;
 
-    if (effort === undefined || efforts.includes(effort)) {
+    if (effort === undefined || notKnown || efforts.includes(effort)) {
         return undefined;
     }
 

@@ -87,6 +87,8 @@ describe("architecture", () => {
             "cli/open.ts",
             // The hosts' own programs, looked for in the folders of the PATH, the player's home and npm's packages, for the table's chat with the master.
             "master/program.ts",
+            // The trace of a chat's lines with its host, in a file the table's environment names, never the campaign's.
+            "master/trace.ts",
             // The player's last choices, in their data folder: what a new campaign's setup suggests (T-134).
             "campaign/last-choices.ts",
             // Codex's own folders where a picture is made, and the engine's folder of programs (D-308, D-425).

@@ -1,6 +1,8 @@
 // A new campaign: its name, the language the master plays in, its game system and where its folder goes; folded under them, what its first chat with the
 // master proposes: the AI app, the model, how much the master thinks. The master makes the rest with the player, in the campaign.
 import { useEffect, useRef, useState } from "preact/hooks";
+import type { HostWish } from "../api.ts";
+import { anyHostReady, firstChoice, hostState } from "../chat/chat.ts";
 import { ChoiceFields } from "../chat/fields.tsx";
 import { Segmented } from "../parts/segmented.tsx";
 import { languageName } from "../settings/languages.ts";
@@ -11,7 +13,7 @@ import { firstForm, inUsualFolder, wishOf } from "./campaigns.ts";
 // How long a campaign's name may be, as the launcher takes it.
 const mostName = 80;
 
-export function NewCampaignForm({ launcher, busy, problem, onCreate, onBack, onPick }: {
+export function NewCampaignForm({ launcher, busy, problem, onCreate, onBack, onPick, onWish }: {
     launcher: LauncherNow;
     /** What is said while the campaign is made; nothing while it is not. */
     busy: string | undefined;
@@ -20,6 +22,8 @@ export function NewCampaignForm({ launcher, busy, problem, onCreate, onBack, onP
     onBack(): void;
     /** Has the player choose a folder in a window titled with these words: the folder, or none. */
     onPick(words: string): Promise<string | undefined>;
+    /** What the player asks of an AI app: to install it, to sign in to it. */
+    onWish(wish: HostWish): void;
 })
 {
     const [form, setForm] = useState(() => firstForm(launcher, browserLanguage() ?? "en"));
@@ -28,8 +32,22 @@ export function NewCampaignForm({ launcher, busy, problem, onCreate, onBack, onP
     const wish = wishOf(form, launcher.hosts);
     const ready = wish !== undefined && busy === undefined && !picking;
     const system = launcher.systems.find((one) => one.name === form.system);
+    // The master's part opens by itself only as it first shows, while no app is ready: then the player opens and closes it, never an app ready since.
+    const masterOpen = useRef<boolean>(undefined);
+    masterOpen.current ??= launcher.hosts.length > 0 ? !anyHostReady(launcher.hosts) : undefined;
 
     useEffect(() => name.current?.focus(), []);
+
+    // An app that becomes ready, or one to sign in to, while none was chosen: the first choice, as the form would have opened with it.
+    useEffect(() => {
+        if (form.chat === undefined) {
+            const chat = firstChoice({ hosts: launcher.hosts });
+
+            if (chat !== undefined) {
+                setForm((before) => ({ ...before, chat }));
+            }
+        }
+    }, [launcher.hosts.map((one) => hostState(one)).join()]);
 
     const pick = async (): Promise<void> => {
         setPicking(true);
@@ -104,12 +122,13 @@ export function NewCampaignForm({ launcher, busy, problem, onCreate, onBack, onP
                 </div>
             </div>
             {launcher.hosts.length > 0 && (
-                <details class="launcher-master">
+                <details class="launcher-master" open={masterOpen.current}>
                     <summary>{t("The master")}</summary>
                     <ChoiceFields
                         shown={{ hosts: launcher.hosts }}
                         choice={form.chat}
                         onChoice={(chat) => setForm((before) => ({ ...before, chat }))}
+                        onWish={onWish}
                     />
                 </details>
             )}

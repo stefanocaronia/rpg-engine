@@ -61,6 +61,15 @@ export function codexReader(maker: PictureMaker = codexPictures()): DocumentRead
     return { ready: () => maker.ready().ready, program: () => "Codex", read };
 }
 
+/** The line that starts one run of the importer, which writes in its folder: on Windows with a sandbox of its own, the player's never read (D-589 (3)). */
+export function readingLine(program: string, platform: NodeJS.Platform): string
+{
+    // --ignore-user-config drops [windows] sandbox too, and without it Codex runs workspace-write as read-only, refusing every command (Elena, 26 November).
+    const sandbox = platform === "win32" ? " -c windows.sandbox=unelevated" : "";
+    // The folder is the working one, never in the line: the shell would read a title's $(…) or %…% (Matteo's review, D-489).
+    return `${program} exec --ephemeral --skip-git-repo-check -s workspace-write${sandbox} -c shell_environment_policy.inherit=core -o .last.txt --ignore-user-config --ignore-rules -`;
+}
+
 /** Whether Codex is there and logged in with ChatGPT: asked in about a second, without spending anything. */
 function codexReady(): PicturesReady
 {
@@ -156,8 +165,7 @@ function write(brief: string): Promise<string | undefined>
 function read(folder: string, brief: string, _writable: string[], signal?: AbortSignal): Promise<{ said: string; } | { failed: string; }>
 {
     const last = join(folder, ".last.txt");
-    // The folder is the working one, never in the line: the shell would read a title's $(…) or %…% (Matteo's review, D-489).
-    const line = `${codex} exec --ephemeral --skip-git-repo-check -s workspace-write -c shell_environment_policy.inherit=core -o .last.txt --ignore-user-config --ignore-rules -`;
+    const line = readingLine(codex, process.platform);
 
     return new Promise((done) => {
         const child = spawn(line, { shell: true, windowsHide: true, cwd: folder, env: helperEnvironment("codex"), stdio: ["pipe", "ignore", "pipe"] });
