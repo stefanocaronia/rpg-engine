@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: kompletní průvodce
 
-**RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. S Pánem jeskyně si povídáš v **chatu**. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**. Vedle chatu máš v prohlížeči otevřenou stránku, **dashboard**, s deníkem postavy, kostkami, mapami a kronikou.
+**RPG Engine** ti umožní hrát stolní hru na hrdiny s **AI jako Pánem jeskyně**. Hraješ v **Přehledu**, v okně na počítači s deníkem postavy, kostkami, mapami, kronikou a **chatem** s Pánem jeskyně. RPG Engine pracuje v pozadí: **pamatuje si svět**, **hází kostkami** a **vede účty**.
 
 Tento průvodce je pro hráče: programovat umět nemusíš.
 
 ## Rychlý start <!-- icon: send -->
 
 1. Nainstaluj **Node.js** z [nodejs.org](https://nodejs.org) (verze LTS).
-2. Nainstaluj **AI agenta**, program, ve kterém Pán jeskyně běží, a přihlas se: například Claude Code nebo Codex ([2.4](#24-connect-your-ai)).
-3. V novém terminálu, otevřeném až po instalaci Node.js, nainstaluj RPG Engine: `npm install -g rpg-engine`. Pokud Windows odpoví, že spouštění skriptů je zakázané, napiš jednou `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, odpověz ano a zkus to znovu.
-4. Otevři terminál ve složce, kam ukládáš své hry (klikni na ni pravým tlačítkem a zvol **Otevřít v Terminálu**), a vytvoř kampaň, vždy i s jejím názvem: `rpg init "The Salt Isles"`. RPG Engine odpoví dvěma řádky v angličtině: vše je v pořádku.
-5. Přejdi do nové složky, `cd "The Salt Isles"`, a spusť tam svého agenta: `claude` pro Claude Code, `codex` pro Codex. Když se zeptá, jestli složce důvěřuješ, potvrď ([2.4](#24-connect-your-ai)). Pak napiš *Ahoj! Pojďme začít.* Pán jeskyně odpoví odkazem na tvůj dashboard.
+2. Jednou, v novém terminálu otevřeném až po instalaci Node.js, nainstaluj RPG Engine: `npm install -g rpg-engine`. Pokud Windows odpoví, že spouštění skriptů je zakázané, napiš jednou `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, odpověz ano a zkus to znovu.
+3. Napiš `rpg open`. Zeptá se, jestli má dát ikonu RPG Engine na plochu a do nabídky: stiskni Enter pro ano. Od té chvíle RPG Engine spouštíš z jeho ikony, bez terminálu ([2.2](#22-install)).
+4. Okno ukáže tvoje kampaně. Stiskni **Nová kampaň**, zadej jméno a stiskni **Vytvořit** ([2.3](#23-create-a-campaign)): její Přehled se otevře ve vlastním okně.
+5. V chatu s Pánem jeskyně vyber svou AI aplikaci a její model: Claude Code potřebuje placený tarif Claude, Codex účet ChatGPT, bezplatný nebo placený ([2.4](#24-connect-your-ai)). Pokud aplikace chybí nebo chybí přihlášení, stránka ji nainstaluje, případně tě přihlásí. Stiskni **Otevřít chat**, pak **Začít**. První odpověď může trvat i pár minut. Pak se Pán jeskyně zeptá, jak chceš hrát, a postavu vytvoříte společně.
 
 ## 1. O hře RPG Engine <!-- icon: about -->
 
@@ -39,48 +39,46 @@ Hra přichází jako herní systém, balíček, který Pán jeskyně nainstaluje
 
 - Počítač s Windows, macOS nebo Linuxem a webový prohlížeč.
 - **Node.js 24** nebo novější, z [nodejs.org](https://nodejs.org). Přináší `npm`, kterým se instaluje RPG Engine.
-- **Terminál**: ve Windows Terminál nebo PowerShell, v macOS Terminál. Terminál ve složce otevřeš tak, že na složku klikneš pravým tlačítkem a zvolíš **Otevřít v Terminálu** (Windows) nebo **Služby > Nový terminál ve složce** (macOS). Pokud Windows odpoví, že spouštění skriptů je zakázané, napiš jednou `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` a odpověz ano.
-- **AI agent** pro Pána jeskyně ([2.4](#24-connect-your-ai)) s **největším modelem**, který nabízí: malý model se snáze nechá přemluvit k prozrazení tajemství nebo k ohnutí pravidel.
+- **Terminál**, jednou, kvůli instalaci RPG Engine: ve Windows Terminál nebo PowerShell, v macOS Terminál. Terminál ve složce otevřeš tak, že na složku klikneš pravým tlačítkem a zvolíš **Otevřít v Terminálu** (Windows) nebo **Služby > Nový terminál ve složce** (macOS). Pokud Windows odpoví, že spouštění skriptů je zakázané, napiš jednou `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` a odpověz ano.
+- **AI aplikace** pro Pána jeskyně, s tvým vlastním účtem ([2.4](#24-connect-your-ai)): stránka ti ji umí nainstalovat. Hraj s **největším modelem**, který nabízí: malý model se dá snáze přemluvit k prozrazení tajemství nebo k ohnutí pravidel.
 
 ### 2.2 Instalace
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-Příkaz `rpg --version` ověří, že instalace proběhla. Pokud ti npm nabídne, že se aktualizuje, můžeš to ignorovat. Příkaz `rpg` použiješ jednou pro každou kampaň, když ji vytváříš. Potom už RPG Engine spouští tvůj agent sám. Samotný `rpg` nic neotevře: dashboard ti dá Pán jeskyně.
+První řádek nainstaluje RPG Engine; `rpg --version` ověří, že se to povedlo. Pokud ti npm nabídne, že se aktualizuje, můžeš to ignorovat.
+
+`rpg open` otevře okno RPG Engine s tvými kampaněmi. Poprvé se v terminálu zeptá, jestli má přidat jeho ikonu na plochu a do nabídky Start (na Macu do složky Aplikace): stiskni Enter pro ano. Od té chvíle na ikonu dvakrát klikneš a terminál už nepotřebuješ. Bez ikony piš `rpg open` při každé hře; `rpg icon` přidá ikonu později a `rpg icon --remove` ji odebere.
 
 ### 2.3 Vytvoření kampaně
 
-Otevři terminál ve složce, kam ukládáš své hry ([2.1](#21-what-you-need) říká, jak na to):
+Okno RPG Engine ukazuje tvoje kampaně jako karty, naposledy otevřená je první. Stiskni **Nová kampaň** a zadej její **Jméno**, **Jazyk** a **Herní systém**: zbytek s tebou vytvoří Pán jeskyně. Kampaň se uloží do složky se stejným názvem uvnitř složky `RPG Engine` ve tvé uživatelské složce (ve Windows `C:\Users\<name>`); **Vybrat jinou složku…** ji uloží do prázdné složky, kterou vybereš. V části **Pán jeskyně** už můžeš zvolit AI aplikaci a model pro její první chat ([2.4](#24-connect-your-ai)). Stiskni **Vytvořit**: Přehled kampaně se otevře ve vlastním okně.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Tím vznikne složka `The Salt Isles` s novou kampaní. Přejdi do ní příkazem `cd "The Salt Isles"`. Název piš vždy: bez něj se kampaní stane složka, ve které právě jsi, vedle všeho, co už obsahuje. Zapamatuj si, kde leží: vracíš se do ní při každé hře. Vše ostatní zvolíš později, v chatu nebo na dashboardu.
-
-Pán jeskyně kampaň za tebe vytvořit nemůže: před příkazem `init` nic neříká tvému agentovi, kde RPG Engine najde.
+Příště kampaň otevřeš kliknutím na její kartu; ta, která je otevřená, má nápis **Právě otevřená**. **Otevřít složku…** přidá kampaň, kterou už na tomto počítači máš. Malý křížek na kartě ji odebere ze seznamu: soubory zůstanou, kde jsou.
 
 ### 2.4 Připojení AI
 
-Pán jeskyně běží v **AI agentovi**: je to AI aplikace, v terminálu nebo na ploše, která umí pracovat se soubory v tvém počítači, například Claude Code, Codex, Antigravity nebo OpenCode. Obyčejný chat jako claude.ai nebo ChatGPT, případně aplikace v telefonu, nestačí: Pán jeskyně se musí dostat k souborům kampaně v tvém počítači. Každý agent potřebuje vlastní tarif a přihlášení: Claude Code placený tarif Claude, Codex přihlášení do ChatGPT, Antigravity účet Google, jehož bezplatný tarif má malou týdenní kvótu. OpenCode funguje s modely, které mu zadáš, včetně lokálních. Nainstaluješ ho jednou, z jeho vlastní stránky: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Pán jeskyně běží v **AI aplikaci** na tvém počítači, s tvým vlastním účtem: Claude Code, Codex, OpenCode nebo Antigravity. Obyčejný chat jako claude.ai nebo ChatGPT, případně aplikace v telefonu, nestačí: Pán jeskyně se musí dostat k souborům kampaně v tvém počítači. Každá aplikace potřebuje vlastní účet: Claude Code placený tarif Claude (Pro nebo vyšší); Codex účet ChatGPT, bezplatný nebo placený; Antigravity účet Google, jehož bezplatné používání má týdenní limity; OpenCode má na omezenou dobu některé modely zdarma, nebo použije modely tvého vlastního poskytovatele, včetně lokálních.
 
-- **Claude Code**: ve složce kampaně napiš `claude`. Když se zeptá, jestli složce důvěřuješ, zvol **Yes, I trust this folder**. Pozor, předvolená odpověď je *No, exit*. Kampaň má také malý hook, `rpg --listen`, který otázka neukazuje: okamžitě sdělí Pánu jeskyně, když něco uděláš na dashboardu.
-- **Codex**: ve složce kampaně napiš `codex` a na otázku, jestli složce důvěřuješ, odpověz ano. V klíčových chvílích mluví postava přes vlastního agenta, `.codex/agents/rpg-character.toml`, který ví jen to, co ví ona. V jeho desktopové aplikaci zkontroluj v nastavení, že jsou paměti pro chaty hry vypnuté.
-- **Antigravity**: ve složce kampaně napiš `agy` a pokud se zeptá, jestli složce důvěřuješ, odpověz ano; nebo v jeho aplikaci otevři složku kampaně. Pro aplikaci se RPG Engine také sám přidá do vlastního nastavení Antigravity, `.gemini/config/mcp_config.json` ve tvé domovské složce, které platí pro každou složku, kterou otevřeš, nejen pro složku kampaně: mimo kampaň nedělá nic. Kampaň má dva malé hooky: `rpg --approve` dovolí Pánu jeskyně používat nástroje RPG Engine, aniž by se tě na to pokaždé ptal, a `rpg --listen` okamžitě sdělí Pánu jeskyně, když něco uděláš na dashboardu. Obrázky v chatu maluje Pán jeskyně sám, s placeným tarifem Google. V bezplatném tarifu jeho nástroj na obrázky selže a Pán jeskyně kreslí jednoduché vektorové obrázky, stejně jako Claude. V klíčových chvílích mluví postava přes vlastního agenta, `.agents/agents/rpg-character.md`: Pán jeskyně napíše větu příběhu a odpověď postavy přijde o chvíli později. Tvůj Antigravity také mimo chat překládá dashboard a pravidla hry a čte dokumenty, které importuješ, a to z kvóty tvého účtu Google: RPG Engine ho spouští odděleně od tvých vlastních chatů, takže mezi nimi nic nezanechá. Antigravity uchovává tvoje dřívější chaty a jeho paměť nejde vypnout: Pán jeskyně má pokyn, aby je nikdy nečetl. Co napíšeš, jde do Googlu, kde to mohou číst lidé: nevkládej do hry osobní údaje. RPG Engine není produkt Googlu.
-- **OpenCode**: ve složce kampaně napiš `opencode`. Kampaň má malý plugin, `.opencode/plugins/rpg.js`, který okamžitě sdělí Pánu jeskyně, když něco uděláš na dashboardu. V kampani Pán jeskyně zapisuje soubory jen přes RPG Engine: vlastní zapisování a úpravy souborů v OpenCode jsou tam vypnuté a před spuštěním příkazu se tě OpenCode zeptá. Obrázky kreslí Pán jeskyně sám, jako jednoduché vektorové obrázky, stejně jako Claude. V klíčových chvílích mluví postava přes vlastního agenta, `.opencode/agents/rpg-character.md`: Pán jeskyně napíše větu příběhu a odpověď postavy přijde o chvíli později; malý lokální model ho nemusí zavolat. Tvůj OpenCode s modelem, který sis v něm naposledy vybral, také mimo chat překládá dashboard a pravidla hry a čte dokumenty, které importuješ. Pokud nemá model, který může použít, udělá to Codex nebo Claude Code, pokud je máš.
-- **Jiný agent**: spusť ho ve složce kampaně a připoj k němu server MCP `rpg mcp`. RPG Engine je standardní server MCP: Pánem jeskyně může být každý agent, který MCP podporuje, i lokální.
+V chatu v Přehledu vyber aplikaci v části **Tvoje AI aplikace**, pak její **Model** a **Úvahy Pána jeskyně**: stránka je navrhne. Více úvah je pomalejší a spotřebuje víc tvého tarifu. Aplikace, která není připravená, řekne, co potřebuje, a nabídne tlačítko, které to udělá:
 
-Pokud Pán jeskyně řekne, že nemůže najít nástroje RPG Engine, napiš ve složce kampaně `rpg init`: ve složce, která už je kampaní, pouze aktualizuje tyto soubory. Potom otevři nový chat.
+- **Claude Code** a **Codex**: **Nainstalovat Claude Code** nebo **Nainstalovat Codex** ji stáhne do složky RPG Engine na tomto počítači; **Přihlásit se do Claude Code** nebo **Přihlásit se do Codex** otevře její přihlašovací stránku ve tvém prohlížeči. RPG Engine nikdy nevidí tvoje heslo.
+- **OpenCode** a **Antigravity**: **Získat OpenCode** nebo **Získat Antigravity** otevře její web, kde ji nainstaluješ. OpenCode se hraje bez přihlášení; Antigravity se přihlašuje ve své vlastní aplikaci. Pak se vrať a stiskni **Zkontrolovat znovu**.
 
-Hrajeme a testujeme s **Claude Code**. **Codex**, **Antigravity** a **OpenCode** jsou připojené a ověřené, ale zatím se s nimi neodehrála celá kampaň. Kampaň vypíná vlastní paměť agenta: hra žije v jeho souborech, aby návrat k uložené hře opravdu vrátil zpět.
+Antigravity je označený **ve zkušební verzi**: může vystoupit ze hry a ptát se po svém, takže ke hraní jsou lepší Claude Code, Codex nebo OpenCode. Antigravity uchovává tvoje dřívější chaty a jeho paměť nejde vypnout: Pán jeskyně má pokyn, aby je nikdy nečetl. Co napíšeš, jde do Googlu, kde to mohou číst lidé: nevkládej do hry osobní údaje. RPG Engine není produkt Googlu. RPG Engine nejvíc hrajeme a testujeme s **Claude Code**: s ostatními zatím nebyla odehrána celá kampaň.
+
+V chatu v Přehledu se Pán jeskyně dotýká tvého počítače jen přes RPG Engine: žádný z tvých souborů sám neotevírá. RPG Engine čte mimo kampaň jen to, co zvolíš, až v okně svého počítače potvrdíš.
+
+Můžeš hrát i ve vlastním chatu své AI aplikace, v terminálu nebo v její desktopové aplikaci ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 První chat
 
-Napiš cokoli, třeba *Ahoj! Pojďme začít.* Ve své první odpovědi v každém chatu ti Pán jeskyně dá **odkaz na tvůj dashboard**, něco jako `http://127.0.0.1:4750`. Otevři ho a měj ho vedle chatu.
+Když máš zvolenou aplikaci a model, stiskni **Otevřít chat**: aplikace se spustí, což může trvat několik sekund. Pak stiskni **Začít**, nebo napiš cokoli, třeba *Ahoj! Pojďme začít.* První odpověď může trvat i několik minut, než Pán jeskyně připraví scénu.
 
-Mezi zprávami Pána jeskyně ukazuje tvůj agent nástroje, které používá. Neotvírej jejich podrobnosti (v Claude Code ctrl+o), mohou odhalit tajemství.
+Chat má vlastní sekci **Hraní rolí**, nebo stojí vedle stránky: malá tlačítka nahoře ho umístí **Na vlastní kartě**, **Vlevo** nebo **Vpravo** a tažením za okraj ho zvětšíš.
 
 Nová kampaň prochází třemi fázemi, které jsou vidět nahoře na dashboardu: **1 Nastavení** (jak chceš hrát), **2 Nulté sezení** (vytváříš postavu, přímo ve hře), **3 Hra**.
 
@@ -114,7 +112,20 @@ Na **Styl Pána jeskyně** se Pán jeskyně nikdy neptá, ale můžeš ho změni
 
 Postavu vytváříš s Pánem jeskyně, jako u stolu. Každá volba je tvoje, pokud Pána jeskyně nepožádáš, aby ji udělal on: přijď s hotovou představou, s mlhavou, nebo s ničím. Anebo Pána jeskyně požádej, ať postavu vytvoří celou z pár slov. Ve hře s úrovněmi se Pán jeskyně zeptá, od které úrovně začínáš: od první, pokud nechceš jinou. Pán jeskyně ti řekne, jak se tvoří hodnoty vlastností, ještě než se hodí první kostkou. Příběh postavy není nikdy povinný. Pokud nějaký dáš, Pán jeskyně ho napíše tvými slovy. Potom Pán jeskyně požádá o obrázek tvé postavy ([3.7](#37-your-characters-story-and-picture)). RPG Engine spočítá deník postavy: žádné výpočty nikdy nedělᬠsám.
 
-Už máš postavu z jiné hry nebo z jiné kampaně? Zvol v nastavení **Už ho mám** a předej ji Pánu jeskyně: vlož deník postavy do chatu, nebo řekni, kde je jeho soubor ve tvém počítači (PDF, obrázek, text). Pán jeskyně postavu zapíše tak, jak je, na její úrovni, ověří ji podle pravidel a světa a s tebou se domluví na všem, co se do nich nehodí.
+Máš už postavu z jiné hry nebo z jiné kampaně? Zvol při přípravě **Už ho mám** a předej postavu Pánu jeskyně: vlož deník postavy do chatu. Ve vlastním chatu své AI aplikace můžeš také říct, kde je její soubor ve tvém počítači (PDF, obrázek, text); v chatu v Přehledu Pán jeskyně žádný tvůj soubor neotevře. Pán jeskyně postavu zapíše tak, jak je, na její úrovni, ověří ji podle pravidel a světa a s tebou se domluví na všem, co se do nich nehodí.
+
+### 2.8 Druhá cesta: vlastní chat tvé AI aplikace
+
+Můžeš hrát i přímo v chatu své AI aplikace, v terminálu nebo v její desktopové aplikaci, s Přehledem otevřeným vedle. Kampaň pak vytvoříš v terminálu, ve složce, kam ukládáš své hry ([2.1](#21-what-you-need) říká, jak na to), vždy s jejím názvem: `rpg init "The Salt Isles"` vytvoří složku `The Salt Isles` s novou kampaní. RPG Engine tam samo připraví, co každá aplikace potřebuje.
+
+Aplikaci spusť v té složce: `claude` pro Claude Code, `codex` pro Codex, `agy` pro Antigravity, `opencode` pro OpenCode; nebo složku otevři v její desktopové aplikaci. Když se zeptá, jestli složce důvěřuješ, potvrď: pozor, v Claude Code je předvolená odpověď *No, exit*. Pánem jeskyně může být i jakýkoli jiný agent, který podporuje MCP: spusť ho ve složce kampaně a připoj k němu server MCP `rpg mcp`.
+
+Napiš *Ahoj! Pojďme začít.* Ve své první odpovědi v každém chatu ti Pán jeskyně dá **odkaz na tvůj Přehled**, něco jako `http://127.0.0.1:4750`: otevři ho vedle chatu.
+
+- Mezi zprávami Pána jeskyně ukazuje aplikace nástroje, které používá: neotvírej jejich podrobnosti (v Claude Code ctrl+o), mohou odhalit tajemství.
+- Kampaň vypíná vlastní paměť aplikace: hra žije v jejích souborech, aby návrat k uložené hře opravdu vrátil zpět. V desktopové aplikaci Codex zkontroluj v nastavení, že jsou paměti pro chaty hry vypnuté.
+- Pokud Pán jeskyně řekne, že nemůže najít nástroje RPG Engine, napiš ve složce kampaně `rpg init` a pak otevři nový chat.
+- Kampaň hraje vždy jen jeden chat: dokud je otevřený tvůj, chat v Přehledu čeká.
 
 ---
 
@@ -126,7 +137,9 @@ Napiš, co tvoje postava dělá nebo říká, vlastními slovy:
 
 > Ptám se hostinského, kdo další tudy dnes večer procházel.
 
-Když chceš mluvit mimo příběh, napiš `[OOC: …]` (out of character): *[OOC: Jak funguje zápas v držení?]* Pán jeskyně odpoví stejně.
+Mimo příběh napiš `[OOC: …]` (out of character): *[OOC: Jak funguje zápas v držení?]* Pán jeskyně odpoví stejně; v chatu v Přehledu jsou jeho slova mimo hru oddělená a označená OOC.
+
+V chatu v Přehledu piš do pole dole a odešli klávesou Enter; Shift+Enter začne nový řádek. Když Pán jeskyně odpovídá, **Zastavit** ho zastaví a tvoje slova zůstanou v poli. Když se tě Pán jeskyně na něco zeptá, tlačítka přijdou spolu s otázkou, včetně hodů: klikni na jedno, nebo napiš odpověď. Pod polem vidíš aplikaci a model; kde to aplikace dovoluje, můžeš model změnit kliknutím, až Pán jeskyně dopoví. **Zavřít chat** chat ukončí; hra zůstane v souborech.
 
 Ty říkáš, o co se pokoušíš. Pán jeskyně říká, co se stane. Pán jeskyně nikdy nerozhoduje za tvou postavu a nikdy nemluví o enginu. Můžeš se ho zeptat, jak se používá dashboard.
 
@@ -184,17 +197,17 @@ RPG Engine ukládá celou kampaň na konci každé scény. O zbytku rozhoduje na
 
 V každém režimu můžeš **začít znovu**, od začátku hry nebo od nultého sezení. Udělej to v chatu nebo v **Uložené hry**.
 
-Po návratu zpět **otevři nový chat**: starý si pamatuje, co bylo zrušeno. V novém chatu napiš *pokračuj*, potom v Uložené hry stiskni **Nový chat otevřen**.
+Po návratu zpět **otevři nový chat**: starý si pamatuje, co bylo zrušeno. V chatu v Přehledu stiskni **Zavřít chat**, pak **Nový chat**; ve vlastním chatu své AI aplikace otevři novou konverzaci (`/clear` v Claude Code). V novém chatu napiš *Pokračovat*. Potom Pánu jeskyně řekni, že chat je nový: stiskni **Nový chat otevřen** v Uložených hrách, nebo to řekni v chatu. Dokud to neuděláš, Pán jeskyně nepokračuje.
 
-Pokud je složka kampaně repozitář gitu, **Nastavení** obsahuje sekci **Git**, kde je všechno vypnuté, dokud nezvolíš jinak: commit na začátku každého sezení, při každém uložení hry a na konci každé scény a po něm případně push. Commit je snímek kampaně v dané chvíli. Push pošle snímky do online repozitáře, třeba na GitHub, aby kopie existovala i mimo tento počítač. Uložené hry a tvoje chaty s Pánem jeskyně zůstávají mimo repozitář, dokud je do něj nepustíš. Chaty tam pusť, jen když je repozitář soukromý.
+Pokud nevíš, co je git, tento odstavec přeskoč. Pokud je složka kampaně repozitář gitu, **Nastavení** obsahuje sekci **Git**, kde je vše vypnuté, dokud nezvolíš jinak: commit na začátku každého sezení, při každém uložení hry a na konci každé scény, a po něm případně push. Commit je snímek kampaně v dané chvíli; push pošle snímky do online repozitáře, třeba na GitHub, aby kopie existovala i mimo tento počítač. Uložené hry a tvoje chaty s Pánem jeskyně zůstávají mimo repozitář, dokud je do něj nepustíš; chaty tam pusť, jen když je repozitář soukromý.
 
 ### 3.9 Sezení: přestávka a návrat
 
-Přestaň, kdy chceš: *[Pro dnešek skončeme.]* Všechno je už uloženo v souborech. Až se budeš chtít vrátit, spusť svého agenta ve složce kampaně a napiš *pokračuj*: Pán jeskyně ti krátce shrne děj a jde se dál.
+Přestaň, kdy chceš: *[Pro dnešek tady skončeme.]* Všechno je už uloženo v souborech. Až se budeš chtít vrátit, otevři RPG Engine z jeho ikony a klikni na svou kampaň. Pokud chat zůstal otevřený, vrátí se sám. Pokud byl zavřený, stiskni **Obnovit chat**. Pak stiskni **Navázat na příběh**: Pán jeskyně ti v pár řádcích řekne, kde příběh stojí, a pokračuje. Pokud byla hra zavřena, když Pán jeskyně ještě odpovídal, nebo když na tebe čekala jeho otázka, tlačítko místo toho říká **Pokračovat odtud**. **Nový chat** otevře čerstvý chat na stejné hře. Ve vlastním chatu své AI aplikace ji spusť ve složce kampaně a napiš *Pokračovat*.
 
 ### 3.10 Nálada Pána jeskyně
 
-Robot nahoře na dashboardu je Pán jeskyně. Jeho tvář sleduje tón příběhu a nikdy neprozradí, co ještě nevíš. Když je chat zavřený, spí.
+Robot nahoře v Přehledu je Pán jeskyně: jeho tvář sleduje tón příběhu a nikdy neprozradí, co ještě nevíš. Když Přehled není spojený s hrou, spí.
 
 ### 3.11 Obrázky
 
@@ -212,14 +225,15 @@ Každé nastavení lze změnit, v chatu nebo v **Nastavení**. Rozhodnutí, kter
 
 ## 4. Ovládací panel <!-- icon: party -->
 
-Stránka na tvém počítači, kterou otevřeš jen v prohlížeči na tomto počítači. Funguje, dokud je chat otevřený. Když se chat zavře, zobrazí *Not connected*. S dalším chatem se vrátí sama.
+Stránka na tvém vlastním počítači, ve vlastním okně, otevřená jen na tomto počítači. Zůstává živá, dokud je její okno otevřené, s chatem i bez něj; asi třicet sekund po jeho zavření se hra zastaví, a s ní i chat. Nic se neztratí: vše je v souborech. Ve vlastním chatu tvé AI aplikace je živá, dokud je ten chat otevřený. Když hra není k dispozici, stránka ukáže *Not connected*: stiskni **Znovu otevřít kampaň**, nebo ve své aplikaci otevři další chat. Tlačítko **Kampaně** s domečkem vede zpět ke všem tvým kampaním.
 
-- **Družina**: tvůj deník postavy a deníky tvých společníků. Kliknutím na číslo si hodíš. Když na něj najedeš myší, uvidíš, odkud se bere, a pokud šipka u kostky něco označuje, také co hod zlepšuje nebo zhoršuje. Když pro tebe Pán jeskyně připraví volby, například při novém levelu, otevřeš je oznámením v deníku postavy. Vybereš, kdy chceš, přečteš si stránky, které možnosti uvádějí, hodíš si, kde to možnost vyžaduje, a pak volbu potvrdíš. Příběh mezitím pokračuje. Vedle jsou hody.
-- **Scéna**: kde jsi, obrázek a mapa místa, kdo tam je a co se děje. V boji tu najdeš tahy a kartu své postavy.
-- **Kronika**: úkoly, příběh jako kniha, jeho časová osa, deníky tvých společníků a tvé poznámky.
+- **Hraní rolí**: chat s Pánem jeskyně, když není vedle stránky ([2.5](#25-the-first-chat)).
+- **Družina**: tvůj deník postavy a deníky tvých společníků. Kliknutím na číslo si hodíš; když na něj najedeš myší, uvidíš, odkud se bere, a pokud šipka u kostky něco označuje, také co hod zlepšuje nebo zhoršuje. Když pro tebe Pán jeskyně připraví volby, například při novém levelu, otevřeš je oznámením v deníku postavy: vyber, kdy chceš, přečti si stránky, které možnosti uvádějí, hoď, kde to možnost vyžaduje, a pak potvrď; příběh mezitím pokračuje. Vedle jsou hody.
+- **Scéna**: kde jsi, obrázek a mapa místa, kdo tam je a co se děje; v boji tahy a karta tvé postavy.
+- **Kronika**: úkoly, příběh jako kniha, jeho časová osa, deníky tvých společníků, tvé poznámky.
 - **Svět**: mapa světa, co tvá postava ví, nalezené dokumenty a kalendář.
-- **Podnos na kostky**: vyber kostky a opravu a hoď. ×2 zdvojnásobí kostky, nikdy ne opravu, jako při kritickém zásahu.
-- **Uložené hry**, **Nápověda**, **Nastavení** a **O aplikaci**: ikony na konci řady. V **Nastavení** najdeš pod **Přehled** také vlastní předvolby stránky: režim, zvuk kostek, sadu kostek a **Motiv**, tedy barvy, podoby a obrázky stránky. Může to být motiv herního systému, motiv přidaný v Packages › Add z katalogu, z odkazu na GitHub, ze souboru .zip nebo ze složky, anebo vlastní motiv stránky. Pokud kvůli vlastnímu stylu motivu není stránka dobře čitelná, vypni tam **Vlastní styl motivu**. Nastavení se vždy zobrazí bez něj, na adrese stránky s `#/settings/page` na konci.
+- **Podnos na kostky**: vyber kostky a opravu a hoď; ×2 zdvojnásobí kostky, nikdy ne opravu, jako při kritickém zásahu.
+- **Uložené hry**, **Nápověda**, **Nastavení** a **O aplikaci**: ikony na konci řady. Nastavení také obsahuje pod **Přehled** vlastní předvolby stránky: režim, zvuk kostek, sadu kostek a **Motiv**, tedy barvy, podoby a obrázky stránky: motiv herního systému, motiv přidaný v Packages › Add z katalogu, z odkazu na GitHub, ze souboru .zip nebo ze složky, nebo vlastní motiv stránky. Pokud kvůli vlastnímu stylu motivu není stránka dobře čitelná, vypni tam **Vlastní styl motivu**: Nastavení se vždy zobrazí bez něj, na adrese stránky s `#/settings/page` na konci.
 
 Když se tě Pán jeskyně na něco zeptá, jeho nápis zůstane nahoře, ať jsi v jakékoli části.
 
@@ -263,9 +277,9 @@ Rozšíření přidá do kampaně něco navíc k jejímu hernímu systému: nap�
 
 ### 7.1 Tři cesty ke světu
 
-- **Vytvářený za pochodu**: z tvého námětu Pán jeskyně buduje každé místo, osobu i zápletku těsně předtím, než je potřebuješ, a uchovává je.
+- **Vytvářený za pochodu**: z tvého námětu Pán jeskyně buduje každé místo, osobu i zápletku těsně předtím, než je budeš potřebovat, a uchovává je.
 - **Připravený na začátku**: totéž, ale svět se postaví před hrou.
-- **Z tvého vlastního dobrodružství nebo knihy**: dej Pánu jeskyně její soubor, *[Naimportuj toto dobrodružství jako naši kampaň: D:\Books\adventure.pdf. Neříkej mi nic z toho, co v něm je.]* Nejlépe se čte jako text, EPUB, dokument Word nebo PDF s textem, který lze označit. Naskenované PDF se čte z obrázků stránek, jen ve Windows, pomalu a s několika chybami. Čte ho tvoje vlastní AI aplikace mimo chat, jinak Pán jeskyně v chatu, v rámci tvého tarifu: v Claude Code nebo Codexu ho čte jeden z těchto dvou, v Antigravity tvůj Antigravity, v OpenCode model, který sis v něm naposledy vybral. Celý dokument jde tvůrci toho, kdo ho čte, podle podmínek tvého účtu a jeho nastavení ohledně trénování. Dashboard ukazuje, jak daleko to je. U románu Pán jeskyně navrhne, kde začít. Napíše místa, postavy a tajemství.
+- **Z tvého vlastního dobrodružství nebo knihy**: dej Pánu jeskyně její soubor, *[Naimportuj toto dobrodružství jako naši kampaň: D:\Books\adventure.pdf. Neříkej mi nic z toho, co v něm je.]* Soubor mimo kampaň se přečte až poté, co v okně svého počítače potvrdíš; soubor ve složce **inbox** kampaně se přečte hned. Nejlépe se čte jako text, EPUB, dokument Word nebo PDF s textem, který lze označit; naskenované PDF se čte z obrázků stránek, jen ve Windows, pomalu a s několika chybami. Čte ho tvoje vlastní AI aplikace mimo chat, jinak Pán jeskyně v chatu, v rámci tvého tarifu: v Claude Code nebo Codex ho čte jeden z těchto dvou, v Antigravity tvůj Antigravity, v OpenCode model, který je v něm naposledy zvolený. Celý dokument jde tvůrci toho, kdo ho čte, podle podmínek tvého účtu a jeho nastavení ohledně trénování. Přehled ukazuje, jak daleko čtení je; u románu Pán jeskyně navrhne, kde začít. Napíše místa, postavy a tajemství.
 
 Kampaň se hraje jednou: chceš-li hrát totéž dobrodružství znovu, vytvoř novou kampaň.
 
@@ -303,28 +317,34 @@ Každý příkaz, který Pán jeskyně používá, jde spustit i ve složce kamp
 
 **Může Pán jeskyně podvádět?** Nemůže změnit hod, který udělal RPG Engine, kromě obtížnosti příběh, ani už stanovená fakta.
 
-**Stojí to něco?** RPG Engine je zdarma. Pán jeskyně běží na tarifu tvého agenta, nebo na tvém počítači s místním modelem. Večer hraní je dlouhý chat: na nejmenších tarifech můžeš narazit na limit tarifu dřív, než večer skončí. Obrázky, překlady a importy používají stejný tarif. RPG Engine sám nikdy nepoužívá klíč API, který se platí za každé volání: přihlas agenta svým účtem, ne klíčem.
+**Stojí to něco?** RPG Engine je zdarma. Pán jeskyně běží na tarifu tvé AI aplikace, nebo na tvém počítači s lokálním modelem. Večer hraní je dlouhý chat: na nejmenších tarifech můžeš narazit na limit tarifu dřív, než večer skončí. Obrázky, překlady a importy používají stejný tarif. RPG Engine sám nikdy nepoužívá klíč API, který se platí za každé volání: přihlas svou AI aplikaci účtem, ne klíčem.
 
 **Můžu hrát na telefonu?** Ne: Pán jeskyně běží na tvém počítači a dashboard se otevře jen tam.
 
 **Můžu hrát s kamarády?** Zatím ne: dnes jeden hráč, jedna postava a k tomu společníci ([Coming later](#9-coming-later)).
 
-**Můžu příště použít jinou AI?** Ano: otevři kampaň v jiném agentovi a napiš *pokračuj*.
+**Můžu příště použít jinou AI?** Ano: před otevřením chatu vyber jinou aplikaci, nebo kampaň otevři v jiné aplikaci a napiš *Pokračovat*.
 
 ### Problémy
 
-**Dashboard se neotevře.** Zeptej se Pána jeskyně: `[OOC: Jaký je odkaz na dashboard?]`. Funguje jen tehdy, když je v té kampani otevřený chat: v Claude Code a Codexu se spouští spolu s otevřením chatu, v Antigravity s tvou první zprávou. V aplikaci Claude chat, který chvíli zůstane na pozadí, usne a stránka s ním: klikni na chat a stránka se vrátí na stejné adrese.
+**Kampaň se neotevře.** Otevři RPG Engine znovu z jeho ikony, nebo příkazem `rpg open` v terminálu, a klikni na kampaň. Pokud její Přehled hlásí *Not connected*, stiskni **Znovu otevřít kampaň**. Karta s nápisem **Složka nenalezena** přišla o svou složku: odeber ji ze seznamu a přidej ji znovu přes **Otevřít složku…** tam, kde je teď. Ve vlastním chatu tvé AI aplikace Přehled funguje, jen dokud je otevřený chat té kampaně: zeptej se Pána jeskyně `[OOC: Jaký je odkaz na Přehled?]`. V aplikaci Claude chat, který chvíli zůstane na pozadí, usne a stránka s ním: klikni na chat a stránka se vrátí na stejné adrese.
 
-**Pán jeskyně jako by hru neznal.** Tvůj agent nenačetl RPG Engine. Zkontroluj, že jsi ho spustil(a) ve složce kampaně a že jsi jí důvěřoval(a). V Claude Code napiš `/mcp` a znovu připoj `rpg`. V Codexu musí `codex mcp list` ve složce kampaně ukázat `rpg`. Pokud se `rpg --version` nenajde, nainstaluj RPG Engine znovu ([2.2](#22-install)).
+**Pán jeskyně jako by hru neznal.** Stává se to ve vlastním chatu tvé AI aplikace: nenačetla RPG Engine. Zkontroluj, že aplikace běží ve složce kampaně a že důvěra ve složku byla potvrzena. V Claude Code napiš `/mcp` a znovu připoj `rpg`. V Codex musí `codex mcp list` ve složce kampaně ukázat `rpg`. Pokud se `rpg --version` nenajde, nainstaluj RPG Engine znovu ([2.2](#22-install)).
 
-**Windows nenajde `claude`.** Instalátor to oznámí ve žluté poznámce a uvede složku, do které se nainstaloval: přidej tu složku do PATH (Vlastnosti systému > Proměnné prostředí) a pak otevři nový terminál.
+**Windows nenajde `claude`.** Stává se to, když Claude Code instaluješ sám. Jeho instalátor to oznámí ve žluté poznámce a uvede složku, do které se nainstaloval: přidej tu složku do PATH (Vlastnosti systému > Proměnné prostředí) a pak otevři nový terminál.
 
-**Aktualizace.** Spusť znovu `npm install -g rpg-engine` a potom otevři nový chat: běžící Pán jeskyně si drží verzi, se kterou začal.
+**Aktualizace.** Když vyjde novější RPG Engine, Přehled to oznámí: v Packages › Installed je RPG Engine první, s tlačítkem **Aktualizovat**; pak udělej, co ti stránka řekne. Nebo v terminálu znovu spusť `npm install -g rpg-engine` a pak otevři nový chat: běžící Pán jeskyně si drží verzi, se kterou začal.
 
 **Pán jeskyně si pamatuje něco, co jsem vrátil(a) zpět.** Otevři nový chat a v Uložených hrách stiskni **Nový chat otevřen**.
+
+**Aplikace se nenainstaluje.** Stránka řekne proč: stiskni **Zkusit znovu**. Nebo ji nainstaluj ze stránek jejího výrobce a pak stiskni **Zkontrolovat znovu**.
+
+**Přihlašovací stránka se v prohlížeči neotevře.** Dokud stránka na tebe čeká, stiskni tam, kde se ukáže, **Znovu otevřít přihlašovací stránku**, nebo **Zrušit** a zkus to znovu.
+
+**Chat v Přehledu hlásí, že hraje jiný chat.** Tuto kampaň hraje chat otevřený ve tvé AI aplikaci: pokračuj tam, nebo ho zavři a hraj v Přehledu.
 
 **Neobjevují se žádné obrázky.** Nastavení > Kampaň > Obrázky říká, jestli je tento počítač umí vytvářet, a jak.
 
 **Instalace selže, nebo `rpg` nechce začít.** `node --version` musí hlásit 24 nebo novější. Pokud Windows odpoví, že spouštění skriptů je zakázané, viz [2.1](#21-what-you-need). Ve Windows nech RPG Engine a své kampaně mimo cesty, které obsahují `&`.
 
-**Odkaz na dashboard se změnil.** Každá kampaň má vlastní adresu, chat za chatem stejnou. Změní se jen tehdy, když ji už používá jiný program: Pán jeskyně ti dá nový odkaz a od té chvíle zůstane. Druhý chat stejné kampaně drží stránku na stejné adrese a převezme ji, jakmile zavřeš první.
+**Odkaz na Přehled se změnil.** Ve vlastním chatu tvé AI aplikace má každá kampaň vlastní adresu, chat za chatem stejnou. Změní se, jen když ji už používá jiný program: Pán jeskyně ti dá nový odkaz a od té chvíle zůstane. Druhý chat stejné kampaně drží stránku na stejné adrese a převezme ji, jakmile zavřeš první.

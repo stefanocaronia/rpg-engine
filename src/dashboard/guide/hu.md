@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: a teljes útmutató
 
-Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **MI mesélővel**. A mesélővel egy **csevegésben** beszélgetsz; az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**. A csevegés mellett egy oldalt tartasz nyitva a böngészőben, ez a **vezérlőpult**, rajta a karakterlapoddal, a kockákkal, a térképekkel és a naplóddal.
+Az **RPG Engine** lehetővé teszi, hogy asztali szerepjátékot játssz egy **AI mesélővel**. Az **irányítópulton** játszol: ez egy ablak a számítógépeden, benne a karakterlapoddal, a kockákkal, a térképekkel, a naplóddal és a mesélővel folytatott **csevegéssel**. Az RPG Engine a háttérben dolgozik: **emlékszik a világra**, **dob a kockákkal** és **vezeti a számokat**.
 
 Az útmutató játékosoknak szól: nem kell tudnod programozni.
 
 ## Gyors kezdés <!-- icon: send -->
 
 1. Telepítsd a **Node.js**-t a [nodejs.org](https://nodejs.org) oldalról (az LTS verziót).
-2. Telepíts egy **MI-ügynököt**, azt a programot, amelyben a mesélő fut, és jelentkezz be: például Claude Code vagy Codex ([2.4](#24-connect-your-ai)).
-3. Egy új terminálban, amelyet a Node.js telepítése után nyitottál, telepítsd az RPG Engine-t: `npm install -g rpg-engine`. Ha a Windows azt válaszolja, hogy a szkriptek futtatása le van tiltva, írd be egyszer: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, válaszolj igennel, és próbáld újra.
-4. Nyisd meg a terminált abban a mappában, ahol a játékaidat tartod (kattints rá jobb gombbal, **Megnyitás a Terminalban**), és hozz létre egy kampányt, mindig a nevével: `rpg init "The Salt Isles"`. Az RPG Engine két angol sorral válaszol: minden rendben.
-5. Lépj be az új mappába: `cd "The Salt Isles"`, és indítsd el ott az ügynöködet: `claude` a Claude Code-hoz, `codex` a Codexhez. Mondj igent, amikor megkérdezi, megbízol-e a mappában ([2.4](#24-connect-your-ai)), aztán írd be: *Szia! Kezdjünk bele.* A mesélő válaszul megadja a vezérlőpulted linkjét.
+2. Egyszer, a Node.js telepítése után megnyitott új terminálban telepítsd az RPG Engine-t: `npm install -g rpg-engine`. Ha a Windows azt válaszolja, hogy a szkriptek futtatása le van tiltva, írd be egyszer: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, válaszolj igennel, és próbáld újra.
+3. Írd be: `rpg open`. Megkérdezi, tegye-e az RPG Engine ikonját az asztalra és a menübe: az igenhez nyomj Entert. Ettől kezdve az RPG Engine-t az ikonjáról indítod, terminál nélkül ([2.2](#22-install)).
+4. Egy ablak mutatja a kampányaidat. Nyomd meg az **Új kampány** gombot, adj neki nevet, és nyomd meg a **Létrehozás** gombot ([2.3](#23-create-a-campaign)): az irányítópultja egy saját ablakban nyílik meg.
+5. A mesélővel folytatott csevegésben válaszd ki az AI-appodat és a modelljét: a Claude Code-hoz fizetős Claude-csomag kell, a Codexhez ChatGPT-fiók, ingyenes vagy fizetős ([2.4](#24-connect-your-ai)). Ha az app hiányzik, vagy nem vagy bejelentkezve, az oldal telepíti, illetve bejelentkeztet. Nyomd meg a **Csevegés megnyitása**, majd a **Kezdés** gombot. Az első válasz akár pár percig is eltarthat; utána a mesélő megkérdezi, hogyan szeretnél játszani, és közösen megalkotjátok a karaktered.
 
 ## 1. Mi az az RPG Engine <!-- icon: about -->
 
@@ -38,49 +38,47 @@ A játék egy játékrendszerrel érkezik, egy csomaggal, amelyet a mesélő tel
 ### 2.1 Amire szükséged van
 
 - Egy számítógép Windows, macOS vagy Linux rendszerrel, és egy webböngésző.
-- **Node.js 24** vagy újabb, a [nodejs.org](https://nodejs.org) oldalról. Ezzel jön az `npm`, amely telepíti az RPG Enginet.
-- Egy **terminál**: Windowson a Terminal vagy a PowerShell, macOS-en a Terminal. Ha egy mappában akarsz terminált nyitni, kattints a mappára jobb gombbal, és válaszd a **Megnyitás a Terminalban** (Windows) vagy a **Szolgáltatások > Új terminál a mappához** (macOS) lehetőséget. Ha a Windows azt válaszolja, hogy a szkriptek futtatása le van tiltva, írd be egyszer: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, és válaszolj igennel.
-- Egy **AI-ügynök** a mesélőnek ([2.4](#24-connect-your-ai)), a hozzá elérhető **legnagyobb modellel**: egy kis modellt könnyebb rávenni a titkok kiadására vagy a szabályok kijátszására.
+- **Node.js 24** vagy újabb, a [nodejs.org](https://nodejs.org) oldalról. Ezzel jön az `npm`, amely telepíti az RPG Engine-t.
+- Egy **terminál**, egyszer, az RPG Engine telepítéséhez: Windowson a Terminal vagy a PowerShell, macOS-en a Terminal. Ha egy mappában akarsz terminált nyitni, kattints a mappára jobb gombbal, és válaszd a **Megnyitás a Terminalban** (Windows) vagy a **Szolgáltatások > Új terminál a mappához** (macOS) lehetőséget. Ha a Windows azt válaszolja, hogy a szkriptek futtatása le van tiltva, írd be egyszer: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, és válaszolj igennel.
+- Egy **AI-app** a mesélőnek, a saját fiókoddal ([2.4](#24-connect-your-ai)): az oldal telepíteni tudja neked. Az általa kínált **legnagyobb modellel** játssz: egy kis modellt könnyebb rávenni, hogy elárulja a titkokat, vagy kijátssza a szabályokat.
 
 ### 2.2 Telepítés
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-Az `rpg --version` parancs megmutatja, hogy sikerült-e. Ha az npm felajánlja, hogy frissíti magát, nyugodtan figyelmen kívül hagyhatod. Az `rpg` parancsot kampányonként egyszer használod, a létrehozáshoz. Ezután az ügynököd magától elindítja az RPG Enginet. Az `rpg` önmagában semmit sem nyit meg: a vezérlőpultot a mesélő adja meg.
+Az első sor telepíti az RPG Engine-t; az `rpg --version` ellenőrzi, hogy sikerült-e. Ha az npm felajánlja, hogy frissíti magát, nyugodtan figyelmen kívül hagyhatod.
+
+Az `rpg open` megnyitja az RPG Engine ablakát a kampányaiddal. Az első alkalommal a terminálban megkérdezi, felkerüljön-e az ikonja az asztalodra és a Start menübe (Macen az Alkalmazások közé): az igenhez nyomj Entert. Ettől kezdve az ikonra kattintasz duplán, és nincs többé szükséged a terminálra. Ikon nélkül minden játékalkalommal írd be: `rpg open`; az `rpg icon` később hozzáadja az ikont, az `rpg icon --remove` pedig eltávolítja.
 
 ### 2.3 Kampány létrehozása
 
-Nyiss egy terminált abban a mappában, ahol a játékaidat tartod (a [2.1](#21-what-you-need) leírja, hogyan):
+Az RPG Engine ablaka kártyákon mutatja a kampányaidat, legelöl a legutóbb megnyitottat. Nyomd meg az **Új kampány** gombot, és add meg a **Név**, a **Nyelv** és a **Játékrendszer** mezőt: a többit a mesélő készíti el veled. A kampány a nevével megegyező mappába kerül, a felhasználói mappádon belüli `RPG Engine` mappában (Windowson `C:\Users\<name>`); a **Másik mappa választása…** egy általad választott üres mappába teszi. **A mesélő** alatt már kiválaszthatod az AI-appot és a modellt az első csevegéshez ([2.4](#24-connect-your-ai)). Nyomd meg a **Létrehozás** gombot: a kampány irányítópultja egy saját ablakban nyílik meg.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Ez létrehozza a `The Salt Isles` mappát egy új kampánnyal. Lépj be a `cd "The Salt Isles"` paranccsal. Mindig írd be a nevet: név nélkül az a mappa lesz a kampány, amelyben éppen vagy, amellett, ami már benne van. Jegyezd meg, hol van: minden játékalkalommal ide térsz vissza. Mindent másról később döntesz, a chaten vagy a vezérlőpulton.
-
-A mesélő nem tud kampányt létrehozni neked: az `init` előtt semmi sem mondja meg az ügynöködnek, hol van az RPG Engine.
+Legközelebb kattints egy kártyára a kampány megnyitásához; a megnyitott kampány kártyáján ez áll: **Jelenleg nyitva**. A **Mappa megnyitása…** egy olyan kampányt ad hozzá, amely már megvan ezen a számítógépen. A kártyán lévő kis kereszt leveszi a kampányt a listáról: a fájljai ott maradnak, ahol voltak.
 
 ### 2.4 Az AI csatlakoztatása
 
-A mesélő egy **AI-ügynökben** fut. Ez egy AI-alkalmazás a terminálban vagy az asztalon, amely a számítógéped fájljaival is tud dolgozni, például a Claude Code, a Codex, az Antigravity vagy az OpenCode. Egy sima chat, például a claude.ai vagy a ChatGPT, illetve egy telefonos alkalmazás nem elég: a mesélőnek el kell érnie a kampány fájljait a számítógépeden. Minden ügynökhöz saját csomag és bejelentkezés kell: a Claude Code-hoz fizetős Claude-csomag, a Codexhez ChatGPT-bejelentkezés, az Antigravityhez Google-fiók, amelynek ingyenes csomagjában kicsi a heti keret. Az OpenCode azokkal a modellekkel működik, amelyeket megadsz neki, a helyiekkel is. Egyszer kell telepítened, a saját oldaláról: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+A mesélő egy **AI-appban** fut a számítógépeden, a saját fiókoddal: Claude Code, Codex, OpenCode vagy Antigravity. Egy sima csevegés, például a claude.ai vagy a ChatGPT, illetve egy telefonos app nem elég: a mesélőnek el kell érnie a kampány fájljait a számítógépeden. Minden apphoz saját fiók kell: a Claude Code-hoz fizetős Claude-csomag (Pro vagy magasabb); a Codexhez ChatGPT-fiók, ingyenes vagy fizetős; az Antigravityhez Google-fiók, amelynek ingyenes használatában heti korlátok vannak; az OpenCode-nak van néhány ingyenes modellje korlátozott ideig, vagy a saját szolgáltatód modelljeit használja, a helyieket is.
 
-- **Claude Code**: a kampány mappájában írd be: `claude`. Amikor megkérdezi, megbízol-e a mappában, válaszd a **Yes, I trust this folder** lehetőséget. Vigyázz, az előre kijelölt válasz a *No, exit*. A kampányban van egy kis hook is, az `rpg --listen`, amelyet a kérdés nem mutat: azonnal szól a mesélőnek, ha a vezérlőpulton cselekszel.
-- **Codex**: a kampány mappájában írd be: `codex`, és mondj igent, amikor megkérdezi, megbízol-e a mappában. Kulcspillanatokban a karakter egy saját ügynökön keresztül beszél, ez a `.codex/agents/rpg-character.toml`, amely csak azt tudja, amit a karakter. Az asztali alkalmazásában ellenőrizd a beállításokban, hogy a memóriák ki vannak kapcsolva a játék chatjeinél.
-- **Antigravity**: a kampány mappájában írd be: `agy`, és mondj igent, ha megkérdezi, megbízol-e a mappában; vagy az alkalmazásában nyisd meg a kampány mappáját. Az alkalmazáshoz az RPG Engine az Antigravity saját beállításaiba is beírja magát: a saját mappádban lévő `.gemini/config/mcp_config.json` fájlba. Ezek minden megnyitott mappára érvényesek, nem csak a kampányéra: kampányon kívül az RPG Engine nem csinál semmit. A kampányban két kis hook van: az `rpg --approve` lehetővé teszi, hogy a mesélő az RPG Engine eszközeit minden alkalommal kérdezés nélkül használja, az `rpg --listen` pedig azonnal szól a mesélőnek, ha a vezérlőpulton cselekszel. A képeket a mesélő maga festi meg a chatben, fizetős Google-csomaggal; az ingyenes csomagban a képkészítő eszköze nem működik, ilyenkor egyszerű vektorképeket rajzol, ahogy a Claude is. Kulcspillanatokban a karakter egy saját ügynökön keresztül beszél, ez a `.agents/agents/rpg-character.md`: a mesélő megír egy sort a történetből, a karakter válasza pedig egy pillanattal később érkezik. Az Antigravity a chaten kívül a vezérlőpultot és a játék szabályait is lefordítja, és az importált dokumentumokat is beolvassa, a Google-fiókod keretéből: az RPG Engine a saját chatjeidtől külön indítja, így nem hagy nyomot közöttük. Az Antigravity megőrzi a korábbi chatjeidet, és a memóriája nem kapcsolható ki: a mesélő azt az utasítást kapja, hogy soha ne olvassa el őket. Amit írsz, a Google-hoz kerül, ahol emberek is elolvashatják: ne vigyél személyes adatot a játékba. Az RPG Engine nem a Google terméke.
-- **OpenCode**: a kampány mappájában írd be: `opencode`. A kampányban van egy kis bővítmény, a `.opencode/plugins/rpg.js`, amely azonnal szól a mesélőnek, ha a vezérlőpulton cselekszel. A kampányban a mesélő csak az RPG Engine-en keresztül ír fájlokat: az OpenCode saját fájlírása és -szerkesztése ott ki van kapcsolva, és parancs futtatása előtt rákérdez nálad. A képeket a mesélő maga rajzolja, egyszerű vektorképekként, ahogy a Claude is. Kulcspillanatokban a karakter egy saját ügynökön keresztül beszél, ez a `.opencode/agents/rpg-character.md`: a mesélő megír egy sort a történetből, a karakter válasza pedig egy pillanattal később érkezik; egy kis helyi modell lehet, hogy nem hívja meg. Az OpenCode a benne legutóbb választott modellel a chaten kívül a vezérlőpultot és a játék szabályait is lefordítja, és az importált dokumentumokat is beolvassa; ha nincs használható modellje, ezt a Codex vagy a Claude Code végzi el, ha megvannak neked.
-- **Másik ügynök**: indítsd el a kampány mappájában, és add meg neki az `rpg mcp` MCP-szervert. Az RPG Engine szabványos MCP-szerver: bármelyik MCP-t támogató ügynök lehet a mesélő, a helyiek is.
+Az irányítópult csevegésében az **Az AI-appod** résznél válaszd ki az appot, aztán a **Modell** és **A mesélő gondolatai** értékét: az oldal javasol egyet-egyet. Több gondolkodás lassabb, és jobban fogyasztja a csomagodat. Az az app, amely még nem áll készen, megmondja, mi kell hozzá, és ad egy gombot, amely elintézi:
 
-Ha a mesélő azt mondja, hogy nem találja az RPG Engine eszközeit, írd be az `rpg init` parancsot a kampány mappájában: egy olyan mappában, amely már kampány, ez csak frissíti ezeket a fájlokat. Utána nyiss egy új chatet.
+- **Claude Code** és **Codex**: a **Claude Code telepítése** vagy a **Codex telepítése** letölti az appot az RPG Engine saját mappájába ezen a számítógépen; a **Bejelentkezés a Claude Code-ba** vagy a **Bejelentkezés a Codexbe** megnyitja a bejelentkezési oldalát a böngészőben. Az RPG Engine sosem látja a jelszavad.
+- **OpenCode** és **Antigravity**: az **OpenCode letöltése** vagy az **Antigravity letöltése** megnyitja az oldalát, ahol telepítheted. Az OpenCode bejelentkezés nélkül is játszik; az Antigravityben a saját appjából jelentkezel be. Utána gyere vissza, és nyomd meg az **Ellenőrzés újra** gombot.
 
-**Claude Code-dal** játszunk és tesztelünk. A **Codex**, az **Antigravity** és az **OpenCode** csatlakoztatva és ellenőrizve van, de még egyikükkel sem játszottunk végig egy kampányt. A kampány kikapcsolja az ügynök saját memóriáját: a játék a fájljaiban él, így egy mentéshez való visszatérés tényleg visszavisz.
+Az Antigravity **kipróbálás alatt** jelölést kapott: kiléphet a játékból, és a maga módján kérdezhet, ezért játékra jobb a Claude Code, a Codex vagy az OpenCode. Az Antigravity megőrzi a korábbi csevegéseidet, és a memóriája nem kapcsolható ki: a mesélő azt az utasítást kapja, hogy soha ne olvassa el őket. Amit írsz, a Google-hoz kerül, ahol emberek is elolvashatják: ne vigyél személyes adatot a játékba. Az RPG Engine nem a Google terméke. Az RPG Engine-nel a legtöbbet a **Claude Code-dal** játszunk és tesztelünk: a többivel még nem játszottunk végig egész kampányt.
+
+Az irányítópult csevegésében a mesélő csak az RPG Engine-en keresztül nyúl a számítógépedhez: magától egyetlen fájlodat sem nyitja meg. Az RPG Engine a kampányon kívül csak azt olvassa, amit te választottál, miután igent mondtál a számítógéped egyik ablakában.
+
+Játszhatsz az AI-appod saját csevegésében is, terminálban vagy az asztali appjában ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 Az első chat
 
-Írj bármit, például: *Szia! Kezdjünk bele.* A mesélő minden chat első válaszában megadja a **vezérlőpultod linkjét**, valami ilyesmit: `http://127.0.0.1:4750`. Nyisd meg, és tartsd a chat mellett.
+Miután kiválasztottad az appot és a modellt, nyomd meg a **Csevegés megnyitása** gombot: az app elindul, ami pár másodpercig is eltarthat. Aztán nyomd meg a **Kezdés** gombot, vagy írj bármit, például: *Szia! Kezdjünk bele.* Az első válasz akár pár percig is eltarthat, amíg a mesélő felállítja a jelenetet.
 
-A mesélő üzenetei között az ügynököd megmutatja az általa használt eszközöket. Ne nyisd meg a részleteiket (Claude Code-ban ctrl+o), mert titkokat mutathatnak.
+A csevegésnek saját szekciója van, a **Szerepjáték**, vagy az oldal mellett áll: a tetején lévő kis gombok három helyre teszik: **A saját fülén**, **Balra** vagy **Jobbra**, a szélét húzva pedig szélesebbé teheted.
 
 Egy új kampány három szakaszon megy végig, ezek a vezérlőpult tetején látszanak: **1 Beállítások** (hogyan akarsz játszani), **2 Nulladik alkalom** (megalkotod a karaktered, játékban), **3 Játék**.
 
@@ -114,7 +112,20 @@ Ha nincs megírt világ, a mesélő egy **alaphelyzetet** is kérdez (műfaj, ha
 
 A karaktered a mesélővel együtt alkotod meg, mint az asztalnál. Minden döntés a tiéd, hacsak nem kéred meg a mesélőt, hogy döntsön helyetted: jöhetsz kész ötlettel, homályossal vagy semmivel; vagy kérheted a mesélőt, hogy néhány szóból készítse el az egészet. Szintekkel játszott játékban a mesélő megkérdezi, melyik szinttől indulsz: az elsőtől, hacsak nem akarsz másikat. A mesélő még azelőtt elmondja, hogyan készülnek a képességpontok, hogy bármelyik kockát eldobnád. A történeted sosem kötelező; ha adsz egyet, a mesélő a te szavaiddal írja le. Ezután a mesélő képet kér a karakteredről ([3.7](#37-your-characters-story-and-picture)). Az RPG Engine kiszámolja a karakterlapot: te sosem számolsz.
 
-Van már karaktered, egy másik játékból vagy egy másik kampányból? Válaszd a beállításnál a **Már van egy** lehetőséget, és add oda a mesélőnek: illeszd be a karakterlapot a chatbe, vagy mondd meg, hol van a fájlja a számítógépeden (PDF, kép, szöveg). A mesélő úgy írja le, ahogy van, a saját szintjén, összeveti a szabályokkal és a világgal, és megbeszéli veled, ami nem illik bele.
+Van már karaktered, egy másik játékból vagy egy másik kampányból? Válaszd a beállításnál a **Már van egy** lehetőséget, és add oda a mesélőnek: illeszd be a karakterlapot a csevegésbe. Az AI-appod saját csevegésében azt is megmondhatod, hol van a fájlja a számítógépeden (PDF, kép, szöveg); az irányítópult csevegésében a mesélő nem nyitja meg a fájljaidat. A mesélő úgy írja le a karaktert, ahogy van, a saját szintjén, összeveti a szabályokkal és a világgal, és megbeszéli veled, ami nem illik bele.
+
+### 2.8 A másik mód: az AI-appod saját csevegése
+
+Játszhatsz magában az AI-appod csevegésében is, terminálban vagy az asztali appjában, az irányítópulttal megnyitva mellette. Ilyenkor a kampányt egy terminálban hozod létre, abban a mappában, ahol a játékaidat tartod (a [2.1](#21-what-you-need) leírja, hogyan), mindig a nevével: az `rpg init "The Salt Isles"` létrehozza a `The Salt Isles` mappát egy új kampánnyal. Az RPG Engine magától előkészíti ott mindazt, amire az egyes appoknak szükségük van.
+
+Indítsd el az appodat abban a mappában: `claude` a Claude Code-hoz, `codex` a Codexhez, `agy` az Antigravityhez, `opencode` az OpenCode-hoz; vagy nyisd meg a mappát az asztali appjában. Mondj igent, amikor megkérdezi, megbízol-e a mappában: vigyázz, a Claude Code-ban az előre kijelölt válasz a *No, exit*. Bármelyik másik, MCP-t támogató ügynök is lehet a mesélő: indítsd el a kampány mappájában, és add meg neki az `rpg mcp` MCP-szervert.
+
+Írd be: *Szia! Kezdjünk bele.* A mesélő minden csevegés első válaszában megadja az **irányítópultod linkjét**, valami ilyesmit: `http://127.0.0.1:4750`. Nyisd meg a csevegés mellett.
+
+- A mesélő üzenetei között az appod megmutatja az általa használt eszközöket: ne nyisd meg a részleteiket (Claude Code-ban ctrl+o), mert titkokat mutathatnak.
+- A kampány kikapcsolja az app saját memóriáját: a játék a fájljaiban él, így egy mentéshez való visszatérés tényleg visszavisz. A Codex asztali appjában ellenőrizd a beállításokban, hogy a memóriák ki vannak kapcsolva a játék csevegéseinél.
+- Ha a mesélő azt mondja, hogy nem találja az RPG Engine eszközeit, írd be az `rpg init` parancsot a kampány mappájában, aztán nyiss új csevegést.
+- Egy kampányt egyszerre egy csevegés játszik: amíg a tiéd nyitva van, az irányítópult csevegése vár.
 
 ---
 
@@ -126,7 +137,9 @@ Van már karaktered, egy másik játékból vagy egy másik kampányból? Válas
 
 > Megkérdezem a fogadóst, ki járt még erre ma este.
 
-A történeten kívül írd így: `[OOC: …]` (out of character): *[OOC: Hogyan működik a dulakodás?]* A mesélő is így válaszol.
+A történeten kívül írd így: `[OOC: …]` (out of character): *[OOC: Hogyan működik a dulakodás?]* A mesélő is így válaszol; az irányítópult csevegésében a játékon kívüli szavai külön állnak, OOC jelöléssel.
+
+Az irányítópult csevegésében írj az alul lévő mezőbe, és az Entert megnyomva küldd el; a Shift+Enter új sort kezd. Amíg a mesélő válaszol, a **Leállítás** megállítja, a szavaid pedig a mezőben várnak. Amikor a mesélő kérdez tőled valamit, a gombjai a kérdéssel együtt jönnek, a dobásokat is beleértve: kattints egyre, vagy írd le a válaszod. A mező alatt látod az appot és a modellt; ahol az app engedi, kattints a modellre, hogy megváltoztasd, miután a mesélő válaszolt. A **Csevegés bezárása** befejezi a csevegést; a játék a fájljaiban marad.
 
 Te azt mondod meg, mit próbálsz tenni; a mesélő azt, mi történik. A mesélő sosem dönt a karaktered helyett, és sosem beszél a motorról. Megkérdezheted tőle, hogyan használd a vezérlőpultot.
 
@@ -184,17 +197,17 @@ Az RPG Engine minden jelenet végén menti az egész kampányt. A többit a **me
 
 Minden módban **újrakezdheted** a játékot a játék elejéről vagy a nulladik alkalomtól. Megteheted a csevegésben vagy a **Mentésekben**.
 
-Visszalépés után **nyiss új csevegést**: a régi emlékszik arra, ami visszacsinálódott. Írd az új csevegésbe, hogy *folytatjuk*, majd nyomd meg a **Megnyitottam az új csevegést** gombot a Mentésekben.
+Visszalépés után **nyiss új csevegést**: a régi emlékszik arra, ami visszacsinálódott. Az irányítópult csevegésében nyomd meg a **Csevegés bezárása**, majd az **Új csevegés** gombot; az AI-appod saját csevegésében nyiss új beszélgetést (`/clear` a Claude Code-ban). Írd az új csevegésbe: *Tovább*. Aztán told meg a mesélőnek, hogy a csevegés új: nyomd meg a **Megnyitottam az új csevegést** gombot a Mentések között, vagy mondd el a csevegésben. Addig a mesélő nem megy tovább.
 
-Ha a kampány mappája git-tároló, a **Beállítások** között van egy **Git** szakasz, amelyben minden kikapcsolt, amíg nem döntesz: egy commit minden alkalom kezdetén, minden mentésnél és minden jelenet végén, és ha szeretnéd, utána egy push is. A commit a kampány pillanatnyi állapotának pillanatképe; a push elküldi a pillanatképeket az online tárolóba, például a GitHubra, így egy másolat ezen a számítógépen kívül is megvan. A mentések és a mesélővel folytatott csevegéseid kívül maradnak a tárolón, hacsak nem engeded be őket; a csevegéseket csak akkor engedd be, ha a tároló privát.
+Ha nem tudod, mi az a git, ugord át ezt a bekezdést. Ha a kampány mappája git-tároló, a **Beállítások** között van egy **Git** szakasz, amelyben minden kikapcsolt, amíg nem döntesz: egy commit minden alkalom kezdetén, minden mentésnél és minden jelenet végén, és ha szeretnéd, utána egy push is. A commit a kampány pillanatnyi állapotának pillanatképe; a push elküldi a pillanatképeket az online tárolóba, például a GitHubra, így egy másolat ezen a számítógépen kívül is megvan. A mentések és a mesélővel folytatott csevegéseid kívül maradnak a tárolón, hacsak nem engeded be őket; a csevegéseket csak akkor engedd be, ha a tároló privát.
 
 ### 3.9 Alkalmak: abbahagyás és visszatérés
 
-Hagyd abba, amikor akarod: *[Mára álljunk meg itt.]* Minden már el van mentve a fájlokban. A visszatéréshez indítsd el az ügynöködet a kampány mappájában, és írd: *folytatjuk*; a mesélő rövid összefoglalót ad, és megy tovább.
+Hagyd abba, amikor akarod: *[Mára álljunk meg itt.]* Minden már el van mentve a fájlokban. A visszatéréshez nyisd meg az RPG Engine-t az ikonjáról, és kattints a kampányodra. Ha nyitva hagytad a csevegést, magától visszatér. Ha bezártad, nyomd meg a **Csevegés folytatása** gombot. Aztán nyomd meg a **Folytatás** gombot: a mesélő pár sorban elmondja, hol tartottatok, és megy tovább. Ha a játék bezárult, miközben a mesélő még válaszolt, vagy miközben egy kérdése várt rád, ezen a gombon helyette **Folytatás innen** áll. Az **Új csevegés** friss csevegést nyit ugyanarra a játékra. Az AI-appod saját csevegésében indítsd el a kampány mappájában, és írd be: *Tovább*.
 
 ### 3.10 A mesélő hangulata
 
-A vezérlőpult tetején lévő robot a mesélő: az arca követi a történet hangulatát, és sosem árulja el, amit még nem tudsz. Ha a csevegés zárva van, alszik.
+Az irányítópult tetején lévő robot a mesélő: az arca követi a történet hangulatát, és sosem árulja el, amit még nem tudsz. Ha az irányítópult nincs összekötve a játékkal, alszik.
 
 ### 3.11 Képek
 
@@ -212,14 +225,15 @@ Minden beállítás megváltoztatható, a csevegésben vagy a **Beállításokba
 
 ## 4. A irányítópult <!-- icon: party -->
 
-Egy oldal a saját számítógépeden, amely csak az adott gép böngészőjében nyílik meg, és amíg a csevegés nyitva van, él. Ha a csevegés bezárul, a *Not connected* felirat jelenik meg. A következő csevegéssel magától visszatér.
+Egy oldal a saját számítógépeden, egy saját ablakban, amely csak azon a számítógépen nyílik meg. Amíg az ablaka nyitva van, él, csevegéssel vagy anélkül; miután bezártad, nagyjából harminc másodperc múlva a játék leáll, és vele a csevegés is. Semmi sem vész el: minden a fájlokban van. Az AI-appod saját csevegésében addig él, amíg az a csevegés nyitva van. Ha a játék nincs jelen, az oldal ezt írja: *Not connected*: nyomd meg a **Kampány újranyitása** gombot, vagy a saját appodban nyisd meg a következő csevegést. A házzal jelölt **Kampányok** gomb visszavisz az összes kampányodhoz.
 
+- **Szerepjáték**: a csevegés a mesélővel, amikor nem az oldal mellett áll ([2.5](#25-the-first-chat)).
 - **Csapat**: a te karakterlapod és a társaidé. Kattints egy számra, hogy dobj vele; vidd fölé az egeret, hogy lásd, honnan jön, és ha egy nyíl jelöli a kockáját, azt is, mi teszi jobbá vagy rosszabbá a dobást. Ha a mesélő választásokat készít elő neked, például új szintlépésnél, a karakterlapon egy értesítés megnyitja őket: akkor választasz, amikor akarsz, elolvasod a lapokat, amelyeket a lehetőségek megneveznek, dobsz, ha egy lehetőség dobást kér, aztán megerősíted; a történet közben megy tovább. Mellette vannak a dobások.
 - **Jelenet**: hol vagy, a jelenet képe és térképe, kik vannak ott, mi történik; harcban a körök és a karaktered kártyája.
 - **Napló**: küldetések, a történet könyvként, az idővonala, a társaid naplói, a jegyzeteid.
 - **Világ**: a világtérkép, amit a karaktered tud, a megtalált dokumentumok és a naptár.
 - **A dobótálca**: válassz kockákat és módosítót, aztán dobj; a ×2 megduplázza a kockákat, a módosítót soha, mint kritikus találatnál.
-- **Mentések**, **Súgó**, **Beállítások** és **Névjegy**: ikonok a sor végén. A **Beállítások** az **Irányítópult** alatt az oldal saját beállításait is tartalmazza: mód, kockahang, kockakészlet és a **Téma**, vagyis az oldal színei, arcai és képei: a játékrendszeré, egy téma, amelyet a Packages › Add alatt adtál hozzá a katalógusból, GitHub-linkkel, .zip fájlból vagy mappából, vagy az oldal saját stílusa. Ha egy téma saját stíluslapja nehezen olvashatóvá teszi az oldalt, kapcsold ki ott a következőt: **A téma saját stílusa**. A **Beállítások** mindig enélkül jelennek meg, az oldal címével, amelynek a végén `#/settings/page` áll.
+- **Mentések**, **Súgó**, **Beállítások** és **Névjegy**: ikonok a sor végén. A Beállítások az **Irányítópult** alatt az oldal saját beállításait is tartalmazza: mód, kockahang, kockakészlet és a **Téma**, vagyis az oldal színei, arcai és képei: a játékrendszeré, egy téma, amelyet a Packages › Add alatt adtál hozzá a katalógusból, GitHub-linkkel, .zip fájlból vagy mappából, vagy az oldal saját témája. Ha egy téma saját stíluslapja nehezen olvashatóvá teszi az oldalt, kapcsold ki ott a következőt: **A téma saját stílusa**. A Beállítások mindig enélkül jelennek meg, az oldal címével, amelynek a végén `#/settings/page` áll.
 
 Ha a mesélő kérdez tőled valamit, a kérdése szalagként a képernyő tetején marad, bármelyik részben jársz.
 
@@ -265,7 +279,7 @@ A bővítmény valami újat ad egy kampányhoz a játékrendszer mellé: példá
 
 - **Menet közben készített**: az alapötletedből a mesélő minden helyszínt, szereplőt és cselekményszálat közvetlenül azelőtt épít fel, hogy szükséged lenne rá, és megőrzi.
 - **Az elején előkészített**: ugyanez, de a világ a játék előtt készül el.
-- **A saját kalandodból vagy könyvedből**: add át a mesélőnek a fájlját, *[Importáld ezt a kalandot kampányunknak: D:\Books\adventure.pdf. Ne áruld el nekem, mi van benne.]* A legjobban szövegként olvasható, EPUB-ként, Word-dokumentumként vagy olyan PDF-ként, amelynek a szövege kijelölhető. A beszkennelt PDF-et az oldalak képeiből olvassa, csak Windowson, lassan és néhány hibával. A saját AI-appod olvassa el a chaten kívül, vagy ha az nem tudja, a mesélő a chatben, az előfizetésed terhére: Claude Code-ban vagy Codexben a kettő közül az egyik, Antigravityben az Antigravity, OpenCode-ban a benne legutóbb választott modell. A teljes dokumentum annak készítőjéhez kerül, aki olvassa, a fiókod feltételei és a tanításra vonatkozó választásod szerint. A vezérlőpult mutatja, meddig jutott. Regényből a mesélő javaslatot tesz, hol kezdjétek. Megírja a helyszíneket, a szereplőket és a titkokat.
+- **A saját kalandodból vagy könyvedből**: add át a mesélőnek a fájlját, *[Importáld ezt a kalandot kampányunknak: D:\Books\adventure.pdf. Ne áruld el nekem, mi van benne.]* A kampányon kívüli fájlt csak azután olvassa el, hogy igent mondtál a számítógéped egyik ablakában; a kampány **inbox** mappájába tett fájlt azonnal. A legjobban szövegként olvasható, EPUB-ként, Word-dokumentumként vagy olyan PDF-ként, amelynek a szövege kijelölhető; a beszkennelt PDF-et az oldalak képeiből olvassa, csak Windowson, lassan és néhány hibával. A saját AI-appod olvassa el a csevegésen kívül, vagy ha az nem tudja, a mesélő a csevegésben, a te csomagod terhére: Claude Code-ban vagy Codexben a kettő közül az egyik, Antigravityben az Antigravity, OpenCode-ban a benne legutóbb választott modell. A teljes dokumentum annak készítőjéhez kerül, aki olvassa, a fiókod feltételei és a tanításra vonatkozó választásod szerint. Az irányítópult mutatja, meddig jutott. Regényből a mesélő javaslatot tesz, hol kezdjétek. Megírja a helyszíneket, a szereplőket és a titkokat.
 
 Egy kampányt egyszer játszol végig: ha ugyanazt a kalandot újra szeretnéd játszani, hozz létre új kampányt.
 
@@ -303,28 +317,34 @@ A mesélő által használt minden parancs a kampánymappában is futtatható: a
 
 **Csalhat a mesélő?** Nem változtathat meg egy dobást, amelyet az RPG Engine végzett, kivéve a történet nehézségen, és nem változtathat meg már rögzített tényeket sem.
 
-**Kerül valamibe?** Az RPG Engine ingyenes. A mesélő az ügynököd előfizetésén fut, vagy a saját számítógépeden egy helyi modellel. Egy este játék egy hosszú csevegés: a legkisebb előfizetéseknél elérheted az előfizetés korlátját, mielőtt az este véget érne. A képek, a fordítások és az importálások ugyanazt az előfizetést használják. Maga az RPG Engine sosem használ API-kulcsot, amelyért hívásonként kell fizetni: az ügynöködbe a fiókoddal jelentkezz be, ne kulccsal.
+**Kerül valamibe?** Az RPG Engine ingyenes. A mesélő az AI-appod csomagján fut, vagy a saját számítógépeden egy helyi modellel. Egy este játék egy hosszú csevegés: a legkisebb csomagoknál elérheted a csomag korlátját, mielőtt az este véget érne. A képek, a fordítások és az importálások ugyanazt a csomagot használják. Maga az RPG Engine sosem használ API-kulcsot, amelyért hívásonként kell fizetni: az AI-appodba a fiókoddal jelentkezz be, ne kulccsal.
 
 **Játszhatok telefonon?** Nem: a mesélő a számítógépeden fut, és az irányítópult csak ott nyílik meg.
 
 **Játszhatok barátokkal?** Egyelőre nem: ma egy játékos, egy karakter és társak vannak ([Hamarosan](#9-coming-later)).
 
-**Használhatok legközelebb másik AI-t?** Igen: nyisd meg a kampányt egy másik ügynökben, és írd be: *folytassuk*.
+**Használhatok legközelebb másik AI-t?** Igen: a csevegésben válassz másik appot, mielőtt megnyitod, vagy nyisd meg a kampányt egy másik appban, és írd be: *Tovább*.
 
 ### Problémák
 
-**Az irányítópult nem nyílik meg.** Kérdezd meg a mesélőt: `[OOC: Mi az irányítópult linkje?]`. Csak akkor működik, amíg abban a kampányban nyitva van egy csevegés: Claude Code-ban és Codexben a csevegés megnyitásakor indul el, Antigravityben az első üzenetedkor. A Claude appban a háttérben egy ideje hagyott csevegés elalszik, és vele az oldal is: kattints a csevegésre, és az oldal ugyanazon a címen visszajön.
+**Egy kampány nem nyílik meg.** Nyisd meg újra az RPG Engine-t az ikonjáról, vagy terminálban az `rpg open` paranccsal, és kattints a kampányra. Ha az irányítópultja azt írja: *Not connected*, nyomd meg a **Kampány újranyitása** gombot. Az a kártya, amelyen **A mappa nem található** áll, elvesztette a mappáját: vedd le a listáról, és add hozzá újra a **Mappa megnyitása…** gombbal, ott, ahol most van. Az AI-appod saját csevegésében az irányítópult csak addig működik, amíg a kampány egy csevegése nyitva van: kérdezd meg a mesélőt: `[OOC: Mi az irányítópult linkje?]`. A Claude appban a háttérben egy ideje hagyott csevegés elalszik, és vele az oldal is: kattints a csevegésre, és az oldal ugyanazon a címen visszajön.
 
-**A mesélő nem ismeri a játékot.** Az ügynököd nem töltötte be az RPG Engine-t. Ellenőrizd, hogy a kampány mappájában indítottad el, és megbíztál benne. Claude Code-ban írd be: `/mcp`, és csatlakoztasd újra az `rpg`-t. Codexben a `codex mcp list` parancsnak a kampány mappájában mutatnia kell az `rpg`-t. Ha az `rpg --version` nem található, telepítsd újra az RPG Engine-t ([2.2](#22-install)).
+**A mesélő nem ismeri a játékot.** Ez az AI-appod saját csevegésében fordul elő: nem töltötte be az RPG Engine-t. Ellenőrizd, hogy a kampány mappájában indítottad el, és megbíztál benne. Claude Code-ban írd be: `/mcp`, és csatlakoztasd újra az `rpg`-t. Codexben a `codex mcp list` parancsnak a kampány mappájában mutatnia kell az `rpg`-t. Ha az `rpg --version` nem található, telepítsd újra az RPG Engine-t ([2.2](#22-install)).
 
-**A Windows nem találja a `claude`-ot.** A telepítője ezt egy sárga megjegyzésben jelzi, és megadja a mappát is, ahová települt: add hozzá ezt a mappát a PATH-hoz (Rendszertulajdonságok > Környezeti változók), aztán nyiss egy új terminált.
+**A Windows nem találja a `claude`-ot.** Ez akkor történik, ha a Claude Code-ot te telepítetted. A telepítője ezt egy sárga megjegyzésben jelzi, és megadja a mappát is, ahová települt: add hozzá ezt a mappát a PATH-hoz (Rendszertulajdonságok > Környezeti változók), aztán nyiss egy új terminált.
 
-**Frissítés.** Futtasd újra az `npm install -g rpg-engine` parancsot, aztán nyiss új csevegést: a már futó mesélő azt a verziót tartja, amellyel elindult.
+**Frissítés.** Ha megjelent egy újabb RPG Engine, az irányítópult szól: a Packages › Installed alatt az RPG Engine áll legelöl, mellette a **Frissítés** gombbal; aztán tedd, amit az oldal mond. Vagy futtasd újra az `npm install -g rpg-engine` parancsot egy terminálban, aztán nyiss új csevegést: a már futó mesélő azt a verziót tartja, amellyel elindult.
 
 **A mesélő emlékszik valamire, amit visszacsináltam.** Nyiss új csevegést, és nyomd meg a **Megnyitottam az új csevegést** gombot a Mentések között.
+
+**Egy app nem települ.** Az oldal megmondja, miért: nyomd meg a **Próbáld újra** gombot. Vagy telepítsd magad a készítője oldaláról, aztán nyomd meg az **Ellenőrzés újra** gombot.
+
+**A bejelentkezési oldal nem nyílik meg a böngészőben.** Amíg az oldal rád vár, nyomd meg ott, ahol megjelenik, a **Nyisd meg újra a bejelentkezési oldalt** gombot, vagy a **Mégse** gombbal szakítsd meg, és próbáld meg újra.
+
+**Az irányítópult csevegése azt írja, hogy egy másik csevegés játszik.** Egy csevegés, amelyet te magad nyitottál meg az AI-appodban, játssza ezt a kampányt: folytasd ott, vagy zárd be, hogy az irányítópulton játssz.
 
 **Nem jelennek meg képek.** A Beállítások > Kampány > Képek megmutatja, hogy ez a számítógép tudja-e készíteni őket, és hogyan.
 
 **A telepítés nem sikerül, vagy az `rpg` nem indul.** A `node --version` parancsnak 24-et vagy újabbat kell mutatnia. Ha a Windows azt válaszolja, hogy a szkriptek futtatása le van tiltva, lásd a [2.1](#21-what-you-need) részt. Windowson ne tedd az RPG Engine-t és a kampányaidat olyan útvonalra, amelyben `&` van.
 
-**Megváltozott az irányítópult linkje.** Minden kampánynak saját címe van, csevegésről csevegésre ugyanaz. Csak akkor változik meg, ha egy másik program már használja: a mesélő megadja az új linket, és attól kezdve az marad. Ugyanannak a kampánynak egy második csevegése ugyanazon a címen tartja az oldalt, és átveszi, amint bezárod az elsőt.
+**Megváltozott az irányítópult linkje.** Az AI-appod saját csevegésében minden kampánynak saját címe van, csevegésről csevegésre ugyanaz. Csak akkor változik meg, ha egy másik program már használja: a mesélő megadja az új linket, és attól kezdve az marad. Ugyanannak a kampánynak egy második csevegése ugyanazon a címen tartja az oldalt, és átveszi, amint bezárod az elsőt.

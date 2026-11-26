@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: täydellinen opas
 
-**RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Keskustelet pelinjohtajan kanssa **keskustelussa**. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**. Keskustelun rinnalla pidät selaimessa auki sivua, **kojelautaa**, jossa ovat hahmolomake, nopat, kartat ja päiväkirja.
+**RPG Engine** antaa sinun pelata pöytäroolipeliä, jossa **tekoäly toimii pelinjohtajana**. Pelaat **kojelaudassa**, tietokoneesi ikkunassa, jossa ovat hahmolomake, nopat, kartat, päiväkirja ja **keskustelu** pelinjohtajan kanssa. RPG Engine työskentelee taustalla: se **muistaa maailman**, **heittää nopat** ja **pitää kirjaa**.
 
 Tämä opas on pelaajille: ohjelmointitaitoja ei tarvita.
 
 ## Pika-aloitus <!-- icon: send -->
 
 1. Asenna **Node.js** osoitteesta [nodejs.org](https://nodejs.org) (LTS-versio).
-2. Asenna **tekoälyagentti**, ohjelma, jossa pelinjohtaja toimii, ja kirjaudu sisään: esimerkiksi Claude Code tai Codex ([2.4](#24-connect-your-ai)).
-3. Asenna RPG Engine uudessa päätteessä, joka on avattu Node.js:n asennuksen jälkeen: `npm install -g rpg-engine`. Jos Windows ilmoittaa, että komentosarjojen suorittaminen on estetty, kirjoita kerran `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, vastaa myöntävästi ja yritä uudelleen.
-4. Avaa pääte kansioon, jossa säilytät pelisi (napsauta kansiota hiiren kakkospainikkeella ja valitse **Open in Terminal**), ja luo kampanja aina nimen kanssa: `rpg init "The Salt Isles"`. RPG Engine vastaa kahdella englanninkielisellä rivillä: kaikki on kunnossa.
-5. Siirry uuteen kansioon komennolla `cd "The Salt Isles"` ja käynnistä agentti siellä: `claude` Claude Codelle, `codex` Codexille. Vastaa myöntävästi, kun se kysyy, luotatko kansioon ([2.4](#24-connect-your-ai)), ja kirjoita sitten *Hei! Aloitetaan.* Pelinjohtaja vastaa antamalla kojelaudan linkin.
+2. Asenna RPG Engine kerran uudessa päätteessä, joka on avattu Node.js:n asennuksen jälkeen: `npm install -g rpg-engine`. Jos Windows ilmoittaa, että komentosarjojen suorittaminen on estetty, kirjoita kerran `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, vastaa myöntävästi ja yritä uudelleen.
+3. Kirjoita `rpg open`. Se kysyy, lisätäänkö RPG Enginen kuvake työpöydälle ja valikkoon: vastaa myöntävästi painamalla Enteriä. Sen jälkeen käynnistät RPG Enginen kuvakkeesta ilman päätettä ([2.2](#22-install)).
+4. Ikkunassa näkyvät kampanjasi. Paina **Uusi kampanja**, anna sille nimi ja paina **Luo** ([2.3](#23-create-a-campaign)): sen kojelauta avautuu omaan ikkunaansa.
+5. Valitse pelinjohtajan kanssa käytävässä keskustelussa tekoälysovelluksesi ja sen malli: Claude Code vaatii maksullisen Claude-tilauksen, Codex ChatGPT-tilin, ilmaisen tai maksullisen ([2.4](#24-connect-your-ai)). Jos sovellus puuttuu tai et ole kirjautunut sisään, sivu asentaa sovelluksen tai kirjaa sinut sisään. Paina **Avaa keskustelu** ja sitten **Aloita**. Ensimmäinen vastaus voi kestää pari minuuttia. Sen jälkeen pelinjohtaja kysyy, miten haluat pelata, ja teette hahmosi yhdessä.
 
 ## 1. Mikä RPG Engine on <!-- icon: about -->
 
@@ -39,48 +39,46 @@ Peli tulee pelijärjestelmänä. Se on paketti, jonka pelinjohtaja asentaa kampa
 
 - Tietokone, jossa on Windows, macOS tai Linux, sekä verkkoselain.
 - **Node.js 24** tai uudempi, osoitteesta [nodejs.org](https://nodejs.org). Mukana tulee `npm`, joka asentaa RPG Enginen.
-- **Pääte**: Windowsissa Terminal tai PowerShell, macOS:ssä Terminal. Voit avata päätteen kansioon napsauttamalla kansiota hiiren kakkospainikkeella ja valitsemalla **Open in Terminal** (Windows) tai **Services > New Terminal at Folder** (macOS). Jos Windows ilmoittaa, että komentosarjojen suorittaminen on estetty, kirjoita kerran `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` ja vastaa myöntävästi.
-- Pelinjohtajalle **tekoälyagentti** ([2.4](#24-connect-your-ai)), jossa on tarjolla oleva **suurin malli**: pieni malli antaa helpommin puhua itsensä paljastamaan salaisuuksia tai taivuttamaan sääntöjä.
+- **Pääte** kerran RPG Enginen asentamista varten: Windowsissa Terminal tai PowerShell, macOS:ssä Terminal. Voit avata päätteen kansioon napsauttamalla kansiota hiiren kakkospainikkeella ja valitsemalla **Avaa päätteessä** (Windows) tai **Palvelut > Uusi Terminal kansiossa** (macOS). Jos Windows ilmoittaa, että komentosarjojen suorittaminen on estetty, kirjoita kerran `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` ja vastaa myöntävästi.
+- Pelinjohtajalle **tekoälysovellus** omalla tilillä ([2.4](#24-connect-your-ai)): sivu voi asentaa sen puolestasi. Pelaa sen tarjoamalla **suurimmalla mallilla**: pieni malli antaa helpommin puhua itsensä paljastamaan salaisuuksia tai taivuttamaan sääntöjä.
 
 ### 2.2 Asennus
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-Komento `rpg --version` tarkistaa, että asennus onnistui. Jos npm tarjoutuu päivittämään itsensä, voit ohittaa tarjouksen. Käytät komentoa `rpg` kerran kampanjaa kohti, kampanjan luomiseen. Sen jälkeen agenttisi käynnistää RPG Enginen itse. Pelkkä `rpg` ei avaa mitään: kojelaudan antaa pelinjohtaja.
+Ensimmäinen rivi asentaa RPG Enginen. Komento `rpg --version` tarkistaa, että asennus onnistui. Jos npm tarjoutuu päivittämään itsensä, voit ohittaa tarjouksen.
+
+`rpg open` avaa RPG Enginen ikkunan, jossa näkyvät kampanjasi. Ensimmäisellä kerralla se kysyy päätteessä, lisätäänkö sen kuvake työpöydälle ja Käynnistä-valikkoon (Macilla Appeihin): vastaa myöntävästi painamalla Enteriä. Sen jälkeen kaksoisnapsautat kuvaketta, eikä päätettä tarvita enää. Ilman kuvaketta kirjoita `rpg open` aina, kun pelaat. Komento `rpg icon` lisää kuvakkeen myöhemmin, ja `rpg icon --remove` poistaa sen.
 
 ### 2.3 Kampanjan luominen
 
-Avaa pääte kansioon, jossa säilytät pelisi ([2.1](#21-what-you-need) kertoo, miten):
+RPG Enginen ikkunassa kampanjasi näkyvät korttina, viimeksi avattu ensimmäisenä. Paina **Uusi kampanja** ja anna sille **Nimi**, **Kieli** ja **Pelijärjestelmä**: loput pelinjohtaja tekee kanssasi. Kampanja tallentuu nimensä mukaiseen kansioon käyttäjäkansiosi `RPG Engine` -kansion sisään (Windowsissa `C:\Users\<nimi>`). **Valitse toinen kansio…** vie sen valitsemaasi tyhjään kansioon. Kohdassa **Pelinjohtaja** voit jo valita tekoälysovelluksen ja mallin sen ensimmäistä keskustelua varten ([2.4](#24-connect-your-ai)). Paina **Luo**: kampanjan kojelauta avautuu omaan ikkunaansa.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Komento luo kansion `The Salt Isles`, jossa on uusi kampanja. Siirry siihen komennolla `cd "The Salt Isles"`. Kirjoita nimi aina: ilman nimeä kansiosta, jossa olet, tulee kampanja sen jo sisältämien tiedostojen viereen. Muista, missä kansio on: palaat siihen aina, kun pelaat. Kaiken muun valitset myöhemmin, keskustelussa tai kojelaudalla.
-
-Pelinjohtaja ei voi luoda kampanjaa puolestasi: ennen komentoa `init` mikään ei kerro agentillesi, missä RPG Engine on.
+Seuraavalla kerralla avaat kampanjan napsauttamalla sen korttia. Auki olevassa kampanjassa lukee **Avoinna nyt**. **Avaa kansio…** lisää kampanjan, joka sinulla on jo tällä tietokoneella. Kortin pieni risti poistaa sen luettelosta: sen tiedostot jäävät paikoilleen.
 
 ### 2.4 Tekoälyn yhdistäminen
 
-Pelinjohtaja toimii **tekoälyagentissa**. Se on tekoälysovellus, päätteessä tai työpöydällä, joka voi käsitellä tietokoneesi tiedostoja, kuten Claude Code, Codex, Antigravity tai OpenCode. Pelkkä chat, kuten claude.ai tai ChatGPT, tai puhelinsovellus ei riitä: pelinjohtajan täytyy päästä käsiksi kampanjan tiedostoihin tietokoneellasi. Jokainen agentti tarvitsee oman tilauksensa ja kirjautumisensa: Claude Code maksullisen Claude-tilauksen, Codex ChatGPT-kirjautumisen, Antigravity Google-tilin, jonka ilmaisessa tilauksessa on pieni viikoittainen käyttökiintiö. OpenCode toimii niiden mallien kanssa, jotka sille annat, myös paikallisten. Asennat agentin kerran sen omalta sivulta: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Pelinjohtaja toimii tietokoneellasi **tekoälysovelluksessa**, sinun omalla tililläsi: Claude Code, Codex, OpenCode tai Antigravity. Pelkkä chat, kuten claude.ai tai ChatGPT, tai puhelinsovellus ei riitä: pelinjohtajan täytyy päästä käsiksi kampanjan tiedostoihin tietokoneellasi. Jokainen sovellus tarvitsee oman tilinsä: Claude Code maksullisen Claude-tilauksen (Pro tai korkeampi), Codex ChatGPT-tilin, ilmaisen tai maksullisen, Antigravity Google-tilin, jonka ilmaisessa käytössä on viikoittaiset rajat. OpenCodessa on joitakin ilmaisia malleja rajoitetun ajan, tai se käyttää oman palveluntarjoajasi malleja, myös paikallisia.
 
-- **Claude Code**: kirjoita kampanjakansiossa `claude`. Kun se kysyy, luotatko kansioon, valitse **Yes, I trust this folder**. Varo: valmiiksi valittuna on vastaus *No, exit*. Kampanjassa on myös pieni koukku, `rpg --listen`, jota kysymys ei näytä: se kertoo pelinjohtajalle heti, kun toimit kojelaudalla.
-- **Codex**: kirjoita kampanjakansiossa `codex` ja vastaa myöntävästi, kun se kysyy, luotatko kansioon. Ratkaisevissa hetkissä hahmo puhuu oman agenttinsa kautta, `.codex/agents/rpg-character.toml`, joka tietää vain sen, minkä hahmo tietää. Tarkista sen työpöytäsovelluksen asetuksista, että muistit on poistettu käytöstä pelin keskusteluissa.
-- **Antigravity**: kirjoita kampanjakansiossa `agy` ja vastaa myöntävästi, jos se kysyy, luotatko kansioon, tai avaa sovelluksessa kampanjakansio. Sovellusta varten RPG Engine lisää itsensä myös Antigravityn omiin asetuksiin, kotikansiosi tiedostoon `.gemini/config/mcp_config.json`. Asetukset pätevät jokaiseen avaamaasi kansioon, eivät vain kampanjan: kampanjan ulkopuolella RPG Engine ei tee mitään. Kampanjassa on kaksi pientä koukkua: `rpg --approve` antaa pelinjohtajan käyttää RPG Enginen työkaluja kysymättä sinulta joka kerta, ja `rpg --listen` kertoo pelinjohtajalle heti, kun toimit kojelaudalla. Pelinjohtaja maalaa kuvat keskustelussa itse, maksullisella Google-tilauksella. Ilmaisessa tilauksessa kuvatyökalu epäonnistuu, ja pelinjohtaja piirtää yksinkertaisia vektorikuvia, kuten Claude. Ratkaisevissa hetkissä hahmo puhuu oman agenttinsa kautta, `.agents/agents/rpg-character.md`: pelinjohtaja kirjoittaa tarinan rivin, ja hahmon vastaus tulee hetken kuluttua. Antigravity kääntää myös kojelaudan ja pelin säännöt sekä lukee tuomasi asiakirjat keskustelun ulkopuolella, Google-tilisi kiintiöllä: RPG Engine käynnistää sen erillään omista keskusteluistasi, joten se ei jätä niihin jälkeäkään. Antigravity säilyttää aiemmat keskustelusi, eikä sen muistia voi poistaa käytöstä: pelinjohtajaa on kielletty lukemasta niitä. Se, mitä kirjoitat, menee Googlelle, joka voi antaa ihmisten lukea sen: pidä henkilötiedot poissa pelistä. RPG Engine ei ole Googlen tuote.
-- **OpenCode**: kirjoita kampanjakansiossa `opencode`. Kampanjassa on pieni lisäosa, `.opencode/plugins/rpg.js`, joka kertoo pelinjohtajalle heti, kun toimit kojelaudalla. Kampanjassa pelinjohtaja kirjoittaa tiedostoja vain RPG Enginen kautta: OpenCoden oma tiedostojen kirjoittaminen ja muokkaaminen on siellä poistettu käytöstä, ja OpenCode kysyy sinulta ennen kuin suorittaa komennon. Pelinjohtaja piirtää kuvat itse yksinkertaisina vektorikuvina, kuten Claude. Ratkaisevissa hetkissä hahmo puhuu oman agenttinsa kautta, `.opencode/agents/rpg-character.md`: pelinjohtaja kirjoittaa tarinan rivin, ja hahmon vastaus tulee hetken kuluttua. Pieni paikallinen malli ei välttämättä kutsu sitä. OpenCode kääntää myös kojelaudan ja pelin säännöt sekä lukee tuomasi asiakirjat keskustelun ulkopuolella, ja käyttää siihen mallia, jonka valitsit siinä viimeksi. Jos sillä ei ole käytettävää mallia, työn tekee Codex tai Claude Code, jos sinulla on jompikumpi.
-- **Muu agentti**: käynnistä se kampanjakansiossa ja anna sille MCP-palvelin `rpg mcp`. RPG Engine on tavallinen MCP-palvelin: pelinjohtajaksi kelpaa mikä tahansa MCP:tä tukeva agentti, myös paikalliset.
+Valitse kojelaudan keskustelussa sovellus kohdasta **Tekoälysovelluksesi**, sitten sen **Malli** ja **Pelinjohtajan ajatukset**: sivu ehdottaa niitä. Enemmän ajattelua on hitaampaa ja kuluttaa enemmän tilaustasi. Sovellus, joka ei ole valmis, kertoo, mitä se tarvitsee, ja tarjoaa painikkeen, joka hoitaa asian:
 
-Jos pelinjohtaja sanoo, ettei löydä RPG Enginen työkaluja, kirjoita kampanjakansiossa `rpg init`: kansiossa, joka on jo kampanja, komento vain päivittää nämä tiedostot. Avaa sen jälkeen uusi keskustelu.
+- **Claude Code** ja **Codex**: **Install Claude Code** tai **Install Codex** lataa sovelluksen RPG Enginen omaan kansioon tälle tietokoneelle. **Sign in to Claude Code** tai **Sign in to Codex** avaa sovelluksen kirjautumissivun selaimessasi. RPG Engine ei koskaan näe salasanaasi.
+- **OpenCode** ja **Antigravity**: **Get OpenCode** tai **Get Antigravity** avaa sovelluksen sivuston, jossa asennat sen. OpenCodella pelaa ilman kirjautumista. Antigravityyn kirjaudutaan sen omassa sovelluksessa. Palaa sitten takaisin ja paina **Tarkista uudelleen**.
 
-Pelaamme ja testaamme **Claude Codella**. **Codex**, **Antigravity** ja **OpenCode** on yhdistetty ja tarkistettu, mutta niillä ei ole vielä pelattu kokonaista kampanjaa. Kampanja poistaa agentin oman muistin käytöstä: peli elää sen tiedostoissa, jotta tallennukseen palaaminen palauttaa pelin todella takaisin.
+Antigravity on merkitty **kokeilussa**: se voi astua ulos pelistä ja kysellä omalla tavallaan, joten Claude Code, Codex tai OpenCode sopivat pelaamiseen paremmin. Antigravity säilyttää aiemmat keskustelusi, eikä sen muistia voi poistaa käytöstä: pelinjohtajaa on kielletty lukemasta niitä. Se, mitä kirjoitat, menee Googlelle, joka voi antaa ihmisten lukea sen: pidä henkilötiedot poissa pelistä. RPG Engine ei ole Googlen tuote. Pelaamme ja testaamme RPG Enginea eniten **Claude Codella**: muilla ei ole vielä pelattu kokonaista kampanjaa.
+
+Kojelaudan keskustelussa pelinjohtaja koskee tietokoneeseesi vain RPG Enginen kautta: se ei avaa tiedostojasi itse. RPG Engine lukee kampanjan ulkopuolelta vain sen, minkä valitsit, kun olet vastannut myöntävästi tietokoneesi ikkunassa.
+
+Voit pelata myös tekoälysovelluksesi omassa keskustelussa, päätteessä tai sen työpöytäsovelluksessa ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 Ensimmäinen keskustelu
 
-Kirjoita mitä tahansa, vaikka *Hei! Aloitetaan.* Pelinjohtaja antaa jokaisen keskustelun ensimmäisessä vastauksessaan **linkin kojelautaasi**, esimerkiksi `http://127.0.0.1:4750`. Avaa se ja pidä se keskustelun vieressä.
+Kun sovellus ja malli on valittu, paina **Avaa keskustelu**: sovellus käynnistyy, mikä voi kestää muutaman sekunnin. Paina sitten **Aloita** tai kirjoita mitä tahansa, vaikka *Hei! Aloitetaan.* Ensimmäinen vastaus voi kestää pari minuuttia, kun pelinjohtaja luo kohtausta.
 
-Pelinjohtajan viestien välissä agenttisi näyttää käyttämänsä työkalut. Älä avaa niiden tietoja (Claude Codessa ctrl+o), sillä ne voivat paljastaa salaisuuksia.
+Keskustelulla on oma osionsa, **Roolipeli**, tai se on sivun vieressä: sen yläreunan pienillä painikkeilla voit asettaa sen kohtaan **Omalla välilehdellään**, **Vasemmalla** tai **Oikealla**, ja reunaa vetämällä saat sen leveämmäksi.
 
 Uusi kampanja käy läpi kolme vaihetta, jotka näkyvät kojelaudan ylälaidassa: **1 Asetukset** (miten haluat pelata), **2 Nollasessio** (teet hahmosi, pelin sisällä), **3 Pelaaminen**.
 
@@ -114,7 +112,20 @@ Pelinjohtaja ei koskaan kysy asetusta **Pelinjohtajan tyyli**, mutta voit muutta
 
 Teet hahmosi pelinjohtajan kanssa, kuten pelipöydän ääressä. Jokainen valinta on sinun, ellet pyydä pelinjohtajaa tekemään sitä: tule mukaan valmiin idean, epämääräisen idean tai ilman mitään ideaa, tai pyydä pelinjohtajaa tekemään koko hahmo muutaman sanan pohjalta. Tasoihin perustuvassa pelissä pelinjohtaja kysyy, miltä tasolta aloitat: ensimmäiseltä, ellet halua toista. Pelinjohtaja kertoo, miten ominaisuuspisteet määritetään, ennen kuin yhtään noppaa heitetään. Taustatarinaa ei koskaan vaadita. Jos kerrot sellaisen, pelinjohtaja kirjoittaa sen sinun sanoillasi. Sitten pelinjohtaja pyytää kuvaa hahmostasi ([3.7](#37-your-characters-story-and-picture)). RPG Engine laskee hahmolomakkeen: sinun ei koskaan tarvitse laskea itse.
 
-Onko sinulla jo hahmo, toisesta pelistä tai toisesta kampanjasta? Valitse asetuksissa **Minulla on jo yksi** ja anna hahmo pelinjohtajalle: liitä hahmolomake keskusteluun tai kerro, missä sen tiedosto on tietokoneellasi (PDF, kuva, teksti). Pelinjohtaja kirjoittaa hahmon sellaisenaan, sen tasolla, tarkistaa sen sääntöjä ja maailmaa vasten ja sopii kanssasi kaikesta, mikä ei sovi.
+Onko sinulla jo hahmo, toisesta pelistä tai toisesta kampanjasta? Valitse asetuksissa **Minulla on jo yksi** ja anna hahmo pelinjohtajalle: liitä hahmolomake keskusteluun. Tekoälysovelluksesi omassa keskustelussa voit myös kertoa, missä sen tiedosto on tietokoneellasi (PDF, kuva, teksti). Kojelaudan keskustelussa pelinjohtaja ei avaa tiedostojasi. Pelinjohtaja kirjoittaa hahmon sellaisenaan, sen tasolla, tarkistaa sen sääntöjä ja maailmaa vasten ja sopii kanssasi kaikesta, mikä ei sovi.
+
+### 2.8 Toinen tapa: tekoälysovelluksesi oma keskustelu
+
+Voit pelata myös suoraan tekoälysovelluksesi keskustelussa, päätteessä tai sen työpöytäsovelluksessa, kojelauta auki sen vieressä. Silloin luot kampanjan päätteessä, kansiossa, jossa säilytät pelisi ([2.1](#21-what-you-need) kertoo, miten), ja kirjoitat aina nimen: `rpg init "The Salt Isles"` luo kansion `The Salt Isles`, jossa on uusi kampanja. RPG Engine valmistelee siellä itse sen, mitä kukin sovellus tarvitsee.
+
+Käynnistä sovelluksesi siinä kansiossa: `claude` Claude Codelle, `codex` Codexille, `agy` Antigravitylle, `opencode` OpenCodelle. Voit myös avata kansion sovelluksen työpöytäversiossa. Vastaa myöntävästi, kun se kysyy, luotatko kansioon. Varo: Claude Codessa valmiiksi valittuna on vastaus *No, exit*. Pelinjohtajaksi kelpaa myös mikä tahansa muu MCP:tä tukeva agentti: käynnistä se kampanjakansiossa ja anna sille MCP-palvelin `rpg mcp`.
+
+Kirjoita *Hei! Aloitetaan.* Pelinjohtaja antaa jokaisen keskustelun ensimmäisessä vastauksessaan **linkin kojelautaasi**, esimerkiksi `http://127.0.0.1:4750`: avaa se keskustelun viereen.
+
+- Pelinjohtajan viestien välissä sovelluksesi näyttää käyttämänsä työkalut. Älä avaa niiden tietoja (Claude Codessa ctrl+o), sillä ne voivat paljastaa salaisuuksia.
+- Kampanja poistaa sovelluksen oman muistin käytöstä: peli elää sen tiedostoissa, jotta tallennukseen palaaminen palauttaa pelin todella takaisin. Tarkista Codexin työpöytäsovelluksen asetuksista, että muistit on poistettu käytöstä pelin keskusteluissa.
+- Jos pelinjohtaja sanoo, ettei löydä RPG Enginen työkaluja, kirjoita kampanjakansiossa `rpg init` ja avaa sitten uusi keskustelu.
+- Kampanjaa pelaa yksi keskustelu kerrallaan: kun sinun keskustelusi on auki, kojelaudan keskustelu odottaa.
 
 ---
 
@@ -126,7 +137,9 @@ Kirjoita, mitä hahmosi tekee tai sanoo, omin sanoin:
 
 > Kysyn majatalon isännältä, kuka muu kävi täällä tänä iltana.
 
-Jos haluat puhua tarinan ulkopuolelta, kirjoita `[OOC: …]` (out of character, eli hahmon ulkopuolelta): *[OOC: Miten painiminen toimii?]* Pelinjohtaja vastaa samalla tavalla.
+Jos haluat puhua tarinan ulkopuolelta, kirjoita `[OOC: …]` (out of character, eli hahmon ulkopuolelta): *[OOC: Miten painiminen toimii?]* Pelinjohtaja vastaa samalla tavalla. Kojelaudan keskustelussa sen pelin ulkopuoliset sanat erottuvat omikseen, OOC-merkittyinä.
+
+Kirjoita kojelaudan keskustelussa alareunan kenttään ja lähetä painamalla Enteriä. Shift+Enter aloittaa uuden rivin. Kun pelinjohtaja vastaa, **Pysäytä** keskeyttää vastauksen, ja sanasi odottavat kentässä. Kun pelinjohtaja kysyy sinulta jotain, kysymyksen mukana tulevat painikkeet, heitotkin: klikkaa yhtä tai kirjoita vastauksesi. Kentän alla näet sovelluksen ja mallin. Jos sovellus sen sallii, voit vaihtaa mallin klikkaamalla sitä, kun pelinjohtaja on vastannut. **Sulje keskustelu** päättää keskustelun, ja peli säilyy tiedostoissaan.
 
 Sinä kerrot, mitä yrität. Pelinjohtaja kertoo, mitä tapahtuu. Pelinjohtaja ei koskaan päätä hahmosi puolesta eikä puhu pelimoottorista. Pelinjohtajalta voi kysyä, miten kojelautaa käytetään.
 
@@ -184,17 +197,17 @@ RPG Engine tallentaa koko kampanjan jokaisen kohtauksen lopussa. Asetus **tallen
 
 Kaikissa tiloissa voit **aloittaa alusta**, joko pelin alusta tai nollasessiosta. Tee se keskustelussa tai kohdassa **Tallennukset**.
 
-Kun olet palannut takaisin, **avaa uusi keskustelu**: vanha muistaa, mikä peruttiin. Kirjoita uuteen keskusteluun *jatka* ja paina sitten Tallennuksissa **Avasin uuden keskustelun**.
+Kun olet palannut takaisin, **avaa uusi keskustelu**: vanha muistaa, mikä peruttiin. Paina kojelaudan keskustelussa **Sulje keskustelu** ja sitten **Uusi keskustelu**. Tekoälysovelluksesi omassa keskustelussa avaa uusi keskustelu (Claude Codessa `/clear`). Kirjoita uuteen keskusteluun *jatka*. Kerro sitten pelinjohtajalle, että keskustelu on uusi: paina Tallennuksissa **Avasin uuden keskustelun** tai sano se keskustelussa. Siihen asti pelinjohtaja ei jatka.
 
-Jos kampanjan kansio on Git-tietovarasto, kohdassa **Asetukset** on **Git**-osio, jossa kaikki on pois päältä, kunnes valitset toisin: commit jokaisen istunnon alussa, jokaisen tallennuksen yhteydessä ja jokaisen kohtauksen lopussa sekä halutessasi push sen jälkeen. Commit on tilannekuva kampanjasta kyseisellä hetkellä. Push lähettää tilannekuvat verkossa olevaan tietovarastoon, esimerkiksi GitHubiin, jolloin kopio on myös tämän tietokoneen ulkopuolella. Tallennukset ja keskustelusi pelinjohtajan kanssa pysyvät tietovaraston ulkopuolella, ellet ota niitä mukaan. Ota keskustelut mukaan vain, jos tietovarasto on yksityinen.
+Jos et tiedä, mikä git on, ohita tämä kappale. Jos kampanjan kansio on git-tietovarasto, kohdassa **Asetukset** on **Git**-osio, jossa kaikki on pois päältä, kunnes valitset toisin: commit jokaisen istunnon alussa, jokaisen tallennuksen yhteydessä ja jokaisen kohtauksen lopussa sekä halutessasi push sen jälkeen. Commit on tilannekuva kampanjasta kyseisellä hetkellä. Push lähettää tilannekuvat verkossa olevaan tietovarastoon, esimerkiksi GitHubiin, jolloin kopio on myös tämän tietokoneen ulkopuolella. Tallennukset ja keskustelusi pelinjohtajan kanssa pysyvät tietovaraston ulkopuolella, ellet ota niitä mukaan. Ota keskustelut mukaan vain, jos tietovarasto on yksityinen.
 
 ### 3.9 Istunnot: lopettaminen ja palaaminen
 
-Lopeta, kun haluat: *[Lopetetaan tältä illalta.]* Kaikki on jo tallennettu tiedostoihin. Kun haluat palata, käynnistä agenttisi kampanjan kansiossa ja kirjoita *jatka*. Pelinjohtaja antaa lyhyen kertauksen ja jatkaa.
+Lopeta, kun haluat: *[Lopetetaan tältä illalta.]* Kaikki on jo tallennettu tiedostoihin. Kun haluat palata, avaa RPG Engine kuvakkeesta ja klikkaa kampanjaasi. Jos jätit keskustelun auki, se palaa itsestään. Jos suljit sen, paina **Jatka keskustelua**. Paina sitten **Jatka tarinaa**: pelinjohtaja kertoo parilla rivillä, mihin jäitte, ja jatkaa. Jos peli suljettiin, kun pelinjohtaja vielä vastasi tai kun pelinjohtajan kysymys odotti sinua, painikkeessa lukee sen sijaan **Jatka tästä**. **Uusi keskustelu** avaa uuden keskustelun samaan peliin. Tekoälysovelluksesi omassa keskustelussa käynnistä se kampanjakansiossa ja kirjoita *jatka*.
 
 ### 3.10 Pelinjohtajan mieliala
 
-Kojelaudan yläreunan robotti on pelinjohtaja. Sen ilme seuraa tarinan sävyä eikä koskaan paljasta sitä, mitä et vielä tiedä. Kun keskustelu on suljettu, robotti nukkuu.
+Kojelaudan yläreunan robotti on pelinjohtaja: sen ilme seuraa tarinan sävyä eikä koskaan paljasta sitä, mitä et vielä tiedä. Kun kojelauta ei ole yhteydessä peliin, robotti nukkuu.
 
 ### 3.11 Kuvat
 
@@ -212,8 +225,9 @@ Jokaista asetusta voi muuttaa, keskustelussa tai kohdassa **Asetukset**. Ratkais
 
 ## 4. Hallintanäkymä <!-- icon: party -->
 
-Sivu omalla tietokoneellasi. Se avautuu vain tämän tietokoneen selaimessa ja toimii niin kauan kuin keskustelu on auki. Kun keskustelu sulkeutuu, sivulla lukee *Not connected*. Yhteys palaa itsestään seuraavan keskustelun mukana.
+Sivu omalla tietokoneellasi, omassa ikkunassaan, joka aukeaa vain tällä tietokoneella. Se pysyy käynnissä niin kauan kuin sen ikkuna on auki, keskustelun kanssa tai ilman. Noin kolmekymmentä sekuntia ikkunan sulkemisen jälkeen peli pysähtyy, ja keskustelu sen mukana. Mitään ei katoa: kaikki on tiedostoissa. Tekoälysovelluksesi omassa keskustelussa sivu on käynnissä niin kauan kuin keskustelu on auki. Kun peli on poissa, sivulla lukee *Not connected*: paina **Avaa kampanja uudelleen** tai avaa omassa sovelluksessasi seuraava keskustelu. Talon kuvalla merkitty **Kampanjat**-painike vie takaisin kaikkiin kampanjoihisi.
 
+- **Roolipeli**: keskustelu pelinjohtajan kanssa, kun se ei ole sivun vieressä ([2.5](#25-the-first-chat)).
 - **Seurue**: oma hahmolomakkeesi ja seuralaistesi lomakkeet. Heitä numerolla napsauttamalla. Vie osoitin numeron päälle, niin näet, mistä se tulee. Jos nuoli merkitsee noppaa, näet myös, mikä parantaa tai huonontaa heittoa. Kun pelinjohtaja valmistelee sinulle valintoja, kuten uudella tasolla, hahmolomakkeen ilmoitus avaa ne. Valitse silloin kun haluat, lue sivut, joihin vaihtoehdot viittaavat, heitä nopat, jos vaihtoehto sitä vaatii, ja vahvista lopuksi. Tarina jatkuu sillä välin. Sen vieressä näkyvät heitot.
 - **Kohtaus**: missä olet, paikan kuva ja kartta, ketkä ovat paikalla ja mitä tapahtuu. Taistelussa näet vuorot ja hahmosi kortin.
 - **Päiväkirja**: tehtävät, tarina kirjana, sen aikajana, seuralaistesi päiväkirjat ja omat muistiinpanosi.
@@ -265,7 +279,7 @@ Laajennus lisää kampanjaan jotakin pelijärjestelmän päälle: esimerkiksi s�
 
 - **Tehty lennossa**: lähtökohdastasi pelinjohtaja rakentaa jokaisen paikan, henkilön ja juonen juuri ennen kuin tarvitset sen, ja säilyttää sen.
 - **Valmisteltu alussa**: sama, mutta maailma rakennetaan ennen pelin alkua.
-- **Omasta seikkailustasi tai kirjastasi**: anna pelinjohtajalle sen tiedosto, *[Tuo tämä seikkailu kampanjaksemme: D:\Books\adventure.pdf. Älä kerro minulle mitään, mikä siinä on.]* Se luetaan parhaiten tekstinä, EPUBina, Word-asiakirjana tai PDF:nä, jonka tekstin voi valita. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, hitaasti ja muutaman virheen kera. Oma tekoälysovelluksesi lukee sen keskustelun ulkopuolella, tai muuten pelinjohtaja keskustelussa, sinun tilauksellasi: Claude Codessa tai Codexissa lukee jompikumpi niistä, Antigravityssa sinun Antigravitysi, OpenCodessa malli, jonka valitsit siinä viimeksi. Koko asiakirja menee sen tekijälle, joka sen lukee, tilisi ehtojen ja sen koulutusvalinnan mukaisesti. Kojelauta näyttää, kuinka pitkällä työ on. Romaanista pelinjohtaja ehdottaa, mistä aloittaa. Pelinjohtaja kirjoittaa paikat, hahmot ja salaisuudet.
+- **Omasta seikkailustasi tai kirjastasi**: anna pelinjohtajalle sen tiedosto, *[Tuo tämä seikkailu kampanjaksemme: D:\Books\adventure.pdf. Älä kerro minulle mitään, mikä siinä on.]* Kampanjan ulkopuolinen tiedosto luetaan vasta, kun olet vastannut myöntävästi tietokoneesi ikkunassa. Kampanjan **inbox**-kansioon laittamasi tiedosto luetaan heti. Se luetaan parhaiten tekstinä, EPUBina, Word-asiakirjana tai PDF:nä, jonka tekstin voi valita. Skannattu PDF luetaan sivujen kuvista, vain Windowsissa, hitaasti ja muutaman virheen kera. Oma tekoälysovelluksesi lukee sen keskustelun ulkopuolella, tai muuten pelinjohtaja keskustelussa, sinun tilauksellasi: Claude Codessa tai Codexissa lukee jompikumpi niistä, Antigravityssa sinun Antigravitysi, OpenCodessa malli, jonka valitsit siinä viimeksi. Koko asiakirja menee sen tekijälle, joka sen lukee, tilisi ehtojen ja sen koulutusvalinnan mukaisesti. Kojelauta näyttää, kuinka pitkällä työ on. Romaanista pelinjohtaja ehdottaa, mistä aloittaa. Pelinjohtaja kirjoittaa paikat, hahmot ja salaisuudet.
 
 Kampanja pelataan kerran: jos haluat pelata saman seikkailun uudestaan, luo uusi kampanja.
 
@@ -303,28 +317,34 @@ Jokaisen komennon, jota pelinjohtaja käyttää, voi ajaa myös kampanjakansioss
 
 **Voiko pelinjohtaja huijata?** Se ei voi muuttaa RPG Enginen tekemää heittoa, paitsi vaikeustasolla tarina, eikä jo vahvistettuja tosiasioita.
 
-**Maksaako se mitään?** RPG Engine on ilmainen. Pelinjohtaja toimii agenttisi tilauksella tai omalla tietokoneellasi paikallisella mallilla. Pelilta on pitkä keskustelu: pienimmillä tilauksilla voit saavuttaa tilauksen rajan ennen illan loppua. Kuvat, käännökset ja tuonnit käyttävät samaa tilausta. RPG Engine itse ei koskaan käytä API-avainta, joka maksaa kutsukohtaisesti: kirjaudu agenttiisi tililläsi, älä avaimella.
+**Maksaako se mitään?** RPG Engine on ilmainen. Pelinjohtaja toimii tekoälysovelluksesi tilauksella tai omalla tietokoneellasi paikallisella mallilla. Pelilta on pitkä keskustelu: pienimmillä tilauksilla voit saavuttaa tilauksen rajan ennen illan loppua. Kuvat, käännökset ja tuonnit käyttävät samaa tilausta. RPG Engine itse ei koskaan käytä API-avainta, joka maksaa kutsukohtaisesti: kirjaa tekoälysovelluksesi sisään tililläsi, älä avaimella.
 
 **Voinko pelata puhelimella?** Et: pelinjohtaja toimii tietokoneellasi, ja kojelauta aukeaa vain siellä.
 
 **Voinko pelata kavereiden kanssa?** Ei vielä: nykyisin yksi pelaaja, yksi hahmo ja seuralaiset ([Tulossa myöhemmin](#9-coming-later)).
 
-**Voinko käyttää ensi kerralla eri tekoälyä?** Voit: avaa kampanja toisessa agentissa ja kirjoita *jatka*.
+**Voinko käyttää ensi kerralla eri tekoälyä?** Voit: valitse keskustelussa toinen sovellus ennen kuin avaat sen, tai avaa kampanja toisessa sovelluksessa ja kirjoita *jatka*.
 
 ### Ongelmat
 
-**Kojelauta ei aukea.** Kysy pelinjohtajalta: `[OOC: Mikä on kojelaudan linkki?]`. Se toimii vain, kun kyseisen kampanjan keskustelu on auki: Claude Codessa ja Codexissa se käynnistyy keskustelun avautuessa, Antigravityssa ensimmäisen viestisi mukana. Clauden sovelluksessa jonkin aikaa taustalla ollut keskustelu menee lepotilaan, ja sivu sen mukana: klikkaa keskustelua, niin sivu palaa samaan osoitteeseen.
+**Kampanja ei aukea.** Avaa RPG Engine uudelleen kuvakkeesta tai kirjoita päätteessä `rpg open` ja klikkaa kampanjaa. Jos sen kojelaudassa lukee *Not connected*, paina **Avaa kampanja uudelleen**. Kortti, jossa lukee **Kansiota ei löytynyt**, on menettänyt kansionsa: poista se luettelosta ja lisää kampanja uudelleen kohdassa **Avaa kansio…**, siellä missä se nyt on. Tekoälysovelluksesi omassa keskustelussa kojelauta toimii vain, kun kyseisen kampanjan keskustelu on auki: kysy pelinjohtajalta `[OOC: Mikä on kojelaudan linkki?]`. Clauden sovelluksessa jonkin aikaa taustalla ollut keskustelu menee lepotilaan, ja sivu sen mukana: klikkaa keskustelua, niin sivu palaa samaan osoitteeseen.
 
-**Pelinjohtaja ei tunnu tuntevan peliä.** Agenttisi ei ladannut RPG Engineä. Tarkista, että käynnistit sen kampanjakansiossa ja että luotit kansioon. Claude Codessa kirjoita `/mcp` ja yhdistä `rpg` uudelleen. Codexissa komennon `codex mcp list` kampanjakansiossa pitää näyttää `rpg`. Jos komentoa `rpg --version` ei löydy, asenna RPG Engine uudelleen ([2.2](#22-install)).
+**Pelinjohtaja ei tunnu tuntevan peliä.** Tämä tapahtuu tekoälysovelluksesi omassa keskustelussa: se ei ladannut RPG Enginea. Tarkista, että käynnistit sen kampanjakansiossa ja että luotit kansioon. Claude Codessa kirjoita `/mcp` ja yhdistä `rpg` uudelleen. Codexissa komennon `codex mcp list` kampanjakansiossa pitää näyttää `rpg`. Jos komentoa `rpg --version` ei löydy, asenna RPG Engine uudelleen ([2.2](#22-install)).
 
-**Windows ei löydä komentoa `claude`.** Asennusohjelma kertoo siitä keltaisessa huomautuksessa ja mainitsee kansion, johon asennus meni: lisää kansio PATH-ympäristömuuttujaan (Järjestelmän ominaisuudet > Ympäristömuuttujat) ja avaa sitten uusi pääte.
+**Windows ei löydä komentoa `claude`.** Näin käy, kun olet asentanut Claude Coden itse. Asennusohjelma kertoo siitä keltaisessa huomautuksessa ja mainitsee kansion, johon asennus meni: lisää kansio PATH-ympäristömuuttujaan (Järjestelmän ominaisuudet > Ympäristömuuttujat) ja avaa sitten uusi pääte.
 
-**Päivittäminen.** Suorita `npm install -g rpg-engine` uudelleen ja avaa sitten uusi keskustelu: käynnissä oleva pelinjohtaja pitää sen version, jolla se käynnistyi.
+**Päivittäminen.** Kun uudempi RPG Engine on ilmestynyt, kojelauta kertoo siitä: kohdassa Packages › Installed RPG Engine on ensimmäisenä, ja sen vieressä on **Päivitä**. Tee sitten, mitä sivu neuvoo. Voit myös suorittaa `npm install -g rpg-engine` uudelleen päätteessä ja avata sitten uuden keskustelun: käynnissä oleva pelinjohtaja pitää sen version, jolla se käynnistyi.
 
 **Pelinjohtaja muistaa jotain, minkä peruin.** Avaa uusi keskustelu ja paina Tallennuksissa **Avasin uuden keskustelun**.
+
+**Sovellus ei asennu.** Sivu kertoo syyn: paina **Yritä uudelleen**. Tai asenna sovellus itse sen tekijän sivustolta ja paina sitten **Tarkista uudelleen**.
+
+**Kirjautumissivu ei aukea selaimessa.** Kun sivu odottaa sinua, paina **Avaa kirjautumissivu uudelleen**, jos se näkyy, tai **Peruuta** ja yritä vielä kerran.
+
+**Kojelaudan keskustelu kertoo, että toinen keskustelu pelaa.** Tekoälysovelluksessasi itse avaamasi keskustelu pelaa tätä kampanjaa: jatka siellä tai sulje se, jotta voit pelata kojelaudassa.
 
 **Kuvia ei ilmesty.** Asetukset > Kampanja > Kuvat kertoo, voiko tämä tietokone tehdä niitä, ja miten.
 
 **Asennus epäonnistuu tai `rpg` ei käynnisty.** Komennon `node --version` pitää näyttää 24 tai uudempi. Jos Windows ilmoittaa, että komentosarjojen suorittaminen on estetty, katso [2.1](#21-what-you-need). Pidä Windowsissa RPG Engine ja kampanjasi poissa poluista, joissa on `&`.
 
-**Kojelaudan linkki muuttui.** Jokaisella kampanjalla on oma osoitteensa, joka pysyy samana keskustelusta toiseen. Se muuttuu vain, jos jokin toinen ohjelma käyttää sitä jo: pelinjohtaja antaa sinulle uuden linkin, ja siitä lähtien se pysyy. Saman kampanjan toinen keskustelu pitää sivun samassa osoitteessa ja ottaa sen haltuunsa, kun suljet ensimmäisen.
+**Kojelaudan linkki muuttui.** Tekoälysovelluksesi omassa keskustelussa jokaisella kampanjalla on oma osoitteensa, joka pysyy samana keskustelusta toiseen. Se muuttuu vain, jos jokin toinen ohjelma käyttää sitä jo: pelinjohtaja antaa sinulle uuden linkin, ja siitä lähtien se pysyy. Saman kampanjan toinen keskustelu pitää sivun samassa osoitteessa ja ottaa sen haltuunsa, kun suljet ensimmäisen.

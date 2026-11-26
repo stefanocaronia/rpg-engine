@@ -60,7 +60,7 @@ rpg open
 
 If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer yes and try again.
 
-`rpg open` offers to put RPG Engine's icon on your desktop and in your menu: from then on you start it from there, with no terminal. It opens a window with your campaigns: make a new one, and its dashboard opens in a window of its own, with the chat with the master beside it. There you choose your AI app and its model; if the app is missing or signed out, the page installs it and signs you in. Then press *Begin*: the master asks how you want to play, a few questions at a time, then you make your character together, and the story begins.
+`rpg open` offers to put RPG Engine's icon on your desktop and in your menu: from then on you start it from there, with no terminal. It opens a window with your campaigns: make a new one, and its dashboard opens in a window of its own, with the chat with the master beside it. There you choose your AI app and its model; if Claude Code or Codex is missing or signed out, the page installs it and signs you in; for the others it opens their site. Press *Open the chat*, then *Begin*: the master asks how you want to play, a few questions at a time, then you make your character together, and the story begins.
 
 You can still play in your AI app's own chat, from a terminal or its desktop app: `rpg init "The Salt Isles"` makes a campaign in a folder of that name; start your app there (`claude`, `codex`, `opencode`, `agy`), say yes when it asks whether you trust the folder, and write *Hi! Let's start.*
 

@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: pełny przewodnik
 
-**RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Rozmawiasz z Mistrzem Gry na **czacie**. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**. Obok czatu trzymasz otwartą w przeglądarce stronę, czyli **dashboard**, z kartą postaci, kośćmi, mapami i dziennikiem.
+**RPG Engine** pozwala grać w tradycyjną grę fabularną z **AI w roli Mistrza Gry**. Grasz na **Pulpicie**, czyli w oknie na komputerze, z kartą postaci, kośćmi, mapami, dziennikiem i **czatem** z Mistrzem Gry. RPG Engine pracuje w tle: **pamięta świat**, **rzuca kośćmi** i **prowadzi rachunki**.
 
 Ten przewodnik jest dla graczy: nie musisz umieć programować.
 
 ## Szybki start <!-- icon: send -->
 
 1. Zainstaluj **Node.js** ze strony [nodejs.org](https://nodejs.org) (wersja LTS).
-2. Zainstaluj **agenta AI**, czyli program, w którym działa Mistrz Gry, i zaloguj się: na przykład Claude Code albo Codex ([2.4](#24-connect-your-ai)).
-3. W nowym terminalu, otwartym po zainstalowaniu Node.js, zainstaluj RPG Engine: `npm install -g rpg-engine`. Jeśli Windows odpowie, że uruchamianie skryptów jest wyłączone, wpisz raz `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, odpowiedz tak i spróbuj ponownie.
-4. Otwórz terminal w folderze, w którym trzymasz swoje gry (kliknij go prawym przyciskiem myszy i wybierz **Otwórz w Terminalu**) i utwórz kampanię, zawsze z jej nazwą: `rpg init "The Salt Isles"`. RPG Engine odpowie dwiema linijkami po angielsku: wszystko jest w porządku.
-5. Wejdź do nowego folderu poleceniem `cd "The Salt Isles"` i uruchom tam agenta: `claude` dla Claude Code, `codex` dla Codex. Zgódź się, gdy zapyta, czy ufasz temu folderowi ([2.4](#24-connect-your-ai)), a potem napisz *Cześć! Zaczynajmy.* Mistrz Gry odpowie linkiem do dashboardu.
+2. Jednorazowo, w nowym terminalu otwartym po zainstalowaniu Node.js, zainstaluj RPG Engine: `npm install -g rpg-engine`. Jeśli Windows odpowie, że uruchamianie skryptów jest wyłączone, wpisz raz `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, odpowiedz tak i spróbuj ponownie.
+3. Wpisz `rpg open`. RPG Engine zapyta, czy umieścić jego ikonę na pulpicie komputera i w menu: naciśnij Enter, żeby się zgodzić. Odtąd uruchamiasz RPG Engine z ikony, bez terminala ([2.2](#22-install)).
+4. Okno pokaże Twoje kampanie. Naciśnij **Nowa kampania**, nadaj jej nazwę i naciśnij **Utwórz** ([2.3](#23-create-a-campaign)): jej Pulpit otworzy się w osobnym oknie.
+5. W czacie z Mistrzem Gry wybierz swoją aplikację AI i jej model: Claude Code wymaga płatnego planu Claude, Codex konta ChatGPT, darmowego lub płatnego ([2.4](#24-connect-your-ai)). Jeśli aplikacji brakuje albo brakuje logowania, strona ją zainstaluje lub Cię zaloguje. Naciśnij **Otwórz czat**, a potem **Zaczynamy**. Pierwsza odpowiedź może potrwać kilka minut. Potem Mistrz Gry zapyta, jak chcesz grać, i razem stworzycie Twoją postać.
 
 ## 1. Czym jest RPG Engine <!-- icon: about -->
 
@@ -39,48 +39,46 @@ Gra działa w oparciu o system gry, czyli pakiet, który Mistrz Gry instaluje do
 
 - Komputer z Windows, macOS lub Linuksem oraz przeglądarka internetowa.
 - **Node.js 24** lub nowszy, ze strony [nodejs.org](https://nodejs.org). Razem z nim instaluje się `npm`, który instaluje RPG Engine.
-- **Terminal**: w Windows Terminal lub PowerShell, w macOS Terminal. Aby otworzyć terminal w folderze, kliknij folder prawym przyciskiem myszy i wybierz **Otwórz w Terminalu** (Windows) lub **Usługi > Nowy terminal w folderze** (macOS). Jeśli Windows odpowie, że uruchamianie skryptów jest wyłączone, wpisz raz `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` i odpowiedz tak.
-- **Agent AI** dla Mistrza Gry ([2.4](#24-connect-your-ai)), z **największym modelem**, jaki oferuje. Mały model łatwiej namówić do ujawnienia sekretów albo naginania zasad.
+- **Terminal**, jednorazowo, do zainstalowania RPG Engine: w Windows Terminal lub PowerShell, w macOS Terminal. Aby otworzyć terminal w folderze, kliknij folder prawym przyciskiem myszy i wybierz **Otwórz w Terminalu** (Windows) lub **Usługi > Nowy terminal w folderze** (macOS). Jeśli Windows odpowie, że uruchamianie skryptów jest wyłączone, wpisz raz `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` i odpowiedz tak.
+- **Aplikacja AI** dla Mistrza Gry, z Twoim własnym kontem ([2.4](#24-connect-your-ai)): strona może ją zainstalować za Ciebie. Graj z **największym modelem**, jaki oferuje: mały model łatwiej namówić do ujawnienia sekretów albo naginania zasad.
 
 ### 2.2 Instalacja
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-Polecenie `rpg --version` sprawdza, czy instalacja się udała. Jeśli npm zaproponuje aktualizację samego siebie, możesz to zignorować. Używasz `rpg` raz na kampanię, aby ją utworzyć. Potem agent uruchamia RPG Engine sam. Samo `rpg` niczego nie otwiera: dashboard podaje Mistrz Gry.
+Pierwsze polecenie instaluje RPG Engine, a `rpg --version` sprawdza, czy się udało. Jeśli npm zaproponuje aktualizację samego siebie, możesz ją pominąć.
+
+`rpg open` otwiera okno RPG Engine z Twoimi kampaniami. Za pierwszym razem pyta w terminalu, czy dodać jego ikonę na pulpit komputera i do menu Start (w macOS do folderu Programy): naciśnij Enter, żeby się zgodzić. Odtąd klikasz ikonę dwukrotnie i terminal nie jest już potrzebny. Bez ikony wpisuj `rpg open` przy każdej grze. `rpg icon` dodaje ikonę później, a `rpg icon --remove` ją usuwa.
 
 ### 2.3 Tworzenie kampanii
 
-Otwórz terminal w folderze, w którym trzymasz swoje gry ([2.1](#21-what-you-need) mówi, jak to zrobić):
+Okno RPG Engine pokazuje kampanie jako karty, ostatnio otwarta jest pierwsza. Naciśnij **Nowa kampania** i podaj jej **Nazwę**, **Język** i **System gry**: resztę Mistrz Gry tworzy razem z Tobą. Kampania trafia do folderu o jej nazwie, w folderze `RPG Engine` w Twoim folderze użytkownika (w Windows `C:\Users\<name>`). **Wybierz inny folder…** umieszcza ją w pustym folderze, który wskażesz. W sekcji **Mistrz Gry** możesz już wybrać aplikację AI i model do pierwszego czatu ([2.4](#24-connect-your-ai)). Naciśnij **Utwórz**: Pulpit kampanii otworzy się w osobnym oknie.
 
-```text
-rpg init "The Salt Isles"
-```
-
-To tworzy folder `The Salt Isles` z nową kampanią w środku. Wejdź do niego poleceniem `cd "The Salt Isles"`. Zawsze wpisuj nazwę: bez niej kampanią staje się folder, w którym jesteś, razem z wszystkim, co już w nim leży. Zapamiętaj, gdzie on jest: wracasz do niego za każdym razem, gdy grasz. Całą resztę wybierasz później, w czacie lub na dashboardzie.
-
-Mistrz Gry nie może utworzyć kampanii za Ciebie: przed `init` nic nie mówi agentowi, gdzie jest RPG Engine.
+Następnym razem kliknij kartę, żeby otworzyć kampanię. Karta otwartej kampanii ma napis **Otwarta teraz**. **Otwórz folder…** dodaje kampanię, którą już masz na tym komputerze. Mały krzyżyk na karcie usuwa ją z listy: pliki zostają tam, gdzie są.
 
 ### 2.4 Połącz swoją AI
 
-Mistrz Gry działa w **agencie AI**: aplikacji AI, w terminalu lub na pulpicie, która potrafi pracować na plikach na Twoim komputerze, jak Claude Code, Codex, Antigravity czy OpenCode. Zwykły czat, taki jak claude.ai lub ChatGPT, ani aplikacja na telefon nie wystarczą: Mistrz Gry musi mieć dostęp do plików kampanii na Twoim komputerze. Każdy agent wymaga własnego planu i logowania: Claude Code płatnego planu Claude, Codex logowania do ChatGPT, Antigravity konta Google, którego darmowy plan ma niewielki tygodniowy limit. OpenCode działa z modelami, które mu podasz, także lokalnymi. Instalujesz agenta raz, ze strony agenta: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Mistrz Gry działa w **aplikacji AI** na Twoim komputerze, z Twoim własnym kontem: Claude Code, Codex, OpenCode lub Antigravity. Zwykły czat, taki jak claude.ai lub ChatGPT, ani aplikacja na telefon nie wystarczą: Mistrz Gry musi mieć dostęp do plików kampanii na Twoim komputerze. Każda aplikacja wymaga własnego konta: Claude Code płatnego planu Claude (Pro lub wyższego), Codex konta ChatGPT, darmowego lub płatnego, Antigravity konta Google, którego darmowe użycie ma tygodniowe limity. OpenCode ma kilka darmowych modeli przez ograniczony czas albo korzysta z modeli Twojego dostawcy, także lokalnych.
 
-- **Claude Code**: w folderze kampanii wpisz `claude`. Gdy zapyta, czy ufasz folderowi, wybierz **Yes, I trust this folder**. Uwaga: domyślnie zaznaczona jest odpowiedź *No, exit*. Kampania ma też mały hook, `rpg --listen`, którego to pytanie nie pokazuje: informuje on Mistrza Gry od razu, gdy działasz z dashboardu.
-- **Codex**: w folderze kampanii wpisz `codex` i zgódź się, gdy zapyta, czy ufasz folderowi. W kluczowych momentach postać mówi przez własnego agenta, `.codex/agents/rpg-character.toml`, który wie tylko to, co wie postać. W aplikacji Codex na pulpit sprawdź w ustawieniach, czy pamięć jest wyłączona dla czatów gry.
-- **Antigravity**: w folderze kampanii wpisz `agy` i zgódź się, jeśli zapyta, czy ufasz folderowi. Możesz też otworzyć folder kampanii w aplikacji Antigravity. Na potrzeby aplikacji RPG Engine dodaje się również do własnych ustawień Antigravity, w pliku `.gemini/config/mcp_config.json` w Twoim folderze domowym. Ustawienia te obowiązują w każdym otwieranym folderze, nie tylko w folderze kampanii: poza kampanią RPG Engine nic nie robi. Kampania ma dwa małe hooki: `rpg --approve` pozwala Mistrzowi Gry używać narzędzi RPG Engine bez pytania Cię za każdym razem, a `rpg --listen` informuje Mistrza Gry od razu, gdy działasz z dashboardu. Obrazy w czacie Mistrz Gry maluje sam, w płatnym planie Google. W planie darmowym jego narzędzie do obrazów zawodzi i Mistrz Gry rysuje proste obrazy wektorowe, tak jak Claude. W kluczowych momentach postać mówi przez własnego agenta, `.agents/agents/rpg-character.md`: Mistrz Gry zapisuje kwestię z opowieści, a odpowiedź postaci przychodzi chwilę później. Twój Antigravity tłumaczy też dashboard i zasady gry oraz czyta importowane dokumenty, poza czatem, w ramach limitu Twojego konta Google. RPG Engine uruchamia go osobno od Twoich własnych czatów, więc nie zostawia w nich żadnego śladu. Antigravity zachowuje Twoje dawne czaty, a jego pamięci nie da się wyłączyć: Mistrz Gry ma polecenie, by nigdy ich nie czytać. To, co piszesz, trafia do Google, który może pozwolić ludziom to czytać: nie podawaj w grze danych osobowych. RPG Engine nie jest produktem Google.
-- **OpenCode**: w folderze kampanii wpisz `opencode`. Kampania ma mały plugin, `.opencode/plugins/rpg.js`, który informuje Mistrza Gry od razu, gdy działasz z dashboardu. W kampanii Mistrz Gry zapisuje pliki wyłącznie przez RPG Engine: własne zapisywanie i edytowanie plików w OpenCode jest tam wyłączone, a przed uruchomieniem polecenia OpenCode pyta Cię o zgodę. Obrazy Mistrz Gry rysuje sam, jako proste obrazy wektorowe, tak jak Claude. W kluczowych momentach postać mówi przez własnego agenta, `.opencode/agents/rpg-character.md`: Mistrz Gry zapisuje kwestię z opowieści, a odpowiedź postaci przychodzi chwilę później. Mały model lokalny może go nie wywołać. Twój OpenCode, z modelem, który ostatnio w nim wybrano, tłumaczy też dashboard i zasady gry oraz czyta importowane dokumenty, poza czatem. Jeśli nie ma modelu, którego może użyć, robią to Codex lub Claude Code, o ile je masz.
-- **Inny agent**: uruchom go w folderze kampanii i podaj mu serwer MCP `rpg mcp`. RPG Engine to standardowy serwer MCP: Mistrzem Gry może być każdy agent obsługujący MCP, także lokalny.
+W czacie Pulpitu wybierz aplikację w polu **Twoja aplikacja AI**, potem jej **Model** i **Przemyślenia Mistrza Gry**: strona je proponuje. Więcej myślenia oznacza wolniejszą grę i większe zużycie planu. Aplikacja, która nie jest gotowa, mówi, czego potrzebuje, i pokazuje przycisk, który to załatwia:
 
-Jeśli Mistrz Gry mówi, że nie może znaleźć narzędzi RPG Engine, wpisz `rpg init` w folderze kampanii: w folderze, który już jest kampanią, polecenie tylko aktualizuje te pliki. Potem otwórz nowy czat.
+- **Claude Code** i **Codex**: **Zainstaluj Claude Code** lub **Zainstaluj Codex** pobiera aplikację do własnego folderu RPG Engine na tym komputerze. **Zaloguj się do Claude Code** lub **Zaloguj się do Codex** otwiera w przeglądarce jej stronę logowania. RPG Engine nigdy nie widzi Twojego hasła.
+- **OpenCode** i **Antigravity**: **Pobierz OpenCode** lub **Pobierz Antigravity** otwiera stronę aplikacji, na której ją zainstalujesz. OpenCode działa bez logowania, a w Antigravity logujesz się w jego własnej aplikacji. Potem wróć i naciśnij **Sprawdź ponownie**.
 
-Gramy i testujemy z **Claude Code**. **Codex**, **Antigravity** i **OpenCode** są podłączone i sprawdzone, ale nie rozegrano z nimi jeszcze całej kampanii. Kampania wyłącza własną pamięć agenta: gra żyje w jego plikach, dzięki czemu powrót do zapisu naprawdę cofa grę.
+Antigravity jest oznaczony jako **w wersji próbnej**: może wyjść z gry i zadawać pytania po swojemu, więc do gry lepsze są Claude Code, Codex lub OpenCode. Antigravity zachowuje Twoje dawne czaty, a jego pamięci nie da się wyłączyć: Mistrz Gry ma polecenie, by nigdy ich nie czytać. To, co piszesz, trafia do Google, który może pozwolić ludziom to czytać: nie podawaj w grze danych osobowych. RPG Engine nie jest produktem Google. Najwięcej gramy i testujemy z **Claude Code**: z pozostałymi nie rozegrano jeszcze całej kampanii.
+
+W czacie Pulpitu Mistrz Gry dotyka Twojego komputera tylko przez RPG Engine: sam nie otwiera żadnych Twoich plików. RPG Engine czyta poza kampanią tylko to, co wybierzesz, gdy zgodzisz się w oknie komputera.
+
+Możesz też grać w czacie własnej aplikacji AI, w terminalu lub w jej aplikacji na komputer ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 Pierwszy czat
 
-Napisz cokolwiek, na przykład *Cześć! Zaczynajmy.* W pierwszej odpowiedzi w każdym czacie Mistrz Gry podaje **link do Twojego dashboardu**, coś w rodzaju `http://127.0.0.1:4750`. Otwórz go i trzymaj obok czatu.
+Gdy aplikacja i model są wybrane, naciśnij **Otwórz czat**: aplikacja się uruchamia, co może potrwać kilka sekund. Potem naciśnij **Zaczynamy** albo napisz cokolwiek, na przykład *Cześć! Zaczynajmy.* Pierwsza odpowiedź może potrwać kilka minut, bo Mistrz Gry buduje scenę.
 
-Między wiadomościami Mistrza Gry agent pokazuje narzędzia, których używa. Nie otwieraj ich szczegółów (w Claude Code ctrl+o), bo mogą zdradzać sekrety.
+Czat ma własną sekcję, **Odgrywanie**, albo stoi obok strony: małe przyciski u góry umieszczają go **W osobnej karcie**, **Po lewej** lub **Po prawej**, a przeciągnięcie jego krawędzi poszerza go.
 
 Nowa kampania przechodzi przez trzy etapy, widoczne u góry dashboardu: **1 Ustawienia** (jak chcesz grać), **2 Sesja zero** (tworzysz postać, w grze), **3 Gra**.
 
@@ -114,7 +112,20 @@ Gdy nie ma gotowego świata, Mistrz Gry pyta też o **założenie** (gatunek, to
 
 Postać tworzysz z Mistrzem Gry, jak przy stole. Każdy wybór należy do Ciebie, chyba że poprosisz Mistrza Gry, aby go dokonał. Możesz przyjść z pełnym pomysłem, z mglistym albo z niczym. Możesz też poprosić Mistrza Gry, aby stworzył całą postać na podstawie kilku słów. W grze z poziomami Mistrz Gry pyta, od którego poziomu zaczynasz: od pierwszego, chyba że chcesz inny. Mistrz Gry mówi, jak powstają wartości cech, zanim padnie jakikolwiek rzut kością. Historia postaci nigdy nie jest wymagana. Jeśli ją podasz, Mistrz Gry zapisze ją Twoimi słowami. Potem Mistrz Gry prosi o obraz postaci ([3.7](#37-your-characters-story-and-picture)). RPG Engine liczy kkartę postaci: nigdy nie robisz rachunków.
 
-Masz już postać, z innej gry lub z innej kampanii? Wybierz w ustawieniach **Już mam** i przekaż ją Mistrzowi Gry: wklej kartę postaci w czacie albo powiedz, gdzie na komputerze leży jej plik (PDF, obraz, tekst). Mistrz Gry zapisuje postać taką, jaka jest, na jej poziomie, sprawdza ją z zasadami i światem oraz uzgadnia z Tobą wszystko, co do nich nie pasuje.
+Masz już postać, z innej gry lub z innej kampanii? Wybierz w ustawieniach początkowych **Już mam** i przekaż ją Mistrzowi Gry: wklej kartę postaci w czacie. W czacie własnej aplikacji AI możesz też podać, gdzie na komputerze leży plik (PDF, obraz, tekst). W czacie Pulpitu Mistrz Gry nie otwiera żadnych Twoich plików. Mistrz Gry zapisuje postać taką, jaka jest, na jej poziomie, sprawdza ją z zasadami i światem oraz uzgadnia z Tobą wszystko, co do nich nie pasuje.
+
+### 2.8 Inny sposób: czat własnej aplikacji AI
+
+Możesz też grać w czacie samej aplikacji AI, w terminalu lub w jej aplikacji na komputer, z Pulpitem otwartym obok. Wtedy kampanię tworzysz w terminalu, w folderze, w którym trzymasz swoje gry ([2.1](#21-what-you-need) mówi, jak to zrobić), zawsze z jej nazwą: `rpg init "The Salt Isles"` tworzy folder `The Salt Isles` z nową kampanią w środku. RPG Engine sam przygotowuje tam to, czego potrzebuje każda aplikacja.
+
+Uruchom aplikację w tym folderze: `claude` dla Claude Code, `codex` dla Codex, `agy` dla Antigravity, `opencode` dla OpenCode. Możesz też otworzyć folder w jej aplikacji na komputer. Zgódź się, gdy zapyta, czy ufasz folderowi: uwaga, w Claude Code domyślnie zaznaczona jest odpowiedź *No, exit*. Mistrzem Gry może być też każdy inny agent obsługujący MCP: uruchom go w folderze kampanii i podaj mu serwer MCP `rpg mcp`.
+
+Napisz *Cześć! Zaczynajmy.* W pierwszej odpowiedzi w każdym czacie Mistrz Gry podaje **link do Twojego Pulpitu**, coś w rodzaju `http://127.0.0.1:4750`: otwórz go obok czatu.
+
+- Między wiadomościami Mistrza Gry aplikacja pokazuje narzędzia, których używa: nie otwieraj ich szczegółów (w Claude Code ctrl+o), bo mogą zdradzać sekrety.
+- Kampania wyłącza własną pamięć aplikacji: gra żyje w jej plikach, dzięki czemu powrót do zapisu naprawdę cofa grę. W aplikacji Codex na komputer sprawdź w ustawieniach, czy pamięć jest wyłączona dla czatów gry.
+- Jeśli Mistrz Gry mówi, że nie może znaleźć narzędzi RPG Engine, wpisz `rpg init` w folderze kampanii, a potem otwórz nowy czat.
+- Kampanię prowadzi naraz jeden czat: gdy Twój jest otwarty, czat Pulpitu czeka.
 
 ---
 
@@ -126,7 +137,9 @@ Pisz, co robi lub mówi Twoja postać, własnymi słowami:
 
 > Pytam karczmarza, kto jeszcze tu dzisiaj zaglądał.
 
-Żeby wyjść poza opowieść, pisz `[OOC: …]` (poza postacią): *[OOC: Jak działa chwyt zapaśniczy?]* Mistrz Gry odpowiada w ten sam sposób.
+Żeby wyjść poza opowieść, pisz `[OOC: …]` (poza postacią): *[OOC: Jak działa chwyt zapaśniczy?]* Mistrz Gry odpowiada w ten sam sposób. W czacie Pulpitu jego słowa spoza gry są wyodrębnione i oznaczone OOC.
+
+W czacie Pulpitu pisz w polu na dole i naciśnij Enter, żeby wysłać. Shift+Enter zaczyna nowy wiersz. Gdy Mistrz Gry odpowiada, **Zatrzymaj** wstrzymuje jego odpowiedź, a Twoje słowa czekają w polu. Gdy Mistrz Gry o coś pyta, razem z pytaniem pojawiają się jego przyciski, także te z rzutami: kliknij jeden albo napisz odpowiedź. Pod polem widzisz aplikację i model. Jeśli aplikacja na to pozwala, kliknij model, żeby go zmienić po odpowiedzi Mistrza Gry. **Zamknij czat** kończy czat, a gra zostaje w swoich plikach.
 
 Ty mówisz, czego próbujesz. Mistrz Gry mówi, co się dzieje. Mistrz Gry nigdy nie decyduje za Twoją postać i nigdy nie mówi o silniku gry. Możesz go zapytać, jak korzystać z dashboardu.
 
@@ -184,17 +197,17 @@ RPG Engine zapisuje całą kampanię na końcu każdej sceny. Resztę określa u
 
 W każdym trybie możesz **zacząć od nowa**, od początku gry lub od sesji zero. Zrób to na czacie albo w **Zapisach**.
 
-Po powrocie **otwórz nowy czat**: stary pamięta to, co zostało cofnięte. Napisz *kontynuuj* na nowym czacie, a potem naciśnij **Nowy czat otwarty** w Zapisach.
+Po powrocie **otwórz nowy czat**: stary pamięta to, co cofnięto. W czacie Pulpitu naciśnij **Zamknij czat**, a potem **Nowy czat**. W czacie własnej aplikacji AI otwórz nową rozmowę (`/clear` w Claude Code). Napisz *dalej* w nowym czacie. Potem powiedz Mistrzowi Gry, że czat jest nowy: naciśnij **Nowy czat otwarty** w Zapisach albo napisz o tym w czacie. Do tego czasu Mistrz Gry nie rusza dalej.
 
-Jeśli folder kampanii jest repozytorium Git, w **Ustawieniach** znajdziesz sekcję **Git**, w której wszystko jest wyłączone, dopóki nie wybierzesz inaczej: commit na początku każdej sesji, przy każdym zapisie i na końcu każdej sceny, a po nim, jeśli chcesz, push. Commit to migawka kampanii z danej chwili. Push wysyła migawki do repozytorium online, na przykład na GitHubie, żeby kopia istniała też poza tym komputerem. Zapisy i Twoje czaty z Mistrzem Gry nie trafiają do repozytorium, chyba że je tam dopuścisz. Dopuszczaj czaty tylko wtedy, gdy repozytorium jest prywatne.
+Jeśli nie wiesz, czym jest git, pomiń ten akapit. Jeśli folder kampanii jest repozytorium git, w **Ustawieniach** znajdziesz sekcję **Git**, w której wszystko jest wyłączone, dopóki nie wybierzesz inaczej: commit na początku każdej sesji, przy każdym zapisie i na końcu każdej sceny, a po nim, jeśli chcesz, push. Commit to migawka kampanii z danej chwili. Push wysyła migawki do repozytorium online, na przykład na GitHubie, żeby kopia istniała też poza tym komputerem. Zapisy i Twoje czaty z Mistrzem Gry zostają poza repozytorium, chyba że je tam dopuścisz. Dopuszczaj czaty tylko wtedy, gdy repozytorium jest prywatne.
 
 ### 3.9 Sesje: przerwa i powrót
 
-Przerwij, kiedy chcesz: *[Skończmy na dziś.]* Wszystko jest już zapisane w plikach. Żeby wrócić, uruchom swojego agenta w folderze kampanii i napisz *kontynuuj*: Mistrz Gry krótko podsumuje, co było, i poprowadzi dalej.
+Przerwij, kiedy chcesz: *[Skończmy na dziś.]* Wszystko jest już zapisane w plikach. Żeby wrócić, uruchom RPG Engine z ikony i kliknij swoją kampanię. Jeśli czat został otwarty, wróci sam. Jeśli został zamknięty, naciśnij **Wznów czat**. Potem naciśnij **Wznów historię**: Mistrz Gry w kilku zdaniach przypomina, gdzie skończyła się gra, i prowadzi dalej. Jeśli gra została zamknięta, gdy Mistrz Gry jeszcze odpowiadał albo gdy czekało na Ciebie jego pytanie, ten przycisk nazywa się **Wznów od tego miejsca**. **Nowy czat** otwiera świeży czat w tej samej grze. W czacie własnej aplikacji AI uruchom ją w folderze kampanii i napisz *dalej*.
 
 ### 3.10 Nastrój Mistrza Gry
 
-Robot u góry dashboardu to Mistrz Gry: jego twarz podąża za tonem opowieści i nigdy nie zdradza tego, czego jeszcze nie wiesz. Gdy czat jest zamknięty, robot śpi.
+Robot u góry Pulpitu to Mistrz Gry: jego twarz podąża za tonem opowieści i nigdy nie zdradza tego, czego jeszcze nie wiesz. Gdy Pulpit nie jest połączony z grą, robot śpi.
 
 ### 3.11 Obrazy
 
@@ -212,14 +225,15 @@ Każde ustawienie można zmienić, na czacie lub w **Ustawieniach**. Rozstrzygni
 
 ## 4. Pulpit <!-- icon: party -->
 
-Strona na Twoim komputerze, otwierana tylko w przeglądarce na tym komputerze. Działa, dopóki czat jest otwarty. Gdy czat się zamyka, pokazuje *Not connected*. Wraca sama przy następnym czacie.
+Strona na Twoim komputerze, w osobnym oknie, otwierana tylko na tym komputerze. Działa, dopóki jej okno jest otwarte, z czatem lub bez. Około trzydziestu sekund po jego zamknięciu gra się zatrzymuje, a razem z nią czat. Nic nie ginie: wszystko jest w plikach. W czacie własnej aplikacji AI strona działa, dopóki ten czat jest otwarty. Gdy gry nie ma, strona pokazuje *Not connected*: naciśnij **Wznów kampanię** albo, we własnej aplikacji, otwórz następny czat. Przycisk **Kampanie**, z domkiem, prowadzi z powrotem do wszystkich Twoich kampanii.
 
+- **Odgrywanie**: czat z Mistrzem Gry, gdy nie stoi obok strony ([2.5](#25-the-first-chat)).
 - **Drużyna**: Twoja karta postaci i karty towarzyszy. Kliknij liczbę, aby wykonać rzut. Najedź na nią kursorem, aby zobaczyć, skąd się bierze. Gdy strzałka oznacza kość, zobaczysz też, co poprawia rzut lub go pogarsza. Gdy Mistrz Gry przygotowuje dla Ciebie wybory, na przykład przy nowym poziomie, otwiera je powiadomienie na karcie postaci. Wybierz, kiedy chcesz, przeczytaj strony wskazane w opcjach, wykonaj rzut tam, gdzie opcja tego wymaga, a potem potwierdź. Opowieść toczy się w tym czasie dalej. Obok są rzuty.
 - **Scena**: gdzie jesteś, obraz i mapa miejsca, kto tam jest, co się dzieje. W walce: tury i karta Twojej postaci.
 - **Dziennik**: zadania, historia jako książka, jej oś czasu, dzienniki towarzyszy, Twoje notatki.
 - **Świat**: mapa świata, to, co wie Twoja postać, znalezione dokumenty i kalendarz.
 - **Tacka na kości**: wybierz kości i modyfikator, potem rzuć. ×2 podwaja kości, nigdy modyfikator, tak jak przy trafieniu krytycznym.
-- **Zapisy**, **Pomoc**, **Ustawienia** i **Informacje**: ikony na końcu rzędu. W **Ustawieniach**, w sekcji **Pulpit**, są też preferencje samej strony: tryb, dźwięk kości, zestaw kości oraz **Motyw**, czyli kolory, ścianki kości i obrazy strony. Może to być motyw systemu gry, motyw dodany w Packages › Add (z katalogu, z linku do GitHuba, z pliku .zip lub z folderu) albo motyw samej strony. Jeśli własny arkusz stylów motywu sprawia, że strona jest trudna do czytania, wyłącz tam **Własny styl motywu**. **Ustawienia** zawsze otwierają się bez niego, pod adresem strony z `#/settings/page` na końcu.
+- **Zapisy**, **Pomoc**, **Ustawienia** i **Informacje**: ikony na końcu rzędu. W Ustawieniach, w sekcji **Pulpit**, są też preferencje samej strony: tryb, dźwięk kości, zestaw kości oraz **Motyw**, czyli kolory, ścianki kości i obrazy strony. Może to być motyw systemu gry, motyw dodany w Packages › Add (z katalogu, z linku do GitHuba, z pliku .zip lub z folderu) albo motyw samej strony. Jeśli własny arkusz stylów motywu sprawia, że strona jest trudna do czytania, wyłącz tam **Własny styl motywu**. Ustawienia zawsze otwierają się bez niego, pod adresem strony z `#/settings/page` na końcu.
 
 Gdy Mistrz Gry o coś pyta, jego baner zostaje na górze, w jakiejkolwiek sekcji jesteś.
 
@@ -265,7 +279,7 @@ Rozszerzenie dodaje do kampanii coś ekstra, ponad system gry: na przykład pogo
 
 - **Tworzony na bieżąco**: na podstawie Twojego założenia Mistrz Gry buduje każde miejsce, osobę i wątek tuż przed tym, jak będą potrzebne, i je zapamiętuje.
 - **Przygotowany na początku**: tak samo, tylko świat powstaje przed grą.
-- **Z Twojej własnej przygody lub książki**: daj Mistrzowi Gry jej plik, *[Zaimportuj tę przygodę jako naszą kampanię: D:\Books\adventure.pdf. Nie mów mi nic z tego, co w niej jest.]* Najlepiej czyta się tekst, EPUB, dokument Word albo PDF z zaznaczalnym tekstem. PDF ze skanu jest czytany z obrazów stron, tylko w systemie Windows, powoli i z kilkoma błędami. Czyta go Twoja aplikacja AI poza czatem, a jeśli nie może, to Mistrz Gry w czacie, w ramach Twojego planu: w Claude Code lub Codex czyta jedno z tych dwóch, w Antigravity Twój Antigravity, a w OpenCode model, który ostatnio w nim wybrano. Cały dokument trafia do producenta tego, kto go czyta, na warunkach Twojego konta i jego ustawień dotyczących trenowania. Dashboard pokazuje postęp. Przy powieści Mistrz Gry proponuje, od czego zacząć. Mistrz Gry spisuje miejsca, postacie i sekrety.
+- **Z Twojej własnej przygody lub książki**: daj Mistrzowi Gry jej plik, *[Zaimportuj tę przygodę jako naszą kampanię: D:\Books\adventure.pdf. Nie mów mi nic z tego, co w niej jest.]* Plik spoza kampanii jest czytany dopiero po Twojej zgodzie w oknie komputera, a plik włożony do folderu **inbox** kampanii jest czytany od razu. Najlepiej czyta się tekst, EPUB, dokument Word albo PDF z zaznaczalnym tekstem. PDF ze skanu jest czytany z obrazów stron, tylko w systemie Windows, powoli i z kilkoma błędami. Czyta go Twoja aplikacja AI poza czatem, a jeśli nie może, to Mistrz Gry w czacie, w ramach Twojego planu: w Claude Code lub Codex czyta jedno z tych dwóch, w Antigravity Twój Antigravity, a w OpenCode model, który ostatnio w nim wybrano. Cały dokument trafia do producenta tego, kto go czyta, na warunkach Twojego konta i jego ustawień dotyczących trenowania. Pulpit pokazuje postęp. Przy powieści Mistrz Gry proponuje, od czego zacząć. Mistrz Gry spisuje miejsca, postacie i sekrety.
 
 W kampanię gra się raz: aby zagrać tę samą przygodę jeszcze raz, utwórz nową kampanię.
 
@@ -303,28 +317,34 @@ Każde polecenie, którego używa Mistrz Gry, można też uruchomić w folderze 
 
 **Czy Mistrz Gry może oszukiwać?** Nie może zmienić rzutu wykonanego przez RPG Engine, chyba że na poziomie trudności fabularnym, ani faktów już ustalonych.
 
-**Czy to coś kosztuje?** RPG Engine jest darmowy. Mistrz Gry działa w ramach planu Twojego agenta albo na Twoim komputerze z modelem lokalnym. Wieczór gry to długi czat: na najmniejszych planach możesz dojść do limitu planu przed końcem wieczoru. Obrazy, tłumaczenia i importy korzystają z tego samego planu. RPG Engine nigdy nie używa klucza API, za który płaci się za każde wywołanie: zaloguj agenta swoim kontem, nie kluczem.
+**Czy to coś kosztuje?** RPG Engine jest darmowy. Mistrz Gry działa w ramach planu Twojej aplikacji AI albo na Twoim komputerze z modelem lokalnym. Wieczór gry to długi czat: na najmniejszych planach możesz dojść do limitu planu przed końcem wieczoru. Obrazy, tłumaczenia i importy korzystają z tego samego planu. RPG Engine nigdy nie używa klucza API, za który płaci się za każde wywołanie: zaloguj aplikację AI swoim kontem, nie kluczem.
 
 **Czy mogę grać na telefonie?** Nie: Mistrz Gry działa na Twoim komputerze, a dashboard otwiera się tylko tam.
 
 **Czy mogę grać ze znajomymi?** Jeszcze nie: dziś jest jeden gracz, jedna postać i towarzysze ([Wkrótce](#9-coming-later)).
 
-**Czy następnym razem mogę użyć innego AI?** Tak: otwórz kampanię w innym agencie i napisz *kontynuuj*.
+**Czy następnym razem mogę użyć innej AI?** Tak: wybierz inną aplikację w czacie, zanim go otworzysz, albo otwórz kampanię w innej aplikacji i napisz *dalej*.
 
 ### Problemy
 
-**Dashboard się nie otwiera.** Zapytaj Mistrza Gry: `[OOC: Jaki jest link do dashboardu?]`. Działa tylko wtedy, gdy otwarty jest czat tej kampanii: w Claude Code i Codex uruchamia się razem z czatem, w Antigravity z Twoją pierwszą wiadomością. W aplikacji Claude czat zostawiony na jakiś czas w tle zasypia, a razem z nim strona: kliknij czat, a strona wróci pod tym samym adresem.
+**Kampania się nie otwiera.** Uruchom RPG Engine ponownie z ikony albo poleceniem `rpg open` w terminalu i kliknij kampanię. Jeśli jej Pulpit pokazuje *Not connected*, naciśnij **Wznów kampanię**. Karta z napisem **Nie znaleziono folderu** straciła swój folder: usuń ją z listy i dodaj ponownie przez **Otwórz folder…**, tam gdzie folder jest teraz. W czacie własnej aplikacji AI Pulpit działa tylko wtedy, gdy otwarty jest czat tej kampanii: zapytaj Mistrza Gry `[OOC: Jaki jest link do Pulpitu?]`. W aplikacji Claude czat zostawiony na jakiś czas w tle zasypia, a razem z nim strona: kliknij czat, a strona wróci pod tym samym adresem.
 
-**Mistrz Gry chyba nie zna gry.** Twój agent nie załadował RPG Engine. Sprawdź, czy uruchomiono go w folderze kampanii i czy ufasz temu folderowi. W Claude Code wpisz `/mcp` i połącz ponownie `rpg`. W Codex polecenie `codex mcp list` w folderze kampanii musi pokazać `rpg`. Jeśli `rpg --version` nie zostanie znalezione, zainstaluj RPG Engine ponownie ([2.2](#22-install)).
+**Mistrz Gry chyba nie zna gry.** Dzieje się tak w czacie własnej aplikacji AI: nie załadowała ona RPG Engine. Sprawdź, czy uruchomiono ją w folderze kampanii i czy ufasz temu folderowi. W Claude Code wpisz `/mcp` i połącz ponownie `rpg`. W Codex polecenie `codex mcp list` w folderze kampanii musi pokazać `rpg`. Jeśli `rpg --version` nie zostanie znalezione, zainstaluj RPG Engine ponownie ([2.2](#22-install)).
 
-**Windows nie znajduje `claude`.** Instalator informuje o tym w żółtej notatce i podaje folder, do którego trafił program: dodaj ten folder do PATH (Właściwości systemu > Zmienne środowiskowe), a potem otwórz nowy terminal.
+**Windows nie znajduje `claude`.** Dzieje się tak, gdy Claude Code został zainstalowany ręcznie. Jego instalator informuje o tym w żółtej notatce i podaje folder, do którego trafił program: dodaj ten folder do PATH (Właściwości systemu > Zmienne środowiskowe), a potem otwórz nowy terminal.
 
-**Aktualizacja.** Uruchom ponownie `npm install -g rpg-engine`, a potem otwórz nowy czat: działający Mistrz Gry zachowuje wersję, z którą wystartował.
+**Aktualizacja.** Gdy jest nowsza wersja RPG Engine, Pulpit o tym informuje: w Packages › Installed RPG Engine jest pierwszy, z przyciskiem **Aktualizuj**, a potem rób to, co podpowiada strona. Albo uruchom ponownie `npm install -g rpg-engine` w terminalu, a potem otwórz nowy czat: działający Mistrz Gry zachowuje wersję, z którą wystartował.
 
 **Mistrz Gry pamięta coś, co cofnięto.** Otwórz nowy czat i naciśnij **Nowy czat otwarty** w Zapisach.
+
+**Aplikacja się nie instaluje.** Strona podaje powód: naciśnij **Spróbuj ponownie**. Albo zainstaluj aplikację samodzielnie ze strony jej producenta, a potem naciśnij **Sprawdź ponownie**.
+
+**Strona logowania nie otwiera się w przeglądarce.** Gdy strona na Ciebie czeka, naciśnij tam **Otwórz stronę logowania ponownie** albo **Anuluj** i spróbuj jeszcze raz.
+
+**Czat Pulpitu mówi, że gra inny czat.** Tę kampanię prowadzi czat otwarty w Twojej aplikacji AI: graj dalej tam albo zamknij go, żeby grać w Pulpicie.
 
 **Nie pojawiają się obrazy.** Ustawienia > Kampania > Obrazy mówią, czy ten komputer może je tworzyć i jak.
 
 **Instalacja się nie udaje albo `rpg` nie startuje.** `node --version` musi pokazać 24 lub nowszą wersję. Jeśli Windows odpowie, że uruchamianie skryptów jest wyłączone, zobacz [2.1](#21-what-you-need). W systemie Windows trzymaj RPG Engine i swoje kampanie poza ścieżkami zawierającymi `&`.
 
-**Link do dashboardu się zmienił.** Każda kampania ma własny adres, taki sam czat po czacie. Zmienia się on tylko wtedy, gdy zajmuje go już inny program: Mistrz Gry poda Ci nowy link, który od tej chwili zostaje. Drugi czat tej samej kampanii zachowuje stronę pod tym samym adresem i przejmuje ją, gdy zamkniesz pierwszy.
+**Link do Pulpitu się zmienił.** W czacie własnej aplikacji AI każda kampania ma własny adres, taki sam czat po czacie. Zmienia się on tylko wtedy, gdy zajmuje go już inny program: Mistrz Gry poda Ci nowy link, który od tej chwili zostaje. Drugi czat tej samej kampanii zachowuje stronę pod tym samym adresem i przejmuje ją, gdy zamkniesz pierwszy.

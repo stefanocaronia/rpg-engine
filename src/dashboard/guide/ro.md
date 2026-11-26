@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: ghidul complet
 
-**RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Vorbești cu maestrul de joc într-un **chat**; RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**. Lângă chat ții deschisă în browser o pagină, **dashboardul**, cu fișa ta, zarurile, hărțile și jurnalul.
+**RPG Engine** îți permite să joci un joc de rol de masă cu o **IA în rolul de maestru de joc**. Joci în **tabloul de bord**, o fereastră pe calculatorul tău cu fișa ta, zarurile, hărțile, jurnalul și **chatul** cu maestrul de joc. RPG Engine lucrează în spate: **își amintește lumea**, **aruncă zarurile** și **ține socotelile**.
 
 Ghidul este pentru jucători: nu e nevoie să știi să programezi.
 
 ## Pornire rapidă <!-- icon: send -->
 
 1. Instalează **Node.js** de pe [nodejs.org](https://nodejs.org) (versiunea LTS).
-2. Instalează un **agent IA**, programul în care rulează maestrul de joc, și autentifică-te: de exemplu Claude Code sau Codex ([2.4](#24-connect-your-ai)).
-3. Într-un terminal nou, deschis după instalarea Node.js, instalează RPG Engine: `npm install -g rpg-engine`. Dacă Windows răspunde că rularea scripturilor este dezactivată, scrie o singură dată `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, răspunde da și încearcă din nou.
-4. Deschide terminalul în dosarul în care ții jocurile tale (dă clic dreapta pe dosar, **Open in Terminal**) și creează o campanie, mereu cu numele ei: `rpg init "The Salt Isles"`. RPG Engine răspunde cu două rânduri în engleză: totul este în regulă.
-5. Intră în folderul nou, `cd "The Salt Isles"`, și pornește agentul acolo: `claude` pentru Claude Code, `codex` pentru Codex. Spune da când te întreabă dacă ai încredere în folder ([2.4](#24-connect-your-ai)), apoi scrie *Salut! Hai să începem.* Maestrul de joc răspunde cu linkul către dashboard.
+2. O singură dată, într-un terminal nou, deschis după instalarea Node.js, instalează RPG Engine: `npm install -g rpg-engine`. Dacă Windows răspunde că rularea scripturilor este dezactivată, scrie o singură dată `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, răspunde da și încearcă din nou.
+3. Scrie `rpg open`. Te întreabă dacă să pună pictograma RPG Engine pe desktop și în meniu: apasă Enter pentru da. De atunci pornești RPG Engine din pictogramă, fără terminal ([2.2](#22-install)).
+4. O fereastră îți arată campaniile. Apasă **Campanie nouă**, dă-i un nume și apasă **Creează** ([2.3](#23-create-a-campaign)): tabloul ei de bord se deschide într-o fereastră proprie.
+5. În chatul cu maestrul de joc, alege aplicația ta de AI și modelul ei: Claude Code are nevoie de un abonament Claude cu plată, Codex de un cont ChatGPT, gratuit sau cu plată ([2.4](#24-connect-your-ai)). Dacă aplicația lipsește sau nu ești conectat, pagina o instalează sau te conectează. Apasă **Deschide chatul**, apoi **Începe**. Primul răspuns poate dura câteva minute; apoi maestrul de joc te întreabă cum vrei să joci, iar voi doi creați personajul împreună.
 
 ## 1. Ce este RPG Engine <!-- icon: about -->
 
@@ -39,48 +39,46 @@ Un joc vine sub forma unui sistem de joc, un pachet pe care maestrul de joc îl 
 
 - Un calculator cu Windows, macOS sau Linux și un browser web.
 - **Node.js 24** sau mai nou, de pe [nodejs.org](https://nodejs.org). Vine cu `npm`, care instalează RPG Engine.
-- Un **terminal**: pe Windows, Terminal sau PowerShell; pe macOS, Terminal. Ca să deschizi unul într-un dosar, dă clic dreapta pe dosar și alege **Open in Terminal** (Windows) sau **Services > New Terminal at Folder** (macOS). Dacă Windows răspunde că rularea scripturilor este dezactivată, scrie o singură dată `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` și răspunde da.
-- Un **agent AI** pentru maestrul de joc ([2.4](#24-connect-your-ai)), cu **cel mai mare model** pe care îl oferă: un model mic poate fi convins mai ușor să dezvăluie secrete sau să încalce regulile.
+- Un **terminal**, o singură dată, ca să instalezi RPG Engine: pe Windows, Terminal sau PowerShell; pe macOS, Terminal. Ca să deschizi unul într-un dosar, dă clic dreapta pe dosar și alege **Deschide în Terminal** (Windows) sau **Servicii > Terminal nou la dosar** (macOS). Dacă Windows răspunde că rularea scripturilor este dezactivată, scrie o singură dată `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` și răspunde da.
+- O **aplicație de AI** pentru maestrul de joc, cu contul tău propriu ([2.4](#24-connect-your-ai)): pagina o poate instala pentru tine. Joacă cu **cel mai mare model** pe care îl oferă: un model mic poate fi convins mai ușor să dezvăluie secrete sau să încalce regulile.
 
 ### 2.2 Instalare
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-`rpg --version` verifică dacă a mers. Dacă npm se oferă să se actualizeze singur, poți ignora oferta. Folosești `rpg` o singură dată pentru fiecare campanie, ca s-o creezi; după aceea, agentul tău pornește singur RPG Engine. `rpg` de unul singur nu deschide nimic: dashboardul ți-l dă maestrul de joc.
+Prima linie instalează RPG Engine; `rpg --version` verifică dacă a mers. Dacă npm se oferă să se actualizeze singur, poți ignora oferta.
+
+`rpg open` deschide fereastra RPG Engine, cu campaniile tale. Prima dată, te întreabă în terminal dacă să adauge pictograma pe desktop și în meniul Start (Aplicații pe un Mac): apasă Enter pentru da. De atunci dai dublu clic pe pictogramă și nu mai ai nevoie de terminal. Fără pictogramă, scrie `rpg open` de fiecare dată când joci; `rpg icon` adaugă pictograma mai târziu, iar `rpg icon --remove` o scoate.
 
 ### 2.3 Crearea unei campanii
 
-Deschide un terminal în dosarul în care ții jocurile tale ([2.1](#21-what-you-need) îți arată cum):
+Fereastra RPG Engine îți arată campaniile ca pe niște cartonașe, cea deschisă ultima fiind prima. Apasă **Campanie nouă** și completează **Nume**, **Limbă** și **Sistem de joc**: restul îl faci împreună cu maestrul de joc. Campania se pune într-un dosar cu numele ei, în dosarul `RPG Engine` din dosarul tău de utilizator (pe Windows, `C:\Users\<name>`); **Alege alt dosar…** o pune într-un dosar gol, ales de tine. La **Maestrul de joc** poți alege deja aplicația de AI și modelul pentru primul chat ([2.4](#24-connect-your-ai)). Apasă **Creează**: tabloul de bord al campaniei se deschide într-o fereastră proprie.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Comanda creează dosarul `The Salt Isles`, cu o campanie nouă în el; intră în el cu `cd "The Salt Isles"`. Scrie întotdeauna numele: fără nume, dosarul în care te afli devine campania, alături de tot ce conține deja. Ține minte unde se află: te întorci aici de fiecare dată când joci. Pe toate celelalte le alegi mai târziu, în chat sau pe dashboard.
-
-Maestrul de joc nu poate crea o campanie în locul tău: înainte de `init`, nimic nu-i spune agentului tău unde se află RPG Engine.
+Data viitoare, dă clic pe un cartonaș ca să deschizi campania; cea deschisă are mențiunea **Deschisă acum**. **Deschide un dosar…** adaugă o campanie pe care o ai deja pe acest calculator. Cruciulița de pe un cartonaș îl scoate din listă: fișierele rămân unde sunt.
 
 ### 2.4 Conectarea AI-ului
 
-Maestrul de joc rulează într-un **agent AI**: o aplicație AI, în terminal sau pe desktop, care poate lucra cu fișierele de pe calculatorul tău, cum ar fi Claude Code, Codex, Antigravity sau OpenCode. Un chat obișnuit, precum claude.ai sau ChatGPT, sau o aplicație de telefon nu ajunge: maestrul de joc trebuie să poată accesa fișierele campaniei de pe calculatorul tău. Fiecare agent are nevoie de propriul abonament și de propria autentificare: Claude Code, un abonament Claude cu plată; Codex, o autentificare ChatGPT; Antigravity, un cont Google, al cărui abonament gratuit are o cotă săptămânală mică; OpenCode funcționează cu modelele pe care i le dai tu, inclusiv cu cele locale. Îl instalezi o singură dată, de pe pagina lui: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Maestrul de joc rulează într-o **aplicație de AI** de pe calculatorul tău, cu contul tău propriu: Claude Code, Codex, OpenCode sau Antigravity. Un chat obișnuit, precum claude.ai sau ChatGPT, sau o aplicație de telefon nu ajunge: maestrul de joc trebuie să poată accesa fișierele campaniei de pe calculatorul tău. Fiecare aplicație are nevoie de propriul cont: Claude Code, un abonament Claude cu plată (Pro sau superior); Codex, un cont ChatGPT, gratuit sau cu plată; Antigravity, un cont Google, a cărui utilizare gratuită are limite săptămânale; OpenCode are câteva modele gratuite pentru o perioadă limitată sau folosește modelele furnizorului tău, inclusiv cele locale.
 
-- **Claude Code**: în dosarul campaniei scrie `claude`. Când te întreabă dacă ai încredere în dosar, alege **Yes, I trust this folder**; atenție, răspunsul deja selectat este *No, exit*. Campania are și un mic hook, `rpg --listen`, pe care întrebarea nu-l arată: îi spune maestrului de joc pe loc când acționezi din dashboard.
-- **Codex**: în dosarul campaniei scrie `codex` și răspunde da când te întreabă dacă ai încredere în dosar. În momentele-cheie, un personaj vorbește printr-un agent propriu, `.codex/agents/rpg-character.toml`, care știe doar ce știe personajul. În aplicația lui desktop, verifică în setări că memoriile sunt oprite pentru chaturile jocului.
-- **Antigravity**: în dosarul campaniei scrie `agy` și răspunde da dacă te întreabă dacă ai încredere în dosar; sau, în aplicația lui, deschide dosarul campaniei. Pentru aplicație, RPG Engine se adaugă și în setările proprii ale Antigravity, `.gemini/config/mcp_config.json` din dosarul tău personal, care se aplică fiecărui dosar pe care îl deschizi, nu doar celui al campaniei: în afara unei campanii nu face nimic. Campania are două mici hookuri: `rpg --approve` îi permite maestrului de joc să folosească uneltele RPG Engine fără să te întrebe de fiecare dată, iar `rpg --listen` îi spune maestrului de joc pe loc când acționezi din dashboard. Maestrul de joc pictează imaginile chiar în chat, cu un abonament Google cu plată; în abonamentul gratuit, unealta de imagini nu funcționează, iar maestrul desenează imagini vectoriale simple, ca Claude. În momentele-cheie, un personaj vorbește printr-un agent propriu, `.agents/agents/rpg-character.md`: maestrul de joc scrie o replică a poveștii, iar răspunsul personajului vine după o clipă. Antigravity-ul tău traduce și dashboardul și regulile jocului și citește documentele pe care le imporți, în afara chatului, din cota contului tău Google: RPG Engine îl pornește separat de chaturile tale, așa că nu lasă nimic printre ele. Antigravity păstrează chaturile tale anterioare, iar memoria lui nu poate fi oprită: maestrului de joc i se spune să nu le citească niciodată. Ce scrii ajunge la Google, care poate pune oameni să citească: nu introduce date personale în joc. RPG Engine nu este un produs Google.
-- **OpenCode**: în dosarul campaniei scrie `opencode`. Campania are un mic plugin, `.opencode/plugins/rpg.js`, care îi spune maestrului de joc pe loc când acționezi din dashboard. În campanie, maestrul de joc scrie fișiere doar prin RPG Engine: scrierea și editarea proprie de fișiere a OpenCode sunt oprite acolo, iar agentul te întreabă înainte să ruleze o comandă. Maestrul de joc desenează imaginile chiar el, ca imagini vectoriale simple, la fel ca Claude. În momentele-cheie, un personaj vorbește printr-un agent propriu, `.opencode/agents/rpg-character.md`: maestrul de joc scrie o replică a poveștii, iar răspunsul personajului vine după o clipă; un model local mic poate să nu-l apeleze. OpenCode-ul tău, cu modelul pe care l-ai ales ultima dată în el, traduce și dashboardul și regulile jocului și citește documentele pe care le imporți, în afara chatului; dacă nu are un model pe care să-l poată folosi, le face Codex sau Claude Code, dacă le ai.
-- **Alt agent**: pornește-l în dosarul campaniei și dă-i serverul MCP `rpg mcp`. RPG Engine este un server MCP standard: orice agent care acceptă MCP poate fi maestrul de joc, inclusiv cei locali.
+În chatul din tabloul de bord, alege aplicația la **Aplicația ta de AI**, apoi **Model** și **Gândirea maestrului de joc**: pagina ți le propune. Mai multă gândire înseamnă mai lent și mai mult din abonamentul tău consumat. O aplicație care nu este gata spune ce îi trebuie, cu un buton care face asta:
 
-Dacă maestrul de joc spune că nu găsește uneltele RPG Engine, scrie `rpg init` în dosarul campaniei: într-un dosar care este deja o campanie, doar aduce la zi aceste fișiere; apoi deschide un chat nou.
+- **Claude Code** și **Codex**: **Instalează Claude Code** sau **Instalează Codex** o descarcă în dosarul propriu al RPG Engine de pe acest calculator; **Conectează-te la Claude Code** sau **Conectează-te la Codex** deschide pagina de conectare în browser. RPG Engine nu îți vede niciodată parola.
+- **OpenCode** și **Antigravity**: **Obține OpenCode** sau **Obține Antigravity** deschide site-ul aplicației, unde o instalezi. OpenCode se joacă fără conectare; Antigravity se conectează din aplicația lui. Apoi revino și apasă **Verifică din nou**.
 
-Jucăm și testăm cu **Claude Code**; **Codex**, **Antigravity** și **OpenCode** sunt conectate și verificate, dar încă nu s-a jucat cu ele o campanie întreagă. Campania oprește memoria proprie a agentului: jocul trăiește în fișierele lui, ca revenirea la o salvare să fie cu adevărat o revenire.
+Antigravity este marcat **în probă**: poate ieși din joc și pune întrebări în felul lui, așa că Claude Code, Codex sau OpenCode sunt mai potrivite pentru joc. Antigravity păstrează chaturile tale anterioare, iar memoria lui nu poate fi oprită: maestrului de joc i se spune să nu le citească niciodată. Ce scrii ajunge la Google, care poate pune oameni să citească: nu introduce date personale în joc. RPG Engine nu este un produs Google. Jucăm și testăm RPG Engine cel mai mult cu **Claude Code**: cu celelalte nu s-a jucat încă o campanie întreagă.
+
+În chatul din tabloul de bord, maestrul de joc atinge calculatorul tău doar prin RPG Engine: nu deschide singur niciun fișier de-al tău. RPG Engine citește în afara campaniei doar ce ai ales, după ce spui da într-o fereastră a calculatorului tău.
+
+Poți juca și în chatul propriu al aplicației tale de AI, într-un terminal sau în aplicația ei desktop ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 Primul chat
 
-Scrie orice, de exemplu *Salut! Hai să începem.* În primul său răspuns din fiecare chat, maestrul de joc îți dă **linkul către dashboard**, ceva de genul `http://127.0.0.1:4750`: deschide-l și ține-l lângă chat.
+După ce ai ales aplicația și modelul, apasă **Deschide chatul**: aplicația pornește, ceea ce poate dura câteva secunde. Apoi apasă **Începe** sau scrie orice, de exemplu *Salut! Hai să începem.* Primul răspuns poate dura câteva minute, cât timp maestrul de joc pregătește scena.
 
-Între mesajele maestrului de joc, agentul tău arată uneltele pe care le folosește: nu deschide detaliile lor (în Claude Code, ctrl+o), pentru că pot arăta secrete.
+Chatul are propria secțiune, **Joc de rol**, sau stă lângă pagină: butoanele mici de deasupra îl pun **În fila proprie**, **În stânga** sau **În dreapta**, iar îi poți trage marginea ca să-l lărgești.
 
 O campanie nouă trece prin trei etape, afișate în partea de sus a dashboardului: **1 Setări** (cum vrei să joci), **2 Sesiunea zero** (îți creezi personajul, în joc), **3 Joc**.
 
@@ -114,7 +112,20 @@ Dacă nu ai o lume scrisă, maestrul de joc întreabă și o **Premisă** (gen, 
 
 Îți creezi personajul împreună cu maestrul de joc, ca la o masă de joc. Fiecare alegere îți aparține, în afară de cazul în care îi ceri maestrului de joc s-o facă: vino cu o idee completă, cu una vagă sau cu nimic; sau cere-i maestrului de joc să facă totul pornind de la câteva cuvinte. Într-un joc cu niveluri, maestrul de joc te întreabă de la ce nivel începi: de la primul, dacă nu vrei altul. Maestrul de joc îți spune cum se stabilesc valorile abilităților înainte să se arunce vreun zar. Povestea ta nu este niciodată obligatorie; dacă dai una, maestrul de joc o scrie în cuvintele tale. Apoi maestrul de joc îți cere o imagine a personajului tău ([3.7](#37-your-characters-story-and-picture)). RPG Engine calculează fișa: nu faci tu niciodată socotelile.
 
-Ai deja un personaj, dintr-un alt joc sau dintr-o altă campanie? Alege **Am deja unul** la configurare și dă-l maestrului de joc: lipește fișa în chat sau spune unde se află fișierul ei pe calculatorul tău (un PDF, o imagine, un text). Maestrul de joc o scrie ca atare, la nivelul ei, o verifică în raport cu regulile și cu lumea și stabilește cu tine tot ce nu se potrivește.
+Ai deja un personaj, dintr-un alt joc sau dintr-o altă campanie? Alege **Am deja unul** la configurare și dă-l maestrului de joc: lipește fișa în chat. În chatul propriu al aplicației tale de AI poți spune și unde se află fișierul ei pe calculatorul tău (un PDF, o imagine, un text); în chatul din tabloul de bord, maestrul de joc nu deschide niciun fișier de-al tău. Maestrul de joc o scrie ca atare, la nivelul ei, o verifică în raport cu regulile și cu lumea și stabilește cu tine tot ce nu se potrivește.
+
+### 2.8 Cealaltă variantă: chatul propriu al aplicației tale de AI
+
+Poți juca și în chatul propriu al aplicației tale de AI, într-un terminal sau în aplicația ei desktop, cu tabloul de bord deschis alături. Atunci creezi campania într-un terminal, în dosarul în care ții jocurile tale ([2.1](#21-what-you-need) îți arată cum), mereu cu numele ei: `rpg init "The Salt Isles"` creează dosarul `The Salt Isles` cu o campanie nouă în el. RPG Engine pregătește singur acolo tot ce are nevoie fiecare aplicație.
+
+Pornește aplicația în acel dosar: `claude` pentru Claude Code, `codex` pentru Codex, `agy` pentru Antigravity, `opencode` pentru OpenCode; sau deschide dosarul în aplicația ei desktop. Spune da când te întreabă dacă ai încredere în dosar: atenție, în Claude Code răspunsul deja selectat este *No, exit*. Orice alt agent care acceptă MCP poate fi și el maestrul de joc: pornește-l în dosarul campaniei și dă-i serverul MCP `rpg mcp`.
+
+Scrie *Salut! Hai să începem.* În primul său răspuns din fiecare chat, maestrul de joc îți dă **linkul către tabloul de bord**, ceva de genul `http://127.0.0.1:4750`: deschide-l lângă chat.
+
+- Între mesajele maestrului de joc, aplicația ta arată uneltele pe care le folosește: nu deschide detaliile lor (în Claude Code, ctrl+o), pentru că pot arăta secrete.
+- Campania oprește memoria proprie a aplicației: jocul trăiește în fișierele lui, ca revenirea la o salvare să fie cu adevărat o revenire. În aplicația desktop Codex, verifică în setări că memoriile sunt oprite pentru chaturile jocului.
+- Dacă maestrul de joc spune că nu găsește uneltele RPG Engine, scrie `rpg init` în dosarul campaniei, apoi deschide un chat nou.
+- Un singur chat joacă o campanie la un moment dat: cât timp al tău este deschis, chatul din tabloul de bord așteaptă.
 
 ---
 
@@ -126,7 +137,9 @@ Scrie ce face sau ce spune personajul tău, cu cuvintele tale:
 
 > Îl întreb pe hangiu cine a mai trecut pe aici în seara asta.
 
-Când vrei să ieși din poveste, scrie `[OOC: …]` (out of character): *[OOC: Cum funcționează imobilizarea?]* Maestrul de joc răspunde la fel.
+Când vrei să ieși din poveste, scrie `[OOC: …]` (out of character): *[OOC: Cum funcționează imobilizarea?]* Maestrul de joc răspunde la fel; în chatul din tabloul de bord, cuvintele lui din afara jocului stau separat, marcate cu OOC.
+
+În chatul din tabloul de bord, scrie în caseta de jos și apasă Enter ca să trimiți; Shift+Enter începe un rând nou. Cât timp maestrul de joc răspunde, **Oprește** îl oprește, iar cuvintele tale așteaptă în casetă. Când maestrul de joc te întreabă ceva, butoanele lui vin odată cu întrebarea, inclusiv aruncările: apasă pe unul sau scrie răspunsul. Sub casetă vezi aplicația și modelul; acolo unde aplicația permite, apasă pe model ca să-l schimbi după ce maestrul de joc a răspuns. **Închide chatul** încheie chatul; jocul rămâne în fișierele lui.
 
 Tu spui ce încerci, iar maestrul de joc spune ce se întâmplă. Maestrul de joc nu decide niciodată pentru personajul tău și nu vorbește despre motor. Poți întreba maestrul de joc cum se folosește tabloul de bord.
 
@@ -184,17 +197,17 @@ RPG Engine salvează toată campania la sfârșitul fiecărei scene. Setarea **s
 
 În toate modurile poți **începe de la capăt**, de la începutul jocului sau de la sesiunea zero. Fă asta în chat sau în **Salvări**.
 
-După ce te-ai întors în timp, **deschide un chat nou**: cel vechi își amintește ce a fost anulat. Scrie *continuă* în chatul nou, apoi apasă **Am deschis un chat nou** în Salvări.
+După ce te-ai întors în timp, **deschide un chat nou**: cel vechi își amintește ce a fost anulat. În chatul din tabloul de bord, apasă **Închide chatul**, apoi **Chat nou**; în chatul propriu al aplicației tale de AI, deschide o conversație nouă (`/clear` în Claude Code). Scrie *continuă* în chatul nou. Apoi spune-i maestrului de joc că chatul este nou: apasă **Am deschis un chat nou** în Salvări sau spune-o în chat. Până atunci, maestrul de joc nu merge mai departe.
 
-Dacă folderul campaniei este un depozit git, **Setări** are o secțiune **Git**, cu toate opțiunile dezactivate până când alegi tu: un commit la începutul fiecărei sesiuni, la fiecare salvare și la sfârșitul fiecărei scene, plus un push după aceea, dacă vrei. Un commit este o instantanee a campaniei din acel moment. Un push trimite instantaneele către depozitul online, de exemplu pe GitHub, ca o copie să existe și în afara acestui calculator. Salvările și chaturile tale cu maestrul de joc rămân în afara depozitului, dacă nu le permiți tu să intre. Permite intrarea chaturilor doar dacă depozitul este privat.
+Dacă nu știi ce este git, sari peste acest paragraf. Dacă dosarul campaniei este un depozit git, **Setări** are o secțiune **Git**, cu totul oprit până când alegi tu: un commit la începutul fiecărei sesiuni, la fiecare salvare și la sfârșitul fiecărei scene, plus un push după aceea, dacă vrei. Un commit este o instantanee a campaniei din acel moment; un push trimite instantaneele către depozitul online, de exemplu pe GitHub, ca o copie să existe și în afara acestui calculator. Salvările și chaturile tale cu maestrul de joc rămân în afara depozitului, dacă nu le permiți să intre; permite intrarea chaturilor doar dacă depozitul este privat.
 
 ### 3.9 Sesiuni: oprirea și revenirea
 
-Oprește-te oricând vrei: *[Să ne oprim aici pentru în seara asta.]* Totul este deja salvat în fișiere. Ca să revii, pornește-ți agentul în folderul campaniei și scrie *continuă*: maestrul de joc îți face un scurt rezumat și merge mai departe.
+Oprește-te oricând vrei: *[Să ne oprim aici pentru în seara asta.]* Totul este deja salvat în fișiere. Ca să revii, deschide RPG Engine din pictogramă și dă clic pe campania ta. Dacă ai lăsat chatul deschis, revine singur. Dacă l-ai închis, apasă **Reia chatul**. Apoi apasă **Reia povestea**: maestrul de joc îți spune în câteva rânduri unde ai rămas și merge mai departe. Dacă jocul a fost închis cât timp maestrul de joc încă răspundea sau cât timp o întrebare a lui te aștepta, butonul acela spune în schimb **Continuă de aici**. **Chat nou** deschide un chat proaspăt pe același joc. În chatul propriu al aplicației tale de AI, pornește-l în dosarul campaniei și scrie *continuă*.
 
 ### 3.10 Starea de spirit a maestrului de joc
 
-Robotul din partea de sus a tabloului de bord este maestrul de joc: chipul lui urmează tonul poveștii și nu dezvăluie niciodată ce nu știi încă. Când chatul este închis, robotul doarme.
+Robotul din partea de sus a tabloului de bord este maestrul de joc: chipul lui urmează tonul poveștii și nu dezvăluie niciodată ce nu știi încă. Când tabloul de bord nu este conectat la joc, robotul doarme.
 
 ### 3.11 Imagini
 
@@ -212,14 +225,15 @@ Orice setare poate fi schimbată, în chat sau în **Setări**. O decizie pe car
 
 ## 4. Tabloul de comandă <!-- icon: party -->
 
-O pagină de pe propriul tău calculator, deschisă doar în browserul acelui calculator, activă cât timp chatul este deschis. Când chatul se închide, afișează *Not connected*; revine singură la următorul chat.
+O pagină de pe propriul tău calculator, într-o fereastră proprie, deschisă doar pe acel calculator. Rămâne activă cât timp fereastra ei este deschisă, cu chat sau fără; la aproximativ treizeci de secunde după ce o închizi, jocul se oprește, iar chatul odată cu el. Nu se pierde nimic: totul este în fișiere. În chatul propriu al aplicației tale de AI, pagina este activă cât timp acel chat este deschis. Când jocul lipsește, pagina arată *Not connected*: apasă **Redeschide campania** sau, în aplicația ta, deschide următorul chat. Butonul **Campanii**, cu căsuța, te duce înapoi la toate campaniile tale.
 
-- **Grup**: fișa ta și fișele însoțitorilor tăi. Dă clic pe un număr ca să faci o aruncare; ține cursorul deasupra lui ca să vezi de unde vine și, când o săgeată marchează zarul, ce îmbunătățește sau înrăutățește aruncarea. Când maestrul de joc pregătește alegeri pentru tine, de exemplu la un nivel nou, o notificare de pe fișă le deschide: alege când vrei, citește paginile pe care le numesc opțiunile, aruncă acolo unde o opțiune cere o aruncare, apoi confirmă; povestea merge mai departe între timp. Alături, aruncările.
+- **Joc de rol**: chatul cu maestrul de joc, când nu este lângă pagină ([2.5](#25-the-first-chat)).
+- **Grup**: fișa ta și fișele însoțitorilor tăi. Dă clic pe un număr ca să-l arunci; ține cursorul deasupra lui ca să vezi de unde vine și, când o săgeată marchează zarul, ce îmbunătățește sau înrăutățește aruncarea. Când maestrul de joc pregătește alegeri pentru tine, de exemplu la un nivel nou, o notificare de pe fișă le deschide: alege când vrei, citește paginile pe care le numesc opțiunile, aruncă acolo unde o opțiune cere o aruncare, apoi confirmă; povestea merge mai departe între timp. Alături, aruncările.
 - **Scenă**: unde te afli, imaginea și harta ei, cine este de față, ce se întâmplă; într-o luptă, turele și cartonașul personajului tău.
 - **Jurnal**: misiuni, povestea ca o carte, cronologia ei, jurnalele însoțitorilor tăi, notițele tale.
 - **Lume**: harta lumii, ce știe personajul tău, documentele găsite și calendarul.
 - **Tava pentru zaruri**: alege zarurile și un modificator, apoi aruncă; ×2 dublează zarurile, niciodată modificatorul, ca la o lovitură critică.
-- **Salvări**, **Ajutor**, **Setări** și **Despre**, ca pictograme la capătul rândului. În **Setări**, la **Tablou de bord**, găsești și preferințele proprii ale paginii: modul, sunetul zarurilor, setul de zaruri și **Temă**, adică culorile, chipurile și imaginile paginii: cele ale sistemului de joc, o temă adăugată din Packages › Add, din catalog, dintr-un link GitHub, dintr-un .zip sau dintr-un dosar, ori cele proprii ale paginii. Dacă foaia de stil a unei teme face pagina greu de citit, dezactivează acolo **Stilul propriu al temei**: **Setări** se afișează întotdeauna fără el, la adresa paginii cu `#/settings/page` la final.
+- **Salvări**, **Ajutor**, **Setări** și **Despre**, ca pictograme la capătul rândului. **Setări** conține și, la **Tablou de bord**, preferințele proprii ale paginii: modul, sunetul zarurilor, setul de zaruri și **Temă**, adică culorile, chipurile și imaginile paginii: cele ale sistemului de joc, o temă adăugată din Packages › Add, din catalog, dintr-un link GitHub, dintr-un .zip sau dintr-un dosar, ori cele proprii ale paginii. Dacă foaia de stil a unei teme face pagina greu de citit, dezactivează acolo **Stilul propriu al temei**: **Setări** se afișează întotdeauna fără el, la adresa paginii cu `#/settings/page` la final.
 
 Când maestrul de joc îți pune o întrebare, bannerul lui rămâne în partea de sus, indiferent în ce secțiune te afli.
 
@@ -265,7 +279,7 @@ O extensie adaugă ceva unei campanii, peste sistemul ei de joc: o funcție prec
 
 - **Creată din mers**: pornind de la premisa ta, maestrul de joc construiește fiecare loc, persoană și intrigă chiar înainte să ai nevoie de ele și le păstrează.
 - **Pregătită la început**: la fel, dar cu lumea construită înainte de joc.
-- **Dintr-o aventură sau o carte a ta**: dă-i maestrului de joc fișierul, *[OOC: Importă această aventură ca pe campania noastră: D:\Books\adventure.pdf. Nu-mi spune nimic din ce e în ea.]* Se citește cel mai bine ca text, EPUB, document Word sau PDF cu text selectabil; un PDF scanat se citește din imaginile paginilor, doar pe Windows, lent și cu câteva greșeli. Aplicația ta AI îl citește în afara chatului, sau altfel maestrul de joc din chat, în abonamentul tău: în Claude Code sau Codex îl citește unul dintre cele două, în Antigravity Antigravity-ul tău, în OpenCode modelul pe care l-ai ales ultima dată în el. Întregul document ajunge la firma care a creat agentul ce îl citește, conform termenilor contului tău și opțiunii tale privind antrenarea. Dashboardul arată cât a avansat citirea; dintr-un roman, maestrul de joc propune de unde să începi. Maestrul de joc scrie locurile, personajele și secretele.
+- **Dintr-o aventură sau o carte a ta**: dă-i maestrului de joc fișierul, *[Importă această aventură ca pe campania noastră: D:\Books\adventure.pdf. Nu-mi spune nimic din ce e în ea.]* Un fișier din afara campaniei este citit doar după ce spui da într-o fereastră a calculatorului tău; unul pus în dosarul **inbox** al campaniei este citit pe loc. Se citește cel mai bine ca text, EPUB, document Word sau PDF cu text selectabil; un PDF scanat se citește din imaginile paginilor, doar pe Windows, lent și cu câteva greșeli. Aplicația ta de AI îl citește în afara chatului, sau altfel maestrul de joc din chat, în abonamentul tău: în Claude Code sau Codex îl citește unul dintre cele două, în Antigravity Antigravity-ul tău, în OpenCode modelul pe care l-ai ales ultima dată în el. Întregul document ajunge la firma care a creat aplicația ce îl citește, conform termenilor contului tău și opțiunii tale privind antrenarea. Tabloul de bord arată cât a avansat citirea; dintr-un roman, maestrul de joc propune de unde să începi. Maestrul de joc scrie locurile, personajele și secretele.
 
 O campanie se joacă o singură dată: ca să joci din nou aceeași aventură, creează o campanie nouă.
 
@@ -303,28 +317,34 @@ Fiecare comandă pe care o folosește maestrul de joc poate fi rulată și în f
 
 **Poate maestrul să trișeze?** Nu poate schimba o aruncare făcută de RPG Engine, decât la dificultatea poveste, și nici faptele deja stabilite.
 
-**Costă ceva?** RPG Engine este gratuit. Maestrul rulează pe abonamentul agentului tău sau pe calculatorul tău, cu un model local. O seară de joc înseamnă un chat lung: pe cele mai mici abonamente poți atinge limita abonamentului înainte să se termine seara. Imaginile, traducerile și importurile folosesc același abonament. RPG Engine în sine nu folosește niciodată o cheie API, care se plătește la fiecare apel: autentifică-ți agentul cu contul tău, nu cu o cheie.
+**Costă ceva?** RPG Engine este gratuit. Maestrul de joc rulează pe abonamentul aplicației tale de AI sau pe calculatorul tău, cu un model local. O seară de joc înseamnă un chat lung: pe cele mai mici abonamente poți atinge limita abonamentului înainte să se termine seara. Imaginile, traducerile și importurile folosesc același abonament. RPG Engine în sine nu folosește niciodată o cheie API, care se plătește la fiecare apel: conectează-ți aplicația de AI cu contul tău, nu cu o cheie.
 
 **Pot juca pe telefon?** Nu: maestrul rulează pe calculatorul tău, iar dashboardul se deschide doar acolo.
 
 **Pot juca cu prieteni?** Încă nu: azi există un jucător, un personaj și însoțitori ([Coming later](#9-coming-later)).
 
-**Pot folosi alt AI data viitoare?** Da: deschide campania în alt agent și scrie *continuă*.
+**Pot folosi alt AI data viitoare?** Da: alege altă aplicație în chat înainte să-l deschizi sau deschide campania în altă aplicație și scrie *continuă*.
 
 ### Probleme
 
-**Tabloul de bord nu se deschide.** Întreabă maestrul de joc: `[OOC: Care e linkul către tabloul de bord?]`. Funcționează doar cât timp este deschis un chat al acelei campanii. În Claude Code și în Codex pornește odată cu chatul, iar în Antigravity, odată cu primul tău mesaj. În aplicația Claude, un chat lăsat o vreme pe fundal adoarme, iar pagina odată cu el. Apasă pe chat și pagina revine la aceeași adresă.
+**O campanie nu se deschide.** Deschide din nou RPG Engine din pictogramă sau cu `rpg open` într-un terminal și dă clic pe campanie. Dacă tabloul ei de bord spune *Not connected*, apasă **Redeschide campania**. Un cartonaș care spune **Dosarul nu a fost găsit** și-a pierdut dosarul: scoate-l din listă și adaugă-l din nou cu **Deschide un dosar…**, de unde se află acum. În chatul propriu al aplicației tale de AI, tabloul de bord funcționează doar cât timp este deschis un chat al acelei campanii: întreabă maestrul de joc `[OOC: Care e linkul către tabloul de bord?]`. În aplicația Claude, un chat lăsat o vreme pe fundal adoarme, iar pagina odată cu el: apasă pe chat și pagina revine la aceeași adresă.
 
-**Maestrul pare să nu cunoască jocul.** Agentul tău nu a încărcat RPG Engine. Verifică dacă l-ai pornit în folderul campaniei și dacă ai avut încredere în el. În Claude Code, scrie `/mcp` și reconectează `rpg`. În Codex, `codex mcp list` în folderul campaniei trebuie să arate `rpg`. Dacă `rpg --version` nu e găsit, instalează din nou RPG Engine ([2.2](#22-install)).
+**Maestrul de joc pare să nu cunoască jocul.** Se întâmplă în chatul propriu al aplicației tale de AI: aceasta nu a încărcat RPG Engine. Verifică dacă ai pornit-o în dosarul campaniei și dacă ai avut încredere în dosar. În Claude Code, scrie `/mcp` și reconectează `rpg`. În Codex, `codex mcp list` în dosarul campaniei trebuie să arate `rpg`. Dacă `rpg --version` nu e găsit, instalează din nou RPG Engine ([2.2](#22-install)).
 
-**Windows nu găsește `claude`.** Programul lui de instalare spune asta într-o notă galbenă, cu dosarul în care s-a instalat: adaugă dosarul respectiv la PATH (System Properties > Environment Variables), apoi deschide un terminal nou.
+**Windows nu găsește `claude`.** Se întâmplă când ai instalat Claude Code chiar tu. Programul lui de instalare spune asta într-o notă galbenă, cu dosarul în care s-a instalat: adaugă dosarul respectiv la PATH (Proprietăți sistem > Variabile de mediu), apoi deschide un terminal nou.
 
-**Actualizare.** Rulează din nou `npm install -g rpg-engine`, apoi deschide un chat nou: un maestru aflat în rulare păstrează versiunea cu care a pornit.
+**Actualizare.** Când apare un RPG Engine mai nou, tabloul de bord anunță asta: în Packages › Installed, RPG Engine este primul, cu **Actualizează**; apoi urmează ce îți spune pagina. Sau rulează din nou `npm install -g rpg-engine` într-un terminal, apoi deschide un chat nou: un maestru de joc aflat în rulare păstrează versiunea cu care a pornit.
 
 **Maestrul își amintește ceva ce am anulat.** Deschide un chat nou și apasă **Am deschis un chat nou** în Salvări.
+
+**O aplicație nu se instalează.** Pagina spune de ce: apasă **Încearcă din nou**. Sau instal-o chiar tu de pe site-ul creatorului ei, apoi apasă **Verifică din nou**.
+
+**Pagina de conectare nu se deschide în browser.** Cât timp pagina te așteaptă, apasă **Deschide din nou pagina de conectare** acolo unde apare sau **Anulează** și încearcă încă o dată.
+
+**Chatul din tabloul de bord spune că joacă alt chat.** Un chat deschis chiar de tine în aplicația ta de AI joacă această campanie: continuă acolo sau închide-l ca să joci în tabloul de bord.
 
 **Nu apare nicio imagine.** **Setări** > Campaign > Pictures arată dacă acest calculator le poate face și cum.
 
 **Instalarea eșuează sau `rpg` nu pornește.** `node --version` trebuie să arate 24 sau mai nou. Dacă Windows răspunde că rularea scripturilor este dezactivată, vezi [2.1](#21-what-you-need). Pe Windows, ține RPG Engine și campaniile tale departe de căi care conțin `&`.
 
-**Linkul tabloului de bord s-a schimbat.** Fiecare campanie are propria adresă, aceeași chat după chat. Adresa se schimbă doar când un alt program o folosește deja. Maestrul de joc îți dă noul link, iar de atunci acesta rămâne. Un al doilea chat al aceleiași campanii păstrează pagina la aceeași adresă și o preia după ce îl închizi pe primul.
+**Linkul tabloului de bord s-a schimbat.** În chatul propriu al aplicației tale de AI, fiecare campanie are propria adresă, aceeași chat după chat. Se schimbă doar când un alt program o folosește deja: maestrul de joc îți dă noul link, iar de atunci acesta rămâne. Un al doilea chat al aceleiași campanii păstrează pagina la aceeași adresă și o preia după ce îl închizi pe primul.

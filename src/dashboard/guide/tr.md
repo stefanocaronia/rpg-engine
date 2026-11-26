@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: eksiksiz kılavuz
 
-**RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyun yöneticisiyle bir **sohbette** konuşursun; RPG Engine ise arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**. Sohbetin yanında tarayıcında bir sayfa açık tutarsın: **gösterge paneli**. Orada karakter kağıdın, zarların, haritaların ve günlüğün durur.
+**RPG Engine**, masa başı rol yapma oyununu **yapay zekâ oyun yöneticisiyle** oynamanı sağlar. Oyunu **gösterge panelinde** oynarsın: bilgisayarındaki bu pencerede karakter kağıdın, zarlar, haritalar, günlüğün ve oyun yöneticisiyle **sohbetin** bulunur. RPG Engine arka planda çalışır: **dünyayı hatırlar**, **zarları atar** ve **hesapları tutar**.
 
 Bu kılavuz oyuncular için yazıldı: program yazmayı bilmen gerekmez.
 
 ## Hızlı başlangıç <!-- icon: send -->
 
 1. [nodejs.org](https://nodejs.org) adresinden **Node.js** kur (LTS sürümü).
-2. Bir **yapay zekâ ajanı** kur ve giriş yap. Oyun yöneticisi bu programın içinde çalışır. Örneğin Claude Code ya da Codex ([2.4](#24-connect-your-ai)).
-3. Node.js kurulduktan sonra açtığın yeni bir terminalde RPG Engine'i kur: `npm install -g rpg-engine`. Windows betiklerin çalıştırılmasının devre dışı olduğunu söylerse, bir kez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` yaz, evet de ve yeniden dene.
-4. Terminali oyunlarını tuttuğun klasörde aç (klasöre sağ tıkla, **Terminalde Aç**) ve her zaman adını yazarak bir kampanya oluştur: `rpg init "The Salt Isles"`. RPG Engine İngilizce iki satırla yanıt verir: her şey yolunda.
-5. Yeni klasöre gir, `cd "The Salt Isles"`, ve ajanını orada başlat: Claude Code için `claude`, Codex için `codex`. Klasöre güvenip güvenmediğini sorduğunda evet de ([2.4](#24-connect-your-ai)), sonra *Merhaba! Başlayalım.* yaz. Oyun yöneticisi gösterge panelinin bağlantısıyla yanıt verir.
+2. Node.js kurulduktan sonra açtığın yeni bir terminalde bir kez RPG Engine'i kur: `npm install -g rpg-engine`. Windows betiklerin çalıştırılmasının devre dışı olduğunu söylerse, bir kez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` yaz, evet de ve yeniden dene.
+3. `rpg open` yaz. RPG Engine'in simgesinin masaüstüne ve menüne eklenip eklenmeyeceğini sorar: evet için Enter'a bas. Bundan sonra RPG Engine'i terminal olmadan, simgesinden başlatırsın ([2.2](#22-install)).
+4. Bir pencere kampanyalarını gösterir. **Yeni kampanya**'ya bas, bir ad ver ve **Oluştur**'a bas ([2.3](#23-create-a-campaign)): kampanyanın gösterge paneli kendi penceresinde açılır.
+5. Oyun yöneticisiyle sohbette yapay zekâ uygulamanı ve modelini seç: Claude Code için ücretli bir Claude planı, Codex için ücretsiz ya da ücretli bir ChatGPT hesabı gerekir ([2.4](#24-connect-your-ai)). Uygulama yoksa ya da giriş yapmadıysan sayfa uygulamayı kurar veya giriş yaptırır. **Sohbeti aç**'a, sonra **Başla**'ya bas. İlk yanıt birkaç dakika sürebilir. Sonra oyun yöneticisi nasıl oynamak istediğini sorar ve karakterini birlikte yaparsınız.
 
 ## 1. RPG Engine nedir <!-- icon: about -->
 
@@ -39,48 +39,46 @@ Bir oyun, oyun sistemiyle gelir. Oyun sistemi, oyun yöneticisinin macerana kurd
 
 - Windows, macOS veya Linux yüklü bir bilgisayar ve bir web tarayıcısı.
 - [nodejs.org](https://nodejs.org) adresinden **Node.js 24** veya daha yenisi. Yanında `npm` gelir; RPG Engine'i o kurar.
-- Bir **terminal**: Windows'ta Terminal ya da PowerShell; macOS'ta Terminal. Terminali bir klasörde açmak için klasöre sağ tıkla ve **Terminalde Aç** (Windows) ya da **Servisler > Klasörde Yeni Terminal** (macOS) seçeneğini seç. Windows betiklerin çalıştırılmasının devre dışı olduğunu söylerse, bir kez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` yaz ve evet de.
-- Oyun yöneticisi için bir **yapay zekâ ajanı** ([2.4](#24-connect-your-ai)). Ajanın sunduğu **en büyük modeli** kullan: küçük bir modeli sır vermeye ya da kuralları esnetmeye ikna etmek daha kolaydır.
+- RPG Engine'i kurmak için bir kez **terminal**: Windows'ta Terminal ya da PowerShell; macOS'ta Terminal. Terminali bir klasörde açmak için klasöre sağ tıkla ve **Terminalde Aç** (Windows) ya da **Servisler > Klasörde Yeni Terminal** (macOS) seçeneğini seç. Windows betiklerin çalıştırılmasının devre dışı olduğunu söylerse, bir kez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` yaz ve evet de.
+- Oyun yöneticisi için, kendi hesabınla bir **yapay zekâ uygulaması** ([2.4](#24-connect-your-ai)): sayfa uygulamayı senin için kurabilir. Uygulamanın sunduğu **en büyük modelle** oyna: küçük bir modeli sır vermeye ya da kuralları esnetmeye ikna etmek daha kolaydır.
 
 ### 2.2 Kurulum
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-`rpg --version` komutu kurulumun işe yaradığını doğrular. npm kendini güncellemeyi önerirse bunu yok sayabilirsin. `rpg` komutunu kampanya başına bir kez, kampanyayı oluşturmak için kullanırsın. Sonrasında ajanın RPG Engine'i kendisi başlatır. Tek başına `rpg` hiçbir şey açmaz: gösterge panelini oyun yöneticisi verir.
+İlk satır RPG Engine'i kurar; `rpg --version` kurulumun işe yaradığını doğrular. npm kendini güncellemeyi önerirse bunu yok sayabilirsin.
+
+`rpg open`, RPG Engine'in kampanyalarını gösteren penceresini açar. İlk seferde terminalde, simgesinin masaüstüne ve Başlat menüne (Mac'te Uygulamalar) eklenip eklenmeyeceğini sorar: evet için Enter'a bas. Bundan sonra simgeye çift tıklarsın, terminale artık gerek kalmaz. Simge yoksa her oynayışında `rpg open` yaz. `rpg icon` simgeyi sonradan ekler, `rpg icon --remove` kaldırır.
 
 ### 2.3 Kampanya oluşturma
 
-Oyunlarını tuttuğun klasörde bir terminal aç ([2.1](#21-what-you-need) nasıl yapılacağını anlatır):
+RPG Engine'in penceresi kampanyalarını kartlar olarak gösterir; en son açılan başta durur. **Yeni kampanya**'ya bas ve **Ad**, **Dil** ile **Oyun sistemi** seç: gerisini oyun yöneticisi seninle birlikte yapar. Kampanya, kullanıcı klasöründeki `RPG Engine` klasörünün içinde, kendi adıyla bir klasöre konur (Windows'ta `C:\Users\<ad>`). **Başka bir klasör seç…** onu senin seçtiğin boş bir klasöre koyar. **Oyun yöneticisi** bölümünde ilk sohbet için yapay zekâ uygulamasını ve modeli şimdiden seçebilirsin ([2.4](#24-connect-your-ai)). **Oluştur**'a bas: kampanyanın gösterge paneli kendi penceresinde açılır.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Bu komut `The Salt Isles` adında bir klasör ve içinde yeni bir kampanya oluşturur. `cd "The Salt Isles"` ile klasörün içine gir. Adı her zaman yaz: adı yazmazsan içinde bulunduğun klasör kampanya olur ve içindeki her şeyin yanında yer alır. Yerini unutma: oynadığın her seferde buraya döneceksin. Geri kalan her şeyi sonra, sohbette ya da gösterge panelinde seçersin.
-
-Oyun yöneticisi senin için kampanya oluşturamaz: `init` çalışmadan önce ajanına RPG Engine'in nerede olduğunu söyleyen hiçbir şey yoktur.
+Sonraki sefer, kampanyasını açmak için bir karta tıkla. Açık olan kartta **Şu an açık** yazar. **Klasör aç…** bu bilgisayarda zaten olan bir kampanyayı ekler. Kartın üstündeki küçük çarpı kartı listeden kaldırır: dosyaları olduğu yerde kalır.
 
 ### 2.4 Yapay zekânı bağla
 
-Oyun yöneticisi bir **yapay zekâ ajanında** çalışır. Bu, terminalde ya da masaüstünde çalışan, bilgisayarındaki dosyalarla iş yapabilen bir yapay zekâ uygulamasıdır; Claude Code, Codex, Antigravity veya OpenCode gibi. claude.ai ya da ChatGPT gibi düz bir sohbet veya bir telefon uygulaması yetmez: oyun yöneticisinin bilgisayarındaki kampanya dosyalarına erişmesi gerekir. Her ajanın kendi planı ve girişi vardır: Claude Code için ücretli bir Claude planı, Codex için bir ChatGPT girişi, Antigravity için bir Google hesabı; ücretsiz planın haftalık kotası küçüktür. OpenCode, verdiğin modellerle çalışır; yerel modeller de dahildir. Ajanı kendi sayfasından bir kez kurarsın: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Oyun yöneticisi, bilgisayarında kendi hesabınla çalışan bir **yapay zekâ uygulamasında** çalışır: Claude Code, Codex, OpenCode ya da Antigravity. claude.ai ya da ChatGPT gibi düz bir sohbet veya bir telefon uygulaması yetmez: oyun yöneticisinin bilgisayarındaki kampanya dosyalarına erişmesi gerekir. Her uygulamanın kendi hesabı gerekir: Claude Code için ücretli bir Claude planı (Pro ya da üstü); Codex için ücretsiz ya da ücretli bir ChatGPT hesabı; Antigravity için bir Google hesabı, ücretsiz kullanımın haftalık sınırları vardır; OpenCode'un sınırlı bir süre için bazı ücretsiz modelleri vardır, ya da kendi sağlayıcının modellerini, yerel olanlar dahil, kullanır.
 
-- **Claude Code**: kampanya klasöründe `claude` yaz. Klasöre güvenip güvenmediğini sorduğunda **Yes, I trust this folder** seçeneğini seç. Dikkat: önceden seçili gelen cevap *No, exit* olur. Kampanyada ayrıca küçük bir kanca (hook) vardır: `rpg --listen`. Soruda görünmez. Gösterge panelinden bir şey yaptığında oyun yöneticisine hemen haber verir.
-- **Codex**: kampanya klasöründe `codex` yaz ve klasöre güvenip güvenmediğini sorduğunda evet de. Önemli anlarda bir karakter, kendine ait bir ajan üzerinden konuşur: `.codex/agents/rpg-character.toml`. Bu ajan yalnızca karakterin bildiklerini bilir. Masaüstü uygulamasında, ayarlardan oyunun sohbetleri için belleklerin kapalı olduğunu kontrol et.
-- **Antigravity**: kampanya klasöründe `agy` yaz ve klasöre güvenip güvenmediğini sorarsa evet de. Ya da uygulamasında kampanya klasörünü aç. Uygulama için RPG Engine kendini Antigravity'nin kendi ayarlarına da ekler: bu ayarlar ana dizinindeki `.gemini/config/mcp_config.json` dosyasındadır. Yalnızca kampanya için değil, açtığın her klasör için geçerlidir. Kampanyanın dışında hiçbir şey yapmaz. Kampanyada iki küçük kanca vardır: `rpg --approve`, oyun yöneticisinin RPG Engine araçlarını her seferinde sana sormadan kullanmasını sağlar. `rpg --listen` ise gösterge panelinden bir şey yaptığında oyun yöneticisine hemen haber verir. Oyun yöneticisi görselleri sohbetin içinde kendisi boyar. Bunun için ücretli bir Google planı gerekir. Ücretsiz planda görsel aracı çalışmaz ve oyun yöneticisi, Claude'un yaptığı gibi, basit vektör görseller çizer. Önemli anlarda bir karakter, kendine ait bir ajan üzerinden konuşur: `.agents/agents/rpg-character.md`. Oyun yöneticisi hikâyeden bir satır yazar, karakterin cevabı biraz sonra gelir. Antigravity'n ayrıca gösterge panelini ve oyunun kurallarını çevirir, içe aktardığın belgeleri de okur. Bunu sohbetin dışında, Google hesabının kotasıyla yapar. RPG Engine onu senin kendi sohbetlerinden ayrı başlatır, bu yüzden sohbetlerinin arasında hiçbir iz bırakmaz. Antigravity geçmiş sohbetlerini saklar ve belleği kapatılamaz. Oyun yöneticisine bunları asla okumaması söylenir. Yazdıkların Google'a gider ve Google bunları insanlara okutabilir: kişisel verilerini oyunun dışında tut. RPG Engine bir Google ürünü değildir.
-- **OpenCode**: kampanya klasöründe `opencode` yaz. Kampanyada küçük bir eklenti vardır: `.opencode/plugins/rpg.js`. Gösterge panelinden bir şey yaptığında oyun yöneticisine hemen haber verir. Kampanyada oyun yöneticisi dosyaları yalnızca RPG Engine üzerinden yazar. OpenCode'un kendi dosya yazma ve düzenleme özelliği orada kapalıdır. OpenCode bir komut çalıştırmadan önce sana sorar. Oyun yöneticisi görselleri, Claude'un yaptığı gibi, basit vektör görseller olarak kendisi çizer. Önemli anlarda bir karakter, kendine ait bir ajan üzerinden konuşur: `.opencode/agents/rpg-character.md`. Oyun yöneticisi hikâyeden bir satır yazar, karakterin cevabı biraz sonra gelir. Küçük bir yerel model bu ajanı çağırmayabilir. OpenCode'un, içinde en son seçtiğin modelle, gösterge panelini ve oyunun kurallarını çevirmesi ve içe aktardığın belgeleri okuması da sohbetin dışında gerçekleşir. Kullanabileceği bir model yoksa, sende varsa Codex ya da Claude Code bunu yapar.
-- **Başka bir ajan**: ajanı kampanya klasöründe başlat ve ona `rpg mcp` MCP sunucusunu ver. RPG Engine standart bir MCP sunucusudur: MCP destekleyen her ajan oyun yöneticisi olabilir, yerel olanlar da.
+Gösterge panelinin sohbetinde **Yapay zekâ uygulaman** altından uygulamayı, sonra **Model**'i ve **Oyun yöneticisinin düşüncelerini** seç: sayfa bunları önerir. Daha fazla düşünce daha yavaştır ve planının daha çoğunu harcar. Hazır olmayan bir uygulama neye ihtiyacı olduğunu söyler ve bunu yapan bir düğme gösterir:
 
-Oyun yöneticisi RPG Engine'in araçlarını bulamadığını söylerse kampanya klasöründe `rpg init` yaz: zaten kampanya olan bir klasörde bu komut yalnızca bu dosyaları günceller. Sonra yeni bir sohbet aç.
+- **Claude Code** ve **Codex**: **Install Claude Code** ya da **Install Codex** uygulamayı bu bilgisayarda RPG Engine'in kendi klasörüne indirir. **Sign in to Claude Code** ya da **Sign in to Codex** giriş sayfasını tarayıcında açar. RPG Engine parolanı asla görmez.
+- **OpenCode** ve **Antigravity**: **Get OpenCode** ya da **Get Antigravity** sitesini açar, uygulamayı orada kurarsın. OpenCode ile giriş yapmadan oynarsın; Antigravity'de giriş kendi uygulamasından yapılır. Sonra geri gel ve **Yeniden kontrol et**'e bas.
 
-Biz **Claude Code** ile oynuyor ve test ediyoruz. **Codex**, **Antigravity** ve **OpenCode** bağlı ve kontrol edildi, ama onlarla henüz tam bir kampanya oynanmadı. Kampanya, ajanın kendi belleğini kapatır: oyun dosyalarında yaşar, böylece bir kayda dönmek gerçekten geri dönmek olur.
+Antigravity **deneme aşamasında** olarak işaretlidir: oyundan çıkıp kendi tarzıyla sorular sorabilir, bu yüzden Claude Code, Codex ya da OpenCode oynamak için daha iyidir. Antigravity geçmiş sohbetlerini saklar ve belleği kapatılamaz: oyun yöneticisine bunları asla okumaması söylenir. Yazdıkların Google'a gider ve Google bunları insanlara okutabilir: kişisel verilerini oyunun dışında tut. RPG Engine bir Google ürünü değildir. RPG Engine'i en çok **Claude Code** ile oynuyor ve test ediyoruz: diğerleriyle henüz tam bir kampanya oynanmadı.
+
+Gösterge panelinin sohbetinde oyun yöneticisi bilgisayarına yalnızca RPG Engine üzerinden dokunur: dosyalarından hiçbirini kendi kendine açmaz. RPG Engine kampanyanın dışında yalnızca senin seçtiğini okur; bunu da bilgisayarının bir penceresinde evet dedikten sonra yapar.
+
+Yapay zekâ uygulamasının kendi sohbetinde, bir terminalde ya da masaüstü uygulamasında da oynayabilirsin ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 İlk sohbet
 
-İstediğini yaz; örneğin *Selam! Başlayalım.* Oyun yöneticisi her sohbetin ilk cevabında sana **panonun bağlantısını** verir; şuna benzer bir şey: `http://127.0.0.1:4750`. Bağlantıyı aç ve sohbetin yanında tut.
+Uygulama ve model seçildiğinde **Sohbeti aç**'a bas: uygulama başlar, bu birkaç saniye sürebilir. Sonra **Başla**'ya bas ya da *Selam! Başlayalım.* gibi bir şey yaz. İlk yanıt birkaç dakika sürebilir; oyun yöneticisi bu sürede sahneyi kurar.
 
-Oyun yöneticisinin mesajları arasında ajanın kullandığı araçları gösterir. Ayrıntılarını açma (Claude Code'da ctrl+o), çünkü sırları gösterebilirler.
+Sohbetin kendi bölümü olan **Rol yapma** vardır, ya da sayfanın yanında durur: üstündeki küçük düğmeler onu **Kendi sekmesinde**, **Solda** ya da **Sağda** gösterir. Kenarından sürükleyerek genişletebilirsin.
 
 Yeni bir kampanya üç aşamadan geçer; panonun üstünde görünürler: **1 Ayarlar** (nasıl oynamak istediğin), **2 Sıfırıncı oturum** (karakterini oyun içinde yaparsın), **3 Oyun**.
 
@@ -114,7 +112,20 @@ Yazılı bir dünya yoksa oyun yöneticisi bir de **temel fikir** sorar (tür, t
 
 Karakterini oyun yöneticisiyle birlikte yaparsın, tıpkı bir masada olduğu gibi. Oyun yöneticisinden yapmasını istemediğin sürece her seçim senindir: dolu bir fikirle, belirsiz bir fikirle ya da hiçbir şeyle gelebilirsin; ya da oyun yöneticisinden birkaç sözcükten yola çıkıp her şeyi yapmasını isteyebilirsin. Seviyeli bir oyunda oyun yöneticisi hangi seviyeden başlayacağını sorar: istemediğin sürece birinci seviyeden. Oyun yöneticisi, herhangi bir zar atılmadan önce yetenek puanlarının nasıl belirleneceğini anlatır. Hikâyen hiçbir zaman zorunlu değildir; verirsen oyun yöneticisi onu senin sözlerinle yazar. Sonra oyun yöneticisi karakterin için bir görsel ister ([3.7](#37-your-characters-story-and-picture)). Karakter kağıdını RPG Engine hesaplar: toplama çıkarma yapmazsın.
 
-Başka bir oyundan ya da başka bir kampanyadan zaten bir karakterin mi var? Kurulumda **Zaten bir tanem var** seçeneğini seç ve karakteri oyun yöneticisine ver: karakter kağıdını sohbete yapıştır ya da dosyasının bilgisayarında nerede olduğunu söyle (bir PDF, bir görsel, bir metin). Oyun yöneticisi karakteri olduğu gibi, kendi seviyesinde yazar, kurallara ve dünyaya uygun olup olmadığını kontrol eder ve uymayan her şeyi seninle birlikte çözer.
+Başka bir oyundan ya da başka bir kampanyadan zaten bir karakterin mi var? Kurulumda **Zaten bir tanem var** seçeneğini seç ve karakteri oyun yöneticisine ver: karakter kağıdını sohbete yapıştır. Yapay zekâ uygulamanın kendi sohbetinde dosyasının bilgisayarında nerede olduğunu da söyleyebilirsin (bir PDF, bir görsel, bir metin). Gösterge panelinin sohbetinde oyun yöneticisi senin hiçbir dosyanı açmaz. Oyun yöneticisi karakteri olduğu gibi, kendi seviyesinde yazar, kurallara ve dünyaya uygun olup olmadığını kontrol eder ve uymayan her şeyi seninle birlikte çözer.
+
+### 2.8 Diğer yol: yapay zekâ uygulamanın kendi sohbeti
+
+Oyunu doğrudan yapay zekâ uygulamanın sohbetinde, bir terminalde ya da masaüstü uygulamasında da oynayabilirsin; gösterge paneli yanında açık durur. O zaman kampanyayı bir terminalde, oyunlarını tuttuğun klasörde oluşturursun ([2.1](#21-what-you-need) nasıl yapılacağını anlatır). Adı her zaman yaz: `rpg init "The Salt Isles"` komutu `The Salt Isles` adında bir klasör ve içinde yeni bir kampanya oluşturur. RPG Engine her uygulamanın orada ihtiyaç duyduğunu kendiliğinden hazırlar.
+
+Uygulamanı o klasörde başlat: Claude Code için `claude`, Codex için `codex`, Antigravity için `agy`, OpenCode için `opencode`. Ya da klasörü masaüstü uygulamasında aç. Klasöre güvenip güvenmediğini sorduğunda evet de. Dikkat: Claude Code'da önceden seçili gelen cevap *No, exit* olur. MCP destekleyen her ajan da oyun yöneticisi olabilir: onu kampanya klasöründe başlat ve ona `rpg mcp` MCP sunucusunu ver.
+
+*Selam! Başlayalım.* yaz. Oyun yöneticisi her sohbetin ilk yanıtında sana **gösterge panelinin bağlantısını** verir; şuna benzer bir şey: `http://127.0.0.1:4750`. Bağlantıyı sohbetin yanında aç.
+
+- Oyun yöneticisinin mesajları arasında uygulaman kullandığı araçları gösterir. Ayrıntılarını açma (Claude Code'da ctrl+o), çünkü sırları gösterebilirler.
+- Kampanya, uygulamanın kendi belleğini kapatır: oyun dosyalarında yaşar, böylece bir kayda dönmek gerçekten geri dönmek olur. Codex'in masaüstü uygulamasında, ayarlardan oyunun sohbetleri için belleklerin kapalı olduğunu kontrol et.
+- Oyun yöneticisi RPG Engine'in araçlarını bulamadığını söylerse kampanya klasöründe `rpg init` yaz, sonra yeni bir sohbet aç.
+- Bir kampanyayı aynı anda tek sohbet oynar: seninki açıkken gösterge panelinin sohbeti bekler.
 
 ---
 
@@ -126,7 +137,9 @@ Karakterin ne yapıyor ya da ne söylüyorsa kendi sözlerinle yaz:
 
 > Han sahibine bu gece başka kimin uğradığını soruyorum.
 
-Hikâyenin dışına çıkmak için `[OOC: …]` yaz (karakter dışı): *[OOC: Tutuşma nasıl işliyor?]* Oyun yöneticisi de aynı şekilde yanıt verir.
+Hikâyenin dışına çıkmak için `[OOC: …]` yaz (karakter dışı): *[OOC: Tutuşma nasıl işliyor?]* Oyun yöneticisi de aynı şekilde yanıt verir. Gösterge panelinin sohbetinde oyun dışı sözleri ayrı durur, OOC ile işaretlenir.
+
+Gösterge panelinin sohbetinde alttaki kutuya yaz ve göndermek için Enter'a bas; Shift+Enter yeni satır başlatır. Oyun yöneticisi yanıt verirken **Durdur** onu durdurur, yazdıkların kutuda bekler. Oyun yöneticisi sana bir şey sorduğunda düğmeleri soruyla birlikte gelir, atışlar da dahil: birine tıkla ya da yanıtını yaz. Kutunun altında uygulamayı ve modeli görürsün. Uygulama izin veriyorsa, oyun yöneticisi yanıt verdikten sonra modele tıklayarak onu değiştirebilirsin. **Sohbeti kapat** sohbeti bitirir; oyun dosyalarında kalır.
 
 Sen neyi denediğini söylersin, ne olacağını oyun yöneticisi söyler. Oyun yöneticisi karakterin adına asla karar vermez ve motordan asla söz etmez. Gösterge panelini nasıl kullanacağını ona sorabilirsin.
 
@@ -184,17 +197,17 @@ RPG Engine, her sahnenin sonunda tüm kampanyayı kaydeder. Gerisini **Kayıtlar
 
 Her kipte **baştan başlayabilirsin**: oyunun başından ya da sıfırıncı oturumdan. Bunu sohbette ya da **Kayıtlar**'da yap.
 
-Geri döndükten sonra **yeni bir sohbet aç**: eski sohbet geri alınanı hâlâ hatırlar. Yeni sohbete *devam* yaz, sonra Kayıtlar'da **Yeni sohbet açtım**'a bas.
+Geri döndükten sonra **yeni bir sohbet aç**: eski sohbet geri alınanı hâlâ hatırlar. Gösterge panelinin sohbetinde **Sohbeti kapat**'a, sonra **Yeni sohbet**'e bas. Yapay zekâ uygulamanın kendi sohbetinde yeni bir konuşma aç (Claude Code'da `/clear`). Yeni sohbete *devam* yaz. Sonra oyun yöneticisine sohbetin yeni olduğunu söyle: Kayıtlar'da **Yeni sohbet açtım**'a bas ya da sohbette söyle. O zamana kadar oyun yöneticisi devam etmez.
 
-Kampanyanın klasörü bir git deposuysa **Ayarlar**'da bir **Git** bölümü bulunur. Sen seçene kadar hepsi kapalıdır: her oturumun başında, her kayıtta ve her sahnenin sonunda bir commit, istersen ardından bir push. Commit, kampanyanın o andaki anlık görüntüsüdür. Push ise bu görüntüleri çevrimiçi depoya, örneğin GitHub'a gönderir; böylece bir kopya bu bilgisayarın dışında durur. Kayıtlar ve oyun yöneticisiyle yaptığın sohbetler, sen izin vermedikçe depoya girmez. Sohbetlere yalnızca depo özelse izin ver.
+Git'in ne olduğunu bilmiyorsan bu paragrafı atla. Kampanyanın klasörü bir git deposuysa **Ayarlar**'da bir **Git** bölümü bulunur. Sen seçene kadar hepsi kapalıdır: her oturumun başında, her kayıtta ve her sahnenin sonunda bir commit, istersen ardından bir push. Commit, kampanyanın o andaki anlık görüntüsüdür. Push ise bu görüntüleri çevrimiçi depoya, örneğin GitHub'a gönderir; böylece bir kopya bu bilgisayarın dışında durur. Kayıtlar ve oyun yöneticisiyle yaptığın sohbetler, sen izin vermedikçe depoya girmez. Sohbetlere yalnızca depo özelse izin ver.
 
 ### 3.9 Oturumlar: durmak ve geri dönmek
 
-İstediğin zaman dur: *[Bu gecelik burada bırakalım.]* Her şey zaten dosyalara kayıtlı. Geri dönmek için ajanını kampanya klasöründe başlat ve *devam* yaz: oyun yöneticisi sana kısa bir özet verir ve kaldığınız yerden sürdürür.
+İstediğin zaman dur: *[Bu gecelik burada bırakalım.]* Her şey zaten dosyalara kayıtlı. Geri dönmek için RPG Engine'i simgesinden aç ve kampanyana tıkla. Sohbeti açık bıraktıysan kendiliğinden geri gelir. Kapattıysan **Sohbete devam et**'e bas. Sonra **Hikâyeye devam et**'e bas: oyun yöneticisi kaldığın yeri sana birkaç satırda anlatır ve oyunu sürdürür. Oyun, oyun yöneticisi hâlâ yanıt verirken ya da onun sorduğu bir soru seni beklerken kapandıysa bu düğmede bunun yerine **Buradan devam et** yazar. **Yeni sohbet** aynı oyun üzerinde yeni bir sohbet açar. Yapay zekâ uygulamanın kendi sohbetinde, uygulamayı kampanya klasöründe başlat ve *devam* yaz.
 
 ### 3.10 Oyun yöneticisinin ruh hali
 
-Gösterge panelinin üstündeki robot oyun yöneticisidir. Yüzü hikâyenin tonunu izler ve henüz bilmediğin hiçbir şeyi ele vermez. Sohbet kapalıyken uyur.
+Gösterge panelinin üstündeki robot oyun yöneticisidir. Yüzü hikâyenin tonunu izler ve henüz bilmediğin hiçbir şeyi ele vermez. Gösterge paneli oyuna bağlı değilken uyur.
 
 ### 3.11 Resimler
 
@@ -212,14 +225,15 @@ Her ayar değiştirilebilir, sohbette ya da **Ayarlar**'da. Oyun yöneticisinin 
 
 ## 4. Gösterge paneli <!-- icon: party -->
 
-Kendi bilgisayarındaki bir sayfa. Yalnızca o bilgisayarın tarayıcısında açılır ve sohbet açık olduğu sürece canlıdır. Sohbet kapanınca *Bağlı değil* yazar. Bir sonraki sohbetle kendiliğinden geri gelir.
+Kendi bilgisayarındaki bir sayfa; kendi penceresinde açılır ve yalnızca o bilgisayarda açılır. Penceresi açık olduğu sürece, sohbet olsun olmasın canlıdır. Pencereyi kapattıktan yaklaşık otuz saniye sonra oyun durur, sohbet de onunla birlikte. Hiçbir şey kaybolmaz: hepsi dosyalarda durur. Yapay zekâ uygulamanın kendi sohbetinde, o sohbet açık olduğu sürece canlıdır. Oyun yokken sayfada *Bağlı değil* yazar: **Kampanyayı yeniden aç**'a bas ya da kendi uygulamanda bir sonraki sohbeti aç. Ev simgeli **Kampanyalar** düğmesi seni tüm kampanyalarına geri götürür.
 
+- **Rol yapma**: oyun yöneticisiyle sohbet; sayfanın yanında değilse burada durur ([2.5](#25-the-first-chat)).
 - **Grup**: senin karakter kağıdın ve yoldaşlarınınkiler. Bir sayıya tıklayarak onu at. Üzerine gelirsen sayının nereden geldiğini görürsün. Bir ok zarını işaretliyorsa atışı neyin iyileştirdiğini ya da kötüleştirdiğini de görürsün. Oyun yöneticisi sana seçimler hazırladığında, örneğin yeni bir seviyede, karakter kağıdındaki bir bildirim bunları açar. İstediğin zaman seç, seçeneklerin adını verdiği sayfaları oku, bir seçenek atış istiyorsa at, sonra onayla. Hikâye bu sırada devam eder. Yanında atışlar yer alır.
 - **Sahne**: bulunduğun yer, resmi ve haritası, orada kimlerin olduğu, neler olduğu. Çatışmada sıralar ve karakterinin kartı da burada görünür.
 - **Günlük**: görevler, kitap olarak hikâye, zaman çizelgesi, yoldaşlarının günlükleri, notların.
 - **Dünya**: dünya haritası, karakterinin bildikleri, bulunan belgeler ve takvim.
 - **Zar tepsisi**: zarları ve bir değiştirici seç, sonra at. ×2 zarları ikiye katlar, değiştiriciyi asla katlamaz; kritik vuruşta olduğu gibi.
-- **Kayıtlar**, **Yardım**, **Ayarlar** ve **Hakkında**: satırın sonunda simge olarak durur. **Ayarlar** ayrıca **Gösterge paneli** altında sayfanın kendi tercihlerini içerir: mod, zar sesi, zar seti ve **Tema**. Tema, sayfanın renkleri, yazı tipleri ve resimleridir. Bunlar oyun sisteminin teması olabilir, Packages › Add ile eklediğin bir tema olabilir (katalogdan, bir GitHub bağlantısından, bir .zip dosyasından ya da bir klasörden) ya da sayfanın kendi teması olabilir. Bir temanın kendi stil sayfası sayfayı okumayı zorlaştırırsa orada **Temanın kendi stili** seçeneğini kapat. **Ayarlar** her zaman o stil olmadan görünür: sayfanın adresinin sonuna `#/settings/page` ekleyerek aç.
+- **Kayıtlar**, **Yardım**, **Ayarlar** ve **Hakkında**: satırın sonunda simge olarak durur. **Ayarlar** ayrıca **Gösterge paneli** altında sayfanın kendi tercihlerini içerir: mod, zar sesi, zar seti ve **Tema**. Tema, sayfanın renkleri, yazı tipleri ve resimleridir. Bunlar oyun sisteminin teması olabilir, Packages › Add ile kataloğdan, bir GitHub bağlantısından, bir .zip dosyasından ya da bir klasörden eklediğin bir tema olabilir ya da sayfanın kendi teması olabilir. Bir temanın kendi stil sayfası sayfayı okumayı zorlaştırırsa orada **Temanın kendi stili** seçeneğini kapat. **Ayarlar** her zaman o stil olmadan görünür: sayfanın adresinin sonuna `#/settings/page` ekleyerek aç.
 
 Oyun yöneticisi sana bir şey sorduğunda, afişi hangi bölümde olursan ol en üstte kalır.
 
@@ -265,7 +279,7 @@ Eklenti, bir kampanyaya oyun sisteminin üstüne yeni bir şey katar. Örneğin 
 
 - **Anında yapılan**: öncülünden yola çıkarak oyun yöneticisi her yeri, kişiyi ve olay örgüsünü tam ihtiyacın olmadan önce kurar ve saklar.
 - **Baştan hazırlanan**: aynısı, ama dünya oyundan önce kurulur.
-- **Kendi macerandan veya kitabından**: oyun yöneticisine dosyasını ver, *[OOC: Bu macerayı kampanyamız olarak içe aktar: D:\Books\adventure.pdf. İçindekilerden hiçbirini bana söyleme.]* En iyi metin, EPUB, Word belgesi veya metni seçilebilen bir PDF olarak okunur. Taranmış bir PDF sayfalarının görsellerinden okunur; yalnızca Windows'ta, yavaş ve birkaç hatayla. Onu sohbetin dışında kendi yapay zekâ uygulaman okur, olmazsa sohbetteki oyun yöneticisi okur; senin planınla. Claude Code ya da Codex kullanıyorsan bu ikisinden biri okur, Antigravity'de senin Antigravity'n, OpenCode'da içinde en son seçtiğin model. Belgenin tamamı, onu okuyanın yapımcısına gider; hesabının koşullarına ve eğitim konusundaki tercihine tabidir. Gösterge paneli ne kadar ilerlediğini gösterir. Bir romandan başlıyorsan oyun yöneticisi nereden başlanacağını önerir. Yerleri, karakterleri ve sırları yazar.
+- **Kendi macerandan veya kitabından**: oyun yöneticisine dosyasını ver, *[OOC: Bu macerayı kampanyamız olarak içe aktar: D:\Books\adventure.pdf. İçindekilerden hiçbirini bana söyleme.]* Kampanyanın dışındaki bir dosya, ancak bilgisayarının bir penceresinde evet dedikten sonra okunur. Kampanyanın **inbox** klasörüne koyduğun dosya hemen okunur. En iyi metin, EPUB, Word belgesi veya metni seçilebilen bir PDF olarak okunur. Taranmış bir PDF sayfalarının görsellerinden okunur; yalnızca Windows'ta, yavaş ve birkaç hatayla. Onu sohbetin dışında kendi yapay zekâ uygulaman okur, olmazsa sohbetteki oyun yöneticisi okur; senin planınla. Claude Code ya da Codex kullanıyorsan bu ikisinden biri okur, Antigravity'de senin Antigravity'n, OpenCode'da içinde en son seçtiğin model. Belgenin tamamı, onu okuyanın yapımcısına gider; hesabının koşullarına ve eğitim konusundaki tercihine tabidir. Gösterge paneli ne kadar ilerlediğini gösterir. Bir romandan başlıyorsan oyun yöneticisi nereden başlanacağını önerir. Yerleri, karakterleri ve sırları yazar.
 
 Bir kampanya bir kez oynanır: aynı macerayı yeniden oynamak için yeni bir kampanya oluştur.
 
@@ -303,28 +317,34 @@ Oyun yöneticisinin kullandığı her komut kampanya klasöründe de çalıştı
 
 **Oyun yöneticisi hile yapabilir mi?** RPG Engine'in yaptığı bir atışı değiştiremez; yalnızca hikâye zorluğunda değiştirebilir. Belirlenmiş gerçekleri de değiştiremez.
 
-**Bir maliyeti var mı?** RPG Engine ücretsizdir. Oyun yöneticisi ajanının planında ya da kendi bilgisayarında yerel bir modelle çalışır. Bir oyun akşamı uzun bir sohbettir: en küçük planlarda akşam bitmeden planın sınırına ulaşabilirsin. Görseller, çeviriler ve içe aktarmalar aynı planı kullanır. RPG Engine'in kendisi çağrı başına ücretlenen bir API anahtarını asla kullanmaz: ajanında anahtarla değil, hesabınla oturum aç.
+**Bir maliyeti var mı?** RPG Engine ücretsizdir. Oyun yöneticisi yapay zekâ uygulamanın planında ya da kendi bilgisayarında yerel bir modelle çalışır. Bir oyun akşamı uzun bir sohbettir: en küçük planlarda akşam bitmeden planın sınırına ulaşabilirsin. Görseller, çeviriler ve içe aktarmalar aynı planı kullanır. RPG Engine'in kendisi çağrı başına ücretlenen bir API anahtarını asla kullanmaz: yapay zekâ uygulamana anahtarla değil, hesabınla giriş yap.
 
 **Telefonumda oynayabilir miyim?** Hayır: oyun yöneticisi bilgisayarında çalışır ve panel yalnızca orada açılır.
 
 **Arkadaşlarımla oynayabilir miyim?** Henüz değil: bugün bir oyuncu, bir karakter, artı yoldaşlar var ([Yakında](#9-coming-later)).
 
-**Bir dahaki sefere farklı bir yapay zekâ kullanabilir miyim?** Evet: kampanyayı başka bir ajanda aç ve *devam* yaz.
+**Bir dahaki sefere farklı bir yapay zekâ kullanabilir miyim?** Evet: sohbeti açmadan önce sohbette başka bir uygulama seç ya da kampanyayı başka bir uygulamada aç ve *devam* yaz.
 
 ### Sorunlar
 
-**Gösterge paneli açılmıyor.** Oyun yöneticisine sor: `[OOC: Gösterge panelinin bağlantısı ne?]`. Panel yalnızca o kampanyanın bir sohbeti açıkken çalışır. Claude Code ve Codex'te sohbet açılınca başlar, Antigravity'de ilk mesajınla başlar. Claude uygulamasında bir süre arka planda bırakılan sohbet uykuya geçer, sayfa da onunla birlikte. Sohbete tıkla, sayfa aynı adreste geri gelir.
+**Bir kampanya açılmıyor.** RPG Engine'i simgesinden ya da bir terminalde `rpg open` ile yeniden aç ve kampanyaya tıkla. Gösterge paneli *Bağlı değil* diyorsa **Kampanyayı yeniden aç**'a bas. **Klasör bulunamadı** yazan bir kart klasörünü kaybetmiştir: onu listeden kaldır ve şimdi bulunduğu yerden **Klasör aç…** ile yeniden ekle. Yapay zekâ uygulamanın kendi sohbetinde gösterge paneli yalnızca o kampanyanın bir sohbeti açıkken çalışır: oyun yöneticisine sor: `[OOC: Gösterge panelinin bağlantısı ne?]`. Claude uygulamasında bir süre arka planda bırakılan sohbet uykuya geçer, sayfa da onunla birlikte. Sohbete tıkla, sayfa aynı adreste geri gelir.
 
-**Oyun yöneticisi oyunu bilmiyor gibi.** Ajanın RPG Engine'i yüklemedi. Onu kampanya klasöründe başlattığını ve klasöre güvendiğini kontrol et. Claude Code'da `/mcp` yaz ve `rpg`'yi yeniden bağla. Codex'te kampanya klasöründe `codex mcp list` çıktısında `rpg` görünmelidir. `rpg --version` bulunamıyorsa RPG Engine'i yeniden kur ([2.2](#22-install)).
+**Oyun yöneticisi oyunu bilmiyor gibi.** Bu, yapay zekâ uygulamanın kendi sohbetinde olur: uygulama RPG Engine'i yüklemedi. Onu kampanya klasöründe başlattığını ve klasöre güvendiğini kontrol et. Claude Code'da `/mcp` yaz ve `rpg`'yi yeniden bağla. Codex'te kampanya klasöründe `codex mcp list` çıktısında `rpg` görünmelidir. `rpg --version` bulunamıyorsa RPG Engine'i yeniden kur ([2.2](#22-install)).
 
-**Windows `claude` komutunu bulamıyor.** Kurulum programı bunu sarı bir notla söyler ve programın girdiği klasörü gösterir. O klasörü PATH'e ekle (Sistem Özellikleri > Ortam Değişkenleri), sonra yeni bir terminal aç.
+**Windows `claude` komutunu bulamıyor.** Bu, Claude Code'u kendin kurduğunda olur. Kurulum programı bunu sarı bir notla söyler ve programın girdiği klasörü gösterir. O klasörü PATH'e ekle (Sistem Özellikleri > Ortam Değişkenleri), sonra yeni bir terminal aç.
 
-**Güncelleme.** `npm install -g rpg-engine` komutunu yeniden çalıştır, sonra yeni bir sohbet aç: çalışan bir oyun yöneticisi başladığı sürümü korur.
+**Güncelleme.** RPG Engine'in daha yeni bir sürümü çıktığında gösterge paneli bunu söyler: Packages › Installed bölümünde RPG Engine en başta durur ve yanında **Güncelle** vardır; sonra sayfanın söylediğini yap. Ya da bir terminalde `npm install -g rpg-engine` komutunu yeniden çalıştır, sonra yeni bir sohbet aç: çalışan bir oyun yöneticisi başladığı sürümü korur.
 
 **Oyun yöneticisi geri aldığım bir şeyi hatırlıyor.** Yeni bir sohbet aç ve Kayıtlar'da **Yeni sohbet açtım** düğmesine bas.
+
+**Bir uygulama kurulmuyor.** Sayfa nedenini söyler: **Tekrar dene**'ye bas. Ya da uygulamayı yapımcısının sitesinden kendin kur, sonra **Yeniden kontrol et**'e bas.
+
+**Giriş sayfası tarayıcıda açılmıyor.** Sayfa seni beklerken, göründüğü yerdeki **Giriş sayfasını yeniden aç**'a bas ya da **İptal**'e basıp bir kez daha dene.
+
+**Gösterge panelinin sohbeti başka bir sohbetin oynadığını söylüyor.** Yapay zekâ uygulamanda kendin açtığın bir sohbet bu kampanyayı oynuyor: orada devam et ya da gösterge panelinde oynamak için onu kapat.
 
 **Hiç görsel çıkmıyor.** Ayarlar > Campaign > Pictures, bu bilgisayarın görsel yapıp yapamadığını ve nasıl yapabileceğini söyler.
 
 **Kurulum başarısız oluyor veya `rpg` başlamıyor.** `node --version` çıktısı 24 veya daha yeni olmalı. Windows betiklerin çalıştırılmasının devre dışı olduğunu söylerse [2.1](#21-what-you-need) bölümüne bak. Windows'ta RPG Engine'i ve kampanyalarını `&` içeren yollardan uzak tut.
 
-**Gösterge paneli bağlantısı değişti.** Her kampanyanın kendi adresi vardır ve bu adres sohbetten sohbete aynı kalır. Adres yalnızca başka bir program onu zaten kullanıyorsa değişir. Oyun yöneticisi sana yeni bağlantıyı verir ve bundan sonra o kalır. Aynı kampanyanın ikinci bir sohbeti sayfayı aynı adreste tutar, birincisini kapattığında da sayfayı devralır.
+**Gösterge paneli bağlantısı değişti.** Yapay zekâ uygulamanın kendi sohbetinde her kampanyanın kendi adresi vardır ve bu adres sohbetten sohbete aynı kalır. Adres yalnızca başka bir program onu zaten kullanıyorsa değişir: oyun yöneticisi sana yeni bağlantıyı verir ve bundan sonra o kalır. Aynı kampanyanın ikinci bir sohbeti sayfayı aynı adreste tutar, birincisini kapattığında da sayfayı devralır.

@@ -818,6 +818,8 @@
   "on the map": "マップ上",
   "On the right": "右",
   "On this computer": "このコンピューター内",
+  "on trial": "お試し中",
+  "On trial: it can step out of the game and ask questions its own way. To play, Claude Code, Codex or OpenCode are better.": "お試し中です。ゲームの外に出て、独自のやり方で質問することがあります。プレイには Claude Code、Codex、OpenCode のほうが適しています。",
   "On whom": "対象",
   "Once you confirm, the master writes them on the sheet and tells you. Until then you can change everything but a roll made.": "確定すると、GMがキャラクターシートに書き込んで知らせます。それまでは、振ったロール以外はすべて変更できます。",
   "One {die} less": "{die}を1個減らす",

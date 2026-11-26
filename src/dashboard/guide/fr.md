@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine : le guide complet
 
-**RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu parles avec le MJ dans un **chat**. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**. À côté du chat, tu gardes ouverte dans ton navigateur une page, le **tableau de bord**, avec ta fiche, les dés, les cartes et ton journal.
+**RPG Engine** te permet de jouer à un jeu de rôle sur table avec une **IA comme MJ**. Tu joues dans le **tableau de bord**, une fenêtre sur ton ordinateur avec ta fiche, les dés, les cartes, ton journal et le **chat** avec le MJ. RPG Engine travaille en coulisses : il **garde en mémoire le monde**, **lance les dés** et **tient les comptes**.
 
 Ce guide s'adresse aux joueurs et joueuses : tu n'as pas besoin de savoir programmer.
 
 ## Démarrage rapide <!-- icon: send -->
 
 1. Installe **Node.js** depuis [nodejs.org](https://nodejs.org) (la version LTS).
-2. Installe un **agent IA**, le programme dans lequel le MJ fonctionne, et connecte-toi : par exemple Claude Code ou Codex ([2.4](#24-connect-your-ai)).
-3. Dans un nouveau terminal, ouvert après l'installation de Node.js, installe RPG Engine : `npm install -g rpg-engine`. Si Windows répond que l'exécution de scripts est désactivée, écris une fois `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, réponds oui et réessaie.
-4. Ouvre le terminal dans le dossier où tu ranges tes jeux (clic droit sur le dossier, **Ouvrir dans le Terminal**) et crée une campagne, toujours avec son nom : `rpg init "The Salt Isles"`. RPG Engine répond par deux lignes en anglais : tout va bien.
-5. Entre dans le nouveau dossier, `cd "The Salt Isles"`, et lance ton agent à cet endroit : `claude` pour Claude Code, `codex` pour Codex. Réponds oui quand il demande si tu fais confiance au dossier ([2.4](#24-connect-your-ai)), puis écris *Salut ! On commence.* Le MJ répond avec le lien vers ton tableau de bord.
+2. Une seule fois, dans un nouveau terminal ouvert après l'installation de Node.js, installe RPG Engine : `npm install -g rpg-engine`. Si Windows répond que l'exécution de scripts est désactivée, écris une fois `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, réponds oui et réessaie.
+3. Écris `rpg open`. Il demande s'il doit mettre l'icône de RPG Engine sur ton bureau et dans ton menu : appuie sur Entrée pour dire oui. Ensuite, tu lances RPG Engine depuis son icône, sans terminal ([2.2](#22-install)).
+4. Une fenêtre affiche tes campagnes. Appuie sur **Nouvelle campagne**, donne-lui un nom et appuie sur **Créer** ([2.3](#23-create-a-campaign)) : son tableau de bord s'ouvre dans une fenêtre à part.
+5. Dans le chat avec le MJ, choisis ton appli d'IA et son modèle : Claude Code demande un abonnement Claude payant, Codex un compte ChatGPT, gratuit ou payant ([2.4](#24-connect-your-ai)). Si l'appli manque, ou si tu n'es pas connecté, la page l'installe ou te connecte. Appuie sur **Ouvrir le chat**, puis sur **Commencer**. La première réponse peut prendre quelques minutes ; ensuite, le MJ te demande comment tu veux jouer, et vous créez ton personnage ensemble.
 
 ## 1. Qu'est-ce que RPG Engine <!-- icon: about -->
 
@@ -39,48 +39,46 @@ Un jeu prend la forme d'un système de jeu, un paquet que le MJ installe pour ta
 
 - Un ordinateur sous Windows, macOS ou Linux, et un navigateur web.
 - **Node.js 24** ou plus récent, sur [nodejs.org](https://nodejs.org). Il apporte `npm`, qui installe RPG Engine.
-- Un **terminal** : sous Windows, Terminal ou PowerShell ; sous macOS, Terminal. Pour en ouvrir un dans un dossier, fais un clic droit sur le dossier et choisis **Ouvrir dans le Terminal** (Windows) ou **Services > Nouveau terminal au dossier** (macOS). Si Windows répond que l'exécution de scripts est désactivée, écris une fois `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` et réponds oui.
-- Un **agent IA** pour le MJ ([2.4](#24-connect-your-ai)), avec le **plus grand modèle** qu'il propose : un petit modèle se laisse plus facilement convaincre de révéler des secrets ou de contourner les règles.
+- Un **terminal**, une seule fois, pour installer RPG Engine : sous Windows, Terminal ou PowerShell ; sous macOS, Terminal. Pour en ouvrir un dans un dossier, fais un clic droit sur le dossier et choisis **Ouvrir dans le Terminal** (Windows) ou **Services > Nouveau terminal au dossier** (macOS). Si Windows répond que l'exécution de scripts est désactivée, écris une fois `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` et réponds oui.
+- Une **appli d'IA** pour le MJ, avec ton propre compte ([2.4](#24-connect-your-ai)) : la page peut l'installer pour toi. Joue avec le **plus grand modèle** qu'elle propose : un petit modèle se laisse plus facilement convaincre de révéler des secrets ou de contourner les règles.
 
 ### 2.2 Installer
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-`rpg --version` vérifie que tout a fonctionné. Si npm propose de se mettre à jour, tu peux l'ignorer. Tu utilises `rpg` une seule fois par campagne, pour la créer ; ensuite, ton agent lance RPG Engine tout seul. `rpg` seul n'ouvre rien : c'est le MJ qui te donne le tableau de bord.
+La première ligne installe RPG Engine ; `rpg --version` vérifie que tout a fonctionné. Si npm propose de se mettre à jour, tu peux l'ignorer.
+
+`rpg open` ouvre la fenêtre de RPG Engine, avec tes campagnes. La première fois, il demande dans le terminal s'il doit ajouter son icône à ton bureau et à ton menu Démarrer (Applications sur un Mac) : appuie sur Entrée pour dire oui. Ensuite, tu double-cliques sur l'icône, et tu n'as plus besoin du terminal. Sans l'icône, écris `rpg open` à chaque partie ; `rpg icon` ajoute l'icône plus tard, et `rpg icon --remove` l'enlève.
 
 ### 2.3 Créer une campagne
 
-Ouvre un terminal dans le dossier où tu ranges tes jeux ([2.1](#21-what-you-need) explique comment) :
+La fenêtre de RPG Engine affiche tes campagnes sous forme de cartes, la dernière ouverte en premier. Appuie sur **Nouvelle campagne**, puis renseigne son **Nom**, sa **Langue** et son **Système de jeu** : le MJ fait le reste avec toi. Elle est rangée dans un dossier à son nom, dans le dossier `RPG Engine` de ton dossier personnel (sous Windows, `C:\Users\<nom>`) ; **Choisir un autre dossier…** la place dans un dossier vide de ton choix. Sous **Le MJ**, tu peux déjà choisir l'appli d'IA et le modèle de son premier chat ([2.4](#24-connect-your-ai)). Appuie sur **Créer** : le tableau de bord de la campagne s'ouvre dans une fenêtre à part.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Cela crée le dossier `The Salt Isles` avec une nouvelle campagne dedans ; entres-y avec `cd "The Salt Isles"`. Écris toujours le nom : sans nom, le dossier où tu te trouves devient la campagne, à côté de tout ce qu'il contient déjà. Retiens où il se trouve : tu y reviendras à chaque partie. Tu choisiras tout le reste plus tard, dans le chat ou sur le tableau de bord.
-
-Le MJ ne peut pas créer une campagne à ta place : avant `init`, rien n'indique à ton agent où se trouve RPG Engine.
+La fois suivante, clique sur une carte pour ouvrir sa campagne ; une campagne ouverte indique **Ouverte en ce moment**. **Ouvrir un dossier…** ajoute une campagne que tu as déjà sur cet ordinateur. La petite croix sur une carte la retire de la liste : ses fichiers restent où ils sont.
 
 ### 2.4 Connecter ton IA
 
-Le MJ tourne dans un **agent IA** : une appli d'IA, dans le terminal ou sur le bureau, qui peut travailler avec les fichiers de ton ordinateur, comme Claude Code, Codex, Antigravity ou OpenCode. Un simple chat comme claude.ai ou ChatGPT, ou une appli de téléphone, ne suffit pas : le MJ doit pouvoir accéder aux fichiers de la campagne sur ton ordinateur. Chaque agent demande son propre abonnement et sa propre connexion : Claude Code un abonnement Claude payant, Codex une connexion ChatGPT, Antigravity un compte Google, dont l'offre gratuite a un petit quota hebdomadaire ; OpenCode fonctionne avec les modèles que tu lui donnes, y compris les modèles locaux. Tu l'installes une seule fois, depuis sa propre page : [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Le MJ tourne dans une **appli d'IA** sur ton ordinateur, avec ton propre compte : Claude Code, Codex, OpenCode ou Antigravity. Un simple chat comme claude.ai ou ChatGPT, ou une appli de téléphone, ne suffit pas : le MJ doit pouvoir accéder aux fichiers de la campagne sur ton ordinateur. Chaque appli demande son propre compte : Claude Code un abonnement Claude payant (Pro ou supérieur) ; Codex un compte ChatGPT, gratuit ou payant ; Antigravity un compte Google, dont l'offre gratuite a des limites hebdomadaires ; OpenCode propose quelques modèles gratuits pour une durée limitée, ou utilise ceux de ton propre fournisseur, y compris les modèles locaux.
 
-- **Claude Code** : dans le dossier de la campagne, écris `claude`. Quand il demande si tu fais confiance au dossier, choisis **Yes, I trust this folder** ; attention, la réponse déjà sélectionnée est *No, exit*. La campagne contient aussi un petit hook, `rpg --listen`, que la question ne montre pas : il prévient aussitôt le MJ quand tu agis depuis le tableau de bord.
-- **Codex** : dans le dossier de la campagne, écris `codex`, et réponds oui quand il demande si tu fais confiance au dossier. Aux moments clés, un personnage parle par un agent à lui, `.codex/agents/rpg-character.toml`, qui ne sait que ce que le personnage sait. Dans son appli de bureau, vérifie dans les paramètres que les mémoires sont désactivées pour les chats du jeu.
-- **Antigravity** : dans le dossier de la campagne, écris `agy`, et réponds oui s'il demande si tu fais confiance au dossier ; ou, dans son appli, ouvre le dossier de la campagne. Pour l'appli, RPG Engine s'ajoute aussi aux paramètres propres d'Antigravity, `.gemini/config/mcp_config.json` dans ton dossier personnel, qui valent pour tous les dossiers que tu ouvres, pas seulement celui de la campagne : en dehors d'une campagne, il ne fait rien. La campagne contient deux petits hooks : `rpg --approve` permet au MJ d'utiliser les outils de RPG Engine sans te demander à chaque fois, et `rpg --listen` prévient aussitôt le MJ quand tu agis depuis le tableau de bord. Le MJ peint lui-même les images dans le chat, avec une offre Google payante ; avec l'offre gratuite, son outil d'images échoue, et il dessine de simples images vectorielles, comme le fait Claude. Aux moments clés, un personnage parle par un agent à lui, `.agents/agents/rpg-character.md` : le MJ écrit une réplique de l'histoire, et la réponse du personnage arrive un instant plus tard. Ton Antigravity traduit aussi le tableau de bord et les règles du jeu, et lit les documents que tu importes, en dehors du chat, sur le quota de ton compte Google : RPG Engine le lance à part de tes propres chats, donc il n'y laisse rien. Antigravity garde tes anciens chats, et sa mémoire ne peut pas être désactivée : le MJ a pour consigne de ne jamais les lire. Ce que tu écris part chez Google, qui peut le faire relire par des personnes : ne mets pas de données personnelles dans la partie. RPG Engine n'est pas un produit Google.
-- **OpenCode** : dans le dossier de la campagne, écris `opencode`. La campagne contient un petit plugin, `.opencode/plugins/rpg.js`, qui prévient aussitôt le MJ quand tu agis depuis le tableau de bord. Dans la campagne, le MJ n'écrit des fichiers que par RPG Engine : l'écriture et la modification de fichiers propres à OpenCode y sont désactivées, et OpenCode te demande ton accord avant de lancer une commande. Le MJ dessine lui-même les images, sous forme de simples images vectorielles, comme le fait Claude. Aux moments clés, un personnage parle par un agent à lui, `.opencode/agents/rpg-character.md` : le MJ écrit une réplique de l'histoire, et la réponse du personnage arrive un instant plus tard ; un petit modèle local peut ne pas l'appeler. Ton OpenCode, avec le modèle que tu y as choisi en dernier, traduit aussi le tableau de bord et les règles du jeu, et lit les documents que tu importes, en dehors du chat ; sans modèle utilisable, Codex ou Claude Code s'en chargent si tu les as.
-- **Un autre agent** : lance-le dans le dossier de la campagne et donne-lui le serveur MCP `rpg mcp`. RPG Engine est un serveur MCP standard : tout agent compatible MCP peut être le MJ, y compris les agents locaux.
+Dans le chat du tableau de bord, choisis l'appli sous **Ton appli d'IA**, puis son **Modèle** et la **Réflexion du MJ** : la page te les propose. Plus de réflexion, c'est plus lent et cela consomme davantage ton abonnement. Une appli qui n'est pas prête dit ce qu'il lui faut, avec un bouton qui s'en charge :
 
-Si le MJ dit qu'il ne trouve pas les outils de RPG Engine, écris `rpg init` dans le dossier de la campagne : dans un dossier qui est déjà une campagne, cela ne fait que mettre ces fichiers à jour ; ouvre ensuite un nouveau chat.
+- **Claude Code** et **Codex** : **Installer Claude Code** ou **Installer Codex** le télécharge dans le dossier propre à RPG Engine sur cet ordinateur ; **Se connecter à Claude Code** ou **Se connecter à Codex** ouvre sa page de connexion dans ton navigateur. RPG Engine ne voit jamais ton mot de passe.
+- **OpenCode** et **Antigravity** : **Obtenir OpenCode** ou **Obtenir Antigravity** ouvre son site, où tu l'installes. OpenCode fonctionne sans connexion ; Antigravity se connecte depuis sa propre appli. Reviens ensuite et appuie sur **Revérifier**.
 
-Nous jouons et testons avec **Claude Code** ; **Codex**, **Antigravity** et **OpenCode** sont connectés et vérifiés, mais aucune campagne entière n'a encore été jouée avec eux. La campagne désactive la mémoire propre de l'agent : la partie vit dans ses fichiers, pour qu'un retour à une sauvegarde revienne vraiment en arrière.
+Antigravity est marqué **en test** : il peut sortir du jeu et poser des questions à sa façon, donc Claude Code, Codex ou OpenCode conviennent mieux pour jouer. Antigravity garde tes anciens chats, et sa mémoire ne peut pas être désactivée : le MJ a pour consigne de ne jamais les lire. Ce que tu écris part chez Google, qui peut le faire relire par des personnes : ne mets pas de données personnelles dans la partie. RPG Engine n'est pas un produit Google. Nous jouons et testons surtout avec **Claude Code** : aucune campagne entière n'a encore été jouée avec les autres.
+
+Dans le chat du tableau de bord, le MJ ne touche à ton ordinateur que par RPG Engine : il n'ouvre aucun de tes fichiers de lui-même. RPG Engine ne lit hors de la campagne que ce que tu as choisi, après ton accord dans une fenêtre de ton ordinateur.
+
+Tu peux aussi jouer dans le chat propre à ton appli d'IA, dans un terminal ou dans son appli de bureau ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 Le premier chat
 
-Écris n'importe quoi, par exemple *Salut ! On commence.* Dans sa première réponse de chaque chat, le MJ te donne le **lien vers ton dashboard**, quelque chose comme `http://127.0.0.1:4750` : ouvre-le et garde-le à côté du chat.
+Une fois l'appli et le modèle choisis, appuie sur **Ouvrir le chat** : l'appli démarre, ce qui peut prendre quelques secondes. Ensuite, appuie sur **Commencer**, ou écris n'importe quoi, par exemple *Salut ! On commence.* La première réponse peut prendre quelques minutes, le temps que le MJ installe la scène.
 
-Entre les messages du MJ, ton agent affiche les outils qu'il utilise : n'ouvre pas leurs détails (dans Claude Code, ctrl+o), ils peuvent montrer des secrets.
+Le chat a sa propre section, **Roleplay**, ou se place à côté de la page : les petits boutons en haut du chat le mettent **Dans son onglet**, **À gauche** ou **À droite**, et tu fais glisser son bord pour l'élargir.
 
 Une nouvelle campagne passe par trois étapes, affichées en haut du dashboard : **1 Paramètres** (comment tu veux jouer), **2 Session zéro** (tu crées ton personnage, en jouant), **3 Jeu**.
 
@@ -114,7 +112,20 @@ Si tu n'as pas de monde écrit, le MJ demande aussi une **prémisse** (le genre,
 
 Tu crées ton personnage avec le MJ, comme à une table. Chaque choix t'appartient, sauf si tu demandes au MJ de le faire : viens avec une idée complète, une idée vague, ou rien du tout ; ou demande au MJ de tout créer à partir de quelques mots. Dans un jeu à niveaux, le MJ demande à partir de quel niveau tu commences : le premier, sauf si tu en veux un autre. Le MJ t'explique comment sont obtenus les scores de caractéristiques avant qu'un seul dé soit lancé. Ton histoire n'est jamais obligatoire ; si tu en donnes une, le MJ la rédige avec tes mots. Ensuite, le MJ te propose une image de ton personnage ([3.7](#37-your-characters-story-and-picture)). RPG Engine calcule la fiche : tu n'as jamais à faire les additions.
 
-Tu as déjà un personnage, d'un autre jeu ou d'une autre campagne ? Choisis **J'en ai déjà un** dans la configuration et donne-le au MJ : colle la fiche dans le chat, ou indique où se trouve son fichier sur ton ordinateur (un PDF, une image, un texte). Le MJ le reprend tel quel, à son niveau, le vérifie au regard des règles et du monde, et s'accorde avec toi sur tout ce qui ne colle pas.
+Tu as déjà un personnage, d'un autre jeu ou d'une autre campagne ? Choisis **J'en ai déjà un** dans la configuration et donne-le au MJ : colle la fiche dans le chat. Dans le chat propre à ton appli d'IA, tu peux aussi indiquer où se trouve son fichier sur ton ordinateur (un PDF, une image, un texte) ; dans le chat du tableau de bord, le MJ n'ouvre aucun de tes fichiers. Le MJ le reprend tel quel, à son niveau, le vérifie au regard des règles et du monde, et s'accorde avec toi sur tout ce qui ne colle pas.
+
+### 2.8 L'autre façon : le chat propre à ton appli d'IA
+
+Tu peux aussi jouer dans le chat de ton appli d'IA elle-même, dans un terminal ou dans son appli de bureau, avec le tableau de bord ouvert à côté. Dans ce cas, tu crées la campagne dans un terminal, dans le dossier où tu ranges tes jeux ([2.1](#21-what-you-need) explique comment), toujours avec son nom : `rpg init "The Salt Isles"` crée le dossier `The Salt Isles` avec une nouvelle campagne dedans. RPG Engine y prépare tout seul ce dont chaque appli a besoin.
+
+Lance ton appli dans ce dossier : `claude` pour Claude Code, `codex` pour Codex, `agy` pour Antigravity, `opencode` pour OpenCode ; ou ouvre le dossier dans son appli de bureau. Réponds oui quand elle demande si tu fais confiance au dossier : attention, dans Claude Code, la réponse déjà sélectionnée est *No, exit*. Tout autre agent compatible MCP peut aussi être le MJ : lance-le dans le dossier de la campagne et donne-lui le serveur MCP `rpg mcp`.
+
+Écris *Salut ! On commence.* Dans sa première réponse de chaque chat, le MJ te donne le **lien vers ton tableau de bord**, quelque chose comme `http://127.0.0.1:4750` : ouvre-le à côté du chat.
+
+- Entre les messages du MJ, ton appli affiche les outils qu'elle utilise : n'ouvre pas leurs détails (dans Claude Code, ctrl+o), ils peuvent montrer des secrets.
+- La campagne désactive la mémoire propre à l'appli : la partie vit dans ses fichiers, pour qu'un retour à une sauvegarde revienne vraiment en arrière. Dans l'appli de bureau de Codex, vérifie dans les paramètres que les mémoires sont désactivées pour les chats du jeu.
+- Si le MJ dit qu'il ne trouve pas les outils de RPG Engine, écris `rpg init` dans le dossier de la campagne, puis ouvre un nouveau chat.
+- Un seul chat à la fois joue une campagne : tant que le tien est ouvert, le chat du tableau de bord attend.
 
 ---
 
@@ -126,7 +137,9 @@ Tu as déjà un personnage, d'un autre jeu ou d'une autre campagne ? Choisis **J
 
 > Je demande à l'aubergiste qui d'autre est passé ce soir.
 
-Pour parler hors de l'histoire, écris `[OOC: …]` (hors personnage) : *[OOC: Comment fonctionne la lutte ?]* Le MJ répond de la même façon.
+Pour parler hors de l'histoire, écris `[OOC: …]` (hors personnage) : *[OOC: Comment fonctionne la lutte ?]* Le MJ répond de la même façon ; dans le chat du tableau de bord, ses propos hors jeu sont mis à part, marqués OOC.
+
+Dans le chat du tableau de bord, écris dans la zone en bas et appuie sur Entrée pour envoyer ; Maj+Entrée passe à la ligne. Pendant que le MJ répond, **Arrêter** l'interrompt, et tes mots attendent dans la zone. Quand le MJ te pose une question, ses boutons accompagnent la question, jets compris : clique sur l'un d'eux, ou écris ta réponse. Sous la zone, tu vois l'appli et le modèle ; là où l'appli le permet, clique sur le modèle pour le changer une fois que le MJ a répondu. **Fermer le chat** termine le chat ; la partie reste dans ses fichiers.
 
 Tu dis ce que tu tentes ; le MJ dit ce qui arrive. Le MJ ne décide jamais à la place de ton personnage, et ne parle jamais du moteur de jeu. Tu peux lui demander comment utiliser le tableau de bord.
 
@@ -184,17 +197,17 @@ RPG Engine sauvegarde toute la campagne à la fin de chaque scène. Le réglage 
 
 Dans tous les modes, tu peux **recommencer**, depuis le début du jeu ou depuis la session zéro. Fais-le dans le chat ou dans **Sauvegardes**.
 
-Après un retour en arrière, **ouvre un nouveau chat** : l'ancien se souvient de ce qui a été annulé. Écris *continue* dans le nouveau chat, puis appuie sur **J'ai ouvert un nouveau chat** dans Sauvegardes.
+Après un retour en arrière, **ouvre un nouveau chat** : l'ancien se souvient de ce qui a été annulé. Dans le chat du tableau de bord, appuie sur **Fermer le chat**, puis sur **Nouveau chat** ; dans le chat propre à ton appli d'IA, ouvre une nouvelle conversation (`/clear` dans Claude Code). Écris *continue* dans le nouveau chat. Dis ensuite au MJ que le chat est nouveau : appuie sur **J'ai ouvert un nouveau chat** dans **Sauvegardes**, ou dis-le dans le chat. Tant que ce n'est pas fait, le MJ ne continue pas.
 
-Si le dossier de la campagne est un dépôt git, **Paramètres** contient une section **Git**, entièrement désactivée tant que tu n'as rien choisi : un commit au début de chaque session, à chaque sauvegarde et à la fin de chaque scène, et un push juste après si tu le veux. Un commit est un instantané de la campagne à ce moment-là ; un push envoie les instantanés vers le dépôt en ligne, sur GitHub par exemple, pour qu'une copie existe hors de cet ordinateur. Les sauvegardes et tes chats avec le MJ restent hors du dépôt, sauf si tu les y autorises ; n'autorise les chats que si le dépôt est privé.
+Si tu ne sais pas ce qu'est git, passe ce paragraphe. Si le dossier de la campagne est un dépôt git, **Paramètres** contient une section **Git**, entièrement désactivée tant que tu n'as rien choisi : un commit au début de chaque session, à chaque sauvegarde et à la fin de chaque scène, et un push juste après si tu le veux. Un commit est un instantané de la campagne à ce moment-là ; un push envoie les instantanés vers le dépôt en ligne, sur GitHub par exemple, pour qu'une copie existe hors de cet ordinateur. Les sauvegardes et tes chats avec le MJ restent hors du dépôt, sauf si tu les y autorises ; n'autorise les chats que si le dépôt est privé.
 
 ### 3.9 Sessions : s'arrêter et revenir
 
-Arrête-toi quand tu veux : *[On s'arrête ici pour ce soir.]* Tout est déjà sauvegardé dans les fichiers. Pour revenir, lance ton agent dans le dossier de la campagne et écris *continue* : le MJ te fait un court résumé et reprend l'histoire.
+Arrête-toi quand tu veux : *[On s'arrête ici pour ce soir.]* Tout est déjà sauvegardé dans les fichiers. Pour revenir, ouvre RPG Engine depuis son icône et clique sur ta campagne. Si tu avais laissé le chat ouvert, il revient tout seul. Si tu l'avais fermé, appuie sur **Reprendre le chat**. Appuie ensuite sur **Reprendre** : le MJ te rappelle en quelques lignes où tu en étais, puis continue. Si le jeu a été fermé pendant que le MJ répondait encore, ou pendant qu'une de ses questions t'attendait, ce bouton affiche plutôt **Reprendre à partir d'ici**. **Nouveau chat** ouvre un chat tout neuf sur la même partie. Dans le chat propre à ton appli d'IA, lance-la dans le dossier de la campagne et écris *continue*.
 
 ### 3.10 L'humeur du MJ
 
-Le robot en haut du tableau de bord, c'est le MJ : son visage suit le ton de l'histoire, sans jamais révéler ce que tu ne sais pas encore. Quand le chat est fermé, il dort.
+Le robot en haut du tableau de bord, c'est le MJ : son visage suit le ton de l'histoire, sans jamais révéler ce que tu ne sais pas encore. Quand le tableau de bord n'est pas connecté au jeu, il dort.
 
 ### 3.11 Images
 
@@ -212,14 +225,15 @@ Chaque réglage peut changer, dans le chat ou dans **Paramètres**. Une décisio
 
 ## 4. Le tableau de bord <!-- icon: party -->
 
-Une page sur ton propre ordinateur, ouverte uniquement dans le navigateur de cet ordinateur, active tant que le chat est ouvert. Quand le chat se ferme, elle affiche *Not connected*. Elle revient toute seule avec le prochain chat.
+Une page sur ton propre ordinateur, dans une fenêtre à part, ouverte uniquement sur cet ordinateur. Elle reste active tant que sa fenêtre est ouverte, avec ou sans chat ; environ trente secondes après que tu l'as fermée, le jeu s'arrête, et le chat avec lui. Rien n'est perdu : tout est dans les fichiers. Dans le chat propre à ton appli d'IA, elle est active tant que ce chat est ouvert. Quand le jeu est absent, la page affiche *Not connected* : appuie sur **Rouvrir la campagne** ou, dans ton appli, ouvre le chat suivant. Le bouton **Campagnes**, avec la maison, ramène à toutes tes campagnes.
 
-- **Groupe** : ta fiche et celles de tes compagnons. Clique sur un nombre pour le lancer. Survole-le pour voir d'où il vient et, quand une flèche marque son dé, ce qui améliore ou aggrave le jet. Quand le MJ te prépare des choix, par exemple à un nouveau niveau, un avis sur la fiche les ouvre : choisis quand tu veux, lis les pages que nomment les options, lance les dés là où une option le demande, puis confirme. L'histoire continue pendant ce temps. À côté, les jets.
-- **Scène** : où tu es, son image et sa carte, qui est là, ce qui se passe. Pendant un combat, les tours et la carte de ton personnage.
+- **Roleplay** : le chat avec le MJ, quand il n'est pas à côté de la page ([2.5](#25-the-first-chat)).
+- **Groupe** : ta fiche et celles de tes compagnons. Clique sur un nombre pour le lancer ; survole-le pour voir d'où il vient et, quand une flèche marque son dé, ce qui améliore ou aggrave le jet. Quand le MJ te prépare des choix, par exemple à un nouveau niveau, un avis sur la fiche les ouvre : choisis quand tu veux, lis les pages que nomment les options, lance les dés là où une option le demande, puis confirme ; l'histoire continue pendant ce temps. À côté, les jets.
+- **Scène** : où tu es, son image et sa carte, qui est là, ce qui se passe ; pendant un combat, les tours et la carte de ton personnage.
 - **Journal** : les quêtes, l'histoire comme un livre, sa chronologie, les journaux de tes compagnons, tes notes.
 - **Monde** : la carte du monde, ce que sait ton personnage, les documents trouvés et le calendrier.
-- **La piste de dés** : choisis les dés et un modificateur, puis lance. ×2 double les dés, jamais le modificateur, comme pour un coup critique.
-- **Sauvegardes**, **Aide**, **Paramètres** et **À propos**, sous forme d'icônes au bout de la rangée. Les **Paramètres** contiennent aussi, sous **Tableau de bord**, les préférences propres à la page : mode, son des dés, jeu de dés, et le **Thème**, c'est-à-dire les couleurs, les faces et les images de la page : ceux du système de jeu, un thème que tu as ajouté dans Packages › Add, depuis le catalogue, un lien GitHub, un .zip ou un dossier, ou ceux de la page elle-même. Si la feuille de style propre à un thème rend la page difficile à lire, désactive **Style propre au thème** à cet endroit : les **Paramètres** s'affichent toujours sans elle, à l'adresse de la page terminée par `#/settings/page`.
+- **La piste de dés** : choisis les dés et un modificateur, puis lance ; ×2 double les dés, jamais le modificateur, comme pour un coup critique.
+- **Sauvegardes**, **Aide**, **Paramètres** et **À propos**, sous forme d'icônes au bout de la rangée. Les Paramètres contiennent aussi, sous **Tableau de bord**, les préférences propres à la page : mode, son des dés, jeu de dés, et le **Thème**, c'est-à-dire les couleurs, les faces et les images de la page : ceux du système de jeu, un thème que tu as ajouté dans Packages › Add, depuis le catalogue, un lien GitHub, un .zip ou un dossier, ou ceux de la page elle-même. Si la feuille de style propre à un thème rend la page difficile à lire, désactive **Style propre au thème** à cet endroit : les Paramètres s'affichent toujours sans elle, à l'adresse de la page terminée par `#/settings/page`.
 
 Quand le MJ te pose une question, sa bannière reste en haut, quelle que soit la section où tu te trouves.
 
@@ -265,7 +279,7 @@ Une extension ajoute quelque chose à une campagne, en plus de son système de j
 
 - **Créé au fil du jeu** : à partir de ta prémisse, le MJ construit chaque lieu, chaque personne et chaque intrigue juste avant que tu en aies besoin, et les garde.
 - **Préparé au début** : pareil, mais avec le monde construit avant le jeu.
-- **À partir de ta propre aventure ou de ton propre livre** : donne son fichier au MJ, *[Importe cette aventure comme notre campagne : D:\Books\adventure.pdf. Ne me dis rien de ce qu'elle contient.]* Elle se lit mieux en texte, en EPUB, en document Word ou en PDF dont on peut sélectionner le texte ; un PDF scanné est lu à partir des images de ses pages, sous Windows uniquement, lentement et avec quelques erreurs. Ton appli d'IA la lit en dehors du chat, ou sinon le MJ dans le chat, sur ton abonnement : dans Claude Code ou Codex, l'un des deux la lit ; dans Antigravity, ton Antigravity ; dans OpenCode, le modèle que tu y as choisi en dernier. Le document entier part chez le fabricant de celui qui le lit, selon les conditions de ton compte et son choix concernant l'entraînement. Le tableau de bord montre l'avancement ; pour un roman, le MJ propose par où commencer. Il écrit les lieux, les personnages et les secrets.
+- **À partir de ta propre aventure ou de ton propre livre** : donne son fichier au MJ, *[Importe cette aventure comme notre campagne : D:\Books\adventure.pdf. Ne me dis rien de ce qu'elle contient.]* Un fichier hors de la campagne n'est lu qu'après ton accord dans une fenêtre de ton ordinateur ; un fichier que tu déposes dans le dossier **inbox** de la campagne est lu aussitôt. Il se lit mieux en texte, en EPUB, en document Word ou en PDF dont on peut sélectionner le texte ; un PDF scanné est lu à partir des images de ses pages, sous Windows uniquement, lentement et avec quelques erreurs. Ton appli d'IA le lit en dehors du chat, ou sinon le MJ dans le chat, sur ton abonnement : dans Claude Code ou Codex, l'un des deux le lit ; dans Antigravity, ton Antigravity ; dans OpenCode, le modèle que tu y as choisi en dernier. Le document entier part chez le fabricant de celui qui le lit, selon les conditions de ton compte et son choix concernant l'entraînement. Le tableau de bord montre l'avancement ; pour un roman, le MJ propose par où commencer. Il écrit les lieux, les personnages et les secrets.
 
 Une campagne se joue une seule fois : pour rejouer la même aventure, crée une nouvelle campagne.
 
@@ -303,28 +317,34 @@ Toutes les commandes que le MJ utilise peuvent aussi être lancées dans le doss
 
 **Le MJ peut-il tricher ?** Il ne peut pas changer un jet fait par RPG Engine, sauf en difficulté histoire, ni les faits déjà établis.
 
-**Est-ce que ça coûte quelque chose ?** RPG Engine est gratuit. Le MJ tourne sur l'abonnement de ton agent, ou sur ton propre ordinateur avec un modèle local. Une soirée de jeu, c'est un long chat : avec les plus petits abonnements, tu peux atteindre la limite de l'abonnement avant la fin de la soirée. Les images, les traductions et les imports utilisent le même abonnement. RPG Engine lui-même n'utilise jamais de clé d'API, qui se paie à l'appel : connecte ton agent avec ton compte, pas avec une clé.
+**Est-ce que ça coûte quelque chose ?** RPG Engine est gratuit. Le MJ tourne sur l'abonnement de ton appli d'IA, ou sur ton propre ordinateur avec un modèle local. Une soirée de jeu, c'est un long chat : avec les plus petits abonnements, tu peux atteindre la limite de l'abonnement avant la fin de la soirée. Les images, les traductions et les imports utilisent le même abonnement. RPG Engine lui-même n'utilise jamais de clé d'API, qui se paie à l'appel : connecte ton appli d'IA avec ton compte, pas avec une clé.
 
 **Puis-je jouer sur mon téléphone ?** Non : le MJ tourne sur ton ordinateur, et le tableau de bord ne s'ouvre que là.
 
 **Puis-je jouer avec des amis ?** Pas encore : pour l'instant, un joueur, un personnage, plus des compagnons ([Bientôt](#9-coming-later)).
 
-**Puis-je utiliser une autre IA la prochaine fois ?** Oui : ouvre la campagne dans un autre agent et écris *continue*.
+**Puis-je utiliser une autre IA la prochaine fois ?** Oui : choisis une autre appli dans le chat avant de l'ouvrir, ou ouvre la campagne dans une autre appli et écris *continue*.
 
 ### Problèmes
 
-**Le tableau de bord ne s'ouvre pas.** Demande au MJ : `[OOC: Quel est le lien du tableau de bord ?]`. Il ne fonctionne que tant qu'un chat de cette campagne est ouvert : dans Claude Code et Codex, il démarre à l'ouverture du chat ; dans Antigravity, avec ton premier message. Dans l'application Claude, un chat laissé un moment en arrière-plan s'endort, et la page avec lui : clique sur le chat, et la page revient à la même adresse.
+**Une campagne ne s'ouvre pas.** Rouvre RPG Engine depuis son icône, ou avec `rpg open` dans un terminal, et clique sur la campagne. Si son tableau de bord affiche *Not connected*, appuie sur **Rouvrir la campagne**. Une carte qui indique **Dossier introuvable** a perdu son dossier : retire-la de la liste, puis ajoute-la de nouveau avec **Ouvrir un dossier…** là où il se trouve maintenant. Dans le chat propre à ton appli d'IA, le tableau de bord ne fonctionne que tant qu'un chat de cette campagne est ouvert : demande au MJ `[OOC: Quel est le lien du tableau de bord ?]`. Dans l'application Claude, un chat laissé un moment en arrière-plan s'endort, et la page avec lui : clique sur le chat, et la page revient à la même adresse.
 
-**Le MJ ne semble pas connaître le jeu.** Ton agent n'a pas chargé RPG Engine. Vérifie que tu l'as lancé dans le dossier de la campagne et que tu lui as fait confiance. Dans Claude Code, écris `/mcp` et reconnecte `rpg`. Dans Codex, `codex mcp list` dans le dossier de la campagne doit afficher `rpg`. Si `rpg --version` est introuvable, réinstalle RPG Engine ([2.2](#22-install)).
+**Le MJ ne semble pas connaître le jeu.** Cela arrive dans le chat propre à ton appli d'IA : elle n'a pas chargé RPG Engine. Vérifie que tu l'as lancée dans le dossier de la campagne et que tu lui as fait confiance. Dans Claude Code, écris `/mcp` et reconnecte `rpg`. Dans Codex, `codex mcp list` dans le dossier de la campagne doit afficher `rpg`. Si `rpg --version` est introuvable, réinstalle RPG Engine ([2.2](#22-install)).
 
-**Windows ne trouve pas `claude`.** Son installateur le signale dans une note jaune, avec le dossier où il s'est installé : ajoute ce dossier au PATH (Propriétés système > Variables d'environnement), puis ouvre un nouveau terminal.
+**Windows ne trouve pas `claude`.** Cela arrive quand tu as installé Claude Code toi-même. Son installateur le signale dans une note jaune, avec le dossier où il s'est installé : ajoute ce dossier au PATH (Propriétés système > Variables d'environnement), puis ouvre un nouveau terminal.
 
-**Mise à jour.** Relance `npm install -g rpg-engine`, puis ouvre un nouveau chat : un MJ déjà en cours garde la version avec laquelle il a démarré.
+**Mise à jour.** Quand une version plus récente de RPG Engine est disponible, le tableau de bord l'indique : dans Packages › Installed, RPG Engine est en premier, avec **Mettre à jour** ; fais ensuite ce que la page te dit. Ou relance `npm install -g rpg-engine` dans un terminal, puis ouvre un nouveau chat : un MJ déjà en cours garde la version avec laquelle il a démarré.
 
 **Le MJ se souvient de quelque chose que j'ai annulé.** Ouvre un nouveau chat et appuie sur **J'ai ouvert un nouveau chat** dans Sauvegardes.
+
+**Une appli ne s'installe pas.** La page en explique la raison : appuie sur **Réessayer**. Ou installe-la toi-même depuis le site de son fabricant, puis appuie sur **Revérifier**.
+
+**La page de connexion ne s'ouvre pas dans le navigateur.** Pendant que la page t'attend, appuie sur **Rouvrir la page de connexion** là où il s'affiche, ou sur **Annuler** et réessaie.
+
+**Le chat du tableau de bord dit qu'un autre chat est en train de jouer.** Un chat que tu as ouvert toi-même dans ton appli d'IA joue cette campagne : continue là-bas, ou ferme-le pour jouer dans le tableau de bord.
 
 **Aucune image n'apparaît.** Paramètres > Campagne > Images indique si cet ordinateur peut en créer, et comment.
 
 **L'installation échoue, ou `rpg` ne démarre pas.** `node --version` doit afficher 24 ou plus. Si Windows répond que l'exécution de scripts est désactivée, consulte [2.1](#21-what-you-need). Sous Windows, garde RPG Engine et tes campagnes loin des chemins qui contiennent `&`.
 
-**Le lien du tableau de bord a changé.** Chaque campagne a sa propre adresse, la même chat après chat. Elle ne change que si un autre programme l'occupe déjà : le MJ te donne alors le nouveau lien, qui ne bouge plus ensuite. Un deuxième chat de la même campagne garde la page à la même adresse, et la reprend quand tu fermes le premier.
+**Le lien du tableau de bord a changé.** Dans le chat propre à ton appli d'IA, chaque campagne a sa propre adresse, la même chat après chat. Elle ne change que si un autre programme l'occupe déjà : le MJ te donne alors le nouveau lien, qui ne bouge plus ensuite. Un deuxième chat de la même campagne garde la page à la même adresse, et la reprend quand tu fermes le premier.

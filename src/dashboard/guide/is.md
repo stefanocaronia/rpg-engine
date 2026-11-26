@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: heildarleiðbeiningar
 
-**RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú talar við sögumanninn í **spjalli**; RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**. Við hliðina á spjallinu hefurðu síðu opna í vafranum, **mælaborðið**, með persónublaðinu þínu, teningunum, kortunum og dagbókinni.
+**RPG Engine** lætur þig spila borðhlutverkaleik með **gervigreind sem sögumann**. Þú spilar í **yfirlitinu**, glugga á tölvunni þinni með persónublaðinu þínu, teningunum, kortunum, dagbókinni og **spjallinu** við sögumanninn. RPG Engine vinnur á bak við tjöldin: það **man heiminn**, **kastar teningunum** og **heldur utan um bókhaldið**.
 
 Þessar leiðbeiningar eru fyrir spilara: þú þarft ekki að kunna að forrita.
 
 ## Fljótleg byrjun <!-- icon: send -->
 
 1. Settu upp **Node.js** frá [nodejs.org](https://nodejs.org) (LTS-útgáfuna).
-2. Settu upp **gervigreindarforrit**, forritið sem sögumaðurinn keyrir í, og skráðu þig inn: til dæmis Claude Code eða Codex ([2.4](#24-connect-your-ai)).
-3. Settu RPG Engine upp í nýjum skipanaglugga, sem þú opnaðir eftir að Node.js var sett upp: `npm install -g rpg-engine`. Ef Windows svarar að keyrsla skripta sé óvirk skaltu skrifa einu sinni `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, svara já og reyna aftur.
-4. Opnaðu skipanaglugga í möppunni þar sem þú geymir leikina þína (hægrismelltu á hana og veldu **Open in Terminal**) og búðu til herferð, alltaf með nafni: `rpg init "The Salt Isles"`. RPG Engine svarar með tveimur línum á ensku: allt er í lagi.
-5. Farðu inn í nýju möppuna með `cd "The Salt Isles"` og ræstu forritið þar: `claude` fyrir Claude Code, `codex` fyrir Codex. Segðu já þegar það spyr hvort þú treystir möppunni ([2.4](#24-connect-your-ai)) og skrifaðu svo *Hæ! Byrjum.* Sögumaðurinn svarar með tengli á mælaborðið þitt.
+2. Einu sinni, í nýjum skipanaglugga sem þú opnaðir eftir að Node.js var sett upp, settu upp RPG Engine: `npm install -g rpg-engine`. Ef Windows svarar að keyrsla skripta sé óvirk skaltu skrifa einu sinni `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, svara já og reyna aftur.
+3. Skrifaðu `rpg open`. Það spyr hvort setja eigi tákn RPG Engine á skjáborðið og í valmyndina: ýttu á Enter til að svara já. Eftir það ræsirðu RPG Engine með tákninu, án skipanaglugga ([2.2](#22-install)).
+4. Gluggi sýnir herferðirnar þínar. Ýttu á **Ný herferð**, gefðu henni nafn og ýttu á **Búa til** ([2.3](#23-create-a-campaign)): yfirlit hennar opnast í sérstökum glugga.
+5. Veldu í spjallinu við sögumanninn gervigreindarforritið þitt og líkan þess: Claude Code krefst greiddrar Claude-áskriftar, Codex ChatGPT-reiknings, ókeypis eða greidds ([2.4](#24-connect-your-ai)). Ef forritið vantar eða þú hefur ekki skráð þig inn setur síðan það upp eða skráir þig inn. Ýttu á **Opna spjallið** og svo á **Byrja**. Fyrsta svarið getur tekið nokkrar mínútur. Síðan spyr sögumaðurinn hvernig þú vilt spila og þið búið til persónuna saman.
 
 ## 1. Hvað RPG Engine er <!-- icon: about -->
 
@@ -37,50 +37,48 @@ Leikur kemur sem leikjakerfi, pakki sem sögumaður setur upp fyrir herferðina 
 
 ### 2.1 Það sem þú þarft
 
-- Tölvu með Windows, macOS eða Linux og vafra.
+- Tölva með Windows, macOS eða Linux og vafri.
 - **Node.js 24** eða nýrra, frá [nodejs.org](https://nodejs.org). Með því fylgir `npm`, sem setur upp RPG Engine.
-- **Skipanaglugga**: á Windows Terminal eða PowerShell, á macOS Terminal. Til að opna hann í möppu skaltu hægrismella á möppuna og velja **Open in Terminal** (Windows) eða **Services > New Terminal at Folder** (macOS). Ef Windows svarar að keyrsla skripta sé óvirk skaltu skrifa einu sinni `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` og svara já.
-- **Gervigreindarforrit** fyrir sögumanninn ([2.4](#24-connect-your-ai)), með **stærsta líkaninu** sem það býður: lítið líkan er auðveldara að fá til að ljóstra upp leyndarmálum eða sveigja reglurnar.
+- **Skipanagluggi**, einu sinni, til að setja RPG Engine upp: á Windows Terminal eða PowerShell, á macOS Terminal. Til að opna hann í möppu skaltu hægrismella á möppuna og velja **Opna í Terminal** (Windows) eða **Þjónusta > Nýr Terminal við möppu** (macOS). Ef Windows svarar að keyrsla skripta sé óvirk skaltu skrifa einu sinni `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` og svara já.
+- **Gervigreindarforrit** fyrir sögumanninn, með þínum eigin reikningi ([2.4](#24-connect-your-ai)): síðan getur sett það upp fyrir þig. Spilaðu með **stærsta líkaninu** sem það býður: lítið líkan er auðveldara að fá til að ljóstra upp leyndarmálum eða sveigja reglurnar.
 
 ### 2.2 Uppsetning
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-`rpg --version` sýnir hvort þetta tókst. Ef npm býðst til að uppfæra sig sjálft geturðu hunsað það. Þú notar `rpg` einu sinni fyrir hverja herferð, til að búa hana til. Eftir það ræsir forritið þitt RPG Engine sjálft. `rpg` eitt og sér opnar ekkert: sögumaðurinn gefur þér stjórnborðið.
+Fyrsta línan setur RPG Engine upp; `rpg --version` sýnir hvort það tókst. Ef npm býðst til að uppfæra sig sjálft geturðu hunsað það.
+
+`rpg open` opnar glugga RPG Engine með herferðunum þínum. Í fyrsta skipti spyr það í skipanaglugganum hvort bæta eigi tákni þess á skjáborðið og í Start-valmyndina (Forrit á Mac): ýttu á Enter til að svara já. Eftir það tvísmellirðu á táknið og þarft ekki lengur skipanaglugga. Án táknsins skaltu skrifa `rpg open` í hvert sinn sem þú spilar; `rpg icon` bætir tákninu við síðar og `rpg icon --remove` fjarlægir það.
 
 ### 2.3 Búa til herferð
 
-Opnaðu skipanaglugga í möppunni þar sem þú geymir leikina þína ([2.1](#21-what-you-need) segir hvernig):
+Gluggi RPG Engine sýnir herferðirnar þínar sem spjöld, þá síðustu sem var opnuð fyrst. Ýttu á **Ný herferð** og fylltu út **Nafn**, **Tungumál** og **Leikjakerfi**: sögumaðurinn býr til afganginn með þér. Herferðin fer í möppu með nafni hennar, inni í möppunni `RPG Engine` í notandamöppunni þinni (á Windows `C:\Users\<name>`); með **Veldu aðra möppu…** fer hún í tóma möppu að þínu vali. Undir **Sögumaður** geturðu nú þegar valið gervigreindarforritið og líkanið fyrir fyrsta spjallið ([2.4](#24-connect-your-ai)). Ýttu á **Búa til**: yfirlit herferðarinnar opnast í sérstökum glugga.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Þetta býr til möppuna `The Salt Isles` með nýrri herferð. Farðu inn í hana með `cd "The Salt Isles"`. Skrifaðu alltaf nafnið: án þess verður mappan sem þú ert í að herferðinni, við hliðina á öllu sem hún geymir nú þegar. Mundu hvar herferðin er: þú kemur aftur í hana í hvert sinn sem þú spilar. Allt annað velurðu síðar, í spjallinu eða á stjórnborðinu.
-
-Sögumaðurinn getur ekki búið til herferð fyrir þig: fyrir `init` er ekkert sem segir forritinu þínu hvar RPG Engine er.
+Næst smellirðu á spjald til að opna herferðina þess; herferð sem er opin segir **Opin núna**. Með **Opna möppu…** bætirðu við herferð sem þú átt nú þegar á þessari tölvu. Litli krossinn á spjaldinu tekur það af listanum: skrárnar haldast þar sem þær eru.
 
 ### 2.4 Tengja gervigreindina
 
-Sögumaðurinn keyrir í **gervigreindarforriti**: gervigreindarappi, í skipanaglugga eða á skjáborði, sem getur unnið með skrárnar á tölvunni þinni, eins og Claude Code, Codex, Antigravity eða OpenCode. Venjulegt spjall eins og claude.ai eða ChatGPT, eða símaapp, dugar ekki: sögumaðurinn þarf að komast í skrár herferðarinnar á tölvunni þinni. Hvert forrit þarf sína eigin áskrift og innskráningu: Claude Code þarf greidda Claude-áskrift, Codex þarf ChatGPT-innskráningu, Antigravity þarf Google-reikning, en ókeypis áskrift hans hefur lítinn vikulegan kvóta. OpenCode virkar með þeim líkönum sem þú gefur því, líka staðbundnum. Þú setur það upp einu sinni, frá síðunni þess: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Sögumaðurinn keyrir í **gervigreindarforriti** á tölvunni þinni, með þínum eigin reikningi: Claude Code, Codex, OpenCode eða Antigravity. Venjulegt spjall eins og claude.ai eða ChatGPT, eða símaapp, dugar ekki: sögumaðurinn þarf að komast í skrár herferðarinnar á tölvunni þinni. Hvert forrit þarf sinn eigin reikning: Claude Code greidda Claude-áskrift (Pro eða hærri); Codex ChatGPT-reikning, ókeypis eða greiddan; Antigravity Google-reikning, en ókeypis notkun hans hefur vikuleg mörk; OpenCode býður nokkur ókeypis líkön í takmarkaðan tíma, eða notar líkön þíns eigin þjónustuaðila, líka staðbundin.
 
-- **Claude Code**: skrifaðu `claude` í herferðarmöppunni. Þegar það spyr hvort þú treystir möppunni skaltu velja **Yes, I trust this folder**. Farðu varlega: svarið sem er valið fyrirfram er *No, exit*. Herferðin hefur líka lítinn krók (hook), `rpg --listen`, sem spurningin sýnir ekki: hann lætur sögumanninn vita strax þegar þú gerir eitthvað á stjórnborðinu.
-- **Codex**: skrifaðu `codex` í herferðarmöppunni og svaraðu já þegar það spyr hvort þú treystir möppunni. Á lykilaugnablikum talar persóna í gegnum sitt eigið forrit, `.codex/agents/rpg-character.toml`, sem veit aðeins það sem persónan veit. Í skjáborðsappinu skaltu athuga í stillingunum að minni sé slökkt fyrir spjöll leiksins.
-- **Antigravity**: skrifaðu `agy` í herferðarmöppunni og svaraðu já ef það spyr hvort þú treystir möppunni, eða opnaðu herferðarmöppuna í appinu þess. Fyrir appið bætir RPG Engine sér líka við í stillingar Antigravity sjálfs, `.gemini/config/mcp_config.json` í heimamöppunni þinni, sem gilda fyrir hverja möppu sem þú opnar, ekki aðeins herferðarmöppuna: utan herferðar gerir það ekkert. Herferðin hefur tvo litla króka: `rpg --approve` leyfir sögumanninum að nota verkfæri RPG Engine án þess að spyrja þig í hvert sinn og `rpg --listen` lætur sögumanninn vita strax þegar þú gerir eitthvað á stjórnborðinu. Sögumaðurinn málar myndirnar sjálfur í spjallinu, með greiddri Google-áskrift. Á ókeypis áskrift bregst myndaverkfærið og sögumaðurinn teiknar einfaldar vigurmyndir, eins og Claude gerir. Á lykilaugnablikum talar persóna í gegnum sitt eigið forrit, `.agents/agents/rpg-character.md`: sögumaðurinn skrifar línu úr sögunni og svar persónunnar kemur augnabliki síðar. Antigravity hjá þér þýðir líka stjórnborðið og reglur leiksins og les skjölin sem þú flytur inn, utan spjallsins, á kvóta Google-reikningsins þíns: RPG Engine ræsir það aðskilið frá þínum eigin spjöllum, svo það skilur ekkert eftir á meðal þeirra. Antigravity geymir fyrri spjöll þín og ekki er hægt að slökkva á minni þess: sögumanninum er sagt að lesa þau aldrei. Það sem þú skrifar fer til Google, sem gæti látið fólk lesa það: haltu persónuupplýsingum utan leiksins. RPG Engine er ekki vara frá Google.
-- **OpenCode**: skrifaðu `opencode` í herferðarmöppunni. Herferðin hefur litla viðbót (plugin), `.opencode/plugins/rpg.js`, sem lætur sögumanninn vita strax þegar þú gerir eitthvað á stjórnborðinu. Í herferðinni skrifar sögumaðurinn skrár aðeins í gegnum RPG Engine: eigin skráarritun og skráarbreytingar OpenCode eru óvirkar þar og það spyr þig áður en það keyrir skipun. Sögumaðurinn teiknar myndirnar sjálfur, sem einfaldar vigurmyndir, eins og Claude gerir. Á lykilaugnablikum talar persóna í gegnum sitt eigið forrit, `.opencode/agents/rpg-character.md`: sögumaðurinn skrifar línu úr sögunni og svar persónunnar kemur augnabliki síðar. Lítið staðbundið líkan kallar það kannski ekki fram. OpenCode hjá þér, með líkaninu sem þú valdir síðast í því, þýðir líka stjórnborðið og reglur leiksins og les skjölin sem þú flytur inn, utan spjallsins. Ef það hefur ekkert líkan til að nota gera Codex eða Claude Code það, ef þú ert með þau.
-- **Annað forrit**: ræstu það í herferðarmöppunni og gefðu því MCP-þjóninn `rpg mcp`. RPG Engine er hefðbundinn MCP-þjónn: hvaða forrit sem styður MCP getur verið sögumaðurinn, líka staðbundin.
+Veldu í spjallinu forritið undir **Gervigreindarforritið þitt**, síðan **Líkan** þess og **Hugsun sögumanns**: síðan stingur upp á gildum. Meiri hugsun er hægari og notar meira af áskriftinni þinni. Forrit sem er ekki tilbúið segir hvað það þarf, með hnappi sem gerir það:
 
-Ef sögumaðurinn segist ekki finna verkfæri RPG Engine skaltu skrifa `rpg init` í herferðarmöppunni: í möppu sem er nú þegar herferð færir það aðeins þessar skrár til nýjustu útgáfu. Opnaðu síðan nýtt spjall.
+- **Claude Code** og **Codex**: **Setja upp Claude Code** eða **Setja upp Codex** sækir það í sérstaka möppu RPG Engine á þessari tölvu; **Skrá inn í Claude Code** eða **Skrá inn í Codex** opnar innskráningarsíðu þess í vafranum þínum. RPG Engine sér aldrei lykilorðið þitt.
+- **OpenCode** og **Antigravity**: **Sækja OpenCode** eða **Sækja Antigravity** opnar vefsíðu þess, þar sem þú setur það upp. OpenCode virkar án innskráningar; Antigravity skráir þig inn úr sínu eigin forriti. Komdu síðan aftur og ýttu á **Athuga aftur**.
 
-Við spilum og prófum með **Claude Code**. **Codex**, **Antigravity** og **OpenCode** eru tengd og athuguð, en engin heil herferð hefur enn verið spiluð með þeim. Herferðin slekkur á eigin minni forritsins: leikurinn býr í skrám þess, svo að það að fara aftur í vistun fari raunverulega aftur.
+Antigravity er merkt **í prófun**: það getur stigið út úr leiknum og spurt spurninga á sinn hátt, svo Claude Code, Codex eða OpenCode henta betur til að spila. Antigravity geymir fyrri spjöll þín og ekki er hægt að slökkva á minni þess: sögumanninum er sagt að lesa þau aldrei. Það sem þú skrifar fer til Google, sem gæti látið fólk lesa það: haltu persónuupplýsingum utan leiksins. RPG Engine er ekki vara frá Google. Við spilum og prófum RPG Engine mest með **Claude Code**: engin heil herferð hefur enn verið spiluð með hinum.
+
+Í spjallinu í yfirlitinu snertir sögumaðurinn tölvuna þína aðeins í gegnum RPG Engine: hann opnar engar skrár þínar sjálfur. RPG Engine les utan herferðarinnar aðeins það sem þú valdir, eftir að þú segir já í glugga á tölvunni þinni.
+
+Þú getur líka spilað í spjalli gervigreindarforritsins sjálfs, í skipanaglugga eða í skjáborðsappi þess ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 Fyrsta spjallið
 
-Skrifaðu hvað sem er, til dæmis *Hæ! Byrjum.* Í fyrsta svari hvers spjalls gefur sögumaðurinn þér **hlekkinn á stjórnborðið þitt**, eitthvað á borð við `http://127.0.0.1:4750`. Opnaðu hann og hafðu hann við hliðina á spjallinu.
+Þegar forritið og líkanið eru valin skaltu ýta á **Opna spjallið**: forritið ræsist, sem getur tekið nokkrar sekúndur. Ýttu síðan á **Byrja** eða skrifaðu hvað sem er, til dæmis *Hæ! Byrjum.* Fyrsta svarið getur tekið nokkrar mínútur meðan sögumaðurinn sviðsetur atriðið.
 
-Milli skilaboða sögumannsins sýnir forritið þitt verkfærin sem það notar. Ekki opna upplýsingar um þau (í Claude Code ctrl+o), því þær geta sýnt leyndarmál.
+Spjallið hefur sinn eigin hluta, **Leikur**, eða stendur við hlið síðunnar: litlu hnapparnir efst á því setja það **Í sínum flipa**, **Til vinstri** eða **Til hægri**, og þú dregur brúnina til að breikka það.
 
 Ný herferð fer í gegnum þrjú stig, sem sjást efst á stjórnborðinu: **1 Stillingar** (hvernig þú vilt spila), **2 Núllti fundur** (þú býrð til persónuna þína, í leiknum), **3 Spilun**.
 
@@ -114,7 +112,20 @@ Ef enginn heimur er skrifaður spyr sögumaðurinn líka um **Forsendu** (tegund
 
 Þú býrð til persónuna þína með sögumanninum, eins og við borð. Hvert val er þitt, nema þú biðjir sögumanninn að taka það: komdu með fullmótaða hugmynd, óljósa eða enga, eða biddu sögumanninn að búa allt til út frá nokkrum orðum. Í leik með stigum spyr sögumaðurinn á hvaða stigi þú vilt byrja: á fyrsta, nema þú viljir annað. Sögumaðurinn segir þér hvernig hæfnistig eru ákveðin áður en nokkrum teningi er kastað. Saga þín er aldrei skilyrði. Ef þú gefur upp sögu skrifar sögumaðurinn hana með þínum orðum. Síðan biður sögumaðurinn um mynd af persónunni þinni ([3.7](#37-your-characters-story-and-picture)). RPG Engine reiknar persónublaðið: þú þarft aldrei að reikna sjálf/ur.
 
-Áttu nú þegar persónu, úr öðrum leik eða annarri herferð? Veldu **Ég á nú þegar einn** í uppsetningunni og réttu sögumanninum hana: límdu persónublaðið inn í spjallið eða segðu hvar skráin er á tölvunni þinni (PDF, mynd, texti). Sögumaðurinn skrifar persónuna eins og hún er, á stigi hennar, ber hana saman við reglurnar og heiminn og semur við þig um allt sem passar ekki.
+Áttu nú þegar persónu, úr öðrum leik eða annarri herferð? Veldu **Ég á nú þegar einn** í uppsetningunni og réttu sögumanninum hana: límdu persónublaðið inn í spjallið. Í spjalli gervigreindarforritsins sjálfs geturðu líka sagt hvar skráin er á tölvunni þinni (PDF, mynd, texti); í spjallinu í yfirlitinu opnar sögumaðurinn enga skrá frá þér. Sögumaðurinn skrifar persónuna eins og hún er, á stigi hennar, ber hana saman við reglurnar og heiminn og semur við þig um allt sem passar ekki.
+
+### 2.8 Hin leiðin: spjall gervigreindarforritsins sjálfs
+
+Þú getur líka spilað í spjalli gervigreindarforritsins sjálfs, í skipanaglugga eða í skjáborðsappi þess, með yfirlitið opið við hliðina. Þá býrðu herferðina til í skipanaglugga, í möppunni þar sem þú geymir leikina þína ([2.1](#21-what-you-need) segir hvernig), alltaf með nafni: `rpg init "The Salt Isles"` býr til möppuna `The Salt Isles` með nýrri herferð. RPG Engine undirbýr sjálft það sem hvert forrit þarf þar.
+
+Ræstu forritið þitt í þeirri möppu: `claude` fyrir Claude Code, `codex` fyrir Codex, `agy` fyrir Antigravity, `opencode` fyrir OpenCode; eða opnaðu möppuna í skjáborðsappi þess. Segðu já þegar það spyr hvort þú treystir möppunni: farðu varlega, í Claude Code er svarið sem er valið fyrirfram *No, exit*. Hvaða annað forrit sem styður MCP getur líka verið sögumaðurinn: ræstu það í herferðarmöppunni og gefðu því MCP-þjóninn `rpg mcp`.
+
+Skrifaðu *Hæ! Byrjum.* Í fyrsta svari hvers spjalls gefur sögumaðurinn þér **hlekkinn á yfirlitið þitt**, eitthvað á borð við `http://127.0.0.1:4750`: opnaðu hann við hliðina á spjallinu.
+
+- Milli skilaboða sögumannsins sýnir forritið þitt verkfærin sem það notar: ekki opna upplýsingar um þau (í Claude Code ctrl+o), því þær geta sýnt leyndarmál.
+- Herferðin slekkur á eigin minni forritsins: leikurinn býr í skrám þess, svo að það að fara aftur í vistun fari raunverulega aftur. Í skjáborðsappi Codex skaltu athuga í stillingunum að minni sé slökkt fyrir spjöll leiksins.
+- Ef sögumaðurinn segist ekki finna verkfæri RPG Engine skaltu skrifa `rpg init` í herferðarmöppunni og opna síðan nýtt spjall.
+- Eitt spjall í einu spilar herferð: meðan þitt er opið bíður spjallið í yfirlitinu.
 
 ---
 
@@ -126,7 +137,9 @@ Skrifaðu hvað persónan þín gerir eða segir, með þínum eigin orðum:
 
 > Ég spyr gestgjafann hver annar kom hér við í kvöld.
 
-Utan sögunnar skrifarðu `[OOC: …]` (utan persónu): *[OOC: Hvernig virka glímutök?]* Sögumaðurinn svarar á sama hátt.
+Utan sögunnar skrifarðu `[OOC: …]` (utan persónu): *[OOC: Hvernig virka glímutök?]* Sögumaðurinn svarar á sama hátt; í spjallinu í yfirlitinu sker mál hans utan leiks sig úr og er merkt OOC.
+
+Í spjallinu í yfirlitinu skrifarðu í reitinn neðst og ýtir á Enter til að senda; Shift+Enter byrjar nýja línu. Meðan sögumaðurinn svarar stöðvar **Stöðva** hann og orðin þín bíða í reitnum. Þegar sögumaðurinn spyr þig einhvers fylgja hnappar spurningunni, líka köst: smelltu á einn eða skrifaðu svarið. Undir reitnum sérðu forritið og líkanið; þar sem forritið leyfir geturðu smellt á líkanið til að breyta því eftir að sögumaðurinn hefur svarað. **Loka spjallinu** bindur enda á spjallið; leikurinn helst í skránum sínum.
 
 Þú segir hvað þú reynir. Sögumaðurinn segir hvað gerist. Sögumaðurinn ákveður aldrei neitt fyrir persónuna þína og talar aldrei um vélina á bak við leikinn. Þú getur spurt um það hvernig á að nota stjórnborðið.
 
@@ -184,17 +197,17 @@ RPG Engine vistar alla herferðina í lok hvers atriðis. Stillingin **vistanir*
 
 Í öllum stillingum geturðu **byrjað upp á nýtt**, frá upphafi leiks eða frá núllta fundi. Gerðu það í spjallinu eða í **Vistanir**.
 
-Eftir að hafa farið til baka skaltu **opna nýtt spjall**: gamla spjallið man það sem var afturkallað. Skrifaðu *haltu áfram* í nýja spjallið og ýttu síðan á **Ég opnaði nýtt spjall** í Vistanir.
+Eftir að þú ferð til baka skaltu **opna nýtt spjall**: gamla spjallið man það sem var afturkallað. Í spjallinu í yfirlitinu skaltu ýta á **Loka spjallinu** og svo á **Nýtt spjall**; í spjalli gervigreindarforritsins sjálfs skaltu opna nýtt samtal (`/clear` í Claude Code). Skrifaðu *Halda áfram* í nýja spjallið. Segðu síðan sögumanninum að spjallið sé nýtt: ýttu á **Ég opnaði nýtt spjall** í Vistanir, eða segðu það í spjallinu. Þar til það er gert heldur sögumaðurinn ekki áfram.
 
-Ef herferðarmappan er git-geymsla, er í **Stillingar** hlutinn **Git**. Allt í honum er slökkt þar til þú velur: framlag (commit) í upphafi hverrar lotu, við hverja vistun og í lok hvers atriðis, og ýting (push) á eftir ef þú vilt. Framlag er skyndimynd af herferðinni á þeirri stundu. Ýting sendir skyndimyndirnar í geymsluna á netinu, til dæmis á GitHub, svo að afrit sé til utan þessarar tölvu. Vistanir og spjall þitt við sögumanninn haldast utan geymslunnar nema þú hleypir þeim inn. Hleyptu spjallinu aðeins inn ef geymslan er einkageymsla.
+Ef þú veist ekki hvað git er skaltu sleppa þessari málsgrein. Ef mappa herferðarinnar er git-geymsla hefur **Stillingar** hlutann **Git**, allt slökkt þar til þú velur: framlag (commit) í upphafi hverrar lotu, við hverja vistun og í lok hvers atriðis, og ýting (push) á eftir ef þú vilt. Framlag er skyndimynd af herferðinni á þeirri stundu; ýting sendir skyndimyndirnar í geymsluna á netinu, til dæmis á GitHub, svo að afrit sé til utan þessarar tölvu. Vistanir og spjöll þín við sögumanninn haldast utan geymslunnar nema þú hleypir þeim inn; hleyptu spjöllunum aðeins inn ef geymslan er einkageymsla.
 
 ### 3.9 Fundir: að hætta og koma aftur
 
-Hættu hvenær sem þú vilt: *[Hættum hér í kvöld.]* Allt er þegar vistað í skrárnar. Til að koma aftur skaltu ræsa forritið þitt í herferðarmöppunni og skrifa *haltu áfram*: sögumaðurinn gefur þér stutt yfirlit og heldur áfram.
+Hættu hvenær sem þú vilt: *[Hættum hér í kvöld.]* Allt er þegar vistað í skrárnar. Til að koma aftur skaltu opna RPG Engine með tákninu og smella á herferðina þína. Ef þú skildir spjallið eftir opið kemur það aftur af sjálfu sér. Ef þú lokaðir því skaltu ýta á **Halda spjallinu áfram**. Ýttu síðan á **Halda sögunni áfram**: sögumaðurinn segir þér í fáum línum hvar þú varst og heldur áfram. Ef leiknum var lokað meðan sögumaðurinn var enn að svara, eða meðan spurning frá honum beið þín, stendur **Halda áfram héðan** á hnappnum í staðinn. **Nýtt spjall** opnar nýtt spjall í sama leik. Í spjalli gervigreindarforritsins sjálfs skaltu ræsa það í herferðarmöppunni og skrifa *Halda áfram*.
 
 ### 3.10 Skap sögumannsins
 
-Vélmennið efst á stjórnborðinu er sögumaðurinn: svipur þess fylgir tóni sögunnar og gefur aldrei upp það sem þú veist ekki enn. Þegar spjallið er lokað sefur það.
+Vélmennið efst á yfirlitinu er sögumaðurinn: andlit hans fylgir tóni sögunnar og gefur aldrei upp það sem þú veist ekki enn. Þegar yfirlitið er ekki tengt við leikinn sefur hann.
 
 ### 3.11 Myndir
 
@@ -212,8 +225,9 @@ Allar stillingar má breyta, í spjallinu eða í **Stillingar**. Úrskurður se
 
 ## 4. Mælaborðið <!-- icon: party -->
 
-Síða á þinni eigin tölvu, sem opnast aðeins í vafra þeirrar tölvu og er virk meðan spjallið er opið. Þegar spjallinu er lokað sýnir hún *Not connected*; hún kemur aftur af sjálfu sér með næsta spjalli.
+Síða á þinni eigin tölvu, í sérstökum glugga, opin aðeins á þeirri tölvu. Hún er virk meðan glugginn er opinn, með eða án spjalls; um þrjátíu sekúndum eftir að þú lokar honum stöðvast leikurinn og spjallið með honum. Ekkert tapast: allt er í skránum. Í spjalli gervigreindarforritsins sjálfs er hún virk meðan það spjall er opið. Þegar leikurinn er ekki tengdur sýnir síðan *Not connected*: ýttu á **Opna herferðina aftur** eða, í þínu eigin forriti, opnaðu næsta spjall. Hnappurinn **Herferðir**, með húsinu, leiðir aftur í allar herferðirnar þínar.
 
+- **Leikur**: spjallið við sögumanninn, þegar það er ekki við hlið síðunnar ([2.5](#25-the-first-chat)).
 - **Hópur**: persónublaðið þitt og blöð félaga þinna. Smelltu á tölu til að kasta henni; haltu bendlinum yfir hana til að sjá hvaðan hún kemur og, þegar ör merkir tening hennar, hvað gerir kastið betra eða verra. Þegar sögumaðurinn undirbýr val fyrir þig, til dæmis á nýju stigi, opnar tilkynning á persónublaðinu það: veldu þegar þér hentar, lestu síðurnar sem valkostirnir nefna, kastaðu þar sem valkostur krefst kasts og staðfestu svo; sagan heldur áfram á meðan. Við hliðina eru köstin.
 - **Atriði**: hvar þú ert, mynd þess og kort, hverjir eru þar, hvað er að gerast; í bardaga eru það raðirnar og spjald persónunnar þinnar.
 - **Dagbók**: verkefni, sagan sem bók, tímalína hennar, dagbækur félaga þinna, minnisblöðin þín.
@@ -265,7 +279,7 @@ Viðbót bætir einhverju við herferð ofan á leikjakerfið hennar: eiginleika
 
 - **Búinn til jafnóðum**: út frá forsendu þinni byggir sögumaðurinn hvern stað, hverja persónu og hvern söguþráð rétt áður en þú þarft á honum að halda, og geymir hann.
 - **Undirbúinn í upphafi**: það sama, en heimurinn er byggður fyrir spilun.
-- **Úr þínu eigin ævintýri eða bók**: gefðu sögumanninum skrána, *[OOC: Fluttu þetta ævintýri inn sem herferðina okkar: D:\Books\adventure.pdf. Segðu mér ekkert af því sem stendur í því.]* Best er að það sé texti, EPUB, Word-skjal eða PDF þar sem hægt er að velja textann. Skönnuð PDF er lesin af myndum síðnanna, aðeins á Windows, hægt og með nokkrum villum. Gervigreindarforritið þitt les það utan spjallsins, annars sögumaðurinn í spjallinu, á þinni áskrift: í Claude Code eða Codex les annað þeirra það, í Antigravity þitt Antigravity, í OpenCode líkanið sem þú valdir síðast í því. Allt skjalið fer til framleiðanda þess sem les það, samkvæmt skilmálum reikningsins þíns og vali hans um þjálfun. Stjórnborðið sýnir hvernig gengur. Úr skáldsögu leggur sögumaðurinn til hvar á að byrja. Sögumaðurinn skrifar staðina, persónurnar og leyndarmálin.
+- **Úr þínu eigin ævintýri eða bók**: gefðu sögumanninum skrána, *[Fluttu þetta ævintýri inn sem herferðina okkar: D:\Books\adventure.pdf. Segðu mér ekkert af því sem stendur í því.]* Skrá utan herferðarinnar er aðeins lesin eftir að þú segir já í glugga á tölvunni þinni; skrá sem þú setur í möppuna **inbox** í herferðinni er lesin strax. Best er að hún sé texti, EPUB, Word-skjal eða PDF þar sem hægt er að velja textann; skönnuð PDF er lesin af myndum síðnanna, aðeins á Windows, hægt og með nokkrum villum. Gervigreindarforritið þitt les hana utan spjallsins, annars sögumaðurinn í spjallinu, á þinni áskrift: í Claude Code eða Codex les annað þeirra hana, í Antigravity þitt Antigravity, í OpenCode líkanið sem þú valdir síðast í því. Allt skjalið fer til framleiðanda þess sem les það, samkvæmt skilmálum reikningsins þíns og vali hans um þjálfun. Yfirlitið sýnir hvernig gengur; úr skáldsögu leggur sögumaðurinn til hvar á að byrja. Hann skrifar staðina, persónurnar og leyndarmálin.
 
 Herferð er spiluð einu sinni: til að spila sama ævintýrið aftur skaltu búa til nýja herferð.
 
@@ -309,22 +323,28 @@ Sérhver skipun sem sögumaður notar má líka keyra í herferðarmöppunni: `r
 
 **Get ég spilað með vinum?** Ekki enn: í dag er einn spilari, ein persóna, auk félaga ([Væntanlegt síðar](#9-coming-later)).
 
-**Get ég notað aðra gervigreind næst?** Já: opnaðu herferðina í öðru forriti og skrifaðu *haltu áfram*.
+**Get ég notað aðra gervigreind næst?** Já: veldu annað forrit í spjallinu áður en þú opnar það, eða opnaðu herferðina í öðru forriti og skrifaðu *Halda áfram*.
 
 ### Vandamál
 
-**Mælaborðið opnast ekki.** Spurðu sögumanninn: `[OOC: Hver er hlekkurinn á mælaborðið?]`. Það virkar aðeins meðan spjall er opið í þeirri herferð: í Claude Code og Codex ræsist það um leið og spjallið opnast, í Antigravity með fyrstu skilaboðunum þínum. Í Claude appinu fer spjall sem hefur verið látið liggja í bakgrunni um tíma að sofa, og síðan með því: smelltu á spjallið og þá kemur síðan aftur á sama vistfangi.
+**Herferð opnast ekki.** Opnaðu RPG Engine aftur með tákninu, eða með `rpg open` í skipanaglugga, og smelltu á herferðina. Ef yfirlit hennar segir *Not connected* skaltu ýta á **Opna herferðina aftur**. Spjald sem segir **Mappa fannst ekki** hefur misst möppuna sína: taktu það af listanum og bættu henni við aftur með **Opna möppu…** þar sem hún er núna. Í spjalli gervigreindarforritsins sjálfs virkar yfirlitið aðeins meðan spjall þeirrar herferðar er opið: spurðu sögumanninn `[OOC: Hver er hlekkurinn á yfirlitið?]`. Í Claude appinu fer spjall sem hefur verið látið liggja í bakgrunni um tíma að sofa, og síðan með því: smelltu á spjallið og þá kemur síðan aftur á sama vistfangi.
 
-**Sögumaðurinn virðist ekki þekkja leikinn.** Gervigreindarforritið þitt hlóð ekki RPG Engine. Athugaðu að þú ræstir það í herferðarmöppunni og treystir henni. Í Claude Code skaltu skrifa `/mcp` og tengja `rpg` aftur. Í Codex verður `codex mcp list` í herferðarmöppunni að sýna `rpg`. Ef `rpg --version` finnst ekki skaltu setja RPG Engine upp aftur ([2.2](#22-install)).
+**Sögumaðurinn virðist ekki þekkja leikinn.** Þetta gerist í spjalli gervigreindarforritsins sjálfs: það hlóð ekki RPG Engine. Athugaðu að þú ræstir það í herferðarmöppunni og treystir henni. Í Claude Code skaltu skrifa `/mcp` og tengja `rpg` aftur. Í Codex verður `codex mcp list` í herferðarmöppunni að sýna `rpg`. Ef `rpg --version` finnst ekki skaltu setja RPG Engine upp aftur ([2.2](#22-install)).
 
-**Windows finnur ekki `claude`.** Uppsetningarforritið segir frá því í gulum reit, ásamt möppunni sem það fór í: bættu þeirri möppu við PATH (System Properties > Environment Variables) og opnaðu síðan nýjan skipanaglugga.
+**Windows finnur ekki `claude`.** Þetta gerist þegar þú settir Claude Code upp sjálf/ur. Uppsetningarforritið þess segir frá því í gulum reit, ásamt möppunni sem það fór í: bættu þeirri möppu við PATH (Kerfiseiginleikar > Umhverfisbreytur) og opnaðu síðan nýjan skipanaglugga.
 
-**Uppfærsla.** Keyrðu `npm install -g rpg-engine` aftur og opnaðu síðan nýtt spjall: sögumaður sem er í gangi heldur þeirri útgáfu sem hann ræsti með.
+**Uppfærsla.** Þegar nýrra RPG Engine er komið út segir yfirlitið frá því: í Packages › Installed er RPG Engine fyrst, með **Uppfæra**; gerðu síðan það sem síðan segir þér. Eða keyrðu `npm install -g rpg-engine` aftur í skipanaglugga og opnaðu síðan nýtt spjall: sögumaður sem er í gangi heldur þeirri útgáfu sem hann ræsti með.
 
 **Sögumaðurinn man eitthvað sem ég afturkallaði.** Opnaðu nýtt spjall og ýttu á **Ég opnaði nýtt spjall** í Vistanir.
+
+**Forrit setst ekki upp.** Síðan segir hvers vegna: ýttu á **Reyna aftur**. Eða settu það upp af vef framleiðandans og ýttu síðan á **Athuga aftur**.
+
+**Innskráningarsíðan opnast ekki í vafranum.** Meðan síðan bíður eftir þér skaltu ýta á **Opna innskráningarsíðuna aftur** þar sem hún birtist, eða **Hætta við** og reyna aftur.
+
+**Spjallið í yfirlitinu segir að annað spjall sé í gangi.** Spjall sem þú opnaðir sjálf/ur í gervigreindarforritinu þínu spilar þessa herferð: haltu áfram þar, eða lokaðu því til að spila í yfirlitinu.
 
 **Engar myndir birtast.** Stillingar > Herferð > Myndir segir hvort þessi tölva getur gert þær og hvernig.
 
 **Uppsetning mistekst, eða `rpg` ræsist ekki.** `node --version` verður að sýna 24 eða nýrra. Ef Windows svarar að keyrsla skripta sé óvirk, sjá [2.1](#21-what-you-need). Á Windows skaltu halda RPG Engine og herferðunum þínum frá slóðum sem innihalda `&`.
 
-**Hlekkurinn á mælaborðið breyttist.** Hver herferð heldur sínu eigin vistfangi, spjall eftir spjall. Það breytist aðeins þegar annað forrit er þegar að nota það: sögumaðurinn gefur þér nýja hlekkinn og eftir það helst hann. Annað spjall í sömu herferð heldur síðunni á sama vistfangi og tekur hana yfir þegar þú lokar því fyrsta.
+**Hlekkurinn á yfirlitið breyttist.** Í spjalli gervigreindarforritsins sjálfs hefur hver herferð sitt eigið vistfang, það sama spjall eftir spjall. Það breytist aðeins þegar annað forrit er þegar að nota það: sögumaðurinn gefur þér nýja hlekkinn og eftir það helst hann. Annað spjall í sömu herferð heldur síðunni á sama vistfangi og tekur hana yfir þegar þú lokar því fyrsta.

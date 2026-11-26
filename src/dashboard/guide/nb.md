@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: den komplette veiledningen
 
-**RPG Engine** lar deg spille et rollespill rundt bordet med en **AI som spilleder**. Du snakker med spillederen i en **chat**. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**. Ved siden av chatten har du en side åpen i nettleseren, **dashbordet**, med karakterarket, terningene, kartene og dagboken din.
+**RPG Engine** lar deg spille et bordrollespill med en **KI som spilleder**. Du spiller i **dashbordet**, et vindu på datamaskinen din med karakterarket, terningene, kartene, dagboken og **chatten** med spillederen. RPG Engine jobber bak kulissene: det **husker verden**, **kaster terningene** og **fører regnskapet**.
 
 Veiledningen er for spillere: du trenger ikke kunne programmere.
 
 ## Hurtigstart <!-- icon: send -->
 
 1. Installer **Node.js** fra [nodejs.org](https://nodejs.org) (LTS-versjonen).
-2. Installer en **AI-agent**, programmet spillederen kjører i, og logg inn: for eksempel Claude Code eller Codex ([2.4](#24-connect-your-ai)).
-3. Installer RPG Engine i en ny terminal, åpnet etter at Node.js er installert: `npm install -g rpg-engine`. Hvis Windows svarer at det er slått av å kjøre skript, skriver du én gang `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, svarer ja og prøver igjen.
-4. Åpne terminalen i mappen der du har spillene dine (høyreklikk mappen, **Åpne i Terminal**) og opprett en kampanje, alltid med navn: `rpg init "The Salt Isles"`. RPG Engine svarer med to linjer på engelsk: alt er i orden.
-5. Gå inn i den nye mappen med `cd "The Salt Isles"`, og start agenten din der: `claude` for Claude Code, `codex` for Codex. Si ja når den spør om du stoler på mappen ([2.4](#24-connect-your-ai)), og skriv så *Hei! La oss begynne.* Spillederen svarer med lenken til dashbordet ditt.
+2. Én gang, i en ny terminal som er åpnet etter at Node.js er installert, installerer du RPG Engine: `npm install -g rpg-engine`. Hvis Windows svarer at det er slått av å kjøre skript, skriver du én gang `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, svarer ja og prøver igjen.
+3. Skriv `rpg open`. Den spør om RPG Engine-ikonet skal legges på skrivebordet og i menyen din: trykk Enter for ja. Fra da av starter du RPG Engine fra ikonet, uten terminal ([2.2](#22-install)).
+4. Et vindu viser kampanjene dine. Trykk **Ny kampanje**, gi den et navn og trykk **Opprett** ([2.3](#23-create-a-campaign)): dashbordet til kampanjen åpnes i et eget vindu.
+5. I chatten med spillederen velger du KI-appen din og modellen: Claude Code krever et betalt Claude-abonnement, Codex en ChatGPT-konto, gratis eller betalt ([2.4](#24-connect-your-ai)). Hvis appen mangler, eller du ikke er logget inn, installerer siden den eller logger deg inn. Trykk **Åpne chatten**, og deretter **Begynn**. Det første svaret kan ta et par minutter. Så spør spillederen hvordan du vil spille, og dere lager karakteren din sammen.
 
 ## 1. Hva RPG Engine er <!-- icon: about -->
 
@@ -39,48 +39,46 @@ Et spill kommer som et spillsystem, en pakke som spilleder installerer for kampa
 
 - En datamaskin med Windows, macOS eller Linux, og en nettleser.
 - **Node.js 24** eller nyere, fra [nodejs.org](https://nodejs.org). Det følger med `npm`, som installerer RPG Engine.
-- En **terminal**: på Windows Terminal eller PowerShell, på macOS Terminal. For å åpne en terminal i en mappe høyreklikker du mappen og velger **Åpne i Terminal** (Windows) eller **Tjenester > Ny terminal i mappen** (macOS). Hvis Windows svarer at det er slått av å kjøre skript, skriver du én gang `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` og svarer ja.
-- En **AI-agent** til spillederen ([2.4](#24-connect-your-ai)), med den **største modellen** den tilbyr: en liten modell lar seg lettere lokke til å avsløre hemmeligheter eller bøye reglene.
+- En **terminal**, én gang, for å installere RPG Engine: på Windows Terminal eller PowerShell, på macOS Terminal. For å åpne en terminal i en mappe høyreklikker du mappen og velger **Åpne i Terminal** (Windows) eller **Tjenester > Ny terminal i mappen** (macOS). Hvis Windows svarer at det er slått av å kjøre skript, skriver du én gang `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` og svarer ja.
+- En **KI-app** til spillederen, med din egen konto ([2.4](#24-connect-your-ai)): siden kan installere den for deg. Spill med den **største modellen** den tilbyr: en liten modell lar seg lettere lokke til å avsløre hemmeligheter eller bøye reglene.
 
 ### 2.2 Installer
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-`rpg --version` sjekker at det gikk bra. Hvis npm tilbyr å oppdatere seg selv, kan du ignorere det. Du bruker `rpg` én gang per kampanje, for å opprette den. Etter det starter agenten din RPG Engine av seg selv. `rpg` alene åpner ingenting: spillederen gir deg dashbordet.
+Den første linjen installerer RPG Engine. `rpg --version` sjekker at det gikk bra. Hvis npm tilbyr å oppdatere seg selv, kan du ignorere det.
+
+`rpg open` åpner vinduet til RPG Engine, med kampanjene dine. Første gang spør det i terminalen om ikonet skal legges på skrivebordet og i Start-menyen (Programmer på Mac): trykk Enter for ja. Fra da av dobbeltklikker du på ikonet, og du trenger ikke terminalen mer. Uten ikonet skriver du `rpg open` hver gang du skal spille. `rpg icon` legger til ikonet senere, og `rpg icon --remove` tar det bort.
 
 ### 2.3 Opprett en kampanje
 
-Åpne en terminal i mappen der du har spillene dine ([2.1](#21-what-you-need) forklarer hvordan):
+Vinduet til RPG Engine viser kampanjene dine som kort, med den sist åpnede først. Trykk **Ny kampanje** og fyll ut **Navn**, **Språk** og **Spillsystem**: resten lager spillederen sammen med deg. Kampanjen havner i en mappe med samme navn, inne i mappen `RPG Engine` i brukermappen din (på Windows `C:\Users\<name>`). **Velg en annen mappe …** legger den i en tom mappe du selv velger. Under **Spilleder** kan du allerede velge KI-appen og modellen for den første chatten ([2.4](#24-connect-your-ai)). Trykk **Opprett**: dashbordet til kampanjen åpnes i et eget vindu.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Dette lager mappen `The Salt Isles` med en ny kampanje i. Gå inn i den med `cd "The Salt Isles"`. Skriv alltid navnet: uten navn blir mappen du står i selv til kampanjen, ved siden av alt den allerede inneholder. Husk hvor den ligger: du kommer tilbake hit hver gang du spiller. Alt annet velger du senere, i chatten eller på dashbordet.
-
-Spilleder kan ikke opprette en kampanje for deg: før `init` er det ingenting som forteller agenten din hvor RPG Engine er.
+Neste gang klikker du på et kort for å åpne kampanjen. En som er åpen, sier **Åpen nå**. **Åpne en mappe …** legger til en kampanje du allerede har på denne datamaskinen. Det lille krysset på et kort tar kampanjen bort fra listen: filene blir liggende der de er.
 
 ### 2.4 Koble til AI-en din
 
-Spillederen kjører i en **AI-agent**: en AI-app, i terminalen eller på skrivebordet, som kan arbeide med filene på datamaskinen din, for eksempel Claude Code, Codex, Antigravity eller OpenCode. En vanlig chat som claude.ai eller ChatGPT, eller en app på telefonen, er ikke nok: spillederen må kunne nå kampanjens filer på datamaskinen din. Hver agent trenger sitt eget abonnement og sin egen innlogging: Claude Code et betalt Claude-abonnement, Codex en ChatGPT-innlogging, Antigravity en Google-konto, der gratisabonnementet har en liten ukentlig kvote. OpenCode fungerer med modellene du gir den, også lokale. Du installerer agenten én gang, fra agentens egen side: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Spillederen kjører i en **KI-app** på datamaskinen din, med din egen konto: Claude Code, Codex, OpenCode eller Antigravity. En vanlig chat som claude.ai eller ChatGPT, eller en app på telefonen, er ikke nok: spillederen må kunne nå filene til kampanjen på datamaskinen din. Hver app trenger sin egen konto: Claude Code et betalt Claude-abonnement (Pro eller høyere), Codex en ChatGPT-konto, gratis eller betalt, Antigravity en Google-konto, der gratisbruken har ukentlige grenser. OpenCode har noen gratis modeller i en begrenset tid, eller bruker modellene fra din egen leverandør, også lokale.
 
-- **Claude Code**: skriv `claude` i kampanjemappen. Når den spør om du stoler på mappen, velger du **Yes, I trust this folder**. Pass på: svaret som er valgt på forhånd, er *No, exit*. Kampanjen har også en liten krok, `rpg --listen`, som spørsmålet ikke viser: den forteller spillederen med en gang når du gjør noe fra dashbordet.
-- **Codex**: skriv `codex` i kampanjemappen, og svar ja når den spør om du stoler på mappen. I viktige øyeblikk snakker karakteren gjennom en egen agent, `.codex/agents/rpg-character.toml`, som bare vet det karakteren vet. I skrivebordsappen sjekker du i innstillingene at minner er slått av for spillets chatter.
-- **Antigravity**: skriv `agy` i kampanjemappen, og svar ja hvis den spør om du stoler på mappen. Eller åpne kampanjemappen i appen. For appen legger RPG Engine seg også inn i Antigravitys egne innstillinger, `.gemini/config/mcp_config.json` i hjemmemappen din. De gjelder for hver mappe du åpner, ikke bare kampanjens: utenfor en kampanje gjør RPG Engine ingenting. Kampanjen har to små kroker: `rpg --approve` lar spillederen bruke verktøyene til RPG Engine uten å spørre deg hver gang, og `rpg --listen` forteller spillederen med en gang når du gjør noe fra dashbordet. Spillederen maler bildene i chatten selv, med et betalt Google-abonnement. Med gratisabonnementet svikter bildeverktøyet, og spillederen tegner enkle vektorbilder, slik Claude gjør. I viktige øyeblikk snakker karakteren gjennom en egen agent, `.agents/agents/rpg-character.md`: spillederen skriver en replikk i historien, og svaret fra karakteren kommer et øyeblikk senere. Antigravity din oversetter også dashbordet og spillets regler og leser dokumentene du importerer, utenfor chatten, på kvoten til Google-kontoen din: RPG Engine starter den atskilt fra dine egne chatter, så den etterlater ingenting blant dem. Antigravity beholder de tidligere chattene dine, og minnet kan ikke slås av: spillederen er instruert om aldri å lese dem. Det du skriver, går til Google, som kan la folk lese det: hold personopplysninger utenfor spillet. RPG Engine er ikke et Google-produkt.
-- **OpenCode**: skriv `opencode` i kampanjemappen. Kampanjen har en liten plugin, `.opencode/plugins/rpg.js`, som forteller spillederen med en gang når du gjør noe fra dashbordet. I kampanjen skriver spillederen filer bare gjennom RPG Engine: OpenCodes egen skriving og redigering av filer er slått av der, og den spør deg før den kjører en kommando. Spillederen tegner bildene selv, som enkle vektorbilder, slik Claude gjør. I viktige øyeblikk snakker karakteren gjennom en egen agent, `.opencode/agents/rpg-character.md`: spillederen skriver en replikk i historien, og svaret fra karakteren kommer et øyeblikk senere. En liten lokal modell kaller den kanskje ikke opp. OpenCode-en din, med modellen du valgte sist i den, oversetter også dashbordet og spillets regler og leser dokumentene du importerer, utenfor chatten. Har den ingen modell den kan bruke, gjør Codex eller Claude Code det hvis du har dem.
-- **En annen agent**: start den i kampanjemappen og gi den MCP-tjeneren `rpg mcp`. RPG Engine er en standard MCP-tjener: alle agenter som støtter MCP kan være spilleder, også lokale.
+I chatten på dashbordet velger du appen under **KI-appen din**, deretter **Modell** og **Spillederens tenkning**: siden foreslår dem. Mer tenkning er tregere og bruker mer av abonnementet ditt. En app som ikke er klar, sier hva den trenger, med en knapp som ordner det:
 
-Hvis spillederen ikke finner verktøyene til RPG Engine, skriver du `rpg init` i kampanjemappen: i en mappe som allerede er en kampanje, oppdaterer det bare disse filene. Åpne deretter en ny chat.
+- **Claude Code** og **Codex**: **Installer Claude Code** eller **Installer Codex** laster appen ned til RPG Engines egen mappe på denne datamaskinen. **Logg inn på Claude Code** eller **Logg inn på Codex** åpner innloggingssiden i nettleseren din. RPG Engine ser aldri passordet ditt.
+- **OpenCode** og **Antigravity**: **Hent OpenCode** eller **Hent Antigravity** åpner nettstedet, der du installerer appen. OpenCode kan brukes uten innlogging. Antigravity logger du inn på fra appen selv. Kom deretter tilbake og trykk **Sjekk på nytt**.
 
-Vi spiller og tester med **Claude Code**. **Codex**, **Antigravity** og **OpenCode** er koblet til og kontrollert, men ingen hel kampanje er spilt med dem ennå. Kampanjen slår av agentens eget minne: spillet lever i filene sine, slik at det å gå tilbake til et lagret spill virkelig tar deg tilbake.
+Antigravity er merket **på prøve**: den kan gå ut av spillet og stille spørsmål på sin egen måte, så Claude Code, Codex eller OpenCode egner seg bedre til å spille med. Antigravity beholder de tidligere chattene dine, og minnet kan ikke slås av: spillederen er instruert om aldri å lese dem. Det du skriver, går til Google, som kan la folk lese det: hold personopplysninger utenfor spillet. RPG Engine er ikke et Google-produkt. Vi spiller og tester mest med **Claude Code**: ingen hel kampanje er spilt med de andre ennå.
+
+I chatten på dashbordet rører spillederen datamaskinen din bare gjennom RPG Engine: den åpner ingen av filene dine på egen hånd. RPG Engine leser utenfor kampanjen bare det du har valgt, etter at du har sagt ja i et vindu på datamaskinen din.
+
+Du kan også spille i KI-appens egen chat, i en terminal eller i skrivebordsappen ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 Den første chatten
 
-Skriv hva som helst, for eksempel *Hei! La oss begynne.* I det første svaret i hver chat gir spilleder deg **lenken til dashbordet ditt**, noe sånt som `http://127.0.0.1:4750`. Åpne den og ha den ved siden av chatten.
+Med appen og modellen valgt trykker du **Åpne chatten**: appen starter, og det kan ta noen sekunder. Trykk deretter **Begynn**, eller skriv hva som helst, for eksempel *Hei! La oss begynne.* Det første svaret kan ta et par minutter, mens spillederen setter scenen.
 
-Mellom meldingene fra spilleder viser agenten verktøyene den bruker. Ikke åpne detaljene deres (i Claude Code ctrl+o), for de kan vise hemmeligheter.
+Chatten har sin egen del, **Rollespill**, eller står ved siden av siden: de små knappene øverst setter den **I egen fane**, **Til venstre** eller **Til høyre**, og du drar i kanten for å gjøre den bredere.
 
 En ny kampanje går gjennom tre trinn, vist øverst på dashbordet: **1 Innstillinger** (hvordan du vil spille), **2 Sesjon null** (du lager karakteren din, i spillet), **3 Spill**.
 
@@ -114,7 +112,20 @@ Uten en skrevet verden spør spilleder også om en **premiss** (sjanger, tone, n
 
 Du lager karakteren din sammen med spilleder, som ved et bord. Hvert valg er ditt, med mindre du ber spilleder ta det: kom med en full idé, en vag en, eller ingenting. Du kan også be spilleder lage alt ut fra noen få ord. I et spill med nivåer spør spilleder hvilket nivå du vil starte på: det første, med mindre du vil ha et annet. Spilleder forteller deg hvordan egenskapsverdiene lages før noen terning blir kastet. Du trenger aldri å skrive en bakgrunnshistorie. Gir du en, skriver spilleder den med dine ord. Deretter ber spilleder om et bilde av karakteren din ([3.7](#37-your-characters-story-and-picture)). RPG Engine regner ut karakterarket: du slipper å gjøre regnestykkene.
 
-Har du allerede en karakter, fra et annet spill eller en annen kampanje? Velg **Jeg har allerede en** i oppsettet og gi karakteren til spilleder: lim inn karakterarket i chatten, eller si hvor filen ligger på datamaskinen din (en PDF, et bilde, en tekst). Spilleder skriver karakteren inn som den er, på sitt nivå, sjekker den mot reglene og verdenen, og blir enig med deg om alt som ikke passer.
+Har du allerede en karakter, fra et annet spill eller en annen kampanje? Velg **Jeg har allerede en** i oppsettet og gi karakteren til spillederen: lim inn karakterarket i chatten. I KI-appens egen chat kan du også si hvor filen ligger på datamaskinen din (en PDF, et bilde, en tekst). I chatten på dashbordet åpner spillederen ingen av filene dine. Spillederen skriver karakteren inn som den er, på sitt nivå, sjekker den mot reglene og verdenen, og blir enig med deg om alt som ikke passer.
+
+### 2.8 Den andre måten: KI-appens egen chat
+
+Du kan også spille i selve chatten til KI-appen din, i en terminal eller i skrivebordsappen, med dashbordet åpent ved siden av. Da lager du kampanjen i en terminal, i mappen der du har spillene dine ([2.1](#21-what-you-need) forklarer hvordan), alltid med navn: `rpg init "The Salt Isles"` lager mappen `The Salt Isles` med en ny kampanje i. RPG Engine gjør selv klart det hver app trenger der.
+
+Start appen din i den mappen: `claude` for Claude Code, `codex` for Codex, `agy` for Antigravity, `opencode` for OpenCode. Du kan også åpne mappen i skrivebordsappen. Svar ja når den spør om du stoler på mappen. Pass på: i Claude Code er svaret som er valgt på forhånd, *No, exit*. Alle andre agenter som støtter MCP, kan også være spilleder: start den i kampanjemappen og gi den MCP-tjeneren `rpg mcp`.
+
+Skriv *Hei! La oss begynne.* I det første svaret i hver chat gir spillederen deg **lenken til dashbordet ditt**, noe sånt som `http://127.0.0.1:4750`: åpne den ved siden av chatten.
+
+- Mellom meldingene fra spillederen viser appen din verktøyene den bruker: ikke åpne detaljene deres (i Claude Code ctrl+o), for de kan vise hemmeligheter.
+- Kampanjen slår av appens eget minne: spillet lever i filene sine, slik at det å gå tilbake til et lagret spill virkelig tar deg tilbake. I skrivebordsappen til Codex sjekker du i innstillingene at minner er slått av for chattene til spillet.
+- Hvis spillederen sier at den ikke finner verktøyene til RPG Engine, skriver du `rpg init` i kampanjemappen og åpner deretter en ny chat.
+- Bare én chat om gangen spiller en kampanje: mens din er åpen, venter chatten på dashbordet.
 
 ---
 
@@ -126,7 +137,9 @@ Skriv hva karakteren din gjør eller sier, med dine egne ord:
 
 > Jeg spør vertshusholderen hvem andre som kom innom i kveld.
 
-Utenfor historien skriver du `[OOC: …]` (out of character, utenfor rollen): *[OOC: Hvordan fungerer det å gripe tak i noen?]* Spillederen svarer på samme måte.
+Utenfor historien skriver du `[OOC: …]` (out of character, utenfor rollen): *[OOC: Hvordan fungerer det å gripe tak i noen?]* Spillederen svarer på samme måte. I chatten på dashbordet står ordene spillederen sier utenfor spillet, for seg selv, merket OOC.
+
+I chatten på dashbordet skriver du i boksen nederst og trykker Enter for å sende. Shift+Enter gir en ny linje. Mens spillederen svarer, stopper **Stopp** den, og ordene dine blir stående i boksen. Når spillederen spør deg om noe, kommer knappene med spørsmålet, kast inkludert: klikk på en av dem, eller skriv svaret ditt. Under boksen ser du appen og modellen. Der appen tillater det, klikker du på modellen for å bytte den når spillederen har svart. **Lukk chatten** avslutter chatten. Spillet blir liggende i filene sine.
 
 Du sier hva du prøver. Spillederen sier hva som skjer. Spillederen bestemmer aldri for karakteren din, og snakker aldri om motoren. Du kan spørre spillederen hvordan du bruker dashbordet.
 
@@ -184,17 +197,17 @@ RPG Engine lagrer hele kampanjen ved slutten av hver scene. Innstillingen **lagr
 
 I alle modi kan du **begynne på nytt**, fra starten av spillet eller fra sesjon null. Gjør det i chatten eller i **Lagrede spill**.
 
-Etter at du har gått tilbake, **åpne en ny chat**: den gamle husker det som er blitt angret. Skriv *fortsett* i den nye chatten, og trykk deretter på **Jeg har åpnet en ny chat** i Lagrede spill.
+Etter at du har gått tilbake, **åpne en ny chat**: den gamle husker det som er blitt angret. I chatten på dashbordet trykker du **Lukk chatten** og deretter **Ny chat**. I KI-appens egen chat åpner du en ny samtale (`/clear` i Claude Code). Skriv *fortsett* i den nye chatten. Si deretter til spillederen at chatten er ny: trykk **Jeg har åpnet en ny chat** i Lagrede spill, eller si det i chatten. Før det går ikke spillederen videre.
 
-Hvis kampanjemappen er et git-arkiv, har **Innstillinger** en **Git**-del, alt avslått til du velger selv: en commit ved starten av hver sesjon, ved hvert lagrede spill og ved slutten av hver scene, og en push etter den hvis du vil. En commit er et øyeblikksbilde av kampanjen på det tidspunktet. En push sender øyeblikksbildene til arkivet på nettet, for eksempel på GitHub, slik at en kopi finnes utenfor denne datamaskinen. De lagrede spillene og chattene dine med spillederen holdes utenfor arkivet, med mindre du slipper dem inn. Slipp bare chattene inn hvis arkivet er privat.
+Hvis du ikke vet hva git er, hopp over dette avsnittet. Hvis kampanjemappen er et git-arkiv, har **Innstillinger** en **Git**-del, alt avslått til du velger selv: en commit ved starten av hver sesjon, ved hvert lagrede spill og ved slutten av hver scene, og en push etter den hvis du vil. En commit er et øyeblikksbilde av kampanjen på det tidspunktet. En push sender øyeblikksbildene til arkivet på nettet, for eksempel på GitHub, slik at en kopi finnes utenfor denne datamaskinen. De lagrede spillene og chattene dine med spillederen holdes utenfor arkivet, med mindre du slipper dem inn. Slipp bare chattene inn hvis arkivet er privat.
 
 ### 3.9 Sesjoner: å stoppe og komme tilbake
 
-Stopp når du vil: *[La oss stoppe her for i kveld.]* Alt er allerede lagret i filene. For å komme tilbake starter du agenten din i kampanjemappen og skriver *fortsett*: spillederen gir deg en kort oppsummering og fortsetter.
+Stopp når du vil: *[La oss stoppe her for i kveld.]* Alt er allerede lagret i filene. For å komme tilbake åpner du RPG Engine fra ikonet og klikker på kampanjen din. Hvis du lot chatten stå åpen, kommer den tilbake av seg selv. Hvis du lukket den, trykker du **Gjenoppta chatten**. Trykk deretter **Fortsett historien**: spillederen forteller deg i noen få linjer hvor dere var, og fortsetter. Hvis spillet ble lukket mens spillederen fortsatt svarte, eller mens et spørsmål fra den ventet på deg, står det **Fortsett herfra** på knappen i stedet. **Ny chat** åpner en ny chat på samme spill. I KI-appens egen chat starter du den i kampanjemappen og skriver *fortsett*.
 
 ### 3.10 Spillederens humør
 
-Roboten øverst på dashbordet er spillederen: ansiktet følger tonen i historien, og røper aldri det du ikke vet ennå. Når chatten er lukket, sover den.
+Roboten øverst på dashbordet er spillederen: ansiktet følger tonen i historien, og røper aldri det du ikke vet ennå. Når dashbordet ikke er koblet til spillet, sover den.
 
 ### 3.11 Bilder
 
@@ -212,11 +225,12 @@ Alle innstillinger kan endres, i chatten eller i **Innstillinger**. En avgjørel
 
 ## 4. Dashboardet <!-- icon: party -->
 
-En side på din egen datamaskin. Den åpnes bare i nettleseren på den maskinen, og den er i gang så lenge samtalen er åpen. Når samtalen lukkes, viser den *Not connected*. Den kommer tilbake av seg selv med neste samtale.
+En side på din egen datamaskin, i et eget vindu, åpen bare på den maskinen. Den er i gang så lenge vinduet er åpent, med eller uten chat. Omtrent tretti sekunder etter at du lukker det, stopper spillet, og chatten med det. Ingenting går tapt: alt ligger i filene. I KI-appens egen chat er den i gang så lenge den chatten er åpen. Når spillet er borte, viser siden *Not connected*: trykk **Åpne kampanjen igjen**, eller åpne neste chat i din egen app. Knappen **Kampanjer**, med huset, fører tilbake til alle kampanjene dine.
 
-- **Gruppe**: karakterarket ditt og følgesvennenes. Klikk på et tall for å kaste det. Hold musepekeren over det for å se hvor det kommer fra og, når en pil markerer terningen, hva som gjør kastet bedre eller verre. Når spilleder forbereder valg til deg, for eksempel ved et nytt nivå, åpner et varsel på karakterarket dem. Velg når du vil, les sidene som alternativene nevner, kast der et alternativ krever det, og bekreft. Historien går videre i mellomtiden. Ved siden av ser du kastene.
+- **Rollespill**: chatten med spillederen, når den ikke står ved siden av siden ([2.5](#25-the-first-chat)).
+- **Gruppe**: karakterarket ditt og følgesvennenes. Klikk på et tall for å kaste det. Hold musepekeren over det for å se hvor det kommer fra og, når en pil markerer terningen, hva som gjør kastet bedre eller verre. Når spillederen forbereder valg til deg, for eksempel ved et nytt nivå, åpner et varsel på karakterarket dem. Velg når du vil, les sidene som alternativene nevner, kast der et alternativ krever det, og bekreft. Historien går videre i mellomtiden. Ved siden av ser du kastene.
 - **Scene**: hvor du er, bilde og kart, hvem som er der, og hva som skjer. I en kamp ser du turene og kortet til karakteren din.
-- **Dagbok**: oppdrag, historien som en bok, tidslinjen, følgesvennenes dagbøker og notatene dine.
+- **Dagbok**: oppdrag, historien som en bok, tidslinjen, dagbøkene til følgesvennene og notatene dine.
 - **Verden**: verdenskartet, det karakteren din vet, dokumentene som er funnet, og kalenderen.
 - **Terningbrettet**: velg terninger og en modifikator, og kast. ×2 dobler terningene, aldri modifikatoren, som ved et kritisk treff.
 - **Lagrede spill**, **Hjelp**, **Innstillinger** og **Om** ligger som ikoner ytterst i raden. **Innstillinger** rommer også sidens egne valg under **Dashbord**: modus, terninglyd, terningsett og **Tema**, altså fargene, ansiktene og bildene på siden. Du kan velge spillsystemets eget tema, et tema du har lagt til under Packages › Add (fra katalogen, med en GitHub-lenke, en .zip eller en mappe), eller sidens eget. Hvis stilarket i et tema gjør siden vanskelig å lese, slå av **Temaets egen stil** der. Innstillinger vises alltid uten den, på sidens adresse med `#/settings/page` til slutt.
@@ -265,7 +279,7 @@ En utvidelse legger til noe i en kampanje, oppå spillsystemet: en funksjon som 
 
 - **Laget underveis**: ut fra premissen din bygger spillederen hvert sted, hver person og hvert plott rett før du trenger det, og husker det.
 - **Forberedt i starten**: det samme, men med verden bygget før spillet.
-- **Fra ditt eget eventyr eller din egen bok**: gi spillederen filen, *[Importer dette eventyret som kampanjen vår: D:\Books\adventure.pdf. Ikke fortell meg noe av det som står i det.]* Det leses best som tekst, en EPUB, et Word-dokument eller en PDF der teksten kan markeres. En skannet PDF leses fra bildene av sidene, bare på Windows, sakte og med noen feil. Din egen AI-app leser den utenfor chatten, ellers spillederen i chatten, på abonnementet ditt: i Claude Code eller Codex leser en av de to den, i Antigravity din Antigravity, i OpenCode modellen du valgte sist i den. Hele dokumentet går til produsenten av den som leser det, under vilkårene for kontoen din og dens valg om trening. Dashbordet viser hvor langt det har kommet. Fra en roman foreslår spillederen hvor dere kan begynne. Spillederen skriver stedene, karakterene og hemmelighetene.
+- **Fra ditt eget eventyr eller din egen bok**: gi spillederen filen, *[Importer dette eventyret som kampanjen vår: D:\Books\adventure.pdf. Ikke fortell meg noe av det som står i det.]* En fil utenfor kampanjen leses først etter at du har sagt ja i et vindu på datamaskinen din. En du legger i mappen **inbox** i kampanjen, leses med en gang. Den leses best som tekst, en EPUB, et Word-dokument eller en PDF der teksten kan markeres. En skannet PDF leses fra bildene av sidene, bare på Windows, sakte og med noen feil. Din egen KI-app leser den utenfor chatten, ellers spillederen i chatten, på abonnementet ditt: i Claude Code eller Codex leser en av de to den, i Antigravity din Antigravity, i OpenCode modellen du valgte sist i den. Hele dokumentet går til produsenten av den som leser det, under vilkårene for kontoen din og dens valg om trening. Dashbordet viser hvor langt det har kommet. Fra en roman foreslår spillederen hvor dere kan begynne. Spillederen skriver stedene, karakterene og hemmelighetene.
 
 En kampanje spilles én gang: for å spille det samme eventyret igjen, opprett en ny kampanje.
 
@@ -303,28 +317,34 @@ Hver kommando spilleder bruker, kan også kjøres i kampanjemappen: `rpg --help`
 
 **Kan spillederen jukse?** Spillederen kan ikke endre et kast RPG Engine har gjort, unntatt på vanskelighetsgrad historie, og heller ikke fakta som allerede er fastsatt.
 
-**Koster det noe?** RPG Engine er gratis. Spillederen kjører på agentens abonnement, eller på din egen datamaskin med en lokal modell. En spillkveld er en lang chat: på de minste abonnementene kan du nå abonnementets grense før kvelden er slutt. Bilder, oversettelser og importer bruker det samme abonnementet. RPG Engine selv bruker aldri en API-nøkkel, som betales per kall: logg agenten din inn med kontoen din, ikke med en nøkkel.
+**Koster det noe?** RPG Engine er gratis. Spillederen kjører på abonnementet til KI-appen din, eller på din egen datamaskin med en lokal modell. En spillkveld er en lang chat: på de minste abonnementene kan du nå grensen før kvelden er slutt. Bilder, oversettelser og importer bruker det samme abonnementet. RPG Engine selv bruker aldri en API-nøkkel, som betales per kall: logg KI-appen din inn med kontoen din, ikke med en nøkkel.
 
 **Kan jeg spille på telefonen?** Nei: spillederen kjører på datamaskinen din, og dashbordet åpnes bare der.
 
 **Kan jeg spille med venner?** Ikke ennå: i dag én spiller, én karakter, pluss følgesvenner ([Kommer senere](#9-coming-later)).
 
-**Kan jeg bruke en annen AI neste gang?** Ja: åpne kampanjen i en annen agent og skriv *fortsett*.
+**Kan jeg bruke en annen KI neste gang?** Ja: velg en annen app i chatten før du åpner den, eller åpne kampanjen i en annen app og skriv *fortsett*.
 
 ### Problemer
 
-**Dashbordet åpnes ikke.** Spør spillederen: `[OOC: Hva er lenken til dashbordet?]`. Det fungerer bare mens en chat i den kampanjen er åpen: i Claude Code og Codex starter det når chatten åpnes, i Antigravity med den første meldingen din. I Claude-appen går en chat som har ligget en stund i bakgrunnen, i dvale, og siden med den: klikk på chatten, så kommer siden tilbake på samme adresse.
+**En kampanje åpnes ikke.** Åpne RPG Engine på nytt fra ikonet, eller med `rpg open` i en terminal, og klikk på kampanjen. Hvis dashbordet sier *Not connected*, trykk **Åpne kampanjen igjen**. Et kort som sier **Fant ikke mappen**, har mistet mappen sin: ta det bort fra listen, og legg det til igjen med **Åpne en mappe …** der mappen ligger nå. I KI-appens egen chat fungerer dashbordet bare mens en chat i den kampanjen er åpen: spør spillederen `[OOC: Hva er lenken til dashbordet?]`. I Claude-appen går en chat som har ligget en stund i bakgrunnen, i dvale, og siden med den: klikk på chatten, så kommer siden tilbake på samme adresse.
 
-**Spillederen ser ikke ut til å kunne spillet.** Agenten din lastet ikke RPG Engine. Sjekk at du startet den i kampanjemappen og stolte på den. I Claude Code, skriv `/mcp` og koble til `rpg` på nytt. I Codex må `codex mcp list` i kampanjemappen vise `rpg`. Hvis `rpg --version` ikke blir funnet, installer RPG Engine på nytt ([2.2](#22-install)).
+**Spillederen ser ikke ut til å kunne spillet.** Dette skjer i KI-appens egen chat: den lastet ikke RPG Engine. Sjekk at du startet den i kampanjemappen og stolte på den. I Claude Code skriver du `/mcp` og kobler til `rpg` på nytt. I Codex må `codex mcp list` i kampanjemappen vise `rpg`. Hvis `rpg --version` ikke blir funnet, installer RPG Engine på nytt ([2.2](#22-install)).
 
-**Windows finner ikke `claude`.** Installasjonsprogrammet sier fra om det i et gult notat, med mappen det havnet i: legg den mappen til i PATH (Systemegenskaper > Miljøvariabler), og åpne deretter en ny terminal.
+**Windows finner ikke `claude`.** Dette skjer når du har installert Claude Code selv. Installasjonsprogrammet sier fra om det i et gult notat, med mappen det havnet i: legg den mappen til i PATH (Systemegenskaper > Miljøvariabler), og åpne deretter en ny terminal.
 
-**Oppdatering.** Kjør `npm install -g rpg-engine` på nytt, og åpne deretter en ny chat: en spilleder som kjører, beholder versjonen den startet med.
+**Oppdatering.** Når en nyere RPG Engine er ute, sier dashbordet fra: i Packages › Installed står RPG Engine først, med **Oppdater**. Gjør deretter det siden ber deg om. Du kan også kjøre `npm install -g rpg-engine` på nytt i en terminal og åpne en ny chat: en spilleder som kjører, beholder versjonen den startet med.
 
 **Spillederen husker noe jeg angret.** Åpne en ny chat og trykk på **Jeg har åpnet en ny chat** i Lagrede spill.
+
+**En app lar seg ikke installere.** Siden sier hvorfor: trykk **Prøv igjen**. Eller installer den selv fra produsentens nettsted, og trykk deretter **Sjekk på nytt**.
+
+**Innloggingssiden åpnes ikke i nettleseren.** Mens siden venter på deg, trykker du **Åpne innloggingssiden på nytt** der den vises, eller **Avbryt** og prøver én gang til.
+
+**Chatten på dashbordet sier at en annen chat spiller.** En chat du selv har åpnet i KI-appen din, spiller denne kampanjen: fortsett der, eller lukk den for å spille på dashbordet.
 
 **Ingen bilder vises.** Innstillinger > Campaign > Pictures viser om denne datamaskinen kan lage dem, og hvordan.
 
 **Installasjonen mislykkes, eller `rpg` vil ikke starte.** `node --version` må vise 24 eller nyere. Hvis Windows svarer at det er slått av å kjøre skript, se [2.1](#21-what-you-need). På Windows, hold RPG Engine og kampanjene dine unna stier som inneholder `&`.
 
-**Lenken til dashbordet endret seg.** Hver kampanje har sin egen adresse, den samme chat etter chat. Den endres bare når et annet program allerede bruker den: spillederen gir deg den nye lenken, og fra da av beholder kampanjen den. En andre chat i samme kampanje beholder siden på samme adresse, og tar den over når du lukker den første.
+**Lenken til dashbordet endret seg.** I KI-appens egen chat har hver kampanje sin egen adresse, den samme chat etter chat. Den endres bare når et annet program allerede bruker den: spillederen gir deg den nye lenken, og fra da av beholder kampanjen den. En andre chat i samme kampanje beholder siden på samme adresse, og tar den over når du lukker den første.

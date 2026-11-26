@@ -1,16 +1,16 @@
 # RPG Engine: the complete guide
 
-**RPG Engine** lets you play a tabletop role-playing game with an **AI as your game master**. You talk with the master in a **chat**; RPG Engine works behind the scenes: it **remembers the world**, **rolls the dice** and **keeps the accounts**. Beside the chat you keep a page open in your browser, the **dashboard**, with your sheet, the dice, the maps and your journal.
+**RPG Engine** lets you play a tabletop role-playing game with an **AI as your game master**. You play in the **dashboard**, a window on your computer with your sheet, the dice, the maps, your journal and the **chat** with the master. RPG Engine works behind the scenes: it **remembers the world**, **rolls the dice** and **keeps the accounts**.
 
 This guide is for players: you do not need to know how to program.
 
 ## Quick start <!-- icon: send -->
 
 1. Install **Node.js** from [nodejs.org](https://nodejs.org) (the LTS version).
-2. Install an **AI agent**, the program the master runs in, and sign in: for example Claude Code or Codex ([2.4](#24-connect-your-ai)).
-3. In a new terminal, opened after Node.js is installed, install RPG Engine: `npm install -g rpg-engine`. If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer yes and try again.
-4. Open the terminal in the folder where you keep your games (right-click it, **Open in Terminal**) and create a campaign, always with its name: `rpg init "The Salt Isles"`. RPG Engine answers with two lines in English: all is well.
-5. Go into the new folder, `cd "The Salt Isles"`, and start your agent there: `claude` for Claude Code, `codex` for Codex. Say yes when it asks whether you trust the folder ([2.4](#24-connect-your-ai)), then write *Hi! Let's start.* The master answers with the link to your dashboard.
+2. Once, in a new terminal opened after Node.js is installed, install RPG Engine: `npm install -g rpg-engine`. If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, answer yes and try again.
+3. Write `rpg open`. It asks whether to put RPG Engine's icon on your desktop and in your menu: press Enter for yes. From then on you start RPG Engine from its icon, with no terminal ([2.2](#22-install)).
+4. A window shows your campaigns. Press **New campaign**, give it a name and press **Create** ([2.3](#23-create-a-campaign)): its dashboard opens in a window of its own.
+5. In the chat with the master, choose your AI app and its model: Claude Code needs a paid Claude plan, Codex a ChatGPT account, free or paid ([2.4](#24-connect-your-ai)). If the app is missing, or you are not signed in, the page installs it or signs you in. Press **Open the chat**, then **Begin**. The first answer can take a couple of minutes; then the master asks how you want to play, and you make your character together.
 
 ## 1. What RPG Engine is <!-- icon: about -->
 
@@ -38,48 +38,46 @@ A game comes as a game system, a package the master installs for your campaign: 
 
 - A computer with Windows, macOS or Linux, and a web browser.
 - **Node.js 24** or newer, from [nodejs.org](https://nodejs.org). It brings `npm`, which installs RPG Engine.
-- A **terminal**: on Windows, Terminal or PowerShell; on macOS, Terminal. To open one in a folder, right-click the folder and choose **Open in Terminal** (Windows) or **Services > New Terminal at Folder** (macOS). If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` and answer yes.
-- An **AI agent** for the master ([2.4](#24-connect-your-ai)), with the **largest model** it offers: a small model is easier to talk into revealing secrets or bending the rules.
+- A **terminal**, once, to install RPG Engine: on Windows, Terminal or PowerShell; on macOS, Terminal. To open one in a folder, right-click the folder and choose **Open in Terminal** (Windows) or **Services > New Terminal at Folder** (macOS). If Windows answers that running scripts is disabled, write once `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` and answer yes.
+- An **AI app** for the master, with your own account ([2.4](#24-connect-your-ai)): the page can install it for you. Play with the **largest model** it offers: a small model is easier to talk into revealing secrets or bending the rules.
 
 ### 2.2 Install
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-`rpg --version` checks that it worked. If npm offers to update itself, you can ignore it. You use `rpg` once per campaign, to create it; after that your agent starts RPG Engine by itself. `rpg` alone opens nothing: the master gives you the dashboard.
+The first line installs RPG Engine; `rpg --version` checks that it worked. If npm offers to update itself, you can ignore it.
+
+`rpg open` opens RPG Engine's window, with your campaigns. The first time, it asks in the terminal whether to add its icon to your desktop and to your Start menu (Applications on a Mac): press Enter for yes. From then on you double-click the icon, and you need the terminal no more. Without the icon, write `rpg open` each time you play; `rpg icon` adds the icon later, and `rpg icon --remove` takes it away.
 
 ### 2.3 Create a campaign
 
-Open a terminal in the folder where you keep your games ([2.1](#21-what-you-need) says how):
+RPG Engine's window shows your campaigns as cards, the last one opened first. Press **New campaign** and give its **Name**, its **Language** and its **Game system**: the master makes the rest with you. It goes in a folder with its name, inside the `RPG Engine` folder of your user folder (on Windows, `C:\Users\<name>`); **Choose another folder…** puts it in an empty folder of your choice. Under **The master** you can already choose the AI app and the model for its first chat ([2.4](#24-connect-your-ai)). Press **Create**: the campaign's dashboard opens in a window of its own.
 
-```text
-rpg init "The Salt Isles"
-```
-
-This makes the folder `The Salt Isles` with a new campaign in it; go into it with `cd "The Salt Isles"`. Always write the name: without one, the folder you are in becomes the campaign, beside whatever it already holds. Remember where it is: you come back to it every time you play. You choose everything else later, in the chat or on the dashboard.
-
-The master cannot create a campaign for you: before `init`, nothing tells your agent where RPG Engine is.
+Next time, click a card to open its campaign; one that is open says **Open now**. **Open a folder…** adds a campaign you already have on this computer. The small cross on a card takes it off the list: its files stay where they are.
 
 ### 2.4 Connect your AI
 
-The master runs in an **AI agent**: an AI app, in the terminal or on the desktop, that can work with the files on your computer, such as Claude Code, Codex, Antigravity or OpenCode. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer. Each agent needs its own plan and login: Claude Code a paid Claude plan, Codex a ChatGPT login, Antigravity a Google account, whose free plan has a small weekly quota; OpenCode works with the models you give it, local ones included. You install it once, from its own page: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+The master runs in an **AI app** on your computer, with your own account: Claude Code, Codex, OpenCode or Antigravity. A plain chat such as claude.ai or ChatGPT, or a phone app, is not enough: the master needs to reach the campaign's files on your computer. Each app needs its own account: Claude Code a paid Claude plan (Pro or higher); Codex a ChatGPT account, free or paid; Antigravity a Google account, whose free use has weekly limits; OpenCode has some free models for a limited time, or uses your own provider's, local ones included.
 
-- **Claude Code**: in the campaign folder write `claude`. When it asks whether you trust the folder, choose **Yes, I trust this folder**; careful, the answer already selected is *No, exit*. The campaign also has a small hook, `rpg --listen`, which the question does not show: it tells the master at once when you act from the dashboard.
-- **Codex**: in the campaign folder write `codex`, and say yes when it asks whether you trust the folder. At key moments a character speaks through an agent of their own, `.codex/agents/rpg-character.toml`, which knows only what they know. In its desktop app, check in the settings that memories are off for the game's chats.
-- **Antigravity**: in the campaign folder write `agy`, and say yes if it asks whether you trust the folder; or, in its app, open the campaign folder. For the app, RPG Engine also adds itself to Antigravity's own settings, `.gemini/config/mcp_config.json` in your home, which hold for every folder you open, not only the campaign's: outside a campaign it does nothing. The campaign has two small hooks: `rpg --approve` lets the master use RPG Engine's tools without asking you each time, and `rpg --listen` tells the master at once when you act from the dashboard. The master paints the pictures in the chat itself, with a paid Google plan; on the free plan its image tool fails, and it draws simple vector pictures, as Claude does. At key moments a character speaks through an agent of their own, `.agents/agents/rpg-character.md`: the master writes a line of the story, and the character's answer comes a moment later. Your Antigravity also translates the dashboard and the game's rules and reads the documents you import, outside the chat, on your Google account's quota: RPG Engine starts it apart from your own chats, so it leaves nothing among them. Antigravity keeps your past chats, and its memory cannot be turned off: the master is told never to read them. What you write goes to Google, which may have people read it: keep personal data out of the game. RPG Engine is not a Google product.
-- **OpenCode**: in the campaign folder write `opencode`. The campaign has a small plugin, `.opencode/plugins/rpg.js`, that tells the master at once when you act from the dashboard. In the campaign the master writes files only through RPG Engine: OpenCode's own writing and editing of files is turned off there, and it asks you before it runs a command. The master draws the pictures itself, as simple vector pictures, as Claude does. At key moments a character speaks through an agent of their own, `.opencode/agents/rpg-character.md`: the master writes a line of the story, and the character's answer comes a moment later; a small local model may not call it. Your OpenCode, with the model you last chose in it, also translates the dashboard and the game's rules and reads the documents you import, outside the chat; without a model it can use, Codex or Claude Code do it if you have them.
-- **Another agent**: start it in the campaign folder and give it the MCP server `rpg mcp`. RPG Engine is a standard MCP server: any agent that supports MCP can be the master, local ones included.
+In the dashboard's chat, choose the app under **Your AI app**, then its **Model** and the **Master's thinking**: the page proposes them. More thinking is slower and uses more of your plan. An app that is not ready says what it needs, with a button that does it:
 
-If the master says it cannot find RPG Engine's tools, write `rpg init` in the campaign folder: in a folder that is already a campaign it only brings these files up to date; then open a new chat.
+- **Claude Code** and **Codex**: **Install Claude Code** or **Install Codex** downloads it into RPG Engine's own folder on this computer; **Sign in to Claude Code** or **Sign in to Codex** opens its sign-in page in your browser. RPG Engine never sees your password.
+- **OpenCode** and **Antigravity**: **Get OpenCode** or **Get Antigravity** opens its site, where you install it. OpenCode plays without signing in; Antigravity signs in from its own app. Then come back and press **Check again**.
 
-We play and test it with **Claude Code**; **Codex**, **Antigravity** and **OpenCode** are connected and checked, but no whole campaign has been played with them yet. The campaign turns off the agent's own memory: the game lives in its files, so that going back to a save really goes back.
+Antigravity is marked **on trial**: it can step out of the game and ask questions its own way, so Claude Code, Codex or OpenCode are better to play. Antigravity keeps your past chats, and its memory cannot be turned off: the master is told never to read them. What you write goes to Google, which may have people read it: keep personal data out of the game. RPG Engine is not a Google product. We play and test RPG Engine most with **Claude Code**: no whole campaign has been played with the others yet.
+
+In the dashboard's chat the master touches your computer only through RPG Engine: it opens none of your files by itself. RPG Engine reads outside the campaign only what you chose, after you say yes in a window of your computer.
+
+You can also play in your AI app's own chat, in a terminal or in its desktop app ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 The first chat
 
-Write anything, such as *Hi! Let's start.* In its first answer of every chat the master gives you the **link to your dashboard**, something like `http://127.0.0.1:4750`: open it and keep it beside the chat.
+With the app and the model chosen, press **Open the chat**: the app starts, which can take a few seconds. Then press **Begin**, or write anything, such as *Hi! Let's start.* The first answer can take a couple of minutes, while the master sets the scene.
 
-Between the master's messages your agent shows the tools it uses: do not open their details (in Claude Code, ctrl+o), they can show secrets.
+The chat has its own section, **Roleplay**, or stands beside the page: the small buttons at its top put it **In its tab**, **On the left** or **On the right**, and you drag its edge to make it wider.
 
 A new campaign goes through three stages, shown at the top of the dashboard: **1 Settings** (how you want to play), **2 Session zero** (you make your character, in play), **3 Play**.
 
@@ -113,7 +111,20 @@ Without a written world, the master also asks a **premise** (genre, tone, a few 
 
 You make your character with the master, as at a table. Every choice is yours, unless you ask the master to make it: come with a full idea, a vague one, or nothing; or ask the master to make it all from a few words. In a game with levels the master asks from which level you start: the first, unless you want another. The master tells you how ability scores are made before any die is rolled. Your story is never required; if you give one, the master writes it in your words. Then the master asks for a picture of your character ([3.7](#37-your-characters-story-and-picture)). RPG Engine works out the sheet: you never do the sums.
 
-Do you already have a character, from another game or another campaign? Choose **I already have one** in the setup and give it to the master: paste the sheet in the chat, or say where its file is on your computer (a PDF, a picture, a text). The master writes it as it is, at its level, checks it against the rules and the world, and agrees with you anything that does not fit.
+Do you already have a character, from another game or another campaign? Choose **I already have one** in the setup and give it to the master: paste the sheet in the chat. In your AI app's own chat you can also say where its file is on your computer (a PDF, a picture, a text); in the dashboard's chat the master opens no file of yours. The master writes it as it is, at its level, checks it against the rules and the world, and agrees with you anything that does not fit.
+
+### 2.8 The other way: your AI app's own chat
+
+You can also play in the chat of your AI app itself, in a terminal or in its desktop app, with the dashboard open beside it. Then you make the campaign in a terminal, in the folder where you keep your games ([2.1](#21-what-you-need) says how), always with its name: `rpg init "The Salt Isles"` makes the folder `The Salt Isles` with a new campaign in it. RPG Engine prepares by itself what each app needs there.
+
+Start your app in that folder: `claude` for Claude Code, `codex` for Codex, `agy` for Antigravity, `opencode` for OpenCode; or open the folder in its desktop app. Say yes when it asks whether you trust the folder: careful, in Claude Code the answer already selected is *No, exit*. Any other agent that supports MCP can be the master too: start it in the campaign folder and give it the MCP server `rpg mcp`.
+
+Write *Hi! Let's start.* In its first answer of every chat the master gives you the **link to your dashboard**, something like `http://127.0.0.1:4750`: open it beside the chat.
+
+- Between the master's messages your app shows the tools it uses: do not open their details (in Claude Code, ctrl+o), they can show secrets.
+- The campaign turns off the app's own memory: the game lives in its files, so that going back to a save really goes back. In Codex's desktop app, check in the settings that memories are off for the game's chats.
+- If the master says it cannot find RPG Engine's tools, write `rpg init` in the campaign folder, then open a new chat.
+- One chat at a time plays a campaign: while yours is open, the dashboard's chat waits.
 
 ---
 
@@ -125,7 +136,9 @@ Write what your character does or says, in your own words:
 
 > I ask the innkeeper who else came through tonight.
 
-Out of the story, write `[OOC: …]` (out of character): *[OOC: How does grappling work?]* The master answers the same way.
+Out of the story, write `[OOC: …]` (out of character): *[OOC: How does grappling work?]* The master answers the same way; in the dashboard's chat its words out of the game stand apart, marked OOC.
+
+In the dashboard's chat, write in the box at the bottom and press Enter to send; Shift+Enter starts a new line. While the master answers, **Stop** halts them, and your words wait in the box. When the master asks you something, its buttons come with the question, rolls included: click one, or write your answer. Under the box you see the app and the model; where the app allows it, click the model to change it once the master has answered. **Close the chat** ends the chat; the game stays in its files.
 
 You say what you try; the master says what happens. The master never decides for your character, and never talks about the engine. You can ask it how to use the dashboard.
 
@@ -183,17 +196,17 @@ RPG Engine saves the whole campaign at the end of every scene. The **saves** set
 
 In every mode you can **start over**, from the start of play or from session zero. Do it in the chat or in **Saves**.
 
-After going back, **open a new chat**: the old one remembers what was undone. Write *continue* in the new chat, then press **I opened a new chat** in Saves.
+After going back, **open a new chat**: the old one remembers what was undone. In the dashboard's chat, press **Close the chat**, then **New chat**; in your AI app's own chat, open a new conversation (`/clear` in Claude Code). Write *continue* in the new chat. Then tell the master that the chat is new: press **I opened a new chat** in Saves, or say so in the chat. Until then the master does not go on.
 
-If the campaign's folder is a git repository, **Settings** has a **Git** section, all off until you choose: a commit at the start of each session, at each save and at each end of a scene, and a push after it if you want. A commit is a snapshot of the campaign at that moment; a push sends the snapshots to the repository online, on GitHub for example, so that a copy lives outside this computer. The saves and your chats with the master stay out of the repository unless you let them in; let the chats in only if the repository is private.
+If you do not know what git is, skip this paragraph. If the campaign's folder is a git repository, **Settings** has a **Git** section, all off until you choose: a commit at the start of each session, at each save and at each end of a scene, and a push after it if you want. A commit is a snapshot of the campaign at that moment; a push sends the snapshots to the repository online, on GitHub for example, so that a copy lives outside this computer. The saves and your chats with the master stay out of the repository unless you let them in; let the chats in only if the repository is private.
 
 ### 3.9 Sessions: stopping and coming back
 
-Stop whenever you want: *[Let's stop here for tonight.]* Everything is already saved in the files. To come back, start your agent in the campaign folder and write *continue*: the master gives you a short recap and goes on.
+Stop whenever you want: *[Let's stop here for tonight.]* Everything is already saved in the files. To come back, open RPG Engine from its icon and click your campaign. If you left the chat open, it comes back by itself. If you closed it, press **Resume the chat**. Then press **Take up the story**: the master tells you in a few lines where you were, and goes on. If the game was closed while the master was still answering, or while a question of theirs waited for you, that button says **Pick up from here** instead. **New chat** opens a fresh chat on the same game. In your AI app's own chat, start it in the campaign folder and write *continue*.
 
 ### 3.10 The master's mood
 
-The robot at the top of the dashboard is the master: its face follows the tone of the story, and never gives away what you do not know yet. When the chat is closed, it sleeps.
+The robot at the top of the dashboard is the master: its face follows the tone of the story, and never gives away what you do not know yet. When the dashboard is not connected to the game, it sleeps.
 
 ### 3.11 Pictures
 
@@ -211,8 +224,9 @@ Every setting can change, in the chat or in **Settings**. A ruling the master ma
 
 ## 4. The dashboard <!-- icon: party -->
 
-A page on your own computer, open only in that computer's browser, live while the chat is open. When the chat closes, it shows *Not connected*; it comes back by itself with the next chat.
+A page on your own computer, in a window of its own, open only on that computer. It stays live while its window is open, with or without a chat; about thirty seconds after you close it, the game stops, and the chat with it. Nothing is lost: it is all in the files. In your AI app's own chat, it is live while that chat is open. When the game is away the page shows *Not connected*: press **Reopen the campaign**, or, in your own app, open the next chat. The **Campaigns** button, with the house, leads back to all your campaigns.
 
+- **Roleplay**: the chat with the master, when it is not beside the page ([2.5](#25-the-first-chat)).
 - **Party**: your sheet and your companions'. Click a number to roll it; hover over it to see where it comes from and, when an arrow marks its die, what makes the roll better or worse. When the master prepares choices for you, as at a new level, a notice on the sheet opens them: pick when you like, read the pages the options name, roll where an option rolls, then confirm; the story goes on meanwhile. Beside it, the rolls.
 - **Scene**: where you are, its picture and map, who is there, what is happening; in a fight, the turns and your character's card.
 - **Journal**: quests, the story as a book, its timeline, your companions' diaries, your notes.
@@ -264,7 +278,7 @@ An extension adds something to a campaign on top of its game system: a feature s
 
 - **Made on the fly**: from your premise, the master builds each place, person and plot just before you need it, and keeps it.
 - **Prepared at the start**: the same, with the world built before play.
-- **From your own adventure or book**: give the master its file, *[Import this adventure as our campaign: D:\Books\adventure.pdf. Don't tell me anything that's in it.]* It reads best as text, an EPUB, a Word document or a PDF whose text can be selected; a scanned PDF is read from the pictures of its pages, on Windows only, slowly and with a few mistakes. Your own AI app reads it outside the chat, or else the master in the chat, on your plan: in Claude Code or Codex one of those two reads it, in Antigravity your Antigravity, in OpenCode the model you last chose in it. The whole document goes to the maker of the one that reads it, under the terms of your account and its choice on training. The dashboard shows how far it is; from a novel, the master proposes where to start. It writes the places, the characters and the secrets.
+- **From your own adventure or book**: give the master its file, *[Import this adventure as our campaign: D:\Books\adventure.pdf. Don't tell me anything that's in it.]* A file outside the campaign is read only after you say yes in a window of your computer; one you put in the campaign's **inbox** folder is read at once. It reads best as text, an EPUB, a Word document or a PDF whose text can be selected; a scanned PDF is read from the pictures of its pages, on Windows only, slowly and with a few mistakes. Your own AI app reads it outside the chat, or else the master in the chat, on your plan: in Claude Code or Codex one of those two reads it, in Antigravity your Antigravity, in OpenCode the model you last chose in it. The whole document goes to the maker of the one that reads it, under the terms of your account and its choice on training. The dashboard shows how far it is; from a novel, the master proposes where to start. It writes the places, the characters and the secrets.
 
 A campaign is played once: to play the same adventure again, create a new campaign.
 
@@ -302,28 +316,34 @@ Every command the master uses can be run in the campaign folder too: `rpg --help
 
 **Can the master cheat?** It cannot change a roll RPG Engine made, except at difficulty story, nor facts already set.
 
-**Does it cost anything?** RPG Engine is free. The master runs on your agent's plan, or on your own computer with a local model. An evening of play is a long chat: on the smallest plans you may reach the plan's limit before the evening ends. Pictures, translations and imports use the same plan. RPG Engine itself never uses an API key, which is paid by the call: sign your agent in with your account, not with a key.
+**Does it cost anything?** RPG Engine is free. The master runs on your AI app's plan, or on your own computer with a local model. An evening of play is a long chat: on the smallest plans you may reach the plan's limit before the evening ends. Pictures, translations and imports use the same plan. RPG Engine itself never uses an API key, which is paid by the call: sign your AI app in with your account, not with a key.
 
 **Can I play on my phone?** No: the master runs on your computer, and the dashboard opens only there.
 
 **Can I play with friends?** Not yet: today one player, one character, plus companions ([Coming later](#9-coming-later)).
 
-**Can I use a different AI next time?** Yes: open the campaign in another agent and write *continue*.
+**Can I use a different AI next time?** Yes: choose another app in the chat before you open it, or open the campaign in another app and write *continue*.
 
 ### Problems
 
-**The dashboard does not open.** Ask the master: `[OOC: What's the dashboard link?]`. It works only while a chat of that campaign is open: in Claude Code and Codex it starts as the chat opens, in Antigravity with your first message. In the Claude app a chat left in the background for a while sleeps, and the page with it: click the chat, and the page comes back at the same address.
+**A campaign does not open.** Open RPG Engine again from its icon, or with `rpg open` in a terminal, and click the campaign. If its dashboard says *Not connected*, press **Reopen the campaign**. A card that says **Folder not found** lost its folder: take it off the list, and add it again with **Open a folder…** where it is now. In your AI app's own chat, the dashboard works only while a chat of that campaign is open: ask the master `[OOC: What's the dashboard link?]`. In the Claude app a chat left in the background for a while sleeps, and the page with it: click the chat, and the page comes back at the same address.
 
-**The master does not seem to know the game.** Your agent did not load RPG Engine. Check that you started it in the campaign folder and trusted it. In Claude Code, write `/mcp` and reconnect `rpg`. In Codex, `codex mcp list` in the campaign folder must show `rpg`. If `rpg --version` is not found, install RPG Engine again ([2.2](#22-install)).
+**The master does not seem to know the game.** This happens in your AI app's own chat: it did not load RPG Engine. Check that you started it in the campaign folder and trusted it. In Claude Code, write `/mcp` and reconnect `rpg`. In Codex, `codex mcp list` in the campaign folder must show `rpg`. If `rpg --version` is not found, install RPG Engine again ([2.2](#22-install)).
 
-**Windows does not find `claude`.** Its installer says so in a yellow note, with the folder it went into: add that folder to the PATH (System Properties > Environment Variables), then open a new terminal.
+**Windows does not find `claude`.** This happens when you installed Claude Code yourself. Its installer says so in a yellow note, with the folder it went into: add that folder to the PATH (System Properties > Environment Variables), then open a new terminal.
 
-**Updating.** Run `npm install -g rpg-engine` again, then open a new chat: a running master keeps the version it started with.
+**Updating.** When a newer RPG Engine is out, the dashboard says so: in Packages › Installed, RPG Engine comes first, with **Update**; then do what the page tells you. Or run `npm install -g rpg-engine` again in a terminal, then open a new chat: a running master keeps the version it started with.
 
 **The master remembers something I undid.** Open a new chat and press **I opened a new chat** in Saves.
+
+**An app does not install.** The page says why: press **Try again**. Or install it yourself from its maker's site, then press **Check again**.
+
+**The sign-in page does not open in the browser.** While the page waits for you, press **Open the sign-in page again** where it shows, or **Cancel** and try once more.
+
+**The dashboard's chat says another chat is playing.** A chat you opened yourself in your AI app is playing this campaign: go on there, or close it to play in the dashboard.
 
 **No pictures appear.** Settings > Campaign > Pictures says whether this computer can make them, and how.
 
 **Installing fails, or `rpg` will not start.** `node --version` must say 24 or newer. If Windows answers that running scripts is disabled, see [2.1](#21-what-you-need). On Windows, keep RPG Engine and your campaigns out of paths that contain `&`.
 
-**The dashboard link changed.** Each campaign has its own address, the same chat after chat. It changes only when another program is already using it: the master gives you the new link, and from then on it stays. A second chat of the same campaign keeps the page at the same address, and takes it over once you close the first.
+**The dashboard link changed.** In your AI app's own chat, each campaign has its own address, the same chat after chat. It changes only when another program is already using it: the master gives you the new link, and from then on it stays. A second chat of the same campaign keeps the page at the same address, and takes it over once you close the first.

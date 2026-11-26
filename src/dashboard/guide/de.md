@@ -1,17 +1,17 @@
-<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,e51b18d7,be38a186 f2f35057,51f49a5b 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,afad321d,99406ef2,f831ecd8,b6a6bfff,b5544596,5c016bb1,3afa0abc,ef6b72c1,bc923cc3,07c079ea,8b6ac2d5,7b760ca8,086f7b8c,db332866,06d7d789,e6f82f9e,6def7d66,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,a2da9de6,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,1c335942,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,44639926,6cb75000,86179abe,323d8fa3,f8d6b2fd,18bc17d2,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,92e343cc,83c19e53,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,3f155eae,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,180f77d8,e0f88bdb,1e0ccfed,05fde17f,5070d986,f83c9d82,5b0bb1d2,600db53a,6b115391,5db3836c,590b2eb2,df64a3bb,e9a3f2a9. Change the English, then run it again. -->
+<!-- Translated from en.md, paragraph by paragraph, by npm run translate: cdcc612c,920451e3,be38a186 f2f35057,6ca38325 128c5761,5e6cbafc,48febcc7,f0f71376,b1381f21,cb3f91d5 5faea867,7780116a,9d44b238,99406ef2,e6bcc348,f79c5b1e,272bd137,b5544596,591cdcfe,9a7d5853,07c079ea,2c297004,869e4581,0d938812,10dc1056,8158c275,0185620d,06d7d789,b4c2c7b3,725e11c3,f27372ca,d904fdec,8da0dbd5,1c13fe15,de62cd09,1aa7894f,56b73d9b,d9fbeec2,74dc52f1,9228c033,8e1adcaa,11800870,a75dc1e4,9886fddc,780281aa,cb3f91d5 09eaf555,63d0c1fb,27c765d2,46692547,e8a839a5,14954012,25f9bdf8,bd8adb1c,b0846f60,602a5e46,6fee496f,71124663,4bed5644,c2bbeff9,12a7bf4b,15e36217,4b57013e,cb7d8189,b2a29c8a,056b4e29,2ef22287,d61653a8,9d7e522f,f4c26681,c6b050c9,6c58220c,5f7b18e6,6a64e757,ad3fa941,57283bd2,e9fa262a,c64bfe05,ab627403,86179abe,21ba08ef,f8d6b2fd,3f5bbaaf,3bbb14f4,15e9f48c,65ff2775,623c2986,0fac97e5,d3afc486,cb3f91d5 ec2eeb06,5a2d9db1,ba8c72d7,da0fad21,cb3f91d5 5dafa85b,c5ec9f44,2e849e73,35a85f2e,607c7f74,95ffeabc,7687ded0,4ee5ae41,fd2934d1,177ddff0,a78e1054,025009be,c8315e19,cb3f91d5 40941750,f3b2d1f6,cb3f91d5 30c03e82,209b159b,b78e7609,b8e71497,32482cb4,d90a5d53,cb3f91d5 eac34391,4497f74b,487e04c0,c6ebe0c0,cb3f91d5 2f86bef9,9402592c,cb3f91d5 519ce5ee,de58bc03,fd906c57,697b0622,ab3874f2,e0f88bdb,1e0ccfed,bb5be5d8,5070d986,2dbad46d,a7d9232d,b21a6994,22436b3a,5db3836c,12a20643,cc12de47,d58492a7,590b2eb2,df64a3bb,e065c96f. Change the English, then run it again. -->
 # RPG Engine: der komplette Leitfaden
 
-**RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du sprichst mit der Spielleitung in einem **Chat**; RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**. Neben dem Chat hältst du im Browser eine Seite offen, das **Dashboard**, mit deinem Charakterbogen, den Würfeln, den Karten und deinem Tagebuch.
+**RPG Engine** lässt dich ein Pen-&-Paper-Rollenspiel mit einer **KI als Spielleitung** spielen. Du spielst im **Dashboard**, einem Fenster auf deinem Computer mit deinem Charakterbogen, den Würfeln, den Karten, deinem Tagebuch und dem **Chat** mit der Spielleitung. RPG Engine arbeitet im Hintergrund: Es **merkt sich die Welt**, **würfelt** und **führt Buch**.
 
 Dieser Leitfaden richtet sich an Spielende: Du musst nicht programmieren können.
 
 ## Schnellstart <!-- icon: send -->
 
 1. Installiere **Node.js** von [nodejs.org](https://nodejs.org) (die LTS-Version).
-2. Installiere einen **KI-Agenten**, das Programm, in dem die Spielleitung läuft, und melde dich an: zum Beispiel Claude Code oder Codex ([2.4](#24-connect-your-ai)).
-3. Installiere RPG Engine in einem neuen Terminal, das du nach der Installation von Node.js geöffnet hast: `npm install -g rpg-engine`. Wenn Windows meldet, dass das Ausführen von Skripten deaktiviert ist, schreibe einmal `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, antworte mit Ja und versuche es noch einmal.
-4. Öffne das Terminal in dem Ordner, in dem du deine Spiele aufbewahrst (rechtsklicke ihn, **Im Terminal öffnen**), und lege eine Kampagne an, immer mit ihrem Namen: `rpg init "The Salt Isles"`. RPG Engine antwortet mit zwei Zeilen auf Englisch: Alles ist in Ordnung.
-5. Wechsle in den neuen Ordner mit `cd "The Salt Isles"` und starte dort deinen Agenten: `claude` für Claude Code, `codex` für Codex. Bestätige mit Ja, wenn er fragt, ob du dem Ordner vertraust ([2.4](#24-connect-your-ai)), und schreibe dann *Hallo! Lass uns anfangen.* Die Spielleitung antwortet mit dem Link zu deinem Dashboard.
+2. Installiere RPG Engine, einmalig, in einem neuen Terminal, das du nach der Installation von Node.js geöffnet hast: `npm install -g rpg-engine`. Wenn Windows meldet, dass das Ausführen von Skripten deaktiviert ist, schreibe einmal `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, antworte mit Ja und versuche es noch einmal.
+3. Schreibe `rpg open`. Es fragt, ob das Symbol von RPG Engine auf deinen Desktop und in dein Menü soll: Drücke Enter für Ja. Ab dann startest du RPG Engine über sein Symbol, ohne Terminal ([2.2](#22-install)).
+4. Ein Fenster zeigt deine Kampagnen. Drücke auf **Neue Kampagne**, gib ihr einen Namen und drücke auf **Erstellen** ([2.3](#23-create-a-campaign)): Ihr Dashboard öffnet sich in einem eigenen Fenster.
+5. Wähle im Chat mit der Spielleitung deine KI-App und ihr Modell: Claude Code braucht einen bezahlten Claude-Tarif, Codex ein ChatGPT-Konto, kostenlos oder bezahlt ([2.4](#24-connect-your-ai)). Fehlt die App oder bist du nicht angemeldet, installiert die Seite sie oder meldet dich an. Drücke auf **Chat öffnen**, dann auf **Beginnen**. Die erste Antwort kann ein paar Minuten dauern. Dann fragt die Spielleitung, wie du spielen möchtest, und ihr erschafft gemeinsam deinen Charakter.
 
 ## 1. Was RPG Engine ist <!-- icon: about -->
 
@@ -39,48 +39,46 @@ Ein Spiel kommt als Spielsystem, ein Paket, das die Spielleitung für deine Kamp
 
 - Einen Computer mit Windows, macOS oder Linux und einen Webbrowser.
 - **Node.js 24** oder neuer, von [nodejs.org](https://nodejs.org). Es bringt `npm` mit, womit du RPG Engine installierst.
-- Ein **Terminal**: unter Windows Terminal oder PowerShell, unter macOS Terminal. Um eines in einem Ordner zu öffnen, klickst du den Ordner mit der rechten Maustaste an und wählst **Im Terminal öffnen** (Windows) oder **Dienste > Neues Terminal beim Ordner** (macOS). Wenn Windows meldet, dass das Ausführen von Skripten deaktiviert ist, schreibe einmal `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` und antworte mit Ja.
-- Einen **KI-Agenten** für die Spielleitung ([2.4](#24-connect-your-ai)), mit dem **größten Modell**, das er anbietet: Ein kleines Modell lässt sich leichter dazu bringen, Geheimnisse zu verraten oder die Regeln zu verbiegen.
+- Ein **Terminal**, einmalig, um RPG Engine zu installieren: unter Windows Terminal oder PowerShell, unter macOS Terminal. Um eines in einem Ordner zu öffnen, klickst du den Ordner mit der rechten Maustaste an und wählst **Im Terminal öffnen** (Windows) oder **Dienste > Neues Terminal beim Ordner** (macOS). Wenn Windows meldet, dass das Ausführen von Skripten deaktiviert ist, schreibe einmal `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` und antworte mit Ja.
+- Eine **KI-App** für die Spielleitung, mit deinem eigenen Konto ([2.4](#24-connect-your-ai)): Die Seite kann sie für dich installieren. Spiele mit dem **größten Modell**, das sie anbietet: Ein kleines Modell lässt sich leichter dazu bringen, Geheimnisse zu verraten oder die Regeln zu verbiegen.
 
 ### 2.2 Installieren
 
 ```text
 npm install -g rpg-engine
+rpg open
 ```
 
-Mit `rpg --version` prüfst du, ob es geklappt hat. Wenn npm anbietet, sich selbst zu aktualisieren, kannst du das ignorieren. Du nutzt `rpg` einmal pro Kampagne, um sie anzulegen. Danach startet dein Agent RPG Engine von selbst. `rpg` allein öffnet nichts: Das Dashboard gibt dir die Spielleitung.
+Die erste Zeile installiert RPG Engine. Mit `rpg --version` prüfst du, ob es geklappt hat. Wenn npm anbietet, sich selbst zu aktualisieren, kannst du das ignorieren.
+
+`rpg open` öffnet das Fenster von RPG Engine mit deinen Kampagnen. Beim ersten Mal fragt es im Terminal, ob sein Symbol auf deinen Desktop und in dein Startmenü (unter macOS in Programme) soll: Drücke Enter für Ja. Ab dann klickst du doppelt auf das Symbol und brauchst das Terminal nicht mehr. Ohne das Symbol schreibst du bei jedem Spielen `rpg open`. Mit `rpg icon` fügst du das Symbol später hinzu, mit `rpg icon --remove` entfernst du es.
 
 ### 2.3 Eine Kampagne anlegen
 
-Öffne ein Terminal in dem Ordner, in dem du deine Spiele aufbewahrst ([2.1](#21-what-you-need) erklärt, wie):
+Das Fenster von RPG Engine zeigt deine Kampagnen als Karten, die zuletzt geöffnete zuerst. Drücke auf **Neue Kampagne** und fülle **Name**, **Sprache** und **Spielsystem** aus: Den Rest erschafft die Spielleitung mit dir. Die Kampagne liegt in einem Ordner mit ihrem Namen, im Ordner `RPG Engine` deines Benutzerordners (unter Windows `C:\Users\<name>`). Mit **Anderen Ordner wählen…** legst du sie in einem leeren Ordner deiner Wahl ab. Unter **Die Spielleitung** kannst du schon die KI-App und das Modell für den ersten Chat wählen ([2.4](#24-connect-your-ai)). Drücke auf **Erstellen**: Das Dashboard der Kampagne öffnet sich in einem eigenen Fenster.
 
-```text
-rpg init "The Salt Isles"
-```
-
-Das erstellt den Ordner `The Salt Isles` mit einer neuen Kampagne darin. Wechsle mit `cd "The Salt Isles"` hinein. Schreibe immer den Namen: Ohne Namen wird der Ordner, in dem du gerade bist, zur Kampagne, neben allem, was er schon enthält. Merk dir, wo er liegt: Du kehrst jedes Mal dorthin zurück, wenn du spielst. Alles andere legst du später fest, im Chat oder im Dashboard.
-
-Die Spielleitung kann keine Kampagne für dich anlegen: Vor `init` sagt nichts deinem Agenten, wo RPG Engine ist.
+Beim nächsten Mal klickst du auf eine Karte, um ihre Kampagne zu öffnen. Eine geöffnete Kampagne trägt den Vermerk **Jetzt geöffnet**. Mit **Ordner öffnen…** fügst du eine Kampagne hinzu, die du schon auf diesem Computer hast. Das kleine Kreuz auf einer Karte nimmt sie von der Liste: Ihre Dateien bleiben, wo sie sind.
 
 ### 2.4 Deine KI verbinden
 
-Die Spielleitung läuft in einem **KI-Agenten**: einer KI-App im Terminal oder auf dem Desktop, die mit den Dateien auf deinem Computer arbeiten kann, zum Beispiel Claude Code, Codex, Antigravity oder OpenCode. Ein einfacher Chat wie claude.ai oder ChatGPT oder eine Handy-App reicht nicht: Die Spielleitung muss die Dateien der Kampagne auf deinem Computer erreichen können. Jeder Agent braucht seinen eigenen Tarif und sein eigenes Login: Claude Code einen bezahlten Claude-Tarif, Codex ein ChatGPT-Login, Antigravity ein Google-Konto, dessen kostenloser Tarif ein kleines Wochenkontingent hat. OpenCode funktioniert mit den Modellen, die du ihm gibst, auch mit lokalen. Du installierst ihn einmal, über seine eigene Seite: [Claude Code](https://code.claude.com/docs/en/setup), [Codex](https://developers.openai.com/codex), [Antigravity](https://antigravity.google), [OpenCode](https://opencode.ai).
+Die Spielleitung läuft in einer **KI-App** auf deinem Computer, mit deinem eigenen Konto: Claude Code, Codex, OpenCode oder Antigravity. Ein einfacher Chat wie claude.ai oder ChatGPT oder eine Handy-App reicht nicht: Die Spielleitung muss die Dateien der Kampagne auf deinem Computer erreichen können. Jede App braucht ihr eigenes Konto: Claude Code einen bezahlten Claude-Tarif (Pro oder höher), Codex ein ChatGPT-Konto, kostenlos oder bezahlt, Antigravity ein Google-Konto, dessen kostenlose Nutzung Wochenlimits hat. OpenCode hat zeitweise einige kostenlose Modelle oder nutzt die deines eigenen Anbieters, auch lokale.
 
-- **Claude Code**: Schreibe im Kampagnenordner `claude`. Wenn es fragt, ob du dem Ordner vertraust, wähle **Yes, I trust this folder**. Vorsicht: Die vorausgewählte Antwort ist *No, exit*. Die Kampagne hat außerdem einen kleinen Hook, `rpg --listen`, den die Frage nicht zeigt: Er sagt der Spielleitung sofort Bescheid, wenn du im Dashboard etwas tust.
-- **Codex**: Schreibe im Kampagnenordner `codex` und antworte mit Ja, wenn es fragt, ob du dem Ordner vertraust. In Schlüsselmomenten spricht ein Charakter durch einen eigenen Agenten, `.codex/agents/rpg-character.toml`, der nur weiß, was der Charakter weiß. Prüfe in der Desktop-App in den Einstellungen, dass die Erinnerungen für die Chats des Spiels ausgeschaltet sind.
-- **Antigravity**: Schreibe im Kampagnenordner `agy` und antworte mit Ja, wenn es fragt, ob du dem Ordner vertraust. Oder öffne in der App den Kampagnenordner. Für die App trägt sich RPG Engine außerdem in die eigenen Einstellungen von Antigravity ein, `.gemini/config/mcp_config.json` in deinem Home-Verzeichnis. Sie gelten für jeden Ordner, den du öffnest, nicht nur für den der Kampagne: Außerhalb einer Kampagne tut RPG Engine dann nichts. Die Kampagne hat zwei kleine Hooks: `rpg --approve` erlaubt der Spielleitung, die Werkzeuge von RPG Engine zu nutzen, ohne jedes Mal bei dir nachzufragen, und `rpg --listen` sagt der Spielleitung sofort Bescheid, wenn du im Dashboard etwas tust. Die Spielleitung malt die Bilder selbst im Chat, mit einem bezahlten Google-Tarif. Im kostenlosen Tarif fällt ihr Bildwerkzeug aus, dann zeichnet sie einfache Vektorbilder, wie Claude es tut. In Schlüsselmomenten spricht ein Charakter durch einen eigenen Agenten, `.agents/agents/rpg-character.md`: Die Spielleitung schreibt eine Zeile der Geschichte, und die Antwort des Charakters kommt einen Moment später. Dein Antigravity übersetzt außerdem das Dashboard und die Regeln des Spiels und liest die Dokumente, die du importierst, außerhalb des Chats, mit dem Kontingent deines Google-Kontos: RPG Engine startet es getrennt von deinen eigenen Chats, sodass es dort nichts hinterlässt. Antigravity behält deine bisherigen Chats, und sein Speicher lässt sich nicht ausschalten: Die Spielleitung hat die Anweisung, sie nie zu lesen. Was du schreibst, geht an Google, wo es unter Umständen von Menschen gelesen wird: Gib keine persönlichen Daten ins Spiel ein. RPG Engine ist kein Produkt von Google.
-- **OpenCode**: Schreibe im Kampagnenordner `opencode`. Die Kampagne hat ein kleines Plugin, `.opencode/plugins/rpg.js`, das der Spielleitung sofort Bescheid sagt, wenn du im Dashboard etwas tust. In der Kampagne schreibt die Spielleitung Dateien nur über RPG Engine: Das eigene Schreiben und Bearbeiten von Dateien ist in OpenCode dort ausgeschaltet, und es fragt dich, bevor es einen Befehl ausführt. Die Spielleitung zeichnet die Bilder selbst, als einfache Vektorbilder, wie Claude es tut. In Schlüsselmomenten spricht ein Charakter durch einen eigenen Agenten, `.opencode/agents/rpg-character.md`: Die Spielleitung schreibt eine Zeile der Geschichte, und die Antwort des Charakters kommt einen Moment später. Ein kleines lokales Modell ruft ihn vielleicht nicht auf. Dein OpenCode übersetzt außerdem mit dem Modell, das du zuletzt darin gewählt hast, das Dashboard und die Regeln des Spiels und liest die Dokumente, die du importierst, außerhalb des Chats. Hat es kein nutzbares Modell, übernehmen Codex oder Claude Code das, wenn du sie hast.
-- **Ein anderer Agent**: Starte ihn im Kampagnenordner und gib ihm den MCP-Server `rpg mcp`. RPG Engine ist ein Standard-MCP-Server: Jeder Agent, der MCP unterstützt, kann die Spielleitung sein, auch lokale.
+Wähle im Chat des Dashboards unter **Deine KI-App** die App, dann ihr **Modell** und die **Überlegungen der Spielleitung**: Die Seite schlägt sie vor. Mehr Überlegung ist langsamer und verbraucht mehr von deinem Tarif. Eine App, die noch nicht bereit ist, sagt, was sie braucht, mit einer Schaltfläche, die es erledigt:
 
-Wenn die Spielleitung sagt, dass sie die Werkzeuge von RPG Engine nicht finden kann, schreibe `rpg init` im Kampagnenordner: In einem Ordner, der schon eine Kampagne ist, bringt es nur diese Dateien auf den neuesten Stand. Öffne danach einen neuen Chat.
+- **Claude Code** und **Codex**: **Claude Code installieren** oder **Codex installieren** lädt die App in den eigenen Ordner von RPG Engine auf diesem Computer herunter. **Bei Claude Code anmelden** oder **Bei Codex anmelden** öffnet ihre Anmeldeseite in deinem Browser. RPG Engine sieht nie dein Passwort.
+- **OpenCode** und **Antigravity**: **OpenCode holen** oder **Antigravity holen** öffnet ihre Website, wo du sie installierst. OpenCode spielt ohne Anmeldung, Antigravity meldet sich in seiner eigenen App an. Komm dann zurück und drücke auf **Erneut prüfen**.
 
-Wir spielen und testen mit **Claude Code**. **Codex**, **Antigravity** und **OpenCode** sind angebunden und geprüft, aber es wurde noch keine ganze Kampagne damit gespielt. Die Kampagne schaltet den eigenen Speicher des Agenten ab: Das Spiel lebt in seinen Dateien, damit die Rückkehr zu einem Spielstand wirklich zurückführt.
+Antigravity ist als **in der Testphase** markiert: Es kann aus dem Spiel aussteigen und auf seine eigene Art Fragen stellen, deshalb eignen sich Claude Code, Codex oder OpenCode besser zum Spielen. Antigravity behält deine bisherigen Chats, und sein Speicher lässt sich nicht ausschalten: Die Spielleitung hat die Anweisung, sie nie zu lesen. Was du schreibst, geht an Google, wo es unter Umständen von Menschen gelesen wird: Gib keine persönlichen Daten ins Spiel ein. RPG Engine ist kein Produkt von Google. Wir spielen und testen RPG Engine am meisten mit **Claude Code**: Mit den anderen wurde noch keine ganze Kampagne gespielt.
+
+Im Chat des Dashboards greift die Spielleitung nur über RPG Engine auf deinen Computer zu: Von selbst öffnet sie keine deiner Dateien. RPG Engine liest außerhalb der Kampagne nur, was du gewählt hast, nachdem du in einem Fenster deines Computers Ja gesagt hast.
+
+Du kannst auch im eigenen Chat deiner KI-App spielen, in einem Terminal oder in ihrer Desktop-App ([2.8](#28-the-other-way-your-ai-apps-own-chat)).
 
 ### 2.5 Der erste Chat
 
-Schreib irgendetwas, zum Beispiel *Hallo! Lass uns anfangen.* In ihrer ersten Antwort jedes Chats gibt dir die Spielleitung den **Link zu deinem Dashboard**, etwa `http://127.0.0.1:4750`. Öffne ihn und lass ihn neben dem Chat offen.
+Sind App und Modell gewählt, drücke auf **Chat öffnen**: Die App startet, was ein paar Sekunden dauern kann. Drücke dann auf **Beginnen** oder schreibe irgendetwas, zum Beispiel *Hallo! Lass uns anfangen.* Die erste Antwort kann ein paar Minuten dauern, während die Spielleitung die Szene aufbaut.
 
-Zwischen den Nachrichten der Spielleitung zeigt dein Agent die Werkzeuge, die er benutzt. Öffne ihre Details nicht (in Claude Code mit Strg+O), denn sie können Geheimnisse zeigen.
+Der Chat hat einen eigenen Bereich, **Rollenspiel**, oder steht neben der Seite: Die kleinen Schaltflächen oben im Chat legen ihn **In eigenem Tab**, **Links** oder **Rechts** ab, und du ziehst an seinem Rand, um ihn breiter zu machen.
 
 Eine neue Kampagne durchläuft drei Schritte, die oben im Dashboard stehen: **1 Einstellungen** (wie du spielen willst), **2 Session Zero** (du erschaffst deinen Charakter, im Spiel), **3 Spiel**.
 
@@ -114,7 +112,20 @@ Der **Stil der Spielleitung** wird nie abgefragt, aber du kannst ihn im Chat ode
 
 Du erschaffst deinen Charakter gemeinsam mit der Spielleitung, wie an einem Spieltisch. Jede Entscheidung liegt bei dir, außer du bittest die Spielleitung, sie zu treffen: Komm mit einer fertigen Idee, einer vagen oder mit nichts. Oder bitte die Spielleitung, alles aus ein paar Worten zu erschaffen. In einem Spiel mit Stufen fragt die Spielleitung, mit welcher Stufe du beginnst: mit der ersten, außer du willst eine andere. Die Spielleitung sagt dir, wie die Attributswerte bestimmt werden, bevor ein Würfel fällt. Eine Hintergrundgeschichte ist nie Pflicht. Wenn du eine erzählst, schreibt die Spielleitung sie in deinen Worten auf. Danach bittet die Spielleitung dich um ein Bild deines Charakters ([3.7](#37-your-characters-story-and-picture)). RPG Engine berechnet den Charakterbogen: Du musst nie rechnen.
 
-Hast du schon einen Charakter, aus einem anderen Spiel oder einer anderen Kampagne? Wähle bei der Einrichtung **ich habe schon eine** und gib ihn der Spielleitung: Füge den Charakterbogen in den Chat ein oder sag, wo seine Datei auf deinem Computer liegt (ein PDF, ein Bild, ein Text). Die Spielleitung schreibt ihn so auf, wie er ist, auf seiner Stufe, prüft ihn an den Regeln und an der Welt und klärt mit dir alles, was nicht passt.
+Hast du schon einen Charakter, aus einem anderen Spiel oder einer anderen Kampagne? Wähle bei der Einrichtung **ich habe schon eine** und gib ihn der Spielleitung: Füge den Charakterbogen in den Chat ein. Im eigenen Chat deiner KI-App kannst du auch sagen, wo seine Datei auf deinem Computer liegt (ein PDF, ein Bild, ein Text). Im Chat des Dashboards öffnet die Spielleitung keine Datei von dir. Die Spielleitung schreibt den Charakter so auf, wie er ist, auf seiner Stufe, prüft ihn an den Regeln und an der Welt und klärt mit dir alles, was nicht passt.
+
+### 2.8 Der andere Weg: der eigene Chat deiner KI-App
+
+Du kannst auch im Chat deiner KI-App selbst spielen, in einem Terminal oder in ihrer Desktop-App, mit dem Dashboard daneben. Dann legst du die Kampagne in einem Terminal an, in dem Ordner, in dem du deine Spiele aufbewahrst ([2.1](#21-what-you-need) sagt, wie), immer mit ihrem Namen: `rpg init "The Salt Isles"` erstellt den Ordner `The Salt Isles` mit einer neuen Kampagne darin. RPG Engine bereitet dort von selbst vor, was jede App braucht.
+
+Starte deine App in diesem Ordner: `claude` für Claude Code, `codex` für Codex, `agy` für Antigravity, `opencode` für OpenCode. Oder öffne den Ordner in ihrer Desktop-App. Antworte mit Ja, wenn sie fragt, ob du dem Ordner vertraust. Vorsicht: In Claude Code ist die vorausgewählte Antwort *No, exit*. Jeder andere Agent, der MCP unterstützt, kann ebenfalls die Spielleitung sein: Starte ihn im Kampagnenordner und gib ihm den MCP-Server `rpg mcp`.
+
+Schreibe *Hallo! Lass uns anfangen.* In ihrer ersten Antwort jedes Chats gibt dir die Spielleitung den **Link zu deinem Dashboard**, etwa `http://127.0.0.1:4750`: Öffne ihn neben dem Chat.
+
+- Zwischen den Nachrichten der Spielleitung zeigt deine App die Werkzeuge, die sie benutzt. Öffne ihre Details nicht (in Claude Code mit Strg+O), denn sie können Geheimnisse zeigen.
+- Die Kampagne schaltet den eigenen Speicher der App ab: Das Spiel lebt in seinen Dateien, damit die Rückkehr zu einem Spielstand wirklich zurückführt. Prüfe in der Desktop-App von Codex in den Einstellungen, dass die Erinnerungen für die Chats des Spiels ausgeschaltet sind.
+- Wenn die Spielleitung sagt, dass sie die Werkzeuge von RPG Engine nicht finden kann, schreibe `rpg init` im Kampagnenordner und öffne dann einen neuen Chat.
+- Eine Kampagne wird immer nur von einem Chat gespielt: Solange deiner offen ist, wartet der Chat des Dashboards.
 
 ---
 
@@ -126,7 +137,9 @@ Schreib, was dein Charakter tut oder sagt, in deinen eigenen Worten:
 
 > Ich frage die Wirtin, wer heute Nacht noch vorbeigekommen ist.
 
-Außerhalb der Geschichte schreibst du `[OOC: …]` (out of character): *[OOC: Wie funktioniert das Ringen?]* Die Spielleitung antwortet genauso.
+Außerhalb der Geschichte schreibst du `[OOC: …]` (out of character): *[OOC: Wie funktioniert das Ringen?]* Die Spielleitung antwortet genauso. Im Chat des Dashboards stehen ihre Worte außerhalb des Spiels abgesetzt und sind mit OOC markiert.
+
+Schreibe im Chat des Dashboards in das Feld unten und drücke Enter zum Senden. Mit Umschalt+Enter beginnst du eine neue Zeile. Während die Spielleitung antwortet, hält **Stopp** sie an, und deine Worte warten im Feld. Wenn die Spielleitung dir eine Frage stellt, kommen ihre Schaltflächen mit der Frage, Würfe eingeschlossen: Klicke auf eine oder schreibe deine Antwort. Unter dem Feld siehst du die App und das Modell. Wo die App es erlaubt, klickst du auf das Modell, um es zu wechseln, sobald die Spielleitung geantwortet hat. **Chat schließen** beendet den Chat. Das Spiel bleibt in seinen Dateien.
 
 Du sagst, was du versuchst. Die Spielleitung sagt, was passiert. Sie entscheidet nie für deinen Charakter und spricht nie über die Engine. Du kannst sie fragen, wie das Dashboard funktioniert.
 
@@ -184,17 +197,17 @@ RPG Engine speichert die ganze Kampagne am Ende jeder Szene. Die Einstellung **S
 
 In jedem Modus kannst du **neu anfangen**, vom Beginn des Spiels oder von Session Zero an. Mach das im Chat oder unter **Spielstände**.
 
-Öffne nach dem Zurückgehen **einen neuen Chat**: Der alte erinnert sich an das, was rückgängig gemacht wurde. Schreib im neuen Chat *weiter*, dann drück unter Spielstände auf **Ich habe einen neuen Chat geöffnet**.
+Öffne nach dem Zurückgehen **einen neuen Chat**: Der alte erinnert sich an das, was rückgängig gemacht wurde. Drücke im Chat des Dashboards auf **Chat schließen**, dann auf **Neuer Chat**. Öffne im eigenen Chat deiner KI-App eine neue Unterhaltung (`/clear` in Claude Code). Schreibe im neuen Chat *weiter*. Sag dann der Spielleitung, dass der Chat neu ist: Drücke unter **Spielstände** auf **Ich habe einen neuen Chat geöffnet** oder sag es im Chat. Bis dahin macht die Spielleitung nicht weiter.
 
-Ist der Ordner der Kampagne ein Git-Repository, gibt es in den **Einstellungen** einen Abschnitt **Git**. Alles ist ausgeschaltet, bis du etwas wählst: ein Commit zu Beginn jeder Session, bei jedem Spielstand und am Ende jeder Szene, und danach auf Wunsch ein Push. Ein Commit ist eine Momentaufnahme der Kampagne zu diesem Zeitpunkt. Ein Push schickt die Momentaufnahmen an das Repository im Internet, zum Beispiel auf GitHub, damit eine Kopie außerhalb dieses Computers liegt. Die Spielstände und deine Chats mit der Spielleitung bleiben außerhalb des Repositorys, es sei denn, du lässt sie hinein. Lass die Chats nur hinein, wenn das Repository privat ist.
+Wenn du nicht weißt, was Git ist, überspringe diesen Absatz. Ist der Ordner der Kampagne ein Git-Repository, gibt es in den **Einstellungen** einen Abschnitt **Git**. Alles ist ausgeschaltet, bis du etwas wählst: ein Commit zu Beginn jeder Session, bei jedem Spielstand und am Ende jeder Szene, und danach auf Wunsch ein Push. Ein Commit ist eine Momentaufnahme der Kampagne zu diesem Zeitpunkt. Ein Push schickt die Momentaufnahmen an das Repository im Internet, zum Beispiel auf GitHub, damit eine Kopie außerhalb dieses Computers liegt. Die Spielstände und deine Chats mit der Spielleitung bleiben außerhalb des Repositorys, es sei denn, du lässt sie hinein. Lass die Chats nur hinein, wenn das Repository privat ist.
 
 ### 3.9 Sessions: aufhören und zurückkommen
 
-Hör auf, wann du willst: *[Lass uns für heute Abend hier aufhören.]* Alles ist schon in den Dateien gespeichert. Um zurückzukommen, starte deinen Agenten im Kampagnenordner und schreib *weiter*: Die Spielleitung gibt dir eine kurze Zusammenfassung und macht weiter.
+Hör auf, wann du willst: *[Lass uns für heute Abend hier aufhören.]* Alles ist schon in den Dateien gespeichert. Um zurückzukommen, öffne RPG Engine über sein Symbol und klicke auf deine Kampagne. Hast du den Chat offen gelassen, kommt er von selbst zurück. Hast du ihn geschlossen, drücke auf **Chat fortsetzen**. Drücke dann auf **Geschichte fortsetzen**: Die Spielleitung sagt dir in ein paar Zeilen, wo du warst, und macht weiter. Wurde das Spiel geschlossen, während die Spielleitung noch antwortete oder eine Frage von ihr auf dich wartete, steht auf dieser Schaltfläche stattdessen **Hier weitermachen**. **Neuer Chat** öffnet einen frischen Chat zum selben Spiel. Starte im eigenen Chat deiner KI-App den Chat im Kampagnenordner und schreibe *weiter*.
 
 ### 3.10 Die Stimmung der Spielleitung
 
-Der Roboter oben auf dem Dashboard ist die Spielleitung: Sein Gesicht folgt dem Ton der Geschichte und verrät nie, was du noch nicht weißt. Wenn der Chat geschlossen ist, schläft er.
+Der Roboter oben im Dashboard ist die Spielleitung: Sein Gesicht folgt dem Ton der Geschichte und verrät nie, was du noch nicht weißt. Wenn das Dashboard nicht mit dem Spiel verbunden ist, schläft er.
 
 ### 3.11 Bilder
 
@@ -212,14 +225,15 @@ Jede Einstellung lässt sich ändern, im Chat oder in den **Einstellungen**. Ein
 
 ## 4. Das Dashboard <!-- icon: party -->
 
-Eine Seite auf deinem eigenen Computer. Sie lässt sich nur im Browser dieses Computers öffnen und ist live, solange der Chat offen ist. Wenn der Chat schließt, zeigt sie *Nicht verbunden*. Mit dem nächsten Chat kommt sie von selbst zurück.
+Eine Seite auf deinem eigenen Computer, in einem eigenen Fenster, nur auf diesem Computer zu öffnen. Sie ist live, solange ihr Fenster offen ist, mit oder ohne Chat. Etwa dreißig Sekunden nachdem du es schließt, endet das Spiel und mit ihm der Chat. Nichts geht verloren: Alles liegt in den Dateien. Im eigenen Chat deiner KI-App ist die Seite live, solange dieser Chat offen ist. Ist das Spiel nicht mehr da, zeigt die Seite *Nicht verbunden*: Drücke auf **Kampagne erneut öffnen** oder öffne in deiner eigenen App den nächsten Chat. Die Schaltfläche **Kampagnen** mit dem Haus führt zurück zu all deinen Kampagnen.
 
-- **Gruppe**: dein Charakterbogen und die deiner Begleiter. Klick auf eine Zahl, um sie zu würfeln. Fahr mit der Maus darüber, um zu sehen, woher sie kommt und, wenn ein Pfeil den Würfel markiert, was den Wurf besser oder schlechter macht. Wenn die Spielleitung Auswahlmöglichkeiten für dich vorbereitet, etwa bei einer neuen Stufe, öffnet ein Hinweis auf dem Charakterbogen sie. Wähle, wann du magst, lies die Seiten, die die Optionen nennen, würfle, wo eine Option einen Wurf verlangt, und bestätige dann. Die Geschichte geht in der Zwischenzeit weiter. Daneben stehen die Würfe.
+- **Rollenspiel**: der Chat mit der Spielleitung, wenn er nicht neben der Seite steht ([2.5](#25-the-first-chat)).
+- **Gruppe**: dein Charakterbogen und die deiner Begleiter. Klicke auf eine Zahl, um sie zu würfeln. Fahre mit der Maus darüber, um zu sehen, woher sie kommt und, wenn ein Pfeil den Würfel markiert, was den Wurf besser oder schlechter macht. Wenn die Spielleitung Auswahlmöglichkeiten für dich vorbereitet, etwa bei einer neuen Stufe, öffnet ein Hinweis auf dem Charakterbogen sie. Wähle, wann du magst, lies die Seiten, die die Optionen nennen, würfle, wo eine Option einen Wurf verlangt, und bestätige dann. Die Geschichte geht in der Zwischenzeit weiter. Daneben stehen die Würfe.
 - **Szene**: wo du bist, mit Bild und Karte, wer da ist und was gerade passiert. Im Kampf siehst du die Züge und die Karte deines Charakters.
 - **Tagebuch**: Quests, die Geschichte als Buch, ihre Zeitleiste, die Tagebücher deiner Begleiter und deine Notizen.
 - **Welt**: die Weltkarte, was dein Charakter weiß, die gefundenen Dokumente und der Kalender.
 - **Die Würfelschale**: Wähle Würfel und einen Modifikator und wirf. ×2 verdoppelt die Würfel, nie den Modifikator, wie bei einem kritischen Treffer.
-- **Spielstände**, **Hilfe**, **Einstellungen** und **Info** stehen als Symbole am Ende der Zeile. Die **Einstellungen** enthalten unter **Dashboard** auch die eigenen Vorlieben der Seite: Modus, Würfelsound, Würfelset und das **Design**, also die Farben, Gesichter und Bilder der Seite. Du kannst das Design des Spielsystems wählen, ein Design, das du unter Packages › Add hinzugefügt hast (aus dem Katalog, per GitHub-Link, als .zip oder als Ordner), oder das eigene der Seite. Wenn der Stil eines Designs die Seite schwer lesbar macht, schalte dort **Eigener Stil des Themes** aus. Die **Einstellungen** erscheinen immer ohne diesen Stil, unter der Adresse der Seite mit `#/settings/page` am Ende.
+- **Spielstände**, **Hilfe**, **Einstellungen** und **Info** stehen als Symbole am Ende der Zeile. Die Einstellungen enthalten unter **Dashboard** auch die eigenen Vorlieben der Seite: Modus, Würfelsound, Würfelset und das **Design**, also die Farben, Gesichter und Bilder der Seite. Du kannst das Design des Spielsystems wählen, ein Design, das du unter Packages › Add hinzugefügt hast (aus dem Katalog, per GitHub-Link, als .zip oder als Ordner), oder das eigene der Seite. Wenn das eigene Stylesheet eines Designs die Seite schwer lesbar macht, schalte dort **Eigener Stil des Themes** aus. Die Einstellungen erscheinen immer ohne diesen Stil, unter der Adresse der Seite mit `#/settings/page` am Ende.
 
 Wenn die Spielleitung dir eine Frage stellt, bleibt ihr Banner oben stehen, in welchem Bereich du auch bist.
 
@@ -265,7 +279,7 @@ Eine Erweiterung ergänzt eine Kampagne um etwas, das über das Spielsystem hina
 
 - **Unterwegs aufgebaut**: Aus deiner Prämisse baut die Spielleitung jeden Ort, jede Person und jeden Plot kurz bevor du sie brauchst, und behält sie.
 - **Am Anfang vorbereitet**: dasselbe, nur wird die Welt vor dem Spiel aufgebaut.
-- **Aus deinem eigenen Abenteuer oder Buch**: Gib der Spielleitung die Datei, *[Importiere dieses Abenteuer als unsere Kampagne: D:\Books\adventure.pdf. Verrate mir nichts von dem, was darin steht.]* Am besten liest es sich als Text, als EPUB, als Word-Dokument oder als PDF, dessen Text sich markieren lässt. Ein eingescanntes PDF wird aus den Bildern seiner Seiten gelesen, nur unter Windows, langsam und mit ein paar Fehlern. Deine eigene KI-App liest es außerhalb des Chats, oder sonst die Spielleitung im Chat, in deinem Tarif: In Claude Code oder Codex liest eines der beiden, in Antigravity dein Antigravity, in OpenCode das Modell, das du zuletzt darin gewählt hast. Das ganze Dokument geht an den Hersteller dessen, was es liest, unter den Bedingungen deines Kontos und seiner Wahl zum Training. Das Dashboard zeigt, wie weit es ist. Bei einem Roman schlägt die Spielleitung vor, wo man beginnt. Sie schreibt die Orte, die Charaktere und die Geheimnisse.
+- **Aus deinem eigenen Abenteuer oder Buch**: Gib der Spielleitung die Datei, *[Importiere dieses Abenteuer als unsere Kampagne: D:\Books\adventure.pdf. Verrate mir nichts von dem, was darin steht.]* Eine Datei außerhalb der Kampagne wird erst gelesen, nachdem du in einem Fenster deines Computers Ja gesagt hast. Eine Datei im Ordner **inbox** der Kampagne wird sofort gelesen. Am besten liest sie sich als Text, als EPUB, als Word-Dokument oder als PDF, dessen Text sich markieren lässt. Ein eingescanntes PDF wird aus den Bildern seiner Seiten gelesen, nur unter Windows, langsam und mit ein paar Fehlern. Deine eigene KI-App liest sie außerhalb des Chats, oder sonst die Spielleitung im Chat, in deinem Tarif: In Claude Code oder Codex liest eines der beiden, in Antigravity dein Antigravity, in OpenCode das Modell, das du zuletzt darin gewählt hast. Das ganze Dokument geht an den Hersteller dessen, was es liest, unter den Bedingungen deines Kontos und seiner Wahl zum Training. Das Dashboard zeigt, wie weit es ist. Bei einem Roman schlägt die Spielleitung vor, wo man beginnt. Sie schreibt die Orte, die Charaktere und die Geheimnisse.
 
 Eine Kampagne wird einmal gespielt: Um dasselbe Abenteuer noch einmal zu spielen, erstelle eine neue Kampagne.
 
@@ -303,28 +317,34 @@ Jeden Befehl, den die Spielleitung benutzt, kannst du auch im Kampagnenordner au
 
 **Kann die Spielleitung schummeln?** Sie kann einen Wurf, den RPG Engine gemacht hat, nicht ändern, außer bei der Schwierigkeit Story, und auch keine Fakten, die schon feststehen.
 
-**Kostet es etwas?** RPG Engine ist kostenlos. Die Spielleitung läuft im Tarif deines Agenten oder auf deinem eigenen Computer mit einem lokalen Modell. Ein Spielabend ist ein langer Chat: In den kleinsten Tarifen kann es sein, dass du die Grenze des Tarifs erreichst, bevor der Abend vorbei ist. Bilder, Übersetzungen und Importe nutzen denselben Tarif. RPG Engine selbst nutzt nie einen API-Schlüssel, der pro Aufruf bezahlt wird: Melde deinen Agenten mit deinem Konto an, nicht mit einem Schlüssel.
+**Kostet es etwas?** RPG Engine ist kostenlos. Die Spielleitung läuft im Tarif deiner KI-App oder auf deinem eigenen Computer mit einem lokalen Modell. Ein Spielabend ist ein langer Chat: In den kleinsten Tarifen kann es sein, dass du die Grenze des Tarifs erreichst, bevor der Abend vorbei ist. Bilder, Übersetzungen und Importe nutzen denselben Tarif. RPG Engine selbst nutzt nie einen API-Schlüssel, der pro Aufruf bezahlt wird: Melde deine KI-App mit deinem Konto an, nicht mit einem Schlüssel.
 
 **Kann ich am Handy spielen?** Nein: Die Spielleitung läuft auf deinem Computer, und das Dashboard öffnet sich nur dort.
 
 **Kann ich mit Freunden spielen?** Noch nicht: Heute gibt es eine Person, einen Charakter, dazu Begleiter ([Coming later](#9-coming-later)).
 
-**Kann ich nächstes Mal eine andere KI nutzen?** Ja: Öffne die Kampagne in einem anderen Agenten und schreib *weiter*.
+**Kann ich nächstes Mal eine andere KI nutzen?** Ja: Wähle im Chat eine andere App, bevor du ihn öffnest, oder öffne die Kampagne in einer anderen App und schreibe *weiter*.
 
 ### Probleme
 
-**Das Dashboard öffnet sich nicht.** Frag die Spielleitung: `[OOC: Wie lautet der Link zum Dashboard?]`. Es funktioniert nur, solange ein Chat dieser Kampagne offen ist: In Claude Code und Codex startet es, sobald der Chat sich öffnet, in Antigravity mit deiner ersten Nachricht. In der Claude App schläft ein Chat, der eine Weile im Hintergrund bleibt, und mit ihm die Seite. Klick auf den Chat, dann kommt die Seite unter derselben Adresse zurück.
+**Eine Kampagne öffnet sich nicht.** Öffne RPG Engine noch einmal über sein Symbol oder mit `rpg open` in einem Terminal und klicke auf die Kampagne. Wenn ihr Dashboard *Nicht verbunden* zeigt, drücke auf **Kampagne erneut öffnen**. Eine Karte mit dem Vermerk **Ordner nicht gefunden** hat ihren Ordner verloren: Nimm sie von der Liste und füge sie mit **Ordner öffnen…** dort, wo er jetzt liegt, wieder hinzu. Im eigenen Chat deiner KI-App funktioniert das Dashboard nur, solange ein Chat dieser Kampagne offen ist: Frage die Spielleitung `[OOC: Wie lautet der Link zum Dashboard?]`. In der Claude App schläft ein Chat, der eine Weile im Hintergrund bleibt, und mit ihm die Seite: Klicke auf den Chat, dann kommt die Seite unter derselben Adresse zurück.
 
-**Die Spielleitung scheint das Spiel nicht zu kennen.** Dein Agent hat RPG Engine nicht geladen. Prüfe, ob du ihn im Kampagnenordner gestartet und dem Ordner vertraut hast. Schreib in Claude Code `/mcp` und verbinde `rpg` neu. In Codex muss `codex mcp list` im Kampagnenordner `rpg` anzeigen. Wenn `rpg --version` nicht gefunden wird, installiere RPG Engine neu ([2.2](#22-install)).
+**Die Spielleitung scheint das Spiel nicht zu kennen.** Das passiert im eigenen Chat deiner KI-App: Sie hat RPG Engine nicht geladen. Prüfe, ob du sie im Kampagnenordner gestartet und dem Ordner vertraut hast. Schreibe in Claude Code `/mcp` und verbinde `rpg` neu. In Codex muss `codex mcp list` im Kampagnenordner `rpg` anzeigen. Wenn `rpg --version` nicht gefunden wird, installiere RPG Engine neu ([2.2](#22-install)).
 
-**Windows findet `claude` nicht.** Der Installer weist in einem gelben Hinweis darauf hin und nennt den Ordner, in den er installiert hat. Füge diesen Ordner zum PATH hinzu (Systemeigenschaften > Umgebungsvariablen) und öffne dann ein neues Terminal.
+**Windows findet `claude` nicht.** Das passiert, wenn du Claude Code selbst installiert hast. Der Installer weist in einem gelben Hinweis darauf hin und nennt den Ordner, in den er installiert hat. Füge diesen Ordner zum PATH hinzu (Systemeigenschaften > Umgebungsvariablen) und öffne dann ein neues Terminal.
 
-**Aktualisieren.** Führe `npm install -g rpg-engine` noch einmal aus und öffne dann einen neuen Chat: Eine laufende Spielleitung behält die Version, mit der sie gestartet ist.
+**Aktualisieren.** Wenn es ein neueres RPG Engine gibt, sagt das Dashboard es: Unter Packages › Installed steht RPG Engine zuerst, mit **Aktualisieren**. Tu dann, was die Seite dir sagt. Oder führe in einem Terminal `npm install -g rpg-engine` noch einmal aus und öffne dann einen neuen Chat: Die laufende Spielleitung behält die Version, mit der sie gestartet ist.
 
 **Die Spielleitung erinnert sich an etwas, das ich rückgängig gemacht habe.** Öffne einen neuen Chat und drück unter Spielstände auf **Ich habe einen neuen Chat geöffnet**.
+
+**Eine App lässt sich nicht installieren.** Die Seite sagt, warum: Drücke auf **Erneut versuchen**. Oder installiere sie selbst von der Website ihres Herstellers und drücke dann auf **Erneut prüfen**.
+
+**Die Anmeldeseite öffnet sich nicht im Browser.** Solange die Seite auf dich wartet, drücke auf **Anmeldeseite erneut öffnen**, wo es angezeigt wird, oder auf **Abbrechen** und versuche es noch einmal.
+
+**Der Chat des Dashboards sagt, dass ein anderer Chat spielt.** Ein Chat, den du selbst in deiner KI-App geöffnet hast, spielt diese Kampagne: Mach dort weiter oder schließe ihn, um im Dashboard zu spielen.
 
 **Es erscheinen keine Bilder.** Unter Einstellungen > Kampagne > Bilder steht, ob dieser Computer sie erzeugen kann, und wie.
 
 **Die Installation schlägt fehl, oder `rpg` startet nicht.** `node --version` muss 24 oder neuer anzeigen. Wenn Windows meldet, dass das Ausführen von Skripten deaktiviert ist, siehe [2.1](#21-what-you-need). Halte RPG Engine und deine Kampagnen unter Windows aus Pfaden heraus, die `&` enthalten.
 
-**Der Link zum Dashboard hat sich geändert.** Jede Kampagne hat ihre eigene Adresse, Chat für Chat dieselbe. Sie ändert sich nur, wenn ein anderes Programm sie schon belegt: Die Spielleitung gibt dir den neuen Link, und ab dann bleibt er. Ein zweiter Chat derselben Kampagne zeigt die Seite unter derselben Adresse und übernimmt sie, sobald du den ersten schließt.
+**Der Link zum Dashboard hat sich geändert.** Im eigenen Chat deiner KI-App hat jede Kampagne ihre eigene Adresse, Chat für Chat dieselbe. Sie ändert sich nur, wenn ein anderes Programm sie schon belegt: Die Spielleitung gibt dir den neuen Link, und ab dann bleibt er. Ein zweiter Chat derselben Kampagne zeigt die Seite unter derselben Adresse und übernimmt sie, sobald du den ersten schließt.

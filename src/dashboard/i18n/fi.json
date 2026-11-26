@@ -818,6 +818,8 @@
   "on the map": "kartalla",
   "On the right": "Oikealla",
   "On this computer": "Tällä koneella",
+  "on trial": "kokeilussa",
+  "On trial: it can step out of the game and ask questions its own way. To play, Claude Code, Codex or OpenCode are better.": "Kokeiluvaiheessa: voi poistua pelistä ja esittää kysymyksiä omalla tavallaan. Pelaamiseen sopivat paremmin Claude Code, Codex tai OpenCode.",
   "On whom": "Kohde",
   "Once you confirm, the master writes them on the sheet and tells you. Until then you can change everything but a roll made.": "Kun vahvistat, pelinjohtaja kirjaa valinnat hahmolomakkeelle ja kertoo sinulle. Siihen asti voit muuttaa kaikkea paitsi jo tehtyä heittoa.",
   "One {die} less": "Yksi {die} vähemmän",
