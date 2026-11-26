@@ -22,6 +22,7 @@ import { choicesNews } from "./choices.ts";
 import type { EngineAsked } from "./engine.ts";
 import { type PageMaster, rollTeller } from "./master.ts";
 import { callBegins, deliverActs, pageNews } from "./news.ts";
+import { closeDoor, homeAddresses, type PhoneDoor } from "./phone.ts";
 import { type Asked, pagePlayer, type ShownCard } from "./player.ts";
 import { campaignPorts, type DashboardAt, dashboardAt } from "./ports.ts";
 import { answer } from "./routes.ts";
@@ -78,6 +79,8 @@ export interface DashboardOptions
     master?: PageMaster;
     /** At a campaign's table: the way back to the launcher, which the table is given from outside; absent for a chat's own server. */
     launcher?: LauncherWay;
+    /** The computer's addresses on the home network, where the door to the phone opens (T-317): the system's, else the tests'. */
+    homeAddresses?: () => string[];
     /** The tests' look at the state the page is served with. */
     served?: (served: Served) => void;
 }
@@ -165,6 +168,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 pages: new Set<ServerResponse>(),
                 pageReturn: options.pageReturn ?? pageReturn,
                 pageHidden: options.pageHidden ?? pageHidden,
+                phonePages: new Set<ServerResponse>(),
                 pageIds: new Map<ServerResponse, string>(),
                 seen: new Map<string, boolean>(),
                 declined: new Set<string>(),
@@ -182,6 +186,7 @@ export async function startDashboard(context: Context, session: SessionStore, op
                 chat: {},
                 queue: options.queue ?? codexQueue(),
                 heldFor: options.heldFor ?? heldFor,
+                homeAddresses: options.homeAddresses ?? homeAddresses,
                 ...(options.master === undefined ? {} : { master: options.master }),
                 ...(options.launcher === undefined ? {} : { launcher: options.launcher }),
             };
@@ -262,6 +267,8 @@ export interface Served
     pageIds: Map<ServerResponse, string>;
     /** Whether each page, by its id, is seen now: on the screen, not in a tab or a window behind (D-455). */
     seen: Map<string, boolean>;
+    /** The open pages that came through the door to the phone (T-317). */
+    phonePages: Set<ServerResponse>;
     /** The wait of a question on pages that no one sees: a page seen again ends it. */
     hiding?: NodeJS.Timeout;
     /** Tells the pages that something changed, once for changes that come together. */
@@ -297,6 +304,10 @@ export interface Served
     tellRolls(): Promise<void>;
     /** At a campaign's table: the way back to the launcher. */
     launcher?: LauncherWay;
+    /** The door to the player's phone on the home network, while the player keeps it open (T-317). */
+    phone?: PhoneDoor;
+    /** The computer's addresses on the home network now. */
+    homeAddresses(): string[];
 }
 
 /** What the page keeps of the chat it serves, all of it: a campaign's table forgets it as that chat leaves (D-582). */
@@ -428,7 +439,7 @@ function serve(server: Server, served: Served): Dashboard
                 },
             };
         },
-        pages: () => served.pages.size,
+        pages: () => keepingPages(served),
         chatEnded: () => {
             served.chat.bell?.end("gone");
             served.chat = {};
@@ -454,9 +465,19 @@ function serve(server: Server, served: Served): Dashboard
                 }
 
                 served.pages.forEach((page) => page.end());
-                server.close(() => done());
+
+                const door = served.phone;
+                served.phone = undefined;
+                const closing = [door === undefined ? Promise.resolve() : closeDoor(door), new Promise<void>((closed) => server.close(() => closed()))];
+                void Promise.all(closing).then(() => done());
             }),
     };
+}
+
+/** The pages that keep the game going: the computer's alone. A phone's page is seldom closed: the game ends with the computer's last window (T-317). */
+function keepingPages(served: Served): number
+{
+    return [...served.pages].filter((page) => !served.phonePages.has(page)).length;
 }
 
 /** The import under way as the page tells it, as text to compare; empty without a campaign. */

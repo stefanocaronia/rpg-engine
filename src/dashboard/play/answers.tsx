@@ -3,14 +3,17 @@
 // engine. Each place gives them its own frame and room, nothing more.
 import { Fragment } from "preact";
 import { useEffect, useState } from "preact/hooks";
+import { sectionAddress } from "../address.ts";
 import { answer } from "../api.ts";
 import type { Asked, Member } from "../data.ts";
+import { useMedia } from "../parts/card.tsx";
 import { CoinFace } from "../parts/faces.tsx";
 import { notationLabel } from "../parts/game-words.ts";
 import { Icon, NotationIcons } from "../parts/icons.tsx";
 import { checkOf, notationModifier, signed } from "../parts/labels.ts";
 import { sheetAddress } from "../sheet/party.tsx";
 import { byHandPref, usePref } from "../shell/prefs.ts";
+import { tableSection } from "../shell/table.tsx";
 import { t, tParts } from "../text.ts";
 import { asksRoll, handChecks, shownAnswers } from "./answering.ts";
 
@@ -112,32 +115,38 @@ export function AnswerLabel({ label, asked, index }: { label: string; asked: Pic
         : <CheckLabel check={check.check} dice={check.dice} name={(index === undefined ? undefined : asked.names?.[index]) ?? keptName(check.dice)} />;
 }
 
-/** By hand, as a master says it: which checks, with their dice as pictures; their number the player finds on the sheet. Nothing with no check to roll so. */
+/**
+ * By hand, as a master says it: which checks, with their dice as pictures; their number the player finds on the sheet. Nothing with no check to roll so. On a
+ * phone the dice are in the table's section, which the note leads to.
+ */
 export function HandNote({ asked, who }: { asked: Asked; who?: Member | undefined; })
 {
     const named = handChecks(asked);
+    const phone = useMedia(tableSection);
 
     if (named.length === 0) {
         return null;
     }
 
+    const parts = {
+        checks: named.map((check, index) => (
+            <Fragment key={check.check}>
+                {index > 0 && (index === named.length - 1 ? ` ${t("or")} ` : ", ")}
+                <a class="asked-hand-check" href={sheetAddress(asked.who ?? "")} onClick={() => showRow(check.field)}>
+                    <NotationIcons notation={check.dice} />
+                    {check.check}
+                </a>
+            </Fragment>
+        )),
+        sheet: <a href={sheetAddress(asked.who ?? "")}>{who === undefined ? t("your sheet") : t("{name}'s sheet", { name: who.name })}</a>,
+    };
+    const said = phone
+        ? tParts("Roll {checks} yourself, on {sheet} or with {dice}.", { ...parts, dice: <a href={sectionAddress("table")}>{t("the dice on the table")}</a> })
+        : tParts("Roll {checks} yourself, on {sheet} or with the dice.", parts);
     return (
         <p class="asked-hand-note">
             <Icon name="hand" />
-            <span>
-                {tParts("Roll {checks} yourself, on {sheet} or with the dice.", {
-                    checks: named.map((check, index) => (
-                        <Fragment key={check.check}>
-                            {index > 0 && (index === named.length - 1 ? ` ${t("or")} ` : ", ")}
-                            <a class="asked-hand-check" href={sheetAddress(asked.who ?? "")} onClick={() => showRow(check.field)}>
-                                <NotationIcons notation={check.dice} />
-                                {check.check}
-                            </a>
-                        </Fragment>
-                    )),
-                    sheet: <a href={sheetAddress(asked.who ?? "")}>{who === undefined ? t("your sheet") : t("{name}'s sheet", { name: who.name })}</a>,
-                }).map((part, index) => <Fragment key={index}>{part}</Fragment>)}
-            </span>
+            <span>{said.map((part, index) => <Fragment key={index}>{part}</Fragment>)}</span>
         </p>
     );
 }

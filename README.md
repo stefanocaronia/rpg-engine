@@ -68,7 +68,7 @@ You can still play in your AI app's own chat, from a terminal or its desktop app
 
 ## Try it, and tell us
 
-RPG Engine is at its first versions, and it grows with the games played on it. Try it, and when something breaks or confuses you, open an [issue on GitHub](https://github.com/stefanocaronia/rpg-engine/issues): what you did, what you expected, what happened. Every report helps. Questions, ideas and the stories of your games go to the [Discussions](https://github.com/stefanocaronia/rpg-engine/discussions).
+RPG Engine is at its first versions, and it grows with the games played on it. Try it, and when something breaks or confuses you, open an [issue on GitHub](https://github.com/stefanocaronia/rpg-engine/issues/new/choose): what you did, what you expected, what happened. Every report helps. Questions, ideas and the stories of your games go to the [Discussions](https://github.com/stefanocaronia/rpg-engine/discussions).
 
 RPG Engine takes no pull requests: we write its code with our AI, from your reports. To add something to the game, make a package of your own, a [game system](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/game-systems.md) or an [extension](https://github.com/stefanocaronia/rpg-engine/blob/main/docs/extensions.md), in a repository of yours.
 

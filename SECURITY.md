@@ -23,6 +23,7 @@ RPG Engine is made by one person, in their own time. Your report will be read an
 
 - **Packages are code.** A game system or an extension is an npm package: its code runs on your computer with your permissions, in the game's server and in the dashboard, where it sees the whole campaign, as the code of any npm package does. There is no sandbox. Before installing a package that is not ours (`@rpgengine/...`), RPG Engine asks your yes, in a form of your agent or a window of your computer; it does not review that package, and cannot vouch for it. Install only packages whose authors you trust. A way to make a package's code run without that yes **is** a vulnerability: report it.
 - **Your AI agent is not part of RPG Engine.** What the agent may do on your computer (commands, files outside the campaign) is decided by its host and the permissions you give it. Report problems of the agent or its host to their makers.
+- **Phone access is plain HTTP on your network.** While it is on, anyone who can read that network's traffic can read the game, and join it as the paired phone. Getting in without the code, or opening or closing access from the phone, **is** a vulnerability: report it.
 - **The story's secrets are game, not security.** A master that tells you a secret of the story is a matter for an issue, not for this page.
 
 A package by others that you believe is malicious: report it to npm, from **Report malware** on its page, and tell us if you like.

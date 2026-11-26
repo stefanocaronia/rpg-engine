@@ -20,8 +20,12 @@ import { applyGameStyle, gameStyle, installedStyle, systemStylePref } from "../s
 import { PageTabs } from "../shell/tabs.tsx";
 import { pickTheme, shownTheme } from "../shell/theme.ts";
 import { t } from "../text.ts";
+import { Command } from "./command.tsx";
 import { LanguageChoice, languageLine } from "./language-choice.tsx";
+import { PhoneSetting, usePhone } from "./phone.tsx";
 import { type SettingsTab, settingsTab, settingsTabLabel, settingsTabs } from "./tabs.ts";
+
+export { Command };
 
 // The cards of the campaign's settings, in the order groupTitle names them: each in its tab, with its picture and its settings in order. A setting the game
 // system adds goes with the dice, as whether the master's rolls are shown (D-287). The master's style holds who voices the characters (D-490) and how much the
@@ -625,30 +629,6 @@ function withCommands(line: string)
     return line.split(/(`[^`]+`)/).map((part, index) => part.startsWith("`") && part.endsWith("`") && part.length > 2 ? <Command key={index} text={part.slice(1, -1)} /> : part);
 }
 
-/** A command to type in a terminal, and a button that copies it. */
-export function Command({ text }: { text: string; })
-{
-    const [copied, setCopied] = useState(false);
-
-    const copy = async (): Promise<void> => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // Where the browser keeps the clipboard, the command stays there to select.
-        }
-    };
-
-    return (
-        <span class="setting-command">
-            {/* Its words wrap only between them, never at a hyphen of a package's name; one wider than the line wraps within. */}
-            <code>{text.split(" ").flatMap((word, index) => [index === 0 ? "" : " ", <span key={index} class="command-word">{word}</span>])}</code>
-            <button type="button" class="setting-copy" aria-label={t("Copy {command}", { command: text })} onClick={() => void copy()}>{copied ? t("Copied") : t("Copy")}</button>
-        </span>
-    );
-}
-
 /**
  * Under the theme, the game's style, when the campaign's system has one, a theme or a page style (D-528), or this computer has themes installed (D-574): the
  * game's, each installed theme by its name, or the page's, kept in this browser for that system; the game's left out when its theme does not pass the check
@@ -828,6 +808,7 @@ function PageSettings()
     ];
     return (
         <>
+            <PhoneCard />
             <p class="settings-kept">{t("Kept in this browser alone: the master hears nothing of them.")}</p>
             <SettingsCard name="look" icon={iconPath("theme")} title={t("Look")}>
                 {look.map((row) => <PageSetting key={row.key} row={row} />)}
@@ -839,6 +820,20 @@ function PageSettings()
                 {dice.map((row) => <PageSetting key={row.key} row={row} />)}
             </SettingsCard>
         </>
+    );
+}
+
+/**
+ * Playing from a phone on the home network (T-317), first among the page's own as it is no setting of this browser: the way in, which this computer opens
+ * and closes; none where the dashboard does not tell of it.
+ */
+function PhoneCard()
+{
+    const phone = usePhone();
+    return phone.now === undefined ? null : (
+        <SettingsCard name="phone" icon={iconPath("phone")} title={t("Play from your phone")}>
+            <PhoneSetting phone={phone} />
+        </SettingsCard>
     );
 }
 

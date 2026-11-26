@@ -9,6 +9,8 @@ export interface Home
 {
     url?: string;
     root?: string;
+    /** The page is the phone's (T-317): the campaigns open on the computer. */
+    phone?: boolean;
 }
 
 // How often the page asks after the launcher while its table answers: less than the launcher waits before it ends by itself with no page and no request,
@@ -20,10 +22,10 @@ const lostAfter = 10_000;
 /** The launcher's link where it answers, and the campaign's folder; nothing where the page cannot ask. */
 export async function readHome(): Promise<Home>
 {
-    const home = await readJson<{ url?: unknown; root?: unknown; }>("/api/home");
+    const home = await readJson<{ url?: unknown; root?: unknown; phone?: unknown; }>("/api/home");
     const url = typeof home.url === "string" ? home.url : undefined;
     const root = typeof home.root === "string" && home.root !== "" ? home.root : undefined;
-    return { ...(url === undefined ? {} : { url }), ...(root === undefined ? {} : { root }) };
+    return { ...(url === undefined ? {} : { url }), ...(root === undefined ? {} : { root }), ...(home.phone === true ? { phone: true } : {}) };
 }
 
 /**
@@ -119,7 +121,7 @@ export function useHome(table: boolean, live: boolean): HomeWays | undefined
         return () => window.removeEventListener("pageshow", back);
     }, []);
 
-    if (!table) {
+    if (!table || home.phone === true) {
         return undefined;
     }
 

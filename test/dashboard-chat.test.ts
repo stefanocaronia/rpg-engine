@@ -305,6 +305,9 @@ describe("the chat with the master on the page (D-582)", () => {
         expect(sectionAddress("chat")).toBe("#/chat");
         expect(sectionTabs(true)).toEqual(["party", "chat", "scene", "journal", "world"]);
         expect(sectionTabs(false)).toEqual(["party", "scene", "journal", "world"]);
+        // On a phone the table is a section too, after the Scene.
+        expect(sectionTabs(true, true)).toEqual(["party", "chat", "scene", "table", "journal", "world"]);
+        expect(readAddress("#/table")).toEqual({ section: "table" });
     });
 
     it("offers to begin in a new chat with nothing said, and nothing once there are words, in a turn or when it ended", () => {
@@ -338,6 +341,9 @@ describe("the chat with the master on the page (D-582)", () => {
         // Never less than a chat can do with, however little the window leaves.
         expect(chatRoom("section", { foot: 450, top: 290, title: 43, clear: 0 })).toBe(320);
         expect(chatRoom("under", { foot: 400, top: 900, title: 43, clear: 152 })).toBe(320);
+        // Writing on a phone, the whole window over the keyboard from under the page's top, the chat scrolled there; less than the least if that is all there is.
+        expect(chatRoom("section", { foot: 440, top: 52, title: 43, clear: 16, typing: true })).toBe(372);
+        expect(chatRoom("section", { foot: 150, top: 52, title: 43, clear: 16, typing: true })).toBe(120);
     });
 
     it("marks the chat's tab when the master said something new while the player was in another section, never for the player's own words nor what was there at first", () => {

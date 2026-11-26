@@ -70,7 +70,9 @@ interface Plate
     look?: DiceLook;
 }
 
-export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onShown, onFree }: {
+export function DiceTray({ away = false, requested, sheetThrow, party, campaign, onLanded, onShown, onFree }: {
+    /** The button and its tray elsewhere, as on a phone out of the table's section: the dice still fly and their plate still shows here. */
+    away?: boolean;
     requested?: ShownRoll;
     sheetThrow?: SheetThrow;
     party: Member[];
@@ -109,6 +111,13 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
     const [coin] = useChoice(coinPref);
     const [design] = useChoice(coinDesignPref);
     const shownSet = useRef(`${diceSet} ${edges} ${coin} ${design}`);
+
+    // The tray left open where its button goes away closes with it.
+    useEffect(() => {
+        if (away) {
+            setOpen(false);
+        }
+    }, [away]);
 
     useEffect(() => {
         const onResize = (): void => void roller.current?.then((loaded) => loaded?.resize());
@@ -464,8 +473,8 @@ export function DiceTray({ requested, sheetThrow, party, campaign, onLanded, onS
             <div ref={measuredPlate} class={["dice-result", "measured", plate?.free ? "free" : "", plate?.rare === undefined ? "" : plate.rare.face].filter((name) => name !== "").join(" ")} aria-hidden="true">
                 {plate !== undefined && !plate.shown && <PlateContent plate={plate} />}
             </div>
-            {open && <div class="tray-scrim" aria-hidden="true" />}
-            <div ref={controls} class="dice-controls">
+            {open && !away && <div class="tray-scrim" aria-hidden="true" />}
+            <div ref={controls} class="dice-controls" hidden={away}>
                 {open && (
                     <div ref={tray} class="dice-tray" role="group" aria-label={asked === undefined ? t("Free roll: it counts for nothing") : t("Dice: a check the master asks, or a free roll")}>
                         <p class="tray-note">

@@ -106,7 +106,7 @@ function waitingHtml(text: string, language: string): { html: string; policy: st
     const rightToLeft = ["ar", "he"].includes(language);
     const html = [
         "<!doctype html>",
-        `<html lang="${language}"${rightToLeft ? ' dir="rtl"' : ""}>`,
+        `<html lang="${language}" translate="no"${rightToLeft ? ' dir="rtl"' : ""}>`,
         '<meta charset="utf-8">',
         '<meta name="color-scheme" content="light dark">',
         "<title>RPG Engine</title>",

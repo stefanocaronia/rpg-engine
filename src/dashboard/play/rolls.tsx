@@ -40,7 +40,7 @@ export function RollLog(
 {
     // With more than one player character the tray's free dice, of no sheet, are no one's: the die for a face, "Free roll" for a name.
     const of: Whose = { lead: party.find((member) => member.role === "pc"), nobody: several };
-    const [chosen, toggle] = useOpen("Rolls");
+    const [chosen, toggle] = useOpen("Rolls", true);
     const [cleared, setCleared] = useState(() => readCleared(campaign));
     const [older, setOlder] = useState(0);
     // The rolls already drawn: a new one comes in only the first time, not again when the column comes back.

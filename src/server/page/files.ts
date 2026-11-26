@@ -108,9 +108,12 @@ function pageShell(entry: string): string
 {
     return [
         "<!doctype html>",
-        '<html lang="en">',
+        // The page writes in the player's language, and the story in the campaign's: never a browser's translation over them.
+        '<html lang="en" translate="no">',
         '<meta charset="utf-8">',
-        '<meta name="viewport" content="width=device-width, initial-scale=1">',
+        '<meta name="google" content="notranslate">',
+        // A phone's keyboard shortens the page, as the window does, rather than covering its foot: the chat's words stay over it (Chrome on Android).
+        '<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">',
         '<meta name="color-scheme" content="light dark">',
         "<title>RPG Engine</title>",
         '<link rel="icon" href="/assets/icon-16.png" sizes="16x16">',

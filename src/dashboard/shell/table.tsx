@@ -1,8 +1,9 @@
 // The table, beside the page on a wide screen: what changes while the game goes on, always in sight as the page scrolls. The order of the turns while a fight is
 // open, the quests the player follows, and the rolls, up to twelve before their list scrolls inside; each card closes to its header. The whole table folds away
-// by a switch at the end of the top's row of the world, and opens again from it, as the browser remembers (D-293).
+// by a switch at the end of the top's row of the world, and opens again from it, as the browser remembers (D-293). On a phone it is a section, with the dice.
 import type { ComponentChildren } from "preact";
 import { useEffect, useState } from "preact/hooks";
+import { PageHead } from "./pages.tsx";
 
 // The gap between the table and the window's foot; how many rolls the list shows before it scrolls inside. Where the browser remembers that the player folded
 // the table, as it did the rolls.
@@ -20,6 +21,9 @@ const awayKey = "rpg-engine.rolls-away";
 /** Whether the table stands beside the page: from this width, as in the style sheet; under it what it holds goes back to the page. */
 export const tableBeside = "(min-width: 900px)";
 
+/** Where the table is a section of its own, its tab in the bar at the window's foot: a phone's width, as in the style sheet; the dice's button stays in it. */
+export const tableSection = "(max-width: 600px)";
+
 /** The table; `entering` when the player opened it, which slides it in. */
 export function PlayTable({ children, entering = false }: { children: ComponentChildren; entering?: boolean; })
 {
@@ -36,6 +40,17 @@ export function PlayTable({ children, entering = false }: { children: ComponentC
         <div class="play-table" id="play-table" ref={setTrack}>
             <div class="play-table-stick">{children}</div>
         </div>
+    );
+}
+
+/** The table as a section of its own, on a phone: its head, then its cards one under the other, the dice's button over their foot. */
+export function TableSection({ children }: { children: ComponentChildren; })
+{
+    return (
+        <section class="page-stack table-section" aria-labelledby="table-title">
+            <PageHead section="table" id="table-title" />
+            {children}
+        </section>
     );
 }
 

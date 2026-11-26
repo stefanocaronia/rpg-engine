@@ -5,7 +5,7 @@
 // while the chat is away (D-305). On a phone the sections at the bottom, the rest in the menu (D-309).
 import { type ComponentChildren, Fragment, type RefObject } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { chatPage, menuPages, packagePages, type Section, sectionAddress, sectionLabel, type sections, sectionTabs } from "../address.ts";
+import { chatPage, menuPages, packagePages, type Section, sectionAddress, sectionLabel, type SectionTab, sectionTabs } from "../address.ts";
 import type { CalendarDay, Moment, Mood } from "../data.ts";
 import { type NavPage, ownKey } from "../packages/page-code.tsx";
 import { Drawn, WidgetChips } from "../packages/widgets.tsx";
@@ -50,6 +50,8 @@ interface TopOf
     home?: HomeWay | undefined;
     /** Where the page has its column beside it: whether it is shown, and what shows or hides it. */
     column?: ColumnSwitch | undefined;
+    /** On a phone the table is a section of its own, its tab after the Scene's. */
+    table?: boolean;
 }
 
 /** The switch of the column beside the page: whether it is shown, and what turns it. */
@@ -117,6 +119,7 @@ export function Top(top: TopOf)
                     ownShown={top.ownShown}
                     choices={top.choices}
                     chat={top.chat}
+                    table={top.table}
                     home={top.home}
                 />
                 {((top.path !== undefined && top.path.length > 0) || top.now !== undefined || top.column !== undefined) && <PlaceRow path={top.path ?? []} now={top.now} calendar={top.calendar} column={top.column} />}
@@ -130,7 +133,7 @@ export function Top(top: TopOf)
  * settings, the packages and About as icons at the row's end (D-333, D-409), the packages a menu of the packages' other pages when they have some: what does
  * not fit goes into the menu, those icons first, then the tabs from the last.
  */
-function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, choices, chat, home }: {
+function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, choices, chat, table, home }: {
     current: Section;
     fight?: boolean | undefined;
     yourTurn?: boolean | undefined;
@@ -139,13 +142,14 @@ function Navigation({ current, fight, yourTurn, turnName, ownPages, ownShown, ch
     ownShown?: string | undefined;
     choices?: boolean | undefined;
     chat?: "there" | "new" | undefined;
+    table?: boolean | undefined;
     home?: HomeWay | undefined;
 })
 {
     // While the scene goes by turns the Scene's name is in gold; on the player's turn, from another section, it pulses (D-315, D-349, D-351, D-444).
     const turns = fight === true && current !== "scene";
     const turn = yourTurn === true && current !== "scene";
-    const tabs = [...sectionTabs(chat !== undefined).map((section) => sectionTab(section, current)), ...ownPages.filter((page) => page.nav === "tab").map((page) => ownTab(page, ownShown))];
+    const tabs = [...sectionTabs(chat !== undefined, table === true).map((section) => sectionTab(section, current)), ...ownPages.filter((page) => page.nav === "tab").map((page) => ownTab(page, ownShown))];
     const inMenu = ownPages.filter((page) => page.nav === "menu");
     const row = useRef<HTMLDivElement>(null);
     const fitting = useFitting(row, tabs.length, `${tabs.map((tab) => tab.key).join()} ${turn} ${inMenu.length} ${home !== undefined}`);
@@ -230,7 +234,7 @@ interface Tab
     own: boolean;
 }
 
-function sectionTab(section: (typeof sections)[number] | typeof chatPage, current: Section): Tab
+function sectionTab(section: SectionTab, current: Section): Tab
 {
     return { key: section, href: sectionAddress(section), label: sectionLabel(section), icon: <Icon name={section} />, current: section === current, own: false };
 }

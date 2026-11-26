@@ -193,7 +193,7 @@ function CardSwitch({ players, shown, onShow }: { players: Member[]; shown: stri
 export function TurnsCard({ scene, party, several = false, beside = false }: { scene?: ShownScene; party: Member[]; several?: boolean; beside?: boolean; })
 {
     const list = useRef<HTMLOListElement>(null);
-    const [open, toggle] = useOpen("Turns");
+    const [open, toggle] = useOpen("Turns", true);
     const fighters = scene?.fighters ?? [];
     const acting = actingIndex(fighters, scene?.turn);
 

@@ -1402,6 +1402,28 @@
             max-width: 92%;
         }
 
+        /* On a phone the chat's section is the chat's place: its ground the whole page under the top, with no box's edge or ground inside it. */
+        .page:has(.chat-page.chat-section) {
+            --chat-ground: light-dark(color-mix(in srgb, var(--paper) 88%, var(--gold)), color-mix(in srgb, var(--paper) 45%, black));
+            background: var(--chat-ground);
+        }
+
+        .chat-page.chat-section .chat-box {
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+        }
+
+        /* The player's bubbles keep their tail's room at the end. */
+        .chat-page.chat-section .chat-log {
+            padding-inline: 0 10px;
+        }
+
+        /* Room for the field's focus ring, which the box would cut. */
+        .chat-page.chat-section .chat-words {
+            padding-inline: 4px;
+        }
+
         /* The room is the messages': what the chat plays with is left out. */
         .chat-plays {
             display: none;
@@ -1411,8 +1433,9 @@
             scroll-margin-block-end: 0;
         }
 
+        /* In play the dice's button is in the table's section, never over the chat: the player's words take the chat's whole width. */
         .body:not(:has(> .play-table)) .chat-page.view-open .chat-words {
-            padding-inline-end: 64px;
+            padding-inline-end: 4px;
         }
 
         /* Under the setup's questions the chat stands whole over the dice's button. */

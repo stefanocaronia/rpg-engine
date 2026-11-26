@@ -13,8 +13,10 @@ export type ChatView = "start" | "elsewhere" | "open" | "ended";
  */
 export type ChatPlace = "section" | "beside" | "under" | "dock";
 
-// The least room the open chat takes, however little the window leaves it, and the room it leaves under itself.
+// The least room the open chat takes, however little the window leaves it, and while the player writes in it over a phone's keyboard; the room it leaves
+// under itself.
 const leastRoom = 320;
+const leastTyping = 120;
 const footRoom = 16;
 
 /** How far from its end, in pixels, a list still counts as showing it: a line or so. */
@@ -535,11 +537,16 @@ export function firstAnswerDue(shown: Pick<MasterShown, "chat" | "messages">): b
 /**
  * How tall the open chat is, in pixels: from where it starts in the page to the window's foot, or to the bar of the sections where one stands there, less
  * the room under it. Under the setup's questions it starts wherever they end: the window's height, less its own title and what the page keeps clear at
- * its foot on a phone, where a field that takes the focus is scrolled over the dice's button, so that the chat stands whole over it and stays put. Never
- * less than the least, however little the window leaves.
+ * its foot on a phone, where a field that takes the focus is scrolled over the dice's button, so that the chat stands whole over it and stays put. While the
+ * player writes in it on a phone (`typing`), the whole window over the keyboard from under the page's top (`top` then), the page scrolled to the chat's top.
+ * Never less than the least, however little the window leaves.
  */
-export function chatRoom(place: ChatPlace, measures: { foot: number; top: number; title: number; clear: number; }): number
+export function chatRoom(place: ChatPlace, measures: { foot: number; top: number; title: number; clear: number; typing?: boolean; }): number
 {
+    if (measures.typing === true) {
+        return Math.max(leastTyping, Math.floor(measures.foot - measures.top - footRoom));
+    }
+
     const top = place === "under" ? measures.title + footRoom + measures.clear : measures.top;
     return Math.max(leastRoom, Math.floor(measures.foot - top - footRoom));
 }

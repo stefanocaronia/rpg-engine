@@ -18,13 +18,23 @@ export const choicesPage = "choices" as const;
 /** The chat with the master, as #/chat: a section after the others, there only where the campaign's table keeps the chat (D-582). */
 export const chatPage = "chat" as const;
 
-/** The sections' tabs in their order: the chat's, where the page has it as a section, right after the party's, never last. */
-export function sectionTabs(chat: boolean): ((typeof sections)[number] | typeof chatPage)[]
+/** The table on a phone, as #/table: the turns, the quests followed, the rolls and the dice, which a wider window keeps beside the page. */
+export const tablePage = "table" as const;
+
+/** A tab of the sections' row: a section, the chat's or the table's. */
+export type SectionTab = (typeof sections)[number] | typeof chatPage | typeof tablePage;
+
+/**
+ * The sections' tabs in their order: the chat's, where the page has it as a section, right after the party's, never last; the table's, on a phone, after the
+ * Scene's.
+ */
+export function sectionTabs(chat: boolean, table = false): SectionTab[]
 {
-    return chat ? [sections[0], chatPage, ...sections.slice(1)] : [...sections];
+    const [party, scene, ...rest] = sections;
+    return [party, ...(chat ? [chatPage] : []), scene, ...(table ? [tablePage] : []), ...rest];
 }
 
-export type Section = (typeof sections)[number] | (typeof menuPages)[number] | typeof packagePages | typeof choicesPage | typeof chatPage;
+export type Section = (typeof sections)[number] | (typeof menuPages)[number] | typeof packagePages | typeof choicesPage | typeof chatPage | typeof tablePage;
 
 /** A place in the page: its section, for the sheet whom it shows, a page's tab, as #/packages/add, and what is open in the tab, as #/world/lore/Bertoldo. */
 export interface Address
@@ -39,7 +49,7 @@ export function readAddress(hash: string): Address
 {
     const [, written = "", ...rest] = hash.replace(/^#/, "").split("/");
     const first = written === "combat" ? "scene" : written;
-    const section = [...sections, ...menuPages, packagePages, choicesPage, chatPage].find((candidate) => candidate === first) ?? "party";
+    const section = [...sections, ...menuPages, packagePages, choicesPage, chatPage, tablePage].find((candidate) => candidate === first) ?? "party";
     const sheet = first === "party" || first === "character";
     const known = section === first;
     const tab = sheet || !known ? "" : decoded(rest[0] ?? "");
@@ -75,6 +85,7 @@ export function sectionLabel(section: Section): string
         pkg: t("Packages"),
         choices: t("Party"),
         chat: t("Roleplay"),
+        table: t("Table"),
     };
     return labels[section];
 }

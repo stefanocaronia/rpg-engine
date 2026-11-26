@@ -16,6 +16,7 @@ import { homeNow, startHome } from "./home.ts";
 import type { Served } from "./index.ts";
 import { changeMaster, masterNow } from "./master.ts";
 import { act, keepProblems, listenForBell, notes, setupWord, story } from "./news.ts";
+import { changePhone, fromPhone, phoneNow, sendPhoneCode } from "./phone.ts";
 import { givePicture } from "./pictures.ts";
 import { answerAsked, closeCard, listenForChanges, pageSeen, rollNamesOf, spendShown } from "./player.ts";
 import { addPackage, catalogNow, changeLibrary, changePackage, changeSaves, changeSetting, engineNow, exportCampaign, exportedFile, libraryNow, packagesNow, runForPlayer, takeLayerOff } from "./writes.ts";
@@ -33,6 +34,15 @@ export async function answer(request: IncomingMessage, response: ServerResponse,
         return;
     }
 
+    await answerAdmitted(request, response, served);
+}
+
+/** Answers a request the gate let in, at the computer's own address or at the door to the phone (T-317): the page's API, else the page's files. */
+async function answerAdmitted(request: IncomingMessage, response: ServerResponse, served: Served): Promise<void>
+{
+    const base = `http://localhost:${served.port}`;
+    const url = URL.parse(request.url ?? "/", base) ?? new URL("/404", base);
+    const path = url.pathname;
     const route: Route | undefined = routes[path];
     const call = { request, response, served, url };
     // HEAD is answered as GET, on every route.
@@ -77,7 +87,13 @@ const routes: Record<string, Route> = {
     // The table's own chat with the master, in the page.
     "/api/master": { get: ({ response, served }) => masterNow(response, served), post: ({ request, response, served }) => changeMaster(request, response, served) },
     // The launcher, the way back to the campaigns of this computer; started from the page at a table alone.
-    "/api/home": { get: ({ response, served }) => homeNow(response, served), post: ({ request, response, served }) => startHome(request, response, served) },
+    "/api/home": {
+        get: ({ request, response, served }) => (fromPhone(request, served) ? sendJson(response, 200, { phone: true }) : homeNow(response, served)),
+        post: ({ request, response, served }) =>
+            fromPhone(request, served)
+                ? sendJson(response, 403, { error: "The campaigns open on the computer: go back to them there." })
+                : startHome(request, response, served),
+    },
     // Claude Code's hook waits here for the player's next sentence, from this computer (D-495).
     "/api/bell": { get: ({ request, response, served, url }) => listenForBell(request, response, served, url.searchParams) },
     "/api/card": { post: ({ request, response, served }) => closeCard(request, response, served) },
@@ -107,6 +123,12 @@ const routes: Record<string, Route> = {
     "/api/modules": { get: ({ response, served }) => modulesNow(response, served) },
     "/api/widgets": { get: ({ response, served }) => widgetsNow(response, served) },
     "/api/widget": { get: ({ response, served, url }) => widgetForCard(response, served, url.searchParams) },
+    // The door to the player's phone on the home network (T-317): opened and closed from the computer's page alone.
+    "/api/phone": {
+        get: ({ request, response, served }) => sendJson(response, 200, phoneNow(request, served)),
+        post: ({ request, response, served }) => changePhone(request, response, served, (admitted, answered) => answerAdmitted(admitted, answered, served)),
+    },
+    "/api/phone/code": { get: ({ request, response, served }) => sendPhoneCode(request, response, served) },
     "/api/catalog": { get: ({ response, served, url }) => catalogNow(response, served, url.searchParams.get("fresh") === "true") },
 };
 

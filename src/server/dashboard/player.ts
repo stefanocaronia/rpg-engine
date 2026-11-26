@@ -11,6 +11,7 @@ import { rollName } from "../../systems/index.ts";
 import { readBody, securityHeaders, sendJson } from "../page/index.ts";
 import { mostSaid } from "./files.ts";
 import type { Served } from "./index.ts";
+import { fromPhone } from "./phone.ts";
 
 /** A question of ask on the page: its buttons, whether it asks for a square of the map (ASK-11), and what settles it: a click, a stop or a timeout, or the pages gone. */
 export interface Asked
@@ -255,6 +256,11 @@ export function listenForChanges(request: IncomingMessage, response: ServerRespo
     response.writeHead(200, { ...securityHeaders, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store" });
     response.write("retry: 2000\n\n");
     served.pages.add(response);
+
+    if (fromPhone(request, served)) {
+        served.phonePages.add(response);
+    }
+
     const id = new URL(request.url ?? "/", "http://localhost").searchParams.get("page");
 
     if (id !== null && id !== "") {
@@ -264,6 +270,7 @@ export function listenForChanges(request: IncomingMessage, response: ServerRespo
     clearTimeout(served.returning);
     request.on("close", () => {
         served.pages.delete(response);
+        served.phonePages.delete(response);
         served.pageIds.delete(response);
         served.seen.delete(id ?? "");
         watchHidden(served);

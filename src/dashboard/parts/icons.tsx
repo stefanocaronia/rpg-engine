@@ -94,6 +94,8 @@ const iconPaths = {
     // Help's parts (D-409): the chat with the master, and the dice.
     chat: "M4.5 5h15v10.5H10l-4.5 3.5v-3.5h-1Z M8 9h8 M8 12h5",
     dice: diePaths[20],
+    // The table, a section on a phone: where the dice are, and the rolls.
+    table: diePaths[20],
     // A place without a picture, and someone the character does not know (D-309).
     house: "M3 20.5h18 M5 20.5V10.5l7-6 7 6v10 M10 20.5v-5a2 2 0 0 1 4 0v5",
     stranger: "M12 3c-4 0-6.5 3.5-6.5 8v3.5L4 20.5h16l-1.5-6V11c0-4.5-2.5-8-6.5-8Z M8.8 11.8c.8-1.7 1.9-2.6 3.2-2.6s2.4.9 3.2 2.6c-.7 1.7-1.8 2.6-3.2 2.6s-2.5-.9-3.2-2.6Z",
@@ -110,6 +112,7 @@ const iconPaths = {
     // A painter's palette: a theme, the page's colours and faces (D-574).
     theme: "M12 3a9 9 0 1 0 0 18c1 0 1.7-.8 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.8-1.7 1.7-1.7h2.1a5.3 5.3 0 0 0 5.3-5.3C22 6.6 17.5 3 12 3Z M7.5 12h.01 M9 8h.01 M13.5 7h.01 M17 10h.01",
     window: "M3 5h18v14H3Z M3 9h18 M6 7h.01 M8.5 7h.01",
+    phone: "M8 2.5h8a1.5 1.5 0 0 1 1.5 1.5v16a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 20V4A1.5 1.5 0 0 1 8 2.5Z M10.5 18.5h3",
     // The campaign's folder as a git repository, in Settings: a branch that joins its trunk.
     branch: "M7 4a2 2 0 1 0 0 4a2 2 0 1 0 0-4Z M7 16a2 2 0 1 0 0 4a2 2 0 1 0 0-4Z M17 6.5a2 2 0 1 0 0 4a2 2 0 1 0 0-4Z M7 8v8 M17 10.5c0 3.5-4 3-10 5.5",
     more: "M6 9l6 6 6-6",

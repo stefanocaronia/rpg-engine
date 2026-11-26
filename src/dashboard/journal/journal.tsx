@@ -204,7 +204,7 @@ function NamedWords({ words, name }: { words: string; name: string; })
 /** The card of the quests followed, beside the page: a line for each, which opens where it stands; the way to the Journal in its header. */
 function QuestTracker({ quests, onUnfollow }: { quests: ShownQuest[]; onUnfollow(name: string): void; })
 {
-    const [open, toggle] = useOpen("Quests followed");
+    const [open, toggle] = useOpen("Quests followed", true);
     return (
         <section class="quest-tracker" aria-labelledby="tracker-title">
             <details class="table-card" open={open}>

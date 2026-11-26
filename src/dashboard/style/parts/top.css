@@ -910,9 +910,11 @@
             display: grid;
             grid-auto-columns: 1fr;
             grid-auto-flow: column;
-            height: 68px;
+            height: calc(68px + env(safe-area-inset-bottom));
             margin: 0;
-            padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+            /* No room around the sections: the light of the one shown or under a finger is its whole share of the bar. */
+            padding: 0 0 env(safe-area-inset-bottom);
+            gap: 0;
             border-top: 1px solid var(--rule);
             background: var(--panel);
             box-shadow: var(--raise-up);
@@ -952,9 +954,22 @@
             corner-shape: var(--tab-corner, round);
         }
 
+        /* The section shown is lit on its whole share and its picture in the accent: no mark of its own around the picture. */
         .top .main-nav a[aria-current="page"] .section-mark {
-            background: color-mix(in srgb, var(--accent) 22%, transparent);
             color: var(--accent);
+        }
+
+        /* Writing on a touch screen, the keyboard takes the window's foot: the bar steps aside while a field has the focus, and what is written stays in sight
+           right over the keyboard, with the chat's last words over it. */
+        @media (pointer: coarse) {
+            :root:has(:focus:is(textarea, input:is([type="text"], [type="search"], :not([type])))) .top .main-nav {
+                display: none;
+            }
+
+            /* Nor bar nor dice's button under the field then: only a breath of room between it and the keyboard. */
+            :root:has(:focus:is(textarea, input:is([type="text"], [type="search"], :not([type])))) {
+                scroll-padding-bottom: 16px;
+            }
         }
     }
 

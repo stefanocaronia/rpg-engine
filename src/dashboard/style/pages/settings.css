@@ -238,6 +238,65 @@
         cursor: pointer;
     }
 
+    /* Playing from a phone (T-317): while the way in is open, the code to scan beside the steps, framed in the accent as what the player does outside the
+       page, the address to copy and what to know under them; the code over the steps on a phone. */
+    .phone-pair {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-column: 1 / -1;
+        align-items: start;
+        gap: 12px 16px;
+        padding: 12px;
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--rule));
+        border-radius: var(--radius-l);
+    }
+
+    /* The code's own palette, dark on white in both themes, with the quiet room round it that a camera needs. */
+    .phone-code {
+        display: block;
+        width: 176px;
+        height: 176px;
+        padding: 10px;
+        border-radius: var(--radius-m);
+        background: #fff;
+    }
+
+    .phone-steps {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .phone-steps ol {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding-inline-start: 20px;
+    }
+
+    .phone-notes {
+        margin-top: 4px;
+        font-size: 0.85rem;
+    }
+
+    .phone-offline .button {
+        margin-inline-start: -10px;
+    }
+
+    .phone-here {
+        margin: 12px 0 8px;
+    }
+
+    @media (max-width: 600px) {
+        .phone-pair {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .phone-code {
+            justify-self: center;
+        }
+    }
+
     /* A list's items as chips to take off, and a field to add one. */
     .setting-list {
         display: grid;

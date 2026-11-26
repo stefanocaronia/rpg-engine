@@ -116,7 +116,7 @@ export function Help()
 }
 
 /** Where the issues of RPG Engine are reported, as its README says. */
-export const issuesLink = "https://github.com/stefanocaronia/rpg-engine/issues";
+export const issuesLink = "https://github.com/stefanocaronia/rpg-engine/issues/new/choose";
 
 /** The invitation to report what went wrong, said to one who may never have seen GitHub: what to write there, and that it is a public page. */
 export function ReportCard()
@@ -127,6 +127,7 @@ export function ReportCard()
             <div class="card-body">
                 <p>{t("Something doesn't work, confuses you or could be better? Tell us what you did, what you expected and what happened: every report helps.")}</p>
                 <p class="help-report-note">{t("GitHub is the site where RPG Engine is made: you write there with a free account, as in a forum, and anyone can read it.")}</p>
+                <p class="help-report-note">{t("A question or an idea goes in the Discussions, from the same page. Leave out personal data and your campaign's secrets.")}</p>
                 <a class="about-link" href={issuesLink} target="_blank" rel="noreferrer">
                     <Icon name="github" />
                     {t("Open a report on GitHub")}

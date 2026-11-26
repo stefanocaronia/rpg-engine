@@ -220,7 +220,8 @@ function FirstAnswer({ due }: { due: boolean; })
 /**
  * The open chat as tall as the window leaves it, from where it starts to the window's foot, or to the bar of the sections on a phone: its messages scroll
  * inside it, and the player's words stay in sight. Under the setup's questions, far down the page, as tall as the window with its title, for the player
- * who scrolls to it. Measured when the window or what stands over it changes, never as the page scrolls.
+ * who scrolls to it. Measured when the window or what stands over it changes, never as the page scrolls. On a phone, while the player writes in it, the bar
+ * steps aside and the chat takes the whole window over the keyboard, the page scrolled up to its top; then the page goes back where it was.
  */
 function useRoom(root: { current: HTMLElement | null; }, open: boolean, place: ChatPlace): void
 {
@@ -232,17 +233,36 @@ function useRoom(root: { current: HTMLElement | null; }, open: boolean, place: C
         }
 
         let asked = 0;
+        // Where the page stood before the player started writing, to go back there, and whether the chat took the window for it.
+        let before: number | undefined;
+        let typed = false;
 
         const measure = (): void => {
             asked = 0;
-            // The bar of the sections, where it stands at the window's foot.
+            // The bar of the sections, where it stands at the window's foot; stepped aside, on a phone, for the keyboard of a field the player writes in.
             const bar = document.querySelector<HTMLElement>(".main-nav");
-            const foot = bar !== null && getComputedStyle(bar).position === "fixed" ? bar.getBoundingClientRect().top : window.innerHeight;
+            const barShown = bar !== null && bar.getClientRects().length > 0 && getComputedStyle(bar).position === "fixed";
+            const typing = place === "section" && bar !== null && !barShown && box.contains(document.activeElement);
+            const foot = Math.min(barShown ? bar.getBoundingClientRect().top : window.innerHeight, keyboardTop());
             // Where the box starts in the page, how far under its own title, and what the page keeps clear at its foot for a field that takes the focus.
             const top = box.getBoundingClientRect().top + window.scrollY;
             const title = box.getBoundingClientRect().top - (root.current?.getBoundingClientRect().top ?? 0);
             const clear = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom) || 0;
-            box.style.setProperty("--chat-room", `${chatRoom(place, { foot, top, title, clear })}px`);
+            // Writing, the chat starts right under the page's top, which stays over the page.
+            const under = document.querySelector(".top")?.getBoundingClientRect().bottom ?? 0;
+            box.style.setProperty("--chat-room", `${chatRoom(place, { foot, top: typing ? under : top, title, clear, typing })}px`);
+
+            if (typing) {
+                typed = true;
+                window.scrollTo({ top: top - under, behavior: "instant" });
+            } else {
+                if (typed && before !== undefined) {
+                    window.scrollTo({ top: before, behavior: "instant" });
+                }
+
+                typed = false;
+                before = undefined;
+            }
         };
 
         const update = (): void => {
@@ -253,13 +273,39 @@ function useRoom(root: { current: HTMLElement | null; }, open: boolean, place: C
         const sizes = new ResizeObserver(update);
         sizes.observe(document.body);
         window.addEventListener("resize", update);
+        window.visualViewport?.addEventListener("resize", update);
+
+        // A field that takes or leaves the focus moves the bar aside or back; where the page stood is taken as the focus comes, before anything scrolls.
+        const focused = (event: FocusEvent): void => {
+            if (before === undefined && event.target instanceof Node && box.contains(event.target)) {
+                before = window.scrollY;
+            }
+
+            update();
+        };
+
+        document.addEventListener("focusin", focused);
+        document.addEventListener("focusout", update);
         measure();
 
         return () => {
             cancelAnimationFrame(asked);
             sizes.disconnect();
             window.removeEventListener("resize", update);
+            window.visualViewport?.removeEventListener("resize", update);
+            document.removeEventListener("focusin", focused);
+            document.removeEventListener("focusout", update);
             box.style.removeProperty("--chat-room");
         };
     }, [open, place]);
+}
+
+/**
+ * Where a phone's keyboard starts, in the window: the foot of what the window shows, which a keyboard laid over the page shortens, as Safari's does; past the
+ * window's foot where nothing covers it, or the page is zoomed in, which shortens it too.
+ */
+function keyboardTop(): number
+{
+    const seen = window.visualViewport;
+    return seen === null || seen.scale > 1.01 ? window.innerHeight : seen.height;
 }

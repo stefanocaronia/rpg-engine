@@ -699,6 +699,46 @@ export async function changeMaster(wish: MasterWish): Promise<{ shown?: MasterNo
     }
 }
 
+/**
+ * The way in for the player's phone on the home network (T-317), as this page may see it: whether this page is the phone's, whether it is open, whether the
+ * computer is on no home network, and, to the computer alone while it is open, the address the phone opens, which its code gives.
+ */
+export interface PhoneNow
+{
+    phone: boolean;
+    open: boolean;
+    offline?: true;
+    link?: string;
+}
+
+/** The way in for the phone as it is now; undefined where the dashboard does not tell of it. */
+export async function readPhone(): Promise<PhoneNow | undefined>
+{
+    try {
+        const response = await fetch("/api/phone");
+        return response.ok ? await response.json() as PhoneNow : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+/** Opens or closes the way in for the phone: how it is after, as when the computer turned out to be on no home network, or what went wrong. */
+export async function changePhone(open: boolean): Promise<{ shown: PhoneNow; } | { problem: string; }>
+{
+    try {
+        const response = await fetch("/api/phone", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ open }) });
+        const body = await response.json().catch(() => ({})) as Partial<PhoneNow> & { code?: string; };
+
+        if (response.ok) {
+            return { shown: body as PhoneNow };
+        }
+
+        return body.code === "offline" ? { shown: { phone: false, open: false, offline: true } } : { problem: t("It did not reach the game: try again.") };
+    } catch {
+        return { problem: t("It did not reach the game: try again.") };
+    }
+}
+
 /** How each number of a group of someone's sheet is made, by field: what view gives for Page#Group. */
 export async function readExplanations(member: string, group: string): Promise<Map<string, string[]>>
 {

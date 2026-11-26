@@ -48,13 +48,14 @@ import { SetupView, useSetup } from "./settings/setup.tsx";
 import { PartyStrip, type Tokened } from "./sheet/party.tsx";
 import { type FreeRoll, MemberSheet } from "./sheet/sheet.tsx";
 import { PageFoot } from "./shell/footer.tsx";
+import { fullScreenOnTouch } from "./shell/full-screen.ts";
 import { useHome } from "./shell/home.ts";
 import { gameNotices, importNotices, type Notice, Notices } from "./shell/notices.tsx";
 import { About } from "./shell/pages.tsx";
 import { productName } from "./shell/product.ts";
 import { calledOf, playerNamed, type Shown, turnKey, withHeld } from "./shell/shown.ts";
 import { gameStyleChanged, takeSystemStyle } from "./shell/system-style.ts";
-import { foldTable, PlayTable, tableBeside, useTableAway } from "./shell/table.tsx";
+import { foldTable, PlayTable, tableBeside, TableSection, tableSection, useTableAway } from "./shell/table.tsx";
 import { restoreTheme } from "./shell/theme.ts";
 import { startTooltips } from "./shell/tooltip.ts";
 import { SetupCorner, Top } from "./shell/top.tsx";
@@ -107,6 +108,8 @@ function App()
     // On a wide screen the table stands beside the page, unless the player folded it; folded, or under that width, the turns and the followed quest go back to
     // the page.
     const wideWindow = useMedia(tableBeside);
+    // On a phone the table is a section of its own, the dice's button in it: nothing over the chat, nothing at every page's foot.
+    const phone = useMedia(tableSection);
     const [tableAway, setTableAway] = useTableAway();
     // Whether the player has just opened or folded the table, which slides it in and gives the focus to what folds it, or to its tab; at the first reading it
     // is simply there.
@@ -723,6 +726,15 @@ function App()
     }, [address.section]);
     const engineNotice = useEngineNotice(address.section);
 
+    // The table's section is a phone's: a window that grows past it has the table beside the page, or under it, and the address leads to the party.
+    useEffect(() => {
+        if (address.section === "table" && wide) {
+            window.location.replace(sectionAddress("party"));
+        }
+    }, [address.section, wide]);
+
+    const tableShown = address.section === "table" && !wide;
+
     // The way back to the campaigns of this computer, at a campaign's table alone; and, its table gone, the way to have the campaign opened again (D-582).
     const home = useHome(master.table === true, live);
     const homeWay = home === undefined ? undefined : { go: home.go, busy: home.busy };
@@ -768,6 +780,16 @@ function App()
             }}
         />
     );
+    // What the table holds, beside the page or in its section on a phone.
+    const tableCards = (
+        <>
+            {fight && <TurnsCard scene={shown.openScene} party={shown.party} several={several} beside />}
+            <QuestEndings version={shown.version} campaign={shown.campaign} beside />
+            <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
+            <WidgetCards place="side" />
+            {rolls}
+        </>
+    );
     return (
         <ModulesContext.Provider value={modules}>
             <PeopleContext.Provider value={people}>
@@ -794,6 +816,7 @@ function App()
                                         choices={(shown.choices?.sets ?? []).some(waits)}
                                         chat={master.table !== true || dockSide !== undefined ? undefined : words.unseen ? "new" : "there"}
                                         home={homeWay}
+                                        table={phone}
                                         column={wide
                                             ? {
                                                 shown: table,
@@ -901,7 +924,7 @@ function App()
                                             )}
                                             <Notices notices={importing} />
                                             {/* A followed quest that ends is told here for a moment, beside the page over the quests' card when the table holds them. */}
-                                            {!table && <QuestEndings version={shown.version} campaign={shown.campaign} />}
+                                            {!table && !tableShown && <QuestEndings version={shown.version} campaign={shown.campaign} />}
                                             {/* The party's strip is the Party section's own (D-310): it leads to each one's sheet. */}
                                             {address.section === "party" && (
                                                 <PartyStrip
@@ -915,6 +938,7 @@ function App()
                                                 <main>
                                                     {address.section === "about" && <About product={productName} system={shown.system} />}
                                                     {address.section === "help" && <Help />}
+                                                    {tableShown && <TableSection>{tableCards}</TableSection>}
                                                     {address.section === "chat" && master.table === true && dockSide === undefined && (
                                                         <ChatPage chat={master} entering={ledToChat.current} asking={asking} game={chatGame} tools={dock.width === undefined ? undefined : <ChatPlaces side="tab" onSide={placeChat} />} />
                                                     )}
@@ -991,14 +1015,10 @@ function App()
                                                 {table
                                                     ? (
                                                         <PlayTable entering={tableMoved}>
-                                                            {fight && <TurnsCard scene={shown.openScene} party={shown.party} several={several} beside />}
-                                                            <QuestEndings version={shown.version} campaign={shown.campaign} beside />
-                                                            <FollowedQuests version={shown.version} campaign={shown.campaign} beside />
-                                                            <WidgetCards place="side" />
-                                                            {rolls}
+                                                            {tableCards}
                                                         </PlayTable>
                                                     )
-                                                    : wide
+                                                    : wide || phone || tableShown
                                                     ? null
                                                     : (
                                                         <>
@@ -1011,6 +1031,7 @@ function App()
                                         </>
                                     )}
                                 <DiceTray
+                                    away={phone && !inSetup && !tableShown}
                                     requested={thrown}
                                     sheetThrow={sheetThrow}
                                     party={shown.party}
@@ -1067,10 +1088,12 @@ function App()
     );
 }
 
-// The theme the player picked before, from the start (D-300); the tooltips over everything (T-228); the window the launcher sent here, large and centred.
+// The theme the player picked before, from the start (D-300); the tooltips over everything (T-228); the window the launcher sent here, large and centred; on
+// a phone the whole screen at the first touch.
 fitOpenedWindow("campaign");
 restoreTheme();
 startTooltips();
+fullScreenOnTouch();
 
 const root = document.getElementById("app");
 
