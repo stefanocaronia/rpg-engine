@@ -100,6 +100,7 @@ export function setOrder(root: string, world: World, order: string[], context: C
         throw new Error(`Give who takes turns, in order. In the scene: ${inScene}.`);
     }
 
+    refuseOffMap(world, current, named);
     const { round, turn } = keptTurn(current, named);
     updateScene(root, [[["order"], named], [["round"], round], [["turn"], turn]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, order: named }));
@@ -201,6 +202,7 @@ export function passTurn(root: string, world: World, context: Context, current: 
     }
 
     const { turn, round } = nextTurn(current.order, current.turn, current.round ?? 1);
+    refuseOffMap(world, current, [turn]);
     updateScene(root, [[["round"], round], [["turn"], turn]]);
     appendLogEntry(root, newDatedLogEntry(root, context, "scene-changed", "hidden", { title: current.title, round, turn }));
     const order = current.order;
@@ -258,13 +260,35 @@ export function withActing(root: string, context: Context, before: Scene, result
 /** Who acts and stands on no square of the scene's map, when its place has one (GRD-3, playtest 07): where it stands decides reach, cover and the way. */
 function offTheMap(world: World, scene: Scene | undefined, name: string): string
 {
+    const off = offMap(world, scene, [name]);
+    return off === undefined ? "" : `${name} is not on the map of ${off.place}: put it on its square with move ${name} --at, such as E4, before telling its turn.`;
+}
+
+/** Turns go only to who stands on a square, where the scene's place has a map (GRD-3): which one is the master's to choose, never the engine's. */
+function refuseOffMap(world: World, scene: Scene, names: string[]): void
+{
+    const off = offMap(world, scene, names);
+
+    if (off !== undefined) {
+        const first = off.names[0];
+        throw new Error(
+            `${off.names.join(", ")} ${off.names.length === 1 ? "is" : "are"} not on the map of ${off.place}: choose where each stands and put them there with move ${first} --at, such as E4, one at a time; then give the turn again.`,
+        );
+    }
+}
+
+/** Who of these stands on no square of the scene's map; undefined when all do, or its place has no map. */
+function offMap(world: World, scene: Scene | undefined, names: string[]): { place: string; names: string[]; } | undefined
+{
     const place = scenePlace(world, scene);
 
-    if (place === undefined || placeGrid(place) === undefined || standing(world, place, scene).some((one) => sameName([one.name], name) !== undefined && one.square !== undefined)) {
-        return "";
+    if (place === undefined || placeGrid(place) === undefined) {
+        return undefined;
     }
 
-    return `${name} is not on the map of ${place.name}: put it on its square with move ${name} --at, such as E4, before telling its turn.`;
+    const placed = standing(world, place, scene).filter((one) => one.square !== undefined);
+    const off = names.filter((name) => !placed.some((one) => sameName([one.name], name) !== undefined));
+    return off.length === 0 ? undefined : { place: place.name, names: off };
 }
 
 /** "Round 2 · now Lena (then Annegato 2).", and on the player's character's turn, to stop there (D-139). */

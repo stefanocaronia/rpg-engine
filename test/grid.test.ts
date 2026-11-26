@@ -231,10 +231,12 @@ describe("who stands where, in play (GRD-3, GRD-6)", () => {
         const opened = await ok("scene", "open", "--title", "Rissa", "--type", "combat", "--place", "Locanda", "--with", "Kira", "--with", "Bran", "--creatures", "Reed Cutter=2");
         expect(opened).toContain("Locanda has a map: put Reed Cutter 1, Reed Cutter 2 on it, one at a time, such as page Reed Cutter 1, at D2.");
         await ok("move", "Reed Cutter 1", "--at", "I2");
-        // Whose turn begins off the map is put on it first (playtest 07, where the wolves never stood anywhere).
-        await ok("scene", "order", "--order", "Kira", "--order", "Reed Cutter 2", "--order", "Bran", "--order", "Reed Cutter 1");
-        expect(await ok("scene", "next")).toContain("Reed Cutter 2 is not on the map of Locanda: put it on its square with move Reed Cutter 2 --at, such as E4, before telling its turn.");
+        // No turn goes to who is off the map: the master puts them on it first, where they choose (playtest 07, where the wolves never stood anywhere).
+        const order = ["scene", "order", "--order", "Kira", "--order", "Reed Cutter 2", "--order", "Bran", "--order", "Reed Cutter 1"];
+        expect(await refused(...order)).toContain("Reed Cutter 2 is not on the map of Locanda: choose where each stands and put them there with move Reed Cutter 2 --at");
         await ok("move", "Reed Cutter 2", "--at", "I3");
+        await ok(...order);
+        await ok("scene", "next");
         expect(innPage()).toContain("Reed Cutter 1 I2");
         expect(await refused("move", "Reed Cutter 1", "--to", "Guado", "--at", "D3")).toContain("Reed Cutter 1 is a copy in the open scene");
         await ok("scene", "leave", "--who", "Reed Cutter 1");
