@@ -3,6 +3,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { connect, type Socket } from "node:net";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readDataFile, removeDataFile, writeDataFile } from "../../core/data-file.ts";
 import { isPageAddress } from "../../core/page-address.ts";
@@ -19,11 +20,23 @@ export interface TablePlace
     url: string;
 }
 
-/** The socket of a campaign's table: a named pipe on Windows, else a socket file beside its place. */
-export function tableSocket(home: string, root: string, platform: string): string
+// The longest path a socket file may have where the system counts fewest (macOS: 104 bytes with its end), kept a little under.
+const longestSocketPath = 100;
+
+/**
+ * The socket of a campaign's table: a named pipe on Windows, else a socket file beside its place; where that path is longer than a socket's may be, as in a
+ * home with a long name, a file of the system's temporary folder. Only the table works it out: the others read it in the table's place.
+ */
+export function tableSocket(home: string, root: string, platform: string, temporary: string = tmpdir()): string
 {
     const key = tableKey(root);
-    return platform === "win32" ? `\\\\.\\pipe\\rpg-table-${key}` : join(tablesFolder(home), `${key}.sock`);
+
+    if (platform === "win32") {
+        return `\\\\.\\pipe\\rpg-table-${key}`;
+    }
+
+    const beside = join(tablesFolder(home), `${key}.sock`);
+    return Buffer.byteLength(beside) <= longestSocketPath ? beside : join(temporary, `rpg-table-${key}.sock`);
 }
 
 /** A new token, at each start of a table: only who reads its place knocks right. */
